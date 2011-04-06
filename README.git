@@ -1,0 +1,66 @@
+Clone the repository
+$git clone git+ssh://gbussi@qe-forge.org/scmrepos/git/plumed2/plumed2.git
+$cd plumed2
+
+Stay up to date
+$git pull
+
+Make a small fix (working locally)
+$git add FILENAME # always necessary, not only with new files
+$git commit FILENAME
+
+Share it (needs internet connection)
+$git pull # always check if you are up-to-date
+$git push
+
+Look at what's happening
+$git log
+or better
+$gitk --all
+
+Start working on a new feature, opening a new branch
+$git checkout -b new-feature
+
+Check the present branches
+$git branch
+
+And switch among them
+$git checkout master
+$git checkout new-feature
+
+Do a commit on your new-feature branch
+$git checkout new-feature
+$ ... edit files ...
+$git add NEWFILE
+$git commit NEWFILE
+
+Merge recent work from the master branch, doing a "rebase"
+$git checkout master
+$git pull # to stay up-to-date with remote work
+$git checkout new-feature
+$git rebase master
+
+After several commits, your new feature is ready for merge.
+$git checkout master
+$git pull # to stay up-to-date with remote work
+$git checkout new-feature
+You can squeeze your commits with:
+$git rebase -i master
+then interactively picking your commits (follow onscreen instructions)
+(Without -i, all the commits are retained)
+Merge your work into master branch
+$git checkout master
+$git merge new-feature
+Remove the branch
+$git branch -d new-feature
+Analyze the results
+$gitk --all
+If everything seems right, push your master branch to the central repository
+$git push
+
+#####
+
+All these things can be done with a GUI:
+$git gui
+
+
