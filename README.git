@@ -6,7 +6,7 @@ Stay up to date
 $git pull
 
 Make a small fix (working locally)
-$git add FILENAME # always necessary, not only with new files
+$git add FILENAME
 $git commit FILENAME
 
 Share it (needs internet connection)
