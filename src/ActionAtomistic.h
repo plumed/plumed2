@@ -24,15 +24,30 @@ class ActionAtomistic :
   std::vector<double>   charges;
 
 protected:
+/// Request an array of atoms.
+/// This method is used to ask for a list of atoms. Atoms
+/// should be asked for by number. If this routine is called
+/// during the simulation, atoms will be available at the next step
+/// MAYBE WE HAVE TO FIND SOMETHING MORE CLEAR FOR DYNAMIC
+/// LISTS OF ATOMS
   void requestAtoms(const std::vector<int> & a);
+/// Get position of i-th atom
   const Vector & getPositions(int)const;
+/// Get position of i-th atom
   const Tensor & getBox()const;
+/// Get the array of all positions
   const std::vector<Vector> & getPositions()const;
+/// Get mass of i-th atom
   double getMasses(int i)const;
+/// Get charge of i-th atom
   double getCharges(int i)const;
+/// Get a reference to forces array
   std::vector<Vector> & modifyForces();
+/// Get a reference to virial array
   Tensor & modifyVirial();
+/// Get number of available atoms
   int getNatoms(){return indexes.size();};
+/// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
 
 public:
