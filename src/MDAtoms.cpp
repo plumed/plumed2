@@ -35,16 +35,12 @@ public:
     *(static_cast<T*>(m))=T(d);
   }
   void getBox(Tensor &)const;
-  void getPositions(int first,int last,vector<Vector>&)const;
   void getPositions(const vector<int>&index,vector<Vector>&positions)const;
-  void getMasses(int first,int last,vector<double>&)const;
   void getMasses(const vector<int>&index,vector<double>&)const;
-  void getCharges(int first,int last,vector<double>&)const;
   void getCharges(const vector<int>&index,vector<double>&)const;
   void updateVirial(const Tensor&)const;
-  void updateForces(int first,int last,const vector<Vector>&);
   void updateForces(const vector<int>&index,const vector<Vector>&);
-  void rescaleForces(int first,int last,double factor);
+  void rescaleForces(int n,double factor);
   int  getRealPrecision()const;
 };
 
@@ -75,28 +71,6 @@ void MDAtomsBase::setUnits(double l,double e){
   scaleb=1.0/l;
   scalev=e;
 }
-
-template <class T>
-void MDAtomsTyped<T>::getPositions(int first,int last,vector<Vector>&positions)const{
-  for(int i=first;i<last;i++){
-    positions[i][0]=px[stride*i]*scalep;
-    positions[i][1]=py[stride*i]*scalep;
-    positions[i][2]=pz[stride*i]*scalep;
-  }
-}
-
-template <class T>
-void MDAtomsTyped<T>::getMasses(int first,int last,vector<double>&masses)const{
-  if(m) for(int i=first;i<last;i++) masses[i]=m[i];
-  else  for(int i=first;i<last;i++) masses[i]=0.0;
-}
-
-template <class T>
-void MDAtomsTyped<T>::getCharges(int first,int last,vector<double>&charges)const{
-  if(c) for(int i=first;i<last;i++) charges[i]=c[i];
-  else  for(int i=first;i<last;i++) charges[i]=0.0;
-}
-
 
 template <class T>
 void MDAtomsTyped<T>::getBox(Tensor&box)const{
@@ -130,16 +104,6 @@ void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const{
   if(this->virial) for(int i=0;i<3;i++)for(int j=0;j<3;j++) this->virial[3*i+j]+=T(virial(i,j)*scalev);
 }
 
-
-template <class T>
-void MDAtomsTyped<T>::updateForces(int first,int last,const vector<Vector>&forces){
-  for(int i=first;i<last;i++){
-    fx[stride*i]+=T(scalef*forces[i][0]);
-    fy[stride*i]+=T(scalef*forces[i][1]);
-    fz[stride*i]+=T(scalef*forces[i][2]);
-  }
-}
-
 template <class T>
 void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&forces){
   for(unsigned i=0;i<index.size();++i){
@@ -150,8 +114,8 @@ void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&
 }
 
 template <class T>
-void MDAtomsTyped<T>::rescaleForces(int first,int last,double factor){
-  for(int i=first;i<last;++i){
+void MDAtomsTyped<T>::rescaleForces(int n,double factor){
+  for(int i=0;i<n;++i){
     fx[stride*i]*=T(factor);
     fy[stride*i]*=T(factor);
     fz[stride*i]*=T(factor);

@@ -33,7 +33,7 @@ public:
   virtual void getCharges(const std::vector<int>&index,std::vector<double>&)const=0;
   virtual void updateVirial(const Tensor&)const=0;
   virtual void updateForces(const std::vector<int>&index,const std::vector<Vector>&)=0;
-  virtual void rescaleForces(int first,int last,double factor)=0;
+  virtual void rescaleForces(int n,double factor)=0;
   virtual int  getRealPrecision()const=0;
   static MDAtomsBase* create(int);
 };

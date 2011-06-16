@@ -162,7 +162,7 @@ void Atoms::updateForces(){
   };
   if(forceOnEnergy*forceOnEnergy>epsilon){
      double alpha=1.0-forceOnEnergy;
-     mdatoms->rescaleForces(0,gatindex.size(),alpha);
+     mdatoms->rescaleForces(gatindex.size(),alpha);
   }
   if(!any)return;
   mdatoms->updateForces(gatindex,forces);
