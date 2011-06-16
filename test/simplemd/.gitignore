@@ -1,0 +1,8 @@
+simplemd
+simplemd-static
+simplemd-dummy
+*.mod
+energies.dat
+output.xyz
+trajectory.xyz
+COLVAR

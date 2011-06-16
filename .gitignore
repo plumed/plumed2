@@ -1,1 +1,12 @@
+.DS_Store
 *~
+*.o
+*.so
+*.dylib
+makefile.dep
+/gromacs*
+/Makefile.conf
+/sourceme.sh
+/tmp
+*.swp
+core

@@ -1,0 +1,29 @@
+
+CHECK_BOUNDARIES=-D_GLIBCXX_DEBUG
+DOUBLEPRECISION=-qrealsize=8
+
+
+LIBS=-ldl
+DYNAMIC_LIBS=$(IMDLIB)
+
+CPPFLAGS=-D__PLUMED_HAS_DLOPEN $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE) $(IMDDEF)
+#CXXFLAGS=-pedantic -Wall -O -fPIC
+#CFLAGS=-pedantic -Wall -O -fPIC
+CXXFLAGS=-O0 -G -qpic -qrtti=all
+CFLAGS=-O0 -qpic
+
+LDFLAGS=-brtl -bdynamic -bexpall
+SOEXT=so
+LDSO=xlc++ -G -qmkshrobj -bM:SRE $(CFLAGS)
+LD=xlc++
+LDF90=xlc++ -lm -lxlf90
+CXX=xlc++
+CC=xlc
+FC=xlf
+
+GCCDEP=g++
+
+
+
+
+

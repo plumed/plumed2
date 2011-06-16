@@ -1,0 +1,236 @@
+patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/Makefile" << \EOF_EOF
+--- ./src/kernel/Makefile.preplumed
++++ ./src/kernel/Makefile
+@@ -16,10 +16,11 @@
+ 
+ 
+ # Note: Makefile is automatically generated from Makefile.in by the configure
+ # script, and Makefile.in is generated from Makefile.am by automake.
+ 
++include ../../Plumed.inc
+ 
+ 
+ 
+ pkgdatadir = $(datadir)/gromacs
+ pkgincludedir = $(includedir)/gromacs
+@@ -141,11 +142,11 @@
+ am_mdrun_OBJECTS = gctio.$(OBJEXT) ionize.$(OBJEXT) do_gct.$(OBJEXT) \
+ 	repl_ex.$(OBJEXT) xutils.$(OBJEXT) runner.$(OBJEXT) \
+ 	md.$(OBJEXT) mdrun.$(OBJEXT) genalg.$(OBJEXT) \
+ 	md_openmm.$(OBJEXT)
+ mdrun_OBJECTS = $(am_mdrun_OBJECTS)
+-mdrun_LDADD = $(LDADD)
++mdrun_LDADD = $(LDADD) $(PLUMED_LOAD)
+ mdrun_DEPENDENCIES = $(lib_LTLIBRARIES) ../mdlib/libmd_mpi_d.la \
+ 	../gmxlib/libgmx_mpi_d.la
+ pdb2gmx_SOURCES = pdb2gmx.c
+ pdb2gmx_OBJECTS = pdb2gmx.$(OBJEXT)
+ pdb2gmx_LDADD = $(LDADD)
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
+--- ./src/kernel/md.c.preplumed
++++ ./src/kernel/md.c
+@@ -88,10 +88,16 @@
+ #include "mvdata.h"
+ #include "checkpoint.h"
+ #include "mtop_util.h"
+ #include "sighandler.h"
+ 
++/* PLUMED */
++#include "../../Plumed.h"
++extern int    plumedswitch;
++extern plumed plumedmain;
++/* END PLUMED */
++
+ #ifdef GMX_LIB_MPI
+ #include <mpi.h>
+ #endif
+ #ifdef GMX_THREADS
+ #include "tmpi.h"
+@@ -1522,10 +1528,41 @@
+             }
+         }
+         fprintf(fplog,"\n");
+     }
+ 
++/* PLUMED */
++  if(plumedswitch){
++
++    if(PAR(cr)){
++      if(DOMAINDECOMP(cr)) {
++        plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
++      }else{
++        plumed_cmd(plumedmain,"setMPIComm",&cr->mpi_comm_mysim);
++      }
++    }
++
++    plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
++    plumed_cmd(plumedmain,"setMDEngine","gromacs");
++    plumed_cmd(plumedmain,"setLog",fplog);
++    plumed_cmd(plumedmain,"setTimestep",&ir->delta_t);
++
++    plumed_cmd(plumedmain,"init",NULL);
++
++    if(PAR(cr)){
++      if(DOMAINDECOMP(cr)) {
++        plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
++        plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
++      }else{
++        plumed_cmd(plumedmain,"setAtomsNlocal",&mdatoms->homenr);
++        plumed_cmd(plumedmain,"setAtomsContiguous",&mdatoms->start);
++      }
++    }
++  }
++/* END PLUMED */
++
++
+     /* Set and write start time */
+     runtime_start(runtime);
+     print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
+     wallcycle_start(wcycle,ewcRUN);
+     if (fplog)
+@@ -1802,10 +1839,17 @@
+                                     state,&f,mdatoms,top,fr,
+                                     vsite,shellfc,constr,
+                                     nrnb,wcycle,do_verbose);
+                 wallcycle_stop(wcycle,ewcDOMDEC);
+                 /* If using an iterative integrator, reallocate space to match the decomposition */
++/* PLUMED */
++        if(plumedswitch){
++          plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
++          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
++        }
++/* END PLUMED */
++
+             }
+         }
+ 
+         if (MASTER(cr) && do_log && !bFFscan)
+         {
+@@ -1928,16 +1972,37 @@
+              * in do_force.
+              * This is parallellized as well, and does communication too. 
+              * Check comments in sim_util.c
+              */
+         
++
++ /* PLUMED */
++       if(plumedswitch){
++         plumed_cmd(plumedmain,"setStep",&step);
++         plumed_cmd(plumedmain,"setPositions",&state->x[mdatoms->start][0]);
++         plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[mdatoms->start]);
++         plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
++         plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
++         plumed_cmd(plumedmain,"prepareCalc",NULL);
++       }
++ /* END PLUMED */
++
+             do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
+                      state->box,state->x,&state->hist,
+                      f,force_vir,mdatoms,enerd,fcd,
+                      state->lambda,graph,
+                      fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
+                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
++ /* PLUMED */
++       if(plumedswitch){
++         plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
++         plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
++         plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
++         plumed_cmd(plumedmain,"performCalc",NULL);
++       }
++ /* END PLUMED */
++
+         }
+     
+         GMX_BARRIER(cr->mpi_comm_mygroup);
+         
+         if (bTCR)
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
+--- ./src/kernel/mdrun.c.preplumed
++++ ./src/kernel/mdrun.c
+@@ -54,10 +54,16 @@
+ #endif
+ 
+ /* afm stuf */
+ #include "pull.h"
+ 
++/* PLUMED */
++#include "../../Plumed.h"
++int    plumedswitch;
++plumed plumedmain;
++/* END PLUMED */
++
+ int main(int argc,char *argv[])
+ {
+   const char *desc[] = {
+  #ifdef GMX_OPENMM
+     "This is an experimental release of GROMACS for accelerated",
+@@ -369,11 +375,12 @@
+     { efXVG, "-devout", "deviatie", ffOPTWR },
+     { efXVG, "-runav",  "runaver",  ffOPTWR },
+     { efXVG, "-px",     "pullx",    ffOPTWR },
+     { efXVG, "-pf",     "pullf",    ffOPTWR },
+     { efMTX, "-mtx",    "nm",       ffOPTWR },
+-    { efNDX, "-dn",     "dipole",   ffOPTWR }
++    { efNDX, "-dn",     "dipole",   ffOPTWR },
++    { efDAT, "-plumed", "plumed",   ffOPTRD }   /* PLUMED */
+   };
+ #define NFILE asize(fnm)
+ 
+   /* Command line options ! */
+   gmx_bool bCart        = FALSE;
+@@ -635,16 +642,52 @@
+ 
+   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
+   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
+   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
+ 
++/* PLUMED */
++  plumedswitch=0;
++  if (opt2bSet("-plumed",NFILE,fnm)) plumedswitch=1;
++  if(plumedswitch){
++    int plumed_is_there=0;
++    int real_precision=sizeof(real);
++    real energyUnits=1.0;
++    real lengthUnits=1.0;
++    real timeUnits=1.0;
++
++    plumed_installed(&plumed_is_there);
++    if(!plumed_is_there){
++      gmx_fatal(FARGS,"Plumed is not available. Check your PLUMED_KERNEL variable.");
++    }
++    plumedmain=plumed_create();
++    plumed_cmd(plumedmain,"setRealPrecision",&real_precision);
++// this is not necessary for gromacs units:
++    plumed_cmd(plumedmain,"setMDEnergyUnits",&energyUnits);
++    plumed_cmd(plumedmain,"setMDLengthUnits",&lengthUnits);
++    plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);
++//
++    plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,NFILE,fnm));
++    plumedswitch=1;
++  }
++/* END PLUMED */
++
++
++
+   rc = mdrunner(nthreads, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
+                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
+                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
+                 nstepout,resetstep,nmultisim,repl_ex_nst,repl_ex_seed,
+                 pforce, cpt_period,max_hours,deviceOptions,Flags);
+ 
++/* PLUMED */
++  if(plumedswitch){
++    plumed_finalize(plumedmain);
++  }
++/* END PLUMED */
++
++
++
+   if (gmx_parallel_env_initialized())
+       gmx_finalize();
+ 
+   if (MULTIMASTER(cr)) {
+       thanx(stderr);
+EOF_EOF

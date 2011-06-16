@@ -1,0 +1,79 @@
+#ifndef __PLUMED_ActionSet_h
+#define __PLUMED_ActionSet_h
+
+#include "Action.h"
+
+namespace PLMD {
+
+class PlumedMain;
+
+/// std::vector containing the sequence of Action to be done.
+/// It is a vector of Action*, and as such it has the entire
+/// std::vector interface. Moreover, it implements methods to extract
+/// Acion* of a given type (select<T>()), NOT of a given type (selectNot<T>())
+/// or to find an Action with a given label (selectWithLabel())
+/// Finally, since it holds pointers, there is a clearDelete() function
+/// which deletes the pointers before deleting the vector
+class ActionSet:
+  public std::vector<Action*>
+{
+  PlumedMain& plumed;
+public:
+  ActionSet(PlumedMain&p);
+/// Clear and deletes all the included pointers.
+  void clearDelete();
+
+/// Extract pointers to all Action's of type T
+/// To extract all Colvar , use select<Colvar*>();
+  template <class T>
+  std::vector<T> select()const;
+/// Extract pointers to all Action's which are not of type T
+/// E.g., to extract all noncolvars, use
+///    selectNot<Colvar*>();
+  template <class T>
+  std::vector<Action*> selectNot()const;
+/// Extract pointer to an action labeled s, only if it is of
+/// type T. E.g., to extract an action labeled "pippo", use selectWithLabel<Action*>("pippo")
+/// If you want it to be a Colvar, use selectWithLabel<Colvar*>(pippo). If it is
+/// not found, it returns NULL
+  template <class T>
+  T selectWithLabel(const std::string&s)const;
+};
+
+///////
+// INLINE IMPLEMENTATIONS:
+
+template <class T>
+std::vector<T> ActionSet::select()const{
+  std::vector<T> ret;
+  for(const_iterator p=begin();p!=end();++p){
+    T t=dynamic_cast<T>(*p);
+    if(t) ret.push_back(t);
+  };
+  return ret;
+}
+
+template <class T>
+T ActionSet::selectWithLabel(const std::string&s)const{
+  std::vector<T> ret;
+  for(const_iterator p=begin();p!=end();++p){
+    T t=dynamic_cast<T>(*p);
+    if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;
+  };
+  return NULL;
+}
+
+template <class T>
+std::vector<Action*> ActionSet::selectNot()const{
+  std::vector<Action*> ret;
+  for(const_iterator p=begin();p!=end();++p){
+    T t=dynamic_cast<T>(*p);
+    if(!t) ret.push_back(*p);
+  };
+  return ret;
+}
+
+}
+
+#endif
+

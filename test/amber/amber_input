@@ -1,0 +1,11 @@
+METADYNAMICS TEST 
+&cntrl
+ imin=0, irest=0, ntx=1, ig=71278 , 
+ nstlim=1001, dt=0.0002,
+ ntc=1, ntf=1,
+ ntt=3, gamma_ln=5 , 
+ tempi=300.0, temp0=300.0,
+ ntpr=200, ntwx=0,
+ ntb=0, igb=0,
+ cut=999., plumed=1 , plumedfile='plumed.dat'
+/

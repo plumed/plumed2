@@ -1,0 +1,268 @@
+patch -u -l -b -F 5 --suffix=.preplumed "./src/sander/Makefile" << \EOF_EOF
+--- ./src/sander/Makefile.preplumed
++++ ./src/sander/Makefile
+@@ -18,10 +18,11 @@
+ #************************************************************************
+ #
+ # Makefile for Amber 9   SANDER 
+ #
+ include ../config.h
++include ../../Plumed.inc
+ 
+ # Sander Fortran source files are free format
+ LOCALFLAGS = $(FREEFORMAT_FLAG)
+ 
+ SHELL=/bin/sh
+@@ -169,48 +170,48 @@
+               nxtsec lapack blas lmod divcon checkserconf
+ 	$(LOAD) -o sander$(SFX)  $(MMOBJ) $(QMOBJ) $(QM2OBJ) $(QMMMOBJ_DFTB) \
+                  qm_div.o force.o \
+ 		../lmod/lmod.a ../dcqtp/src/qmmm/libdivcon.a \
+ 		../lapack/lapack.a ../blas/blas.a \
+-		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB)
++		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB) $(PLUMED_LOAD)
+ 
+ #---------------------------------------------------------------------------
+ sander.MPI$(SFX): $(NETCDF) $(MMOBJ) $(QMOBJ) $(QM2OBJ) $(QMMMOBJ_DFTB) \
+               qm_div.o force.o \
+               syslib nxtsec lapack blas lmod checkparconf
+ 	$(LOAD) -o sander.MPI$(SFX)  $(MMOBJ) $(QMOBJ) $(QM2OBJ)  $(QMMMOBJ_DFTB) \
+                    qm_div.o force.o \
+ 		../lmod/lmod.a ../lapack/lapack.a ../blas/blas.a \
+-		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB)
++		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB) $(PLUMED_LOAD)
+ 
+ #---------------------------------------------------------------------------
+ sander.LES$(SFX): $(NETCDF) $(LESOBJ) syslib nxtsec lapack blas lmod \
+ 		checkserconf
+ 	$(LOAD) -o sander.LES$(SFX) $(LESOBJ) \
+ 		../lmod/lmod.a ../lapack/lapack.a ../blas/blas.a \
+-		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB)
++		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB) $(PLUMED_LOAD)
+ 
+ #---------------------------------------------------------------------------
+ sander.LES.MPI$(SFX): $(NETCDF) $(LESOBJ) syslib nxtsec lapack blas lmod \
+ 		checkparconf
+ 	$(LOAD) -o sander.LES.MPI$(SFX) $(LESOBJ) \
+ 		../lmod/lmod.a ../lapack/lapack.a ../blas/blas.a \
+-		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB)
++		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB) $(PLUMED_LOAD)
+ 
+ #---------------------------------------------------------------------------
+ sander.PIMD$(SFX): $(NETCDF) $(PIMDOBJ) $(EVBPIMD) syslib nxtsec lapack blas \
+        lmod checkserconf
+ 	$(LOAD) -o sander.PIMD$(SFX) $(PIMDOBJ) $(EVBPIMD) \
+ 		../lmod/lmod.a ../lapack/lapack.a ../blas/blas.a \
+-		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB)
++		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB) $(PLUMED_LOAD)
+ 
+ #---------------------------------------------------------------------------
+ sander.PIMD.MPI$(SFX): $(NETCDF) $(PIMDOBJ) $(EVBPIMD) syslib nxtsec lapack \
+        blas lmod checkparconf
+ 	$(LOAD) -o sander.PIMD.MPI$(SFX) $(PIMDOBJ) $(EVBPIMD) \
+ 		../lmod/lmod.a ../lapack/lapack.a ../blas/blas.a \
+-		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB)
++		../lib/nxtsec.o ../lib/sys.a $(NETCDFLIB) $(LOADLIB) $(PLUMED_LOAD)
+ 
+ #---------------------------------------------------------------------------
+ psander$(SFX): $(NETCDF) $(PSOBJ)  $(QMOBJ) $(QM2OBJ) $(QMMMOBJ_DFTB) \
+               qm_div.o force.PS.o syslib \
+                  syslib nxtsec lapack blas lmod
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./src/sander/mdread.f" << \EOF_EOF
+--- ./src/sander/mdread.f.preplumed
++++ ./src/sander/mdread.f
+@@ -78,11 +78,11 @@
+          cut_inner,icfe,clambda,klambda, rbornstat,lastrst,lastist,  &
+          itgtmd,tgtrmsd,tgtmdfrc,tgtfitmask,tgtrmsmask, &
+          idecomp,temp0les,restraintmask,restraint_wt,bellymask, &
+          noshakemask, &
+          mmtsb_switch, mmtsb_iterations,rdt,icnstph,solvph,ntcnstph, &
+-         ifqnt,ievb, &
++         ifqnt,ievb,plumed,plumedfile, &
+ #ifdef PIMD
+          pimd_runtype, pimd_use_original_mass, ineb, &
+ #endif
+          dtemp, dxm, heat, timlim  !all retired 
+ 
+@@ -129,10 +129,13 @@
+    ig = 71277
+    tempi = ZERO
+    ntb = 1
+    ntt = 0
+    temp0 = 300.0d0
++   plumed = 0
++   plumedfile = 'plumed.dat'
++
+ #if defined(LES) || defined(PIMD)
+    
+    ! alternate temp for LES copies, if negative then use single bath
+    ! single bath not the same as 2 baths with same target T
+    
+@@ -306,10 +309,15 @@
+    else
+       write(6, '(1x,a,/)') 'Could not find cntrl namelist'
+       call mexit(6,1)
+    end if
+ 
++   if (plumed.eq.1) then
++     write(6, '(1x,a,/)') 'PLUMED is on'
++     write(6, '(1x,a,a,/)') 'PLUMEDfile is ',plumedfile
++   endif
++
+    if (ifqnt>0) then
+      qmmm_nml%ifqnt = .true.
+      if (saltcon /= 0.0d0) then
+        qm_gb%saltcon_on = .true.
+      else
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./src/sander/md.h" << \EOF_EOF
+--- ./src/sander/md.h.preplumed
++++ ./src/sander/md.h
+@@ -15,22 +15,23 @@
+       ibgwat,ienwat,iorwat,              &!36
+       iwatpr,nsolw,igb,alpb,iyammp,           &!41
+       gbsa,vrand,iwrap,nrespa,irespa,nrespai,icfe,  &!48
+       rbornstat,ivcap,iconstreff,        &!51
+       neb,vv,tmode,ipol,iesp,ievb,nodeid,num_noshake,    &!59
+-      idecomp,icnstph,ntcnstph,maxdup,numexchg,repcrd,numwatkeep     !66
+-parameter (BC_MDI=66)
++      idecomp,icnstph,ntcnstph,maxdup,numexchg,repcrd,numwatkeep,&  !66
++      plumed !67
++parameter (BC_MDI=67)
+ 
+ common/mdi/nrp,nspm,ig, &
+       ntx,ntcx,ntxo,ntt,ntp,ntr,init,ntcm,nscm, &
+       isolvp,nsolut,ntc,ntcc,ntf,ntid,ntn,ntnb,nsnb,ndfmin, &
+       nstlim,nrc,ntrx,npscal,imin,maxcyc,ncyc,ntmin, &
+       irest,jfastw,ibgwat,ienwat,iorwat, &
+       iwatpr,nsolw,igb,alpb,iyammp,gbsa,vrand,numexchg,repcrd,numwatkeep, &
+       iwrap,nrespa,irespa,nrespai,icfe,rbornstat, &
+       ivcap,iconstreff,idecomp,klambda,icnstph,ntcnstph,maxdup,neb,vv, &
+-	  tmode,ipol,iesp,ievb,nodeid,num_noshake
++	  tmode,ipol,iesp,ievb,nodeid,num_noshake, plumed
+ 
+ ! ... floats:
+ 
+ _REAL_ t,dt,temp0,tautp,pres0,comp,taup,temp,tempi, & !9
+       tol,taur,dx0,drms,vlimit,rbtarg(9),tmass,tmassinv,  & !25
+@@ -47,11 +48,12 @@
+       v11,v12,v22,kevb,evbt,Arad
+ 
+ ! ... strings:
+ 
+ character(len=4) iwtnm,iowtnm,ihwtnm
+-character(len=256) restraintmask,bellymask,tgtfitmask,tgtrmsmask,noshakemask
++character(len=256) restraintmask,bellymask,tgtfitmask,tgtrmsmask,noshakemask, &
++                   plumedfile
+ common/mds/ restraintmask,bellymask,tgtfitmask,tgtrmsmask,noshakemask,  &
+-            iwtnm,iowtnm,ihwtnm(2)
++            iwtnm,iowtnm,ihwtnm(2),plumedfile
+ 
+ !-------------END    md.h  ------------------------------------------------
+ 
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./src/sander/sander.f" << \EOF_EOF
+--- ./src/sander/sander.f.preplumed
++++ ./src/sander/sander.f
+@@ -509,10 +509,13 @@
+    !----- Set up integer stack initial size --------------    
+    call mpi_bcast(lastist,1,mpi_integer,0,commsander,ierr)
+    call mpi_bcast(lastrst,1,mpi_integer,0,commsander,ierr)
+ 
+    call stack_setup()
++
++   call mpi_bcast(plumed,1,MPI_INTEGER,0,commsander,ierr)
++   call mpi_bcast(plumedfile,256,MPI_CHARACTER,0,commsander,ierr)
+       
+    call mpi_barrier(commsander,ierr)
+    !     ---allocate memory on the non-master nodes:
+ 
+    if( .not.master ) then
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./src/sander/runmd.f" << \EOF_EOF
+--- ./src/sander/runmd.f.preplumed
++++ ./src/sander/runmd.f
+@@ -172,10 +172,12 @@
+    character(len=4) prndiptest
+    !--- END VARIABLES FOR DIPOLE PRINTING ---
+ 
+    _REAL_,parameter :: pressure_constant = 6.85695d+4
+ 
++   _REAL_ :: energyUnits,timeUnits,lengthUnits
++
+    !  Runmd operates in kcal/mol units for energy, amu for masses,
+    !     and angstoms for distances.  To convert the input time parameters
+    !     from picoseconds to internal units, multiply by 20.455
+    !     (which is 10.0*sqrt(4.184)).
+    
+@@ -477,10 +479,41 @@
+    ener(9) = box(3)
+    
+    ekcmt(1:4) = 0.d0
+    nitp = 0
+    nits = 0
++
++   ! init PLUMED
++   if(plumed.eq.1) then
++     call plumed_g_create()
++     energyUnits=4.184
++     lengthUnits=0.1
++     timeUnits=1.0
++     call plumed_g_cmd("setMDEnergyUnits"//char(0),energyUnits)
++     call plumed_g_cmd("setMDLengthUnits"//char(0),lengthUnits)
++     call plumed_g_cmd("setMDTimeUnits"//char(0),timeUnits)
++     call plumed_g_cmd("setPlumedDat"//char(0),trim(adjustl(plumedfile))//char(0))
++     call plumed_g_cmd("setNatoms"//char(0),nr)
++     call plumed_g_cmd("setMDEngine"//char(0),"amber");
++     call plumed_g_cmd("setTimestep"//char(0),dt);
++#  ifdef MPI
++     call plumed_g_cmd("setMPIFComm"//char(0),MPI_COMM_WORLD)
++#  endif
++
++     call plumed_g_cmd("init"//char(0),0);
++
++
++!     if(ifbox/=0 .and. ifbox/=1 .and. ifbox/=2) then
++!      write (6,*) "!!!!! PLUMED ERROR: Only orthorhombic and truncted octahedron cells are supported in this release."
++!      write (6,*) "!!!!! ABORTING RUN"
++!      stop
++!     endif
++!     call init_metadyn(nr,dt,amass,xx(l15),ifbox,0,trim(adjustl(plumedfile))//char(0))
++     continue
++   endif
++   ! end init PLUMED
++
+    
+    !=======================================================================
+    !     ----- MAKE A FIRST DYNAMICS STEP -----
+    !=======================================================================
+    !  init = 3:  general startup if not continuing a previous run
+@@ -815,10 +848,26 @@
+    !     TIME_force is started and stopped inside force
+    call force(xx,ix,ih,ipairs,x,f,ener(23),vir, &
+          xx(l96),xx(l97),xx(l98),xx(l99), qsetup,qpsander, &
+             do_list_update)
+ 
++   !PLUMED force added
++   if(plumed.eq.1) then
++     call plumed_g_cmd("setStep"//char(0),nstep)
++     call plumed_g_cmd("setPositions"//char(0),x)
++     call plumed_g_cmd("setMasses"//char(0),amass)
++     call plumed_g_cmd("setCharges"//char(0),xx(l15))
++     call plumed_g_cmd("setEnergy"//char(0),ener(23))
++     call plumed_g_cmd("setForces"//char(0),f)
++!     call plumed_g_cmd("setVirial",&force_vir[0][0]);
++!     call plumed_g_cmd("setBox"//char(0),box)
++     call plumed_g_cmd("calc"//char(0),0);
++
++   end if
++   !PLUMED end
++
++
+    ! Constant pH transition evaluation
+    if ((icnstph /= 0) .and. (mod(irespa,ntcnstph) == 0)) then
+       call cnstphendstep(ix(icpstinf),ix(icpresst),ix(icpptcnt), &
+             ix(icptrsct), xx(lcpene),xx(lcpcrg),xx(l190),xx(l15),ener(39), &
+             icpselres,icpselstat,cnstph_rand_gen)
+EOF_EOF

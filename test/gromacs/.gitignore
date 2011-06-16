@@ -1,0 +1,6 @@
+*
+!grompp.mdp
+!conf.gro
+!topol.top
+!plumed.dat
+!.gitignore

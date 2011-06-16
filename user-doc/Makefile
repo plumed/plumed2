@@ -1,0 +1,9 @@
+
+.PHONY: all clean
+
+all:
+	./extract
+	doxygen
+
+clean:
+	rm -fr html latex automatic DocPostproc.txt *~

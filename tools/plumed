@@ -1,0 +1,71 @@
+#! /bin/bash
+
+MANUAL="\
++++ PLUMED tool +++
+
+Actions (choose only one):
+  help
+                    print this help and exit
+  patch
+                    patch an MD code (patch -h for help)
+  newcv
+                    create a new collective variable from a template  (newcv -h for help)
+Options:
+  --root ROOT
+                    set path to plumed directory (default: PLUMED_ROOT environment variable)
+"
+
+prefix=""
+action=""
+
+exitloop=""
+
+while [ -n "$*" ]
+do
+
+  prefix_option="$prefix$1"
+  prefix=""
+
+  case "$prefix_option" in
+    (help|--help|-h)    echo "$MANUAL" ; exit ;;
+    (patch)             action=patch; exitloop=yes ;;
+    (newcv)             action=newcv; exitloop=yes ;;
+    (--root=*)          PLUMED_ROOT="${prefix_option#--root=}" ;;
+    (*)
+      echo "ERROR: Unknown option $prefix_option. Use 'plumed help' for help"
+      exit
+  esac
+  shift
+
+  test -n "$exitloop" && break
+done
+
+if [ -z "$action" ] ; then
+  echo "Nothing to do. Use 'plumed help' for help"
+  exit
+fi
+
+echo "PLUMED tool"
+echo
+if [ -z "$PLUMED_ROOT" ]
+then
+  echo "ERROR: I cannot find PLUMED"
+  echo "Please set PLUMED_ROOT environment variable or use --root"
+  exit
+fi
+if [ ! -d "$PLUMED_ROOT/patches/" ]
+then
+  echo "ERROR: cannot find $PLUMED_ROOT/patches/ directory"
+  echo "Check your PLUMED_ROOT variable or --root option"
+  exit
+fi
+
+export PLUMED_ROOT
+
+case "$action" in
+  (patch) ${PLUMED_ROOT}/patches/patch.sh "$@" ;;
+  (newcv) ${PLUMED_ROOT}/tools/scripts/newcv.sh "$@" ;;
+esac
+
+
+

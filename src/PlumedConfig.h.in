@@ -1,0 +1,12 @@
+#ifndef __PLUMED_PlumedConfig_h
+#define __PLUMED_PlumedConfig_h
+
+namespace PLMD{
+
+// nothing yet
+
+const std::string soext("@SOEXT@");
+
+}
+
+#endif

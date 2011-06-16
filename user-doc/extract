@@ -1,0 +1,38 @@
+#! /bin/bash
+mkdir automatic
+
+cat ../src/*cpp |
+awk '{
+  if($1=="//+ENDPLUMEDOC") inside=0;
+  if(inside && $1!="/**" && $1!="*/") print $0 >output
+  if($1=="//+PLUMEDOC"){
+    if($2=="COLVAR" || $2=="FUNCTION" || $2=="BIAS" || $2=="GENERIC"){
+      output="automatic/"$2".txt";
+      print "\\section "$3 > output
+      inside=1;
+    }
+  }
+}'
+
+cat Doc.txt |
+{
+  while read -r LINE ;
+  do
+  if [ "$LINE" = "@COLVAR@" ]
+  then
+    cat automatic/COLVAR.txt
+  elif [ "$LINE" = "@BIAS@" ]
+  then
+    cat automatic/BIAS.txt
+  elif [ "$LINE" = "@FUNCTION@" ]
+  then
+    cat automatic/FUNCTION.txt
+  elif [ "$LINE" = "@GENERIC@" ]
+  then
+    cat automatic/GENERIC.txt
+  else
+    echo -E "$LINE"
+  fi
+  done
+} > DocPostproc.txt
+

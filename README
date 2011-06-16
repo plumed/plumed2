@@ -1,0 +1,16 @@
+DOCUMENTATION
+
+To build the documentation, type
+$ make doc
+You need doxygen (www.doxygen.org)
+installed to see the html documentation,
+and graphviz (www.graphviz.org/)
+if you want to see the graphs
+of class hierarichy.
+
+The starting point for user documentation is then
+user-doc/html/index.html
+
+The starting point for developer documentation is
+developer-doc/html/index.html
+
