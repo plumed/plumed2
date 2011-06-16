@@ -1,39 +1,15 @@
 // This document is formatted for Doxygen
 /**
-\mainpage A Plumed Clone
+\mainpage Plumed 2
 
-\author Giovanni Bussi (as of now)
-\date 2011
-\version 1.9.x
-\warning Very, very unstable
-
-As it can be guessed from the version number, this is a candidate for PLUMED2
-which should be reviewed by a reasonable number the PLUMED developers.
-If it is not accepted as a full package, it can be considered as a repository
-of a few ideas which can be stolen and used in real PLUMED2 development.
-
-If accepted, a possible road map is:
-- 1.99 public release before end of 2011, cloning most PLUMED1 features.
-  It should be usable by (and useful for) developers and people
-  in the community willing to try it.
-- 2.0 public release before mid of 2012, possibly able to superseed completely PLUMED1.
-
-\section Motivation Motivation
-
-- Simpler interface with MD codes. PLUMED should compile by itself as a library,
-  using a proper configure/make procedure, so as to avoid learning all the compilation
-  details of each MD code. Patching a new code should just consist in the insertion of
-  proper function calls and minimal modification to Makefile (to link plumed library),
-  without the need of further hacking inside PLUMED.
-- PLUMED should be easy to extend. Adding a new method/CV should be possible
-  without touching the rest.
-- Other issues:
-  - More friendly units.
-  - More flexible CVs (such as function of other CVs).
-  - Possibility to re-read input.
+Roadmap:
+- Cloning most PLUMED1 features (to be defined)
+- Public beta release (to be defined)
+- 2.0 public release (to be defined)
 
 \section FeaturesAndChanges Features and changes
 
+This are some comments about the structure of the code:
 - Re-designed from scratch, hopefully better.
 - Input is conceptually similar but NON compatible. It is difficult to automatically
   convert old input files, but we could provide a short transition guide.
@@ -175,37 +151,6 @@ INCLUDE anotherplumed.dat
 \verbatim
 LOAD share-object.so
 \endverbatim
-
-
-\section SharingPolicy Sharing Policy
-- I think that Plumed should become fully open, with a public-access shared repository.
-  I would like to switch from cvs to git, which allows for easier branch manipulation.
-  On the central repository, we should have a public master branch where we can
-  publish our work, but for which we do not provide support (developer version).
-  From time to time, as usual, we can provide a supported release (2.0, 2.1 ,...)
-- If it is necessary to work privately, it can be done on a local branch
-  (maybe shared among a few collaborators). Git easily allows to merge multiple times, so it should
-  be relatively easy to stay up do date with the master branch. Finally, when the work
-  is ready, we can merge it into the master branch.
-  This sort of private working should be discouraged for the development of PLUMED kernel.
-  However, it would be perfect to implement new CVs or new methods, since they are
-  completely decoupled from the rest.
-
-\section ToDo To Do
-
-\todo Pbc on COLVARs (possibly with some smart trick for functions-of-functions).
-\todo Optimize atoms sharing. "Calc" should be divided in more steps:
-* Finding list of atoms needed and requesting them (on NAMD, this goes at the
-end of the previous step).
-* Sending the atoms
-* Receiving the atoms and computing everything
-* Sending the forces back
-Moreover, it would be nice to allow PLUMED to be run only on a subset of
-the available processors.
-\todo Replica exchange.
-\todo Interfaces with other codes
-\todo Implementation of CVs
-\todo Implementation of free energy methods
 
 \section Install Install
 
