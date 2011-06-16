@@ -1,6 +1,7 @@
 #include "Log.h"
 #include <cstdarg>
 #include <cassert>
+#include <cstring>
 
 using namespace std;
 using namespace PLMD;
