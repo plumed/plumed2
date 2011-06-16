@@ -16,6 +16,7 @@ protected:
   int getStride()const;
 public:
   ActionPilot(const ActionOptions&);
+/// Check if the action is active on this step
   bool onStep()const;
 };
 

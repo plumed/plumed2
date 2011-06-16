@@ -13,7 +13,8 @@ namespace PLMD{
 class PlumedMain;
 
 /// This class is used to bring the relevant information to the Action constructor.
-/// Its content is kept private to other classes, and may change in the future
+/// Only Action and ActionRegister class can access to its content, which is 
+/// kept private to other classes, and may change in the future.
 class ActionOptions{
   friend class Action;
   friend class ActionRegister;

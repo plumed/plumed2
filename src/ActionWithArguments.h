@@ -21,8 +21,11 @@ class ActionWithArguments:
 protected:
                            ActionWithArguments(const ActionOptions&);
   virtual                 ~ActionWithArguments(){};
+/// Returns an array of pointers to the arguments
   std::vector<Value*>    & getArguments();
+/// Returns the value of an argument
   double                   getArgument(int)const;
+/// Returns the number of arguments
   unsigned                 getNumberOfArguments()const;
 public:
 };
