@@ -8,6 +8,9 @@ using namespace std;
 
 namespace PLMD {
 
+/// Class containing the pointers to the MD data
+/// It is templated so that single and double precision versions coexist
+/// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
 template <class T>
 class MDAtomsTyped:
 public MDAtomsBase

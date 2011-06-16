@@ -7,6 +7,8 @@
 
 namespace PLMD {
 
+/// Class containing interface to MDAtomsTyped
+/// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
 class MDAtomsBase
 {
 protected:

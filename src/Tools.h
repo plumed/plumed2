@@ -9,15 +9,22 @@
 
 namespace PLMD{
 
+/// Very small non-zero number
 const double epsilon(std::numeric_limits<double>::epsilon());
 
 /// Empty class which just contains several (static) tools
 class Tools{
 public:
+/// Split the line in words using separators.
   static std::vector<std::string> getWords(const std::string & line,const char* sep=" \t\n");
   static std::vector<std::string> getWords(const std::string & line,const char* sep,const char* quote);
+/// Get a line from the file pointer fp
   static bool getline(std::FILE* fp,std::string & line);
+/// Get a parsed line from the file pointer fp.
+/// This function already takes care of joining continued lines and splitting the
+/// resulting line into an array of words
   static bool getParsedLine(std::FILE* fp,std::vector<std::string> & line);
+/// Convert a string to a double, reading it
   static bool convert(const std::string & str,double & t);
   static bool convert(const std::string & str,int & t);
   static bool convert(const std::string & str,std::string & t);
