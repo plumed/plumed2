@@ -50,7 +50,7 @@ ifdef SOEXT
 endif
 
 Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) libplumed.$(SOEXT) Plumed.o
-	echo "PLUMED_OBJ=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) | sed 's/ / \\\n  /g' > $@
+	echo "PLUMED_OBJ=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  > $@
 	echo "PLUMED_SHARED_OBJ=" $(realpath libplumed.$(SOEXT)) >> $@
 	echo "PLUMED_WRAPPER=" $(realpath Plumed.o) >> $@
 	echo "PLUMED_INCLUDE="-I$(realpath ../include) >> $@
