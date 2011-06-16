@@ -26,27 +26,33 @@ public:
   static bool getParsedLine(std::FILE* fp,std::vector<std::string> & line);
 /// Convert a string to a double, reading it
   static bool convert(const std::string & str,double & t);
+/// Convert a string to a int, reading it
   static bool convert(const std::string & str,int & t);
+/// Convert a string to a string (i.e. copy)
   static bool convert(const std::string & str,std::string & t);
+/// Convert an int to a string
   static void convert(int i,std::string & str);
+/// Remove trailing blanks
   static void trim(std::string & s);
+/// Remove trailing comments
   static void trimComments(std::string & s);
-
-
+/// Apply pbc for a unitary cell
   static double pbc(double);
-
+/// Retrieve a key from a vector of options.
+/// It finds a key starting with "key=" or equal to "key" and copy the
+/// part after the = on s. E.g.:
+/// line.push_back("aa=xx");
+/// getKey(line,"aa",s);
+/// will set s="xx"
   static bool getKey(std::vector<std::string>& line,const std::string & key,std::string & s);
-
+/// Find a keyword on the input line, eventually deleting it, and saving its value to val
   template <class T>
   static bool parse(std::vector<std::string>&line,const std::string&key,T&val);
+/// Find a keyword on the input line, eventually deleting it, and saving its value to a vector
   template <class T>
   static bool parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val);
+/// Find a keyword without arguments on the input line
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
-
-  template <class T>
-  static double getArray(void*,int,int,double);
-  template <class T>
-  static double getArray(void*,void*,void*,int,int,double);
 };
 
 template <class T>
@@ -83,18 +89,6 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
     }
   }
   return true;
-}
-
-template <class T>
-double Tools::getArray(void*p,int iat,int idim,double scale){
-  return (static_cast<T*>(p))[3*iat+idim]*scale;
-}
-
-template <class T>
-double Tools::getArray(void*px,void*py,void*pz,int iat,int idim,double scale){
-  if(idim==0) return (static_cast<T*>(px))[iat]*scale;
-  if(idim==1) return (static_cast<T*>(py))[iat]*scale;
-              return (static_cast<T*>(pz))[iat]*scale;
 }
 
 inline
