@@ -44,7 +44,10 @@ class Action
 /// so as to check if all the present keywords are correct.
   std::vector<std::string> line;
 
+public:
   typedef std::set<Action*> Dependencies;
+
+private:
 /// Actions on which this Action depends.
   Dependencies after;
 /// Actions depending on this Action.
@@ -116,6 +119,9 @@ public:
 /// Returns the label
   const std::string & getLabel()const;
 
+/// Returns the name
+  const std::string & getName()const;
+
 /// Set action to active
   virtual void activate();
 
@@ -124,6 +130,9 @@ public:
 
 /// Check if action is active
   bool isActive()const;
+
+/// Return dependencies
+  const Dependencies & getDependencies()const{return after;}
 };
 
 /////////////////////
@@ -132,6 +141,11 @@ public:
 inline
 const std::string & Action::getLabel()const{
   return label;
+}
+
+inline
+const std::string & Action::getName()const{
+  return name;
 }
 
 template<class T>
