@@ -42,6 +42,8 @@ components(false)
 // todo
   }
   addValueWithDerivatives("");
+  getValue("")->setPeriodicity(false);
+
   requestAtoms(atoms);
 }
 

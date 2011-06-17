@@ -44,6 +44,7 @@ components(false)
   requestAtoms(atoms);
   isEnergy=true;
   addValueWithDerivatives("");
+  getValue("")->setPeriodicity(false);
 }
 
 

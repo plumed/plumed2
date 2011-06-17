@@ -99,7 +99,7 @@ void BiasMovingRestraint::calculate(){
     for(unsigned j=0;j<narg;j++) aa[j]=(c1*at[i-1][j]+c2*at[i][j]);
   }
   for(unsigned i=0;i<narg;++i){
-    const double cv=(getArgument(i)-aa[i]);
+    const double cv=difference(i,aa[i],getArgument(i));
     const double k=kk[i];
     const double f=-k*cv;
     ene+=0.5*k*cv*cv;

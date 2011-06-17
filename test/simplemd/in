@@ -5,6 +5,6 @@ tstep 0.005
 friction 1
 forcecutoff 2.5
 listcutoff  3.0
-nstep 2000
+nstep 4000
 nconfig 10 trajectory.xyz
 nstat   10 energies.dat

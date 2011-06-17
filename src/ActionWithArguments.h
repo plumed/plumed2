@@ -27,6 +27,8 @@ protected:
   double                   getArgument(int)const;
 /// Returns the number of arguments
   unsigned                 getNumberOfArguments()const;
+/// Takes the difference taking into account pbc for arg i
+  double                   difference(int,double,double)const;
 public:
 };
 
@@ -44,6 +46,11 @@ double ActionWithArguments::getArgument(int i)const{
 inline
 unsigned ActionWithArguments::getNumberOfArguments()const{
   return arguments.size();
+}
+
+inline
+double ActionWithArguments::difference(int i,double d1,double d2)const{
+  return arguments[i]->difference(d1,d2);
 }
 
 

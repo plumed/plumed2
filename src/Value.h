@@ -22,23 +22,97 @@ class Value{
   std::vector<double> derivatives;
   std::string name;
   bool deriv;
+  enum {unset,periodic,notperiodic} periodicity;
+  double min,max;
 public:
-  Value(ActionWithValue&action,const std::string& name):action(action),value(0.0),name(name),deriv(false){};
-  void set(double v){value=v;}
-  double get()const{return value;}
-  const std::string& getName()const{return name;}
+  Value(ActionWithValue&action,const std::string& name);
+  void set(double);
+  double get()const;
+  void setPeriodicity(bool);
+  void setDomain(double,double);
+  const std::string& getName()const;
   const std::string getFullName()const;
   void enableDerivatives();
-  bool hasDerivatives(){return deriv;};
-  void setNumberOfParameters(int n){if(deriv)derivatives.resize(n);}
-  void setDerivatives(int i,double d){derivatives[i]=d;}
-  void clearInputForce(){inputForce=0.0;}
-  void clearDerivatives(){derivatives.assign(derivatives.size(),0.0);}
-  double  getForce()const{return inputForce;}
-  void  addForce(double f){assert(hasDerivatives());inputForce+=f;}
-  const std::vector<double> &  getDerivatives()const{return derivatives;}
-  ActionWithValue& getAction(){return action;};
+  bool hasDerivatives()const;
+  void setNumberOfParameters(int n);
+  void setDerivatives(int i,double d);
+  void clearInputForce();
+  void clearDerivatives();
+  double getForce()const;
+  void  addForce(double f);
+  const std::vector<double> &  getDerivatives()const;
+  ActionWithValue& getAction();
+
+  double difference(double)const;
+  double difference(double,double)const;
 };
+
+inline
+void Value::set(double v){
+  value=v;
+}
+
+inline
+double Value::get()const{
+  return value;
+}
+
+inline
+const std::string& Value::getName()const{
+  return name;
+}
+
+inline
+ActionWithValue& Value::getAction(){
+  return action;
+}
+
+inline
+double Value::getForce()const{
+  return inputForce;
+}
+
+inline
+void Value::addForce(double f){
+  assert(hasDerivatives());
+  inputForce+=f;
+}
+
+inline
+const std::vector<double> & Value::getDerivatives()const{
+  return derivatives;
+}
+
+inline
+bool Value::hasDerivatives()const{
+  return deriv;
+}
+
+inline
+void Value::setNumberOfParameters(int n){
+  if(deriv)derivatives.resize(n);
+}
+
+inline
+void Value::setDerivatives(int i,double d){
+  derivatives[i]=d;
+}
+
+inline
+void Value::clearInputForce(){
+  inputForce=0.0;
+}
+
+inline
+void Value::clearDerivatives(){
+  derivatives.assign(derivatives.size(),0.0);
+}
+
+inline
+double Value::difference(double d)const{
+  return difference(get(),d);
+}
+
 
 }
 
