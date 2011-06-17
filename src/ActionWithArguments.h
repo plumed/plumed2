@@ -38,7 +38,7 @@ std::vector<Value*> & ActionWithArguments::getArguments(){
 
 inline
 double ActionWithArguments::getArgument(int i)const{
-  return arguments[i]->getValue();
+  return arguments[i]->get();
 }
 
 inline

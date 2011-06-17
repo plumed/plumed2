@@ -23,12 +23,11 @@ class Value{
   std::string name;
   bool deriv;
 public:
+  Value(ActionWithValue&action,const std::string& name):action(action),value(0.0),name(name),deriv(false){};
   void set(double v){value=v;}
-  void setValue(double v){value=v;}
-  double getValue()const{return value;}
+  double get()const{return value;}
   const std::string& getName()const{return name;}
   const std::string getFullName()const;
-  Value(ActionWithValue&action,const std::string& name):action(action),value(0.0),name(name),deriv(false){};
   void enableDerivatives();
   bool hasDerivatives(){return deriv;};
   void setNumberOfParameters(int n){if(deriv)derivatives.resize(n);}
