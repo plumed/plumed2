@@ -34,6 +34,7 @@ void Colvar::apply(){
 
   if(!isEnergy)
   for(int i=0;i<getNumberOfValues();++i){
+    if(!getValue(i)->checkForced())continue;
     const vector<double> & derivatives(getValue(i)->getDerivatives());
     const unsigned nat=f.size();
     const double force=getValue(i)->getForce();

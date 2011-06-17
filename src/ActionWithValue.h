@@ -52,8 +52,6 @@ public:
   int getNumberOfParameters()const;
 /// Returns the total force applied on i-th value 
   double getForce(int n);
-/// Add a force to the i-th value 
-  void addInputForces(int i,double f);
 /// Clear the forces on the values
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters
@@ -75,9 +73,6 @@ void ActionWithValue::setValue(double d){
 }
 
 inline
-void ActionWithValue::addInputForces(int i,double f){values[i]->addForce(f);}
-
-inline
 double ActionWithValue::getForce(int n){return values[n]->getForce();}
 
 inline
@@ -92,8 +87,6 @@ inline
 int ActionWithValue::getNumberOfParameters()const{
   return numberOfParameters;
 }
-
-
 
 }
 

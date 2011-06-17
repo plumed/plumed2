@@ -19,6 +19,7 @@ class Value{
   ActionWithValue&action;
   double value;
   double inputForce;
+  bool forced;
   std::vector<double> derivatives;
   std::string name;
   bool deriv;
@@ -45,6 +46,10 @@ public:
 
   double difference(double)const;
   double difference(double,double)const;
+
+/// check if a force has been added at this step
+  bool checkForced()const;
+
 };
 
 inline
@@ -75,6 +80,7 @@ double Value::getForce()const{
 inline
 void Value::addForce(double f){
   assert(hasDerivatives());
+  forced=true;
   inputForce+=f;
 }
 
@@ -100,6 +106,7 @@ void Value::setDerivatives(int i,double d){
 
 inline
 void Value::clearInputForce(){
+  forced=false;
   inputForce=0.0;
 }
 
@@ -112,6 +119,12 @@ inline
 double Value::difference(double d)const{
   return difference(get(),d);
 }
+
+inline
+bool Value::checkForced()const{
+  return forced;
+}
+
 
 
 }
