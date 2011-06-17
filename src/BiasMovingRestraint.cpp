@@ -106,9 +106,12 @@ void BiasMovingRestraint::calculate(){
     setOutputForces(i,f);
     totf2+=f*f;
   };
-  getValue("")->setValue(ene);
-  getValue("Energy")->setValue(ene);
-  getValue("Force2")->setValue(totf2);
+  Value* value;
+  setValue(ene);
+  value=getValue("Energy");
+  setValue(value,ene);
+  value=getValue("Force2");
+  setValue(value,totf2);
 }
 
 }
