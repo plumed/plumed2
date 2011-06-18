@@ -11,7 +11,7 @@ Actions (choose only one):
   newcv
                     create a new collective variable from a template  (newcv -h for help)
 Options:
-  --root ROOT
+  --root ROOT   or   --root=ROOT
                     set path to plumed directory (default: PLUMED_ROOT environment variable)
 "
 
@@ -31,6 +31,7 @@ do
     (patch)             action=patch; exitloop=yes ;;
     (newcv)             action=newcv; exitloop=yes ;;
     (--root=*)          PLUMED_ROOT="${prefix_option#--root=}" ;;
+    (--root)            prefix="${prefix_option}=" ;;
     (*)
       echo "ERROR: Unknown option $prefix_option. Use 'plumed help' for help"
       exit
