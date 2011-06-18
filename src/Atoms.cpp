@@ -77,7 +77,7 @@ void Atoms::share(){
   mdatoms->getMasses(gatindex,masses);
   mdatoms->getCharges(gatindex,charges);
   mdatoms->getPositions(gatindex,positions);
-  if(dd && gatindex.size()<natoms){
+  if(dd && int(gatindex.size())<natoms){
     std::set<int> unique;
     for(unsigned i=0;i<requestset.size();i++){
       if(requestset[i]->isActive()) unique.insert(requestset[i]->unique.begin(),requestset[i]->unique.end());
@@ -107,7 +107,7 @@ void Atoms::share(){
 
 void Atoms::wait(){
 
-  if(dd && gatindex.size()<natoms){
+  if(dd && int(gatindex.size())<natoms){
 // receive toBeReceived
     int count=0;
     PlumedCommunicator::Status status;
