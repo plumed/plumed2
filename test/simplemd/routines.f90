@@ -6,7 +6,7 @@ subroutine read_input(temperature,tstep,friction, &
                       nconfig,nstat, &
                       wrapatoms, &
                       inputfile,outputfile,trajfile,statfile, &
-                      maxneighbours,idum)
+                      maxneighbours,idum,has_parfile,parfile)
   implicit none
   real,           intent(out) :: temperature
   real,           intent(out) :: tstep
@@ -22,6 +22,8 @@ subroutine read_input(temperature,tstep,friction, &
   character(256), intent(out) :: outputfile
   character(256), intent(out) :: trajfile
   character(256), intent(out) :: statfile
+  character(256), intent(in)  :: parfile 
+  logical,        intent(in)  :: has_parfile 
   integer, intent(out) :: idum
   integer :: iostat
   character(256) :: line,keyword,keyword1
@@ -43,9 +45,15 @@ subroutine read_input(temperature,tstep,friction, &
   trajfile=""
   outputfile=""
   inputfile=""
+
+  if(has_parfile)open(unit=33,file=parfile)
   
   do
-    read(*,"(a)",iostat=iostat) line
+    if(has_parfile)then
+      read(33,"(a)",iostat=iostat) line
+    else
+      read(*,"(a)",iostat=iostat) line
+    endif
 ! when the file finishes, exit the loop
     if(iostat/=0) exit
 ! delete everything past an eventual "#" comment
@@ -109,6 +117,7 @@ subroutine read_input(temperature,tstep,friction, &
     write(0,*) "Specify stat file"
     stop
   end if
+  if(has_parfile)close(33) 
 end subroutine read_input
 
 subroutine read_positions(inputfile,natoms,positions,cell)

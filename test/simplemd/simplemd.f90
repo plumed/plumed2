@@ -36,6 +36,8 @@ character(256) :: inputfile      ! name of file with starting configuration (xyz
 character(256) :: outputfile     ! name of file with final configuration (xyz)
 character(256) :: trajfile       ! name of the trajectory file (xyz)
 character(256) :: statfile       ! name of the file with statistics
+character(256) :: parfile        ! name of the file with parameters (optional) 
+character(256) :: string         ! a string for parsing 
 
 
 real    :: engkin         ! kinetic energy
@@ -45,6 +47,10 @@ real    :: engint         ! integral for conserved energy in Langevin dynamics
 logical :: recompute_list ! control if the neighbour list have to be recomputed
 integer :: istep          ! step counter
 integer :: iatom
+
+integer :: i  ! an integer for loops 
+integer :: argcount  ! a counter for the arguments
+logical :: has_parfile  ! a flag for the parameter file 
 
 logical :: plumed
 integer :: plumedavailable
@@ -58,11 +64,23 @@ IF(plumed) THEN
   CALL plumed_g_create()
 END IF
 
+argcount = IARGC()
+
+has_parfile=.false.
+do i=1,argcount
+        call getarg(i,string)
+        if (INDEX(string,'-in').NE.0)then
+          call getarg(i+1,string)
+          read(string,*) parfile 
+          has_parfile=.true.
+        endif
+enddo
+
 call read_input(temperature,tstep,friction,forcecutoff, &
                 listcutoff,nstep,nconfig,nstat, &
                 wrapatoms, &
                 inputfile,outputfile,trajfile,statfile, &
-                maxneighbour,idum)
+                maxneighbour,idum,has_parfile,parfile)
 
 ! number of atoms is read from file inputfile
 call read_natoms(inputfile,natoms)
