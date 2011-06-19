@@ -42,9 +42,22 @@ powers(getNumberOfArguments(),1.0)
   assert(coefficients.size()==static_cast<unsigned>(getNumberOfArguments()));
   parseVector("POWERS",powers);
   assert(powers.size()==static_cast<unsigned>(getNumberOfArguments()));
-  checkRead();
 
   addValueWithDerivatives("");
+  vector<string> period;
+
+  double min(0),max(0);
+  parseVector("PERIODIC",period);
+  if(period.size()==0){
+  }else if(period.size()==1 && period[0]=="NO"){
+    getValue("")->setPeriodicity(false);
+  } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],min)){
+    getValue("")->setPeriodicity(true);
+    getValue("")->setDomain(min,max);
+  }
+
+  checkRead();
+
   log.printf("  with coefficients:");
   for(unsigned i=0;i<coefficients.size();i++) log.printf(" %f",coefficients[i]);
   log.printf("\n");

@@ -14,6 +14,7 @@ class MDAtomsBase;
 class PlumedMain;
 
 /// Class containing atom related quantities from the MD code.
+/// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
 class Atoms
 {
   int natoms;

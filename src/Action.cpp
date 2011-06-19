@@ -26,6 +26,7 @@ Action::Action(const ActionOptions&ao):
     std::string s; Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
   }
+  assert(!plumed.getActionSet().selectWithLabel<Action*>(label));
   log.printf("  with label %s\n",label.c_str());
 }
 

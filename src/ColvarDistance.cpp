@@ -62,12 +62,17 @@ pbc(true)
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
+
   addValueWithDerivatives("");
+  getValue("")->setPeriodicity(false);
 
   if(components){
     addValueWithDerivatives("x");
+    getValue("x")->setPeriodicity(false);
     addValueWithDerivatives("y");
+    getValue("y")->setPeriodicity(false);
     addValueWithDerivatives("z");
+    getValue("z")->setPeriodicity(false);
   }
 
   requestAtoms(atoms);

@@ -63,6 +63,17 @@ names(getNumberOfArguments())
   }
   assert(var.size()==getNumberOfArguments());
   parse("FUNC",func);
+  addValueWithDerivatives("");
+  vector<string> period;
+  double min(0),max(0);
+  parseVector("PERIODIC",period);
+  if(period.size()==0){
+  }else if(period.size()==1 && period[0]=="NO"){
+    getValue("")->setPeriodicity(false);
+  } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],min)){
+    getValue("")->setPeriodicity(true);
+    getValue("")->setDomain(min,max);
+  }
   checkRead();
 
   evaluator=evaluator_create(const_cast<char*>(func.c_str()));
@@ -82,7 +93,6 @@ names(getNumberOfArguments())
   for(unsigned i=0;i<getNumberOfArguments();i++)
     evaluator_deriv[i]=evaluator_derivative(evaluator,const_cast<char*>(var[i].c_str()));
 
-  addValueWithDerivatives("");
 
   log.printf("  with function : %s\n",func.c_str());
   log.printf("  with variables :");

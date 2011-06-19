@@ -66,12 +66,12 @@ public:
 
 inline
 void ActionWithValue::setValue(Value*v,double d){
-  v->setValue(d);
+  v->set(d);
 }
 
 inline
 void ActionWithValue::setValue(double d){
-  values[0]->setValue(d);
+  values[0]->set(d);
 }
 
 inline
