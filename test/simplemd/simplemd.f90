@@ -10,7 +10,7 @@ real,    allocatable :: velocities(:,:) ! velocities
 real,    allocatable :: masses(:)       ! masses
 real,    allocatable :: forces(:,:)     ! forces   
 real                 :: cell(3)         ! cell size
-real                 :: cell9(9)         ! cell size
+real                 :: cell9(3,3)         ! cell size
 
 ! neighbour list variables
 ! see Allen and Tildesey book for details
@@ -181,10 +181,15 @@ do istep=1,nstep
   call compute_forces(natoms,listsize,positions,cell,forcecutoff,point,list,forces,engconf)
 !  forces=0.0
 IF(plumed) THEN
+  cell9=0.0
+  cell9(1,1)=cell(1)
+  cell9(2,2)=cell(2)
+  cell9(3,3)=cell(3)
   CALL plumed_g_cmd("setMasses"//char(0),masses)
   CALL plumed_g_cmd("setForces"//char(0),forces)
   CALL plumed_g_cmd("setStep"//char(0),istep)
   CALL plumed_g_cmd("setPositions"//char(0),positions)
+  CALL plumed_g_cmd("setBox"//char(0),cell9)
   CALL plumed_g_cmd("calc"//char(0),0)
 ENDIF
 
