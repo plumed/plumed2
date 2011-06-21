@@ -20,6 +20,7 @@ class ActionWithValue:
   std::vector<Value*> values;
   void assertUnique(const std::string&name);
   int getValueIndex(const std::string&name)const;
+  bool numericalDerivatives;
 public:
   ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
@@ -60,6 +61,7 @@ public:
   void setValue(Value*,double);
 /// Set the default value (the one without name)
   void setValue(double);
+  bool checkNumericalDerivatives()const;
 };
 
 inline
@@ -87,6 +89,12 @@ inline
 int ActionWithValue::getNumberOfParameters()const{
   return numberOfParameters;
 }
+
+inline
+bool ActionWithValue::checkNumericalDerivatives()const{
+  return numericalDerivatives;
+}
+
 
 }
 

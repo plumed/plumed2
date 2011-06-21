@@ -81,4 +81,10 @@ void Action::exit(int c){
   plumed.exit(c);
 }
 
+void Action::calculateNumericalDerivatives(){
+  assert(0);
+}
+
+
+
 

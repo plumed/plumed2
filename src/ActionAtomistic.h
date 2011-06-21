@@ -46,7 +46,7 @@ protected:
 /// Get a reference to virial array
   Tensor & modifyVirial();
 /// Get number of available atoms
-  int getNatoms(){return indexes.size();};
+  int getNatoms()const{return indexes.size();};
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
 
@@ -61,6 +61,8 @@ public:
   void deactivate();
 
   void clearOutputForces();
+
+  void   calculateNumericalDerivatives();
 };
 
 inline

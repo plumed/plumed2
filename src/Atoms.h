@@ -64,6 +64,7 @@ public:
   double getTimeStep()const;
 
   const Pbc& getPbc()const{return pbc;};
+  Pbc& getPbc(){return pbc;};
 
   class Request{
     friend class Atoms;

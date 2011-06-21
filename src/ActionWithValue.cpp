@@ -8,8 +8,11 @@ using namespace PLMD;
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
-  numberOfParameters(0)
-{}
+  numberOfParameters(0),
+  numericalDerivatives(false)
+{
+  parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
+}
 
 ActionWithValue::~ActionWithValue(){
   for(unsigned i=0;i<values.size();++i)delete values[i];

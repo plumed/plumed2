@@ -64,3 +64,12 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2)const{
   return d;
 }
 
+Vector Pbc::realToScaled(const Vector&d)const{
+  return matmul(invBox.transpose(),d);
+}
+
+Vector Pbc::scaledToReal(const Vector&d)const{
+  return matmul(box.transpose(),d);
+}
+
+

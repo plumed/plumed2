@@ -414,7 +414,11 @@ void PlumedMain::performCalc(){
       if(a) a->clearOutputForces();
     }
     if((*p)->isActive()){
-      (*p)->calculate();
+      if((*p)->checkNumericalDerivatives()){
+        (*p)->calculateNumericalDerivatives();
+      } else {
+        (*p)->calculate();
+      }
     }
   }
   

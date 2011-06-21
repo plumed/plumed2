@@ -133,6 +133,12 @@ public:
 
 /// Return dependencies
   const Dependencies & getDependencies()const{return after;}
+
+/// Check if numerical derivatives should be performed
+  virtual bool checkNumericalDerivatives()const{return false;}
+
+/// Perform calculation using numerical derivatives
+  virtual void calculateNumericalDerivatives();
 };
 
 /////////////////////

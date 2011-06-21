@@ -21,15 +21,17 @@ class ActionWithArguments:
 protected:
                            ActionWithArguments(const ActionOptions&);
   virtual                 ~ActionWithArguments(){};
+public:
 /// Returns an array of pointers to the arguments
   std::vector<Value*>    & getArguments();
 /// Returns the value of an argument
   double                   getArgument(int)const;
 /// Returns the number of arguments
   unsigned                 getNumberOfArguments()const;
+///
+  void                     calculateNumericalDerivatives();
 /// Takes the difference taking into account pbc for arg i
   double                   difference(int,double,double)const;
-public:
 };
 
 
