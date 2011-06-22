@@ -55,6 +55,8 @@ logical :: has_parfile  ! a flag for the parameter file
 logical :: plumed
 integer :: plumedavailable
 
+integer, external :: iargc
+
 CALL plumed_installed(plumedavailable)
 
 plumed=.false.
@@ -64,7 +66,7 @@ IF(plumed) THEN
   CALL plumed_g_create()
 END IF
 
-argcount = IARGC()
+argcount = iargc()
 
 has_parfile=.false.
 do i=1,argcount
@@ -135,7 +137,7 @@ IF(plumed) THEN
   CALL plumed_g_cmd("setMDEngine"//char(0),"simplemd"//char(0))
   CALL plumed_g_cmd("setTimestep"//char(0),tstep)
   CALL plumed_g_cmd("setPlumedDat"//char(0),"plumed.dat"//char(0))
-  CALL plumed_g_cmd("init"//char(0))
+  CALL plumed_g_cmd("init"//char(0),0)
 ENDIF
 
 
