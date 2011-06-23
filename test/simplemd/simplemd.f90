@@ -55,8 +55,6 @@ logical :: has_parfile  ! a flag for the parameter file
 logical :: plumed
 integer :: plumedavailable
 
-integer, external :: iargc
-
 CALL plumed_installed(plumedavailable)
 
 plumed=.false.
@@ -66,7 +64,7 @@ IF(plumed) THEN
   CALL plumed_g_create()
 END IF
 
-argcount = iargc()
+argcount = command_argument_count()
 
 has_parfile=.false.
 do i=1,argcount
