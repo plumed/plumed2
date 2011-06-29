@@ -1,0 +1,95 @@
+// This document is formatted for Doxygen
+/**
+
+\page usingDoxygen Using doxygen to create plumed documentation
+
+Plumed's documentation is created automatically from comments in the source code using the following packages:
+
+- Doxygen:   http://www.doxygen.org
+- Graphviz:  http://www.graphviz.org/ 
+
+To create documentation you need only type it in the top part of your cpp source code files.  
+
+\section sampleInput Creating sample input
+
+You can create sample input by typing:
+
+\verbatim
+\verbatim
+EXAMPLE - AN EXAMPLE INPUT LINE
+\ endverbatim  /*** But with no space between the \ and the endverbatim
+\endverbatim
+
+which will put the following into the manual:
+
+\verbatim 
+EXAMPLE - AN EXAMPLE INPUT LINE
+\endverbatim
+
+\section formula Creating latex formulae
+
+You can add formulae in latex using:
+
+\verbatim
+This is an inline equation \f$s=y+x\f$ but this is an equation:
+
+\f[
+r = \sqrt{ \mathbf{s}^T \mathbf{C}^{-1} \mathbf{s} }
+\f]
+
+And this is an equation array:
+
+\f{eqnarray*}{
+ f &=& \frac{1}{2} \\
+ g &=& \frac{2}{3}
+\f}
+\endverbatim
+
+In the manual this will be translated into:
+
+This is an inline equation \f$s=y+x\f$ but this is an equation:
+ 
+\f[
+r = \sqrt{ \mathbf{s}^T \mathbf{C}^{-1} \mathbf{s} }
+\f]
+
+And this is an equation array:
+
+\f{eqnarray*}{
+ f &=& \frac{1}{2} \\
+ g &=& \frac{2}{3}
+\f} 
+
+\section lists Creating lists
+
+You can create lists of data using: 
+
+\verbatim
+- First item in list
+- Second item in list
+\endverbatim
+
+which becomes:
+
+- First item in list
+- Second item in list
+
+\section formatting Formatting your documentation
+
+You can create a new section in your documentation using:
+
+\verbatim
+\section formula Creating latex formulae
+\endverbatim
+
+In fact I used this very command earlier in writing this page.  I can therefore reference it here (\ref formula) by using:
+
+\verbatim
+\ref formula
+\endverbatim
+
+I can also reference external webpages by typing web addresses directly in my documentation.
+
+
+
+*/

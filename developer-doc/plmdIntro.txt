@@ -1,0 +1,68 @@
+// This document is formatted for Doxygen
+/**
+
+\page ABriefIntroduction A brief introduction to the plumed core
+
+\section intro Introduction
+
+Every line in a plumed input file, regardless of whether it specifies that one is to calculate a colvar, a function of colvars or a bias, instructs plumed to create a PLMD::Actionobject.  Any call to plumed tells it perform all the actions defined in the plumed input file one after the other.  For programmers (like this author) unfamiliar with some of the more advanced features of C++ this may seem somewhat bizzare.  After all calculating a metadynamics bias is very different to calculating a collective coordinate.  This is possible however because plumed classes inherit variables and methods from each other.  This means that we can write a PLMD::Bias, PLMD::Colvar or PLMD::Function class in which we can call all the methods and variables in PLMD::Action as if they were inside the PLMD::Bias, PLMD::Colvar or PLMD::Function.  Consequently, we can avoid duplication by placing all the functionality that is common to calculating biases and colvars in a single object (PLMD::Action), which we can inherit into the PLMD::Bias and PLMD::Colvar classes that contain all the functionality that is not common to the two things.  Furthermore, we can include virtual methods in the PLMD::Action class that we know our PLMD::Bias and PLMD::Colvar objects will perform but that we know will be performed differently by the two classes (for example we know that both will probably calculate something but that each will do this differently).  These two facts make it straightforward to write a plumed core, which just performs a series of actions, that can be modified and added to by other contributors later.  
+
+\section free-energy Free energy methods in plumed
+
+Many of the free energy methods that are implemented in plumed are reliant on the definition of some collective coordinates.   A bias potential is then added on these collective coordinates, which then introduces new forces on to the underlying atoms.  Oftentimes however, one may not want to bias the collective coordinates directly.  Instead one might be interested in biasing a function of the collective coordinates, which adds a further layer of complexity. Therefore the mode of action for a free energy method is, in the most general case, as follows:
+
+- Get the atomic positions, \f$x\f$.
+- Compute the collective coordinates from the positions, \f$s(x)\f$.
+- Compute functions \f$f[s(x)]\f$ of the collective coordinates from \f$s(x)\f$. 
+- Compute the bias \f$B| f[s(x)] |\f$, which is a function of \f$f[s(x)]\f$ and the derivative of the bias with respect to \f$f[s(x)]\f$, \f$\frac{\textrm{d}B}{\textrm{d}f}\f$.
+- Compute the derivative of the bias with respect to the collective coordinates, \f$\frac{\textrm{d}B}{\textrm{d}s} = \frac{\textrm{d}B}{\textrm{d}f} \frac{\textrm{d}f}{\textrm{d}s}\f$
+- Compute the derivative of the bias with respect to the atomic positions, \f$\frac{\textrm{d}b}{\textrm{d}x} = \frac{\textrm{d}B}{\textrm{d}f} \frac{\textrm{d}f}{\textrm{d}s} \frac{\textrm{d}s}{\textrm{d}x} \f$
+- Apply the resulting forces to the atoms of the system.
+
+From this mode of action we might therefore imagine that data flows through plumed as described below:
+
+- From the MD code pass the atom positions, \f$x\f$ to PLMD::Colvar, calculate colvars, \f$s(x)\f$ and derivatives \f$\frac{\textrm{d}s}{\textrm{d}x}\f$.
+- Pass \f$s(x)\f$ from PLMD::Colvar to PLMD::Function, calculate functions \f$f[s(x)]\f$ and derivatives \f$\frac{\textrm{d}f}{\textrm{d}s}\f$.
+- Pass \f$f[s(x)]\f$ from PLMD::Function to PLMD::Bias, calclate the bias \f$B| f[(x)] |\f$ and derivatives \f$\frac{\textrm{d}B}{\textrm{d}f}\f$.
+- Pass the derivative \f$\frac{\textrm{d}B}{\textrm{d}f}\f$ of the bias from PLMD::Bias to PLMD::Function and compute the derivative of the bias with repect to the cvs \f$\frac{\textrm{d}B}{\textrm{d}f} \frac{\textrm{d}f}{\textrm{d}s}\f$.
+- Pass the derivative \f$\frac{\textrm{d}B}{\textrm{d}f} \frac{\textrm{d}f}{\textrm{d}s}\f$ from PLMD::Function to PLMD::Colvar and compute the derivative of the bias with respect to the atomic coordinates \f$\frac{\textrm{d}B}{\textrm{d}f}\frac{\textrm{d}f}{\textrm{d}s}\frac{\textrm{d}s}{\textrm{d}x}\f$.
+- Pass the derivatives \f$\frac{\textrm{d}B}{\textrm{d}f}\frac{\textrm{d}f}{\textrm{d}s}\frac{\textrm{d}s}{\textrm{d}x}\f$ to the MD code and apply the forces.
+
+This is roughly the way that plumed 1.0 operated.  Plumed 2.0 operates differently so that new CVs and free energy methods can be implemented more straightforwardly.  The work flow for plumed 2.0 is therefore:  
+
+- Iterate over the list of PLMD::Action objects, establish whether any contain PLMD::ActionPilot objects.  
+- For the PLMD::ActionPilot objects check if we are supposed to perform an action at this particular MD step.  If it is activate the action.
+- When any object is activated we must check whether or not it contains a PLMD::ActionWithArguments object.  These objects tell plumed that before performing a particular action we must perform some other action (for example before computing the bias in metadynamics we must compute the collective variables). If we find such arguments we activate all arguments listed in the PLMD::ActionWithArguments object belonging to this particular PLMD::Action (i.e. when peforming metadynamics one must make sure that all the collective coordinates on which the bias depends are calculated first).
+- Iterate over the list of all the active PLMD::Action objects calculating all values and derivatives and store them inside PLMD::ActionWithValue objects (N.B. a PLMD::ActionWithValue holds a vector of PLMD::Value objects). 
+- As already mentioned the dependencies of PLMD::Function and PLMD::Bias objects on the PLMD::Colvar objects is stored within a PLMD::ActionWithArguments object.  The reason for this apprantly-arbitrary, additional layer of complexity being that PLMD::Bias objects can depend on both PLMD::Function objects and PLMD::Colvar objects.  PLMD::ActionWithArguments is a list of PLMD::Values.  It is used to tell a PLMD::Action that it must wait for data to be loaded in the set of listed PLMD::Value (by other PLMD::Actions) prior to calculating the particlar PLMD::Action.  In practise this means that the order for the directives in the input matters in plumed 2 as the various PLMD::Actions are always passed through in the order they are read in from input.  
+- By this stage we have computed \f$s(x)\f$, \f$f[s(x)]\f$, \f$B| f[s(x)] |\f$, \f$\frac{\textrm{d}B}{\textrm{d}f}\f$, \f$\frac{\textrm{d}f}{\textrm{d}s}\f$ and \f$\frac{\textrm{d}s}{\textrm{d}x}\f$.  This data has all been stored inside PLMD::Value objects.  In other words, unlike in the previously described workflows, the data is stored in a manner that does not descriminate between the results from calculations in PLMD::Colvar, PLMD::Function and PLMD::Bias.  Instead, all the data is stored in equivalent PLMD::Value objects. Plumed understands that one cannot compute \f$f[s(x)]\f$ or \f$B| f[s(x)] |\f$ without first computing \f$s(x)\f$ and \f$f[s(x)]\f$ as this information is stored inside the PLMD::ActionWithArguments objects.        
+- Next we apply the chain rule to calculate the derivative of the bias with respect to the atomic positions in three steps.  
+- In the first step we loop over all the PLMD::Bias objects and pass \f$-\frac{\textrm{d}B}{\textrm{d}v}\f$ to the PLMD::Value objects listed in the PLMD::ActionWithArguments object.   
+- In the second step we loop over all the PLMD::Function objects. If there is a bias on any of these objects we will have passed information on \f$-\frac{\textrm{d}B}{\textrm{d}f}\f$ to the relevant PLMD::Value objects in this classes PLMD::ActionWithValue class.  Hence, we can calculate \f$-\frac{\textrm{d}B}{\textrm{d}s} = -\frac{\textrm{d}B}{\textrm{d}f}\frac{\textrm{d}f}{\textrm{d}s}\f$ and pass this information to the PLMD::Value objects listed in PLMD::ActionWithArguments.
+- In the final step we calculate the forces on the atoms by looping over all PLMD::Colvar objects.  Once again if there is a bias (or a bias on a function of one of these values) \f$-\frac{\textrm{d}B}{\textrm{d}s}\f$ will have been passed to the relevant PLMD::Value class so that we can calculate \f$-\frac{\textrm{d}B}{\textrm{d}x} = -\frac{\textrm{d}B}{\textrm{d}f}\frac{\textrm{d}f}{\textrm{d}s}\frac{\textrm{d}s}{\textrm{d}s}\f$.  We now apply these forces to the atoms using the PLMD::ActionAtomistic class.
+
+The above list describes the function of the majority of the classes in the plumed core.  In practise to add to plumed you do not need to understand the details of how each of these classes functions as you shouldn't need to touch them.  It is perhaps useful to understand what each one is doing however so that you can better understand the code structure.  
+\section parallel Multiple Replicas
+
+Many free energy methods are reliant on running a number of parallel MD simulations.  From the point of view of implementation these algorithms can be broadly categorised thus:
+
+- Embarrasingly parallel algorithms such as umbrella sampling that require no communication between simulations.
+- Simulations with time dependent biases, which are sped up by collecting the time dependent bias on a number of nodes simultaneously.  An example of this sort is multiple walkers metadynamics.
+- Replica exchange simulations in which different parameters are used for simulations on different nodes and periodic attempts are made to exchange parameters between configurations on different nodes.
+
+The first of these types of simulations is trivial to implement in plumed as all the "communication" between nodes is done in post processing and thus nothing needs to be added to plumed.  Similarly the second relies little work in the plumed core as generally the objects being communicated are highly method development.  For developers implementing these sorts of methods we recommend looking into the implemation of multiple walkers metadynamics.  In this method the hills are passed between nodes and in plumed this is done by writing and reading files.
+
+The third method in the above list is the most involved in terms of implementation.  The first complication for implementing these sorts of methods in plumed is that different algorithms implement them differently.  For instance, during a swapping event gromacs exchanges the configuration information on the two nodes.  This makes the bussiness of the plumed core trivial as in the next call to plumed the swap of configurations will mean that a different configuration will be received.  Hence, one needs only to sort the accept/reject move in the method of interest.  That is to say gromacs looks after all the communication between replicas.
+
+Many other codes implement replica exchange by exchanging the parameters between nodes while keeping the configurations on a the nodes fixed.  From the point of view of plumed this means that we must exchange the bias between the different nodes during an exchange step.  In other words we must swap the list PLMD::Actions between the two nodes taking care to preserve the history dependent part on the new node.  The functionality to do this passing is inside PLMD::SomeClassOrOther and is done by passing information in files.  From the point of view of someone implementing some new biassing functionality this means that one is forced by the inheritence to write a routine called ??? that tells plumed how to pass any time dependent parts of the bias between nodes.  
+
+\section restart Restarting
+
+Plumed 2.0, unlike plumed 1.0, contains functionality to perform a restart of a previous simulation.  If we are allowed to be philosophical for a moment we can think of a restart as simply an exchange of information between two nodes in which there is a long time delay between the sending of the data and the receiving of it.  Hence, to prevent code from being replicated and because all the replica exchange bussiness is done through files, all the checkpointing in plumed is done using the functionality described in the previous section.  
+
+\section Notes Notes
+
+Information about C++
+http://www.parashift.com/c++-faq-lite/
+
+*/

@@ -1,0 +1,7 @@
+// This document is formatted for Doxygen
+/**
+
+\page HowToAddABias How to add a biasing potential
+
+
+*/
