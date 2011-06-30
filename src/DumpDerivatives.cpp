@@ -62,7 +62,7 @@ fp(NULL)
   if(comm.Get_rank()==0){
     fp=fopen(file.c_str(),"wa");
     log.printf("  on file %s\n",file.c_str());
-    fprintf(fp,"#! FIELDS time parameter derivative");
+    fprintf(fp,"%s","#! FIELDS time parameter derivative");
     const std::vector<Value*>& arguments(getArguments());
     assert(arguments.size()>0);
     unsigned npar=arguments[0]->getDerivatives().size();
@@ -73,7 +73,7 @@ fp(NULL)
     for(unsigned i=0;i<arguments.size();i++){
       fprintf(fp," %s",arguments[i]->getFullName().c_str());
     };
-    fprintf(fp,"\n");
+    fprintf(fp,"%s","\n");
   }
   checkRead();
 }
