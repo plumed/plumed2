@@ -78,13 +78,6 @@ double Value::getForce()const{
 }
 
 inline
-void Value::addForce(double f){
-  assert(hasDerivatives());
-  forced=true;
-  inputForce+=f;
-}
-
-inline
 const std::vector<double> & Value::getDerivatives()const{
   return derivatives;
 }
@@ -124,6 +117,14 @@ inline
 bool Value::checkForced()const{
   return forced;
 }
+
+inline
+void Value::addForce(double f){
+  assert(hasDerivatives());
+  forced=true;
+  inputForce+=f;
+}
+
 
 
 

@@ -173,6 +173,7 @@ int PlumedCommunicator::Status::Get_count()const{
   if(initialized()) MPI_Get_count(const_cast<MPI_Status*>(&s),getMPIType<T>(),&i);
 #else
   assert(0);
+  i=0;
 #endif
   return i;
 }
