@@ -45,7 +45,6 @@ public:
   void calculate();
   Print(const ActionOptions&);
   void apply(){};
-  void flush();
   ~Print();
 };
 
@@ -99,10 +98,6 @@ void Print::calculate(){
 
 Print::~Print(){
   if(fp) fclose(fp);
-}
-
-void Print::flush(){
-  if(fp) fflush(fp);
 }
 
 }

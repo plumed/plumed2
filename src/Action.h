@@ -94,6 +94,10 @@ protected:
 /// Exit with error code c
   void exit(int c=0);
 
+///
+  std::set<FILE*> files;
+  typedef std::set<FILE*>::iterator files_iterator;
+
 public:
   Action(const ActionOptions&);
   virtual ~Action(){};
@@ -111,7 +115,7 @@ public:
   virtual void apply()=0;
 
 /// Tell to the Action to flush open files
-  virtual void flush(){};
+  void fflush();
 
   virtual std::string getDocumentation()const;
 
@@ -138,6 +142,9 @@ public:
 
 /// Perform calculation using numerical derivatives
   virtual void calculateNumericalDerivatives();
+
+  FILE *fopen(const char *path, const char *mode);
+  int   fclose(FILE*fp);
 };
 
 /////////////////////

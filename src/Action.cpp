@@ -30,6 +30,23 @@ Action::Action(const ActionOptions&ao):
   log.printf("  with label %s\n",label.c_str());
 }
 
+FILE* Action::fopen(const char *path, const char *mode){
+  FILE*fp=std::fopen(const_cast<char*>(path),const_cast<char*>(mode));
+  files.insert(fp);
+  return fp;
+}
+
+int Action::fclose(FILE*fp){
+  files.erase(fp);
+  return std::fclose(fp);
+}
+
+void Action::fflush(){
+  for(files_iterator p=files.begin();p!=files.end();++p){
+    std::fflush((*p));
+  }
+}
+
 void Action::parseFlag(const std::string&key,bool & t){
   if(!Tools::parseFlag(line,key,t)){
     log.printf("ERROR parsing keyword %s\n",key.c_str());

@@ -46,7 +46,6 @@ public:
   void calculate();
   DumpDerivatives(const ActionOptions&);
   void apply(){};
-  void flush();
   ~DumpDerivatives();
 };
 
@@ -96,10 +95,6 @@ void DumpDerivatives::calculate(){
 
 DumpDerivatives::~DumpDerivatives(){
   if(fp) fclose(fp);
-}
-
-void DumpDerivatives::flush(){
-  if(fp) fflush(fp);
 }
 
 }
