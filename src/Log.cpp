@@ -1,4 +1,5 @@
 #include "Log.h"
+#include "PlumedCommunicator.h"
 #include <cstdarg>
 #include <cassert>
 #include <cstring>

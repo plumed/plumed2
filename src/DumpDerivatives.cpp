@@ -1,6 +1,7 @@
 #include "ActionPilot.h"
 #include "ActionWithArguments.h"
 #include "ActionRegister.h"
+#include "PlumedCommunicator.h"
 
 using namespace std;
 

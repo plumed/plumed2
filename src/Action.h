@@ -3,14 +3,13 @@
 #include <vector>
 #include <string>
 #include <set>
-#include "Log.h"
 #include "Tools.h"
-
-#include "PlumedCommunicator.h"
+#include "Log.h"
 
 namespace PLMD{
 
 class PlumedMain;
+class PlumedCommunicator;
 
 /// This class is used to bring the relevant information to the Action constructor.
 /// Only Action and ActionRegister class can access to its content, which is 

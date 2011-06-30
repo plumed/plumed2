@@ -1,6 +1,6 @@
 #include "Tools.h"
 #include <cstring>
-#include <assert.h>
+#include <cassert>
 #include <sstream>
 
 using namespace PLMD;

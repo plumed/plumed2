@@ -1,12 +1,11 @@
 #ifndef __PLUMED_ActionWithArguments_h
 #define __PLUMED_ActionWithArguments_h
 
-#include "Action.h"
 #include <map>
 #include <vector>
 #include <cassert>
-
-#include "ActionWithValue.h"
+#include "Action.h"
+#include "Value.h"
 
 namespace PLMD{
 

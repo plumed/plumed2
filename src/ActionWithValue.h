@@ -1,10 +1,10 @@
 #ifndef __PLUMED_ActionWithValue_h
 #define __PLUMED_ActionWithValue_h
 
-#include "Action.h"
 #include <map>
 #include <vector>
 #include <cassert>
+#include "Action.h"
 #include "Value.h"
 
 namespace PLMD{

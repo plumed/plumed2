@@ -3,9 +3,10 @@
 #include <cstdio>
 #include <string>
 #include <sstream>
-#include "PlumedCommunicator.h"
 
 namespace PLMD{
+
+class PlumedCommunicator;
 
 /// Class containing the log stream.
 ///
