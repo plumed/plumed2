@@ -1,0 +1,18 @@
+/**
+\mainpage User guide
+
+This is the user manual. If you want to modify PLUMED or to understand how it works internally,
+have a look at the <a href="../../developer-doc/html/index.html"> developer manual </a>.
+
+PLUMED 2.0 is a major rewriting of PLUMED. (...)
+
+- \subpage WhatsNew
+- \subpage Installation
+- \subpage BasicUsage
+- \subpage AdvancedTopics
+- \subpage Tools
+- \subpage Reference
+
+
+*/
+

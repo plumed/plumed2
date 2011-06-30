@@ -1,0 +1,20 @@
+/**
+\page AdvancedTopics Advanced topics
+
+\section AdvancedInput Advanced input file
+
+Inclusion of other files (\ref INCLUDE)
+
+Loading libraries at runtime (\ref LOAD)
+
+\section AtomGroups Atom groups
+
+\section AtomAlignment Atom alignement
+
+\section ReplicaExchange Replica exchange
+
+Discuss the way input is provided.
+A different bias is allowed on the different replicas.
+
+*/
+

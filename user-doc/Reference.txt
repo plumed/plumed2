@@ -1,0 +1,18 @@
+/**
+\page Reference Reference
+
+List of directives to manipulate input: \subpage InputDirectives
+
+List of directives to setup plumed: \subpage Setup
+
+List of collective variables: \subpage Colvar
+
+List of functions: \subpage Function
+
+List of free energy methods: \subpage Bias
+
+List of general purpose directives: \subpage GenericDirectives
+
+
+*/
+

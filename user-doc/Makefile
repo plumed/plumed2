@@ -6,4 +6,4 @@ all:
 	doxygen
 
 clean:
-	rm -fr html latex automatic DocPostproc.txt *~
+	rm -fr html latex automatic *~ *PP.txt

@@ -1,0 +1,43 @@
+/**
+
+\page Installation Installation
+
+\section CompilingPlumed Compiling Plumed
+
+[Configuration]
+
+[Compilation]
+
+[Installation?]
+
+[How to test plumed without MD engine]
+
+\section Patching Patching your MD code
+
+To patch your MD code, you should have PLUMED already installed and properly
+working. In particular, you should have the command "plumed" in your execution
+path. Then, follow these steps
+- Configure and compile your MD enginge
+- Test if it is working properly
+- Go to the root diretory of the MD engine
+- Patch:
+\verbatim
+> plumed patch
+\endverbatim
+The script will interactively ask which MD engine you are patching.
+- Recompile the MD code (if dependencies are set up properly in the MD engine,
+  only modified files will be recompiled)
+
+If your MD code is not supported, you may want to implement an interface for
+it. Refer to the <a href="../../developer-doc/html/index.html"> developer
+manual </a>.
+
+[How to test if interface has been installed properly]
+
+\section InstallingPlumedOnAMainframe Installing Plumed on a mainframe
+
+[Notes on shared libraries, modules, etc.]
+
+
+*/
+

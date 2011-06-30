@@ -1,0 +1,37 @@
+/**
+\page BasicUsage Basic usage
+
+\section HowToActivatePlumed How to activate Plumed
+
+[discuss the different options for supported codes]
+
+\section TheInputFile The input file
+
+Directives
+
+Continued lines
+
+Labeling the directives
+
+Units (see \ref UNITS).
+
+\section MonitoringSimulationsI Monitoring simulations I: Collective variables
+
+Example with \ref DISTANCE and \ref PRINT
+
+For more collective variables, see \ref Colvar
+
+\section MonitoringSimulationsII Monitoring simulations II: Functions
+
+Example with \ref COMBINE
+
+For more, see \ref Function
+
+\section BiasingSimulations Biasing simulations
+
+Example with \ref RESTRAINT
+
+For more, see \ref Bias
+
+*/
+

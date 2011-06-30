@@ -1,0 +1,28 @@
+/**
+\page Function Functions
+
+The following keywords are available for all directives of this section:
+- ARG:
+  This keyword is used to specify on which variables the function is computed
+  It is a comma-separated list of labels. Here is an example with \ref COMBINE
+\verbatim
+DISTANCE  ATOMS=1,5 LABEL=d1
+DISTANCE  ATOMS=2,6 LABEL=d2
+COMBINE   ARG=d1,d2 POWERS=2
+\endverbatim
+- NUMERICAL_DERIVATIVES:
+  This flag can be used to enforce calculation of derivatives with respect to
+  function arguments by means of numerical differences
+\verbatim
+DISTANCE  ATOMS=1,5 LABEL=d1
+DISTANCE  ATOMS=2,6 LABEL=d2
+COMBINE   ARG=d1,d2 POWERS=2 NUMERICAL_DERIVATIVES
+\endverbatim
+
+\attention The rest of this page is automatically generated from the source
+files
+
+
+@FUNCTION@
+*/
+

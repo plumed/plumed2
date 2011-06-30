@@ -1,0 +1,65 @@
+/**
+
+\page InputDirectives Input directives
+
+These are directives which can be used to manipulate the input file.
+
+\section Comments
+
+Comments can be added with # syntax
+\verbatim
+# This is the distance between two atoms:
+DISTANCE ATOM=1,2
+\endverbatim
+
+\section ContinuationLines Continuation lines
+
+Directives with many keywords can be splitted for convenience on multiple
+lines using "..." syntax:
+This:
+\verbatim
+DISTANCE ...
+  ATOMS=1,300
+  NOPBC
+... DISTANCE
+\endverbatim
+is equivalent to this:
+\verbatim
+DISTANCE ATOMS=1,300 NOPBC
+\endverbatim
+
+\section INCLUDE
+
+Other file can be included with the INCLUDE directive. A single "plumed.dat"
+file:
+\verbatim
+DISTANCE ATOMS=0,1 LABEL=dist
+RESTRAINTG ARG=dist
+\endverbatim
+can be equivalently splitted as
+\verbatim
+DISTANCE ATOMS=0,1 LABEL=dist
+INCLUDE toBeIncluded.dat
+\endverbatim
+plus a "toBeIncluded.dat" file
+\verbatim
+RESTRAINTG ARG=dist
+\endverbatim
+
+\section LOAD
+
+[How to load external dynamic libraries]
+
+\section ENDPLUMED
+
+Reading is killed when the directive ENDPLUMED is found. Thus, subsequent
+lines can be used to store comments or other unread information
+\verbatim
+DISTANCE ATOMS=0,1 LABEL=dist
+ENDPLUMED
+lines here are not parsed
+\endverbatim
+
+
+*/
+

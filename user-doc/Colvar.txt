@@ -1,0 +1,20 @@
+/**
+
+\page Colvar Collective Variables
+
+The following keywords are available for all directives of this section:
+- NUMERICAL_DERIVATIVES:
+  This flag can be used to enforce calculation of derivatives with respect to
+  atom positions and cell vectors by means of numerical differences
+\verbatim
+DISTANCE  ATOMS=1,5 LABEL=d1 NUMERICAL_DERIVATIVES
+\endverbatim
+
+\attention The rest of this page is automatically generated from the source
+files
+
+
+@COLVAR@
+
+*/
+

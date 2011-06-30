@@ -1,0 +1,12 @@
+/**
+\page WhatsNew What's new
+
+\section NewFeatures List of new features
+
+[List of new features]
+
+\section NewInputSyntax New syntax for the input file
+
+[Briefly describe the difference between old and new input]
+
+*/

@@ -1,0 +1,14 @@
+/**
+
+\page Setup Setup directives
+
+These are directives which set global PLUMED parameters at the beginning of
+the simulation. They must preceed all the non-setup directives, and they are
+inactive during MD simulation.
+
+\attention The rest of this page is automatically generated from the source files
+
+@SETUP@
+
+*/
+

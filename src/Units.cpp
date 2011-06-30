@@ -6,7 +6,7 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC GENERIC UNITS
+//+PLUMEDOC SETUP UNITS
 /**
 Sets internal units.
 

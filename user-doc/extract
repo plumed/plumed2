@@ -6,7 +6,7 @@ awk '{
   if($1=="//+ENDPLUMEDOC") inside=0;
   if(inside && $1!="/**" && $1!="*/") print $0 >output
   if($1=="//+PLUMEDOC"){
-    if($2=="COLVAR" || $2=="FUNCTION" || $2=="BIAS" || $2=="GENERIC"){
+    if($2=="COLVAR" || $2=="FUNCTION" || $2=="BIAS" || $2=="GENERIC" || $2=="SETUP"){
       output="automatic/"$2".txt";
       print "\\section "$3 > output
       inside=1;
@@ -14,7 +14,10 @@ awk '{
   }
 }'
 
-cat Doc.txt |
+for file in Bias Colvar Functions GenericDirectives InputDirectives Setup
+do
+
+cat $file.txt |
 {
   while read -r LINE ;
   do
@@ -30,9 +33,13 @@ cat Doc.txt |
   elif [ "$LINE" = "@GENERIC@" ]
   then
     cat automatic/GENERIC.txt
+  elif [ "$LINE" = "@SETUP@" ]
+  then
+    cat automatic/SETUP.txt
   else
     echo -E "$LINE"
   fi
   done
-} > DocPostproc.txt
+} > ${file}PP.txt
+done
 
