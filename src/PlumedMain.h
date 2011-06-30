@@ -65,15 +65,15 @@ private:
 /// Name of the input file
   std::string plumedDat;
 
+/// Object containing information about atoms (such as positions,...).
+  Atoms     atoms;           // atomic coordinates
+
 /// Set of actions found in plumed.dat file
   ActionSet actionSet;
 
 /// Set of Pilot actions.
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
   std::vector<ActionPilot*> pilots;
-  
-/// Object containing information about atoms (such as positions,...).
-  Atoms     atoms;           // atomic coordinates
 
 public:
 /// Flag to switch off virial calculation (for debug)

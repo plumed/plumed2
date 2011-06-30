@@ -9,8 +9,8 @@ using namespace std;
 using namespace PLMD;
 
 ActionRegister& PLMD::actionRegister(){
-  static ActionRegister* ans = new ActionRegister;
-  return *ans;
+  static ActionRegister ans;
+  return ans;
 }
 
 void ActionRegister::add(string key,creator_pointer f){

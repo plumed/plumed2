@@ -30,6 +30,9 @@ Atoms::Atoms(PlumedMain&plumed):
 }
 
 Atoms::~Atoms(){
+// this is to check that all the request objects have been already destroyed
+// indeed, since requests access to atoms, they HAVE to be destroyed before
+  assert(requestset.size()==0);
   if(mdatoms) delete mdatoms;
 }
 

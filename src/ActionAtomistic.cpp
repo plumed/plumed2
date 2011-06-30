@@ -17,8 +17,6 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 Action(ao),
 atomRequest(NULL)
 {
-  parse("SIGMA",sigma);
-  log.printf("  with sigma %f\n",sigma);
 }
 
 void ActionAtomistic::activate(){

@@ -74,8 +74,8 @@ PlumedMain::PlumedMain():
   log(comm),
   step(0),
   active(false),
-  actionSet((*this)),
   atoms(*this),
+  actionSet((*this)),
   novirial(false)
 {
 }

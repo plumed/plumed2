@@ -20,6 +20,7 @@ class ActionSet:
   PlumedMain& plumed;
 public:
   ActionSet(PlumedMain&p);
+  ~ActionSet();
 /// Clear and deletes all the included pointers.
   void clearDelete();
 

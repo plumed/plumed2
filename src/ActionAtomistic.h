@@ -13,7 +13,6 @@ class ActionAtomistic :
   virtual public Action
   {
 
-  double                sigma;           // typical variable scale
   Atoms::Request*       atomRequest;     // handler for request of atoms
   std::vector<int> indexes;         // the set of needed atoms
   std::vector<Vector>   positions;       // positions of the needed atoms
