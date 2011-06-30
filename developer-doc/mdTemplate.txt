@@ -10,17 +10,43 @@ Plumed ships with scripts that can be used to add it to many of the standard MD 
 
 \section makefile Modifying your makefile
 
-Once the plumed source code has been compiled a file called src/Plumed.inc will be created.  This file must be included in your MD code's makefile as it informs the code where to find all the plumed source.  In particular, within the code the three variables described below are defined one of which must be added to the command that does the linking for your MD engine:  
+Once the plumed source code has been compiled a file src/Plumed.inc is
+generated. This file should be included in your MD code's makefile as it
+informs the code where to find all the plumed source. There are three possible
+ways to link PLUMED: static (linking the .o files directly), shared (linking
+the libPlumed.so library) or runtime (which links only a wrapper to plumed,
+whereas the location of the remaining part on plumed, i.e. the libPlumedKernel.so,
+can be specified at runtime). The relevant variables are
+- \$(PLUMED_OBJ) all the objects that form the plumed library
+- \$(PLUMED_SHARED_OBJ) a single shared library containing the full plumed library
+- \$(PLUMED_WRAPPER) an object containing only the plumed wrapper
+- \$(PLUMED_LIBS) are libraries which should be linked to the MD code (usually
+  just the library containing functions for dynamic loading)
+- \$(PLUMED_DYNAMIC_LIBS) are libraries on which plumed depends on (e.g.
+  matheval, etc), which should be linked explicitely only in case of static
+  linking.
 
-- \$(PLUMED_OBJ) - This will statically link plumed to your MD engine
-- \$(PLUMD_SHARED_OBJ) - This will dynamically bind plumed to your MD engine.  Furthermore, plumed will not run if you move the libplumedKernel.so library to a new location after compilation.
-- \$(PLUMED_KERNEL) - This allows you to specify the location of plumed at runtime through the PLUMD_KERNEL environment variable.  Obviously, if at runtime this variable is not set, then none of plumed functionality will be available.
+The libPlumedKernel.so basically contains the same objects as the
+\$(PLUMED_SHARED_OBJ) except for the \$(PLUMED_WRAPPER).
 
-For consistency with the other plumed patches please ensure that your new patch allows users to compile with all three options.  Other users should be able to select which compilation mode they require using the following flags:
+The simplest approach is to take advantage of the three variants
+src/Plumed.inc.static , src/Plumed.inc.shared and src/Plumed.inc.runtime .
+Including one of those, it is sufficient to add to the linker line the macro
+\$(PLUMED_LOAD).
 
-- --static for \$(PLUMED_OBJ)
-- --shared for \$(PLUMED_SHARED_OBJ)
-- --runtime for \$(PLUMED_WRAPPER)
+The best way to patch your MD file is thus:
+
+- include in the MD Makefile a file "Plumed.inc" located in the root directory
+  of MD (e.g. with "include ../../Plumed.inc"). The patch script will provide
+  that file on patching
+
+- add "\$(PLUMED_LOAD)" to the linking command in the Makefile.
+
+The patching system will then link the proper variant of .inc file to
+MDROOT/Plumed.inc depending on the arguments to "plumed patch":
+- --static 
+- --shared 
+- --runtime 
 
 \section language Language dependence
 
@@ -137,6 +163,11 @@ plumed_cmd(plumedmain,"setAtomsGatindex",gatindex);         // Pass an array con
 plumed_cmd(plumedmain,"setAtomsContiguous",&start);         // Number the atoms on this node from start to start+nlocal   (used for particle decomposition)
 plumed_cmd(plumedmain,"getApiVersion",api);                 // Pass the api version that plumed is using (what does this mean)???
 \endverbatim 
+
+\section Saving the diffs
+
+This is similar to plumed 1. All the files that you want to modify should be
+first copied to .preplumed files. Then use "plumed patch -s" to save the diff.
 
 \section Notes Notes
 
