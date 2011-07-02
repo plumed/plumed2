@@ -1,5 +1,5 @@
 /**
-\mainpage User guide
+\mainpage Introduction
 
 This is the user manual. If you want to modify PLUMED or to understand how it works internally,
 have a look at the <a href="../../developer-doc/html/index.html"> developer manual </a>.

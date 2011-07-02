@@ -10,11 +10,17 @@ using namespace std;
 /**
 Periodically flush open files.
 
-This Action is used to flush the open files periodically.
-Similarly the other Actions, it understands the keyword STRIDE,
-which is the number of timesteps between flushings
+\par Syntax
 \verbatim
-# This is flushing all output files every 100 steps
+FLUSH [STRIDE=s]
+\endverbatim
+This directive is used to flush all the open files periodically.
+It understands the keyword STRIDE,
+which is the number of timesteps between flushings
+
+\par Example
+This input is flushing all the output files every 100 steps
+\verbatim
 FLUSH STRIDE=100
 \endverbatim
 */

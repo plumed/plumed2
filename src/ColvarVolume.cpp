@@ -11,10 +11,21 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR VOLUME
 /**
-Volume of the simulation box. Example:
+Calculate the volume of the simulation box.
+
+\par Syntax
 \verbatim
-VOLUME LABEL=volume
+VOLUME
 \endverbatim
+
+\par Example
+The following input is printing the volume of the system
+\verbatim
+VOLUME LABEL=vol
+PRINT ARG=vol
+\endverbatim
+(See also \ref PRINT).
+
 */
 //+ENDPLUMEDOC
 

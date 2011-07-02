@@ -11,18 +11,40 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /**
-Combination of more CVs using a matheval expression
-   
-* VAR tells the names of the variables used in the FUNC string
-  If absent, the names are set to x,y,z. With more than 3 arguments explicit
-  names are compulsory
-* FUNC gives the function definition in matheval syntax
+Calculate the combination of variables using a matheval expression
 
+\par Syntax
 \verbatim
-MATHEVAL LABEL=c1 ARG=distance1,distance2 VAR=a,b FUNC=(a+b)/10.0
-MATHEVAL LABEL=c2 ARG=distance1,distance2         FUNC=(x-y)/sin(y)
+MATHEVAL ARG=x1,x2,... [VAR=v1,v2,...] [FUNC=func]
 \endverbatim
+Compute the expression func on the arguments x1,x2,.... If VAR is present,
+it determines the names of the variables used in the FUNC string using
+libmatheval syntax.
+If VAR is absent, the names are set to x,y,z. With more than 3 arguments explicit
+names are compulsory
 
+
+\par Example
+The following input is printing the angle between vectors
+identified by atoms 1,2 and atoms 2,3
+its square (as computed from the x,y,z components) and the distance
+again as computed from the square root of the square.
+\verbatim
+DISTANCE LABEL=d1 ATOMS=1,2 COMPONENTS
+DISTANCE LABEL=d2 ATOMS=2,3 COMPONENTS
+MATHEVAL ...
+  LABEL=theta
+  ARG=d1.x,d1.y,d1.z,d2.x,d2.y,d2.z
+  VAR=ax,ay,az,bx,by,bz
+  FUNC=acos((ax*bx+ay*by+az*bz)/sqrt((ax*ax+ay*ay+az*az)*(bx*bx+by*by+bz*bz))
+... MATHEVAL
+PRINT ARG=theta
+\endverbatim
+(See also \ref PRINT and \ref DISTANCE).
+
+\attention
+The MATHEVAL object only works if libmatheval is installed on the system and
+PLUMED has been linked to it
 
 */
 //+ENDPLUMEDOC

@@ -10,12 +10,22 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR ENERGY
 /**
-Potential energy of the system. Example:
+Calculate the total energy of the simulation box.
+
+\par Syntax
 \verbatim
-ENERGY LABEL=energy
+ENERGY
 \endverbatim
 
-\bug It does not work with variable cell simulations. Should include also PV contribution.
+\par Example
+The following input is printing the energy of the system
+\verbatim
+ENERGY LABEL=ene
+PRINT ARG=ene
+\endverbatim
+(See also \ref PRINT).
+
+\bug It does not work with variable cell simulations. Should include also long range corrections?
 
 */
 //+ENDPLUMEDOC

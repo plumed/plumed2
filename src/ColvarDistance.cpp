@@ -14,9 +14,11 @@ namespace PLMD{
 Calculate the distance between two atoms.
 
 \par Syntax
+\verbatim
 DISTANCE ATOMS=x,y [COMPONENTS] [PBC]
+\endverbatim
 If the COMPONENTS flag is present, the three components of the distance
-can be accessed respectively as .x .y and .z.
+can be accessed respectively as label.x label.y and label.z .
 If the PBC flag is present, distance is computed using periodic boundary conditions.
 
 \par Example
@@ -27,6 +29,7 @@ DISTANCE ATOMS=3,5             LABEL=d1
 DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
 PRINT ARG=d1,d2,d2.x
 \endverbatim
+(See also \ref PRINT).
 
 */
 //+ENDPLUMEDOC

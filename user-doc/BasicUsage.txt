@@ -19,19 +19,32 @@ Units (see \ref UNITS).
 
 Example with \ref DISTANCE and \ref PRINT
 
-For more collective variables, see \ref Colvar
+For more collective variables, see \ref Colvar .
+If the collective variable that you would like to use is not implemented,
+you may want to implement it yourself.
+Refer to the <a href="../../developer-doc/html/index.html"> developer
+manual </a>.
 
 \section MonitoringSimulationsII Monitoring simulations II: Functions
 
 Example with \ref COMBINE
 
-For more, see \ref Function
+For more functions, see \ref Function .
+If the function that you would like to use is not implemented,
+you may want to implement it yourself.
+Refer to the <a href="../../developer-doc/html/index.html"> developer
+manual </a>.
 
 \section BiasingSimulations Biasing simulations
 
 Example with \ref RESTRAINT
 
-For more, see \ref Bias
+For more biasing methods, see \ref Bias .
+If the biasing method that you would like to use is not implemented,
+you may want to implement it yourself.
+Refer to the <a href="../../developer-doc/html/index.html"> developer
+manual </a>.
+
 
 */
 

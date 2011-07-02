@@ -11,21 +11,7 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR TEMPLATE
 /**
-Calculate distance between two atoms
-   
-\author Giovanni Bussi
-\date 17-12-2010
-
-\par Syntax
-
-TEMPLATE ATOMS=x,y [COMPONENTS] [PBC]
-
-Example
-\verbatim
-TEMPLATE ATOMS=3,5 
-\endverbatim
-
-If you use this variable, please cite the following work ... ... ...
+This is just a template variable
 
 */
 //+ENDPLUMEDOC

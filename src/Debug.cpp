@@ -8,18 +8,16 @@ namespace PLMD{
 
 //+PLUMEDOC GENERIC DEBUG
 /**
-  Action to set some debug flags
+  Set some debug options
 
-  This action can be used to enable debug options.
-  It accepts a STRIDE option as the \ref Bias actions,
-  which is used for debug options which are repeated
-  along the simulation.
-  It accepts the following flags:
-- logActivity: writes (every STRIDE steps) the list
-  of which actions are active and which ar inactive in the
-  plumed log, in term of a sequence of + (active) and - (inactive)
-- NOVIRIAL: switches off (for the entire simulation) the contribution
-  of virial computed in plumed
+\par syntax
+\verbatim
+DEBUG [STRIDE=s] [NOVIRIAL] [logActivity]
+\endverbatim
+The NOVIRIAL flag switches off (for the entire simulation) the contribution
+of virial computed in plumed. The logActivity keyword writes in the log
+the list of which objects are active and which are inactive
+as a sequence of + (active) and - (inactive). Logging is done with stride s.
 */
 //+ENDPLUMEDOC
 class Debug:

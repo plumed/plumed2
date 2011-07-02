@@ -1,6 +1,6 @@
 /**
 
-\page InputDirectives Input directives
+\page InputDirectives Input manipulation
 
 These are directives which can be used to manipulate the input file.
 
@@ -9,7 +9,7 @@ These are directives which can be used to manipulate the input file.
 Comments can be added with # syntax
 \verbatim
 # This is the distance between two atoms:
-DISTANCE ATOM=1,2
+DISTANCE ATOM=1,2 # this is ok
 \endverbatim
 
 \section ContinuationLines Continuation lines
@@ -19,9 +19,14 @@ lines using "..." syntax:
 This:
 \verbatim
 DISTANCE ...
+# we can insert also comments here
   ATOMS=1,300
-  NOPBC
+# multiple kewords per line are allowed
+  NOPBC COMPONENTS
+#empty lines are allowed
+
 ... DISTANCE
+
 \endverbatim
 is equivalent to this:
 \verbatim
@@ -30,8 +35,13 @@ DISTANCE ATOMS=1,300 NOPBC
 
 \section INCLUDE
 
-Other file can be included with the INCLUDE directive. A single "plumed.dat"
-file:
+Other files can be included with the INCLUDE directive.
+\par Syntax
+\verbatim
+INCLUDE filename
+\endverbatim
+
+A single "plumed.dat" file:
 \verbatim
 DISTANCE ATOMS=0,1 LABEL=dist
 RESTRAINTG ARG=dist
@@ -46,9 +56,27 @@ plus a "toBeIncluded.dat" file
 RESTRAINTG ARG=dist
 \endverbatim
 
+Notice that this is a real directive and it is resolved after \ref Comments have been stripped 
+and after \ContinuationLines have been unrolled. Thus it is not possible to do
+something like:
+\verbatim 
+# this is wrong:
+DISTANCE INCLUDE options.dat
+RESTRAINTG ARG=dist
+\endverbatim
+
 \section LOAD
 
-[How to load external dynamic libraries]
+LOAD allows to load a shared library containing PLUMED extensions (e.g. new collective variables,
+function or free energy methods).
+
+\par Syntax
+\verbatim
+LOAD library.so
+\endverbatim
+
+Notice that for systems with different suffix (e.g. mac with .dylib), PLUMED automatically
+try to replace the suffix of the requested file with the proper one.
 
 \section ENDPLUMED
 
@@ -57,7 +85,7 @@ lines can be used to store comments or other unread information
 \verbatim
 DISTANCE ATOMS=0,1 LABEL=dist
 ENDPLUMED
-lines here are not parsed
+lines here are not parsed at all
 \endverbatim
 
 

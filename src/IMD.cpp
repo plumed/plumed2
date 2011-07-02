@@ -18,20 +18,23 @@ namespace PLMD {
 /**
 Use interactive molecular dynamics with VMD
 
+\par Examples
 \verbatim
 # listen to port 1112 of localhost
 IMD PORT=1112
 \endverbatim
-
 \verbatim
 # listen to port 1112 of pippo
 IMD HOST=pippo PORT=1112
 \endverbatim
-
 \verbatim
 # listen to port 1112 of localhost and run only when connected
 IMD PORT=1112 WAIT
 \endverbatim
+
+\attention
+The IMB object only works if the IMD routines have been downloaded
+and properly linked with PLUMED
 
 */
 //+ENDPLUMEDOC

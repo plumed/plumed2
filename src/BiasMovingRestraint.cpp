@@ -10,18 +10,51 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS MOVINGRESTRAINT
 /**
-Moving restraint
+Moving restraint (similar to \ref RESTRAINT, but dynamic)
 
-Similar to \ref RESTRAINT but can be moved during the simulation
-   
 \par Syntax
-
-Example
 \verbatim
-MOVINGRESTRAINT
+RESTRAINT ...
+  ARG=x1,x2,...
+  STEP0=s0 [ STEP1=s1 [STEP2=s2 [...] ] ] 
+  KAPPA0=k01,k02,... [ KAPPA1=k11,k12,... [ KAPPA2=k21,k22,... [...] ] ] 
+  AT0=a01,a02,...    [ AT1=a11,a12,...    [ AT1=a21,a22,...    [...] ] ]
+... RESTRAINT
+\endverbatim
+The STEPx keyword, with x=0,1,2,...,n respresent the MD step at
+which the restraint parameters take value KAPPAx and ATx. The meaning
+of KAPPA and AT is the same as for \ref RESTRAINT. For step numbers less than
+STEP0 or larger than STEPn, parameters for x=0 and x=n are used respectively.
+For intermediate steps, parameters are linearly interpolated. If
+a parameter is missing, its value at the present step is kept.
+
+\par Examples
+The following input is dragging the distance between atoms 2 and 4
+from 1 to 2 in the first 1000 steps, then back in the next 1000 steps.
+In the following 500 steps the restraint is progressively switched off.
+\verbatim
+DISTANCE ATOMS=2,4 LABEL=d
+MOVINGRESTRAINT ARG=d1,d2 ...
+  STEP0=0    AT0=1.0 KAPPA0=100.0
+  STEP1=1000 AT1=2.0
+  STEP2=2000 AT2=1.0
+  STEP3=2500         KAPPA3=0.0
+... MOVINGRESTRAINT
+\endverbatim
+The following input is progressively building restraints
+distances between atoms 1 and 5 and between atoms 2 and 4
+in the first 1000 steps. Afterwards, the restraint is kept
+static.
+\verbatim
+DISTANCE ATOMS=1,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+MOVINGRESTRAINT ARG=d ...
+  STEP0=0    AT0=1.0,1.5 KAPPA0=0.0,0.0
+  STEP0=1000 AT0=1.0,1.5 KAPPA0=1.0,1.0
+... MOVINGRESTRAINT
 \endverbatim
 
-If you use this variable, please cite the following work ... ... ...
+(See also \ref DISTANCE).
 
 */
 //+ENDPLUMEDOC

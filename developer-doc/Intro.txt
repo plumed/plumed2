@@ -1,6 +1,6 @@
 // This document is formatted for Doxygen
 /**
-\mainpage A Plumed Clone
+\mainpage Introduction
 
 This is the developer manual. Please first have a look at the <a href="../../user-doc/html/index.html"> user manual </a>.
 

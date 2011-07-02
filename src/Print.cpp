@@ -9,9 +9,12 @@ namespace PLMD{
 
 //+PLUMEDOC GENERIC PRINT
 /**
-Print quantities on file
+Print quantities on a file.
 
-This action is used to periodically print quantities on a file.
+\par Syntax
+\verbatim
+PRINT ARG=what [STRIDE=s] [FILE=file] [FMT=fmt]
+\endverbatim
 Similarly to Actions of type \ref Bias, it accepts keywords
 ARG and STRIDE to specify which quantities should be printed and
 how frequently. It also accepts a keyword FMT specifying (in printf() style)
@@ -20,16 +23,17 @@ name of the output file (if omitted, plumed log will be used).
 This directive can be used multiple times to write multiple files,
 perhaps at different stride.
 
-Example
+\par Example
+The following input is printing the distance between atoms 3 and 5 on file COLVAR
+every 10 steps, and the distance and total energy on file COLVAR_ALL
+every 1000 steps.
 \verbatim
-DISTANCE ATOMS=0,10 LABEL=distance
-ENERGY   LABEL=energy
-
-# this is writing distance on file COLVAR every 10 steps
-PRINT ARG=distance STRIDE=10  FILE=COLVAR
-# this is writing distance and energy on file COLVAR_ALL every 1000 steps
+DISTANCE ATOMS=2,5 LABEL=distance
+ENERGY             LABEL=energy
+PRINT ARG=distance          STRIDE=10   FILE=COLVAR
 PRINT ARG=distance,energy   STRIDE=1000 FILE=COLVAR_ALL
 \endverbatim
+(See also \ref DISTANCE and \ref ENERGY).
 
 */
 //+ENDPLUMEDOC

@@ -10,21 +10,29 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS RESTRAINT
 /**
-Harmonic restraint
+Adds an harmonic restraint on one or more variables
 
-This bias imposes an harmonic restraint on one or more
-collective variables (or function). Besides the
-usual STRIDE, ARG and LABEL, it accepts the following
-keywords:
-- KAPPA an array of force constants (in PLUMED units)
-- AT an array defining the center of the restraint
-Example
+\par Syntax
 \verbatim
-DISTANCE ATOMS=5,10 LABEL=d1
-DISTANCE ATOMS=6,11 LABEL=d2
-DISTANCE ATOMS=7,12 LABEL=d3
-RESTRAINT ARG=d1,d2,d3 KAPPA=0.1,0.1,0.5 AT=5.0,6.0,7.0
+RESTRAINT ARG=x1,x2,... KAPPA=k1,k2,... AT=a1,a2,...
 \endverbatim
+KAPPA specifies an array of force constants, one for each variable,
+and AT the center of the restraints. Thus, the resulting potential is
+\f$
+  \sum_i \frac{k_i}{2} (x_i-a_i)^2
+\f$.
+
+\par Example
+The following input is restraining the distance between atoms 3 and 5
+and the distance between atoms 2 and 4, at different equilibrium
+values, and it is printing the energy of the restraint
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+RESTRAINT ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 LABEL=restraint
+PRINT ARG=restraint.Energy
+\endverbatim
+(See also \ref DISTANCE and \ref PRINT).
 
 */
 //+ENDPLUMEDOC

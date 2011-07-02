@@ -10,9 +10,29 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION COMBINE
 /**
-Combinatin of more CVs
-   
+Calculate the polynomial combination of other variables
+
 \par Syntax
+\verbatim
+COMBINE ARG=x1,x2,... [POWERS=p1,p2,...] [COEFFICIENTS=c1,c2,...]
+\endverbatim
+The resulting variable has value
+\f$
+  \sum_i c_i x_i^{p_i}
+\f$. When not present, powers and coefficient are implicitly equal to 1.
+
+
+\par Example
+The following input is printing the distance between atoms 3 and 5
+its square (as computed from the x,y,z components) and the distance
+again as computed from the square root of the square.
+\verbatim
+DISTANCE LABEL=dist      ATOMS=3,5 COMPONENTS
+COMBINE  LABEL=distance2 ARG=dist.x,dist.y,dist.z POWERS=2,2,2
+COMBINE  LABEL=distance  ARG=distance2 POWERS=0.5
+PRINT ARG=distance,distance2
+\endverbatim
+(See also \ref PRINT and \ref DISTANCE).
 
 
 */
