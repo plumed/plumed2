@@ -21,6 +21,13 @@ class ActionWithValue:
   void assertUnique(const std::string&name);
   int getValueIndex(const std::string&name)const;
   bool numericalDerivatives;
+protected:
+/// Enforce the use of numerical derivatives.
+/// This may be useful during the implementation of new collective
+/// variables. Before implementing the derivatives, the used can
+/// just tell plumed to use finite difference irrespectively of
+/// the NUMERICAL_DERIVATIVES keyword in the input file
+  void enforceNumericalDerivatives();
 public:
   ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
@@ -61,6 +68,7 @@ public:
   void setValue(Value*,double);
 /// Set the default value (the one without name)
   void setValue(double);
+/// Check if numerical derivatives should be used
   bool checkNumericalDerivatives()const;
 };
 
@@ -75,7 +83,9 @@ void ActionWithValue::setValue(double d){
 }
 
 inline
-double ActionWithValue::getForce(int n){return values[n]->getForce();}
+double ActionWithValue::getForce(int n){
+  return values[n]->getForce();
+}
 
 inline
 void ActionWithValue::assertUnique(const std::string&name){
@@ -83,7 +93,9 @@ void ActionWithValue::assertUnique(const std::string&name){
 }
 
 inline
-int ActionWithValue::getNumberOfValues(){return values.size();}
+int ActionWithValue::getNumberOfValues(){
+  return values.size();
+}
 
 inline
 int ActionWithValue::getNumberOfParameters()const{

@@ -40,6 +40,7 @@ ColvarEnergy::ColvarEnergy(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 components(false)
 {
+  assert(!checkNumericalDerivatives());
   std::vector<int> atoms;
   requestAtoms(atoms);
   isEnergy=true;

@@ -87,7 +87,7 @@ void DumpDerivatives::calculate(){
     fprintf(fp," %f",getTime());
     fprintf(fp," %u",ipar);
     for(unsigned i=0;i<getNumberOfArguments();i++){
-      fprintf(fp," %f",arguments[i]->getDerivatives()[ipar]);
+      fprintf(fp," %15.10f",arguments[i]->getDerivatives()[ipar]);
     };
     fprintf(fp,"\n");
   }

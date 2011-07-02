@@ -4,7 +4,11 @@
 using namespace std;
 using namespace PLMD;
 
-
+void ActionWithValue::enforceNumericalDerivatives(){
+  numericalDerivatives=true;
+  log.printf("  WARNING: Numerical derivatives will be used\n");
+  log.printf("    (probably this object does not implement analytical derivatives yet)\n");
+}
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
@@ -12,6 +16,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   numericalDerivatives(false)
 {
   parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
+  if(numericalDerivatives) log.printf("  using numerical derivatives\n");
 }
 
 ActionWithValue::~ActionWithValue(){
