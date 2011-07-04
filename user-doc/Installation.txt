@@ -22,7 +22,7 @@ path. Then, follow these steps
 - Go to the root diretory of the MD engine
 - Patch:
 \verbatim
-> plumed patch
+> plumed patch -p
 \endverbatim
 The script will interactively ask which MD engine you are patching.
 - Recompile the MD code (if dependencies are set up properly in the MD engine,
