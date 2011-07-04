@@ -71,10 +71,10 @@ powers(getNumberOfArguments(),1.0)
   if(period.size()==0){
   }else if(period.size()==1 && period[0]=="NO"){
     getValue("")->setPeriodicity(false);
-  } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],min)){
+  } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
     getValue("")->setPeriodicity(true);
     getValue("")->setDomain(min,max);
-  }
+  } else assert(0);
 
   checkRead();
 
