@@ -17,7 +17,7 @@ Actions (choose only one):
 Options:
   -e ENGINE, --engine ENGINE
                     set MD engine to ENGINE (default: choose interactively)
-  -m MODE, --mode MODE
+  -m MODE, --mode MODE (default: static)
                     set link mode to MODE, which can be either static, shared or runtime
   --static
                     same as --mode static
@@ -25,8 +25,6 @@ Options:
                     same as --mode shared
   --runtime
                     same as --mode runtime
-  --root ROOT
-                    set path to plumed directory (default: PLUMED_ROOT environment variable)
   -d FILE, --diff FILE
                     set the path to diff file (default: ROOT/patches/ENGINE.diff) (FOR TESTING)
   -f, --force
