@@ -16,8 +16,27 @@ bool Tools::convert(const string & str,T & t){ \
         return remaining.length()==0; \
 }
 
-IMPLEMENT(double)
 IMPLEMENT(int)
+
+bool Tools::convert(const string & str,double & t){
+        const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
+        if(str=="PI" || str=="+PI"){
+          t=pi; return true;
+        }else if(str=="2PI" || str=="+2PI"){
+          t=2*pi; return true;
+        }else if(str=="-PI"){
+          t=-pi; return true;
+        }else if(str=="-2PI"){
+          t=-2*pi; return true;
+        }
+        istringstream istr(str.c_str());
+        bool ok=istr>>t;
+        if(!ok) return false;
+        string remaining;
+        istr>>remaining;
+        return remaining.length()==0;
+}
+
 
 bool Tools::convert(const string & str,string & t){
         t=str;
