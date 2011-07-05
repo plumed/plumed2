@@ -88,7 +88,7 @@ PLUMED_BIAS_INIT(ao)
     assert(kk.size()==getNumberOfArguments());
     kappa.push_back(kk);
     parseVector("AT"+s,aa);
-    if(at.size()==0 && i>0) aa=at[i-1];
+    if(aa.size()==0 && i>0) aa=at[i-1];
     assert(aa.size()==getNumberOfArguments());
     at.push_back(aa);
   }
