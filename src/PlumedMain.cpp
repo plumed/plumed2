@@ -48,6 +48,7 @@ void plumedmain_finalize(void*plumed){
 
 extern "C" plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmain_function_holder*);
 extern "C" void* plumed_dlopen(const char*);
+extern "C" const char* plumed_dlerror(void);
 
 namespace PLMD{
 
@@ -330,6 +331,8 @@ void PlumedMain::readInputFile(std::string str){
       if(!p){
         log<<"ERROR\n";
         log<<"I cannot load library "<<words[1].c_str()<<"\n";
+        log<<plumed_dlerror();
+        log<<"\n";
         this->exit(1);
       }
       log<<"Loading shared library "<<s.c_str()<<"\n";

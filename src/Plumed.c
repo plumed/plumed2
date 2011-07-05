@@ -32,6 +32,7 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
   Routine to load a shared library
 */
 void* plumed_dlopen(const char*);
+const char* plumed_dlerror(void);
 
 #ifdef __PLUMED_STATIC_KERNEL
 /* Real interface */
@@ -65,6 +66,13 @@ void* plumed_dlopen(const char* path){
 #endif
 }
 
+const char* plumed_dlerror(void){
+#ifdef __PLUMED_HAS_DLOPEN
+  return dlerror();
+#else
+  return NULL;
+#endif
+}
 
 /* These are the dummy routines which are used when plumed is not available */
 
