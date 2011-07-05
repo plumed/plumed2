@@ -16,6 +16,7 @@ Moving restraint (similar to \ref RESTRAINT, but dynamic)
 \verbatim
 RESTRAINT ...
   ARG=x1,x2,...
+  VERSE=v1,v2,...
   STEP0=s0 [ STEP1=s1 [STEP2=s2 [...] ] ] 
   KAPPA0=k01,k02,... [ KAPPA1=k11,k12,... [ KAPPA2=k21,k22,... [...] ] ] 
   AT0=a01,a02,...    [ AT1=a11,a12,...    [ AT1=a21,a22,...    [...] ] ]
@@ -27,6 +28,9 @@ of KAPPA and AT is the same as for \ref RESTRAINT. For step numbers less than
 STEP0 or larger than STEPn, parameters for x=0 and x=n are used respectively.
 For intermediate steps, parameters are linearly interpolated. If
 a parameter is missing, its value at the present step is kept.
+The VERSE keyword can set for each variable is the restraint is
+only acting for CV larger ("U") or smaller ("L") than the
+restraint. Default is "B" which is acting in both cases.
 
 \par Examples
 The following input is dragging the distance between atoms 2 and 4
@@ -34,7 +38,8 @@ from 1 to 2 in the first 1000 steps, then back in the next 1000 steps.
 In the following 500 steps the restraint is progressively switched off.
 \verbatim
 DISTANCE ATOMS=2,4 LABEL=d
-MOVINGRESTRAINT ARG=d1,d2 ...
+MOVINGRESTRAINT ...
+  ARG=d1,d2
   STEP0=0    AT0=1.0 KAPPA0=100.0
   STEP1=1000 AT1=2.0
   STEP2=2000 AT2=1.0
@@ -48,11 +53,23 @@ static.
 \verbatim
 DISTANCE ATOMS=1,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
-MOVINGRESTRAINT ARG=d ...
+MOVINGRESTRAINT ...
+  ARG=d1,d2 
   STEP0=0    AT0=1.0,1.5 KAPPA0=0.0,0.0
   STEP0=1000 AT0=1.0,1.5 KAPPA0=1.0,1.0
 ... MOVINGRESTRAINT
 \endverbatim
+The following input is progressively bringing atoms 1 and 2
+close to each other with an upper wall
+\verbatim
+DISTANCE ATOMS=1,2 LABEL=d1
+MOVINGRESTRAINT ...
+  ARG=d1
+  STEP0=0    AT0=1.0 KAPPA0=10.0
+  STEP0=1000 AT0=0.0
+... MOVINGRESTRAINT
+\endverbatim
+
 
 (See also \ref DISTANCE).
 
@@ -64,6 +81,7 @@ class BiasMovingRestraint : public Bias{
   std::vector<std::vector<double> > at;
   std::vector<std::vector<double> > kappa;
   std::vector<int> step;
+  vector<string> verse;
 public:
   BiasMovingRestraint(const ActionOptions&);
   void calculate();
@@ -74,6 +92,9 @@ PLUMED_REGISTER_ACTION(BiasMovingRestraint,"MOVINGRESTRAINT")
 BiasMovingRestraint::BiasMovingRestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao)
 {
+  parseVector("VERSE",verse);
+  if(verse.size()==0) verse.assign(getNumberOfArguments(),"B");
+  assert(verse.size()==getNumberOfArguments());
   for(int i=0;;i++){
     int ss=-1;
     std::vector<double> kk,aa;
@@ -135,6 +156,9 @@ void BiasMovingRestraint::calculate(){
     const double cv=difference(i,aa[i],getArgument(i));
     const double k=kk[i];
     const double f=-k*cv;
+    if(verse[i]=="U" && cv<0) continue;
+    if(verse[i]=="L" && cv>0) continue;
+    assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
     ene+=0.5*k*cv*cv;
     setOutputForces(i,f);
     totf2+=f*f;
