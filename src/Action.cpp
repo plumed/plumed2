@@ -79,7 +79,10 @@ std::string Action::getDocumentation()const{
 
 void Action::checkRead(){
   if(line.size()>0){
-    log.printf("ERROR READING INPUT FILE\n%s\n",getDocumentation().c_str());
+    log.printf("ERROR READING INPUT FILE\n");
+    log.printf("I CANNOT UNDERSTAND THE FOLLOWING WORDS:\n");
+    for(unsigned i=0;i<line.size();i++) log.printf("  %s\n",line[i].c_str());
+    log.printf("STOP!!\n");
     exit(1);
   }
 }
