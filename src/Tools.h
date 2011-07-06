@@ -53,6 +53,8 @@ public:
   static bool parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val);
 /// Find a keyword without arguments on the input line
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
+/// Interpret atom ranges
+  static void interpretRanges(std::vector<std::string>&);
 };
 
 template <class T>

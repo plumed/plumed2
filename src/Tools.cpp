@@ -132,5 +132,24 @@ void Tools::convert(int i,std::string & str){
         str=ostr.str();
 }
 
+void Tools::interpretRanges(std::vector<std::string>&s){
+  vector<string> news;
+  for(vector<string>::iterator p=s.begin();p!=s.end();p++){
+    vector<string> words;
+    words=getWords(*p,"-");
+    int a,b;
+    if(words.size()==2 && convert(words[0],a) && convert(words[1],b)){
+      assert(b>=a);
+      for(int i=a;i<=b;i++){
+        string ss;
+        convert(i,ss);
+        news.push_back(ss);
+      }
+    }else news.push_back(*p);
+  }
+  s=news;
+}
+
+
 
 
