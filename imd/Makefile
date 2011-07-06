@@ -1,13 +1,8 @@
 -include ../Makefile.conf
 
-all: Makefile.conf libimd.$(SOEXT)
+all: libimd.$(SOEXT)
 
-Makefile.conf: libimd.$(SOEXT)
-	echo IMDLIB=-L$(PWD) -limd     >  Makefile.conf
-	echo IMDDEF=-D__PLUMED_HAS_IMD >> Makefile.conf
-
-
-libimd.$(SOEXT): imd.o vmdsock.o
+libimd.$(SOEXT): imd.o vmdsock.o ActionIMD.o
 	$(LDSO) -o $@ $^ -lnsl
 
 vmdsock.c imd.c vmdsock.h imd.h: imdapi.tar.gz
@@ -20,7 +15,7 @@ imdapi.tar.gz:
 
 
 clean:
-	rm -fr imdapi.tar.gz *.c *.h *.$(SOEXT) Makefile.conf *.o
+	rm -fr imdapi.tar.gz *.c *.h *.$(SOEXT) *.o
 
 
 

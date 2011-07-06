@@ -1,6 +1,5 @@
 
 -include ../Makefile.conf
--include ../imd/Makefile.conf
 
 ifndef srcdir
 srcdir=.

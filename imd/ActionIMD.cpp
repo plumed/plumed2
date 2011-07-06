@@ -1,14 +1,13 @@
-#ifdef __PLUMED_HAS_IMD
 #include <unistd.h>
 
-#include "ActionRegister.h"
-#include "ActionAtomistic.h"
-#include "ActionPilot.h"
-#include "PlumedMain.h"
+#include "../src/ActionRegister.h"
+#include "../src/ActionAtomistic.h"
+#include "../src/ActionPilot.h"
+#include "../src/PlumedMain.h"
 
 extern "C" {
-#include "../imd/vmdsock.h"
-#include "../imd/imd.h"
+#include "vmdsock.h"
+#include "imd.h"
 }
 
 
@@ -252,4 +251,3 @@ void IMD::apply(){
 
 }
 
-#endif

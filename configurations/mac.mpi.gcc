@@ -4,10 +4,10 @@ DOUBLEPRECISION=-fdefault-real-8
 
 
 LIBS=-ldl
-DYNAMIC_LIBS=-L/sw/lib -lmatheval -lmpi_cxx -lmpi_f77 -lstdc++ $(IMDLIB)
+DYNAMIC_LIBS=-L/sw/lib -lmatheval -lmpi_cxx -lmpi_f77 -lstdc++
 
 CPPFLAGS=-D__PLUMED_MPI -D__PLUMED_HAS_DLOPEN $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE) \
-         -D_REENTRANT -I/sw/include -I/sw/include/openmpi -D__PLUMED_HAS_MATHEVAL $(IMDDEF)
+         -D_REENTRANT -I/sw/include -I/sw/include/openmpi -D__PLUMED_HAS_MATHEVAL
 CXXFLAGS=-Wall -O -fPIC
 CFLAGS=-Wall -O -fPIC
 
