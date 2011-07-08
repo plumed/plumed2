@@ -31,6 +31,8 @@ public:
   double get()const;
   void setPeriodicity(bool);
   void setDomain(double,double);
+  bool isPeriodic()const;
+  void getDomain(double&,double&)const;
   const std::string& getName()const;
   const std::string getFullName()const;
   void enableDerivatives();

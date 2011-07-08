@@ -95,6 +95,10 @@ double Action::getTime()const{
   return plumed.getAtoms().getTimeStep()*getStep();
 }
 
+double Action::getTimeStep()const{
+  return plumed.getAtoms().getTimeStep();
+}
+
 
 
 void Action::exit(int c){

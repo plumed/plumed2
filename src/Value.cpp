@@ -13,6 +13,16 @@ Value::Value(ActionWithValue&action,const std::string& name):
   max(0.0)
 {}
 
+bool Value::isPeriodic()const{
+  assert(periodicity!=unset);
+  return periodicity==periodic;
+}
+
+void Value::getDomain(double&min,double&max)const{
+  min=this->min;
+  max=this->max;
+}
+
 void Value::setPeriodicity(bool p){
   if(p) periodicity=periodic;
   else periodicity=notperiodic;

@@ -75,6 +75,9 @@ protected:
 /// Return the present time
   double getTime()const;
 
+/// Return the timestep
+  double getTimeStep()const;
+
 /// Check if Action was properly read.
 /// This checks if Action::line is empty. It must be called after
 /// a final Action has been initialized
