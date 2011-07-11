@@ -8,20 +8,20 @@
 /// NeighborList 
 class NeighborList  
 {
-  std::vector<int> list0_,list1_,indexes_; 
-  std::vector< std::vector<int> > neighbors_;
+  std::vector<unsigned> list0_,list1_,indexes_; 
+  std::vector< std::vector<unsigned> > neighbors_;
   double distance_;
   PLMD::Pbc *pbc_;
-  int stride_;
+  unsigned stride_;
 public:
-  NeighborList(std::vector<int> list0, std::vector<int> list1,
+  NeighborList(std::vector<unsigned> list0, std::vector<unsigned> list1,
                double distance, unsigned stride, PLMD::Pbc *pbc);
-  std::vector<int> getFullList();
-  std::vector<int> update(std::vector<PLMD::Vector> positions);
-  std::vector<int> getNeighbors(int index);  
-  int getStride() const;
-  int getNumberOfAtoms() const;
-  int getNumberOfNeighbors(int index);
+  std::vector<unsigned> getFullList();
+  std::vector<unsigned> update(std::vector<PLMD::Vector> positions);
+  std::vector<unsigned> getNeighbors(unsigned index);  
+  unsigned getStride() const;
+  unsigned getNumberOfAtoms() const;
+  unsigned getNumberOfNeighbors(unsigned index);
   ~NeighborList(){};
 };
 
