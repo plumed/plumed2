@@ -13,6 +13,7 @@ class NeighborList
   double distance_;
   PLMD::Pbc *pbc_;
   unsigned stride_;
+  void updateIndexes(std::vector<unsigned> request);
 public:
   NeighborList(std::vector<unsigned> list0, std::vector<unsigned> list1,
                double distance, unsigned stride, PLMD::Pbc *pbc);
