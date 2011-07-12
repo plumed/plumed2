@@ -81,12 +81,16 @@ void Atoms::share(){
   mdatoms->getCharges(gatindex,charges);
   mdatoms->getPositions(gatindex,positions);
   if(dd && int(gatindex.size())<natoms){
+    bool async=dd.Get_size()<10;
+//    async=true;
     std::set<int> unique;
     for(unsigned i=0;i<requestset.size();i++){
       if(requestset[i]->isActive()) unique.insert(requestset[i]->unique.begin(),requestset[i]->unique.end());
     }
-    for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
-    for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();
+    if(async){
+      for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
+      for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();
+    }
     int count=0;
     for(std::set<int>::const_iterator p=unique.begin();p!=unique.end();++p){
       if(dd.g2l[*p]>=0){
@@ -99,11 +103,34 @@ void Atoms::share(){
         count++;
       }
     }
-    dd.mpi_request_positions.resize(dd.Get_size());
-    dd.mpi_request_index.resize(dd.Get_size());
-    for(int i=0;i<dd.Get_size();i++){
-      dd.mpi_request_index[i]=dd.Isend(&dd.indexToBeSent[0],count,i,666);
-      dd.mpi_request_positions[i]=dd.Isend(&dd.positionsToBeSent[0],5*count,i,667);
+    if(async){
+      dd.mpi_request_positions.resize(dd.Get_size());
+      dd.mpi_request_index.resize(dd.Get_size());
+      for(int i=0;i<dd.Get_size();i++){
+        dd.mpi_request_index[i]=dd.Isend(&dd.indexToBeSent[0],count,i,666);
+        dd.mpi_request_positions[i]=dd.Isend(&dd.positionsToBeSent[0],5*count,i,667);
+      }
+    }else{
+      const int n=(dd.Get_size());
+      vector<int> counts(n);
+      vector<int> displ(n);
+      vector<int> counts5(n);
+      vector<int> displ5(n);
+      dd.Allgather(&count,1,&counts[0],1);
+      displ[0]=0;
+      for(int i=1;i<n;++i) displ[i]=displ[i-1]+counts[i-1];
+      for(int i=1;i<n;++i) counts5[i]=counts[i]*5;
+      for(int i=1;i<n;++i) displ5[i]=displ[i]*5;
+      dd.Allgatherv(&dd.indexToBeSent[0],count,&dd.indexToBeReceived[0],&counts[0],&displ[0]);
+      dd.Allgatherv(&dd.positionsToBeSent[0],5*count,&dd.positionsToBeReceived[0],&counts5[0],&displ5[0]);
+      int tot=displ[n-1]+counts[n-1];
+      for(int i=0;i<tot;i++){
+        positions[dd.indexToBeReceived[i]][0]=dd.positionsToBeReceived[5*i+0];
+        positions[dd.indexToBeReceived[i]][1]=dd.positionsToBeReceived[5*i+1];
+        positions[dd.indexToBeReceived[i]][2]=dd.positionsToBeReceived[5*i+2];
+        masses[dd.indexToBeReceived[i]]      =dd.positionsToBeReceived[5*i+3];
+        charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[5*i+4];
+      }
     }
   }
 }
@@ -114,18 +141,22 @@ void Atoms::wait(){
 // receive toBeReceived
     int count=0;
     PlumedCommunicator::Status status;
-    for(int i=0;i<dd.Get_size();i++){
-      dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
-      int c=status.Get_count<int>();
-      dd.Recv(&dd.positionsToBeReceived[5*count],dd.positionsToBeReceived.size()-5*count,i,667);
-      count+=c;
-    }
-    for(int i=0;i<count;i++){
-      positions[dd.indexToBeReceived[i]][0]=dd.positionsToBeReceived[5*i+0];
-      positions[dd.indexToBeReceived[i]][1]=dd.positionsToBeReceived[5*i+1];
-      positions[dd.indexToBeReceived[i]][2]=dd.positionsToBeReceived[5*i+2];
-      masses[dd.indexToBeReceived[i]]      =dd.positionsToBeReceived[5*i+3];
-      charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[5*i+4];
+    bool async=dd.Get_size()<10;
+//    async=true;
+    if(async){
+      for(int i=0;i<dd.Get_size();i++){
+        dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
+        int c=status.Get_count<int>();
+        dd.Recv(&dd.positionsToBeReceived[5*count],dd.positionsToBeReceived.size()-5*count,i,667);
+        count+=c;
+      }
+      for(int i=0;i<count;i++){
+        positions[dd.indexToBeReceived[i]][0]=dd.positionsToBeReceived[5*i+0];
+        positions[dd.indexToBeReceived[i]][1]=dd.positionsToBeReceived[5*i+1];
+        positions[dd.indexToBeReceived[i]][2]=dd.positionsToBeReceived[5*i+2];
+        masses[dd.indexToBeReceived[i]]      =dd.positionsToBeReceived[5*i+3];
+        charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[5*i+4];
+      }
     }
     if(collectEnergy) dd.Sum(&energy,1);
     forceOnEnergy=0.0;

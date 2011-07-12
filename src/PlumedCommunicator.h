@@ -70,6 +70,8 @@ public:
   template <class T>
   void Allgatherv(const T*,int,T*,const int*,const int*);
   template <class T>
+  void Allgather(const T*,int,T*,int);
+  template <class T>
   Request Isend(T*,int,int,int);
   template <class T>
   void Recv(T*,int,int,int,Status&);
@@ -121,6 +123,26 @@ void PlumedCommunicator::Allgatherv(const T*sendbuf,int sendcount,T*recvbuf,cons
   assert(0);
 #endif
 }
+
+template<class T>
+void PlumedCommunicator::Allgather(const T*sendbuf,int sendcount,T*recvbuf,int recvcount){
+#if defined(__PLUMED_MPI)
+  if(initialized()){
+    void*s=const_cast<void*>((const void*)sendbuf);
+    void*r=const_cast<void*>((const void*)recvbuf);
+    if(s==NULL)s=MPI_IN_PLACE;
+    MPI_Allgather(s,sendcount,getMPIType<T>(),r,recvcount,getMPIType<T>(),communicator);
+  }
+#else
+  (void) sendbuf;
+  (void) sendcount;
+  (void) recvbuf;
+  (void) recvcounts;
+  (void) displs;
+  assert(0);
+#endif
+}
+
 
 template <class T>
 PlumedCommunicator::Request PlumedCommunicator::Isend(T*buf,int count,int source,int tag){
