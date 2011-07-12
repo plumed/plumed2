@@ -48,6 +48,8 @@ protected:
   int getNatoms()const{return indexes.size();};
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
+/// Get the absolute index of an atom
+  int getAbsoluteIndex(int i)const;
 
 public:
 
@@ -79,6 +81,10 @@ double ActionAtomistic::getCharges(int i)const{
   return charges[i];
 }
 
+inline
+int ActionAtomistic::getAbsoluteIndex(int i)const{
+  return indexes[i];
+}
 
 inline
 const std::vector<Vector> & ActionAtomistic::getPositions()const{
