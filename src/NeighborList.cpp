@@ -8,7 +8,7 @@ using namespace PLMD;
 using namespace std;
 
 NeighborList::NeighborList(vector<unsigned> list0, vector<unsigned> list1,
-                           double distance, unsigned stride, Pbc *pbc=NULL):  
+                           double distance=0.0, unsigned stride=0, Pbc *pbc=NULL):  
                            list0_(list0), list1_(list1),
                            distance_(distance), pbc_(pbc), stride_(stride)
 {
