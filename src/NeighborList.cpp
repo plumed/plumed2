@@ -12,15 +12,13 @@ NeighborList::NeighborList(vector<unsigned> list0, vector<unsigned> list1,
                            list0_(list0), list1_(list1),
                            distance_(distance), pbc_(pbc), stride_(stride)
 {
- if(stride_<2){
-  // I need to access to log here. still don't know how to do it
-  // log.printf("Stride should be greater or equal to 2")
- }
 // find maximum index atom
  unsigned imax0= *max_element(list0_.begin(),list0_.end());
  unsigned imax1= *max_element(list1_.begin(),list1_.end());
-// initialize indexes_
- indexes_.resize(max(imax0,imax1)+1);
+// initialize indexes
+ imax_=max(imax0,imax1)+1;
+ indexes_.resize(imax_);
+ newindexes_.resize(imax_);
 // initialize neighbor list with all the atoms
 // NB: the neighbor list contains the atomic index of the atoms
 // not the index in the array of positions
@@ -32,26 +30,29 @@ NeighborList::NeighborList(vector<unsigned> list0, vector<unsigned> list1,
  }
 }
 
-// indexes_[i] is the index of the array of positions
-// (the one requested from the MD code) of an atom with atomic index i. 
-// This method should be called every time the array of position is requested to change
-void NeighborList::updateIndexes(vector<unsigned> request)
+vector<unsigned> NeighborList::createIndexes(vector<unsigned> request)
 {
- indexes_.clear();
+ vector<unsigned> indexes;
+ indexes.resize(imax_);
  for(unsigned int i=0;i<request.size();++i){
-  indexes_[request[i]]=i;
+  indexes[request[i]]=i;
  }
+ return indexes;
 }
 
+// this method should be called at the end of the step
+// before the update of the neighbor list
 vector<unsigned> NeighborList::getFullList()
 {
  vector<unsigned> request=list0_;
  request.insert(request.end(),list1_.begin(),list1_.end());
- updateIndexes(request); 
+ indexes_=createIndexes(request);
  return request;
 }
 
-vector<unsigned> NeighborList::update(vector<Vector> positions)
+// this method should be called at the beginning of the step
+// when nl must be updated
+vector<unsigned> NeighborList::prepareUpdate(vector<Vector> positions)
 {
  vector<unsigned> request=list0_;
 // clean neighbors list
@@ -78,8 +79,15 @@ vector<unsigned> NeighborList::update(vector<Vector> positions)
   }
   request.insert(request.end(),neighbors_[i].begin(),neighbors_[i].end());
  }
- updateIndexes(request);
+ newindexes_=createIndexes(request);
  return request;
+}
+
+// this method should be called at the end of the step
+// when nl must be updated, before getFullList()
+void NeighborList::finishUpdate()
+{
+ indexes_=newindexes_;
 }
 
 unsigned NeighborList::getStride() const
