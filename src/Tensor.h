@@ -12,6 +12,8 @@ class Tensor{
 public:
 /// scale the tensor by a factor s
   friend Tensor operator*(double,const Tensor&);
+/// return t1+t2
+  friend Tensor operator+(const Tensor&,const Tensor&);
 /// initialize the tensor to zero
   Tensor();
 /// initialize a tensor as an external product of two Vector
@@ -138,6 +140,14 @@ Vector matmul(const Vector&a,const Tensor&b){
   for(int i=0;i<3;i++) for(int j=0;j<3;j++) t(i)+=a(i)*b(i,j);
   return t;
 }
+
+inline
+Tensor operator+(const Tensor&t1,const Tensor&t2){
+  Tensor t(t1);
+  for(int i=0;i<3;i++) for(int j=0;j<3;j++) t(i,j)+=t2(i,j);
+  return t;
+}
+
 
 
 
