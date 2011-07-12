@@ -24,6 +24,7 @@ class ColvarCoordination : public Colvar {
   int mm;
   double r_0;
   double d_0;
+  vector<Vector> deriv;
 
 public:
   ColvarCoordination(const ActionOptions&);
@@ -86,6 +87,7 @@ pbc(true)
   addValueWithDerivatives("");
 
   requestAtoms(lista);
+  deriv.resize(lista.size());
 }
 
 
@@ -94,6 +96,9 @@ void ColvarCoordination::calculate(){
 
  double ncoord=0.;
  double threshold=pow(0.00001,1./(nn-mm));
+
+ Tensor virial;
+ for(int i=0;i<deriv.size();i++) deriv[i].clear();
 
  for(int i=0;i<gasize;i++) {                                           // sum over CoordNumber(i)
     for(int j=gasize;j<(gasize+gbsize);j++) {
@@ -123,13 +128,14 @@ void ColvarCoordination::calculate(){
          ncoord += func;
          dfunc = ((-nn*rNdist*iden)+(func*(iden*mm)*rMdist))/(distance.modulo()*r_0);
       }
-      setAtomsDerivatives(i,dfunc*distance);
-      setAtomsDerivatives(j,dfunc*distance);
+      deriv[i]=deriv[i]+(-dfunc*distance);
+      deriv[j]=deriv[j]+(dfunc*distance);
+      virial=virial+(-dfunc)*Tensor(distance,distance);
     }
   }
+  for(int i=0;i<deriv.size();i++) setAtomsDerivatives(i,deriv[i]);
   setValue           (ncoord);
-
-  //setBoxDerivatives  (-invvalue*Tensor(distance,distance));
+  setBoxDerivatives  (virial);
 
 }
 
