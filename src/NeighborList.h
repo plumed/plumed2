@@ -20,7 +20,8 @@ public:
   std::vector<unsigned> getFullList();
   std::vector<unsigned> getUpdatedList(std::vector<PLMD::Vector> positions);
   void update();
-  std::vector<unsigned> getNeighbors(unsigned index);  
+  std::vector<unsigned> getNeighbors(unsigned index);
+  std::vector<unsigned> getNeighborsAtomicIndex(unsigned iatom);
   unsigned getStride() const;
   unsigned getNumberOfAtoms() const;
   unsigned getNumberOfNeighbors(unsigned index);

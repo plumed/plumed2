@@ -107,6 +107,17 @@ vector<unsigned> NeighborList::getNeighbors(unsigned index)
  return neigh; 
 }
 
+vector<unsigned> NeighborList::getNeighborsAtomicIndex(unsigned iatom)
+{
+ vector<unsigned> neigh;
+ unsigned index=indexes_[iatom];
+ for(unsigned int i=0;i<getNumberOfNeighbors(index);++i){
+  unsigned jatom=neighbors_[index][i];
+  neigh.push_back(jatom);
+ }
+ return neigh; 
+}
+
 unsigned NeighborList::getNumberOfNeighbors(unsigned index)
 {
  return neighbors_[index].size();
