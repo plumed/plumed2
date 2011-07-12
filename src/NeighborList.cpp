@@ -118,6 +118,30 @@ vector<unsigned> NeighborList::getNeighborsAtomicIndex(unsigned iatom)
  return neigh; 
 }
 
+vector<pair <unsigned, unsigned> > NeighborList::getClosePairs()
+{
+ vector<pair <unsigned, unsigned> > pairs;
+ for(unsigned int i=0;i<getNumberOfAtoms();++i){
+  for(unsigned int j=0;j<getNumberOfNeighbors(i);++j){
+   unsigned jatom=neighbors_[i][j];
+   pairs.push_back(pair <unsigned,unsigned> (i,indexes_[jatom]));
+  }
+ }
+ return pairs;
+}
+
+vector<pair <unsigned, unsigned> > NeighborList::getClosePairsAtomicIndex()
+{
+ vector<pair <unsigned, unsigned> > pairs;
+ for(unsigned int i=0;i<getNumberOfAtoms();++i){
+  unsigned iatom=list0_[i];
+  for(unsigned int j=0;j<getNumberOfNeighbors(i);++j){
+   pairs.push_back(pair <unsigned,unsigned> (iatom,neighbors_[i][j]));
+  }
+ }
+ return pairs;
+}
+
 unsigned NeighborList::getNumberOfNeighbors(unsigned index)
 {
  return neighbors_[index].size();
@@ -125,5 +149,5 @@ unsigned NeighborList::getNumberOfNeighbors(unsigned index)
 
 unsigned NeighborList::getNumberOfAtoms() const
 {
- return neighbors_.size();
+ return list0_.size();
 }

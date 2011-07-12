@@ -22,6 +22,8 @@ public:
   void update();
   std::vector<unsigned> getNeighbors(unsigned index);
   std::vector<unsigned> getNeighborsAtomicIndex(unsigned iatom);
+  std::vector<std::pair <unsigned, unsigned> > getClosePairs();
+  std::vector<std::pair <unsigned, unsigned> > getClosePairsAtomicIndex();
   unsigned getStride() const;
   unsigned getNumberOfAtoms() const;
   unsigned getNumberOfNeighbors(unsigned index);
