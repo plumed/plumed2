@@ -8,25 +8,30 @@
 /// NeighborList 
 class NeighborList  
 {
-  std::vector<unsigned> list0_,list1_,indexes_,newindexes_; 
-  std::vector< std::vector<unsigned> > neighbors_;
-  double distance_;
+  bool do_pair_,twolists_;
   PLMD::Pbc *pbc_;
-  unsigned stride_, imax_;
+  std::vector<unsigned> fullatomlist_,requestlist_;
+  std::vector< std::pair<unsigned,unsigned> > neighbors_;
+  double distance_;
+  unsigned stride_,nlist0_,nlist1_,nallpairs_;
+  std::pair<unsigned,unsigned> getIndexPair(unsigned ipair);
   std::vector<unsigned> createIndexes(std::vector<unsigned> request);
+  template<typename T> 
+   void removeDuplicates(std::vector<T>& vec);
+  std::vector<unsigned> getRequestList();
 public:
   NeighborList(std::vector<unsigned> list0, std::vector<unsigned> list1,
-               double distance, unsigned stride, PLMD::Pbc *pbc);
-  std::vector<unsigned> getFullList();
-  std::vector<unsigned> getUpdatedList(std::vector<PLMD::Vector> positions);
+               bool do_pair, PLMD::Pbc *pbc, double distance, unsigned stride);
+  NeighborList(std::vector<unsigned> list0, PLMD::Pbc *pbc,
+               double distance, unsigned stride);
+                             
+  std::vector<unsigned> getFullAtomList() const;
+  std::vector<unsigned> getReducedAtomList(std::vector<PLMD::Vector> positions);
   void update();
-  std::vector<unsigned> getNeighbors(unsigned index);
-  std::vector<unsigned> getNeighborsAtomicIndex(unsigned iatom);
-  std::vector<std::pair <unsigned, unsigned> > getClosePairs();
-  std::vector<std::pair <unsigned, unsigned> > getClosePairsAtomicIndex();
   unsigned getStride() const;
-  unsigned getNumberOfAtoms() const;
-  unsigned getNumberOfNeighbors(unsigned index);
+  unsigned size() const;
+  const std::pair<unsigned,unsigned> & operator[] (unsigned i)const;
+  std::vector<unsigned> getNeighbors(unsigned i);
   ~NeighborList(){};
 };
 
