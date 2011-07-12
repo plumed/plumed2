@@ -20,9 +20,11 @@ NeighborList::NeighborList(vector<unsigned> list0, vector<unsigned> list1, bool 
  if(!do_pair){
   nallpairs_=nlist0_*nlist1_;
  }else{
-  // if(nlist0_!=nlist1_) error
+// if(nlist0_!=nlist1_) error
   nallpairs_=nlist0_;
  }
+// initialize neighborlist
+ initialize();
 }
 
 NeighborList::NeighborList(vector<unsigned> list0, Pbc *pbc=NULL,
@@ -34,6 +36,16 @@ NeighborList::NeighborList(vector<unsigned> list0, Pbc *pbc=NULL,
  nlist0_=list0.size();
  twolists_=false;
  nallpairs_=nlist0_*(nlist0_-1)/2;
+ // initialize neighborlist
+ initialize();
+}
+
+void NeighborList::initialize()
+{
+ neighbors_.clear();
+ for(unsigned int i=0;i<nallpairs_;++i){
+   neighbors_.push_back(getIndexPair(i));
+ }
 }
 
 // this method should be called at the end of the step
@@ -43,8 +55,8 @@ vector<unsigned> NeighborList::getFullAtomList() const
  return fullatomlist_;
 }
 
-// this method return the pair of indexes in the array of positions
-// of a given pair "ipair" from the complete list
+// this method returns the pair of indexes of the positions array
+// of a given pair (ipair) from the list of all possible pairs
 pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
 {
  pair<unsigned,unsigned> index;
@@ -53,7 +65,7 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
  }else if (twolists_ && !do_pair_){
   index=pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
  }else if (!twolists_){
-// still to fix the map between mono and multi index
+// still to fix the map between mono and multi index here
   index=pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
  }
  return index;

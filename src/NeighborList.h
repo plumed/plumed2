@@ -14,6 +14,7 @@ class NeighborList
   std::vector< std::pair<unsigned,unsigned> > neighbors_;
   double distance_;
   unsigned stride_,nlist0_,nlist1_,nallpairs_;
+  void initialize();
   std::pair<unsigned,unsigned> getIndexPair(unsigned ipair);
   std::vector<unsigned> createIndexes(std::vector<unsigned> request);
   template<typename T> 
@@ -36,4 +37,3 @@ public:
 };
 
 #endif
-
