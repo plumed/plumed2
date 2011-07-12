@@ -45,7 +45,7 @@ ColvarVolume::ColvarVolume(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 components(false)
 {
-  std::vector<int> atoms;
+  std::vector<AtomNumber> atoms;
   parseFlag("COMPONENTS",components);
   checkRead();
 

@@ -1,4 +1,5 @@
 #include "Tools.h"
+#include "AtomNumber.h"
 #include <cstring>
 #include <cassert>
 #include <sstream>
@@ -17,6 +18,13 @@ bool Tools::convert(const string & str,T & t){ \
 }
 
 IMPLEMENT(int)
+
+bool Tools::convert(const string & str,AtomNumber &a){
+  int i;
+  bool r=convert(str,i);
+  a.setSerial(i);
+  return r;
+}
 
 bool Tools::convert(const string & str,double & t){
         const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;

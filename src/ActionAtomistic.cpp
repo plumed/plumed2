@@ -29,9 +29,10 @@ void ActionAtomistic::deactivate(){
   Action::deactivate();
 }
 
-void ActionAtomistic::requestAtoms(const vector<int> & a){
+void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   int nat=a.size();
-  indexes=a;
+  indexes.resize(nat);
+  for(int i=0;i<nat;i++) indexes[i]=a[i].index();
   positions.resize(nat);
   forces.resize(nat);
   masses.resize(nat);

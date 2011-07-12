@@ -14,7 +14,7 @@ class ActionAtomistic :
   {
 
   Atoms::Request*       atomRequest;     // handler for request of atoms
-  std::vector<int> indexes;         // the set of needed atoms
+  std::vector<int>      indexes;         // the set of needed atoms
   std::vector<Vector>   positions;       // positions of the needed atoms
   Tensor                box;
   Tensor                virial;
@@ -29,7 +29,7 @@ protected:
 /// during the simulation, atoms will be available at the next step
 /// MAYBE WE HAVE TO FIND SOMETHING MORE CLEAR FOR DYNAMIC
 /// LISTS OF ATOMS
-  void requestAtoms(const std::vector<int> & a);
+  void requestAtoms(const std::vector<AtomNumber> & a);
 /// Get position of i-th atom
   const Vector & getPositions(int)const;
 /// Get position of i-th atom
@@ -49,7 +49,7 @@ protected:
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
 /// Get the absolute index of an atom
-  int getAbsoluteIndex(int i)const;
+  AtomNumber getAbsoluteIndex(int i)const;
 
 public:
 
@@ -82,8 +82,10 @@ double ActionAtomistic::getCharges(int i)const{
 }
 
 inline
-int ActionAtomistic::getAbsoluteIndex(int i)const{
-  return indexes[i];
+AtomNumber ActionAtomistic::getAbsoluteIndex(int i)const{
+  AtomNumber a;
+  a.setIndex(indexes[i]);
+  return a;
 }
 
 inline

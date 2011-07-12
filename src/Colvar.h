@@ -16,7 +16,7 @@ class Colvar :
   {
 protected:
   bool isEnergy;
-  void requestAtoms(std::vector<int> & a);
+  void requestAtoms(std::vector<AtomNumber> & a);
 // These are so as to map to 3d vectors for atoms:
   void setAtomsDerivatives(int,const Vector&);
   void setAtomsDerivatives(Value*,int,const Vector&);

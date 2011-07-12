@@ -51,7 +51,7 @@ PLUMED_COLVAR_INIT(ao),
 components(false),
 pbc(true)
 {
-  vector<int> atoms;
+  vector<AtomNumber> atoms;
   parseVector("ATOMS",atoms);
   assert(atoms.size()==2);
   parseFlag("COMPONENTS",components);
@@ -61,7 +61,7 @@ pbc(true)
   parseFlag("PBC",pbc);
   checkRead();
 
-  log.printf("  between atoms %d %d\n",atoms[0],atoms[1]);
+  log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 

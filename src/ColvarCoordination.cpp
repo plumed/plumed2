@@ -40,7 +40,7 @@ pbc(true)
 {
   vector<string> ga;
   vector<string> gb;
-  vector<int> lista;
+  vector<AtomNumber> lista;
   parseVector("GROUPA",ga); // this is just parsing "commas" ("1-4","14-16")
   Tools::interpretRanges(ga); // this is expanding the array ("1","2","3","4","14","15","16")
   parseVector("GROUPB",gb); // this is just parsing "commas" ("1-4","14-16")
@@ -77,9 +77,9 @@ pbc(true)
 
   log.printf("  between two groups of %d and %d atoms\n",gasize,gbsize);
   log.printf("  first group:\n");
-  for(int i=0;i<gasize;i++) log.printf("  %d", lista[i]);
+  for(int i=0;i<gasize;i++) log.printf("  %d", lista[i].serial());
   log.printf("  \nsecond group:\n");
-  for(int i=gasize;i<(gasize+gbsize);i++) log.printf("  %d", lista[i]);
+  for(int i=gasize;i<(gasize+gbsize);i++) log.printf("  %d", lista[i].serial());
   log.printf("  \n");
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");

@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cmath>
 #include <limits>
+#include "AtomNumber.h"
 
 namespace PLMD{
 
@@ -28,6 +29,8 @@ public:
   static bool convert(const std::string & str,double & t);
 /// Convert a string to a int, reading it
   static bool convert(const std::string & str,int & t);
+/// Convert a string to a atom number, reading it
+  static bool convert(const std::string & str,AtomNumber & t);
 /// Convert a string to a string (i.e. copy)
   static bool convert(const std::string & str,std::string & t);
 /// Convert an int to a string

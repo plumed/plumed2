@@ -16,7 +16,7 @@ isEnergy(false)
 }
 
 
-void Colvar::requestAtoms(vector<int> & a){
+void Colvar::requestAtoms(vector<AtomNumber> & a){
   ActionAtomistic::requestAtoms(a);
   setNumberOfParameters(3*a.size()+9);
 }

@@ -51,7 +51,7 @@ PLUMED_COLVAR_INIT(ao),
 components(false)
 {
   assert(!checkNumericalDerivatives());
-  std::vector<int> atoms;
+  std::vector<AtomNumber> atoms;
   requestAtoms(atoms);
   isEnergy=true;
   addValueWithDerivatives("");
