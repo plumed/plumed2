@@ -30,6 +30,8 @@ NeighborList::NeighborList(vector<unsigned> list0, vector<unsigned> list1,
  }
 }
 
+// indexes[i] is the index in the positions array (the one requested from
+// the MD code) of the atom with "atomic" index i 
 vector<unsigned> NeighborList::createIndexes(vector<unsigned> request)
 {
  vector<unsigned> indexes;
@@ -51,8 +53,8 @@ vector<unsigned> NeighborList::getFullList()
 }
 
 // this method should be called at the beginning of the step
-// when nl must be updated
-vector<unsigned> NeighborList::prepareUpdate(vector<Vector> positions)
+// when the neighbor list should be updated
+vector<unsigned> NeighborList::getUpdatedList(vector<Vector> positions)
 {
  vector<unsigned> request=list0_;
 // clean neighbors list
@@ -61,7 +63,7 @@ vector<unsigned> NeighborList::prepareUpdate(vector<Vector> positions)
 // check if positions array has the correct length
  if(positions.size()!=list0_.size()+list1_.size()){
   // i need to access to log here. still don't know how to do it
-  //log.printf("ERROR you need to request all the atoms before updating NL\n"); 
+  //log.printf("ERROR you need to request all the atoms one step before updating the NL\n"); 
  }
 // update neighbors
  for(unsigned int i=0;i<list0_.size();++i){
@@ -85,7 +87,7 @@ vector<unsigned> NeighborList::prepareUpdate(vector<Vector> positions)
 
 // this method should be called at the end of the step
 // when nl must be updated, before getFullList()
-void NeighborList::finishUpdate()
+void NeighborList::update()
 {
  indexes_=newindexes_;
 }

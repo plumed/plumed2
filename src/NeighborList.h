@@ -18,8 +18,8 @@ public:
   NeighborList(std::vector<unsigned> list0, std::vector<unsigned> list1,
                double distance, unsigned stride, PLMD::Pbc *pbc);
   std::vector<unsigned> getFullList();
-  std::vector<unsigned> prepareUpdate(std::vector<PLMD::Vector> positions);
-  void finishUpdate();
+  std::vector<unsigned> getUpdatedList(std::vector<PLMD::Vector> positions);
+  void update();
   std::vector<unsigned> getNeighbors(unsigned index);  
   unsigned getStride() const;
   unsigned getNumberOfAtoms() const;
