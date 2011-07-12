@@ -19,6 +19,7 @@ NeighborList::NeighborList(vector<unsigned> list0, vector<unsigned> list1,
  imax_=max(imax0,imax1)+1;
  indexes_.resize(imax_);
  newindexes_.resize(imax_);
+ getFullList();
 // initialize neighbor list with all the atoms
 // NB: the neighbor list contains the atomic index of the atoms
 // not the index in the array of positions
