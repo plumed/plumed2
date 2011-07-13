@@ -97,5 +97,16 @@ void ActionAtomistic::calculateNumericalDerivatives(){
   }
 }
 
+void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber> &t){
+  vector<string> strings;
+  parseVector(key,strings);
+  Tools::interpretRanges(strings);
+  t.resize(strings.size());
+  for(unsigned i=0;i<t.size();++i){
+   Tools::convert(strings[i],t[i]); // this is converting strings to AtomNumbers
+  }
+}
+
+
 
 

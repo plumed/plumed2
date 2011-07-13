@@ -50,6 +50,8 @@ protected:
   Vector pbcDistance(const Vector&,const Vector&)const;
 /// Get the absolute index of an atom
   AtomNumber getAbsoluteIndex(int i)const;
+/// Parse a list of atoms
+  void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 
 public:
 

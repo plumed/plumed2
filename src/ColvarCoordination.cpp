@@ -38,20 +38,9 @@ ColvarCoordination::ColvarCoordination(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true)
 {
-  vector<string> ga, gb;
-  vector<AtomNumber> ga_lista, gb_lista; 
-  parseVector("GROUPA",ga); // this is just parsing "commas" ("1-4","14-16")
-  Tools::interpretRanges(ga); // this is expanding the array ("1","2","3","4","14","15","16")
-  parseVector("GROUPB",gb); // this is just parsing "commas" ("1-4","14-16")
-  Tools::interpretRanges(gb); // this is expanding the array ("1","2","3","4","14","15","16")
-  ga_lista.resize(ga.size());
-  for(int i=0;i<ga.size();++i){
-   Tools::convert(ga[i],ga_lista[i]); // this is converting strings to AtomNumbers
-  }
-  gb_lista.resize(gb.size());
-  for(int i=0;i<gb.size();++i){
-   Tools::convert(gb[i],gb_lista[i]); // this is converting strings to AtomNumbers
-  }
+  vector<AtomNumber> ga_lista,gb_lista;
+  parseAtomList("GROUPA",ga_lista);
+  parseAtomList("GROUPB",gb_lista);
   
   vector<int> tnn,tmm;
   vector<double> tr_0,td_0;

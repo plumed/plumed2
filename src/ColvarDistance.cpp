@@ -52,7 +52,7 @@ components(false),
 pbc(true)
 {
   vector<AtomNumber> atoms;
-  parseVector("ATOMS",atoms);
+  parseAtomList("ATOMS",atoms);
   assert(atoms.size()==2);
   parseFlag("COMPONENTS",components);
   bool nopbc=!pbc;
