@@ -46,11 +46,11 @@ pbc(true)
   Tools::interpretRanges(gb); // this is expanding the array ("1","2","3","4","14","15","16")
   ga_lista.resize(ga.size());
   for(int i=0;i<ga.size();++i){
-   Tools::convert(ga[i],ga_lista[i]); // this is converting strings to int
+   Tools::convert(ga[i],ga_lista[i]); // this is converting strings to AtomNumbers
   }
   gb_lista.resize(gb.size());
   for(int i=0;i<gb.size();++i){
-   Tools::convert(gb[i],gb_lista[i]); // this is converting strings to int
+   Tools::convert(gb[i],gb_lista[i]); // this is converting strings to AtomNumbers
   }
   
   vector<int> tnn,tmm;
@@ -130,46 +130,57 @@ void ColvarCoordination::calculate()
 
 /*
  Tensor virial;
- for(int i=0;i<deriv.size();i++) deriv[i].clear();
+ deriv.resize(getPositions().size());
+ for(unsigned int i=0;i<deriv.size();++i) deriv[i].clear();
 
- 
- for(int i=0;i<gasize;i++) {                                           // sum over CoordNumber(i)
-    for(int j=gasize;j<(gasize+gbsize);j++) {
-      Vector distance;
-      if(pbc){
-        distance=pbcDistance(getPositions(i),getPositions(j));
-      } else {
-        distance=delta(getPositions(i),getPositions(j));
-      }
+ // i need the timestep here
+ if(nl->getStride()>0 && step%nl->getStride()==0) {nl->update(getPositions())};
 
-      const double rdist = (distance.modulo()-d_0)/r_0;
-      double dfunc=0.;
-      /// analitic limit of the switching function 
-      if(rdist<=0.){
-         ncoord+=1.;
-         dfunc=0.;
-      }else if(rdist>0.999999 && rdist<1.000001){
-         ncoord+=nn/mm;
-         dfunc=0.5*nn*(nn-mm)/mm;
-      }else if(rdist>threshold){
-         dfunc=0.;
-      }else{
-         double rNdist = pow(rdist, nn-1);
-         double rMdist = pow(rdist, mm-1);
-         double num = 1.-rNdist*rdist;
-         double iden = 1./(1.-rMdist*rdist);
-         double func = num*iden;
-         ncoord += func;
-         dfunc = ((-nn*rNdist*iden)+(func*(iden*mm)*rMdist))/(distance.modulo()*r_0);
-      }
-      deriv[i]=deriv[i]+(-dfunc*distance);
-      deriv[j]=deriv[j]+(dfunc*distance);
-      virial=virial+(-dfunc)*Tensor(distance,distance);
-    }
+ for(unsigned int i=0;i<nl->size();++i) {                   // sum over close pairs
+  Vector distance;
+  if(pbc){
+   distance=pbcDistance(getPositions(nl[i].first),getPositions(nl[i].second));
+  } else {
+   distance=delta(getPositions(nl[i].first),getPositions(nl[i].second));
   }
-  for(int i=0;i<deriv.size();i++) setAtomsDerivatives(i,deriv[i]);
-  setValue           (ncoord);
-  setBoxDerivatives  (virial);
+
+// we should define switching functions and derivatives in Tools 
+
+  const double rdist = (distance.modulo()-d_0)/r_0;
+  double dfunc=0.;
+  /// analitic limit of the switching function 
+  if(rdist<=0.){
+     ncoord+=1.;
+     dfunc=0.;
+  }else if(rdist>0.999999 && rdist<1.000001){
+     ncoord+=nn/mm;
+     dfunc=0.5*nn*(nn-mm)/mm;
+  }else if(rdist>threshold){
+     dfunc=0.;
+  }else{
+     double rNdist = pow(rdist, nn-1);
+     double rMdist = pow(rdist, mm-1);
+     double num = 1.-rNdist*rdist;
+     double iden = 1./(1.-rMdist*rdist);
+     double func = num*iden;
+     ncoord += func;
+     dfunc = ((-nn*rNdist*iden)+(func*(iden*mm)*rMdist))/(distance.modulo()*r_0);
+  }
+  deriv[nl[i].first]+= -dfunc*distance ;
+  deriv[nl[i].second]+= dfunc*distance ;
+  virial=virial+(-dfunc)*Tensor(distance,distance);
+ }
+
+ for(int i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);
+ setValue           (ncoord);
+ setBoxDerivatives  (virial);
+
+ if(nl->getStride()>0 && step%nl->getStride()==0){
+  requestAtoms(nl->getReducedAtomList());
+ }
+ if(nl->getStride()>0 && step+1%nl->getStride()==0){
+  requestAtoms(nl->getFullAtomList());
+ }
 
 */
 }

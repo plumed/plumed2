@@ -6,6 +6,8 @@
 #include "Pbc.h"
 #include "AtomNumber.h"
 
+namespace PLMD{
+
 /// NeighborList 
 class NeighborList  
 {
@@ -30,13 +32,15 @@ public:
                const unsigned& stride=0);
                              
   std::vector<PLMD::AtomNumber>& getFullAtomList();
-  std::vector<PLMD::AtomNumber>& getReducedAtomList(std::vector<PLMD::Vector> positions);
-  void update();
+  std::vector<PLMD::AtomNumber>& getReducedAtomList();
+  void update(const std::vector<PLMD::Vector>& positions);
   unsigned getStride() const;
   unsigned size() const;
   const std::pair<unsigned,unsigned> & operator[] (unsigned i)const;
   std::vector<unsigned> getNeighbors(unsigned i);
   ~NeighborList(){};
 };
+
+}
 
 #endif

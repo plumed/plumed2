@@ -8,6 +8,8 @@
 using namespace PLMD;
 using namespace std;
 
+namespace PLMD{
+
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
                            const bool& do_pair, const bool& do_pbc, const Pbc& pbc,
                            const double& distance, const unsigned& stride):
@@ -53,7 +55,7 @@ void NeighborList::initialize()
  }
 }
 
-// this methods return the list of all atoms
+// this methods returns the list of all atoms
 // it should be called at the end of the step
 // before the update of the neighbor list or in the prep stage
 vector<AtomNumber>& NeighborList::getFullAtomList()
@@ -77,10 +79,9 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
  return index;
 }
 
-// this methods return the list of the atoms belonging to the
-// current list of close pairs. It should be called at the beginning 
-// of the step in which the neighbor list is updated
-vector<AtomNumber>& NeighborList::getReducedAtomList(vector<Vector> positions)
+// this method updates the neighbor list and prepare the new
+// list of atoms to request to the MD code
+void NeighborList::update(const vector<Vector>& positions)
 {
 // clean neighbors list
  neighbors_.clear();
@@ -106,7 +107,6 @@ vector<AtomNumber>& NeighborList::getReducedAtomList(vector<Vector> positions)
    } 
  }
  setRequestList();
- return requestlist_;
 }
 
 // template to remove duplicates from a list of types <T>
@@ -131,8 +131,9 @@ void NeighborList::setRequestList()
 
 // this method should be called at the end of the step when nl is updated
 // it updates the indexes in the neighbor list to match the new
-// order in the positions array at the next iteration
-void NeighborList::update()
+// ordering in the future positions array at the next iteration
+// and returns the new list of atoms to request to the MD code
+vector<AtomNumber>& NeighborList::getReducedAtomList()
 {
  std::vector< pair<unsigned,unsigned> > newneighbors;
  for(unsigned int i=0;i<size();++i){
@@ -147,6 +148,7 @@ void NeighborList::update()
  }
  neighbors_.clear();
  neighbors_=newneighbors;
+ return requestlist_;
 }
 
 // get the update stride of the Neighbor List
@@ -179,4 +181,6 @@ vector<unsigned> NeighborList::getNeighbors(unsigned index)
   if(neighbors_[i].second==index) neighbors.push_back(neighbors_[i].first);
  }
  return neighbors;
+}
+
 }
