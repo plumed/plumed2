@@ -107,6 +107,13 @@ public:
 
   PlumedCommunicator& comm;
 
+/// Prepare an Action for calculation
+/// This can be used by Action if they need some special preparation
+/// before calculation. Typical case is for collective variables
+/// which would like to change their list of requested atoms.
+/// By default (if not overridden) does nothing.
+  virtual void prepare();
+
 /// Calculate an Action.
 /// This method is called one or more times per step.
 /// The set of all Actions is calculated in forward order.
@@ -114,7 +121,7 @@ public:
 
 /// Apply an Action.
 /// This method is called one time per step.
-/// The set of all Actions is applied in backword order.
+/// The set of all Actions is applied in backward order.
   virtual void apply()=0;
 
 /// Tell to the Action to flush open files

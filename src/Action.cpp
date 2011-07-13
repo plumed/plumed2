@@ -109,6 +109,11 @@ void Action::calculateNumericalDerivatives(){
   assert(0);
 }
 
+void Action::prepare(){
+  return;
+}
+
+
 
 
 

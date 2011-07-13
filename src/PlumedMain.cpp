@@ -373,8 +373,6 @@ void PlumedMain::prepareDependencies(){
 
   atoms.setCollectEnergy(false);
 
-// activate all the actions which are on step
-// activation is recursive and enables also the dependencies
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++){
     (*p)->deactivate();
     if(Colvar *c=dynamic_cast<Colvar*>(*p)) {
@@ -382,13 +380,19 @@ void PlumedMain::prepareDependencies(){
     }
   }
 
+// activate all the actions which are on step
+// activation is recursive and enables also the dependencies
   for(unsigned i=0;i<pilots.size();++i){
     if(pilots[i]->onStep()){
       pilots[i]->activate();
       active=true;
      }
   };
-}
+
+// allow actions to update their request list before atoms are shared
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++)
+    if((*p)->isActive()) (*p)->prepare();
+  }
 
 void PlumedMain::shareData(){
   if(active)atoms.share();
