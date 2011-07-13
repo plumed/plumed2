@@ -9,8 +9,8 @@
 /// NeighborList 
 class NeighborList  
 {
-  bool do_pair_,twolists_;
-  PLMD::Pbc *pbc_;
+  bool do_pair_,do_pbc_,twolists_;
+  PLMD::Pbc pbc_;
   std::vector<PLMD::AtomNumber> fullatomlist_,requestlist_;
   std::vector< std::pair<unsigned,unsigned> > neighbors_;
   double distance_;
@@ -21,10 +21,13 @@ class NeighborList
    void removeDuplicates(std::vector<T>& vec);
   std::vector<unsigned> getRequestList();
 public:
-  NeighborList(std::vector<unsigned> list0, std::vector<unsigned> list1,
-               bool do_pair, PLMD::Pbc *pbc, double distance, unsigned stride);
-  NeighborList(std::vector<unsigned> list0, PLMD::Pbc *pbc,
-               double distance, unsigned stride);
+  NeighborList(const std::vector<PLMD::AtomNumber>& list0,
+               const std::vector<PLMD::AtomNumber>& list1,
+               const bool& do_pair, const bool& do_pbc, const PLMD::Pbc& pbc, 
+               const double& distance=1.0e+30, const unsigned& stride=0);
+  NeighborList(const std::vector<PLMD::AtomNumber>& list0, const bool& do_pbc,
+               const PLMD::Pbc& pbc, const double& distance=1.0e+30,
+               const unsigned& stride=0);
                              
   std::vector<PLMD::AtomNumber> & getFullAtomList() const;
   std::vector<PLMD::AtomNumber> & getReducedAtomList(std::vector<PLMD::Vector> positions);

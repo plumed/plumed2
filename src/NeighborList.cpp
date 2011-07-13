@@ -8,9 +8,11 @@
 using namespace PLMD;
 using namespace std;
 
-NeighborList::NeighborList(vector<AtomNumber> list0, vector<AtomNumber> list1, bool do_pair,
-                           Pbc *pbc=NULL, double distance=1.0e+20, unsigned stride=0):  
-                           do_pair_(do_pair), pbc_(pbc), distance_(distance), stride_(stride)
+NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
+                           const bool& do_pair, const bool& do_pbc, const Pbc& pbc,
+                           const double& distance=1.0e+30, const unsigned& stride=0):
+                           do_pair_(do_pair), do_pbc_(do_pbc), pbc_(pbc),
+                           distance_(distance), stride_(stride)
 {
 // store full list of atoms needed
  fullatomlist_=list0;
@@ -27,9 +29,12 @@ NeighborList::NeighborList(vector<AtomNumber> list0, vector<AtomNumber> list1, b
  initialize();
 }
 
-NeighborList::NeighborList(vector<AtomNumber> list0, Pbc *pbc=NULL,
-                           double distance=1.0e+20, unsigned stride=0):  
-                           pbc_(pbc), distance_(distance), stride_(stride)
+
+NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
+                           const Pbc& pbc, const double& distance=1.0e+30,
+                           const unsigned& stride=0):
+                           do_pbc_(do_pbc), pbc_(pbc),
+                           distance_(distance), stride_(stride)
 {
 // store full list of atoms needed
  fullatomlist_=list0;
@@ -90,7 +95,7 @@ vector<AtomNumber> & NeighborList::getReducedAtomList(vector<Vector> positions)
    unsigned index0=index.first;
    unsigned index1=index.second;
    Vector distance;
-   if(pbc_!=NULL){
+   if(do_pbc_){
     distance=pbc_->distance(positions[index0],positions[index1]);
    } else {
     distance=delta(positions[index0],positions[index1]);
