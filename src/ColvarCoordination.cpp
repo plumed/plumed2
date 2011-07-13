@@ -64,12 +64,11 @@ pbc(true)
   parseFlag("PBC",pbc);
 
 // pair stuff
-  bool dopair;
+  bool dopair=false;
   parseFlag("PAIR",dopair);
 
 // neighbor list stuff
-  bool doneigh;
-  const Pbc & pbc_c=getPbc();
+  bool doneigh=false;
   vector<double> nl_cut;
   vector<int> nl_st;
   parseFlag("NLIST",doneigh);
@@ -79,23 +78,24 @@ pbc(true)
    parseVector("NL_STRIDE",nl_st);
    assert(nl_st.size()==1);
   }
+
   
   checkRead();
 
   addValueWithDerivatives("");
 
-  if(doneigh)  *nl= NeighborList(ga_lista,gb_lista,dopair,pbc,pbc_c,nl_cut[0],nl_st[0]);
-  else         *nl= NeighborList(ga_lista,gb_lista,dopair,pbc,pbc_c);
+  if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut[0],nl_st[0]);
+  else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
   
   requestAtoms(nl->getFullAtomList());
   deriv.resize(nl->getFullAtomList().size());
-
+ 
   log.printf("  between two groups of %d and %d atoms\n",ga_lista.size(),gb_lista.size());
   log.printf("  first group:\n");
   for(unsigned int i=0;i<ga_lista.size();++i){
    log.printf("  %d", ga_lista[i].serial());
   }
-  log.printf("  \nsecond group:\n");
+  log.printf("  \n  second group:\n");
   for(unsigned int i=0;i<gb_lista.size();++i){
    log.printf("  %d", gb_lista[i].serial());
   }
@@ -110,7 +110,9 @@ pbc(true)
 }
 
 void ColvarCoordination::prepare(){
- if(nl->doUpdate(getStep())) {requestAtoms(nl->getFullAtomList());}
+ if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
+  requestAtoms(nl->getFullAtomList());
+ }
 }
 
 // calculator
@@ -118,16 +120,16 @@ void ColvarCoordination::calculate()
 {
 
  double ncoord=0.;
- //double threshold=pow(0.00001,1./(nn-mm));
-
-
  Tensor virial;
  deriv.resize(getPositions().size());
  for(unsigned int i=0;i<deriv.size();++i) deriv[i].clear();
 
- if(nl->doUpdate(getStep())) {nl->update(getPositions(),getStep());}
+ if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
+   nl->update(getPositions());
+ }
 
  for(unsigned int i=0;i<nl->size();++i) {                   // sum over close pairs
+ 
   Vector distance;
   unsigned i0=nl->getClosePair(i).first;
   unsigned i1=nl->getClosePair(i).second;
@@ -137,33 +139,9 @@ void ColvarCoordination::calculate()
    distance=delta(getPositions(i0),getPositions(i1));
   }
 
-// we should define switching functions and derivatives in Tools 
-// Carlo: I put an implementation of the switching function in Tools
-// It can be called as
   double dfunc=0.;
   ncoord += Tools::switchingFunc(distance.modulo(), nn, mm, r_0, d_0, &dfunc);
-/*
-  const double rdist = (distance.modulo()-d_0)/r_0;
-  double dfunc=0.;
-  /// analitic limit of the switching function 
-  if(rdist<=0.){
-     ncoord+=1.;
-     dfunc=0.;
-  }else if(rdist>0.999999 && rdist<1.000001){
-     ncoord+=nn/mm;
-     dfunc=0.5*nn*(nn-mm)/mm;
-  }else if(rdist>threshold){
-     dfunc=0.;
-  }else{
-     double rNdist = pow(rdist, nn-1);
-     double rMdist = pow(rdist, mm-1);
-     double num = 1.-rNdist*rdist;
-     double iden = 1./(1.-rMdist*rdist);
-     double func = num*iden;
-     ncoord += func;
-     dfunc = ((-nn*rNdist*iden)+(func*(iden*mm)*rMdist))/(distance.modulo()*r_0);
-  }
-  */
+
   deriv[i0] = deriv[i0] + (-dfunc)*distance ;
   deriv[i1] = deriv[i1] + dfunc*distance ;
   virial=virial+(-dfunc)*Tensor(distance,distance);
@@ -173,11 +151,10 @@ void ColvarCoordination::calculate()
  setValue           (ncoord);
  setBoxDerivatives  (virial);
 
- if(nl->doUpdate(getStep())){requestAtoms(nl->getReducedAtomList());}
+ if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
+  requestAtoms(nl->getReducedAtomList());
+  nl->setLastUpdate(getStep());
+ }
 
 }
-
 }
-
-
-
