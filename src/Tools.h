@@ -60,6 +60,9 @@ public:
   static void interpretRanges(std::vector<std::string>&);
 /// Switching function
   static double switchingFunc(const double, const int, const int, const double, const double, double *);
+/// Remove duplicates from a vector of types <T> 
+  template <typename T>
+  static void removeDuplicates(std::vector<T>& vec);
 };
 
 template <class T>
@@ -83,6 +86,13 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
     val.push_back(v);
   }
   return true;
+}
+
+template<typename T>
+void Tools::removeDuplicates(std::vector<T>& vec)
+{
+   std::sort(vec.begin(), vec.end());
+   vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
 
 inline
