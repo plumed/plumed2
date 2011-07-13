@@ -137,8 +137,7 @@ void PlumedCommunicator::Allgather(const T*sendbuf,int sendcount,T*recvbuf,int r
   (void) sendbuf;
   (void) sendcount;
   (void) recvbuf;
-  (void) recvcounts;
-  (void) displs;
+  (void) recvcount;
   assert(0);
 #endif
 }
