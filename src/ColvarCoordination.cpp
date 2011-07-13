@@ -1,5 +1,6 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
+#include "NeighborList.h"
 
 #include <string>
 #include <cmath>
@@ -18,14 +19,13 @@ This is just a template variable
    
 class ColvarCoordination : public Colvar {
   bool pbc;
-  int gasize;
-  int gbsize;
   int nn;
   int mm;
   double r_0;
   double d_0;
   vector<Vector> deriv;
-
+  NeighborList *nl;
+  
 public:
   ColvarCoordination(const ActionOptions&);
 // active methods:
@@ -38,23 +38,23 @@ ColvarCoordination::ColvarCoordination(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true)
 {
-  vector<string> ga;
-  vector<string> gb;
-  vector<AtomNumber> lista;
+  vector<string> ga, gb;
+  vector<AtomNumber> ga_lista, gb_lista; 
   parseVector("GROUPA",ga); // this is just parsing "commas" ("1-4","14-16")
   Tools::interpretRanges(ga); // this is expanding the array ("1","2","3","4","14","15","16")
   parseVector("GROUPB",gb); // this is just parsing "commas" ("1-4","14-16")
   Tools::interpretRanges(gb); // this is expanding the array ("1","2","3","4","14","15","16")
-  gasize=ga.size();
-  gbsize=gb.size();
-  lista.resize((gasize+gbsize));
-  for(int i=0;i<gasize;i++) Tools::convert(ga[i],lista[i]); // this is converting strings to int
-  for(int i=gasize;i<(gasize+gbsize);i++) Tools::convert(gb[i-gasize],lista[i]); // this is converting strings to int
-
-  vector<int> tnn;
-  vector<int> tmm;
-  vector<double> tr_0;
-  vector<double> td_0;
+  ga_lista.resize(ga.size());
+  for(int i=0;i<ga.size();++i){
+   Tools::convert(ga[i],ga_lista[i]); // this is converting strings to int
+  }
+  gb_lista.resize(gb.size());
+  for(int i=0;i<gb.size();++i){
+   Tools::convert(gb[i],gb_lista[i]); // this is converting strings to int
+  }
+  
+  vector<int> tnn,tmm;
+  vector<double> tr_0,td_0;
   parseVector("NN",tnn);
   assert(tnn.size()==1);
   parseVector("MM",tmm);
@@ -73,33 +73,66 @@ pbc(true)
   pbc=!nopbc;
   parseFlag("PBC",pbc);
 
-  checkRead();
+// pair stuff
+  bool dopair;
+  parseFlag("PAIR",dopair);
 
-  log.printf("  between two groups of %d and %d atoms\n",gasize,gbsize);
-  log.printf("  first group:\n");
-  for(int i=0;i<gasize;i++) log.printf("  %d", lista[i].serial());
-  log.printf("  \nsecond group:\n");
-  for(int i=gasize;i<(gasize+gbsize);i++) log.printf("  %d", lista[i].serial());
-  log.printf("  \n");
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+// neighbor list stuff
+  bool doneigh;
+  Pbc pbc_c;
+  vector<double> nl_cut;
+  vector<int> nl_st;
+  parseFlag("NLIST",doneigh);
+  if(doneigh){
+   parseVector("NL_CUTOFF",nl_cut);
+   assert(nl_cut.size()==1);
+   parseVector("NL_STRIDE",nl_st);
+   assert(nl_st.size()==1);
+   //if(pbc) pbc_c=plumed.getAtoms().getPbc();
+  }
+  
+  checkRead();
 
   addValueWithDerivatives("");
 
-  requestAtoms(lista);
-  deriv.resize(lista.size());
+  if(doneigh)  *nl= NeighborList(ga_lista,gb_lista,dopair,pbc,pbc_c,nl_cut[0],nl_st[0]);
+  else         *nl= NeighborList(ga_lista,gb_lista,dopair,pbc,pbc_c);
+  
+  requestAtoms(nl->getFullAtomList());
+  deriv.resize(nl->getFullAtomList().size());
+
+  log.printf("  between two groups of %d and %d atoms\n",ga_lista.size(),gb_lista.size());
+  log.printf("  first group:\n");
+  for(unsigned int i=0;i<ga_lista.size();++i){
+   log.printf("  %d", ga_lista[i].serial());
+  }
+  log.printf("  \nsecond group:\n");
+  for(unsigned int i=0;i<gb_lista.size();++i){
+   log.printf("  %d", gb_lista[i].serial());
+  }
+  log.printf("  \n");
+  if(pbc) log.printf("  using periodic boundary conditions\n");
+  else    log.printf("  without periodic boundary conditions\n");
+  if(dopair) log.printf("  with PAIR option\n");
+  if(doneigh){
+   log.printf("  using neighbor lists with\n");
+   log.printf("  update every %d steps and cutoff %lf\n",nl_st[0],nl_cut[0]);
+  }
 }
 
 
 // calculator
-void ColvarCoordination::calculate(){
+void ColvarCoordination::calculate()
+{
 
  double ncoord=0.;
  double threshold=pow(0.00001,1./(nn-mm));
 
+/*
  Tensor virial;
  for(int i=0;i<deriv.size();i++) deriv[i].clear();
 
+ 
  for(int i=0;i<gasize;i++) {                                           // sum over CoordNumber(i)
     for(int j=gasize;j<(gasize+gbsize);j++) {
       Vector distance;
@@ -108,9 +141,10 @@ void ColvarCoordination::calculate(){
       } else {
         distance=delta(getPositions(i),getPositions(j));
       }
+
       const double rdist = (distance.modulo()-d_0)/r_0;
       double dfunc=0.;
-      /* analitic limit of the switching function */
+      /// analitic limit of the switching function 
       if(rdist<=0.){
          ncoord+=1.;
          dfunc=0.;
@@ -137,6 +171,7 @@ void ColvarCoordination::calculate(){
   setValue           (ncoord);
   setBoxDerivatives  (virial);
 
+*/
 }
 
 }
