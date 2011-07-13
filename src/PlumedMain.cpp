@@ -293,7 +293,7 @@ void PlumedMain::init(){
   log.printf("  D. Donadio, F. Marinelli, F. Pietrucci, R. A. Broglia and M. Parrinello\n");
   log.printf("  PLUMED: a portable plugin for free-energy calculations with molecular dynamics\n");
   log.printf("  Comp. Phys. Comm. 180, 1961 (2009)\n");
-  log.printf("For further information see the PLUMED web page at merlino.mi.infn.it/~plumed\n");
+  log.printf("For further information see the PLUMED web page at www.plumed-code.org\n");
   log.printf("List of registered actions:\n");
   actionRegister().log(log);
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
