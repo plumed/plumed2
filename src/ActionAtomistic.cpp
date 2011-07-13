@@ -92,7 +92,7 @@ void ActionAtomistic::calculateNumericalDerivatives(){
       for(int i=0;i<3;i++) for(int k=0;k<3;k++)virial(i,k)= (valuebox[j](i,k)-ref)/delta;
 // BE CAREFUL WITH NON ORTHOROMBIC CELL
       virial=-1.0*matmul(box.transpose(),virial.transpose());
-      for(int i=0;i<3;i++) for(int k=0;k<3;k++) v->setDerivatives(3*natoms+3*i+k,virial(i,k));
+      for(int i=0;i<3;i++) for(int k=0;k<3;k++) v->setDerivatives(3*natoms+3*k+i,virial(i,k));
     }
   }
 }
