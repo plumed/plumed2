@@ -134,6 +134,10 @@ void ColvarCoordination::calculate()
   }
 
 // we should define switching functions and derivatives in Tools 
+// Carlo: I put an implementation of the switching function in Tools
+// It can be called as
+  double dfunc=0.;
+  ncoord += Tools::switchingFunc(distance.modulo(), nn, mm, r_0, d_0, &dfunc);
 
   const double rdist = (distance.modulo()-d_0)/r_0;
   double dfunc=0.;

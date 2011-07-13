@@ -58,6 +58,8 @@ public:
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
 /// Interpret atom ranges
   static void interpretRanges(std::vector<std::string>&);
+/// Switching function
+  static double switchingFunc(const double, const int, const int, const double, const double, double *);
 };
 
 template <class T>
