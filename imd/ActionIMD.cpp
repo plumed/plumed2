@@ -82,8 +82,8 @@ IMD::IMD(const ActionOptions& ao):
 {
   natoms=plumed.getAtoms().getNatoms();
 
-  std::vector<int> index(natoms);
-  for(int i=0;i<natoms;i++) index[i]=i;
+  std::vector<AtomNumber> index(natoms);
+  for(int i=0;i<natoms;i++) index[i].setIndex(i);
   requestAtoms(index);
   coord.resize(natoms*3,float(0.0));
   forces.resize(natoms*3,0.0);
