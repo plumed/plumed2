@@ -69,7 +69,7 @@ pbc(true)
 
 // neighbor list stuff
   bool doneigh;
-  Pbc pbc_c;
+  const Pbc & pbc_c=getPbc();
   vector<double> nl_cut;
   vector<int> nl_st;
   parseFlag("NLIST",doneigh);
@@ -78,7 +78,6 @@ pbc(true)
    assert(nl_cut.size()==1);
    parseVector("NL_STRIDE",nl_st);
    assert(nl_st.size()==1);
-   //if(pbc) pbc_c=plumed.getAtoms().getPbc();
   }
   
   checkRead();
@@ -111,33 +110,31 @@ pbc(true)
 }
 
 void ColvarCoordination::prepare(){
-// This is the right place where one should eventually change the requested atom list.
-// Atoms will be available in the forthcoming call to calculate(), later at the same step
-// ....
+ if(nl->doUpdate(getStep())) {requestAtoms(nl->getFullAtomList());}
 }
-
 
 // calculator
 void ColvarCoordination::calculate()
 {
 
  double ncoord=0.;
- double threshold=pow(0.00001,1./(nn-mm));
+ //double threshold=pow(0.00001,1./(nn-mm));
 
-/*
+
  Tensor virial;
  deriv.resize(getPositions().size());
  for(unsigned int i=0;i<deriv.size();++i) deriv[i].clear();
 
- // i need the timestep here
- if(nl->getStride()>0 && step%nl->getStride()==0) {nl->update(getPositions())};
+ if(nl->doUpdate(getStep())) {nl->update(getPositions(),getStep());}
 
  for(unsigned int i=0;i<nl->size();++i) {                   // sum over close pairs
   Vector distance;
+  unsigned i0=nl->getClosePair(i).first;
+  unsigned i1=nl->getClosePair(i).second;
   if(pbc){
-   distance=pbcDistance(getPositions(nl[i].first),getPositions(nl[i].second));
+   distance=pbcDistance(getPositions(i0),getPositions(i1));
   } else {
-   distance=delta(getPositions(nl[i].first),getPositions(nl[i].second));
+   distance=delta(getPositions(i0),getPositions(i1));
   }
 
 // we should define switching functions and derivatives in Tools 
@@ -145,7 +142,7 @@ void ColvarCoordination::calculate()
 // It can be called as
   double dfunc=0.;
   ncoord += Tools::switchingFunc(distance.modulo(), nn, mm, r_0, d_0, &dfunc);
-
+/*
   const double rdist = (distance.modulo()-d_0)/r_0;
   double dfunc=0.;
   /// analitic limit of the switching function 
@@ -166,8 +163,9 @@ void ColvarCoordination::calculate()
      ncoord += func;
      dfunc = ((-nn*rNdist*iden)+(func*(iden*mm)*rMdist))/(distance.modulo()*r_0);
   }
-  deriv[nl[i].first]+= -dfunc*distance ;
-  deriv[nl[i].second]+= dfunc*distance ;
+  */
+  deriv[i0] = deriv[i0] + (-dfunc)*distance ;
+  deriv[i1] = deriv[i1] + dfunc*distance ;
   virial=virial+(-dfunc)*Tensor(distance,distance);
  }
 
@@ -175,14 +173,8 @@ void ColvarCoordination::calculate()
  setValue           (ncoord);
  setBoxDerivatives  (virial);
 
- if(nl->getStride()>0 && step%nl->getStride()==0){
-  requestAtoms(nl->getReducedAtomList());
- }
- if(nl->getStride()>0 && step+1%nl->getStride()==0){
-  requestAtoms(nl->getFullAtomList());
- }
+ if(nl->doUpdate(getStep())){requestAtoms(nl->getReducedAtomList());}
 
-*/
 }
 
 }

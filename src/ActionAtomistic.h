@@ -3,6 +3,7 @@
 
 #include "Action.h"
 #include "Atoms.h"
+#include "PlumedMain.h"
 #include <vector>
 
 namespace PLMD {
@@ -51,7 +52,8 @@ protected:
   AtomNumber getAbsoluteIndex(int i)const;
 /// Parse a list of atoms
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
-
+/// Get reference to Pbc
+  const Pbc & getPbc() const;
 public:
 
 // virtual functions:
@@ -119,7 +121,10 @@ void ActionAtomistic::clearOutputForces(){
   }
 }
 
-
+inline
+const Pbc & ActionAtomistic::getPbc() const{
+ return plumed.getAtoms().getPbc();
+}
 
 }
 

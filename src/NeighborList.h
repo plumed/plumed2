@@ -17,14 +17,12 @@ class NeighborList
   std::vector< std::pair<unsigned,unsigned> > neighbors_;
   double distance_;
   unsigned stride_,nlist0_,nlist1_,nallpairs_;
+  int lastupdate_;
 /// Initialize the neighbor list with all possible pairs
   void initialize();
 /// Return the pair of indexes in the positions array
 /// of the two atoms forming the i-th pair among all possible pairs  
   std::pair<unsigned,unsigned> getIndexPair(unsigned i);
-/// Template to remove duplicates from a list of types <T>
-  template<typename T> 
-   void removeDuplicates(std::vector<T>& vec);
 /// Extract the list of atoms from the current list of close pairs
   void setRequestList();
 public:
@@ -45,13 +43,15 @@ public:
   std::vector<PLMD::AtomNumber>& getReducedAtomList();
 /// Update the neighbor list and prepare the new
 /// list of atoms that will be requested to the main code  
-  void update(const std::vector<PLMD::Vector>& positions);
+  void update(const std::vector<PLMD::Vector>& positions, int step);
 /// Get the update stride of the neighbor list
   unsigned getStride() const;
+/// Check if it is time to update the neighbor list
+  bool doUpdate(int step);
 /// Get the size of the neighbor list
   unsigned size() const;
 /// Get the i-th pair of the neighbor list
-  const std::pair<unsigned,unsigned> & operator[] (unsigned i)const;
+  std::pair<unsigned,unsigned> getClosePair(unsigned i) const;
 /// Get the list of neighbors of the i-th atom
   std::vector<unsigned> getNeighbors(unsigned i);
   ~NeighborList(){};

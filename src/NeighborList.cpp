@@ -29,6 +29,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
   nallpairs_=nlist0_;
  }
  initialize();
+ lastupdate_=-1;
 }
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
@@ -42,6 +43,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
  twolists_=false;
  nallpairs_=nlist0_*(nlist0_-1)/2;
  initialize();
+ lastupdate_=-1;
 }
 
 void NeighborList::initialize()
@@ -71,8 +73,9 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
  return index;
 }
 
-void NeighborList::update(const vector<Vector>& positions)
+void NeighborList::update(const vector<Vector>& positions, int step)
 {
+ lastupdate_=step;
  neighbors_.clear();
 // check if positions array has the correct length
  if(positions.size()!=fullatomlist_.size()){
@@ -97,13 +100,6 @@ void NeighborList::update(const vector<Vector>& positions)
  setRequestList();
 }
 
-template<typename T>
-void NeighborList::removeDuplicates(std::vector<T>& vec)
-{
-    std::sort(vec.begin(), vec.end());
-    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
-}
-
 void NeighborList::setRequestList()
 {
  requestlist_.clear();
@@ -111,8 +107,6 @@ void NeighborList::setRequestList()
   requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
   requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
  }
-// is it going to work when T=AtomNumber?
- //removeDuplicates<AtomNumber>(request);
 }
 
 vector<AtomNumber>& NeighborList::getReducedAtomList()
@@ -138,12 +132,23 @@ unsigned NeighborList::getStride() const
  return stride_;
 }
 
+bool NeighborList::doUpdate(int step)
+{
+ bool doit;
+ if(stride_>0 && step!=lastupdate_ && (step-lastupdate_)%stride_==0){
+  doit=true;
+ }else{
+  doit=false;
+ }
+ return doit;
+}
+
 unsigned NeighborList::size() const
 {
  return neighbors_.size();
 }
 
-const pair<unsigned,unsigned> & NeighborList::operator[] (unsigned i) const
+ pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const
 {
  return neighbors_[i];
 }
