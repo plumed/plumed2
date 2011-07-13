@@ -30,6 +30,7 @@ public:
   ColvarCoordination(const ActionOptions&);
 // active methods:
   virtual void calculate();
+  virtual void prepare();
 };
 
 PLUMED_REGISTER_ACTION(ColvarCoordination,"COORDINATION")
@@ -107,6 +108,12 @@ pbc(true)
    log.printf("  using neighbor lists with\n");
    log.printf("  update every %d steps and cutoff %lf\n",nl_st[0],nl_cut[0]);
   }
+}
+
+void ColvarCoordination::prepare(){
+// This is the right place where one should eventually change the requested atom list.
+// Atoms will be available in the forthcoming call to calculate(), later at the same step
+// ....
 }
 
 
