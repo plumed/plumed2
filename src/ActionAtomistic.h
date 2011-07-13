@@ -1,10 +1,9 @@
 #ifndef __PLUMED_ActionAtomistic_h
 #define __PLUMED_ActionAtomistic_h
 
-#include <vector>
-#include <string>
 #include "Action.h"
 #include "Atoms.h"
+#include <vector>
 
 namespace PLMD {
 

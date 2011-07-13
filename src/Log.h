@@ -1,5 +1,6 @@
 #ifndef __PLUMED_Log_h
 #define __PLUMED_Log_h
+
 #include <cstdio>
 #include <string>
 #include <sstream>

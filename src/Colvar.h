@@ -1,9 +1,9 @@
 #ifndef __PLUMED_Colvar_h
 #define __PLUMED_Colvar_h
-#include <vector>
-#include <string>
+
 #include "ActionAtomistic.h"
 #include "ActionWithValue.h"
+#include <vector>
 
 #define PLUMED_COLVAR_INIT(ao) Action(ao),Colvar(ao)
 

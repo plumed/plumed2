@@ -1,12 +1,12 @@
 #ifndef __PLUMED_Tools_h
 #define __PLUMED_Tools_h
 
+#include "AtomNumber.h"
 #include <vector>
 #include <string>
 #include <cstdio>
 #include <cmath>
 #include <limits>
-#include "AtomNumber.h"
 
 namespace PLMD{
 

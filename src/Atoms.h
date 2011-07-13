@@ -1,12 +1,12 @@
 #ifndef __PLUMED_Atoms_h
 #define __PLUMED_Atoms_h
-#include <vector>
-#include <set>
-#include <cassert>
-#include <string>
+
 #include "PlumedCommunicator.h"
 #include "Tensor.h"
 #include "Pbc.h"
+#include <vector>
+#include <set>
+#include <cassert>
 
 namespace PLMD{
 

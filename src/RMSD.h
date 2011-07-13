@@ -1,8 +1,8 @@
 #ifndef __PLUMED_RMSD_h
 #define __PLUMED_RMSD_h
 
-#include <vector>
 #include "Vector.h"
+#include <vector>
 
 namespace PLMD{
 

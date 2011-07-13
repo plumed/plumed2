@@ -3,7 +3,6 @@
 
 #include "Action.h"
 
-
 namespace PLMD{
 
 /// Action executed only at startup

@@ -1,13 +1,13 @@
 #ifndef __PLUMED_ActionWithArguments_h
 #define __PLUMED_ActionWithArguments_h
 
-#include <map>
-#include <vector>
-#include <cassert>
 #include "Action.h"
 #include "Value.h"
+#include <vector>
 
 namespace PLMD{
+
+class Value;
 
 /// Action which takes other Action's as arguments.
 /// Arguments are objects of type PLMD::Value, and

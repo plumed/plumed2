@@ -1,12 +1,11 @@
 #ifndef __PLUMED_PlumedMain_h
 #define __PLUMED_PlumedMain_h
 
-#include <string>
-#include <vector>
-#include <set>
 #include "ActionSet.h"
 #include "Atoms.h"
 #include "PlumedCommunicator.h"
+#include <string>
+#include <vector>
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11

@@ -1,9 +1,10 @@
 #ifndef __PLUMED_ActionRegister_h
 #define __PLUMED_ActionRegister_h
 
+#include "Action.h"
+#include <string>
 #include <map>
 #include <set>
-#include "Action.h"
 
 namespace PLMD{
 

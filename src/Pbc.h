@@ -1,6 +1,6 @@
 #ifndef __PLUMED_Pbc_h
 #define __PLUMED_Pbc_h
-#include <cassert>
+
 #include "Vector.h"
 #include "Tensor.h"
 

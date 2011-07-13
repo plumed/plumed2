@@ -1,10 +1,9 @@
 #ifndef __PLUMED_PDB_h
 #define __PLUMED_PDB_h
 
-#include <vector>
-#include <string>
 #include "AtomNumber.h"
 #include "Vector.h"
+#include <vector>
 
 namespace PLMD{
 
