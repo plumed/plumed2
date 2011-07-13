@@ -1,4 +1,5 @@
 #include "Colvar.h"
+#include "PlumedMain.h"
 #include "ActionRegister.h"
 
 #include "PDB.h"
@@ -46,7 +47,7 @@ PLUMED_COLVAR_INIT(ao)
   getValue("")->setPeriodicity(false);
 
   PDB pdb;
-  pdb.read(reference);
+  pdb.read(reference,0.1/plumed.getAtoms().getInternalLengthUnits());
 
   rmsd.setFromPDB(pdb);
 

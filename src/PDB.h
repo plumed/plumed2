@@ -16,8 +16,8 @@ class PDB{
   std::vector<double> beta;
   std::vector<AtomNumber> numbers;
 public:
-/// Read the pdb from a file
-  void read(const std::string&file);
+/// Read the pdb from a file, scaling positions by a factor scale
+  void read(const std::string&file,double scale);
 /// Access to the position array
   const std::vector<Vector>     & getPositions()const;
 /// Access to the occupancy array

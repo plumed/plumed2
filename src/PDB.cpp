@@ -26,7 +26,7 @@ unsigned PDB::size()const{
   return positions.size();
 }
 
-void PDB::read(const std::string&file){
+void PDB::read(const std::string&file,double scale){
   FILE* fp=fopen(file.c_str(),"r");
   string line;
   while(Tools::getline(fp,line)){
@@ -51,6 +51,7 @@ void PDB::read(const std::string&file){
       Tools::convert(x,p[0]);
       Tools::convert(y,p[1]);
       Tools::convert(z,p[2]);
+      p.scale(scale);
       numbers.push_back(a);
       occupancy.push_back(o);
       beta.push_back(b);
