@@ -31,14 +31,12 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
  initialize();
 }
 
-
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
                            const Pbc& pbc, const double& distance,
                            const unsigned& stride):
                            do_pbc_(do_pbc), pbc_(pbc),
                            distance_(distance), stride_(stride)
 {
-// store full list of atoms needed
  fullatomlist_=list0;
  nlist0_=list0.size();
  twolists_=false;
@@ -46,7 +44,6 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
  initialize();
 }
 
-// initialize neighborlist with all possible pairs
 void NeighborList::initialize()
 {
  neighbors_.clear();
@@ -55,16 +52,11 @@ void NeighborList::initialize()
  }
 }
 
-// this methods returns the list of all atoms
-// it should be called at the end of the step
-// before the update of the neighbor list or in the prep stage
 vector<AtomNumber>& NeighborList::getFullAtomList()
 {
  return fullatomlist_;
 }
 
-// this method returns the pair of indexes of the positions array
-// of pair "ipair" among the list of all possible pairs
 pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
 {
  pair<unsigned,unsigned> index;
@@ -79,18 +71,14 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
  return index;
 }
 
-// this method updates the neighbor list and prepare the new
-// list of atoms to request to the MD code
 void NeighborList::update(const vector<Vector>& positions)
 {
-// clean neighbors list
  neighbors_.clear();
 // check if positions array has the correct length
  if(positions.size()!=fullatomlist_.size()){
   // i need to access to log here. still don't know how to do it
   //log.printf("ERROR you need to request all the atoms one step before updating the NL\n"); 
  }
-// update neighbors. cycle on all possible pairs
  for(unsigned int i=0;i<nallpairs_;++i){
    pair<unsigned,unsigned> index=getIndexPair(i);
    unsigned index0=index.first;
@@ -109,7 +97,6 @@ void NeighborList::update(const vector<Vector>& positions)
  setRequestList();
 }
 
-// template to remove duplicates from a list of types <T>
 template<typename T>
 void NeighborList::removeDuplicates(std::vector<T>& vec)
 {
@@ -117,7 +104,6 @@ void NeighborList::removeDuplicates(std::vector<T>& vec)
     vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
 }
 
-// extract the list of atoms from the list of close pairs
 void NeighborList::setRequestList()
 {
  requestlist_.clear();
@@ -129,10 +115,6 @@ void NeighborList::setRequestList()
  //removeDuplicates<AtomNumber>(request);
 }
 
-// this method should be called at the end of the step when nl is updated
-// it updates the indexes in the neighbor list to match the new
-// ordering in the future positions array at the next iteration
-// and returns the new list of atoms to request to the MD code
 vector<AtomNumber>& NeighborList::getReducedAtomList()
 {
  std::vector< pair<unsigned,unsigned> > newneighbors;
@@ -151,28 +133,21 @@ vector<AtomNumber>& NeighborList::getReducedAtomList()
  return requestlist_;
 }
 
-// get the update stride of the Neighbor List
 unsigned NeighborList::getStride() const
 {
  return stride_;
 }
 
-// size of the Neighbor List
 unsigned NeighborList::size() const
 {
  return neighbors_.size();
 }
 
-// this method returns the pair of indexes in the positions array of
-// the close pair "i"
 const pair<unsigned,unsigned> & NeighborList::operator[] (unsigned i) const
 {
  return neighbors_[i];
 }
 
-// this method returns the list of indexes in the positions array of the
-// neighbors of the atom "index", where "index" refers to the index in the
-// positions array
 vector<unsigned> NeighborList::getNeighbors(unsigned index)
 {
  vector<unsigned> neighbors;
