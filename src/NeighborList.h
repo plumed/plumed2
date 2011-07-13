@@ -19,7 +19,7 @@ class NeighborList
   std::pair<unsigned,unsigned> getIndexPair(unsigned ipair);
   template<typename T> 
    void removeDuplicates(std::vector<T>& vec);
-  std::vector<unsigned> getRequestList();
+  void setRequestList();
 public:
   NeighborList(const std::vector<PLMD::AtomNumber>& list0,
                const std::vector<PLMD::AtomNumber>& list1,
@@ -29,8 +29,8 @@ public:
                const PLMD::Pbc& pbc, const double& distance=1.0e+30,
                const unsigned& stride=0);
                              
-  std::vector<PLMD::AtomNumber> & getFullAtomList() const;
-  std::vector<PLMD::AtomNumber> & getReducedAtomList(std::vector<PLMD::Vector> positions);
+  std::vector<PLMD::AtomNumber>& getFullAtomList();
+  std::vector<PLMD::AtomNumber>& getReducedAtomList(std::vector<PLMD::Vector> positions);
   void update();
   unsigned getStride() const;
   unsigned size() const;

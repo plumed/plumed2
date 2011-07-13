@@ -10,7 +10,7 @@ using namespace std;
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
                            const bool& do_pair, const bool& do_pbc, const Pbc& pbc,
-                           const double& distance=1.0e+30, const unsigned& stride=0):
+                           const double& distance, const unsigned& stride):
                            do_pair_(do_pair), do_pbc_(do_pbc), pbc_(pbc),
                            distance_(distance), stride_(stride)
 {
@@ -31,8 +31,8 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
 
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
-                           const Pbc& pbc, const double& distance=1.0e+30,
-                           const unsigned& stride=0):
+                           const Pbc& pbc, const double& distance,
+                           const unsigned& stride):
                            do_pbc_(do_pbc), pbc_(pbc),
                            distance_(distance), stride_(stride)
 {
@@ -56,7 +56,7 @@ void NeighborList::initialize()
 // this methods return the list of all atoms
 // it should be called at the end of the step
 // before the update of the neighbor list or in the prep stage
-vector<AtomNumber> & NeighborList::getFullAtomList() const
+vector<AtomNumber>& NeighborList::getFullAtomList()
 {
  return fullatomlist_;
 }
@@ -80,7 +80,7 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
 // this methods return the list of the atoms belonging to the
 // current list of close pairs. It should be called at the beginning 
 // of the step in which the neighbor list is updated
-vector<AtomNumber> & NeighborList::getReducedAtomList(vector<Vector> positions)
+vector<AtomNumber>& NeighborList::getReducedAtomList(vector<Vector> positions)
 {
 // clean neighbors list
  neighbors_.clear();
@@ -96,7 +96,7 @@ vector<AtomNumber> & NeighborList::getReducedAtomList(vector<Vector> positions)
    unsigned index1=index.second;
    Vector distance;
    if(do_pbc_){
-    distance=pbc_->distance(positions[index0],positions[index1]);
+    distance=pbc_.distance(positions[index0],positions[index1]);
    } else {
     distance=delta(positions[index0],positions[index1]);
    }
@@ -105,7 +105,7 @@ vector<AtomNumber> & NeighborList::getReducedAtomList(vector<Vector> positions)
     neighbors_.push_back(index);
    } 
  }
- requestlist_=getRequestList();
+ setRequestList();
  return requestlist_;
 }
 
@@ -118,16 +118,15 @@ void NeighborList::removeDuplicates(std::vector<T>& vec)
 }
 
 // extract the list of atoms from the list of close pairs
-vector<AtomNumber> NeighborList::getRequestList()
+void NeighborList::setRequestList()
 {
- vector<AtomNumber> request;
+ requestlist_.clear();
  for(unsigned int i=0;i<size();++i){
-  request.push_back(fullatomlist_[neighbors_[i].first]);
-  request.push_back(fullatomlist_[neighbors_[i].second]);
+  requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
+  requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
  }
 // is it going to work when T=AtomNumber?
  //removeDuplicates<AtomNumber>(request);
- return request;
 }
 
 // this method should be called at the end of the step when nl is updated
