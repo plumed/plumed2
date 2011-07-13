@@ -12,12 +12,11 @@ namespace PLMD{
 class NeighborList  
 {
   bool do_pair_,do_pbc_,twolists_;
-  PLMD::Pbc pbc_;
+  const PLMD::Pbc& pbc_;
   std::vector<PLMD::AtomNumber> fullatomlist_,requestlist_;
   std::vector< std::pair<unsigned,unsigned> > neighbors_;
   double distance_;
-  unsigned stride_,nlist0_,nlist1_,nallpairs_;
-  int lastupdate_;
+  unsigned stride_,nlist0_,nlist1_,nallpairs_,lastupdate_;
 /// Initialize the neighbor list with all possible pairs
   void initialize();
 /// Return the pair of indexes in the positions array
@@ -33,9 +32,7 @@ public:
   NeighborList(const std::vector<PLMD::AtomNumber>& list0, const bool& do_pbc,
                const PLMD::Pbc& pbc, const double& distance=1.0e+30,
                const unsigned& stride=0);
-/// Return the list of all atoms that are needed to rebuild the neighbor list.
-/// This method should be called at the end of the step
-/// before the update of the neighbor list or in prep stage                             
+/// Return the list of all atoms. These are needed to rebuild the neighbor list.                         
   std::vector<PLMD::AtomNumber>& getFullAtomList();
 /// Update the indexes in the neighbor list to match the
 /// ordering in the new positions array
@@ -43,11 +40,13 @@ public:
   std::vector<PLMD::AtomNumber>& getReducedAtomList();
 /// Update the neighbor list and prepare the new
 /// list of atoms that will be requested to the main code  
-  void update(const std::vector<PLMD::Vector>& positions, int step);
+  void update(const std::vector<PLMD::Vector>& positions);
 /// Get the update stride of the neighbor list
   unsigned getStride() const;
-/// Check if it is time to update the neighbor list
-  bool doUpdate(int step);
+/// Get the last step in which the neighbor list was updated  
+  unsigned getLastUpdate() const;
+/// Set the step of the last update
+  void setLastUpdate(unsigned step);
 /// Get the size of the neighbor list
   unsigned size() const;
 /// Get the i-th pair of the neighbor list

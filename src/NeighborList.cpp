@@ -3,6 +3,7 @@
 #include "Vector.h"
 #include "Pbc.h"
 #include "AtomNumber.h"
+#include "Tools.h"
 #include "NeighborList.h"
 
 using namespace PLMD;
@@ -29,7 +30,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
   nallpairs_=nlist0_;
  }
  initialize();
- lastupdate_=-1;
+ lastupdate_=0;
 }
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
@@ -43,12 +44,11 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
  twolists_=false;
  nallpairs_=nlist0_*(nlist0_-1)/2;
  initialize();
- lastupdate_=-1;
+ lastupdate_=0;
 }
 
 void NeighborList::initialize()
 {
- neighbors_.clear();
  for(unsigned int i=0;i<nallpairs_;++i){
    neighbors_.push_back(getIndexPair(i));
  }
@@ -73,11 +73,10 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
  return index;
 }
 
-void NeighborList::update(const vector<Vector>& positions, int step)
+void NeighborList::update(const vector<Vector>& positions)
 {
- lastupdate_=step;
  neighbors_.clear();
-// check if positions array has the correct length
+// check if positions array has the correct length 
  if(positions.size()!=fullatomlist_.size()){
   // i need to access to log here. still don't know how to do it
   //log.printf("ERROR you need to request all the atoms one step before updating the NL\n"); 
@@ -93,9 +92,7 @@ void NeighborList::update(const vector<Vector>& positions, int step)
     distance=delta(positions[index0],positions[index1]);
    }
    double value=distance.modulo();
-   if(value<=distance_) {
-    neighbors_.push_back(index);
-   } 
+   if(value<=distance_) {neighbors_.push_back(index);} 
  }
  setRequestList();
 }
@@ -103,9 +100,16 @@ void NeighborList::update(const vector<Vector>& positions, int step)
 void NeighborList::setRequestList()
 {
  requestlist_.clear();
+ vector<unsigned> tmp;
  for(unsigned int i=0;i<size();++i){
-  requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
-  requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
+  tmp.push_back(fullatomlist_[neighbors_[i].first].index());
+  tmp.push_back(fullatomlist_[neighbors_[i].second].index());
+ }
+ Tools::removeDuplicates(tmp);
+ for(unsigned int i=0;i<tmp.size();++i){
+  AtomNumber an;
+  an.setIndex(tmp[i]);
+  requestlist_.push_back(an);
  }
 }
 
@@ -132,15 +136,14 @@ unsigned NeighborList::getStride() const
  return stride_;
 }
 
-bool NeighborList::doUpdate(int step)
+unsigned NeighborList::getLastUpdate() const
 {
- bool doit;
- if(stride_>0 && step!=lastupdate_ && (step-lastupdate_)%stride_==0){
-  doit=true;
- }else{
-  doit=false;
- }
- return doit;
+ return lastupdate_;
+}
+
+void NeighborList::setLastUpdate(unsigned step)
+{
+ lastupdate_=step;
 }
 
 unsigned NeighborList::size() const
