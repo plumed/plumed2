@@ -71,14 +71,14 @@ serial(false)
 
 // neighbor list stuff
   bool doneigh=false;
-  vector<double> nl_cut;
-  vector<int> nl_st;
+  double nl_cut=0.0;
+  int nl_st=0;
   parseFlag("NLIST",doneigh);
   if(doneigh){
-   parseVector("NL_CUTOFF",nl_cut);
-   assert(nl_cut.size()==1);
-   parseVector("NL_STRIDE",nl_st);
-   assert(nl_st.size()==1);
+   parse("NL_CUTOFF",nl_cut);
+   assert(nl_cut>0.);
+   parse("NL_STRIDE",nl_st);
+   assert(nl_st>0);
   }
   
   checkRead();
@@ -86,7 +86,7 @@ serial(false)
   addValueWithDerivatives("");
   getValue("")->setPeriodicity(false);
 
-  if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut[0],nl_st[0]);
+  if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st);
   else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
   
   requestAtoms(nl->getFullAtomList());
@@ -107,7 +107,7 @@ serial(false)
   if(dopair) log.printf("  with PAIR option\n");
   if(doneigh){
    log.printf("  using neighbor lists with\n");
-   log.printf("  update every %d steps and cutoff %lf\n",nl_st[0],nl_cut[0]);
+   log.printf("  update every %d steps and cutoff %lf\n",nl_st,nl_cut);
   }
 }
 
