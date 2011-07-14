@@ -112,6 +112,7 @@ ColvarCoordination::~ColvarCoordination(){
 void ColvarCoordination::prepare(){
  if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
   requestAtoms(nl->getFullAtomList());
+  deriv.resize(nl->getFullAtomList().size());
  }
 }
 
@@ -121,7 +122,6 @@ void ColvarCoordination::calculate()
 
  double ncoord=0.;
  Tensor virial;
- deriv.resize(getPositions().size());
  for(unsigned int i=0;i<deriv.size();++i) deriv[i].clear();
 
  if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
