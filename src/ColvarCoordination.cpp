@@ -26,6 +26,7 @@ class ColvarCoordination : public Colvar {
   
 public:
   ColvarCoordination(const ActionOptions&);
+  ~ColvarCoordination();
 // active methods:
   virtual void calculate();
   virtual void prepare();
@@ -104,6 +105,10 @@ pbc(true)
   }
 }
 
+ColvarCoordination::~ColvarCoordination(){
+  delete nl;
+}
+
 void ColvarCoordination::prepare(){
  if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
   requestAtoms(nl->getFullAtomList());
@@ -142,7 +147,7 @@ void ColvarCoordination::calculate()
   virial=virial+(-dfunc)*Tensor(distance,distance);
  }
 
- for(int i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);
+ for(unsigned i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);
  setValue           (ncoord);
  setBoxDerivatives  (virial);
 
