@@ -106,14 +106,13 @@ void PlumedCommunicator::Bcast(T*b,int count,int root){
 template<class T>
 void PlumedCommunicator::Allgatherv(const T*sendbuf,int sendcount,T*recvbuf,const int*recvcounts,const int*displs){
 #if defined(__PLUMED_MPI)
-  if(initialized()){
-    void*s=const_cast<void*>((const void*)sendbuf);
-    void*r=const_cast<void*>((const void*)recvbuf);
-    int*rc=const_cast<int*>(recvcounts);
-    int*di=const_cast<int*>(displs);
-    if(s==NULL)s=MPI_IN_PLACE;
-    MPI_Allgatherv(s,sendcount,getMPIType<T>(),r,rc,di,getMPIType<T>(),communicator);
-  }
+  assert(initialized());
+  void*s=const_cast<void*>((const void*)sendbuf);
+  void*r=const_cast<void*>((const void*)recvbuf);
+  int*rc=const_cast<int*>(recvcounts);
+  int*di=const_cast<int*>(displs);
+  if(s==NULL)s=MPI_IN_PLACE;
+  MPI_Allgatherv(s,sendcount,getMPIType<T>(),r,rc,di,getMPIType<T>(),communicator);
 #else
   (void) sendbuf;
   (void) sendcount;
@@ -127,12 +126,11 @@ void PlumedCommunicator::Allgatherv(const T*sendbuf,int sendcount,T*recvbuf,cons
 template<class T>
 void PlumedCommunicator::Allgather(const T*sendbuf,int sendcount,T*recvbuf,int recvcount){
 #if defined(__PLUMED_MPI)
-  if(initialized()){
-    void*s=const_cast<void*>((const void*)sendbuf);
-    void*r=const_cast<void*>((const void*)recvbuf);
-    if(s==NULL)s=MPI_IN_PLACE;
-    MPI_Allgather(s,sendcount,getMPIType<T>(),r,recvcount,getMPIType<T>(),communicator);
-  }
+  assert(initialized());
+  void*s=const_cast<void*>((const void*)sendbuf);
+  void*r=const_cast<void*>((const void*)recvbuf);
+  if(s==NULL)s=MPI_IN_PLACE;
+  MPI_Allgather(s,sendcount,getMPIType<T>(),r,recvcount,getMPIType<T>(),communicator);
 #else
   (void) sendbuf;
   (void) sendcount;
@@ -147,7 +145,8 @@ template <class T>
 PlumedCommunicator::Request PlumedCommunicator::Isend(T*buf,int count,int source,int tag){
   Request req;
 #ifdef __PLUMED_MPI
-  if(initialized())MPI_Isend(buf,count,getMPIType<T>(),source,tag,communicator,&req.r);
+  assert(initialized());
+  MPI_Isend(buf,count,getMPIType<T>(),source,tag,communicator,&req.r);
 #else
   (void) buf;
   (void) count;
@@ -161,9 +160,8 @@ PlumedCommunicator::Request PlumedCommunicator::Isend(T*buf,int count,int source
 template <class T>
 void PlumedCommunicator::Recv(T*buf,int count,int source,int tag,Status&status){
 #ifdef __PLUMED_MPI
-  if(initialized()){
-    MPI_Recv(buf,count,getMPIType<T>(),source,tag,communicator,&status.s);
-  }
+  assert(initialized());
+  MPI_Recv(buf,count,getMPIType<T>(),source,tag,communicator,&status.s);
 #else
   (void) buf;
   (void) count;
@@ -177,7 +175,8 @@ void PlumedCommunicator::Recv(T*buf,int count,int source,int tag,Status&status){
 template <class T>
 void PlumedCommunicator::Recv(T*buf,int count,int source,int tag){
 #ifdef __PLUMED_MPI
-  if(initialized())MPI_Recv(buf,count,getMPIType<T>(),source,tag,communicator,MPI_STATUS_IGNORE);
+  assert(initialized());
+  MPI_Recv(buf,count,getMPIType<T>(),source,tag,communicator,MPI_STATUS_IGNORE);
 #else
   (void) buf;
   (void) count;
@@ -191,7 +190,8 @@ template<class T>
 int PlumedCommunicator::Status::Get_count()const{
   int i;
 #ifdef __PLUMED_MPI
-  if(initialized()) MPI_Get_count(const_cast<MPI_Status*>(&s),getMPIType<T>(),&i);
+  assert(initialized());
+  MPI_Get_count(const_cast<MPI_Status*>(&s),getMPIType<T>(),&i);
 #else
   assert(0);
   i=0;

@@ -49,7 +49,8 @@ PlumedCommunicator::~PlumedCommunicator(){
 
 void PlumedCommunicator::Set_comm(void*val){
 #ifdef __PLUMED_MPI
- if(initialized()&&val) Set_comm(*(MPI_Comm*)val);
+ assert(initialized());
+ if(val) Set_comm(*(MPI_Comm*)val);
 #else
  (void) val;
  assert(0);
@@ -58,7 +59,8 @@ void PlumedCommunicator::Set_comm(void*val){
 
 void PlumedCommunicator::Set_fcomm(void*val){
 #ifdef __PLUMED_MPI
-  if(initialized() && val){
+ assert(initialized());
+  if(val){
     MPI_Comm comm=MPI_Comm_f2c(*(MPI_Fint*)val);
     Set_comm(comm);
   }
@@ -94,7 +96,8 @@ bool PlumedCommunicator::initialized(){
 
 void PlumedCommunicator::Request::wait(){
 #ifdef __PLUMED_MPI
-  if(initialized())MPI_Wait(&r,MPI_STATUS_IGNORE);
+  assert(initialized());
+  MPI_Wait(&r,MPI_STATUS_IGNORE);
 #else
   assert(0);
 #endif
@@ -102,7 +105,8 @@ void PlumedCommunicator::Request::wait(){
 
 void PlumedCommunicator::Request::wait(Status&s){
 #ifdef __PLUMED_MPI
-  if(initialized()) MPI_Wait(&r,&s.s);
+  assert(initialized());
+  MPI_Wait(&r,&s.s);
 #else
   (void) s;
   assert(0);
