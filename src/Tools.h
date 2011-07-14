@@ -58,8 +58,6 @@ public:
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
 /// Interpret atom ranges
   static void interpretRanges(std::vector<std::string>&);
-/// Switching function
-  static double switchingFunc(const double, const int, const int, const double, const double, double *);
 /// Remove duplicates from a vector of types <T> 
   template <typename T>
   static void removeDuplicates(std::vector<T>& vec);

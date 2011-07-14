@@ -1,3 +1,4 @@
+#include "SwitchingFunction.h"
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "NeighborList.h"
@@ -19,12 +20,9 @@ This is just a template variable
    
 class ColvarCoordination : public Colvar {
   bool pbc;
-  int nn;
-  int mm;
-  double r_0;
-  double d_0;
   vector<Vector> deriv;
   NeighborList *nl;
+  SwitchingFunction switchingFunction;
   
 public:
   ColvarCoordination(const ActionOptions&);
@@ -43,20 +41,18 @@ pbc(true)
   parseAtomList("GROUPA",ga_lista);
   parseAtomList("GROUPB",gb_lista);
   
-  vector<int> tnn,tmm;
-  vector<double> tr_0,td_0;
-  parseVector("NN",tnn);
-  assert(tnn.size()==1);
-  parseVector("MM",tmm);
-  assert(tmm.size()==1);
-  parseVector("R_0",tr_0);
-  assert(tr_0.size()==1);
-  parseVector("D_0",td_0);
-  assert(td_0.size()==1);
-  nn=tnn[0];
-  mm=tmm[0];
-  r_0=tr_0[0];
-  d_0=td_0[0];
+  int nn,mm;
+  double r_0,d_0;
+  nn=6;
+  mm=12;
+  r_0=-1;
+  d_0=0.0;
+  parse("NN",nn);
+  parse("MM",mm);
+  parse("R_0",r_0);
+  parse("D_0",d_0);
+  assert(r_0>0); // this is the only compulsory option
+  switchingFunction.set(nn,mm,r_0,d_0);
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -78,7 +74,6 @@ pbc(true)
    parseVector("NL_STRIDE",nl_st);
    assert(nl_st.size()==1);
   }
-
   
   checkRead();
 
@@ -140,7 +135,7 @@ void ColvarCoordination::calculate()
   }
 
   double dfunc=0.;
-  ncoord += Tools::switchingFunc(distance.modulo(), nn, mm, r_0, d_0, &dfunc);
+  ncoord += switchingFunction.calculate(distance.modulo(), dfunc);
 
   deriv[i0] = deriv[i0] + (-dfunc)*distance ;
   deriv[i1] = deriv[i1] + dfunc*distance ;

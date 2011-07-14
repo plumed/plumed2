@@ -158,27 +158,3 @@ void Tools::interpretRanges(std::vector<std::string>&s){
   s=news;
 }
 
-double Tools::switchingFunc(const double distance, const int nn, const int mm, const double r_0, const double d_0, double *dfunc){
-  double result=0.;
-  const double threshold=pow(0.00001,1./(nn-mm));
-  const double rdist = (distance-d_0)/r_0;
-
-  if(rdist<=0.){
-     result+=1.;
-     *dfunc=0.;
-  }else if(rdist>(1.-epsilon) && rdist<(1+epsilon)){
-     result+=nn/mm;
-     *dfunc=0.5*nn*(nn-mm)/mm;
-  }else if(rdist>threshold){
-     *dfunc=0.;
-  }else{
-     double rNdist = pow(rdist, nn-1);
-     double rMdist = pow(rdist, mm-1);
-     double num = 1.-rNdist*rdist;
-     double iden = 1./(1.-rMdist*rdist);
-     double func = num*iden;
-     result += func;
-     *dfunc = ((-nn*rNdist*iden)+(func*(iden*mm)*rMdist))/(distance*r_0);
-  }
-  return result;
-}
