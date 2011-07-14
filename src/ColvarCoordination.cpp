@@ -84,6 +84,7 @@ serial(false)
   checkRead();
 
   addValueWithDerivatives("");
+  getValue("")->setPeriodicity(false);
 
   if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut[0],nl_st[0]);
   else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
