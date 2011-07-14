@@ -21,7 +21,6 @@ This is just a template variable
 class ColvarCoordination : public Colvar {
   bool pbc;
   bool serial;
-  vector<Vector> deriv;
   NeighborList *nl;
   SwitchingFunction switchingFunction;
   
@@ -90,7 +89,6 @@ serial(false)
   else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
   
   requestAtoms(nl->getFullAtomList());
-  deriv.resize(nl->getFullAtomList().size());
  
   log.printf("  between two groups of %d and %d atoms\n",ga_lista.size(),gb_lista.size());
   log.printf("  first group:\n");
@@ -118,7 +116,6 @@ ColvarCoordination::~ColvarCoordination(){
 void ColvarCoordination::prepare(){
  if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
   requestAtoms(nl->getFullAtomList());
-  deriv.resize(nl->getFullAtomList().size());
  }
 }
 
@@ -128,7 +125,8 @@ void ColvarCoordination::calculate()
 
  double ncoord=0.;
  Tensor virial;
- for(unsigned int i=0;i<deriv.size();++i) deriv[i].clear();
+ vector<Vector> deriv;
+ deriv.resize(getPositions().size());
 
  if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
    nl->update(getPositions());
