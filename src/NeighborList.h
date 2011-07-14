@@ -1,12 +1,15 @@
 #ifndef __PLUMED_NeighborList_h
 #define __PLUMED_NeighborList_h
 
-#include <vector>
 #include "Vector.h"
-#include "Pbc.h"
 #include "AtomNumber.h"
 
+#include <cassert>
+#include <vector>
+
 namespace PLMD{
+
+class Pbc;
 
 /// A class that implements neighbor lists from two lists or a single list of atoms
 class NeighborList  
