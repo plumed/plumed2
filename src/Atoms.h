@@ -3,7 +3,6 @@
 
 #include "PlumedCommunicator.h"
 #include "Tensor.h"
-#include "Pbc.h"
 #include <vector>
 #include <set>
 #include <cassert>
@@ -32,7 +31,6 @@ class Atoms
   std::vector<int> fullList;
   
   MDAtomsBase* mdatoms;
-  Pbc     pbc;
 
   PlumedMain & plumed;
 
@@ -64,9 +62,6 @@ public:
 
   void setTimeStep(void*);
   double getTimeStep()const;
-
-  const Pbc& getPbc()const{return pbc;};
-  Pbc& getPbc(){return pbc;};
 
 private:
   std::vector<const ActionAtomistic*> actions;

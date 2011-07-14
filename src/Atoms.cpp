@@ -38,7 +38,6 @@ Atoms::~Atoms(){
 void Atoms::setBox(void*p){
   mdatoms->setBox(p);
   Tensor b; mdatoms->getBox(b);
-  pbc.setBox(b);
 }
 
 void Atoms::setPositions(void*p){

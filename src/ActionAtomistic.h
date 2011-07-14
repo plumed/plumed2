@@ -6,6 +6,7 @@
 #include "PlumedMain.h"
 #include <vector>
 #include <set>
+#include "Pbc.h"
 
 namespace PLMD {
 
@@ -20,6 +21,7 @@ class ActionAtomistic :
   std::set<int>         unique;
   std::vector<Vector>   positions;       // positions of the needed atoms
   Tensor                box;
+  Pbc                   pbc;
   Tensor                virial;
   std::vector<Vector>   forces;          // forces on the needed atoms
   std::vector<double>   masses;
@@ -127,7 +129,7 @@ void ActionAtomistic::clearOutputForces(){
 
 inline
 const Pbc & ActionAtomistic::getPbc() const{
- return plumed.getAtoms().getPbc();
+ return pbc;
 }
 
 }
