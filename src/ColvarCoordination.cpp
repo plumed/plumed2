@@ -20,6 +20,7 @@ This is just a template variable
    
 class ColvarCoordination : public Colvar {
   bool pbc;
+  bool serial;
   vector<Vector> deriv;
   NeighborList *nl;
   SwitchingFunction switchingFunction;
@@ -36,8 +37,12 @@ PLUMED_REGISTER_ACTION(ColvarCoordination,"COORDINATION")
 
 ColvarCoordination::ColvarCoordination(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-pbc(true)
+pbc(true),
+serial(false)
 {
+
+  parseFlag("SERIAL",serial);
+
   vector<AtomNumber> ga_lista,gb_lista;
   parseAtomList("GROUPA",ga_lista);
   parseAtomList("GROUPB",gb_lista);
@@ -128,7 +133,17 @@ void ColvarCoordination::calculate()
    nl->update(getPositions());
  }
 
- for(unsigned int i=0;i<nl->size();++i) {                   // sum over close pairs
+ unsigned stride=comm.Get_size();
+ unsigned rank=comm.Get_rank();
+ if(serial){
+   stride=1;
+   rank=0;
+ }else{
+   stride=comm.Get_size();
+   rank=comm.Get_rank();
+ }
+
+ for(unsigned int i=rank;i<nl->size();i+=stride) {                   // sum over close pairs
  
   Vector distance;
   unsigned i0=nl->getClosePair(i).first;
@@ -145,6 +160,11 @@ void ColvarCoordination::calculate()
   deriv[i0] = deriv[i0] + (-dfunc)*distance ;
   deriv[i1] = deriv[i1] + dfunc*distance ;
   virial=virial+(-dfunc)*Tensor(distance,distance);
+ }
+
+ if(!serial){
+   comm.Sum(&ncoord,1);
+   comm.Sum(&deriv[0][0],3*deriv.size());
  }
 
  for(unsigned i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);
