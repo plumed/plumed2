@@ -392,7 +392,23 @@ void PlumedMain::prepareDependencies(){
 // allow actions to update their request list before atoms are shared
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++)
     if((*p)->isActive()) (*p)->prepare();
-  }
+
+/*
+Temporary fix to allow atom requests to be update in "prepare()"
+
+Nasty bug there. Actual requests of lists of atoms were forwarded to Atoms
+object *during* dependence preparation, so that any change made immediately
+after that was not taken into account. I temporarily solved this by
+re-preparing dependencies again after calls to prepare(), but probably the
+workflow has to be adjusted to be more robust.
+*/
+  for(unsigned i=0;i<pilots.size();++i){
+    if(pilots[i]->onStep()){
+      pilots[i]->activate();
+      active=true;
+     }
+  };
+}
 
 void PlumedMain::shareData(){
   if(active)atoms.share();
