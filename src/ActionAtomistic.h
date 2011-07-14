@@ -5,6 +5,7 @@
 #include "Atoms.h"
 #include "PlumedMain.h"
 #include <vector>
+#include <set>
 
 namespace PLMD {
 
@@ -13,8 +14,10 @@ class ActionAtomistic :
   virtual public Action
   {
 
-  Atoms::Request*       atomRequest;     // handler for request of atoms
+  friend class Atoms;
+
   std::vector<int>      indexes;         // the set of needed atoms
+  std::set<int>         unique;
   std::vector<Vector>   positions;       // positions of the needed atoms
   Tensor                box;
   Tensor                virial;
@@ -61,12 +64,13 @@ public:
   ActionAtomistic(const ActionOptions&ao);
   ~ActionAtomistic();
 
-  void activate();
-  void deactivate();
 
   void clearOutputForces();
 
   void   calculateNumericalDerivatives();
+
+  void retrieveAtoms();
+  void applyForces();
 };
 
 inline

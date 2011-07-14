@@ -435,19 +435,19 @@ void PlumedMain::performCalc(){
     {
       ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
       if(a) a->clearOutputForces();
+      if(a) if(a->isActive()) a->retrieveAtoms();
     }
     if((*p)->isActive()){
-      if((*p)->checkNumericalDerivatives()){
-        (*p)->calculateNumericalDerivatives();
-      } else {
-        (*p)->calculate();
-      }
+      if((*p)->checkNumericalDerivatives()) (*p)->calculateNumericalDerivatives();
+      else (*p)->calculate();
     }
   }
   
 // Finally apply them in reverse order
   for(ActionSet::reverse_iterator p=actionSet.rbegin();p!=actionSet.rend();++p){
     if((*p)->isActive()) (*p)->apply();
+    ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
+    if(a) if(a->isActive()) a->applyForces();
   }
 
 // And update forces:
