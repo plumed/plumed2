@@ -26,7 +26,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
  if(!do_pair){
   nallpairs_=nlist0_*nlist1_;
  }else{
-// if(nlist0_!=nlist1_) error
+  assert(nlist0_==nlist1_);
   nallpairs_=nlist0_;
  }
  initialize();
@@ -77,10 +77,7 @@ void NeighborList::update(const vector<Vector>& positions)
 {
  neighbors_.clear();
 // check if positions array has the correct length 
- if(positions.size()!=fullatomlist_.size()){
-  // i need to access to log here. still don't know how to do it
-  //log.printf("ERROR you need to request all the atoms one step before updating the NL\n"); 
- }
+ assert(positions.size()==fullatomlist_.size());
  for(unsigned int i=0;i<nallpairs_;++i){
    pair<unsigned,unsigned> index=getIndexPair(i);
    unsigned index0=index.first;
