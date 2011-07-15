@@ -1,2 +1,4 @@
 Plumed.inc*
 PlumedConfig.h
+*.cdep
+*.cppdep
