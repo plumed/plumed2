@@ -4,6 +4,7 @@
 #include <string>
 #include <cassert>
 #include "ActionWithValue.h"
+#include "Colvar.h"
 
 using namespace std;
 using namespace PLMD;
@@ -108,7 +109,8 @@ void ActionAtomistic::retrieveAtoms(){
   for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j]];
   for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j]];
   for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j]];
-  energy=plumed.getAtoms().getEnergy();
+  Colvar*cc=dynamic_cast<Colvar*>(this);
+  if(cc && cc->checkIsEnergy()) energy=plumed.getAtoms().getEnergy();
 }
 
 void ActionAtomistic::applyForces(){
