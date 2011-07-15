@@ -26,11 +26,11 @@ FLUSH STRIDE=100
 */
 //+ENDPLUMEDOC
 
-class Flush:
+class GenericFlush:
   public ActionPilot
 {
 public:
-  Flush(const ActionOptions&ao):
+  GenericFlush(const ActionOptions&ao):
     Action(ao),
     ActionPilot(ao)
   {
@@ -44,7 +44,7 @@ public:
   }
 };
 
-PLUMED_REGISTER_ACTION(Flush,"FLUSH")
+PLUMED_REGISTER_ACTION(GenericFlush,"FLUSH")
 
 }
 

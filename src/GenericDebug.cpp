@@ -20,20 +20,20 @@ the list of which objects are active and which are inactive
 as a sequence of + (active) and - (inactive). Logging is done with stride s.
 */
 //+ENDPLUMEDOC
-class Debug:
+class GenericDebug:
   public ActionPilot
 {
   bool logActivity;
   bool novirial;
 public:
-  Debug(const ActionOptions&ao);
+  GenericDebug(const ActionOptions&ao);
   void calculate(){};
   void apply();
 };
 
-PLUMED_REGISTER_ACTION(Debug,"DEBUG")
+PLUMED_REGISTER_ACTION(GenericDebug,"DEBUG")
 
-Debug::Debug(const ActionOptions&ao):
+GenericDebug::GenericDebug(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 logActivity(false),
@@ -46,18 +46,18 @@ novirial(false){
   checkRead();
 }
 
-void Debug::apply(){
+void GenericDebug::apply(){
   if(logActivity){
     const ActionSet&actionSet(plumed.getActionSet());
     int a=0;
     for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p){
-      if(dynamic_cast<Debug*>(*p))continue;
+      if(dynamic_cast<GenericDebug*>(*p))continue;
       if((*p)->isActive()) a++;
     };
     if(a>0){
       log.printf("activity at step %i: ",getStep());
       for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p){
-        if(dynamic_cast<Debug*>(*p))continue;
+        if(dynamic_cast<GenericDebug*>(*p))continue;
         if((*p)->isActive()) log.printf("+");
         else                 log.printf("-");
       };
