@@ -62,8 +62,13 @@ void Action::addDependency(Action*action){
 }
 
 void Action::activate(){
-  active=true;
+// preparation step is called only the first time an Action is activated.
+// since it could change its dependences (e.g. in an ActionAtomistic which is
+// accessing to a virtual atom), this is done just before dependencies are
+// activated
+  if(!active) prepare();
   for(Dependencies::iterator p=after.begin();p!=after.end();p++) (*p)->activate();
+  active=true;
 }
 
 void Action::clearDependencies(){

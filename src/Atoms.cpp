@@ -32,7 +32,7 @@ Atoms::Atoms(PlumedMain&plumed):
 
 Atoms::~Atoms(){
   assert(actions.size()==0);
-  if(mdatoms) delete mdatoms;
+  delete mdatoms;
 }
 
 void Atoms::setBox(void*p){
@@ -132,6 +132,7 @@ void Atoms::share(){
   }
   virial.clear();
   for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].clear();
+  for(unsigned i=getNatoms();i<positions.size();i++) forces[i].clear(); // virtual atoms
   forceOnEnergy=0.0;
 }
 
@@ -275,7 +276,30 @@ void Atoms::init(){
   }
 }
 
+void Atoms::setDomainDecomposition(PlumedCommunicator& comm){
+  dd.enable(comm);
+}
 
+void Atoms::resizeVectors(unsigned n){
+  positions.resize(n);
+  forces.resize(n);
+  masses.resize(n);
+  charges.resize(n);
+}
+
+unsigned Atoms::addVirtualAtom(ActionWithVirtualAtom*a){
+  unsigned n=positions.size();
+  resizeVectors(n+1);
+  virtualAtomsActions.push_back(a);
+  return n;
+}
+
+void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a){
+  unsigned n=positions.size();
+  assert(a==virtualAtomsActions[n-1]);
+  resizeVectors(n-1);
+  virtualAtomsActions.pop_back();
+}
 
 }
 

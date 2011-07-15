@@ -394,6 +394,10 @@ void PlumedMain::prepareDependencies(){
 
 // activate all the actions which are on step
 // activation is recursive and enables also the dependencies
+// before doing that, the prepare() method is called to see if there is some
+// new/changed dependency (up to now, only useful for dependences on virtual atoms,
+// which can be dynamically changed).
+//
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
   for(unsigned i=0;i<pilots.size();++i){
@@ -403,7 +407,6 @@ void PlumedMain::prepareDependencies(){
      }
   };
 
-// allow actions to update their request list before atoms are shared
 // also, if one of them is the total energy, tell to atoms that energy should be collected
   bool collectEnergy=false;
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++){
@@ -411,7 +414,6 @@ void PlumedMain::prepareDependencies(){
       if(Colvar *c=dynamic_cast<Colvar*>(*p)) {
         if(c->checkIsEnergy()) collectEnergy=true;
       }
-      (*p)->prepare();
     }
   }
   atoms.setCollectEnergy(collectEnergy);

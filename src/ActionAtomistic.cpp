@@ -5,6 +5,7 @@
 #include <cassert>
 #include "ActionWithValue.h"
 #include "Colvar.h"
+#include "ActionWithVirtualAtom.h"
 
 using namespace std;
 using namespace PLMD;
@@ -21,6 +22,7 @@ Action(ao)
 }
 
 void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
+  Atoms&atoms(plumed.getAtoms());
   int nat=a.size();
   indexes.resize(nat);
   for(int i=0;i<nat;i++) indexes[i]=a[i].index();
@@ -28,8 +30,12 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   forces.resize(nat);
   masses.resize(nat);
   charges.resize(nat);
-  unsigned n=plumed.getAtoms().natoms;
-  for(unsigned i=0;i<indexes.size();i++) assert(indexes[i]<n);
+  int n=atoms.positions.size();
+  clearDependencies();
+  for(unsigned i=0;i<indexes.size();i++){
+    assert(indexes[i]<n);
+    if(indexes[i]>=atoms.getNatoms()) addDependency(atoms.virtualAtomsActions[indexes[i]-atoms.getNatoms()]);
+  }
   unique.clear();
   unique.insert(indexes.begin(),indexes.end());
 
@@ -96,7 +102,21 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
   Tools::interpretRanges(strings);
   t.resize(strings.size());
   for(unsigned i=0;i<t.size();++i){
-   Tools::convert(strings[i],t[i]); // this is converting strings to AtomNumbers
+   bool ok=false;
+   ok=Tools::convert(strings[i],t[i]); // this is converting strings to AtomNumbers
+// here we check if the atom name is the name of an added virtual atom
+   if(!ok){
+     const ActionSet&actionSet(plumed.getActionSet());
+     for(ActionSet::const_iterator a=actionSet.begin();a!=actionSet.end();++a){
+       ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(*a);
+       if(c) if(c->getLabel()==strings[i]){
+         ok=true;
+         t[i]=c->getIndex();
+         break;
+       }
+     }
+   }
+   assert(ok);
   }
 }
 
