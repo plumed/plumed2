@@ -18,6 +18,7 @@ class ActionAtomistic;
 class Atoms
 {
   friend class ActionAtomistic;
+  friend class GenericWholeMolecules;
   int natoms;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
