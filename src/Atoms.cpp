@@ -132,6 +132,7 @@ void Atoms::share(){
   }
   virial.clear();
   for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].clear();
+  forceOnEnergy=0.0;
 }
 
 void Atoms::wait(){
@@ -158,7 +159,6 @@ void Atoms::wait(){
       }
     }
     if(collectEnergy) dd.Sum(&energy,1);
-    forceOnEnergy=0.0;
   }
 }
 

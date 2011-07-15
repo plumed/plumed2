@@ -61,7 +61,7 @@ components(false)
 
 // calculator
 void ColvarEnergy::calculate(){
-  setValue(plumed.getAtoms().getEnergy());
+  setValue(getEnergy());
 }
 
 }

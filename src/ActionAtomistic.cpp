@@ -108,6 +108,7 @@ void ActionAtomistic::retrieveAtoms(){
   for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j]];
   for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j]];
   for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j]];
+  energy=plumed.getAtoms().getEnergy();
 }
 
 void ActionAtomistic::applyForces(){
@@ -115,6 +116,7 @@ void ActionAtomistic::applyForces(){
   Tensor           & v(plumed.getAtoms().virial);
   for(unsigned j=0;j<indexes.size();j++) f[indexes[j]]+=forces[j];
   v+=virial;
+  plumed.getAtoms().forceOnEnergy+=forceOnEnergy;
 }
 
 

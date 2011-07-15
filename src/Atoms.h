@@ -44,7 +44,6 @@ class Atoms
 
 public:
 
-  void forceEnergy(double d){forceOnEnergy+=d;};
   double getEnergy()const{assert(collectEnergy);return energy;};
   void setCollectEnergy(bool b){collectEnergy=b;};
   void setMDEnergyUnits(double d){MDEnergyUnits=d;};

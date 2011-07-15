@@ -53,7 +53,7 @@ void Colvar::apply(){
     v(2,1)+=force*derivatives[3*nat+7];
     v(2,2)+=force*derivatives[3*nat+8];
   }
-  if(isEnergy) plumed.getAtoms().forceEnergy(getValue(0)->getForce());
+  if(isEnergy) modifyForceOnEnergy()+=getValue(0)->getForce();
 }
 
 
