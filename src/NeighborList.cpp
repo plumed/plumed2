@@ -49,6 +49,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
 
 void NeighborList::initialize()
 {
+ neighbors_.clear();
  for(unsigned int i=0;i<nallpairs_;++i){
    neighbors_.push_back(getIndexPair(i));
  }
@@ -67,8 +68,10 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
  }else if (twolists_ && !do_pair_){
   index=pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
  }else if (!twolists_){
-// still to fix the map between mono and multi index here
-  index=pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
+  unsigned ii = nallpairs_-1-ipair;
+  unsigned  K = floor((sqrt(8*ii+1)+1)/2);
+  unsigned jj = ii-K*(K-1)/2;
+  index=pair<unsigned,unsigned>(nlist0_-1-K,nlist0_-1-jj);
  }
  return index;
 }
