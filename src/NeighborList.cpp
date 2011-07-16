@@ -37,8 +37,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
                            const Pbc& pbc, const double& distance,
                            const unsigned& stride):
                            do_pbc_(do_pbc), pbc_(pbc),
-                           distance_(distance), stride_(stride)
-{
+                           distance_(distance), stride_(stride){
  fullatomlist_=list0;
  nlist0_=list0.size();
  twolists_=false;
@@ -47,21 +46,18 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
  lastupdate_=0;
 }
 
-void NeighborList::initialize()
-{
+void NeighborList::initialize() {
  neighbors_.clear();
  for(unsigned int i=0;i<nallpairs_;++i){
    neighbors_.push_back(getIndexPair(i));
  }
 }
 
-vector<AtomNumber>& NeighborList::getFullAtomList()
-{
+vector<AtomNumber>& NeighborList::getFullAtomList() {
  return fullatomlist_;
 }
 
-pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
-{
+pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
  pair<unsigned,unsigned> index;
  if(twolists_ && do_pair_){
   index=pair<unsigned,unsigned>(ipair,ipair+nlist0_);
@@ -76,8 +72,7 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair)
  return index;
 }
 
-void NeighborList::update(const vector<Vector>& positions)
-{
+void NeighborList::update(const vector<Vector>& positions) {
  neighbors_.clear();
 // check if positions array has the correct length 
  assert(positions.size()==fullatomlist_.size());
@@ -97,8 +92,7 @@ void NeighborList::update(const vector<Vector>& positions)
  setRequestList();
 }
 
-void NeighborList::setRequestList()
-{
+void NeighborList::setRequestList() {
  requestlist_.clear();
  vector<unsigned> tmp;
  for(unsigned int i=0;i<size();++i){
@@ -113,8 +107,7 @@ void NeighborList::setRequestList()
  }
 }
 
-vector<AtomNumber>& NeighborList::getReducedAtomList()
-{
+vector<AtomNumber>& NeighborList::getReducedAtomList() {
  std::vector< pair<unsigned,unsigned> > newneighbors;
  for(unsigned int i=0;i<size();++i){
   unsigned newindex0,newindex1;
@@ -131,33 +124,27 @@ vector<AtomNumber>& NeighborList::getReducedAtomList()
  return requestlist_;
 }
 
-unsigned NeighborList::getStride() const
-{
+unsigned NeighborList::getStride() const {
  return stride_;
 }
 
-unsigned NeighborList::getLastUpdate() const
-{
+unsigned NeighborList::getLastUpdate() const {
  return lastupdate_;
 }
 
-void NeighborList::setLastUpdate(unsigned step)
-{
+void NeighborList::setLastUpdate(unsigned step) {
  lastupdate_=step;
 }
 
-unsigned NeighborList::size() const
-{
+unsigned NeighborList::size() const {
  return neighbors_.size();
 }
 
- pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const
-{
+ pair<unsigned,unsigned> NeighborList::getClosePair(unsigned i) const {
  return neighbors_[i];
 }
 
-vector<unsigned> NeighborList::getNeighbors(unsigned index)
-{
+vector<unsigned> NeighborList::getNeighbors(unsigned index) {
  vector<unsigned> neighbors;
  for(unsigned int i=0;i<size();++i){
   if(neighbors_[i].first==index)  neighbors.push_back(neighbors_[i].second);
