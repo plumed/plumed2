@@ -38,7 +38,7 @@ DUMPDERIVATIVES ARG=distance,distanceN STRIDE=1 FILE=deriv
 */
 //+ENDPLUMEDOC
 
-class DumpDerivatives :
+class GenericDumpDerivatives :
 public ActionPilot,
 public ActionWithArguments
 {
@@ -46,14 +46,14 @@ public ActionWithArguments
   FILE* fp;
 public:
   void calculate();
-  DumpDerivatives(const ActionOptions&);
+  GenericDumpDerivatives(const ActionOptions&);
   void apply(){};
-  ~DumpDerivatives();
+  ~GenericDumpDerivatives();
 };
 
-PLUMED_REGISTER_ACTION(DumpDerivatives,"DUMPDERIVATIVES")
+PLUMED_REGISTER_ACTION(GenericDumpDerivatives,"DUMPDERIVATIVES")
 
-DumpDerivatives::DumpDerivatives(const ActionOptions&ao):
+GenericDumpDerivatives::GenericDumpDerivatives(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
@@ -81,7 +81,7 @@ fp(NULL)
 }
 
 
-void DumpDerivatives::calculate(){
+void GenericDumpDerivatives::calculate(){
   if(comm.Get_rank()!=0)return;
   const std::vector<Value*>& arguments(getArguments());
   unsigned npar=arguments[0]->getDerivatives().size();
@@ -95,7 +95,7 @@ void DumpDerivatives::calculate(){
   }
 }
 
-DumpDerivatives::~DumpDerivatives(){
+GenericDumpDerivatives::~GenericDumpDerivatives(){
   if(fp) fclose(fp);
 }
 

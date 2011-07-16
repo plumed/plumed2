@@ -15,6 +15,7 @@ SRC_DYNAMIC_WRAPPER=$(srcdir)/Plumed.c
 OBJ_DYNAMIC_WRAPPER=Plumed.o
 
 ALL_SRC=$(SRC_KERNEL) $(SRC_WRAPPER) $(SRC_DYNAMIC_WRAPPER)
+ALL_SRC_DEP=$(SRC_KERNEL:.cpp=.cppdep) $(SRC_WRAPPER:.cpp=.cppdep) $(SRC_DYNAMIC_WRAPPER:.c.cdep)
 
 .PHONY: all clean
 
@@ -38,9 +39,12 @@ libplumedKernel.$(SOEXT): $(OBJ_KERNEL)
 libplumed.$(SOEXT): $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 
+
 clean:
 	rm -f *.o
 	rm -f makefile.dep
+	rm -f *.cdep
+	rm -f *.cppdep
 	rm -f PlumedConfig.h
 	rm -f Plumed.inc*
 	rm -f *~
@@ -75,9 +79,19 @@ Plumed.inc.shared: Plumed.inc
 	echo PLUMED_LOAD= '$$(PLUMED_SHARED_OBJ) $$(PLUMED_LIBS) $$(PLUMED_LDFLAGS)' >> $@
 	echo PLUMED_DEPENDENCIES='$$(PLUMED_SHARED_OBJ)' >> $@
 
-makefile.dep : $(ALL_SRC) $(srcdir)/*.h $(srcdir)/PlumedConfig.h
+makefile.dep : $(ALL_SRC_DEP)
+	cat $(ALL_SRC_DEP) > $@
+
+$(ALL_SRC_DEP): $(ALL_SRC) $(srcdir)/*.h $(srcdir)/PlumedConfig.h
+
+%.cppdep : %.cpp
 ifdef GCCDEP
-	for i in $(ALL_SRC) ; do $(GCCDEP) $(CPPFLAGS) -MM "$${i}"; done > $@
+	$(GCCDEP) $(CPPFLAGS) -MM $< -o $@
+endif
+
+%.cdep : %.c
+ifdef GCCDEP
+	$(GCCDEP) $(CPPFLAGS) -MM $< -o $@
 endif
 
 -include makefile.dep

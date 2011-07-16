@@ -360,6 +360,18 @@ void PlumedMain::readInputFile(std::string str){
   pilots=actionSet.select<ActionPilot*>();
 }
 
+////////////////////////////////////////////////////////////////////////
+
+void PlumedMain::exit(int c){
+  comm.Abort(c);
+}
+
+Log& PlumedMain::getLog(){
+  return log;
+}
+
+
+
 
 
 void PlumedMain::calc(){
@@ -367,21 +379,22 @@ void PlumedMain::calc(){
   performCalc();
 }
 
+void PlumedMain::prepareCalc(){
+  prepareDependencies();
+  shareData();
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// here we have the main steps in "calc()"
+// they can be called individually, but the standard thing is to
+// traverse them in this order:
 void PlumedMain::prepareDependencies(){
-
-  active=false;
-
-  atoms.setCollectEnergy(false);
-
-  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++){
-    (*p)->deactivate();
-    if(Colvar *c=dynamic_cast<Colvar*>(*p)) {
-      if(c->checkIsEnergy()) atoms.setCollectEnergy(true);
-    }
-  }
 
 // activate all the actions which are on step
 // activation is recursive and enables also the dependencies
+// for optimization, an "active" flag remains false if no action at all is active
+  active=false;
   for(unsigned i=0;i<pilots.size();++i){
     if(pilots[i]->onStep()){
       pilots[i]->activate();
@@ -390,35 +403,26 @@ void PlumedMain::prepareDependencies(){
   };
 
 // allow actions to update their request list before atoms are shared
-  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++)
-    if((*p)->isActive()) (*p)->prepare();
+// also, if one of them is the total energy, tell to atoms that energy should be collected
+  bool collectEnergy=false;
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++){
+    if((*p)->isActive()){
+      if(Colvar *c=dynamic_cast<Colvar*>(*p)) {
+        if(c->checkIsEnergy()) collectEnergy=true;
+      }
+      (*p)->prepare();
+    }
+  }
+  atoms.setCollectEnergy(collectEnergy);
 
-/*
-Temporary fix to allow atom requests to be update in "prepare()"
-
-Nasty bug there. Actual requests of lists of atoms were forwarded to Atoms
-object *during* dependence preparation, so that any change made immediately
-after that was not taken into account. I temporarily solved this by
-re-preparing dependencies again after calls to prepare(), but probably the
-workflow has to be adjusted to be more robust.
-*/
-  for(unsigned i=0;i<pilots.size();++i){
-    if(pilots[i]->onStep()){
-      pilots[i]->activate();
-      active=true;
-     }
-  };
 }
 
 void PlumedMain::shareData(){
-  if(active)atoms.share();
+// atom positions are shared (but only if there is something to do)
+  if(!active)return;
+  atoms.share();
 }
 
-
-void PlumedMain::prepareCalc(){
-  prepareDependencies();
-  shareData();
-}
 
 void PlumedMain::performCalc(){
 
@@ -435,35 +439,30 @@ void PlumedMain::performCalc(){
     {
       ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
       if(a) a->clearOutputForces();
+      if(a) if(a->isActive()) a->retrieveAtoms();
     }
     if((*p)->isActive()){
-      if((*p)->checkNumericalDerivatives()){
-        (*p)->calculateNumericalDerivatives();
-      } else {
-        (*p)->calculate();
-      }
+      if((*p)->checkNumericalDerivatives()) (*p)->calculateNumericalDerivatives();
+      else (*p)->calculate();
     }
   }
   
-// Finally apply them in reverse order
+// apply them in reverse order
   for(ActionSet::reverse_iterator p=actionSet.rbegin();p!=actionSet.rend();++p){
     if((*p)->isActive()) (*p)->apply();
+    ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
+// still ActionAtomistic has a special treatment, since they may need to add forces on atoms
+    if(a) if(a->isActive()) a->applyForces();
   }
 
-// And update forces:
+// this is updating the MD copy of the forces
   atoms.updateForces();
 
+// Finally switch off all actions (they will be switched on at next step
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++) (*p)->deactivate();
+
 }
-
-void PlumedMain::exit(int c){
-  comm.Abort(c);
-}
-
-Log& PlumedMain::getLog(){
-  return log;
-}
-
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 

@@ -3,7 +3,6 @@
 
 #include "PlumedCommunicator.h"
 #include "Tensor.h"
-#include "Pbc.h"
 #include <vector>
 #include <set>
 #include <cassert>
@@ -12,11 +11,14 @@ namespace PLMD{
 
 class MDAtomsBase;
 class PlumedMain;
+class ActionAtomistic;
 
 /// Class containing atom related quantities from the MD code.
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
 class Atoms
 {
+  friend class ActionAtomistic;
+  friend class GenericWholeMolecules;
   int natoms;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
@@ -30,7 +32,6 @@ class Atoms
   std::vector<int> fullList;
   
   MDAtomsBase* mdatoms;
-  Pbc     pbc;
 
   PlumedMain & plumed;
 
@@ -43,7 +44,6 @@ class Atoms
 
 public:
 
-  void forceEnergy(double d){forceOnEnergy+=d;};
   double getEnergy()const{assert(collectEnergy);return energy;};
   void setCollectEnergy(bool b){collectEnergy=b;};
   void setMDEnergyUnits(double d){MDEnergyUnits=d;};
@@ -63,40 +63,8 @@ public:
   void setTimeStep(void*);
   double getTimeStep()const;
 
-  const Pbc& getPbc()const{return pbc;};
-  Pbc& getPbc(){return pbc;};
-
-  class Request{
-    friend class Atoms;
-    bool active;
-    Atoms& atoms;
-    const std::vector<int>& indexes;
-    std::vector<double>&    masses;
-    std::vector<double>&    charges;
-    std::vector<Vector> & positions;
-    const std::vector<Vector> & forces;
-    Tensor& box;
-    const Tensor& virial;
-    std::set<int> unique;
-  public:
-    void activate();
-    void deactivate();
-    bool isActive();
-    void setForced();
-    Request(Atoms& atoms,const std::vector<int>& indexes,
-                               std::vector<double>& masses,
-                               std::vector<double>& charges,
-                               std::vector<Vector>& positions,
-                         const std::vector<Vector>& forces,
-                               Tensor& box,
-                         const Tensor& virial);
-    ~Request();
-  };
-
-
 private:
-  std::vector<Request*> requestset;
-  typedef std::vector<Request*>::iterator requestsetIterator;
+  std::vector<const ActionAtomistic*> actions;
   std::vector<int>    gatindex;
 
   class DomainDecomposition:
@@ -153,6 +121,8 @@ public:
   void createFullList(int*);
   void getFullList(int**);
   void clearFullList();
+  void add(const ActionAtomistic*);
+  void remove(const ActionAtomistic*);
 };
 
 inline
@@ -165,20 +135,6 @@ void Atoms::setDomainDecomposition(PlumedCommunicator& comm){
   dd.enable(comm);
 }
 
-inline
-void Atoms::Request::activate(){
-  active=true;
-}
-
-inline
-void Atoms::Request::deactivate(){
-  active=false;
-}
-
-inline
-bool Atoms::Request::isActive(){
-  return active;
-}
 
 }
 #endif

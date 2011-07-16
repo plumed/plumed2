@@ -35,6 +35,8 @@ public:
   double modulo()const;
 /// scale the vector by a factor s
   void scale(double s);
+/// increment
+  Vector& operator +=(const Vector& b);
 };
 
 inline
@@ -101,6 +103,14 @@ void Vector::scale(double s){
 inline
 Vector operator+(const Vector&v1,const Vector&v2){
   return Vector(v1[0]+v2[0],v1[1]+v2[1],v1[2]+v2[2]);
+}
+
+inline
+Vector& Vector::operator +=(const Vector& b){
+  d[0]+=b(0);
+  d[1]+=b(1);
+  d[2]+=b(2);
+  return *this;
 }
 
 }

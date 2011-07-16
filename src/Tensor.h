@@ -31,6 +31,7 @@ public:
 /// return the matrix inverse
   Tensor inverse()const;
   Tensor transpose()const;
+  Tensor& operator +=(const Tensor& b);
 };
 
 /// matrix multiplication
@@ -163,6 +164,21 @@ Tensor operator+(const Tensor&t1,const Tensor&t2){
   t(2,2)+=t2(2,2);
   return t;
 }
+
+inline
+Tensor& Tensor::operator +=(const Tensor& b){
+  d[0][0]+=b(0,0);
+  d[0][1]+=b(0,1);
+  d[0][2]+=b(0,2);
+  d[1][0]+=b(1,0);
+  d[1][1]+=b(1,1);
+  d[1][2]+=b(1,2);
+  d[2][0]+=b(2,0);
+  d[2][1]+=b(2,1);
+  d[2][2]+=b(2,2);
+  return *this;
+}
+
 
 
 

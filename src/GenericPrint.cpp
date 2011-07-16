@@ -38,7 +38,7 @@ PRINT ARG=distance,energy   STRIDE=1000 FILE=COLVAR_ALL
 */
 //+ENDPLUMEDOC
 
-class Print :
+class GenericPrint :
 public ActionPilot,
 public ActionWithArguments
 {
@@ -47,14 +47,14 @@ public ActionWithArguments
   string fmt;
 public:
   void calculate();
-  Print(const ActionOptions&);
+  GenericPrint(const ActionOptions&);
   void apply(){};
-  ~Print();
+  ~GenericPrint();
 };
 
-PLUMED_REGISTER_ACTION(Print,"PRINT")
+PLUMED_REGISTER_ACTION(GenericPrint,"PRINT")
 
-Print::Print(const ActionOptions&ao):
+GenericPrint::GenericPrint(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
@@ -83,7 +83,7 @@ fmt("%f")
 }
 
 
-void Print::calculate(){
+void GenericPrint::calculate(){
     if(comm.Get_rank()!=0)return;
     if(!fp){
       log.printf("PRINT:");
@@ -100,7 +100,7 @@ void Print::calculate(){
     }
 }
 
-Print::~Print(){
+GenericPrint::~GenericPrint(){
   if(fp) fclose(fp);
 }
 

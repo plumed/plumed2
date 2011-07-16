@@ -4,29 +4,20 @@
 #include <string>
 #include <cassert>
 #include "ActionWithValue.h"
+#include "Colvar.h"
 
 using namespace std;
 using namespace PLMD;
 
 ActionAtomistic::~ActionAtomistic(){
 // forget the pending request
-  if(atomRequest) delete atomRequest;
+  plumed.getAtoms().remove(this);
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
-Action(ao),
-atomRequest(NULL)
+Action(ao)
 {
-}
-
-void ActionAtomistic::activate(){
-  if(atomRequest) atomRequest->activate();
-  Action::activate();
-}
-
-void ActionAtomistic::deactivate(){
-  if(atomRequest) atomRequest->deactivate();
-  Action::deactivate();
+  plumed.getAtoms().add(this);
 }
 
 void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
@@ -37,13 +28,15 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   forces.resize(nat);
   masses.resize(nat);
   charges.resize(nat);
-  if(atomRequest) delete atomRequest;
-//  atomRequest=new Atoms::Request(plumed.getAtoms(),indexes,positions,forces,box,virial);
-  atomRequest=new Atoms::Request(plumed.getAtoms(),indexes,masses,charges,positions,forces,box,virial);
+  unsigned n=plumed.getAtoms().natoms;
+  for(unsigned i=0;i<indexes.size();i++) assert(indexes[i]<n);
+  unique.clear();
+  unique.insert(indexes.begin(),indexes.end());
+
 }
 
 Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
-  return plumed.getAtoms().getPbc().distance(v1,v2);
+  return pbc.distance(v1,v2);
 }
 
 void ActionAtomistic::calculateNumericalDerivatives(){
@@ -67,13 +60,13 @@ void ActionAtomistic::calculateNumericalDerivatives(){
   }
  for(int i=0;i<3;i++) for(int k=0;k<3;k++){
    double arg0=box(i,k);
-   for(int j=0;j<natoms;j++) positions[j]=plumed.getAtoms().getPbc().realToScaled(positions[j]);
+   for(int j=0;j<natoms;j++) positions[j]=pbc.realToScaled(positions[j]);
    box(i,k)=box(i,k)+delta;
-   plumed.getAtoms().getPbc().setBox(box);
-   for(int j=0;j<natoms;j++) positions[j]=plumed.getAtoms().getPbc().scaledToReal(positions[j]);
+   pbc.setBox(box);
+   for(int j=0;j<natoms;j++) positions[j]=pbc.scaledToReal(positions[j]);
    calculate();
    box(i,k)=arg0;
-   plumed.getAtoms().getPbc().setBox(box);
+   pbc.setBox(box);
    for(int j=0;j<natoms;j++) positions[j]=savedPositions[j];
    for(int j=0;j<nval;j++) valuebox[j](i,k)=a->getValue(j)->get();
  }
@@ -106,6 +99,29 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
    Tools::convert(strings[i],t[i]); // this is converting strings to AtomNumbers
   }
 }
+
+void ActionAtomistic::retrieveAtoms(){
+  box=plumed.getAtoms().box;
+  pbc.setBox(box);
+  const vector<Vector> & p(plumed.getAtoms().positions);
+  const vector<double> & c(plumed.getAtoms().charges);
+  const vector<double> & m(plumed.getAtoms().masses);
+  for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j]];
+  for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j]];
+  for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j]];
+  Colvar*cc=dynamic_cast<Colvar*>(this);
+  if(cc && cc->checkIsEnergy()) energy=plumed.getAtoms().getEnergy();
+}
+
+void ActionAtomistic::applyForces(){
+  vector<Vector>   & f(plumed.getAtoms().forces);
+  Tensor           & v(plumed.getAtoms().virial);
+  for(unsigned j=0;j<indexes.size();j++) f[indexes[j]]+=forces[j];
+  v+=virial;
+  plumed.getAtoms().forceOnEnergy+=forceOnEnergy;
+}
+
+
 
 
 

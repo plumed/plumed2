@@ -5,6 +5,8 @@
 #include "Atoms.h"
 #include "PlumedMain.h"
 #include <vector>
+#include <set>
+#include "Pbc.h"
 
 namespace PLMD {
 
@@ -13,14 +15,20 @@ class ActionAtomistic :
   virtual public Action
   {
 
-  Atoms::Request*       atomRequest;     // handler for request of atoms
+  friend class Atoms;
+
   std::vector<int>      indexes;         // the set of needed atoms
+  std::set<int>         unique;
   std::vector<Vector>   positions;       // positions of the needed atoms
+  double                energy;
   Tensor                box;
+  Pbc                   pbc;
   Tensor                virial;
-  std::vector<Vector>   forces;          // forces on the needed atoms
   std::vector<double>   masses;
   std::vector<double>   charges;
+
+  std::vector<Vector>   forces;          // forces on the needed atoms
+  double                forceOnEnergy;
 
 protected:
 /// Request an array of atoms.
@@ -36,6 +44,8 @@ protected:
   const Tensor & getBox()const;
 /// Get the array of all positions
   const std::vector<Vector> & getPositions()const;
+/// Get energy
+  const double & getEnergy()const;
 /// Get mass of i-th atom
   double getMasses(int i)const;
 /// Get charge of i-th atom
@@ -44,6 +54,8 @@ protected:
   std::vector<Vector> & modifyForces();
 /// Get a reference to virial array
   Tensor & modifyVirial();
+/// Get a reference to force on energy
+  double & modifyForceOnEnergy();
 /// Get number of available atoms
   int getNatoms()const{return indexes.size();};
 /// Compute the pbc distance between two positions
@@ -61,12 +73,13 @@ public:
   ActionAtomistic(const ActionOptions&ao);
   ~ActionAtomistic();
 
-  void activate();
-  void deactivate();
 
   void clearOutputForces();
 
   void   calculateNumericalDerivatives();
+
+  void retrieveAtoms();
+  void applyForces();
 };
 
 inline
@@ -96,6 +109,10 @@ const std::vector<Vector> & ActionAtomistic::getPositions()const{
   return positions;
 }
 
+inline
+const double & ActionAtomistic::getEnergy()const{
+  return energy;
+}
 
 inline
 const Tensor & ActionAtomistic::getBox()const{
@@ -114,16 +131,19 @@ Tensor & ActionAtomistic::modifyVirial(){
 
 inline
 void ActionAtomistic::clearOutputForces(){
-  for(unsigned i=0;i<forces.size();++i){
-    forces[i][0]=0.0;
-    forces[i][1]=0.0;
-    forces[i][2]=0.0;
-  }
+  for(unsigned i=0;i<forces.size();++i)forces[i].clear();
+  forceOnEnergy=0.0;
+}
+
+
+inline
+double & ActionAtomistic::modifyForceOnEnergy(){
+  return forceOnEnergy;
 }
 
 inline
 const Pbc & ActionAtomistic::getPbc() const{
- return plumed.getAtoms().getPbc();
+ return pbc;
 }
 
 }

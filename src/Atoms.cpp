@@ -1,4 +1,5 @@
 #include "Atoms.h"
+#include "ActionAtomistic.h"
 #include <cassert>
 #include <algorithm>
 #include <string>
@@ -30,16 +31,13 @@ Atoms::Atoms(PlumedMain&plumed):
 }
 
 Atoms::~Atoms(){
-// this is to check that all the request objects have been already destroyed
-// indeed, since requests access to atoms, they HAVE to be destroyed before
-  assert(requestset.size()==0);
+  assert(actions.size()==0);
   if(mdatoms) delete mdatoms;
 }
 
 void Atoms::setBox(void*p){
   mdatoms->setBox(p);
   Tensor b; mdatoms->getBox(b);
-  pbc.setBox(b);
 }
 
 void Atoms::setPositions(void*p){
@@ -82,10 +80,9 @@ void Atoms::share(){
   mdatoms->getPositions(gatindex,positions);
   if(dd && int(gatindex.size())<natoms){
     bool async=dd.Get_size()<10;
-//    async=true;
     std::set<int> unique;
-    for(unsigned i=0;i<requestset.size();i++){
-      if(requestset[i]->isActive()) unique.insert(requestset[i]->unique.begin(),requestset[i]->unique.end());
+    for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
+      unique.insert(actions[i]->unique.begin(),actions[i]->unique.end());
     }
     if(async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
@@ -133,6 +130,9 @@ void Atoms::share(){
       }
     }
   }
+  virial.clear();
+  for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].clear();
+  forceOnEnergy=0.0;
 }
 
 void Atoms::wait(){
@@ -159,48 +159,16 @@ void Atoms::wait(){
       }
     }
     if(collectEnergy) dd.Sum(&energy,1);
-    forceOnEnergy=0.0;
   }
-
-
-  for(unsigned i=0;i<requestset.size();i++){
-    if(!requestset[i]->isActive()) continue;
-    const vector<int> & indexes(requestset[i]->indexes);
-    vector<Vector>   & p(requestset[i]->positions);
-    vector<double>   & c(requestset[i]->charges);
-    vector<double>   & m(requestset[i]->masses);
-    requestset[i]->box=box;
-    for(unsigned j=0;j<indexes.size();j++) p[j]=positions[indexes[j]];
-    for(unsigned j=0;j<indexes.size();j++) c[j]=charges[indexes[j]];
-    for(unsigned j=0;j<indexes.size();j++) m[j]=masses[indexes[j]];
-  };
 }
 
 void Atoms::updateForces(){
-  bool any(false);
-  virial.clear();
-  for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].clear();
-  for(unsigned i=0;i<requestset.size();i++){
-    if(!requestset[i]->isActive()) continue;
-    any=true;
-    const vector<int> & indexes(requestset[i]->indexes);
-    const vector<Vector>   & f(requestset[i]->forces);
-    const Tensor           & v(requestset[i]->virial);
-    if(!plumed.novirial) for(int l=0;l<3;l++)for(int m=0;m<3;m++) virial(l,m)+=v(l,m);
-    for(unsigned j=0;j<indexes.size();j++){
-      const unsigned iat=indexes[j];
-      forces[iat][0]+=f[j][0];
-      forces[iat][1]+=f[j][1];
-      forces[iat][2]+=f[j][2];
-    }
-  };
   if(forceOnEnergy*forceOnEnergy>epsilon){
      double alpha=1.0-forceOnEnergy;
      mdatoms->rescaleForces(gatindex.size(),alpha);
   }
-  if(!any)return;
   mdatoms->updateForces(gatindex,forces);
-  if(dd.Get_rank()==0) mdatoms->updateVirial(virial);
+  if(!plumed.novirial && dd.Get_rank()==0) mdatoms->updateVirial(virial);
 }
 
 void Atoms::setNatoms(int n){
@@ -214,33 +182,16 @@ void Atoms::setNatoms(int n){
 }
 
 
-Atoms::Request::Request(Atoms& atoms,const vector<int>& indexes,
-                                           vector<double> & masses,
-                                           vector<double> & charges,
-                                           vector<Vector>& positions,
-                                     const vector<Vector>& forces,
-                                           Tensor&box,
-                                     const Tensor&virial):
-    active(false),
-    atoms(atoms),
-    indexes(indexes),
-    masses(masses),
-    charges(charges),
-    positions(positions),
-    forces(forces),
-    box(box),
-    virial(virial)
-{
-    for(unsigned i=0;i<indexes.size();i++) assert(indexes[i]<atoms.natoms);
-    unique.insert(indexes.begin(),indexes.end());
-    atoms.requestset.push_back(this);
+void Atoms::add(const ActionAtomistic*a){
+  actions.push_back(a);
 }
 
-Atoms::Request::~Request(){
-  vector<Request*>::iterator f=find(atoms.requestset.begin(),atoms.requestset.end(),this);
-  assert(f!=atoms.requestset.end());
-  atoms.requestset.erase(f);
+void Atoms::remove(const ActionAtomistic*a){
+  vector<const ActionAtomistic*>::iterator f=find(actions.begin(),actions.end(),a);
+  assert(f!=actions.end());
+  actions.erase(f);
 }
+
 
 void Atoms::DomainDecomposition::enable(PlumedCommunicator& c){
   on=true;
@@ -299,8 +250,8 @@ double Atoms::getTimeStep()const{
 }
 
 void Atoms::createFullList(int*n){
-  for(unsigned i=0;i<requestset.size();i++) if(requestset[i]->isActive())
-    fullList.insert(fullList.end(),requestset[i]->unique.begin(),requestset[i]->unique.end());
+  for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive())
+    fullList.insert(fullList.end(),actions[i]->unique.begin(),actions[i]->unique.end());
   std::sort(fullList.begin(),fullList.end());
   int nn=std::unique(fullList.begin(),fullList.end())-fullList.begin();
   fullList.resize(nn);
