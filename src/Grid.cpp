@@ -14,7 +14,7 @@ Grid::Grid(vector<double> gmin,vector<double> gmax,vector<unsigned> nbin,
  assert(gmax.size()==nbin.size());
  for(unsigned int i=0;i<gmax.size();++i){
   assert(gmax[i]>gmin[i]);
-  assert(nbin[i]>0.0);
+  assert(nbin[i]>0);
  }
  min_=gmin;
  max_=gmax;
@@ -52,10 +52,13 @@ unsigned Grid::dimension() const {
  return max_.size();
 }
 
+// we are flattening arrays using a column-major order
 unsigned Grid::getIndex(vector<unsigned> indices) const {
  assert(indices.size()==dimension());
- unsigned index;
- // TO DO
+ unsigned index=indices[dimension()-1];
+ for(unsigned int i=dimension()-1;i>0;--i){
+  index=index*nbin_[i-1]+indices[i-1];
+ }
  return index;
 }
 
@@ -65,9 +68,17 @@ unsigned Grid::getIndex(vector<double> x) const {
  return getIndex(indices);
 }
 
+// we are flattening arrays using a column-major order
 vector<unsigned> Grid::getIndices(unsigned index) const {
  vector<unsigned> indices;
- // TO DO
+ unsigned N=dimension();
+ unsigned kk=index;
+ indices.push_back(index%nbin_[0]);
+ for(unsigned int i=1;i<N-1;++i){
+  kk=(kk-indices[i-1])/nbin_[i-1];
+  indices.push_back(kk%nbin_[i]);
+ }
+ if(N>=2) indices.push_back((kk-indices[N-2])/nbin_[N-2]);
  return indices;
 }
 
