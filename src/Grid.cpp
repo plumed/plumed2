@@ -101,10 +101,12 @@ vector<double> Grid::getPoint(vector<unsigned> indices) const {
 }
 
 vector<double> Grid::getPoint(unsigned index) const {
+ assert(index>=0 && index<maxsize_);
  return getPoint(getIndices(index));
 }
 
-double Grid::getValue(unsigned index) { 
+double Grid::getValue(unsigned index) {
+ assert(index>=0 && index<size());
  return grid_[index];
 }
 
@@ -119,6 +121,7 @@ double Grid::getValue(vector<double> x) {
 }
 
 void Grid::setValue(unsigned index, double value){
+ assert(index>=0 && index<size());
  grid_[index]=value;
 }
 
@@ -127,6 +130,7 @@ void Grid::setValue(vector<unsigned> indices, double value){
 }
 
 void Grid::addValue(unsigned index, double value){
+ assert(index>=0 && index<size());
  grid_[index]+=value;
 }
 
@@ -143,7 +147,8 @@ unsigned SparseGrid::size() const{
  return map_.size();
 }
 
-double SparseGrid::getValue(unsigned index) { 
+double SparseGrid::getValue(unsigned index) {
+ assert(index>=0 && index<maxsize_);
  double value=0.0;
  it_=map_.find(index);
  if(it_!=map_.end()) value=it_->second;
@@ -161,6 +166,7 @@ double SparseGrid::getValue(vector<double> x) {
 }
 
 void SparseGrid::setValue(unsigned index, double value){
+ assert(index>=0 && index<maxsize_);
  map_[index]=value;
 }
 
@@ -169,9 +175,14 @@ void SparseGrid::setValue(vector<unsigned> indices, double value){
 }
 
 void SparseGrid::addValue(unsigned index, double value){
+ assert(index>=0 && index<maxsize_);
  map_[index]+=value;
 }
 
 void SparseGrid::addValue(vector<unsigned> indices, double value){
  addValue(getIndex(indices),value);
+}
+
+double SparseGrid::getMaxSize() const {
+ return maxsize_;
 }

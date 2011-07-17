@@ -55,6 +55,7 @@ class SparseGrid : public Grid
 
  unsigned size() const;
  void clear();
+ double getMaxSize() const;
  double getValue(unsigned index); 
  double getValue(vector<unsigned> indices);
  double getValue(vector<double> x);
