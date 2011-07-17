@@ -2,6 +2,7 @@
 #include <cassert>
 #include <math.h>
 #include "Grid.h"
+#include <iostream>
 
 using namespace std;
 
@@ -64,8 +65,7 @@ unsigned Grid::getIndex(vector<unsigned> indices) const {
 
 unsigned Grid::getIndex(vector<double> x) const {
  assert(x.size()==dimension());
- vector<unsigned> indices=getIndices(x);
- return getIndex(indices);
+ return getIndex(getIndices(x));
 }
 
 // we are flattening arrays using a column-major order
@@ -101,8 +101,7 @@ vector<double> Grid::getPoint(vector<unsigned> indices) const {
 }
 
 vector<double> Grid::getPoint(unsigned index) const {
- vector<unsigned> indices=getIndices(index);
- return getPoint(indices);
+ return getPoint(getIndices(index));
 }
 
 double Grid::getValue(unsigned index) const { 
@@ -110,19 +109,13 @@ double Grid::getValue(unsigned index) const {
 }
 
 double Grid::getValue(vector<unsigned> indices) const {
- return grid_[getIndex(indices)];
+ return getValue(getIndex(indices));
 }
 
-double Grid::getValue(vector<double> x) const{
- assert(x.size()==dimension());
- vector<unsigned> indices;
- double value;
+double Grid::getValue(vector<double> x) const {
  if(dospline_){
 // TO DO 
- } else {
-  value=getValue(getIndices(x));
- }
- return value;
+ } else { return getValue(getIndices(x)); }
 }
 
 void Grid::setValue(unsigned index, double value){
@@ -130,7 +123,7 @@ void Grid::setValue(unsigned index, double value){
 }
 
 void Grid::setValue(vector<unsigned> indices, double value){
- grid_[getIndex(indices)]=value; 
+ setValue(getIndex(indices),value); 
 }
 
 void Grid::addValue(unsigned index, double value){
@@ -138,7 +131,7 @@ void Grid::addValue(unsigned index, double value){
 }
 
 void Grid::addValue(vector<unsigned> indices, double value){
- grid_[getIndex(indices)]+=value;
+ addValue(getIndex(indices),value);
 }
 
 // Sparse version of grid with map
@@ -148,4 +141,36 @@ void SparseGrid::clear(){
 
 unsigned SparseGrid::size() const{
  return map_.size();
+}
+
+double SparseGrid::getValue(unsigned index) const { 
+ double value=0.0;
+ if(map_.find(index)!=map_.end()) value=map_.find(index)->second;
+ return value;
+}
+
+double SparseGrid::getValue(vector<unsigned> indices) const {
+ return getValue(getIndex(indices));
+}
+
+double SparseGrid::getValue(vector<double> x) const {
+ if(dospline_){
+// TO DO 
+ } else { return getValue(getIndices(x)); }
+}
+
+void SparseGrid::setValue(unsigned index, double value){
+ map_[index]=value;
+}
+
+void SparseGrid::setValue(vector<unsigned> indices, double value){
+ setValue(getIndex(indices),value); 
+}
+
+void SparseGrid::addValue(unsigned index, double value){
+ map_[index]+=value;
+}
+
+void SparseGrid::addValue(vector<unsigned> indices, double value){
+ addValue(getIndex(indices),value);
 }
