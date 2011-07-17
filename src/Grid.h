@@ -33,9 +33,9 @@ public:
 //! a class that inherits from this, like SparseGrid, should override these methods
  virtual unsigned size() const;
  virtual void clear();
- virtual double getValue(unsigned index) const; 
- virtual double getValue(vector<unsigned> indices) const;
- virtual double getValue(vector<double> x) const;
+ virtual double getValue(unsigned index); 
+ virtual double getValue(vector<unsigned> indices);
+ virtual double getValue(vector<double> x);
  virtual void setValue(unsigned index, double value);
  virtual void setValue(vector<unsigned> indices, double value);
  virtual void addValue(unsigned index, double value); 
@@ -55,9 +55,9 @@ class SparseGrid : public Grid
 
  unsigned size() const;
  void clear();
- double getValue(unsigned index) const; 
- double getValue(vector<unsigned> indices) const;
- double getValue(vector<double> x) const;
+ double getValue(unsigned index); 
+ double getValue(vector<unsigned> indices);
+ double getValue(vector<double> x);
  void setValue(unsigned index, double value);
  void setValue(vector<unsigned> indices, double value);
  void addValue(unsigned index, double value); 
