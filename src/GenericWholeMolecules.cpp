@@ -25,7 +25,7 @@ WHOLEMOLECULES [STRIDE=s] GROUP0=list0 [ GROUP1=list1 [ GROUP2=list2 [ ... ] ] ]
 Similar to the ALIGN_ATOMS keyword of plumed 1. It rebuilds molecules
 correctly according to pbc. It can rebuild multiple groups, and
 it can be applied more than once. To see its effects, use
-an variable without pbc or the \ref DUMPATOMS directive.
+a variable without pbc or the \ref DUMPATOMS directive.
 
 \attention
 This directive is modifying the stored position in the precise moment

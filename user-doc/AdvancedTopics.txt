@@ -9,7 +9,18 @@ Loading libraries at runtime (\ref LOAD)
 
 \section AtomGroups Atom groups
 
+\section CenterOfMass Centers of mass of groups
+
+A brief discussion about virtual atoms. Also discuss the \ref DUMPATOMS keyword,
+which can be used to write the atoms (including virtual ones) on a file.
+
+See \ref COM
+
 \section AtomAlignment Atom alignement
+
+See \ref WHOLEMOLECULES
+
+Also here, discuss the use of \ref DUMPATOMS to restore broken molecules.
 
 \section ReplicaExchange Replica exchange
 
