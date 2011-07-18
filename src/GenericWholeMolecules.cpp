@@ -3,6 +3,7 @@
 #include "ActionRegister.h"
 #include "Vector.h"
 #include "AtomNumber.h"
+#include "Tools.h"
 
 #include <vector>
 #include <string>
@@ -56,11 +57,6 @@ Vector & GenericWholeMolecules::modifyPosition(AtomNumber i){
   return plumed.getAtoms().positions[i.index()];
 }
 
-inline
-Vector & GenericWholeMolecules::modifyPosition(unsigned i){
-  return plumed.getAtoms().positions[getAbsoluteIndex(i).index()];
-}
-
 GenericWholeMolecules::GenericWholeMolecules(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
@@ -77,6 +73,7 @@ ActionAtomistic(ao)
     merge.insert(merge.end(),group.begin(),group.end());
   }
   checkRead();
+  Tools::removeDuplicates(merge);
   requestAtoms(merge);
 }
 

@@ -20,6 +20,8 @@ public:
   void setIndex(unsigned);
   static AtomNumber serial(unsigned);
   static AtomNumber index(unsigned);
+  friend bool operator<(const AtomNumber&,const AtomNumber&);
+  friend bool operator==(const AtomNumber&,const AtomNumber&);
 };
 
 inline
@@ -60,6 +62,16 @@ AtomNumber AtomNumber::index(unsigned i){
   AtomNumber a;
   a.setIndex(i);
   return a;
+}
+
+inline
+bool operator<(const AtomNumber&a,const AtomNumber&b){
+  return a.index_<b.index_;
+}
+
+inline
+bool operator==(const AtomNumber&a,const AtomNumber&b){
+  return a.index_==b.index_;
 }
 
 
