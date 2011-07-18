@@ -170,6 +170,10 @@ void SparseGrid::clear(){
 }
 
 unsigned SparseGrid::size() const{
+ return maxsize_;
+}
+
+double SparseGrid::getRealSize() const {
  return map_.size();
 }
 
@@ -207,8 +211,4 @@ void SparseGrid::addValue(unsigned index, double value){
 
 void SparseGrid::addValue(vector<unsigned> indices, double value){
  addValue(getIndex(indices),value);
-}
-
-double SparseGrid::getMaxSize() const {
- return maxsize_;
 }
