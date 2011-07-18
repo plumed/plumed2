@@ -22,7 +22,7 @@ IMPLEMENT(int)
 bool Tools::convert(const string & str,AtomNumber &a){
   int i;
   bool r=convert(str,i);
-  a.setSerial(i);
+  if(r) a.setSerial(i);
   return r;
 }
 
