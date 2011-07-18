@@ -158,3 +158,14 @@ void Tools::interpretRanges(std::vector<std::string>&s){
   s=news;
 }
 
+void Tools::interpretLabel(vector<string>&s){
+  if(s.size()<2)return;
+  string s0=s[0];
+  unsigned l=s0.length();
+  if(l<1) return;
+  if(s0[l-1]==':'){
+    s[0]=s[1];
+    s[1]="LABEL="+s0.substr(0,l-1);
+  }
+}
+

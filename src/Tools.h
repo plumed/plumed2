@@ -61,6 +61,8 @@ public:
 /// Remove duplicates from a vector of types <T> 
   template <typename T>
   static void removeDuplicates(std::vector<T>& vec);
+/// interpret ":" syntax for labels
+  static void interpretLabel(std::vector<std::string>&s);
 };
 
 template <class T>

@@ -343,6 +343,7 @@ void PlumedMain::readInputFile(std::string str){
       readInputFile(words[1]);
       continue;
     } else {
+      Tools::interpretLabel(words);
       Action* action=actionRegister().create(ActionOptions(*this,words));
       if(!action){
         log<<"ERROR\n";
