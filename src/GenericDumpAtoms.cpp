@@ -56,7 +56,16 @@ GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
 
 void GenericDumpAtoms::calculate(){
   fprintf(fp,"%d\n",getNatoms());
-  fprintf(fp,"here we should write the box\n");
+  const Tensor & t(getPbc().getBox());
+  if(getPbc().isOrthorombic()){
+    fprintf(fp," %f %f %f\n",t(0,0),t(1,1),t(2,2));
+  }else{
+    fprintf(fp," %f %f %f %f %f %f %f %f %f\n",
+                 t(0,0),t(0,1),t(0,2),
+                 t(1,0),t(1,1),t(1,2),
+                 t(2,0),t(2,1),t(2,2)
+           );
+  }
   for(unsigned i=0;i<getNatoms();++i){
     fprintf(fp,"X %f %f %f\n",getPositions(i)(0),getPositions(i)(1),getPositions(i)(2));
   }
