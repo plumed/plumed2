@@ -28,21 +28,42 @@ Grid::Grid(vector<double> gmin,vector<double> gmax,vector<unsigned> nbin,
  if(doclear) {clear();}
 }
 
+Grid::Grid(vector<double> gmin,vector<double> gmax,vector<double> dx,
+           bool dospline, bool doclear):
+           dospline_(dospline) {
+// various checks
+ assert(gmax.size()==gmin.size());
+ assert(gmax.size()==dx.size());
+ for(unsigned int i=0;i<gmax.size();++i){
+  assert(gmax[i]>gmin[i]);
+  assert(dx[i]>0.0);
+ }
+ min_=gmin;
+ max_=gmax;
+ dx_=dx;
+ maxsize_=1;
+ for(unsigned int i=0;i<max_.size();++i){
+  nbin_.push_back(floor((max_[i]-min_[i])/dx_[i])+1);
+  maxsize_*=nbin_[i];
+ }
+ if(doclear) {clear();}
+}
+
 void Grid::clear(){
  grid_.resize(maxsize_);
  for(unsigned int i=0;i<size();++i){grid_[i]=0.0;}
 }
 
-double Grid::getMin(unsigned i) const {
- return min_[i];
+vector<double> Grid::getMin() const {
+ return min_;
 }
 
-double Grid::getMax(unsigned i) const {
- return max_[i];
+vector<double> Grid::getMax() const {
+ return max_;
 }
 
-double Grid::getSide(unsigned i) const {
- return dx_[i];
+vector<double> Grid::getSide() const {
+ return dx_;
 }
 
 unsigned Grid::size() const {

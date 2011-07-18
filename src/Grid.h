@@ -16,10 +16,12 @@ protected:
 public:
  Grid(vector<double> gmin,vector<double> gmax,
       vector<unsigned> nbin,bool dospline, bool doclear=true);
+ Grid(vector<double> gmin,vector<double> gmax,
+      vector<double> dx,bool dospline, bool doclear=true);
 
- double getMin(unsigned i) const;
- double getMax(unsigned i) const;
- double getSide(unsigned i) const;
+ vector<double> getMin() const;
+ vector<double> getMax() const;
+ vector<double> getSide() const;
  unsigned dimension() const;
  
  vector<unsigned> getIndices(unsigned index) const;
@@ -52,6 +54,8 @@ class SparseGrid : public Grid
  public:
  SparseGrid(vector<double> gmin,vector<double> gmax,vector<unsigned> nbin,bool dospline):
   Grid(gmin,gmax,nbin,dospline,false){};
+ SparseGrid(vector<double> gmin,vector<double> gmax,vector<double> dx,bool dospline):
+  Grid(gmin,gmax,dx,dospline,false){};
 
  unsigned size() const;
  void clear();
