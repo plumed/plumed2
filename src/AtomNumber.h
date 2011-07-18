@@ -18,6 +18,8 @@ public:
   unsigned index()const;
   void setSerial(unsigned);
   void setIndex(unsigned);
+  static AtomNumber serial(unsigned);
+  static AtomNumber index(unsigned);
 };
 
 inline
@@ -45,6 +47,21 @@ inline
 void AtomNumber::setIndex(unsigned i){
   index_=i;
 }
+
+inline
+AtomNumber AtomNumber::serial(unsigned i){
+  AtomNumber a;
+  a.setSerial(i);
+  return a;
+}
+
+inline
+AtomNumber AtomNumber::index(unsigned i){
+  AtomNumber a;
+  a.setIndex(i);
+  return a;
+}
+
 
 }
 

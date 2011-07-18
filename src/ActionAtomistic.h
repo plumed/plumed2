@@ -99,9 +99,7 @@ double ActionAtomistic::getCharges(int i)const{
 
 inline
 AtomNumber ActionAtomistic::getAbsoluteIndex(int i)const{
-  AtomNumber a;
-  a.setIndex(indexes[i]);
-  return a;
+  return AtomNumber::index(indexes[i]);
 }
 
 inline
