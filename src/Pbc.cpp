@@ -72,4 +72,12 @@ Vector Pbc::scaledToReal(const Vector&d)const{
   return matmul(box.transpose(),d);
 }
 
+bool Pbc::isOrthorombic()const{
+  return type==orthorombic;
+}
+
+const Tensor& Pbc::getBox()const{
+  return box;
+}
+
 

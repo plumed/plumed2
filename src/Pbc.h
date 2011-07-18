@@ -14,8 +14,10 @@ public:
   Pbc();
   Vector distance(const Vector&,const Vector&)const;
   void setBox(const Tensor&);
+  const Tensor& getBox()const;
   Vector realToScaled(const Vector&)const;
   Vector scaledToReal(const Vector&)const;
+  bool isOrthorombic()const;
 };
 
 }
