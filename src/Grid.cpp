@@ -126,6 +126,11 @@ vector<double> Grid::getPoint(unsigned index) const {
  return getPoint(getIndices(index));
 }
 
+vector<double> Grid::getPoint(vector<double> x) const {
+ assert(x.size()==dimension());
+ return getPoint(getIndices(x));
+}
+
 double Grid::getValue(unsigned index) {
  assert(index>=0 && index<size());
  return grid_[index];

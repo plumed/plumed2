@@ -30,6 +30,7 @@ public:
  unsigned getIndex(vector<double> x) const;
  vector<double> getPoint(unsigned index) const;
  vector<double> getPoint(vector<unsigned> indices) const;
+ vector<double> getPoint(vector<double> x) const;
  
 
 //! a class that inherits from this, like SparseGrid, should override these methods
