@@ -32,12 +32,13 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   charges.resize(nat);
   int n=atoms.positions.size();
   clearDependencies();
+  unique.clear();
   for(unsigned i=0;i<indexes.size();i++){
     assert(indexes[i]<n);
     if(indexes[i]>=atoms.getNatoms()) addDependency(atoms.virtualAtomsActions[indexes[i]-atoms.getNatoms()]);
+// only real atoms are requested to lower level Atoms class
+    else unique.insert(indexes[i]);
   }
-  unique.clear();
-  unique.insert(indexes.begin(),indexes.end());
 
 }
 
