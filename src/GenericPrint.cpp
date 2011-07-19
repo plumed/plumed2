@@ -45,8 +45,18 @@ public ActionWithArguments
   string file;
   FILE* fp;
   string fmt;
+/////////////////////////////////////////
+// these are crazy things just for debug:
+// they allow to change regularly the
+// printed argument
+  int rotate;
+  int rotateCountdown;
+  int rotateLast;
+  vector<Value*> rotateArguments;
+/////////////////////////////////////////
 public:
   void calculate();
+  void prepare();
   GenericPrint(const ActionOptions&);
   void apply(){};
   ~GenericPrint();
@@ -59,7 +69,8 @@ Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
 fp(NULL),
-fmt("%f")
+fmt("%f"),
+rotate(0)
 {
   parse("FILE",file);
   if(file.length()>0){
@@ -79,9 +90,38 @@ fmt("%f")
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
+/////////////////////////////////////////
+// these are crazy things just for debug:
+// they allow to change regularly the
+// printed argument
+  parse("_ROTATE",rotate);
+  if(rotate>0){
+    rotateCountdown=rotate;
+    rotateArguments=getArguments();
+    vector<Value*> a(1,rotateArguments[0]);
+    requestArguments(vector<Value*>(1,rotateArguments[0]));
+    rotateLast=0;
+  }
+/////////////////////////////////////////
   checkRead();
 }
 
+void GenericPrint::prepare(){
+/////////////////////////////////////////
+// these are crazy things just for debug:
+// they allow to change regularly the
+// printed argument
+  if(rotate>0){
+    rotateCountdown--;
+    if(rotateCountdown==0){
+      rotateCountdown=rotate;
+      rotateLast++;
+      rotateLast%=rotateArguments.size();
+      requestArguments(vector<Value*>(1,rotateArguments[rotateLast]));
+    }
+  }
+/////////////////////////////////////////
+}
 
 void GenericPrint::calculate(){
     if(comm.Get_rank()!=0)return;
