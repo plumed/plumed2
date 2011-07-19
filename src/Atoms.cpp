@@ -296,7 +296,7 @@ unsigned Atoms::addVirtualAtom(ActionWithVirtualAtom*a){
 
 void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a){
   unsigned n=positions.size();
-  assert(a==virtualAtomsActions[n-1]);
+  assert(a==virtualAtomsActions[virtualAtomsActions.size()-1]);
   resizeVectors(n-1);
   virtualAtomsActions.pop_back();
 }
