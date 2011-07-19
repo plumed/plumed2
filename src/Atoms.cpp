@@ -260,7 +260,8 @@ void Atoms::createFullList(int*n){
 }
 
 void Atoms::getFullList(int**x){
-  *x=&fullList[0];
+  if(fullList.size()>0) *x=&fullList[0];
+  else *x=NULL;
 }
 
 void Atoms::clearFullList(){
