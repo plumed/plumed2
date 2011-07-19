@@ -16,6 +16,7 @@ class ActionWithArguments:
   public virtual Action
 {
   std::vector<Value*> arguments;
+  bool lockRequestArguments;
 
 protected:
                            ActionWithArguments(const ActionOptions&);
@@ -34,6 +35,8 @@ public:
 /// Parse a list of arguments
   void                     parseArgumentList(const std::string&key,std::vector<Value*>&args);
   void                     requestArguments(const std::vector<Value*> &arg);
+  void lockRequests();
+  void unlockRequests();
 };
 
 
@@ -57,6 +60,15 @@ double ActionWithArguments::difference(int i,double d1,double d2)const{
   return arguments[i]->difference(d1,d2);
 }
 
+inline
+void ActionWithArguments::lockRequests(){
+  lockRequestArguments=true;
+}
+
+inline
+void ActionWithArguments::unlockRequests(){
+  lockRequestArguments=false;
+}
 
 }
 

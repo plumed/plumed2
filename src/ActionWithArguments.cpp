@@ -49,13 +49,15 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
 }
 
 void ActionWithArguments::requestArguments(const vector<Value*> &arg){
+  assert(!lockRequestArguments);
   arguments=arg;
   clearDependencies();
   for(unsigned i=0;i<arguments.size();i++) addDependency(&arguments[i]->getAction());
 }
 
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
-  Action(ao)
+  Action(ao),
+  lockRequestArguments(false)
 {
   vector<Value*> arg;
   parseArgumentList("ARG",arg);

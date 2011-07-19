@@ -66,7 +66,11 @@ void Action::activate(){
 // since it could change its dependences (e.g. in an ActionAtomistic which is
 // accessing to a virtual atom), this is done just before dependencies are
 // activated
-  if(!active) prepare();
+  if(!active){
+    this->unlockRequests();
+    prepare();
+    this->lockRequests();
+  }
   for(Dependencies::iterator p=after.begin();p!=after.end();p++) (*p)->activate();
   active=true;
 }

@@ -16,12 +16,14 @@ ActionAtomistic::~ActionAtomistic(){
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
-Action(ao)
+Action(ao),
+lockRequestAtoms(false)
 {
   plumed.getAtoms().add(this);
 }
 
 void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
+  assert(!lockRequestAtoms);
   Atoms&atoms(plumed.getAtoms());
   int nat=a.size();
   indexes.resize(nat);

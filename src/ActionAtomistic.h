@@ -30,6 +30,8 @@ class ActionAtomistic :
   std::vector<Vector>   forces;          // forces on the needed atoms
   double                forceOnEnergy;
 
+  bool                  lockRequestAtoms; // forbid changes to request atoms
+
 protected:
 /// Request an array of atoms.
 /// This method is used to ask for a list of atoms. Atoms
@@ -80,6 +82,8 @@ public:
 
   void retrieveAtoms();
   void applyForces();
+  void lockRequests();
+  void unlockRequests();
 };
 
 inline
@@ -142,6 +146,16 @@ double & ActionAtomistic::modifyForceOnEnergy(){
 inline
 const Pbc & ActionAtomistic::getPbc() const{
  return pbc;
+}
+
+inline
+void ActionAtomistic::lockRequests(){
+  lockRequestAtoms=true;
+}
+
+inline
+void ActionAtomistic::unlockRequests(){
+  lockRequestAtoms=false;
 }
 
 }

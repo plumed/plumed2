@@ -114,6 +114,9 @@ public:
 /// By default (if not overridden) does nothing.
   virtual void prepare();
 
+  virtual void lockRequests(){};
+  virtual void unlockRequests(){};
+
 /// Calculate an Action.
 /// This method is called one or more times per step.
 /// The set of all Actions is calculated in forward order.
