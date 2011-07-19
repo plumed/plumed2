@@ -23,6 +23,8 @@ class ColvarCoordination : public Colvar {
   bool serial;
   NeighborList *nl;
   SwitchingFunction switchingFunction;
+
+  bool reduceListAtNextStep;
   
 public:
   ColvarCoordination(const ActionOptions&);
@@ -37,7 +39,8 @@ PLUMED_REGISTER_ACTION(ColvarCoordination,"COORDINATION")
 ColvarCoordination::ColvarCoordination(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true),
-serial(false)
+serial(false),
+reduceListAtNextStep(false)
 {
 
   parseFlag("SERIAL",serial);
@@ -114,6 +117,10 @@ ColvarCoordination::~ColvarCoordination(){
 }
 
 void ColvarCoordination::prepare(){
+ if(reduceListAtNextStep){
+   requestAtoms(nl->getReducedAtomList());
+   reduceListAtNextStep=false;
+ }
  if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
   requestAtoms(nl->getFullAtomList());
  }
@@ -171,7 +178,7 @@ void ColvarCoordination::calculate()
  setBoxDerivatives  (virial);
 
  if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
-  requestAtoms(nl->getReducedAtomList());
+  reduceListAtNextStep=true;
   nl->setLastUpdate(getStep());
  }
 
