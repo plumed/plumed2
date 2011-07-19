@@ -25,6 +25,7 @@ class GenericDebug:
 {
   bool logActivity;
   bool novirial;
+  bool logRequestedAtoms;
 public:
   GenericDebug(const ActionOptions&ao);
   void calculate(){};
@@ -37,9 +38,12 @@ GenericDebug::GenericDebug(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 logActivity(false),
+logRequestedAtoms(false),
 novirial(false){
   parseFlag("logActivity",logActivity);
   if(logActivity) log.printf("  logging activity\n");
+  parseFlag("logRequestedAtoms",logRequestedAtoms);
+  if(logRequestedAtoms) log.printf("  logging requested atoms\n");
   parseFlag("NOVIRIAL",novirial);
   if(novirial) log.printf("  Switching off virial contribution\n");
   if(novirial) plumed.novirial=true;
@@ -64,6 +68,16 @@ void GenericDebug::apply(){
       log.printf("\n");
     };
   };
+  if(logRequestedAtoms){
+    log.printf("requested atoms at step %i: ",getStep());
+    int* l;
+    int n;
+    plumed.cmd("createFullList",&n);
+    plumed.cmd("getFullList",&l);
+    for(int i=0;i<n;i++) log.printf(" %d",l[i]);
+    log.printf("\n");
+    plumed.cmd("clearFullList");
+  }
 
 }
 
