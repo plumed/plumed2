@@ -6,6 +6,8 @@
 #include <vector>
 #include <set>
 #include <cassert>
+#include <map>
+#include <string>
 
 namespace PLMD{
 
@@ -30,6 +32,8 @@ class Atoms
   Tensor virial;
   double energy;
   bool   collectEnergy;
+
+  std::map<const std::string,std::vector<unsigned> > groups;
 
   void resizeVectors(unsigned);
 
@@ -135,6 +139,8 @@ public:
   void updateUnits();
   unsigned int addVirtualAtom(ActionWithVirtualAtom*);
   void removeVirtualAtom(ActionWithVirtualAtom*);
+  void insertGroup(const std::string&name,const std::vector<unsigned>&a);
+  void removeGroup(const std::string&name);
 };
 
 inline

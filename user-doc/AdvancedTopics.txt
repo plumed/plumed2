@@ -9,6 +9,8 @@ Loading libraries at runtime (\ref LOAD)
 
 \section AtomGroups Atom groups
 
+See \ref GROUP
+
 \section CenterOfMass Centers of mass of groups
 
 A brief discussion about virtual atoms. Also discuss the \ref DUMPATOMS keyword,

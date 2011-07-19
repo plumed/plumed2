@@ -302,6 +302,17 @@ void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a){
   virtualAtomsActions.pop_back();
 }
 
+void Atoms::insertGroup(const std::string&name,const std::vector<unsigned>&a){
+  assert(groups.count(name)==0);
+  groups[name]=a;
+}
+
+void Atoms::removeGroup(const std::string&name){
+  assert(groups.count(name)==1);
+  groups.erase(name);
+}
+
+
 }
 
 

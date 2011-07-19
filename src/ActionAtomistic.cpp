@@ -103,10 +103,21 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
   vector<string> strings;
   parseVector(key,strings);
   Tools::interpretRanges(strings);
-  t.resize(strings.size());
-  for(unsigned i=0;i<t.size();++i){
+  t.resize(0);
+  for(unsigned i=0;i<strings.size();++i){
    bool ok=false;
-   ok=Tools::convert(strings[i],t[i]); // this is converting strings to AtomNumbers
+   AtomNumber atom;
+   ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
+   if(ok) t.push_back(atom);
+// here we check if the atom name is the name of a group
+   if(!ok){
+     const Atoms&atoms(plumed.getAtoms());
+     if(atoms.groups.count(strings[i])){
+       map<const string,vector<unsigned> >::const_iterator m=atoms.groups.find(strings[i]);
+       for(unsigned j=0;j<(*m).second.size();j++) t.push_back(AtomNumber::index((*m).second[j]));
+       ok=true;
+     }
+   }
 // here we check if the atom name is the name of an added virtual atom
    if(!ok){
      const ActionSet&actionSet(plumed.getActionSet());
@@ -114,7 +125,7 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
        ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(*a);
        if(c) if(c->getLabel()==strings[i]){
          ok=true;
-         t[i]=c->getIndex();
+         t.push_back(c->getIndex());
          break;
        }
      }
