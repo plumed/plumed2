@@ -163,7 +163,7 @@ void ColvarCoordination::calculate()
 
  if(!serial){
    comm.Sum(&ncoord,1);
-   comm.Sum(&deriv[0][0],3*deriv.size());
+   if(deriv.size()>0) comm.Sum(&deriv[0][0],3*deriv.size());
  }
 
  for(unsigned i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);
