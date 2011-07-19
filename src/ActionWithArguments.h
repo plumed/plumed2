@@ -31,6 +31,9 @@ public:
   void                     calculateNumericalDerivatives();
 /// Takes the difference taking into account pbc for arg i
   double                   difference(int,double,double)const;
+/// Parse a list of arguments
+  void                     parseArgumentList(const std::string&key,std::vector<Value*>&args);
+  void                     requestArguments(const std::vector<Value*> &arg);
 };
 
 
