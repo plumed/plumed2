@@ -44,16 +44,16 @@ UNITS LENGTH=nm TIME=0.001
 */
 //+ENDPLUMEDOC
 
-class Units :
+class SetupUnits :
   public ActionSetup
 {
 public:
-  Units(const ActionOptions&ao);
+  SetupUnits(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(Units,"UNITS")
+PLUMED_REGISTER_ACTION(SetupUnits,"UNITS")
 
-Units::Units(const ActionOptions&ao):
+SetupUnits::SetupUnits(const ActionOptions&ao):
 Action(ao),
 ActionSetup(ao)
 {
