@@ -3,6 +3,7 @@
 #include "Tools.h"
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 
 
 using namespace std;
@@ -35,25 +36,23 @@ Action* ActionRegister::create(const ActionOptions&ao){
   return action;
 }
 
-void ActionRegister::log(Log & log){
+
+std::ostream & PLMD::operator<<(std::ostream &log,const ActionRegister&ar){
   vector<string> s;
-  for(mIterator it=m.begin();it!=m.end();++it)
+  for(ActionRegister::const_mIterator it=ar.m.begin();it!=ar.m.end();++it)
     s.push_back((*it).first);
   sort(s.begin(),s.end());
-  for(unsigned i=0;i<s.size();i++){
-    log.printf("  %s\n",s[i].c_str());
-  };
-  if(disabled.size()>0){
-    s.assign(disabled.size(),"");
-    copy(disabled.begin(),disabled.end(),s.begin());
+  for(unsigned i=0;i<s.size();i++) log<<"  "<<s[i]<<"\n";
+  if(ar.disabled.size()>0){
+    s.assign(ar.disabled.size(),"");
+    copy(ar.disabled.begin(),ar.disabled.end(),s.begin());
     sort(s.begin(),s.end());
-    log.printf("+++++++ WARNING +++++++\n");
-    log.printf("The following keywords have been registered more than once and will be disabled:\n");
-    for(unsigned i=0;i<s.size();i++){
-      log.printf("  - %s\n",s[i].c_str());
-    };
-    log.printf("+++++++ END WARNING +++++++\n");
+    log<<"+++++++ WARNING +++++++\n";
+    log<<"The following keywords have been registered more than once and will be disabled:\n";
+    for(unsigned i=0;i<s.size();i++) log<<"  - "<<s[i]<<"\n";
+    log<<"+++++++ END WARNING +++++++\n";
   };
+  return log;
 }
 
 

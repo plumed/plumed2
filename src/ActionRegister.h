@@ -5,10 +5,9 @@
 #include <string>
 #include <map>
 #include <set>
+#include <iostream>
 
 namespace PLMD{
-
-class Log;
 
 /// Register holding all the allowed keywords.
 /// This is a register which holds a map between strings (directives) and function pointers.
@@ -20,12 +19,16 @@ class Log;
 /// to avoid random results.
 ///
 class ActionRegister{
+/// Write on a stream the list of registered directives
+  friend std::ostream &operator<<(std::ostream &,const ActionRegister&);
 /// Pointer to a function which, given the options, create an Action
   typedef Action*(*creator_pointer)(const ActionOptions&);
 /// Map action to a function which creates the related object
   std::map<std::string,creator_pointer> m;
 /// Iterator over the map
   typedef std::map<std::string,creator_pointer>::iterator mIterator;
+/// Iterator over the map
+  typedef std::map<std::string,creator_pointer>::const_iterator const_mIterator;
 /// Set of disabled actions (which were registered more than once)
   std::set<std::string> disabled;
 public:
@@ -38,8 +41,6 @@ public:
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   Action* create(const ActionOptions&ao);
-/// Write on the log stream the list of registered directives
-  void log(Log & log);
 };
 
 /// Function returning a reference to the ActionRegister.

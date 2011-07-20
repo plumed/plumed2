@@ -295,7 +295,7 @@ void PlumedMain::init(){
   log.printf("  Comp. Phys. Comm. 180, 1961 (2009)\n");
   log.printf("For further information see the PLUMED web page at www.plumed-code.org\n");
   log.printf("List of registered actions:\n");
-  actionRegister().log(log);
+  log<<actionRegister();
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
@@ -337,7 +337,7 @@ void PlumedMain::readInputFile(std::string str){
       }
       log<<"Loading shared library "<<s.c_str()<<"\n";
       log<<"Here is the new list of available actions\n";
-      actionRegister().log(log);
+      log<<actionRegister();
     } else if(words[0]=="INCLUDE"){
       assert(words.size()==2);
       readInputFile(words[1]);
