@@ -67,12 +67,15 @@ MDAtomsBase* MDAtomsBase::create(int p){
   return NULL;
 }
 
-
-void MDAtomsBase::setUnits(double l,double e){
-  scalep=1.0/l;
-  scalef=e/l;
-  scaleb=1.0/l;
-  scalev=e;
+void MDAtomsBase::setUnits(const Units& units,const Units& MDUnits){
+  double lscale=units.length/MDUnits.length;
+  double escale=units.energy/MDUnits.energy;
+// scalep and scaleb are used to convert MD to plumed
+  scalep=1.0/lscale;
+  scaleb=1.0/lscale;
+// scalef and scalev are used to convert plumed to MD
+  scalef=escale/lscale;
+  scalev=escale;
 }
 
 template <class T>

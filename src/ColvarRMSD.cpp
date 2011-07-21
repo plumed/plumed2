@@ -47,7 +47,7 @@ PLUMED_COLVAR_INIT(ao)
   getValue("")->setPeriodicity(false);
 
   PDB pdb;
-  pdb.read(reference,0.1/plumed.getAtoms().getInternalLengthUnits());
+  pdb.read(reference,0.1/plumed.getAtoms().getUnits().length);
 
   rmsd.setFromPDB(pdb);
 

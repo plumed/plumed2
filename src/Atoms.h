@@ -3,6 +3,7 @@
 
 #include "PlumedCommunicator.h"
 #include "Tensor.h"
+#include "Units.h"
 #include <vector>
 #include <set>
 #include <cassert>
@@ -43,8 +44,8 @@ class Atoms
 
   PlumedMain & plumed;
 
-  double MDEnergyUnits,MDLengthUnits,MDTimeUnits;
-  double internalEnergyUnits,internalLengthUnits,internalTimeUnits;
+  Units MDUnits;
+  Units units;
 
   double timestep;
   double forceOnEnergy;
@@ -124,19 +125,14 @@ public:
 
   double getEnergy()const{assert(collectEnergy);return energy;};
 
-  void setMDEnergyUnits(double d){MDEnergyUnits=d;};
-  void setMDLengthUnits(double d){MDLengthUnits=d;};
-  void setMDTimeUnits(double d){MDTimeUnits=d;};
-  double getMDEnergyUnits()const{return MDEnergyUnits;};
-  double getMDLengthUnits()const{return MDLengthUnits;};
-  double getMDTimeUnits()const{return MDTimeUnits;};
-  void setInternalEnergyUnits(double d){internalEnergyUnits=d;};
-  void setInternalLengthUnits(double d){internalLengthUnits=d;};
-  void setInternalTimeUnits(double d){internalTimeUnits=d;};
-  double getInternalEnergyUnits()const{return internalEnergyUnits;};
-  double getInternalLengthUnits()const{return internalLengthUnits;};
-  double getInternalTimeUnits()const{return internalTimeUnits;};
+  void setMDEnergyUnits(double d){MDUnits.energy=d;};
+  void setMDLengthUnits(double d){MDUnits.length=d;};
+  void setMDTimeUnits(double d){MDUnits.time=d;};
+  const Units& getMDUnits(){return MDUnits;};
+  void setUnits(const Units&u){units=u;};
+  const Units& getUnits(){return units;};
   void updateUnits();
+
   unsigned int addVirtualAtom(ActionWithVirtualAtom*);
   void removeVirtualAtom(ActionWithVirtualAtom*);
   void insertGroup(const std::string&name,const std::vector<unsigned>&a);

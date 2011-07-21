@@ -4,6 +4,7 @@
 #include "Tensor.h"
 #include "Vector.h"
 #include <vector>
+#include "Units.h"
 
 namespace PLMD {
 
@@ -26,7 +27,7 @@ public:
   virtual void setf(void*f)=0;
   virtual void setp(void*p,int i)=0;
   virtual void setf(void*f,int i)=0;
-          void setUnits(double,double);
+          void setUnits(const Units&,const Units&);
   virtual void MD2double(const void*,double&)const=0;
   virtual void double2MD(const double&,void*)const=0;
   virtual void getBox(Tensor &)const=0;

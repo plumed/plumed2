@@ -19,12 +19,6 @@ Atoms::Atoms(PlumedMain&plumed):
   energy(0.0),
   collectEnergy(0.0),
   plumed(plumed),
-  MDEnergyUnits(1.0),
-  MDLengthUnits(1.0),
-  MDTimeUnits(1.0),
-  internalEnergyUnits(1.0),
-  internalLengthUnits(1.0),
-  internalTimeUnits(1.0),
   forceOnEnergy(0.0)
 {
   mdatoms=MDAtomsBase::create(sizeof(double));
@@ -58,7 +52,7 @@ void Atoms::setVirial(void*p){
 
 void Atoms::setEnergy(void*p){
   MD2double(p,energy);
-  energy*=MDEnergyUnits/internalEnergyUnits;
+  energy*=MDUnits.energy/units.energy;
 }
 
 void Atoms::setForces(void*p){
@@ -239,7 +233,7 @@ void Atoms::double2MD(const double&d,void*m)const{
 }
 
 void Atoms::updateUnits(){
-  mdatoms->setUnits(internalLengthUnits/MDLengthUnits,internalEnergyUnits/MDEnergyUnits);
+  mdatoms->setUnits(units,MDUnits);
 }
 
 void Atoms::setTimeStep(void*p){
@@ -247,7 +241,7 @@ void Atoms::setTimeStep(void*p){
 }
 
 double Atoms::getTimeStep()const{
-  return timestep/internalTimeUnits*MDTimeUnits;
+  return timestep/units.time*MDUnits.time;
 }
 
 void Atoms::createFullList(int*n){

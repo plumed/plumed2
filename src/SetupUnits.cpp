@@ -57,9 +57,7 @@ SetupUnits::SetupUnits(const ActionOptions&ao):
 Action(ao),
 ActionSetup(ao)
 {
-  double length=1.0;
-  double energy=1.0;
-  double time=1.0;
+  Units u;
 
   std::string s;
   bool numeric;
@@ -68,61 +66,59 @@ ActionSetup(ao)
   numeric=false;
   parse("LENGTH",s);
   if(s=="nm"){
-    length=1.0;
+    u.length=1.0;
   } else if(s=="A"){
-    length=0.1;
+    u.length=0.1;
   } else if(s=="um"){
-    length=1000.0;
+    u.length=1000.0;
   } else {
-    length=-1.0;
-    Tools::convert(s,length);
+    u.length=-1.0;
+    Tools::convert(s,u.length);
     numeric=true;
-    assert(length>0.0);
+    assert(u.length>0.0);
   }
   if(!numeric) log.printf("  length: %s\n",s.c_str());
-  else         log.printf("  length: %f nm\n",length);
+  else         log.printf("  length: %f nm\n",u.length);
 
   s="kj/mol";
   numeric=false;
   parse("ENERGY",s);
   if(s=="kj/mol"){
-    energy=1.0;
+    u.energy=1.0;
   } else if(s=="kcal/mol"){
-    energy=4.184;
+    u.energy=4.184;
   } else if(s=="j/mol"){
-    energy=0.001;
+    u.energy=0.001;
   } else {
-    energy=-1.0;
-    Tools::convert(s,energy);
+    u.energy=-1.0;
+    Tools::convert(s,u.energy);
     numeric=true;
-    assert(energy>0.0);
+    assert(u.energy>0.0);
   }
   if(!numeric) log.printf("  energy: %s\n",s.c_str());
-  else         log.printf("  energy: %f kj/mol\n",energy);
+  else         log.printf("  energy: %f kj/mol\n",u.energy);
 
   s="ps";
   numeric=false;
   parse("TIME",s);
   if(s=="ps"){
-    time=1.0;
+    u.time=1.0;
   } else if(s=="ns"){
-    time=1000.0;
+    u.time=1000.0;
   } else if(s=="fs"){
-    time=0.001;
+    u.time=0.001;
   } else {
-    time=-1.0;
-    Tools::convert(s,time);
+    u.time=-1.0;
+    Tools::convert(s,u.time);
     numeric=true;
-    assert(time>0.0);
+    assert(u.time>0.0);
   }
   if(!numeric) log.printf("  time: %s\n",s.c_str());
-  else         log.printf("  energy: %f ns\n",time);
+  else         log.printf("  time: %f ns\n",u.time);
 
   checkRead();
 
-  plumed.getAtoms().setInternalLengthUnits(length);
-  plumed.getAtoms().setInternalEnergyUnits(energy);
-  plumed.getAtoms().setInternalTimeUnits(time);
+  plumed.getAtoms().setUnits(u);
 }
 
 }
