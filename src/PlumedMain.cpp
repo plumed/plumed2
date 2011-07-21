@@ -1,7 +1,7 @@
 #include "PlumedMain.h"
 #include "Tools.h"
 #include <cstring>
-#include <assert.h>
+#include <cassert>
 #include "ActionPilot.h"
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"

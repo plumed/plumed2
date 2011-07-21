@@ -50,6 +50,8 @@ public:
 /// In this manner, it is always initialized before it's used
 ActionRegister& actionRegister();
 
+std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
+
 }
 
 

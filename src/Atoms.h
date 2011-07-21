@@ -15,6 +15,7 @@ namespace PLMD{
 class MDAtomsBase;
 class PlumedMain;
 class ActionAtomistic;
+class ActionWithVirtualAtom;
 
 /// Class containing atom related quantities from the MD code.
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
@@ -34,7 +35,7 @@ class Atoms
   double energy;
   bool   collectEnergy;
 
-  std::map<const std::string,std::vector<unsigned> > groups;
+  std::map<std::string,std::vector<unsigned> > groups;
 
   void resizeVectors(unsigned);
 

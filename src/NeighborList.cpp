@@ -65,7 +65,7 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
   index=pair<unsigned,unsigned>(ipair/nlist1_,ipair%nlist1_+nlist0_);
  }else if (!twolists_){
   unsigned ii = nallpairs_-1-ipair;
-  unsigned  K = floor((sqrt(8*ii+1)+1)/2);
+  unsigned  K = floor((sqrt(double(8*ii+1))+1)/2);
   unsigned jj = ii-K*(K-1)/2;
   index=pair<unsigned,unsigned>(nlist0_-1-K,nlist0_-1-jj);
  }

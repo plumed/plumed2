@@ -113,7 +113,7 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
    if(!ok){
      const Atoms&atoms(plumed.getAtoms());
      if(atoms.groups.count(strings[i])){
-       map<const string,vector<unsigned> >::const_iterator m=atoms.groups.find(strings[i]);
+       map<string,vector<unsigned> >::const_iterator m=atoms.groups.find(strings[i]);
        for(unsigned j=0;j<(*m).second.size();j++) t.push_back(AtomNumber::index((*m).second[j]));
        ok=true;
      }

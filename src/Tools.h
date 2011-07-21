@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 namespace PLMD{
 

@@ -1,10 +1,8 @@
 #include "Colvar.h"
 #include "PlumedMain.h"
 #include "ActionRegister.h"
-
 #include "PDB.h"
-
-#include <RMSD.h>
+#include "RMSD.h"
 
 using namespace std;
 
