@@ -64,7 +64,7 @@ fp(NULL)
   if(comm.Get_rank()==0){
     fp=fopen(file.c_str(),"wa");
     log.printf("  on file %s\n",file.c_str());
-    fprintf(fp,"%s","#! FIELDS time parameter derivative");
+    fprintf(fp,"%s","#! FIELDS time parameter");
     const std::vector<Value*>& arguments(getArguments());
     assert(arguments.size()>0);
     unsigned npar=arguments[0]->getDerivatives().size();
