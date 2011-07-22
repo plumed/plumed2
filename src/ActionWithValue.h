@@ -18,8 +18,11 @@ class ActionWithValue:
   int numberOfParameters;
   std::vector<Value*> values;
   void assertUnique(const std::string&name);
+  void check(const std::string&name);
   int getValueIndex(const std::string&name)const;
   bool numericalDerivatives;
+  bool hasMultipleValues;
+  bool hasUnnamedValue;
 protected:
 /// Enforce the use of numerical derivatives.
 /// This may be useful during the implementation of new collective

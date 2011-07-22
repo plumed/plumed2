@@ -13,7 +13,9 @@ void ActionWithValue::enforceNumericalDerivatives(){
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
   numberOfParameters(0),
-  numericalDerivatives(false)
+  numericalDerivatives(false),
+  hasMultipleValues(false),
+  hasUnnamedValue(false)
 {
   parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
@@ -23,13 +25,24 @@ ActionWithValue::~ActionWithValue(){
   for(unsigned i=0;i<values.size();++i)delete values[i];
 }
 
-void ActionWithValue::addValue(const std::string&name){
+void ActionWithValue::check(const std::string&name){
   assertUnique(name);
+  if(name==""){
+    hasUnnamedValue=true;
+    assert(!hasMultipleValues);
+  }else{
+    hasMultipleValues=true;
+    assert(!hasUnnamedValue);
+  }
+}
+
+void ActionWithValue::addValue(const std::string&name){
+  check(name);
   values.push_back(new Value(*this,name));
 }
 
 void ActionWithValue::addValueWithDerivatives(const std::string&name){
-  assertUnique(name);
+  check(name);
   Value* v=new Value(*this,name);
   v->enableDerivatives();
   values.push_back(v);

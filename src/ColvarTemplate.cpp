@@ -17,7 +17,6 @@ This is just a template variable
 //+ENDPLUMEDOC
    
 class ColvarTemplate : public Colvar {
-  bool components;
   bool pbc;
 
 public:
@@ -30,13 +29,11 @@ PLUMED_REGISTER_ACTION(ColvarTemplate,"TEMPLATE")
 
 ColvarTemplate::ColvarTemplate(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-components(false),
 pbc(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   assert(atoms.size()==2);
-  parseFlag("COMPONENTS",components);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
@@ -48,12 +45,6 @@ pbc(true)
   else    log.printf("  without periodic boundary conditions\n");
 
   addValueWithDerivatives("");
-
-  if(components){
-    addValueWithDerivatives("x");
-    addValueWithDerivatives("y");
-    addValueWithDerivatives("z");
-  }
 
   requestAtoms(atoms);
 }
@@ -75,27 +66,6 @@ void ColvarTemplate::calculate(){
   setAtomsDerivatives(1,invvalue*distance);
   setBoxDerivatives  (-invvalue*Tensor(distance,distance));
   setValue           (value);
-
-  if(components){
-    Value* valuex=getValue("x");
-    Value* valuey=getValue("y");
-    Value* valuez=getValue("z");
-
-    setAtomsDerivatives (valuex,0,Vector(-1,0,0));
-    setAtomsDerivatives (valuex,1,Vector(+1,0,0));
-    setBoxDerivatives   (valuex,Tensor(distance,Vector(-1,0,0)));
-    setValue            (valuex,distance[0]);
-
-    setAtomsDerivatives (valuey,0,Vector(0,-1,0));
-    setAtomsDerivatives (valuey,1,Vector(0,+1,0));
-    setBoxDerivatives   (valuey,Tensor(distance,Vector(0,-1,0)));
-    setValue            (valuey,distance[1]);
-
-    setAtomsDerivatives (valuez,0,Vector(0,0,-1));
-    setAtomsDerivatives (valuez,1,Vector(0,0,+1));
-    setBoxDerivatives   (valuez,Tensor(distance,Vector(0,0,-1)));
-    setValue            (valuez,distance[2]);
-  };
 }
 
 }

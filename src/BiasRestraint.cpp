@@ -65,7 +65,6 @@ kappa(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
 
-  addValue("");
   addValue("Energy");
   addValue("Force2");
 }
@@ -82,7 +81,6 @@ void BiasRestraint::calculate(){
     setOutputForces(i,f);
     totf2+=f*f;
   };
-  setValue(ene);
   Value* value;
   value=getValue("Energy"); setValue(value,ene);
   value=getValue("Force2");  setValue(value,totf2);

@@ -66,10 +66,13 @@ pbc(true)
   else    log.printf("  without periodic boundary conditions\n");
 
 
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(false);
+  if(!components){
 
-  if(components){
+    addValueWithDerivatives("");
+    getValue("")->setPeriodicity(false);
+
+  }else{
+
     addValueWithDerivatives("x");
     getValue("x")->setPeriodicity(false);
     addValueWithDerivatives("y");
@@ -94,12 +97,15 @@ void ColvarDistance::calculate(){
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 
-  setAtomsDerivatives(0,-invvalue*distance);
-  setAtomsDerivatives(1,invvalue*distance);
-  setBoxDerivatives  (-invvalue*Tensor(distance,distance));
-  setValue           (value);
+  if(!components){
 
-  if(components){
+    setAtomsDerivatives(0,-invvalue*distance);
+    setAtomsDerivatives(1,invvalue*distance);
+    setBoxDerivatives  (-invvalue*Tensor(distance,distance));
+    setValue           (value);
+
+  }else{
+
     Value* valuex=getValue("x");
     Value* valuey=getValue("y");
     Value* valuez=getValue("z");
