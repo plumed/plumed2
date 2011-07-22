@@ -1,6 +1,7 @@
 #ifndef __PLUMED_PlumedMain_h
 #define __PLUMED_PlumedMain_h
 
+#include "WithCmd.h"
 #include "ActionSet.h"
 #include "Atoms.h"
 #include "PlumedCommunicator.h"
@@ -37,7 +38,8 @@ class Log;
 /// plumed or PLMD::Plumed objects. Its main method is cmd(),
 /// which defines completely the external plumed interface.
 /// It does not contain any static data.
-class PlumedMain
+class PlumedMain:
+  public WithCmd
 {
 public:
 /// Communicator for plumed.
@@ -80,13 +82,15 @@ public:
 
 public:
   PlumedMain();
+// this is to access to WithCmd versions of cmd (allowing overloading of a virtual method)
+  using WithCmd::cmd;
 /// cmd method, accessible with standard Plumed.h interface.
 /// It is called as plumed_cmd() or as PLMD::Plumed::cmd()
 /// It is the interpreter for plumed commands. It basically contains the definition of the plumed interface.
 /// If you want to add a new functionality to the interface between plumed
 /// and an MD engine, this is the right place
 /// Notice that this interface should always keep retro-compatibility
-  void cmd(const char*key,const void*val=NULL);
+  void cmd(const std::string&key,void*val=NULL);
   ~PlumedMain(){};
 /// Read an input file.
 /// \param str name of the file

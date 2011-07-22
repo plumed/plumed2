@@ -84,16 +84,7 @@ PlumedMain::PlumedMain():
 /////////////////////////////////////////////////////////////
 //  MAIN INTERPRETER
 
-void PlumedMain::cmd(const char*key,const void*cval){
-
-// this is nasty trick:
-  void* val=const_cast<void*>(cval);
-// in this manner, a const pointer can be used for cval, allowing the user to pass
-// arguments such as cmd("pippo","pluto")
-// but here we override the const
-
-// first try single word keys
-  std::string word(key);
+void PlumedMain::cmd(const std::string & word,void*val){
 
   if(false){
 // for efficiency, words frequently used are checked first
@@ -259,7 +250,7 @@ void PlumedMain::cmd(const char*key,const void*cval){
   } else {
 // multi word commands
 
-     std::vector<std::string> words=Tools::getWords(key);
+     std::vector<std::string> words=Tools::getWords(word);
      int nw=words.size();
    
      if(false){
@@ -270,7 +261,7 @@ void PlumedMain::cmd(const char*key,const void*cval){
      } else{
    // error
        fprintf(stderr,"+++ PLUMED ERROR\n");
-       fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG %s\n",key);
+       fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG %s\n",word.c_str());
        fprintf(stderr,"+++ There might be a mistake in the MD code\n");
        fprintf(stderr,"+++ or you may be using an out-dated plumed version\n");
        exit(1);
