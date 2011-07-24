@@ -21,8 +21,6 @@ protected:
 public:
  Grid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin, 
       vector<bool> pbc, bool dospline, bool doclear=true);
- Grid(vector<double> gmin, vector<double> gmax, vector<double> dx,
-      vector<bool> pbc, bool dospline, bool doclear=true);
 
 /// get lower boundary
  vector<double> getMin() const;
@@ -55,7 +53,7 @@ public:
  virtual double getValue(unsigned index);
  virtual double getValue(vector<unsigned> indices);
  virtual double getValue(vector<double> x);
-/// get grid value and derivatives
+/// get grid value and derivatives (only if you are using splines)
  virtual double getValueAndDerivatives(unsigned index, vector<double>& der); 
  virtual double getValueAndDerivatives(vector<unsigned> indices, vector<double>& der);
  virtual double getValueAndDerivatives(vector<double> x, vector<double>& der);
@@ -63,15 +61,15 @@ public:
 /// set grid value 
  virtual void setValue(unsigned index, double value);
  virtual void setValue(vector<unsigned> indices, double value);
-/// set grid value and derivatives
- virtual void setValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der);
+/// set grid value and derivatives (only if you are using splines)
  virtual void setValueAndDerivatives(unsigned index, double value, vector<double>& der);
+ virtual void setValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der);
 /// add to grid value
  virtual void addValue(unsigned index, double value); 
  virtual void addValue(vector<unsigned> indices, double value);
-/// add to grid value and derivatives
- virtual void addValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der); 
+/// add to grid value and derivatives (only if you are using splines)
  virtual void addValueAndDerivatives(unsigned index, double value, vector<double>& der); 
+ virtual void addValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der); 
 
  ~Grid(){};
 };
@@ -92,10 +90,7 @@ class SparseGrid : public Grid
  SparseGrid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin,
             vector<bool> pbc, bool dospline):
             Grid(gmin,gmax,nbin,pbc,dospline,false){};
- SparseGrid(vector<double> gmin,vector<double> gmax,vector<double> dx,
-            vector<bool> pbc, bool dospline):
-            Grid(gmin,gmax,dx,pbc,dospline,false){};
-
+ 
  unsigned getSize() const;
  double   getUsedSize() const;
  
@@ -112,14 +107,14 @@ class SparseGrid : public Grid
  void setValue(unsigned index, double value);
  void setValue(vector<unsigned> indices, double value);
 /// set grid value and derivatives
- void setValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der);
  void setValueAndDerivatives(unsigned index, double value, vector<double>& der);
+ void setValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der);
 /// add to grid value
  void addValue(unsigned index, double value); 
  void addValue(vector<unsigned> indices, double value);
 /// add to grid value and derivatives
- void addValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der); 
  void addValueAndDerivatives(unsigned index, double value, vector<double>& der); 
+ void addValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der); 
 
  ~SparseGrid(){};
 };
