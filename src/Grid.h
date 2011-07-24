@@ -5,24 +5,37 @@ using namespace std;
 
 class Grid  
 {
- 
-protected:
  vector<double> grid_;
+ vector< vector<double> > der_;
+
+protected:
  vector<double> min_,max_,dx_;  
  vector<unsigned> nbin_;
- unsigned maxsize_;
+ vector<bool> pbc_;
+ unsigned maxsize_, dimension_;
+ bool dospline_;
+ 
+ /// clear grid
+ virtual void clear();
  
 public:
- Grid(vector<double> gmin, vector<double> gmax,
-      vector<unsigned> nbin, bool doclear=true);
- Grid(vector<double> gmin,vector<double> gmax,
-      vector<double> dx, bool doclear=true);
+ Grid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin, 
+      vector<bool> pbc, bool dospline, bool doclear=true);
+ Grid(vector<double> gmin, vector<double> gmax, vector<double> dx,
+      vector<bool> pbc, bool dospline, bool doclear=true);
 
+/// get lower boundary
  vector<double> getMin() const;
+/// get upper boundary
  vector<double> getMax() const;
- vector<double> getSide() const;
- unsigned dimension() const;
+/// get bin size
+ vector<double> getDx() const;
+/// get number of bins
+ vector<unsigned> getNbin() const;
+/// get grid dimension
+ unsigned getDimension() const;
  
+/// methods to handle grid indices 
  vector<unsigned> getIndices(unsigned index) const;
  vector<unsigned> getIndices(vector<double> x) const;
  unsigned getIndex(vector<unsigned> indices) const;
@@ -30,104 +43,84 @@ public:
  vector<double> getPoint(unsigned index) const;
  vector<double> getPoint(vector<unsigned> indices) const;
  vector<double> getPoint(vector<double> x) const;
- 
-//! a class that inherits from this, like SparseGrid, should override these methods
- virtual unsigned size() const;
- virtual void clear();
- virtual double getValue(unsigned index); 
+
+/// get i-th order neighbors
+ vector<unsigned> getNeighbors(unsigned index,unsigned order=1);
+ vector<unsigned> getNeighbors(vector<unsigned> indices,unsigned order=1);
+ vector<unsigned> getNeighbors(vector<double> x,unsigned order=1);
+
+/// get grid size
+ virtual unsigned getSize() const;
+/// get grid value
+ virtual double getValue(unsigned index);
  virtual double getValue(vector<unsigned> indices);
  virtual double getValue(vector<double> x);
+/// get grid value and derivatives
+ virtual double getValueAndDerivatives(unsigned index, vector<double>& der); 
+ virtual double getValueAndDerivatives(vector<unsigned> indices, vector<double>& der);
+ virtual double getValueAndDerivatives(vector<double> x, vector<double>& der);
+
+/// set grid value 
  virtual void setValue(unsigned index, double value);
  virtual void setValue(vector<unsigned> indices, double value);
+/// set grid value and derivatives
+ virtual void setValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der);
+ virtual void setValueAndDerivatives(unsigned index, double value, vector<double>& der);
+/// add to grid value
  virtual void addValue(unsigned index, double value); 
  virtual void addValue(vector<unsigned> indices, double value);
+/// add to grid value and derivatives
+ virtual void addValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der); 
+ virtual void addValueAndDerivatives(unsigned index, double value, vector<double>& der); 
 
  ~Grid(){};
 };
 
-class GridWithSpline : public Grid
-{
-  vector< vector <double> > der_;
-  vector<bool> pbc_;
-  
-  public:
-   GridWithSpline(vector<double> gmin, vector<double> gmax, 
-                  vector<unsigned> nbin, vector<bool> pbc);
-   GridWithSpline(vector<double> gmin, vector<double> gmax, 
-                  vector<double> dx, vector<bool> pbc);
-
-
-  double getValue(unsigned index); 
-  double getValue(vector<unsigned> indices);
-  double getValue(vector<double> x);
-  double getValue(vector<double> x, vector<double>& der);
-  void setValue(unsigned index, double value);
-  void setValue(unsigned index, double value, vector<double>& der);
-  void setValue(vector<unsigned> indices, double value);
-  void setValue(vector<unsigned> indices, double value, vector<double>& der);
-  void addValue(unsigned index, double value);
-  void addValue(unsigned index, double value, vector<double>& der);
-  void addValue(vector<unsigned> indices, double value);
-  void addValue(vector<unsigned> indices, double value, vector<double>& der);
-  
-  ~GridWithSpline(){};
-};
   
 class SparseGrid : public Grid
 {
 
- protected:
  map<unsigned,double> map_;
  map<unsigned,double>::iterator it_;
-
- public:
- SparseGrid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin):
-            Grid(gmin,gmax,nbin,false){};
- SparseGrid(vector<double> gmin,vector<double> gmax,vector<double> dx):
-            Grid(gmin,gmax,dx,false){};
-
- unsigned size() const;
- void clear();
- double getRealSize() const;
- virtual double getValue(unsigned index); 
- virtual double getValue(vector<unsigned> indices);
- virtual double getValue(vector<double> x);
- virtual void setValue(unsigned index, double value);
- virtual void setValue(vector<unsigned> indices, double value);
- virtual void addValue(unsigned index, double value); 
- virtual void addValue(vector<unsigned> indices, double value);
-
- ~SparseGrid(){};
-};
-
-class SparseGridWithSpline : public SparseGrid
-{
  map< unsigned,vector<double> > der_;
  map<unsigned,vector<double> >::iterator itder_;
- vector<bool> pbc_;
-
- public:
- SparseGridWithSpline(vector<double> gmin, vector<double> gmax,
-            vector<unsigned> nbin, vector<bool> pbc):
-            SparseGrid(gmin,gmax,nbin),pbc_(pbc){};
- SparseGridWithSpline(vector<double> gmin,vector<double> gmax,
-            vector<double> dx, vector<bool> pbc):
-            SparseGrid(gmin,gmax,dx),pbc_(pbc){};
-
  
-  double getValue(unsigned index); 
-  double getValue(vector<unsigned> indices);
-  double getValue(vector<double> x);
-  double getValue(vector<double> x, vector<double>& der);
-  void setValue(unsigned index, double value);
-  void setValue(unsigned index, double value, vector<double>& der);
-  void setValue(vector<unsigned> indices, double value);
-  void setValue(vector<unsigned> indices, double value, vector<double>& der);
-  void addValue(unsigned index, double value);
-  void addValue(unsigned index, double value, vector<double>& der);
-  void addValue(vector<unsigned> indices, double value);
-  void addValue(vector<unsigned> indices, double value, vector<double>& der);
+ protected:
+ void clear(); 
+ 
+ public:
+ SparseGrid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin,
+            vector<bool> pbc, bool dospline):
+            Grid(gmin,gmax,nbin,pbc,dospline,false){};
+ SparseGrid(vector<double> gmin,vector<double> gmax,vector<double> dx,
+            vector<bool> pbc, bool dospline):
+            Grid(gmin,gmax,dx,pbc,dospline,false){};
 
- ~SparseGridWithSpline(){};
+ unsigned getSize() const;
+ double   getUsedSize() const;
+ 
+ /// get grid value
+ double getValue(unsigned index);
+ double getValue(vector<unsigned> indices);
+ double getValue(vector<double> x);
+/// get grid value and derivatives
+ double getValueAndDerivatives(unsigned index, vector<double>& der); 
+ double getValueAndDerivatives(vector<unsigned> indices, vector<double>& der);
+ double getValueAndDerivatives(vector<double> x, vector<double>& der);
+
+/// set grid value 
+ void setValue(unsigned index, double value);
+ void setValue(vector<unsigned> indices, double value);
+/// set grid value and derivatives
+ void setValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der);
+ void setValueAndDerivatives(unsigned index, double value, vector<double>& der);
+/// add to grid value
+ void addValue(unsigned index, double value); 
+ void addValue(vector<unsigned> indices, double value);
+/// add to grid value and derivatives
+ void addValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der); 
+ void addValueAndDerivatives(unsigned index, double value, vector<double>& der); 
+
+ ~SparseGrid(){};
 };
 
