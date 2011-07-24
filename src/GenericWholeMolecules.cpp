@@ -31,7 +31,9 @@ a variable without pbc or the \ref DUMPATOMS directive.
 This directive is modifying the stored position in the precise moment
 when it get executed. This means that only collective variables
 which are below this in the input script will see the corrected positions.
-As a general rule, put it at the top of the input file.
+As a general rule, put it at the top of the input file. Also, unless you
+know exactly what you are doing, leave the default stride (1), so that
+it acts at every step.
 */
 //+ENDPLUMEDOC
 
@@ -41,8 +43,6 @@ class GenericWholeMolecules:
   public ActionAtomistic
 {
   vector<vector<AtomNumber> > groups;
-protected:
-  Vector & modifyPosition(unsigned);
   Vector & modifyPosition(AtomNumber);
 public:
   GenericWholeMolecules(const ActionOptions&ao);
