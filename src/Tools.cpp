@@ -1,6 +1,5 @@
 #include "Tools.h"
 #include "AtomNumber.h"
-#include <cstring>
 #include <cassert>
 #include <sstream>
 
@@ -52,18 +51,19 @@ bool Tools::convert(const string & str,string & t){
 }
 
 vector<string> Tools::getWords(const string & line,const char* separators){
-  char* ww;
-  char* s3;
-  char* copy;
-  copy= new char[strlen(line.c_str())+1];
-  strcpy(copy,line.c_str());
+  const string sep(separators);
   vector<string> words;
-  ww=strtok_r(copy,separators,&s3);
-  if(ww){
-    words.push_back(string(ww));
-    while((ww=strtok_r(NULL,separators,&s3))) words.push_back(string(ww));
+  string word;
+  for(unsigned i=0;i<line.length();i++){
+    bool found=false;
+    for(unsigned j=0;j<sep.length();j++) if(line[i]==sep[j]) found=true;
+    if(!found) word.push_back(line[i]);
+    if(found && word.length()>0){
+      words.push_back(word);
+      word.clear();
+    }
   }
-  delete [] copy;
+  if(word.length()>0) words.push_back(word);
   return words;
 }
 
