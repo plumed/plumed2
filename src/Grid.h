@@ -13,14 +13,14 @@ protected:
  vector<unsigned> nbin_;
  vector<bool> pbc_;
  unsigned maxsize_, dimension_;
- bool dospline_;
+ bool dospline_, usederiv_;
  
  /// clear grid
  virtual void clear();
  
 public:
  Grid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin, 
-      vector<bool> pbc, bool dospline, bool doclear=true);
+      vector<bool> pbc, bool dospline, bool usederiv, bool doclear=true);
 
 /// get lower boundary
  vector<double> getMin() const;
@@ -88,8 +88,8 @@ class SparseGrid : public Grid
  
  public:
  SparseGrid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin,
-            vector<bool> pbc, bool dospline):
-            Grid(gmin,gmax,nbin,pbc,dospline,false){};
+            vector<bool> pbc, bool dospline, bool usederiv):
+            Grid(gmin,gmax,nbin,pbc,dospline,usederiv,false){};
  
  unsigned getSize() const;
  double   getUsedSize() const;
