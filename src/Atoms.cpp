@@ -19,6 +19,7 @@ Atoms::Atoms(PlumedMain&plumed):
   energy(0.0),
   collectEnergy(0.0),
   plumed(plumed),
+  timestep(0.0),
   forceOnEnergy(0.0)
 {
   mdatoms=MDAtomsBase::create(sizeof(double));
