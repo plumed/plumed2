@@ -14,12 +14,13 @@ Calculate the polynomial combination of other variables
 
 \par Syntax
 \verbatim
-COMBINE ARG=x1,x2,... [POWERS=p1,p2,...] [COEFFICIENTS=c1,c2,...]
+COMBINE ARG=x1,x2,... [POWERS=p1,p2,...] [COEFFICIENTS=c1,c2,...] [NORMALIZE]
 \endverbatim
 The resulting variable has value
 \f$
   \sum_i c_i x_i^{p_i}
 \f$. When not present, powers and coefficient are implicitly equal to 1.
+If NORMALIZE is present, the c coefficients are first normalized.
 
 
 \par Example
@@ -42,6 +43,7 @@ PRINT ARG=distance,distance2
 class FunctionCombine :
   public Function
 {
+  bool normalize;
   std::vector<double> coefficients;
   std::vector<double> powers;
 public:
@@ -55,6 +57,7 @@ PLUMED_REGISTER_ACTION(FunctionCombine,"COMBINE")
 FunctionCombine::FunctionCombine(const ActionOptions&ao):
 Action(ao),
 Function(ao),
+normalize(false),
 coefficients(getNumberOfArguments(),1.0),
 powers(getNumberOfArguments(),1.0)
 {
@@ -62,6 +65,14 @@ powers(getNumberOfArguments(),1.0)
   assert(coefficients.size()==static_cast<unsigned>(getNumberOfArguments()));
   parseVector("POWERS",powers);
   assert(powers.size()==static_cast<unsigned>(getNumberOfArguments()));
+
+  parseFlag("NORMALIZE",normalize);
+
+  if(normalize){
+    double n=0.0;
+    for(unsigned i=0;i<coefficients.size();i++) n+=coefficients[i];
+    for(unsigned i=0;i<coefficients.size();i++) coefficients[i]*=(1.0/n);
+  }
 
   addValueWithDerivatives("");
   vector<string> period;
