@@ -8,6 +8,7 @@
 #include <cmath>
 #include <limits>
 #include <algorithm>
+#include <string.h>
 
 namespace PLMD{
 

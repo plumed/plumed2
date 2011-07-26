@@ -4,6 +4,7 @@
 #include "AtomNumber.h"
 #include "Vector.h"
 #include <vector>
+#include <string>
 
 namespace PLMD{
 
