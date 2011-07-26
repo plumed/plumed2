@@ -1,6 +1,6 @@
 #include <vector>
 #include <cassert>
-#include <math.h>
+#include <cmath>
 #include "Grid.h"
 #include <iostream>
 
@@ -136,7 +136,7 @@ vector<unsigned> Grid::getNeighbors(vector<unsigned> indices,unsigned order){
 
  vector<unsigned> neighbors;
  unsigned iorder=2*order;
- unsigned nneigh=pow(iorder,dimension_);
+ unsigned nneigh=pow(double(iorder),int(dimension_));
  
  for(unsigned int i=0;i<nneigh;++i){
   unsigned tmp=i;
@@ -196,7 +196,7 @@ double Grid::getValueAndDerivatives(vector<double> x, vector<double>& der) {
  
  if(dospline_){
   double X,X2,X3,value;
-  double fd[dimension_],C[dimension_],D[dimension_];
+  vector<double> fd(dimension_),C(dimension_),D(dimension_);
   vector<double> dder;
   dder.resize(dimension_);
 // reset
@@ -333,7 +333,7 @@ double SparseGrid::getValueAndDerivatives(vector<double> x, vector<double>& der)
 
  if(dospline_){
   double X,X2,X3,value;
-  double fd[dimension_],C[dimension_],D[dimension_];
+  vector<double> fd(dimension_),C(dimension_),D(dimension_);
   vector<double> dder;
   dder.resize(dimension_);
 // reset
