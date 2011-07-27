@@ -217,7 +217,7 @@ void IMD::receive(){
 
 void IMD::calculate(){
   if(comm.Get_rank()==0 && connected && plumed.getStep()%transferRate==0 && vmdsock_selwrite(clientsock,0)) {
-    double scale=10.0*plumed.getAtoms().getInternalLengthUnits();
+    double scale=10.0*plumed.getAtoms().getUnits().length;
     Vector ref;
     for(int i=0;i<natoms;i++){
       Vector pos=getPositions(i);
@@ -234,8 +234,8 @@ void IMD::apply(){
 
   std::vector<Vector> & f(modifyForces());
    
-  const double scale=4.184/plumed.getAtoms().getInternalEnergyUnits()
-             /(0.1/plumed.getAtoms().getInternalLengthUnits())*fscale;
+  const double scale=4.184/plumed.getAtoms().getUnits().energy
+             /(0.1/plumed.getAtoms().getUnits().length)*fscale;
    
   for(unsigned i=0;i<f.size();i++){
     f[i][0]=forces[3*i+0]*getStride()*scale;
