@@ -16,6 +16,9 @@ void Pbc::setBox(const Tensor&b){
 // UP TO NOW ONLY WORKS WITH ORTHOROMIBIC (should implement matrix inversion)
 // detect type:
   const double epsilon=1e-14;
+
+  if(box.determinant()<epsilon)return;
+
   bool cxy=false;
   bool cxz=false;
   bool cyz=false;
