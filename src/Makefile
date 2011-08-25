@@ -1,20 +1,27 @@
 
+# include the machine dependent configuration
 -include ../Makefile.conf
 
 ifndef srcdir
 srcdir=.
 endif
 
+# source/objects for plumed kernel
 SRC_KERNEL=$(subst $(srcdir)/PlumedStatic.cpp,,$(wildcard $(srcdir)/*.cpp))
 OBJ_KERNEL=$(subst $(srcdir)/,,$(SRC_KERNEL:.cpp=.o))
 
+# source/objects for plumed wrapper
 SRC_WRAPPER=$(srcdir)/PlumedStatic.cpp
 OBJ_WRAPPER=PlumedStatic.o
 
+# source/objects for plumed dynamic wrapper
 SRC_DYNAMIC_WRAPPER=$(srcdir)/Plumed.c
 OBJ_DYNAMIC_WRAPPER=Plumed.o
 
+# all sources
 ALL_SRC=$(SRC_KERNEL) $(SRC_WRAPPER) $(SRC_DYNAMIC_WRAPPER)
+
+# dependency files
 ALL_SRC_DEP=$(SRC_KERNEL:.cpp=.cppdep) $(SRC_WRAPPER:.cpp=.cppdep) $(SRC_DYNAMIC_WRAPPER:.c.cdep)
 
 .PHONY: all clean
@@ -39,10 +46,8 @@ libplumedKernel.$(SOEXT): $(OBJ_KERNEL)
 libplumed.$(SOEXT): $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 
-
 clean:
 	rm -f *.o
-	rm -f makefile.dep
 	rm -f *.cdep
 	rm -f *.cppdep
 	rm -f PlumedConfig.h
@@ -79,9 +84,6 @@ Plumed.inc.shared: Plumed.inc
 	echo PLUMED_LOAD= '$$(PLUMED_SHARED_OBJ) $$(PLUMED_LIBS) $$(PLUMED_LDFLAGS)' >> $@
 	echo PLUMED_DEPENDENCIES='$$(PLUMED_SHARED_OBJ)' >> $@
 
-makefile.dep : $(ALL_SRC_DEP)
-	cat $(ALL_SRC_DEP) > $@
-
 $(ALL_SRC_DEP): $(ALL_SRC) $(srcdir)/*.h $(srcdir)/PlumedConfig.h
 
 %.cppdep : %.cpp
@@ -94,5 +96,9 @@ ifdef GCCDEP
 	$(GCCDEP) $(CPPFLAGS) -MM $< -o $@
 endif
 
--include makefile.dep
+# Individual dependencies
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(ALL_SRC_DEP)
+endif
 
