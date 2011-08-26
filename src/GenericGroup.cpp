@@ -31,6 +31,7 @@ class GenericGroup:
 
 public:
   GenericGroup(const ActionOptions&ao);
+  ~GenericGroup();
   void calculate(){};
   void apply(){};
 };
@@ -49,6 +50,10 @@ GenericGroup::GenericGroup(const ActionOptions&ao):
   log.printf("  of atoms ");
   for(unsigned i=0;i<atoms.size();i++) log.printf(" %d",atoms[i].serial());
   log.printf("\n");
+}
+
+GenericGroup::~GenericGroup(){
+  plumed.getAtoms().removeGroup(getLabel());
 }
 
 }
