@@ -71,7 +71,7 @@ public:
  virtual void addValueAndDerivatives(unsigned index, double value, vector<double>& der); 
  virtual void addValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der); 
 
- ~Grid(){};
+ virtual ~Grid(){};
 };
 
   
@@ -116,6 +116,6 @@ class SparseGrid : public Grid
  void addValueAndDerivatives(unsigned index, double value, vector<double>& der); 
  void addValueAndDerivatives(vector<unsigned> indices, double value, vector<double>& der); 
 
- ~SparseGrid(){};
+ virtual ~SparseGrid(){};
 };
 

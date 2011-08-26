@@ -24,8 +24,8 @@ class GenericDebug:
   public ActionPilot
 {
   bool logActivity;
-  bool novirial;
   bool logRequestedAtoms;
+  bool novirial;
 public:
   GenericDebug(const ActionOptions&ao);
   void calculate(){};
