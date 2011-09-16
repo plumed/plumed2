@@ -3,11 +3,11 @@
 #include <cstring>
 #include <cassert>
 #include "ActionWithValue.h"
-#include "ActionAtomistic.h"
+#include "ActionWithExternalArguments.h"
 #include "Atoms.h"
 #include <set>
 #include "PlumedConfig.h"
-#include "Colvar.h"
+#include "ColvarEnergy.h"
 
 #include <cstdlib>
 
@@ -396,9 +396,7 @@ void PlumedMain::prepareDependencies(){
   bool collectEnergy=false;
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++){
     if((*p)->isActive()){
-      if(Colvar *c=dynamic_cast<Colvar*>(*p)) {
-        if(c->checkIsEnergy()) collectEnergy=true;
-      }
+      if(ColvarEnergy* c=dynamic_cast<ColvarEnergy*>(*p)) collectEnergy=true; 
     }
   }
   atoms.setCollectEnergy(collectEnergy);
@@ -420,17 +418,17 @@ void PlumedMain::performCalc(){
 // calculate the active actions in order (assuming *backward* dependence)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
     {
-      ActionWithValue*a=dynamic_cast<ActionWithValue*>(*p);
+      ActionWithValue* a=dynamic_cast<ActionWithValue*>(*p);
       if(a) a->clearInputForces();
       if(a) a->clearDerivatives();
     }
     {
-      ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
+      ActionWithExternalArguments* a=dynamic_cast<ActionWithExternalArguments*>(*p);
       if(a) a->clearOutputForces();
-      if(a) if(a->isActive()) a->retrieveAtoms();
+      if(a) if(a->isActive()) a->retrieveData();
     }
     if((*p)->isActive()){
-      if((*p)->checkNumericalDerivatives()) (*p)->calculateNumericalDerivatives();
+      if( (*p)->checkNumericalDerivatives() ) (*p)->calculateNumericalDerivatives();
       else (*p)->calculate();
     }
   }
@@ -438,9 +436,9 @@ void PlumedMain::performCalc(){
 // apply them in reverse order
   for(ActionSet::reverse_iterator p=actionSet.rbegin();p!=actionSet.rend();++p){
     if((*p)->isActive()) (*p)->apply();
-    ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
+//    ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
 // still ActionAtomistic has a special treatment, since they may need to add forces on atoms
-    if(a) if(a->isActive()) a->applyForces();
+//    if(a) if(a->isActive()) a->applyForces();
   }
 
 // this is updating the MD copy of the forces

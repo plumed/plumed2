@@ -8,8 +8,8 @@ using namespace std;
 using namespace PLMD;
 
 Colvar::Colvar(const ActionOptions&ao) :
-ActionAtomistic(ao),
-isEnergy(false)
+ActionAtomistic(ao)
+//isEnergy(false)
 {
 }
 
@@ -30,7 +30,7 @@ void Colvar::apply(){
   }
   v.clear();
 
-  if(!isEnergy)
+  //if(!isEnergy)
   for(int i=0;i<getNumberOfValues();++i){
     if(!getValue(i)->checkForced())continue;
     const vector<double> & derivatives(getValue(i)->getDerivatives());
@@ -51,7 +51,8 @@ void Colvar::apply(){
     v(2,1)+=force*derivatives[3*nat+7];
     v(2,2)+=force*derivatives[3*nat+8];
   }
-  if(isEnergy) modifyForceOnEnergy()+=getValue(0)->getForce();
+  //if(isEnergy) modifyForceOnEnergy()+=getValue(0)->getForce();
+  applyForces();
 }
 
 

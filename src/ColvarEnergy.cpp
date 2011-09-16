@@ -1,5 +1,5 @@
-#include "Colvar.h"
 #include "ActionRegister.h"
+#include "ColvarEnergy.h"
 #include "PlumedMain.h"
 
 #include <string>
@@ -30,38 +30,35 @@ PRINT ARG=ene
 */
 //+ENDPLUMEDOC
 
-
-class ColvarEnergy : public Colvar {
-  bool components;
-
-public:
-  ColvarEnergy(const ActionOptions&);
-// active methods:
-  virtual void calculate();
-};
-
-
 using namespace std;
-
 
 PLUMED_REGISTER_ACTION(ColvarEnergy,"ENERGY")
 
 ColvarEnergy::ColvarEnergy(const ActionOptions&ao):
-Colvar(ao),
-components(false)
+ActionWithExternalArguments(ao)
 {
-  assert(!checkNumericalDerivatives());
-  std::vector<AtomNumber> atoms;
-  requestAtoms(atoms);
-  isEnergy=true;
+  if( checkNumericalDerivatives() ) error("numerical derivatives cannot be used with energy cvs");
   addValueWithDerivatives("");
   getValue("")->setPeriodicity(false);
+  readAction();	
 }
 
+void ColvarEnergy::clearOutputForces(){
+  forceOnEnergy=0.0;
+}
+
+void ColvarEnergy::retrieveData(){
+  energy=plumed.getAtoms().getEnergy();
+}
 
 // calculator
 void ColvarEnergy::calculate(){
-  setValue(getEnergy());
+  setValue( energy );
+}
+
+void ColvarEnergy::apply(){
+  forceOnEnergy+=getValue(0)->getForce();
+  plumed.getAtoms().forceOnEnergy+=forceOnEnergy;
 }
 
 }

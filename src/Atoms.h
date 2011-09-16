@@ -21,6 +21,7 @@ class ActionWithVirtualAtom;
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
 class Atoms
 {
+  friend class ColvarEnergy;
   friend class ActionAtomistic;
   friend class GenericWholeMolecules;
   friend class ActionWithVirtualAtom;
