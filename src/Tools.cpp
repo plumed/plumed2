@@ -118,6 +118,15 @@ void Tools::trimComments(string & s){
   s=s.substr(0,n);
 }
 
+bool Tools::testForKey(std::vector<std::string>& line, const std::string& key){
+  for(std::vector<string>::iterator p=line.begin();p!=line.end();++p){
+    if((*p).length()==0) continue;
+    std::string x=(*p).substr(0,key.length());
+    if(x==key){ return true; }
+  }
+  return false;
+}
+
 bool Tools::getKey(vector<string>& line,const string & key,string & s){
   s.clear();
   for(vector<string>::iterator p=line.begin();p!=line.end();++p){

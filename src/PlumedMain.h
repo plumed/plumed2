@@ -30,7 +30,6 @@ namespace PLMD {
 
 
 class ActionAtomistic;
-class ActionPilot;
 class Log;
 
 /// Main plumed object.
@@ -71,10 +70,6 @@ private:
 
 /// Set of actions found in plumed.dat file
   ActionSet actionSet;
-
-/// Set of Pilot actions.
-/// These are the action the, if they are Pilot::onStep(), can trigger execution
-  std::vector<ActionPilot*> pilots;
 
 public:
 /// Flag to switch off virial calculation (for debug)

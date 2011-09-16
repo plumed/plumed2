@@ -43,6 +43,8 @@ public:
   static void trimComments(std::string & s);
 /// Apply pbc for a unitary cell
   static double pbc(double);
+/// Establish whether a key is in a list of string objects
+  static bool testForKey(std::vector<std::string>& line, const std::string& key);
 /// Retrieve a key from a vector of options.
 /// It finds a key starting with "key=" or equal to "key" and copy the
 /// part after the = on s. E.g.:

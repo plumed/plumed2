@@ -1,4 +1,3 @@
-#include "ActionPilot.h"
 #include "ActionWithArguments.h"
 #include "ActionRegister.h"
 #include "PlumedCommunicator.h"
@@ -39,7 +38,6 @@ PRINT ARG=distance,energy   STRIDE=1000 FILE=COLVAR_ALL
 //+ENDPLUMEDOC
 
 class GenericPrint :
-public ActionPilot,
 public ActionWithArguments
 {
   string file;
@@ -66,12 +64,12 @@ PLUMED_REGISTER_ACTION(GenericPrint,"PRINT")
 
 GenericPrint::GenericPrint(const ActionOptions&ao):
 Action(ao),
-ActionPilot(ao),
 ActionWithArguments(ao),
 fp(NULL),
 fmt("%f"),
 rotate(0)
 {
+  strideKeywordIsCompulsory();
   parse("FILE",file);
   if(file.length()>0){
     if(comm.Get_rank()==0){

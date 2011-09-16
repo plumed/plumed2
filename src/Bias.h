@@ -1,7 +1,6 @@
 #ifndef __PLUMED_Bias_h
 #define __PLUMED_Bias_h
 
-#include "ActionPilot.h"
 #include "ActionWithValue.h"
 #include "ActionWithArguments.h"
 
@@ -11,7 +10,6 @@ namespace PLMD{
 
 /// Action defining a bias which can act on other Action's
 class Bias :
-  public ActionPilot,
   public ActionWithValue,
   public ActionWithArguments
 {

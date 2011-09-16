@@ -20,6 +20,7 @@ Action(ao),
 lockRequestAtoms(false)
 {
   plumed.getAtoms().add(this);
+  readAction();
 }
 
 void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){

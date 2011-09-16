@@ -1,5 +1,4 @@
 #include "ActionAtomistic.h"
-#include "ActionPilot.h"
 #include "ActionRegister.h"
 #include <cstdio>
 
@@ -26,8 +25,7 @@ editing atom positions (e.g. \ref WHOLEMOLECULES).
 //+ENDPLUMEDOC
 
 class GenericDumpAtoms:
-  public ActionAtomistic,
-  public ActionPilot
+  public ActionAtomistic
 {
   FILE*fp;
 public:
@@ -41,9 +39,9 @@ PLUMED_REGISTER_ACTION(GenericDumpAtoms,"DUMPATOMS")
 
 GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   Action(ao),
-  ActionAtomistic(ao),
-  ActionPilot(ao)
+  ActionAtomistic(ao)
 {
+  strideKeywordIsCompulsory();
   vector<AtomNumber> atoms;
   string file;
   parse("FILE",file);

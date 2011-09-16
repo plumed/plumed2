@@ -2,7 +2,6 @@
 #include "Tools.h"
 #include <cstring>
 #include <cassert>
-#include "ActionPilot.h"
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "Atoms.h"
@@ -348,8 +347,6 @@ void PlumedMain::readInputFile(std::string str){
   };
   fclose(fp);
   log.printf("END FILE: %s\n",str.c_str());
-
-  pilots=actionSet.select<ActionPilot*>();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -391,12 +388,15 @@ void PlumedMain::prepareDependencies(){
 //
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
-  for(unsigned i=0;i<pilots.size();++i){
-    if(pilots[i]->onStep()){
-      pilots[i]->activate();
-      active=true;
-     }
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
+     if( (*p)->onStep() ){ (*p)->activate(); active=true; }
   };
+  //for(unsigned i=0;i<pilots.size();++i){
+  //  if(pilots[i]->onStep()){
+  //    pilots[i]->activate();
+  //    active=true;
+  //   }
+  //};
 
 // also, if one of them is the total energy, tell to atoms that energy should be collected
   bool collectEnergy=false;

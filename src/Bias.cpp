@@ -7,11 +7,11 @@ using namespace std;
 
 Bias::Bias(const ActionOptions&ao):
 Action(ao),
-ActionPilot(ao),
 ActionWithValue(ao),
 ActionWithArguments(ao),
 outputForces(getArguments().size(),0.0)
 {
+  strideKeywordIsCompulsory();
 }
 
 

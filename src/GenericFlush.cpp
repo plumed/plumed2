@@ -1,5 +1,4 @@
 #include "ActionRegister.h"
-#include "ActionPilot.h"
 #include "PlumedMain.h"
 
 namespace PLMD{
@@ -27,13 +26,14 @@ FLUSH STRIDE=100
 //+ENDPLUMEDOC
 
 class GenericFlush:
-  public ActionPilot
+  public Action
 {
 public:
   GenericFlush(const ActionOptions&ao):
-    Action(ao),
-    ActionPilot(ao)
+    Action(ao)
   {
+    strideKeywordIsCompulsory();
+    readAction();
     checkRead();
   }
   void calculate(){};

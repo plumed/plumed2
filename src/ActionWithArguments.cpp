@@ -68,8 +68,8 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
     log.printf("\n");
   }
 
+  readAction();
   requestArguments(arg);
-
 }
 
 void ActionWithArguments::calculateNumericalDerivatives(){

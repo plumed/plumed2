@@ -1,4 +1,3 @@
-#include "ActionPilot.h"
 #include "ActionWithArguments.h"
 #include "ActionRegister.h"
 #include "PlumedCommunicator.h"
@@ -39,7 +38,6 @@ DUMPDERIVATIVES ARG=distance,distanceN STRIDE=1 FILE=deriv
 //+ENDPLUMEDOC
 
 class GenericDumpDerivatives :
-public ActionPilot,
 public ActionWithArguments
 {
   string file;
@@ -55,7 +53,6 @@ PLUMED_REGISTER_ACTION(GenericDumpDerivatives,"DUMPDERIVATIVES")
 
 GenericDumpDerivatives::GenericDumpDerivatives(const ActionOptions&ao):
 Action(ao),
-ActionPilot(ao),
 ActionWithArguments(ao),
 fp(NULL)
 {

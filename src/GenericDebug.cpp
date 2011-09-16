@@ -1,5 +1,4 @@
 #include "ActionRegister.h"
-#include "ActionPilot.h"
 #include "PlumedMain.h"
 
 using namespace std;
@@ -21,7 +20,7 @@ as a sequence of + (active) and - (inactive). Logging is done with stride s.
 */
 //+ENDPLUMEDOC
 class GenericDebug:
-  public ActionPilot
+  public Action
 {
   bool logActivity;
   bool logRequestedAtoms;
@@ -36,10 +35,11 @@ PLUMED_REGISTER_ACTION(GenericDebug,"DEBUG")
 
 GenericDebug::GenericDebug(const ActionOptions&ao):
 Action(ao),
-ActionPilot(ao),
 logActivity(false),
 logRequestedAtoms(false),
-novirial(false){
+novirial(false)
+{
+  strideKeywordIsCompulsory();
   parseFlag("logActivity",logActivity);
   if(logActivity) log.printf("  logging activity\n");
   parseFlag("logRequestedAtoms",logRequestedAtoms);

@@ -1,5 +1,4 @@
 #include "ActionAtomistic.h"
-#include "ActionPilot.h"
 #include "ActionRegister.h"
 #include "Vector.h"
 #include "AtomNumber.h"
@@ -39,7 +38,6 @@ it acts at every step.
 
 
 class GenericWholeMolecules:
-  public ActionPilot,
   public ActionAtomistic
 {
   vector<vector<AtomNumber> > groups;
@@ -59,9 +57,9 @@ Vector & GenericWholeMolecules::modifyPosition(AtomNumber i){
 
 GenericWholeMolecules::GenericWholeMolecules(const ActionOptions&ao):
 Action(ao),
-ActionPilot(ao),
 ActionAtomistic(ao)
 {
+  strideKeywordIsCompulsory();
   vector<AtomNumber> merge;
   for(int i=0;;i++){
     string is; Tools::convert(i,is);

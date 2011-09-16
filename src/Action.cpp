@@ -22,22 +22,44 @@ Action::Action(const ActionOptions&ao):
   name(ao.line[0]),
   line(ao.line),
   active(false),
+  stride(0),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm)
 {
 
   registerKeyword( 1, "LABEL", "a label for the action so that it can be referenced" );
-
+  registerKeyword( 0, "STRIDE", "the frequency with which this particular action should be performed in the absence of dependencies"); 
   line.erase(line.begin());
   log.printf("Action %s\n",name.c_str());
+}
+
+
+void Action::strideKeywordIsCompulsory(){
+  for(unsigned i=0;i<keys.size();++i){
+      if( keys[i].key=="STRIDE" ){ keys[i].compulsory=1; break; }
+  }
+}
+
+void Action::readAction(){
   parse("LABEL",label);
   if(label.length()==0){
     std::string s; Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
-  }
+  } 
   if (plumed.getActionSet().selectWithLabel<Action*>(label)) error("there is already an action with label " + label);
   log.printf("  with label %s\n",label.c_str());
+
+  // GAT - eventually move something like this into parse
+  bool needstride=false;
+  for(unsigned i=0;i<keys.size();++i){
+      if( keys[i].key=="STRIDE" && keys[i].compulsory!=0 ){ needstride=true; break; }
+  }
+
+  if( needstride || Tools::testForKey(line, "STRIDE=") ){ 
+    parse("STRIDE",stride); 
+    log.printf("  with stride %d\n",stride);
+  }
 }
 
 FILE* Action::fopen(const char *path, const char *mode){

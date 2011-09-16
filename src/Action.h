@@ -72,6 +72,9 @@ private:
 /// Switch to activate Action on this step.
   bool active;
 
+/// The frequency with which the action is performed (in the absence of any dependencies)
+  int stride;
+
 protected:
 
 /// Reference to main plumed object
@@ -94,6 +97,15 @@ protected:
 
 /// Return the timestep
   double getTimeStep()const;
+
+/// Return the value of the stride parameter
+  int getStride() const;
+
+/// Make stride a compulsory keyword (for actions like BIAS, PRINT and so on)
+  void strideKeywordIsCompulsory();
+
+/// Read in the keywords relevant to action (LABEL and STRIDE)
+  void readAction();
 
 /// Check if Action was properly read.
 /// This checks if Action::line is empty. It must be called after
@@ -161,6 +173,9 @@ public:
 /// Returns the name
   const std::string & getName()const;
 
+/// Is it time to peform this action
+  virtual bool onStep() const;
+
 /// Set action to active
   virtual void activate();
 
@@ -194,6 +209,16 @@ const std::string & Action::getLabel()const{
 inline
 const std::string & Action::getName()const{
   return name;
+}
+
+inline
+bool Action::onStep() const {
+  return ( stride>0 && getStep()%stride==0 );
+}
+
+inline
+int Action::getStride() const {
+  assert(stride>0); return stride;
 }
 
 template<class T>
