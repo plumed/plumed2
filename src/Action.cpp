@@ -11,6 +11,13 @@ line(l)
 {
 }
 
+Keyword::Keyword( const unsigned& c, const std::string& k, const std::string& d ):
+compulsory(c),
+key(k),
+documentation(d)
+{
+}
+
 Action::Action(const ActionOptions&ao):
   name(ao.line[0]),
   line(ao.line),
@@ -19,6 +26,9 @@ Action::Action(const ActionOptions&ao):
   log(plumed.getLog()),
   comm(plumed.comm)
 {
+
+  registerKeyword( 1, "LABEL", "a label for the action so that it can be referenced" );
+
   line.erase(line.begin());
   log.printf("Action %s\n",name.c_str());
   parse("LABEL",label);
@@ -26,7 +36,7 @@ Action::Action(const ActionOptions&ao):
     std::string s; Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
   }
-  assert(!plumed.getActionSet().selectWithLabel<Action*>(label));
+  if (plumed.getActionSet().selectWithLabel<Action*>(label)) error("there is already an action with label " + label);
   log.printf("  with label %s\n",label.c_str());
 }
 
@@ -41,6 +51,10 @@ int Action::fclose(FILE*fp){
   return std::fclose(fp);
 }
 
+void Action::registerKeyword( const unsigned& compulsory, const std::string& key, const std::string& description ){
+  Keyword tmpkey( compulsory, key, description ); keys.push_back( tmpkey );
+}
+
 void Action::fflush(){
   for(files_iterator p=files.begin();p!=files.end();++p){
     std::fflush((*p));
@@ -48,11 +62,7 @@ void Action::fflush(){
 }
 
 void Action::parseFlag(const std::string&key,bool & t){
-  if(!Tools::parseFlag(line,key,t)){
-    log.printf("ERROR parsing keyword %s\n",key.c_str());
-    log.printf("%s\n",getDocumentation().c_str());
-    this->exit(1);
-  }
+  if(!Tools::parseFlag(line,key,t)) error("problem parsing keyword " + key );
 }
 
 void Action::addDependency(Action*action){
@@ -92,8 +102,9 @@ void Action::checkRead(){
     log.printf("I CANNOT UNDERSTAND THE FOLLOWING WORDS:\n");
     for(unsigned i=0;i<line.size();i++) log.printf("  %s\n",line[i].c_str());
     log.printf("STOP!!\n");
-    exit(1);
+    plumed.exit(1);
   }
+  keys.resize(0);
 }
 
 int Action::getStep()const{
@@ -108,12 +119,6 @@ double Action::getTimeStep()const{
   return plumed.getAtoms().getTimeStep();
 }
 
-
-
-void Action::exit(int c){
-  plumed.exit(c);
-}
-
 void Action::calculateNumericalDerivatives(){
   assert(0);
 }
@@ -121,6 +126,25 @@ void Action::calculateNumericalDerivatives(){
 void Action::prepare(){
   return;
 }
+
+void Action::error( const std::string& stream ){
+	log.printf("ERROR in action %s with label %s : %s\n\n",name.c_str(),label.c_str(),stream.c_str() );
+	log.printf( "%s\n\n",getDocumentation().c_str() );
+	log.printf( "Compulsory keywords for this action are: \n\n");
+        for(unsigned i=0;i<keys.size();++i){
+	   if ( keys[i].compulsory==1 ) log.printf(" %s - %s \n",keys[i].key.c_str(), keys[i].documentation.c_str() );
+	}
+        log.printf( "\n Optional keywords for this action are: \n\n");
+        for(unsigned i=0;i<keys.size();++i){
+           if ( keys[i].compulsory==0 ) log.printf(" %s - %s \n",keys[i].key.c_str(), keys[i].documentation.c_str() );
+        }
+	log.printf("\n");
+	plumed.exit(1);
+}
+
+void Action::warning( const std::string& stream ){
+	log.printf("WARNING in action %s with label %s : %s\n",name.c_str(),label.c_str(),stream.c_str() );
+}   
 
 
 

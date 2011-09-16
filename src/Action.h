@@ -27,6 +27,18 @@ public:
   ActionOptions(PlumedMain&p,const std::vector<std::string>&);
 };
 
+/// This class holds the keywords and their documentation
+class Keyword{
+friend class Action;
+private:
+  unsigned compulsory;
+  std::string key;
+  std::string documentation;
+public:
+  Keyword(){}
+  Keyword( const unsigned& , const std::string&, const std::string& );
+};
+
 /// Base class for all the input Actions.
 /// The input Actions are more or less corresponding to the directives
 /// in the plumed.dat file and are applied in order at each time-step.
@@ -52,6 +64,10 @@ private:
   Dependencies after;
 /// Actions depending on this Action.
   Dependencies before;
+
+/// The keywords that are available to this particular action 
+/// This list is created using registerKeyword.
+  std::vector<Keyword> keys;
  
 /// Switch to activate Action on this step.
   bool active;
@@ -84,6 +100,9 @@ protected:
 /// a final Action has been initialized
   void checkRead();
 
+/// Add a keyword to the list of keywords for this action
+  void registerKeyword( const unsigned& , const std::string& , const std::string& ); 
+
 /// Parse one keyword as generic type
   template<class T>
   void parse(const std::string&key,T&t);
@@ -94,9 +113,12 @@ protected:
 
 /// Parse one keyword as boolean flag
   void parseFlag(const std::string&key,bool&t);
-
-/// Exit with error code c
-  void exit(int c=0);
+	
+/// Print errors and die 
+  void error( const std::string& stream );
+  
+/// Print a warning but don't die	
+  void warning( const std::string& stream );	
 
 ///
   std::set<FILE*> files;
@@ -176,20 +198,12 @@ const std::string & Action::getName()const{
 
 template<class T>
 void Action::parse(const std::string&key,T&t){
-  if(!Tools::parse(line,key,t)){
-    log.printf("ERROR parsing keyword %s\n",key.c_str());
-    log.printf("%s\n",getDocumentation().c_str());
-    this->exit(1);
-  }
+  if(!Tools::parse(line,key,t)) error("missing " + key + " keyword");
 }
 
 template<class T>
 void Action::parseVector(const std::string&key,std::vector<T>&t){
-  if(!Tools::parseVector(line,key,t)){
-    log.printf("ERROR parsing keyword %s\n",key.c_str());
-    log.printf("%s\n",getDocumentation().c_str());
-    this->exit(1);
-  }
+  if(!Tools::parseVector(line,key,t)) error("missing " + key + " keyword");
 }
 
 inline
