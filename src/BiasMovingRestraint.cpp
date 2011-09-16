@@ -90,7 +90,7 @@ public:
 PLUMED_REGISTER_ACTION(BiasMovingRestraint,"MOVINGRESTRAINT")
 
 BiasMovingRestraint::BiasMovingRestraint(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao)
+Bias(ao)
 {
   parseVector("VERSE",verse);
   if(verse.size()==0) verse.assign(getNumberOfArguments(),"B");

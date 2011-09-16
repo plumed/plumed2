@@ -34,7 +34,7 @@ public:
 PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
 
 ColvarRMSD::ColvarRMSD(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+Colvar(ao)
 {
   string reference;
   parse("REFERENCE",reference);

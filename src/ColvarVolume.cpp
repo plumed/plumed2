@@ -42,7 +42,7 @@ public:
 PLUMED_REGISTER_ACTION(ColvarVolume,"VOLUME")
 
 ColvarVolume::ColvarVolume(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
+Colvar(ao),
 components(false)
 {
   std::vector<AtomNumber> atoms;

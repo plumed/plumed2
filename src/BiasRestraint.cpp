@@ -48,7 +48,7 @@ public:
 PLUMED_REGISTER_ACTION(BiasRestraint,"RESTRAINT")
 
 BiasRestraint::BiasRestraint(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao),
+Bias(ao),
 at(0),
 kappa(getNumberOfArguments(),0.0)
 {

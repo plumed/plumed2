@@ -47,7 +47,7 @@ public:
 PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
 
 ColvarDistance::ColvarDistance(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
+Colvar(ao),
 components(false),
 pbc(true)
 {

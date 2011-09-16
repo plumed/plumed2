@@ -1,7 +1,7 @@
 #ifndef __PLUMED_ActionAtomistic_h
 #define __PLUMED_ActionAtomistic_h
 
-#include "Action.h"
+#include "ActionWithValue.h"
 #include "Atoms.h"
 #include "PlumedMain.h"
 #include <vector>
@@ -11,9 +11,7 @@
 namespace PLMD {
 
 /// Action which can access to atomistic data
-class ActionAtomistic :
-  virtual public Action
-  {
+class ActionAtomistic : public ActionWithValue {
 
   friend class Atoms;
 

@@ -42,7 +42,6 @@ public:
 PLUMED_REGISTER_ACTION(GenericCOM,"COM")
 
 GenericCOM::GenericCOM(const ActionOptions&ao):
-  Action(ao),
   ActionWithVirtualAtom(ao)
 {
   vector<AtomNumber> atoms;

@@ -56,7 +56,6 @@ Vector & GenericWholeMolecules::modifyPosition(AtomNumber i){
 }
 
 GenericWholeMolecules::GenericWholeMolecules(const ActionOptions&ao):
-Action(ao),
 ActionAtomistic(ao)
 {
   strideKeywordIsCompulsory();

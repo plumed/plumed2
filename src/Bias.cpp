@@ -5,9 +5,7 @@
 using namespace PLMD;
 using namespace std;
 
-Bias::Bias(const ActionOptions&ao):
-Action(ao),
-ActionWithValue(ao),
+Bias::Bias(const ActionOptions&ao) : 
 ActionWithArguments(ao),
 outputForces(getArguments().size(),0.0)
 {

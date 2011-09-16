@@ -5,15 +5,10 @@
 #include "ActionWithValue.h"
 #include <vector>
 
-#define PLUMED_COLVAR_INIT(ao) Action(ao),Colvar(ao)
-
 namespace PLMD {
 
 /// Action representing a collective variable
-class Colvar :
-  public ActionAtomistic,
-  public ActionWithValue
-  {
+class Colvar : public ActionAtomistic {
 protected:
   bool isEnergy;
   void requestAtoms(const std::vector<AtomNumber> & a);

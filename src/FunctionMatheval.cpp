@@ -69,7 +69,6 @@ public:
 PLUMED_REGISTER_ACTION(FunctionMatheval,"MATHEVAL")
 
 FunctionMatheval::FunctionMatheval(const ActionOptions&ao):
-Action(ao),
 Function(ao),
 evaluator_deriv(getNumberOfArguments()),
 values(getNumberOfArguments()),

@@ -7,10 +7,8 @@
 using namespace std;
 using namespace PLMD;
 
-Colvar::Colvar(const ActionOptions&ao):
-Action(ao),
+Colvar::Colvar(const ActionOptions&ao) :
 ActionAtomistic(ao),
-ActionWithValue(ao),
 isEnergy(false)
 {
 }

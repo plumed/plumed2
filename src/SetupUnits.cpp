@@ -54,7 +54,6 @@ public:
 PLUMED_REGISTER_ACTION(SetupUnits,"UNITS")
 
 SetupUnits::SetupUnits(const ActionOptions&ao):
-Action(ao),
 ActionSetup(ao)
 {
   Units u;

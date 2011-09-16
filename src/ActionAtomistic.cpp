@@ -16,7 +16,7 @@ ActionAtomistic::~ActionAtomistic(){
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
-Action(ao),
+ActionWithValue(ao),
 lockRequestAtoms(false)
 {
   plumed.getAtoms().add(this);

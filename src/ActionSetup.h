@@ -6,8 +6,7 @@
 namespace PLMD{
 
 /// Action executed only at startup
-class ActionSetup :
-  public virtual Action {
+class ActionSetup : public Action {
 public:
 /// Constructor
   ActionSetup(const ActionOptions&ao);

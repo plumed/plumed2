@@ -55,7 +55,6 @@ public:
 PLUMED_REGISTER_ACTION(FunctionCombine,"COMBINE")
 
 FunctionCombine::FunctionCombine(const ActionOptions&ao):
-Action(ao),
 Function(ao),
 normalize(false),
 coefficients(getNumberOfArguments(),1.0),

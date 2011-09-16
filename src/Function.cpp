@@ -5,12 +5,8 @@
 using namespace PLMD;
 using namespace std;
 
-Function::Function(const ActionOptions&ao):
-Action(ao),
-ActionWithValue(ao),
-ActionWithArguments(ao)
-{
-    setNumberOfParameters(getNumberOfArguments());
+Function::Function(const ActionOptions&ao) : ActionWithArguments(ao) {
+  setNumberOfParameters(getNumberOfArguments());
 }
 
 void Function::apply(){

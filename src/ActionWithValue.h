@@ -12,9 +12,7 @@ namespace PLMD{
 /// This object contains an array of PLMD::Value, one for each component.
 /// It also stores all the derivatives of these values wrt the parameters
 /// Parameters are other values (from other Action s) or atomic positions.
-class ActionWithValue:
-  public virtual Action
-{
+class ActionWithValue : public Action {
   int numberOfParameters;
   std::vector<Value*> values;
   void assertUnique(const std::string&name);

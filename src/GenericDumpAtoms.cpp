@@ -38,7 +38,6 @@ public:
 PLUMED_REGISTER_ACTION(GenericDumpAtoms,"DUMPATOMS")
 
 GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
-  Action(ao),
   ActionAtomistic(ao)
 {
   strideKeywordIsCompulsory();

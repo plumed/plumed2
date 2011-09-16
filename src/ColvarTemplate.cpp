@@ -28,7 +28,7 @@ public:
 PLUMED_REGISTER_ACTION(ColvarTemplate,"TEMPLATE")
 
 ColvarTemplate::ColvarTemplate(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
+Colvar(ao),
 pbc(true)
 {
   vector<AtomNumber> atoms;

@@ -63,7 +63,6 @@ public:
 PLUMED_REGISTER_ACTION(GenericPrint,"PRINT")
 
 GenericPrint::GenericPrint(const ActionOptions&ao):
-Action(ao),
 ActionWithArguments(ao),
 fp(NULL),
 fmt("%f"),

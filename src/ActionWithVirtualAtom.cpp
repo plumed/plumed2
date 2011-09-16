@@ -7,7 +7,6 @@ using namespace std;
 namespace PLMD{
 
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
-  Action(ao),
   ActionAtomistic(ao)
 {
   index=plumed.getAtoms().addVirtualAtom(this);

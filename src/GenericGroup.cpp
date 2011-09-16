@@ -39,7 +39,6 @@ public:
 PLUMED_REGISTER_ACTION(GenericGroup,"GROUP")
 
 GenericGroup::GenericGroup(const ActionOptions&ao):
-  Action(ao),
   ActionAtomistic(ao)
 {
   vector<AtomNumber> atoms;

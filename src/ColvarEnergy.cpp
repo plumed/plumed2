@@ -47,7 +47,7 @@ using namespace std;
 PLUMED_REGISTER_ACTION(ColvarEnergy,"ENERGY")
 
 ColvarEnergy::ColvarEnergy(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
+Colvar(ao),
 components(false)
 {
   assert(!checkNumericalDerivatives());

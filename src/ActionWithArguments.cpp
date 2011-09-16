@@ -56,7 +56,7 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg){
 }
 
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
-  Action(ao),
+  ActionWithValue(ao),
   lockRequestArguments(false)
 {
   vector<Value*> arg;

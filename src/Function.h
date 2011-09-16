@@ -1,16 +1,13 @@
 #ifndef __PLUMED_Function_h
 #define __PLUMED_Function_h
 
-#include "ActionWithValue.h"
+//#include "ActionWithValue.h"
 #include "ActionWithArguments.h"
 
 namespace PLMD{
 
 /// Action representing a function of other actions
-class Function:
-  public ActionWithValue,
-  public ActionWithArguments
-{
+class Function : public ActionWithArguments {
 public:
   Function(const ActionOptions&);
   virtual ~Function(){};

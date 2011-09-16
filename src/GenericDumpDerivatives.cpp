@@ -52,7 +52,6 @@ public:
 PLUMED_REGISTER_ACTION(GenericDumpDerivatives,"DUMPDERIVATIVES")
 
 GenericDumpDerivatives::GenericDumpDerivatives(const ActionOptions&ao):
-Action(ao),
 ActionWithArguments(ao),
 fp(NULL)
 {

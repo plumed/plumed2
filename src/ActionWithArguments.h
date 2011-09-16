@@ -1,7 +1,7 @@
 #ifndef __PLUMED_ActionWithArguments_h
 #define __PLUMED_ActionWithArguments_h
 
-#include "Action.h"
+#include "ActionWithValue.h"
 #include "Value.h"
 #include <vector>
 
@@ -12,9 +12,7 @@ class Value;
 /// Action which takes other Action's as arguments.
 /// Arguments are objects of type PLMD::Value, and
 /// are addressed using the ARG= keyword on the directive line
-class ActionWithArguments:
-  public virtual Action
-{
+class ActionWithArguments : public ActionWithValue {
   std::vector<Value*> arguments;
   bool lockRequestArguments;
 

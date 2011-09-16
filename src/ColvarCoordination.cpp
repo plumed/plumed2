@@ -37,7 +37,7 @@ public:
 PLUMED_REGISTER_ACTION(ColvarCoordination,"COORDINATION")
 
 ColvarCoordination::ColvarCoordination(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
+Colvar(ao),
 pbc(true),
 serial(false),
 reduceListAtNextStep(false)

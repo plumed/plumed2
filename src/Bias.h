@@ -1,18 +1,12 @@
 #ifndef __PLUMED_Bias_h
 #define __PLUMED_Bias_h
 
-#include "ActionWithValue.h"
 #include "ActionWithArguments.h"
-
-#define PLUMED_BIAS_INIT(ao) Action(ao),Bias(ao)
 
 namespace PLMD{
 
 /// Action defining a bias which can act on other Action's
-class Bias :
-  public ActionWithValue,
-  public ActionWithArguments
-{
+class Bias : public ActionWithArguments {
   std::vector<double> outputForces;
 protected:
   void resetOutputForces();

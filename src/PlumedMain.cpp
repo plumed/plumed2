@@ -391,12 +391,6 @@ void PlumedMain::prepareDependencies(){
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
      if( (*p)->onStep() ){ (*p)->activate(); active=true; }
   };
-  //for(unsigned i=0;i<pilots.size();++i){
-  //  if(pilots[i]->onStep()){
-  //    pilots[i]->activate();
-  //    active=true;
-  //   }
-  //};
 
 // also, if one of them is the total energy, tell to atoms that energy should be collected
   bool collectEnergy=false;
