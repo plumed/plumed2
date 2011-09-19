@@ -1,13 +1,9 @@
-#ifndef __PLUMED_GenericGroup_h
-#define __PLUMED_GenericGroup_h
-
 #include "ActionRegister.h"
-#include "ActionAtomistic.h"
-#include "PlumedMain.h"
+#include "GenericGroup.h"
 
 using namespace std;
 
-namespace PLMD{
+namespace PLMD {
 
 //+PLUMEDOC GENERIC GROUP
 /**
@@ -23,19 +19,6 @@ expanded when used in multi-atoms options
 */
 //+ENDPLUMEDOC
 
-
-
-class GenericGroup:
-  public ActionAtomistic
-{
-
-public:
-  GenericGroup(const ActionOptions&ao);
-  ~GenericGroup();
-  void calculate(){};
-  void apply(){};
-};
-
 PLUMED_REGISTER_ACTION(GenericGroup,"GROUP")
 
 GenericGroup::GenericGroup(const ActionOptions&ao):
@@ -44,8 +27,8 @@ GenericGroup::GenericGroup(const ActionOptions&ao):
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   vector<unsigned> a(atoms.size());
-  for(unsigned i=0;i<atoms.size();i++) a[i]=atoms[i].index();
-  plumed.getAtoms().insertGroup(getLabel(),a);
+//  for(unsigned i=0;i<atoms.size();i++) a[i]=atoms[i].index();
+//  plumed.getAtoms().insertGroup(getLabel(),a);
   log.printf("  of atoms ");
   for(unsigned i=0;i<atoms.size();i++) log.printf(" %d",atoms[i].serial());
   log.printf("\n");
@@ -56,5 +39,3 @@ GenericGroup::~GenericGroup(){
 }
 
 }
-
-#endif

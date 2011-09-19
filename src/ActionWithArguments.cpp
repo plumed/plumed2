@@ -36,14 +36,13 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
     } else if(c[i]=="*"){
       std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
       for(unsigned j=0;j<all.size();j++){
-        assert(all[j]->hasNamedValue(""));
-        arg.push_back(all[j]->getValue(""));
+        assert(all[j]->getNumberOfValues()==1); 
+        arg.push_back(all[j]->getValue(0));
       };
     } else{
       ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
-      assert(action);
-      assert(action->hasNamedValue(""));
-      arg.push_back(action->getValue(""));
+      assert(action); assert(action->getNumberOfValues()==1); 
+      arg.push_back(action->getValue(0));
     }
   }
 }

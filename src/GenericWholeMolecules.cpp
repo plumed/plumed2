@@ -59,7 +59,7 @@ GenericWholeMolecules::GenericWholeMolecules(const ActionOptions&ao):
 ActionAtomistic(ao)
 {
   strideKeywordIsCompulsory();
-  vector<AtomNumber> merge;
+//  vector<AtomNumber> merge;
   for(int i=0;;i++){
     string is; Tools::convert(i,is);
     string name="GROUP"+is;
@@ -67,11 +67,11 @@ ActionAtomistic(ao)
     parseAtomList(name,group);
     if(group.size()==0)break;
     groups.push_back(group);
-    merge.insert(merge.end(),group.begin(),group.end());
+//    merge.insert(merge.end(),group.begin(),group.end());
   }
   checkRead();
-  Tools::removeDuplicates(merge);
-  requestAtoms(merge);
+//  Tools::removeDuplicates(merge);
+  //requestAtoms(merge);
 }
 
 void GenericWholeMolecules::calculate(){
@@ -79,7 +79,7 @@ void GenericWholeMolecules::calculate(){
     for(unsigned j=0;j<groups[i].size()-1;++j){
       Vector & first (modifyPosition(groups[i][j]));
       Vector & second (modifyPosition(groups[i][j+1]));
-      second=first+pbcDistance(first,second);
+      second=first+getSeparation( groups[i][j].index(), groups[i][j+1].index() );
     }
   }
 }

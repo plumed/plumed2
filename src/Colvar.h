@@ -10,8 +10,7 @@ namespace PLMD {
 /// Action representing a collective variable
 class Colvar : public ActionAtomistic {
 protected:
-//  bool isEnergy;
-  void requestAtoms(const std::vector<AtomNumber> & a);
+//  void requestAtoms(const std::vector<AtomNumber> & a);
 // These are so as to map to 3d vectors for atoms:
   void setAtomsDerivatives(int,const Vector&);
   void setAtomsDerivatives(Value*,int,const Vector&);

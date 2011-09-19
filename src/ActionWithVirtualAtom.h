@@ -24,7 +24,7 @@ protected:
 /// Set its charge
   void setCharge(double);
 /// Request atoms on which the calculation depends
-  void requestAtoms(const std::vector<AtomNumber> & a);
+//  void requestAtoms(const std::vector<AtomNumber> & a);
 /// Set the derivatives of virtual atom coordinate wrt atoms on which it dependes
   void setAtomsDerivatives(const std::vector<Tensor> &d);
 public:

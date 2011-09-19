@@ -21,11 +21,12 @@ ActionWithVirtualAtom::~ActionWithVirtualAtom(){
 void ActionWithVirtualAtom::apply(){
   const Vector & f(plumed.getAtoms().forces[index]);
   for(unsigned i=0;i<getNatoms();i++) modifyForces()[i]=matmul(derivatives[i],f);
+  applyForces();	
 }
 
-void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a){
-  ActionAtomistic::requestAtoms(a);
-  derivatives.resize(a.size());
-}
+//void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a){
+//  ActionAtomistic::requestAtoms(a);
+//  derivatives.resize(a.size());
+//}
 
 }

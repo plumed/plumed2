@@ -38,9 +38,10 @@ ColvarEnergy::ColvarEnergy(const ActionOptions&ao):
 ActionWithExternalArguments(ao)
 {
   if( checkNumericalDerivatives() ) error("numerical derivatives cannot be used with energy cvs");
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(false);
+  addValueWithDerivatives("pe");
+  getValue("pe")->setPeriodicity(false);
   readAction();	
+  checkRead();
 }
 
 void ColvarEnergy::clearOutputForces(){

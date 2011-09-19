@@ -6,6 +6,7 @@
 #include "ActionWithValue.h"
 #include "Colvar.h"
 #include "ActionWithVirtualAtom.h"
+#include "GenericGroup.h"
 
 using namespace std;
 using namespace PLMD;
@@ -13,47 +14,46 @@ using namespace PLMD;
 ActionAtomistic::~ActionAtomistic(){
 // forget the pending request
   plumed.getAtoms().remove(this);
+// Get rid of this actions group
+  if( atomGroupName==getLabel() ) plumed.getAtoms().removeGroup(atomGroupName);
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 ActionWithExternalArguments(ao),
+atomGroupName("none"),
+pbcOn(true),
 lockRequestAtoms(false)
 {
   plumed.getAtoms().add(this);
+
+  registerKeyword(0, "PBC", "(default) use periodic boundary conditions when calculating the vectors that connect atoms");
+  registerKeyword(0, "NOPBC","do not use periodic boundary conditions when calculating the vectors that connect atoms");
+  registerKeyword(0, "UPDATE","frequency for updates of neighbour lists and dynamic groups");
+  registerKeyword(0, "NL_CUT","distance cutoff for neighbour lists");
+}
+
+void ActionAtomistic::readActionAtomistic(){
   readAction();
+
+  // Read periodic boundary condition stuff
+  bool nopbc=!pbcOn; parseFlag("NOPBC",nopbc);
+  pbcOn=!nopbc; parseFlag("PBC",pbcOn);
+
+  if(pbcOn) log.printf("  using periodic boundary conditions\n");
+  else      log.printf("  without periodic boundary conditions\n");
+
+  // Read in frequencies for updates and NL_STUFF
 }
 
-void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
-  assert(!lockRequestAtoms);
-  Atoms&atoms(plumed.getAtoms());
-  int nat=a.size();
-  indexes.resize(nat);
-  for(int i=0;i<nat;i++) indexes[i]=a[i].index();
-  positions.resize(nat);
-  forces.resize(nat);
-  masses.resize(nat);
-  charges.resize(nat);
-  int n=atoms.positions.size();
-  clearDependencies();
-  unique.clear();
-  for(unsigned i=0;i<indexes.size();i++){
-    assert(indexes[i]<n);
-    if(indexes[i]>=atoms.getNatoms()) addDependency(atoms.virtualAtomsActions[indexes[i]-atoms.getNatoms()]);
-// only real atoms are requested to lower level Atoms class
-    else unique.insert(indexes[i]);
-  }
-
-}
-
-Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
-  return pbc.distance(v1,v2);
-}
+//Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
+//  return pbc.distance(v1,v2);
+//}
 
 void ActionAtomistic::calculateNumericalDerivatives(){
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
   assert(a);
   const int nval=a->getNumberOfValues();
-  const int natoms=getNatoms();
+  const int natoms=positions.size(); 
   std::vector<Vector> value(nval*natoms);
   std::vector<Tensor> valuebox(nval);
   std::vector<Vector> savedPositions(natoms);
@@ -104,19 +104,19 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
   vector<string> strings;
   parseVector(key,strings);
   Tools::interpretRanges(strings);
-  t.resize(0);
+  t.resize(0); 
   for(unsigned i=0;i<strings.size();++i){
    bool ok=false;
    AtomNumber atom;
    ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
    if(ok) t.push_back(atom);
-// here we check if the atom name is the name of a group
-   if(!ok){
-     const Atoms&atoms(plumed.getAtoms());
-     if(atoms.groups.count(strings[i])){
-       map<string,vector<unsigned> >::const_iterator m=atoms.groups.find(strings[i]);
-       for(unsigned j=0;j<(*m).second.size();j++) t.push_back(AtomNumber::index((*m).second[j]));
-       ok=true;
+// here we check if the atom name is the name of a dynamic group
+   if(!ok && atomGroupName=="none"){
+     //error("you can only specify a single group when you parse an atom list");
+     GenericGroup* grp=plumed.getActionSet().selectWithLabel<GenericGroup*>(strings[i]);
+     if( grp ){
+        if(strings.size()!=1) error("you can only use one group at a time when you specify an atom list");
+        atomGroupName=strings[i];
      }
    }
 // here we check if the atom name is the name of an added virtual atom
@@ -131,30 +131,70 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
        }
      }
    }
+   if(!ok) error("in arguments to " + key + strings[i] + " is not an atom, a group or a virtual atom");
    assert(ok);
+  }
+
+  // Adjust everything that will be used to store the atom positions
+  Atoms& atoms(plumed.getAtoms());
+
+  std::vector<unsigned> indexes( t.size() );
+  if( atomGroupName=="none" || atomGroupName==getLabel() ){ 
+     // Setup the list of atoms
+     int n=atoms.positions.size();
+     for(unsigned i=0;i<t.size();++i){
+       indexes[i]=t[i].index(); assert(indexes[i]<n);
+     }
+
+     // If there is currently no group insde atoms for this colvar
+     // then make one or add the atoms to the group
+     if( atomGroupName=="none" ){
+        atomGroupName=getLabel();
+        atoms.insertGroup(atomGroupName,atoms.getNatoms(),indexes);
+     } else if ( atomGroupName==getLabel() ) {
+        atoms.addAtomsToGroup(atomGroupName,indexes);
+     }
+  }
+
+  // Get the indices for this group
+  atoms.getGroupIndices(getLabel(),indexes);
+
+  // Resize everything
+  unsigned nn=indexes.size();
+  positions.resize(nn); masses.resize(nn); 
+  charges.resize(nn); skips.resize(nn); forces.resize(nn);
+  setNumberOfParameters(3*nn+9);  // GAT - want this more tidy 
+
+  // Now sort out the dependencies
+  clearDependencies();
+  for(unsigned j=0;j<indexes.size();++j){
+    skips[j]=false;
+    if(indexes[j]>=atoms.getNatoms()) addDependency(atoms.virtualAtomsActions[indexes[j]-atoms.getNatoms()]);
   }
 }
 
 void ActionAtomistic::retrieveData(){
-  box=plumed.getAtoms().box;
+  box=plumed.getAtoms().box; 
   pbc.setBox(box);
-  const vector<Vector> & p(plumed.getAtoms().positions);
-  const vector<double> & c(plumed.getAtoms().charges);
-  const vector<double> & m(plumed.getAtoms().masses);
-  for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j]];
-  for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j]];
-  for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j]];
+  plumed.getAtoms().getAtomsInGroup( atomGroupName, positions, charges, masses );
 }
 
 void ActionAtomistic::applyForces(){
-  vector<Vector>   & f(plumed.getAtoms().forces);
-  Tensor           & v(plumed.getAtoms().virial);
-  for(unsigned j=0;j<indexes.size();j++) f[indexes[j]]+=forces[j];
-  v+=virial;
+  plumed.getAtoms().applyForceToAtomsInGroup( atomGroupName, forces, virial );
 }
 
+/*
+void ActionAtomistic::updateAtomSelection(){
+  for(unsigned i=0;i<skips.size();++i) skips[i]=false;  
 
-
-
-
-
+  if( atomGroupName!=getLabel() ){ 
+      // Find the action
+      GenericDynamicGroup* action=plumed.getActionSet().selectWithLabel<GenericDynamicGroup*>(atomGroupName);
+      assert(action);
+      // Run a routine that selects the atoms in the group
+      action.updateSelection( skips );
+  }
+  updateNeighbourLists( skips );
+  plumed.getAtoms().updateAtomsInSelection( atomGroupName, skips );
+}
+*/

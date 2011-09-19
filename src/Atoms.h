@@ -17,11 +17,36 @@ class PlumedMain;
 class ActionAtomistic;
 class ActionWithVirtualAtom;
 
+/// This class holds a group of atoms.
+class AtomGroup {
+friend class Atoms;
+private:
+/// The number of real atoms in atoms
+  unsigned natoms;
+/// The set of unique atoms
+  std::set<unsigned> unique;
+/// The indexes of the atoms involved in the group
+  std::vector<unsigned> indexes;
+/// The atoms that can be skipped in collection time 
+  std::vector<unsigned> next;  		
+public:
+  AtomGroup() {};
+  AtomGroup( const AtomGroup& old ) : indexes(old.indexes), next(old.next) {}
+  AtomGroup(const unsigned& n, const std::vector<unsigned>& i);
+/// Add some more atoms to the group
+  void addAtoms( const std::vector<unsigned>& i);
+/// Get the list of indices in the group
+  void getIndexes( std::vector<unsigned>& ind);
+/// Update the list of skips
+  void updateSkips(const std::vector<bool>& skip);
+};
+
 /// Class containing atom related quantities from the MD code.
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
 class Atoms
 {
   friend class ColvarEnergy;
+  friend class ColvarVolume;
   friend class ActionAtomistic;
   friend class GenericWholeMolecules;
   friend class ActionWithVirtualAtom;
@@ -36,7 +61,7 @@ class Atoms
   double energy;
   bool   collectEnergy;
 
-  std::map<std::string,std::vector<unsigned> > groups;
+  std::map<std::string,AtomGroup > groups;
 
   void resizeVectors(unsigned);
 
@@ -137,7 +162,11 @@ public:
 
   unsigned int addVirtualAtom(ActionWithVirtualAtom*);
   void removeVirtualAtom(ActionWithVirtualAtom*);
-  void insertGroup(const std::string&name,const std::vector<unsigned>&a);
+  void insertGroup(const std::string&name,const unsigned& n,const std::vector<unsigned>&a);
+  void addAtomsToGroup(const std::string& name, const std::vector<unsigned>&a);
+  void getGroupIndices(const std::string& name, std::vector<unsigned>&a); 
+  void getAtomsInGroup(const std::string& name, std::vector<Vector>& p, std::vector<double>& q, std::vector<double>& m);
+  void applyForceToAtomsInGroup( const std::string& name, const std::vector<Vector>& f, const Tensor& v);
   void removeGroup(const std::string&name);
 };
 

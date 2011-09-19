@@ -1,4 +1,5 @@
-#include "Colvar.h"
+#include "Atoms.h"
+#include "ActionWithExternalArguments.h"
 #include "ActionRegister.h"
 
 #include <string>
@@ -30,43 +31,62 @@ PRINT ARG=vol
 //+ENDPLUMEDOC
 
 
-class ColvarVolume : public Colvar {
+class ColvarVolume : public ActionWithExternalArguments {
+private:
   bool components;
-
+  Tensor box;
 public:
   ColvarVolume(const ActionOptions&);
 // active methods:
+  virtual void clearOutputForces(){};
+  virtual void retrieveData();
   virtual void calculate();
+  virtual void apply();
 };
 
 PLUMED_REGISTER_ACTION(ColvarVolume,"VOLUME")
 
 ColvarVolume::ColvarVolume(const ActionOptions&ao):
-Colvar(ao),
+ActionWithExternalArguments(ao),
 components(false)
 {
-  std::vector<AtomNumber> atoms;
+
+  registerKeyword( 0, "COMPONENTS", "use xx, yy, zz, alpha, beta, gamma as the colvars rather than the box volume");
+  readAction();
   parseFlag("COMPONENTS",components);
   checkRead();
 
   if(components){
 // todo
+  } else {
+     addValueWithDerivatives("volume");
+     getValue("volume")->setPeriodicity(false);
   }
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(false);
-
-  requestAtoms(atoms);
 }
 
+void ColvarVolume::retrieveData(){
+  box=plumed.getAtoms().box;
+}
 
 // calculator
 void ColvarVolume::calculate(){
   if(components){
 // todo
-  };
+  } else {
+    setValue( box.determinant() );
+  }
+}
 
-  setBoxDerivatives(-1.0*Tensor::identity());
-  setValue         (getBox().determinant());
+void ColvarVolume::apply(){
+  Tensor v; 
+  if(components){
+    // todo
+  } else { 
+      if (!getValue(0)->checkForced()) return;
+      const double force=getValue(0)->getForce();
+      v(0,0)-=force; v(1,1)-=force; v(2,2)-=force;
+  }
+  Tensor & vir(plumed.getAtoms().virial); vir+=v;
 }
 
 }

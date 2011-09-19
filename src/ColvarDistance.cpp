@@ -36,7 +36,6 @@ PRINT ARG=d1,d2,d2.x
    
 class ColvarDistance : public Colvar {
   bool components;
-  bool pbc;
 
 public:
   ColvarDistance(const ActionOptions&);
@@ -48,22 +47,18 @@ PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
 
 ColvarDistance::ColvarDistance(const ActionOptions&ao):
 Colvar(ao),
-components(false),
-pbc(true)
+components(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   assert(atoms.size()==2);
   parseFlag("COMPONENTS",components);
-  bool nopbc=!pbc;
-  parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;
-  parseFlag("PBC",pbc);
+  readActionAtomistic();
   checkRead();
 
   log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
-  if(pbc) log.printf("  using periodic boundary conditions\n");
-  else    log.printf("  without periodic boundary conditions\n");
+//  if(pbc) log.printf("  using periodic boundary conditions\n");
+//  else    log.printf("  without periodic boundary conditions\n");
 
 
   if(!components){
@@ -80,20 +75,18 @@ pbc(true)
     addValueWithDerivatives("z");
     getValue("z")->setPeriodicity(false);
   }
-
-  requestAtoms(atoms);
 }
 
 
 // calculator
 void ColvarDistance::calculate(){
 
-  Vector distance;
-  if(pbc){
-    distance=pbcDistance(getPositions(0),getPositions(1));
-  } else {
-    distance=delta(getPositions(0),getPositions(1));
-  }
+  Vector distance=getSeparation(0,1);
+  // if(pbc){
+  //   distance=pbcDistance(getPositions(0),getPositions(1));
+  // } else {
+  //   distance=delta(getPositions(0),getPositions(1));
+  // }
   const double value=distance.modulo();
   const double invvalue=1.0/value;
 

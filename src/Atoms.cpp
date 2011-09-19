@@ -14,6 +14,38 @@ namespace PLMD {
 
 class PlumedMain;
 
+AtomGroup::AtomGroup(const unsigned& n, const std::vector<unsigned>& i) :
+natoms(n)
+{
+   indexes.resize( i.size() ); next.resize( i.size() );
+   for(unsigned j=0;j<i.size();++j){ indexes[j]=i[j]; next[j]=j+1; }
+}
+
+void AtomGroup::addAtoms( const std::vector<unsigned>& i){
+   for(unsigned j=0;j<i.size();++j){ indexes.push_back(i[j]); }
+   next.resize( indexes.size() );
+   for(unsigned j=0;j<next.size();++j){ next[j]=j+1; }
+}
+
+void AtomGroup::getIndexes( std::vector<unsigned>& ind){
+   ind.resize( indexes.size() );
+   for(unsigned i=0;i<indexes.size();++i){ ind[i]=indexes[i]; }
+}
+
+void AtomGroup::updateSkips(const std::vector<bool>& skip){
+   assert( skip.size()==next.size() );
+
+   unsigned k=0;
+   for(unsigned j=0;j<next.size();++j){
+      if( !skip[j] ){ next[k]=j; k=j; }
+   }
+   next[k]=next.size()+1; 
+   unique.clear();
+   for(unsigned j=0;j<indexes.size();j=next[j]){
+      if( indexes[j]<natoms ){ unique.insert(indexes[j]); }
+   }
+}
+
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
   energy(0.0),
@@ -75,9 +107,13 @@ void Atoms::share(){
   mdatoms->getPositions(gatindex,positions);
   if(dd && int(gatindex.size())<natoms){
     bool async=dd.Get_size()<10;
-    std::set<int> unique;
-    for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
-      unique.insert(actions[i]->unique.begin(),actions[i]->unique.end());
+    std::set<int> unique; std::string grname;
+    for(unsigned i=0;i<actions.size();i++){
+       if(actions[i]->isActive()) {
+          grname=actions[i]->atomGroupName;
+          unique.insert( groups[grname].unique.begin(), groups[grname].unique.end() );
+       }
+       //unique.insert(actions[i]->unique.begin(),actions[i]->unique.end());
     }
     if(async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
@@ -246,8 +282,14 @@ double Atoms::getTimeStep()const{
 }
 
 void Atoms::createFullList(int*n){
-  for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive())
-    fullList.insert(fullList.end(),actions[i]->unique.begin(),actions[i]->unique.end());
+  std::string grname;
+  for(unsigned i=0;i<actions.size();i++){ 
+    if(actions[i]->isActive()){
+       grname=actions[i]->atomGroupName;
+       fullList.insert( fullList.end(), groups[grname].unique.begin(), groups[grname].unique.end() );
+    }
+    //fullList.insert(fullList.end(),actions[i]->unique.begin(),actions[i]->unique.end());
+  }
   std::sort(fullList.begin(),fullList.end());
   int nn=std::unique(fullList.begin(),fullList.end())-fullList.begin();
   fullList.resize(nn);
@@ -297,9 +339,10 @@ void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a){
   virtualAtomsActions.pop_back();
 }
 
-void Atoms::insertGroup(const std::string&name,const std::vector<unsigned>&a){
+void Atoms::insertGroup(const std::string&name,const unsigned& n,const std::vector<unsigned>&a){
   assert(groups.count(name)==0);
-  groups[name]=a;
+  AtomGroup newgr(n,a);
+  groups[name]=newgr;
 }
 
 void Atoms::removeGroup(const std::string&name){
@@ -307,7 +350,25 @@ void Atoms::removeGroup(const std::string&name){
   groups.erase(name);
 }
 
-
+void Atoms::addAtomsToGroup(const std::string&name,const std::vector<unsigned>&a){
+  groups[name].addAtoms(a);
 }
 
+void Atoms::getGroupIndices(const std::string&name,std::vector<unsigned>&a){
+  groups[name].getIndexes(a);
+}
 
+void Atoms::getAtomsInGroup(const std::string& name, std::vector<Vector>& p, std::vector<double>& q, std::vector<double>& m){
+  unsigned kk;
+  for(unsigned i=0;i<groups[name].indexes.size();i=groups[name].next[i]){
+     kk=groups[name].indexes[i];
+     p[i]=positions[kk]; q[i]=charges[kk]; m[i]=masses[kk]; 
+  }
+}
+
+void Atoms::applyForceToAtomsInGroup( const std::string& name, const std::vector<Vector>& f, const Tensor& v ){
+  for(unsigned i=0;i<groups[name].indexes.size();i=groups[name].next[i]) forces[ groups[name].indexes[i] ] += f[i]; 
+  virial += v;
+}
+
+}

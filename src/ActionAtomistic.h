@@ -15,16 +15,17 @@ class ActionAtomistic : public ActionWithExternalArguments {
 
   friend class Atoms;
 
-  std::vector<int>      indexes;         // the set of needed atoms
-  std::set<int>         unique;
-  std::vector<Vector>   positions;       // positions of the needed atoms
+  std::string atomGroupName;
+  bool pbcOn;
+  std::vector<bool> skips;
+  std::vector<Vector>   positions;        // positions of the needed atoms
   Tensor                box;
   Pbc                   pbc;
   Tensor                virial;
   std::vector<double>   masses;
   std::vector<double>   charges;
 
-  std::vector<Vector>   forces;          // forces on the needed atoms
+  std::vector<Vector>   forces;           // forces on the needed atoms
 
   bool                  lockRequestAtoms; // forbid changes to request atoms
 
@@ -35,13 +36,15 @@ protected:
 /// during the simulation, atoms will be available at the next step
 /// MAYBE WE HAVE TO FIND SOMETHING MORE CLEAR FOR DYNAMIC
 /// LISTS OF ATOMS
-  void requestAtoms(const std::vector<AtomNumber> & a);
+// Read in actionAtomistics keywords
+  void readActionAtomistic();
+//  void requestAtoms(const std::vector<AtomNumber> & a);
 /// Get position of i-th atom
   const Vector & getPositions(int)const;
+/// Get the separation between two atoms
+  Vector getSeparation(unsigned i, unsigned j) const;
 /// Get position of i-th atom
   const Tensor & getBox()const;
-/// Get the array of all positions
-  const std::vector<Vector> & getPositions()const;
 /// Get mass of i-th atom
   double getMasses(int i)const;
 /// Get charge of i-th atom
@@ -51,15 +54,15 @@ protected:
 /// Get a reference to virial array
   Tensor & modifyVirial();
 /// Get number of available atoms
-  unsigned getNatoms()const{return indexes.size();};
+  unsigned getNatoms()const{return positions.size();};
 /// Compute the pbc distance between two positions
-  Vector pbcDistance(const Vector&,const Vector&)const;
+//  Vector pbcDistance(const Vector&,const Vector&)const;
 /// Get the absolute index of an atom
   AtomNumber getAbsoluteIndex(int i)const;
 /// Parse a list of atoms
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 /// Get reference to Pbc
-  const Pbc & getPbc() const;
+//  const Pbc & getPbc() const;
 public:
 
 // virtual functions:
@@ -71,7 +74,7 @@ public:
   virtual void clearOutputForces();
   virtual void retrieveData();
 
-  void   calculateNumericalDerivatives();
+  void calculateNumericalDerivatives();
   void applyForces();
   void lockRequests();
   void unlockRequests();
@@ -79,32 +82,26 @@ public:
 
 inline
 const Vector & ActionAtomistic::getPositions(int i)const{
+  assert(!skips[i]);
   return positions[i];
 }
 
 inline
+Vector ActionAtomistic::getSeparation(unsigned i, unsigned j) const {
+  if ( pbcOn ) return pbc.distance( positions[i], positions[j] );
+  return delta( positions[i], positions[j] );
+}
+
+inline
 double ActionAtomistic::getMasses(int i)const{
+  assert(!skips[i]);
   return masses[i];
 }
 
 inline
 double ActionAtomistic::getCharges(int i)const{
+  assert(!skips[i]);
   return charges[i];
-}
-
-inline
-AtomNumber ActionAtomistic::getAbsoluteIndex(int i)const{
-  return AtomNumber::index(indexes[i]);
-}
-
-inline
-const std::vector<Vector> & ActionAtomistic::getPositions()const{
-  return positions;
-}
-
-inline
-const Tensor & ActionAtomistic::getBox()const{
-  return box;
 }
 
 inline
@@ -122,10 +119,10 @@ void ActionAtomistic::clearOutputForces(){
   for(unsigned i=0;i<forces.size();++i)forces[i].clear();
 }
 
-inline
-const Pbc & ActionAtomistic::getPbc() const{
- return pbc;
-}
+//  inline
+//  const Pbc & ActionAtomistic::getPbc() const{
+//   return pbc;
+//  }
 
 inline
 void ActionAtomistic::lockRequests(){

@@ -48,13 +48,13 @@ GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   checkRead();
   assert(file.length()>0);
   fp=fopen(file.c_str(),"w");
-  requestAtoms(atoms);
+  //requestAtoms(atoms);
 }
 
 void GenericDumpAtoms::calculate(){
   fprintf(fp,"%d\n",getNatoms());
-  const Tensor & t(getPbc().getBox());
-  if(getPbc().isOrthorombic()){
+  const Tensor & t(getBox()); Pbc tpbc; tpbc.setBox(t);
+  if(tpbc.isOrthorombic()){
     fprintf(fp," %f %f %f\n",t(0,0),t(1,1),t(2,2));
   }else{
     fprintf(fp," %f %f %f %f %f %f %f %f %f\n",

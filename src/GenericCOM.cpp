@@ -50,7 +50,7 @@ GenericCOM::GenericCOM(const ActionOptions&ao):
   log.printf("  of atoms");
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());
   log.printf("\n");
-  requestAtoms(atoms);
+  //requestAtoms(atoms);
 }
 
 void GenericCOM::calculate(){
