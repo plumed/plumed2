@@ -75,8 +75,10 @@ function or free energy methods).
 LOAD library.so
 \endverbatim
 
-Notice that for systems with different suffix (e.g. mac with .dylib), PLUMED automatically
-try to replace the suffix of the requested file with the proper one.
+Notice that plumed will automatically replace the suffix with the proper one for that system
+(e.g. .dylib for mac, .so on linux).
+Moreover, if the file has a .cpp extension it will be first compiled and
+linked into a shared library then loaded.
 
 \section ENDPLUMED
 
