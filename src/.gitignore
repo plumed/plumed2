@@ -2,3 +2,4 @@ Plumed.inc*
 PlumedConfig.h
 *.cdep
 *.cppdep
+/compile_options.sh

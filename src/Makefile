@@ -27,7 +27,9 @@ ALL_SRC_DEP=$(SRC_KERNEL:.cpp=.cppdep) $(SRC_WRAPPER:.cpp=.cppdep) $(SRC_DYNAMIC
 .PHONY: all clean
 
 ifdef GCCDEP
-all: libplumedKernel.$(SOEXT) libplumed.$(SOEXT) Plumed.o Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static
+all: libplumedKernel.$(SOEXT) libplumed.$(SOEXT) Plumed.o \
+     Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static \
+     compile_options.sh
 else
 all:
 	@echo No configuration available
@@ -46,6 +48,11 @@ libplumedKernel.$(SOEXT): $(OBJ_KERNEL)
 libplumed.$(SOEXT): $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 
+compile_options.sh:
+	echo "compile='"$(CXX) -c -I$(realpath $(srcdir)) $(CPPFLAGS) $(CXXFLAGS)"'" > $@
+	echo "link='"$(LDSO) -o"'" >> $@
+	echo "soext='"$(SOEXT)"'" >> $@
+
 clean:
 	rm -f *.o
 	rm -f *.cdep
@@ -53,6 +60,7 @@ clean:
 	rm -f PlumedConfig.h
 	rm -f Plumed.inc*
 	rm -f *~
+	rm -f compile_options.sh
 ifdef SOEXT
 	rm -f *.$(SOEXT)
 endif
