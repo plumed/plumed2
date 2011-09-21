@@ -117,6 +117,8 @@ public:
   const int & getStep()const{return step;};
 /// Stop the run
   void exit(int c=0);
+/// Load a shared library
+  void load(std::vector<std::string> & words);
 };
 
 /////

@@ -15,6 +15,7 @@
 #include "ActionRegister.h"
 
 using namespace PLMD;
+using namespace std;
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE UTILITIES WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -307,29 +308,8 @@ void PlumedMain::readInputFile(std::string str){
   while(Tools::getParsedLine(fp,words)){
     if(words.size()==0)continue;
     else if(words[0]=="ENDPLUMED") break;
-    else if(words[0]=="LOAD"){
-      std::string s=words[1];
-      assert(words.size()==2);
-      void *p=plumed_dlopen(s.c_str());
-      if(!p){
-// try with different extension
-        size_t n=s.find_last_of(".");
-        if(n==std::string::npos) s+=".";
-        else s=s.substr(0,n+1);
-        s+=soext;
-        p=plumed_dlopen(s.c_str());
-      }
-      if(!p){
-        log<<"ERROR\n";
-        log<<"I cannot load library "<<words[1].c_str()<<"\n";
-        log<<plumed_dlerror();
-        log<<"\n";
-        this->exit(1);
-      }
-      log<<"Loading shared library "<<s.c_str()<<"\n";
-      log<<"Here is the new list of available actions\n";
-      log<<actionRegister();
-    } else if(words[0]=="INCLUDE"){
+    else if(words[0]=="LOAD") load(words);
+    else if(words[0]=="INCLUDE"){
       assert(words.size()==2);
       readInputFile(words[1]);
       continue;
@@ -455,6 +435,37 @@ void PlumedMain::performCalc(){
 // Finally switch off all actions (they will be switched on at next step
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++) (*p)->deactivate();
 
+}
+
+void PlumedMain::load(std::vector<std::string> & words){
+    string s=words[1];
+    assert(words.size()==2);
+    size_t n=s.find_last_of(".");
+    string extension="";
+    string base=s;
+    if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
+    if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
+    if(extension=="cpp"){
+      string cmd="plumed mklib "+s;
+      log<<"Executing: "<<cmd;
+      if(comm.Get_size()>0) log<<" (only on master node)";
+      log<<"\n";
+      if(comm.Get_rank()==0) system(cmd.c_str());
+      comm.Barrier();
+      base="./"+base;
+    }
+    s=base+"."+soext;
+    void *p=plumed_dlopen(s.c_str());
+    if(!p){
+      log<<"ERROR\n";
+      log<<"I cannot load library "<<words[1].c_str()<<"\n";
+      log<<plumed_dlerror();
+      log<<"\n";
+      this->exit(1);
+    }
+    log<<"Loading shared library "<<s.c_str()<<"\n";
+    log<<"Here is the new list of available actions\n";
+    log<<actionRegister();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
