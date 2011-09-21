@@ -1,23 +1,25 @@
 #! /bin/bash
+# first check if PLUMED_ROOT is set
+echo "+++ PLUMED tool +++"
+if [ -z "$PLUMED_ROOT" ]
+then
+  echo "ERROR: I cannot find PLUMED"
+  echo "Please set PLUMED_ROOT environment variable"
+  exit
+fi
+if [ ! -d "$PLUMED_ROOT/patches/" ]
+then
+  echo "ERROR: cannot find $PLUMED_ROOT/patches/ directory"
+  echo "Check your PLUMED_ROOT variable"
+  exit
+fi
 
-MANUAL="\
-+++ PLUMED tool +++
+echo "+++ PLUMED_ROOT=$PLUMED_ROOT +++"
 
-Actions (choose only one):
-  help
-                    print this help and exit
-  patch
-                    patch an MD code (patch -h for help)
-  newcv
-                    create a new collective variable from a template  (newcv -h for help)
-Options:
-  --root ROOT   or   --root=ROOT
-                    set path to plumed directory (default: PLUMED_ROOT environment variable)
-"
+export PLUMED_ROOT
 
 prefix=""
 action=""
-
 exitloop=""
 
 while [ -n "$*" ]
@@ -27,14 +29,11 @@ do
   prefix=""
 
   case "$prefix_option" in
-    (help|--help|-h)    echo "$MANUAL" ; exit ;;
-    (patch)             action=patch; exitloop=yes ;;
-    (newcv)             action=newcv; exitloop=yes ;;
-    (--root=*)          PLUMED_ROOT="${prefix_option#--root=}" ;;
-    (--root)            prefix="${prefix_option}=" ;;
-    (*)
+    (help|--help|-h)    action=help;   exitloop=yes ;;
+    (-*)                
       echo "ERROR: Unknown option $prefix_option. Use 'plumed help' for help"
-      exit
+      exit ;;
+    (*)                 action=$prefix_option;  exitloop=yes ;;
   esac
   shift
 
@@ -46,27 +45,27 @@ if [ -z "$action" ] ; then
   exit
 fi
 
-echo "PLUMED tool"
-echo
-if [ -z "$PLUMED_ROOT" ]
+if [ "$action" == "help" ]
 then
-  echo "ERROR: I cannot find PLUMED"
-  echo "Please set PLUMED_ROOT environment variable or use --root"
-  exit
-fi
-if [ ! -d "$PLUMED_ROOT/patches/" ]
-then
-  echo "ERROR: cannot find $PLUMED_ROOT/patches/ directory"
-  echo "Check your PLUMED_ROOT variable or --root option"
-  exit
+  echo "Usage: plumed [action] [options]"
+  echo "  plumed help: to print this help"
+  echo "  plumed [action] -h: to print help for a specific action"
+  echo
+  for file in $PLUMED_ROOT/tools/scripts/*.sh
+  do
+    name=${file##*/}
+    name=${name%.sh}
+    echo "  plumed $name:" $( $file --description)
+  done
+  exit 0
 fi
 
-export PLUMED_ROOT
-
-case "$action" in
-  (patch) ${PLUMED_ROOT}/patches/patch.sh "$@" ;;
-  (newcv) ${PLUMED_ROOT}/tools/scripts/newcv.sh "$@" ;;
-esac
+if [ -x "${PLUMED_ROOT}/tools/scripts/$action.sh" ] ; then
+  "${PLUMED_ROOT}/tools/scripts/$action.sh" "$@"
+else
+  echo "ERROR: Unknown action $action. Use 'plumed help' for help"
+  exit
+fi
 
 
 

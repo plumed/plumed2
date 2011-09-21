@@ -1,5 +1,10 @@
 #! /bin/bash
 
+if [ "$1" = --description ] ; then
+  echo "create a new collective variable from a template"
+  exit 0
+fi
+
 if [ $# != 2 ] ;
 then
   echo "ERROR"

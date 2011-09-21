@@ -1,9 +1,8 @@
 #! /bin/bash
 
 MANUAL="\
-+++ PLUMED patch tool HELP +++
 
-Actions (choose only one):
+Actions (choose one):
   -h, --help
                     print this help and exit
   -p, --patch
@@ -52,6 +51,7 @@ do
     (--save|-s)         test -n "$action" && multiple_actions=yes ; action=save ;;
     (--revert|-R|-r)    test -n "$action" && multiple_actions=yes ; action=revert ;;
     (--list-engines|-l) test -n "$action" && multiple_actions=yes ; action=list ;;
+    (--description)     echo "patch an MD engine" ; exit ;;
     (--engine=*) engine="${prefix_option#--engine=}" ;;
     (--mode=*) mode="${prefix_option#--mode=}" ;;
     (--diff=*) diff="${prefix_option#--diff=}" ;;
