@@ -59,7 +59,8 @@ public:
   void Set_fcomm(void*comm);
 /// Wrapper to MPI_Abort
   void Abort(int);
-
+/// Wrapper to MPI_Barrier
+  void Barrier()const;
 /// Tests if MPI library is initialized
   static bool initialized();
 

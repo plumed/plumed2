@@ -81,6 +81,13 @@ void PlumedCommunicator::Abort(int errorcode){
 #endif
 }
 
+void PlumedCommunicator::Barrier()const{
+#ifdef __PLUMED_MPI
+  assert(initialized());
+  MPI_Barrier(communicator);
+#endif
+}
+
 MPI_Comm & PlumedCommunicator::Get_comm(){
     return communicator;
 }
