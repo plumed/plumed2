@@ -25,8 +25,9 @@ public:
 };
 
 inline
-SwitchingFunction::SwitchingFunction():
-  init(false){
+SwitchingFunction::SwitchingFunction() : 
+init(false)
+{
 }
 
 inline

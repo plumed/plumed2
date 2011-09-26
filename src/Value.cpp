@@ -3,58 +3,32 @@
 
 using namespace PLMD;
 
-Value::Value(ActionWithValue&action,const std::string& name):
-  action(action),
-  value(0.0),
-  name(name),
-  deriv(false),
-  periodicity(unset),
-  min(0.0),
-  max(0.0)
-{}
-
-bool Value::isPeriodic()const{
-  assert(periodicity!=unset);
-  return periodicity==periodic;
-}
-
-void Value::getDomain(double&min,double&max)const{
-  min=this->min;
-  max=this->max;
-}
-
-void Value::setPeriodicity(bool p){
-  if(p) periodicity=periodic;
-  else periodicity=notperiodic;
-}
-
-void Value::setDomain(double min,double max){
-  this->min=min;
-  this->max=max;
-}
-
-
-const std::string Value::getFullName()const{
-  return action.getLabel()+"."+name;
-}
-
-void Value::enableDerivatives()
+Value::Value( ActionWithValue&action,const std::string& name, const unsigned& nd, const std::vector<double>& domain ):
+action(action),
+value(0.0),
+myname(name),
+deriv(false),
+periodicity(unset),
+min(0.0),
+max(0.0)
 {
-  deriv=true;derivatives.resize(action.getNumberOfParameters());
+  assert(domain.size()==2); 
+  if( domain[0]==0.0 && domain[1]==0.0 ){
+     periodicity=notperiodic;
+  } else {
+     periodicity=periodic;
+     min=domain[0]; max=domain[1];
+  } 
+  derivatives.resize(nd);
 }
 
-double Value::difference(double d1,double d2)const{
+double Value::difference(double d1,double d2) const {
   assert(periodicity!=unset);
   if(periodicity==periodic){
     double s=(d2-d1)/(max-min);
     s=Tools::pbc(s);
     return s*(max-min);
-  }else{
+  } else{
     return d2-d1;
   }
-}
-
-
-
-
-
+} 

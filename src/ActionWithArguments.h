@@ -13,44 +13,63 @@ class Value;
 /// Arguments are objects of type PLMD::Value, and
 /// are addressed using the ARG= keyword on the directive line
 class ActionWithArguments : public ActionWithValue {
+private:
   std::vector<Value*> arguments;
   bool lockRequestArguments;
-
 protected:
-                           ActionWithArguments(const ActionOptions&);
-  virtual                 ~ActionWithArguments(){};
-public:
-/// Returns an array of pointers to the arguments
-  std::vector<Value*>    & getArguments();
+/// Reads in the input to action with arguments
+  void readActionWithArguments( const std::vector<double>& domain );
+/// Applies forces to the arguments 
+  void applyForces( const std::vector<double>& forces );
+/// Returns the number of derivatives in a particular argument
+  unsigned getNumberOfDerivatives( const unsigned& n ) const ;
+/// Prints the arguments names out on a file
+  void printArgumentNames( FILE* fp );
 /// Returns the value of an argument
-  double                   getArgument(int)const;
+  double getArgument(int) const;
+/// Returns the jth derivative of the ith argument
+  double getArgumentDerivative( const unsigned& i, const unsigned& j ) const ;
 /// Returns the number of arguments
-  unsigned                 getNumberOfArguments()const;
-///
-  void                     calculateNumericalDerivatives();
+  unsigned getNumberOfArguments()const;
 /// Takes the difference taking into account pbc for arg i
-  double                   difference(int,double,double)const;
+  double difference(int,double,double)const;
+public:
+  ActionWithArguments(const ActionOptions&);
+  virtual ~ActionWithArguments(){};
+/// Calculate numerical derivatives
+  void calculateNumericalDerivatives();
 /// Parse a list of arguments
-  void                     parseArgumentList(const std::string&key,std::vector<Value*>&args);
-  void                     requestArguments(const std::vector<Value*> &arg);
   void lockRequests();
   void unlockRequests();
 };
 
-
 inline
-std::vector<Value*> & ActionWithArguments::getArguments(){
-  return arguments;
+unsigned ActionWithArguments::getNumberOfDerivatives( const unsigned& n ) const {
+  assert( n<arguments.size() );
+  return arguments[n]->derivatives.size();
 }
 
 inline
 double ActionWithArguments::getArgument(int i)const{
-  return arguments[i]->get();
+  assert( i<arguments.size() );
+  return arguments[i]->value;
+}
+
+inline
+double ActionWithArguments::getArgumentDerivative( const unsigned& i, const unsigned& j ) const {
+  assert( i<arguments.size() ); 
+  return arguments[i]->getDerivative(j);
 }
 
 inline
 unsigned ActionWithArguments::getNumberOfArguments()const{
   return arguments.size();
+}
+
+inline
+void ActionWithArguments::applyForces( const std::vector<double>& forces ){
+  assert( forces.size()==arguments.size() );
+  for(unsigned i=0;i<arguments.size();++i){ arguments[i]->inputForce+=forces[i]; }
 }
 
 inline

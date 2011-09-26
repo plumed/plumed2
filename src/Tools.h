@@ -72,7 +72,7 @@ public:
 template <class T>
 bool Tools::parse(std::vector<std::string>&line,const std::string&key,T&val){
   std::string s;
-  if(!getKey(line,key+"=",s)) return false;
+  if(!getKey(line,key+"=",s))return false; 
   if(s.length()>0 && !convert(s,val))return false;
   return true;
 }

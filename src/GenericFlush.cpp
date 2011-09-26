@@ -29,19 +29,18 @@ class GenericFlush:
   public Action
 {
 public:
-  GenericFlush(const ActionOptions&ao):
-    Action(ao)
-  {
-    strideKeywordIsCompulsory();
-    readAction();
-    checkRead();
+  GenericFlush(const ActionOptions&ao) : Action(ao) {
+    readAction(); checkRead();
   }
+/// Do nothing
   void calculate(){};
+/// Flush all open files
   void apply(){
     const ActionSet & actionSet(plumed.getActionSet());
-    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p)
-    (*p)->fflush();
+    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) (*p)->fflush();
   }
+/// You can't do numerical derivatives for an action flush
+  void calculateNumericalDerivatives(){ assert(false); }
 };
 
 PLUMED_REGISTER_ACTION(GenericFlush,"FLUSH")

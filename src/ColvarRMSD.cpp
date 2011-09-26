@@ -23,12 +23,12 @@ RMSD REFERENCE=file.pdb
 //+ENDPLUMEDOC
    
 class ColvarRMSD : public Colvar {
+private:
   RMSD rmsd;
-  vector<Vector> derivs;
-
+  vector<Vector> pos;
 public:
   ColvarRMSD(const ActionOptions&);
-  virtual void calculate();
+  double calcFunction( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial );
 };
 
 PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
@@ -36,37 +36,29 @@ PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
 ColvarRMSD::ColvarRMSD(const ActionOptions&ao):
 Colvar(ao)
 {
+  allowKeyword("ATOMS");
+  registerKeyword( 1, "REFERENCE", "the reference structure we are calculating the rmsd from");
+  std::vector<double> domain( 2, 0.0 );
+  int natoms=-1; readActionColvar( natoms, domain );
+  pos.resize(natoms); 
+
   string reference;
   parse("REFERENCE",reference);
+  log.printf("  reference from file %s\n",reference.c_str());
   checkRead();
-
-
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(false);
 
   PDB pdb;
   pdb.read(reference,0.1/plumed.getAtoms().getUnits().length);
-
+  if( pdb.size()!=natoms ) error("number of atoms in reference pdb file " + reference + " does not match number of atoms in input");
   rmsd.setFromPDB(pdb);
-
-  requestAtoms(pdb.getAtomNumbers());
-
-  derivs.resize(getNatoms());
-  log.printf("  reference from file %s\n",reference.c_str());
-  log.printf("  which contains %d atoms\n",getNatoms());
 }
 
-
-// calculator
-void ColvarRMSD::calculate(){
-
-  double r=rmsd.calculate(getPositions(),derivs);
-
-  setValue(r);
-  for(unsigned i=0;i<derivs.size();i++) setAtomsDerivatives(i,derivs[i]);
-  Tensor virial;
-  for(unsigned i=0;i<derivs.size();i++) virial=virial+(-1.0*Tensor(getPositions(i),derivs[i]));
-  setBoxDerivatives(virial);
+double ColvarRMSD::calcFunction( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){
+  assert( pos.size()==indexes.size() && derivatives.size()==indexes.size() );
+  for(unsigned i=0;i<pos.size();++i) pos[i]=getPositions( indexes[i] );
+  double r=rmsd.calculate( pos, derivatives );
+  virial.clear(); for(unsigned i=0;i<pos.size();i++) virial=virial+( -1.0*Tensor(pos[i],derivatives[i]) );
+  return r;
 }
 
 }

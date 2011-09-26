@@ -27,8 +27,12 @@ class GenericDebug:
   bool novirial;
 public:
   GenericDebug(const ActionOptions&ao);
+/// Do nothing
   void calculate(){};
+/// This routine does all the debugging
   void apply();
+/// There is nothing to differentiate I think
+  void calculateNumericalDerivatives(){ assert(false); }
 };
 
 PLUMED_REGISTER_ACTION(GenericDebug,"DEBUG")
@@ -39,7 +43,11 @@ logActivity(false),
 logRequestedAtoms(false),
 novirial(false)
 {
-  strideKeywordIsCompulsory();
+  registerKeyword(0,"logActivity","write in the log which actions are inactive and which are inactive");
+  registerKeyword(0,"logRequestedAtoms","write in the log which atoms have been requested at a given time");   
+  registerKeyword(0,"NOVIRIAL","switch off the virial contribution for the entirity of the simulation");
+  readAction();
+
   parseFlag("logActivity",logActivity);
   if(logActivity) log.printf("  logging activity\n");
   parseFlag("logRequestedAtoms",logRequestedAtoms);

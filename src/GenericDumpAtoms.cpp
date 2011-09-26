@@ -31,6 +31,8 @@ class GenericDumpAtoms:
 public:
   GenericDumpAtoms(const ActionOptions&);
   ~GenericDumpAtoms();
+  void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups );
+  void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist );
   void calculate();
   void apply(){};
 };
@@ -40,19 +42,41 @@ PLUMED_REGISTER_ACTION(GenericDumpAtoms,"DUMPATOMS")
 GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   ActionAtomistic(ao)
 {
-  strideKeywordIsCompulsory();
-  vector<AtomNumber> atoms;
-  string file;
-  parse("FILE",file);
-  parseAtomList("ATOMS",atoms);
-  checkRead();
-  assert(file.length()>0);
+  allowKeyword("ATOMS"); allowKeyword("GROUP" );
+  registerKeyword(1, "FILE", "file on which to output coordinates");
+  int natoms=-1; unsigned ngrp=1; readActionAtomistic( natoms, ngrp );
+  std::vector<double> domain(2,0.0);
+  readActionWithExternalArguments( 0, domain );
+
+  std::string file; parse("FILE",file);
+  if( file.length()==0 ) error("specified input file makes no sense");
   fp=fopen(file.c_str(),"w");
-  //requestAtoms(atoms);
+  checkRead();
 }
 
+void GenericDumpAtoms::interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups ){
+  if( groups.size()!=1 ) error("cannot print atoms from multiple groups");
+
+  if( atomGroupName!=getLabel() ){
+     log.printf("  printing atoms specified in group %s\n", atomGroupName.c_str() );
+  } else {
+     log.printf("  printing the following list of atoms : " );
+     for(unsigned j=0;j<groups[0].size();++j) log.printf("%s ", plumed.getAtoms().interpretIndex( groups[0][j] ).c_str() );
+     log.printf("\n");
+  }
+} 
+
+void GenericDumpAtoms::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist ){
+  if( flist.size()!=1 ) error("cannot create multiple virtual atoms in a single line");
+
+  log.printf("  printing the following list of atoms : " );
+  for(unsigned j=0;j<flist[0].size();++j) log.printf("%s ", plumed.getAtoms().interpretIndex( flist[0][j] ).c_str() );
+  log.printf("\n");
+}
+
+
 void GenericDumpAtoms::calculate(){
-  fprintf(fp,"%d\n",getNatoms());
+  fprintf(fp,"%d\n",getNumberOfAtoms());
   const Tensor & t(getBox()); Pbc tpbc; tpbc.setBox(t);
   if(tpbc.isOrthorombic()){
     fprintf(fp," %f %f %f\n",t(0,0),t(1,1),t(2,2));
@@ -63,7 +87,7 @@ void GenericDumpAtoms::calculate(){
                  t(2,0),t(2,1),t(2,2)
            );
   }
-  for(unsigned i=0;i<getNatoms();++i){
+  for(unsigned i=0;i<getNumberOfAtoms();++i){
     fprintf(fp,"X %f %f %f\n",getPositions(i)(0),getPositions(i)(1),getPositions(i)(2));
   }
 }

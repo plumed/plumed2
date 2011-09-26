@@ -35,89 +35,32 @@ PRINT ARG=d1,d2,d2.x
 //+ENDPLUMEDOC
    
 class ColvarDistance : public Colvar {
-  bool components;
-
 public:
   ColvarDistance(const ActionOptions&);
 // active methods:
-  virtual void calculate();
+  virtual double calcFunction( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial );
 };
 
 PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
 
 ColvarDistance::ColvarDistance(const ActionOptions&ao):
-Colvar(ao),
-components(false)
+Colvar(ao)
 {
-  vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  assert(atoms.size()==2);
-  parseFlag("COMPONENTS",components);
-  readActionAtomistic();
+  allowKeyword("ATOMS"); allowKeyword("GROUP" );
+  std::vector<double> domain( 2, 0.0 );
+  readActionColvar( 2, domain );
   checkRead();
-
-  log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());
-//  if(pbc) log.printf("  using periodic boundary conditions\n");
-//  else    log.printf("  without periodic boundary conditions\n");
-
-
-  if(!components){
-
-    addValueWithDerivatives("");
-    getValue("")->setPeriodicity(false);
-
-  }else{
-
-    addValueWithDerivatives("x");
-    getValue("x")->setPeriodicity(false);
-    addValueWithDerivatives("y");
-    getValue("y")->setPeriodicity(false);
-    addValueWithDerivatives("z");
-    getValue("z")->setPeriodicity(false);
-  }
 }
 
-
-// calculator
-void ColvarDistance::calculate(){
-
-  Vector distance=getSeparation(0,1);
-  // if(pbc){
-  //   distance=pbcDistance(getPositions(0),getPositions(1));
-  // } else {
-  //   distance=delta(getPositions(0),getPositions(1));
-  // }
+double ColvarDistance::calcFunction( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){
+  assert( indexes.size()==2 && derivatives.size()==2 );
+  Vector distance=getSeparation( indexes[0], indexes[1] ); 
   const double value=distance.modulo();
   const double invvalue=1.0/value;
-
-  if(!components){
-
-    setAtomsDerivatives(0,-invvalue*distance);
-    setAtomsDerivatives(1,invvalue*distance);
-    setBoxDerivatives  (-invvalue*Tensor(distance,distance));
-    setValue           (value);
-
-  }else{
-
-    Value* valuex=getValue("x");
-    Value* valuey=getValue("y");
-    Value* valuez=getValue("z");
-
-    setAtomsDerivatives (valuex,0,Vector(-1,0,0));
-    setAtomsDerivatives (valuex,1,Vector(+1,0,0));
-    setBoxDerivatives   (valuex,Tensor(distance,Vector(-1,0,0)));
-    setValue            (valuex,distance[0]);
-
-    setAtomsDerivatives (valuey,0,Vector(0,-1,0));
-    setAtomsDerivatives (valuey,1,Vector(0,+1,0));
-    setBoxDerivatives   (valuey,Tensor(distance,Vector(0,-1,0)));
-    setValue            (valuey,distance[1]);
-
-    setAtomsDerivatives (valuez,0,Vector(0,0,-1));
-    setAtomsDerivatives (valuez,1,Vector(0,0,+1));
-    setBoxDerivatives   (valuez,Tensor(distance,Vector(0,0,-1)));
-    setValue            (valuez,distance[2]);
-  };
+  derivatives[0]=-invvalue*distance;
+  derivatives[1]=invvalue*distance;
+  virial=-invvalue*Tensor(distance,distance);
+  return value;  
 }
 
 }

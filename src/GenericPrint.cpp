@@ -68,17 +68,23 @@ fp(NULL),
 fmt("%f"),
 rotate(0)
 {
-  strideKeywordIsCompulsory();
+  registerKeyword(1,"FILE","the name of the file on which to write out the information");
+  registerKeyword(0,"FMT","the format with which to output numbers"); 
+  readAction();
+  std::vector<double> domain(2,0.0);
+  readActionWithArguments( domain );
+
   parse("FILE",file);
   if(file.length()>0){
     if(comm.Get_rank()==0){
       fp=fopen(file.c_str(),"wa");
       log.printf("  on file %s\n",file.c_str());
       fprintf(fp,"#! FIELDS time");
-      const std::vector<Value*>& arguments(getArguments());
-      for(unsigned i=0;i<arguments.size();i++){
-        fprintf(fp," %s",arguments[i]->getFullName().c_str());
-      };
+      printArgumentNames(fp);
+      //const std::vector<Value*>& arguments(getArguments());
+      //for(unsigned i=0;i<arguments.size();i++){
+      //  fprintf(fp," %s",arguments[i]->getFullName().c_str());
+      //};
       fprintf(fp,"\n");
     }
   } else {
@@ -91,14 +97,14 @@ rotate(0)
 // these are crazy things just for debug:
 // they allow to change regularly the
 // printed argument
-  parse("_ROTATE",rotate);
-  if(rotate>0){
-    rotateCountdown=rotate;
-    rotateArguments=getArguments();
-    vector<Value*> a(1,rotateArguments[0]);
-    requestArguments(vector<Value*>(1,rotateArguments[0]));
-    rotateLast=0;
-  }
+//  parse("_ROTATE",rotate);
+//  if(rotate>0){
+//    rotateCountdown=rotate;
+//    rotateArguments=getArguments();
+//    vector<Value*> a(1,rotateArguments[0]);
+//    requestArguments(vector<Value*>(1,rotateArguments[0]));
+//    rotateLast=0;
+//  }
 /////////////////////////////////////////
   checkRead();
 }
@@ -114,7 +120,7 @@ void GenericPrint::prepare(){
       rotateCountdown=rotate;
       rotateLast++;
       rotateLast%=rotateArguments.size();
-      requestArguments(vector<Value*>(1,rotateArguments[rotateLast]));
+//      requestArguments(vector<Value*>(1,rotateArguments[rotateLast]));
     }
   }
 /////////////////////////////////////////

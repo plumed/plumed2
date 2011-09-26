@@ -12,14 +12,18 @@ namespace PLMD{
 class ColvarEnergy : public ActionWithExternalArguments {
 private:
   double energy;
-  double forceOnEnergy;
 public:
   ColvarEnergy(const ActionOptions&);
-// active methods:
-  virtual void clearOutputForces();
-  virtual void retrieveData();
-  virtual void calculate();
-  virtual void apply();
+/// Clear the output forces
+  void clearOutputForces(){};
+/// Get the energy from atoms
+  void retrieveData();
+/// Transfer the energy to the output variables
+  void calculate();
+/// Apply force to the energy
+  void apply();
+/// You can't calculate numerical derivatives
+  void calculateNumericalDerivatives(){ assert(false); }
 };
 
 }

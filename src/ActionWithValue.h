@@ -8,98 +8,82 @@
 
 namespace PLMD{
 
-/// Action which can take one or more values.
+class ActionWithArguments;
+
+/// Used to store the values calculated by a given action.
 /// This object contains an array of PLMD::Value, one for each component.
 /// It also stores all the derivatives of these values wrt the parameters
 /// Parameters are other values (from other Action s) or atomic positions.
 class ActionWithValue : public Action {
-  int numberOfParameters;
-  std::vector<Value*> values;
-  void assertUnique(const std::string&name);
-  void check(const std::string&name);
-  int getValueIndex(const std::string&name)const;
+friend class ActionWithArguments;
+private:
+/// The number of derivatives the values in this container should have
+  unsigned nderivatives;
+/// The periodicities of the values in this particular container
+  std::vector<double> domain;
+/// Are we using numerical derivatives
   bool numericalDerivatives;
-  bool hasMultipleValues;
-  bool hasUnnamedValue;
+/// The array of values
+  std::vector<Value*> values;
+/// Return a pointer to one of the values in this action
+/// These two routines are ONLY ever used by ActionWithArguments
+  Value* getValuePointer( const unsigned& i );
+  Value* getValuePointer( const std::string& name );
 protected:
-/// Enforce the use of numerical derivatives.
-/// This may be useful during the implementation of new collective
-/// variables. Before implementing the derivatives, the used can
-/// just tell plumed to use finite difference irrespectively of
-/// the NUMERICAL_DERIVATIVES keyword in the input file
-  void enforceNumericalDerivatives();
+/// If, for whatever reasons, you do not have analytical derivatives implemented in your function this routine 
+/// will ensure that numerical derivatives will be calculated at all times
+  void noAnalyticalDerivatives();
+/// Read all keywords relevant to ActionWithValue
+  void readActionWithValue( const unsigned& nd, const std::vector<double>& domain );
+/// Used to make sure that numerical derivatives does not numerically differentiate quantities that are not differentiable
+  bool isMeaningfulToDifferentiate( const unsigned& n ) const ;
+/// Add a value to the action
+  void addValue( const std::string& name, const bool& ignorePeriod, const bool& hasDerivatives );
+/// Accumulate the derivatives
+  void addDerivative( const unsigned& n, const unsigned& nd, const double& val );
+/// Get the forces acting on a particular value ( force*derivatives )
+  bool getForces( const unsigned& n, std::vector<double>& forces ) const ;
+/// Return a component of the derivatives array
+  double getDerivative( const unsigned& n, const unsigned& nd ) const ; 
+/// Set the value (also applies chain rule by multiplying all derivatives by df)
+  void setValue( const unsigned& n, const double& f, const double& df );
+/// Return the index for the value with name valname
+  unsigned getValueNumberForLabel( const std::string& valname );
+/// Get the number of Values
+  unsigned getNumberOfValues() const;
+/// Get the value of a particular numbered value
+  double getValue( const unsigned i ) const;
 public:
   ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
-/// Add a new value without derivatives.
-/// This should be used for values which are only evaluated (e.g. for printing)
-/// but for which we do not make derivatives available so that forces cannot
-/// be applied
-  void addValue(const std::string&name);
-/// Add a new value with derivatives.
-/// This should be used for values for which we make derivatives available
-/// so that forces can be applied
-  void addValueWithDerivatives(const std::string&name);
-/// Check if a value with a given name is already used
-  bool hasNamedValue(const std::string&name)const;
-/// Return a pointer to the value by name
-  Value* getValue(const std::string&name)const;
-/// Return a pointer to the value by index
-/// This should be an indexes growing for new inserted values.
-/// E.g., the default value (no name) is number 0, ...
-  Value* getValue(int i)const;
-/// Returns an array of strings with the names of the values
-  std::vector<std::string> getValueNames()const;
-/// Returns the number of values defined
-  int getNumberOfValues();
-/// Set the number of parameters on which this Action depends.
-/// Example: for a Bias, this is the number of arguments, for a Colvar
-/// is 3*Natoms+cell variables
-  void setNumberOfParameters(int n);
-/// Returns the number of parameters on which this Action depends.
-  int getNumberOfParameters()const;
-/// Returns the total force applied on i-th value 
-  double getForce(int n);
 /// Clear the forces on the values
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters
   void clearDerivatives();
-/// Set the value
-  void setValue(Value*,double);
-/// Set the default value (the one without name)
-  void setValue(double);
 /// Check if numerical derivatives should be used
-  bool checkNumericalDerivatives()const;
+  bool checkNumericalDerivatives() const;
 };
 
 inline
-void ActionWithValue::setValue(Value*v,double d){
-  v->set(d);
+unsigned ActionWithValue::getValueNumberForLabel( const std::string& valname ){
+  std::string thename = getLabel() + valname;
+  for(unsigned i=0;i<values.size();++i){
+     if( values[i]->myname==valname ) return i;
+  }
+  assert(false);
+  return 0;
 }
 
 inline
-void ActionWithValue::setValue(double d){
-  values[0]->set(d);
+void ActionWithValue::setValue( const unsigned& n, const double& f, const double& df ){
+  assert( n<values.size() );
+  values[n]->value=f;
+  for(unsigned i=0;i<values[n]->derivatives.size();++i){ values[n]->derivatives[i]*=df; } 
 }
 
 inline
-double ActionWithValue::getForce(int n){
-  return values[n]->getForce();
-}
-
-inline
-void ActionWithValue::assertUnique(const std::string&name){
-  assert(!hasNamedValue(name));
-}
-
-inline
-int ActionWithValue::getNumberOfValues(){
-  return values.size();
-}
-
-inline
-int ActionWithValue::getNumberOfParameters()const{
-  return numberOfParameters;
+bool ActionWithValue::isMeaningfulToDifferentiate( const unsigned& n ) const {
+   return values[n]->deriv;
 }
 
 inline
@@ -107,6 +91,35 @@ bool ActionWithValue::checkNumericalDerivatives()const{
   return numericalDerivatives;
 }
 
+inline
+unsigned ActionWithValue::getNumberOfValues() const {
+  return values.size();
+}
+
+inline
+double ActionWithValue::getValue(const unsigned i) const {
+  return values[i]->value;
+}
+
+inline
+void ActionWithValue::addDerivative( const unsigned& n, const unsigned& nd, const double& val ){
+  assert( n<values.size() ); assert( nd<values[n]->derivatives.size() );
+  values[n]->derivatives[nd]+=val; 
+}
+
+inline
+double ActionWithValue::getDerivative( const unsigned& n, const unsigned& nd ) const {
+  printf("Hello from getDerivatives %d %d \n",n,values.size() );
+  assert( n<values.size() ); 
+  assert( nd<values[n]->getNumberOfDerivatives() );
+  return values[n]->derivatives[nd];
+}
+
+inline
+bool ActionWithValue::getForces( const unsigned& n, std::vector<double>& forces ) const {
+  assert( n<values.size() );
+  return values[n]->getForces( forces );  
+}
 
 }
 

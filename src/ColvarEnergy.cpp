@@ -37,15 +37,13 @@ PLUMED_REGISTER_ACTION(ColvarEnergy,"ENERGY")
 ColvarEnergy::ColvarEnergy(const ActionOptions&ao):
 ActionWithExternalArguments(ao)
 {
+  forbidKeyword("NUMERICAL_DERIVATIVES"); forbidKeyword("STRIDE");
+  readAction();
+  std::vector<double> domain(2,0.0);
+  readActionWithExternalArguments( 1, domain);
   if( checkNumericalDerivatives() ) error("numerical derivatives cannot be used with energy cvs");
-  addValueWithDerivatives("pe");
-  getValue("pe")->setPeriodicity(false);
-  readAction();	
+  addValue("pe", true, false);
   checkRead();
-}
-
-void ColvarEnergy::clearOutputForces(){
-  forceOnEnergy=0.0;
 }
 
 void ColvarEnergy::retrieveData(){
@@ -54,12 +52,12 @@ void ColvarEnergy::retrieveData(){
 
 // calculator
 void ColvarEnergy::calculate(){
-  setValue( energy );
+  setValue( 0, energy, 1.0 );
 }
 
 void ColvarEnergy::apply(){
-  forceOnEnergy+=getValue(0)->getForce();
-  plumed.getAtoms().forceOnEnergy+=forceOnEnergy;
+  std::vector<double> f(1); 
+  if( getForces( 0, f ) ) plumed.getAtoms().forceOnEnergy+=f[0];
 }
 
 }

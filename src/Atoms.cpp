@@ -6,6 +6,7 @@
 
 #include "MDAtoms.h"
 #include "PlumedMain.h"
+#include "ActionWithVirtualAtom.h"
 
 using namespace PLMD;
 using namespace std;
@@ -339,6 +340,16 @@ void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a){
   virtualAtomsActions.pop_back();
 }
 
+std::string Atoms::interpretIndex( const unsigned& num ) const {
+  assert( num<positions.size() );
+  if( num<natoms ){
+      std::string nn; Tools::convert(num+1,nn); 
+      return nn;
+  } else {
+      return virtualAtomsActions[num-natoms]->getLabel();
+  }
+}
+
 void Atoms::insertGroup(const std::string&name,const unsigned& n,const std::vector<unsigned>&a){
   assert(groups.count(name)==0);
   AtomGroup newgr(n,a);
@@ -350,11 +361,29 @@ void Atoms::removeGroup(const std::string&name){
   groups.erase(name);
 }
 
-void Atoms::addAtomsToGroup(const std::string&name,const std::vector<unsigned>&a){
-  groups[name].addAtoms(a);
+void Atoms::readAtomsIntoGroup( const std::string& name, std::vector<std::string>& atoms, std::vector<unsigned>& indexes ){
+  indexes.resize(0); Tools::interpretRanges( atoms );
+  for(unsigned i=0;i<atoms.size();++i){
+    bool ok=false;
+    AtomNumber atom; 
+    ok=Tools::convert( atoms[i], atom );    // this is converting strings to AtomNumbers
+    if( atom.index()>natoms ) actions[ actions.size()-1 ]->error("atom index is larger than number of atoms in system");
+
+    if( ok ) indexes.push_back( atom.index() );
+    if( !ok ){
+        for(unsigned j=0;j<virtualAtomsActions.size();++j){
+            if( virtualAtomsActions[j]->getLabel()==atoms[i] ){
+                ok=true;
+                indexes.push_back( virtualAtomsActions[j]->getIndex().index() );
+            }
+        }
+    }
+    if (!ok) actions[ actions.size()-1 ]->error( atoms[i] + " is neither an atom index or a virtual atom");
+  }
+  groups[name].addAtoms( indexes );
 }
 
-void Atoms::getGroupIndices(const std::string&name,std::vector<unsigned>&a){
+void Atoms::getGroupIndices( const std::string&name, std::vector<unsigned>&a ){
   groups[name].getIndexes(a);
 }
 

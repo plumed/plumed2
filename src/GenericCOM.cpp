@@ -44,22 +44,19 @@ PLUMED_REGISTER_ACTION(GenericCOM,"COM")
 GenericCOM::GenericCOM(const ActionOptions&ao):
   ActionWithVirtualAtom(ao)
 {
-  vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
+  allowKeyword("ATOMS"); allowKeyword("GROUP");
+  readActionWithVirtualAtom();
   checkRead();
-  log.printf("  of atoms");
-  for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());
-  log.printf("\n");
-  //requestAtoms(atoms);
 }
 
 void GenericCOM::calculate(){
   Vector pos;
   double mass(0.0),charge(0.0);
-  vector<Tensor> deriv(getNatoms());
-  for(unsigned i=0;i<getNatoms();i++) mass+=getMasses(i);
-  for(unsigned i=0;i<getNatoms();i++) charge+=getCharges(i);
-  for(unsigned i=0;i<getNatoms();i++){
+  unsigned natoms=getNumberOfAtoms();
+  vector<Tensor> deriv(natoms);
+  for(unsigned i=0;i<natoms;i++) mass+=getMasses(i);
+  for(unsigned i=0;i<natoms;i++) charge+=getCharges(i);
+  for(unsigned i=0;i<natoms;i++){
     pos+=(getMasses(i)/mass)*getPositions(i);
     deriv[i]=(getMasses(i)/mass)*Tensor::identity();
   }

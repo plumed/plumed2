@@ -52,6 +52,10 @@ Bias(ao),
 at(0),
 kappa(getNumberOfArguments(),0.0)
 {
+  registerKeyword( 1, "KAPPA", "the value of the force constant on the restraint" );
+  registerKeyword( 1, "AT", "the position of the restraint" );
+  readBias();
+
   parseVector("KAPPA",kappa);
   assert(kappa.size()==getNumberOfArguments());
   parseVector("AT",at);
@@ -64,9 +68,6 @@ kappa(getNumberOfArguments(),0.0)
   log.printf("  with force constant");
   for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
-
-  addValue("Energy");
-  addValue("Force2");
 }
 
 
@@ -81,9 +82,9 @@ void BiasRestraint::calculate(){
     setOutputForces(i,f);
     totf2+=f*f;
   };
-  Value* value;
-  value=getValue("Energy"); setValue(value,ene);
-  value=getValue("Force2");  setValue(value,totf2);
+//  Value* value;
+//  value=getValue("Energy"); setValue(value,ene);
+//  value=getValue("Force2");  setValue(value,totf2);
 }
 
 }

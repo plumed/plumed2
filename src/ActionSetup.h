@@ -7,6 +7,9 @@ namespace PLMD{
 
 /// Action executed only at startup
 class ActionSetup : public Action {
+protected:
+/// Read everything into the action setup
+  void readActionSetup();
 public:
 /// Constructor
   ActionSetup(const ActionOptions&ao);
@@ -14,6 +17,8 @@ public:
   void calculate(){};
 /// Do nothing.
   void apply(){};
+/// You can't do this for an action setup
+  void calculateNumericalDerivatives(){ assert(false); }
 };
 
 }

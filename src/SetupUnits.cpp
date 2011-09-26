@@ -56,6 +56,11 @@ PLUMED_REGISTER_ACTION(SetupUnits,"UNITS")
 SetupUnits::SetupUnits(const ActionOptions&ao):
 ActionSetup(ao)
 {
+  registerKeyword(0,"LENGTH","the units of lengths.  Either specify a conversion factor from the default, nm, or A (for angstroms) or um"); 
+  registerKeyword(0,"ENERGY","the units of energy.  Either specify a conversion factor from the default, kj/mol, or use j/mol or kcal/mol");
+  registerKeyword(0,"TIME","the units of time.  Either specify a conversion factor from the default, ps, or use ns or fs");   
+  readActionSetup();
+
   Units u;
 
   std::string s;

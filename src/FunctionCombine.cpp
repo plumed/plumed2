@@ -60,6 +60,11 @@ normalize(false),
 coefficients(getNumberOfArguments(),1.0),
 powers(getNumberOfArguments(),1.0)
 {
+  registerKeyword(1,"COEFFICIENTS","the coefficients for the terms in the sum");
+  registerKeyword(1,"POWERS","the powers to raise each colvar value to");
+  registerKeyword(0,"NORMALIZE","normalize the coefficients");
+  readFunction();
+
   parseVector("COEFFICIENTS",coefficients);
   assert(coefficients.size()==static_cast<unsigned>(getNumberOfArguments()));
   parseVector("POWERS",powers);
@@ -73,18 +78,7 @@ powers(getNumberOfArguments(),1.0)
     for(unsigned i=0;i<coefficients.size();i++) coefficients[i]*=(1.0/n);
   }
 
-  addValueWithDerivatives("");
-  vector<string> period;
-
-  double min(0),max(0);
-  parseVector("PERIODIC",period);
-  if(period.size()==0){
-  }else if(period.size()==1 && period[0]=="NO"){
-    getValue("")->setPeriodicity(false);
-  } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
-    getValue("")->setPeriodicity(true);
-    getValue("")->setDomain(min,max);
-  } else assert(0);
+  //addValueWithDerivatives("");
 
   checkRead();
 
@@ -102,7 +96,7 @@ void FunctionCombine::calculate(){
     combine+=coefficients[i]*pow(getArgument(i),powers[i]);
     setDerivatives(i,coefficients[i]*powers[i]*pow(getArgument(i),powers[i]-1.0));
   };
-  setValue(combine);
+  //setValue(combine);
 }
 
 }

@@ -4,28 +4,69 @@
 using namespace std;
 using namespace PLMD;
 
-void ActionWithValue::enforceNumericalDerivatives(){
-  numericalDerivatives=true;
-  log.printf("  WARNING: Numerical derivatives will be used\n");
-  log.printf("    (probably this object does not implement analytical derivatives yet)\n");
-}
-
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
-  numberOfParameters(0),
-  numericalDerivatives(false),
-  hasMultipleValues(false),
-  hasUnnamedValue(false)
+  numericalDerivatives(false)
 {
-  parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
-  if(numericalDerivatives) log.printf("  using numerical derivatives\n");
+  registerKeyword(0, "NUMERICAL_DERIVATIVES", "calculate the derivatives for these quantities numerically"); 
 }
 
 ActionWithValue::~ActionWithValue(){
-  for(unsigned i=0;i<values.size();++i)delete values[i];
+  for(unsigned i=0;i<values.size();++i) delete values[i];
 }
 
-void ActionWithValue::check(const std::string&name){
+void ActionWithValue::readActionWithValue( const unsigned& nd, const std::vector<double>& d ){
+  parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
+  if (numericalDerivatives) log.printf("  using numerical derivatives\n");
+  domain.resize(2); domain[0]=d[0]; domain[1]=d[1]; nderivatives=nd;
+}
+
+void ActionWithValue::noAnalyticalDerivatives(){
+  numericalDerivatives=true;
+  warning("Numerical derivatives will be used as analytical derivatives are not available");
+}
+
+void ActionWithValue::addValue( const std::string& name, const bool& ignorePeriod, const bool& hasDerivatives ){
+  std::string thename; thename=getLabel() + "." + name;
+  for(unsigned i=0;i<values.size();++i){
+     if( values[i]->myname==thename ) assert(false);
+  }
+  
+  unsigned nder;
+  if( hasDerivatives ){ nder=nderivatives; } else{ nder=0; }
+  if( ignorePeriod ){
+      std::vector<double> fdomain(2,0.0);
+      values.push_back(new Value(*this, thename, nder, fdomain) );
+  } else {
+      values.push_back(new Value(*this, thename, nder, domain) );
+  } 
+}
+
+void ActionWithValue::clearInputForces(){
+  for(unsigned i=0;i<values.size();i++){
+     values[i]->hasForce=false; values[i]->inputForce=0.0;
+  }
+}
+
+void ActionWithValue::clearDerivatives(){
+  for(unsigned i=0;i<values.size();i++) values[i]->clearDerivatives();
+}
+
+Value* ActionWithValue::getValuePointer( const unsigned& i ){ 
+  assert( i<values.size() );
+  return values[i]; 
+}
+
+Value* ActionWithValue::getValuePointer( const std::string& name ){
+  std::string thename=getLabel() + "." +  name;
+  for(unsigned i=0;i<values.size();++i){
+     if( values[i]->myname==thename ) return values[i];
+  }
+  error("there is no component with label " + name );
+  return values[0];
+}
+
+/*void ActionWithValue::check(const std::string&name){
   assertUnique(name);
   if(name==""){
     hasUnnamedValue=true;
@@ -85,6 +126,6 @@ void ActionWithValue::clearInputForces(){
 }
 void ActionWithValue::clearDerivatives(){
   for(unsigned i=0;i<values.size();i++) values[i]->clearDerivatives();
-}
+} */
 
 

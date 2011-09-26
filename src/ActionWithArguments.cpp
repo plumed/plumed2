@@ -5,10 +5,17 @@
 using namespace std;
 using namespace PLMD;
 
-void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){
-  vector<string> c;
-  arg.clear();
-  parseVector(key,c);
+ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
+  ActionWithValue(ao),
+  lockRequestArguments(false)
+{
+  registerKeyword(2, "ARG", "a list of plumed actions that provide the input to this action");
+  allowKeyword("ARG");
+}
+
+void ActionWithArguments::readActionWithArguments( const std::vector<double>& domain ){
+  vector<string> c; arguments.clear();
+  parseVector("ARG",c);
   for(unsigned i=0;i<c.size();i++){
     std::size_t dot=c[i].find_first_of('.');
     if(dot!=string::npos){
@@ -19,78 +26,72 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
         for(unsigned j=0;j<all.size();j++){
           for(int k=0;k<all[j]->getNumberOfValues();++k){
-            arg.push_back(all[j]->getValue(k));
+            arguments.push_back( all[j]->getValuePointer(k) );
           }
         };
       } else {
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
         assert(action);
         if(name=="*"){
-          vector<string> s=action->getValueNames();
-          for(unsigned j=0;j<s.size();j++)arg.push_back(action->getValue(s[j]));
+          // vector<string> s=action->getValueNames();
+          for(unsigned j=0;j<action->getNumberOfValues();j++) arguments.push_back( action->getValuePointer(j) );
         } else {
-          assert(action->hasNamedValue(name));
-          arg.push_back(action->getValue(name));
+          // assert(action->hasNamedValue(name));
+          arguments.push_back( action->getValuePointer(name) );
         }
       }
     } else if(c[i]=="*"){
       std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
       for(unsigned j=0;j<all.size();j++){
         assert(all[j]->getNumberOfValues()==1); 
-        arg.push_back(all[j]->getValue(0));
-      };
+        arguments.push_back( all[j]->getValuePointer(0) );
+      }
     } else{
       ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
       assert(action); assert(action->getNumberOfValues()==1); 
-      arg.push_back(action->getValue(0));
+      arguments.push_back( action->getValuePointer(0) );
     }
   }
-}
 
-void ActionWithArguments::requestArguments(const vector<Value*> &arg){
-  assert(!lockRequestArguments);
-  arguments=arg;
-  clearDependencies();
-  for(unsigned i=0;i<arguments.size();i++) addDependency(&arguments[i]->getAction());
-}
-
-ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
-  ActionWithValue(ao),
-  lockRequestArguments(false)
-{
-  vector<Value*> arg;
-  parseArgumentList("ARG",arg);
-
-  if(arg.size()>0){
+  if(arguments.size()>0){
+    clearDependencies();
     log.printf("  with arguments");
-    for(unsigned i=0;i<arg.size();i++) log.printf(" %s",arg[i]->getFullName().c_str());
+    for(unsigned i=0;i<arguments.size();i++){
+        log.printf(" %s",arguments[i]->myname.c_str());
+        addDependency(&arguments[i]->getAction());
+    }
     log.printf("\n");
   }
-
-  readAction();
-  requestArguments(arg);
+  readActionWithValue( arguments.size(), domain );
 }
 
 void ActionWithArguments::calculateNumericalDerivatives(){
-  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  assert(a);
-  const int nval=a->getNumberOfValues();
-  const int npar=a->getNumberOfParameters();
+  const int nval=getNumberOfValues();
+  const int npar=arguments.size(); 
   std::vector<double> value (nval*npar);
   for(int i=0;i<npar;i++){
-    double arg0=arguments[i]->get();
-    arguments[i]->set(arg0+sqrt(epsilon));
+    double arg0=getArgument(i); 
+    arguments[i]->set( arg0+sqrt(epsilon) );
     calculate();
-    arguments[i]->set(arg0);
+    arguments[i]->set( arg0 );
     for(int j=0;j<nval;j++){
-      value[i*nval+j]=a->getValue(j)->get();
+      value[i*nval+j]=getValue(j);
     }
   }
   calculate();
-  std::vector<double> value0(nval);
+  clearDerivatives();
+  //std::vector<double> value0(nval);
   for(int j=0;j<nval;j++){
-    Value* v=a->getValue(j);
-    if(v->hasDerivatives())for(int i=0;i<npar;i++) v->setDerivatives(i,(value[i*nval+j]-a->getValue(j)->get())/sqrt(epsilon));
+    //Value* v=a->getValue(j);
+    if ( isMeaningfulToDifferentiate(j) ){
+       for(int i=0;i<npar;i++) addDerivative( j, i, ( value[i*nval+j] - getValue(j) )/sqrt(epsilon) );
+    }
+  }
+}
+
+void ActionWithArguments::printArgumentNames( FILE* fp ){
+  for(unsigned i=0;i<arguments.size();i++){
+    fprintf(fp," %s",arguments[i]->myname.c_str());
   }
 }
 

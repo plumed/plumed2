@@ -7,16 +7,23 @@ using namespace std;
 
 Bias::Bias(const ActionOptions&ao) : 
 ActionWithArguments(ao),
-outputForces(getArguments().size(),0.0)
+outputForces(getNumberOfArguments(),0.0)    /// Actually this will break when readin is changed
 {
-  strideKeywordIsCompulsory();
 }
 
+void Bias::readBias(){
+   readAction();
+   std::vector<double> domain(2,0.0);
+   readActionWithArguments( domain );
+   addValue("energy", true, true);
+   addValue("force2", true, false);
+}
 
 void Bias::apply(){
-  if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){
-    getArguments()[i]->addForce(getStride()*outputForces[i]);
-  }
+  if( onStep() ) applyForces( outputForces );
+//  if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){
+//    getArguments()[i]->addForce(getStride()*outputForces[i]);
+//  }
 }
 
 

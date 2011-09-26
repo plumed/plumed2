@@ -140,7 +140,7 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
       return true;
     }
   };
-  return true;
+  return false;
 }
 
 void Tools::convert(int i,std::string & str){

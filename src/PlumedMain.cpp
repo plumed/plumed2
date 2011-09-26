@@ -448,6 +448,11 @@ void PlumedMain::performCalc(){
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++) (*p)->deactivate();
 
 }
+
+// GAT perhaps need to think a bit more how to do this better
+void PlumedMain::addCitation( const std::string& citation ){
+  cites.push_back( citation );
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

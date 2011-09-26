@@ -8,6 +8,8 @@ namespace PLMD{
 
 /// Action representing a function of other actions
 class Function : public ActionWithArguments {
+protected:
+  void readFunction();
 public:
   Function(const ActionOptions&);
   virtual ~Function(){};
@@ -18,12 +20,12 @@ public:
 
 inline
 void Function::setDerivatives(int i,double d){
-  getValue(0)->setDerivatives(i,d);
+//  getValue(0)->setDerivatives(i,d);
 }
 
 inline
 void Function::setDerivatives(Value*v,int i,double d){
-  v->setDerivatives(i,d);
+//  v->setDerivatives(i,d);
 }
 
 }

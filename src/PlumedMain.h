@@ -71,6 +71,9 @@ private:
 /// Set of actions found in plumed.dat file
   ActionSet actionSet;
 
+/// Set of papers users should cite ( this is built from the actions in input )
+  std::vector<std::string> cites;
+
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
@@ -112,6 +115,8 @@ public:
   const int & getStep()const{return step;};
 /// Stop the run
   void exit(int c=0);
+/// Add a paper that should be cited
+  void addCitation( const std::string& citation );
 };
 
 /////

@@ -55,22 +55,24 @@ GenericDumpDerivatives::GenericDumpDerivatives(const ActionOptions&ao):
 ActionWithArguments(ao),
 fp(NULL)
 {
+  registerKeyword(1,"FILE","the name of the file on which to write out the derivative information");
+  readAction();
+  std::vector<double> domain(2,0.0);
+  readActionWithArguments( domain );
+
   parse("FILE",file);
   assert(file.length()>0);
   if(comm.Get_rank()==0){
     fp=fopen(file.c_str(),"wa");
     log.printf("  on file %s\n",file.c_str());
-    fprintf(fp,"%s","#! FIELDS time parameter");
-    const std::vector<Value*>& arguments(getArguments());
-    assert(arguments.size()>0);
-    unsigned npar=arguments[0]->getDerivatives().size();
-    assert(npar>0);
-    for(unsigned i=1;i<arguments.size();i++){
-      assert(npar==arguments[i]->getDerivatives().size());
-    }
-    for(unsigned i=0;i<arguments.size();i++){
-      fprintf(fp," %s",arguments[i]->getFullName().c_str());
-    };
+    unsigned nargs=getNumberOfArguments();
+    if( nargs==0 ) error("no arguments specified");
+    unsigned npar=getNumberOfDerivatives(0);
+    for(unsigned i=1;i<nargs;i++){
+        if( npar!=getNumberOfDerivatives(i) ) error("the number of derivatives must be the same in all values being dumped");
+    } 
+    fprintf(fp,"%s","#! FIELDS time parameter"); 
+    printArgumentNames(fp);
     fprintf(fp,"%s","\n");
   }
   checkRead();
@@ -79,13 +81,12 @@ fp(NULL)
 
 void GenericDumpDerivatives::calculate(){
   if(comm.Get_rank()!=0)return;
-  const std::vector<Value*>& arguments(getArguments());
-  unsigned npar=arguments[0]->getDerivatives().size();
+  unsigned npar=getNumberOfDerivatives(0);
   for(unsigned ipar=0;ipar<npar;ipar++){
     fprintf(fp," %f",getTime());
     fprintf(fp," %u",ipar);
     for(unsigned i=0;i<getNumberOfArguments();i++){
-      fprintf(fp," %15.10f",arguments[i]->getDerivatives()[ipar]);
+      fprintf(fp," %15.10f", getArgumentDerivative(i,ipar) );   
     };
     fprintf(fp,"\n");
   }

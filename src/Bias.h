@@ -9,6 +9,7 @@ namespace PLMD{
 class Bias : public ActionWithArguments {
   std::vector<double> outputForces;
 protected:
+  void readBias();
   void resetOutputForces();
   void setOutputForces(int i,double g);
 public:

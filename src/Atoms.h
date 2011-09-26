@@ -10,7 +10,7 @@
 #include <map>
 #include <string>
 
-namespace PLMD{
+namespace PLMD {
 
 class MDAtomsBase;
 class PlumedMain;
@@ -30,7 +30,7 @@ private:
 /// The atoms that can be skipped in collection time 
   std::vector<unsigned> next;  		
 public:
-  AtomGroup() {};
+  AtomGroup() {}
   AtomGroup( const AtomGroup& old ) : indexes(old.indexes), next(old.next) {}
   AtomGroup(const unsigned& n, const std::vector<unsigned>& i);
 /// Add some more atoms to the group
@@ -43,13 +43,13 @@ public:
 
 /// Class containing atom related quantities from the MD code.
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
-class Atoms
-{
+class Atoms {
   friend class ColvarEnergy;
   friend class ColvarVolume;
   friend class ActionAtomistic;
   friend class GenericWholeMolecules;
   friend class ActionWithVirtualAtom;
+private:
   int natoms;
   std::vector<Vector> positions;
   std::vector<Vector> forces;
@@ -80,9 +80,7 @@ class Atoms
   std::vector<const ActionAtomistic*> actions;
   std::vector<int>    gatindex;
 
-  class DomainDecomposition:
-    public PlumedCommunicator
-  {
+  class DomainDecomposition : public PlumedCommunicator {
   public:
     bool on;
     std::vector<int>    g2l;
@@ -94,10 +92,8 @@ class Atoms
     std::vector<double> positionsToBeReceived;
     std::vector<int>    indexToBeSent;
     std::vector<int>    indexToBeReceived;
-    operator bool(){return on;};
-    DomainDecomposition():
-      on(false)
-      {};
+    operator bool() { return on; }
+    DomainDecomposition() : on(false) {}
     void enable(PlumedCommunicator& c);
   };
 
@@ -123,7 +119,7 @@ public:
   void setNatoms(int);
   const int & getNatoms()const;
 
-  void setCollectEnergy(bool b){collectEnergy=b;};
+  void setCollectEnergy(bool b){ collectEnergy=b; }
 
   void setDomainDecomposition(PlumedCommunicator&);
   void setAtomsGatindex(int*);
@@ -150,31 +146,31 @@ public:
   void add(const ActionAtomistic*);
   void remove(const ActionAtomistic*);
 
-  double getEnergy()const{assert(collectEnergy);return energy;};
+  double getEnergy() const { assert(collectEnergy); return energy; }
 
-  void setMDEnergyUnits(double d){MDUnits.energy=d;};
-  void setMDLengthUnits(double d){MDUnits.length=d;};
-  void setMDTimeUnits(double d){MDUnits.time=d;};
-  const Units& getMDUnits(){return MDUnits;};
-  void setUnits(const Units&u){units=u;};
-  const Units& getUnits(){return units;};
+  void setMDEnergyUnits(double d){ MDUnits.energy=d; }
+  void setMDLengthUnits(double d){ MDUnits.length=d; }
+  void setMDTimeUnits(double d){ MDUnits.time=d; }
+  const Units& getMDUnits(){ return MDUnits; }
+  void setUnits(const Units&u){ units=u; }
+  const Units& getUnits(){ return units; }
   void updateUnits();
 
+  std::string interpretIndex( const unsigned& num ) const ;
   unsigned int addVirtualAtom(ActionWithVirtualAtom*);
   void removeVirtualAtom(ActionWithVirtualAtom*);
   void insertGroup(const std::string&name,const unsigned& n,const std::vector<unsigned>&a);
-  void addAtomsToGroup(const std::string& name, const std::vector<unsigned>&a);
+  void readAtomsIntoGroup(const std::string& name, std::vector<std::string>& atoms, std::vector<unsigned>& indexes );
   void getGroupIndices(const std::string& name, std::vector<unsigned>&a); 
   void getAtomsInGroup(const std::string& name, std::vector<Vector>& p, std::vector<double>& q, std::vector<double>& m);
-  void applyForceToAtomsInGroup( const std::string& name, const std::vector<Vector>& f, const Tensor& v);
+  void applyForceToAtomsInGroup( const std::string& name, const std::vector<Vector>& f, const Tensor& v );
   void removeGroup(const std::string&name);
 };
 
 inline
-const int & Atoms::getNatoms()const{
+const int & Atoms::getNatoms() const {
   return natoms;
 }
-
 
 }
 #endif

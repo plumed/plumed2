@@ -33,15 +33,22 @@ PRINT ARG=vol
 
 class ColvarVolume : public ActionWithExternalArguments {
 private:
+/// Are we using all components of the box or just the volume
   bool components;
+/// The box coordinates
   Tensor box;
 public:
   ColvarVolume(const ActionOptions&);
-// active methods:
-  virtual void clearOutputForces(){};
-  virtual void retrieveData();
-  virtual void calculate();
-  virtual void apply();
+/// Get rid of any output forces
+  void clearOutputForces(){};
+/// Get the cell from atoms
+  void retrieveData();
+/// Transfer the cell box to the value
+  void calculate();
+/// Apply any forces to the cell box
+  void apply();
+/// You can't calculate numerical derivatives
+  void calculateNumericalDerivatives(){ assert(false); }
 };
 
 PLUMED_REGISTER_ACTION(ColvarVolume,"VOLUME")
@@ -50,17 +57,18 @@ ColvarVolume::ColvarVolume(const ActionOptions&ao):
 ActionWithExternalArguments(ao),
 components(false)
 {
-
+  forbidKeyword("NUMERICAL_DERIVATIVES"); forbidKeyword("STRIDE");
   registerKeyword( 0, "COMPONENTS", "use xx, yy, zz, alpha, beta, gamma as the colvars rather than the box volume");
   readAction();
+  std::vector<double> domain(2,0.0);
+  readActionWithExternalArguments( 1, domain );
   parseFlag("COMPONENTS",components);
   checkRead();
 
   if(components){
 // todo
   } else {
-     addValueWithDerivatives("volume");
-     getValue("volume")->setPeriodicity(false);
+     addValue("volume", true, false );
   }
 }
 
@@ -73,18 +81,16 @@ void ColvarVolume::calculate(){
   if(components){
 // todo
   } else {
-    setValue( box.determinant() );
+    setValue( 0, box.determinant(), 1.0 );
   }
 }
 
 void ColvarVolume::apply(){
-  Tensor v; 
-  if(components){
+  Tensor v; v.clear(); std::vector<double> forces(1);
+  if( components ){
     // todo
-  } else { 
-      if (!getValue(0)->checkForced()) return;
-      const double force=getValue(0)->getForce();
-      v(0,0)-=force; v(1,1)-=force; v(2,2)-=force;
+  } else if( getForces( 0, forces ) ){
+       v(0,0)-=forces[0]; v(1,1)-=forces[0]; v(2,2)-=forces[0];
   }
   Tensor & vir(plumed.getAtoms().virial); vir+=v;
 }

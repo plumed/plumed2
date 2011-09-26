@@ -10,12 +10,14 @@ namespace PLMD{
 
 /// Class to add a single virtual atom to the system.
 /// (it might be extended to add multiple virtual atoms).
-class ActionWithVirtualAtom:
-  public ActionAtomistic
-{
+class ActionWithVirtualAtom : public ActionAtomistic {
+private:
+/// The index of the virtual atom in the Atoms class
   unsigned index;
+/// The derivatives for the virtual atom wrt to the positions of the atoms
   std::vector<Tensor> derivatives;
-  void apply();
+/// The forces on each atom
+  std::vector<Vector> f;
 protected:
 /// Set position of the virtual atom
   void setPosition(const Vector &);
@@ -27,11 +29,16 @@ protected:
 //  void requestAtoms(const std::vector<AtomNumber> & a);
 /// Set the derivatives of virtual atom coordinate wrt atoms on which it dependes
   void setAtomsDerivatives(const std::vector<Tensor> &d);
+/// Read everything in higher levels for virtual atoms
+  void readActionWithVirtualAtom();
 public:
 /// Return the atom id of the corresponding virtual atom
-  AtomNumber getIndex()const;
+  AtomNumber getIndex() const;
   ActionWithVirtualAtom(const ActionOptions&ao);
   ~ActionWithVirtualAtom();
+  void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups );
+  void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist );
+  void apply();
 };
 
 inline
