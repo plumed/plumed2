@@ -47,6 +47,8 @@ protected:
   double getDerivative( const unsigned& n, const unsigned& nd ) const ; 
 /// Set the value (also applies chain rule by multiplying all derivatives by df)
   void setValue( const unsigned& n, const double& f, const double& df );
+/// Set the named value (also applies chain rule by multiplying all derivatives by df)
+  void setValue( const std::string& name, const double& f, const double& df );
 /// Return the index for the value with name valname
   unsigned getValueNumberForLabel( const std::string& valname );
 /// Get the number of Values
@@ -66,9 +68,9 @@ public:
 
 inline
 unsigned ActionWithValue::getValueNumberForLabel( const std::string& valname ){
-  std::string thename = getLabel() + valname;
+  std::string thename = getLabel() + "." + valname;
   for(unsigned i=0;i<values.size();++i){
-     if( values[i]->myname==valname ) return i;
+     if( values[i]->myname==thename ) return i;
   }
   assert(false);
   return 0;
@@ -79,6 +81,13 @@ void ActionWithValue::setValue( const unsigned& n, const double& f, const double
   assert( n<values.size() );
   values[n]->value=f;
   for(unsigned i=0;i<values[n]->derivatives.size();++i){ values[n]->derivatives[i]*=df; } 
+}
+
+inline
+void ActionWithValue::setValue( const std::string& name, const double& f, const double& df ){
+  unsigned n=getValueNumberForLabel( name );
+  values[n]->value=f;
+  for(unsigned i=0;i<values[n]->derivatives.size();++i){ values[n]->derivatives[i]*=df; }
 }
 
 inline

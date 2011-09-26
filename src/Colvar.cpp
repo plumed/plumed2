@@ -46,8 +46,8 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
   // Read in everything that tells us what sort of calculation we are doing
   parseFlag("MIN",domin);
   if (domin){
-     doall=false;
-     beta=50.0; parse("BETA",beta);
+     doall=false; 
+     beta=50.0/plumed.getAtoms().getUnits().length; parse("BETA",beta);
      addValue("min", true, true);
      log.printf("  using minimum value \n");
   }
@@ -71,11 +71,11 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
      log.printf("  using average value \n");
   }
 
-  /*
-  if ( testForKey("LESS_THAN") ) {
+  std::vector<double> r_0;
+  parseVector("LESS_THAN",r_0);
+  if( r_0.size()!=0 ){
      doall=false; dolt=true;
-     std::vector<double> r_0; parseVector("LESS_THAN",r_0);
-     if ( r_0.size()!=1 ) error("Input for LESS_THAN makes no sense");
+     if ( r_0.size()!=1 ) error("input for LESS_THAN makes no sense");
      int nn=6; parse("LOGIC_NN",nn);
      int mm=12; parse("LOGIC_MM",mm);
      ltswitch.set(nn, mm, r_0[0], 0.0);
@@ -83,23 +83,22 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
      addValue("less_than", true, true);
   }
 
-  if ( testForKey("MORE_THAN") ) {
+  std::vector<double> r_1;
+  parseVector("MORE_THAN",r_1);
+  if ( r_1.size()!=0 ) {
      doall=false; domt=true;
-     std::vector<double> r_0; parseVector("MORE_THAN",r_0);
-     if ( r_0.size()!=1 ) error("Input for MORE_THAN makes no sense");
+     if ( r_1.size()!=1 ) error("Input for MORE_THAN makes no sense");
      int nn=6; parse("LOGIC_NN",nn);
      int mm=12; parse("LOGIC_MM",mm);
-     mtswitch.set(nn, mm, r_0[0], 0.0);
-     log.printf("  number of values greater than %f.  Switching function paramers are %d %d \n", r_0[0], nn, mm );
+     mtswitch.set(nn, mm, r_1[0], 0.0);
+     log.printf("  number of values greater than %f.  Switching function paramers are %d %d \n", r_1[0], nn, mm );
      addValue("more_than", true, true);
   }
-  */
 
   if( doall ){
      std::string n;
      for(unsigned i=0;i<function_indexes.size();++i){
-        Tools::convert(i,n);
-        addValue("value" + n, false, true );
+        Tools::convert(i,n); addValue("value" + n, false, true );
      }
   }
 }
@@ -164,78 +163,53 @@ void Colvar::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& f
 }
 
 void Colvar::calculate(){
-  double value;
+  double df, tmp, value, mintotal, ttotal, atotal, maxtotal, lttotal, mttotal;
+  mintotal=maxtotal=ttotal=atotal=lttotal=mttotal=0.0; 
+
   for (unsigned i=0; i<skipto.size(); i=skipto[i] ) {
      value=calcFunction( function_indexes[i], derivatives, virial );
      if (doall) {
         mergeFunctions( i, 1.0 );
         setValue( i, value, 1.0 );
      } else {
-        assert(false);
-     }
-  }
-
-}
-
-//void ActionAtomistic::calculate(){
-
-  // This will eventually update dynamic content (neighbour lists and so on)   -- Gareth we must sort prepare
-  //if( nl_st!=0 && getStep()-nl_last>=nl_st ){
-  //   for(unsigned i=0;i<skips.size();++i) skips[i]=false;  
-
-  //   if( atomGroupName!=getLabel() ){ 
-  //      // Find the action
-  //       GenericDynamicGroup* action=plumed.getActionSet().selectWithLabel<GenericDynamicGroup*>(atomGroupName);
-  //       assert(action);
-  //       // Run a routine that selects the atoms in the group
-  //       action.updateSelection( skips );
-  //   }
-  //   updateNeighbourLists( skips );
-  //   plumed.getAtoms().updateAtomsInSelection( atomGroupName, skips );
-  //}
-
-  // MPI this eventually
-/*  double mintotal, ttotal, atotal, maxtotal,lttotal,mttotal;
-  mintotal=maxtotal=ttotal=atotal=lttotal=mttotal=0.0; 
-  for (unsigned i=0; i<skipto.size(); i=skipto[i] ) {
-     value=calcFunction( i, derivatives, virial );
-     if (doall) {
-        mergeFunctions(i, 1.0, derivatives, virial);
-        setOutputValue( i, value, 1.0 );
-     } else {
-       if ( domin ) {
+        if ( domin ) {
            // Minimum
-           tmp=exp( beta/value ); mintotal+=tmp; df=tmp/(value*value);
-           mergeFunctions("min", df, derivatives, virial );
-        } else if ( domax ) {
+           tmp=exp( beta/value ); mintotal+=tmp; df=tmp/(value*value); 
+           mergeFunctions("min", i, df );
+        }
+        if ( domax ) {
            // Maximum
-        } else if ( dototal ) {
+           assert(false);
+        } 
+        if ( dototal ) {
            ttotal+=value;
-           mergeFunctions("sum", 1.0, derivatives, virial );
-        } else if ( domean ) {
+           mergeFunctions("sum", i, 1.0 );
+        } 
+        if ( domean ) {
            // The mean
            atotal+=value;
-           mergeFunctions("average", 1.0, derivatives, virial );
-        } else if ( dolt ) {
+           mergeFunctions("average", i, 1.0 );
+        } 
+        if ( dolt ) {
            // Less than
            double tmp=ltswitch.calculate(value, df);
            lttotal+=tmp;
-           mergeFunctions("less_than", df*value, derivatives, virial );
-        } else if ( domt ) {
+           mergeFunctions("less_than", i, df*value );
+        } 
+        if ( domt ) {
            // More than
            mttotal+=1.0 - mtswitch.calculate(value, df);
-           mergeFunctions("more_than", -df*value, derivatives, virial );
+           mergeFunctions("more_than", i, -df*value );
         }
      }
   }
-  if ( domin ){ double dist=beta/std::log(mintotal); setOutputValue("min", dist, dist*dist/mintotal ); }
+  if ( domin ){ double dist=beta/std::log(mintotal); setValue("min", dist, dist*dist/mintotal ); }
   if ( domax ) { }
-  if ( dototal ) { setOutputValue("sum", ttotal, 1.0 ); }
-  if ( domean ) { setOutputValue("average", atotal/skipto.size(), 1.0/skipto.size() ); }
-  if ( dolt ) { setOutputValue("less_than", lttotal, 1.0 ); }
-  if ( domt ) { setOutputValue("more_than", mttotal, 1.0 ); }
+  if ( dototal ) { setValue("sum", ttotal, 1.0 ); }
+  if ( domean ) { setValue("average", atotal/skipto.size(), 1.0/skipto.size() ); }
+  if ( dolt ) { setValue("less_than", lttotal, 1.0 ); }
+  if ( domt ) { setValue("more_than", mttotal, 1.0 ); }
 }
-*/
 
 void Colvar::apply(){
 
