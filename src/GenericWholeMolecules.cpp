@@ -1,8 +1,10 @@
-#include "ActionAtomistic.h"
+#include "ActionSetup.h"
 #include "ActionRegister.h"
 #include "Vector.h"
 #include "AtomNumber.h"
 #include "Tools.h"
+#include "Atoms.h"
+#include "PlumedMain.h"
 
 #include <vector>
 #include <string>
@@ -37,54 +39,42 @@ it acts at every step.
 //+ENDPLUMEDOC
 
 
-class GenericWholeMolecules:
-  public ActionAtomistic
-{
-  vector<vector<AtomNumber> > groups;
-  Vector & modifyPosition(AtomNumber);
+class GenericWholeMolecules : public ActionSetup {
 public:
   GenericWholeMolecules(const ActionOptions&ao);
-  void calculate();
-  void apply(){};
 };
 
 PLUMED_REGISTER_ACTION(GenericWholeMolecules,"WHOLEMOLECULES")
 
-inline
-Vector & GenericWholeMolecules::modifyPosition(AtomNumber i){
-  return plumed.getAtoms().positions[i.index()];
-}
-
 GenericWholeMolecules::GenericWholeMolecules(const ActionOptions&ao):
-ActionAtomistic(ao)
+ActionSetup(ao)
 {
-  strideKeywordIsCompulsory();
-//  vector<AtomNumber> merge;
-  for(int i=0;;i++){
-    string is; Tools::convert(i,is);
-    string name="GROUP"+is;
-    vector<AtomNumber> group;
-    parseAtomList(name,group);
-    if(group.size()==0)break;
-    groups.push_back(group);
-//    merge.insert(merge.end(),group.begin(),group.end());
-  }
-  checkRead();
-//  Tools::removeDuplicates(merge);
-  //requestAtoms(merge);
+  registerKeyword(2,"MOLECULE","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of MOLECULE keywords: MOLECULE1, MOLECULE2,...");
+  allowKeyword("MOLECULE"); 
+  void readActionSetup();
+
+  if ( !testForKey("MOLECULE") ) error("no molecules specified in input to WHOLEMOLECULES");
+
+  std::vector<std::string> strings; Atoms& atoms(plumed.getAtoms());
+  std::string myname;
+  if( testForNumberedKeys("MOLECULE") ){
+    std::string num; 
+    for(int i=1;;++i ){
+       Tools::convert(i,num); myname="chain" + num;
+       if( !parseNumberedVector( "MOLECULE", i, strings ) ) break;
+       atoms.addMolecule( *this, myname, strings );
+       log.printf("  molecule %d contains the following atoms : ",i);
+       for(unsigned i=0;i<strings.size();++i) log.printf("%s ", strings[i].c_str() );
+       log.printf("\n");
+     }
+  } else {
+     parseVector("MOLECULE",strings); myname="chain1";
+     atoms.addMolecule( *this, myname, strings );
+     log.printf("  molecule 1 contains the following atoms : ");
+     for(unsigned i=0;i<strings.size();++i) log.printf("%s ", strings[i].c_str() );
+     log.printf("\n");
+  }  
 }
-
-void GenericWholeMolecules::calculate(){
-  for(unsigned i=0;i<groups.size();++i){
-    for(unsigned j=0;j<groups[i].size()-1;++j){
-      Vector & first (modifyPosition(groups[i][j]));
-      Vector & second (modifyPosition(groups[i][j+1]));
-      second=first+getSeparation( groups[i][j].index(), groups[i][j+1].index() );
-    }
-  }
-}
-
-
 
 }
 

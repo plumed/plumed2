@@ -1,4 +1,5 @@
 #include "Atoms.h"
+#include "ActionSetup.h"
 #include "ActionAtomistic.h"
 #include <cassert>
 #include <algorithm>
@@ -14,6 +15,15 @@ using namespace std;
 namespace PLMD {
 
 class PlumedMain;
+
+MoleculeTopology::MoleculeTopology( const std::string& name, const std::vector<unsigned>& atoms ) :
+chainName(name),
+atomIndexes(atoms)
+{
+  resno.resize(0); backbone.resize(0);
+  unique.clear();
+  for(unsigned j=0;j<atomIndexes.size();j++) unique.insert(atomIndexes[j]); 
+}
 
 AtomGroup::AtomGroup(const unsigned& n, const std::vector<unsigned>& i) :
 natoms(n)
@@ -108,13 +118,19 @@ void Atoms::share(){
   mdatoms->getPositions(gatindex,positions);
   if(dd && int(gatindex.size())<natoms){
     bool async=dd.Get_size()<10;
-    std::set<int> unique; std::string grname;
+    std::set<int> unique; 
+    // Get the atoms for the topology
+    for(unsigned i=0;i<topology.size();++i){
+       unique.insert( topology[i].unique.begin(), topology[i].unique.end() );
+    }
+
+    // Get the atoms for the colvars
+    std::string grname;
     for(unsigned i=0;i<actions.size();i++){
        if(actions[i]->isActive()) {
           grname=actions[i]->atomGroupName;
           unique.insert( groups[grname].unique.begin(), groups[grname].unique.end() );
        }
-       //unique.insert(actions[i]->unique.begin(),actions[i]->unique.end());
     }
     if(async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
@@ -162,6 +178,9 @@ void Atoms::share(){
       }
     }
   }
+  // Now do all the aligning required within the topology
+  for(unsigned i=0;i<topology.size();++i) topology[i].align( box, positions );
+
   virial.clear();
   for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].clear();
   for(unsigned i=getNatoms();i<positions.size();i++) forces[i].clear(); // virtual atoms
@@ -283,13 +302,18 @@ double Atoms::getTimeStep()const{
 }
 
 void Atoms::createFullList(int*n){
+  // Get the atoms for the topology
+  for(unsigned i=0;i<topology.size();++i){
+    fullList.insert( fullList.end(), topology[i].unique.begin(), topology[i].unique.end() );
+  }
+
+  // Get the atoms for the colvars
   std::string grname;
   for(unsigned i=0;i<actions.size();i++){ 
     if(actions[i]->isActive()){
        grname=actions[i]->atomGroupName;
        fullList.insert( fullList.end(), groups[grname].unique.begin(), groups[grname].unique.end() );
     }
-    //fullList.insert(fullList.end(),actions[i]->unique.begin(),actions[i]->unique.end());
   }
   std::sort(fullList.begin(),fullList.end());
   int nn=std::unique(fullList.begin(),fullList.end())-fullList.begin();
@@ -359,6 +383,21 @@ void Atoms::insertGroup(const std::string&name,const unsigned& n,const std::vect
 void Atoms::removeGroup(const std::string&name){
   assert(groups.count(name)==1);
   groups.erase(name);
+}
+
+void Atoms::addMolecule( ActionSetup& a, const std::string& name, std::vector<std::string>& atoms ){
+  Tools::interpretRanges( atoms ); std::vector<unsigned> indexes;
+  for(unsigned i=0;i<atoms.size();++i ){
+     bool ok=false;
+     AtomNumber atom;
+     ok=Tools::convert( atoms[i], atom );    // this is converting strings to AtomNumbers
+     if( atom.index()>natoms ) a.error("atom index is larger than number of atoms in system");
+     
+     if( ok ) indexes.push_back( atom.index() );
+     if (!ok) a.error( atoms[i] + " is not an atom index");
+  }
+  MoleculeTopology newmol( name, indexes );
+  topology.push_back( newmol );
 }
 
 void Atoms::readAtomsIntoGroup( const std::string& name, std::vector<std::string>& atoms, std::vector<unsigned>& indexes ){

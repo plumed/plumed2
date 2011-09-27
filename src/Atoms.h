@@ -4,6 +4,7 @@
 #include "PlumedCommunicator.h"
 #include "Tensor.h"
 #include "Units.h"
+#include "Pbc.h"
 #include <vector>
 #include <set>
 #include <cassert>
@@ -14,8 +15,37 @@ namespace PLMD {
 
 class MDAtomsBase;
 class PlumedMain;
+class ActionSetup;
 class ActionAtomistic;
 class ActionWithVirtualAtom;
+
+/// This class holds a molecule
+class MoleculeTopology {
+friend class Atoms;
+private:
+/// The name of this particular molecule
+  std::string chainName;
+/// The indexes of the atoms in the molecule
+  std::vector<unsigned> atomIndexes;  
+/// The set of unique atoms
+  std::set<unsigned> unique;
+/// The residue numbers
+  std::vector<unsigned> resno;
+/// Is this atom part of the backbone
+  std::vector<bool> backbone;
+public:
+  MoleculeTopology() {}
+  MoleculeTopology( const std::string& name, const std::vector<unsigned>& atoms ); 
+  void align( const Tensor& box, std::vector<Vector>& positions );
+};
+
+inline
+void MoleculeTopology::align( const Tensor& box, std::vector<Vector>& positions ){
+  Pbc pbc; pbc.setBox( box );
+  for(unsigned j=0;j<atomIndexes.size()-1;++j){
+    positions[ atomIndexes[j+1] ]=positions[ atomIndexes[j] ] + pbc.distance( positions[ atomIndexes[j] ], positions[ atomIndexes[j+1] ] );
+  }
+}
 
 /// This class holds a group of atoms.
 class AtomGroup {
@@ -62,6 +92,8 @@ private:
   bool   collectEnergy;
 
   std::map<std::string,AtomGroup > groups;
+
+  std::vector<MoleculeTopology> topology;
 
   void resizeVectors(unsigned);
 
@@ -166,6 +198,9 @@ public:
   void updateSkipsForGroup(const std::string& name, const std::vector<bool>& skips ); 
   void applyForceToAtomsInGroup( const std::string& name, const std::vector<Vector>& f, const Tensor& v );
   void removeGroup(const std::string&name);
+
+  // Stuff for topology
+  void addMolecule( ActionSetup& a, const std::string& name, std::vector<std::string>& atoms );
 };
 
 inline

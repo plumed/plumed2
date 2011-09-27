@@ -7,6 +7,7 @@ namespace PLMD{
 
 /// Action executed only at startup
 class ActionSetup : public Action {
+friend class Atoms;
 protected:
 /// Read everything into the action setup
   void readActionSetup();
