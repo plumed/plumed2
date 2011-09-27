@@ -1,4 +1,4 @@
-#include "Colvar.h"
+#include "ColvarDistinguishable.h"
 #include "PlumedMain.h"
 #include "ActionRegister.h"
 #include "PDB.h"
@@ -22,19 +22,19 @@ RMSD REFERENCE=file.pdb
 */
 //+ENDPLUMEDOC
    
-class ColvarRMSD : public Colvar {
+class ColvarRMSD : public ColvarDistinguishable {
 private:
   RMSD rmsd;
   vector<Vector> pos;
 public:
   ColvarRMSD(const ActionOptions&);
-  double calcFunction( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial );
+  double compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial );
 };
 
 PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
 
 ColvarRMSD::ColvarRMSD(const ActionOptions&ao):
-Colvar(ao)
+ColvarDistinguishable(ao)
 {
   allowKeyword("ATOMS");
   registerKeyword( 1, "REFERENCE", "the reference structure we are calculating the rmsd from");
@@ -53,7 +53,7 @@ Colvar(ao)
   rmsd.setFromPDB(pdb);
 }
 
-double ColvarRMSD::calcFunction( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){
+double ColvarRMSD::compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){
   assert( pos.size()==indexes.size() && derivatives.size()==indexes.size() );
   for(unsigned i=0;i<pos.size();++i) pos[i]=getPositions( indexes[i] );
   double r=rmsd.calculate( pos, derivatives );

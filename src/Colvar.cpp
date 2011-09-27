@@ -1,8 +1,5 @@
 #include "Colvar.h"
 #include "PlumedMain.h"
-#include <vector>
-#include <string>
-#include <cassert>
 
 using namespace std;
 using namespace PLMD;
@@ -16,7 +13,8 @@ dototal(false),
 domean(false),
 dolt(false),
 domt(false),
-dohist(false)
+dohist(false),
+isCSphereF(false)
 {
   forbidKeyword("STRIDE");
   registerKeyword(0, "MIN", "calculate the minimum for the defined colvars");
@@ -40,8 +38,8 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
   readActionWithExternalArguments( 3*getNumberOfAtoms()+9, domain );
 
   // Setup everything for calculation of individual colvars
-  skipto.resize( function_indexes.size() ); derivatives.resize( natoms ); 
-  for(unsigned i=0;i<function_indexes.size();++i) skipto[i]=i+1;
+  skipto.resize( getNumberOfColvars() ); 
+  for(unsigned i=0;i<getNumberOfColvars();++i) skipto[i]=i+1;
 
   // Resize stuff for applying forces
   f.resize( getNumberOfAtoms() ); forces.resize( 3*getNumberOfAtoms()+9 );
@@ -155,20 +153,24 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
      }
      log.printf("  calculating a histogram using %d bins \n",histogram.size() );
      for (unsigned i=0; i<histogram.size(); ++i) {
+         if ( !isCSphereF && updateIsOn() ){
+              error("UPDATE keyword cannot be used when calculating a set of distinguishable colvars");
+         } else if( usingDynamicGroups() ){
+              error("using dynamic groups is incompatible with calculating all colvars consider MIN/LESS_THAN/etc");
+         } 
          log.printf("  bin %d counts values between %f and %f \n", i+1, histogram[i].getlowb(), histogram[i].getbigb() );
      }
   }
 
   if( doall ){
      std::string n;
-     //checkUpdate( usingDynamicGroups(), updateIsOn() );
-     for(unsigned i=0;i<function_indexes.size();++i){
+     for(unsigned i=0;i<getNumberOfColvars();++i){
         Tools::convert(i,n); addValue("value" + n, false, true );
      }
   }
 }
 
-void Colvar::interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups ){
+/*void Colvar::interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups ){
   std::vector<unsigned> tmplist;
 
   if( atomGroupName!=getLabel() ){
@@ -226,7 +228,9 @@ void Colvar::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& f
   }
   log.printf("\n");
 }
+*/
 
+/*
 void Colvar::updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){
   bool calcfunc; unsigned n=0;
 
@@ -250,6 +254,7 @@ void Colvar::updateNeighbourList( const double& cutoff, std::vector<bool>& skips
   }
   for(unsigned i=0;i<skips.size();++i){ if( !required_atoms[i] ) skips[i]=true; }
 }
+*/
 
 void Colvar::calculate(){
   double df, tmp, value, mintotal, ttotal, atotal, maxtotal, lttotal, mttotal;
@@ -263,7 +268,8 @@ void Colvar::calculate(){
   if( domt ) mtstring="more_than" + mtswitch.get_r0_string(); 
 
   for (unsigned i=0; i<skipto.size(); i=skipto[i] ) {
-     value=calcFunction( function_indexes[i], derivatives, virial );
+//     value=calcFunction( function_indexes[i], derivatives, virial );
+     value=calcFunction( i );
      if (doall) {
         mergeFunctions( i, i, 1.0 );
         setValue( i, value, 1.0 );

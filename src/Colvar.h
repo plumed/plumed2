@@ -1,11 +1,13 @@
 #ifndef __PLUMED_Colvar_h
 #define __PLUMED_Colvar_h
 
+#include <string>
+#include <cassert>
+#include <vector>
 #include "ActionAtomistic.h"
 #include "ActionWithValue.h"
 #include "SwitchingFunction.h"
 #include "HistogramBead.h"
-#include <vector>
 
 namespace PLMD {
 
@@ -13,13 +15,13 @@ namespace PLMD {
 class Colvar : public ActionAtomistic {
 private:
 /// The indexes of the atoms in each colvar
-  std::vector< std::vector<unsigned> > function_indexes;
+//  std::vector< std::vector<unsigned> > function_indexes;
 /// Makes the neighbour list work
   std::vector<unsigned> skipto;
 /// The derivatives with respect to the atoms for a single thing in the list    
-  std::vector<Vector> derivatives;
+//  std::vector<Vector> derivatives;
 /// The virial with respect to the atoms for a single thing in the list
-  Tensor virial;
+//  Tensor virial;
 /// The forces on the atoms and on the virial
   std::vector<double> forces;
 /// The forces on the atoms
@@ -35,21 +37,32 @@ private:
 /// This is the vector we store the histogram beads inside
   std::vector<double> hvalues;
 /// Routines used to transfer the derivatives for a single colvar onto the list of derivatives
-  void mergeFunctions( const unsigned& vf, const unsigned& nf, const double& df );
-  void mergeFunctions( const std::string& valname, const unsigned& nf, const double& df );
+//  void mergeFunctions( const unsigned& vf, const unsigned& nf, const double& df );
+//  void mergeFunctions( const std::string& valname, const unsigned& nf, const double& df );
 protected:
+  bool isCSphereF;
   void readActionColvar( int natoms, const std::vector<double>& domain );
+  void skipAllColvarFrom( const unsigned& n, const unsigned& i );
 public:
   Colvar(const ActionOptions&);
   ~Colvar(){};
-  void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups );
-  void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist );
-  void updateNeighbourList( const double& cutoff, std::vector<bool>& skips );
+//  void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups );
+//  void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist );
+//  void updateNeighbourList( const double& cutoff, std::vector<bool>& skips );
   void calculate();
   void apply();
-  virtual double calcFunction( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial )=0; 
+  virtual unsigned getNumberOfColvars() const=0;
+  virtual void mergeFunctions( const unsigned& vf, const unsigned& nf, const double& df )=0;
+  virtual void mergeFunctions( const std::string& valname, const unsigned& nf, const double& df )=0;
+  virtual double calcFunction( const unsigned& i )=0; 
 };
 
+inline
+void Colvar::skipAllColvarFrom( const unsigned& n, const unsigned& i ){
+  skipto[n]=i; 
+}
+
+/*
 inline
 void Colvar::mergeFunctions( const unsigned& vf, const unsigned& nf, const double& df ){
   const unsigned nat=getNumberOfAtoms();
@@ -88,6 +101,7 @@ void Colvar::mergeFunctions( const std::string& valname, const unsigned& nf, con
   addDerivative( vf, 3*nat + 7, df*virial(2,1) );
   addDerivative( vf, 3*nat + 8, df*virial(2,2) );
 }
+*/
 
 }
 #endif

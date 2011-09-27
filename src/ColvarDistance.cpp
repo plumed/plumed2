@@ -1,4 +1,4 @@
-#include "Colvar.h"
+#include "ColvarDistinguishable.h"
 #include "ActionRegister.h"
 
 #include <string>
@@ -34,17 +34,17 @@ PRINT ARG=d1,d2,d2.x
 */
 //+ENDPLUMEDOC
    
-class ColvarDistance : public Colvar {
+class ColvarDistance : public ColvarDistinguishable {
 public:
   ColvarDistance(const ActionOptions&);
 // active methods:
-  virtual double calcFunction( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial );
+  virtual double compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial );
 };
 
 PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
 
 ColvarDistance::ColvarDistance(const ActionOptions&ao):
-Colvar(ao)
+ColvarDistinguishable(ao)
 {
   allowKeyword("ATOMS"); allowKeyword("GROUP" );
   std::vector<double> domain( 2, 0.0 );
@@ -52,7 +52,7 @@ Colvar(ao)
   checkRead();
 }
 
-double ColvarDistance::calcFunction( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){
+double ColvarDistance::compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){
   assert( indexes.size()==2 && derivatives.size()==2 );
   Vector distance=getSeparation( indexes[0], indexes[1] ); 
   const double value=distance.modulo();
