@@ -61,7 +61,7 @@ Action::Action(const ActionOptions&ao):
 void Action::readAction(){
   parse("LABEL",label);
   if(label.length()==0){
-    std::string s; Tools::convert(plumed.getActionSet().size(),s);
+    std::string s; Tools::convert(static_cast<int>( plumed.getActionSet().size() ),s);
     label="@"+s;
   } 
   if (plumed.getActionSet().selectWithLabel<Action*>(label)) error("there is already an action with label " + label);
@@ -251,6 +251,10 @@ void Action::error( const std::string& stream ) const {
      if ( keys[i].compulsory==0 && !keys[i].forbidden ) keys[i].print( log, 60 );  
   }
   log.printf("\n");
+  log.printf("\n The following optional keywords may be use multiple times by using <keyword>1, <keyword>2, ... \n or just once by using <keyword>\n\n");
+  for(unsigned i=0;i<keys.size();++i){
+     if ( keys[i].compulsory==3 && !keys[i].forbidden ) keys[i].print( log, 60 );   
+  }
   plumed.exit(1);
 }
 

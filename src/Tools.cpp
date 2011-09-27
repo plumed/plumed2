@@ -143,10 +143,22 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
   return false;
 }
 
+void Tools::convert(unsigned i,std::string & str){
+        std::ostringstream ostr;
+        ostr<<i;
+        str=ostr.str();
+} 
+
 void Tools::convert(int i,std::string & str){
         std::ostringstream ostr;
         ostr<<i;
         str=ostr.str();
+}
+
+void Tools::convert(double d, std::string & str ){
+       std::ostringstream ostr;
+       ostr<<d;
+       str=ostr.str();
 }
 
 void Tools::interpretRanges(std::vector<std::string>&s){

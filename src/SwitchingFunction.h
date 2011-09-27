@@ -3,6 +3,8 @@
 
 #include <cassert>
 #include <cmath>
+#include <string>
+#include "Tools.h"
 
 namespace PLMD {
 
@@ -22,7 +24,14 @@ public:
   SwitchingFunction();
   void set(int nn,int mm,double r_0,double d_0);
   double calculate(double x,double&df)const;
+  std::string get_r0_string() const;
 };
+
+inline
+std::string SwitchingFunction::get_r0_string() const {
+  std::string str; Tools::convert(r_0,str);
+  return str;
+}
 
 inline
 SwitchingFunction::SwitchingFunction() : 

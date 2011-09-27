@@ -163,6 +163,7 @@ public:
   void readAtomsIntoGroup(const std::string& name, std::vector<std::string>& atoms, std::vector<unsigned>& indexes );
   void getGroupIndices(const std::string& name, std::vector<unsigned>&a); 
   void getAtomsInGroup(const std::string& name, std::vector<Vector>& p, std::vector<double>& q, std::vector<double>& m);
+  void updateSkipsForGroup(const std::string& name, const std::vector<bool>& skips ); 
   void applyForceToAtomsInGroup( const std::string& name, const std::vector<Vector>& f, const Tensor& v );
   void removeGroup(const std::string&name);
 };

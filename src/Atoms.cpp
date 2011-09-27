@@ -395,6 +395,10 @@ void Atoms::getAtomsInGroup(const std::string& name, std::vector<Vector>& p, std
   }
 }
 
+void Atoms::updateSkipsForGroup(const std::string& name, const std::vector<bool>& skips ){
+  groups[name].updateSkips( skips );
+}
+
 void Atoms::applyForceToAtomsInGroup( const std::string& name, const std::vector<Vector>& f, const Tensor& v ){
   for(unsigned i=0;i<groups[name].indexes.size();i=groups[name].next[i]) forces[ groups[name].indexes[i] ] += f[i]; 
   virial += v;

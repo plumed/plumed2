@@ -15,11 +15,10 @@ domax(false),
 dototal(false),
 domean(false),
 dolt(false),
-domt(false)
+domt(false),
+dohist(false)
 {
   forbidKeyword("STRIDE");
-  registerKeyword(0, "UPDATE", "frequency for updates of neighbour lists and dynamic groups");
-  registerKeyword(0, "NL_CUT", "distance cutoff for neighbour lists");
   registerKeyword(0, "MIN", "calculate the minimum for the defined colvars");
   registerKeyword(0, "MAX", "calculate the maximum for the defined colvars");
   registerKeyword(0, "BETA", "(default=50) value used to create smooth derivatives in calculations of MIN/MAX"); 
@@ -29,6 +28,10 @@ domt(false)
   registerKeyword(0, "MORE_THAN", "compute the number of colvars that that are more than than a particular value using a smooth switching function");
   registerKeyword(0, "LOGIC_NN", "(default=6) value of NN in switching functions for MORE_THAN/LESS_THAN");
   registerKeyword(0, "LOGIC_MM", "(default=12) value of MM in switching functions for MORE_THAN/LESS_THAN");
+  registerKeyword(0, "HISTOGRAM", "calculate the histogram of a distribution of collective coordinates within a certain range");
+  registerKeyword(0, "NBINS", "number of bins to use in the calculation of the histogram");
+  registerKeyword(0, "SMEAR", "(default=0.5) the ammount to smear the values, relative to bin size, in the calculation of the histogram");
+  registerKeyword(3, "WITHIN_RANGE", "calculate the number of cvs from the distribution that are within a particular range");
 }
 
 void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
@@ -80,7 +83,8 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
      int mm=12; parse("LOGIC_MM",mm);
      ltswitch.set(nn, mm, r_0[0], 0.0);
      log.printf("  number of values less than %f.  Switching function paramers are %d %d \n", r_0[0], nn, mm );
-     addValue("less_than", true, true);
+     std::string lm; Tools::convert( r_0[0], lm );
+     addValue("less_than" + lm, true, true);
   }
 
   std::vector<double> r_1;
@@ -92,11 +96,72 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
      int mm=12; parse("LOGIC_MM",mm);
      mtswitch.set(nn, mm, r_1[0], 0.0);
      log.printf("  number of values greater than %f.  Switching function paramers are %d %d \n", r_1[0], nn, mm );
-     addValue("more_than", true, true);
+     std::string lm; Tools::convert( r_1[0], lm );
+     addValue("more_than" + lm, true, true);
+  }
+
+  std::vector<double> hrange;
+  parseVector("HISTOGRAM",hrange);
+  if( hrange.size()!=0 ){
+      if( !doall ) error("you cannot mix HISTOGRAM calculation with other COLVAR modifiers");
+      if( hrange.size()!=2 || hrange[0]>=hrange[1] ) error("range specified for histogram makes no sense");
+      doall=false; dohist=true;
+      int nbins=-1; parse("NBINS",nbins);
+      if (nbins<0) error("number of bins is unspecified for histogram");
+      double smear=0.5; parse("SMEAR",smear);
+      double delr = ( hrange[1] - hrange[0] ) / static_cast<double>(nbins);
+      histogram.resize( nbins );
+      for (int i=0; i<nbins; ++i){ 
+        histogram[i].set( hrange[0]+i*delr, hrange[0]+(i+1)*delr, smear*delr );
+        std::string lb, ub; Tools::convert( hrange[0]+i*delr, lb); Tools::convert( hrange[0]+(i+1)*delr, ub); 
+        addValue("between" + lb + "&" + ub, true, true );
+      }
+      hvalues.resize(nbins);
+      log.printf("  calculating a histogram using %d bins \n",histogram.size() );
+      for (unsigned i=0; i<histogram.size(); ++i) {
+         log.printf("  bin %d counts values between %f and %f \n", i+1, histogram[i].getlowb(), histogram[i].getbigb() );
+      }
+  }
+
+  if( testForKey("WITHIN_RANGE") ){
+     std::vector<double> range; HistogramBead tmpbead;
+     if( !doall ) error("you cannot mix WITHIN_RANGE calculation with other COLVAR modifiers");
+     doall=false; dohist=true;
+     double smear=0.5; parse("SMEAR",smear);
+     if( testForNumberedKeys("WITHIN_RANGE") ){
+         for(int i=1;; ++i ){
+            range.clear();
+            if( !parseNumberedVector( "WITHIN_RANGE", i, range ) ) break;
+            if( range.size()!=2 || range[0]>=range[1] ) {
+                std::string num; Tools::convert(i,num);
+                error("range specified for WITHIN_RANGE" + num + " makes no sense");
+            }
+            tmpbead.set( range[0], range[1], smear*( range[1]-range[0] ) );
+            histogram.push_back( tmpbead );
+            std::string lb, ub; Tools::convert( range[0], lb); Tools::convert( range[1], ub);
+            addValue("between" + lb + "&" + ub, true, true ); 
+         }
+         hvalues.resize( histogram.size() );
+     } else {
+         parseVector("WITHIN_RANGE", range); 
+         if( range.size()!=2 || range[0]>=range[1] ) {
+             error("range specified for WITHIN_RANGE makes no sense");
+         }
+         tmpbead.set( range[0], range[1], smear*( range[1]-range[0] ) );
+         histogram.push_back( tmpbead );
+         std::string lb, ub; Tools::convert( range[0], lb); Tools::convert( range[1], ub);
+         addValue("between" + lb + "&" + ub, true, true );
+         hvalues.resize(1);
+     }
+     log.printf("  calculating a histogram using %d bins \n",histogram.size() );
+     for (unsigned i=0; i<histogram.size(); ++i) {
+         log.printf("  bin %d counts values between %f and %f \n", i+1, histogram[i].getlowb(), histogram[i].getbigb() );
+     }
   }
 
   if( doall ){
      std::string n;
+     //checkUpdate( usingDynamicGroups(), updateIsOn() );
      for(unsigned i=0;i<function_indexes.size();++i){
         Tools::convert(i,n); addValue("value" + n, false, true );
      }
@@ -162,15 +227,51 @@ void Colvar::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& f
   log.printf("\n");
 }
 
+void Colvar::updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){
+  bool calcfunc; unsigned n=0;
+
+  for(unsigned i=0;i<function_indexes.size();++i){
+      calcfunc=true;
+      for(unsigned j=1;j<function_indexes[i].size();++j){
+         for(unsigned k=0;k<j;++k){
+            if( skips[ function_indexes[i][j] ] || skips[ function_indexes[i][k] ] ){
+                calcfunc=false;
+            } else if( getSeparation( function_indexes[i][j], function_indexes[i][k] ).modulo()>cutoff ){
+                calcfunc=false;
+            }
+         }
+      }
+      if( calcfunc ) { skipto[n]=i; n=i; } 
+  }
+
+  std::vector<bool> required_atoms(skips.size(),false);
+  for(unsigned i=0;i<function_indexes.size();i=skipto[i]){ 
+     for(unsigned n=0;n<function_indexes[i].size();++n) required_atoms[ function_indexes[i][n] ] = true;
+  }
+  for(unsigned i=0;i<skips.size();++i){ if( !required_atoms[i] ) skips[i]=true; }
+}
+
 void Colvar::calculate(){
   double df, tmp, value, mintotal, ttotal, atotal, maxtotal, lttotal, mttotal;
   mintotal=maxtotal=ttotal=atotal=lttotal=mttotal=0.0; 
+  hvalues.assign( hvalues.size(), 0.0 );
+
+  if( updateTime() ) updateDynamicAtoms();
+
+  std::string mtstring, ltstring;
+  if( dolt ) ltstring="less_than" + ltswitch.get_r0_string();
+  if( domt ) mtstring="more_than" + mtswitch.get_r0_string(); 
 
   for (unsigned i=0; i<skipto.size(); i=skipto[i] ) {
      value=calcFunction( function_indexes[i], derivatives, virial );
      if (doall) {
-        mergeFunctions( i, 1.0 );
+        mergeFunctions( i, i, 1.0 );
         setValue( i, value, 1.0 );
+     } else if (dohist) {
+        for (unsigned j=0; j<histogram.size(); ++j) {
+          hvalues[j]+=histogram[j].calculate( value, df );
+          mergeFunctions( j, i, df );
+        }
      } else {
         if ( domin ) {
            // Minimum
@@ -194,21 +295,25 @@ void Colvar::calculate(){
            // Less than
            double tmp=ltswitch.calculate(value, df);
            lttotal+=tmp;
-           mergeFunctions("less_than", i, df*value );
+           mergeFunctions(ltstring, i, df*value );
         } 
         if ( domt ) {
            // More than
            mttotal+=1.0 - mtswitch.calculate(value, df);
-           mergeFunctions("more_than", i, -df*value );
+           mergeFunctions(mtstring, i, -df*value );
         }
      }
   }
-  if ( domin ){ double dist=beta/std::log(mintotal); setValue("min", dist, dist*dist/mintotal ); }
-  if ( domax ) { }
-  if ( dototal ) { setValue("sum", ttotal, 1.0 ); }
-  if ( domean ) { setValue("average", atotal/skipto.size(), 1.0/skipto.size() ); }
-  if ( dolt ) { setValue("less_than", lttotal, 1.0 ); }
-  if ( domt ) { setValue("more_than", mttotal, 1.0 ); }
+  if ( dohist ){ 
+    for (unsigned j=0; j<histogram.size(); ++j) setValue( j, hvalues[j], 1.0 );
+  } else {
+    if ( domin ){ double dist=beta/std::log(mintotal); setValue("min", dist, dist*dist/mintotal ); }
+    if ( domax ) { }
+    if ( dototal ) { setValue("sum", ttotal, 1.0 ); }
+    if ( domean ) { setValue("average", atotal/skipto.size(), 1.0/skipto.size() ); }
+    if ( dolt ) { setValue(ltstring, lttotal, 1.0 ); }
+    if ( domt ) { setValue(mtstring, mttotal, 1.0 ); }
+  }
 }
 
 void Colvar::apply(){

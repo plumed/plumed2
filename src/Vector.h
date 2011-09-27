@@ -9,6 +9,8 @@ namespace PLMD{
 class Vector{
   double d[3];
 public:
+/// Take the dot product of two vectors
+  friend double dot(const Vector&v1,const Vector&v2);  
 /// return v2-v1
   friend Vector delta(const Vector&v1,const Vector&v2);
 /// return s*v
@@ -38,6 +40,11 @@ public:
 /// increment
   Vector& operator +=(const Vector& b);
 };
+
+inline
+double dot(const Vector&v1, const Vector&v2){
+  return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
+} 
 
 inline
 double & Vector::operator[](int i){

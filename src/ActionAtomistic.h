@@ -30,6 +30,11 @@ class ActionAtomistic : public ActionWithExternalArguments {
   std::vector<Vector>   forces;           // forces on the needed atoms
 
   bool                  lockRequestAtoms; // forbid changes to request atoms
+
+// Stuff for dynamic content
+  unsigned              updateFreq;
+  unsigned              lastUpdate;
+  double                nl_cut;
 protected:
 /// Request an array of atoms.
 /// This method is used to ask for a list of atoms. Atoms
@@ -43,6 +48,8 @@ protected:
   const Vector & getPositions(int)const;
 /// Get the separation between two atoms
   Vector getSeparation(unsigned i, unsigned j) const;
+/// Get the angle between the vectors connecting atoms j and i and atoms j and k
+  double getAngle(const unsigned i, const unsigned j, const unsigned k, std::vector<Vector>& derivatives ) const ;
 /// Get the box
   const Tensor & getBox() const;
 /// Get mass of i-th atom
@@ -61,6 +68,14 @@ protected:
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 /// Apply forces to the atoms
   void applyForces( const std::vector<Vector>& forces, const Tensor& virial );
+/// Is it time to update any dynamic content in the "colvar"
+  bool updateTime() const ;
+/// Update the requests for the dynamic atom lists
+  void updateDynamicAtoms();
+/// Check if we are using updates
+  bool updateIsOn() const;
+/// Check if we have dynamic groups
+  bool usingDynamicGroups() const;
 public:
 
 // virtual functions:
@@ -73,11 +88,17 @@ public:
 
   virtual void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups )=0;
   virtual void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist )=0;
-
+  virtual void updateNeighbourList( const double& cutoff, std::vector<bool>& at_skips  )=0; 
+  void prepare();
   void calculateNumericalDerivatives();
   void lockRequests();
   void unlockRequests();
 };
+
+inline
+bool ActionAtomistic::updateTime() const {
+  return ( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq );
+}
 
 inline
 unsigned ActionAtomistic::getNumberOfAtoms() const {
@@ -94,6 +115,28 @@ inline
 Vector ActionAtomistic::getSeparation(unsigned i, unsigned j) const {
   if ( pbcOn ) return pbc.distance( positions[i], positions[j] );
   return delta( positions[i], positions[j] );
+}
+
+inline
+double ActionAtomistic::getAngle(const unsigned i, const unsigned j, const unsigned k, std::vector<Vector>& derivatives ) const {
+  assert( derivatives.size()==3 );
+
+  Vector rji, rjk; 
+  rji=getSeparation(j,i); rjk=getSeparation(j,k);
+  double caa=rji.modulo2();
+  double cab=dot(rji,rjk);
+  double cbb=rjk.modulo2(); 
+ 
+  double ccc = 1.0/sqrt(caa*cbb);
+  double ac = cab*ccc; // cosine of teta
+  double dVac = -ccc/sqrt(1.-ac*ac);
+
+  for(unsigned ix=0;ix<3;ix++) {
+    derivatives[0][ix] = -dVac*(-cab/caa*rji[ix]+rjk[ix]);
+    derivatives[1][ix] = dVac*(-cab/caa*rji[ix]-cab/cbb*rjk[ix]+rji[ix]+rjk[ix]);
+    derivatives[2][ix] = dVac*(cab/cbb*rjk[ix]-rji[ix]);
+  }
+  return acos(ac);
 }
 
 inline

@@ -20,7 +20,10 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 ActionWithExternalArguments(ao),
 atomGroupName("none"),
 pbcOn(true),
-lockRequestAtoms(false)
+lockRequestAtoms(false),
+updateFreq(0),
+lastUpdate(0),
+nl_cut(0)
 {
   plumed.getAtoms().add(this);
 
@@ -28,6 +31,8 @@ lockRequestAtoms(false)
   registerKeyword(0, "NOPBC", "do not use periodic boundary conditions when calculating the vectors that connect atoms");
   registerKeyword(2, "ATOMS", "specify the atoms involved in the colvar as a list of atoms. To specify multiple colvars of this type use a list of ATOMS keywords: ATOMS1, ATOMS2, ATOMS3..." );
   registerKeyword(2, "GROUP", "specify the atoms involved in the colvar using one or two groups (GROUP1, GROUP2) of atoms. These groups can either be defined in another action or the atoms in the group can be enumerated on after the GROUP keywords. If one group is present the value of the colvar is calculated for every conceivable combination of atoms in the group. If multiple groups are specified the colvar is calculated using every combination that contains at least one atom from every group"); 
+  registerKeyword(0, "UPDATE", "frequency for updates of neighbour lists and dynamic groups");
+  registerKeyword(0, "NL_CUTOFF", "the cutoff for distances inside the neighbour list");
 }
 
 void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
@@ -73,7 +78,7 @@ void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
              if( i==1 && maxatoms<0 ){ 
                  maxatoms=t.size(); 
              } else if ( t.size()!=maxatoms ){
-                 std::string nn, ss, tt; Tools::convert( i, nn ); Tools::convert( t.size(), ss ); Tools::convert( maxatoms, tt );
+                 std::string nn, ss, tt; Tools::convert( i, nn ); Tools::convert( static_cast<int>( t.size() ), ss ); Tools::convert( maxatoms, tt );
                  error("in ATOMS" + nn + " keyword found " + ss + " atoms when there should only be " + tt + "atoms"); 
              }
              flist.push_back( t );
@@ -84,7 +89,7 @@ void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
           if( maxatoms<0 ){ 
              maxatoms=t.size(); 
           } else if ( t.size()!=maxatoms ) {
-             std::string ss, tt; Tools::convert( t.size(), ss ); Tools::convert( maxatoms, tt );
+             std::string ss, tt; Tools::convert( static_cast<int>( t.size() ), ss ); Tools::convert( maxatoms, tt );
              error("in ATOMS keyword found " + ss + " atoms when there should only be " + tt + " atoms");
           }
           flist.push_back( t );
@@ -164,6 +169,29 @@ void ActionAtomistic::calculateNumericalDerivatives(){
     virial=-1.0*matmul(box.transpose(),virial.transpose());
     for(int i=0;i<3;i++) for(int k=0;k<3;k++) addDerivative( j, 3*natoms+3*k+i, virial(i,k) ); 
   }
+}
+
+bool ActionAtomistic::updateIsOn() const {
+  return (updateFreq>0);
+}
+
+bool ActionAtomistic::usingDynamicGroups() const {
+  return ( atomGroupName!=getLabel() );
+}
+
+
+void ActionAtomistic::prepare(){
+  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
+     for(unsigned i=0;i<skips.size();++i) skips[i]=false;
+     plumed.getAtoms().updateSkipsForGroup( atomGroupName, skips );
+  }
+}
+
+void ActionAtomistic::updateDynamicAtoms(){
+  GenericGroup* grp=plumed.getActionSet().selectWithLabel<GenericGroup*>( atomGroupName );
+  if( grp ) grp->updateAtomSelection( skips );
+  if( nl_cut>0 ) updateNeighbourList( nl_cut, skips );   // Note the u -- horay!!!
+  plumed.getAtoms().updateSkipsForGroup( atomGroupName, skips );
 }
 
 void ActionAtomistic::retrieveData(){

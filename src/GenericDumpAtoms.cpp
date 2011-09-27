@@ -33,6 +33,7 @@ public:
   ~GenericDumpAtoms();
   void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups );
   void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist );
+  void updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){ assert(false); }
   void calculate();
   void apply(){};
 };
@@ -42,7 +43,7 @@ PLUMED_REGISTER_ACTION(GenericDumpAtoms,"DUMPATOMS")
 GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   ActionAtomistic(ao)
 {
-  allowKeyword("ATOMS"); allowKeyword("GROUP" );
+  allowKeyword("ATOMS"); allowKeyword("GROUP" ); forbidKeyword("NL_CUTOFF");
   registerKeyword(1, "FILE", "file on which to output coordinates");
   int natoms=-1; unsigned ngrp=1; readActionAtomistic( natoms, ngrp );
   std::vector<double> domain(2,0.0);

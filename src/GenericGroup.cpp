@@ -24,7 +24,7 @@ PLUMED_REGISTER_ACTION(GenericGroup,"GROUP")
 GenericGroup::GenericGroup(const ActionOptions&ao):
   ActionAtomistic(ao)
 {
-  allowKeyword("ATOMS");
+  allowKeyword("ATOMS"); forbidKeyword("UPDATE"); forbidKeyword("NL_CUTOFF");
   int natoms=-1; unsigned ngrp=1;
   readActionAtomistic( natoms, ngrp );
   std::vector<double> domain(2,0.0);

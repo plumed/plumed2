@@ -36,6 +36,7 @@ class GenericCOM:
 {
 public:
   GenericCOM(const ActionOptions&ao);
+  void updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){ assert(false); }
   void calculate();
 };
 
@@ -45,6 +46,7 @@ GenericCOM::GenericCOM(const ActionOptions&ao):
   ActionWithVirtualAtom(ao)
 {
   allowKeyword("ATOMS"); allowKeyword("GROUP");
+  forbidKeyword("UPDATE"); forbidKeyword("NL_CUTOFF");
   readActionWithVirtualAtom();
   checkRead();
 }
