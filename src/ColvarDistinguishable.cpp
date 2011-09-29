@@ -5,6 +5,7 @@ using namespace PLMD;
 ColvarDistinguishable::ColvarDistinguishable(const ActionOptions&ao) :
 Colvar(ao)
 {
+  allowKeyword("ATOMS");
 }
 
 void ColvarDistinguishable::interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups ){

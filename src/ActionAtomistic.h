@@ -48,6 +48,8 @@ protected:
   const Vector & getPositions(int)const;
 /// Get the separation between two atoms
   Vector getSeparation(unsigned i, unsigned j) const;
+/// Get the separation between two atoms (specified as vectors)
+  Vector getSeparation(const Vector& v1, const Vector& v2) const;
 /// Get the angle between the vectors connecting atoms j and i and atoms j and k
   double getAngle(const unsigned i, const unsigned j, const unsigned k, std::vector<Vector>& derivatives ) const ;
 /// Get the box
@@ -115,6 +117,12 @@ inline
 Vector ActionAtomistic::getSeparation(unsigned i, unsigned j) const {
   if ( pbcOn ) return pbc.distance( positions[i], positions[j] );
   return delta( positions[i], positions[j] );
+}
+
+inline
+Vector ActionAtomistic::getSeparation(const Vector& v1, const Vector& v2) const {
+  if ( pbcOn ) return pbc.distance( v1, v2 );
+  return delta( v1, v2 );
 }
 
 inline

@@ -46,7 +46,7 @@ PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
 ColvarDistance::ColvarDistance(const ActionOptions&ao):
 ColvarDistinguishable(ao)
 {
-  allowKeyword("ATOMS"); allowKeyword("GROUP" );
+  allowKeyword("GROUP" );
   std::vector<double> domain( 2, 0.0 );
   readActionColvar( 2, domain );
   checkRead();

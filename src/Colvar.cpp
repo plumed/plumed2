@@ -33,8 +33,13 @@ isCSphereF(false)
 }
 
 void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
-  unsigned ngrp=static_cast<unsigned>(natoms);
-  readActionAtomistic( natoms, ngrp );
+  if(isCSphereF){
+    int natoms=0; unsigned ngrp=static_cast<unsigned>(2);
+    readActionAtomistic( natoms, ngrp ); 
+  } else { 
+    unsigned ngrp=static_cast<unsigned>(natoms); 
+    readActionAtomistic( natoms, ngrp ); 
+  }
   readActionWithExternalArguments( 3*getNumberOfAtoms()+9, domain );
 
   // Setup everything for calculation of individual colvars
@@ -153,108 +158,23 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
      }
      log.printf("  calculating a histogram using %d bins \n",histogram.size() );
      for (unsigned i=0; i<histogram.size(); ++i) {
-         if ( !isCSphereF && updateIsOn() ){
-              error("UPDATE keyword cannot be used when calculating a set of distinguishable colvars");
-         } else if( usingDynamicGroups() ){
-              error("using dynamic groups is incompatible with calculating all colvars consider MIN/LESS_THAN/etc");
-         } 
          log.printf("  bin %d counts values between %f and %f \n", i+1, histogram[i].getlowb(), histogram[i].getbigb() );
      }
   }
 
   if( doall ){
      std::string n;
+     if ( !isCSphereF && updateIsOn() ){
+        error("UPDATE keyword cannot be used when calculating a set of distinguishable colvars");
+     } else if( usingDynamicGroups() ){
+        error("using dynamic groups is incompatible with calculating all colvars consider MIN/LESS_THAN/etc");
+     }
+
      for(unsigned i=0;i<getNumberOfColvars();++i){
         Tools::convert(i,n); addValue("value" + n, false, true );
      }
   }
 }
-
-/*void Colvar::interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups ){
-  std::vector<unsigned> tmplist;
-
-  if( atomGroupName!=getLabel() ){
-      log.printf("  using atoms specified in group %s\n", atomGroupName.c_str() );
-  } else {
-      for(unsigned i=0;i<groups.size();++i){
-          log.printf("  atoms in group %d : ", i+1 );
-          for(unsigned j=0;j<groups[i].size();++j) log.printf("%s ", plumed.getAtoms().interpretIndex( groups[i][j] ).c_str() );
-          log.printf("\n");
-      }
-  }
-
-  if( natoms==0 ){
-      unsigned accum=0;
-      for(unsigned i=0;i<groups.size();++i){
-         tmplist.resize(0);
-         for(unsigned j=0;j<groups[i].size();++j) tmplist.push_back(accum+j);
-         function_indexes.push_back( tmplist ); accum+=groups[i].size();
-      }
-  } else {
-      if( natoms!=2 ){
-          error("you can only use groups for indistinguishable colvars if the number of atoms in each colvar is equal to 2");
-          assert( groups.size()<=2 );
-      } 
-      if( groups.size()==1 ){
-          for(unsigned i=1;i<groups[0].size();++i){
-              for(unsigned j=0;j<i;++j){ 
-                 tmplist.resize(0); tmplist.push_back(j); 
-                 tmplist.push_back(i); function_indexes.push_back( tmplist ); 
-              } 
-          }
-      } else if( groups.size()==2 ){
-          for(unsigned i=0;i<groups[0].size();++i){
-              for(unsigned j=0;j<groups[1].size();++j){
-                 tmplist.resize(0); tmplist.push_back(i); 
-                 tmplist.push_back(groups[0].size()+j); function_indexes.push_back( tmplist ); 
-              }
-          }  
-      }
-  }  
-}
-
-void Colvar::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist ){
-  unsigned accum=0; std::vector<unsigned> tmplist;
-  log.printf("  one colvar will be calculated for each of the following sets of atoms ");
-  for(unsigned i=0;i<flist.size();++i){ 
-    log.printf("( %s",plumed.getAtoms().interpretIndex( flist[i][0] ).c_str() );
-    tmplist.resize(0); tmplist.push_back( accum );
-    for(unsigned j=1;j<flist[i].size();++j){
-        tmplist.push_back( accum + j );
-        log.printf( ", %s",plumed.getAtoms().interpretIndex( flist[i][j] ).c_str() );
-    }
-    log.printf(" ) : "); accum+=flist[i].size();
-    function_indexes.push_back( tmplist );
-  }
-  log.printf("\n");
-}
-*/
-
-/*
-void Colvar::updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){
-  bool calcfunc; unsigned n=0;
-
-  for(unsigned i=0;i<function_indexes.size();++i){
-      calcfunc=true;
-      for(unsigned j=1;j<function_indexes[i].size();++j){
-         for(unsigned k=0;k<j;++k){
-            if( skips[ function_indexes[i][j] ] || skips[ function_indexes[i][k] ] ){
-                calcfunc=false;
-            } else if( getSeparation( function_indexes[i][j], function_indexes[i][k] ).modulo()>cutoff ){
-                calcfunc=false;
-            }
-         }
-      }
-      if( calcfunc ) { skipto[n]=i; n=i; } 
-  }
-
-  std::vector<bool> required_atoms(skips.size(),false);
-  for(unsigned i=0;i<function_indexes.size();i=skipto[i]){ 
-     for(unsigned n=0;n<function_indexes[i].size();++n) required_atoms[ function_indexes[i][n] ] = true;
-  }
-  for(unsigned i=0;i<skips.size();++i){ if( !required_atoms[i] ) skips[i]=true; }
-}
-*/
 
 void Colvar::calculate(){
   double df, tmp, value, mintotal, ttotal, atotal, maxtotal, lttotal, mttotal;
@@ -268,7 +188,6 @@ void Colvar::calculate(){
   if( domt ) mtstring="more_than" + mtswitch.get_r0_string(); 
 
   for (unsigned i=0; i<skipto.size(); i=skipto[i] ) {
-//     value=calcFunction( function_indexes[i], derivatives, virial );
      value=calcFunction( i );
      if (doall) {
         mergeFunctions( i, i, 1.0 );

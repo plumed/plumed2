@@ -43,8 +43,6 @@ protected:
   void addDerivative( const unsigned& n, const unsigned& nd, const double& val );
 /// Get the forces acting on a particular value ( force*derivatives )
   bool getForces( const unsigned& n, std::vector<double>& forces ) const ;
-/// Return a component of the derivatives array
-  double getDerivative( const unsigned& n, const unsigned& nd ) const ; 
 /// Set the value (also applies chain rule by multiplying all derivatives by df)
   void setValue( const unsigned& n, const double& f, const double& df );
 /// Set the named value (also applies chain rule by multiplying all derivatives by df)
@@ -114,14 +112,6 @@ inline
 void ActionWithValue::addDerivative( const unsigned& n, const unsigned& nd, const double& val ){
   assert( n<values.size() ); assert( nd<values[n]->derivatives.size() );
   values[n]->derivatives[nd]+=val; 
-}
-
-inline
-double ActionWithValue::getDerivative( const unsigned& n, const unsigned& nd ) const {
-  printf("Hello from getDerivatives %d %d \n",n,values.size() );
-  assert( n<values.size() ); 
-  assert( nd<values[n]->getNumberOfDerivatives() );
-  return values[n]->derivatives[nd];
 }
 
 inline

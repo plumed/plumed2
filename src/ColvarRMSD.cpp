@@ -36,7 +36,6 @@ PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
 ColvarRMSD::ColvarRMSD(const ActionOptions&ao):
 ColvarDistinguishable(ao)
 {
-  allowKeyword("ATOMS");
   registerKeyword( 1, "REFERENCE", "the reference structure we are calculating the rmsd from");
   std::vector<double> domain( 2, 0.0 );
   int natoms=-1; readActionColvar( natoms, domain );
