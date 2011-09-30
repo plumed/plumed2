@@ -242,18 +242,36 @@ void Action::error( const std::string& stream ) const {
   for(unsigned i=0;i<keys.size();++i){
      if ( keys[i].compulsory==2 && !keys[i].forbidden ) keys[i].print( log, 60 ); 
   }
-  log.printf( "\n The compulsory keywords for this action are: \n\n");
+  unsigned nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( keys[i].compulsory==1 && !keys[i].forbidden ) keys[i].print( log, 60 );  
+     if ( keys[i].compulsory==1 && !keys[i].forbidden ) nkeys++;
   }
-  log.printf( "\n The optional keywords for this action are: \n\n");
-  for(unsigned i=0;i<keys.size();++i){
-     if ( keys[i].compulsory==0 && !keys[i].forbidden ) keys[i].print( log, 60 );  
+  if( nkeys>0 ){ 
+     log.printf( "\n The compulsory keywords for this action are: \n\n");
+     for(unsigned i=0;i<keys.size();++i){
+        if ( keys[i].compulsory==1 && !keys[i].forbidden ) keys[i].print( log, 60 );  
+     }
   }
-  log.printf("\n");
-  log.printf("\n The following optional keywords may be use multiple times by using <keyword>1, <keyword>2, ... \n or just once by using <keyword>\n\n");
+  nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( keys[i].compulsory==3 && !keys[i].forbidden ) keys[i].print( log, 60 );   
+     if ( keys[i].compulsory==0 && !keys[i].forbidden ) nkeys++;
+  } 
+  if( nkeys>0 ){
+     log.printf( "\n The optional keywords for this action are: \n\n");
+     for(unsigned i=0;i<keys.size();++i){
+        if ( keys[i].compulsory==0 && !keys[i].forbidden ) keys[i].print( log, 60 );  
+     }
+     log.printf("\n");
+  }
+  nkeys=0;
+  for(unsigned i=0;i<keys.size();++i){
+     if ( keys[i].compulsory==3 && !keys[i].forbidden ) nkeys++;
+  }
+  if( nkeys>0 ){
+     log.printf("\n The following optional keywords may be use multiple times by using <keyword>1, <keyword>2, ... \n or just once by using <keyword>\n\n");
+     for(unsigned i=0;i<keys.size();++i){
+        if ( keys[i].compulsory==3 && !keys[i].forbidden ) keys[i].print( log, 60 );   
+     }
   }
   plumed.exit(1);
 }
