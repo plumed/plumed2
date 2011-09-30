@@ -40,7 +40,8 @@ unsigned ColvarDistinguishable::getNumberOfColvars() const {
 
 inline
 double ColvarDistinguishable::calcFunction( const unsigned& i ){
-  assert( i<function_indexes.size() );
+  assert( i<function_indexes.size() ); virial.clear();
+  for(unsigned i=0;i<derivatives.size();++i) derivatives[i].clear();
   return compute( function_indexes[i], derivatives, virial );
 }
 

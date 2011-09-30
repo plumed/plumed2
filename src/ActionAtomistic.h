@@ -50,8 +50,6 @@ protected:
   Vector getSeparation(unsigned i, unsigned j) const;
 /// Get the separation between two atoms (specified as vectors)
   Vector getSeparation(const Vector& v1, const Vector& v2) const;
-/// Get the angle between the vectors connecting atoms j and i and atoms j and k
-  double getAngle(const unsigned i, const unsigned j, const unsigned k, std::vector<Vector>& derivatives ) const ;
 /// Get the box
   const Tensor & getBox() const;
 /// Get mass of i-th atom
@@ -123,28 +121,6 @@ inline
 Vector ActionAtomistic::getSeparation(const Vector& v1, const Vector& v2) const {
   if ( pbcOn ) return pbc.distance( v1, v2 );
   return delta( v1, v2 );
-}
-
-inline
-double ActionAtomistic::getAngle(const unsigned i, const unsigned j, const unsigned k, std::vector<Vector>& derivatives ) const {
-  assert( derivatives.size()==3 );
-
-  Vector rji, rjk; 
-  rji=getSeparation(j,i); rjk=getSeparation(j,k);
-  double caa=rji.modulo2();
-  double cab=dot(rji,rjk);
-  double cbb=rjk.modulo2(); 
- 
-  double ccc = 1.0/sqrt(caa*cbb);
-  double ac = cab*ccc; // cosine of teta
-  double dVac = -ccc/sqrt(1.-ac*ac);
-
-  for(unsigned ix=0;ix<3;ix++) {
-    derivatives[0][ix] = -dVac*(-cab/caa*rji[ix]+rjk[ix]);
-    derivatives[1][ix] = dVac*(-cab/caa*rji[ix]-cab/cbb*rjk[ix]+rji[ix]+rjk[ix]);
-    derivatives[2][ix] = dVac*(cab/cbb*rjk[ix]-rji[ix]);
-  }
-  return acos(ac);
 }
 
 inline

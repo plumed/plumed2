@@ -10,7 +10,9 @@ class Vector{
   double d[3];
 public:
 /// Take the dot product of two vectors
-  friend double dot(const Vector&v1,const Vector&v2);  
+  friend double dot_product(const Vector&v1,const Vector&v2); 
+/// Take the cross product of two vectors
+  friend Vector cross_product(const Vector&v1,const Vector&v2);
 /// return v2-v1
   friend Vector delta(const Vector&v1,const Vector&v2);
 /// return s*v
@@ -42,9 +44,18 @@ public:
 };
 
 inline
-double dot(const Vector&v1, const Vector&v2){
+double dot_product(const Vector&v1, const Vector&v2){
   return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
 } 
+
+inline
+Vector cross_product(const Vector&v1, const Vector&v2){
+  Vector c;
+  c[0]=v1[1]*v2[2]-v1[2]*v2[1];
+  c[1]=v1[2]*v2[0]-v1[0]*v2[2];
+  c[2]=v1[0]*v2[1]-v1[1]*v2[0];
+  return c;
+}
 
 inline
 double & Vector::operator[](int i){
