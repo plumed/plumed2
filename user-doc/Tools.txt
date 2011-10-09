@@ -3,10 +3,10 @@
 
 \page Tools Tools
 
-\section Driver
+The utilities directory within the plumed distribution contains a number of useful utilities that can be used
+to examine and analyse the results from plumed calculations.  The list of available tools includes:
 
-How to compute the collective variables on an input trajectory.
-
+@TOOL@
 
 */
 

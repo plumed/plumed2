@@ -1,45 +1,118 @@
 #! /bin/bash
 mkdir automatic
 
+# Check for files that register actions with no documentation
+rm errors
+touch errors
+for file in ../src/*.cpp
+do
+  nreg=`grep "PLUMED_REGISTER_ACTION" $file | wc -l | awk '{print $1}'`
+  if [ $nreg -gt 0 ] ; then
+       ndoc=`grep PLUMEDOC $file | wc -l | awk '{print $1}'`
+       if [ $ndoc -eq 0 ] ; then
+          echo The following file registered an action but provided no documentation: $file >> errors
+       fi
+  fi 
+done
+
+# Check for utilities that register actions with no documentation
+for file in ../utilities/*.cpp
+do
+  ndoc=`grep PLUMEDOC $file | grep TOOL | wc -l | awk '{print $1}'`
+  if [ $ndoc -eq 0 ] ; then
+     echo The following utility has been provided without documentation: $file >> errors
+  fi
+done
+
+
+# Generate all the documentation from comments
 cat ../*/*cpp |
 awk '{
-  if($1=="//+ENDPLUMEDOC") inside=0;
+  if($1=="//+ENDPLUMEDOC"){
+     inside=0;
+     print "*/" >output
+  }
   if(inside && $1!="/**" && $1!="*/") print $0 >output
   if($1=="//+PLUMEDOC"){
-    if($2=="COLVAR" || $2=="FUNCTION" || $2=="BIAS" || $2=="GENERIC" || $2=="SETUP"){
-      output="automatic/"$2".txt";
-      print "\\section "$3 > output
+    if($2=="COLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="VATOM" || $2=="TOPOLOGIES" || $2=="GROUP" || $2=="GENERIC" || $2=="TOOL" ){
+      lfile="automatic/"$2".list"
+      print "- \\subpage "$3 > lfile
+      output="automatic/"$3".tmp";
+      print "/**" > output
+      print "\\page "$3 > output
+      print "\\section "$3 >output
       inside=1;
     }
   }
 }'
 
-for file in Bias Colvar Functions GenericDirectives InputDirectives Setup
+# Generate all the documentation from keywords
+source ../sourceme.sh
+for file in automatic/*.tmp
+do
+  foundexample=`grep "\par Example" $file | wc -l | awk '{print $1}'`
+  flag=`echo $file | sed -e 's/.tmp//g' | sed -e 's/automatic\///g'`
+  ./GENMANUAL $flag
+  check=`head -n 1 $flag.man | awk '{print $1}'`
+  if [ $check = "PLUMED:" ] ; then 
+     checkutil=`grep $flag automatic/TOOL.list | wc -l | awk '{print $1}'`
+     if [ $checkutil -eq 0 ] ; then
+        echo Full manual for action $flag will not be generated as you are building the manual from a code where this action was not compiled >> errors
+     fi 
+  elif [ $foundexample -eq 0 ] 
+  then
+    echo There are no examples inside documentation for action: $flag >> errors
+  fi
+  cat automatic/$flag.tmp |
+    { 
+     while read -r LINE ;
+      do
+        if [ "$LINE" = "\par Example" ]
+        then
+          cat $flag.man 
+          echo -E "$LINE"
+        else
+          echo -E "$LINE"
+        fi
+      done
+    } > automatic/$flag.txt
+  rm $flag.man automatic/$flag.tmp
+done
+
+for file in Bias Colvar Functions Tools
 do
 
 cat $file.txt |
 {
-  while read -r LINE ;
+ while read -r LINE ;
   do
   if [ "$LINE" = "@COLVAR@" ]
   then
-    cat automatic/COLVAR.txt
+    cat automatic/COLVAR.list
+  elif [ "$LINE" = "@ANALYSIS@" ]
+  then
+    cat automatic/ANALYSIS.list
   elif [ "$LINE" = "@BIAS@" ]
   then
-    cat automatic/BIAS.txt
+    cat automatic/BIAS.list
   elif [ "$LINE" = "@FUNCTION@" ]
   then
-    cat automatic/FUNCTION.txt
-  elif [ "$LINE" = "@GENERIC@" ]
+    cat automatic/FUNCTION.list
+  elif [ "$LINE" = "@TOPOLOGIES@" ]
   then
-    cat automatic/GENERIC.txt
-  elif [ "$LINE" = "@SETUP@" ]
+    cat automatic/TOPOLOGIES.list
+  elif [ "$LINE" = "@VATOM@" ]
   then
-    cat automatic/SETUP.txt
+    cat automatic/VATOM.list
+  elif [ "$LINE" = "@GROUP@" ]
+  then
+    cat automatic/GROUP.list
+  elif [ "$LINE" = "@TOOL@" ]
+  then
+    cat automatic/TOOL.list
   else
     echo -E "$LINE"
   fi
-  done
+   done
 } > ${file}PP.txt
 done
-

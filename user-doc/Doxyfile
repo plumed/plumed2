@@ -460,18 +460,13 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = Intro.txt \
-                         WhatsNew.txt \
-                         Installation.txt \
-                         BasicUsage.txt \
-                         AdvancedTopics.txt \
-                         Tools.txt \
-                         Reference.txt \
-                         InputDirectivesPP.txt \
-                         SetupPP.txt \
-                         ColvarPP.txt \
-                         FunctionsPP.txt \
                          BiasPP.txt \
-                         GenericDirectivesPP.txt
+                         ColvarPP.txt \ 
+                         FunctionsPP.txt \
+                         ToolsPP.txt \ 
+                         Installation.txt \
+                         WhatsNew.txt \
+                         automatic
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -480,7 +475,7 @@ INPUT                  = Intro.txt \
 # *.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx 
 # *.hpp *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm *.py
 
-FILE_PATTERNS          = 
+FILE_PATTERNS          = *.txt
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
 # should be searched for input files as well. Possible values are YES and NO. 

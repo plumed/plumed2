@@ -2,17 +2,103 @@
 
 \page Colvar Collective Variables
 
-The following keywords are available for all directives of this section:
-- NUMERICAL_DERIVATIVES:
-  This flag can be used to enforce calculation of derivatives with respect to
-  atom positions and cell vectors by means of numerical differences
+Chemical systems contain an enormous number atoms, which, in most cases makes it simply impossible for
+us to understand anything by monitoring the atom postions directly.  Consquentially,
+we introduce Collective variables (CVs) that describe the chemical processes we are 
+interested in and monitor these simpler quantities instead.  These CVs are used in all of the methods 
+implemented in plumed - they're values can be monitored using \ref PRINT, \ref Function of them can be calculated
+or they can be analyzed or biased using the \ref Methods implemented in plumed.  Before doing any of these things
+however we first have to inform plumed how to calculate them.    
+ 
+\section atomSpecs Specifying Atoms
+
+The vast majority of the CVs implemented in plumed are calculated from a list of atom positions.  Within plumed
+atoms are always specified according to their numerical indices in the molecular dynamics input file.  This can
+be done either using a comma separated list of numbers or, if a long list atom of contiguous atoms is required, 
+by using the shortcut 10-100, which specifies all the atom indexes between 10 and 100 (including 10 and 100).  So for example:
+
 \verbatim
-DISTANCE  ATOMS=1,5 LABEL=d1 NUMERICAL_DERIVATIVES
+TORSION ATOMS=1,2,3,4
 \endverbatim
 
-\attention The rest of this page is automatically generated from the source
-files
+could also be specified using:
 
+\verbatim
+TORIONS ATOMS=1-4
+\endverbatim
+
+In addition, for certain colvars, pdb files can be read in using the following keywords:
+
+@TOPOLOGIES@
+
+The read in pdb files are used by plumed to define things like residues, the backbone atoms and so on.  These can then be
+used within the input to colvars to make inputting the lists of atoms involved more straightforward.  Documentation for 
+how these shortcuts can be used can be found in the documentation for the various CVs.
+
+\section vatoms Virtual Atoms
+
+Sometimes, when calculating a colvar, you may not want to use the positions of a number of atoms directly.  Instead
+ you may wish to use the position of a virtual atom whose position is generated based on the positions of a collection 
+of other atoms.  For example you might want to use the center of mass of a group of atoms.  Plumed has a number of routines
+for calculating the positions of these virtual atoms from lists of atoms:
+
+@VATOM@
+
+To specify to a colvar that you want to use the position of a virtual atom to calculate a colvar rather than one of the atoms
+in your system you simply use the label for your virtual atom in place of the usual numerical index.  Virtual
+atoms and normal atoms can be mixed together in the input to colvars as shown below:
+
+\verbatim
+COM ATOMS=1,10 LABEL=com1
+DISTANCE ATOMS=11,com1
+\endverbatim 
+
+If you don't want to calculate CVs from the virtual atom.  That is to say you just want to monitor the position of a virtual atom 
+(or any set of atoms) over the course of your trajectory you can do this using \ref DUMPATOMS.
+
+\section mols Molecules
+
+PLUMED is designed so that for the majority of the CVs implemented the periodic boundary conditions are treated 
+in the same manner as they would be treated in the host code.  In some codes this can be problematic when the colvars
+you are using involve some property of a molecule.  These codes allow the atoms in the molecules to become separated by 
+periodic boundaries, a fact which plumed could only deal with were the topology passed from the MD code to plumed.  Making this
+work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
+in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
+in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run using the command
+\ref WHOLEMOLECULES.   
+
+\section cvmodifiers Colvar Modifiers
+
+In plumed 1.0 a single line in the input instructed plumed to calculate one CV.  This is not the case in plumed 2.0 - now a single
+line in input can be used to specify the calculation of multiple colvars.  As discussed in the documentation for each colvar this can
+be done explicitally, by defining 10 lists of atoms to calculate 10 colvars for example, or implicitally through shortcuts.  The duly 
+calculated lists of colvars can then be used directly by other Actions, in which case they can be referenced using <label>.value1, 
+<label>.value2, ... or functions of the distribution of colvars can be calculated directly.  Currently, the following functions are available:
+
+- MIN - (referenced using <label>.min) the minimum from amongst the calculated colvars
+- MAX - (referenced using <label>.max) the maximum from amongst the calculated colvars
+- SUM - (referenced using <label>.sum) the sum of all the colvars calculated
+- AVERAGE - (referenced using <label>.average) the average colvar
+- LESS_THAN - (referenced using <label>.less_than<number>) the number of colvars less than <number>
+- MORE_THAN - (referenced using <label>.more_than<number>) the number of colvars more than <number>    
+
+Combinations of the above can defined on a single line in input.  Alternatively (these keywords can't be mixed with the above)
+ the number of values within a particular range can be specified using WITHIN_RANGE or a histogram of the collective variable values 
+can be calculated using HISTOGRAM.  More detailed documentation on these features can be found within the documentation for the colvars.
+
+\section ugroups Using Groups
+
+In plumed 1.0 it was possible to specify groups of atoms in the input and to use the groups defined in multiple colvars.  
+This feature has been retained in plumed 2.0 and also extended.  In plumed 2.0 groups can be used to specify a fixed set of atoms or to 
+specify a set of atoms that changes as a function of time.  The various keywords for specifying these groups of atoms are:
+
+@GROUP@ 
+
+Groups are given a label and as specified in the CV documentation the GROUP keyword can take as input the labels for groups
+
+\section cvavail CV Documentation
+
+The following list contains all the colvars that are currently implemented in plumed 2.0.
 
 @COLVAR@
 
