@@ -5,7 +5,7 @@ using namespace std;
 
 namespace PLMD {
 
-//+PLUMEDOC GENERIC GROUP
+//+PLUMEDOC GROUP STATIC_GROUP
 /**
 Define a group of atoms
 
@@ -19,7 +19,7 @@ expanded when used in multi-atoms options
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(GenericGroup,"GROUP")
+PLUMED_REGISTER_ACTION(GenericGroup,"STATIC_GROUP")
 
 GenericGroup::GenericGroup(const ActionOptions&ao):
   ActionAtomistic(ao)

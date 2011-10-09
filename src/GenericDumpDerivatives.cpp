@@ -6,7 +6,7 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC GENERIC DUMPDERIVATIVES
+//+PLUMEDOC ANALYSIS DUMPDERIVATIVES
 /**
 
 Dump the derivatives of one or more objects with respect to their input parameters

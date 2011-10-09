@@ -10,9 +10,6 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   ActionAtomistic(ao)
 {
   forbidKeyword("STRIDE");
-  index=plumed.getAtoms().addVirtualAtom(this);
-  AtomNumber a=AtomNumber::index(index);
-  log.printf("  serial associated to this virtual atom is %d\n",a.serial());
 }
 
 ActionWithVirtualAtom::~ActionWithVirtualAtom(){
@@ -23,6 +20,9 @@ void ActionWithVirtualAtom::readActionWithVirtualAtom(){
   int natoms=-1; unsigned ngrp=1; readActionAtomistic( natoms, ngrp );
   std::vector<double> domain(2,0.0);
   readActionWithExternalArguments( 0, domain );
+  index=plumed.getAtoms().addVirtualAtom(this);
+  AtomNumber a=AtomNumber::index(index);
+  log.printf("  serial associated to this virtual atom is %d\n",a.serial()); 
 }
 
 void ActionWithVirtualAtom::interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups ){

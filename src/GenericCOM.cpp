@@ -5,7 +5,7 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC GENERIC COM
+//+PLUMEDOC VATOM COM
 /**
 Calculate the center of mass of a group of atoms
 

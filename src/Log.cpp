@@ -28,6 +28,27 @@ int Log::printf(const char*fmt,...){
   return r;
 }
 
+int Log::printd(const char*fmt,...){
+  if(comm.Get_rank()>0)return 0;
+  int pointer=strlen(buffer);
+  va_list arg;
+  va_start(arg, fmt);
+  int r=vsnprintf(&buffer[pointer],buflen-pointer,fmt,arg);
+  va_end(arg);
+  assert(r>-1 && r<buflen-pointer);
+
+// Line is buffered until newline, then written with a PLUMED: prefix
+  char*p1=buffer;
+  char*p2;
+  while((p2=strchr(p1,'\n'))){
+    *p2='\0';
+    fprintf(fp,"%s\n",p1);
+    p1=p2+1;
+  };
+  memmove(buffer,p1,strlen(p1)+1);
+  return r;
+}
+
 Log::Log(PlumedCommunicator &comm):
   fp(stdout),
   toBeClosed(false),

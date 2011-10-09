@@ -93,6 +93,8 @@ public:
 /// Read an input file.
 /// \param str name of the file
   void readInputFile(std::string str);
+/// Generate the manual for a particular action (used to create the manual only)
+  void generateManual(std::string key);
 /// Initialize the object
   void init();
 /// Prepare the calculation.

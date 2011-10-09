@@ -5,9 +5,10 @@
 
 using namespace PLMD;
 
-ActionOptions::ActionOptions(PlumedMain&p,const std::vector<std::string>&l):
+ActionOptions::ActionOptions(PlumedMain&p,const std::vector<std::string>&l,const bool mm):
 plumed(p),
-line(l)
+line(l),
+makeManual(mm)
 {
 }
 
@@ -19,6 +20,13 @@ forbidden(false)
 {
   assert( key.length()<23 );  // If you find yourself here then you have created a keyword that is too long for the formatting
   if( compulsory==2 ) forbidden=true;
+}
+
+void Keyword::print_html( Log& log ) const {
+  log.printd("<tr>\n");
+  log.printd("<td> <b> %s </b></td>\n",key.c_str() );
+  log.printd("<td> %s </td>\n",documentation.c_str() );
+  log.printd("</tr>\n");
 }
 
 void Keyword::print( Log& log, const unsigned len ) const {
@@ -46,6 +54,7 @@ void Keyword::print( Log& log, const unsigned len ) const {
 Action::Action(const ActionOptions&ao):
   name(ao.line[0]),
   line(ao.line),
+  makeManual(ao.makeManual),
   active(false),
   stride(0),
   plumed(ao.plumed),
@@ -55,10 +64,57 @@ Action::Action(const ActionOptions&ao):
   registerKeyword( 0, "LABEL", "a label for the action so that it can be referenced" );
   registerKeyword( 1, "STRIDE", "the frequency with which this particular action should be performed"); 
   line.erase(line.begin());
-  log.printf("Action %s\n",name.c_str());
+  if(!makeManual) log.printf("Action %s\n",name.c_str());
 }
 
 void Action::readAction(){
+  if( makeManual ){
+      log.printd("\\par Specifying the input\n\n" );
+      log.printd(" <table align=center frame=void width=95%% cellpadding=5%%> \n" );
+      for(unsigned i=0;i<keys.size();++i){
+          if ( keys[i].compulsory==2 && !keys[i].forbidden ) keys[i].print_html( log );
+      }
+      log.printd("</table>\n\n");
+      unsigned nkeys=0;
+      for(unsigned i=0;i<keys.size();++i){
+         if ( keys[i].compulsory==1 && !keys[i].forbidden ) nkeys++;
+      }
+      if( nkeys>0 ){ 
+         log.printd( "\\par Compulsory keywords\n\n" );
+         log.printd(" <table align=center frame=void width=95%% cellpadding=5%%> \n" );
+         for(unsigned i=0;i<keys.size();++i){
+            if ( keys[i].compulsory==1 && !keys[i].forbidden ) keys[i].print_html( log );
+         }
+         log.printd("</table>\n\n");
+      }
+      nkeys=0;
+      for(unsigned i=0;i<keys.size();++i){
+         if ( keys[i].compulsory==0 && !keys[i].forbidden ) nkeys++;
+      } 
+      if( nkeys>0 ){ 
+         log.printd( "\\par Optional keywords\n\n" );
+         log.printd(" <table align=center frame=void width=95%% cellpadding=5%%> \n" );
+         for(unsigned i=0;i<keys.size();++i){
+            if ( keys[i].compulsory==0 && !keys[i].forbidden ) keys[i].print_html( log );
+         }
+         log.printd("\n");
+      }
+      log.printd("</table>\n\n");
+      nkeys=0;
+      for(unsigned i=0;i<keys.size();++i){
+         if ( keys[i].compulsory==3 && !keys[i].forbidden ) nkeys++;
+      }
+      if( nkeys>0 ){
+         log.printd("\n The following optional keywords may be use multiple times by using <keyword>1, <keyword>2, ... \n or just once by using <keyword>\n\n");
+         log.printd(" <table align=center frame=void width=95%% cellpadding=5%%> \n" );
+         for(unsigned i=0;i<keys.size();++i){
+            if ( keys[i].compulsory==3 && !keys[i].forbidden ) keys[i].print_html( log );
+         }
+         log.printd("</table>\n\n");
+      }
+      plumed.exit(1);
+  } 
+
   parse("LABEL",label);
   if(label.length()==0){
     std::string s; Tools::convert(static_cast<int>( plumed.getActionSet().size() ),s);

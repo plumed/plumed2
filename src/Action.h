@@ -22,9 +22,11 @@ class ActionOptions{
   PlumedMain& plumed;
 /// Input line which sets up the action
   std::vector<std::string> line;
+/// True if we are creating the manual from the keywords and references
+  bool makeManual;
 public:
 /// Constructor
-  ActionOptions(PlumedMain&p,const std::vector<std::string>&);
+  ActionOptions(PlumedMain&p,const std::vector<std::string>&,const bool mm);
 };
 
 /// This class holds the keywords and their documentation
@@ -39,6 +41,7 @@ public:
   Keyword(){}
   Keyword( const unsigned& , const std::string&, const std::string& );
   void print( Log& log, const unsigned len ) const ;
+  void print_html( Log& log ) const;
 };
 
 /// Base class for all the input Actions.
@@ -56,6 +59,9 @@ class Action {
 /// This line is progressively erased during Action construction
 /// so as to check if all the present keywords are correct.
   std::vector<std::string> line;
+
+/// Are we creating a manual for this keyword
+  bool makeManual;
 
 public:
   typedef std::set<Action*> Dependencies;

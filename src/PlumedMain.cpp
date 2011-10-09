@@ -246,6 +246,9 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else if(word=="setKBoltzman"){
        assert(val);
 //
+  } else if(word=="GenerateManual"){
+       if(val) generateManual(static_cast<char*>(val));
+       else assert(false); 
   } else {
 // multi word commands
 
@@ -334,7 +337,7 @@ void PlumedMain::readInputFile(std::string str){
       continue;
     } else {
       Tools::interpretLabel(words);
-      Action* action=actionRegister().create(ActionOptions(*this,words));
+      Action* action=actionRegister().create(ActionOptions(*this,words,false));
       if(!action){
         log<<"ERROR\n";
         log<<"I cannot understand line:";
@@ -347,6 +350,12 @@ void PlumedMain::readInputFile(std::string str){
   };
   fclose(fp);
   log.printf("END FILE: %s\n",str.c_str());
+}
+
+void PlumedMain::generateManual(std::string key){
+  std::vector<std::string> words; words.push_back(key);
+  Action* action=actionRegister().create(ActionOptions(*this,words,true));
+  if (!action){ log<<"UTILITY\n"; }
 }
 
 ////////////////////////////////////////////////////////////////////////

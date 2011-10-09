@@ -36,6 +36,8 @@ public:
   void set(FILE*f);
 /// Standard printf-like function
   int printf(const char*fmt,...);
+/// Print-like function used for generating html documentation (use printf for everything this is only for very special things)
+  int printd(const char*fmt,...);
   template <class T>
   friend Log& operator<<(Log&,const T &);
 };

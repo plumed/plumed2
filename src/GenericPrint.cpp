@@ -34,6 +34,9 @@ PRINT ARG=distance,energy   STRIDE=1000 FILE=COLVAR_ALL
 \endverbatim
 (See also \ref DISTANCE and \ref ENERGY).
 
+When using PRINT on machines that buffer the output you can use the \ref FLUSH keyword to
+force all files to dump all the output that has been buffered with a particular frequency.
+
 */
 //+ENDPLUMEDOC
 

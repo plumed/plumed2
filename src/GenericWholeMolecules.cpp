@@ -51,7 +51,7 @@ ActionSetup(ao)
 {
   registerKeyword(2,"MOLECULE","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of MOLECULE keywords: MOLECULE1, MOLECULE2,...");
   allowKeyword("MOLECULE"); 
-  void readActionSetup();
+  readActionSetup();
 
   if ( !testForKey("MOLECULE") ) error("no molecules specified in input to WHOLEMOLECULES");
 
