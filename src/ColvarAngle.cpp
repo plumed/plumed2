@@ -9,6 +9,28 @@ using namespace std;
 
 namespace PLMD{
 
+//+PLUMEDOC COLVAR ANGLE
+/**
+Calculates angle between sets of three atoms.  To calculate minimum angles, the number of angles less or more than a given value etc you should use this keyword
+in conjuction with the colvar modifiers described in \ref Colvar.
+
+\par Example
+
+The following calculates the angle between the vectors connecting atoms 3 and 5 to atom 4 and stores the value on a1.value0.
+\verbatim
+ANGLE ATOMS=3,4,5 LABEL=a1
+\endverbatim
+
+The following calculates two angles.  That between the vectors connecting atoms 3 and 5 to atom 4 and that connecting atoms 6 and 8 to atom 7.  The values of these angles
+are stored on a1.value0 and a1.value1 respectively.
+\verbatim
+ANGLE ATOMS1=3,4,5 ATOMS2=6,7,8 LABEL=a1
+\endverbatim 
+
+*/
+//+ENDPLUMEDOC
+
+
 class ColvarAngle : public ColvarDistinguishable {
 public:
   ColvarAngle(const ActionOptions&);

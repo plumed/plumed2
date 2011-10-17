@@ -15,17 +15,9 @@ variable (or of one of its components) with respect to atom positions and to cel
 vectors (virial-like form). For functions, there are the the derivatives with respect
 the function arguments.
 
-\par Syntax
-\verbatim
-DUMPDERIVATIVES ARG=what [STRIDE=s] [FILE=file]
-\endverbatim
-It can print at the same time derivatives of more than one object, but they should
-have the same number of parameters. Typically, this can be used to test numerical
-derivatives againts analytical ones
-
 \par Example
-The following input is writing on file deriv distanceB both
-the analytical and numerical derivatives of distance between atoms 1 and 2.
+The following prints both
+the analytical and numerical derivatives of the distance between atoms 1 and 2 on a file called deriv.
 \verbatim
 DISTANCE ATOM=1,2 LABEL=distance
 DISTANCE ATOM=1,2 LABEL=distanceN NUMERICAL_DERIVATIVES

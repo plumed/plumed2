@@ -12,13 +12,8 @@ namespace PLMD{
 /**
 Calculate the total energy of the simulation box.
 
-\par Syntax
-\verbatim
-ENERGY
-\endverbatim
-
 \par Example
-The following input is printing the energy of the system
+The following input instructs plumed to print the energy of the system
 \verbatim
 ENERGY LABEL=ene
 PRINT ARG=ene

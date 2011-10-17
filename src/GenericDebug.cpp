@@ -7,16 +7,10 @@ namespace PLMD{
 
 //+PLUMEDOC GENERIC DEBUG
 /**
-  Set some debug options
+  Set debugging options
 
-\par syntax
-\verbatim
-DEBUG [STRIDE=s] [NOVIRIAL] [logActivity]
-\endverbatim
-The NOVIRIAL flag switches off (for the entire simulation) the contribution
-of virial computed in plumed. The logActivity keyword writes in the log
-the list of which objects are active and which are inactive
-as a sequence of + (active) and - (inactive). Logging is done with stride s.
+\par Example
+
 */
 //+ENDPLUMEDOC
 class GenericDebug:

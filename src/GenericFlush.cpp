@@ -9,16 +9,8 @@ using namespace std;
 /**
 Periodically flush open files.
 
-\par Syntax
-\verbatim
-FLUSH [STRIDE=s]
-\endverbatim
-This directive is used to flush all the open files periodically.
-It understands the keyword STRIDE,
-which is the number of timesteps between flushings
-
 \par Example
-This input is flushing all the output files every 100 steps
+This input instructs plumed to flush all the output files every 100 steps
 \verbatim
 FLUSH STRIDE=100
 \endverbatim

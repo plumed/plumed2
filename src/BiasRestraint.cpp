@@ -10,22 +10,12 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS RESTRAINT
 /**
-Adds an harmonic restraint on one or more variables
-
-\par Syntax
-\verbatim
-RESTRAINT ARG=x1,x2,... KAPPA=k1,k2,... AT=a1,a2,...
-\endverbatim
-KAPPA specifies an array of force constants, one for each variable,
-and AT the center of the restraints. Thus, the resulting potential is
-\f$
-  \sum_i \frac{k_i}{2} (x_i-a_i)^2
-\f$.
+Adds an harmonic restraint on one or more variables i.e. \f$ \sum_i \frac{k_i}{2} (x_i-a_i)^2 \f$.
 
 \par Example
-The following input is restraining the distance between atoms 3 and 5
+The following input is restrains the distance between atoms 3 and 5
 and the distance between atoms 2 and 4, at different equilibrium
-values, and it is printing the energy of the restraint
+values. The energy of the restraint is printed every step.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2

@@ -9,6 +9,27 @@ using namespace std;
 
 namespace PLMD{
 
+//+PLUMEDOC COLVAR TORSION 
+/**
+Calculates torsional angles defined by the positions of four atoms.  To calculate minimum torsions, the number of torsions less or more than a given value etc you should use this keyword
+in conjuction with the colvar modifiers described in \ref Colvar.
+
+\par Example
+
+The following calculates the torsion between the plane containing atoms 3, 4 and 5 and the plane containing atoms 4, 5 and 6. The output is stored on t1.value0.
+\verbatim
+TORSION ATOMS=3,4,5,6 LABEL=t1
+\endverbatim
+
+The following calculates two torsional angle.  One involves atoms 3, 4, 5 and 6 while the other involves atoms 7, 8, 9 and 10.  The values of these angles
+are stored on t1.value0 and t1.value1 respectively.
+\verbatim
+ANGLE ATOMS1=3,4,5,6 ATOMS2=7,8,9,10 LABEL=a1
+\endverbatim 
+
+*/
+//+ENDPLUMEDOC
+
 class ColvarTorsion : public ColvarDistinguishable {
   double pi,twopi;
 public:

@@ -16,14 +16,7 @@ namespace PLMD {
 
 //+PLUMEDOC GENERIC WHOLEMOLECULES
 /**
-Rebuild molecules with pbc
-
-\par syntax
-\verbatim
-WHOLEMOLECULES [STRIDE=s] GROUP0=list0 [ GROUP1=list1 [ GROUP2=list2 [ ... ] ] ]
-\endverbatim
-
-Similar to the ALIGN_ATOMS keyword of plumed 1. It rebuilds molecules
+Rebuild molecules with pbc.  This command is similar to the ALIGN_ATOMS keyword of plumed 1. It rebuilds molecules
 correctly according to pbc. It can rebuild multiple groups, and
 it can be applied more than once. To see its effects, use
 a variable without pbc or the \ref DUMPATOMS directive.
@@ -35,6 +28,9 @@ which are below this in the input script will see the corrected positions.
 As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
 it acts at every step.
+
+\par Example
+
 */
 //+ENDPLUMEDOC
 

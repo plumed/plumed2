@@ -10,20 +10,8 @@ namespace PLMD{
 /**
 Print quantities on a file.
 
-\par Syntax
-\verbatim
-PRINT ARG=what [STRIDE=s] [FILE=file] [FMT=fmt]
-\endverbatim
-Similarly to Actions of type \ref Bias, it accepts keywords
-ARG and STRIDE to specify which quantities should be printed and
-how frequently. It also accepts a keyword FMT specifying (in printf() style)
-the format for the written numbers and a keyword FILE specifying the
-name of the output file (if omitted, plumed log will be used).
-This directive can be used multiple times to write multiple files,
-perhaps at different stride.
-
 \par Example
-The following input is printing the distance between atoms 3 and 5 on file COLVAR
+The following instructs plumed to print the distance between atoms 3 and 5 on file COLVAR
 every 10 steps, and the distance and total energy on file COLVAR_ALL
 every 1000 steps.
 \verbatim

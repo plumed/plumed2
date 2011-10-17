@@ -10,31 +10,18 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION COMBINE
 /**
-Calculate the polynomial combination of other variables
+Calculate a polynomial combination of other variables - i.e. \f$ \sum_i c_i x_i^{p_i}
 
-\par Syntax
-\verbatim
-COMBINE ARG=x1,x2,... [POWERS=p1,p2,...] [COEFFICIENTS=c1,c2,...] [NORMALIZE]
-\endverbatim
-The resulting variable has value
-\f$
-  \sum_i c_i x_i^{p_i}
 \f$. When not present, powers and coefficient are implicitly equal to 1.
 If NORMALIZE is present, the c coefficients are first normalized.
 
-
 \par Example
-The following input is printing the distance between atoms 3 and 5
-its square (as computed from the x,y,z components) and the distance
-again as computed from the square root of the square.
+The following computes two distances along with a linear comination of the two.
 \verbatim
-DISTANCE LABEL=dist      ATOMS=3,5 COMPONENTS
-COMBINE  LABEL=distance2 ARG=dist.x,dist.y,dist.z POWERS=2,2,2
-COMBINE  LABEL=distance  ARG=distance2 POWERS=0.5
-PRINT ARG=distance,distance2
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=5,7 LABEL=d2
+COMBINE LABLE=c1 ARG=d1,d2 POWERS=1,1 COEFFICIENTS=0.5,0.75
 \endverbatim
-(See also \ref PRINT and \ref DISTANCE).
-
 
 */
 //+ENDPLUMEDOC
@@ -60,16 +47,25 @@ normalize(false),
 coefficients(getNumberOfArguments(),1.0),
 powers(getNumberOfArguments(),1.0)
 {
-  registerKeyword(1,"COEFFICIENTS","the coefficients for the terms in the sum");
-  registerKeyword(1,"POWERS","the powers to raise each colvar value to");
+  registerKeyword(0,"COEFFICIENTS","(default=1) the coefficients for the terms in the sum");
+  registerKeyword(0,"POWERS","(default=1) the powers to raise each colvar value to");
   registerKeyword(0,"NORMALIZE","normalize the coefficients");
   readFunction();
 
   parseVector("COEFFICIENTS",coefficients);
-  assert(coefficients.size()==static_cast<unsigned>(getNumberOfArguments()));
+  if(coefficients.size()==0){
+      coefficients.resize( getNumberOfArguments() );
+      for(unsigned i=0;i<coefficients.size();++i) coefficients[i]=1.0;
+  } else if (coefficients.size()!=static_cast<unsigned>(getNumberOfArguments())){
+      error("number of coefficents does not match number of arguments");
+  }
   parseVector("POWERS",powers);
-  assert(powers.size()==static_cast<unsigned>(getNumberOfArguments()));
-
+  if(powers.size()==0){
+      powers.resize( getNumberOfArguments() );
+      for(unsigned i=0;i<powers.size();++i) powers[i]=1.0;
+  } else if (powers.size()!=static_cast<unsigned>(getNumberOfArguments())){
+      error("number of powers does not match number of arguments");
+  }
   parseFlag("NORMALIZE",normalize);
 
   if(normalize){
@@ -77,9 +73,6 @@ powers(getNumberOfArguments(),1.0)
     for(unsigned i=0;i<coefficients.size();i++) n+=coefficients[i];
     for(unsigned i=0;i<coefficients.size();i++) coefficients[i]*=(1.0/n);
   }
-
-  //addValueWithDerivatives("");
-
   checkRead();
 
   log.printf("  with coefficients:");
@@ -96,7 +89,6 @@ void FunctionCombine::calculate(){
     combine+=coefficients[i]*pow(getArgument(i),powers[i]);
     setDerivatives(i,coefficients[i]*powers[i]*pow(getArgument(i),powers[i]-1.0));
   };
-  //setValue(combine);
 }
 
 }

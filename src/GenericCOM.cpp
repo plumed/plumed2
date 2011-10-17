@@ -9,16 +9,9 @@ namespace PLMD{
 /**
 Calculate the center of mass of a group of atoms
 
-\par Syntax
-\verbatim
-COM LABEL=label ATOMS=x,y,z,...
-\endverbatim
-The center of mass of atoms x,y,z,... is computed and stored in a virtual
-atom which can be accessed through the label "label"
-
 \par Example
-The following input is printing the distance between the
-center of mass of atoms 1,2,3,4,5,6,7 and that of atoms 15,20:
+The following input instructs plumed to claculate the distance between the
+center of mass of atoms 1,2,3,4,5,6,7 and the center of mass of atoms 15,20:
 \verbatim
 COM ATOMS=1-7         LABEL=c1
 COM ATOMS=15,20       LABEL=c2

@@ -10,17 +10,18 @@ namespace PLMD
 
 //+PLUMEDOC GENERIC DUMPATOMS
 /**
-  Dump atom positions
 
-\par syntax
+The atoms listed are written out on a file (currently only xyz format).
+The positions are those stored in plumed exactly at the point where
+the directive is put in the input file. This is useful for debugging directives that
+edit atom positions (e.g. \ref WHOLEMOLECULES).
+
+\par Example
+This will print out the positions of atoms 1-100 on the file file.xyz every 10 steps
 \verbatim
-DUMPATOMS [STRIDE=s] FILE=file.xyz ATOMS=list
+DUMPATOMS ATOMS=1-100 FILE=file.xyz STRIDE=10
 \endverbatim
 
-Listed atoms are written on file.xyz (currently only xyz format).
-The positions are those stored in plumed exactly at the point where
-the directive is put in the input file. This is relevant for directives
-editing atom positions (e.g. \ref WHOLEMOLECULES).
 */
 //+ENDPLUMEDOC
 

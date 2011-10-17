@@ -11,25 +11,34 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR DISTANCE
 /**
-Calculate the distance between two atoms.
-
-\par Syntax
-\verbatim
-DISTANCE ATOMS=x,y [COMPONENTS] [PBC]
-\endverbatim
-If the COMPONENTS flag is present, the three components of the distance
-can be accessed respectively as label.x label.y and label.z .
-If the PBC flag is present, distance is computed using periodic boundary conditions.
+Calculate distances between atoms.  To calculate minimum distances, the number of distances less or more than a given value etc you should use this
+keyword in conjuction with the colvar modifiers described in \ref Colvar. 
 
 \par Example
-The following input is printing the distance between atoms 3 and 5,
-the distance between atoms 2 and 4 and its x component.
+
+The following calculates the distance between atoms 3 and 5 and stores the value on d1.value0. 
 \verbatim
-DISTANCE ATOMS=3,5             LABEL=d1
-DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
-PRINT ARG=d1,d2,d2.x
+DISTANCE ATOMS=3,5 LABEL=d1
 \endverbatim
-(See also \ref PRINT).
+
+The following calculates two distances.  That between atoms 3 and 5 and that between atoms 2 and 4.  These two values
+are stored on d1.value0 and d1.value1
+\verbatim
+DISTANCE ATOMS1=3,5 ATOMS2=2,4 LABEL=d1
+\endverbatim
+ 
+The following calculates all the distance between the atoms in the group - i.e. the distances between atoms 3 and 4, between
+3 and 5 and between 4 and 5.
+
+\verbatim
+DISTANCE GROUP=3,4,5 LABEL=d1
+\endverbatim
+
+Lastly, this calculates all the distances between the atoms in the two groups - i.e. the distances between 3 and 4 and 3 and 5.
+
+\verbatim
+DISTNACE GROUP1=3 GROUP2=4,5 LABEL=d1
+\endverbatim
 
 */
 //+ENDPLUMEDOC

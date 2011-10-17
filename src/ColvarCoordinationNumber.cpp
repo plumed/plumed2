@@ -12,7 +12,20 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR COORDINATION
 /**
-This is just a template variable
+This keyword can be used to calculate the coordination numbers for atoms in your system.  Minimum coordination numbers, maximum coordination numbers and so on can be calculated
+using the colvar modifiers described in \ref Colvar.
+
+\par Example
+
+The following example instructs plumed to calculate coordination numbers for all the atoms in the group.  These coordination numbers count the number of atoms within the group that are within 0.3 nm of the central atom.  A neighbour list is used to make this calculation faster, this neighbour list is updated every 100 steps.
+\verbatim
+COORDINATION GROUP=1-100 R_0=0.3 NL_CUTOFF=0.5 UPDATE=100 
+\endverbatim
+
+The following example instructs plumed to calculate the coordination numbers between the two groups.  Each of these coordination numbers calculate the number of atoms from GROUP2 that are within 0.3 nm of one of the atoms in GROUP1.
+\verbatim
+COORDINATIoN GROUP1=1-50 GROUP2=51-300 NL_CUTOFF=0.5 UPDATE=100
+\endverbatim 
 
 */
 //+ENDPLUMEDOC

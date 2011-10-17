@@ -14,13 +14,8 @@ namespace PLMD{
 /**
 Calculate the volume of the simulation box.
 
-\par Syntax
-\verbatim
-VOLUME
-\endverbatim
-
 \par Example
-The following input is printing the volume of the system
+The following input instructs plumed to print the volume of the system
 \verbatim
 VOLUME LABEL=vol
 PRINT ARG=vol

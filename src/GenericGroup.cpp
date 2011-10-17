@@ -9,12 +9,13 @@ namespace PLMD {
 /**
 Define a group of atoms
 
-\par Syntax
+\par Example
+The following contains a static group containing atoms 1-20.  Wherever the label
+of the group appears after the GROUP keyword the specified list of atom will be used
+to calculate the colvar.  
 \verbatim
-GROUP LABEL=label ATOMS=x,y,z,...
+GROUP LABEL=label ATOMS=1-20
 \endverbatim
-The label is associated to a group of atoms which is then automatically
-expanded when used in multi-atoms options
 
 */
 //+ENDPLUMEDOC

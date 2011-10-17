@@ -11,7 +11,7 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /**
-Calculate the combination of variables using a matheval expression
+Calculate a combination of variables using a matheval expression
 
 \par Syntax
 \verbatim

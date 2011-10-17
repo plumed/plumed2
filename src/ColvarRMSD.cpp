@@ -10,14 +10,19 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR RMSD
 /**
-Calculate the RMSD with respect to a reference structure
+Calculate RMSD distances between user defined sets of atoms and a reference structure.
 
-\par Syntax
+\par Example
+
+The following calculates the RMSD distance between the atoms listed and the positions of the 10 atoms in the reference file file.pdb
 \verbatim
-RMSD REFERENCE=file.pdb
+RMSD ATOMS=1-10 REFERENCE=file.pdb
 \endverbatim
 
-...
+The following claculates the RMSD distace between the two sets of listed atoms and the 10 atoms in the reference file file.pdb
+\verbatim
+RMSD ATOMS=1-10 ATOMS=11-20 REFERENCE=file.pdb
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -55,8 +60,7 @@ ColvarDistinguishable(ao)
 double ColvarRMSD::compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){
   assert( pos.size()==indexes.size() && derivatives.size()==indexes.size() );
   for(unsigned i=0;i<pos.size();++i) pos[i]=getPositions( indexes[i] );
-  double r=rmsd.calculate( pos, derivatives );
-  virial.clear(); for(unsigned i=0;i<pos.size();i++) virial=virial+( -1.0*Tensor(pos[i],derivatives[i]) );
+  double r=rmsd.calculate( pos, derivatives, virial );
   return r;
 }
 
