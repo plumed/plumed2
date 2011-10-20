@@ -44,6 +44,7 @@ DISTNACE GROUP1=3 GROUP2=4,5 LABEL=d1
 //+ENDPLUMEDOC
    
 class ColvarDistance : public ColvarDistinguishable {
+  int component;
 public:
   ColvarDistance(const ActionOptions&);
 // active methods:
@@ -53,23 +54,46 @@ public:
 PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
 
 ColvarDistance::ColvarDistance(const ActionOptions&ao):
-ColvarDistinguishable(ao)
+ColvarDistinguishable(ao),
+component(-1)
 {
   allowKeyword("GROUP" );
+  registerKeyword(0,"COMPONENT","use this if you only want the X,Y or Z component of the distance");
   std::vector<double> domain( 2, 0.0 );
   readActionColvar( 2, domain );
+  
+  std::string lab="none"; parse("COMPONENT",lab);
+  if( lab=="X" || lab=="x" ){
+     component=0;
+  } else if( lab=="Y" || lab=="y" ){
+     component=1;
+  } else if( lab=="Z" || lab=="z" ){
+     component=2;
+  } else if( lab!="none") {
+      error( lab + " is not a valid argument for the COMPONENT keyword use X, Y or Z");
+  } 
   checkRead();
 }
 
 double ColvarDistance::compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){
   assert( indexes.size()==2 && derivatives.size()==2 );
   Vector distance=getSeparation( indexes[0], indexes[1] ); 
-  const double value=distance.modulo();
-  const double invvalue=1.0/value;
-  derivatives[0]=-invvalue*distance;
-  derivatives[1]=invvalue*distance;
-  virial=-invvalue*Tensor(distance,distance);
-  return value;  
+
+  if ( component<0 ){
+    const double value=distance.modulo();
+    const double invvalue=1.0/value;
+    derivatives[0]=-invvalue*distance;
+    derivatives[1]=invvalue*distance;
+    virial=-invvalue*Tensor(distance,distance);
+    return value;
+  } else {
+    const double value=distance[component];
+    const double invvalue=1.0/value;
+    derivatives[0][component]=-1.0; 
+    derivatives[1][component]=1.0; 
+    virial=Tensor( distance,derivatives[0] );
+    return value;
+  }
 }
 
 }
