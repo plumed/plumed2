@@ -1,6 +1,7 @@
 #ifndef __PLUMED_RMSD_h
 #define __PLUMED_RMSD_h
 
+#include "Tensor.h"
 #include "Vector.h"
 #include <vector>
 
@@ -26,7 +27,7 @@ public:
 /// set align
   void setDisplace(const std::vector<double> & displace);
 /// Compute rmsd
-  double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives)const;
+  double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, Tensor& virial ) const;
 };
 
 }

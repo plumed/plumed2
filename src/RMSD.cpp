@@ -37,7 +37,7 @@ void RMSD::setDisplace(const vector<double> & displace){
   this->displace=displace;
 }
 
-double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives)const{
+double RMSD::calculate(const std::vector<Vector> & positions, std::vector<Vector> &derivatives, Tensor& virial) const {
   const unsigned n=reference.size();
   bool simple,trivial;
   simple=true;
@@ -64,7 +64,8 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
   double ret=sqrt(dist/norm);
 // sqrt and normalization on derivatives
   for(unsigned i=0;i<n;i++){derivatives[i].scale(0.5/ret/norm);}
-
+// The virial constribution
+  for(unsigned i=0;i<positions.size();i++) virial=virial+( -1.0*Tensor(positions[i],derivatives[i]) );
   return ret;
 }
 
