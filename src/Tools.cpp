@@ -94,6 +94,12 @@ bool Tools::getParsedLine(FILE* fp,vector<string> & words){
   return stat;
 }
 
+bool Tools::file_exists(const std::string& filen){
+  struct stat stFileInfo;
+  int intStat=stat( filen.c_str(), &stFileInfo );
+  if( intStat!=0 && errno==ENOENT ) return false;
+  return true;
+}
 
 bool Tools::getline(FILE* fp,string & line){
   line="";

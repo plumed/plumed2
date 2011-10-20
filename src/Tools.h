@@ -10,6 +10,8 @@
 #include <limits>
 #include <algorithm>
 #include <string.h>
+#include <sys/stat.h>
+#include <errno.h>
 
 namespace PLMD{
 
@@ -22,6 +24,8 @@ public:
 /// Split the line in words using separators.
   static std::vector<std::string> getWords(const std::string & line,const char* sep=" \t\n");
   static std::vector<std::string> getWords(const std::string & line,const char* sep,const char* quote);
+/// Find out whether a file is present
+  static bool file_exists(const std::string& filen);  
 /// Get a line from the file pointer fp
   static bool getline(std::FILE* fp,std::string & line);
 /// Get a parsed line from the file pointer fp.
