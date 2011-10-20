@@ -37,6 +37,7 @@ logActivity(false),
 logRequestedAtoms(false),
 novirial(false)
 {
+  forbidKeyword("STRIDE");
   registerKeyword(0,"logActivity","write in the log which actions are inactive and which are inactive");
   registerKeyword(0,"logRequestedAtoms","write in the log which atoms have been requested at a given time");   
   registerKeyword(0,"NOVIRIAL","switch off the virial contribution for the entirity of the simulation");
