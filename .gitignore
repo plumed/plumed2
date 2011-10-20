@@ -9,3 +9,6 @@ makefile.dep
 /tmp
 *.swp
 core
+/user-doc/GENMANUAL
+/user-doc/errors
+/
