@@ -12,27 +12,7 @@ namespace PLMD{
 /**
 Moving restraint (similar to \ref RESTRAINT, but dynamic)
 
-\par Syntax
-\verbatim
-RESTRAINT ...
-  ARG=x1,x2,...
-  VERSE=v1,v2,...
-  STEP0=s0 [ STEP1=s1 [STEP2=s2 [...] ] ] 
-  KAPPA0=k01,k02,... [ KAPPA1=k11,k12,... [ KAPPA2=k21,k22,... [...] ] ] 
-  AT0=a01,a02,...    [ AT1=a11,a12,...    [ AT1=a21,a22,...    [...] ] ]
-... RESTRAINT
-\endverbatim
-The STEPx keyword, with x=0,1,2,...,n respresent the MD step at
-which the restraint parameters take value KAPPAx and ATx. The meaning
-of KAPPA and AT is the same as for \ref RESTRAINT. For step numbers less than
-STEP0 or larger than STEPn, parameters for x=0 and x=n are used respectively.
-For intermediate steps, parameters are linearly interpolated. If
-a parameter is missing, its value at the present step is kept.
-The VERSE keyword can set for each variable is the restraint is
-only acting for CV larger ("U") or smaller ("L") than the
-restraint. Default is "B" which is acting in both cases.
-
-\par Examples
+\par Example
 The following input is dragging the distance between atoms 2 and 4
 from 1 to 2 in the first 1000 steps, then back in the next 1000 steps.
 In the following 500 steps the restraint is progressively switched off.
@@ -92,25 +72,44 @@ PLUMED_REGISTER_ACTION(BiasMovingRestraint,"MOVINGRESTRAINT")
 BiasMovingRestraint::BiasMovingRestraint(const ActionOptions&ao):
 Bias(ao)
 {
+  // GAT register keywords
+  registerKeyword(3,"STEP","In a moving restraint the bias changes as a function of time.  These changes are defined using instances of the STEP keyword - i.e. STEP1, STEP2, ....  In essence this keyword states that at the specified time the value of kappa should be equal to the corresponding value of kappa and the value of at should be equal to the corresponding value of at.  That is to say at the time specified by STEP1, kappa should equal KAPPA1 and at should equal AT1.  Inbetween the times specified by STEP keywords the force constants and restraint positions are linearly interpolated");
+  registerKeyword(3,"KAPPA","The values of the force constant at the times specified by STEP during the simulation");
+  registerKeyword(3,"AT","The location of the center of the restraint at the times specified the STEP during the simulation");
+  registerKeyword(0,"VERSE","(default=B) how is the bias enforcing the restraint.  U indicates that it only acts if the instantaneous value of the CV is larger than the current location of the restraint, L indicates that it only acts if the instantaneous value of the CV is less than the current location of the restraint and B indicates that the restraint is always acting.");
+  readBias();
+  
   parseVector("VERSE",verse);
   if(verse.size()==0) verse.assign(getNumberOfArguments(),"B");
-  assert(verse.size()==getNumberOfArguments());
+
+  if( verse.size()!=getNumberOfArguments() ) error("wrong number of arguments in verse keyword");
+  for(unsigned i=0;i<verse.size();++i){
+     if( verse[i]!="U" && verse[i]!="L" && verse[i]!="B" ) error( verse[i] + " is not a valid input for the VERSE keyword.  Use U, L or B");
+  }
+
   for(int i=0;;i++){
-    int ss=-1;
+    //int ss=-1;
+    std::vector<int> ss;
     std::vector<double> kk,aa;
-    string s;
-    Tools::convert(i,s);
-    parse("STEP"+s,ss);
-    if(ss<0) break;
-    for(unsigned j=0;j<step.size();j++) assert(ss>step[j]);
-    step.push_back(ss);
-    parseVector("KAPPA"+s,kk);
+    string s; Tools::convert(i,s);
+    if( !parseNumberedVector("STEP", i, ss) ) break;
+    if( ss.size()!=1 ) error("argument to step keyword should be a single number"); 
+    //parse("STEP"+s,ss);
+    //if(ss<0) break;
+    for(unsigned j=0;j<step.size();j++){
+      // assert(ss>step[j]);
+      if( ss[0]<step[j] ) error("really - you want you're simulation to go backwards in time!");
+    }
+    step.push_back(ss[0]);
+    if( !parseNumberedVector("KAPPA", i, kk) ) error("for STEP" + s + " there is no corresponding force constant specified use KAPPA" + s);
     if(kk.size()==0 && i>0) kk=kappa[i-1];
-    assert(kk.size()==getNumberOfArguments());
+    if( kk.size()!=getNumberOfArguments() ) error("force contant " + s + " has wrong size");
+    //assert(kk.size()==getNumberOfArguments());
     kappa.push_back(kk);
-    parseVector("AT"+s,aa);
+    if( !parseNumberedVector("AT", i, aa) ) error("for STEP" + s + " there is no corresponding restraint position specified use AT" + s);
     if(aa.size()==0 && i>0) aa=at[i-1];
-    assert(aa.size()==getNumberOfArguments());
+    if ( aa.size()!=getNumberOfArguments() ) error("restraint location " + s + " has wrong size");
+    //assert(aa.size()==getNumberOfArguments());
     at.push_back(aa);
   }
   checkRead();
@@ -124,10 +123,7 @@ Bias(ao)
     for(unsigned j=0;j<kappa[i].size();j++) log.printf(" %f",kappa[i][j]);
     log.printf("\n");
   };
-
-  addValue("Energy");
-  addValue("Force2");
-  addValue("Work");
+  addValue("Work", true, false );
 }
 
 
@@ -157,16 +153,16 @@ void BiasMovingRestraint::calculate(){
     const double f=-k*cv;
     if(verse[i]=="U" && cv<0) continue;
     if(verse[i]=="L" && cv>0) continue;
-    assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
+    //assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
     ene+=0.5*k*cv*cv;
     setOutputForces(i,f);
     totf2+=f*f;
   };
-  Value* value;
-  value=getValue("Energy");
-  setValue(value,ene);
-  value=getValue("Force2");
-  setValue(value,totf2);
+  //Value* value;
+  //value=getValue("Energy");
+  //setValue(value,ene);
+  //value=getValue("Force2");
+  //setValue(value,totf2);
 }
 
 }
