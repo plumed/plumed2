@@ -14,8 +14,14 @@ protected:
   void setOutputForces(int i,double g);
 public:
   Bias(const ActionOptions&ao);
+  int setDefaultStride() const ; 
   void apply();
 };
+
+inline
+int Bias::setDefaultStride() const {
+  return 1;
+}
 
 inline
 void Bias::setOutputForces(int i,double f){

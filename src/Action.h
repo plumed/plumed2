@@ -128,6 +128,9 @@ protected:
 /// Forbid a particular keyword on any given action
   void forbidKeyword( const std::string& );
 
+/// Make a particular keyword optional
+  void makeKeywordOptional( const std::string& );
+
 /// Allow a particular keyword for any given action
   void allowKeyword( const std::string& );
 
@@ -177,6 +180,9 @@ public:
 
   virtual void lockRequests(){};
   virtual void unlockRequests(){};
+
+/// This is a fudge to make biases have a default stride of 1
+  virtual int setDefaultStride() const { return 0; }
 
 /// Calculate an Action.
 /// This method is called one or more times per step.

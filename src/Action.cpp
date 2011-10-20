@@ -124,6 +124,7 @@ void Action::readAction(){
   log.printf("  with label %s\n",label.c_str());
 
   parse("STRIDE",stride);
+  if(stride==0) stride=setDefaultStride();
   if(stride!=0) log.printf("  with stride %d\n",stride);
 }
 
@@ -160,6 +161,14 @@ void Action::forbidKeyword( const std::string& key ){
      if( key==keys[i].key ){ keys[i].forbidden=true; removed=true; break; }
   }
   assert(removed); // You can't forbid something that isn't there
+}
+
+void Action::makeKeywordOptional( const std::string& key ){
+  bool removed=false;
+  for(unsigned i=0;i<keys.size();++i){
+     if( key==keys[i].key ){ keys[i].compulsory=0; removed=true; break; }
+  }
+  assert(removed); // You can't make it optional if it isn't there
 }
 
 void Action::allowKeyword( const std::string& key ){
