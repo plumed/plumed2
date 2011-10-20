@@ -190,3 +190,9 @@ void Tools::interpretLabel(vector<string>&s){
   }
 }
 
+void Tools::scale( std::vector<Vector>& coords, const double& newunit ){
+  for(unsigned i=0;i<coords.size();++i){
+     coords[i][0]*=newunit; coords[i][1]*=newunit; coords[i][2]*=newunit;
+  }
+}
+

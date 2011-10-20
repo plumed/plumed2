@@ -2,6 +2,7 @@
 #define __PLUMED_Tools_h
 
 #include "AtomNumber.h"
+#include "Vector.h"
 #include <vector>
 #include <string>
 #include <cstdio>
@@ -71,6 +72,8 @@ public:
   static void removeDuplicates(std::vector<T>& vec);
 /// interpret ":" syntax for labels
   static void interpretLabel(std::vector<std::string>&s);
+/// take a set of coordinates and change the length unit
+  static void scale( std::vector<Vector>& coords, const double& newunit );
 };
 
 template <class T>
