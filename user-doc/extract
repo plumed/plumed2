@@ -34,7 +34,7 @@ awk '{
   }
   if(inside && $1!="/**" && $1!="*/") print $0 >output
   if($1=="//+PLUMEDOC"){
-    if($2=="COLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="VATOM" || $2=="TOPOLOGIES" || $2=="GROUP" || $2=="GENERIC" || $2=="TOOL" ){
+    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="VATOM" || $2=="TOPOLOGIES" || $2=="GROUP" || $2=="GENERIC" || $2=="TOOL" ){
       lfile="automatic/"$2".list"
       print "- \\subpage "$3 > lfile
       output="automatic/"$3".tmp";
@@ -100,7 +100,7 @@ cat $file.txt |
     cat automatic/FUNCTION.list
   elif [ "$LINE" = "@TOPOLOGIES@" ]
   then
-    cat automatic/TOPOLOGIES.list
+    cat automatic/TOPOLOGY.list
   elif [ "$LINE" = "@VATOM@" ]
   then
     cat automatic/VATOM.list
