@@ -31,7 +31,8 @@ void ActionWithArguments::readActionWithArguments( const std::vector<double>& do
         };
       } else {
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-        assert(action);
+        if( !action ) error("there is no action with label in the input file " + c[i] );
+        //assert(action);
         if(name=="*"){
           // vector<string> s=action->getValueNames();
           for(unsigned j=0;j<action->getNumberOfValues();j++) arguments.push_back( action->getValuePointer(j) );
@@ -43,12 +44,16 @@ void ActionWithArguments::readActionWithArguments( const std::vector<double>& do
     } else if(c[i]=="*"){
       std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
       for(unsigned j=0;j<all.size();j++){
-        assert(all[j]->getNumberOfValues()==1); 
+        //assert(all[j]->getNumberOfValues()==1); 
+        if( all[j]->getNumberOfValues()!=1 ) error("when using * to specify all values defined by colvars every action must have only one action");
         arguments.push_back( all[j]->getValuePointer(0) );
       }
     } else{
       ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
-      assert(action); assert(action->getNumberOfValues()==1); 
+      if( !action ) error("there is no action with label in the input file " + c[i] );
+      if( action->getNumberOfValues()!=1 ) error("action with label " + c[i] + " has multiple values.  Either use * to specify all values or the particular value you require");
+      // assert(action); 
+      // assert(action->getNumberOfValues()==1); 
       arguments.push_back( action->getValuePointer(0) );
     }
   }
