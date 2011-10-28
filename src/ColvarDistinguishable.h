@@ -14,6 +14,9 @@ private:
   std::vector<Vector> derivatives;
 /// The virial with respect to the atoms for a single thing in the list
   Tensor virial;
+protected:
+/// Add some indexes to create another colvar to calculate
+  void addIndexes( const unsigned& astart, const std::vector<unsigned>& new_indexes );
 public:
   ColvarDistinguishable(const ActionOptions&);
 /// Return the number of colvars

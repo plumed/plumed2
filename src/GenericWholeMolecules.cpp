@@ -14,7 +14,7 @@ using namespace PLMD;
 
 namespace PLMD {
 
-//+PLUMEDOC GENERIC WHOLEMOLECULES
+//+PLUMEDOC TOPOLOGY WHOLEMOLECULES
 /**
 Rebuild molecules with pbc.  This command is similar to the ALIGN_ATOMS keyword of plumed 1. It rebuilds molecules
 correctly according to pbc. It can rebuild multiple groups, and

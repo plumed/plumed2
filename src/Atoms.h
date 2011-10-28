@@ -5,6 +5,7 @@
 #include "Tensor.h"
 #include "Units.h"
 #include "Pbc.h"
+#include "PDB.h"
 #include <vector>
 #include <set>
 #include <cassert>
@@ -35,8 +36,10 @@ private:
   std::vector<bool> backbone;
 public:
   MoleculeTopology() {}
-  MoleculeTopology( const std::string& name, const std::vector<unsigned>& atoms ); 
+  MoleculeTopology( const std::string& name, const std::vector<AtomNumber>& atoms, const std::vector<AtomNumber>& residues ); 
   void align( const Tensor& box, std::vector<Vector>& positions );
+  bool setBackbone( const std::vector<std::string>& backbone_atoms, const std::vector<std::string>& anames );
+  bool getAtomsInResidue( const bool& backbone_only, const unsigned& resnum, std::vector<unsigned>& atoms );
 };
 
 inline
@@ -201,6 +204,8 @@ public:
 
   // Stuff for topology
   void addMolecule( ActionSetup& a, const std::string& name, std::vector<std::string>& atoms );
+  void readTopology( ActionSetup& a, const std::string& type, const std::string& filen );
+  void putBackboneInGroup( const std::string& name, const std::string& type, std::vector<std::string>& residues, std::vector< std::vector<unsigned> >& backbone );
 };
 
 inline

@@ -16,13 +16,56 @@ namespace PLMD {
 
 class PlumedMain;
 
-MoleculeTopology::MoleculeTopology( const std::string& name, const std::vector<unsigned>& atoms ) :
-chainName(name),
-atomIndexes(atoms)
+MoleculeTopology::MoleculeTopology( const std::string& name, const std::vector<AtomNumber>& atoms, const std::vector<AtomNumber>& residues ) :
+chainName(name)
 {
-  resno.resize(0); backbone.resize(0);
+  assert( atoms.size()==residues.size() );
+  for( unsigned i=0;i<atoms.size();++i){ atomIndexes.push_back( atoms[i].index() ); resno.push_back( residues[i].index() ); }
+  backbone.resize(atoms.size(), false);
   unique.clear();
   for(unsigned j=0;j<atomIndexes.size();j++) unique.insert(atomIndexes[j]); 
+}
+
+bool MoleculeTopology::setBackbone( const std::vector<std::string>& backbone_atoms, const std::vector<std::string>& anames ){
+  assert( anames.size()==atomIndexes.size() );
+  unsigned bno=0; bool terminus=true;
+  for(unsigned i=0;i<anames.size();++i){
+      for(unsigned j=0;j<backbone_atoms.size();++j){ 
+          if( j==bno && anames[i]==backbone_atoms[j] ){
+             // This makes sure we skip any atoms in the N terminus
+             // ( this is in the language of proteins but I hope it works for other things too )
+             terminus=false;
+             // Update the backbone atom we are looking for
+             bno++; if( bno==backbone_atoms.size() ){ bno=0; }
+             // Record that this is a backbone atom
+             backbone[i]=true;
+          } else if ( anames[i]==backbone_atoms[j] && !terminus ){
+             return false;
+          }
+      }
+  }
+
+  // This ensures we ignore crap from the C terminal group 
+  // ( this is in the language of proteins but I hope it works for other things too ) 
+  if( bno!=backbone_atoms.size() ){
+      for(int j=bno;j>=0;--j){
+         for(int i=anames.size()-1;i>0;--i){
+             if( anames[i]==backbone_atoms[j] ){ backbone[i]=false; break; }    
+         }
+      }
+  }
+}
+
+bool MoleculeTopology::getAtomsInResidue( const bool& backbone_only, const unsigned& resnum, std::vector<unsigned>& atoms ){
+  bool foundres=false;
+  for(unsigned i=0;i<atomIndexes.size();++i){
+     if( resno[i]==resnum && backbone_only && backbone[i] ){
+        atoms.push_back( atomIndexes[i] ); foundres=true;
+     } else if( resno[i]==resnum && !backbone_only ){
+        atoms.push_back( atomIndexes[i] ); foundres=true;
+     }
+  }
+  return foundres;
 }
 
 AtomGroup::AtomGroup(const unsigned& n, const std::vector<unsigned>& i) :
@@ -386,18 +429,40 @@ void Atoms::removeGroup(const std::string&name){
 }
 
 void Atoms::addMolecule( ActionSetup& a, const std::string& name, std::vector<std::string>& atoms ){
-  Tools::interpretRanges( atoms ); std::vector<unsigned> indexes;
+  Tools::interpretRanges( atoms ); std::vector<AtomNumber> indexes, residues; AtomNumber one; one.setSerial(1); 
   for(unsigned i=0;i<atoms.size();++i ){
      bool ok=false;
      AtomNumber atom;
      ok=Tools::convert( atoms[i], atom );    // this is converting strings to AtomNumbers
      if( atom.index()>natoms ) a.error("atom index is larger than number of atoms in system");
      
-     if( ok ) indexes.push_back( atom.index() );
+     if( ok ){ indexes.push_back( atom ); residues.push_back( one ); }
      if (!ok) a.error( atoms[i] + " is not an atom index");
   }
-  MoleculeTopology newmol( name, indexes );
+  MoleculeTopology newmol( name, indexes, residues );
   topology.push_back( newmol );
+}
+
+void Atoms::readTopology( ActionSetup& a, const std::string& type, const std::string& filen ){
+  // Set the topology type
+  if( !Tools::file_exists(filen) ) a.error("cannot find file named " + filen);
+  // Can only read in one molecule of a given type at a time
+  for(unsigned i=0;i<topology.size();++i){
+     if( topology[i].chainName==type ) a.error("cannot read in multiple " + type + " topologies in a single input file");
+  }
+ 
+  // Read in a pdb file
+  PDB tpdb; tpdb.read( filen, 1.0 );
+  MoleculeTopology newmol( type, tpdb.getAtomNumbers(), tpdb.getResidueNumbers() );
+  topology.push_back( newmol );
+
+  // Now sort out the backbone
+  std::vector<std::string> backbone_atoms;
+  if( type=="protein" ) {
+      backbone_atoms.resize( 5 );
+      backbone_atoms[0]="N"; backbone_atoms[1]="CA"; backbone_atoms[2]="CB"; backbone_atoms[3]="C"; backbone_atoms[4]="O";
+  }
+  if( !topology[topology.size()-1].setBackbone( backbone_atoms, tpdb.getAtomNames() ) ) a.error("structure in file " + filen + " is not a " + type); 
 }
 
 void Atoms::readAtomsIntoGroup( const std::string& name, std::vector<std::string>& atoms, std::vector<unsigned>& indexes ){
@@ -420,6 +485,37 @@ void Atoms::readAtomsIntoGroup( const std::string& name, std::vector<std::string
     if (!ok) actions[ actions.size()-1 ]->error( atoms[i] + " is neither an atom index or a virtual atom");
   }
   groups[name].addAtoms( indexes );
+}
+
+void Atoms::putBackboneInGroup( const std::string& name, const std::string& type, std::vector<std::string>& residues, std::vector< std::vector<unsigned> >& backbone ){
+  int tnumber=-1;
+  for(unsigned i=0;i<topology.size();++i){
+      if(topology[i].chainName==type){ tnumber=i; break; } 
+  }
+  if( tnumber<0 ) actions[ actions.size() - 1 ]->error( "you have requested a backbone of type " + type + " but have not read in the topology using the appropriate command");
+
+  Tools::interpretRanges( residues );
+  bool ok=false; AtomNumber resno; 
+  std::vector<unsigned> tmpvec;
+  ok=Tools::convert( residues[0], resno );
+  if( !ok ) actions[ actions.size() - 1 ]->error( residues[0] + " is not a residue number");
+  unsigned prevres=resno.index();
+  if( !topology[tnumber].getAtomsInResidue( true, resno.index(), tmpvec ) ){
+    actions[ actions.size() - 1 ]->error("residue " + residues[0] + " is not defined in the read in topology");
+  }
+  for(unsigned i=1;i<residues.size();++i){
+     ok=Tools::convert( residues[i], resno );
+     if( !ok ) actions[ actions.size() - 1 ]->error( residues[i] + " is not a residue number");
+
+     if( (prevres+1)!=resno.index() ){
+         backbone.push_back( tmpvec ); groups[name].addAtoms( tmpvec ); tmpvec.clear();
+     }
+     if( !topology[tnumber].getAtomsInResidue( true, resno.index(), tmpvec ) ){
+       actions[ actions.size() - 1 ]->error("residue " + residues[i] + " is not defined in the read in topology");
+     } 
+     prevres=resno.index();
+  }
+  backbone.push_back( tmpvec ); groups[name].addAtoms( tmpvec );
 }
 
 void Atoms::getGroupIndices( const std::string&name, std::vector<unsigned>&a ){

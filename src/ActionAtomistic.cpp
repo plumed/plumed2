@@ -19,6 +19,7 @@ ActionAtomistic::~ActionAtomistic(){
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 ActionWithExternalArguments(ao),
 atomGroupName("none"),
+doneRead(false),
 pbcOn(true),
 lockRequestAtoms(false),
 updateFreq(0),
@@ -36,66 +37,69 @@ nl_cut(0)
 }
 
 void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
-   readAction();
    std::vector<std::string> strings; Atoms& atoms(plumed.getAtoms());
 
    if( testForKey("ATOMS") && testForKey("GROUP") ) error("you cannot mix ATOMS and GROUP keywords");
 
-   if( testForKey("GROUP") ){
-       assert( maxgroups>0 );
-       std::vector< std::vector<unsigned> > groups; std::vector<unsigned> t;
-       if( testForNumberedKeys("GROUP") ){
-          atomGroupName=getLabel();
-          for(int i=1;i<=maxgroups;++i ){
-             if( !parseNumberedVector( "GROUP", i, strings ) ) break;
-             atoms.readAtomsIntoGroup( atomGroupName, strings, t );
-             groups.push_back( t );
-          }
-       } else {
-          parseVector("GROUP",strings);
-          GenericGroup* grp=plumed.getActionSet().selectWithLabel<GenericGroup*>( strings[0] );
-          if( grp ){
-              if(strings.size()!=1) error("you can only use one group at a time when you specify an GROUP");
-              atomGroupName=strings[0];
-              atoms.getGroupIndices( atomGroupName, t ); 
-              groups.push_back( t );
+   if(!doneRead){
+      readAction();
+      if( testForKey("GROUP") ){
+          assert( maxgroups>0 ); assert( atomGroupName=="none" );
+          std::vector< std::vector<unsigned> > groups; std::vector<unsigned> t;
+          if( testForNumberedKeys("GROUP") ){
+             atomGroupName=getLabel();
+             for(int i=1;i<=maxgroups;++i ){
+                if( !parseNumberedVector( "GROUP", i, strings ) ) break;
+                atoms.readAtomsIntoGroup( atomGroupName, strings, t );
+                groups.push_back( t );
+             }
           } else {
-              atomGroupName=getLabel();
-              atoms.readAtomsIntoGroup( atomGroupName, strings, t );
-              groups.push_back( t ); 
+             parseVector("GROUP",strings);
+             GenericGroup* grp=plumed.getActionSet().selectWithLabel<GenericGroup*>( strings[0] );
+             if( grp ){
+                 if(strings.size()!=1) error("you can only use one group at a time when you specify an GROUP");
+                 atomGroupName=strings[0];
+                 atoms.getGroupIndices( atomGroupName, t ); 
+                 groups.push_back( t );
+             } else {
+                 atomGroupName=getLabel();
+                 atoms.readAtomsIntoGroup( atomGroupName, strings, t );
+                 groups.push_back( t ); 
+             }
           }
-       }
-       interpretGroupsKeyword( maxatoms, atomGroupName, groups );
-   } 
-   if( testForKey("ATOMS") ){
-       assert( maxatoms!=0 );
-       std::vector< std::vector<unsigned> > flist; std::vector<unsigned> t;
-       atomGroupName=getLabel();
-       if( testForNumberedKeys("ATOMS") ){
-          for(int i=1;;++i ){
-             if( !parseNumberedVector( "ATOMS", i, strings ) ) break;
+          interpretGroupsKeyword( maxatoms, atomGroupName, groups ); doneRead=true;
+      } 
+      if( testForKey("ATOMS") ){
+          assert( maxatoms!=0 ); assert( atomGroupName=="none" );
+          std::vector< std::vector<unsigned> > flist; std::vector<unsigned> t;
+          atomGroupName=getLabel();
+          if( testForNumberedKeys("ATOMS") ){
+             for(int i=1;;++i ){
+                if( !parseNumberedVector( "ATOMS", i, strings ) ) break;
+                atoms.readAtomsIntoGroup( atomGroupName, strings, t );
+                if( i==1 && maxatoms<0 ){ 
+                    maxatoms=t.size(); 
+                } else if ( t.size()!=maxatoms ){
+                    std::string nn, ss, tt; Tools::convert( i, nn ); Tools::convert( static_cast<int>( t.size() ), ss ); Tools::convert( maxatoms, tt );
+                    error("in ATOMS" + nn + " keyword found " + ss + " atoms when there should only be " + tt + "atoms"); 
+                }
+                flist.push_back( t );
+             }
+          } else {
+             parseVector("ATOMS",strings);
              atoms.readAtomsIntoGroup( atomGroupName, strings, t );
-             if( i==1 && maxatoms<0 ){ 
-                 maxatoms=t.size(); 
-             } else if ( t.size()!=maxatoms ){
-                 std::string nn, ss, tt; Tools::convert( i, nn ); Tools::convert( static_cast<int>( t.size() ), ss ); Tools::convert( maxatoms, tt );
-                 error("in ATOMS" + nn + " keyword found " + ss + " atoms when there should only be " + tt + "atoms"); 
+             if( maxatoms<0 ){ 
+                maxatoms=t.size(); 
+             } else if ( t.size()!=maxatoms ) {
+                std::string ss, tt; Tools::convert( static_cast<int>( t.size() ), ss ); Tools::convert( maxatoms, tt );
+                error("in ATOMS keyword found " + ss + " atoms when there should only be " + tt + " atoms");
              }
              flist.push_back( t );
           }
-       } else {
-          parseVector("ATOMS",strings);
-          atoms.readAtomsIntoGroup( atomGroupName, strings, t );
-          if( maxatoms<0 ){ 
-             maxatoms=t.size(); 
-          } else if ( t.size()!=maxatoms ) {
-             std::string ss, tt; Tools::convert( static_cast<int>( t.size() ), ss ); Tools::convert( maxatoms, tt );
-             error("in ATOMS keyword found " + ss + " atoms when there should only be " + tt + " atoms");
-          }
-          flist.push_back( t );
-       }
-       interpretAtomsKeyword( flist );
+          interpretAtomsKeyword( flist ); doneRead=true;
+      }
    }
+   if( !doneRead ) error("I have not read in the list of atoms involved in this action");
 
    // Get the indices for this group
    std::vector<unsigned> indexes;
@@ -103,7 +107,7 @@ void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
 
    // Resize everything
    unsigned nn=indexes.size();
-   positions.resize(nn); masses.resize(nn); 
+   positions.resize(nn); masses.resize(nn); gderivs.resize(nn); 
    charges.resize(nn); skips.resize(nn); forces.resize(nn);
 
    // Now sort out the dependencies
@@ -118,6 +122,17 @@ void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
    pbcOn=!nopbc; parseFlag("PBC",pbcOn);
    if(pbcOn) log.printf("  using periodic boundary conditions\n");
    else log.printf("  without periodic boundary conditions\n");
+}
+
+bool ActionAtomistic::readBackboneAtoms( const std::string& type, std::vector< std::vector<unsigned> >& backbone ){
+   readAction(); 
+   if ( testForKey("BACKBONE") ){
+        assert( atomGroupName=="none" ); atomGroupName=getLabel(); doneRead=true;
+        std::vector<std::string> residues; parseVector("BACKBONE",residues);
+        plumed.getAtoms().putBackboneInGroup( atomGroupName, type, residues, backbone ); 
+        return true;
+   }
+   return false;
 }
 
 void ActionAtomistic::calculateNumericalDerivatives(){
@@ -198,6 +213,19 @@ void ActionAtomistic::retrieveData(){
   box=plumed.getAtoms().box; 
   pbc.setBox(box);
   plumed.getAtoms().getAtomsInGroup( atomGroupName, positions, charges, masses );
+}
+
+void ActionAtomistic::addGroupDerivatives(){
+  GenericGroup* grp=plumed.getActionSet().selectWithLabel<GenericGroup*>( atomGroupName );
+  assert( grp ); double ader;
+  grp->getGroupDerivatives( gderivs ); 
+  for(unsigned i=0;i<getNumberOfValues();++i){
+     for(unsigned j=0;j<gderivs.size();++j){
+        ader=getDerivative( i, 3*j+0 ); setDerivative( i, 3*j+0, ( gderivs[j][0] + ader ) * positions[j][0] );
+        ader=getDerivative( i, 3*j+1 ); setDerivative( i, 3*j+1, ( gderivs[j][1] + ader ) * positions[j][1] );
+        ader=getDerivative( i, 3*j+2 ); setDerivative( i, 3*j+2, ( gderivs[j][2] + ader ) * positions[j][2] );        
+     }
+  }
 }
 
 void ActionAtomistic::applyForces( const std::vector<Vector>& forces, const Tensor& virial ){

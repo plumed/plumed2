@@ -39,6 +39,10 @@ protected:
   bool isMeaningfulToDifferentiate( const unsigned& n ) const ;
 /// Add a value to the action
   void addValue( const std::string& name, const bool& ignorePeriod, const bool& hasDerivatives );
+/// Clear everything in the derivative and set it equal to this value
+  void setDerivative( const unsigned& n, const unsigned& nd, const double& val );
+/// Get the value of the derivative
+  double getDerivative( const unsigned& n, const unsigned& nd ) const;
 /// Accumulate the derivatives
   void addDerivative( const unsigned& n, const unsigned& nd, const double& val );
 /// Get the forces acting on a particular value ( force*derivatives )
@@ -84,7 +88,7 @@ void ActionWithValue::setValue( const unsigned& n, const double& f, const double
 inline
 void ActionWithValue::setValue( const std::string& name, const double& f, const double& df ){
   unsigned n=getValueNumberForLabel( name );
-  values[n]->value=f;
+  values[n]->value=f; 
   for(unsigned i=0;i<values[n]->derivatives.size();++i){ values[n]->derivatives[i]*=df; }
 }
 
@@ -112,6 +116,18 @@ inline
 void ActionWithValue::addDerivative( const unsigned& n, const unsigned& nd, const double& val ){
   assert( n<values.size() ); assert( nd<values[n]->derivatives.size() );
   values[n]->derivatives[nd]+=val; 
+}
+
+inline 
+double ActionWithValue::getDerivative( const unsigned& n, const unsigned& nd ) const {
+  assert( n<values.size() ); assert( nd<values[n]->derivatives.size() );
+  return values[n]->derivatives[nd];
+}
+
+inline
+void ActionWithValue::setDerivative( const unsigned& n, const unsigned& nd, const double& val ){
+  assert( n<values.size() ); assert( nd<values[n]->derivatives.size() );
+  values[n]->derivatives[nd]=val;
 }
 
 inline

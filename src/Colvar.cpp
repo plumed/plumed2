@@ -218,8 +218,7 @@ void Colvar::calculate(){
         } 
         if ( dolt ) {
            // Less than
-           double tmp=ltswitch.calculate(value, df);
-           lttotal+=tmp;
+           lttotal+=ltswitch.calculate(value, df);
            mergeFunctions(ltstring, i, df*value );
         } 
         if ( domt ) {
@@ -236,9 +235,12 @@ void Colvar::calculate(){
     if ( domax ) { }
     if ( dototal ) { setValue("sum", ttotal, 1.0 ); }
     if ( domean ) { setValue("average", atotal/skipto.size(), 1.0/skipto.size() ); }
-    if ( dolt ) { setValue(ltstring, lttotal, 1.0 ); }
+    if ( dolt ) {  setValue(ltstring, lttotal, 1.0 ); }
     if ( domt ) { setValue(mtstring, mttotal, 1.0 ); }
   }
+
+  // Do derivatives for dynamic group
+  if( usingDynamicGroups() ) addGroupDerivatives(); 
 }
 
 void Colvar::apply(){

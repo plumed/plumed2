@@ -8,6 +8,20 @@ Colvar(ao)
   allowKeyword("ATOMS");
 }
 
+void ColvarDistinguishable::addIndexes( const unsigned& astart, const std::vector<unsigned>& new_indexes ){
+  if( function_indexes.size()==0 ) derivatives.resize( new_indexes.size() );
+  else if( new_indexes.size()!=function_indexes[0].size() ) error("mismatch for number of atoms in colvar");
+
+  unsigned accum=astart; std::vector<unsigned> tmplist; tmplist.push_back( accum ); 
+  log.printf("  a colvar will be calculated from the positions of the following set of atoms : ( %s",plumed.getAtoms().interpretIndex( new_indexes[0] ).c_str() );
+  for(unsigned j=1;j<new_indexes.size();++j){
+      tmplist.push_back( accum + j );
+      log.printf( ", %s",plumed.getAtoms().interpretIndex( new_indexes[j] ).c_str() );
+  }
+  log.printf(" ) \n");
+  function_indexes.push_back( tmplist );
+}
+
 void ColvarDistinguishable::interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups ){
   std::vector<unsigned> tmplist; 
   if( groups.size()>2 ) error("you can only use groups for indistinguishable colvars if the number of atoms in each colvar is equal to 2");
@@ -41,20 +55,10 @@ void ColvarDistinguishable::interpretGroupsKeyword( const unsigned& natoms, cons
 }
 
 void ColvarDistinguishable::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist ){
-  derivatives.resize( flist[0].size() );
   unsigned accum=0; std::vector<unsigned> tmplist;
-  log.printf("  one colvar will be calculated for each of the following sets of atoms ");
   for(unsigned i=0;i<flist.size();++i){ 
-    log.printf("( %s",plumed.getAtoms().interpretIndex( flist[i][0] ).c_str() );
-    tmplist.resize(0); tmplist.push_back( accum );
-    for(unsigned j=1;j<flist[i].size();++j){
-        tmplist.push_back( accum + j );
-        log.printf( ", %s",plumed.getAtoms().interpretIndex( flist[i][j] ).c_str() );
-    }
-    log.printf(" ) : "); accum+=flist[i].size();
-    function_indexes.push_back( tmplist );
+    addIndexes( accum, flist[i] ); accum+=flist[i].size(); 
   }
-  log.printf("\n");
 }
 
 void ColvarDistinguishable::updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){
@@ -72,7 +76,7 @@ void ColvarDistinguishable::updateNeighbourList( const double& cutoff, std::vect
             }
          }
       } 
-      if( calcfunc ) { skipAllColvarFrom(n,i); tmpskip[n]=i; n=i; } //skipto[n]=i; n=i; } 
+      if( calcfunc ) { skipAllColvarFrom(n,i); tmpskip[n]=i; n=i; }  
   } 
     
   std::vector<bool> required_atoms(skips.size(),false);

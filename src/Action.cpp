@@ -240,7 +240,7 @@ bool Action::testForNumberedKeys( const std::string& key) const {
       }
    } else {
       for(unsigned i=0;i<line.size();++i){
-          if( line[i]==(key+"1") ) return true;
+          if( line[i].find(key+"1")!=std::string::npos ) return true;
       } 
    }     
    return false;

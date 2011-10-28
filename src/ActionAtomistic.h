@@ -16,11 +16,12 @@ class ActionAtomistic : public ActionWithExternalArguments {
   friend class Atoms;
 
   std::string atomGroupName;
-  bool pbcOn;
+  bool doneRead,pbcOn;
 
 // Stuff for atoms
   std::vector<bool>     skips;
   std::vector<Vector>   positions;        // positions of the needed atoms
+  std::vector<Vector>   gderivs;          // Derivatives with respect to the group
   Tensor                box;
   Pbc                   pbc;
   Tensor                virial;
@@ -44,6 +45,8 @@ protected:
 /// LISTS OF ATOMS
 /// Read in actionAtomistics keywords
   void readActionAtomistic( int& maxatoms, unsigned& maxgroups );
+/// Recover the backbone atoms from the backbone keyword
+  bool readBackboneAtoms( const std::string& type, std::vector< std::vector<unsigned> >& backbone );
 /// Get position of i-th atom
   const Vector & getPositions(int)const;
 /// Get the separation between two atoms
@@ -64,6 +67,8 @@ protected:
   unsigned getNumberOfAtoms() const; 
 /// Get the absolute index of an atom
   AtomNumber getAbsoluteIndex(int i)const;
+/// Add the derivatives with respect to the group (if there is a dynamic group)
+  void addGroupDerivatives();
 /// Parse a list of atoms
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 /// Apply forces to the atoms

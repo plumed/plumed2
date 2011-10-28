@@ -16,6 +16,8 @@ class PDB{
   std::vector<double> occupancy;
   std::vector<double> beta;
   std::vector<AtomNumber> numbers;
+  std::vector<AtomNumber> residues;
+  std::vector<std::string> atomNames;
 public:
 /// Read the pdb from a file, scaling positions by a factor scale
   void read(const std::string&file,double scale);
@@ -27,6 +29,10 @@ public:
   const std::vector<double>     & getBeta()const;
 /// Access to the indexes
   const std::vector<AtomNumber> & getAtomNumbers()const;
+/// Access to the atom Names
+  const std::vector<std::string> & getAtomNames()const;
+/// Acess to the residue numbers
+  const std::vector<AtomNumber> & getResidueNumbers()const;
 /// Returns the number of atoms
   unsigned                        size()const;
 };

@@ -37,6 +37,10 @@ GenericGroup::~GenericGroup(){
   plumed.getAtoms().removeGroup(getLabel());
 }
 
+void GenericGroup::getGroupDerivatives( std::vector<Vector>& derivatives ) const {
+  return;
+}
+
 void GenericGroup::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist ){
   if( flist.size()!=1 ) error("cannot create multiple groups in a single line");
 
