@@ -217,14 +217,6 @@ void ActionAtomistic::prepare(){
   }
 }
 
-//void ActionAtomistic::updateDynamicAtoms(){
-//  Group* grp=plumed.getActionSet().selectWithLabel<Group*>( atomGroupName );
-//  skips.assign(skips.size(),false);
-//  if( grp ) grp->updateAtomSelection( skips );
-//  if( nl_cut>0 ) updateNeighbourList( nl_cut, skips );   // Note the u -- horay!!!
-//  plumed.getAtoms().updateSkipsForGroup( atomGroupName, skips );
-//}
-
 void ActionAtomistic::retrieveData(){
   box=plumed.getAtoms().box; 
   pbc.setBox(box);

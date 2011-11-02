@@ -14,14 +14,10 @@ namespace PLMD {
 /// Action representing a collective variable
 class Colvar : public ActionAtomistic {
 private:
-/// The indexes of the atoms in each colvar
-//  std::vector< std::vector<unsigned> > function_indexes;
 /// Makes the neighbour list work
   std::vector<unsigned> skipto;
-/// The derivatives with respect to the atoms for a single thing in the list    
-//  std::vector<Vector> derivatives;
-/// The virial with respect to the atoms for a single thing in the list
-//  Tensor virial;
+/// The starts and ends of the colvar calculations on each node
+  std::vector<unsigned> blocks;
 /// The forces on the atoms and on the virial
   std::vector<double> forces;
 /// The forces on the atoms
@@ -39,7 +35,8 @@ private:
 protected:
   bool isCSphereF;
   void readActionColvar( int natoms, const std::vector<double>& domain );
-  void skipAllColvarFrom( const unsigned& n, const unsigned& i );
+  void setSkips( const std::vector<unsigned>& tmpskip );
+  void updateParallelLoops();
 public:
   Colvar(const ActionOptions&);
   ~Colvar(){};
@@ -52,8 +49,9 @@ public:
 };
 
 inline
-void Colvar::skipAllColvarFrom( const unsigned& n, const unsigned& i ){
-  skipto[n]=i; 
+void Colvar::setSkips( const std::vector<unsigned>& tmpskip ){
+  assert( tmpskip.size()==skipto.size() );
+  for(unsigned i=0;i<skipto.size();++i) skipto[i]=tmpskip[i]; 
 }
 
 }

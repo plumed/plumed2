@@ -45,6 +45,7 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
   // Setup everything for calculation of individual colvars
   skipto.resize( getNumberOfColvars() ); 
   for(unsigned i=0;i<getNumberOfColvars();++i) skipto[i]=i+1;
+  blocks.resize( comm.Get_size() + 1); updateParallelLoops();
 
   // Resize stuff for applying forces
   f.resize( getNumberOfAtoms() ); forces.resize( 3*getNumberOfAtoms()+9 );
@@ -176,6 +177,14 @@ void Colvar::readActionColvar( int natoms, const std::vector<double>& domain ){
   }
 }
 
+void Colvar::updateParallelLoops(){
+  if( isParallel() ) comm.splitList( skipto, blocks );
+  else { 
+    blocks[0]=0;
+    for(unsigned i=1;i<blocks.size();++i){ blocks[i]=skipto.size(); }
+  }
+}
+
 void Colvar::calculate(){
   double df, tmp, value, mintotal, ttotal, atotal, maxtotal, lttotal, mttotal;
   mintotal=maxtotal=ttotal=atotal=lttotal=mttotal=0.0; 
@@ -190,7 +199,8 @@ void Colvar::calculate(){
   if( dolt ) ltstring="less_than" + ltswitch.get_r0_string();
   if( domt ) mtstring="more_than" + mtswitch.get_r0_string(); 
 
-  for (unsigned i=0; i<skipto.size(); i=skipto[i] ) {
+  unsigned rank=comm.Get_rank();
+  for (unsigned i=blocks[rank]; i<blocks[rank+1]; i=skipto[i] ) {
      value=calcFunction( i );
      if (doall) {
         mergeFunctions( i, i, value, 1.0 );
@@ -231,15 +241,21 @@ void Colvar::calculate(){
         }
      }
   }
-  if ( dohist ){ 
-    for (unsigned j=0; j<histogram.size(); ++j) setValue( j, hvalues[j], 1.0 );
+  if ( doall ){
+      // Merge all the values from all the nodes
+      gatherAllValues();
+  } else if ( dohist ){ 
+      // PARALLEL allgather hvalues
+      for (unsigned j=0; j<histogram.size(); ++j) setValue( j, hvalues[j], 1.0 );
   } else {
-    if ( domin ){ double dist=beta/std::log(mintotal); setValue("min", dist, dist*dist/mintotal ); }
+    if ( domin ){
+       // PARALLEL allgather mintotal 
+       double dist=beta/std::log(mintotal); setValue("min", dist, dist*dist/mintotal ); }
     if ( domax ) { }
-    if ( dototal ) { setValue("sum", ttotal, 1.0 ); }
-    if ( domean ) { setValue("average", atotal/skipto.size(), 1.0/skipto.size() ); }
-    if ( dolt ) {  setValue(ltstring, lttotal, 1.0 ); }
-    if ( domt ) { setValue(mtstring, mttotal, 1.0 ); }
+    if ( dototal ) { setValue("sum", ttotal, 1.0 ); } //PARALLEL allgather ttotal  }
+    if ( domean ) { setValue("average", atotal/skipto.size(), 1.0/skipto.size() ); }// PARALLEL allgather atotal }
+    if ( dolt ) {  setValue(ltstring, lttotal, 1.0 );  } // PARALLEL allgather lttotal }
+    if ( domt ) { setValue(mtstring, mttotal, 1.0 ); } // PARALLEL allgather mttotal 
   }
 }
 

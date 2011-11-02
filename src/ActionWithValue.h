@@ -23,6 +23,8 @@ private:
   std::vector<double> domain;
 /// Are we using numerical derivatives
   bool numericalDerivatives;
+/// Are we parallelizing the calculation
+  bool parallel;
 /// The array of values
   std::vector<Value*> values;
 /// Return a pointer to one of the values in this action
@@ -57,6 +59,10 @@ protected:
   unsigned getNumberOfValues() const;
 /// Get the value of a particular numbered value
   double getValue( const unsigned i ) const;
+/// Returns a bool telling us if the calculation is parallelized or not
+  bool isParallel() const;
+/// Gather values if they have been calculated on different nodes
+  void gatherAllValues();
 public:
   ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
@@ -82,6 +88,9 @@ inline
 void ActionWithValue::setValue( const unsigned& n, const double& f, const double& df ){
   assert( n<values.size() );
   values[n]->value=f;
+  if(parallel){  
+      // PARALLEL - Do an allgather of the derivatives here
+  }
   for(unsigned i=0;i<values[n]->derivatives.size();++i){ values[n]->derivatives[i]*=df; } 
 }
 
@@ -89,6 +98,9 @@ inline
 void ActionWithValue::setValue( const std::string& name, const double& f, const double& df ){
   unsigned n=getValueNumberForLabel( name );
   values[n]->value=f; 
+  if(parallel){
+     // PARALLEL - Do an allgather of the derivatives here
+  }
   for(unsigned i=0;i<values[n]->derivatives.size();++i){ values[n]->derivatives[i]*=df; }
 }
 
@@ -134,6 +146,11 @@ inline
 bool ActionWithValue::getForces( const unsigned& n, std::vector<double>& forces ) const {
   assert( n<values.size() );
   return values[n]->getForces( forces );  
+}
+
+inline
+bool ActionWithValue::isParallel() const {
+  return parallel;
 }
 
 }

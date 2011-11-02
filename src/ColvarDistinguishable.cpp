@@ -63,9 +63,20 @@ void ColvarDistinguishable::interpretAtomsKeyword( const std::vector<std::vector
 
 void ColvarDistinguishable::updateDynamicContent( const double& cutoff, std::vector<bool>& skips ){
   bool calcfunc; unsigned n=0;
+
+  std::vector<unsigned> tmpskip( function_indexes.size() ), tmpblocks( comm.Get_size() + 1);
+  for(unsigned i=0;i<function_indexes.size();++i){ tmpskip[i]=i+1; }
+  if( isParallel() ) {
+     comm.splitList( tmpskip, tmpblocks );
+  } else {
+     tmpblocks[0]=0;
+     for(unsigned i=1;i<tmpblocks.size();++i){ tmpblocks[i]=tmpskip.size(); }
+  }
+  for(unsigned i=0;i<function_indexes.size();++i){ tmpskip[i]=0; }
   
-  std::vector<unsigned> tmpskip( function_indexes.size() );
-  for(unsigned i=0;i<function_indexes.size();++i){
+  unsigned rank=comm.Get_rank();
+  //std::vector<unsigned> tmpskip( function_indexes.size() );
+  for(unsigned i=tmpblocks[rank];i<tmpblocks[rank+1];++i){
       calcfunc=true;
       for(unsigned j=1;j<function_indexes[i].size();++j){
          for(unsigned k=0;k<j;++k){
@@ -76,14 +87,19 @@ void ColvarDistinguishable::updateDynamicContent( const double& cutoff, std::vec
             }
          }
       } 
-      if( calcfunc ) { skipAllColvarFrom(n,i); tmpskip[n]=i; n=i; }  
+      if( calcfunc ) { tmpskip[n]=i; n=i; }  
   } 
+
+  // PARALLEL Do an allgather on tmpskip
+
+  setSkips( tmpskip );
     
   std::vector<bool> required_atoms(skips.size(),false);
   for(unsigned i=0;i<function_indexes.size();i=tmpskip[i]){ 
      for(unsigned n=0;n<function_indexes[i].size();++n) required_atoms[ function_indexes[i][n] ] = true;
   }
   for(unsigned i=0;i<skips.size();++i){ if( !required_atoms[i] ) skips[i]=true; }
+  updateParallelLoops(); // And finally update the parallelized loops
 }
 
 

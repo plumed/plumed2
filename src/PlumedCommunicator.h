@@ -4,6 +4,8 @@
 #include <mpi.h>
 #endif
 #include <cstdlib>
+#include <vector>
+#include <math.h>
 #include <cassert>
 
 namespace PLMD{
@@ -59,6 +61,9 @@ public:
   void Set_fcomm(void*comm);
 /// Wrapper to MPI_Abort
   void Abort(int);
+
+/// Split up a list of data over the nodes with skips
+  void splitList( std::vector<unsigned>& next, std::vector<unsigned>& blocks ); 
 
 /// Tests if MPI library is initialized
   static bool initialized();

@@ -55,11 +55,20 @@ void ColvarCoordination::updateDynamicContent( const double& cutoff, std::vector
   
   std::vector<unsigned> tmpskip( central.size() );
   for(unsigned i=0;i<central.size();++i){
-     if( skips[ central[i] ] ){ skipAllColvarFrom(n,i); tmpskip[n]=i; n=i; }
+     if( skips[ central[i] ] ){ tmpskip[n]=i; n=i; }
   }
-
+  setSkips( tmpskip );
+  std::vector<unsigned> tmpblocks( comm.Get_size() + 1); 
+  if( isParallel() ) {
+     comm.splitList( tmpskip, tmpblocks );
+  } else {
+     tmpblocks[0]=0;
+     for(unsigned i=1;i<tmpblocks.size();++i){ tmpblocks[i]=tmpskip.size(); }
+  }
+  
+  unsigned rank=comm.Get_rank();
   std::vector<bool> required_atoms(skips.size(),false); unsigned kk,maxvecs=0;
-  for(unsigned i=0;i<central.size();i=tmpskip[i]){
+  for(unsigned i=tmpblocks[rank];i<tmpblocks[rank+1];i=tmpskip[i]){
      required_atoms[ central[i] ] = required_atoms[ sphere[i].index[0] ] = true; kk=0;
      for(unsigned n=0;n<sphere[i].skipto.size();++n){
         if( getSeparation( central[i], sphere[i].index[n] ).modulo()<=cutoff ){ 
@@ -67,7 +76,11 @@ void ColvarCoordination::updateDynamicContent( const double& cutoff, std::vector
         } 
      }
   } 
+  /// PARALELL - must all gather required_atoms
+  /// PARALLEL - must all gather all sphere skipto (it might work without doing this though)
+  
   for(unsigned i=0;i<skips.size();++i){ if( !required_atoms[i] ) skips[i]=true; }
+  updateParallelLoops();   // And finally update the parallel loops
 }
 
 }

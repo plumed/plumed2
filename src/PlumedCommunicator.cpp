@@ -41,6 +41,27 @@ void PlumedCommunicator::Set_comm(MPI_Comm c){
 #endif
 }
 
+void PlumedCommunicator::splitList( std::vector<unsigned>& next, std::vector<unsigned>& blocks ){
+  unsigned s=Get_size(); if( blocks.size()!=(s+1) ) blocks.resize(s+1);
+
+  // Establish the number of elements
+  unsigned n=0; for(unsigned i=0;i<next.size();i=next[i]) n++;
+
+  // Get the number of elements per node
+  unsigned nper=floor( n/s ); unsigned remain=n-s*nper;
+  
+  unsigned bb=0, kk=0, target;
+
+  blocks[0]=0;
+  for(unsigned i=0;i<next.size();i=next[i]){
+     if ( bb<remain ){ target=nper+1; } else{ target=nper; }
+
+     if( kk==target ){ bb++; blocks[bb]=i; kk=0; }
+     kk++; 
+  }
+  assert( bb==(s+1) ); blocks[bb]=next.size();
+}
+
 PlumedCommunicator::~PlumedCommunicator(){
 #ifdef __PLUMED_MPI
   if(initialized() && communicator!=MPI_COMM_SELF) MPI_Comm_free(&communicator);
