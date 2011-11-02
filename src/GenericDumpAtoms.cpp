@@ -34,7 +34,7 @@ public:
   ~GenericDumpAtoms();
   void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups );
   void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist );
-  void updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){ assert(false); }
+  void updateDynamicContent( const double& cutoff, std::vector<bool>& skips ){ assert(false); }
   void calculate();
   void apply(){};
 };

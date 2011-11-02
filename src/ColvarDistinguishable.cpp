@@ -61,7 +61,7 @@ void ColvarDistinguishable::interpretAtomsKeyword( const std::vector<std::vector
   }
 }
 
-void ColvarDistinguishable::updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){
+void ColvarDistinguishable::updateDynamicContent( const double& cutoff, std::vector<bool>& skips ){
   bool calcfunc; unsigned n=0;
   
   std::vector<unsigned> tmpskip( function_indexes.size() );

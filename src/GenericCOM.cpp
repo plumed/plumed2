@@ -29,7 +29,7 @@ class GenericCOM:
 {
 public:
   GenericCOM(const ActionOptions&ao);
-  void updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){ assert(false); }
+  void updateDynamicContent( const double& cutoff, std::vector<bool>& skips ){ assert(false); }
   void calculate();
 };
 

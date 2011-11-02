@@ -1,5 +1,5 @@
 #include "ActionRegister.h"
-#include "GenericGroup.h"
+#include "Group.h"
 
 using namespace std;
 
@@ -20,33 +20,25 @@ GROUP LABEL=label ATOMS=1-20
 */
 //+ENDPLUMEDOC
 
+class GenericGroup : public Group {
+public:
+  GenericGroup(const ActionOptions&ao);
+  virtual double compute( const std::vector<Vector>& positions, std::vector<double>& contributions, std::vector<Vector>& derivatives, Tensor& virial );
+};
+
 PLUMED_REGISTER_ACTION(GenericGroup,"STATIC_GROUP")
 
 GenericGroup::GenericGroup(const ActionOptions&ao):
-  ActionAtomistic(ao)
+Group(ao)
 {
-  allowKeyword("ATOMS"); forbidKeyword("UPDATE"); forbidKeyword("NL_CUTOFF");
-  int natoms=-1; unsigned ngrp=1;
-  readActionAtomistic( natoms, ngrp );
-  std::vector<double> domain(2,0.0);
-  readActionWithExternalArguments( 0, domain );
+  readGroup();
   checkRead();
 }
 
-GenericGroup::~GenericGroup(){
-  plumed.getAtoms().removeGroup(getLabel());
+double GenericGroup::compute( const std::vector<Vector>& positions, std::vector<double>& contributions, std::vector<Vector>& derivatives, Tensor& virial ){
+  assert( positions.size()==contributions.size() && derivatives.size()==positions.size() );
+  for(unsigned i=0;i<positions.size();++i){ contributions[i]=1.0; derivatives[i][0]=derivatives[i][1]=derivatives[i][2]=0.0; }
+  virial.clear();
 }
 
-void GenericGroup::getGroupDerivatives( std::vector<Vector>& derivatives ) const {
-  return;
-}
-
-void GenericGroup::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist ){
-  if( flist.size()!=1 ) error("cannot create multiple groups in a single line");
-
-  log.printf("  created from the following list of atoms : " );
-  for(unsigned j=0;j<flist[0].size();++j) log.printf("%s ", plumed.getAtoms().interpretIndex( flist[0][j] ).c_str() );
-  log.printf("\n");
-}
-
-}
+} 

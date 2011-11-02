@@ -16,7 +16,7 @@ domt(false),
 dohist(false),
 isCSphereF(false)
 {
-  forbidKeyword("STRIDE");
+  forbidKeyword("STRIDE"); forbidKeyword("DG_CUTOFF");
   registerKeyword(0, "MIN", "calculate the minimum for the defined colvars");
   registerKeyword(0, "MAX", "calculate the maximum for the defined colvars");
   registerKeyword(0, "BETA", "(default=50) value used to create smooth derivatives in calculations of MIN/MAX"); 
@@ -181,7 +181,10 @@ void Colvar::calculate(){
   mintotal=maxtotal=ttotal=atotal=lttotal=mttotal=0.0; 
   hvalues.assign( hvalues.size(), 0.0 );
 
-  if( updateTime() ) updateDynamicAtoms();
+  // This does all updating of neighbour lists as well
+  // as the calculations with respect to any dynamic selection
+  // content
+  calculateAtomisticActions();
 
   std::string mtstring, ltstring;
   if( dolt ) ltstring="less_than" + ltswitch.get_r0_string();
@@ -190,18 +193,18 @@ void Colvar::calculate(){
   for (unsigned i=0; i<skipto.size(); i=skipto[i] ) {
      value=calcFunction( i );
      if (doall) {
-        mergeFunctions( i, i, 1.0 );
+        mergeFunctions( i, i, value, 1.0 );
         setValue( i, value, 1.0 );
      } else if (dohist) {
         for (unsigned j=0; j<histogram.size(); ++j) {
-          hvalues[j]+=histogram[j].calculate( value, df );
-          mergeFunctions( j, i, df );
+          tmp=histogram[j].calculate( value, df ); hvalues[j]+=tmp;
+          mergeFunctions( j, i, tmp, df );
         }
      } else {
         if ( domin ) {
            // Minimum
            tmp=exp( beta/value ); mintotal+=tmp; df=tmp/(value*value); 
-           mergeFunctions("min", i, df );
+           mergeFunctions("min", i, tmp, df );
         }
         if ( domax ) {
            // Maximum
@@ -209,22 +212,22 @@ void Colvar::calculate(){
         } 
         if ( dototal ) {
            ttotal+=value;
-           mergeFunctions("sum", i, 1.0 );
+           mergeFunctions("sum", i, value, 1.0 );
         } 
         if ( domean ) {
            // The mean
            atotal+=value;
-           mergeFunctions("average", i, 1.0 );
+           mergeFunctions("average", i, value, 1.0 );
         } 
         if ( dolt ) {
            // Less than
-           lttotal+=ltswitch.calculate(value, df);
-           mergeFunctions(ltstring, i, df*value );
+           tmp=ltswitch.calculate(value, df); lttotal+=tmp;
+           mergeFunctions(ltstring, i, tmp, df*value );
         } 
         if ( domt ) {
            // More than
-           mttotal+=1.0 - mtswitch.calculate(value, df);
-           mergeFunctions(mtstring, i, -df*value );
+           tmp=1.0 - mtswitch.calculate(value, df); mttotal+=tmp;
+           mergeFunctions(mtstring, i, tmp, -df*value );
         }
      }
   }
@@ -238,9 +241,6 @@ void Colvar::calculate(){
     if ( dolt ) {  setValue(ltstring, lttotal, 1.0 ); }
     if ( domt ) { setValue(mtstring, mttotal, 1.0 ); }
   }
-
-  // Do derivatives for dynamic group
-  if( usingDynamicGroups() ) addGroupDerivatives(); 
 }
 
 void Colvar::apply(){
@@ -255,8 +255,8 @@ void Colvar::apply(){
     if( getForces( i, forces ) ){
        for(unsigned j=0;j<nat;++j){
           f[j][0]+=forces[3*j+0];
-          f[j][0]+=forces[3*j+1];
-          f[j][0]+=forces[3*j+2];
+          f[j][1]+=forces[3*j+1];
+          f[j][2]+=forces[3*j+2];
        }
        v(0,0)+=forces[3*nat+0];
        v(0,1)+=forces[3*nat+1];

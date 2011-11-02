@@ -4,7 +4,7 @@
 #include <string>
 #include <cassert>
 #include "ActionWithVirtualAtom.h"
-#include "GenericGroup.h"
+#include "Group.h"
 
 using namespace std;
 using namespace PLMD; 
@@ -34,12 +34,18 @@ nl_cut(0)
   registerKeyword(2, "GROUP", "specify the atoms involved in the colvar using one or two groups (GROUP1, GROUP2) of atoms. These groups can either be defined in another action or the atoms in the group can be enumerated on after the GROUP keywords. If one group is present the value of the colvar is calculated for every conceivable combination of atoms in the group. If multiple groups are specified the colvar is calculated using every combination that contains at least one atom from every group"); 
   registerKeyword(0, "UPDATE", "frequency for updates of neighbour lists and dynamic groups");
   registerKeyword(0, "NL_CUTOFF", "the cutoff for distances inside the neighbour list");
+  registerKeyword(0, "DG_CUTOFF", "dynamic groups have a quanity between 1 and 0 which measures the extent to which a quantity can be said to be a member.  This states that atoms whole assignment quantity is less than this value can safely be ignored");
 }
 
 void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
    std::vector<std::string> strings; Atoms& atoms(plumed.getAtoms());
 
    if( testForKey("ATOMS") && testForKey("GROUP") ) error("you cannot mix ATOMS and GROUP keywords");
+   parse("UPDATE",updateFreq);
+
+   parse("NL_CUTOFF",nl_cut);
+   if(nl_cut==0) parse("DG_CUTOFF",nl_cut);
+   else error("no action should define both a NL_CUTOFF and a DG_CUTOFF");
 
    if(!doneRead){
       readAction();
@@ -55,8 +61,9 @@ void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
              }
           } else {
              parseVector("GROUP",strings);
-             GenericGroup* grp=plumed.getActionSet().selectWithLabel<GenericGroup*>( strings[0] );
+             Group* grp=plumed.getActionSet().selectWithLabel<Group*>( strings[0] );
              if( grp ){
+                 grp->setUpdateFreq( updateFreq ); // Do we really need this - i.e. to force neighbour lists to update at the same time as dynamic groups
                  if(strings.size()!=1) error("you can only use one group at a time when you specify an GROUP");
                  atomGroupName=strings[0];
                  atoms.getGroupIndices( atomGroupName, t ); 
@@ -109,12 +116,20 @@ void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
    unsigned nn=indexes.size();
    positions.resize(nn); masses.resize(nn); gderivs.resize(nn); 
    charges.resize(nn); skips.resize(nn); forces.resize(nn);
+   // This is stuff for super groups
+   group_f.resize(nn); group_df.resize(nn);
 
    // Now sort out the dependencies
    clearDependencies();  
+   // Virtual atoms
    for(unsigned j=0;j<indexes.size();++j){
      skips[j]=false;
      if(indexes[j]>=atoms.getNatoms()) addDependency(atoms.virtualAtomsActions[indexes[j]-atoms.getNatoms()]);
+   }
+   // Groups
+   if( atomGroupName!=getLabel() ){
+       Group* grp=plumed.getActionSet().selectWithLabel<Group*>( atomGroupName );
+       addDependency( grp );
    }
 
    // Read periodic boundary condition stuff
@@ -147,6 +162,9 @@ void ActionAtomistic::calculateNumericalDerivatives(){
     for(int k=0;k<3;k++){
        savedPositions[i][k]=positions[i][k];
        positions[i][k]=positions[i][k]+delta;
+       if( atomGroupName!=getLabel() ){ 
+           Group* grp=plumed.getActionSet().selectWithLabel<Group*>( atomGroupName ); grp->calculate();
+       }
        calculate();
        positions[i][k]=savedPositions[i][k];
        for(int j=0;j<nval;j++){
@@ -161,6 +179,9 @@ void ActionAtomistic::calculateNumericalDerivatives(){
        box(i,k)=box(i,k)+delta;
        pbc.setBox(box);
        for(int j=0;j<natoms;j++) positions[j]=pbc.scaledToReal(positions[j]);
+       if( atomGroupName!=getLabel() ){
+           Group* grp=plumed.getActionSet().selectWithLabel<Group*>( atomGroupName ); grp->calculate();
+       }
        calculate();
        box(i,k)=arg0;
        pbc.setBox(box);
@@ -169,6 +190,9 @@ void ActionAtomistic::calculateNumericalDerivatives(){
     }
  }
 
+ if( atomGroupName!=getLabel() ){
+     Group* grp=plumed.getActionSet().selectWithLabel<Group*>( atomGroupName ); grp->calculate();
+ }
  calculate();
  clearDerivatives();
  for(int j=0;j<nval;j++){
@@ -186,15 +210,6 @@ void ActionAtomistic::calculateNumericalDerivatives(){
   }
 }
 
-bool ActionAtomistic::updateIsOn() const {
-  return (updateFreq>0);
-}
-
-bool ActionAtomistic::usingDynamicGroups() const {
-  return ( atomGroupName!=getLabel() );
-}
-
-
 void ActionAtomistic::prepare(){
   if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
      for(unsigned i=0;i<skips.size();++i) skips[i]=false;
@@ -202,12 +217,13 @@ void ActionAtomistic::prepare(){
   }
 }
 
-void ActionAtomistic::updateDynamicAtoms(){
-  GenericGroup* grp=plumed.getActionSet().selectWithLabel<GenericGroup*>( atomGroupName );
-  if( grp ) grp->updateAtomSelection( skips );
-  if( nl_cut>0 ) updateNeighbourList( nl_cut, skips );   // Note the u -- horay!!!
-  plumed.getAtoms().updateSkipsForGroup( atomGroupName, skips );
-}
+//void ActionAtomistic::updateDynamicAtoms(){
+//  Group* grp=plumed.getActionSet().selectWithLabel<Group*>( atomGroupName );
+//  skips.assign(skips.size(),false);
+//  if( grp ) grp->updateAtomSelection( skips );
+//  if( nl_cut>0 ) updateNeighbourList( nl_cut, skips );   // Note the u -- horay!!!
+//  plumed.getAtoms().updateSkipsForGroup( atomGroupName, skips );
+//}
 
 void ActionAtomistic::retrieveData(){
   box=plumed.getAtoms().box; 
@@ -215,16 +231,28 @@ void ActionAtomistic::retrieveData(){
   plumed.getAtoms().getAtomsInGroup( atomGroupName, positions, charges, masses );
 }
 
-void ActionAtomistic::addGroupDerivatives(){
-  GenericGroup* grp=plumed.getActionSet().selectWithLabel<GenericGroup*>( atomGroupName );
-  assert( grp ); double ader;
-  grp->getGroupDerivatives( gderivs ); 
-  for(unsigned i=0;i<getNumberOfValues();++i){
-     for(unsigned j=0;j<gderivs.size();++j){
-        ader=getDerivative( i, 3*j+0 ); setDerivative( i, 3*j+0, ( gderivs[j][0] + ader ) * positions[j][0] );
-        ader=getDerivative( i, 3*j+1 ); setDerivative( i, 3*j+1, ( gderivs[j][1] + ader ) * positions[j][1] );
-        ader=getDerivative( i, 3*j+2 ); setDerivative( i, 3*j+2, ( gderivs[j][2] + ader ) * positions[j][2] );        
-     }
+void ActionAtomistic::calculateAtomisticActions(){
+  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
+      skips.assign(skips.size(),false); 
+      if( atomGroupName!=getLabel() ){
+         Group* grp=plumed.getActionSet().selectWithLabel<Group*>( atomGroupName );
+         grp->retrieveSkips( skips );  
+      }
+      updateDynamicContent( nl_cut, skips );   
+      plumed.getAtoms().updateSkipsForGroup( atomGroupName, skips );
+      lastUpdate=getStep();
+  }
+
+  if( atomGroupName!=getLabel() ){
+     Group* grp=plumed.getActionSet().selectWithLabel<Group*>( atomGroupName );
+     group_val=grp->getGroupData( group_f, group_df, group_vir );   
+  }
+}
+
+void ActionAtomistic::retrieveSkips( std::vector<bool>& s ) const {
+  assert( s.size()==skips.size() );
+  for(unsigned i=0;i<skips.size();++i){
+     if( !s[i] && skips[i] ) s[i]=true;
   }
 }
 

@@ -424,8 +424,8 @@ void Atoms::insertGroup(const std::string&name,const unsigned& n,const std::vect
 }
 
 void Atoms::removeGroup(const std::string&name){
-  assert(groups.count(name)==1);
-  groups.erase(name);
+  assert(groups.count(name)==1 || groups.count(name)==0);
+  if(groups.count(name)==1) groups.erase(name);
 }
 
 void Atoms::addMolecule( ActionSetup& a, const std::string& name, std::vector<std::string>& atoms ){

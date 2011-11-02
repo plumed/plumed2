@@ -35,14 +35,14 @@ public:
 /// Return the number of colvars
   unsigned getNumberOfColvars() const;
 /// Routines used to transfer the derivatives for a single colvar onto the list of derivatives
-  void mergeFunctions( const unsigned& vf, const unsigned& nf, const double& df );
-  void mergeFunctions( const std::string& valname, const unsigned& nf, const double& df );
+  void mergeFunctions( const unsigned& vf, const unsigned& nf, const double& f, const double& df );
+  void mergeFunctions( const std::string& valname, const unsigned& nf, const double& f, const double& df );
 /// Interpret the use of the groups keyword
   void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups );
 /// Interpret the appearance of the atoms keyword
   void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist );
 /// Update the neighbour list
-  void updateNeighbourList( const double& cutoff, std::vector<bool>& skips );
+  void updateDynamicContent( const double& cutoff, std::vector<bool>& skips );
 /// Calculate a single colvar
   double calcFunction( const unsigned& i );
 /// Compute a single colvar
@@ -67,54 +67,30 @@ double ColvarCoordination::calcFunction( const unsigned& i ){
 }
 
 inline
-void ColvarCoordination::mergeFunctions( const unsigned& vf, const unsigned& nf, const double& df ){
+void ColvarCoordination::mergeFunctions( const unsigned& vf, const unsigned& nf, const double& f, const double& df ){
   const unsigned nat=getNumberOfAtoms();
   
-  addDerivative( vf, 3*central[nf] + 0 , df*derivatives[0][0] );
-  addDerivative( vf, 3*central[nf] + 1 , df*derivatives[0][1] );
-  addDerivative( vf, 3*central[nf] + 2 , df*derivatives[0][2] );
+  addAtomicDerivative( vf, central[nf], f, df*derivatives[0] );
   unsigned nd=1;
   for(unsigned i=0;i<sphere[nf].skipto.size();i=sphere[nf].skipto[i]){
-      addDerivative( vf, 3*sphere[nf].index[i] + 0 ,  df*derivatives[nd][0] );
-      addDerivative( vf, 3*sphere[nf].index[i] + 1 ,  df*derivatives[nd][1] );
-      addDerivative( vf, 3*sphere[nf].index[i] + 2 ,  df*derivatives[nd][2] );
+      addAtomicDerivative( vf, sphere[nf].index[i], f, df*derivatives[nd] );
       nd++;
   }
-  addDerivative( vf, 3*nat + 0, df*virial(0,0) );
-  addDerivative( vf, 3*nat + 1, df*virial(0,1) );
-  addDerivative( vf, 3*nat + 2, df*virial(0,2) );
-  addDerivative( vf, 3*nat + 3, df*virial(1,0) );
-  addDerivative( vf, 3*nat + 4, df*virial(1,1) );
-  addDerivative( vf, 3*nat + 5, df*virial(1,2) );
-  addDerivative( vf, 3*nat + 6, df*virial(2,0) );
-  addDerivative( vf, 3*nat + 7, df*virial(2,1) );
-  addDerivative( vf, 3*nat + 8, df*virial(2,2) );
+  addVirial( vf, f, df*virial );
 }
 
 inline
-void ColvarCoordination::mergeFunctions( const std::string& valname, const unsigned& nf, const double& df ){
+void ColvarCoordination::mergeFunctions( const std::string& valname, const unsigned& nf, const double& f, const double& df ){
   unsigned vf=getValueNumberForLabel( valname );
   const unsigned nat=getNumberOfAtoms();
 
-  addDerivative( vf, 3*central[nf] + 0 , df*derivatives[0][0] );
-  addDerivative( vf, 3*central[nf] + 1 , df*derivatives[0][1] );
-  addDerivative( vf, 3*central[nf] + 2 , df*derivatives[0][2] );
+  addAtomicDerivative( vf, central[nf], f, df*derivatives[0] );
   unsigned nd=1;
   for(unsigned i=0;i<sphere[nf].skipto.size();i=sphere[nf].skipto[i]){
-      addDerivative( vf, 3*sphere[nf].index[i] + 0 ,  df*derivatives[nd][0] );
-      addDerivative( vf, 3*sphere[nf].index[i] + 1 ,  df*derivatives[nd][1] );
-      addDerivative( vf, 3*sphere[nf].index[i] + 2 ,  df*derivatives[nd][2] );
+      addAtomicDerivative( vf, sphere[nf].index[i], f, df*derivatives[nd] );
       nd++;
   }
-  addDerivative( vf, 3*nat + 0, df*virial(0,0) );
-  addDerivative( vf, 3*nat + 1, df*virial(0,1) );
-  addDerivative( vf, 3*nat + 2, df*virial(0,2) );
-  addDerivative( vf, 3*nat + 3, df*virial(1,0) );
-  addDerivative( vf, 3*nat + 4, df*virial(1,1) );
-  addDerivative( vf, 3*nat + 5, df*virial(1,2) );
-  addDerivative( vf, 3*nat + 6, df*virial(2,0) );
-  addDerivative( vf, 3*nat + 7, df*virial(2,1) );
-  addDerivative( vf, 3*nat + 8, df*virial(2,2) );
+  addVirial( vf, f, df*virial );
 }
 
 }

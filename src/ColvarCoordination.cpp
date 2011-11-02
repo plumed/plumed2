@@ -50,7 +50,7 @@ void ColvarCoordination::interpretGroupsKeyword( const unsigned& natoms, const s
 
 void ColvarCoordination::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist ){ assert(false); }
 
-void ColvarCoordination::updateNeighbourList( const double& cutoff, std::vector<bool>& skips ){
+void ColvarCoordination::updateDynamicContent( const double& cutoff, std::vector<bool>& skips ){
   unsigned n=0;
   
   std::vector<unsigned> tmpskip( central.size() );

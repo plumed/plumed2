@@ -27,13 +27,17 @@ class ActionAtomistic : public ActionWithExternalArguments {
   Tensor                virial;
   std::vector<double>   masses;
   std::vector<double>   charges;
+  double                group_val;
+  std::vector<double>   group_f;
+  std::vector<Vector>   group_df;
+  Tensor                group_vir;
 
   std::vector<Vector>   forces;           // forces on the needed atoms
 
   bool                  lockRequestAtoms; // forbid changes to request atoms
 
 // Stuff for dynamic content
-  unsigned              updateFreq;
+  int                   updateFreq;
   unsigned              lastUpdate;
   double                nl_cut;
 protected:
@@ -73,14 +77,22 @@ protected:
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 /// Apply forces to the atoms
   void applyForces( const std::vector<Vector>& forces, const Tensor& virial );
-/// Is it time to update any dynamic content in the "colvar"
-  bool updateTime() const ;
+/// Retrieve the set of skips for this quantity
+  void retrieveSkips( std::vector<bool>& s ) const ;
 /// Update the requests for the dynamic atom lists
   void updateDynamicAtoms();
+/// Set the update frequency (used to sync colvars and groups that are dependent on them)
+  void setUpdateFreq( const unsigned& u);
 /// Check if we are using updates
   bool updateIsOn() const;
 /// Check if we have dynamic groups
   bool usingDynamicGroups() const;
+/// Add some derivative to an atom 
+  void addAtomicDerivative( const unsigned& vf, const unsigned& atom, const double& val, const Vector& der );
+/// Add some derivative to the virial
+  void addVirial( const unsigned& vf, const double& f, const Tensor& vir );
+/// Do updating of dynamic content, neighbour lists + dynamic groups and so on
+  void calculateAtomisticActions();
 public:
 
 // virtual functions:
@@ -93,17 +105,12 @@ public:
 
   virtual void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups )=0;
   virtual void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist )=0;
-  virtual void updateNeighbourList( const double& cutoff, std::vector<bool>& at_skips  )=0; 
+  virtual void updateDynamicContent( const double& cutoff, std::vector<bool>& at_skips  )=0; 
   void prepare();
   void calculateNumericalDerivatives();
   void lockRequests();
   void unlockRequests();
 };
-
-inline
-bool ActionAtomistic::updateTime() const {
-  return ( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq );
-}
 
 inline
 unsigned ActionAtomistic::getNumberOfAtoms() const {
@@ -163,6 +170,61 @@ void ActionAtomistic::lockRequests() {
 inline
 void ActionAtomistic::unlockRequests() {
   lockRequestAtoms=false;
+}
+
+inline
+bool ActionAtomistic::updateIsOn() const {
+  return (updateFreq>0);
+}
+
+inline
+void ActionAtomistic::setUpdateFreq( const unsigned& u ){
+  updateFreq=u;
+}
+
+inline
+bool ActionAtomistic::usingDynamicGroups() const {
+  return ( atomGroupName!=getLabel() );
+}
+
+inline
+void ActionAtomistic::addAtomicDerivative( const unsigned& vf, const unsigned& atom, const double& val, const Vector& der ){
+  if( atomGroupName!=getLabel() ){
+     addDerivative( vf, 3*atom + 0, val*group_df[atom][0] + group_f[atom]*der[0] );
+     addDerivative( vf, 3*atom + 1, val*group_df[atom][1] + group_f[atom]*der[1] );
+     addDerivative( vf, 3*atom + 2, val*group_df[atom][2] + group_f[atom]*der[2] );
+  } else {
+     addDerivative( vf, 3*atom + 0, der[0] );
+     addDerivative( vf, 3*atom + 1, der[1] );
+     addDerivative( vf, 3*atom + 2, der[2] );
+  }
+}
+
+inline
+void ActionAtomistic::addVirial( const unsigned& vf, const double& f, const Tensor& vir ){
+  const unsigned nat=getNumberOfAtoms();
+  if( atomGroupName!=getLabel() ){
+    warning("I am not sure if virial of groups is implemented properly");
+    addDerivative( vf, 3*nat + 0, vir(0,0) );
+    addDerivative( vf, 3*nat + 1, vir(0,1) );
+    addDerivative( vf, 3*nat + 2, vir(0,2) );
+    addDerivative( vf, 3*nat + 3, vir(1,0) );
+    addDerivative( vf, 3*nat + 4, vir(1,1) );
+    addDerivative( vf, 3*nat + 5, vir(1,2) );
+    addDerivative( vf, 3*nat + 6, vir(2,0) );
+    addDerivative( vf, 3*nat + 7, vir(2,1) );
+    addDerivative( vf, 3*nat + 8, vir(2,2) );
+  } else {
+    addDerivative( vf, 3*nat + 0, vir(0,0) );
+    addDerivative( vf, 3*nat + 1, vir(0,1) );
+    addDerivative( vf, 3*nat + 2, vir(0,2) );
+    addDerivative( vf, 3*nat + 3, vir(1,0) );
+    addDerivative( vf, 3*nat + 4, vir(1,1) );
+    addDerivative( vf, 3*nat + 5, vir(1,2) );
+    addDerivative( vf, 3*nat + 6, vir(2,0) );
+    addDerivative( vf, 3*nat + 7, vir(2,1) );
+    addDerivative( vf, 3*nat + 8, vir(2,2) );
+  }
 }
 
 }
