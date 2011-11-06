@@ -69,7 +69,10 @@ unsigned ActionWithArguments::getNumberOfArguments()const{
 inline
 void ActionWithArguments::applyForces( const std::vector<double>& forces ){
   assert( forces.size()==arguments.size() );
-  for(unsigned i=0;i<arguments.size();++i){ arguments[i]->inputForce+=forces[i]; }
+  for(unsigned i=0;i<arguments.size();++i){ 
+    arguments[i]->hasForce=true;
+    arguments[i]->inputForce+=forces[i]; 
+  }
 }
 
 inline

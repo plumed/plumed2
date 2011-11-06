@@ -17,6 +17,7 @@ class ActionAtomistic : public ActionWithExternalArguments {
 
   std::string atomGroupName;
   bool doneRead,pbcOn;
+  FILE* forcefile;
 
 // Stuff for atoms
   std::vector<bool>     skips;

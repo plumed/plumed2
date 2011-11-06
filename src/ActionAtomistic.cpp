@@ -14,6 +14,7 @@ ActionAtomistic::~ActionAtomistic(){
   plumed.getAtoms().remove(this);
 // Get rid of this actions group
   if( atomGroupName==getLabel() ) plumed.getAtoms().removeGroup(atomGroupName);
+  if( forcefile ) fclose(forcefile);
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
@@ -21,6 +22,7 @@ ActionWithExternalArguments(ao),
 atomGroupName("none"),
 doneRead(false),
 pbcOn(true),
+forcefile(NULL),
 lockRequestAtoms(false),
 updateFreq(0),
 lastUpdate(0),
@@ -35,6 +37,7 @@ nl_cut(0)
   registerKeyword(0, "UPDATE", "frequency for updates of neighbour lists and dynamic groups");
   registerKeyword(0, "NL_CUTOFF", "the cutoff for distances inside the neighbour list");
   registerKeyword(0, "DG_CUTOFF", "dynamic groups have a quanity between 1 and 0 which measures the extent to which a quantity can be said to be a member.  This states that atoms whole assignment quantity is less than this value can safely be ignored");
+  registerKeyword(0, "DUMPFORCES", "(debug only) this keyword can be used to force action atomistic to print out the forces on it every step so that they can be debugged");
 }
 
 void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
@@ -137,6 +140,17 @@ void ActionAtomistic::readActionAtomistic( int& maxatoms, unsigned& maxgroups ){
    pbcOn=!nopbc; parseFlag("PBC",pbcOn);
    if(pbcOn) log.printf("  using periodic boundary conditions\n");
    else log.printf("  without periodic boundary conditions\n");
+
+  // Read force dumping stuff
+  std::string forcefilename; parse("DUMPFORCES",forcefilename); 
+  if( forcefilename.length()>0 ){
+    if(comm.Get_rank()==0){
+      forcefile=fopen(forcefilename.c_str(),"wa");
+      log.printf("  writing forces on file %s to debug\n",forcefilename.c_str());
+      fprintf(forcefile,"#! FIELDS time parameter force");
+      fprintf(forcefile,"\n");
+    }
+  }
 }
 
 bool ActionAtomistic::readBackboneAtoms( const std::string& type, std::vector< std::vector<unsigned> >& backbone ){
@@ -254,4 +268,15 @@ void ActionAtomistic::retrieveSkips( std::vector<bool>& s ) const {
 
 void ActionAtomistic::applyForces( const std::vector<Vector>& forces, const Tensor& virial ){
   plumed.getAtoms().applyForceToAtomsInGroup( atomGroupName, forces, virial );
+  if( forcefile ){
+      for(unsigned i=0;i<getNumberOfAtoms();++i){
+          fprintf( forcefile, "%f %d %f \n", getTime(), 3*i+0, forces[i][0] );
+          fprintf( forcefile, "%f %d %f \n", getTime(), 3*i+1, forces[i][1] );
+          fprintf( forcefile, "%f %d %f \n", getTime(), 3*i+2, forces[i][2] );
+      }
+      unsigned natoms=getNumberOfAtoms();
+      for(unsigned j=0;j<3;++j) for(unsigned k=0;k<3;++k){
+         fprintf( forcefile, "%f %d %f \n", getTime(), 3*natoms+3*j+k, virial(j,k) );
+      }
+  } 
 }

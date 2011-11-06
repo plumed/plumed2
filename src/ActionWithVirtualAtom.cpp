@@ -50,7 +50,9 @@ void ActionWithVirtualAtom::interpretAtomsKeyword( const std::vector<std::vector
 
 void ActionWithVirtualAtom::apply(){
   const Vector & forces(plumed.getAtoms().forces[index]);
-  for(unsigned i=0;i<getNumberOfAtoms();++i) f[i]=matmul(derivatives[i],forces);
+  for(unsigned i=0;i<getNumberOfAtoms();++i){
+     f[i]=matmul(derivatives[i],forces);
+  }
   Tensor v; v.clear(); applyForces( f, v );	
 }
 

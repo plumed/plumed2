@@ -25,7 +25,7 @@ int Bias::setDefaultStride() const {
 
 inline
 void Bias::setOutputForces(int i,double f){
-  outputForces[i]=f;
+  outputForces[i]=f; addDerivative( 0, i,-f );
 }
 
 inline
