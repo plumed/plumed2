@@ -8,25 +8,17 @@ namespace PLMD{
 
 /// Action representing a function of other actions
 class Function : public ActionWithArguments {
+private:
+  std::vector<double> arguments, derivatives;
 protected:
   void readFunction();
 public:
   Function(const ActionOptions&);
   virtual ~Function(){};
+  void calculate();
   void apply();
-  void setDerivatives(int,double);
-  void setDerivatives(Value*,int,double);
+  virtual double compute( const std::vector<double>& arguments, std::vector<double> derivatives )=0;
 };
-
-inline
-void Function::setDerivatives(int i,double d){
-//  getValue(0)->setDerivatives(i,d);
-}
-
-inline
-void Function::setDerivatives(Value*v,int i,double d){
-//  v->setDerivatives(i,d);
-}
 
 }
 

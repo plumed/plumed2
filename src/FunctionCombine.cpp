@@ -35,7 +35,7 @@ class FunctionCombine :
   std::vector<double> powers;
 public:
   FunctionCombine(const ActionOptions&);
-  void calculate();
+  double compute(  const std::vector<double>& arguments, std::vector<double> derivatives );
 };
 
 
@@ -83,12 +83,15 @@ powers(getNumberOfArguments(),1.0)
   log.printf("\n");
 }
 
-void FunctionCombine::calculate(){
+double FunctionCombine::compute( const std::vector<double>& arguments, std::vector<double> derivatives ){
+  assert( getNumberOfArguments()==arguments.size()|| getNumberOfArguments()==derivatives.size() );
+
   double combine=0.0;
   for(unsigned i=0;i<coefficients.size();++i){
-    combine+=coefficients[i]*pow(getArgument(i),powers[i]);
-    setDerivatives(i,coefficients[i]*powers[i]*pow(getArgument(i),powers[i]-1.0));
-  };
+    combine+=coefficients[i]*pow(arguments[i],powers[i]);
+    derivatives[i]=coefficients[i]*powers[i]*pow(arguments[i],powers[i]-1.0);
+  }
+  return combine;
 }
 
 }

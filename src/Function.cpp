@@ -21,6 +21,15 @@ void Function::readFunction(){
   } else {
      error("input to PERIODIC keyword makes no sense should be NO or the domain of the function");
   }
+  addValue("value", true, true );
+  arguments.resize( getNumberOfArguments() ); derivatives.resize( getNumberOfArguments() );
+}
+
+void Function::calculate(){
+  for(unsigned i=0;i<getNumberOfArguments();++i) arguments[i]=getArgument(i);
+  double value=compute( arguments, derivatives );
+  for(unsigned i=0;i<getNumberOfArguments();++i) addDerivative( 0, i, derivatives[i] );
+  setValue(0, value, 1.0);
 }
 
 void Function::apply(){
@@ -33,18 +42,8 @@ void Function::apply(){
        at_least_one_forced=true;
        for(unsigned j=0;j<forces.size();j++){ f[j]+=forces[j]; }
     } 
-    //if(!getValue(i)->checkForced()) continue;
-    //at_least_one_forced=true;
-    //const vector<double> & derivatives(getValue(i)->getDerivatives());
-    //for(unsigned j=0;j<derivatives.size();j++){
-    //  f[j]+=getForce(i)*derivatives[j];
-    //}
   }
   if(at_least_one_forced) applyForces( f );
-//     for(unsigned i=0;i<getNumberOfArguments();++i){
-//       //getArguments()[i]->addForce(f[i]);
-//     }
-//  }
 }
 
 
