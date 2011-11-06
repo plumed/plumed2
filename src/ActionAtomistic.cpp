@@ -194,7 +194,9 @@ void ActionAtomistic::calculateNumericalDerivatives(){
      Group* grp=plumed.getActionSet().selectWithLabel<Group*>( atomGroupName ); grp->calculate();
  }
  calculate();
- clearDerivatives();
+ clearDerivatives(); bool isvatom=false;
+ ActionWithVirtualAtom* vatom=dynamic_cast<ActionWithVirtualAtom*>(this);
+ if ( vatom ){ isvatom=true; } 
  for(int j=0;j<nval;j++){
     double ref=getValue(j);
     for(int i=0;i<natoms;i++){
@@ -206,7 +208,9 @@ void ActionAtomistic::calculateNumericalDerivatives(){
     for(int i=0;i<3;i++) for(int k=0;k<3;k++) virial(i,k) = (valuebox[j](i,k)-ref)/delta;
 // BE CAREFUL WITH NON ORTHOROMBIC CELL
     virial=-1.0*matmul(box.transpose(),virial.transpose());
-    for(int i=0;i<3;i++) for(int k=0;k<3;k++) addDerivative( j, 3*natoms+3*k+i, virial(i,k) ); 
+    if (!isvatom) {
+       for(int i=0;i<3;i++) for(int k=0;k<3;k++) addDerivative( j, 3*natoms+3*k+i, virial(i,k) ); 
+    }
   }
 }
 

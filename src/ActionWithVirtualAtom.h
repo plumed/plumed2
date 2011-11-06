@@ -49,6 +49,7 @@ AtomNumber ActionWithVirtualAtom::getIndex()const{
 inline
 void ActionWithVirtualAtom::setPosition(const Vector & pos){
   plumed.getAtoms().positions[index]=pos;
+  setValue( 0,pos[0], 1.0 ); setValue(1, pos[1], 1.0 ) ; setValue( 2, pos[2], 1.0 ); 
 }
 
 inline
@@ -63,7 +64,16 @@ void ActionWithVirtualAtom::setCharge(double c){
 
 inline
 void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d){
+  assert( d.size()==derivatives.size() );
+
   derivatives=d;
+  for(unsigned i=0;i<getNumberOfAtoms();++i) {
+     for(unsigned j=0;j<3;++j){
+        addDerivative(0, 3*i+0, d[i](0,j) ); 
+        addDerivative(1, 3*i+1, d[i](1,j) ); 
+        addDerivative(2, 3*i+2, d[i](2,j) );
+     }
+  }
 }
 
 }

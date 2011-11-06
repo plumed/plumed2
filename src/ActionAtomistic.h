@@ -113,6 +113,11 @@ public:
 };
 
 inline
+const Tensor & ActionAtomistic::getBox() const {
+  return box;
+}
+
+inline
 unsigned ActionAtomistic::getNumberOfAtoms() const {
   return positions.size();
 }

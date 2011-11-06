@@ -55,10 +55,10 @@ void GenericCOM::calculate(){
     pos+=(getMasses(i)/mass)*getPositions(i);
     deriv[i]=(getMasses(i)/mass)*Tensor::identity();
   }
-  setPosition(pos);
   setMass(mass);
   setCharge(charge);
   setAtomsDerivatives(deriv);
+  setPosition(pos);
 }
 
 }
