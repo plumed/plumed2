@@ -1,4 +1,5 @@
-#include "Colvar.h"
+// This file is arse
+/*#include "Colvar.h"
 #include "ActionRegister.h"
 
 #include <string>
@@ -8,6 +9,7 @@
 using namespace std;
 
 namespace PLMD{
+*/
 
 //+PLUMEDOC COLVAR TEMPLATE
 /**
@@ -15,7 +17,8 @@ This is just a template variable
 
 */
 //+ENDPLUMEDOC
-   
+
+/*   
 class ColvarTemplate : public Colvar {
   bool pbc;
 
@@ -46,7 +49,7 @@ pbc(true)
 
   addValueWithDerivatives("");
 
-  requestAtoms(atoms);
+  //requestAtoms(atoms);
 }
 
 
@@ -68,7 +71,7 @@ void ColvarTemplate::calculate(){
   setValue           (value);
 }
 
-}
+}*/
 
 
 
