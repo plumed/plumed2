@@ -25,9 +25,9 @@ void ColvarCoordination::interpretGroupsKeyword( const unsigned& natoms, const s
      unsigned k;
      central.resize( groups[0].size() ); sphere.resize( groups[0].size() );
      for(unsigned i=0;i<groups[0].size();++i){
-        k=0; central[i]=i; sphere[i].resize( groups[0].size()-1 );
-        for(unsigned j=0;j<groups[0].size();++j){
-            if(i!=j){ sphere[i].index[k]=k; k++; } 
+        k=0; central[i]=i; sphere[i].resize( groups[0].size()-i-1 );
+        for(unsigned j=i+1;j<groups[0].size();++j){
+            if(i!=j){ sphere[i].index[k]=j; k++; } 
         }
      }
      neighbours.resize( groups[0].size() -1 ); derivatives.resize( groups[0].size() );
@@ -36,7 +36,7 @@ void ColvarCoordination::interpretGroupsKeyword( const unsigned& natoms, const s
      for(unsigned i=0;i<groups[0].size();++i){
         central[i]=i; sphere[i].resize( groups[1].size() );
         for(unsigned j=0;j<groups[1].size();++j){
-            if(i!=j){ sphere[i].index[j]=groups[0].size()+j; }
+            if(true){ sphere[i].index[j]=groups[0].size()+j; }
         }
      }
      neighbours.resize( groups[1].size() ); derivatives.resize( 1+groups[1].size() );
