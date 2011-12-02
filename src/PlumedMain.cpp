@@ -316,6 +316,10 @@ void PlumedMain::readInputFile(std::string str){
     if(words.size()==0)continue;
     else if(words[0]=="ENDPLUMED") break;
     else if(words[0]=="LOAD") load(words);
+    else if(words[0]=="_SET_SUFFIX"){
+      assert(words.size()==2);
+      setSuffix(words[1]);
+    }
     else if(words[0]=="INCLUDE"){
       assert(words.size()==2);
       readInputFile(words[1]);

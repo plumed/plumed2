@@ -77,6 +77,9 @@ private:
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
   std::vector<ActionPilot*> pilots;
 
+/// Suffix string for file opening, useful for multiple simulations in the same directory
+  std::string suffix;
+
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
@@ -124,6 +127,10 @@ public:
   void exit(int c=0);
 /// Load a shared library
   void load(std::vector<std::string> & words);
+/// Get the suffix string
+  const std::string & getSuffix()const;
+/// Set the suffix string
+  void setSuffix(const std::string&);
 };
 
 /////
@@ -138,6 +145,17 @@ inline
 Atoms& PlumedMain::getAtoms(){
   return atoms;
 }
+
+inline
+const std::string & PlumedMain::getSuffix()const{
+  return suffix;
+}
+
+inline
+void PlumedMain::setSuffix(const std::string&s){
+  suffix=s;
+}
+
 
 }
 
