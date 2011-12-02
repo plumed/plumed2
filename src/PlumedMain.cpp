@@ -369,6 +369,10 @@ void PlumedMain::prepareDependencies(){
 // new/changed dependency (up to now, only useful for dependences on virtual atoms,
 // which can be dynamically changed).
 //
+
+// First switch off all actions
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++) (*p)->deactivate();
+
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
   for(unsigned i=0;i<pilots.size();++i){
@@ -431,9 +435,6 @@ void PlumedMain::performCalc(){
 
 // this is updating the MD copy of the forces
   atoms.updateForces();
-
-// Finally switch off all actions (they will be switched on at next step
-  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++) (*p)->deactivate();
 
 }
 
