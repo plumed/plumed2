@@ -1,5 +1,4 @@
 #include "Function.h"
-#include "Colvar.h"
 #include <cassert>
 
 using namespace PLMD;

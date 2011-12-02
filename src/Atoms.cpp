@@ -407,15 +407,15 @@ void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a){
   virtualAtomsActions.pop_back();
 }
 
-std::string Atoms::interpretIndex( const unsigned& num ) const {
-  assert( num<positions.size() );
-  if( num<natoms ){
-      std::string nn; Tools::convert(num+1,nn); 
-      return nn;
-  } else {
-      return virtualAtomsActions[num-natoms]->getLabel();
-  }
-}
+// std::string Atoms::interpretIndex( const unsigned& num ) const {
+//   assert( num<positions.size() );
+//   if( num<natoms ){
+//       std::string nn; Tools::convert(num+1,nn); 
+//       return nn;
+//   } else {
+//       return virtualAtomsActions[num-natoms]->getLabel();
+//   }
+// }
 
 void Atoms::insertGroup(const std::string&name,const unsigned& n,const std::vector<unsigned>&a){
   assert(groups.count(name)==0);
@@ -474,6 +474,7 @@ void Atoms::readAtomsIntoGroup( const std::string& name, std::vector<std::string
     if( atom.index()>natoms ) actions[ actions.size()-1 ]->error("atom index is larger than number of atoms in system");
 
     if( ok ) indexes.push_back( atom.index() );
+    // here we check if the atom name is the name of a virtual atom
     if( !ok ){
         for(unsigned j=0;j<virtualAtomsActions.size();++j){
             if( virtualAtomsActions[j]->getLabel()==atoms[i] ){
@@ -481,6 +482,14 @@ void Atoms::readAtomsIntoGroup( const std::string& name, std::vector<std::string
                 indexes.push_back( virtualAtomsActions[j]->getIndex().index() );
             }
         }
+    }
+    // here we check if the atom name is the name of a group
+    if(!ok){
+      if(groups.count(atoms[i])){
+        map<string,AtomGroup>::const_iterator it=groups.find(atoms[i]);
+        for(unsigned j=0;j<(*it).second.indexes.size();++j) indexes.push_back( (*it).second.indexes[j] );
+        ok=true;
+      }
     }
     if (!ok) actions[ actions.size()-1 ]->error( atoms[i] + " is neither an atom index or a virtual atom");
   }
@@ -520,6 +529,17 @@ void Atoms::putBackboneInGroup( const std::string& name, const std::string& type
 
 void Atoms::getGroupIndices( const std::string&name, std::vector<unsigned>&a ){
   groups[name].getIndexes(a);
+}
+
+std::string Atoms::interpretIndex( const std::string& name, const unsigned& num ){
+  assert( num<groups[name].indexes.size() );
+  unsigned nn=groups[name].indexes[num];
+  if( num<natoms ){
+      std::string ns; Tools::convert(nn+1,ns);
+      return ns;
+  } else {
+      return virtualAtomsActions[num-natoms]->getLabel();
+  }
 }
 
 void Atoms::getAtomsInGroup(const std::string& name, std::vector<Vector>& p, std::vector<double>& q, std::vector<double>& m){

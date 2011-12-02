@@ -1,4 +1,4 @@
-#include "ColvarDistinguishable.h"
+#include "ColvarWithModifiers.h"
 #include "ActionRegister.h"
 
 #include <string>
@@ -43,24 +43,36 @@ DISTNACE GROUP1=3 GROUP2=4,5 LABEL=d1
 */
 //+ENDPLUMEDOC
    
-class ColvarDistance : public ColvarDistinguishable {
+class ColvarDistance : public ColvarWithModifiers {
   int component;
 public:
   ColvarDistance(const ActionOptions&);
 // active methods:
-  virtual double compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial );
+  double compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial );
+  void interpretGroupsKeyword( const std::vector<unsigned>& boundaries, unsigned& maxatoms );
 };
 
 PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
 
 ColvarDistance::ColvarDistance(const ActionOptions&ao):
-ColvarDistinguishable(ao),
+ColvarWithModifiers(ao),
 component(-1)
 {
-  allowKeyword("GROUP" );
+  setNeighbourListStyle("skipAll");
+  registerKeyword(2,"ATOMS","calculate the distance between this pair of atoms.  To calculate multiple distances use ATOMS1, ATOMS2, ...");
+  registerKeyword(2,"GROUP","calculate the distances between every pair of atoms in the group.  Alternatively use GROUP1, GROUP2 to calculate all the distances between the atoms in group 1 and the atoms in group 2."); 
   registerKeyword(0,"COMPONENT","use this if you only want the X,Y or Z component of the distance");
-  std::vector<double> domain( 2, 0.0 );
-  readActionColvar( 2, domain );
+
+  readActionAtomistic();
+  // Read in the atoms
+  int maxatoms=2; 
+  readAtomsKeyword(maxatoms);
+  readGroupsKeyword(maxatoms);
+
+  // Setup the neighbour list
+  std::vector< std::pair<unsigned, unsigned> > tmp_pair(1); 
+  tmp_pair[0].first=0; tmp_pair[0].second=1;
+  setupNeighbourList( tmp_pair ); 
   
   std::string lab="none"; parse("COMPONENT",lab);
   if( lab=="X" || lab=="x" ){
@@ -72,7 +84,29 @@ component(-1)
   } else if( lab!="none") {
       error( lab + " is not a valid argument for the COMPONENT keyword use X, Y or Z");
   } 
-  checkRead();
+  finishColvarSetup( 0, 0 );
+}
+
+void ColvarDistance::interpretGroupsKeyword( const std::vector<unsigned>& boundaries, unsigned& maxatoms ){
+   AtomicNeighbourList nlist( dynamic_cast<ActionAtomistic*>(this) );
+   if( boundaries.size()==1 ){
+       assert(boundaries[0]==getNumberOfAtoms());
+       for(unsigned i=1;i<getNumberOfAtoms();++i){
+           for(unsigned j=0;j<i;++j){ 
+               nlist.clear(); nlist.addAtom(i); nlist.addAtom(j); addColvar( nlist );
+           }
+       }
+   } else if ( boundaries.size()==2 ){
+       assert(boundaries[1]==getNumberOfAtoms());
+       for(unsigned i=0;i<boundaries[0];++i){
+           for(unsigned j=boundaries[0];j<boundaries[1];++j){ 
+               nlist.clear(); nlist.addAtom(i); nlist.addAtom(j); addColvar( nlist );
+           }
+       }
+   } else {
+      assert(false);
+   }
+   maxatoms=2;
 }
 
 double ColvarDistance::compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){

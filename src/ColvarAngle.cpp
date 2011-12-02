@@ -1,4 +1,4 @@
-#include "ColvarDistinguishable.h"
+#include "ColvarWithModifiers.h"
 #include "ActionRegister.h"
 
 #include <string>
@@ -31,7 +31,7 @@ ANGLE ATOMS1=3,4,5 ATOMS2=6,7,8 LABEL=a1
 //+ENDPLUMEDOC
 
 
-class ColvarAngle : public ColvarDistinguishable {
+class ColvarAngle : public ColvarWithModifiers {
 public:
   ColvarAngle(const ActionOptions&);
 // active methods:
@@ -41,11 +41,13 @@ public:
 PLUMED_REGISTER_ACTION(ColvarAngle,"ANGLE")
 
 ColvarAngle::ColvarAngle(const ActionOptions&ao):
-ColvarDistinguishable(ao)
+ColvarWithModifiers(ao)
 {
-  std::vector<double> domain( 2, 0.0 );
-  readActionColvar( 3, domain );
-  checkRead();
+  setNeighbourListStyle("none");
+  registerKeyword(2,"ATOMS","calculate the angle defined by these three atoms.  To calculate multiple angles use ATOMS1, ATOMS2, ...");
+  readActionAtomistic();
+  int maxatoms=3; readAtomsKeyword(maxatoms);
+  finishColvarSetup( 0, 0 );
 }
 
 double ColvarAngle::compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){

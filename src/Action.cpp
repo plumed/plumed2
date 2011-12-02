@@ -19,10 +19,10 @@ documentation(d),
 forbidden(false)
 {
   assert( key.length()<23 );  // If you find yourself here then you have created a keyword that is too long for the formatting
-  if( compulsory==2 ) forbidden=true;
 }
 
 void Keyword::print_html( Log& log ) const {
+  if(documentation=="modifier") return;
   log.printd("<tr>\n");
   log.printd("<td> <b> %s </b></td>\n",key.c_str() );
   log.printd("<td> %s </td>\n",documentation.c_str() );
@@ -30,6 +30,7 @@ void Keyword::print_html( Log& log ) const {
 }
 
 void Keyword::print( Log& log, const unsigned len ) const {
+  if(documentation=="modifier") return;
   unsigned nlines; nlines=floor( documentation.length() / 60 );
   if ( nlines==0 ){
      log.printf("%23s - %-60s \n", key.c_str(), documentation.c_str() );

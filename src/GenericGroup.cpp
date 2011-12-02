@@ -1,11 +1,11 @@
 #include "ActionRegister.h"
-#include "Group.h"
+#include "ActionAtomistic.h"
 
 using namespace std;
 
 namespace PLMD {
 
-//+PLUMEDOC GROUP STATIC_GROUP
+//+PLUMEDOC GENERIC GROUP
 /**
 Define a group of atoms
 
@@ -20,25 +20,23 @@ GROUP LABEL=label ATOMS=1-20
 */
 //+ENDPLUMEDOC
 
-class GenericGroup : public Group {
+class GenericGroup : public ActionAtomistic {
 public:
   GenericGroup(const ActionOptions&ao);
-  virtual double compute( const std::vector<Vector>& positions, std::vector<double>& contributions, std::vector<Vector>& derivatives, Tensor& virial );
+  void calculate(){};
+  void apply(){};
 };
 
-PLUMED_REGISTER_ACTION(GenericGroup,"STATIC_GROUP")
+PLUMED_REGISTER_ACTION(GenericGroup,"GROUP")
 
 GenericGroup::GenericGroup(const ActionOptions&ao):
-Group(ao)
+ActionAtomistic(ao)
 {
-  readGroup();
-  checkRead();
-}
-
-double GenericGroup::compute( const std::vector<Vector>& positions, std::vector<double>& contributions, std::vector<Vector>& derivatives, Tensor& virial ){
-  assert( positions.size()==contributions.size() && derivatives.size()==positions.size() );
-  for(unsigned i=0;i<positions.size();++i){ contributions[i]=1.0; derivatives[i][0]=derivatives[i][1]=derivatives[i][2]=0.0; }
-  virial.clear();
+  forbidKeyword("STRIDE");
+  registerKeyword( 2, "ATOMS", "the numerical indexes for the set of atoms in the group");
+  setNeighbourListStyle("none");
+  readActionAtomistic();
+  parseAtomList("ATOMS", 0 ); printAllAtoms("contains atoms");
 }
 
 } 

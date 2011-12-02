@@ -28,7 +28,7 @@ init(false)
 
 inline
 void HistogramBead::set( double l, double h, double w){
-	init=true; lowb=l; highb=h; width=w; 
+	init=true; lowb=l; highb=h; width=w*(h-l); 
 	assert( highb>lowb && width>0 );
 }
 

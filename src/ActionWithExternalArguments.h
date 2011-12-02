@@ -16,7 +16,7 @@ protected:
 public:
   ActionWithExternalArguments(const ActionOptions&ao);
 /// Clear the data in the output force arrays
-  virtual void clearOutputForces()=0;
+//  virtual void clearOutputForces()=0;
 /// Retrieve the data from the MD code that is used to calculate this action
   virtual void retrieveData()=0;
 };

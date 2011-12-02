@@ -1,4 +1,4 @@
-#include "ColvarDistinguishable.h"
+#include "ColvarWithModifiers.h"
 #include "ActionRegister.h"
 
 #include <string>
@@ -30,7 +30,7 @@ ANGLE ATOMS1=3,4,5,6 ATOMS2=7,8,9,10 LABEL=a1
 */
 //+ENDPLUMEDOC
 
-class ColvarTorsion : public ColvarDistinguishable {
+class ColvarTorsion : public ColvarWithModifiers {
   double pi,twopi;
 public:
   ColvarTorsion(const ActionOptions&);
@@ -41,13 +41,15 @@ public:
 PLUMED_REGISTER_ACTION(ColvarTorsion,"TORSION")
 
 ColvarTorsion::ColvarTorsion(const ActionOptions&ao):
-ColvarDistinguishable(ao)
+ColvarWithModifiers(ao)
 {
-  std::vector<double> domain( 2, 0.0 );
+  setNeighbourListStyle("none");
+  registerKeyword(2,"ATOMS","calculate the torsion angle based defined by these four atoms.  To calculate multiple torsions use ATOMS1, ATOMS2, ...");
+  readActionAtomistic();
+  int maxatoms=4; readAtomsKeyword(maxatoms);
+
   Tools::convert("+PI",pi); Tools::convert("+2PI",twopi);
-  Tools::convert("-PI",domain[0]); Tools::convert("+PI",domain[1]); 
-  readActionColvar( 4, domain );
-  checkRead();
+  finishColvarSetup( -pi, pi );
 }
 
 double ColvarTorsion::compute( const std::vector<unsigned>& indexes, std::vector<Vector>& derivatives, Tensor& virial ){

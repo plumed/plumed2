@@ -1,4 +1,4 @@
-#include "ColvarDistinguishable.h"
+#include "ColvarWithModifiers.h"
 #include "PlumedMain.h"
 #include "ActionRegister.h"
 #include "PDB.h"
@@ -31,7 +31,7 @@ ALPHARMSD BACKBONE=1-10 LESS_THAN=2.0
 */
 //+ENDPLUMEDOC
 
-class ColvarAlphaRMSD : public ColvarDistinguishable {
+class ColvarAlphaRMSD : public ColvarWithModifiers {
 private:
   bool used;
   RMSD rmsd;
@@ -45,31 +45,30 @@ public:
 PLUMED_REGISTER_ACTION(ColvarAlphaRMSD,"ALPHARMSD")
 
 ColvarAlphaRMSD::ColvarAlphaRMSD(const ActionOptions&ao):
-ColvarDistinguishable(ao),
+ColvarWithModifiers(ao),
 used(false)
 {
-  registerKeyword( 2, "BACKBONE", "(strongly recommended) build the secondary structure from the backbone atoms in the specified residues");
-  allowKeyword("BACKBONE");
+  setNeighbourListStyle("none"); 
+  registerKeyword( 2, "BACKBONE", "build the secondary structure from the backbone atoms in the specified residues");
   registerKeyword( 0, "DRMSD", "calcuate the distance using a DRMSD metric rather than the RMSD metric");
 
-
+  readActionAtomistic(); AtomicNeighbourList nlist(this);
   std::vector< std::vector<unsigned> > backbone; 
-  if( readBackboneAtoms( "protein", backbone ) ){
-      unsigned n, nres, nprevious=0; std::vector<unsigned> atom_list(30);
-      for(unsigned i=0;i<backbone.size();++i){
-         if( backbone[i].size()<30 ) error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
-         nres=backbone[i].size()/5; assert( backbone[i].size()%5==0 ); n=0;
-         for(unsigned ires=0;ires<nres-5;ires++){
-           n=0; for(unsigned iat=ires*5;iat<(ires+6)*5;iat++){ atom_list[n] = backbone[i][ nprevious + iat ]; n++; }
-           assert(n==30); addIndexes( nprevious + 5*ires, atom_list );
-         }
-         nprevious+=backbone[i].size();
-      }
-  } 
-  std::vector<double> domain( 2, 0.0 );
-  readActionColvar( 30, domain ); pos.resize(30);
-  parseFlag("DRMSD",used);
-  checkRead();
+  if( !readBackboneAtoms( "protein", backbone ) ) error("missing input for ColvarAlphaRMSD");
+  unsigned n, nres, nprevious=0; std::vector<unsigned> atom_list(30);
+  for(unsigned i=0;i<backbone.size();++i){
+     if( backbone[i].size()<30 ) error("segment of backbone defined is not long enough to form an alpha helix. Each backbone fragment must contain a minimum of 6 residues");
+     nres=backbone[i].size()/5; assert( backbone[i].size()%5==0 ); n=0;
+     for(unsigned ires=0;ires<nres-5;ires++){
+       n=0; for(unsigned iat=ires*5;iat<(ires+6)*5;iat++){ atom_list[n] = backbone[i][ nprevious + iat ]; n++; }
+       assert(n==30); nlist.clear(); 
+       unsigned accum=nprevious + 5*ires;
+       for(unsigned i=0;i<30;++i) nlist.addAtom( accum+i );
+       addColvar( nlist );
+     }
+     nprevious+=backbone[i].size();
+  }
+  finishColvarSetup( 0, 0 );
 
   // Built the reference structure
   std::vector<Vector> reference(30);

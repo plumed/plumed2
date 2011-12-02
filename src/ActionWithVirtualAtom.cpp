@@ -10,6 +10,7 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   ActionAtomistic(ao)
 {
   forbidKeyword("STRIDE");
+  registerKeyword( 2, "ATOMS", "the numerical indexes for the atoms involved");
 }
 
 ActionWithVirtualAtom::~ActionWithVirtualAtom(){
@@ -17,35 +18,24 @@ ActionWithVirtualAtom::~ActionWithVirtualAtom(){
 }
 
 void ActionWithVirtualAtom::readActionWithVirtualAtom(){
-  int natoms=-1; unsigned ngrp=1; 
-  readActionAtomistic( natoms, ngrp );
+
+  // Read in atom lists and so on
+  readActionAtomistic();
+  parseAtomList("ATOMS", 0 ); printAllAtoms("contains atoms");
+  unsigned natoms=getNumberOfAtoms();
+
+  // Setup the values
   std::vector<double> domain(2,0.0);
   readActionWithExternalArguments( 3*natoms + 9, domain );
+
+  // Create the virtual atom
   index=plumed.getAtoms().addVirtualAtom(this);
   AtomNumber a=AtomNumber::index(index);
   log.printf("  serial associated to this virtual atom is %d\n",a.serial()); 
+
+  // Create places to hold the values inside ActionWithValue
   addValue("x", false, true ); addValue("y", false, true ); addValue("z", false, true );  
   derivatives.resize(natoms); f.resize(natoms);
-}
-
-void ActionWithVirtualAtom::interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups ){
-  if( groups.size()!=1 ) error("cannot create multiple virtual atoms in a single line");
-
-  if( atomGroupName!=getLabel() ){
-     log.printf("  using atoms specified in group %s\n", atomGroupName.c_str() );
-  } else {
-     log.printf("  created from the following list of atoms : " );
-     for(unsigned j=0;j<groups[0].size();++j) log.printf("%s ", plumed.getAtoms().interpretIndex( groups[0][j] ).c_str() );
-     log.printf("\n");
-  }
-}
-
-void ActionWithVirtualAtom::interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist ){
-  if( flist.size()!=1 ) error("cannot create multiple virtual atoms in a single line");
-
-  log.printf("  created from the following list of atoms : " ); 
-  for(unsigned j=0;j<flist[0].size();++j) log.printf("%s ", plumed.getAtoms().interpretIndex( flist[0][j] ).c_str() );
-  log.printf("\n");
 }
 
 void ActionWithVirtualAtom::apply(){

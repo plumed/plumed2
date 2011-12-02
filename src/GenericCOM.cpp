@@ -29,7 +29,6 @@ class GenericCOM:
 {
 public:
   GenericCOM(const ActionOptions&ao);
-  void updateDynamicContent( const double& cutoff, std::vector<bool>& skips ){ assert(false); }
   void calculate();
 };
 
@@ -38,8 +37,7 @@ PLUMED_REGISTER_ACTION(GenericCOM,"COM")
 GenericCOM::GenericCOM(const ActionOptions&ao):
   ActionWithVirtualAtom(ao)
 {
-  allowKeyword("ATOMS"); allowKeyword("GROUP");
-  forbidKeyword("UPDATE"); forbidKeyword("NL_CUTOFF");
+  setNeighbourListStyle("none");
   readActionWithVirtualAtom();
   checkRead();
 }

@@ -433,7 +433,7 @@ void PlumedMain::performCalc(){
     }
     {
       ActionWithExternalArguments* a=dynamic_cast<ActionWithExternalArguments*>(*p);
-      if(a) a->clearOutputForces();
+//      if(a) a->clearOutputForces();
       if(a) if(a->isActive()) a->retrieveData();
     }
     if((*p)->isActive()){

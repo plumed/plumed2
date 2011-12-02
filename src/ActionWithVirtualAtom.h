@@ -25,8 +25,6 @@ protected:
   void setMass(double);
 /// Set its charge
   void setCharge(double);
-/// Request atoms on which the calculation depends
-//  void requestAtoms(const std::vector<AtomNumber> & a);
 /// Set the derivatives of virtual atom coordinate wrt atoms on which it dependes
   void setAtomsDerivatives(const std::vector<Tensor> &d);
 /// Read everything in higher levels for virtual atoms
@@ -36,8 +34,6 @@ public:
   AtomNumber getIndex() const;
   ActionWithVirtualAtom(const ActionOptions&ao);
   ~ActionWithVirtualAtom();
-  void interpretGroupsKeyword( const unsigned& natoms, const std::string& atomGroupName, const std::vector<std::vector<unsigned> >& groups );
-  void interpretAtomsKeyword( const std::vector<std::vector<unsigned> >& flist );
   void apply();
 };
 

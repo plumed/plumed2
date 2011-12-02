@@ -16,6 +16,7 @@ class ActionWithArguments;
 /// Parameters are other values (from other Action s) or atomic positions.
 class ActionWithValue : public Action {
 friend class ActionWithArguments;
+friend class ColvarModifier;
 private:
 /// The number of derivatives the values in this container should have
   unsigned nderivatives;

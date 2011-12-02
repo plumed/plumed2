@@ -191,7 +191,7 @@ public:
   const Units& getUnits(){ return units; }
   void updateUnits();
 
-  std::string interpretIndex( const unsigned& num ) const ;
+  std::string interpretIndex( const std::string& name, const unsigned& num );
   unsigned int addVirtualAtom(ActionWithVirtualAtom*);
   void removeVirtualAtom(ActionWithVirtualAtom*);
   void insertGroup(const std::string&name,const unsigned& n,const std::vector<unsigned>&a);
