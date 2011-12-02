@@ -35,6 +35,10 @@ The read in pdb files are used by plumed to define things like residues, the bac
 used within the input to colvars to make inputting the lists of atoms involved more straightforward.  Documentation for 
 how these shortcuts can be used can be found in the documentation for the various CVs.
 
+Lastly, if you have a list of colvar that is particularly laborious to write out that you need to use multiple times in the 
+input you can create a static group of atoms and then use the label of the group to specify the correpsonding list of 
+atoms in your various colvars.  For more details see \ref GROUP.
+
 \section vatoms Virtual Atoms
 
 Sometimes, when calculating a colvar, you may not want to use the positions of a number of atoms directly.  Instead
@@ -72,35 +76,6 @@ using the ALIGN_ATOMS keyword.  In plumed 2.0 the same effect can be acchieved u
 The most general of these is the \ref WHOLEMOLECULES keywords.  However, there are advantages in using the others as oftentimes
 by defining a topology using a pdb file you can take advantage of shortcuts when specifying other colvars.  For example, if you
 use the \ref PROTEIN_TOPOLOGY keyword you can then later refer to the atoms in a specific residue by the residue number.
-
-\section cvmodifiers Colvar Modifiers
-
-In plumed 1.0 a single line in the input instructed plumed to calculate one CV.  This is not the case in plumed 2.0 - now a single
-line in input can be used to specify the calculation of multiple colvars.  As discussed in the documentation for each colvar this can
-be done explicitally, by defining 10 lists of atoms to calculate 10 colvars for example, or implicitally through shortcuts.  The duly 
-calculated lists of colvars can then be used directly by other Actions, in which case they can be referenced using <label>.value1, 
-<label>.value2, ... or functions of the distribution of colvars can be calculated directly.  Currently, the following functions are available:
-
-- MIN - (referenced using <label>.min) the minimum from amongst the calculated colvars
-- MAX - (referenced using <label>.max) the maximum from amongst the calculated colvars
-- SUM - (referenced using <label>.sum) the sum of all the colvars calculated
-- AVERAGE - (referenced using <label>.average) the average colvar
-- LESS_THAN - (referenced using <label>.less_than<number>) the number of colvars less than <number>
-- MORE_THAN - (referenced using <label>.more_than<number>) the number of colvars more than <number>    
-
-Combinations of the above can defined on a single line in input.  Alternatively (these keywords can't be mixed with the above)
- the number of values within a particular range can be specified using WITHIN_RANGE or a histogram of the collective variable values 
-can be calculated using HISTOGRAM.  More detailed documentation on these features can be found within the documentation for the colvars.
-
-\section ugroups Using Groups
-
-In plumed 1.0 it was possible to specify groups of atoms in the input and to use the groups defined in multiple colvars.  
-This feature has been retained in plumed 2.0 and also extended.  In plumed 2.0 groups can be used to specify a fixed set of atoms or to 
-specify a set of atoms that changes as a function of time.  The various keywords for specifying these groups of atoms are:
-
-@GROUP@ 
-
-Groups are given a label and as specified in the CV documentation the GROUP keyword can take as input the labels for groups
 
 \section cvavail CV Documentation
 

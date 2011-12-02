@@ -24,8 +24,25 @@ do
   fi
 done
 
+# Generate all the documentation pages for colvar modifiers
+rm -f modifier_file
+echo "\\section mod Working with distributions" > modifier_file
+echo "As described above you can use this colvar to calculate one or multiple CVs.  Obviously, if you have calculated multiple CVs then you have a distribution of CVs.  As such plumed allows you to calculate a number of functions of this distribution.  These quantities and their derivatives are then stored as the values of the colvar.  N.B.  You cannot calcualte the values of the colvars and these functions of the distribution from a single line in input.  You can however calculate multiple functions of the distribution." >> modifier_file
+cat ../*/*cpp |
+awk '{
+  if($1=="//+ENDPLUMEDOC"){
+     inside=0
+  }
+  if(inside && $1!="/**" && $1!="*/") print $0 >> "modifier_file"
+  if($1=="//+PLUMEDOC"){
+     if($2=="MODIFIER"){
+        print "\\par " $3 >> "modifier_file"   
+        inside=1;
+     }
+  } 
+}'  
 
-# Generate all the documentation from comments
+# Generate all the documentation pages from comments
 cat ../*/*cpp |
 awk '{
   if($1=="//+ENDPLUMEDOC"){
@@ -34,7 +51,7 @@ awk '{
   }
   if(inside && $1!="/**" && $1!="*/") print $0 >output
   if($1=="//+PLUMEDOC"){
-    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="VATOM" || $2=="TOPOLOGIES" || $2=="GROUP" || $2=="GENERIC" || $2=="TOOL" ){
+    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="VATOM" || $2=="TOPOLOGIES" || $2=="GENERIC" || $2=="TOOL" ){
       lfile="automatic/"$2".list"
       print "- \\subpage "$3 > lfile
       output="automatic/"$3".tmp";
@@ -70,6 +87,14 @@ do
         if [ "$LINE" = "\par Example" ]
         then
           cat $flag.man 
+          iscol=`grep $flag automatic/COLVAR.list | wc -l`
+          if [ $iscol -gt 0 ] ; then
+               fname=`grep PLUMED_REGISTER_ACTION ../src/*.cpp | grep $flag | sed -e 's/:/ /g' | awk '{print $1}'`
+               hasmod=`grep ColvarWithModifiers $fname | wc -l | awk '{print $1}'` 
+               if [ $hasmod -gt 0 ] ; then
+                    cat modifier_file
+               fi
+          fi
           echo -E "$LINE"
         else
           echo -E "$LINE"
@@ -104,9 +129,6 @@ cat $file.txt |
   elif [ "$LINE" = "@VATOM@" ]
   then
     cat automatic/VATOM.list
-  elif [ "$LINE" = "@GROUP@" ]
-  then
-    cat automatic/GROUP.list
   elif [ "$LINE" = "@TOOL@" ]
   then
     cat automatic/TOOL.list
