@@ -61,13 +61,33 @@ void GREX::cmd(const string&key,void*val){
     assert(initialized);
     double x=foreignDeltaBias/(atoms.getMDUnits().energy/atoms.getUnits().energy);
     atoms.double2MD(x,val);
-  } else {
-    fprintf(stderr,"+++ PLUMED GREX ERROR\n");
-    fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG %s\n",key.c_str());
-    fprintf(stderr,"+++ There might be a mistake in the MD code\n");
-    fprintf(stderr,"+++ or you may be using an out-dated plumed version\n");
-    assert(0);
-  }
+  }else if(key=="shareAllDeltaBias"){
+    assert(initialized);
+    if(intracomm.Get_rank()!=0) return;
+    allDeltaBias.assign(intercomm.Get_size(),0.0);
+    allDeltaBias[intercomm.Get_rank()]=localDeltaBias;
+    intercomm.Sum(&allDeltaBias[0],intercomm.Get_size());
+  }else{
+// multi word commands
+     std::vector<std::string> words=Tools::getWords(key);
+     int nw=words.size();
+     if(false){
+     } else if(nw==2 && words[0]=="getDeltaBias"){
+       assert(allDeltaBias.size()==intercomm.Get_size());
+       int rep;
+       Tools::convert(words[1],rep);
+       assert(rep>=0 && rep<allDeltaBias.size());
+       double d=allDeltaBias[rep]/(atoms.getMDUnits().energy/atoms.getUnits().energy);
+       atoms.double2MD(d,val);
+     } else{
+   // error
+       fprintf(stderr,"+++ PLUMED GREX ERROR\n");
+       fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG '%s'\n",key.c_str());
+       fprintf(stderr,"+++ There might be a mistake in the MD code\n");
+       fprintf(stderr,"+++ or you may be using an out-dated plumed version\n");
+       plumedMain.exit(1);
+     };
+  };
 }
 
 void GREX::savePositions(){

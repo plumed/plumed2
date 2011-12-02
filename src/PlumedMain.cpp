@@ -266,14 +266,16 @@ void PlumedMain::cmd(const std::string & word,void*val){
        int check=0;
        if(actionRegister().check(words[1])) check=1;
        *(static_cast<int*>(val))=check;
-     } else if(nw==2 && words[0]=="GREX"){
+     } else if(nw>1 && words[0]=="GREX"){
        if(!grex) grex=new GREX(*this);
        assert(grex);
-       grex->cmd(words[1],val);
+       std::string kk=words[1];
+       for(int i=2;i<words.size();i++) kk+=" "+words[i];
+       grex->cmd(kk.c_str(),val);
      } else{
    // error
        fprintf(stderr,"+++ PLUMED ERROR\n");
-       fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG %s\n",word.c_str());
+       fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG '%s'\n",word.c_str());
        fprintf(stderr,"+++ There might be a mistake in the MD code\n");
        fprintf(stderr,"+++ or you may be using an out-dated plumed version\n");
        exit(1);

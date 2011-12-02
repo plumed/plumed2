@@ -4,6 +4,7 @@
 #include "WithCmd.h"
 #include "PlumedCommunicator.h"
 #include <string>
+#include <vector>
 
 namespace PLMD{
 
@@ -21,6 +22,7 @@ class GREX:
   int partner;
   double localDeltaBias;
   double foreignDeltaBias;
+  std::vector<double> allDeltaBias;
   std::string buffer;
   int myreplica;
 public:

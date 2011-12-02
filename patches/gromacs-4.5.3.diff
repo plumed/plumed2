@@ -18,7 +18,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
    int  nrepl;
    real temp;
    int  type;
-@@ -538,10 +544,25 @@
+@@ -538,10 +544,26 @@
    snew(bEx,re->nrepl);
    snew(prob,re->nrepl);
  
@@ -37,6 +37,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +    }
 +    plumed_cmd(plumedmain,"GREX setPartner",&partner);
 +    plumed_cmd(plumedmain,"GREX calculate",NULL);
++    plumed_cmd(plumedmain,"GREX shareAllDeltaBias",NULL);
 +  }
 +
    for(i=1; i<re->nrepl; i++) {
@@ -44,17 +45,18 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
      b = re->ind[i];
      bPrint = (re->repl==a || re->repl==b);
      if (i % 2 == m) {
-@@ -572,10 +593,19 @@
+@@ -572,10 +594,20 @@
  	dpV = (betaA*re->pres[a]-betaB*re->pres[b])*(Vol[b]-Vol[a])/PRESFAC;
  	if (bPrint)
  	  fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
  	delta += dpV;
        }
 +      if(plumedswitch){
-+        real ldb,fdb,dplumed;
-+        plumed_cmd(plumedmain,"GREX getLocalDeltaBias",&ldb);
-+        plumed_cmd(plumedmain,"GREX getForeignDeltaBias",&fdb);
-+        dplumed=ldb*betaA+fdb*betaB;
++        real adb,bdb,dplumed;
++        char buf[300];
++        sprintf(buf,"GREX getDeltaBias %d",a); plumed_cmd(plumedmain,buf,&adb);
++        sprintf(buf,"GREX getDeltaBias %d",b); plumed_cmd(plumedmain,buf,&bdb);
++        dplumed=adb*betaA+bdb*betaB;
 +        delta+=dplumed;
 +	if (bPrint)
 +	  fprintf(fplog,"  dplumed = %10.3e  d = %10.3e",dplumed,delta);
@@ -64,7 +66,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
        if (delta <= 0) {
  	prob[i] = 1;
  	bEx[i] = TRUE;
-@@ -633,10 +663,12 @@
+@@ -633,10 +665,12 @@
      gmx_multisim_t *ms;
      int  exchange=-1,shift;
      gmx_bool bExchanged=FALSE;
