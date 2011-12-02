@@ -107,6 +107,10 @@ public:
   void performCalc();
 /// Shortcut for prepareCalc() + performCalc()
   void calc();
+
+  void waitData();
+  void justCalculate();
+  void justApply();
 /// Reference to atoms object
   Atoms& getAtoms();
 /// Reference to the list of Action's

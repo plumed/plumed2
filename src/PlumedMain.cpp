@@ -401,11 +401,19 @@ void PlumedMain::shareData(){
   atoms.share();
 }
 
-
 void PlumedMain::performCalc(){
+  waitData();
+  justCalculate();
+  justApply();
+}
 
+void PlumedMain::waitData(){
   if(!active)return;
   atoms.wait();
+}
+
+
+void PlumedMain::justCalculate(){
 
 // calculate the active actions in order (assuming *backward* dependence)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
@@ -424,6 +432,9 @@ void PlumedMain::performCalc(){
       else (*p)->calculate();
     }
   }
+}
+
+void PlumedMain::justApply(){
   
 // apply them in reverse order
   for(ActionSet::reverse_iterator p=actionSet.rbegin();p!=actionSet.rend();++p){
