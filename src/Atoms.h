@@ -141,6 +141,8 @@ public:
   void removeVirtualAtom(ActionWithVirtualAtom*);
   void insertGroup(const std::string&name,const std::vector<unsigned>&a);
   void removeGroup(const std::string&name);
+  void writeBinary(std::ostream&)const;
+  void readBinary(std::istream&);
 };
 
 inline

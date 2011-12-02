@@ -320,6 +320,23 @@ void Atoms::removeGroup(const std::string&name){
   groups.erase(name);
 }
 
+void Atoms::writeBinary(std::ostream&o)const{
+  o.write((const char*)&positions[0][0],natoms*3*sizeof(double));
+  o.write((const char*)&masses[0],natoms*sizeof(double));
+  o.write((const char*)&charges[0],natoms*sizeof(double));
+  o.write((const char*)&box(0,0),9*sizeof(double));
+  o.write((const char*)&energy,sizeof(double));
+}
+
+void Atoms::readBinary(std::istream&i){
+  i.read((char*)&positions[0][0],natoms*3*sizeof(double));
+  i.read((char*)&masses[0],natoms*sizeof(double));
+  i.read((char*)&charges[0],natoms*sizeof(double));
+  i.read((char*)&box(0,0),9*sizeof(double));
+  i.read((char*)&energy,sizeof(double));
+}
+
+
 
 }
 
