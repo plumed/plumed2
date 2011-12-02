@@ -73,7 +73,7 @@ public:
   template <class T>
   void Allgather(const T*,int,T*,int);
   template <class T>
-  Request Isend(T*,int,int,int);
+  Request Isend(const T*,int,int,int);
   template <class T>
   void Recv(T*,int,int,int,Status&);
   template <class T>
@@ -141,13 +141,13 @@ void PlumedCommunicator::Allgather(const T*sendbuf,int sendcount,T*recvbuf,int r
 #endif
 }
 
-
 template <class T>
-PlumedCommunicator::Request PlumedCommunicator::Isend(T*buf,int count,int source,int tag){
+PlumedCommunicator::Request PlumedCommunicator::Isend(const T*buf,int count,int source,int tag){
   Request req;
 #ifdef __PLUMED_MPI
   assert(initialized());
-  MPI_Isend(buf,count,getMPIType<T>(),source,tag,communicator,&req.r);
+  void*s=const_cast<void*>((const void*)buf);
+  MPI_Isend(s,count,getMPIType<T>(),source,tag,communicator,&req.r);
 #else
   (void) buf;
   (void) count;
