@@ -31,20 +31,14 @@ Action::Action(const ActionOptions&ao):
 }
 
 FILE* Action::fopen(const char *path, const char *mode){
-  std::string mmode(mode);
-  std::string ppath(path);
-  std::string suffix(plumed.getSuffix());
-  std::string ppathsuf=ppath+suffix;
-  FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
-  if(!fp) std::fopen(const_cast<char*>(ppath.c_str()),const_cast<char*>(mmode.c_str()));
-  assert(fp);
+  FILE* fp=plumed.fopen(path,mode);
   files.insert(fp);
   return fp;
 }
 
 int Action::fclose(FILE*fp){
   files.erase(fp);
-  return std::fclose(fp);
+  return plumed.fclose(fp);
 }
 
 void Action::fflush(){

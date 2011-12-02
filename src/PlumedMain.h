@@ -5,6 +5,7 @@
 #include "ActionSet.h"
 #include "Atoms.h"
 #include "PlumedCommunicator.h"
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -136,6 +137,8 @@ public:
   void setSuffix(const std::string&);
 /// get the value of the bias
   double getBias()const;
+  FILE* fopen(const char *path, const char *mode);
+  int fclose(FILE*fp);
 };
 
 /////

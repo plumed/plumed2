@@ -300,6 +300,7 @@ void PlumedMain::init(){
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
   log.printf("Number of atoms: %d\n",atoms.getNatoms());
+  log.printf("File suffix: %s\n",getSuffix().c_str());
   if(plumedDat.length()>0){
     readInputFile(plumedDat);
     plumedDat="";
@@ -500,6 +501,23 @@ void PlumedMain::load(std::vector<std::string> & words){
 double PlumedMain::getBias() const{
   return bias;
 }
+
+FILE* PlumedMain::fopen(const char *path, const char *mode){
+  std::string mmode(mode);
+  std::string ppath(path);
+  std::string suffix(getSuffix());
+  std::string ppathsuf=ppath+suffix;
+  FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
+  if(!fp) fp=std::fopen(const_cast<char*>(ppath.c_str()),const_cast<char*>(mmode.c_str()));
+  assert(fp);
+  return fp;
+}
+
+int PlumedMain::fclose(FILE*fp){
+  return std::fclose(fp);
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
