@@ -69,16 +69,29 @@ void Atoms::setForces(void*p,int i){
 }
 
 void Atoms::share(){
+  std::set<int> unique;
+  if(dd && int(gatindex.size())<natoms){
+    for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
+      unique.insert(actions[i]->unique.begin(),actions[i]->unique.end());
+    }
+  }
+  share(unique);
+}
+
+void Atoms::shareAll(){
+  std::set<int> unique;
+  if(dd && int(gatindex.size())<natoms)
+    for(int i=0;i<natoms;i++) unique.insert(i);
+  share(unique);
+}
+
+void Atoms::share(const std::set<int>& unique){
   mdatoms->getBox(box);
   mdatoms->getMasses(gatindex,masses);
   mdatoms->getCharges(gatindex,charges);
   mdatoms->getPositions(gatindex,positions);
   if(dd && int(gatindex.size())<natoms){
     bool async=dd.Get_size()<10;
-    std::set<int> unique;
-    for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
-      unique.insert(actions[i]->unique.begin(),actions[i]->unique.end());
-    }
     if(async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
       for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();

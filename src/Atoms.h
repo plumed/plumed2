@@ -77,6 +77,8 @@ class Atoms
 
   DomainDecomposition dd;
 
+  void share(const std::set<int>&);
+
 public:
 
   Atoms(PlumedMain&plumed);
@@ -85,6 +87,7 @@ public:
   void init();
 
   void share();
+  void shareAll();
   void wait();
   void updateForces();
 
