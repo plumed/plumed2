@@ -14,6 +14,8 @@
 
 #include "ActionRegister.h"
 
+#include "GREX.h"
+
 using namespace PLMD;
 using namespace std;
 
@@ -265,6 +267,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
        if(actionRegister().check(words[1])) check=1;
        *(static_cast<int*>(val))=check;
      } else if(nw==2 && words[0]=="GREX"){
+       if(!grex) grex=new GREX(*this);
        assert(grex);
        grex->cmd(words[1],val);
      } else{
