@@ -47,6 +47,7 @@ public:
   PlumedCommunicator comm;
 
 private:
+  WithCmd* grex;
 /// Flag to avoid double initialization
   bool  initialized;
 /// Name of MD engine
@@ -91,7 +92,7 @@ public:
 /// and an MD engine, this is the right place
 /// Notice that this interface should always keep retro-compatibility
   void cmd(const std::string&key,void*val=NULL);
-  ~PlumedMain(){};
+  ~PlumedMain();
 /// Read an input file.
 /// \param str name of the file
   void readInputFile(std::string str);

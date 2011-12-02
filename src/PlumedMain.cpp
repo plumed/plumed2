@@ -73,13 +73,17 @@ static class PlumedMainInitializer{
 
 PlumedMain::PlumedMain():
   initialized(false),
+  grex(NULL),
   log(comm),
   step(0),
   active(false),
   atoms(*this),
   actionSet((*this)),
   novirial(false)
-{
+{}
+
+PlumedMain::~PlumedMain(){
+  if(grex) delete grex;
 }
 
 /////////////////////////////////////////////////////////////
@@ -259,6 +263,9 @@ void PlumedMain::cmd(const std::string & word,void*val){
        int check=0;
        if(actionRegister().check(words[1])) check=1;
        *(static_cast<int*>(val))=check;
+     } else if(nw==2 && words[0]=="GREX"){
+       assert(grex);
+       grex->cmd(words[1],val);
      } else{
    // error
        fprintf(stderr,"+++ PLUMED ERROR\n");
