@@ -30,7 +30,7 @@ values, and it is printing the energy of the restraint
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 RESTRAINT ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 LABEL=restraint
-PRINT ARG=restraint.Energy
+PRINT ARG=restraint.bias
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
 
@@ -65,8 +65,8 @@ kappa(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
 
-  addValue("Energy");
-  addValue("Force2");
+  addValue("bias");
+  addValue("force2");
 }
 
 
@@ -82,8 +82,8 @@ void BiasRestraint::calculate(){
     totf2+=f*f;
   };
   Value* value;
-  value=getValue("Energy"); setValue(value,ene);
-  value=getValue("Force2");  setValue(value,totf2);
+  value=getValue("bias"); setValue(value,ene);
+  value=getValue("force2");  setValue(value,totf2);
 }
 
 }

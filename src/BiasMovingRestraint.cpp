@@ -125,9 +125,9 @@ PLUMED_BIAS_INIT(ao)
     log.printf("\n");
   };
 
-  addValue("Energy");
-  addValue("Force2");
-  addValue("Work");
+  addValue("bias");
+  addValue("force2");
+  addValue("work");
 }
 
 
@@ -163,9 +163,9 @@ void BiasMovingRestraint::calculate(){
     totf2+=f*f;
   };
   Value* value;
-  value=getValue("Energy");
+  value=getValue("bias");
   setValue(value,ene);
-  value=getValue("Force2");
+  value=getValue("force2");
   setValue(value,totf2);
 }
 

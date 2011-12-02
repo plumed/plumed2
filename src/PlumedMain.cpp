@@ -79,6 +79,7 @@ PlumedMain::PlumedMain():
   active(false),
   atoms(*this),
   actionSet((*this)),
+  bias(0.0),
   novirial(false)
 {}
 
@@ -426,21 +427,26 @@ void PlumedMain::waitData(){
 
 void PlumedMain::justCalculate(){
 
+  bias=0.0;
+
 // calculate the active actions in order (assuming *backward* dependence)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
+    ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
+    ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(*p);
     {
-      ActionWithValue*a=dynamic_cast<ActionWithValue*>(*p);
-      if(a) a->clearInputForces();
-      if(a) a->clearDerivatives();
+      if(av) av->clearInputForces();
+      if(av) av->clearDerivatives();
     }
     {
-      ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
-      if(a) a->clearOutputForces();
-      if(a) if(a->isActive()) a->retrieveAtoms();
+      if(aa) aa->clearOutputForces();
+      if(aa) if(aa->isActive()) aa->retrieveAtoms();
     }
     if((*p)->isActive()){
       if((*p)->checkNumericalDerivatives()) (*p)->calculateNumericalDerivatives();
       else (*p)->calculate();
+      if(av)for(int i=0;i<av->getNumberOfValues();++i){
+        if(av->getValue(i)->getName()=="bias") bias+=av->getValue(i)->get();
+      }
     }
   }
 }
@@ -489,6 +495,10 @@ void PlumedMain::load(std::vector<std::string> & words){
     log<<"Loading shared library "<<s.c_str()<<"\n";
     log<<"Here is the new list of available actions\n";
     log<<actionRegister();
+}
+
+double PlumedMain::getBias() const{
+  return bias;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

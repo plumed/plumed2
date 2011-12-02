@@ -80,6 +80,9 @@ private:
 /// Suffix string for file opening, useful for multiple simulations in the same directory
   std::string suffix;
 
+/// The total bias (=total energy of the restraints)
+  double bias;
+
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
@@ -131,6 +134,8 @@ public:
   const std::string & getSuffix()const;
 /// Set the suffix string
   void setSuffix(const std::string&);
+/// get the value of the bias
+  double getBias()const;
 };
 
 /////
