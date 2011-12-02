@@ -21,7 +21,7 @@ public:
 
 inline
 void Function::setDerivatives(int i,double d){
-  getValue(0)->setDerivatives(i,d);
+  setDerivatives(getValue(0),i,d);
 }
 
 inline
