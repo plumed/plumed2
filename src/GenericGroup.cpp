@@ -14,7 +14,7 @@ The following contains a static group containing atoms 1-20.  Wherever the label
 of the group appears after the GROUP keyword the specified list of atom will be used
 to calculate the colvar.  
 \verbatim
-GROUP LABEL=label ATOMS=1-20
+STATIC_GROUP LABEL=label ATOMS=1-20
 \endverbatim
 
 */

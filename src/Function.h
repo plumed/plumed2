@@ -17,7 +17,7 @@ public:
   virtual ~Function(){};
   void calculate();
   void apply();
-  virtual double compute( const std::vector<double>& arguments, std::vector<double> derivatives )=0;
+  virtual double compute( const std::vector<double>& arguments, std::vector<double> &derivatives )=0;
 };
 
 }
