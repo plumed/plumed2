@@ -305,6 +305,7 @@ void PlumedMain::init(){
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
   log.printf("Number of atoms: %d\n",atoms.getNatoms());
+  if(grex) log.printf("GROMACS-like replica exchange is on\n");
   log.printf("File suffix: %s\n",getSuffix().c_str());
   if(plumedDat.length()>0){
     readInputFile(plumedDat);
