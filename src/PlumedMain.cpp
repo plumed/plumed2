@@ -471,6 +471,10 @@ void PlumedMain::justApply(){
 // this is updating the MD copy of the forces
   atoms.updateForces();
 
+// update step (for statistics, etc)
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
+    if((*p)->isActive()) (*p)->update();
+  }
 }
 
 void PlumedMain::load(std::vector<std::string> & words){

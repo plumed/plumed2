@@ -34,7 +34,8 @@ public:
   GenericDumpAtoms(const ActionOptions&);
   ~GenericDumpAtoms();
   void calculate(){};
-  void apply();
+  void apply(){};
+  void update();
 };
 
 PLUMED_REGISTER_ACTION(GenericDumpAtoms,"DUMPATOMS")
@@ -54,7 +55,7 @@ GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void GenericDumpAtoms::apply(){
+void GenericDumpAtoms::update(){
   fprintf(fp,"%d\n",getNatoms());
   const Tensor & t(getPbc().getBox());
   if(getPbc().isOrthorombic()){

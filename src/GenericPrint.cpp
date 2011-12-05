@@ -58,7 +58,8 @@ public:
   void calculate(){};
   void prepare();
   GenericPrint(const ActionOptions&);
-  void apply();
+  void apply(){};
+  void update();
   ~GenericPrint();
 };
 
@@ -123,7 +124,7 @@ void GenericPrint::prepare(){
 /////////////////////////////////////////
 }
 
-void GenericPrint::apply(){
+void GenericPrint::update(){
     if(comm.Get_rank()!=0)return;
     if(!fp){
       log.printf("PRINT:");
