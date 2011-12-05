@@ -55,10 +55,10 @@ public ActionWithArguments
   vector<Value*> rotateArguments;
 /////////////////////////////////////////
 public:
-  void calculate();
+  void calculate(){};
   void prepare();
   GenericPrint(const ActionOptions&);
-  void apply(){};
+  void apply();
   ~GenericPrint();
 };
 
@@ -123,7 +123,7 @@ void GenericPrint::prepare(){
 /////////////////////////////////////////
 }
 
-void GenericPrint::calculate(){
+void GenericPrint::apply(){
     if(comm.Get_rank()!=0)return;
     if(!fp){
       log.printf("PRINT:");
