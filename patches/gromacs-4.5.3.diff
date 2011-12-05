@@ -129,7 +129,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  #endif
  #ifdef GMX_THREADS
  #include "tmpi.h"
-@@ -1375,13 +1381,37 @@
+@@ -1375,13 +1381,14 @@
          for(i=0; (i<gnx); i++) {
              grpindex[i] = i;
          }
@@ -139,36 +139,13 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +    if (repl_ex_nst > 0 && MASTER(cr)){
          repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
                                          repl_ex_nst,repl_ex_seed);
-+        if(plumedswitch) {
-+          plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
-+          if(PAR(cr)){
-+            if(DOMAINDECOMP(cr)) {
-+              plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
-+            }else{
-+              plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
-+            }
-+          }
-+          plumed_cmd(plumedmain,"GREX init",NULL);
-+        }
 +    }
-+
-+    if (repl_ex_nst>0 && plumedswitch && ! MASTER(cr)){
-+        if(PAR(cr)){
-+          if(DOMAINDECOMP(cr)) {
-+            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
-+          }else{
-+            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
-+          }
-+        }
-+        plumed_cmd(plumedmain,"GREX init",NULL);
-+    }
-+
  
      if (!ir->bContinuation && !bRerunMD)
      {
          if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
          {
-@@ -1522,10 +1552,41 @@
+@@ -1522,10 +1529,53 @@
              }
          }
          fprintf(fplog,"\n");
@@ -176,6 +153,17 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  
 +/* PLUMED */
 +  if(plumedswitch){
++    if(cr->ms && cr->ms->nsim>1) {
++      if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
++      if(PAR(cr)){
++        if(DOMAINDECOMP(cr)) {
++          plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
++        }else{
++          plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
++        }
++      }
++      plumed_cmd(plumedmain,"GREX init",NULL);
++    }
 +
 +    if(PAR(cr)){
 +      if(DOMAINDECOMP(cr)) {
@@ -191,6 +179,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +    plumed_cmd(plumedmain,"setTimestep",&ir->delta_t);
 +
 +    plumed_cmd(plumedmain,"init",NULL);
++
 +
 +    if(PAR(cr)){
 +      if(DOMAINDECOMP(cr)) {
@@ -210,7 +199,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
      print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
      wallcycle_start(wcycle,ewcRUN);
      if (fplog)
-@@ -1802,10 +1863,17 @@
+@@ -1802,10 +1852,17 @@
                                      state,&f,mdatoms,top,fr,
                                      vsite,shellfc,constr,
                                      nrnb,wcycle,do_verbose);
@@ -228,7 +217,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  
          if (MASTER(cr) && do_log && !bFFscan)
          {
-@@ -1928,16 +1996,40 @@
+@@ -1928,16 +1985,40 @@
               * in do_force.
               * This is parallellized as well, and does communication too. 
               * Check comments in sim_util.c
