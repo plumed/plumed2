@@ -20,13 +20,13 @@ public:
 };
 
 inline
-void Function::setDerivatives(int i,double d){
-  setDerivatives(getValue(0),i,d);
+void Function::setDerivatives(Value*v,int i,double d){
+  v->setDerivatives(i,d);
 }
 
 inline
-void Function::setDerivatives(Value*v,int i,double d){
-  v->setDerivatives(i,d);
+void Function::setDerivatives(int i,double d){
+  setDerivatives(getValue(0),i,d);
 }
 
 }
