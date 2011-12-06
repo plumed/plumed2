@@ -6,17 +6,14 @@
 using namespace PLMD;
 using namespace std;
 
-#define IMPLEMENT(T) \
-bool Tools::convert(const string & str,T & t){ \
-        istringstream istr(str.c_str()); \
-        bool ok=istr>>t; \
-        if(!ok) return false; \
-        string remaining; \
-        istr>>remaining; \
-        return remaining.length()==0; \
+bool Tools::convert(const string & str,int & t){
+        istringstream istr(str.c_str());
+        bool ok=istr>>t;
+        if(!ok) return false;
+        string remaining;
+        istr>>remaining;
+        return remaining.length()==0;
 }
-
-IMPLEMENT(int)
 
 bool Tools::convert(const string & str,AtomNumber &a){
   int i;
