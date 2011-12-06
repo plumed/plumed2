@@ -72,7 +72,7 @@ void Atoms::share(){
   std::set<int> unique;
   if(dd && int(gatindex.size())<natoms){
     for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
-      unique.insert(actions[i]->unique.begin(),actions[i]->unique.end());
+      unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
     }
   }
   share(unique);
@@ -260,7 +260,7 @@ double Atoms::getTimeStep()const{
 
 void Atoms::createFullList(int*n){
   for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive())
-    fullList.insert(fullList.end(),actions[i]->unique.begin(),actions[i]->unique.end());
+    fullList.insert(fullList.end(),actions[i]->getUnique().begin(),actions[i]->getUnique().end());
   std::sort(fullList.begin(),fullList.end());
   int nn=std::unique(fullList.begin(),fullList.end())-fullList.begin();
   fullList.resize(nn);
