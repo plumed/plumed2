@@ -1,3 +1,7 @@
+#ifdef __PLUMED_HAS_DLOPEN
+#include <dlfcn.h>
+#endif
+
 #include "PlumedMain.h"
 #include "Tools.h"
 #include <cstring>
@@ -9,69 +13,12 @@
 #include <set>
 #include "PlumedConfig.h"
 #include "Colvar.h"
-
 #include <cstdlib>
-
 #include "ActionRegister.h"
-
 #include "GREX.h"
 
 using namespace PLMD;
 using namespace std;
-
-// !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
-// THE FOLLOWING ARE UTILITIES WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
-// This section should be consistent with the Plumed.h file.
-// Since the Plumed.h file may be included in host MD codes, **NEVER** MODIFY THE CODE DOWN HERE
-
-/* Holder for plumedmain function pointers */
-typedef struct {
-  void*(*create)();
-  void(*cmd)(void*,const char*,const void*);
-  void(*finalize)(void*);
-} plumed_plumedmain_function_holder;
-
-extern "C" void*plumedmain_create();
-extern "C" void plumedmain_cmd(void*plumed,const char*key,const void*val);
-extern "C" void plumedmain_finalize(void*plumed);
-
-void*plumedmain_create(){
-  return new PlumedMain;
-}
-
-void plumedmain_cmd(void*plumed,const char*key,const void*val){
-  assert(plumed);
-  static_cast<PlumedMain*>(plumed)->cmd(key,val);
-}
-
-void plumedmain_finalize(void*plumed){
-  assert(plumed);
-  delete static_cast<PlumedMain*>(plumed);
-}
-
-extern "C" plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmain_function_holder*);
-extern "C" void* plumed_dlopen(const char*);
-extern "C" const char* plumed_dlerror(void);
-
-namespace PLMD{
-
-/// Static object which registers Plumed.
-/// This is a static object which, during its construction at startup,
-/// registers the pointers to plumedmain_create, plumedmain_cmd and plumedmain_finalize
-/// to the plumed_kernel_register function
-static class PlumedMainInitializer{
-  public:
-  PlumedMainInitializer(){
-    plumed_plumedmain_function_holder fh={plumedmain_create,plumedmain_cmd,plumedmain_finalize};
-    plumed_kernel_register(&fh);
-  };
-} RegisterMe;
-
-}
-
-// END OF DANGER
-////////////////////////////////////////////////////////////
-
 
 PlumedMain::PlumedMain():
   initialized(false),
@@ -478,6 +425,7 @@ void PlumedMain::justApply(){
 }
 
 void PlumedMain::load(std::vector<std::string> & words){
+#ifdef __PLUMED_HAS_DLOPEN
     string s=words[1];
     assert(words.size()==2);
     size_t n=s.find_last_of(".");
@@ -495,17 +443,21 @@ void PlumedMain::load(std::vector<std::string> & words){
       base="./"+base;
     }
     s=base+"."+soext;
-    void *p=plumed_dlopen(s.c_str());
+    void *p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
     if(!p){
       log<<"ERROR\n";
       log<<"I cannot load library "<<words[1].c_str()<<"\n";
-      log<<plumed_dlerror();
+      log<<dlerror();
       log<<"\n";
       this->exit(1);
     }
     log<<"Loading shared library "<<s.c_str()<<"\n";
     log<<"Here is the new list of available actions\n";
     log<<actionRegister();
+#else
+  (void) words;
+  assert(0); // Loading not enabled; please recompile with -D__PLUMED_HAS_DLOPEN
+#endif
 }
 
 double PlumedMain::getBias() const{

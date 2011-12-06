@@ -28,12 +28,6 @@ typedef struct {
 */
 plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmain_function_holder*);
 
-/**
-  Routine to load a shared library
-*/
-void* plumed_dlopen(const char*);
-const char* plumed_dlerror(void);
-
 #ifdef __PLUMED_STATIC_KERNEL
 /* Real interface */
 void*plumedmain_create(void);
@@ -51,28 +45,6 @@ void plumed_dummy_finalize(void*);
 #endif
 
 /* END OF DECLARATION USED ONLY IN THIS FILE */
-
-
-/*
-  this routine can be adjusted for different systems
-  it should try to load the shared object indicated in the path 
-*/
-
-void* plumed_dlopen(const char* path){
-#ifdef __PLUMED_HAS_DLOPEN
-  return dlopen(path,RTLD_NOW|RTLD_GLOBAL);
-#else
-  return NULL;
-#endif
-}
-
-const char* plumed_dlerror(void){
-#ifdef __PLUMED_HAS_DLOPEN
-  return dlerror();
-#else
-  return NULL;
-#endif
-}
 
 /* These are the dummy routines which are used when plumed is not available */
 
@@ -122,12 +94,14 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
     path=getenv("PLUMED_KERNEL");
     if(path && (*path)){
       fprintf(stderr,"+++ PLUMED kernel is being loaded as \"%s\" ...",path);
-      p=plumed_dlopen(path);
+      p=dlopen(path,RTLD_NOW|RTLD_GLOBAL);
       if(p){
         fprintf(stderr,"ok\n");
         installed=1;
+      } else{
+        fprintf(stderr,"NOT FOUND !!!\n");
+        fprintf(stderr,"ERROR MSG: %s\n",dlerror());
       }
-      else  fprintf(stderr,"NOT FOUND !!!\n");
     }
 #endif
   }
