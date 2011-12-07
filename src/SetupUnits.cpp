@@ -116,9 +116,20 @@ ActionSetup(ao)
   if(!numeric) log.printf("  time: %s\n",s.c_str());
   else         log.printf("  time: %f ns\n",u.time);
 
+  bool natural=false;
+  parseFlag("NATURAL",natural);
+  plumed.getAtoms().setNaturalUnits(natural);
+
+
   checkRead();
 
   plumed.getAtoms().setUnits(u);
+  if(natural){
+    log.printf("  using natural units\n");
+  } else {
+    log.printf("  using physical units\n");
+  }
+  log.printf("  inside PLUMED, Boltzmann constant is %f\n",plumed.getAtoms().getKBoltzmann());
 }
 
 }

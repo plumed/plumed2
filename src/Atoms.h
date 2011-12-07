@@ -48,6 +48,9 @@ class Atoms
   Units MDUnits;
   Units units;
 
+  bool naturalUnits;
+  bool MDnaturalUnits;
+
   double timestep;
   double forceOnEnergy;
 
@@ -143,6 +146,10 @@ public:
   void removeGroup(const std::string&name);
   void writeBinary(std::ostream&)const;
   void readBinary(std::istream&);
+  double getKBoltzmann()const;
+  double getMDKBoltzmann()const;
+  void setNaturalUnits(bool n){naturalUnits=n;};
+  void setMDNaturalUnits(bool n){MDnaturalUnits=n;};
 };
 
 inline

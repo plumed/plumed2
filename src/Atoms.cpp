@@ -19,6 +19,7 @@ Atoms::Atoms(PlumedMain&plumed):
   energy(0.0),
   collectEnergy(0.0),
   plumed(plumed),
+  naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0)
 {
@@ -336,7 +337,15 @@ void Atoms::readBinary(std::istream&i){
   i.read((char*)&energy,sizeof(double));
 }
 
+double Atoms::getKBoltzmann()const{
+  if(naturalUnits) return 1.0;
+  else return kBoltzmann/units.energy;
+}
 
+double Atoms::getMDKBoltzmann()const{
+  if(naturalUnits) return 1.0;
+  else return kBoltzmann/MDUnits.energy;
+}
 
 }
 

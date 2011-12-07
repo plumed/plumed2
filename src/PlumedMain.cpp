@@ -169,6 +169,13 @@ void PlumedMain::cmd(const std::string & word,void*val){
        double d;
        atoms.MD2double(val,d);
        atoms.setMDTimeUnits(d);
+  } else if(word=="setNaturalUnits"){
+// set the boltzman constant for MD in natural units (kb=1)
+// only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
+// use as cmd("setNaturalUnits")
+       assert(!initialized);
+       assert(!val);
+       atoms.setMDNaturalUnits(true);
   } else if(word=="setPlumedDat"){
        assert(!initialized);
        plumedDat=static_cast<char*>(val);
@@ -199,9 +206,6 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else if(word=="setLogFile"){
        assert(!initialized);
        log.setFile(static_cast<char*>(val));
-  } else if(word=="setKBoltzman"){
-       assert(val);
-//
   } else {
 // multi word commands
 

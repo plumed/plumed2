@@ -14,6 +14,9 @@ namespace PLMD{
 /// Very small non-zero number
 const double epsilon(std::numeric_limits<double>::epsilon());
 
+/// Boltzman constant in kj/K
+const double kBoltzmann(0.0083144621);
+
 /// Empty class which just contains several (static) tools
 class Tools{
 public:
