@@ -3,6 +3,8 @@
 *.o
 *.so
 *.dylib
+*.cppdep
+*.cdep
 makefile.dep
 /Makefile.conf
 /sourceme.sh
