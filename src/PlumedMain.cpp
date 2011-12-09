@@ -1,7 +1,3 @@
-#ifdef __PLUMED_HAS_DLOPEN
-#include <dlfcn.h>
-#endif
-
 #include "PlumedMain.h"
 #include "Tools.h"
 #include <cstring>
@@ -429,39 +425,36 @@ void PlumedMain::justApply(){
 }
 
 void PlumedMain::load(std::vector<std::string> & words){
-#ifdef __PLUMED_HAS_DLOPEN
-    string s=words[1];
-    assert(words.size()==2);
-    size_t n=s.find_last_of(".");
-    string extension="";
-    string base=s;
-    if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
-    if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
-    if(extension=="cpp"){
-      string cmd="plumed mklib "+s;
-      log<<"Executing: "<<cmd;
-      if(comm.Get_size()>0) log<<" (only on master node)";
-      log<<"\n";
-      if(comm.Get_rank()==0) system(cmd.c_str());
-      comm.Barrier();
-      base="./"+base;
-    }
-    s=base+"."+soext;
-    void *p=dlopen(s.c_str(),RTLD_NOW|RTLD_LOCAL);
-    if(!p){
-      log<<"ERROR\n";
-      log<<"I cannot load library "<<words[1].c_str()<<"\n";
-      log<<dlerror();
-      log<<"\n";
-      this->exit(1);
-    }
-    log<<"Loading shared library "<<s.c_str()<<"\n";
-    log<<"Here is the new list of available actions\n";
-    log<<actionRegister();
-#else
-  (void) words;
-  assert(0); // Loading not enabled; please recompile with -D__PLUMED_HAS_DLOPEN
-#endif
+  if(DLLoader::installed()){
+     string s=words[1];
+     assert(words.size()==2);
+     size_t n=s.find_last_of(".");
+     string extension="";
+     string base=s;
+     if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
+     if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
+     if(extension=="cpp"){
+       string cmd="plumed mklib "+s;
+       log<<"Executing: "<<cmd;
+       if(comm.Get_size()>0) log<<" (only on master node)";
+       log<<"\n";
+       if(comm.Get_rank()==0) system(cmd.c_str());
+       comm.Barrier();
+       base="./"+base;
+     }
+     s=base+"."+soext;
+     void *p=dlloader.load(s);
+     if(!p){
+       log<<"ERROR\n";
+       log<<"I cannot load library "<<words[1].c_str()<<"\n";
+       log<<dlloader.error();
+       log<<"\n";
+       this->exit(1);
+     }
+     log<<"Loading shared library "<<s.c_str()<<"\n";
+     log<<"Here is the new list of available actions\n";
+     log<<actionRegister();
+  } else assert(0); // Loading not enabled; please recompile with -D__PLUMED_HAS_DLOPEN
 }
 
 double PlumedMain::getBias() const{

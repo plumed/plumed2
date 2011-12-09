@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include "DLLoader.h"
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -48,6 +49,8 @@ public:
   PlumedCommunicator comm;
 
 private:
+  DLLoader dlloader;
+
   WithCmd* grex;
 /// Flag to avoid double initialization
   bool  initialized;
