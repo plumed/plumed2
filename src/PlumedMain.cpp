@@ -17,8 +17,8 @@ using namespace PLMD;
 using namespace std;
 
 PlumedMain::PlumedMain():
-  initialized(false),
   grex(NULL),
+  initialized(false),
   log(comm),
   step(0),
   active(false),
@@ -217,7 +217,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
        if(!grex) grex=new GREX(*this);
        assert(grex);
        std::string kk=words[1];
-       for(int i=2;i<words.size();i++) kk+=" "+words[i];
+       for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
        grex->cmd(kk.c_str(),val);
      } else{
    // error
