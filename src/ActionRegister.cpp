@@ -45,7 +45,7 @@ bool ActionRegister::check(string key){
 Action* ActionRegister::create(const ActionOptions&ao){
   if(ao.line.size()<1)return NULL;
   Action* action;
-  if(m[ao.line[0]]) action=m[ao.line[0]](ao);
+  if(check(ao.line[0])) action=m[ao.line[0]](ao);
   else action=NULL;
   return action;
 }
