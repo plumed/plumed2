@@ -186,19 +186,19 @@ void plumed_finalize(plumed p);
 
     \returns 1 if plumed is installed, to 0 otherwise
 */
-int plumed_installed();
+int plumed_installed(void);
 
 /** \relates plumed
     \brief Retrieves an handler to the global structure.
 */
-plumed plumed_global();
+plumed plumed_global(void);
 
 /** \relates plumed
     \brief Check if the global interface has been initialized
 
     \returns returns 1 if plumed has been initialized, to 0 otherwise
 */
-int plumed_ginitialized();
+int plumed_ginitialized(void);
 
 /* global C interface, working on a global object */
 
