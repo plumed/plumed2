@@ -205,22 +205,22 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/sander/runmd.f" << \EOF_EOF
 +
 +   ! init PLUMED
 +   if(plumed.eq.1) then
-+     call plumed_g_create()
++     call plumed_f_gcreate()
 +     energyUnits=4.184
 +     lengthUnits=0.1
 +     timeUnits=1.0
-+     call plumed_g_cmd("setMDEnergyUnits"//char(0),energyUnits)
-+     call plumed_g_cmd("setMDLengthUnits"//char(0),lengthUnits)
-+     call plumed_g_cmd("setMDTimeUnits"//char(0),timeUnits)
-+     call plumed_g_cmd("setPlumedDat"//char(0),trim(adjustl(plumedfile))//char(0))
-+     call plumed_g_cmd("setNatoms"//char(0),nr)
-+     call plumed_g_cmd("setMDEngine"//char(0),"amber");
-+     call plumed_g_cmd("setTimestep"//char(0),dt);
++     call plumed_f_gcmd("setMDEnergyUnits"//char(0),energyUnits)
++     call plumed_f_gcmd("setMDLengthUnits"//char(0),lengthUnits)
++     call plumed_f_gcmd("setMDTimeUnits"//char(0),timeUnits)
++     call plumed_f_gcmd("setPlumedDat"//char(0),trim(adjustl(plumedfile))//char(0))
++     call plumed_f_gcmd("setNatoms"//char(0),nr)
++     call plumed_f_gcmd("setMDEngine"//char(0),"amber");
++     call plumed_f_gcmd("setTimestep"//char(0),dt);
 +#  ifdef MPI
-+     call plumed_g_cmd("setMPIFComm"//char(0),MPI_COMM_WORLD)
++     call plumed_f_gcmd("setMPIFComm"//char(0),MPI_COMM_WORLD)
 +#  endif
 +
-+     call plumed_g_cmd("init"//char(0),0);
++     call plumed_f_gcmd("init"//char(0),0);
 +
 +
 +!     if(ifbox/=0 .and. ifbox/=1 .and. ifbox/=2) then
@@ -246,15 +246,15 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/sander/runmd.f" << \EOF_EOF
  
 +   !PLUMED force added
 +   if(plumed.eq.1) then
-+     call plumed_g_cmd("setStep"//char(0),nstep)
-+     call plumed_g_cmd("setPositions"//char(0),x)
-+     call plumed_g_cmd("setMasses"//char(0),amass)
-+     call plumed_g_cmd("setCharges"//char(0),xx(l15))
-+     call plumed_g_cmd("setEnergy"//char(0),ener(23))
-+     call plumed_g_cmd("setForces"//char(0),f)
-+!     call plumed_g_cmd("setVirial",&force_vir[0][0]);
-+!     call plumed_g_cmd("setBox"//char(0),box)
-+     call plumed_g_cmd("calc"//char(0),0);
++     call plumed_f_gcmd("setStep"//char(0),nstep)
++     call plumed_f_gcmd("setPositions"//char(0),x)
++     call plumed_f_gcmd("setMasses"//char(0),amass)
++     call plumed_f_gcmd("setCharges"//char(0),xx(l15))
++     call plumed_f_gcmd("setEnergy"//char(0),ener(23))
++     call plumed_f_gcmd("setForces"//char(0),f)
++!     call plumed_f_gcmd("setVirial",&force_vir[0][0]);
++!     call plumed_f_gcmd("setBox"//char(0),box)
++     call plumed_f_gcmd("calc"//char(0),0);
 +
 +   end if
 +   !PLUMED end
