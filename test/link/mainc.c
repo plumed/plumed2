@@ -2,12 +2,10 @@
 #include <stdlib.h>
 
 int main(int argc,char** argv){
-  int check;
   plumed p;
   int natoms=3;
 
-  plumed_installed(&check);
-  if(check==1){
+  if(plumed_installed()){
     plumed_gcreate();
     plumed_gcmd("setMDEngine","ACCode");
     plumed_gcmd("setNatoms",&natoms);
