@@ -13,8 +13,16 @@ public:
   friend Vector delta(const Vector&v1,const Vector&v2);
 /// return s*v
   friend Vector operator*(double,const Vector&);
+/// return v*s
+  friend Vector operator*(const Vector&,double);
 /// return v1+v2
   friend Vector operator+(const Vector&,const Vector&);
+/// return -v;
+  friend Vector operator-(const Vector&);
+/// return v1 .scalar. v2
+  friend double dotProduct(const Vector&,const Vector&);
+/// return v1 .vector. v2
+  friend Vector crossProduct(const Vector&,const Vector&);
 /// array-like access [i]
   double & operator[](int i);
 /// array-like access [i]
@@ -70,6 +78,11 @@ Vector operator*(double s,const Vector&v){
 }
 
 inline
+Vector operator*(const Vector&v,double s){
+  return Vector(s*v[0],s*v[1],s*v[2]);
+}
+
+inline
 void Vector::clear(){
   d[0]=0.0;
   d[1]=0.0;
@@ -111,6 +124,24 @@ Vector& Vector::operator +=(const Vector& b){
   d[1]+=b(1);
   d[2]+=b(2);
   return *this;
+}
+
+inline
+Vector operator-(const Vector&v){
+  return Vector(-v[0],-v[1],-v[2]);
+}
+
+inline
+double dotProduct(const Vector& v1,const Vector& v2){
+  return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
+}
+
+inline
+Vector crossProduct(const Vector& v1,const Vector& v2){
+  return Vector(
+    v1[1]*v2[2]-v1[2]*v2[1],
+    v1[2]*v2[0]-v1[0]*v2[2],
+    v1[0]*v2[1]-v1[1]*v2[0]);
 }
 
 }

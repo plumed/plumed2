@@ -14,6 +14,8 @@ public:
   friend Tensor operator*(double,const Tensor&);
 /// return t1+t2
   friend Tensor operator+(const Tensor&,const Tensor&);
+/// return -t
+  friend Tensor operator-(const Tensor&);
 /// initialize the tensor to zero
   Tensor();
 /// initialize a tensor as an external product of two Vector
@@ -177,6 +179,21 @@ Tensor& Tensor::operator +=(const Tensor& b){
   d[2][1]+=b(2,1);
   d[2][2]+=b(2,2);
   return *this;
+}
+
+inline
+Tensor operator-(const Tensor&t){
+  Tensor t1;
+  t1(0,0)=-t(0,0);
+  t1(0,1)=-t(0,1);
+  t1(0,2)=-t(0,2);
+  t1(1,0)=-t(1,0);
+  t1(1,1)=-t(1,1);
+  t1(1,2)=-t(1,2);
+  t1(2,0)=-t(2,0);
+  t1(2,1)=-t(2,1);
+  t1(2,2)=-t(2,2);
+  return t1;
 }
 
 
