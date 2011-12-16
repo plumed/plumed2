@@ -17,6 +17,9 @@ const double epsilon(std::numeric_limits<double>::epsilon());
 /// Boltzman constant in kj/K
 const double kBoltzmann(0.0083144621);
 
+/// PI
+const double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
+
 /// Empty class which just contains several (static) tools
 class Tools{
 public:
