@@ -9,20 +9,12 @@ namespace PLMD{
 class Vector{
   double d[3];
 public:
-/// return v2-v1
-  friend Vector delta(const Vector&v1,const Vector&v2);
-/// return s*v
-  friend Vector operator*(double,const Vector&);
-/// return v*s
-  friend Vector operator*(const Vector&,double);
-/// return v1+v2
-  friend Vector operator+(const Vector&,const Vector&);
-/// return -v;
-  friend Vector operator-(const Vector&);
-/// return v1 .scalar. v2
-  friend double dotProduct(const Vector&,const Vector&);
-/// return v1 .vector. v2
-  friend Vector crossProduct(const Vector&,const Vector&);
+/// create it with components x0, x1 and x2
+  Vector(double x0,double x1,double x2);
+/// create it null
+  Vector();
+/// set it to zero
+  void clear();
 /// array-like access [i]
   double & operator[](int i);
 /// array-like access [i]
@@ -31,25 +23,66 @@ public:
   double & operator()(int i);
 /// parenthesis access (i)
   const double & operator()(int i)const;
-/// set it to zero
-  void clear();
-/// create it with components x0, x1 and x2
-  Vector(double x0,double x1,double x2);
-/// create it null
-  Vector();
+/// increment
+  Vector& operator +=(const Vector& b);
+/// decrement
+  Vector& operator -=(const Vector& b);
+/// multiply
+  Vector& operator *=(double s);
+/// divide
+  Vector& operator /=(double s);
+/// sign +
+  Vector operator +()const;
+/// sign -
+  Vector operator -()const;
+/// return v1+v2
+  friend Vector operator+(const Vector&,const Vector&);
+/// return v1-v2
+  friend Vector operator-(const Vector&,const Vector&);
+/// return s*v
+  friend Vector operator*(double,const Vector&);
+/// return v*s
+  friend Vector operator*(const Vector&,double);
+/// return v/s
+  friend Vector operator/(const Vector&,double);
+/// return v2-v1
+  friend Vector delta(const Vector&v1,const Vector&v2);
+/// return v1 .scalar. v2
+  friend double dotProduct(const Vector&,const Vector&);
+/// return v1 .vector. v2
+  friend Vector crossProduct(const Vector&,const Vector&);
 /// compute the squared modulo
   double modulo2()const;
 /// compute the modulo
   double modulo()const;
 /// scale the vector by a factor s
   void scale(double s);
-/// increment
-  Vector& operator +=(const Vector& b);
 };
 
 inline
+Vector::Vector(){
+  d[0]=0.0;
+  d[1]=0.0;
+  d[2]=0.0;
+}
+
+inline
+Vector::Vector(double x0,double x1,double x2){
+  d[0]=x0;
+  d[1]=x1;
+  d[2]=x2;
+}
+
+inline
+void Vector::clear(){
+  d[0]=0.0;
+  d[1]=0.0;
+  d[2]=0.0;
+}
+
+inline
 double & Vector::operator[](int i){
-return d[i];
+  return d[i];
 }
 
 inline
@@ -68,8 +101,56 @@ const double & Vector::operator()(int i)const{
 }
 
 inline
-Vector delta(const Vector&v1,const Vector&v2){
-  return Vector(v2[0]-v1[0],v2[1]-v1[1],v2[2]-v1[2]);
+Vector& Vector::operator +=(const Vector& b){
+  d[0]+=b(0);
+  d[1]+=b(1);
+  d[2]+=b(2);
+  return *this;
+}
+
+inline
+Vector& Vector::operator -=(const Vector& b){
+  d[0]-=b(0);
+  d[1]-=b(1);
+  d[2]-=b(2);
+  return *this;
+}
+
+inline
+Vector& Vector::operator *=(double s){
+  d[0]*=s;
+  d[1]*=s;
+  d[2]*=s;
+  return *this;
+}
+
+inline
+Vector& Vector::operator /=(double s){
+  double x=1.0/s;
+  d[0]*=x;
+  d[1]*=x;
+  d[2]*=x;
+  return *this;
+}
+
+inline
+Vector  Vector::operator +()const{
+  return *this;
+}
+
+inline
+Vector  Vector::operator -()const{
+  return Vector(-d[0],-d[1],-d[2]);
+}
+
+inline
+Vector operator+(const Vector&v1,const Vector&v2){
+  return Vector(v1[0]+v2[0],v1[1]+v2[1],v1[2]+v2[2]);
+}
+
+inline
+Vector operator-(const Vector&v1,const Vector&v2){
+  return Vector(v1[0]-v2[0],v1[1]-v2[1],v1[2]-v2[2]);
 }
 
 inline
@@ -79,28 +160,17 @@ Vector operator*(double s,const Vector&v){
 
 inline
 Vector operator*(const Vector&v,double s){
-  return Vector(s*v[0],s*v[1],s*v[2]);
+  return s*v;
 }
 
 inline
-void Vector::clear(){
-  d[0]=0.0;
-  d[1]=0.0;
-  d[2]=0.0;
+Vector operator/(const Vector&v,double s){
+  return v*(1.0/s);
 }
 
 inline
-Vector::Vector(double x0,double x1,double x2){
-  d[0]=x0;
-  d[1]=x1;
-  d[2]=x2;
-}
-
-inline
-Vector::Vector(){
-  d[0]=0.0;
-  d[1]=0.0;
-  d[2]=0.0;
+Vector delta(const Vector&v1,const Vector&v2){
+  return Vector(v2[0]-v1[0],v2[1]-v1[1],v2[2]-v1[2]);
 }
 
 inline
@@ -110,25 +180,7 @@ double Vector::modulo2()const{
 
 inline
 void Vector::scale(double s){
-  d[0]*=s;d[1]*=s;d[2]*=s;
-}
-
-inline
-Vector operator+(const Vector&v1,const Vector&v2){
-  return Vector(v1[0]+v2[0],v1[1]+v2[1],v1[2]+v2[2]);
-}
-
-inline
-Vector& Vector::operator +=(const Vector& b){
-  d[0]+=b(0);
-  d[1]+=b(1);
-  d[2]+=b(2);
-  return *this;
-}
-
-inline
-Vector operator-(const Vector&v){
-  return Vector(-v[0],-v[1],-v[2]);
+  (*this) *=s;
 }
 
 inline
