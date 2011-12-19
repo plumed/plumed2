@@ -92,8 +92,7 @@ void Atoms::share(const std::set<int>& unique){
   mdatoms->getCharges(gatindex,charges);
   mdatoms->getPositions(gatindex,positions);
   if(dd && int(gatindex.size())<natoms){
-    bool async=dd.Get_size()<10;
-    if(async){
+    if(dd.async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
       for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();
     }
@@ -109,7 +108,7 @@ void Atoms::share(const std::set<int>& unique){
         count++;
       }
     }
-    if(async){
+    if(dd.async){
       dd.mpi_request_positions.resize(dd.Get_size());
       dd.mpi_request_index.resize(dd.Get_size());
       for(int i=0;i<dd.Get_size();i++){
@@ -151,9 +150,7 @@ void Atoms::wait(){
 // receive toBeReceived
     int count=0;
     PlumedCommunicator::Status status;
-    bool async=dd.Get_size()<10;
-//    async=true;
-    if(async){
+    if(dd.async){
       for(int i=0;i<dd.Get_size();i++){
         dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
         int c=status.Get_count<int>();
@@ -206,6 +203,7 @@ void Atoms::remove(const ActionAtomistic*a){
 void Atoms::DomainDecomposition::enable(PlumedCommunicator& c){
   on=true;
   Set_comm(c.Get_comm());
+  async=Get_size()<10;
 }
 
 void Atoms::setAtomsNlocal(int n){

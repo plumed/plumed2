@@ -62,6 +62,7 @@ class Atoms
   {
   public:
     bool on;
+    bool async;
     std::vector<int>    g2l;
 
     std::vector<PlumedCommunicator::Request> mpi_request_positions;
@@ -73,7 +74,7 @@ class Atoms
     std::vector<int>    indexToBeReceived;
     operator bool(){return on;};
     DomainDecomposition():
-      on(false)
+      on(false), async(false)
       {};
     void enable(PlumedCommunicator& c);
   };
