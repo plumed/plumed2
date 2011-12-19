@@ -31,7 +31,11 @@ Action::Action(const ActionOptions&ao):
 }
 
 FILE* Action::fopen(const char *path, const char *mode){
-  FILE* fp=plumed.fopen(path,mode);
+  bool write(false);
+  for(const char*p=mode;*p;p++) if(*p=='w') write=true;
+  FILE* fp;
+  if(write && comm.Get_rank()!=0) fp=plumed.fopen("/dev/null",mode);
+  else      fp=plumed.fopen(path,mode);
   files.insert(fp);
   return fp;
 }
