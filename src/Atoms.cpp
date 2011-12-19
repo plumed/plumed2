@@ -125,8 +125,8 @@ void Atoms::share(const std::set<int>& unique){
       dd.Allgather(&count,1,&counts[0],1);
       displ[0]=0;
       for(int i=1;i<n;++i) displ[i]=displ[i-1]+counts[i-1];
-      for(int i=1;i<n;++i) counts5[i]=counts[i]*5;
-      for(int i=1;i<n;++i) displ5[i]=displ[i]*5;
+      for(int i=0;i<n;++i) counts5[i]=counts[i]*5;
+      for(int i=0;i<n;++i) displ5[i]=displ[i]*5;
       dd.Allgatherv(&dd.indexToBeSent[0],count,&dd.indexToBeReceived[0],&counts[0],&displ[0]);
       dd.Allgatherv(&dd.positionsToBeSent[0],5*count,&dd.positionsToBeReceived[0],&counts5[0],&displ5[0]);
       int tot=displ[n-1]+counts[n-1];
