@@ -12,6 +12,32 @@ namespace PLMD{
 class Tensor{
   double d[3][3];
 public:
+/// Small utility class which just contains a pointer to the tensor so as
+/// to be able to use the [][] syntax (const version)
+/// See C++ FAQ 13.12
+  class Const_row{
+    friend class Tensor; // this so as to allow only Tensor to instantiate Const_row
+                         // the user should not manipulate it directly
+    const Tensor& t;
+    const unsigned i;
+    Const_row(const Tensor&t,unsigned i); // constructor is private and cannot be manipulated by the user
+  public:
+  /// access element
+    const double & operator[] (unsigned j)const;
+  };
+/// Small utility class which just contains a pointer to the tensor so as
+/// to be able to use the [][] syntax
+/// See C++ FAQ 13.12
+  class Row{
+    friend class Tensor; // this so as to allow only Tensor to instantiate Const_row
+                         // the user should not manipulate it directly
+    Tensor& t;
+    const unsigned i;
+    Row(Tensor&t,unsigned i); // constructor is private and cannot be manipulated by the user
+  public:
+  /// access element
+    double & operator[] (unsigned j);
+  };
 /// initialize the tensor to zero
   Tensor();
 /// initialize a tensor as an external product of two Vector
@@ -24,9 +50,17 @@ public:
   double & operator() (int i,int j);
 /// access element
   const double & operator() (int i,int j)const;
+/// access element (with [][] syntax)
+  Row operator[] (unsigned i);
+/// access element (with [][] syntax)
+  Const_row operator[] (unsigned i)const;
+/// increment
   Tensor& operator +=(const Tensor& b);
+/// decrement
   Tensor& operator -=(const Tensor& b);
+/// multiply
   Tensor& operator *=(double);
+/// divide
   Tensor& operator /=(double);
 /// return +t
   Tensor operator +()const;
@@ -58,6 +92,14 @@ public:
   friend Tensor transpose(const Tensor&);
   friend Tensor extProduct(const Vector&,const Vector&);
 };
+
+inline
+Tensor::Const_row::Const_row(const Tensor&t,unsigned i):
+  t(t),i(i){}
+
+inline
+Tensor::Row::Row(Tensor&t,unsigned i):
+  t(t),i(i){}
 
 inline
 Tensor::Tensor(){
@@ -111,6 +153,26 @@ double & Tensor::operator() (int i,int j){
 inline
 const double & Tensor::operator() (int i,int j)const{
   return d[i][j];
+}
+
+inline
+const double & Tensor::Const_row::operator[] (unsigned j)const{
+  return t(i,j);
+}
+
+inline
+double & Tensor::Row::operator[] (unsigned j){
+  return t(i,j);
+}
+
+inline
+Tensor::Row Tensor::operator[] (unsigned i){
+  return Row(*this,i);
+}
+
+inline
+Tensor::Const_row Tensor::operator[] (unsigned i)const{
+  return Const_row(*this,i);
 }
 
 inline
