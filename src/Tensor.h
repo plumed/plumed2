@@ -335,7 +335,7 @@ Vector matmul(const Tensor&a,const Vector&b){
 inline
 Vector matmul(const Vector&a,const Tensor&b){
   Vector t;
-  for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) t(i)+=a(i)*b(i,j);
+  for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) t(i)+=a(j)*b(j,i);
   return t;
 }
 
