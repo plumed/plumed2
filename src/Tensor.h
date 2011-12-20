@@ -82,14 +82,21 @@ public:
   static Tensor identity();
 /// return the matrix inverse
   Tensor inverse()const;
+/// return the transpose matrix
   Tensor transpose()const;
-/// matrix multiplication
+/// matrix-matrix multiplication
   friend Tensor matmul(const Tensor&,const Tensor&);
+/// matrix-vector multiplication
   friend Vector matmul(const Tensor&,const Vector&);
+/// vector-matrix multiplication
   friend Vector matmul(const Vector&,const Tensor&);
+/// returns the determinant of a tensor
   friend double determinant(const Tensor&);
+/// returns the inverse of a tensor (same as inverse())
   friend Tensor inverse(const Tensor&);
+/// returns the transpose of a tensor (same as transpose())
   friend Tensor transpose(const Tensor&);
+/// returns the transpose of a tensor (same as Tensor(const Vector&,const Vector&))
   friend Tensor extProduct(const Vector&,const Vector&);
 };
 
