@@ -7,6 +7,8 @@ namespace PLMD{
 
 /// 3x3 matrix of double.
 /// Useful to simplify syntax. All the methods are inlined for better optimization.
+/// Several functions are declared as friends even if not necessary so as to
+/// properly appear in Doxygen documentation..
 class Tensor{
   double d[3][3];
 public:
@@ -51,6 +53,10 @@ public:
   friend Tensor matmul(const Tensor&,const Tensor&);
   friend Vector matmul(const Tensor&,const Vector&);
   friend Vector matmul(const Vector&,const Tensor&);
+  friend double determinant(const Tensor&);
+  friend Tensor inverse(const Tensor&);
+  friend Tensor transpose(const Tensor&);
+  friend Tensor extProduct(const Vector&,const Vector&);
 };
 
 inline
@@ -264,9 +270,25 @@ Vector matmul(const Vector&a,const Tensor&b){
   return t;
 }
 
+inline
+double determinant(const Tensor&t){
+  return t.determinant();
+}
 
+inline
+Tensor inverse(const Tensor&t){
+  return t.inverse();
+}
 
+inline
+Tensor transpose(const Tensor&t){
+  return t.transpose();
+}
 
+inline
+Tensor extProduct(const Vector&v1,const Vector&v2){
+  return Tensor(v1,v2);
+}
 
 }
 

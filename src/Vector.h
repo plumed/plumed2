@@ -6,6 +6,8 @@ namespace PLMD{
 /// 3d vector of double.
 /// Useful to simplify syntax. All the methods are inlined for better optimization.
 /// Accepts both [] and () syntax for access.
+/// Several functions are declared as friends even if not necessary so as to
+/// properly appear in Doxygen documentation..
 class Vector{
   double d[3];
 public:
