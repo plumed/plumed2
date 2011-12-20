@@ -138,7 +138,7 @@ void plumed_finalize(plumed p){
   (*(plumed_kernel_register(NULL)->finalize))(p.p);
 }
 
-int plumed_installed(){
+int plumed_installed(void){
   plumed_kernel_register(NULL);
   return installed;
 }
@@ -147,7 +147,7 @@ int plumed_installed(){
 
 static plumed gmain={NULL};
 
-plumed plumed_global(){
+plumed plumed_global(void){
   return gmain;
 }
 
@@ -165,7 +165,7 @@ void plumed_gfinalize(void){
   gmain.p=NULL;
 }
 
-int plumed_ginitialized(){
+int plumed_ginitialized(void){
   if(gmain.p) return 1;
   else                return 0;
 }
@@ -223,7 +223,7 @@ void plumed_f_ginitialized(int*i){
   *i=plumed_ginitialized();
 }
 
-void plumed_f_gcreate(){
+void plumed_f_gcreate(void){
   plumed_gcreate();
 }
 
@@ -231,7 +231,7 @@ void plumed_f_gcmd(const char*key,const void*val){
   plumed_gcmd(key,val);
 }
 
-void plumed_f_gfinalize(){
+void plumed_f_gfinalize(void){
   plumed_gfinalize();
 }
 

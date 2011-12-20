@@ -255,50 +255,78 @@ namespace PLMD {
 
 class Plumed{
   plumed main;
-// keeps track if the object was created from scratch using 
-// the defaults destructor (cloned=false) or if it was imported
-// from C or FORTRAN (cloned-true). In the latter case, the
-// plumed_finalize() method is not called when destructing the object,
-// since it is expected to be finalized in the C/FORTRAN code
+/**
+   keeps track if the object was created from scratch using 
+   the defaults destructor (cloned=false) or if it was imported
+   from C or FORTRAN (cloned-true). In the latter case, the
+   plumed_finalize() method is not called when destructing the object,
+   since it is expected to be finalized in the C/FORTRAN code
+*/
   bool cloned;
 public:
-/// Check if plumed is installed (for runtime binding)
+/**
+   Check if plumed is installed (for runtime binding)
+*/
   static bool installed();
-/// Check if global-plumed has been initialized
+/**
+   Check if global-plumed has been initialized
+*/
   static bool ginitialized();
-/// Initialize global-plumed
+/**
+   Initialize global-plumed
+*/
   static void gcreate();
-/// Send a command to global-plumed
+/**
+   Send a command to global-plumed
+*/
   static void gcmd(const char* key,const void* val);
-/// Finalize global-plumed
+/**
+   Finalize global-plumed
+*/
   static void gfinalize();
-/// Returns the Plumed global object
+/**
+   Returns the Plumed global object
+*/
   static Plumed global();
-/// Constructor
+/**
+   Constructor
+*/
   Plumed();
-/// Clone a Plumed object from a FORTRAN char* handler
-///
-/// \attention The Plumed object created in this manner
-///            will not finalize the corresponding plumed structure.
-///            It is expected that the FORTRAN code calls plumed_c_finalize for it
+/**
+   Clone a Plumed object from a FORTRAN char* handler
+
+ \attention The Plumed object created in this manner
+            will not finalize the corresponding plumed structure.
+            It is expected that the FORTRAN code calls plumed_c_finalize for it
+*/
   Plumed(const char*c);
-/// Clone a Plumed object from a C plumed structure
-///
-/// \attention The Plumed object created in this manner
-///            will not finalize the corresponding plumed structure.
-///            It is expected that the C code calls plumed_finalize for it
+/**
+   Clone a Plumed object from a C plumed structure
+
+ \attention The Plumed object created in this manner
+            will not finalize the corresponding plumed structure.
+            It is expected that the C code calls plumed_finalize for it
+*/
   Plumed(plumed p);
-/// Retrieve the C plumed structure for this object
+/**
+   Retrieve the C plumed structure for this object
+*/
   operator plumed()const;
-/// Retrieve a FORTRAN handler for this object
+/**
+   Retrieve a FORTRAN handler for this object
+*/
   void toFortran(char*c)const;
-/// Send a command to this plumed object
+/**
+   Send a command to this plumed object
+*/
   void cmd(const char*key,const void*val=NULL);
-/// Destructor
+/**
+   Destructor
+*/
   ~Plumed();
 };
 
-// All methods are inlined so as to avoid the compilation of an extra c++ file
+/* All methods are inlined so as to avoid the compilation of an extra c++ file */
 
 inline
 bool Plumed::installed(){
