@@ -20,9 +20,6 @@ TORSION ATOMS=x,y,z,t [PBC]
 \endverbatim
 If the PBC flag is present, distance is computed using periodic boundary conditions.
 
-\attention
-For this variable the derivatives are computed numerically, so they might not
-be very efficient!
 */
 //+ENDPLUMEDOC
    
@@ -65,8 +62,6 @@ pbc(true)
   getValue("")->setPeriodicity(true);
   getValue("")->setDomain(-pi,pi);
 
-// I am too lazy now to implement derivatives !!!
-  enforceNumericalDerivatives();
   requestAtoms(atoms);
 }
 
@@ -85,16 +80,16 @@ void ColvarTorsion::calculate(){
   }
   Vector dd0,dd1,dd2;
   Torsion t;
-// this is the version without derivatives
-  double torsion=t.compute(d0,d1,d2);
+  double torsion=t.compute(d0,d1,d2,dd0,dd1,dd2);
+  setAtomsDerivatives(0,dd0);
+  setAtomsDerivatives(1,-dd0);
+  setAtomsDerivatives(2,dd1);
+  setAtomsDerivatives(3,-dd1);
+  setAtomsDerivatives(4,dd2);
+  setAtomsDerivatives(5,-dd2);
+
   setValue           (torsion);
-//  setAtomsDerivatives(0,d0);
-//  setAtomsDerivatives(1,-d0);
-//  setAtomsDerivatives(2,d1);
-//  setAtomsDerivatives(3,-d1);
-//  setAtomsDerivatives(4,d2);
-//  setAtomsDerivatives(5,-d2);
-//  setBoxDerivatives  (-(Tensor(d0,dd0)+Tensor(d1,dd1)+Tensor(d2,dd2)));
+  setBoxDerivatives  (-(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
 }
 
 }

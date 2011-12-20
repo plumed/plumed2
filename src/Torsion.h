@@ -23,9 +23,8 @@ public:
 /// compute(r01,r12,r23);
 /// See ColvarTorsion for a practical usage...
   double compute(const Vector& v1,const Vector& v2,const Vector& v3)const;
-/// This should be the version which also computes the derivatives wrt the arguments.
-/// Still it is not implemented!! So, you can only do numerical derivatives
-///  double compute(const Vector& v1,const Vector& v2,const Vector& v3,Vector& d1,Vector& d2,Vector& d3)const;
+/// This is the version which also computes the derivatives wrt the arguments.
+  double compute(const Vector& v1,const Vector& v2,const Vector& v3,Vector& d1,Vector& d2,Vector& d3)const;
 };
 
 }
