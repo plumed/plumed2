@@ -4,6 +4,10 @@
 
 namespace PLMD{
 
+/// Small auxiliary class.
+/// I use it to test a few things that I am scary of and could introduce bugs.
+/// It checks at startup that Tensor satifies some requirement so as to allow
+/// accessing a vector of tensors as a 9 times longer array of doubles.
 static class TensorChecks{
 public:
   TensorChecks(){
