@@ -18,13 +18,13 @@ public:
 /// set it to zero
   void clear();
 /// array-like access [i]
-  double & operator[](int i);
+  double & operator[](unsigned i);
 /// array-like access [i]
-  const double & operator[](int i)const;
+  const double & operator[](unsigned i)const;
 /// parenthesis access (i)
-  double & operator()(int i);
+  double & operator()(unsigned i);
 /// parenthesis access (i)
-  const double & operator()(int i)const;
+  const double & operator()(unsigned i)const;
 /// increment
   Vector& operator +=(const Vector& b);
 /// decrement
@@ -83,22 +83,22 @@ void Vector::clear(){
 }
 
 inline
-double & Vector::operator[](int i){
+double & Vector::operator[](unsigned i){
   return d[i];
 }
 
 inline
-const double & Vector::operator[](int i)const{
+const double & Vector::operator[](unsigned i)const{
   return d[i];
 }
 
 inline
-double & Vector::operator()(int i){
+double & Vector::operator()(unsigned i){
   return d[i];
 }
 
 inline
-const double & Vector::operator()(int i)const{
+const double & Vector::operator()(unsigned i)const{
   return d[i];
 }
 

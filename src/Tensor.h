@@ -47,9 +47,9 @@ public:
 /// set it to zero
   void clear();
 /// access element
-  double & operator() (int i,int j);
+  double & operator() (unsigned i,unsigned j);
 /// access element
-  const double & operator() (int i,int j)const;
+  const double & operator() (unsigned i,unsigned j)const;
 /// access element (with [][] syntax)
   Row operator[] (unsigned i);
 /// access element (with [][] syntax)
@@ -103,7 +103,7 @@ Tensor::Row::Row(Tensor&t,unsigned i):
 
 inline
 Tensor::Tensor(){
-  for(int i=0;i<3;i++)for(int j=0;j<3;j++)d[i][j]=0.0;
+  for(unsigned i=0;i<3;i++)for(unsigned j=0;j<3;j++)d[i][j]=0.0;
 }
 
 inline
@@ -146,12 +146,12 @@ void Tensor::clear(){
 }
 
 inline
-double & Tensor::operator() (int i,int j){
+double & Tensor::operator() (unsigned i,unsigned j){
   return d[i][j];
 }
 
 inline
-const double & Tensor::operator() (int i,int j)const{
+const double & Tensor::operator() (unsigned i,unsigned j)const{
   return d[i][j];
 }
 
@@ -295,7 +295,7 @@ Tensor Tensor::identity(){
 inline
 Tensor Tensor::transpose()const{
   Tensor t;
-  for(int i=0;i<3;i++)for(int j=0;j<3;j++) t(i,j)=d[j][i];
+  for(unsigned i=0;i<3;i++)for(unsigned j=0;j<3;j++) t(i,j)=d[j][i];
   return t;
 }
 
@@ -303,7 +303,7 @@ inline
 Tensor Tensor::inverse()const{
   Tensor t;
   double invdet=1.0/determinant();
-  for(int i=0;i<3;i++) for(int j=0;j<3;j++)
+  for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++)
     t(j,i)=invdet*(   d[(i+1)%3][(j+1)%3]*d[(i+2)%3][(j+2)%3]
                      -d[(i+1)%3][(j+2)%3]*d[(i+2)%3][(j+1)%3]);
   return t;
@@ -312,7 +312,7 @@ Tensor Tensor::inverse()const{
 inline
 Tensor matmul(const Tensor&a,const Tensor&b){
   Tensor t;
-  for(int i=0;i<3;i++) for(int j=0;j<3;j++) for(int k=0;k<3;k++) {
+  for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) for(unsigned k=0;k<3;k++) {
     t(i,j)+=a(i,k)*b(k,j);
   }
   return t;
@@ -321,14 +321,14 @@ Tensor matmul(const Tensor&a,const Tensor&b){
 inline
 Vector matmul(const Tensor&a,const Vector&b){
   Vector t;
-  for(int i=0;i<3;i++) for(int j=0;j<3;j++) t(i)+=a(i,j)*b(j);
+  for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) t(i)+=a(i,j)*b(j);
   return t;
 }
 
 inline
 Vector matmul(const Vector&a,const Tensor&b){
   Vector t;
-  for(int i=0;i<3;i++) for(int j=0;j<3;j++) t(i)+=a(i)*b(i,j);
+  for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) t(i)+=a(i)*b(i,j);
   return t;
 }
 
