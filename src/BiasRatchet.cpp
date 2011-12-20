@@ -84,8 +84,7 @@ void BiasRatchet::calculate(){
     const double cv2=cv*cv;
     const double k=kappa[i];
 
-    if(min[i]<0.) min[i] = cv2; 
-    if(cv2<min[i]) min[i] = cv2;
+    if(min[i]<0.||cv2<min[i]) min[i] = cv2; 
     else {
       const double f = -2.*k*(cv2-min[i])*cv;
       setOutputForces(i,f);
