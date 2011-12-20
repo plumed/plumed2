@@ -98,6 +98,8 @@ public:
   friend Tensor transpose(const Tensor&);
 /// returns the transpose of a tensor (same as Tensor(const Vector&,const Vector&))
   friend Tensor extProduct(const Vector&,const Vector&);
+  friend Tensor dcrossDv1(const Vector&,const Vector&);
+  friend Tensor dcrossDv2(const Vector&,const Vector&);
 };
 
 inline
@@ -358,6 +360,26 @@ inline
 Tensor extProduct(const Vector&v1,const Vector&v2){
   return Tensor(v1,v2);
 }
+
+inline
+Tensor dcrossDv1(const Vector&v1,const Vector&v2){
+  return Tensor(
+         0.0, v2[2],-v2[1],
+      -v2[2],   0.0, v2[0],
+       v2[1],-v2[0],   0.0);
+}
+
+inline
+Tensor dcrossDv2(const Vector&v1,const Vector&v2){
+//  return -dcrossDv1(v2,v1);
+  return Tensor(
+    0.0,-v1[2],v1[1],
+    v1[2],0.0,-v1[0],
+    -v1[1],v1[0],0.0);
+}
+
+
+
 
 }
 
