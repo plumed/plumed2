@@ -23,7 +23,7 @@ class RMSD
   Log &log;
 public:
 /// initialize the log in the constructor
-  RMSD(Log & log ): log(log){};
+  RMSD(Log & log ): myoptimalalignment(NULL),log(log){};
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure
