@@ -11,7 +11,6 @@ namespace PLMD{
 /// properly appear in Doxygen documentation..
 class Tensor{
   double d[3][3];
-public:
 /// Small utility class which just contains a pointer to the tensor so as
 /// to be able to use the [][] syntax (const version)
 /// See C++ FAQ 13.12
@@ -38,6 +37,7 @@ public:
   /// access element
     double & operator[] (unsigned j);
   };
+public:
 /// initialize the tensor to zero
   Tensor();
 /// initialize a tensor as an external product of two Vector
