@@ -55,6 +55,8 @@ logical :: has_parfile  ! a flag for the parameter file
 logical :: plumed
 integer :: plumedavailable
 
+
+
 CALL plumed_installed(plumedavailable)
 
 plumed=.false.
