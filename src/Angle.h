@@ -2,7 +2,6 @@
 #define __PLUMED_Angle_h
 
 #include "Vector.h"
-#include "Tools.h"
 
 namespace PLMD{
 
