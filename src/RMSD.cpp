@@ -14,6 +14,7 @@ void RMSD::setFromPDB(const PDB&pdb, string mytype ){
   if (mytype=="SIMPLE"){ 	alignmentMethod=SIMPLE; log.printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
 ;}
   else if (mytype=="OPTIMAL"){ 	alignmentMethod=OPTIMAL; log.printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n"); }
+  else assert(0);
   setReference(pdb.getPositions());
   setAlign(pdb.getOccupancy());
   setDisplace(pdb.getBeta());
