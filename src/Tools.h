@@ -8,12 +8,17 @@
 #include <cmath>
 #include <limits>
 #include <algorithm>
-#include <string.h>
 
 namespace PLMD{
 
 /// Very small non-zero number
 const double epsilon(std::numeric_limits<double>::epsilon());
+
+/// Boltzman constant in kj/K
+const double kBoltzmann(0.0083144621);
+
+/// PI
+const double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
 
 /// Empty class which just contains several (static) tools
 class Tools{
@@ -31,6 +36,8 @@ public:
   static bool convert(const std::string & str,double & t);
 /// Convert a string to a int, reading it
   static bool convert(const std::string & str,int & t);
+/// Convert a string to an unsigned int, reading it
+  static bool convert(const std::string & str,unsigned & t);
 /// Convert a string to a atom number, reading it
   static bool convert(const std::string & str,AtomNumber & t);
 /// Convert a string to a string (i.e. copy)
@@ -112,7 +119,14 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 
 inline
 double Tools::pbc(double x){
-  return x-floor(x+0.5);
+  if(std::numeric_limits<int>::round_style == std::round_toward_zero) {
+    const double offset=100.0;
+    const double y=x+offset;
+    if(y>=0) return y-int(y+0.5);
+    else     return y-int(y-0.5);
+  } else if(std::numeric_limits<int>::round_style == std::round_to_nearest) {
+    return x-int(x);
+  } else return x-floor(x+0.5);
 }
 
 

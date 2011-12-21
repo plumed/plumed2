@@ -9,77 +9,27 @@
 #include <set>
 #include "PlumedConfig.h"
 #include "Colvar.h"
-
 #include <cstdlib>
-
 #include "ActionRegister.h"
+#include "GREX.h"
 
 using namespace PLMD;
 using namespace std;
 
-// !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
-// THE FOLLOWING ARE UTILITIES WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
-// This section should be consistent with the Plumed.h file.
-// Since the Plumed.h file may be included in host MD codes, **NEVER** MODIFY THE CODE DOWN HERE
-
-/* Holder for plumedmain function pointers */
-typedef struct {
-  void*(*create)();
-  void(*cmd)(void*,const char*,const void*);
-  void(*finalize)(void*);
-} plumed_plumedmain_function_holder;
-
-extern "C" void*plumedmain_create();
-extern "C" void plumedmain_cmd(void*plumed,const char*key,const void*val);
-extern "C" void plumedmain_finalize(void*plumed);
-
-void*plumedmain_create(){
-  return new PlumedMain;
-}
-
-void plumedmain_cmd(void*plumed,const char*key,const void*val){
-  assert(plumed);
-  static_cast<PlumedMain*>(plumed)->cmd(key,val);
-}
-
-void plumedmain_finalize(void*plumed){
-  assert(plumed);
-  delete static_cast<PlumedMain*>(plumed);
-}
-
-extern "C" plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmain_function_holder*);
-extern "C" void* plumed_dlopen(const char*);
-extern "C" const char* plumed_dlerror(void);
-
-namespace PLMD{
-
-/// Static object which registers Plumed.
-/// This is a static object which, during its construction at startup,
-/// registers the pointers to plumedmain_create, plumedmain_cmd and plumedmain_finalize
-/// to the plumed_kernel_register function
-static class PlumedMainInitializer{
-  public:
-  PlumedMainInitializer(){
-    plumed_plumedmain_function_holder fh={plumedmain_create,plumedmain_cmd,plumedmain_finalize};
-    plumed_kernel_register(&fh);
-  };
-} RegisterMe;
-
-}
-
-// END OF DANGER
-////////////////////////////////////////////////////////////
-
-
 PlumedMain::PlumedMain():
+  grex(NULL),
   initialized(false),
   log(comm),
   step(0),
   active(false),
   atoms(*this),
   actionSet((*this)),
+  bias(0.0),
   novirial(false)
-{
+{}
+
+PlumedMain::~PlumedMain(){
+  if(grex) delete grex;
 }
 
 /////////////////////////////////////////////////////////////
@@ -215,6 +165,13 @@ void PlumedMain::cmd(const std::string & word,void*val){
        double d;
        atoms.MD2double(val,d);
        atoms.setMDTimeUnits(d);
+  } else if(word=="setNaturalUnits"){
+// set the boltzman constant for MD in natural units (kb=1)
+// only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
+// use as cmd("setNaturalUnits")
+       assert(!initialized);
+       assert(!val);
+       atoms.setMDNaturalUnits(true);
   } else if(word=="setPlumedDat"){
        assert(!initialized);
        plumedDat=static_cast<char*>(val);
@@ -245,9 +202,6 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else if(word=="setLogFile"){
        assert(!initialized);
        log.setFile(static_cast<char*>(val));
-  } else if(word=="setKBoltzman"){
-       assert(val);
-//
   } else {
 // multi word commands
 
@@ -259,10 +213,16 @@ void PlumedMain::cmd(const std::string & word,void*val){
        int check=0;
        if(actionRegister().check(words[1])) check=1;
        *(static_cast<int*>(val))=check;
+     } else if(nw>1 && words[0]=="GREX"){
+       if(!grex) grex=new GREX(*this);
+       assert(grex);
+       std::string kk=words[1];
+       for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
+       grex->cmd(kk.c_str(),val);
      } else{
    // error
        fprintf(stderr,"+++ PLUMED ERROR\n");
-       fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG %s\n",word.c_str());
+       fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG '%s'\n",word.c_str());
        fprintf(stderr,"+++ There might be a mistake in the MD code\n");
        fprintf(stderr,"+++ or you may be using an out-dated plumed version\n");
        exit(1);
@@ -292,6 +252,8 @@ void PlumedMain::init(){
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
   log.printf("Number of atoms: %d\n",atoms.getNatoms());
+  if(grex) log.printf("GROMACS-like replica exchange is on\n");
+  log.printf("File suffix: %s\n",getSuffix().c_str());
   if(plumedDat.length()>0){
     readInputFile(plumedDat);
     plumedDat="";
@@ -309,6 +271,10 @@ void PlumedMain::readInputFile(std::string str){
     if(words.size()==0)continue;
     else if(words[0]=="ENDPLUMED") break;
     else if(words[0]=="LOAD") load(words);
+    else if(words[0]=="_SET_SUFFIX"){
+      assert(words.size()==2);
+      setSuffix(words[1]);
+    }
     else if(words[0]=="INCLUDE"){
       assert(words.size()==2);
       readInputFile(words[1]);
@@ -369,6 +335,10 @@ void PlumedMain::prepareDependencies(){
 // new/changed dependency (up to now, only useful for dependences on virtual atoms,
 // which can be dynamically changed).
 //
+
+// First switch off all actions
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++) (*p)->deactivate();
+
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
   for(unsigned i=0;i<pilots.size();++i){
@@ -397,29 +367,45 @@ void PlumedMain::shareData(){
   atoms.share();
 }
 
-
 void PlumedMain::performCalc(){
+  waitData();
+  justCalculate();
+  justApply();
+}
 
+void PlumedMain::waitData(){
   if(!active)return;
   atoms.wait();
+}
+
+
+void PlumedMain::justCalculate(){
+
+  bias=0.0;
 
 // calculate the active actions in order (assuming *backward* dependence)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
+    ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
+    ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(*p);
     {
-      ActionWithValue*a=dynamic_cast<ActionWithValue*>(*p);
-      if(a) a->clearInputForces();
-      if(a) a->clearDerivatives();
+      if(av) av->clearInputForces();
+      if(av) av->clearDerivatives();
     }
     {
-      ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
-      if(a) a->clearOutputForces();
-      if(a) if(a->isActive()) a->retrieveAtoms();
+      if(aa) aa->clearOutputForces();
+      if(aa) if(aa->isActive()) aa->retrieveAtoms();
     }
     if((*p)->isActive()){
       if((*p)->checkNumericalDerivatives()) (*p)->calculateNumericalDerivatives();
       else (*p)->calculate();
+      if(av)for(int i=0;i<av->getNumberOfValues();++i){
+        if(av->getValue(i)->getName()=="bias") bias+=av->getValue(i)->get();
+      }
     }
   }
+}
+
+void PlumedMain::justApply(){
   
 // apply them in reverse order
   for(ActionSet::reverse_iterator p=actionSet.rbegin();p!=actionSet.rend();++p){
@@ -432,41 +418,65 @@ void PlumedMain::performCalc(){
 // this is updating the MD copy of the forces
   atoms.updateForces();
 
-// Finally switch off all actions (they will be switched on at next step
-  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++) (*p)->deactivate();
-
+// update step (for statistics, etc)
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
+    if((*p)->isActive()) (*p)->update();
+  }
 }
 
 void PlumedMain::load(std::vector<std::string> & words){
-    string s=words[1];
-    assert(words.size()==2);
-    size_t n=s.find_last_of(".");
-    string extension="";
-    string base=s;
-    if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
-    if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
-    if(extension=="cpp"){
-      string cmd="plumed mklib "+s;
-      log<<"Executing: "<<cmd;
-      if(comm.Get_size()>0) log<<" (only on master node)";
-      log<<"\n";
-      if(comm.Get_rank()==0) system(cmd.c_str());
-      comm.Barrier();
-      base="./"+base;
-    }
-    s=base+"."+soext;
-    void *p=plumed_dlopen(s.c_str());
-    if(!p){
-      log<<"ERROR\n";
-      log<<"I cannot load library "<<words[1].c_str()<<"\n";
-      log<<plumed_dlerror();
-      log<<"\n";
-      this->exit(1);
-    }
-    log<<"Loading shared library "<<s.c_str()<<"\n";
-    log<<"Here is the new list of available actions\n";
-    log<<actionRegister();
+  if(DLLoader::installed()){
+     string s=words[1];
+     assert(words.size()==2);
+     size_t n=s.find_last_of(".");
+     string extension="";
+     string base=s;
+     if(n!=std::string::npos && n<s.length()-1) extension=s.substr(n+1);
+     if(n!=std::string::npos && n<s.length())   base=s.substr(0,n);
+     if(extension=="cpp"){
+       string cmd="plumed mklib "+s;
+       log<<"Executing: "<<cmd;
+       if(comm.Get_size()>0) log<<" (only on master node)";
+       log<<"\n";
+       if(comm.Get_rank()==0) system(cmd.c_str());
+       comm.Barrier();
+       base="./"+base;
+     }
+     s=base+"."+soext;
+     void *p=dlloader.load(s);
+     if(!p){
+       log<<"ERROR\n";
+       log<<"I cannot load library "<<words[1].c_str()<<"\n";
+       log<<dlloader.error();
+       log<<"\n";
+       this->exit(1);
+     }
+     log<<"Loading shared library "<<s.c_str()<<"\n";
+     log<<"Here is the new list of available actions\n";
+     log<<actionRegister();
+  } else assert(0); // Loading not enabled; please recompile with -D__PLUMED_HAS_DLOPEN
 }
+
+double PlumedMain::getBias() const{
+  return bias;
+}
+
+FILE* PlumedMain::fopen(const char *path, const char *mode){
+  std::string mmode(mode);
+  std::string ppath(path);
+  std::string suffix(getSuffix());
+  std::string ppathsuf=ppath+suffix;
+  FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
+  if(!fp) fp=std::fopen(const_cast<char*>(ppath.c_str()),const_cast<char*>(mmode.c_str()));
+  assert(fp);
+  return fp;
+}
+
+int PlumedMain::fclose(FILE*fp){
+  return std::fclose(fp);
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 

@@ -123,6 +123,8 @@ void PlumedCommunicator::Request::wait(Status&s){
 template<> MPI_Datatype PlumedCommunicator::getMPIType<float>(){ return MPI_FLOAT;}
 template<> MPI_Datatype PlumedCommunicator::getMPIType<double>(){ return MPI_DOUBLE;}
 template<> MPI_Datatype PlumedCommunicator::getMPIType<int>()   { return MPI_INT;}
+template<> MPI_Datatype PlumedCommunicator::getMPIType<char>()   { return MPI_CHAR;}
+template<> MPI_Datatype PlumedCommunicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
 #endif
 
 }

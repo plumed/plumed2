@@ -41,6 +41,8 @@ public:
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   Action* create(const ActionOptions&ao);
+  void remove(creator_pointer);
+  ~ActionRegister();
 };
 
 /// Function returning a reference to the ActionRegister.
@@ -66,6 +68,7 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
     static PLMD::Action* create(const PLMD::ActionOptions&ao){return new classname(ao);} \
   public: \
     classname##RegisterMe(){PLMD::actionRegister().add(directive,create);}; \
+    ~classname##RegisterMe(){PLMD::actionRegister().remove(create);}; \
   } classname##RegisterMeObject;
 
 

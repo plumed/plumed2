@@ -48,6 +48,9 @@ class Atoms
   Units MDUnits;
   Units units;
 
+  bool naturalUnits;
+  bool MDnaturalUnits;
+
   double timestep;
   double forceOnEnergy;
 
@@ -59,6 +62,7 @@ class Atoms
   {
   public:
     bool on;
+    bool async;
     std::vector<int>    g2l;
 
     std::vector<PlumedCommunicator::Request> mpi_request_positions;
@@ -70,12 +74,14 @@ class Atoms
     std::vector<int>    indexToBeReceived;
     operator bool(){return on;};
     DomainDecomposition():
-      on(false)
+      on(false), async(false)
       {};
     void enable(PlumedCommunicator& c);
   };
 
   DomainDecomposition dd;
+
+  void share(const std::set<int>&);
 
 public:
 
@@ -85,6 +91,7 @@ public:
   void init();
 
   void share();
+  void shareAll();
   void wait();
   void updateForces();
 
@@ -138,6 +145,12 @@ public:
   void removeVirtualAtom(ActionWithVirtualAtom*);
   void insertGroup(const std::string&name,const std::vector<unsigned>&a);
   void removeGroup(const std::string&name);
+  void writeBinary(std::ostream&)const;
+  void readBinary(std::istream&);
+  double getKBoltzmann()const;
+  double getMDKBoltzmann()const;
+  void setNaturalUnits(bool n){naturalUnits=n;};
+  void setMDNaturalUnits(bool n){MDnaturalUnits=n;};
 };
 
 inline

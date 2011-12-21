@@ -45,9 +45,10 @@ public ActionWithArguments
   string file;
   FILE* fp;
 public:
-  void calculate();
+  void calculate(){};
   GenericDumpDerivatives(const ActionOptions&);
   void apply(){};
+  void update();
   ~GenericDumpDerivatives();
 };
 
@@ -81,7 +82,7 @@ fp(NULL)
 }
 
 
-void GenericDumpDerivatives::calculate(){
+void GenericDumpDerivatives::update(){
   if(comm.Get_rank()!=0)return;
   const std::vector<Value*>& arguments(getArguments());
   unsigned npar=arguments[0]->getDerivatives().size();

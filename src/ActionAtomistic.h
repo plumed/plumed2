@@ -15,8 +15,6 @@ class ActionAtomistic :
   virtual public Action
   {
 
-  friend class Atoms;
-
   std::vector<int>      indexes;         // the set of needed atoms
   std::set<int>         unique;
   std::vector<Vector>   positions;       // positions of the needed atoms
@@ -84,6 +82,7 @@ public:
   void applyForces();
   void lockRequests();
   void unlockRequests();
+  const std::set<int> & getUnique()const;
 };
 
 inline
@@ -157,6 +156,12 @@ inline
 void ActionAtomistic::unlockRequests(){
   lockRequestAtoms=false;
 }
+
+inline
+const std::set<int> & ActionAtomistic::getUnique()const{
+  return unique;
+}
+
 
 }
 

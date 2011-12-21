@@ -32,14 +32,18 @@ Action::Action(const ActionOptions&ao):
 }
 
 FILE* Action::fopen(const char *path, const char *mode){
-  FILE*fp=std::fopen(const_cast<char*>(path),const_cast<char*>(mode));
+  bool write(false);
+  for(const char*p=mode;*p;p++) if(*p=='w') write=true;
+  FILE* fp;
+  if(write && comm.Get_rank()!=0) fp=plumed.fopen("/dev/null",mode);
+  else      fp=plumed.fopen(path,mode);
   files.insert(fp);
   return fp;
 }
 
 int Action::fclose(FILE*fp){
   files.erase(fp);
-  return std::fclose(fp);
+  return plumed.fclose(fp);
 }
 
 void Action::fflush(){

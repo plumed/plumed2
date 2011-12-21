@@ -9,9 +9,23 @@
 using namespace std;
 using namespace PLMD;
 
+ActionRegister::~ActionRegister(){
+  if(m.size()>0)
+    for(mIterator p=m.begin();p!=m.end();++p)
+       std::cerr<<"WARNING: directive "<<p->first<<" has not been properly unregistered\n";
+}
+
 ActionRegister& PLMD::actionRegister(){
   static ActionRegister ans;
   return ans;
+}
+
+void ActionRegister::remove(creator_pointer f){
+  for(mIterator p=m.begin();p!=m.end();++p){
+    if((*p).second==f){
+      m.erase(p); break;
+    }
+  }
 }
 
 void ActionRegister::add(string key,creator_pointer f){
@@ -31,7 +45,7 @@ bool ActionRegister::check(string key){
 Action* ActionRegister::create(const ActionOptions&ao){
   if(ao.line.size()<1)return NULL;
   Action* action;
-  if(m[ao.line[0]]) action=m[ao.line[0]](ao);
+  if(check(ao.line[0])) action=m[ao.line[0]](ao);
   else action=NULL;
   return action;
 }

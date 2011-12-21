@@ -19,6 +19,7 @@ Atoms::Atoms(PlumedMain&plumed):
   energy(0.0),
   collectEnergy(0.0),
   plumed(plumed),
+  naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0)
 {
@@ -69,17 +70,29 @@ void Atoms::setForces(void*p,int i){
 }
 
 void Atoms::share(){
+  std::set<int> unique;
+  if(dd && int(gatindex.size())<natoms){
+    for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
+      unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
+    }
+  }
+  share(unique);
+}
+
+void Atoms::shareAll(){
+  std::set<int> unique;
+  if(dd && int(gatindex.size())<natoms)
+    for(int i=0;i<natoms;i++) unique.insert(i);
+  share(unique);
+}
+
+void Atoms::share(const std::set<int>& unique){
   mdatoms->getBox(box);
   mdatoms->getMasses(gatindex,masses);
   mdatoms->getCharges(gatindex,charges);
   mdatoms->getPositions(gatindex,positions);
   if(dd && int(gatindex.size())<natoms){
-    bool async=dd.Get_size()<10;
-    std::set<int> unique;
-    for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
-      unique.insert(actions[i]->unique.begin(),actions[i]->unique.end());
-    }
-    if(async){
+    if(dd.async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
       for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();
     }
@@ -95,7 +108,7 @@ void Atoms::share(){
         count++;
       }
     }
-    if(async){
+    if(dd.async){
       dd.mpi_request_positions.resize(dd.Get_size());
       dd.mpi_request_index.resize(dd.Get_size());
       for(int i=0;i<dd.Get_size();i++){
@@ -111,8 +124,8 @@ void Atoms::share(){
       dd.Allgather(&count,1,&counts[0],1);
       displ[0]=0;
       for(int i=1;i<n;++i) displ[i]=displ[i-1]+counts[i-1];
-      for(int i=1;i<n;++i) counts5[i]=counts[i]*5;
-      for(int i=1;i<n;++i) displ5[i]=displ[i]*5;
+      for(int i=0;i<n;++i) counts5[i]=counts[i]*5;
+      for(int i=0;i<n;++i) displ5[i]=displ[i]*5;
       dd.Allgatherv(&dd.indexToBeSent[0],count,&dd.indexToBeReceived[0],&counts[0],&displ[0]);
       dd.Allgatherv(&dd.positionsToBeSent[0],5*count,&dd.positionsToBeReceived[0],&counts5[0],&displ5[0]);
       int tot=displ[n-1]+counts[n-1];
@@ -137,9 +150,7 @@ void Atoms::wait(){
 // receive toBeReceived
     int count=0;
     PlumedCommunicator::Status status;
-    bool async=dd.Get_size()<10;
-//    async=true;
-    if(async){
+    if(dd.async){
       for(int i=0;i<dd.Get_size();i++){
         dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
         int c=status.Get_count<int>();
@@ -192,6 +203,7 @@ void Atoms::remove(const ActionAtomistic*a){
 void Atoms::DomainDecomposition::enable(PlumedCommunicator& c){
   on=true;
   Set_comm(c.Get_comm());
+  async=Get_size()<10;
 }
 
 void Atoms::setAtomsNlocal(int n){
@@ -247,7 +259,7 @@ double Atoms::getTimeStep()const{
 
 void Atoms::createFullList(int*n){
   for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive())
-    fullList.insert(fullList.end(),actions[i]->unique.begin(),actions[i]->unique.end());
+    fullList.insert(fullList.end(),actions[i]->getUnique().begin(),actions[i]->getUnique().end());
   std::sort(fullList.begin(),fullList.end());
   int nn=std::unique(fullList.begin(),fullList.end())-fullList.begin();
   fullList.resize(nn);
@@ -307,6 +319,31 @@ void Atoms::removeGroup(const std::string&name){
   groups.erase(name);
 }
 
+void Atoms::writeBinary(std::ostream&o)const{
+  o.write(reinterpret_cast<const char*>(&positions[0][0]),natoms*3*sizeof(double));
+  o.write(reinterpret_cast<const char*>(&masses[0]),natoms*sizeof(double));
+  o.write(reinterpret_cast<const char*>(&charges[0]),natoms*sizeof(double));
+  o.write(reinterpret_cast<const char*>(&box(0,0)),9*sizeof(double));
+  o.write(reinterpret_cast<const char*>(&energy),sizeof(double));
+}
+
+void Atoms::readBinary(std::istream&i){
+  i.read(reinterpret_cast<char*>(&positions[0][0]),natoms*3*sizeof(double));
+  i.read(reinterpret_cast<char*>(&masses[0]),natoms*sizeof(double));
+  i.read(reinterpret_cast<char*>(&charges[0]),natoms*sizeof(double));
+  i.read(reinterpret_cast<char*>(&box(0,0)),9*sizeof(double));
+  i.read(reinterpret_cast<char*>(&energy),sizeof(double));
+}
+
+double Atoms::getKBoltzmann()const{
+  if(naturalUnits) return 1.0;
+  else return kBoltzmann/units.energy;
+}
+
+double Atoms::getMDKBoltzmann()const{
+  if(naturalUnits) return 1.0;
+  else return kBoltzmann/MDUnits.energy;
+}
 
 }
 

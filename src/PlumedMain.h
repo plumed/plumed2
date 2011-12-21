@@ -5,8 +5,10 @@
 #include "ActionSet.h"
 #include "Atoms.h"
 #include "PlumedCommunicator.h"
+#include <cstdio>
 #include <string>
 #include <vector>
+#include "DLLoader.h"
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -47,6 +49,9 @@ public:
   PlumedCommunicator comm;
 
 private:
+  DLLoader dlloader;
+
+  WithCmd* grex;
 /// Flag to avoid double initialization
   bool  initialized;
 /// Name of MD engine
@@ -76,6 +81,12 @@ private:
 /// These are the action the, if they are Pilot::onStep(), can trigger execution
   std::vector<ActionPilot*> pilots;
 
+/// Suffix string for file opening, useful for multiple simulations in the same directory
+  std::string suffix;
+
+/// The total bias (=total energy of the restraints)
+  double bias;
+
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
@@ -91,7 +102,7 @@ public:
 /// and an MD engine, this is the right place
 /// Notice that this interface should always keep retro-compatibility
   void cmd(const std::string&key,void*val=NULL);
-  ~PlumedMain(){};
+  ~PlumedMain();
 /// Read an input file.
 /// \param str name of the file
   void readInputFile(std::string str);
@@ -107,6 +118,10 @@ public:
   void performCalc();
 /// Shortcut for prepareCalc() + performCalc()
   void calc();
+
+  void waitData();
+  void justCalculate();
+  void justApply();
 /// Reference to atoms object
   Atoms& getAtoms();
 /// Reference to the list of Action's
@@ -119,6 +134,14 @@ public:
   void exit(int c=0);
 /// Load a shared library
   void load(std::vector<std::string> & words);
+/// Get the suffix string
+  const std::string & getSuffix()const;
+/// Set the suffix string
+  void setSuffix(const std::string&);
+/// get the value of the bias
+  double getBias()const;
+  FILE* fopen(const char *path, const char *mode);
+  int fclose(FILE*fp);
 };
 
 /////
@@ -133,6 +156,17 @@ inline
 Atoms& PlumedMain::getAtoms(){
   return atoms;
 }
+
+inline
+const std::string & PlumedMain::getSuffix()const{
+  return suffix;
+}
+
+inline
+void PlumedMain::setSuffix(const std::string&s){
+  suffix=s;
+}
+
 
 }
 

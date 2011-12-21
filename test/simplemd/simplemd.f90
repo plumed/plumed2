@@ -54,16 +54,15 @@ logical :: has_parfile  ! a flag for the parameter file
 
 logical :: plumed
 integer :: plumedavailable
+character(32) :: iplumed
 
-
-
-CALL plumed_installed(plumedavailable)
+CALL plumed_f_installed(plumedavailable)
 
 plumed=.false.
 if(plumedavailable>0)plumed=.true.
 
 IF(plumed) THEN
-  CALL plumed_g_create()
+  CALL plumed_f_create(iplumed)
 END IF
 
 argcount = command_argument_count()
@@ -133,11 +132,11 @@ call randomize_velocities(natoms,temperature,masses,velocities,idum)
 
 !CALL init_metadyn(natoms,tstep,masses,masses,1,1.0D0,"plumed.dat"//char(0));
 IF(plumed) THEN
-  CALL plumed_g_cmd("setNatoms"//char(0),natoms)
-  CALL plumed_g_cmd("setMDEngine"//char(0),"simplemd"//char(0))
-  CALL plumed_g_cmd("setTimestep"//char(0),tstep)
-  CALL plumed_g_cmd("setPlumedDat"//char(0),"plumed.dat"//char(0))
-  CALL plumed_g_cmd("init"//char(0),0)
+  CALL plumed_f_cmd(iplumed,"setNatoms"//char(0),natoms)
+  CALL plumed_f_cmd(iplumed,"setMDEngine"//char(0),"simplemd"//char(0))
+  CALL plumed_f_cmd(iplumed,"setTimestep"//char(0),tstep)
+  CALL plumed_f_cmd(iplumed,"setPlumedDat"//char(0),"plumed.dat"//char(0))
+  CALL plumed_f_cmd(iplumed,"init"//char(0),0)
 ENDIF
 
 
@@ -187,12 +186,12 @@ IF(plumed) THEN
   cell9(1,1)=cell(1)
   cell9(2,2)=cell(2)
   cell9(3,3)=cell(3)
-  CALL plumed_g_cmd("setMasses"//char(0),masses)
-  CALL plumed_g_cmd("setForces"//char(0),forces)
-  CALL plumed_g_cmd("setStep"//char(0),istep)
-  CALL plumed_g_cmd("setPositions"//char(0),positions)
-  CALL plumed_g_cmd("setBox"//char(0),cell9)
-  CALL plumed_g_cmd("calc"//char(0),0)
+  CALL plumed_f_cmd(iplumed,"setMasses"//char(0),masses)
+  CALL plumed_f_cmd(iplumed,"setForces"//char(0),forces)
+  CALL plumed_f_cmd(iplumed,"setStep"//char(0),istep)
+  CALL plumed_f_cmd(iplumed,"setPositions"//char(0),positions)
+  CALL plumed_f_cmd(iplumed,"setBox"//char(0),cell9)
+  CALL plumed_f_cmd(iplumed,"calc"//char(0),0)
 ENDIF
 
   do iatom=1,natoms
@@ -223,7 +222,7 @@ deallocate(point)
 deallocate(list)
 
 IF(plumed) THEN
-  CALL plumed_g_finalize()
+  CALL plumed_f_finalize(iplumed)
 END IF
 
 end program simplemd

@@ -217,8 +217,8 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
 +    real lengthUnits=1.0;
 +    real timeUnits=1.0;
 +
-+    plumed_installed(&plumed_is_there);
-+    if(!plumed_is_there){
++
++    if(!plumed_installed()){
 +      gmx_fatal(FARGS,"Plumed is not available. Check your PLUMED_KERNEL variable.");
 +    }
 +    plumedmain=plumed_create();

@@ -1,3 +1,85 @@
+patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
+--- ./src/kernel/repl_ex.c.preplumed
++++ ./src/kernel/repl_ex.c
+@@ -49,10 +49,16 @@
+ #include "names.h"
+ #include "mvdata.h"
+ #include "domdec.h"
+ #include "partdec.h"
+ 
++/* PLUMED */
++#include "../../Plumed.h"
++extern int    plumedswitch;
++extern plumed plumedmain;
++/* END PLUMED */
++
+ typedef struct gmx_repl_ex {
+   int  repl;
+   int  nrepl;
+   real temp;
+   int  type;
+@@ -538,10 +544,26 @@
+   snew(bEx,re->nrepl);
+   snew(prob,re->nrepl);
+ 
+   exchange = -1;
+   m = (step / re->nst) % 2;
++
++  if(plumedswitch){
++    int partner=re->repl;
++
++    for(i=1; i<re->nrepl; i++) {
++      if (i % 2 != m) continue;
++      a = re->ind[i-1];
++      b = re->ind[i];
++      if(re->repl==a) partner=b;
++      if(re->repl==b) partner=a;
++    }
++    plumed_cmd(plumedmain,"GREX setPartner",&partner);
++    plumed_cmd(plumedmain,"GREX calculate",NULL);
++    plumed_cmd(plumedmain,"GREX shareAllDeltaBias",NULL);
++  }
++
+   for(i=1; i<re->nrepl; i++) {
+     a = re->ind[i-1];
+     b = re->ind[i];
+     bPrint = (re->repl==a || re->repl==b);
+     if (i % 2 == m) {
+@@ -572,10 +594,20 @@
+ 	dpV = (betaA*re->pres[a]-betaB*re->pres[b])*(Vol[b]-Vol[a])/PRESFAC;
+ 	if (bPrint)
+ 	  fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
+ 	delta += dpV;
+       }
++      if(plumedswitch){
++        real adb,bdb,dplumed;
++        char buf[300];
++        sprintf(buf,"GREX getDeltaBias %d",a); plumed_cmd(plumedmain,buf,&adb);
++        sprintf(buf,"GREX getDeltaBias %d",b); plumed_cmd(plumedmain,buf,&bdb);
++        dplumed=adb*betaA+bdb*betaB;
++        delta+=dplumed;
++	if (bPrint)
++	  fprintf(fplog,"  dplumed = %10.3e  d = %10.3e",dplumed,delta);
++      }
+       if (bPrint)
+ 	fprintf(fplog,"\n");
+       if (delta <= 0) {
+ 	prob[i] = 1;
+ 	bEx[i] = TRUE;
+@@ -633,10 +665,12 @@
+     gmx_multisim_t *ms;
+     int  exchange=-1,shift;
+     gmx_bool bExchanged=FALSE;
+     
+     ms = cr->ms;
++
++    if(plumedswitch)plumed_cmd(plumedmain,"GREX prepare",NULL);
+  
+     if (MASTER(cr))
+     {
+         exchange = get_replica_exchange(fplog,ms,re,ener,det(state->box),
+                                         step,time);
+EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/Makefile" << \EOF_EOF
 --- ./src/kernel/Makefile.preplumed
 +++ ./src/kernel/Makefile
@@ -47,7 +129,23 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  #endif
  #ifdef GMX_THREADS
  #include "tmpi.h"
-@@ -1522,10 +1528,41 @@
+@@ -1375,13 +1381,14 @@
+         for(i=0; (i<gnx); i++) {
+             grpindex[i] = i;
+         }
+     }
+ 
+-    if (repl_ex_nst > 0 && MASTER(cr))
++    if (repl_ex_nst > 0 && MASTER(cr)){
+         repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
+                                         repl_ex_nst,repl_ex_seed);
++    }
+ 
+     if (!ir->bContinuation && !bRerunMD)
+     {
+         if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
+         {
+@@ -1522,10 +1529,53 @@
              }
          }
          fprintf(fplog,"\n");
@@ -55,6 +153,17 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  
 +/* PLUMED */
 +  if(plumedswitch){
++    if(cr->ms && cr->ms->nsim>1) {
++      if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
++      if(PAR(cr)){
++        if(DOMAINDECOMP(cr)) {
++          plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
++        }else{
++          plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
++        }
++      }
++      plumed_cmd(plumedmain,"GREX init",NULL);
++    }
 +
 +    if(PAR(cr)){
 +      if(DOMAINDECOMP(cr)) {
@@ -70,6 +179,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +    plumed_cmd(plumedmain,"setTimestep",&ir->delta_t);
 +
 +    plumed_cmd(plumedmain,"init",NULL);
++
 +
 +    if(PAR(cr)){
 +      if(DOMAINDECOMP(cr)) {
@@ -89,7 +199,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
      print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
      wallcycle_start(wcycle,ewcRUN);
      if (fplog)
-@@ -1802,10 +1839,17 @@
+@@ -1802,10 +1852,17 @@
                                      state,&f,mdatoms,top,fr,
                                      vsite,shellfc,constr,
                                      nrnb,wcycle,do_verbose);
@@ -107,7 +217,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  
          if (MASTER(cr) && do_log && !bFFscan)
          {
-@@ -1928,16 +1972,37 @@
+@@ -1928,16 +1985,40 @@
               * in do_force.
               * This is parallellized as well, and does communication too. 
               * Check comments in sim_util.c
@@ -121,6 +231,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +         plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[mdatoms->start]);
 +         plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
 +         plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
++
 +         plumed_cmd(plumedmain,"prepareCalc",NULL);
 +       }
 + /* END PLUMED */
@@ -137,6 +248,8 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +         plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
 +         plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
 +         plumed_cmd(plumedmain,"performCalc",NULL);
++         if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
++            do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
 +       }
 + /* END PLUMED */
 +
@@ -196,8 +309,8 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
 +    real lengthUnits=1.0;
 +    real timeUnits=1.0;
 +
-+    plumed_installed(&plumed_is_there);
-+    if(!plumed_is_there){
++
++    if(!plumed_installed()){
 +      gmx_fatal(FARGS,"Plumed is not available. Check your PLUMED_KERNEL variable.");
 +    }
 +    plumedmain=plumed_create();

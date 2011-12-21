@@ -8,16 +8,16 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC BIAS RESTRAINT
+//+PLUMEDOC BIAS ABMD 
 /**
-Adds an harmonic restraint on one or more variables
+Adds an ratchet-and-pawl like restraint on one or more variables
 
 \par Syntax
 \verbatim
-RESTRAINT ARG=x1,x2,... KAPPA=k1,k2,... AT=a1,a2,...
+ABMD ARG=x1,x2,... KAPPA=k1,k2,... MIN=a1,a2,... TO=a1,a2,...
 \endverbatim
 KAPPA specifies an array of force constants, one for each variable,
-and AT the center of the restraints. Thus, the resulting potential is
+and TO the target values of the restraints. Thus, the resulting potential is
 \f$
   \sum_i \frac{k_i}{2} (x_i-a_i)^2
 \f$.
@@ -29,37 +29,43 @@ values, and it is printing the energy of the restraint
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
-RESTRAINT ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 LABEL=restraint
-PRINT ARG=restraint.bias
+ABMD ARG=d1,d2 TO=1.0,1.5 KAPPA=5.0,5.0 LABEL=abmd
+PRINT ARG=abmd.bias
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
 
 */
 //+ENDPLUMEDOC
 
-class BiasRestraint : public Bias{
-  std::vector<double> at;
+class BiasRatchet : public Bias{
+  std::vector<double> to;
+  std::vector<double> min;
   std::vector<double> kappa;
 public:
-  BiasRestraint(const ActionOptions&);
+  BiasRatchet(const ActionOptions&);
   void calculate();
 };
 
-PLUMED_REGISTER_ACTION(BiasRestraint,"RESTRAINT")
+PLUMED_REGISTER_ACTION(BiasRatchet,"ABMD")
 
-BiasRestraint::BiasRestraint(const ActionOptions&ao):
+BiasRatchet::BiasRatchet(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
-at(0),
+min(getNumberOfArguments(),-1.0),
 kappa(getNumberOfArguments(),0.0)
 {
   parseVector("KAPPA",kappa);
   assert(kappa.size()==getNumberOfArguments());
-  parseVector("AT",at);
-  assert(at.size()==getNumberOfArguments());
+  parseVector("MIN",min);
+  assert(min.size()==getNumberOfArguments());
+  parseVector("TO",to);
+  assert(to.size()==getNumberOfArguments());
   checkRead();
 
-  log.printf("  at");
-  for(unsigned i=0;i<at.size();i++) log.printf(" %f",at[i]);
+  log.printf("  min");
+  for(unsigned i=0;i<min.size();i++) log.printf(" %f",min[i]);
+  log.printf("\n");
+  log.printf("  to");
+  for(unsigned i=0;i<to.size();i++) log.printf(" %f",to[i]);
   log.printf("\n");
   log.printf("  with force constant");
   for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
@@ -70,16 +76,21 @@ kappa(getNumberOfArguments(),0.0)
 }
 
 
-void BiasRestraint::calculate(){
+void BiasRatchet::calculate(){
   double ene=0.0;
   double totf2=0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
-    const double cv=difference(i,at[i],getArgument(i));
+    const double cv=difference(i,to[i],getArgument(i));
+    const double cv2=cv*cv;
     const double k=kappa[i];
-    const double f=-k*cv;
-    ene+=0.5*k*cv*cv;
-    setOutputForces(i,f);
-    totf2+=f*f;
+
+    if(min[i]<0.||cv2<min[i]) min[i] = cv2; 
+    else {
+      const double f = -2.*k*(cv2-min[i])*cv;
+      setOutputForces(i,f);
+      ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
+      totf2+=f*f;
+    }
   };
   Value* value;
   value=getValue("bias"); setValue(value,ene);

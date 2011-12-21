@@ -128,6 +128,11 @@ public:
 /// The set of all Actions is applied in backward order.
   virtual void apply()=0;
 
+/// Update.
+/// This method is called one time per step.
+/// The set of all Actions is updated in forward order.
+  virtual void update(){};
+
 /// Tell to the Action to flush open files
   void fflush();
 
