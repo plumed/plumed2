@@ -1,12 +1,19 @@
 #include "RMSD.h"
 #include "PDB.h"
+#include "Log.h"
 #include <cassert>
 #include <cmath>
+#include <iostream>
 
 using namespace std;
 using namespace PLMD;
 
-void RMSD::setFromPDB(const PDB&pdb){
+void RMSD::setFromPDB(const PDB&pdb, string mytype ){
+  myoptimalalignment=NULL; 
+  alignment_method=SIMPLE; // initialize with the simplest case: no rotation
+  if (mytype=="SIMPLE"){ 	alignment_method=SIMPLE; log.printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
+;}
+  else if (mytype=="OPTIMAL"){ 	alignment_method=OPTIMAL; log.printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n"); }
   setReference(pdb.getPositions());
   setAlign(pdb.getOccupancy());
   setDisplace(pdb.getBeta());
@@ -16,6 +23,15 @@ void RMSD::clear(){
   reference.clear();
   align.clear();
   displace.clear();
+}
+
+string RMSD::getMethod(){
+	string mystring;
+	switch(alignment_method){
+		case SIMPLE: mystring.assign("SIMPLE");break; 
+		case OPTIMAL: mystring.assign("OPTIMAL");break; 
+	}	
+	return mystring;
 }
 
 void RMSD::setReference(const vector<Vector> & reference){
@@ -37,34 +53,54 @@ void RMSD::setDisplace(const vector<double> & displace){
   this->displace=displace;
 }
 
-double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives)const{
+double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives){
+
   const unsigned n=reference.size();
-  bool simple,trivial;
-  simple=true;
-  trivial=true; // means: no alignment!!
-  for(unsigned i=0;i<n;i++) if(align[i]!=1.0) simple=false;
-  for(unsigned i=0;i<n;i++) if(align[i]!=0.0) trivial=false;
-  for(unsigned i=0;i<n;i++) if(displace[i]!=1.0) simple=false;
 
-  double dist(0);
-  double norm(0);
-  if(trivial){
-    for(unsigned i=0;i<n;i++){
-      Vector d=delta(reference[i],positions[i]);
-      derivatives[i]=2.0*d;
-      dist+=displace[i]*d.modulo2();
-      norm+=displace[i];
-    }
-  } else {
-// TODO
-    assert(trivial);
-  }
-
-// sqrt and normalization
-  double ret=sqrt(dist/norm);
-// sqrt and normalization on derivatives
-  for(unsigned i=0;i<n;i++){derivatives[i].scale(0.5/ret/norm);}
+  double ret=0.;
+  log.printf("RMSD: begin calculated\n");
+  switch(alignment_method){
+	case SIMPLE:
+		//	do a simple alignment without rotation 
+		break;	
+	case OPTIMAL:
+		if (myoptimalalignment==NULL){ // do full initialization	
+			myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
+        }
+		// this changes the P1 according the running frame
+		(*myoptimalalignment).assignP1(positions);
+		ret=(*myoptimalalignment).calculate(derivatives);
+		break;	
+  }	
+  log.printf("RMSD: done!\n");
 
   return ret;
+///  bool simple,trivial;
+///  simple=true;
+///  trivial=true; // means: no alignment!!
+///  for(unsigned i=0;i<n;i++) if(align[i]!=1.0) simple=false;
+///  for(unsigned i=0;i<n;i++) if(align[i]!=0.0) trivial=false;
+///  for(unsigned i=0;i<n;i++) if(displace[i]!=1.0) simple=false;
+///
+///  double dist(0);
+///  double norm(0);
+///  if(trivial){
+///    for(unsigned i=0;i<n;i++){
+///      Vector d=delta(reference[i],positions[i]);
+///      derivatives[i]=2.0*d;
+///      dist+=displace[i]*d.modulo2();
+///      norm+=displace[i];
+///    }
+///  } else {
+///// TODO
+///    assert(trivial);
+///  }
+///
+///// sqrt and normalization
+///  double ret=sqrt(dist/norm);
+///// sqrt and normalization on derivatives
+///  for(unsigned i=0;i<n;i++){derivatives[i].scale(0.5/ret/norm);}
+
 }
+
 

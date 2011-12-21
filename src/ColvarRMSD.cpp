@@ -21,9 +21,12 @@ RMSD REFERENCE=file.pdb
 
 */
 //+ENDPLUMEDOC
+
    
 class ColvarRMSD : public Colvar {
+	
   RMSD rmsd;
+	
   vector<Vector> derivs;
 
 public:
@@ -34,10 +37,14 @@ public:
 PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
 
 ColvarRMSD::ColvarRMSD(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao)
+PLUMED_COLVAR_INIT(ao),rmsd(log)
 {
   string reference;
   parse("REFERENCE",reference);
+  string type;	
+  type.assign("SIMPLE");
+  parse("TYPE",type);
+
   checkRead();
 
 
@@ -47,13 +54,15 @@ PLUMED_COLVAR_INIT(ao)
   PDB pdb;
   pdb.read(reference,0.1/plumed.getAtoms().getUnits().length);
 
-  rmsd.setFromPDB(pdb);
+  rmsd.setFromPDB(pdb,type);
 
   requestAtoms(pdb.getAtomNumbers());
 
   derivs.resize(getNatoms());
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNatoms());
+  log.printf("  method for alignment : %s \n",rmsd.getMethod().c_str() );
+
 }
 
 
@@ -61,7 +70,6 @@ PLUMED_COLVAR_INIT(ao)
 void ColvarRMSD::calculate(){
 
   double r=rmsd.calculate(getPositions(),derivs);
-
   setValue(r);
   for(unsigned i=0;i<derivs.size();i++) setAtomsDerivatives(i,derivs[i]);
   Tensor virial;

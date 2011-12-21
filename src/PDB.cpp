@@ -1,6 +1,7 @@
 #include "PDB.h"
 #include "Tools.h"
 #include <cstdio>
+#include <iostream>
 
 using namespace std;
 
@@ -28,6 +29,7 @@ unsigned PDB::size()const{
 
 void PDB::read(const std::string&file,double scale){
   FILE* fp=fopen(file.c_str(),"r");
+  //cerr<<file<<endl;
   string line;
   while(Tools::getline(fp,line)){
     while(line.length()<80) line.push_back(' ');
