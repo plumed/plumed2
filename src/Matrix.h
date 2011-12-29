@@ -312,5 +312,77 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
    return 0;
 }
 
+template <typename T>
+class Matrix4d {
+   template <typename U> friend Log& operator<<(Log&, const Matrix4d<U>& );
+   /// Output the Matrix in matrix form
+   template <typename U> friend void matrixOut( Log&, const Matrix4d<U>& );
+private:
+   /// Number of elements in matrix (r1*r2*r3*r4)
+   unsigned sz;
+   /// dimensions in matrix
+   unsigned r1,r2,r3,r4;
+   /// The data in the matrix
+   std::vector<T> data;
+public:
+   Matrix4d<T>(const unsigned tr1=0,
+		       const unsigned tr2=0,
+		       const unsigned tr3=0,
+		       const unsigned tr4=0 ):
+		       sz(tr1*tr2*tr3*tr4), r1(tr1), r2(tr2), r3(tr3), r4(tr4), data(r1*r2*r3*r4) {};
+   Matrix4d<T>(const Matrix4d<T>& t) : r1(t.r1), r2(t.r2), r3(t.r3), r4(t.r4), data(t.data) {};
+   // destructor
+   ~Matrix4d<T>(){data.clear();};
+   /// Resize the matrix
+   void resize( const unsigned tr1, const unsigned tr2, const unsigned tr3, const unsigned tr4 )
+   { r1=tr1; r2=tr2; r3=tr3; r4=tr4; sz=r1*r2*r3*r4; data.resize(sz); };
+   /// Return element i,j,k,l of the matrix
+   inline T operator () (const unsigned& i, const unsigned& j, const unsigned& k, const unsigned& l ) const
+   { return data[i*r2*r3*r4*+j*r3*r4+k*r4+l]; }
+   /// Return a referenre to element i,j of the matrix
+   inline T& operator () (const unsigned& i, const unsigned& j, const unsigned& k, const unsigned& l)
+   { return data[i*r2*r3*r4*+j*r3*r4+k*r4+l]; }
+   /// Set all elements of the matrix equal to the value of v
+   Matrix4d<T>& operator=(const T& v){
+     for(unsigned i=0;i<sz;++i){ data[i]=v; }
+     return *this;
+   }
+   /// Set the Matrix equal to another Matrix
+   Matrix4d<T>& operator=(const Matrix4d<T>& m){
+     assert( m.r1==r1 && m.r2==r2 && m.r3==r3 && m.r4==r4  );
+     data=m.data;
+     return *this;
+   }
+   /// Set the Matrix equal to the value of a standard vector - used for readin
+   Matrix4d<T>& operator=(const std::vector<T>& v){
+     assert( v.size()==sz );
+     for(unsigned i=0;i<sz;++i){ data[i]=v[i]; }
+     return *this;
+   }
+   /// Add v to all elements of the Matrix
+   Matrix4d<T> operator+=(const T& v){
+     for(unsigned i=0;i<sz;++i){ data[i]+=v; }
+     return *this;
+   }
+   /// Matrix addition
+   Matrix4d<T>& operator+=(const Matrix4d<T>& m){
+    assert( m.r1==r1 && m.r2==r2 && m.r3==r3 && m.r4==r4 );
+    data+=m.data;
+    return *this;
+   }
+  /// Subtract v from all elements of the Matrix
+  Matrix4d<T> operator-=(const T& v){
+    for(unsigned i=0;i<sz;++i){ data-=v; }
+    return *this;
+  }
+  /// Matrix subtraction
+  Matrix4d<T>& operator-=(const Matrix4d<T>& m){
+    assert( m.r1==r1 && m.r2==r2 && m.r3==r3 && m.r4==r4  );
+    data-=m.data;
+    return *this;
+  }
+
+};
+
 }
 #endif
