@@ -632,7 +632,7 @@ double Kearsley::calculate(bool rmsd) {
 
 		if(p1.size()!=p1rotated.size())p1rotated.resize(p1.size());
 
-		exit(0);
+		//exit(0);
 
 		for(i=0;i<natoms;i++){
 			p1rotated[i][0]=d[0][0]*p1reset[i][0]+
