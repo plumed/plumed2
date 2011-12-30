@@ -53,6 +53,7 @@ void PDB::read(const std::string&file,double scale){
       Tools::convert(x,p[0]);
       Tools::convert(y,p[1]);
       Tools::convert(z,p[2]);
+      // scale into nm
       p.scale(scale);
       numbers.push_back(a);
       occupancy.push_back(o);

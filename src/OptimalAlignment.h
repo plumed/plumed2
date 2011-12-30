@@ -11,6 +11,7 @@ using namespace std;
 
 namespace PLMD{
 
+
 /// A class that implements Kearsley's calculation 
 
 class	OptimalAlignment 
@@ -20,16 +21,19 @@ class	OptimalAlignment
   // the optimal alignment should only contain the derivative respect the distance 
    std::vector<double> displace;
    std::vector<double> align;
+   std::vector<Vector> p0;
    std::vector<Vector> p1;
-   std::vector<Vector> p2;
+   std::vector<Vector> derrdp0;
+   std::vector<Vector> derrdp1;
+
    Log &log;
    bool fast;	
 
 public:
-  OptimalAlignment( const  std::vector<double>  & align,  const std::vector<double>   & displace, const std::vector<Vector> & p1, const std::vector<Vector> & p2 , Log &log );
+  OptimalAlignment( const  std::vector<double>  & align,  const std::vector<double>   & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log &log );
+  void assignP0(  const std::vector<Vector> & p0 );
   void assignP1(  const std::vector<Vector> & p1 );
-  void assignP2(  const std::vector<Vector> & p2 );
-  double calculate(const std::vector<Vector> & derivatives);
+  double calculate( std::vector<Vector> & derivatives);
 };
 
 }

@@ -37,6 +37,13 @@ public:
   void setDisplace(const std::vector<double> & displace);
 /// 
   std::string getMethod();	
+///
+  double simpleAlignment(const  std::vector<double>  & align,
+  		                     const  std::vector<double>  & displace,
+  		                     const std::vector<Vector> & positions,
+  		                     const std::vector<Vector> & reference ,
+  		                     Log &log,
+  		                     std::vector<Vector>  & derivatives);
 /// Compute rmsd
   double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives);
 };

@@ -35,9 +35,10 @@ Kearsley::Kearsley(const vector<Vector> &p0, const vector<Vector> &p1, const vec
 
 };
 // do the alignment
-double Kearsley::calculate() {
+
+double Kearsley::calculate(bool rmsd) {
 	// just an ad-hoc scaling factor
-	double myscale=0.1;
+	double myscale=1.;
 	// basic sanity check
 	if(p0.size()!=p1.size() || p1.size()!=align.size()){
 			cerr<<"Kearsley: looks like you have not properly allocated the vectors: the two frames have different size"<<endl;
@@ -76,6 +77,10 @@ double Kearsley::calculate() {
 
 	}
 
+	// later will be implemented something for optimizing this piece of crap
+
+	com0_is_removed=false;
+	com1_is_removed=false;
 
 	bool do_center=true; // keep it for legacy code compatibility
 
@@ -291,20 +296,23 @@ double Kearsley::calculate() {
 						exit(0);
 					}
 					else{
-						gamma[i][j][k]  +=  dddq[i][j][l]*m(l,k+1)/(eigenvals[0]-eigenvals[k+1]);
+						gamma[i][j][k]  +=  dddq[i][j][l]*eigenvecs(k+1,l)/(eigenvals[0]-eigenvals[k+1]);
 					}
 				}
+                //log.printf("GAMMA %2d %2d %2d V %12.6f\n",i,j,k,gamma[i][j][k]);
 			}
 		}
 	}
 
 	// allocate various arrays
-	Matrix4d<double> dd_dr1=Matrix4d<double>(3,3,3,natoms);
-	Matrix4d<double> dd_dr0=Matrix4d<double>(3,3,3,natoms);
-	Matrix4d<double> dd_dr_temp=Matrix4d<double>(3,3,3,natoms);
 
-	Matrix4d<double> dm_r0_store=Matrix4d<double>(3,3,3,natoms);
-	Matrix4d<double> dm_r1_store=Matrix4d<double>(3,3,3,natoms);
+	dmatdp1.resize(3*3*3*natoms);
+	dmatdp0.resize(3*3*3*natoms);
+
+	vector<double> dd_dr_temp;dd_dr_temp.resize(natoms);
+
+	vector<double> dm_r0_store;dm_r0_store.resize(3*3*3*natoms);
+	vector<double> dm_r1_store;dm_r1_store.resize(3*3*3*natoms);
 
 
 	vector<Vector> derr_dr1;
@@ -438,8 +446,10 @@ double Kearsley::calculate() {
 
 			for(ll=0;ll<4;ll++){
 				for(mm=0;mm<4;mm++){
-					dm_r0_store(ll,mm,j,i)=dm_r0[ll][mm][j];
-					dm_r1_store(ll,mm,j,i)=dm_r1[ll][mm][j];
+					int ind=ll*3*3*natoms+mm*3*natoms+j*natoms+i;
+					dm_r0_store[ind]=dm_r0[ll][mm][j];
+					dm_r1_store[ind]=dm_r1[ll][mm][j];
+
 				};
 			};
 		};
@@ -461,11 +471,11 @@ double Kearsley::calculate() {
 
 			for(k=0;k<4;k++){
 				for(l=0;l<4;l++){
-					derr_dr1[i][j]=derr_dr1[i][j]+q[k]*q[l]*dm_r1[l][k][j];
-					derr_dr0[i][j]=derr_dr0[i][j]+q[k]*q[l]*dm_r0[l][k][j];
+					derr_dr1[i][j]+=q[k]*q[l]*dm_r1[l][k][j];
+					derr_dr0[i][j]+=q[k]*q[l]*dm_r0[l][k][j];
 					for(mm=0;mm<3;mm++){
-						pi0[mm][j]+=m(k,mm+1)*dm_r0[l][k][j]*q[l];
-						pi1[mm][j]+=m(k,mm+1)*dm_r1[l][k][j]*q[l];
+						pi0[mm][j]+=eigenvecs(mm+1,k)*dm_r0[l][k][j]*q[l];
+						pi1[mm][j]+=eigenvecs(mm+1,k)*dm_r1[l][k][j]*q[l];
 					};
 				};
 			};
@@ -478,17 +488,22 @@ double Kearsley::calculate() {
 		for(j=0;j<3;j++){
 			for (k=0;k<3;k++){
 				for(l=0;l<3;l++){
-					dd_dr1(j,k,l,i)=0.;
-					dd_dr0(j,k,l,i)=0.;
+					int ind=j*3*3*natoms+k*3*natoms+l*natoms+i;
+					dmatdp0[ind]=0.;
+					dmatdp1[ind]=0.;
 					for(ii=0;ii<3;ii++){
-						dd_dr1(j,k,l,i)+=gamma[j][k][ii]*pi1[ii][l];
-						dd_dr0(j,k,l,i)+=gamma[j][k][ii]*pi0[ii][l];
+						dmatdp1[ind]+=gamma[j][k][ii]*pi1[ii][l];
+						dmatdp0[ind]+=gamma[j][k][ii]*pi0[ii][l];
 					}
-				}
-			}
-		}
 
+				}
+
+			}
+
+		}
 	}
+
+
 
 
 	// end of the calculation of the derivative of the rotation matrix
@@ -550,10 +565,10 @@ double Kearsley::calculate() {
 		}
 	}
 
+
 	bool do_der_r1=true;
 	bool do_der_r0=true;
 	bool do_der_rotmat=true;
-
 
 	if(do_der_r1 && do_der_rotmat){
 		for(i=0;i<3;i++){
@@ -561,29 +576,27 @@ double Kearsley::calculate() {
 				for(k=0;k<3;k++){
 					for(ll=0;ll<alignmap.size();ll++){
 						l=alignmap[ll];
-						dd_dr_temp(i,j,k,l)=align[l]*dd_dr1(i,j,k,l);
+						int ind=i*3*3*natoms+j*3*natoms+k*natoms+l;
+						dd_dr_temp[l]=align[l]*dmatdp1[ind];
 						tmp1=align[l]/totalign;
 						if(do_center){
 							for(nn=0;nn<alignmap.size();nn++){
-								n=align[nn];
-								dd_dr_temp(i,j,k,l)-=dd_dr1(i,j,k,n)*tmp1*align[n];
+								n=alignmap[nn];
+								dd_dr_temp[l]-=dmatdp1[ind-l+n]*tmp1*align[n];
 							}
 						}
 
 					}
-				}
-			}
-		}
-		for(i=0;i<3;i++){
-			for(j=0;j<3;j++){
-				for(k=0;k<3;k++){
-					for(ll=0;ll<align.size();ll++){
-						l=align[ll];
-						dd_dr1(i,j,k,l)=dd_dr_temp(i,j,k,l);
+					for(ll=0;ll<alignmap.size();ll++){
+						l=alignmap[ll];
+						int ind=i*3*3*natoms+j*3*natoms+k*natoms+l;
+						dmatdp1[ind]=dd_dr_temp[l];
 					}
+
 				}
 			}
 		}
+
 	}
 
 	if(do_der_r0 && do_der_rotmat){
@@ -592,34 +605,34 @@ double Kearsley::calculate() {
 				for(k=0;k<3;k++){
 					for(ll=0;ll<alignmap.size();ll++){
 						l=alignmap[ll];
-						dd_dr_temp(i,j,k,l)=align[l]*dd_dr0(i,j,k,l);
+						int ind=i*3*3*natoms+j*3*natoms+k*natoms+l;
+						dd_dr_temp[l]=align[l]*dmatdp0[ind];
 						tmp1=align[l]/totalign;
 						if(do_center){
 							for(nn=0;nn<alignmap.size();nn++){
 								n=alignmap[nn];
-								dd_dr_temp(i,j,k,l)-=dd_dr0(i,j,k,n)*tmp1*align[n];
+								dd_dr_temp[l]-=dmatdp0[ind-l+n]*tmp1*align[n];
 							}
 						}
 					}
-				}
-			}
-		}
-		for(i=0;i<3;i++){
-			for(j=0;j<3;j++){
-				for(k=0;k<3;k++){
 					for(ll=0;ll<alignmap.size();ll++){
 						l=alignmap[ll];
-						dd_dr0(i,j,k,l)=dd_dr_temp(i,j,k,l);
+						int ind=i*3*3*natoms+j*3*natoms+k*natoms+l;
+						dmatdp0[ind]=dd_dr_temp[l];
 					}
 				}
 			}
 		}
 	}
 
+
 	bool do_p1rotated=true;
 	if (do_p1rotated){
 		// resize if not allocated
+
 		if(p1.size()!=p1rotated.size())p1rotated.resize(p1.size());
+
+		exit(0);
 
 		for(i=0;i<natoms;i++){
 			p1rotated[i][0]=d[0][0]*p1reset[i][0]+
@@ -633,12 +646,13 @@ double Kearsley::calculate() {
 					        d[2][2]*p1reset[i][2];
 		}
 
+
 		// reallocate difference vectors
-		if(p1.size()!=diff.size())diff.resize(p1.size());
+		if(p1.size()!=diff1on0.size())diff1on0.resize(p1.size());
 		for(i=0;i<natoms;i++){
-			diff[i][0]=p1rotated[i][0]-p0reset[i][0];
-			diff[i][1]=p1rotated[i][1]-p0reset[i][1];
-			diff[i][2]=p1rotated[i][2]-p0reset[i][2];
+			diff1on0[i][0]=p1rotated[i][0]-p0reset[i][0];
+			diff1on0[i][1]=p1rotated[i][1]-p0reset[i][1];
+			diff1on0[i][2]=p1rotated[i][2]-p0reset[i][2];
 		}
 
 		if(verbose){
@@ -655,6 +669,8 @@ double Kearsley::calculate() {
 		}
 
 	}
+
+
 
 	// wonderful supersoviet hardcoded 3x3 matrix inversion ;)
 	double det;
@@ -688,6 +704,12 @@ double Kearsley::calculate() {
 							dinv[2][1]*p0reset[i][1]+
 							dinv[2][2]*p0reset[i][2];
 		}
+		if(p1.size()!=diff0on1.size())diff0on1.resize(p1.size());
+		for(i=0;i<natoms;i++){
+			diff0on1[i][0]=p0rotated[i][0]-p1reset[i][0];
+			diff0on1[i][1]=p0rotated[i][1]-p1reset[i][1];
+			diff0on1[i][2]=p0rotated[i][2]-p1reset[i][2];
+		}
 		if(verbose){
 			log.printf("P0-RESET AND INVERSE ROTATED\n");
 			for(i=0;i<natoms;i++){
@@ -708,10 +730,23 @@ double Kearsley::calculate() {
 	derrdp0=derr_dr0;
 	derrdp1.resize(natoms);
 	derrdp1=derr_dr1;
-	dmatdp0.resize(3,3,3,natoms);
-	dmatdp0=dd_dr0;
-	dmatdp1.resize(3,3,3,natoms);
-	dmatdp1=dd_dr1;
+
+	// now rescale accordingly for rmsd instead of msd
+	if(rmsd){
+		err=sqrt(err);
+		double tmp=0.5/err;
+		for(ii=0;ii<alignmap.size();ii++){
+				i=alignmap[ii];
+				derrdp0[i][0]=derrdp0[i][0]*tmp;
+				derrdp0[i][1]=derrdp0[i][1]*tmp;
+				derrdp0[i][2]=derrdp0[i][2]*tmp;
+				derrdp1[i][0]=derrdp1[i][0]*tmp;
+				derrdp1[i][1]=derrdp1[i][1]*tmp;
+				derrdp1[i][2]=derrdp1[i][2]*tmp;
+
+		}
+
+	}
 
 	return err;
 
@@ -726,16 +761,15 @@ void Kearsley::assignP0(const std::vector<Vector> & p0) {
 	com0_is_removed=false;
 }
 
-void Kearsley::finiteDifferenceInterface(){
+void Kearsley::finiteDifferenceInterface(bool rmsd){
 log.printf("Entering rmsd finite difference test system\n");
 log.printf("-------------------------------------------\n");
 log.printf("TEST1: derivative of the value (derr_dr0/derr_dr1)\n");
 //// test 1
-unsigned i,j,k,l,m;
+unsigned i,j,l,m;
 double step=1.e-9,olderr,delta;
-
 //// get initial value of the error and derivative of it
-olderr=calculate();
+olderr=calculate(rmsd);
 log.printf("INITIAL ERROR VALUE: %e\n",olderr);
 //// store the derivative
 vector<Vector> old_derrdp0=derrdp0 ;
@@ -743,8 +777,6 @@ vector<Vector> old_derrdp1=derrdp1 ;
 // store the matrix
 Tensor old_rotmat0on1=rotmat0on1,old_rotmat1on0=rotmat1on0;
 // store the deriv of matrix respect to atoms
-Matrix4d<double>  old_dmatdp0=dmatdp0;
-Matrix4d<double>  old_dmatdp1=dmatdp1;
 
 log.printf("TESTING: derrdp1 \n");
 for(unsigned j=0;j<3;j++){
@@ -754,7 +786,7 @@ for(unsigned j=0;j<3;j++){
        p1[i][j]+=delta;
 	   com1_is_removed=false; // this is required whenever the assignment is not done with the methods
        com0_is_removed=false; // this is required whenever the assignment is not done with the methods
-       err=calculate();
+       err=calculate(rmsd);
        //log.printf("INITIAL ERROR VALUE: %e NEW ERROR %e DELTA %e ELEM %d %d \n",olderr,err,delta,i,j );
        p1[i][j]-=delta;
        switch(j){
@@ -777,7 +809,7 @@ for(unsigned j=0;j<3;j++){
        com0_is_removed=false; // this is required whenever the assignment is not done with the methods
        com1_is_removed=false; // this is required whenever the assignment is not done with the methods
 
-       err=calculate();
+       err=calculate(rmsd);
        p0[i][j]-=delta;
        switch(j){
          case 0:
@@ -801,11 +833,19 @@ for(l=0;l<3;l++){
            p0[i][j]+=delta;
            com0_is_removed=false;
            com1_is_removed=false;
-           calculate();
+           calculate(rmsd);
            p0[i][j]-=delta;
+       	   int ind=l*3*3*p0.size()+m*3*p0.size()+j*p0.size()+i;
            switch(j){
-             case 0:
-                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp0(l,m,j,i),(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0(l,m,j,i)-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+           	 case 0:
+                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+
+           	 case 1:
+                 log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+
+           	 case 2:
+                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+
            }
        }
     }
@@ -821,42 +861,25 @@ for(l=0;l<3;l++){
            p1[i][j]+=delta;
            com0_is_removed=false;
            com1_is_removed=false;
-           calculate();
+           calculate(rmsd);
            p1[i][j]-=delta;
+       	   int ind=l*3*3*p1.size()+m*3*p1.size()+j*p1.size()+i;
            switch(j){
+
              case 0:
-                log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp1(l,m,j,i),(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1(l,m,j,i)-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+                log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+
+             case 1:
+                 log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+
+             case 2:
+                 log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+
            }
        }
     }
   }
 }
 
-
-
-//fprintf(mtd_data.fplog,"TESTING: dd_dr1 \n");
-//for(l=0;l<3;l++){
-//  for(m=0;m<3;m++){
-//    for(j=0;j<3;j++){
-//       for(i=0;i<inpack.natoms;i++){
-//           // random displacement
-//           delta=(drand48()-0.5)*2*step;
-//           inpack.r1[j][i]+=delta;
-//           rmsd_mini_pack(inpack,work,7,2,0);
-//           inpack.r1[j][i]-=delta;
-//           switch(j){
-//             case 0:
-//                fprintf(mtd_data.fplog,"TESTING: DD_DR1 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dd_dr1[l][m][j][i],(work->d[l][m]- oldd[l][m])/delta,dd_dr1[l][m][j][i]-(work->d[l][m]- oldd[l][m])/delta);break;
-//             case 1:
-//                fprintf(mtd_data.fplog,"TESTING: DD_DR1 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dd_dr1[l][m][j][i],(work->d[l][m]- oldd[l][m])/delta,dd_dr1[l][m][j][i]-(work->d[l][m]- oldd[l][m])/delta);break;
-//             case 2:
-//                fprintf(mtd_data.fplog,"TESTING: DD_DR1 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dd_dr1[l][m][j][i],(work->d[l][m]- oldd[l][m])/delta,dd_dr1[l][m][j][i]-(work->d[l][m]- oldd[l][m])/delta);break;
-//
-//
-//           }
-//       }
-//    }
-//  }
-//}
 	exit(0);
 };

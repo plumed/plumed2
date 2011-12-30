@@ -1,47 +1,101 @@
 #ifndef __PLUMED_Plumed_h
 #define __PLUMED_Plumed_h
 
-/*
+/**
   Plumed.h and Plumed.c contain the external plumed interface, which is used to
   integrate it with MD engines. This interface is very general, and is expected
   not to change across plumed versions. Plumed.c also implements a dummy version
-  of the interface. These files could be directly included in the official
+  of the interface, so as to allow a code to be fully linked even if the plumed
+  library is not available yet. These files could be directly included in the official
   host MD distribution. In this manner, it will be sufficient to link the plumed
-  library at link time (on all systems) or directly at runtime (on some system)
-  to include plumed features.
-  The C++ interface is more or less equivalent to the PlumedMain class, but it is
-  based on the plumed_{create,cmd,finalize} C interface. In this manner it
-  can take advantage of dynamic binding.
+  library at link time (on all systems) or directly at runtime (on system where
+  dynamic loading is enabled) to include plumed features.
 
-  The available actions are:
-  create   --- creates a plumed object (in C++ this is done by the constructor)
-  cmd      --- sends a command to the plumed object
-  finalize --- destroys a plumed object (in C++ this is done by the destructor)
+  Plumed interface can be used from C, C++ and FORTRAN. Everything concerning plumed
+  is hidden inside a single object type, which is described in C by a structure
+  (struct plumed), in C++ by a class (PLMD::Plumed) and in FORTRAN by a
+  fixed-length string (CHARACTER(LEN=32)). Obviously C++ can use both struct
+  and class interfaces, but the first should be preferred. The reference interface
+  is the C one, whereas FORTRAN and C++ interfaces are implemented as wrappers
+  around it.
 
-  The dummy interface does:
-  create   --- don't do anything
-  cmd      --- report an error and die
-  finalize --- don't do anything
+  In the C++ interface, all the routines are implemented as methods of PLMD::Plumed.
+  In the C and FORTRAN interfaces, all the routines are named plumed_*, to
+  avoid potential name clashes. Notice that the entire plumed library
+  is implemented in C++, and it is hidden inside the PLMD namespace.
 
-  There is also a "global" interface, where a static plumed object is used. It can be called
-  also from FORTRAN.
+  Handlers to the plumed object can be converted among different representations,
+  to allow inter-operability among languages. In C, there are tools to convert
+  to/from FORTRAN, whereas in C++ there are tools to convert to/from FORTRAN and C.
 
-  C++ interface:
-    bool installed();
-    class PLMD::Plumed{
-      cmd(const char* key,const void* val=NULL);
-    }
-  C interface (can be used in C/C++)
-    void   plumed_installed(int*)
-    struct plumed;
-    plumed plumed_create();
-    void   plumed_cmd(plumed p,const char* key,const void* val);
-    void   plumed_finalize(plumed p);
-  Global interface (can be used in C/C++/FORTRAN)
-    plumed_installed(int*)
-    plumed_g_create();
-    plumed_g_command(const char* key,const void* val);
-    plumed_g_finalize();
+  These handlers only contain a pointer to the real structure, so that
+  when a plumed object is brought from one language to another,
+  it brings a reference to the same environment.
+
+  Moreover, to simplify life in all cases where a single Plumed object is
+  required for the entire simulation (which covers most of the practical
+  applications with conventional MD codes) it is possible to take advantage
+  of a global interface, which is implicitly referring to a unique global instance.
+  The global object should still be initialized and finalized properly.
+
+  The basic method to send a message to plumed is
+  (C) plumed_cmd
+  (C++) PLMD::Plumed::cmd
+  (FORTRAN)  PLUMED_F_CMD
+
+  To initialize a plumed object, use:
+  (C)        plumed_create
+  (C++)      (constructor of PLMD::Plumed)
+  (FORTRAN)  PLUMED_F_CREATE
+
+  To finalize it, use
+  (C)        plumed_finalize
+  (C++)      (destructor of PLMD::Plumed)
+  (FORTRAN)  PLUMED_F_FINALIZE
+
+  To access to the global-object, use
+  (C)        plumed_gcreate, plumed_gfinalize, plumed_gcmd
+  (C++)      PLMD::Plumed::gcreate, PLMD::Plumed::gfinalize, PLMD::Plumed::gcmd
+  (FORTRAN)  PLUMED_F_GCREATE, PLUMED_F_GFINALIZE, PLUMED_F_GCMD
+
+  To check if the global object has been initialized, use
+  (C)        plumed_g_initialized
+  (C++)      PLMD::Plumed::g_initialized
+  (FORTRAN)  PLUMED_F_GINITIALIZED
+
+  To check if plumed library is available (this is useful for runtime linking), use
+  (C)        plumed_installed 
+  (C++)      PLMD::Plumed::installed
+  (FORTRAN)  PLUMED_F_INSTALLED
+
+  To convert handlers use
+  (C)        plumed_c2f                 (C to FORTRAN)
+  (C)        plumed_f2c                 (FORTRAN to C)
+  (C++)      Plumed(plumed) constructor (C to C++)
+  (C++)      operator plumed() cast     (C++ to C)
+  (C++)      Plumed(char*)  constructor (FORTRAN to C++)
+  (C++)      toFortran(char*)           (C++ to FORTRAN)
+
+  FORTRAN interface
+    SUBROUTINE PLUMED_F_INSTALLED(i)
+      INTEGER,           INTENT(OUT)   :: i
+    SUBROUTINE PLUMED_F_GINITIALIZED(i)
+      INTEGER,           INTENT(OUT)   :: i
+    SUBROUTINE PLUMED_F_GCREATE()
+    SUBROUTINE PLUMED_F_GCMD(key,val)
+      CHARACTER(LEN=*), INTENT(IN)     :: key
+      UNSPECIFIED_TYPE, INTENT(INOUT)  :: val(*)
+    SUBROUTINE PLUMED_F_GFINALIZE()
+    SUBROUTINE PLUMED_F_GLOBAL(p)
+      CHARACTER(LEN=32), INTENT(OUT)   :: p
+    SUBROUTINE PLUMED_F_CREATE(p)
+      CHARACTER(LEN=32), INTENT(OUT)   :: p
+    SUBROUTINE PLUMED_F_CMD(p,key,val)
+      CHARACTER(LEN=32), INTENT(IN)    :: p
+      CHARACTER(LEN=*),  INTENT(IN)    :: key
+      UNSPECIFIED_TYPE,  INTENT(INOUT) :: val(*)
+    SUBROUTINE PLUMED_F_FINALIZE(p)
+      CHARACTER(LEN=32), INTENT(IN)    :: p
 
   The main routine is "cmd", which accepts two arguments:
   key is a string containing the name of the command
@@ -51,12 +105,7 @@
   The set of possible keys is the real API of the plumed library, and will be expanded with time.
   New commands will be added, but backward compatibility will be retained as long as possible.
 
-  The plumed_install routine set its argument to a positive integer if plumed is installed,
-  to zero otherwise. Similarly, the C++ version installed() returns true in the first case and
-  false in the second. This is useful for the host MD code to know if
-  plumed has been linked or not, and is the only command which can be executed in the dummy interface.
-
-  To pass plumed a callback function use the following syntax:
+  To pass plumed a callback function use the following syntax (not available in FORTRAN yet)
     plumed_function_holder ff;
     ff.p=your_function;
     plumed_cmd(plumed,"xxxx",&ff);
@@ -135,9 +184,21 @@ void plumed_finalize(plumed p);
 /** \relates plumed
     \brief Check if plumed is installed (for runtime binding)
 
-    \param flag Is set to 1 if plumed is installed, to 0 otherwise
+    \returns 1 if plumed is installed, to 0 otherwise
 */
-void plumed_installed(int*flag);
+int plumed_installed(void);
+
+/** \relates plumed
+    \brief Retrieves an handler to the global structure.
+*/
+plumed plumed_global(void);
+
+/** \relates plumed
+    \brief Check if the global interface has been initialized
+
+    \returns returns 1 if plumed has been initialized, to 0 otherwise
+*/
+int plumed_ginitialized(void);
 
 /* global C interface, working on a global object */
 
@@ -146,48 +207,35 @@ void plumed_installed(int*flag);
 
     Equivalent to plumed_create(), but initialize a static global plumed object
 */
-void plumed_g_create(void);
+void plumed_gcreate(void);
 
 /** \relates plumed
     \brief Tells to the global interface to execute a command.
 
     Equivalent to plumed_cmd(), but skipping the plumed argument
 */
-void plumed_g_cmd(const char*,const void*);
+void plumed_gcmd(const char*,const void*);
 
 /** \relates plumed
     \brief Destructor for the global interface.
 
     Equivalent to plumed_finalize(), but skipping the plumed argument
 */
-void plumed_g_finalize(void);
+void plumed_gfinalize(void);
 
-/* fortran (underscored) wrappers, only to the global interface */
+/* routines to convert char handler from/to plumed objects */
 
-
-/** \relates plumed
-    \brief Same as plumed_g_create().
-
+/** \related plumed
+    \brief Converts a C handler to a FORTRAN handler
 */
-void plumed_g_create_(void);
+void   plumed_c2f(plumed,char*);
 
-/** \relates plumed
-    \brief Same as plumed_g_cmd().
-
+/** \related plumed
+    \brief Converts a FORTRAN handler to a C handler
+    \param
+    \returns The C handler
 */
-
-void plumed_g_cmd_(const char*,const void*);
-/** \relates plumed
-    \brief Same as plumed_g_finalize().
-
-*/
-void plumed_g_finalize_(void);
-
-/** \relates plumed
-    \brief Same as plumed_installed().
-
-*/
-void plumed_installed_(int*);
+plumed plumed_f2c(const char*);
 
 #ifdef __cplusplus
  }
@@ -207,28 +255,147 @@ namespace PLMD {
 
 class Plumed{
   plumed main;
+/**
+   keeps track if the object was created from scratch using 
+   the defaults destructor (cloned=false) or if it was imported
+   from C or FORTRAN (cloned-true). In the latter case, the
+   plumed_finalize() method is not called when destructing the object,
+   since it is expected to be finalized in the C/FORTRAN code
+*/
+  bool cloned;
 public:
 /**
-  Constructor - equivalent to plumed_create()
+   Check if plumed is installed (for runtime binding)
 */
-  Plumed(){main=plumed_create();};
+  static bool installed();
 /**
-  Cmd - equivalent to plumed_cmd()
+   Check if global-plumed has been initialized
 */
-  void cmd(const char*key,const void*val=NULL){plumed_cmd(main,key,val);};
+  static bool ginitialized();
 /**
-  Destructor - equivalent to plumed_finalize()
+   Initialize global-plumed
 */
-  ~Plumed(){plumed_finalize(main);};
+  static void gcreate();
+/**
+   Send a command to global-plumed
+*/
+  static void gcmd(const char* key,const void* val);
+/**
+   Finalize global-plumed
+*/
+  static void gfinalize();
+/**
+   Returns the Plumed global object
+*/
+  static Plumed global();
+/**
+   Constructor
+*/
+  Plumed();
+/**
+   Clone a Plumed object from a FORTRAN char* handler
+
+ \attention The Plumed object created in this manner
+            will not finalize the corresponding plumed structure.
+            It is expected that the FORTRAN code calls plumed_c_finalize for it
+*/
+  Plumed(const char*c);
+/**
+   Clone a Plumed object from a C plumed structure
+
+ \attention The Plumed object created in this manner
+            will not finalize the corresponding plumed structure.
+            It is expected that the C code calls plumed_finalize for it
+*/
+  Plumed(plumed p);
+/**
+   Retrieve the C plumed structure for this object
+*/
+  operator plumed()const;
+/**
+   Retrieve a FORTRAN handler for this object
+*/
+  void toFortran(char*c)const;
+/**
+   Send a command to this plumed object
+*/
+  void cmd(const char*key,const void*val=NULL);
+/**
+   Destructor
+*/
+  ~Plumed();
 };
 
-/** \relates Plumed
-    \brief Check if plumed is installed (for runtime binding)
+/* All methods are inlined so as to avoid the compilation of an extra c++ file */
 
-    \return true if plumed is installed, false otherwise
-*/
 inline
-bool installed(){int i;plumed_installed(&i);if(i>0) return true;else return false;}
+bool Plumed::installed(){
+  return plumed_installed();
+}
+
+inline
+bool Plumed::ginitialized(){
+  return plumed_ginitialized();
+}
+
+inline
+void Plumed::gcreate(){
+  plumed_gcreate();
+}
+
+inline
+void Plumed::gcmd(const char* key,const void* val){
+  plumed_gcmd(key,val);
+}
+
+inline
+void Plumed::gfinalize(){
+  plumed_gfinalize();
+}
+
+inline
+Plumed Plumed::global(){
+  return plumed_global();
+}
+
+inline
+Plumed::Plumed():
+  cloned(false){
+  main=plumed_create();
+}
+
+inline
+Plumed::Plumed(const char*c):
+  cloned(true){
+  main=plumed_f2c(c);
+}
+
+inline
+Plumed::Plumed(plumed p):
+  cloned(true)
+{
+  main=p;
+}
+
+inline
+Plumed::operator plumed()const{
+  return main;
+}
+
+inline
+void Plumed::toFortran(char*c)const{
+  plumed_c2f(main,c);
+}
+
+inline
+void Plumed::cmd(const char*key,const void*val){
+  plumed_cmd(main,key,val);
+}
+
+inline
+Plumed::~Plumed(){
+  if(!cloned)plumed_finalize(main);
+}
 
 }
 

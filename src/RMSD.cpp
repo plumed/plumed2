@@ -58,49 +58,45 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
   const unsigned n=reference.size();
 
   double ret=0.;
-  log.printf("RMSD: begin calculated\n");
+
   switch(alignment_method){
 	case SIMPLE:
 		//	do a simple alignment without rotation 
+		ret=simpleAlignment(align,displace,positions,reference,log,derivatives);
 		break;	
 	case OPTIMAL:
 		if (myoptimalalignment==NULL){ // do full initialization	
 			myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
         }
 		// this changes the P1 according the running frame
-		(*myoptimalalignment).assignP1(positions);
+		(*myoptimalalignment).assignP0(positions);
 		ret=(*myoptimalalignment).calculate(derivatives);
 		break;	
   }	
-  log.printf("RMSD: done!\n");
 
   return ret;
-///  bool simple,trivial;
-///  simple=true;
-///  trivial=true; // means: no alignment!!
-///  for(unsigned i=0;i<n;i++) if(align[i]!=1.0) simple=false;
-///  for(unsigned i=0;i<n;i++) if(align[i]!=0.0) trivial=false;
-///  for(unsigned i=0;i<n;i++) if(displace[i]!=1.0) simple=false;
-///
-///  double dist(0);
-///  double norm(0);
-///  if(trivial){
-///    for(unsigned i=0;i<n;i++){
-///      Vector d=delta(reference[i],positions[i]);
-///      derivatives[i]=2.0*d;
-///      dist+=displace[i]*d.modulo2();
-///      norm+=displace[i];
-///    }
-///  } else {
-///// TODO
-///    assert(trivial);
-///  }
-///
-///// sqrt and normalization
-///  double ret=sqrt(dist/norm);
-///// sqrt and normalization on derivatives
-///  for(unsigned i=0;i<n;i++){derivatives[i].scale(0.5/ret/norm);}
 
 }
 
+double RMSD::simpleAlignment(const  std::vector<double>  & align,
+		                     const  std::vector<double>  & displace,
+		                     const std::vector<Vector> & positions,
+		                     const std::vector<Vector> & reference ,
+		                     Log &log,
+		                     std::vector<Vector>  & derivatives) {
+	  double dist(0);
+	  double norm(0);
+	  int n=reference.size();
+	  for(unsigned i=0;i<n;i++){
+	      Vector d=delta(reference[i],positions[i]);
+	      derivatives[i]=2.0*d;
+	      dist+=displace[i]*d.modulo2();
+	      norm+=displace[i];
+      }
 
+	// sqrt and normalization
+     double ret=sqrt(dist/norm);
+	///// sqrt and normalization on derivatives
+	  for(unsigned i=0;i<n;i++){derivatives[i].scale(0.5/ret/norm);}
+	  return ret;
+}

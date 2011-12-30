@@ -13,7 +13,7 @@ namespace PLMD{
 
 /// A class that implements Kearsley's calculation 
 
-class Kearsley 
+class Kearsley
 {
   // general log
   Log &log;
@@ -31,7 +31,9 @@ public:
   // error  
   double err;
   // displacement
-  vector<Vector> diff;  
+  vector<Vector> diff0on1;
+  vector<Vector> diff1on0;
+
   // center of mass
   Vector com0;
   Vector com1;
@@ -47,8 +49,8 @@ public:
   vector<Vector> derrdp0;
   vector<Vector> derrdp1;
   //derivative of the rotation matrix 9 x 3N 
-  Matrix4d<double>  dmatdp0;
-  Matrix4d<double>  dmatdp1;
+  vector<double> dmatdp0; //(3*3*3*natoms)
+  vector<double> dmatdp1;
 
   // initialize the structure
   Kearsley(  const vector<Vector> &p0, const vector<Vector> &p1,  const vector<double> &align , Log &log);
@@ -56,9 +58,9 @@ public:
   void assignP0(const std::vector<Vector> & p0);
   void assignP1(const std::vector<Vector> & p1);
   // just for regularity test
-  void finiteDifferenceInterface();
+  void finiteDifferenceInterface(bool rmsd);
   // this makes the real buisness
-  double calculate( );
+  double calculate( bool rmsd );
 };
 
 }

@@ -52,6 +52,9 @@ PLUMED_COLVAR_INIT(ao),rmsd(log)
   getValue("")->setPeriodicity(false);
 
   PDB pdb;
+
+  // read everything in ang and transform to nm
+
   pdb.read(reference,0.1/plumed.getAtoms().getUnits().length);
 
   rmsd.setFromPDB(pdb,type);
@@ -68,7 +71,6 @@ PLUMED_COLVAR_INIT(ao),rmsd(log)
 
 // calculator
 void ColvarRMSD::calculate(){
-
   double r=rmsd.calculate(getPositions(),derivs);
   setValue(r);
   for(unsigned i=0;i<derivs.size();i++) setAtomsDerivatives(i,derivs[i]);
