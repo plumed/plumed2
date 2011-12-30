@@ -33,7 +33,7 @@ Kearsley::Kearsley(const vector<Vector> &p0, const vector<Vector> &p1, const vec
 //		cerr<<"Cannot allocate the vector in Kearsley"<<endl;
 //	}
 
-};
+}
 // do the alignment
 
 double Kearsley::calculate(bool rmsd) {
@@ -751,7 +751,6 @@ double Kearsley::calculate(bool rmsd) {
 	return err;
 
 }
-;
 void Kearsley::assignP1(const std::vector<Vector> & p1) {
 	this->p1=p1;
 	com1_is_removed=false;

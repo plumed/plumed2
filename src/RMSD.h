@@ -9,14 +9,13 @@
 
 namespace PLMD{
 
-enum alignment_method_t {SIMPLE, OPTIMAL};
-
 class PDB;
 
 /// A class that implements RMSD calculations
 class RMSD
 {
-  alignment_method_t alignment_method;
+  enum AlignmentMethod {SIMPLE, OPTIMAL};
+  AlignmentMethod alignmentMethod;
   std::vector<Vector> reference;
   std::vector<double> align;
   std::vector<double> displace;
@@ -24,7 +23,7 @@ class RMSD
   Log &log;
 public:
 /// initialize the log in the constructor
-  RMSD(Log & log ): log(log){};
+  RMSD(Log & log ): myoptimalalignment(NULL),log(log){};
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure

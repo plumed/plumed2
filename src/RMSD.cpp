@@ -10,10 +10,11 @@ using namespace PLMD;
 
 void RMSD::setFromPDB(const PDB&pdb, string mytype ){
   myoptimalalignment=NULL; 
-  alignment_method=SIMPLE; // initialize with the simplest case: no rotation
-  if (mytype=="SIMPLE"){ 	alignment_method=SIMPLE; log.printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
+  alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
+  if (mytype=="SIMPLE"){ 	alignmentMethod=SIMPLE; log.printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
 ;}
-  else if (mytype=="OPTIMAL"){ 	alignment_method=OPTIMAL; log.printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n"); }
+  else if (mytype=="OPTIMAL"){ 	alignmentMethod=OPTIMAL; log.printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n"); }
+  else assert(0);
   setReference(pdb.getPositions());
   setAlign(pdb.getOccupancy());
   setDisplace(pdb.getBeta());
@@ -27,7 +28,7 @@ void RMSD::clear(){
 
 string RMSD::getMethod(){
 	string mystring;
-	switch(alignment_method){
+	switch(alignmentMethod){
 		case SIMPLE: mystring.assign("SIMPLE");break; 
 		case OPTIMAL: mystring.assign("OPTIMAL");break; 
 	}	
@@ -59,7 +60,7 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 
   double ret=0.;
 
-  switch(alignment_method){
+  switch(alignmentMethod){
 	case SIMPLE:
 		//	do a simple alignment without rotation 
 		ret=simpleAlignment(align,displace,positions,reference,log,derivatives);

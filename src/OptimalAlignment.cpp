@@ -34,7 +34,7 @@ OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  
 //		log.printf("USING SLOW ALIGNMENT\n");
 //	}
 
-};
+}
 
 void OptimalAlignment::assignP0(  const std::vector<Vector> & p0 ){
 	this->p0=p1;

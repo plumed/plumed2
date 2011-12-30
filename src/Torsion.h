@@ -2,7 +2,6 @@
 #define __PLUMED_Torsion_h
 
 #include "Vector.h"
-#include "Tools.h"
 
 namespace PLMD{
 
