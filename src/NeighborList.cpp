@@ -9,8 +9,6 @@
 using namespace PLMD;
 using namespace std;
 
-namespace PLMD{
-
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
                            const bool& do_pair, const bool& do_pbc, const Pbc& pbc,
                            const double& distance, const unsigned& stride):
@@ -153,4 +151,3 @@ vector<unsigned> NeighborList::getNeighbors(unsigned index) {
  return neighbors;
 }
 
-}

@@ -1,7 +1,12 @@
+#ifndef __PLUMED_Grid_h
+#define __PLUMED_Grid_h
+
 #include <vector>
 #include <map>
 
 using namespace std;
+
+namespace PLMD{ 
 
 class Grid  
 {
@@ -119,3 +124,6 @@ class SparseGrid : public Grid
  virtual ~SparseGrid(){};
 };
 
+}
+
+#endif

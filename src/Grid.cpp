@@ -5,7 +5,7 @@
 #include <iostream>
 
 using namespace std;
-
+using namespace PLMD;
 
 Grid::Grid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin,
            vector<bool> pbc, bool dospline, bool usederiv, bool doclear){
