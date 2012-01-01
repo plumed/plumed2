@@ -1,7 +1,9 @@
 #include "Bias.h"
 #include "ActionRegister.h"
+#include "Grid.h"
 
 #include <cassert>
+#include <iostream>
 
 using namespace std;
 
@@ -18,14 +20,20 @@ METAD ...
   ARG=x1,x2,... 
   SIGMA=s1,s2,... 
   HEIGHT=w 
-  STRIDE=s
+  PACE=s
+  RESTART
   [BIASFACTOR=biasf]
   [TEMP=temp]
+  [GRIDMIN=min1,min2]
+  [GRIDMAX=max1,max2]
+  [GRIDBIN=bin1,bin2]
+  [NOSPLINE]
+  [SPARSEGRID]
 ... METAD
 \endverbatim
 SIGMA specifies an array of Gaussian widths, one for each variable,
-HEIGHT the Gaussian height, STRIDE the Gaussian deposition pace in steps,
-BIASFACTOR the bias factor for well-tempered metadynamics, 
+HEIGHT the Gaussian height, PACE the Gaussian deposition stride in steps,
+RESTART to restart the run, BIASFACTOR the bias factor of well-tempered metad, 
 TEMP the temperature.
 \par Example
 The following input is for a standard metadynamics calculation using as
@@ -43,26 +51,30 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 */
 //+ENDPLUMEDOC
 
-struct Gaussian {
-  vector<double> center;
-  vector<double> sigma;
-  double height; 
-};
-
 class BiasMetaD : public Bias{
 
 private:
-  vector<double> sigma_;
+  struct Gaussian {
+   vector<double> center;
+   vector<double> sigma;
+   double height;
+  };
+  vector<double> sigma0_;
   vector<Gaussian> hills_;
-  double w0_;
+  FILE* hillsfile_;
+  Grid* BiasGrid_;
+  double height0_;
   double biasf_;
   double temp_;
   int stride_;
   bool welltemp_;
+  bool restart_;
   bool grid_;
+  
+  void   readGaussians(FILE*);
+  void   writeGaussian(Gaussian,FILE*);
+  void   addGaussian(Gaussian);
   double getHeight(vector<double>);
-  void addGaussian(vector<double>,vector<double>,double);
-  void addGaussianToList(vector<double>,vector<double>,double);
   double getBiasAndForces(vector<double>,double*);
   double getBiasAndForcesFromList(vector<double>,double*);
 
@@ -75,53 +87,137 @@ PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
 
 BiasMetaD::BiasMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
-sigma_(getNumberOfArguments(),0.0),
-w0_(0.0),
+sigma0_(getNumberOfArguments(),0.0),
+height0_(0.0),
 biasf_(1.0),
 temp_(0.0),
 stride_(0),
 welltemp_(false),
+restart_(false),
 grid_(false)
 {
-  parseVector("SIGMA",sigma_);
-  assert(sigma_.size()==getNumberOfArguments());
-  parse("HEIGHT",w0_);
-  assert(w0_>0.0);
+  parseVector("SIGMA",sigma0_);
+  assert(sigma0_.size()==getNumberOfArguments());
+  parse("HEIGHT",height0_);
+  assert(height0_>0.0);
   parse("PACE",stride_);
   assert(stride_>0); 
+  parseFlag("RESTART",restart_);
+// well-tempered metadynamics options
   parse("BIASFACTOR",biasf_);
   assert(biasf_>=1.0);
   parse("TEMP",temp_);
   if(biasf_>1.0){
    assert(temp_>0.0);
    welltemp_=true;
-  }  
+  }
+// grid options
+  vector<double> gmin;
+  parseVector("GRIDMIN",gmin);
+  assert(gmin.size()==getNumberOfArguments() || gmin.size()==0);
+  vector<double> gmax;
+  parseVector("GRIDMAX",gmax);
+  assert(gmax.size()==getNumberOfArguments() || gmax.size()==0);
+  vector<unsigned> gbin;
+  parseVector("GRIDBIN",gbin);
+  assert(gbin.size()==getNumberOfArguments() || gbin.size()==0);
+  assert(gmin.size()==gmax.size() && gmin.size()==gbin.size());
+  bool sparsegrid=false;
+  parseFlag("SPARSEGRID",sparsegrid);
+  bool nospline=false;
+  parseFlag("NOSPLINE",nospline);
+  bool spline=!nospline;
+  if(gbin.size()>0){grid_=true;}
+
   checkRead();
 
   log.printf("  Gaussian width");
-  for(unsigned i=0;i<sigma_.size();++i) log.printf(" %f",sigma_[i]);
+  for(unsigned i=0;i<sigma0_.size();++i) log.printf(" %f",sigma0_[i]);
   log.printf("\n");
-  log.printf("  Gaussian height %f\n",w0_);
+  log.printf("  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_); 
   if(welltemp_){log.printf("  Well-Tempered Bias Factor %f\n",biasf_);}
-
+  if(grid_){
+   log.printf("  Grid min");
+   for(unsigned i=0;i<gmin.size();++i) log.printf(" %f",gmin[i]);
+   log.printf("\n");
+   log.printf("  Grid max");
+   for(unsigned i=0;i<gmax.size();++i) log.printf(" %f",gmax[i]);
+   log.printf("\n");
+   log.printf("  Grid bin");
+   for(unsigned i=0;i<gbin.size();++i) log.printf(" %d",gbin[i]);
+   log.printf("\n");
+   if(spline){log.printf("  Grid uses spline interpolation\n");}
+   if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
+  }
+  
   addValue("bias");
+
+// initializing grid
+  if(grid_){
+   vector<bool> pbc;
+   for(unsigned i=0;i<getNumberOfArguments();++i){
+    pbc.push_back(getArguments()[i]->isPeriodic());
+// if periodic, use CV domain for grid boundaries
+    if(pbc[i]){
+     double dmin,dmax;
+     getArguments()[i]->getDomain(dmin,dmax);
+     gmin[i]=dmin;
+     gmax[i]=dmax;
+    }
+   }
+   if(!sparsegrid){BiasGrid_=new Grid(gmin,gmax,gbin,pbc,spline,true);}
+   else{BiasGrid_=new SparseGrid(gmin,gmax,gbin,pbc,spline,true);}
+  }
+
+// open HILLS file
+  hillsfile_=fopen("HILLS","a+");
+// restarting from HILLS file
+  if(restart_){
+   log.printf("  Restarting");
+   readGaussians(hillsfile_);
+  } 
 }
 
-void BiasMetaD::addGaussian(vector<double> center,
- vector<double> sigma, double height)
+void BiasMetaD::readGaussians(FILE* file)
 {
- if(!grid_){addGaussianToList(center,sigma,height);} 
+ int ncv=getNumberOfArguments();
+ double dummy;
+ vector<double> center;
+ vector<double> sigma;
+ center.resize(ncv);
+ sigma.resize(ncv);
+ double height;
+ int nhills=0;
+ rewind(file);
+ while(1){
+  if(fscanf(file, "%lf", &dummy)!=1){break;}
+  for(unsigned i=0;i<ncv;++i){fscanf(file, "%lf", &(center[i]));}
+  for(unsigned i=0;i<ncv;++i){fscanf(file, "%lf", &(sigma[i]));}
+  fscanf(file, "%lf", &height);
+  fscanf(file, "%lf", &dummy);
+  nhills++;
+  if(welltemp_){height*=(biasf_-1.0)/biasf_;}
+  Gaussian newhill={center,sigma,height}; 
+  addGaussian(newhill);
+ }     
+ log.printf("  %d Gaussians read\n",nhills);
 }
 
-void BiasMetaD::addGaussianToList(vector<double> center,
- vector<double> sigma, double height)
+void BiasMetaD::writeGaussian(Gaussian hill, FILE* file)
 {
- Gaussian newhill;
- newhill.center=center;
- newhill.sigma=sigma;
- newhill.height=height;
- hills_.push_back(newhill);
+ int ncv=getNumberOfArguments();
+ fprintf(hillsfile_, "%10.3f   ", getTimeStep()*getStep());
+ for(unsigned i=0;i<ncv;++i){fprintf(file, "%14.9f   ", hill.center[i]);}
+ for(unsigned i=0;i<ncv;++i){fprintf(file, "%14.9f   ", hill.sigma[i]);}
+ double height=hill.height;
+ if(welltemp_){height*=biasf_/(biasf_-1.0);}
+ fprintf(file, "%14.9f   %4.3f \n",height,biasf_);
+}
+
+void BiasMetaD::addGaussian(Gaussian hill)
+{
+ if(!grid_){hills_.push_back(hill);} 
 }
 
 double BiasMetaD::getBiasAndForces(vector<double> cv, double* ff)
@@ -142,12 +238,15 @@ double BiasMetaD::getBiasAndForcesFromList(vector<double> cv, double* ff)
    dp.push_back(difference(i,cv[i],(*it).center[i])/(*it).sigma[i]);
    dp2+=dp[i]*dp[i];
   }
+  dp2*=0.5;
 // put DP2CUTOFF here
-  double newbias=(*it).height*exp(-0.5*dp2);
-  bias+=newbias;
-  if(ff!=NULL){
-   for(unsigned i=0;i<cv.size();++i){
-    ff[i]+=newbias*dp[i]/(*it).sigma[i];
+  if(dp2<6.25){
+   double newbias=(*it).height*exp(-dp2);
+   bias+=newbias;
+   if(ff!=NULL){
+    for(unsigned i=0;i<cv.size();++i){
+     ff[i]+=-newbias*dp[i]/(*it).sigma[i];
+    }
    }
   }
  }
@@ -156,12 +255,12 @@ double BiasMetaD::getBiasAndForcesFromList(vector<double> cv, double* ff)
 
 double BiasMetaD::getHeight(vector<double> cv)
 {
- double ww=w0_;
+ double height=height0_;
  if(welltemp_){
     double vbias=getBiasAndForces(cv,NULL);
-    ww=w0_*exp(-vbias/(temp_*(biasf_-1.0)));
+    height=height0_*exp(-vbias/(temp_*(biasf_-1.0)));
  } 
- return ww;
+ return height;
 }
 
 void BiasMetaD::calculate(){
@@ -171,10 +270,11 @@ void BiasMetaD::calculate(){
 
   if(getStep()%stride_==0){
 // add a Gaussian
-   double ww=getHeight(cv);
-   addGaussian(cv,sigma_,ww);
+   double height=getHeight(cv);
+   Gaussian newhill={cv,sigma0_,height}; 
+   addGaussian(newhill);
 // print on HILLS file
-   //printGaussian(cv,sigma_,ww);
+   writeGaussian(newhill,hillsfile_);
   }
 
   double* ff=new double[ncv];
