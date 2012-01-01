@@ -5,6 +5,8 @@
 #include <cassert>
 #include <iostream>
 
+#define DP2CUTOFF 6.25
+
 using namespace std;
 
 
@@ -34,7 +36,10 @@ METAD ...
 SIGMA specifies an array of Gaussian widths, one for each variable,
 HEIGHT the Gaussian height, PACE the Gaussian deposition stride in steps,
 RESTART to restart the run, BIASFACTOR the bias factor of well-tempered metad, 
-TEMP the temperature.
+TEMP the temperature. To activate the use of Grid to store the bias potential,
+you need to specify the grid boundaries with GRIDMIN and GRIDMAX and the number
+of bins with GRIDBIN. An experimental sparse grid can be activated with SPARSEGRID.
+The use of spline can be disabled with NOSPLINE.
 \par Example
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
@@ -76,7 +81,9 @@ private:
   void   addGaussian(Gaussian);
   double getHeight(vector<double>);
   double getBiasAndForces(vector<double>,double*);
-  double getBiasAndForcesFromList(vector<double>,double*);
+  double evaluateGaussian(vector<double>,Gaussian,double*);
+  vector<unsigned> getNumberOfNeighbors(Gaussian);
+
 
 public:
   BiasMetaD(const ActionOptions&);
@@ -218,36 +225,67 @@ void BiasMetaD::writeGaussian(Gaussian hill, FILE* file)
 void BiasMetaD::addGaussian(Gaussian hill)
 {
  if(!grid_){hills_.push_back(hill);} 
+ else{
+  int ncv=getNumberOfArguments();
+  vector<unsigned> nneighb=getNumberOfNeighbors(hill);
+  vector<unsigned> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
+  double* ff=new double[ncv];
+  for(unsigned i=0;i<neighbors.size();++i){
+   for(unsigned j=0;j<ncv;++j){ff[j]=0.0;}
+   double bias=evaluateGaussian(BiasGrid_->getPoint(i),hill,ff);
+   vector<double> der(ff, ff+ncv);
+   BiasGrid_->addValueAndDerivatives(i,bias,der);
+  }
+  delete(ff);
+ }
+}
+
+vector<unsigned> BiasMetaD::getNumberOfNeighbors(Gaussian hill)
+{
+ vector<unsigned> nneigh;
+ for(unsigned i=0;i<getNumberOfArguments();++i){
+  double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[i];
+  nneigh.push_back((unsigned)ceil(cutoff/BiasGrid_->getDx()[i]));
+ }
+ return nneigh;
 }
 
 double BiasMetaD::getBiasAndForces(vector<double> cv, double* ff)
 {
- if(!grid_){return getBiasAndForcesFromList(cv,ff);}
+ double bias=0.0;
+ if(!grid_){
+  vector<Gaussian>::iterator it;
+  for(it=hills_.begin();it!=hills_.end();it++){
+   bias+=evaluateGaussian(cv,*it,ff);
+  }
+ }else{
+  if(ff!=NULL){
+   vector<double> der;
+   der.resize(cv.size());  
+   bias=BiasGrid_->getValueAndDerivatives(cv,der);
+   for(unsigned i=0;i<cv.size();++i){ff[i]=der[i];}
+  }else{
+   bias=BiasGrid_->getValue(cv);
+  }
+ }
+ return bias;
 }
 
-double BiasMetaD::getBiasAndForcesFromList(vector<double> cv, double* ff)
+double BiasMetaD::evaluateGaussian
+ (vector<double> cv, Gaussian hill, double* ff)
 {
+ vector<double> dp;
+ double dp2=0.0;
  double bias=0.0;
- vector<Gaussian>::iterator it;
-// cycle on the Gaussians deposited
- for(it=hills_.begin();it!=hills_.end();it++)
- {
-  vector<double> dp;
-  double dp2=0.0;
-  for(unsigned i=0;i<cv.size();++i){
-   dp.push_back(difference(i,cv[i],(*it).center[i])/(*it).sigma[i]);
-   dp2+=dp[i]*dp[i];
-  }
-  dp2*=0.5;
-// put DP2CUTOFF here
-  if(dp2<6.25){
-   double newbias=(*it).height*exp(-dp2);
-   bias+=newbias;
-   if(ff!=NULL){
-    for(unsigned i=0;i<cv.size();++i){
-     ff[i]+=-newbias*dp[i]/(*it).sigma[i];
-    }
-   }
+ for(unsigned i=0;i<cv.size();++i){
+  dp.push_back(difference(i,cv[i],hill.center[i])/hill.sigma[i]);
+  dp2+=dp[i]*dp[i];
+ }
+ dp2*=0.5;
+ if(dp2<DP2CUTOFF){
+  bias=hill.height*exp(-dp2);
+  if(ff!=NULL){
+   for(unsigned i=0;i<cv.size();++i){ff[i]+=-bias*dp[i]/hill.sigma[i];}
   }
  }
  return bias;
