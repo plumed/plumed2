@@ -82,7 +82,7 @@ private:
   double getHeight(vector<double>);
   double getBiasAndForces(vector<double>,double*);
   double evaluateGaussian(vector<double>,Gaussian,double*);
-  vector<unsigned> getNumberOfNeighbors(Gaussian);
+  vector<unsigned> getGaussianSupport(Gaussian);
 
 
 public:
@@ -227,7 +227,7 @@ void BiasMetaD::addGaussian(Gaussian hill)
  if(!grid_){hills_.push_back(hill);} 
  else{
   int ncv=getNumberOfArguments();
-  vector<unsigned> nneighb=getNumberOfNeighbors(hill);
+  vector<unsigned> nneighb=getGaussianSupport(hill);
   vector<unsigned> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
   double* ff=new double[ncv];
   for(unsigned i=0;i<neighbors.size();++i){
@@ -240,7 +240,7 @@ void BiasMetaD::addGaussian(Gaussian hill)
  }
 }
 
-vector<unsigned> BiasMetaD::getNumberOfNeighbors(Gaussian hill)
+vector<unsigned> BiasMetaD::getGaussianSupport(Gaussian hill)
 {
  vector<unsigned> nneigh;
  for(unsigned i=0;i<getNumberOfArguments();++i){
