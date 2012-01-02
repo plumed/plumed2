@@ -90,6 +90,7 @@ public:
   BiasMetaD(const ActionOptions&);
   ~BiasMetaD();
   void calculate();
+  void update();
 };
 
 PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
@@ -315,15 +316,6 @@ void BiasMetaD::calculate(){
   int ncv=getNumberOfArguments();
   for(unsigned i=0;i<ncv;++i){cv.push_back(getArgument(i));}
 
-  if(getStep()%stride_==0){
-// add a Gaussian
-   double height=getHeight(cv);
-   Gaussian newhill={cv,sigma0_,height}; 
-   addGaussian(newhill);
-// print on HILLS file
-   writeGaussian(newhill,hillsfile_);
-  }
-
   double* ff=new double[ncv];
   for(unsigned i=0;i<ncv;++i){ff[i]=0.0;}
   double ene=getBiasAndForces(cv,ff);
@@ -337,6 +329,20 @@ void BiasMetaD::calculate(){
    setOutputForces(i,f);
   }
   delete [] ff;
+}
+
+void BiasMetaD::update(){
+  vector<double> cv(getNumberOfArguments());
+  for(unsigned i=0;i<cv.size();++i){cv[i]=getArgument(i);}
+  if(getStep()%stride_==0){
+// add a Gaussian
+   double height=getHeight(cv);
+   Gaussian newhill={cv,sigma0_,height};
+   addGaussian(newhill);
+// print on HILLS file
+   writeGaussian(newhill,hillsfile_);
+  }
+
 }
 
 }
