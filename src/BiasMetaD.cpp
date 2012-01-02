@@ -236,7 +236,7 @@ void BiasMetaD::addGaussian(Gaussian hill)
    vector<double> der(ff, ff+ncv);
    BiasGrid_->addValueAndDerivatives(i,bias,der);
   }
-  delete(ff);
+  delete [] ff;
  }
 }
 
@@ -327,7 +327,7 @@ void BiasMetaD::calculate(){
    const double f=ff[i];
    setOutputForces(i,f);
   }
-  delete(ff);
+  delete [] ff;
 }
 
 }
