@@ -19,13 +19,17 @@ protected:
  vector<bool> pbc_;
  unsigned maxsize_, dimension_;
  bool dospline_, usederiv_;
- 
+
+ /// get "neighbors" for spline
+ vector<unsigned> getSplineNeighbors(vector<unsigned> indices);
+
  /// clear grid
  virtual void clear();
  
 public:
  Grid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin, 
       vector<bool> pbc, bool dospline, bool usederiv, bool doclear=true);
+
 
 /// get lower boundary
  vector<double> getMin() const;
@@ -51,8 +55,6 @@ public:
  vector<unsigned> getNeighbors(unsigned index,vector<unsigned> neigh);
  vector<unsigned> getNeighbors(vector<unsigned> indices,vector<unsigned> neigh);
  vector<unsigned> getNeighbors(vector<double> x,vector<unsigned> neigh);
-/// get "neighbors" for spline
- vector<unsigned> getSplineNeighbors(vector<unsigned> indices);
 
 /// get grid size
  virtual unsigned getSize() const;
