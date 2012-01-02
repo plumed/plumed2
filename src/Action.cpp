@@ -33,7 +33,7 @@ Action::Action(const ActionOptions&ao):
 
 FILE* Action::fopen(const char *path, const char *mode){
   bool write(false);
-  for(const char*p=mode;*p;p++) if(*p=='w') write=true;
+  for(const char*p=mode;*p;p++) if(*p=='w' || *p=='a' || *p=='+') write=true;
   FILE* fp;
   if(write && comm.Get_rank()!=0) fp=plumed.fopen("/dev/null",mode);
   else      fp=plumed.fopen(path,mode);
