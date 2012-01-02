@@ -110,7 +110,6 @@ grid_(false)
   parse("PACE",stride_);
   assert(stride_>0); 
   parseFlag("RESTART",restart_);
-// well-tempered metadynamics options
   parse("BIASFACTOR",biasf_);
   assert(biasf_>=1.0);
   parse("TEMP",temp_);
@@ -118,7 +117,6 @@ grid_(false)
    assert(temp_>0.0);
    welltemp_=true;
   }
-// grid options
   vector<double> gmin;
   parseVector("GRIDMIN",gmin);
   assert(gmin.size()==getNumberOfArguments() || gmin.size()==0);
@@ -301,7 +299,8 @@ double BiasMetaD::getHeight(vector<double> cv)
  return height;
 }
 
-void BiasMetaD::calculate(){
+void BiasMetaD::calculate()
+{
   vector<double> cv;
   int ncv=getNumberOfArguments();
   for(unsigned i=0;i<ncv;++i){cv.push_back(getArgument(i));}

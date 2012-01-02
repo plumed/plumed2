@@ -152,10 +152,10 @@ vector<unsigned> Grid::getNeighbors
   vector<unsigned> tmp_indices;
   for(unsigned i=0;i<dimension_;++i){
    int i0=small_indices[i]-nneigh[i]+indices[i];
-   if(!pbc_[i] && i0<0) continue;
+   if(!pbc_[i] && i0<0)         continue;
    if(!pbc_[i] && i0>=nbin_[i]) continue;
-   if(pbc_[i] && i0<0) i0+=nbin_[i];
-   if(pbc_[i] && i0>=nbin_[i]) i0-=nbin_[i];
+   if( pbc_[i] && i0<0)         i0+=nbin_[i];
+   if( pbc_[i] && i0>=nbin_[i]) i0-=nbin_[i];
    tmp_indices.push_back((unsigned)i0);
   }
   if(tmp_indices.size()==dimension_){neighbors.push_back(getIndex(tmp_indices));}
@@ -184,12 +184,10 @@ vector<unsigned> Grid::getSplineNeighbors(vector<unsigned> indices){
   unsigned tmp=i;
   vector<unsigned> nindices;
   for(unsigned int j=0;j<dimension_;++j){
-   int i0=tmp%2+indices[j];
+   unsigned i0=tmp%2+indices[j];
    tmp/=2;
-   if(!pbc_[j] && i0<0) continue;
-   if(!pbc_[j] && i0>=nbin_[j]) continue;
-   if(pbc_[j] && i0<0) i0+=nbin_[j];
-   if(pbc_[j] && i0>=nbin_[j]) i0-=nbin_[j];
+   if(!pbc_[j] && i0==nbin_[j]) continue;
+   if( pbc_[j] && i0==nbin_[j]) i0=0;
    nindices.push_back(i0);
   }
   if(nindices.size()==dimension_) neighbors.push_back(getIndex(nindices));
@@ -236,7 +234,9 @@ double Grid::getValueAndDerivatives
  
  if(dospline_){
   double X,X2,X3,value;
-  vector<double> fd(dimension_),C(dimension_),D(dimension_);
+  double* fd=new double[dimension_];
+  double* C=new double[dimension_];
+  double* D=new double[dimension_];
   vector<double> dder;
   dder.resize(dimension_);
 // reset
@@ -252,6 +252,7 @@ double Grid::getValueAndDerivatives
    double grid=getValueAndDerivatives(neigh[ipoint],dder);
    vector<unsigned> nindices=getIndices(neigh[ipoint]);
    double ff=1.0;
+
    for(unsigned j=0;j<dimension_;++j){
     int x0=1;
     if(nindices[j]==indices[j]) x0=0;
@@ -261,10 +262,10 @@ double Grid::getValueAndDerivatives
     X3=X2*X;
     double yy;
     if(fabs(grid)<0.0000001) yy=0.0;
-      else yy=dder[j]/grid;
-    C[j]=(1.0-3.0*X2+2.0*X3) - (double)(x0?-1:1)*yy*(X-2.0*X2+X3)*dx;
-    D[j]=( -6.0*X +6.0*X2) - (double)(x0?-1:1)*yy*(1.0-4.0*X +3.0*X2)*dx; 
-    D[j]*=(double)(x0?-1:1)/dx;
+      else yy=-dder[j]/grid;
+    C[j]=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*dx;
+    D[j]=( -6.0*X +6.0*X2) - (x0?-1.0:1.0)*yy*(1.0-4.0*X +3.0*X2)*dx; 
+    D[j]*=(x0?-1.0:1.0)/dx;
     ff*=C[j];
    }
    for(unsigned j=0;j<dimension_;++j){
@@ -274,6 +275,7 @@ double Grid::getValueAndDerivatives
    value+=grid*ff;
    for(unsigned j=0;j<dimension_;++j) der[j]+=grid*fd[j];
   }
+  delete(fd); delete(C); delete(D);
   return value;
  }else{
   return getValueAndDerivatives(getIndex(x),der);
@@ -378,9 +380,12 @@ double SparseGrid::getValueAndDerivatives
  (vector<double> x, vector<double>& der){
  assert(der.size()==dimension_ && usederiv_);
 
- if(dospline_){
+
+if(dospline_){
   double X,X2,X3,value;
-  vector<double> fd(dimension_),C(dimension_),D(dimension_);
+  double* fd=new double[dimension_];
+  double* C=new double[dimension_];
+  double* D=new double[dimension_];
   vector<double> dder;
   dder.resize(dimension_);
 // reset
@@ -396,6 +401,7 @@ double SparseGrid::getValueAndDerivatives
    double grid=getValueAndDerivatives(neigh[ipoint],dder);
    vector<unsigned> nindices=getIndices(neigh[ipoint]);
    double ff=1.0;
+
    for(unsigned j=0;j<dimension_;++j){
     int x0=1;
     if(nindices[j]==indices[j]) x0=0;
@@ -405,10 +411,10 @@ double SparseGrid::getValueAndDerivatives
     X3=X2*X;
     double yy;
     if(fabs(grid)<0.0000001) yy=0.0;
-      else yy=dder[j]/grid;
-    C[j]=(1.0-3.0*X2+2.0*X3) - (double)(x0?-1:1)*yy*(X-2.0*X2+X3)*dx;
-    D[j]=( -6.0*X +6.0*X2) - (double)(x0?-1:1)*yy*(1.0-4.0*X +3.0*X2)*dx; 
-    D[j]*=(double)(x0?-1:1)/dx;
+      else yy=-dder[j]/grid;
+    C[j]=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*dx;
+    D[j]=( -6.0*X +6.0*X2) - (x0?-1.0:1.0)*yy*(1.0-4.0*X +3.0*X2)*dx; 
+    D[j]*=(x0?-1.0:1.0)/dx;
     ff*=C[j];
    }
    for(unsigned j=0;j<dimension_;++j){
@@ -418,6 +424,7 @@ double SparseGrid::getValueAndDerivatives
    value+=grid*ff;
    for(unsigned j=0;j<dimension_;++j) der[j]+=grid*fd[j];
   }
+  delete(fd); delete(C); delete(D);
   return value;
  }else{
   return getValueAndDerivatives(getIndex(x),der);
