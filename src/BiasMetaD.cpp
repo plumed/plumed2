@@ -46,7 +46,7 @@ The use of spline can be disabled with NOSPLINE.
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
 and the distance between atoms 2 and 4. The value of the CVs and
-the metadynamics bias potential is written to the COLVAR file every 100 steps.
+the metadynamics bias potential are written to the COLVAR file every 100 steps.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
@@ -82,8 +82,8 @@ private:
   void   writeGaussian(Gaussian,FILE*);
   void   addGaussian(Gaussian);
   double getHeight(vector<double>);
-  double getBiasAndDerivatives(vector<double>,double*);
-  double evaluateGaussian(vector<double>,Gaussian,double*);
+  double getBiasAndDerivatives(vector<double>,double* der=NULL);
+  double evaluateGaussian(vector<double>,Gaussian,double* der=NULL);
   vector<unsigned> getGaussianSupport(Gaussian);
 
 
@@ -271,7 +271,7 @@ double BiasMetaD::getBiasAndDerivatives(vector<double> cv, double* der)
    bias+=evaluateGaussian(cv,*it,der);
   }
  }else{
-  if(der!=NULL){
+  if(der){
    vector<double> vder(getNumberOfArguments());
    bias=BiasGrid_->getValueAndDerivatives(cv,vder);
    for(unsigned i=0;i<getNumberOfArguments();++i){der[i]=vder[i];}
@@ -295,7 +295,7 @@ double BiasMetaD::evaluateGaussian
  dp2*=0.5;
  if(dp2<DP2CUTOFF){
   bias=hill.height*exp(-dp2);
-  if(der!=NULL){
+  if(der){
    for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp[i]/hill.sigma[i];}
   }
  }
@@ -306,7 +306,7 @@ double BiasMetaD::getHeight(vector<double> cv)
 {
  double height=height0_;
  if(welltemp_){
-    double vbias=getBiasAndDerivatives(cv,NULL);
+    double vbias=getBiasAndDerivatives(cv);
     height=height0_*exp(-vbias/(plumed.getAtoms().getKBoltzmann()*temp_*(biasf_-1.0)));
  } 
  return height;
