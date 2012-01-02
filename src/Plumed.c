@@ -114,8 +114,8 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
         fprintf(stderr,"ERROR MSG: %s\n",dlerror());
       }
     }
-#endif
   }
+#endif
   first=0;
   if(f) g=*f;
   return &g;
