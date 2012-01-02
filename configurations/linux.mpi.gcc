@@ -2,7 +2,7 @@
 #CHECK_BOUNDARIES=-D_GLIBCXX_DEBUG
 
 LIBS=-ldl
-DYNAMIC_LIBS=-lstdc++ -lmpi_cxx
+DYNAMIC_LIBS=-lstdc++ -lmpi_cxx -llapack -lblas
 DOUBLEPRECISION=-fdefault-real-8
 
 
