@@ -23,7 +23,8 @@ METAD ...
   SIGMA=s1,s2,... 
   HEIGHT=w 
   PACE=s
-  RESTART
+  [FILE=filename]
+  [RESTART]
   [BIASFACTOR=biasf]
   [TEMP=temp]
   [GRIDMIN=min1,min2]
@@ -35,6 +36,7 @@ METAD ...
 \endverbatim
 SIGMA specifies an array of Gaussian widths, one for each variable,
 HEIGHT the Gaussian height, PACE the Gaussian deposition stride in steps,
+FILE the name of the file where the Gaussians are written to (or read from), 
 RESTART to restart the run, BIASFACTOR the bias factor of well-tempered metad, 
 TEMP the temperature. To activate the use of Grid to store the bias potential,
 you need to specify the grid boundaries with GRIDMIN and GRIDMAX and the number
@@ -117,7 +119,9 @@ grid_(false)
   parse("HEIGHT",height0_);
   assert(height0_>0.0);
   parse("PACE",stride_);
-  assert(stride_>0); 
+  assert(stride_>0);
+  string filename="HILLS";
+  parse("FILE",filename);
   parseFlag("RESTART",restart_);
   parse("BIASFACTOR",biasf_);
   assert(biasf_>=1.0);
@@ -150,6 +154,7 @@ grid_(false)
   log.printf("\n");
   log.printf("  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_); 
+  log.printf("  Gaussian file %s\n",filename.c_str());
   if(welltemp_){log.printf("  Well-Tempered Bias Factor %f\n",biasf_);}
   if(grid_){
    log.printf("  Grid min");
@@ -184,12 +189,13 @@ grid_(false)
    else{BiasGrid_=new SparseGrid(gmin,gmax,gbin,pbc,spline,true);}
   }
 
-// open HILLS file
-  hillsfile_=fopen("HILLS","a+");
 // restarting from HILLS file
   if(restart_){
-   log.printf("  Restarting");
+   hillsfile_=fopen(filename.c_str(),"a+");
+   log.printf("  Restarting from %s:",filename.c_str());
    readGaussians(hillsfile_);
+  }else{
+   hillsfile_=fopen(filename.c_str(),"w");
   } 
 }
 
@@ -197,10 +203,8 @@ void BiasMetaD::readGaussians(FILE* file)
 {
  unsigned ncv=getNumberOfArguments();
  double dummy;
- vector<double> center;
- vector<double> sigma;
- center.resize(ncv);
- sigma.resize(ncv);
+ vector<double> center(ncv);
+ vector<double> sigma(ncv);
  double height;
  int nhills=0;
  rewind(file);
@@ -268,8 +272,7 @@ double BiasMetaD::getBiasAndDerivatives(vector<double> cv, double* der)
   }
  }else{
   if(der!=NULL){
-   vector<double> vder;
-   vder.resize(getNumberOfArguments());  
+   vector<double> vder(getNumberOfArguments());
    bias=BiasGrid_->getValueAndDerivatives(cv,vder);
    for(unsigned i=0;i<getNumberOfArguments();++i){der[i]=vder[i];}
   }else{

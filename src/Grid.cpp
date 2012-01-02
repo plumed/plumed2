@@ -210,8 +210,7 @@ double Grid::getValue(vector<double> x) {
  if(!dospline_){
   return getValue(getIndex(x));
  } else {
-  vector<double> der;
-  der.resize(dimension_);
+  vector<double> der(dimension_);
   return getValueAndDerivatives(x,der);
  }
 }
@@ -234,11 +233,10 @@ double Grid::getValueAndDerivatives
  
  if(dospline_){
   double X,X2,X3,value;
-  double* fd=new double[dimension_];
-  double* C=new double[dimension_];
-  double* D=new double[dimension_];
-  vector<double> dder;
-  dder.resize(dimension_);
+  vector<double> fd(dimension_);
+  vector<double> C(dimension_);
+  vector<double> D(dimension_);
+  vector<double> dder(dimension_);
 // reset
   value=0.0;
   for(unsigned int i=0;i<dimension_;++i) der[i]=0.0;
@@ -275,7 +273,6 @@ double Grid::getValueAndDerivatives
    value+=grid*ff;
    for(unsigned j=0;j<dimension_;++j) der[j]+=grid*fd[j];
   }
-  delete(fd); delete(C); delete(D);
   return value;
  }else{
   return getValueAndDerivatives(getIndex(x),der);
@@ -353,8 +350,7 @@ double SparseGrid::getValue(vector<double> x) {
  if(!dospline_){
   return getValue(getIndex(x));
  } else {
-  vector<double> der;
-  der.resize(dimension_);
+  vector<double> der(dimension_);
   return getValueAndDerivatives(x,der);
  }
 }
@@ -383,11 +379,10 @@ double SparseGrid::getValueAndDerivatives
 
 if(dospline_){
   double X,X2,X3,value;
-  double* fd=new double[dimension_];
-  double* C=new double[dimension_];
-  double* D=new double[dimension_];
-  vector<double> dder;
-  dder.resize(dimension_);
+  vector<double> fd(dimension_);
+  vector<double> C(dimension_);
+  vector<double> D(dimension_); 
+  vector<double> dder(dimension_);
 // reset
   value=0.0;
   for(unsigned int i=0;i<dimension_;++i) der[i]=0.0;
@@ -424,7 +419,6 @@ if(dospline_){
    value+=grid*ff;
    for(unsigned j=0;j<dimension_;++j) der[j]+=grid*fd[j];
   }
-  delete(fd); delete(C); delete(D);
   return value;
  }else{
   return getValueAndDerivatives(getIndex(x),der);
