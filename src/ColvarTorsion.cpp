@@ -12,13 +12,23 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR TORSION
 /**
-Calculate the torsion between four atoms
-
+Calculate the torsion between four atoms.
 \par Syntax
 \verbatim
-TORSION ATOMS=x,y,z,t [PBC]
+TORSION ATOMS=a0,a1,a2,a3 [PBC]
 \endverbatim
 If the PBC flag is present, distance is computed using periodic boundary conditions.
+
+Alternatively, compute the angle between two vectors projected on the plane
+orthogonal to an axis, such as
+\verbatim
+TORSION V1=a0,a1 AXIS=a2,a3 V2=a4,a5
+\endverbatim
+Thus, two following variables are exactly the same one:
+\verbatim
+TORSION ATOMS=a0,a1,a2,a3
+TORSION V1=a1,a0 AXIS=a1,a2 V2=a2,a3
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -38,8 +48,12 @@ ColvarTorsion::ColvarTorsion(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true)
 {
-  vector<AtomNumber> atoms;
+  vector<AtomNumber> atoms,v1,v2,axis;
   parseAtomList("ATOMS",atoms);
+  parseAtomList("VECTOR1",v1);
+  parseAtomList("VECTOR2",v2);
+  parseAtomList("AXIS",axis);
+
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
@@ -47,12 +61,24 @@ pbc(true)
   checkRead();
 
   if(atoms.size()==4){
+    assert(v1.size()==0 && v2.size()==0 && axis.size()==0);
     log.printf("  between atoms %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
     atoms.resize(6);
     atoms[5]=atoms[3];
     atoms[4]=atoms[2];
     atoms[3]=atoms[2];
     atoms[2]=atoms[1];
+  }else if(atoms.size()==0){
+    assert(v1.size()==2 && v2.size()==2 && axis.size()==2);
+    log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
+                v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
+    atoms.resize(6);
+    atoms[0]=v1[1];
+    atoms[1]=v1[0];
+    atoms[2]=axis[0];
+    atoms[3]=axis[1];
+    atoms[4]=v2[0];
+    atoms[5]=v2[1];
   }else assert(0);
 
   if(pbc) log.printf("  using periodic boundary conditions\n");

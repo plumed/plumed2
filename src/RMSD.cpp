@@ -98,6 +98,6 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 	// sqrt and normalization
      double ret=sqrt(dist/norm);
 	///// sqrt and normalization on derivatives
-	  for(unsigned i=0;i<n;i++){derivatives[i].scale(0.5/ret/norm);}
+	  for(unsigned i=0;i<n;i++){derivatives[i]*=(0.5/ret/norm);}
 	  return ret;
 }

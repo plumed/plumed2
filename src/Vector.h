@@ -3,11 +3,38 @@
 
 namespace PLMD{
 
-/// 3d vector of double.
-/// Useful to simplify syntax. All the methods are inlined for better optimization.
-/// Accepts both [] and () syntax for access.
-/// Several functions are declared as friends even if not necessary so as to
-/// properly appear in Doxygen documentation..
+/**
+3d vector of double
+
+Class implementing a standard three-component vector of double.
+Vector elements are initialized to zero by default,
+Useful to simplify syntax.
+All the methods are inlined for better optimization.
+Accepts both [] and () syntax for access.
+Several functions are declared as friends even if not necessary so as to
+properly appear in Doxygen documentation..
+
+Example of usage
+\verbatim
+#include "Vector.h"
+
+using namespace PLMD;
+
+int main(){
+  Vector v1;
+  v1[0]=3.0;
+// use equivalently () and [] syntax:
+  v1(1)=5.0;
+// initialize with components
+  Vector v2=Vector(1.0,2.0,3.0);
+  Vector v3=crossProduct(v1,v2);
+  double d=dotProduct(v1,v2);
+  v3+=v1;
+  v2=v1+2.0*v3;
+}
+\endverbatim
+
+*/
 class Vector{
   double d[3];
 public:
@@ -57,8 +84,6 @@ public:
   double modulo2()const;
 /// compute the modulo
   double modulo()const;
-/// scale the vector by a factor s
-  void scale(double s);
 };
 
 inline
@@ -178,11 +203,6 @@ Vector delta(const Vector&v1,const Vector&v2){
 inline
 double Vector::modulo2()const{
   return d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
-}
-
-inline
-void Vector::scale(double s){
-  (*this) *=s;
 }
 
 inline

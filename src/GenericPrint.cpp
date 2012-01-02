@@ -76,7 +76,7 @@ rotate(0)
   parse("FILE",file);
   if(file.length()>0){
     if(comm.Get_rank()==0){
-      fp=fopen(file.c_str(),"wa");
+      fp=fopen(file.c_str(),"a");
       log.printf("  on file %s\n",file.c_str());
       fprintf(fp,"#! FIELDS time");
       const std::vector<Value*>& arguments(getArguments());

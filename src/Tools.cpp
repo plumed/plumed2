@@ -2,6 +2,7 @@
 #include "AtomNumber.h"
 #include <cassert>
 #include <sstream>
+#include <cstring>
 
 using namespace PLMD;
 using namespace std;

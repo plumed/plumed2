@@ -12,8 +12,10 @@ namespace PLMD{
 /// of type checking on passed arguments.
 class WithCmd{
 public:
-  virtual ~WithCmd(){};
+  virtual ~WithCmd();
+/// Const val version, which indeed just overrides the const and call the virtual method.
   void cmd(const std::string& key,const void*val);
+/// This has to be implemented in daughter classes.
   virtual void cmd(const std::string& key,void*val=NULL)=0;
 };
 
@@ -24,6 +26,12 @@ void WithCmd::cmd(const std::string& key,const void*val){
 // in this manner, a const pointer can be used for val, allowing the user to pass
 // arguments such as cmd("pippo","pluto")
 // but here we override the const
+}
+
+inline
+WithCmd::~WithCmd(){
+// do nothing
+// here just to allow inheriting from this class properly
 }
 
 }

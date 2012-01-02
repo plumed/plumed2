@@ -2,6 +2,7 @@
 #include "PlumedMain.h"
 #include "Log.h"
 #include <cassert>
+#include <iostream>
 
 using namespace PLMD;
 
@@ -31,9 +32,14 @@ Action::Action(const ActionOptions&ao):
   log.printf("  with label %s\n",label.c_str());
 }
 
+Action::~Action(){
+  if(files.size()>0)
+     std::cerr<<"WARNING: some files open in Action were not properly closed\n";
+}
+
 FILE* Action::fopen(const char *path, const char *mode){
   bool write(false);
-  for(const char*p=mode;*p;p++) if(*p=='w') write=true;
+  for(const char*p=mode;*p;p++) if(*p=='w' || *p=='a' || *p=='+') write=true;
   FILE* fp;
   if(write && comm.Get_rank()!=0) fp=plumed.fopen("/dev/null",mode);
   else      fp=plumed.fopen(path,mode);

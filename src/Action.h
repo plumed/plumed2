@@ -104,7 +104,7 @@ protected:
 
 public:
   Action(const ActionOptions&);
-  virtual ~Action(){};
+  virtual ~Action();
 
   PlumedCommunicator& comm;
 

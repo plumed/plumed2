@@ -1,9 +1,9 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 #include "Grid.h"
+#include "PlumedMain.h"
 
 #include <cassert>
-#include <iostream>
 
 #define DP2CUTOFF 6.25
 
@@ -87,14 +87,23 @@ private:
 
 public:
   BiasMetaD(const ActionOptions&);
+  ~BiasMetaD();
   void calculate();
+  void update();
 };
 
 PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
 
+BiasMetaD::~BiasMetaD(){
+  if(BiasGrid_) delete BiasGrid_;
+  if(hillsfile_) fclose(hillsfile_);
+}
+
 BiasMetaD::BiasMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 sigma0_(getNumberOfArguments(),0.0),
+hillsfile_(NULL),
+BiasGrid_(NULL),
 height0_(0.0),
 biasf_(1.0),
 temp_(0.0),
@@ -186,7 +195,7 @@ grid_(false)
 
 void BiasMetaD::readGaussians(FILE* file)
 {
- int ncv=getNumberOfArguments();
+ unsigned ncv=getNumberOfArguments();
  double dummy;
  vector<double> center;
  vector<double> sigma;
@@ -211,7 +220,7 @@ void BiasMetaD::readGaussians(FILE* file)
 
 void BiasMetaD::writeGaussian(Gaussian hill, FILE* file)
 {
- int ncv=getNumberOfArguments();
+ unsigned ncv=getNumberOfArguments();
  fprintf(hillsfile_, "%10.3f   ", getTimeStep()*getStep());
  for(unsigned i=0;i<ncv;++i){fprintf(file, "%14.9f   ", hill.center[i]);}
  for(unsigned i=0;i<ncv;++i){fprintf(file, "%14.9f   ", hill.sigma[i]);}
@@ -224,7 +233,7 @@ void BiasMetaD::addGaussian(Gaussian hill)
 {
  if(!grid_){hills_.push_back(hill);} 
  else{
-  int ncv=getNumberOfArguments();
+  unsigned ncv=getNumberOfArguments();
   vector<unsigned> nneighb=getGaussianSupport(hill);
   vector<unsigned> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
   double* der=new double[ncv];
@@ -235,7 +244,7 @@ void BiasMetaD::addGaussian(Gaussian hill)
    vector<double> vder(der, der+ncv);
    BiasGrid_->addValueAndDerivatives(ineigh,bias,vder);
   }
-  delete(der);
+  delete [] der;
  }
 }
 
@@ -295,7 +304,7 @@ double BiasMetaD::getHeight(vector<double> cv)
  double height=height0_;
  if(welltemp_){
     double vbias=getBiasAndDerivatives(cv,NULL);
-    height=height0_*exp(-vbias/(temp_*(biasf_-1.0)));
+    height=height0_*exp(-vbias/(plumed.getAtoms().getKBoltzmann()*temp_*(biasf_-1.0)));
  } 
  return height;
 }
@@ -303,17 +312,8 @@ double BiasMetaD::getHeight(vector<double> cv)
 void BiasMetaD::calculate()
 {
   vector<double> cv;
-  int ncv=getNumberOfArguments();
+  unsigned ncv=getNumberOfArguments();
   for(unsigned i=0;i<ncv;++i){cv.push_back(getArgument(i));}
-
-  if(getStep()%stride_==0){
-// add a Gaussian
-   double height=getHeight(cv);
-   Gaussian newhill={cv,sigma0_,height}; 
-   addGaussian(newhill);
-// print on HILLS file
-   writeGaussian(newhill,hillsfile_);
-  }
 
   double* der=new double[ncv];
   for(unsigned i=0;i<ncv;++i){der[i]=0.0;}
@@ -327,7 +327,21 @@ void BiasMetaD::calculate()
    const double f=-der[i];
    setOutputForces(i,f);
   }
-  delete(der);
+
+  delete [] der;
+}
+
+void BiasMetaD::update(){
+  vector<double> cv(getNumberOfArguments());
+  for(unsigned i=0;i<cv.size();++i){cv[i]=getArgument(i);}
+  if(getStep()%stride_==0){
+// add a Gaussian
+   double height=getHeight(cv);
+   Gaussian newhill={cv,sigma0_,height};
+   addGaussian(newhill);
+// print on HILLS file
+   writeGaussian(newhill,hillsfile_);
+  }
 }
 
 }
