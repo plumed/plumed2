@@ -1,6 +1,7 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 #include "Grid.h"
+#include "PlumedMain.h"
 
 #include <cassert>
 #include <iostream>
@@ -304,7 +305,7 @@ double BiasMetaD::getHeight(vector<double> cv)
  double height=height0_;
  if(welltemp_){
     double vbias=getBiasAndForces(cv,NULL);
-    height=height0_*exp(-vbias/(temp_*(biasf_-1.0)));
+    height=height0_*exp(-vbias/(plumed.getAtoms().getKBoltzmann()*temp_*(biasf_-1.0)));
  } 
  return height;
 }
