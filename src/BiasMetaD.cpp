@@ -198,7 +198,7 @@ grid_(false)
 
 void BiasMetaD::readGaussians(FILE* file)
 {
- int ncv=getNumberOfArguments();
+ unsigned ncv=getNumberOfArguments();
  double dummy;
  vector<double> center;
  vector<double> sigma;
@@ -223,7 +223,7 @@ void BiasMetaD::readGaussians(FILE* file)
 
 void BiasMetaD::writeGaussian(Gaussian hill, FILE* file)
 {
- int ncv=getNumberOfArguments();
+ unsigned ncv=getNumberOfArguments();
  fprintf(hillsfile_, "%10.3f   ", getTimeStep()*getStep());
  for(unsigned i=0;i<ncv;++i){fprintf(file, "%14.9f   ", hill.center[i]);}
  for(unsigned i=0;i<ncv;++i){fprintf(file, "%14.9f   ", hill.sigma[i]);}
@@ -236,7 +236,7 @@ void BiasMetaD::addGaussian(Gaussian hill)
 {
  if(!grid_){hills_.push_back(hill);} 
  else{
-  int ncv=getNumberOfArguments();
+  unsigned ncv=getNumberOfArguments();
   vector<unsigned> nneighb=getNumberOfNeighbors(hill);
   vector<unsigned> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
   double* ff=new double[ncv];
@@ -313,7 +313,7 @@ double BiasMetaD::getHeight(vector<double> cv)
 
 void BiasMetaD::calculate(){
   vector<double> cv;
-  int ncv=getNumberOfArguments();
+  unsigned ncv=getNumberOfArguments();
   for(unsigned i=0;i<ncv;++i){cv.push_back(getArgument(i));}
 
   double* ff=new double[ncv];
