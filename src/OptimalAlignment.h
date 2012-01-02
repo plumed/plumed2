@@ -7,8 +7,6 @@
 #include "Log.h"
 #include <vector>
 
-using namespace std;
-
 namespace PLMD{
 
 
