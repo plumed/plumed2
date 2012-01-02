@@ -2,6 +2,7 @@
 #include "PlumedMain.h"
 #include "Log.h"
 #include <cassert>
+#include <iostream>
 
 using namespace PLMD;
 
@@ -29,6 +30,11 @@ Action::Action(const ActionOptions&ao):
   }
   assert(!plumed.getActionSet().selectWithLabel<Action*>(label));
   log.printf("  with label %s\n",label.c_str());
+}
+
+Action::~Action(){
+  if(files.size()>0)
+     std::cerr<<"WARNING: some files open in Action were not properly closed\n";
 }
 
 FILE* Action::fopen(const char *path, const char *mode){
