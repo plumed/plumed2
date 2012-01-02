@@ -84,8 +84,6 @@ public:
   double modulo2()const;
 /// compute the modulo
   double modulo()const;
-/// scale the vector by a factor s
-  void scale(double s);
 };
 
 inline
@@ -205,11 +203,6 @@ Vector delta(const Vector&v1,const Vector&v2){
 inline
 double Vector::modulo2()const{
   return d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
-}
-
-inline
-void Vector::scale(double s){
-  (*this) *=s;
 }
 
 inline
