@@ -229,10 +229,11 @@ void BiasMetaD::addGaussian(Gaussian hill)
   vector<unsigned> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
   double* ff=new double[ncv];
   for(unsigned i=0;i<neighbors.size();++i){
+   unsigned ineigh=neighbors[i];
    for(unsigned j=0;j<ncv;++j){ff[j]=0.0;}
-   double bias=evaluateGaussian(BiasGrid_->getPoint(i),hill,ff);
+   double bias=evaluateGaussian(BiasGrid_->getPoint(ineigh),hill,ff);
    vector<double> der(ff, ff+ncv);
-   BiasGrid_->addValueAndDerivatives(i,bias,der);
+   BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
   }
   delete(ff);
  }
