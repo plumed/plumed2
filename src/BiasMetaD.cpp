@@ -87,14 +87,20 @@ private:
 
 public:
   BiasMetaD(const ActionOptions&);
+  ~BiasMetaD();
   void calculate();
 };
 
 PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
 
+BiasMetaD::~BiasMetaD(){
+  if(BiasGrid_) delete BiasGrid_;
+}
+
 BiasMetaD::BiasMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 sigma0_(getNumberOfArguments(),0.0),
+BiasGrid_(NULL),
 height0_(0.0),
 biasf_(1.0),
 temp_(0.0),
