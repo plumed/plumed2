@@ -76,7 +76,7 @@ void GREX::cmd(const string&key,void*val){
        assert(allDeltaBias.size()==static_cast<unsigned>(intercomm.Get_size()));
        unsigned rep;
        Tools::convert(words[1],rep);
-       assert(rep>=0 && rep<allDeltaBias.size());
+       assert(rep<allDeltaBias.size());
        double d=allDeltaBias[rep]/(atoms.getMDUnits().energy/atoms.getUnits().energy);
        atoms.double2MD(d,val);
      } else{
