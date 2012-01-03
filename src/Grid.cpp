@@ -342,19 +342,6 @@ double SparseGrid::getValue(unsigned index)const{
  return value;
 }
 
-double SparseGrid::getValue(const vector<unsigned> &indices)const{
- return getValue(getIndex(indices));
-}
-
-double SparseGrid::getValue(const vector<double> &x)const{
- if(!dospline_){
-  return getValue(getIndex(x));
- } else {
-  vector<double> der(dimension_);
-  return getValueAndDerivatives(x,der);
- }
-}
-
 double SparseGrid::getValueAndDerivatives
  (unsigned index, vector<double>& der)const{
  assert(index>=0 && index<maxsize_ && usederiv_ && der.size()==dimension_);
@@ -367,71 +354,9 @@ double SparseGrid::getValueAndDerivatives
  return value;
 }
 
-double SparseGrid::getValueAndDerivatives
- (const vector<unsigned> & indices, vector<double>& der)const{
- return getValueAndDerivatives(getIndex(indices),der);
-}
-
-double SparseGrid::getValueAndDerivatives
- (const vector<double> & x, vector<double>& der)const{
- assert(der.size()==dimension_ && usederiv_);
-
-
-if(dospline_){
-  double X,X2,X3,value;
-  vector<double> fd(dimension_);
-  vector<double> C(dimension_);
-  vector<double> D(dimension_); 
-  vector<double> dder(dimension_);
-// reset
-  value=0.0;
-  for(unsigned int i=0;i<dimension_;++i) der[i]=0.0;
-
-  vector<unsigned> indices=getIndices(x);
-  vector<unsigned> neigh=getSplineNeighbors(indices);
-  vector<double>   xfloor=getPoint(x);
-
-// loop over neighbors
-  for(unsigned int ipoint=0;ipoint<neigh.size();++ipoint){
-   double grid=getValueAndDerivatives(neigh[ipoint],dder);
-   vector<unsigned> nindices=getIndices(neigh[ipoint]);
-   double ff=1.0;
-
-   for(unsigned j=0;j<dimension_;++j){
-    int x0=1;
-    if(nindices[j]==indices[j]) x0=0;
-    double dx=getDx()[j];
-    X=fabs((x[j]-xfloor[j])/dx-(double)x0);
-    X2=X*X;
-    X3=X2*X;
-    double yy;
-    if(fabs(grid)<0.0000001) yy=0.0;
-      else yy=-dder[j]/grid;
-    C[j]=(1.0-3.0*X2+2.0*X3) - (x0?-1.0:1.0)*yy*(X-2.0*X2+X3)*dx;
-    D[j]=( -6.0*X +6.0*X2) - (x0?-1.0:1.0)*yy*(1.0-4.0*X +3.0*X2)*dx; 
-    D[j]*=(x0?-1.0:1.0)/dx;
-    ff*=C[j];
-   }
-   for(unsigned j=0;j<dimension_;++j){
-    fd[j]=D[j];
-    for(unsigned i=0;i<dimension_;++i) if(i!=j) fd[j]*=C[i];
-   }
-   value+=grid*ff;
-   for(unsigned j=0;j<dimension_;++j) der[j]+=grid*fd[j];
-  }
-  return value;
- }else{
-  return getValueAndDerivatives(getIndex(x),der);
- }
-}
-
 void SparseGrid::setValue(unsigned index, double value){
  assert(index>=0 && index<maxsize_ && !usederiv_);
  map_[index]=value;
-}
-
-void SparseGrid::setValue(const vector<unsigned> & indices, double value){
- setValue(getIndex(indices),value); 
 }
 
 void SparseGrid::setValueAndDerivatives
@@ -441,18 +366,9 @@ void SparseGrid::setValueAndDerivatives
  der_[index]=der;
 }
 
-void SparseGrid::setValueAndDerivatives
-(const vector<unsigned> & indices, double value, vector<double>& der){
- setValueAndDerivatives(getIndex(indices),value,der); 
-}
-
 void SparseGrid::addValue(unsigned index, double value){
  assert(index>=0 && index<maxsize_ && !usederiv_);
  map_[index]+=value;
-}
-
-void SparseGrid::addValue(const vector<unsigned> & indices, double value){
- addValue(getIndex(indices),value);
 }
 
 void SparseGrid::addValueAndDerivatives
@@ -461,9 +377,4 @@ void SparseGrid::addValueAndDerivatives
  map_[index]+=value;
  der_[index].resize(dimension_);
  for(unsigned int i=0;i<dimension_;++i) der_[index][i]+=der[i]; 
-}
-
-void SparseGrid::addValueAndDerivatives
-(const vector<unsigned> & indices, double value, vector<double>& der){
- addValueAndDerivatives(getIndex(indices),value,der);
 }

@@ -103,25 +103,17 @@ class SparseGrid : public Grid
  
  /// get grid value
  double getValue(unsigned index) const;
- double getValue(const std::vector<unsigned> & indices) const;
- double getValue(const std::vector<double> & x) const;
 /// get grid value and derivatives
  double getValueAndDerivatives(unsigned index, std::vector<double>& der) const; 
- double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
- double getValueAndDerivatives(const std::vector<double> & x, std::vector<double>& der) const;
 
 /// set grid value 
  void setValue(unsigned index, double value);
- void setValue(const std::vector<unsigned> & indices, double value);
 /// set grid value and derivatives
  void setValueAndDerivatives(unsigned index, double value, std::vector<double>& der);
- void setValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der);
 /// add to grid value
  void addValue(unsigned index, double value); 
- void addValue(const std::vector<unsigned> & indices, double value);
 /// add to grid value and derivatives
  void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
- void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
 
  virtual ~SparseGrid(){};
 };
