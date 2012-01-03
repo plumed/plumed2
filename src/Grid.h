@@ -19,7 +19,7 @@ protected:
  bool dospline_, usederiv_;
 
  /// get "neighbors" for spline
- std::vector<unsigned> getSplineNeighbors(std::vector<unsigned> indices);
+ std::vector<unsigned> getSplineNeighbors(std::vector<unsigned> indices)const;
 
  /// clear grid
  virtual void clear();
@@ -50,20 +50,20 @@ public:
  std::vector<double> getPoint(std::vector<double> x) const;
 
 /// get neighbors
- std::vector<unsigned> getNeighbors(unsigned index,std::vector<unsigned> neigh);
- std::vector<unsigned> getNeighbors(std::vector<unsigned> indices,std::vector<unsigned> neigh);
- std::vector<unsigned> getNeighbors(std::vector<double> x,std::vector<unsigned> neigh);
+ std::vector<unsigned> getNeighbors(unsigned index,std::vector<unsigned> neigh) const;
+ std::vector<unsigned> getNeighbors(std::vector<unsigned> indices,std::vector<unsigned> neigh) const;
+ std::vector<unsigned> getNeighbors(std::vector<double> x,std::vector<unsigned> neigh) const;
 
 /// get grid size
  virtual unsigned getSize() const;
 /// get grid value
- virtual double getValue(unsigned index);
- virtual double getValue(std::vector<unsigned> indices);
- virtual double getValue(std::vector<double> x);
+ virtual double getValue(unsigned index) const;
+ virtual double getValue(std::vector<unsigned> indices) const;
+ virtual double getValue(std::vector<double> x) const;
 /// get grid value and derivatives
- virtual double getValueAndDerivatives(unsigned index, std::vector<double>& der); 
- virtual double getValueAndDerivatives(std::vector<unsigned> indices, std::vector<double>& der);
- virtual double getValueAndDerivatives(std::vector<double> x, std::vector<double>& der);
+ virtual double getValueAndDerivatives(unsigned index, std::vector<double>& der) const ;
+ virtual double getValueAndDerivatives(std::vector<unsigned> indices, std::vector<double>& der) const;
+ virtual double getValueAndDerivatives(std::vector<double> x, std::vector<double>& der) const;
 
 /// set grid value 
  virtual void setValue(unsigned index, double value);
@@ -86,9 +86,9 @@ class SparseGrid : public Grid
 {
 
  std::map<unsigned,double> map_;
- std::map<unsigned,double>::iterator it_;
+ typedef std::map<unsigned,double>::const_iterator iterator;
  std::map< unsigned,std::vector<double> > der_;
- std::map<unsigned,std::vector<double> >::iterator itder_;
+ typedef std::map<unsigned,std::vector<double> >::const_iterator iterator_der;
  
  protected:
  void clear(); 
@@ -102,13 +102,13 @@ class SparseGrid : public Grid
  double   getUsedSize() const;
  
  /// get grid value
- double getValue(unsigned index);
- double getValue(std::vector<unsigned> indices);
- double getValue(std::vector<double> x);
+ double getValue(unsigned index) const;
+ double getValue(std::vector<unsigned> indices) const;
+ double getValue(std::vector<double> x) const;
 /// get grid value and derivatives
- double getValueAndDerivatives(unsigned index, std::vector<double>& der); 
- double getValueAndDerivatives(std::vector<unsigned> indices, std::vector<double>& der);
- double getValueAndDerivatives(std::vector<double> x, std::vector<double>& der);
+ double getValueAndDerivatives(unsigned index, std::vector<double>& der) const; 
+ double getValueAndDerivatives(std::vector<unsigned> indices, std::vector<double>& der) const;
+ double getValueAndDerivatives(std::vector<double> x, std::vector<double>& der) const;
 
 /// set grid value 
  void setValue(unsigned index, double value);
