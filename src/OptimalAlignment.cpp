@@ -68,7 +68,7 @@ double OptimalAlignment::calculate( std::vector<Vector> & derivatives){
 	// destroy the kearsley object?
 
 	return err;
-};
+}
 /// this does the weighed alignment if the vector of alignment is different from displacement
 double OptimalAlignment::weightedAlignment( bool rmsd){
 	double tmp0,tmp1,walign,wdisplace,ndisplace,const1,ret;
@@ -230,7 +230,7 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 
 	//log.printf(" ERRR NEW %f \n",ret);
 	return ret;
-};
+}
 
 double OptimalAlignment::weightedFindiffTest( bool rmsd){
 
