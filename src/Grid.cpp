@@ -118,7 +118,7 @@ vector<double> Grid::getPoint(const vector<unsigned> & indices) const {
 }
 
 vector<double> Grid::getPoint(unsigned index) const {
- assert(index>=0 && index<maxsize_);
+ assert(index<maxsize_);
  return getPoint(getIndices(index));
 }
 
@@ -171,7 +171,7 @@ vector<unsigned> Grid::getNeighbors
 
 vector<unsigned> Grid::getNeighbors
  (unsigned index,const vector<unsigned> & nneigh)const{
- assert(index>=0 && index<maxsize_ && nneigh.size()==dimension_);
+ assert(index<maxsize_ && nneigh.size()==dimension_);
  return getNeighbors(getIndices(index),nneigh);
 }
 
@@ -198,7 +198,7 @@ vector<unsigned> Grid::getSplineNeighbors(const vector<unsigned> & indices)const
 // all the methods below should be overwritten by a class 
 // that inherits from Grid
 double Grid::getValue(unsigned index) const {
- assert(index>=0 && index<maxsize_);
+ assert(index<maxsize_);
  return grid_[index];
 }
 
@@ -217,7 +217,7 @@ double Grid::getValue(const vector<double> & x) const {
 
 double Grid::getValueAndDerivatives
  (unsigned index, vector<double>& der) const{
- assert(index>=0 && index<maxsize_ && usederiv_ && der.size()==dimension_);
+ assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  der=der_[index];
  return grid_[index];
 }
@@ -280,7 +280,7 @@ double Grid::getValueAndDerivatives
 }
 
 void Grid::setValue(unsigned index, double value){
- assert(index>=0 && index<maxsize_ && !usederiv_);
+ assert(index<maxsize_ && !usederiv_);
  grid_[index]=value;
 }
 
@@ -290,7 +290,7 @@ void Grid::setValue(const vector<unsigned> & indices, double value){
 
 void Grid::setValueAndDerivatives
  (unsigned index, double value, vector<double>& der){
- assert(index>=0 && index<maxsize_ && usederiv_ && der.size()==dimension_);
+ assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  grid_[index]=value;
  der_[index]=der;
 }
@@ -301,7 +301,7 @@ void Grid::setValueAndDerivatives
 }
 
 void Grid::addValue(unsigned index, double value){
- assert(index>=0 && index<maxsize_ && !usederiv_);
+ assert(index<maxsize_ && !usederiv_);
  grid_[index]+=value;
 }
 
@@ -311,7 +311,7 @@ void Grid::addValue(const vector<unsigned> & indices, double value){
 
 void Grid::addValueAndDerivatives
  (unsigned index, double value, vector<double>& der){
- assert(index>=0 && index<maxsize_ && usederiv_ && der.size()==dimension_);
+ assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  grid_[index]+=value;
  for(unsigned int i=0;i<dimension_;++i) der_[index][i]+=der[i];
 }
@@ -335,7 +335,7 @@ double SparseGrid::getUsedSize() const {
 }
 
 double SparseGrid::getValue(unsigned index)const{
- assert(index>=0 && index<maxsize_);
+ assert(index<maxsize_);
  double value=0.0;
  iterator it=map_.find(index);
  if(it!=map_.end()) value=it->second;
@@ -344,7 +344,7 @@ double SparseGrid::getValue(unsigned index)const{
 
 double SparseGrid::getValueAndDerivatives
  (unsigned index, vector<double>& der)const{
- assert(index>=0 && index<maxsize_ && usederiv_ && der.size()==dimension_);
+ assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  double value=0.0;
  for(unsigned int i=0;i<dimension_;++i) der[i]=0.0;
  iterator it=map_.find(index);
@@ -355,25 +355,25 @@ double SparseGrid::getValueAndDerivatives
 }
 
 void SparseGrid::setValue(unsigned index, double value){
- assert(index>=0 && index<maxsize_ && !usederiv_);
+ assert(index<maxsize_ && !usederiv_);
  map_[index]=value;
 }
 
 void SparseGrid::setValueAndDerivatives
  (unsigned index, double value, vector<double>& der){
- assert(index>=0 && index<maxsize_ && usederiv_ && der.size()==dimension_);
+ assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  map_[index]=value;
  der_[index]=der;
 }
 
 void SparseGrid::addValue(unsigned index, double value){
- assert(index>=0 && index<maxsize_ && !usederiv_);
+ assert(index<maxsize_ && !usederiv_);
  map_[index]+=value;
 }
 
 void SparseGrid::addValueAndDerivatives
  (unsigned index, double value, vector<double>& der){
- assert(index>=0 && index<maxsize_ && usederiv_ && der.size()==dimension_);
+ assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  map_[index]+=value;
  der_[index].resize(dimension_);
  for(unsigned int i=0;i<dimension_;++i) der_[index][i]+=der[i]; 
