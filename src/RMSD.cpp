@@ -72,6 +72,7 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 		// this changes the P1 according the running frame
 		(*myoptimalalignment).assignP0(positions);
 		ret=(*myoptimalalignment).calculate(derivatives);
+		//(*myoptimalalignment).weightedFindiffTest( true);
 		break;	
   }	
 

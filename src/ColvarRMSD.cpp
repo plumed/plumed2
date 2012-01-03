@@ -13,8 +13,13 @@ namespace PLMD{
 Calculate the RMSD with respect to a reference structure
 
 \par Syntax
+for an optimal alignment following Kearsley algorithm then 
 \verbatim
-RMSD REFERENCE=file.pdb
+RMSD REFERENCE=file.pdb TYPE=OPTIMAL
+\endverbatim
+else, for simple case (no optimal alignment but only translation) 
+\verbatim
+RMSD REFERENCE=file.pdb TYPE=SIMPLE
 \endverbatim
 
 ...

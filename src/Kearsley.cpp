@@ -207,6 +207,7 @@ double Kearsley::calculate(bool rmsd) {
 	q[2]=s*eigenvecs(0,2);
 	q[3]=s*eigenvecs(0,3);
 	err=eigenvals[0]/totalign;
+
 	if(verbose){
 		log.printf(" ERR: %f \n",err);
 		for (i=0;i<4;i++){
@@ -311,8 +312,6 @@ double Kearsley::calculate(bool rmsd) {
 
 	vector<double> dd_dr_temp;dd_dr_temp.resize(natoms);
 
-	vector<double> dm_r0_store;dm_r0_store.resize(3*3*3*natoms);
-	vector<double> dm_r1_store;dm_r1_store.resize(3*3*3*natoms);
 
 
 	vector<Vector> derr_dr1;
@@ -444,14 +443,7 @@ double Kearsley::calculate(bool rmsd) {
 			dm_r0[3][1][j]=dm_r0[1][3][j];
 			dm_r0[3][2][j]=dm_r0[2][3][j];
 
-			for(ll=0;ll<4;ll++){
-				for(mm=0;mm<4;mm++){
-					int ind=ll*3*3*natoms+mm*3*natoms+j*natoms+i;
-					dm_r0_store[ind]=dm_r0[ll][mm][j];
-					dm_r1_store[ind]=dm_r1[ll][mm][j];
 
-				};
-			};
 		};
 
 		/*

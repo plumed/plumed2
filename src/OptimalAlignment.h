@@ -9,29 +9,42 @@
 
 namespace PLMD{
 
-
-/// A class that implements Kearsley's calculation 
+/// A class that is intended to include or combine various optimal alignment algorithms
 
 class	OptimalAlignment 
 {
-  // kearsley should contain all the derivatives respect the rotation matrix and respect to the alignment 
-  Kearsley *mykearsley;	
-  // the optimal alignment should only contain the derivative respect the distance 
-   std::vector<double> displace;
-   std::vector<double> align;
-   std::vector<Vector> p0;
-   std::vector<Vector> p1;
-   std::vector<Vector> derrdp0;
-   std::vector<Vector> derrdp1;
-
-   Log &log;
-   bool fast;	
+	/// a pointer to the object that performs the optimal alignment via quaternions
+	Kearsley *mykearsley;
+	/// displacement vector : a double that says if the coordinate should be used in calculating the RMSD/MSD
+	std::vector<double> displace;
+	/// alignment vector: a double that says if the atom has to be used in reset COM and makeing the alignment
+	std::vector<double> align;
+	/// position of one frame (generally the MD)
+	std::vector<Vector> p0;
+	/// position of the reference frames
+	std::vector<Vector> p1;
+	/// derivatives of the error  respect to the p0 (MD running frame)
+	std::vector<Vector> derrdp0;
+	/// derivatives of the error respect to the p1 (static frame, do not remove: useful for SM)
+	std::vector<Vector> derrdp1;
+	/// the reference to the logfile
+	Log &log;
+	/// a bool that decides to make the fast version (alignment vec= displacement vec) or the slower case
+	bool fast;
 
 public:
-  OptimalAlignment( const  std::vector<double>  & align,  const std::vector<double>   & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log &log );
-  void assignP0(  const std::vector<Vector> & p0 );
-  void assignP1(  const std::vector<Vector> & p1 );
-  double calculate( std::vector<Vector> & derivatives);
+	/// the contructor
+	OptimalAlignment( const  std::vector<double>  & align,  const std::vector<double>   & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log &log );
+	/// assignment of the running frame p0
+	void assignP0(  const std::vector<Vector> & p0 );
+	/// assignment to the reference frame p1
+	void assignP1(  const std::vector<Vector> & p1 );
+	/// this does the real calculation
+	double calculate( std::vector<Vector> & derivatives);
+	/// this should perform the weighted alignment
+	double weightedAlignment( bool rmsd);
+	// a finite difference test
+	double weightedFindiffTest( bool rmsd);
 };
 
 }
