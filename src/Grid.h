@@ -100,6 +100,14 @@ class SparseGrid : public Grid
  
  unsigned getSize() const;
  double   getUsedSize() const;
+
+/// this is to access to Grid:: version of these methods (allowing overloading of virtual methods)
+ using Grid::getValue;
+ using Grid::getValueAndDerivatives;
+ using Grid::setValue;
+ using Grid::setValueAndDerivatives;
+ using Grid::addValue;
+ using Grid::addValueAndDerivatives;
  
  /// get grid value
  double getValue(unsigned index) const;
