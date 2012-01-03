@@ -19,14 +19,14 @@ protected:
  bool dospline_, usederiv_;
 
  /// get "neighbors" for spline
- std::vector<unsigned> getSplineNeighbors(std::vector<unsigned> indices)const;
+ std::vector<unsigned> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
  /// clear grid
  virtual void clear();
  
 public:
- Grid(std::vector<double> gmin, std::vector<double> gmax, std::vector<unsigned> nbin, 
-      std::vector<bool> pbc, bool dospline, bool usederiv, bool doclear=true);
+ Grid(const std::vector<double> & gmin, const std::vector<double> & gmax, const std::vector<unsigned> & nbin, 
+      const std::vector<bool> & pbc, bool dospline, bool usederiv, bool doclear=true);
 
 
 /// get lower boundary
@@ -42,41 +42,41 @@ public:
  
 /// methods to handle grid indices 
  std::vector<unsigned> getIndices(unsigned index) const;
- std::vector<unsigned> getIndices(std::vector<double> x) const;
- unsigned getIndex(std::vector<unsigned> indices) const;
- unsigned getIndex(std::vector<double> x) const;
+ std::vector<unsigned> getIndices(const std::vector<double> & x) const;
+ unsigned getIndex(const std::vector<unsigned> & indices) const;
+ unsigned getIndex(const std::vector<double> & x) const;
  std::vector<double> getPoint(unsigned index) const;
- std::vector<double> getPoint(std::vector<unsigned> indices) const;
- std::vector<double> getPoint(std::vector<double> x) const;
+ std::vector<double> getPoint(const std::vector<unsigned> & indices) const;
+ std::vector<double> getPoint(const std::vector<double> & x) const;
 
 /// get neighbors
- std::vector<unsigned> getNeighbors(unsigned index,std::vector<unsigned> neigh) const;
- std::vector<unsigned> getNeighbors(std::vector<unsigned> indices,std::vector<unsigned> neigh) const;
- std::vector<unsigned> getNeighbors(std::vector<double> x,std::vector<unsigned> neigh) const;
+ std::vector<unsigned> getNeighbors(unsigned index,const std::vector<unsigned> & neigh) const;
+ std::vector<unsigned> getNeighbors(const std::vector<unsigned> & indices,const std::vector<unsigned> & neigh) const;
+ std::vector<unsigned> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
 
 /// get grid size
  virtual unsigned getSize() const;
 /// get grid value
  virtual double getValue(unsigned index) const;
- virtual double getValue(std::vector<unsigned> indices) const;
- virtual double getValue(std::vector<double> x) const;
+ virtual double getValue(const std::vector<unsigned> & indices) const;
+ virtual double getValue(const std::vector<double> & x) const;
 /// get grid value and derivatives
  virtual double getValueAndDerivatives(unsigned index, std::vector<double>& der) const ;
- virtual double getValueAndDerivatives(std::vector<unsigned> indices, std::vector<double>& der) const;
- virtual double getValueAndDerivatives(std::vector<double> x, std::vector<double>& der) const;
+ virtual double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
+ virtual double getValueAndDerivatives(const std::vector<double> & x, std::vector<double>& der) const;
 
 /// set grid value 
  virtual void setValue(unsigned index, double value);
- virtual void setValue(std::vector<unsigned> indices, double value);
+ virtual void setValue(const std::vector<unsigned> & indices, double value);
 /// set grid value and derivatives
  virtual void setValueAndDerivatives(unsigned index, double value, std::vector<double>& der);
- virtual void setValueAndDerivatives(std::vector<unsigned> indices, double value, std::vector<double>& der);
+ virtual void setValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der);
 /// add to grid value
  virtual void addValue(unsigned index, double value); 
- virtual void addValue(std::vector<unsigned> indices, double value);
+ virtual void addValue(const std::vector<unsigned> & indices, double value);
 /// add to grid value and derivatives
  virtual void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
- virtual void addValueAndDerivatives(std::vector<unsigned> indices, double value, std::vector<double>& der); 
+ virtual void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
 
  virtual ~Grid(){};
 };
@@ -94,8 +94,8 @@ class SparseGrid : public Grid
  void clear(); 
  
  public:
- SparseGrid(std::vector<double> gmin, std::vector<double> gmax, std::vector<unsigned> nbin,
-            std::vector<bool> pbc, bool dospline, bool usederiv):
+ SparseGrid(const std::vector<double> & gmin, const std::vector<double> & gmax, const std::vector<unsigned> & nbin,
+            const std::vector<bool> & pbc, bool dospline, bool usederiv):
             Grid(gmin,gmax,nbin,pbc,dospline,usederiv,false){};
  
  unsigned getSize() const;
@@ -103,25 +103,25 @@ class SparseGrid : public Grid
  
  /// get grid value
  double getValue(unsigned index) const;
- double getValue(std::vector<unsigned> indices) const;
- double getValue(std::vector<double> x) const;
+ double getValue(const std::vector<unsigned> & indices) const;
+ double getValue(const std::vector<double> & x) const;
 /// get grid value and derivatives
  double getValueAndDerivatives(unsigned index, std::vector<double>& der) const; 
- double getValueAndDerivatives(std::vector<unsigned> indices, std::vector<double>& der) const;
- double getValueAndDerivatives(std::vector<double> x, std::vector<double>& der) const;
+ double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
+ double getValueAndDerivatives(const std::vector<double> & x, std::vector<double>& der) const;
 
 /// set grid value 
  void setValue(unsigned index, double value);
- void setValue(std::vector<unsigned> indices, double value);
+ void setValue(const std::vector<unsigned> & indices, double value);
 /// set grid value and derivatives
  void setValueAndDerivatives(unsigned index, double value, std::vector<double>& der);
- void setValueAndDerivatives(std::vector<unsigned> indices, double value, std::vector<double>& der);
+ void setValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der);
 /// add to grid value
  void addValue(unsigned index, double value); 
- void addValue(std::vector<unsigned> indices, double value);
+ void addValue(const std::vector<unsigned> & indices, double value);
 /// add to grid value and derivatives
  void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
- void addValueAndDerivatives(std::vector<unsigned> indices, double value, std::vector<double>& der); 
+ void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
 
  virtual ~SparseGrid(){};
 };

@@ -7,8 +7,8 @@
 using namespace std;
 using namespace PLMD;
 
-Grid::Grid(vector<double> gmin, vector<double> gmax, vector<unsigned> nbin,
-           vector<bool> pbc, bool dospline, bool usederiv, bool doclear){
+Grid::Grid(const vector<double> & gmin, const vector<double> & gmax, const vector<unsigned> & nbin,
+           const vector<bool> & pbc, bool dospline, bool usederiv, bool doclear){
 // various checks
  assert(gmax.size()==gmin.size());
  assert(gmax.size()==nbin.size());
@@ -70,7 +70,7 @@ unsigned Grid::getDimension() const {
 }
 
 // we are flattening arrays using a column-major order
-unsigned Grid::getIndex(vector<unsigned> indices) const {
+unsigned Grid::getIndex(const vector<unsigned> & indices) const {
  assert(indices.size()==dimension_);
  unsigned index=indices[dimension_-1];
  for(unsigned int i=dimension_-1;i>0;--i){
@@ -79,7 +79,7 @@ unsigned Grid::getIndex(vector<unsigned> indices) const {
  return index;
 }
 
-unsigned Grid::getIndex(vector<double> x) const {
+unsigned Grid::getIndex(const vector<double> & x) const {
  assert(x.size()==dimension_);
  return getIndex(getIndices(x));
 }
@@ -99,7 +99,7 @@ vector<unsigned> Grid::getIndices(unsigned index) const {
  return indices;
 }
 
-vector<unsigned> Grid::getIndices(vector<double> x) const {
+vector<unsigned> Grid::getIndices(const vector<double> & x) const {
  assert(x.size()==dimension_);
  vector<unsigned> indices;
  for(unsigned int i=0;i<dimension_;++i){
@@ -108,7 +108,7 @@ vector<unsigned> Grid::getIndices(vector<double> x) const {
  return indices;
 }
 
-vector<double> Grid::getPoint(vector<unsigned> indices) const {
+vector<double> Grid::getPoint(const vector<unsigned> & indices) const {
  assert(indices.size()==dimension_);
  vector<double> x;
  for(unsigned int i=0;i<dimension_;++i){
@@ -122,13 +122,13 @@ vector<double> Grid::getPoint(unsigned index) const {
  return getPoint(getIndices(index));
 }
 
-vector<double> Grid::getPoint(vector<double> x) const {
+vector<double> Grid::getPoint(const vector<double> & x) const {
  assert(x.size()==dimension_);
  return getPoint(getIndices(x));
 }
 
 vector<unsigned> Grid::getNeighbors
- (vector<unsigned> indices,vector<unsigned> nneigh)const{
+ (const vector<unsigned> &indices,const vector<unsigned> &nneigh)const{
  assert(indices.size()==dimension_ && nneigh.size()==dimension_);
 
  vector<unsigned> neighbors, small_bin; 
@@ -164,18 +164,18 @@ vector<unsigned> Grid::getNeighbors
 }
  
 vector<unsigned> Grid::getNeighbors
- (vector<double> x,vector<unsigned> nneigh)const{
+ (const vector<double> & x,const vector<unsigned> & nneigh)const{
  assert(x.size()==dimension_ && nneigh.size()==dimension_);
  return getNeighbors(getIndices(x),nneigh);
 }
 
 vector<unsigned> Grid::getNeighbors
- (unsigned index,vector<unsigned> nneigh)const{
+ (unsigned index,const vector<unsigned> & nneigh)const{
  assert(index>=0 && index<maxsize_ && nneigh.size()==dimension_);
  return getNeighbors(getIndices(index),nneigh);
 }
 
-vector<unsigned> Grid::getSplineNeighbors(vector<unsigned> indices)const{
+vector<unsigned> Grid::getSplineNeighbors(const vector<unsigned> & indices)const{
  assert(indices.size()==dimension_);
  vector<unsigned> neighbors;
  unsigned nneigh=pow(2.0,int(dimension_));
@@ -202,11 +202,11 @@ double Grid::getValue(unsigned index) const {
  return grid_[index];
 }
 
-double Grid::getValue(vector<unsigned> indices) const {
+double Grid::getValue(const vector<unsigned> & indices) const {
  return getValue(getIndex(indices));
 }
 
-double Grid::getValue(vector<double> x) const {
+double Grid::getValue(const vector<double> & x) const {
  if(!dospline_){
   return getValue(getIndex(x));
  } else {
@@ -223,12 +223,12 @@ double Grid::getValueAndDerivatives
 }
 
 double Grid::getValueAndDerivatives
- (vector<unsigned> indices, vector<double>& der) const{
+ (const vector<unsigned> & indices, vector<double>& der) const{
  return getValueAndDerivatives(getIndex(indices),der);
 }
 
 double Grid::getValueAndDerivatives
-(vector<double> x, vector<double>& der) const {
+(const vector<double> & x, vector<double>& der) const {
  assert(der.size()==dimension_ && usederiv_);
  
  if(dospline_){
@@ -284,7 +284,7 @@ void Grid::setValue(unsigned index, double value){
  grid_[index]=value;
 }
 
-void Grid::setValue(vector<unsigned> indices, double value){
+void Grid::setValue(const vector<unsigned> & indices, double value){
  setValue(getIndex(indices),value); 
 }
 
@@ -296,7 +296,7 @@ void Grid::setValueAndDerivatives
 }
 
 void Grid::setValueAndDerivatives
- (vector<unsigned> indices, double value, vector<double>& der){
+ (const vector<unsigned> & indices, double value, vector<double>& der){
  setValueAndDerivatives(getIndex(indices),value,der); 
 }
 
@@ -305,7 +305,7 @@ void Grid::addValue(unsigned index, double value){
  grid_[index]+=value;
 }
 
-void Grid::addValue(vector<unsigned> indices, double value){
+void Grid::addValue(const vector<unsigned> & indices, double value){
  addValue(getIndex(indices),value);
 }
 
@@ -317,7 +317,7 @@ void Grid::addValueAndDerivatives
 }
 
 void Grid::addValueAndDerivatives
- (vector<unsigned> indices, double value, vector<double>& der){
+ (const vector<unsigned> & indices, double value, vector<double>& der){
  addValueAndDerivatives(getIndex(indices),value,der);
 }
 
@@ -342,11 +342,11 @@ double SparseGrid::getValue(unsigned index)const{
  return value;
 }
 
-double SparseGrid::getValue(vector<unsigned> indices)const{
+double SparseGrid::getValue(const vector<unsigned> &indices)const{
  return getValue(getIndex(indices));
 }
 
-double SparseGrid::getValue(vector<double> x)const{
+double SparseGrid::getValue(const vector<double> &x)const{
  if(!dospline_){
   return getValue(getIndex(x));
  } else {
@@ -368,12 +368,12 @@ double SparseGrid::getValueAndDerivatives
 }
 
 double SparseGrid::getValueAndDerivatives
- (vector<unsigned> indices, vector<double>& der)const{
+ (const vector<unsigned> & indices, vector<double>& der)const{
  return getValueAndDerivatives(getIndex(indices),der);
 }
 
 double SparseGrid::getValueAndDerivatives
- (vector<double> x, vector<double>& der)const{
+ (const vector<double> & x, vector<double>& der)const{
  assert(der.size()==dimension_ && usederiv_);
 
 
@@ -430,7 +430,7 @@ void SparseGrid::setValue(unsigned index, double value){
  map_[index]=value;
 }
 
-void SparseGrid::setValue(vector<unsigned> indices, double value){
+void SparseGrid::setValue(const vector<unsigned> & indices, double value){
  setValue(getIndex(indices),value); 
 }
 
@@ -442,7 +442,7 @@ void SparseGrid::setValueAndDerivatives
 }
 
 void SparseGrid::setValueAndDerivatives
-(vector<unsigned> indices, double value, vector<double>& der){
+(const vector<unsigned> & indices, double value, vector<double>& der){
  setValueAndDerivatives(getIndex(indices),value,der); 
 }
 
@@ -451,7 +451,7 @@ void SparseGrid::addValue(unsigned index, double value){
  map_[index]+=value;
 }
 
-void SparseGrid::addValue(vector<unsigned> indices, double value){
+void SparseGrid::addValue(const vector<unsigned> & indices, double value){
  addValue(getIndex(indices),value);
 }
 
@@ -464,6 +464,6 @@ void SparseGrid::addValueAndDerivatives
 }
 
 void SparseGrid::addValueAndDerivatives
-(vector<unsigned> indices, double value, vector<double>& der){
+(const vector<unsigned> & indices, double value, vector<double>& der){
  addValueAndDerivatives(getIndex(indices),value,der);
 }
