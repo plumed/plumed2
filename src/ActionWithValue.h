@@ -3,8 +3,8 @@
 
 #include "Action.h"
 #include "Value.h"
+#include "PlumedException.h"
 #include <vector>
-#include <cassert>
 
 namespace PLMD{
 
@@ -91,7 +91,7 @@ double ActionWithValue::getForce(int n){
 
 inline
 void ActionWithValue::assertUnique(const std::string&name){
-  assert(!hasNamedValue(name));
+  plumed_massert(!hasNamedValue(name),"action " + getLabel() + " already has a value " + name);
 }
 
 inline

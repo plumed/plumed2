@@ -1,5 +1,6 @@
 #include "Value.h"
 #include "ActionWithValue.h"
+#include "PlumedException.h"
 
 using namespace PLMD;
 
@@ -16,7 +17,7 @@ Value::Value(ActionWithValue&action,const std::string& name):
 {}
 
 bool Value::isPeriodic()const{
-  assert(periodicity!=unset);
+  plumed_massert(periodicity!=unset,"periodicity should be set");
   return periodicity==periodic;
 }
 
@@ -48,7 +49,7 @@ void Value::enableDerivatives()
 }
 
 double Value::difference(double d1,double d2)const{
-  assert(periodicity!=unset);
+  plumed_massert(periodicity!=unset,"periodicity should be set to compute differences");
   if(periodicity==periodic){
     double s=(d2-d1)*inv_max_minus_min;
     s=Tools::pbc(s);

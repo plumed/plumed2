@@ -4,7 +4,7 @@
 #include <mpi.h>
 #endif
 #include <cstdlib>
-#include <cassert>
+#include "PlumedException.h"
 
 namespace PLMD{
 
@@ -107,7 +107,7 @@ void PlumedCommunicator::Bcast(T*b,int count,int root){
 template<class T>
 void PlumedCommunicator::Allgatherv(const T*sendbuf,int sendcount,T*recvbuf,const int*recvcounts,const int*displs){
 #if defined(__PLUMED_MPI)
-  assert(initialized());
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   void*s=const_cast<void*>((const void*)sendbuf);
   void*r=const_cast<void*>((const void*)recvbuf);
   int*rc=const_cast<int*>(recvcounts);
@@ -120,14 +120,14 @@ void PlumedCommunicator::Allgatherv(const T*sendbuf,int sendcount,T*recvbuf,cons
   (void) recvbuf;
   (void) recvcounts;
   (void) displs;
-  assert(0);
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 
 template<class T>
 void PlumedCommunicator::Allgather(const T*sendbuf,int sendcount,T*recvbuf,int recvcount){
 #if defined(__PLUMED_MPI)
-  assert(initialized());
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   void*s=const_cast<void*>((const void*)sendbuf);
   void*r=const_cast<void*>((const void*)recvbuf);
   if(s==NULL)s=MPI_IN_PLACE;
@@ -137,7 +137,7 @@ void PlumedCommunicator::Allgather(const T*sendbuf,int sendcount,T*recvbuf,int r
   (void) sendcount;
   (void) recvbuf;
   (void) recvcount;
-  assert(0);
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 
@@ -145,7 +145,7 @@ template <class T>
 PlumedCommunicator::Request PlumedCommunicator::Isend(const T*buf,int count,int source,int tag){
   Request req;
 #ifdef __PLUMED_MPI
-  assert(initialized());
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   void*s=const_cast<void*>((const void*)buf);
   MPI_Isend(s,count,getMPIType<T>(),source,tag,communicator,&req.r);
 #else
@@ -153,7 +153,7 @@ PlumedCommunicator::Request PlumedCommunicator::Isend(const T*buf,int count,int 
   (void) count;
   (void) source;
   (void) tag;
-  assert(0);
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
   return req;
 }
@@ -161,7 +161,7 @@ PlumedCommunicator::Request PlumedCommunicator::Isend(const T*buf,int count,int 
 template <class T>
 void PlumedCommunicator::Recv(T*buf,int count,int source,int tag,Status&status){
 #ifdef __PLUMED_MPI
-  assert(initialized());
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Recv(buf,count,getMPIType<T>(),source,tag,communicator,&status.s);
 #else
   (void) buf;
@@ -169,21 +169,21 @@ void PlumedCommunicator::Recv(T*buf,int count,int source,int tag,Status&status){
   (void) source;
   (void) tag;
   (void) status;
-  assert(0);
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 
 template <class T>
 void PlumedCommunicator::Recv(T*buf,int count,int source,int tag){
 #ifdef __PLUMED_MPI
-  assert(initialized());
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Recv(buf,count,getMPIType<T>(),source,tag,communicator,MPI_STATUS_IGNORE);
 #else
   (void) buf;
   (void) count;
   (void) source;
   (void) tag;
-  assert(0);
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 
@@ -191,10 +191,10 @@ template<class T>
 int PlumedCommunicator::Status::Get_count()const{
   int i;
 #ifdef __PLUMED_MPI
-  assert(initialized());
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Get_count(const_cast<MPI_Status*>(&s),getMPIType<T>(),&i);
 #else
-  assert(0);
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
   i=0;
 #endif
   return i;

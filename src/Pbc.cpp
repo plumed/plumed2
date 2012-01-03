@@ -1,5 +1,6 @@
 #include "Pbc.h"
 #include "Tools.h"
+#include "PlumedException.h"
 
 using namespace PLMD;
 
@@ -63,7 +64,7 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2)const{
       }
     }
     d=best;
-  } else assert(0);
+  } else plumed_merror("unknown pbc type");
   return d;
 }
 

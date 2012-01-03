@@ -1,5 +1,5 @@
 #include "PlumedMain.h"
-#include <cassert>
+#include "PlumedException.h"
 #include <cstdlib>
 
 using namespace PLMD;
@@ -26,12 +26,12 @@ extern "C" void*plumedmain_create(){
 }
 
 extern "C" void plumedmain_cmd(void*plumed,const char*key,const void*val){
-  assert(plumed); // ERROR: sending a cmd to an uninitialized plumed object
+  plumed_massert(plumed,"trying to use a plumed object which is not initialized");
   static_cast<PlumedMain*>(plumed)->cmd(key,val);
 }
 
 extern "C" void plumedmain_finalize(void*plumed){
-  assert(plumed); // ERROR: destructing an uninitialized plumed object
+  plumed_massert(plumed,"trying to deallocate a plumed object which is not initialized");
   delete static_cast<PlumedMain*>(plumed);
 }
 

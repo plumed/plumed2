@@ -1,7 +1,7 @@
 #include "Action.h"
 #include "PlumedMain.h"
 #include "Log.h"
-#include <cassert>
+#include "PlumedException.h"
 #include <iostream>
 
 using namespace PLMD;
@@ -28,7 +28,8 @@ Action::Action(const ActionOptions&ao):
     std::string s; Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
   }
-  assert(!plumed.getActionSet().selectWithLabel<Action*>(label));
+  plumed_massert(!plumed.getActionSet().selectWithLabel<Action*>(label),
+                "label " + label + " has been already used");
   log.printf("  with label %s\n",label.c_str());
 }
 
@@ -67,7 +68,7 @@ void Action::parseFlag(const std::string&key,bool & t){
 }
 
 void Action::addDependency(Action*action){
-  assert(this->after.count(action)==action->before.count(this));
+  plumed_massert(this->after.count(action)==action->before.count(this),"internal consistency of dependencies");
   this->after.insert(action);
   action->before.insert(this);
 }
@@ -126,7 +127,7 @@ void Action::exit(int c){
 }
 
 void Action::calculateNumericalDerivatives(){
-  assert(0);
+  plumed_merror("if you get here it means that you are trying to use numerical derivatives for a class that does not implement them");
 }
 
 void Action::prepare(){

@@ -1,5 +1,6 @@
 #include "ActionWithValue.h"
 #include "PlumedMain.h"
+#include "PlumedException.h"
 
 using namespace std;
 using namespace PLMD;
@@ -29,10 +30,10 @@ void ActionWithValue::check(const std::string&name){
   assertUnique(name);
   if(name==""){
     hasUnnamedValue=true;
-    assert(!hasMultipleValues);
+    plumed_massert(!hasMultipleValues,"cannot use unnamed components for a multicomponent Action");
   }else{
     hasMultipleValues=true;
-    assert(!hasUnnamedValue);
+    plumed_massert(!hasUnnamedValue,"cannot use unnamed components for a multicomponent Action");
   }
 }
 
@@ -57,7 +58,7 @@ bool ActionWithValue::hasNamedValue(const std::string&name)const{
 
 int ActionWithValue::getValueIndex(const std::string&name)const{
   for(unsigned i=0;i<values.size();++i) if(name==values[i]->getName()) return i;
-  assert(0);
+  plumed_merror("value not found" + name);
   return -1; // otherwise the compiler complains
 }
 

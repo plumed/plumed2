@@ -1,6 +1,7 @@
 #ifndef __PLUMED_AtomNumber_h
 #define __PLUMED_AtomNumber_h
-#include <cassert>
+
+#include "PlumedException.h"
 
 namespace PLMD{
 
@@ -68,7 +69,7 @@ unsigned AtomNumber::index()const{
 
 inline
 AtomNumber & AtomNumber::setSerial(unsigned i){
-  assert(i!=0);
+  plumed_massert(i>0,"serial of an atom cannot be zero");
   index_=i-1;
   return *this;
 }

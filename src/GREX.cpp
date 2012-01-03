@@ -1,6 +1,7 @@
 #include "GREX.h"
 #include "sstream"
 #include "PlumedMain.h"
+#include <cassert>
 
 using namespace std;
 using namespace PLMD;

@@ -2,6 +2,7 @@
 #include "ActionWithArguments.h"
 #include "ActionRegister.h"
 #include "PlumedCommunicator.h"
+#include <cassert>
 
 using namespace std;
 

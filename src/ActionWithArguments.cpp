@@ -1,6 +1,7 @@
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
 #include "PlumedMain.h"
+#include <cassert>
 
 using namespace std;
 using namespace PLMD;

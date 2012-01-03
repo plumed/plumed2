@@ -2,10 +2,10 @@
 #include "PlumedMain.h"
 #include <vector>
 #include <string>
-#include <cassert>
 #include "ActionWithValue.h"
 #include "Colvar.h"
 #include "ActionWithVirtualAtom.h"
+#include "PlumedException.h"
 
 using namespace std;
 using namespace PLMD;
@@ -23,7 +23,7 @@ lockRequestAtoms(false)
 }
 
 void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
-  assert(!lockRequestAtoms);
+  plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
   Atoms&atoms(plumed.getAtoms());
   int nat=a.size();
   indexes.resize(nat);
@@ -36,7 +36,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   clearDependencies();
   unique.clear();
   for(unsigned i=0;i<indexes.size();i++){
-    assert(indexes[i]<n);
+    plumed_massert(indexes[i]<n,"atom out of range");
     if(indexes[i]>=atoms.getNatoms()) addDependency(atoms.virtualAtomsActions[indexes[i]-atoms.getNatoms()]);
 // only real atoms are requested to lower level Atoms class
     else unique.insert(indexes[i]);
@@ -50,7 +50,7 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
 
 void ActionAtomistic::calculateNumericalDerivatives(){
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  assert(a);
+  plumed_massert(a,"only Actions with a value can be derived");
   const int nval=a->getNumberOfValues();
   const int natoms=getNatoms();
   std::vector<Vector> value(nval*natoms);
@@ -130,7 +130,7 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
        }
      }
    }
-   assert(ok);
+   plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 }
 

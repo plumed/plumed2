@@ -1,6 +1,6 @@
 #include "Tools.h"
 #include "AtomNumber.h"
-#include <cassert>
+#include "PlumedException.h"
 #include <sstream>
 #include <cstring>
 
@@ -86,8 +86,8 @@ bool Tools::getParsedLine(FILE* fp,vector<string> & words){
     if(w.size()==0) continue;
     if(inside && *(w.begin())=="..."){
       inside=false;
-      if(w.size()==2) assert(w[1]==words[0]);
-      assert(w.size()<=2);
+      if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" lines, if present, should be equal to first word of directive");
+      plumed_massert(w.size()<=2,"terminating \"...\" lines cannot consist of more than two words");
       w.clear();
     }else if(*(w.end()-1)=="..."){
       inside=true;
@@ -153,7 +153,7 @@ void Tools::interpretRanges(std::vector<std::string>&s){
     words=getWords(*p,"-");
     int a,b;
     if(words.size()==2 && convert(words[0],a) && convert(words[1],b)){
-      assert(b>=a);
+      plumed_massert(b>=a,"interpreting range \"" + words[0] + "-" + words[1] +"\", second atom should have higher index than first atom");
       for(int i=a;i<=b;i++){
         string ss;
         convert(i,ss);

@@ -3,8 +3,7 @@
 
 #include <vector>
 #include <string>
-#include <cassert>
-
+#include "PlumedException.h"
 
 namespace PLMD{
 
@@ -124,7 +123,7 @@ bool Value::checkForced()const{
 
 inline
 void Value::addForce(double f){
-  assert(hasDerivatives());
+  plumed_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   forced=true;
   inputForce+=f;
 }
