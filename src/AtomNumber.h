@@ -2,6 +2,7 @@
 #define __PLUMED_AtomNumber_h
 
 #include "PlumedException.h"
+#include <limits>
 
 namespace PLMD{
 
@@ -70,6 +71,7 @@ unsigned AtomNumber::index()const{
 inline
 AtomNumber & AtomNumber::setSerial(unsigned i){
   plumed_massert(i>0,"serial of an atom cannot be zero");
+  plumed_massert(i<std::numeric_limits<unsigned>::max()/2,"serial cannot be negative");
   index_=i-1;
   return *this;
 }
