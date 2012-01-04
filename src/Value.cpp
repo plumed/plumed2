@@ -10,7 +10,9 @@ Value::Value(ActionWithValue&action,const std::string& name):
   deriv(false),
   periodicity(unset),
   min(0.0),
-  max(0.0)
+  max(0.0),
+  max_minus_min(0.0),
+  inv_max_minus_min(0.0)
 {}
 
 bool Value::isPeriodic()const{
@@ -31,6 +33,8 @@ void Value::setPeriodicity(bool p){
 void Value::setDomain(double min,double max){
   this->min=min;
   this->max=max;
+  max_minus_min=max-min;
+  if(max_minus_min!=0.0) inv_max_minus_min=1.0/max_minus_min;
 }
 
 
@@ -46,9 +50,9 @@ void Value::enableDerivatives()
 double Value::difference(double d1,double d2)const{
   assert(periodicity!=unset);
   if(periodicity==periodic){
-    double s=(d2-d1)/(max-min);
+    double s=(d2-d1)*inv_max_minus_min;
     s=Tools::pbc(s);
-    return s*(max-min);
+    return s*max_minus_min;
   }else{
     return d2-d1;
   }

@@ -25,6 +25,8 @@ class Value{
   bool deriv;
   enum {unset,periodic,notperiodic} periodicity;
   double min,max;
+  double max_minus_min;
+  double inv_max_minus_min;
 public:
   Value(ActionWithValue&action,const std::string& name);
   void set(double);
