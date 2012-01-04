@@ -10,7 +10,7 @@ WARNINGS=-pedantic -Wall -Wextra -Wfloat-equal -Wwrite-strings -Wpointer-arith -
          -Wredundant-decls -Wvariadic-macros # -Werror
 
 CPPFLAGS=-D__PLUMED_HAS_DLOPEN $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE) \
-         -I/sw/include -I/sw/include/openmpi -D__PLUMED_HAS_MATHEVAL  -D__PLUMED_EXCEPTIONS
+         -I/sw/include -I/sw/include/openmpi -D__PLUMED_HAS_MATHEVAL
 CXXFLAGS=-O -fPIC $(WARNINGS) -Wstrict-null-sentinel -Wold-style-cast
 CFLAGS=-O -fPIC $(WARNINGS) \
        -Wdeclaration-after-statement -Wbad-function-cast -Wstrict-prototypes \

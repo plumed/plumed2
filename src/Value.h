@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include "PlumedException.h"
+#include "Tools.h"
 
 namespace PLMD{
 
@@ -128,8 +129,16 @@ void Value::addForce(double f){
   inputForce+=f;
 }
 
-
-
+inline
+double Value::difference(double d1,double d2)const{
+  if(periodicity==notperiodic){
+    return d2-d1;
+  }else if(periodicity==periodic){
+    double s=(d2-d1)*inv_max_minus_min;
+    s=Tools::pbc(s);
+    return s*max_minus_min;
+  } else plumed_merror("periodicity should be set to compute differences");
+}
 
 }
 

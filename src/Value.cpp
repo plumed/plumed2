@@ -48,18 +48,5 @@ void Value::enableDerivatives()
   deriv=true;derivatives.resize(action.getNumberOfParameters());
 }
 
-double Value::difference(double d1,double d2)const{
-  plumed_massert(periodicity!=unset,"periodicity should be set to compute differences");
-  if(periodicity==periodic){
-    double s=(d2-d1)*inv_max_minus_min;
-    s=Tools::pbc(s);
-    return s*max_minus_min;
-  }else{
-    return d2-d1;
-  }
-}
-
-
-
 
 
