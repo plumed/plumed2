@@ -13,6 +13,7 @@ namespace PLMD{
 
 class	OptimalAlignment 
 {
+private:
 	/// a pointer to the object that performs the optimal alignment via quaternions
 	Kearsley *mykearsley;
 	/// displacement vector : a double that says if the coordinate should be used in calculating the RMSD/MSD
@@ -44,7 +45,7 @@ public:
 	// this updates displace runtime
 	void assignDisplace(  const std::vector<double> & displace );
 	/// this does the real calculation
-	double calculate( std::vector<Vector> & derivatives);
+	double calculate( bool rmsd, std::vector<Vector> & derivatives);
 	/// this should perform the weighted alignment
 	double weightedAlignment( bool rmsd);
 	// a finite difference test

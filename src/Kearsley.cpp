@@ -77,24 +77,7 @@ double Kearsley::calculate(bool rmsd) {
 
 	}
 
-	if(totalign<1.e-5){
-	// case of trivial alignment
-         // set rotmat
-		rotmat0on1[0][0]= 1.0 ; rotmat0on1[0][1]= 0.0 ; rotmat0on1[0][2]= 0.0;
-		rotmat0on1[1][0]= 0.0 ; rotmat0on1[1][1]= 1.0 ; rotmat0on1[1][2]= 0.0;
-		rotmat0on1[2][0]= 0.0 ; rotmat0on1[2][1]= 0.0 ; rotmat0on1[2][2]= 0.0;
-		//
-		if (p0reset.size()==0){p0reset.resize(natoms);}
-		if (p1reset.size()==0){p1reset.resize(natoms);}
-		p0reset=p0;
-		p1reset=p1;
-		derrdp0.resize(natoms);
-		derrdp1.resize(natoms);
-		dmatdp0.resize(3*3*3*natoms);for(i=0;i<dmatdp0.size();i++)dmatdp0[i]=0.;
-		dmatdp1.resize(3*3*3*natoms);for(i=0;i<dmatdp1.size();i++)dmatdp1[i]=0.;
 
-		return 0.;
-	}
 	// later will be implemented something for optimizing this piece of crap
 
 	com0_is_removed=false;
@@ -165,6 +148,31 @@ double Kearsley::calculate(bool rmsd) {
 
 	}
 
+	bool fake=false;
+	if(fake){
+	// case of trivial alignment
+         // set rotmat
+		rotmat0on1[0][0]= 1.0 ; rotmat0on1[0][1]= 0.0 ; rotmat0on1[0][2]= 0.0;
+		rotmat0on1[1][0]= 0.0 ; rotmat0on1[1][1]= 1.0 ; rotmat0on1[1][2]= 0.0;
+		rotmat0on1[2][0]= 0.0 ; rotmat0on1[2][1]= 0.0 ; rotmat0on1[2][2]= 0.0;
+		//
+		if (p0reset.size()==0){p0reset.resize(natoms);}
+		if (p1reset.size()==0){p1reset.resize(natoms);}
+
+		derrdp0.resize(natoms);
+		derrdp1.resize(natoms);
+		dmatdp0.resize(3*3*3*natoms);for(i=0;i<dmatdp0.size();i++)dmatdp0[i]=0.;
+		dmatdp1.resize(3*3*3*natoms);for(i=0;i<dmatdp1.size();i++)dmatdp1[i]=0.;
+
+		err=0.;
+		for(i=0;i<natoms;i++){
+			if(align[i]>0.)err+=align[i]*(  (p0reset[i][0]-p1reset[i][0])* (p0reset[i][0]-p1reset[i][0])
+										+ (p0reset[i][1]-p1reset[i][1])* (p0reset[i][1]-p1reset[i][1])
+										+ (p0reset[i][2]-p1reset[i][2])* (p0reset[i][2]-p1reset[i][2])  );
+		}
+
+		return 0.;
+	}
 	//
 	// CLEAN M MATRIX
 

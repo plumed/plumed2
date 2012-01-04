@@ -51,8 +51,8 @@ void OptimalAlignment::assignDisplace(  const std::vector<double> & displace ){
 }
 
 
-double OptimalAlignment::calculate( std::vector<Vector> & derivatives){
-	bool rmsd=true;
+double OptimalAlignment::calculate(bool rmsd, std::vector<Vector> & derivatives){
+
 	double err;
 
 	// at this point everything should be already in place for calculating the alignment (p1,p2,align)
@@ -94,6 +94,7 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 	if (derrdp0.size()!=natoms)derrdp0.resize(natoms);
 	if (derrdp1.size()!=natoms)derrdp1.resize(natoms);
 
+	// clear the container
 	for(i=0;i<natoms;i++){
 		derrdp0[i][0]=derrdp0[i][1]=derrdp0[i][2]=0.;
 		derrdp1[i][0]=derrdp1[i][1]=derrdp1[i][2]=0.;
@@ -105,8 +106,6 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 		if (align[i]>0.){
 			alignmap.push_back(i);
 			walign+=align[i];
-			//log.printf("ALIGN %d %f\n",i,align[i]);
-
 		}
 		if (align[i]<0.){cerr<<"FOUND ALIGNMENT WEIGHT NEGATIVE!"<<endl;exit(0);};
 	}
@@ -117,7 +116,6 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 		if (displace[i]>0.){
 			displacemap.push_back(i);
 			wdisplace+=displace[i];
-			//log.printf("DISP %d %f\n",i,displace[i]);
 		}
 		if (displace[i]<0.){cerr<<"FOUND ALIGNMENT WEIGHT NEGATIVE!"<<endl;exit(0);};
 	}
@@ -149,11 +147,12 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 			array_n_3[k][l]=tmp1; // store coefficents for derivative usage//
 			tmp0+=tmp1*tmp1*displace[k]; //squared distance added//
 		}
+
 	}
 
 	tmp0=tmp0/wdisplace;
 
-   // log.printf(" ERRR NEW %f \n",tmp0);
+  // log.printf(" ERRR NEW %f \n",tmp0);
 
 	ret=tmp0;
 
@@ -163,7 +162,6 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 
 			tmp1 =2.*array_n_3[k][l]*displace[k]/wdisplace ; //ok
 
-			//log.printf("  TMP1  a %2d %2d a %20.10f \n",l,k,tmp1);
 			const1=2.*align[k]/(walign*wdisplace);
 
 			if(const1>0.){
@@ -172,7 +170,6 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 					tmp1 -=const1*array_n_3[o][l]*displace[o];   //ok
 				}
 			}
-			//	log.printf("  TMP1  b %2d %2d a %20.10f \n",l,k,tmp1);
 
 			for(mm=0;mm<displacemap.size();mm++){
 				m=displacemap[mm];
@@ -182,22 +179,20 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 					for(o=0;o<3;o++){
 						int ind=n*3*3*natoms+o*3*natoms+l*natoms+k;  //ok
 						tmp0+=myk->dmatdp0[ind]*myk->p1reset[m][o];
-						//log.printf("  GG : %f %f   tt %f\n",myk->dmatdp0[ind],myk->p1reset[m][o],tmp0);
 					}
-					//log.printf("  VV  %d %d :  %12.6f *%12.6f * %20.10f \n",m,n,const1,array_n_3[o][l],tmp0);
 					tmp0*=-const1*array_n_3[m][n];
 
 					tmp1+=tmp0;
 				}
 			}
-			//log.printf("  TMP1  c %2d %2d a %20.10f \n",l,k,tmp1);
 
 			derrdp0[k][l]=tmp1;
 
 		}
 	}
+	//exit(0);
 
-
+	//return ret;
 	bool do_frameref_der=true;
 
 	// derivatives of
@@ -281,7 +276,8 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 
 double OptimalAlignment::weightedFindiffTest( bool rmsd){
 
-	log.printf("Entering rmsd finite difference test system\n");
+	log.printf("Entering rmsd finite difference test system\n ");
+	log.printf("RMSD OR MSD: %s\n",(rmsd)?"rmsd":"msd");
 	log.printf("-------------------------------------------\n");
 	log.printf("TEST1: derivative of the value (derr_dr0/derr_dr1)\n");
 	//// test 1
@@ -298,30 +294,29 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	    if(delta>delta1){
 	    	align[i]=delta;
 	    }else{align[i]=0.;};
-	    align[i]=0.;
 	    delta=drand48();
 	    delta1=drand48();
 	    if(delta>delta1){
 	    	displace[i]=delta;
 	    }else{displace[i]=0.;}
-	    displace[i]=0.5;
 	}
 	//// get initial value of the error and derivative of it
 	assignAlign(align);
 	assignDisplace(displace);
-	olderr=calculate(fakederivatives);
+	olderr=calculate(rmsd, fakederivatives);
+
 	log.printf("INITIAL ERROR VALUE: %e\n",olderr);
 
 	// randomizing alignments and  displacements
 	log.printf("TESTING: derrdp0 \n");
+
 	for(unsigned j=0;j<3;j++){
 	   for(unsigned i=0;i<derrdp0.size();i++){
 	       // random displacement
 	       delta=(drand48()-0.5)*2*step;
 	       p0[i][j]+=delta;
 	       assignP0( p0 );
-	       err=calculate(fakederivatives);
-	       //log.printf("INITIAL ERROR VALUE: %e NEW ERROR %e DELTA %e ELEM %d %d \n",olderr,err,delta,i,j );
+	       err=calculate(rmsd, fakederivatives);
 	       p0[i][j]-=delta;
 	       assignP0( p0 );
 	       switch(j){
@@ -335,8 +330,6 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	       }
 	   }
 	}
-	//exit(0);
-
 
 	log.printf("TESTING: derrdp1 \n");
 	for(unsigned j=0;j<3;j++){
@@ -345,8 +338,7 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	       delta=(drand48()-0.5)*2*step;
 	       p1[i][j]+=delta;
 	       assignP1( p1 );
-	       err=calculate(fakederivatives);
-	       //log.printf("INITIAL ERROR VALUE: %e NEW ERROR %e DELTA %e ELEM %d %d \n",olderr,err,delta,i,j );
+	       err=calculate(rmsd, fakederivatives);
 	       p1[i][j]-=delta;
 	       assignP1( p1 );
 	       switch(j){
