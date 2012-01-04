@@ -73,6 +73,7 @@ private:
   double height0_;
   double biasf_;
   double temp_;
+  double* dp_;
   int stride_;
   bool welltemp_;
   bool restart_;
@@ -99,6 +100,7 @@ PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
 BiasMetaD::~BiasMetaD(){
   if(BiasGrid_) delete BiasGrid_;
   if(hillsfile_) fclose(hillsfile_);
+  delete [] dp_;
 }
 
 BiasMetaD::BiasMetaD(const ActionOptions& ao):
@@ -109,6 +111,7 @@ BiasGrid_(NULL),
 height0_(0.0),
 biasf_(1.0),
 temp_(0.0),
+dp_(NULL),
 stride_(0),
 welltemp_(false),
 restart_(false),
@@ -171,6 +174,9 @@ grid_(false)
   }
   
   addValue("bias");
+
+// for performance
+   dp_ = new double[getNumberOfArguments()];
 
 // initializing grid
   if(grid_){
@@ -285,18 +291,18 @@ double BiasMetaD::getBiasAndDerivatives(vector<double>& cv, double* der)
 double BiasMetaD::evaluateGaussian
  (vector<double>& cv, Gaussian& hill, double* der)
 {
- vector<double> dp;
  double dp2=0.0;
  double bias=0.0;
  for(unsigned i=0;i<cv.size();++i){
-  dp.push_back(difference(i,hill.center[i],cv[i])/hill.sigma[i]);
-  dp2+=dp[i]*dp[i];
+  double dp=difference(i,hill.center[i],cv[i])/hill.sigma[i];
+  dp2+=dp*dp;
+  dp_[i]=dp;
  }
  dp2*=0.5;
  if(dp2<DP2CUTOFF){
   bias=hill.height*exp(-dp2);
   if(der){
-   for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp[i]/hill.sigma[i];}
+   for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp_[i]/hill.sigma[i];}
   }
  }
  return bias;
