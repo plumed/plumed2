@@ -4,9 +4,9 @@
 #include "PlumedCommunicator.h"
 #include "Tensor.h"
 #include "Units.h"
+#include "PlumedException.h"
 #include <vector>
 #include <set>
-#include <cassert>
 #include <map>
 #include <string>
 
@@ -131,7 +131,7 @@ public:
   void add(const ActionAtomistic*);
   void remove(const ActionAtomistic*);
 
-  double getEnergy()const{assert(collectEnergy);return energy;};
+  double getEnergy()const{plumed_assert(collectEnergy);return energy;};
 
   void setMDEnergyUnits(double d){MDUnits.energy=d;};
   void setMDLengthUnits(double d){MDUnits.length=d;};

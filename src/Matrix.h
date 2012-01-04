@@ -7,9 +7,13 @@
 #include "Tools.h"
 #include "Log.h"
 
-/// This puts an undescore after after the names of lapack routines
-#ifndef F77_FUNC
+#if defined(F77_NO_UNDERSCORE)
+/// This is for AIX
+#define F77_FUNC(name,NAME) name
+#else
+/// Default: put the underscore
 #define F77_FUNC(name,NAME) name ## _
+/// other cases may be added as we find them...
 #endif
 
 extern "C" {

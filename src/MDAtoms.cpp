@@ -1,7 +1,8 @@
-#include <cassert>
 #include <algorithm>
 #include <string>
 #include "MDAtoms.h"
+#include "Tools.h"
+#include "PlumedException.h"
 
 using namespace PLMD;
 using namespace std;
@@ -63,7 +64,9 @@ MDAtomsBase* MDAtomsBase::create(int p){
   } else if (p==sizeof(float)){
     return new MDAtomsTyped<float>;
   }
-  assert(0);
+  std::string pp;
+  Tools::convert(p,pp);
+  plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
   return NULL;
 }
 
@@ -136,7 +139,7 @@ int MDAtomsTyped<T>::getRealPrecision()const{
 template <class T>
 void MDAtomsTyped<T>::setp(void*pp){
   T*p=static_cast<T*>(pp);
-  assert(stride==0 || stride==3);
+  plumed_assert(stride==0 || stride==3);
   px=p;
   py=p+1;
   pz=p+2;
@@ -152,7 +155,7 @@ void MDAtomsTyped<T>::setBox(void*pp){
 template <class T>
 void MDAtomsTyped<T>::setf(void*ff){
   T*f=static_cast<T*>(ff);
-  assert(stride==0 || stride==3);
+  plumed_assert(stride==0 || stride==3);
   fx=f;
   fy=f+1;
   fz=f+2;
@@ -162,7 +165,7 @@ void MDAtomsTyped<T>::setf(void*ff){
 template <class T>
 void MDAtomsTyped<T>::setp(void*pp,int i){
   T*p=static_cast<T*>(pp);
-  assert(stride==0 || stride==1);
+  plumed_assert(stride==0 || stride==1);
   if(i==0)px=p;
   if(i==1)py=p;
   if(i==2)pz=p;
@@ -178,7 +181,7 @@ void MDAtomsTyped<T>::setVirial(void*pp){
 template <class T>
 void MDAtomsTyped<T>::setf(void*ff,int i){
   T*f=static_cast<T*>(ff);
-  assert(stride==0 || stride==1);
+  plumed_assert(stride==0 || stride==1);
   if(i==0)fx=f;
   if(i==1)fy=f;
   if(i==2)fz=f;

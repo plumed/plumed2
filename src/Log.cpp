@@ -1,8 +1,8 @@
+#include <cstdarg>
+#include <cstring>
 #include "Log.h"
 #include "PlumedCommunicator.h"
-#include <cstdarg>
-#include <cassert>
-#include <cstring>
+#include "PlumedException.h"
 
 using namespace std;
 using namespace PLMD;
@@ -14,7 +14,7 @@ int Log::printf(const char*fmt,...){
   va_start(arg, fmt);
   int r=vsnprintf(&buffer[pointer],buflen-pointer,fmt,arg);
   va_end(arg);
-  assert(r>-1 && r<buflen-pointer);
+  plumed_massert(r>-1 && r<buflen-pointer,"error using fmt string " + std::string(fmt));
 
 // Line is buffered until newline, then written with a PLUMED: prefix
   char*p1=buffer;

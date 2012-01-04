@@ -1,7 +1,6 @@
 #include "PlumedMain.h"
 #include "Tools.h"
 #include <cstring>
-#include <cassert>
 #include "ActionPilot.h"
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
@@ -12,6 +11,7 @@
 #include <cstdlib>
 #include "ActionRegister.h"
 #include "GREX.h"
+#include "PlumedException.h"
 
 using namespace PLMD;
 using namespace std;
@@ -35,6 +35,10 @@ PlumedMain::~PlumedMain(){
 /////////////////////////////////////////////////////////////
 //  MAIN INTERPRETER
 
+#define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after plumed initialization")
+#define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before plumed initialization")
+#define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
+
 void PlumedMain::cmd(const std::string & word,void*val){
 
   if(false){
@@ -42,126 +46,133 @@ void PlumedMain::cmd(const std::string & word,void*val){
 
 // words used at every MD steps:
   } else if(word=="setBox") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setBox(val);
   } else if(word=="setPositions") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setPositions(val);
   } else if(word=="setMasses") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setMasses(val);
   } else if(word=="setCharges") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setCharges(val);
   } else if(word=="setPositionsX") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setPositions(val,0);
   } else if(word=="setPositionsY") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setPositions(val,1);
   } else if(word=="setPositionsZ") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setPositions(val,2);
   } else if(word=="setVirial") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setVirial(val);
   } else if(word=="setEnergy") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setEnergy(val);
   } else if(word=="setForces") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setForces(val);
   } else if(word=="setForcesX") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setForces(val,0);
   } else if(word=="setForcesY") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setForces(val,1);
   } else if(word=="setForcesZ") {
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setForces(val,2);
   } else if(word=="calc") {
-       assert(initialized);
+       CHECK_INIT(initialized,word);
        calc();
   } else if(word=="prepareDependencies") {
-       assert(initialized);
+       CHECK_INIT(initialized,word);
        prepareDependencies();
   } else if(word=="shareData") {
-       assert(initialized);
+       CHECK_INIT(initialized,word);
        shareData();
   } else if(word=="prepareCalc") {
-       assert(initialized);
+       CHECK_INIT(initialized,word);
        prepareCalc();
   } else if(word=="performCalc") {
-       assert(initialized);
+       CHECK_INIT(initialized,word);
        performCalc();
   } else if(word=="setStep") {
-       assert(initialized);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        step=(*static_cast<int*>(val));
 // words used less frequently:
   } else if(word=="setAtomsNlocal"){
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setAtomsNlocal(*static_cast<int*>(val));
   } else if(word=="setAtomsGatindex"){
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setAtomsGatindex(static_cast<int*>(val));
   } else if(word=="setAtomsContiguous"){
-       assert(initialized);
-       assert(val);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setAtomsContiguous(*static_cast<int*>(val));
   } else if(word=="createFullList"){
-       assert(initialized);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.createFullList(static_cast<int*>(val));
   } else if(word=="getFullList"){
-       assert(initialized);
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.getFullList(static_cast<int**>(val));
   } else if(word=="clearFullList"){
-       assert(initialized);
+       CHECK_INIT(initialized,word);
        atoms.clearFullList();
   } else if(word=="read"){
-       assert(initialized);
+       CHECK_INIT(initialized,word);
        if(val)readInputFile(static_cast<char*>(val));
        else   readInputFile("plumed.dat");
   } else if(word=="clear"){
-       assert(initialized);
+       CHECK_INIT(initialized,word);
        actionSet.clearDelete();
   } else if(word=="getApiVersion"){
+       CHECK_NULL(val,word);
        *(static_cast<int*>(val))=1;
 // commands which can be used only before initialization:
   } else if(word=="init"){
-       assert(!initialized);
+       CHECK_NOTINIT(initialized,word);
        init();
   } else if(word=="setRealPrecision"){
-       assert(!initialized);
-       assert(val);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setRealPrecision(*static_cast<int*>(val));
   } else if(word=="setMDLengthUnits"){
-       assert(!initialized);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        double d;
        atoms.MD2double(val,d);
        atoms.setMDLengthUnits(d);
   } else if(word=="setMDEnergyUnits"){
-       assert(!initialized);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        double d;
        atoms.MD2double(val,d);
        atoms.setMDEnergyUnits(d);
   } else if(word=="setMDTimeUnits"){
-       assert(!initialized);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        double d;
        atoms.MD2double(val,d);
        atoms.setMDTimeUnits(d);
@@ -169,38 +180,40 @@ void PlumedMain::cmd(const std::string & word,void*val){
 // set the boltzman constant for MD in natural units (kb=1)
 // only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
 // use as cmd("setNaturalUnits")
-       assert(!initialized);
-       assert(!val);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setMDNaturalUnits(true);
   } else if(word=="setPlumedDat"){
-       assert(!initialized);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        plumedDat=static_cast<char*>(val);
   } else if(word=="setMPIComm"){
-       assert(!initialized);
+       CHECK_NOTINIT(initialized,word);
        comm.Set_comm(val);
        atoms.setDomainDecomposition(comm);
   } else if(word=="setMPIFComm"){
-       assert(!initialized);
+       CHECK_NOTINIT(initialized,word);
        comm.Set_fcomm(val);
        atoms.setDomainDecomposition(comm);
   } else if(word=="setNatoms"){
-       assert(!initialized);
-       assert(val);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setNatoms(*static_cast<int*>(val));
   } else if(word=="setTimestep"){
-       assert(!initialized);
-       assert(val);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        atoms.setTimeStep(val);
   } else if(word=="setMDEngine"){
-       assert(!initialized);
-       assert(val);
-       assert(MDEngine.length()==0);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        MDEngine=static_cast<char*>(val);
   } else if(word=="setLog"){
-       assert(!initialized);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        log.set(static_cast<FILE*>(val));
   } else if(word=="setLogFile"){
-       assert(!initialized);
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
        log.setFile(static_cast<char*>(val));
   } else {
 // multi word commands
@@ -215,17 +228,12 @@ void PlumedMain::cmd(const std::string & word,void*val){
        *(static_cast<int*>(val))=check;
      } else if(nw>1 && words[0]=="GREX"){
        if(!grex) grex=new GREX(*this);
-       assert(grex);
+       plumed_massert(grex,"error allocating grex");
        std::string kk=words[1];
        for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
        grex->cmd(kk.c_str(),val);
      } else{
-   // error
-       fprintf(stderr,"+++ PLUMED ERROR\n");
-       fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG '%s'\n",word.c_str());
-       fprintf(stderr,"+++ There might be a mistake in the MD code\n");
-       fprintf(stderr,"+++ or you may be using an out-dated plumed version\n");
-       exit(1);
+       plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
      };
   };
 }
@@ -263,7 +271,7 @@ void PlumedMain::init(){
 }
 
 void PlumedMain::readInputFile(std::string str){
-  assert(initialized);
+  plumed_assert(initialized);
   log.printf("FILE: %s\n",str.c_str());
   FILE*fp=fopen(str.c_str(),"r");
   std::vector<std::string> words;
@@ -272,11 +280,11 @@ void PlumedMain::readInputFile(std::string str){
     else if(words[0]=="ENDPLUMED") break;
     else if(words[0]=="LOAD") load(words);
     else if(words[0]=="_SET_SUFFIX"){
-      assert(words.size()==2);
+      plumed_assert(words.size()==2);
       setSuffix(words[1]);
     }
     else if(words[0]=="INCLUDE"){
-      assert(words.size()==2);
+      plumed_assert(words.size()==2);
       readInputFile(words[1]);
       continue;
     } else {
@@ -427,7 +435,7 @@ void PlumedMain::justApply(){
 void PlumedMain::load(std::vector<std::string> & words){
   if(DLLoader::installed()){
      string s=words[1];
-     assert(words.size()==2);
+     plumed_assert(words.size()==2);
      size_t n=s.find_last_of(".");
      string extension="";
      string base=s;
@@ -454,7 +462,7 @@ void PlumedMain::load(std::vector<std::string> & words){
      log<<"Loading shared library "<<s.c_str()<<"\n";
      log<<"Here is the new list of available actions\n";
      log<<actionRegister();
-  } else assert(0); // Loading not enabled; please recompile with -D__PLUMED_HAS_DLOPEN
+  } else plumed_merror("loading not enabled, please recompile with -D__PLUMED_HAS_DLOPEN");
 }
 
 double PlumedMain::getBias() const{
@@ -468,7 +476,7 @@ FILE* PlumedMain::fopen(const char *path, const char *mode){
   std::string ppathsuf=ppath+suffix;
   FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
   if(!fp) fp=std::fopen(const_cast<char*>(ppath.c_str()),const_cast<char*>(mmode.c_str()));
-  assert(fp);
+  plumed_massert(fp,"file " + ppath + "cannot be found");
   return fp;
 }
 

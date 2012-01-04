@@ -1,6 +1,6 @@
-#include "PlumedCommunicator.h"
 #include <cstdlib>
-#include <cassert>
+#include "PlumedCommunicator.h"
+#include "PlumedException.h"
 
 using namespace std;
 using namespace PLMD;
@@ -49,24 +49,24 @@ PlumedCommunicator::~PlumedCommunicator(){
 
 void PlumedCommunicator::Set_comm(void*val){
 #ifdef __PLUMED_MPI
- assert(initialized());
+ plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
  if(val) Set_comm(*(MPI_Comm*)val);
 #else
  (void) val;
- assert(0);
+ plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 
 void PlumedCommunicator::Set_fcomm(void*val){
 #ifdef __PLUMED_MPI
- assert(initialized());
+ plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val){
     MPI_Comm comm=MPI_Comm_f2c(*(MPI_Fint*)val);
     Set_comm(comm);
   }
 #else
   (void) val;
-  assert(0);
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 
@@ -102,20 +102,20 @@ bool PlumedCommunicator::initialized(){
 
 void PlumedCommunicator::Request::wait(){
 #ifdef __PLUMED_MPI
-  assert(initialized());
+ plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Wait(&r,MPI_STATUS_IGNORE);
 #else
-  assert(0);
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 
 void PlumedCommunicator::Request::wait(Status&s){
 #ifdef __PLUMED_MPI
-  assert(initialized());
+ plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Wait(&r,&s.s);
 #else
   (void) s;
-  assert(0);
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
 }
 

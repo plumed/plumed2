@@ -1,6 +1,5 @@
 #include "ActionPilot.h"
 #include "PlumedMain.h"
-#include <cassert>
 
 using namespace PLMD;
 using namespace std;

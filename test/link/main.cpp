@@ -10,7 +10,7 @@ int ddoit(){
 int main(int argc,char**argv){
   PLMD::Plumed plumed;
   bool inst=PLMD::Plumed::installed();
-  char* input="plumed.dat";
+  const char* input="plumed.dat";
 
   if(argc>1 && argv[1]) input=argv[1];
 

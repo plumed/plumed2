@@ -2,7 +2,6 @@
 #include "Log.h"
 #include "Tools.h"
 #include <algorithm>
-#include <cassert>
 #include <iostream>
 
 

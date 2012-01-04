@@ -2,6 +2,7 @@
 #include "ActionPilot.h"
 #include "ActionRegister.h"
 #include <cstdio>
+#include <cassert>
 
 using namespace PLMD;
 using namespace std;

@@ -19,7 +19,16 @@ ABMD ARG=x1,x2,... KAPPA=k1,k2,... MIN=a1,a2,... TO=a1,a2,...
 KAPPA specifies an array of force constants, one for each variable,
 and TO the target values of the restraints. Thus, the resulting potential is
 \f$
-  \sum_i \frac{k_i}{2} (x_i-a_i)^2
+V(\rho(t)) = \left \{ \begin{array}{ll} \frac{\alpha}{2}\left(\rho(t)-\rho_m(t)\right)^2, &\rho(t)>\rho_m(t)\\
+              0, & \rho(t)\le\rho_m(t), \end{array} \right .
+\f$
+where
+\f$
+\rho(t)=\left(CV(t)-TO\right)^2
+\f$
+and
+\f$
+\rho_m(t)=\min_{0\le\tau\le t}\rho(\tau).
 \f$.
 
 \par Example
@@ -50,6 +59,7 @@ PLUMED_REGISTER_ACTION(BiasRatchet,"ABMD")
 
 BiasRatchet::BiasRatchet(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
+to(0),
 min(getNumberOfArguments(),-1.0),
 kappa(getNumberOfArguments(),0.0)
 {
@@ -71,12 +81,14 @@ kappa(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
 
+  for(unsigned i=0;i<getNumberOfArguments();i++) {char str_min[6]; sprintf(str_min,"min_%i",i+1); addValue(str_min);}
   addValue("bias");
   addValue("force2");
 }
 
 
 void BiasRatchet::calculate(){
+  Value* value;
   double ene=0.0;
   double totf2=0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -91,8 +103,11 @@ void BiasRatchet::calculate(){
       ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
       totf2+=f*f;
     }
+    char str_min[6]; 
+    sprintf(str_min,"min_%i",i+1); 
+    value=getValue(str_min);
+    setValue(value,min[i]);
   };
-  Value* value;
   value=getValue("bias"); setValue(value,ene);
   value=getValue("force2");  setValue(value,totf2);
 }

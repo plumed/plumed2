@@ -3,8 +3,8 @@
 
 #include <vector>
 #include <string>
-#include <cassert>
-
+#include "PlumedException.h"
+#include "Tools.h"
 
 namespace PLMD{
 
@@ -25,6 +25,8 @@ class Value{
   bool deriv;
   enum {unset,periodic,notperiodic} periodicity;
   double min,max;
+  double max_minus_min;
+  double inv_max_minus_min;
 public:
   Value(ActionWithValue&action,const std::string& name);
   void set(double);
@@ -122,13 +124,21 @@ bool Value::checkForced()const{
 
 inline
 void Value::addForce(double f){
-  assert(hasDerivatives());
+  plumed_massert(hasDerivatives(),"forces can only be added to values with derivatives");
   forced=true;
   inputForce+=f;
 }
 
-
-
+inline
+double Value::difference(double d1,double d2)const{
+  if(periodicity==notperiodic){
+    return d2-d1;
+  }else if(periodicity==periodic){
+    double s=(d2-d1)*inv_max_minus_min;
+    s=Tools::pbc(s);
+    return s*max_minus_min;
+  } else plumed_merror("periodicity should be set to compute differences");
+}
 
 }
 

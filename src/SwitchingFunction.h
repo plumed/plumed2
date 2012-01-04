@@ -1,8 +1,8 @@
 #ifndef __PLUMED_SwitchingFunction_h
 #define __PLUMED_SwitchingFunction_h
 
-#include <cassert>
 #include <cmath>
+#include "PlumedException.h"
 
 namespace PLMD {
 
@@ -42,7 +42,7 @@ void SwitchingFunction::set(int nn,int mm,double r_0,double d_0){
 
 inline
 double SwitchingFunction::calculate(double distance,double&dfunc)const{
-  assert(init);
+  plumed_massert(init,"you are trying to use an unset SwitchingFunction");
   const double rdist = (distance-d_0)/r_0;
   double result=0.;
   if(rdist<=0.){

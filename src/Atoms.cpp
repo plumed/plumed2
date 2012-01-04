@@ -1,11 +1,9 @@
 #include "Atoms.h"
 #include "ActionAtomistic.h"
-#include <cassert>
-#include <algorithm>
-#include <string>
-
 #include "MDAtoms.h"
 #include "PlumedMain.h"
+#include <algorithm>
+#include <string>
 
 using namespace PLMD;
 using namespace std;
@@ -27,7 +25,7 @@ Atoms::Atoms(PlumedMain&plumed):
 }
 
 Atoms::~Atoms(){
-  assert(actions.size()==0);
+  plumed_massert(actions.size()==0,"there is some inconsistency in action added to atoms. some of them were not properly destroyed");
   delete mdatoms;
 }
 
@@ -195,7 +193,7 @@ void Atoms::add(const ActionAtomistic*a){
 
 void Atoms::remove(const ActionAtomistic*a){
   vector<const ActionAtomistic*>::iterator f=find(actions.begin(),actions.end(),a);
-  assert(f!=actions.end());
+  plumed_massert(f!=actions.end(),"cannot remove an action registered to atoms");
   actions.erase(f);
 }
 
@@ -239,10 +237,10 @@ int Atoms::getRealPrecision()const{
 }
 
 void Atoms::MD2double(const void*m,double&d)const{
-  assert(mdatoms); mdatoms->MD2double(m,d);
+  plumed_assert(mdatoms); mdatoms->MD2double(m,d);
 }
 void Atoms::double2MD(const double&d,void*m)const{
-  assert(mdatoms); mdatoms->double2MD(d,m);
+  plumed_assert(mdatoms); mdatoms->double2MD(d,m);
 }
 
 void Atoms::updateUnits(){
@@ -304,18 +302,18 @@ unsigned Atoms::addVirtualAtom(ActionWithVirtualAtom*a){
 
 void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a){
   unsigned n=positions.size();
-  assert(a==virtualAtomsActions[virtualAtomsActions.size()-1]);
+  plumed_massert(a==virtualAtomsActions[virtualAtomsActions.size()-1],"virtual atoms should be destroyed in reverse creation order");
   resizeVectors(n-1);
   virtualAtomsActions.pop_back();
 }
 
 void Atoms::insertGroup(const std::string&name,const std::vector<unsigned>&a){
-  assert(groups.count(name)==0);
+  plumed_massert(groups.count(name)==0,"group named "+name+" already exists");
   groups[name]=a;
 }
 
 void Atoms::removeGroup(const std::string&name){
-  assert(groups.count(name)==1);
+  plumed_massert(groups.count(name)==1,"cannot remove group named "+name);
   groups.erase(name);
 }
 

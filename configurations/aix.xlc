@@ -4,9 +4,10 @@ DOUBLEPRECISION=-qrealsize=8
 
 
 LIBS=-ldl
-DYNAMIC_LIBS=
+# fortran libraries are required here to link lapack
+DYNAMIC_LIBS= -L/cineca/prod/libraries/lapack/3.2.1/xl--10.1/lib -llapack -lessl -lxlf90
 
-CPPFLAGS=-D__PLUMED_HAS_DLOPEN $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE)
+CPPFLAGS=-D__PLUMED_HAS_DLOPEN $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE) -DF77_NO_UNDERSCORE
 #CXXFLAGS=-pedantic -Wall -O -fPIC
 #CFLAGS=-pedantic -Wall -O -fPIC
 CXXFLAGS=-O0 -G -qpic -qrtti=all
