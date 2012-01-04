@@ -78,7 +78,7 @@ bool Tools::getParsedLine(FILE* fp,vector<string> & words){
   words.clear();
   bool stat;
   bool inside=false;
-  while(stat=getline(fp,line)){
+  while((stat=getline(fp,line))){
     trimComments(line);
     trim(line);
     if(line.length()==0) continue;
@@ -106,7 +106,7 @@ bool Tools::getline(FILE* fp,string & line){
   const int bufferlength=5;
   char buffer[bufferlength];
   bool ret;
-  while(ret=fgets(buffer,bufferlength,fp)){
+  while((ret=fgets(buffer,bufferlength,fp))){
     line.append(buffer);
     if(buffer[strlen(buffer)-1]=='\n') break;
   };
