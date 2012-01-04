@@ -48,6 +48,10 @@ public:
  std::vector<double> getPoint(unsigned index) const;
  std::vector<double> getPoint(const std::vector<unsigned> & indices) const;
  std::vector<double> getPoint(const std::vector<double> & x) const;
+/// faster versions relying on preallocated vectors
+ void getPoint(unsigned index,std::vector<double> & point) const;
+ void getPoint(const std::vector<unsigned> & indices,std::vector<double> & point) const;
+ void getPoint(const std::vector<double> & x,std::vector<double> & point) const;
 
 /// get neighbors
  std::vector<unsigned> getNeighbors(unsigned index,const std::vector<unsigned> & neigh) const;

@@ -127,6 +127,25 @@ vector<double> Grid::getPoint(const vector<double> & x) const {
  return getPoint(getIndices(x));
 }
 
+void Grid::getPoint(unsigned index,std::vector<double> & point) const{
+ assert(index<maxsize_);
+ getPoint(getIndices(index),point);
+}
+
+void Grid::getPoint(const std::vector<unsigned> & indices,std::vector<double> & point) const{
+ assert(indices.size()==dimension_);
+ assert(point.size()==dimension_);
+ for(unsigned int i=0;i<dimension_;++i){
+  point[i]=(min_[i]+(double)(indices[i])*dx_[i]);
+ }
+}
+
+void Grid::getPoint(const std::vector<double> & x,std::vector<double> & point) const{
+ assert(x.size()==dimension_);
+ getPoint(getIndices(x),point);
+}
+
+
 vector<unsigned> Grid::getNeighbors
  (const vector<unsigned> &indices,const vector<unsigned> &nneigh)const{
  assert(indices.size()==dimension_ && nneigh.size()==dimension_);
