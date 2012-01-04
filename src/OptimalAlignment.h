@@ -39,6 +39,10 @@ public:
 	void assignP0(  const std::vector<Vector> & p0 );
 	/// assignment to the reference frame p1
 	void assignP1(  const std::vector<Vector> & p1 );
+	// this updates align runtime
+	void assignAlign(  const std::vector<double> & align );
+	// this updates displace runtime
+	void assignDisplace(  const std::vector<double> & displace );
 	/// this does the real calculation
 	double calculate( std::vector<Vector> & derivatives);
 	/// this should perform the weighted alignment

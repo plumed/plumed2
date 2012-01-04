@@ -32,7 +32,7 @@ OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  
 }
 
 void OptimalAlignment::assignP0(  const std::vector<Vector> & p0 ){
-	this->p0=p1;
+	this->p0=p0;
 	if(mykearsley!=NULL){mykearsley->assignP0(p0);}else{cerr<<"kearsley is not initialized"<<endl; exit(0);}
 }
 
@@ -40,6 +40,16 @@ void OptimalAlignment::assignP1(  const std::vector<Vector> & p1 ){
 	this->p1=p1;
 	if(mykearsley!=NULL){mykearsley->assignP1(p1);}else{cerr<<"kearsley is not initialized"<<endl; exit(0);}
 }
+
+void OptimalAlignment::assignAlign(  const std::vector<double> & align ){
+	this->align=align;
+	if(mykearsley!=NULL){mykearsley->assignAlign(align);}else{cerr<<"kearsley is not initialized"<<endl; exit(0);}
+}
+
+void OptimalAlignment::assignDisplace(  const std::vector<double> & displace ){
+	this->displace=displace;
+}
+
 
 double OptimalAlignment::calculate( std::vector<Vector> & derivatives){
 	bool rmsd=true;
@@ -52,17 +62,17 @@ double OptimalAlignment::calculate( std::vector<Vector> & derivatives){
 	err=mykearsley->calculate(rmsd);  // this calculates the MSD: transform into RMSD
 
 	// check findiff alignment
-	// mykearsley->finiteDifferenceInterface(rmsd);
+	 //mykearsley->finiteDifferenceInterface(rmsd);
 
 	if(fast){
-		log.printf("Doing fast: ERR %12.6f \n",err);
+		//log.printf("Doing fast: ERR %12.6f \n",err);
 		derrdp0=mykearsley->derrdp0;
 		derrdp1=mykearsley->derrdp1;
 		derivatives=derrdp0;
 	}else{
 		/// TODO this interface really sucks since is strongly asymmetric should be re-engineered.
 		err=weightedAlignment(rmsd);
-		log.printf("Doing slow: ERR %12.6f \n",err);
+		//log.printf("Doing slow: ERR %12.6f \n",err);
 		derivatives=derrdp0;
 	}
 	// destroy the kearsley object?
@@ -71,7 +81,7 @@ double OptimalAlignment::calculate( std::vector<Vector> & derivatives){
 };
 /// this does the weighed alignment if the vector of alignment is different from displacement
 double OptimalAlignment::weightedAlignment( bool rmsd){
-	double tmp0,tmp1,walign,wdisplace,ndisplace,const1,ret;
+	double tmp0,tmp1,walign,wdisplace,const1,ret;
 	unsigned  i,j,k,l,m,n,o,oo,mm,kk;
 
 	unsigned natoms=p0.size();
@@ -80,12 +90,23 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 
 	/// TODO : these two blocks can be calculated once forever after the initialization (exception for certain methods?)
 
+	/// clear derivatives
+	if (derrdp0.size()!=natoms)derrdp0.resize(natoms);
+	if (derrdp1.size()!=natoms)derrdp1.resize(natoms);
+
+	for(i=0;i<natoms;i++){
+		derrdp0[i][0]=derrdp0[i][1]=derrdp0[i][2]=0.;
+		derrdp1[i][0]=derrdp1[i][1]=derrdp1[i][2]=0.;
+	}
+
 	walign=0.;
 	vector<int> alignmap;
 	for(i=0;i<natoms;i++){
 		if (align[i]>0.){
 			alignmap.push_back(i);
 			walign+=align[i];
+			//log.printf("ALIGN %d %f\n",i,align[i]);
+
 		}
 		if (align[i]<0.){cerr<<"FOUND ALIGNMENT WEIGHT NEGATIVE!"<<endl;exit(0);};
 	}
@@ -96,6 +117,7 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 		if (displace[i]>0.){
 			displacemap.push_back(i);
 			wdisplace+=displace[i];
+			//log.printf("DISP %d %f\n",i,displace[i]);
 		}
 		if (displace[i]<0.){cerr<<"FOUND ALIGNMENT WEIGHT NEGATIVE!"<<endl;exit(0);};
 	}
@@ -105,9 +127,14 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 
 	vector<Vector> array_n_3;
 	array_n_3.resize(natoms);
+	for(i=0;i<array_n_3.size();i++)array_n_3[i][0]=array_n_3[i][1]=array_n_3[i][2]=0.;
 
-	for(kk=0;kk<displacemap.size();kk++){
-		k=displacemap[kk];
+	//    err= (1/totdisplace) sum_k_l   displace_k*((p0reset_k_l- sum_k_m rot_l_m*p1reset_k_m )**2)
+
+	//for(kk=0;kk<displacemap.size();kk++){
+	//	k=displacemap[kk];
+	for(k=0;k<natoms;k++){
+
 		for(l=0;l<3;l++){
 
 			tmp1=0.;
@@ -118,13 +145,11 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 
 			// contribution from running centered frame //
 			tmp1+= myk->p0reset[k][l];
-	//		log.printf("WEIGHTED %3d COMP %1d VAL %f  XX %f CUMUL %f \n",k,l,tmp1*sqrt(displace[k]/wdisplace),tmp1, tmp0);
 
 			array_n_3[k][l]=tmp1; // store coefficents for derivative usage//
 			tmp0+=tmp1*tmp1*displace[k]; //squared distance added//
 		}
 	}
-  //  log.printf(" ERRR NEW1 %f %f \n",tmp0,wdisplace);
 
 	tmp0=tmp0/wdisplace;
 
@@ -136,44 +161,67 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 	for(k=0;k<natoms;k++){
 		for(l=0;l<3;l++){
 
-			tmp1 =2.*array_n_3[k][l]*displace[k]/wdisplace ;
+			tmp1 =2.*array_n_3[k][l]*displace[k]/wdisplace ; //ok
 
+			//log.printf("  TMP1  a %2d %2d a %20.10f \n",l,k,tmp1);
 			const1=2.*align[k]/(walign*wdisplace);
 
-			if(const1!=0.){
+			if(const1>0.){
 				for(oo=0;oo<displacemap.size();oo++){
 					o=displacemap[oo];
-					tmp1 -=const1*array_n_3[o][l]*displace[o];
+					tmp1 -=const1*array_n_3[o][l]*displace[o];   //ok
 				}
 			}
+			//	log.printf("  TMP1  b %2d %2d a %20.10f \n",l,k,tmp1);
 
-				for(mm=0;mm<displacemap.size();mm++){
-					m=displacemap[mm];
-					const1=2.* displacemap[m]/wdisplace ;
-					for(n=0;n<3;n++){
-						tmp0=0.;
-						for(o=0;o<3;o++){
-							int ind=n*3*3*natoms+o*3*natoms+l*natoms+k;
-							tmp0+=myk->dmatdp0[ind]*myk->p1reset[m][o];
-						}
-						tmp0*=-const1*array_n_3[m][n];
-
-						tmp1+=tmp0;
+			for(mm=0;mm<displacemap.size();mm++){
+				m=displacemap[mm];
+				const1=2.* displace[m]/wdisplace ;
+				for(n=0;n<3;n++){
+					tmp0=0.;
+					for(o=0;o<3;o++){
+						int ind=n*3*3*natoms+o*3*natoms+l*natoms+k;  //ok
+						tmp0+=myk->dmatdp0[ind]*myk->p1reset[m][o];
+						//log.printf("  GG : %f %f   tt %f\n",myk->dmatdp0[ind],myk->p1reset[m][o],tmp0);
 					}
-				}
+					//log.printf("  VV  %d %d :  %12.6f *%12.6f * %20.10f \n",m,n,const1,array_n_3[o][l],tmp0);
+					tmp0*=-const1*array_n_3[m][n];
 
-			derrdp1[k][l]=tmp1;
+					tmp1+=tmp0;
+				}
+			}
+			//log.printf("  TMP1  c %2d %2d a %20.10f \n",l,k,tmp1);
+
+			derrdp0[k][l]=tmp1;
 
 		}
 	}
 
 
-	bool do_frameref_der;
+	bool do_frameref_der=true;
+
+	// derivatives of
+	//    err= (1/totdisplace) sum_k_l   displace_k*((p0reset_k_l- sum_m rot_l_m*p1reset_k_m )**2)
+	// respect p1:
+	// derr_dp1=(1/totdisplace) sum_k_l 2*displace_k*(p0reset_k_l- sum_m rot_l_m*p1reset_k_m )
+	// 									 *d/dp1 ( p0reset_k_l- sum_m rot_l_m*p1reset_k_m)
+	// =
+	// (1/totdisplace) sum_k_l 2*displace_k*(p0reset_k_l- sum_m rot_l_m*p1reset_k_m )*
+	//							*(d/dp1 p0reset_k_l
+	//								- sum_m (d/dp1  rot_l_m)*p1reset_k_m
+	//								- sum_m rot_l_m*(d/dp1 p1reset_k_m ) )
+	// =
+	// 				sum_k_l 2*displace_k/totdisplace* array_n_3_k_l
+	//							*(- sum_m (d/dp1  rot_l_m)*p1reset_k_m
+	//								- sum_m rot_l_m*(d/dp1 p1reset_k_m ) )
 
 	if(do_frameref_der){
 		for(k=0;k<natoms;k++){
+//			for(kk=0;kk<displacemap.size();kk++){
+//				k=displacemap[kk];
+
 			for(l=0;l<3;l++){
-				/////////////////////////////////////
+
 				tmp1=0.;
 				for(mm=0;mm<displacemap.size();mm++){
 					m=displacemap[mm];
@@ -197,6 +245,7 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 				tmp1+=-tmp0*2.*displace[k]/wdisplace;
 
 				tmp0=0.;
+
 				for(mm=0;mm<displacemap.size();mm++){
 					m=displacemap[mm];
 					for(o=0;o<3;o++){
@@ -207,7 +256,6 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 
 				derrdp1[k][l]=tmp1;
 
-				/////////////////////////////////////
 			}
 		}
 	}
@@ -228,7 +276,6 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 			}
 	}
 
-	//log.printf(" ERRR NEW %f \n",ret);
 	return ret;
 };
 
@@ -239,7 +286,7 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	log.printf("TEST1: derivative of the value (derr_dr0/derr_dr1)\n");
 	//// test 1
 	unsigned i,j,l,m;
-	double step=1.e-7,olderr,delta,delta1,err;
+	double step=1.e-8,olderr,delta,delta1,err;
 	vector<Vector> fakederivatives;
 	fakederivatives.resize(p0.size());
 	fast=false;
@@ -251,17 +298,46 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	    if(delta>delta1){
 	    	align[i]=delta;
 	    }else{align[i]=0.;};
+	    align[i]=0.;
 	    delta=drand48();
 	    delta1=drand48();
 	    if(delta>delta1){
 	    	displace[i]=delta;
 	    }else{displace[i]=0.;}
+	    displace[i]=0.5;
 	}
 	//// get initial value of the error and derivative of it
+	assignAlign(align);
+	assignDisplace(displace);
 	olderr=calculate(fakederivatives);
 	log.printf("INITIAL ERROR VALUE: %e\n",olderr);
 
 	// randomizing alignments and  displacements
+	log.printf("TESTING: derrdp0 \n");
+	for(unsigned j=0;j<3;j++){
+	   for(unsigned i=0;i<derrdp0.size();i++){
+	       // random displacement
+	       delta=(drand48()-0.5)*2*step;
+	       p0[i][j]+=delta;
+	       assignP0( p0 );
+	       err=calculate(fakederivatives);
+	       //log.printf("INITIAL ERROR VALUE: %e NEW ERROR %e DELTA %e ELEM %d %d \n",olderr,err,delta,i,j );
+	       p0[i][j]-=delta;
+	       assignP0( p0 );
+	       switch(j){
+	         case 0:
+	             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	         case 1:
+	             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	         case 2:
+	             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+
+	       }
+	   }
+	}
+	//exit(0);
+
+
 	log.printf("TESTING: derrdp1 \n");
 	for(unsigned j=0;j<3;j++){
 	   for(unsigned i=0;i<derrdp1.size();i++){
@@ -272,18 +348,20 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	       err=calculate(fakederivatives);
 	       //log.printf("INITIAL ERROR VALUE: %e NEW ERROR %e DELTA %e ELEM %d %d \n",olderr,err,delta,i,j );
 	       p1[i][j]-=delta;
+	       assignP1( p1 );
 	       switch(j){
 	         case 0:
-	             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta);break;
+	             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 1:
-	             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta);break;
+	             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 2:
-	             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta);break;
+	             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 
 	       }
 	   }
 	}
 	exit(0);
+
 }
 
 

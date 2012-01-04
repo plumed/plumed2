@@ -77,6 +77,24 @@ double Kearsley::calculate(bool rmsd) {
 
 	}
 
+	if(totalign<1.e-5){
+	// case of trivial alignment
+         // set rotmat
+		rotmat0on1[0][0]= 1.0 ; rotmat0on1[0][1]= 0.0 ; rotmat0on1[0][2]= 0.0;
+		rotmat0on1[1][0]= 0.0 ; rotmat0on1[1][1]= 1.0 ; rotmat0on1[1][2]= 0.0;
+		rotmat0on1[2][0]= 0.0 ; rotmat0on1[2][1]= 0.0 ; rotmat0on1[2][2]= 0.0;
+		//
+		if (p0reset.size()==0){p0reset.resize(natoms);}
+		if (p1reset.size()==0){p1reset.resize(natoms);}
+		p0reset=p0;
+		p1reset=p1;
+		derrdp0.resize(natoms);
+		derrdp1.resize(natoms);
+		dmatdp0.resize(3*3*3*natoms);for(i=0;i<dmatdp0.size();i++)dmatdp0[i]=0.;
+		dmatdp1.resize(3*3*3*natoms);for(i=0;i<dmatdp1.size();i++)dmatdp1[i]=0.;
+
+		return 0.;
+	}
 	// later will be implemented something for optimizing this piece of crap
 
 	com0_is_removed=false;
@@ -208,6 +226,8 @@ double Kearsley::calculate(bool rmsd) {
 	q[3]=s*eigenvecs(0,3);
 	err=eigenvals[0]/totalign;
 
+	//log.printf(" ERR: %20.10f \n",err);
+
 	if(verbose){
 		log.printf(" ERR: %f \n",err);
 		for (i=0;i<4;i++){
@@ -308,7 +328,10 @@ double Kearsley::calculate(bool rmsd) {
 	// allocate various arrays
 
 	dmatdp1.resize(3*3*3*natoms);
+	for(i=0;i<dmatdp1.size();i++)dmatdp1[i]=0.;
 	dmatdp0.resize(3*3*3*natoms);
+	for(i=0;i<dmatdp0.size();i++)dmatdp0[i]=0.;
+
 
 	vector<double> dd_dr_temp;dd_dr_temp.resize(natoms);
 
@@ -444,7 +467,11 @@ double Kearsley::calculate(bool rmsd) {
 			dm_r0[3][2][j]=dm_r0[2][3][j];
 
 
+
 		};
+
+		//log.printf("DMDR0 ALIGN %f AT %d VAL %f\n",align[i],i,dm_r0[0][0][j]);
+
 
 		/*
 		 * pi matrix : coefficents in per theory
@@ -460,6 +487,7 @@ double Kearsley::calculate(bool rmsd) {
 
 			derr_dr1[i][j]=0.;
 			derr_dr0[i][j]=0.;
+
 
 			for(k=0;k<4;k++){
 				for(l=0;l<4;l++){
@@ -752,13 +780,32 @@ void Kearsley::assignP0(const std::vector<Vector> & p0) {
 	com0_is_removed=false;
 }
 
+void Kearsley::assignAlign(const std::vector<double> & align) {
+	this->align=align;
+}
+
 void Kearsley::finiteDifferenceInterface(bool rmsd){
-log.printf("Entering rmsd finite difference test system\n");
+log.printf("Entering rmsd finite difference test system for kearsley\n");
 log.printf("-------------------------------------------\n");
 log.printf("TEST1: derivative of the value (derr_dr0/derr_dr1)\n");
 //// test 1
 unsigned i,j,l,m;
-double step=1.e-9,olderr,delta;
+double step=1.e-6,olderr,delta;
+// messing up a bit with align weights
+double delta1;
+vector<double> align1;
+align1.resize(p0.size());
+for (i=0;i<p0.size();i++){
+		// draw a random number
+	    delta=drand48();
+	    delta1=drand48();
+	    if(delta>delta1){
+	    //if(delta>0.3){
+	    	align1[i]=delta;
+	    }else{align1[i]=0.;};
+	   // log.printf("ALIGN %d IS %8.3f\n",i,align1[i]);
+}
+assignAlign(align1);
 //// get initial value of the error and derivative of it
 olderr=calculate(rmsd);
 log.printf("INITIAL ERROR VALUE: %e\n",olderr);
@@ -767,7 +814,8 @@ vector<Vector> old_derrdp0=derrdp0 ;
 vector<Vector> old_derrdp1=derrdp1 ;
 // store the matrix
 Tensor old_rotmat0on1=rotmat0on1,old_rotmat1on0=rotmat1on0;
-// store the deriv of matrix respect to atoms
+
+//// get initial value of the error and derivative of it
 
 log.printf("TESTING: derrdp1 \n");
 for(unsigned j=0;j<3;j++){
@@ -782,15 +830,16 @@ for(unsigned j=0;j<3;j++){
        p1[i][j]-=delta;
        switch(j){
          case 0:
-             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta);break;
+             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,align[i]);break;
          case 1:
-             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta);break;
+             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,align[i]);break;
          case 2:
-             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta);break;
+             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,align[i]);break;
 
        }
    }
 }
+//exit(0);
 log.printf("TESTING: derrdp0 \n");
 for(unsigned j=0;j<3;j++){
    for(unsigned i=0;i<derrdp0.size();i++){
@@ -804,11 +853,11 @@ for(unsigned j=0;j<3;j++){
        p0[i][j]-=delta;
        switch(j){
          case 0:
-             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta);break;
+             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,align[i]);break;
          case 1:
-             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta);break;
+             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,align[i]);break;
          case 2:
-             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta);break;
+             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,align[i]);break;
 
        }
    }
@@ -829,13 +878,13 @@ for(l=0;l<3;l++){
        	   int ind=l*3*3*p0.size()+m*3*p0.size()+j*p0.size()+i;
            switch(j){
            	 case 0:
-                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
            	 case 1:
-                 log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
            	 case 2:
-                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
            }
        }
@@ -858,13 +907,13 @@ for(l=0;l<3;l++){
            switch(j){
 
              case 0:
-                log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+                log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
              case 1:
-                 log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+                log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
              case 2:
-                 log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta);break;
+                log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
            }
        }

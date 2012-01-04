@@ -64,6 +64,8 @@ public:
   void assignP0(const std::vector<Vector> & p0);
   /// derivatives: derivative of the error respect p1
   void assignP1(const std::vector<Vector> & p1);
+  /// transfer the alignment vector
+  void assignAlign(const std::vector<double> & align);
   /// finite differences of all the relevant quantities: takes a bool which decides if giving back rmsd or not (msd in this case)
   void finiteDifferenceInterface(bool rmsd);
   // this makes the real calculation: the rmsd bool decides wether doing rmsd or msd
