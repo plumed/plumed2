@@ -170,7 +170,7 @@ void Atoms::wait(){
 void Atoms::updateForces(){
   if(forceOnEnergy*forceOnEnergy>epsilon){
      double alpha=1.0-forceOnEnergy;
-     mdatoms->rescaleForces(gatindex.size(),alpha);
+     mdatoms->rescaleForces(gatindex,alpha);
   }
   mdatoms->updateForces(gatindex,forces);
   if(!plumed.novirial && dd.Get_rank()==0) mdatoms->updateVirial(virial);
