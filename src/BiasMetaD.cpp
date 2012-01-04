@@ -65,6 +65,11 @@ private:
    vector<double> center;
    vector<double> sigma;
    double height;
+   vector<double> invsigma;
+   Gaussian(const vector<double> & center,const vector<double> & sigma,double height):
+     center(center),sigma(sigma),height(height),invsigma(sigma){
+       for(unsigned i=0;i<invsigma.size();++i)invsigma[i]=1.0/invsigma[i];
+     }
   };
   vector<double> sigma0_;
   vector<Gaussian> hills_;
@@ -222,8 +227,7 @@ void BiasMetaD::readGaussians(FILE* file)
   fscanf(file, "%lf", &dummy);
   nhills++;
   if(welltemp_){height*=(biasf_-1.0)/biasf_;}
-  Gaussian newhill={center,sigma,height}; 
-  addGaussian(newhill);
+  addGaussian(Gaussian(center,sigma,height));
  }     
  log.printf("  %d Gaussians read\n",nhills);
 }
@@ -294,7 +298,7 @@ double BiasMetaD::evaluateGaussian
  double dp2=0.0;
  double bias=0.0;
  for(unsigned i=0;i<cv.size();++i){
-  double dp=difference(i,hill.center[i],cv[i])/hill.sigma[i];
+  double dp=difference(i,hill.center[i],cv[i])*hill.invsigma[i];
   dp2+=dp*dp;
   dp_[i]=dp;
  }
@@ -302,7 +306,7 @@ double BiasMetaD::evaluateGaussian
  if(dp2<DP2CUTOFF){
   bias=hill.height*exp(-dp2);
   if(der){
-   for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp_[i]/hill.sigma[i];}
+   for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp_[i]*hill.invsigma[i];}
   }
  }
  return bias;
@@ -346,7 +350,7 @@ void BiasMetaD::update(){
   if(getStep()%stride_==0){
 // add a Gaussian
    double height=getHeight(cv);
-   Gaussian newhill={cv,sigma0_,height};
+   Gaussian newhill=Gaussian(cv,sigma0_,height);
    addGaussian(newhill);
 // print on HILLS file
    writeGaussian(newhill,hillsfile_);
