@@ -80,12 +80,12 @@ private:
   bool grid_;
   
   void   readGaussians(FILE*);
-  void   writeGaussian(Gaussian&,FILE*);
-  void   addGaussian(Gaussian&);
-  double getHeight(vector<double>&);
-  double getBiasAndDerivatives(vector<double>&,double* der=NULL);
-  double evaluateGaussian(vector<double>&,Gaussian&,double* der=NULL);
-  vector<unsigned> getGaussianSupport(Gaussian&);
+  void   writeGaussian(const Gaussian&,FILE*);
+  void   addGaussian(const Gaussian&);
+  double getHeight(const vector<double>&);
+  double getBiasAndDerivatives(const vector<double>&,double* der=NULL);
+  double evaluateGaussian(const vector<double>&, const Gaussian&,double* der=NULL);
+  vector<unsigned> getGaussianSupport(const Gaussian&);
 
 
 public:
@@ -228,7 +228,7 @@ void BiasMetaD::readGaussians(FILE* file)
  log.printf("  %d Gaussians read\n",nhills);
 }
 
-void BiasMetaD::writeGaussian(Gaussian& hill, FILE* file)
+void BiasMetaD::writeGaussian(const Gaussian& hill, FILE* file)
 {
  unsigned ncv=getNumberOfArguments();
  fprintf(hillsfile_, "%10.3f   ", getTimeStep()*getStep());
@@ -239,7 +239,7 @@ void BiasMetaD::writeGaussian(Gaussian& hill, FILE* file)
  fprintf(file, "%14.9f   %4.3f \n",height,biasf_);
 }
 
-void BiasMetaD::addGaussian(Gaussian& hill)
+void BiasMetaD::addGaussian(const Gaussian& hill)
 {
  if(!grid_){hills_.push_back(hill);} 
  else{
@@ -259,7 +259,7 @@ void BiasMetaD::addGaussian(Gaussian& hill)
  }
 }
 
-vector<unsigned> BiasMetaD::getGaussianSupport(Gaussian& hill)
+vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
 {
  vector<unsigned> nneigh;
  for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -269,7 +269,7 @@ vector<unsigned> BiasMetaD::getGaussianSupport(Gaussian& hill)
  return nneigh;
 }
 
-double BiasMetaD::getBiasAndDerivatives(vector<double>& cv, double* der)
+double BiasMetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 {
  double bias=0.0;
  if(!grid_){
@@ -289,7 +289,7 @@ double BiasMetaD::getBiasAndDerivatives(vector<double>& cv, double* der)
 }
 
 double BiasMetaD::evaluateGaussian
- (vector<double>& cv, Gaussian& hill, double* der)
+ (const vector<double>& cv, const Gaussian& hill, double* der)
 {
  double dp2=0.0;
  double bias=0.0;
@@ -308,7 +308,7 @@ double BiasMetaD::evaluateGaussian
  return bias;
 }
 
-double BiasMetaD::getHeight(vector<double>& cv)
+double BiasMetaD::getHeight(const vector<double>& cv)
 {
  double height=height0_;
  if(welltemp_){
