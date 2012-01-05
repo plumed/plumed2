@@ -2,7 +2,6 @@
 #include <cassert>
 #include <cmath>
 #include "Grid.h"
-#include <iostream>
 
 using namespace std;
 using namespace PLMD;
@@ -213,9 +212,7 @@ vector<unsigned> Grid::getSplineNeighbors(const vector<unsigned> & indices)const
  }
  return neighbors;
 }
- 
-// all the methods below should be overwritten by a class 
-// that inherits from Grid
+
 double Grid::getValue(unsigned index) const {
  assert(index<maxsize_);
  return grid_[index];
@@ -340,17 +337,50 @@ void Grid::addValueAndDerivatives
  addValueAndDerivatives(getIndex(indices),value,der);
 }
 
+void Grid::writeHeader(FILE* file){
+ fprintf(file,"#! DERIVATIVE %d\n",int(usederiv_));
+ fprintf(file,"#! NVAR      %2u\n",dimension_);
+ fprintf(file,"#! BIN"); 
+ for(unsigned i=0;i<dimension_;++i){fprintf(file," %14u",nbin_[i]);}
+ fprintf(file,"\n");
+ fprintf(file,"#! MIN");
+ for(unsigned i=0;i<dimension_;++i){fprintf(file," %14.9f",min_[i]);}                        
+ fprintf(file,"\n");
+ fprintf(file,"#! MAX");
+ for(unsigned i=0;i<dimension_;++i){fprintf(file," %14.9f",max_[i]);} 
+ fprintf(file,"\n");
+ fprintf(file,"#! PBC");
+ for(unsigned i=0;i<dimension_;++i){fprintf(file," %14d",int(pbc_[i]));}
+ fprintf(file,"\n");
+}
+
+void Grid::writeToFile(FILE* file){
+ vector<double> xx(dimension_);
+ vector<double> der(dimension_);
+ double f;
+ writeHeader(file);
+ for(unsigned i=0;i<getSize();++i){
+   xx=getPoint(i);
+   if(usederiv_){f=getValueAndDerivatives(i,der);} 
+   else{f=getValue(i);}
+   for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",xx[j]);}
+   fprintf(file,"  %14.9f  ",f);
+   if(usederiv_){for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",der[j]);}}
+   fprintf(file,"\n");
+ }
+}
+
 // Sparse version of grid with map
 void SparseGrid::clear(){
  map_.clear();
 }
 
 unsigned SparseGrid::getSize() const{
- return maxsize_;
+ return map_.size(); 
 }
 
-double SparseGrid::getUsedSize() const {
- return map_.size();
+unsigned SparseGrid::getMaxSize() const {
+ return maxsize_; 
 }
 
 double SparseGrid::getValue(unsigned index)const{
@@ -396,4 +426,21 @@ void SparseGrid::addValueAndDerivatives
  map_[index]+=value;
  der_[index].resize(dimension_);
  for(unsigned int i=0;i<dimension_;++i) der_[index][i]+=der[i]; 
+}
+
+void SparseGrid::writeToFile(FILE* file){
+ vector<double> xx(dimension_);
+ vector<double> der(dimension_);
+ double f;
+ writeHeader(file);
+ for(iterator it=map_.begin();it!=map_.end();it++){
+   unsigned i=(*it).first;
+   xx=getPoint(i);
+   if(usederiv_){f=getValueAndDerivatives(i,der);} 
+   else{f=getValue(i);}
+   for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",xx[j]);}
+   fprintf(file,"  %14.9f  ",f);
+   if(usederiv_){for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",der[j]);}}
+   fprintf(file,"\n");
+ }
 }

@@ -58,6 +58,9 @@ public:
  std::vector<unsigned> getNeighbors(const std::vector<unsigned> & indices,const std::vector<unsigned> & neigh) const;
  std::vector<unsigned> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
 
+/// write header for grid file
+ void writeHeader(FILE* file);
+
 /// get grid size
  virtual unsigned getSize() const;
 /// get grid value
@@ -82,6 +85,9 @@ public:
  virtual void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
  virtual void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
 
+/// dump grid on file
+ virtual void writeToFile(FILE*);
+
  virtual ~Grid(){};
 };
 
@@ -103,7 +109,7 @@ class SparseGrid : public Grid
             Grid(gmin,gmax,nbin,pbc,dospline,usederiv,false){};
  
  unsigned getSize() const;
- double   getUsedSize() const;
+ unsigned getMaxSize() const;
 
 /// this is to access to Grid:: version of these methods (allowing overloading of virtual methods)
  using Grid::getValue;
@@ -126,6 +132,9 @@ class SparseGrid : public Grid
  void addValue(unsigned index, double value); 
 /// add to grid value and derivatives
  void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
+
+/// dump grid on file
+ void writeToFile(FILE*);
 
  virtual ~SparseGrid(){};
 };
