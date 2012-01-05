@@ -1,7 +1,6 @@
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
 #include "PlumedMain.h"
-#include <cassert>
 
 using namespace std;
 using namespace PLMD;
@@ -16,7 +15,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
       string a=c[i].substr(0,dot);
       string name=c[i].substr(dot+1);
       if(a=="*"){
-        assert(name=="*");
+        plumed_massert(name=="*","arguments in the form *.something are not allowed, but for *.*");
         std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
         for(unsigned j=0;j<all.size();j++){
           for(int k=0;k<all[j]->getNumberOfValues();++k){
@@ -25,32 +24,32 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         };
       } else {
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-        assert(action);
+        plumed_massert(action,"cannot find action named " + a);
         if(name=="*"){
           vector<string> s=action->getValueNames();
           for(unsigned j=0;j<s.size();j++)arg.push_back(action->getValue(s[j]));
         } else {
-          assert(action->hasNamedValue(name));
+          plumed_massert(action->hasNamedValue(name),"action " + a + " has no component with name "+ name);
           arg.push_back(action->getValue(name));
         }
       }
     } else if(c[i]=="*"){
       std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
       for(unsigned j=0;j<all.size();j++){
-        assert(all[j]->hasNamedValue(""));
+        plumed_massert(all[j]->hasNamedValue(""),"action " + all[j]->getLabel() + " has no default component (unnamed one)");
         arg.push_back(all[j]->getValue(""));
       };
     } else{
       ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
-      assert(action);
-      assert(action->hasNamedValue(""));
+      plumed_massert(action,"cannot find action named " +c[i]);
+      plumed_massert(action->hasNamedValue(""),"action "+c[i]+" has no default component (unnamed one)");
       arg.push_back(action->getValue(""));
     }
   }
 }
 
 void ActionWithArguments::requestArguments(const vector<Value*> &arg){
-  assert(!lockRequestArguments);
+  plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
   arguments=arg;
   clearDependencies();
   for(unsigned i=0;i<arguments.size();i++) addDependency(&arguments[i]->getAction());
@@ -75,7 +74,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
 
 void ActionWithArguments::calculateNumericalDerivatives(){
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  assert(a);
+  plumed_massert(a,"cannot compute numerical derivatives for an action without values");
   const int nval=a->getNumberOfValues();
   const int npar=a->getNumberOfParameters();
   std::vector<double> value (nval*npar);

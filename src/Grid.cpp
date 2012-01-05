@@ -1,6 +1,7 @@
 #include <vector>
 #include <cassert>
 #include <cmath>
+#include <iostream>
 
 #include "Grid.h"
 
@@ -55,6 +56,10 @@ vector<double> Grid::getMax() const {
 
 vector<double> Grid::getDx() const {
  return dx_;
+}
+
+vector<bool> Grid::getIsPeriodic() const {
+ return pbc_;
 }
 
 vector<unsigned> Grid::getNbin() const {
@@ -447,12 +452,3 @@ void SparseGrid::writeToFile(FILE* file){
    fprintf(file,"\n");
  }
 }
-
-// auxiliary function not member of the class 
-Grid* readGridFromFile(FILE* file, bool dospline, bool dosparse, bool doder)
-{
- Grid* grid=NULL;
-// TO DO
- return grid;
-} 
-

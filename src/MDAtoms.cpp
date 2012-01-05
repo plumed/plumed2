@@ -16,6 +16,9 @@ template <class T>
 class MDAtomsTyped:
 public MDAtomsBase
 {
+  double scalep,scalef;
+  double scaleb,scalev;
+  int stride;
   T *m;
   T *c;
   T *px; T *py; T *pz;
@@ -32,6 +35,7 @@ public:
   void setf(void*f);
   void setp(void*p,int i);
   void setf(void*f,int i);
+  void setUnits(const Units&,const Units&);
   void MD2double(const void*m,double&d)const{
     d=double(*(static_cast<const T*>(m)));
   }
@@ -44,33 +48,12 @@ public:
   void getCharges(const vector<int>&index,vector<double>&)const;
   void updateVirial(const Tensor&)const;
   void updateForces(const vector<int>&index,const vector<Vector>&);
-  void rescaleForces(int n,double factor);
-  int  getRealPrecision()const;
+  void rescaleForces(const vector<int>&index,double factor);
+  unsigned  getRealPrecision()const;
 };
 
-
-MDAtomsBase::MDAtomsBase():
-  scalep(1.0),
-  scalef(1.0),
-  scaleb(1.0),
-  scalev(1.0),
-  stride(0)
-{
-}
-
-MDAtomsBase* MDAtomsBase::create(int p){
-  if(p==sizeof(double)){
-    return new MDAtomsTyped<double>;
-  } else if (p==sizeof(float)){
-    return new MDAtomsTyped<float>;
-  }
-  std::string pp;
-  Tools::convert(p,pp);
-  plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
-  return NULL;
-}
-
-void MDAtomsBase::setUnits(const Units& units,const Units& MDUnits){
+template <class T>
+void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits){
   double lscale=units.length/MDUnits.length;
   double escale=units.energy/MDUnits.energy;
 // scalep and scaleb are used to convert MD to plumed
@@ -123,8 +106,8 @@ void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&
 }
 
 template <class T>
-void MDAtomsTyped<T>::rescaleForces(int n,double factor){
-  for(int i=0;i<n;++i){
+void MDAtomsTyped<T>::rescaleForces(const vector<int>&index,double factor){
+  for(unsigned i=0;i<index.size();++i){
     fx[stride*i]*=T(factor);
     fy[stride*i]*=T(factor);
     fz[stride*i]*=T(factor);
@@ -132,7 +115,7 @@ void MDAtomsTyped<T>::rescaleForces(int n,double factor){
 }
 
 template <class T>
-int MDAtomsTyped<T>::getRealPrecision()const{
+unsigned MDAtomsTyped<T>::getRealPrecision()const{
   return sizeof(T);
 }
 
@@ -200,6 +183,11 @@ void MDAtomsTyped<T>::setc(void*c){
 
 template <class T>
 MDAtomsTyped<T>::MDAtomsTyped():
+  scalep(1.0),
+  scalef(1.0),
+  scaleb(1.0),
+  scalev(1.0),
+  stride(0),
   m(NULL),
   c(NULL),
   px(NULL),
@@ -211,6 +199,18 @@ MDAtomsTyped<T>::MDAtomsTyped():
   box(NULL),
   virial(NULL)
 {}
+
+MDAtomsBase* MDAtomsBase::create(unsigned p){
+  if(p==sizeof(double)){
+    return new MDAtomsTyped<double>;
+  } else if (p==sizeof(float)){
+    return new MDAtomsTyped<float>;
+  }
+  std::string pp;
+  Tools::convert(p,pp);
+  plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
+  return NULL;
+}
 
 }
 

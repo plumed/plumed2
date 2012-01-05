@@ -7,8 +7,6 @@
 
 namespace PLMD{
 
-class Value;
-
 /// Action which takes other Action's as arguments.
 /// Arguments are objects of type PLMD::Value, and
 /// are addressed using the ARG= keyword on the directive line

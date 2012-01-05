@@ -1,7 +1,6 @@
 #include "GREX.h"
-#include "sstream"
 #include "PlumedMain.h"
-#include <cassert>
+#include <sstream>
 
 using namespace std;
 using namespace PLMD;
@@ -19,18 +18,23 @@ GREX::GREX(PlumedMain&p):
 GREX::~GREX(){
 }
 
+#define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after GREX initialization")
+#define CHECK_NOTINIT(ini,word) plumed_massert(!(ini),"cmd(\"" + word +"\") should be only used before GREX initialization")
+#define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"GREX " + word + "\")");
+
 void GREX::cmd(const string&key,void*val){
   if(false){
   }else if(key=="initialized"){
+    CHECK_NULL(val,key);
     *static_cast<int*>(val)=initialized;
   }else if(key=="setMPIIntracomm"){
-    assert(!initialized);
+    CHECK_NOTINIT(initialized,key);
     intracomm.Set_comm(val);
   }else if(key=="setMPIIntercomm"){
-    assert(!initialized);
+    CHECK_NOTINIT(initialized,key);
     intercomm.Set_comm(val);
   }else if(key=="init"){
-    assert(!initialized);
+    CHECK_NOTINIT(initialized,key);
     initialized=true;
     std::string s;
 // note that for PEs!=root this is automatically 0 (comm defaults to MPI_COMM_SELF)
@@ -39,31 +43,33 @@ void GREX::cmd(const string&key,void*val){
     Tools::convert(myreplica,s);
     plumedMain.setSuffix("."+s);
   }else if(key=="prepare"){
-    assert(initialized);
+    CHECK_INIT(initialized,key);
     if(intracomm.Get_rank()==0) return;
     intracomm.Bcast(&partner,1,0);
     calculate();
   }else if(key=="setPartner"){
-    assert(initialized);
+    CHECK_INIT(initialized,key);
     partner=*static_cast<int*>(val);
   }else if(key=="savePositions"){
-    assert(initialized);
+    CHECK_INIT(initialized,key);
     savePositions();
   }else if(key=="calculate"){
-    assert(initialized);
+    CHECK_INIT(initialized,key);
     if(intracomm.Get_rank()!=0) return;
     intracomm.Bcast(&partner,1,0);
     calculate();
   }else if(key=="getLocalDeltaBias"){
-    assert(initialized);
+    CHECK_INIT(initialized,key);
+    CHECK_NULL(val,key);
     double x=localDeltaBias/(atoms.getMDUnits().energy/atoms.getUnits().energy);
     atoms.double2MD(x,val);
   }else if(key=="getForeignDeltaBias"){
-    assert(initialized);
+    CHECK_INIT(initialized,key);
+    CHECK_NULL(val,key);
     double x=foreignDeltaBias/(atoms.getMDUnits().energy/atoms.getUnits().energy);
     atoms.double2MD(x,val);
   }else if(key=="shareAllDeltaBias"){
-    assert(initialized);
+    CHECK_INIT(initialized,key);
     if(intracomm.Get_rank()!=0) return;
     allDeltaBias.assign(intercomm.Get_size(),0.0);
     allDeltaBias[intercomm.Get_rank()]=localDeltaBias;
@@ -74,19 +80,17 @@ void GREX::cmd(const string&key,void*val){
      int nw=words.size();
      if(false){
      } else if(nw==2 && words[0]=="getDeltaBias"){
-       assert(allDeltaBias.size()==static_cast<unsigned>(intercomm.Get_size()));
+       CHECK_INIT(initialized,key);
+       CHECK_NULL(val,key);
+       plumed_massert(allDeltaBias.size()==static_cast<unsigned>(intercomm.Get_size()),
+           "to retrieve bias with cmd(\"GREX getDeltaBias\"), first share it with cmd(\"GREX shareAllDeltaBias\")");
        unsigned rep;
        Tools::convert(words[1],rep);
-       assert(rep<allDeltaBias.size());
+       plumed_massert(rep<allDeltaBias.size(),"replica index passed to cmd(\"GREX getDeltaBias\") is out of range");
        double d=allDeltaBias[rep]/(atoms.getMDUnits().energy/atoms.getUnits().energy);
        atoms.double2MD(d,val);
      } else{
-   // error
-       fprintf(stderr,"+++ PLUMED GREX ERROR\n");
-       fprintf(stderr,"+++ CANNOT INTERPRET CALL TO cmd() ROUTINE WITH ARG '%s'\n",key.c_str());
-       fprintf(stderr,"+++ There might be a mistake in the MD code\n");
-       fprintf(stderr,"+++ or you may be using an out-dated plumed version\n");
-       plumedMain.exit(1);
+       plumed_merror("cannot interpret cmd(\"GREX " + key + "\"). check plumed developers manual to see the available commands.");
      };
   };
 }

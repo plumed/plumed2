@@ -8,10 +8,8 @@ LIBS=-ldl
 DYNAMIC_LIBS= -L/cineca/prod/libraries/lapack/3.2.1/xl--10.1/lib -llapack -lessl -lxlf90
 
 CPPFLAGS=-D__PLUMED_HAS_DLOPEN $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE) -DF77_NO_UNDERSCORE
-#CXXFLAGS=-pedantic -Wall -O -fPIC
-#CFLAGS=-pedantic -Wall -O -fPIC
-CXXFLAGS=-O0 -G -qpic -qrtti=all
-CFLAGS=-O0 -qpic
+CXXFLAGS=-O0 -G -qpic -qrtti=all -qlanglvl=strict98
+CFLAGS=-O0 -G -qpic
 
 LDFLAGS=-brtl -bdynamic -bexpall
 SOEXT=so

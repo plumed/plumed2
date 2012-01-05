@@ -1,8 +1,10 @@
-#ifdef __PLUMED_HAS_MATHEVAL
 #include "ActionRegister.h"
 #include "Function.h"
 #include <cassert>
+
+#ifdef __PLUMED_HAS_MATHEVAL
 #include <matheval.h>
+#endif
 
 using namespace std;
 
@@ -66,6 +68,7 @@ public:
 };
 
 
+#ifdef __PLUMED_HAS_MATHEVAL
 PLUMED_REGISTER_ACTION(FunctionMatheval,"MATHEVAL")
 
 FunctionMatheval::FunctionMatheval(const ActionOptions&ao):
@@ -137,7 +140,8 @@ FunctionMatheval::~FunctionMatheval(){
   for(unsigned i=0;i<evaluator_deriv.size();i++)evaluator_destroy(evaluator_deriv[i]);
 }
 
+#endif
+
 }
 
-#endif
 

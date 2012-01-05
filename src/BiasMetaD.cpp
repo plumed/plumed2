@@ -2,7 +2,6 @@
 #include "ActionRegister.h"
 #include "Grid.h"
 #include "PlumedMain.h"
-
 #include <cassert>
 
 #define DP2CUTOFF 6.25
@@ -27,21 +26,24 @@ METAD ...
   [RESTART]
   [BIASFACTOR=biasf]
   [TEMP=temp]
-  [GRIDMIN=min1,min2]
-  [GRIDMAX=max1,max2]
-  [GRIDBIN=bin1,bin2]
-  [NOSPLINE]
-  [SPARSEGRID]
+  [GRID_MIN=min1,min2]
+  [GRID_MAX=max1,max2]
+  [GRID_BIN=bin1,bin2]
+  [GRID_NOSPLINE]
+  [GRID_SPARSE]
+  [GRID_WFILE=filename]
+  [GRID_WSTRIDE=ws]
 ... METAD
 \endverbatim
 SIGMA specifies an array of Gaussian widths, one for each variable,
 HEIGHT the Gaussian height, PACE the Gaussian deposition stride in steps,
 FILE the name of the file where the Gaussians are written to (or read from), 
 RESTART to restart the run, BIASFACTOR the bias factor of well-tempered metad, 
-TEMP the temperature. To activate the use of Grid to store the bias potential,
-you need to specify the grid boundaries with GRIDMIN and GRIDMAX and the number
-of bins with GRIDBIN. An experimental sparse grid can be activated with SPARSEGRID.
-The use of spline can be disabled with NOSPLINE.
+TEMP the temperature. To store the bias potential on a grid,
+you need to specify the grid boundaries with GRID_MIN and GRID_MAX and the number
+of bins with GRID_BIN. An experimental sparse grid can be activated with GRID_SPARSE.
+The use of spline can be disabled with GRID_NOSPLINE. You can dump the grid on file
+with GRID_WFILE every GRID_WSTRIDE steps.
 \par Example
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
@@ -75,11 +77,13 @@ private:
   vector<Gaussian> hills_;
   FILE* hillsfile_;
   Grid* BiasGrid_;
+  FILE* gridfile_;
   double height0_;
   double biasf_;
   double temp_;
   double* dp_;
   int stride_;
+  int wgridstride_; 
   bool welltemp_;
   bool restart_;
   bool grid_;
@@ -105,6 +109,7 @@ PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
 BiasMetaD::~BiasMetaD(){
   if(BiasGrid_) delete BiasGrid_;
   if(hillsfile_) fclose(hillsfile_);
+  if(gridfile_) fclose(gridfile_);
   delete [] dp_;
 }
 
@@ -113,11 +118,13 @@ PLUMED_BIAS_INIT(ao),
 sigma0_(getNumberOfArguments(),0.0),
 hillsfile_(NULL),
 BiasGrid_(NULL),
+gridfile_(NULL),
 height0_(0.0),
 biasf_(1.0),
 temp_(0.0),
 dp_(NULL),
 stride_(0),
+wgridstride_(0),
 welltemp_(false),
 restart_(false),
 grid_(false)
@@ -128,8 +135,8 @@ grid_(false)
   assert(height0_>0.0);
   parse("PACE",stride_);
   assert(stride_>0);
-  string filename="HILLS";
-  parse("FILE",filename);
+  string hillsfname="HILLS";
+  parse("FILE",hillsfname);
   parseFlag("RESTART",restart_);
   parse("BIASFACTOR",biasf_);
   assert(biasf_>=1.0);
@@ -139,21 +146,26 @@ grid_(false)
    welltemp_=true;
   }
   vector<double> gmin;
-  parseVector("GRIDMIN",gmin);
+  parseVector("GRID_MIN",gmin);
   assert(gmin.size()==getNumberOfArguments() || gmin.size()==0);
   vector<double> gmax;
-  parseVector("GRIDMAX",gmax);
+  parseVector("GRID_MAX",gmax);
   assert(gmax.size()==getNumberOfArguments() || gmax.size()==0);
   vector<unsigned> gbin;
-  parseVector("GRIDBIN",gbin);
+  parseVector("GRID_BIN",gbin);
   assert(gbin.size()==getNumberOfArguments() || gbin.size()==0);
   assert(gmin.size()==gmax.size() && gmin.size()==gbin.size());
   bool sparsegrid=false;
-  parseFlag("SPARSEGRID",sparsegrid);
+  parseFlag("GRID_SPARSE",sparsegrid);
   bool nospline=false;
-  parseFlag("NOSPLINE",nospline);
+  parseFlag("GRID_NOSPLINE",nospline);
   bool spline=!nospline;
   if(gbin.size()>0){grid_=true;}
+  parse("GRID_WSTRIDE",wgridstride_);
+  string gridfname;
+  parse("GRID_WFILE",gridfname); 
+  if(grid_&&gridfname.length()>0){assert(wgridstride_>0);}
+  if(grid_&&wgridstride_>0){assert(gridfname.length()>0);}
 
   checkRead();
 
@@ -162,7 +174,7 @@ grid_(false)
   log.printf("\n");
   log.printf("  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_); 
-  log.printf("  Gaussian file %s\n",filename.c_str());
+  log.printf("  Gaussian file %s\n",hillsfname.c_str());
   if(welltemp_){log.printf("  Well-Tempered Bias Factor %f\n",biasf_);}
   if(grid_){
    log.printf("  Grid min");
@@ -176,7 +188,8 @@ grid_(false)
    log.printf("\n");
    if(spline){log.printf("  Grid uses spline interpolation\n");}
    if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
-  }
+   if(wgridstride_>0){log.printf("  Grid is written on file %s with stride %d\n",gridfname.c_str(),wgridstride_);} 
+ }
   
   addValue("bias");
 
@@ -198,15 +211,17 @@ grid_(false)
    }
    if(!sparsegrid){BiasGrid_=new Grid(gmin,gmax,gbin,pbc,spline,true);}
    else{BiasGrid_=new SparseGrid(gmin,gmax,gbin,pbc,spline,true);}
+// open file for grid writing 
+   if(wgridstride_>0){gridfile_=fopen(gridfname.c_str(),"w");}
   }
 
 // restarting from HILLS file
   if(restart_){
-   hillsfile_=fopen(filename.c_str(),"a+");
-   log.printf("  Restarting from %s:",filename.c_str());
+   hillsfile_=fopen(hillsfname.c_str(),"a+");
+   log.printf("  Restarting from %s:",hillsfname.c_str());
    readGaussians(hillsfile_);
   }else{
-   hillsfile_=fopen(filename.c_str(),"w");
+   hillsfile_=fopen(hillsfname.c_str(),"w");
   } 
 }
 
@@ -323,9 +338,9 @@ double BiasMetaD::getHeight(const vector<double>& cv)
 
 void BiasMetaD::calculate()
 {
-  vector<double> cv;
   unsigned ncv=getNumberOfArguments();
-  for(unsigned i=0;i<ncv;++i){cv.push_back(getArgument(i));}
+  vector<double> cv(ncv);
+  for(unsigned i=0;i<ncv;++i){cv[i]=getArgument(i);}
 
   double* der=new double[ncv];
   for(unsigned i=0;i<ncv;++i){der[i]=0.0;}
@@ -353,6 +368,10 @@ void BiasMetaD::update(){
    addGaussian(newhill);
 // print on HILLS file
    writeGaussian(newhill,hillsfile_);
+  }
+// dump grid on file
+  if(wgridstride_>0&&getStep()%wgridstride_==0){
+   BiasGrid_->writeToFile(gridfile_); 
   }
 }
 

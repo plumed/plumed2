@@ -10,7 +10,6 @@ namespace PLMD{
 
 class PlumedMain;
 class PlumedCommunicator;
-class Log;
 
 /// This class is used to bring the relevant information to the Action constructor.
 /// Only Action and ActionRegister class can access to its content, which is 
