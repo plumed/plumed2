@@ -9,9 +9,11 @@ using namespace std;
 using namespace PLMD;
 
 ActionRegister::~ActionRegister(){
-  if(m.size()>0)
-    for(mIterator p=m.begin();p!=m.end();++p)
-       std::cerr<<"WARNING: directive "<<p->first<<" has not been properly unregistered\n";
+  if(m.size()>0){
+    string names="";
+    for(mIterator p=m.begin();p!=m.end();++p)names+=p->first+" ";
+    plumed_merror("Directive "+ names +" has not been properly unregistered");
+  }
 }
 
 ActionRegister& PLMD::actionRegister(){

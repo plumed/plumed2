@@ -1,6 +1,5 @@
 #include "Tensor.h"
-#include <iostream>
-#include <cstdlib>
+#include "PlumedException.h"
 
 namespace PLMD{
 
@@ -12,9 +11,7 @@ static class TensorChecks{
 public:
   TensorChecks(){
     if(sizeof(Tensor)==9*sizeof(double)) return;
-    std::cerr<<"Severe error: sizeof(Tensor)!=9*sizeof(double)\n";
-    std::cerr<<"PLUMED cannot work properly in these conditions\n";
-    std::abort();
+    plumed_merror("sizeof(Tensor)!=9*sizeof(double). PLUMED cannot work properly in these conditions.");
   }
 } checks;
 

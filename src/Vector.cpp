@@ -1,7 +1,6 @@
 #include "Vector.h"
+#include "PlumedException.h"
 #include <cmath>
-#include <iostream>
-#include <cstdlib>
 
 namespace PLMD{
 
@@ -17,9 +16,7 @@ static class VectorChecks{
 public:
   VectorChecks(){
     if(sizeof(Vector)==3*sizeof(double)) return;
-    std::cerr<<"Severe error: sizeof(Vector)!=3*sizeof(double)\n";
-    std::cerr<<"PLUMED cannot work properly in these conditions\n";
-    std::abort();
+    plumed_merror("sizeof(Vector)!=3*sizeof(double). PLUMED cannot work properly in these conditions.");
   }
 } checks;
 

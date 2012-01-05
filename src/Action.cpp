@@ -34,8 +34,7 @@ Action::Action(const ActionOptions&ao):
 }
 
 Action::~Action(){
-  if(files.size()>0)
-     std::cerr<<"WARNING: some files open in Action were not properly closed\n";
+  plumed_massert(files.size()==0,"some files open in action "+getLabel()+" where not properly closed.");
 }
 
 FILE* Action::fopen(const char *path, const char *mode){
