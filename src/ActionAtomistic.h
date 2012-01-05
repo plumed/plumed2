@@ -3,7 +3,6 @@
 
 #include "Action.h"
 #include "Atoms.h"
-#include "PlumedMain.h"
 #include <vector>
 #include <set>
 #include "Pbc.h"
