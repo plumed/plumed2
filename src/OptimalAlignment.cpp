@@ -8,13 +8,18 @@ using namespace PLMD;
 
 OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  std::vector<double>  & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log &log )
 :log(log){
-	// copy the structure into place
-	this->p0=p0;
-	this->p1=p1;
-	this->align=align;
-	this->displace=displace;
+
 	// kearsley init to null
 	mykearsley=NULL;
+	if (mykearsley==NULL) {
+		mykearsley=new Kearsley(p0,p1,align,log);
+	}
+	// copy the structure into place
+	assignP0(p0);
+	assignP1(p1);
+	assignAlign(align);
+	assignDisplace(displace);
+
 	// basic check
 	if(p0.size() != p1.size()){
 		log.printf("THE SIZE OF THE TWO FRAMES TO BE ALIGNED ARE DIFFERENT\n");
@@ -24,10 +29,6 @@ OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  
 	for (unsigned i=0;i<align.size();i++ ){
 		if(align[i]!=displace[i])fast=false;
 	}
-	if (mykearsley==NULL) {
-		mykearsley=new Kearsley(p0,p1,align,log);
-	}
-
 
 }
 
