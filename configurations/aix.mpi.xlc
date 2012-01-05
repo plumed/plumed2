@@ -20,6 +20,7 @@ CC=mpcc
 FC=mpxlf
 
 GCCDEP=g++
+XLF=yes
 
 
 

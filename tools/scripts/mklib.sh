@@ -25,7 +25,7 @@ then
   exit 1
 fi
 
-$compile "$file" -o "$obj" && $link "$lib" "$obj"
+$compile "$obj" "$file" && $link "$lib" "$obj"
 
 
 

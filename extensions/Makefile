@@ -21,19 +21,38 @@ libplumedExtensions.$(SOEXT): $(OBJ)
 	$(LDSO) -o $@ $^
 
 clean:
-	rm -f makefile.dep
 	rm -f *.o
-ifdef SOEXT
-	rm -f *.$(SOEXT)
-endif
-
-makefile.dep : $(SRC) *.h
-ifdef GCCDEP
-	for i in $(ALL_SRC) ; do $(GCCDEP) $(CPPFLAGS) -MM "$${i}"; done > $@
-endif
+	rm -f *.d
+	rm -f *~
+	rm -f *.tmp
+	rm -f *.so
+	rm -f *.dylib
 
 %.$(SOEXT) : %.o
 	$(LDSO) -o $@ $^
 
--include makefile.dep
+%.o: %.cpp
+	$(CXX) -M $(CPPFLAGS) $(CXXFLAGS) $*.cpp > $*.d
+	@cp -f $*.d $*.d.tmp
+	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@rm -f $*.d.tmp
+ifndef XLF
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $*.cpp -o $*.o
+endif
+%.o: %.c
+	$(CC) -M $(CPPFLAGS) $(CXXFLAGS) $*.c > $*.d
+	@cp -f $*.d $*.d.tmp
+	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@rm -f $*.d.tmp
+ifndef XLF
+	$(CC) -c $(CPPFLAGS) $(CXXFLAGS) $*.c -o $*.o
+endif
+
+# Individual dependencies
+
+ifneq ($(MAKECMDGOALS),clean)
+-include $(ALL_SRC_DEP)
+endif
 

@@ -2,45 +2,41 @@
 # include the machine dependent configuration
 -include ../Makefile.conf
 
-ifndef srcdir
-srcdir=.
-endif
+# if machine dependent configuration has been found:
+ifdef CXX
 
 # source/objects for plumed kernel
-SRC_KERNEL=$(subst $(srcdir)/PlumedStatic.cpp,,$(wildcard $(srcdir)/*.cpp))
-OBJ_KERNEL=$(subst $(srcdir)/,,$(SRC_KERNEL:.cpp=.o))
+SRC_KERNEL=$(subst PlumedStatic.cpp,,$(wildcard *.cpp))
+OBJ_KERNEL=$(SRC_KERNEL:.cpp=.o)
 
 # source/objects for plumed wrapper
-SRC_WRAPPER=$(srcdir)/PlumedStatic.cpp
+SRC_WRAPPER=PlumedStatic.cpp
 OBJ_WRAPPER=PlumedStatic.o
 
 # source/objects for plumed dynamic wrapper
-SRC_DYNAMIC_WRAPPER=$(srcdir)/Plumed.c
+SRC_DYNAMIC_WRAPPER=Plumed.c
 OBJ_DYNAMIC_WRAPPER=Plumed.o
 
 # all sources
 ALL_SRC=$(SRC_KERNEL) $(SRC_WRAPPER) $(SRC_DYNAMIC_WRAPPER)
 
+# all objects
+ALL_SRC_OBJ=$(SRC_KERNEL:.cpp=.o) $(SRC_WRAPPER:.cpp=.o) $(SRC_DYNAMIC_WRAPPER:.c.o)
+
 # dependency files
-ALL_SRC_DEP=$(SRC_KERNEL:.cpp=.cppdep) $(SRC_WRAPPER:.cpp=.cppdep) $(SRC_DYNAMIC_WRAPPER:.c.cdep)
+ALL_SRC_DEP=$(ALL_SRC_OBJ:.o=.d)
 
-.PHONY: all clean
+# plumed kernel
+PLUMED_KERNEL=libplumedKernel.$(SOEXT)
 
-ifdef GCCDEP
-all: libplumedKernel.$(SOEXT) libplumed.$(SOEXT) Plumed.o \
+# plumed library
+PLUMED_SHARED_OBJ=libplumed.$(SOEXT)
+
+# default target
+.PHONY: all
+all: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(OBJ_WRAPPER) \
      Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static \
      compile_options.sh
-else
-all:
-	@echo No configuration available
-	@echo First run ./configure.sh in the root directory
-endif
-
-PlumedConfig.h: PlumedConfig.h.in
-	sed "s/@SOEXT@/$(SOEXT)/g" $< > $@
-
-check:
-	echo $(OBJ_KERNEL) $(SRC_KERNEL)
 
 libplumedKernel.$(SOEXT): $(OBJ_KERNEL)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
@@ -48,65 +44,99 @@ libplumedKernel.$(SOEXT): $(OBJ_KERNEL)
 libplumed.$(SOEXT): $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 
-compile_options.sh:
-	echo "compile='"$(CXX) -c -I$(realpath $(srcdir)) $(CPPFLAGS) $(CXXFLAGS)"'" > $@
-	echo "link='"$(LDSO) -o"'" >> $@
-	echo "soext='"$(SOEXT)"'" >> $@
+Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) libplumed.$(SOEXT) Plumed.o
+	@echo Building Plumed.inc
+	@echo "PLUMED_OBJ=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  > $@
+	@echo "PLUMED_SHARED_OBJ=" $(realpath libplumed.$(SOEXT)) >> $@
+	@echo "PLUMED_WRAPPER=" $(realpath Plumed.o) >> $@
+	@echo "PLUMED_INCLUDE="-I$(realpath ../include) >> $@
+	@echo "PLUMED_LIBS="$(LIBS) >> $@
+	@echo "PLUMED_DYNAMIC_LIBS="$(DYNAMIC_LIBS) >> $@
+	@echo "PLUMED_LDFLAGS="$(LDFLAGS) >> $@
 
+Plumed.inc.runtime: Plumed.inc
+	@echo Building Plumed.inc, runtime-linking version
+	@echo "# PLUMED: runtime installation" > $@
+	@cat $< >> $@
+	@echo PLUMED_LOAD= '$$(PLUMED_WRAPPER) $$(PLUMED_LIBS) $$(PLUMED_LDFLAGS)' >> $@
+	@echo PLUMED_DEPENDENCIES= >> $@
+
+Plumed.inc.static: Plumed.inc
+	@echo Building Plumed.inc, static version
+	@echo "# PLUMED: static installation" > $@
+	@cat $< >> $@
+	@echo PLUMED_LOAD= '$$(PLUMED_OBJ) $$(PLUMED_LIBS) $$(PLUMED_DYNAMIC_LIBS) $$(PLUMED_LDFLAGS)' >> $@
+	@echo PLUMED_DEPENDENCIES='$$(PLUMED_OBJ)' >> $@
+
+Plumed.inc.shared: Plumed.inc
+	@echo Building Plumed.inc, shared version
+	@echo "# PLUMED: shared installation" > $@
+	@cat $< >> $@
+	@echo PLUMED_LOAD= '$$(PLUMED_SHARED_OBJ) $$(PLUMED_LIBS) $$(PLUMED_LDFLAGS)' >> $@
+	@echo PLUMED_DEPENDENCIES='$$(PLUMED_SHARED_OBJ)' >> $@
+
+$(ALL_SRC_DEP): PlumedConfig.h
+
+# rule for c++
+%.o: %.cpp
+	$(CXX) -c -MM -MF$*.d $(CPPFLAGS) $(CXXFLAGS) $*.cpp
+	@cp -f $*.d $*.d.tmp
+	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@rm -f $*.d.tmp
+ifndef XLF
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $*.cpp -o $*.o
+endif
+
+# rule for c
+%.o: %.c
+	$(CC) -c -MM -MF$*.d -M $(CPPFLAGS) $(CFLAGS) $*.c
+	@cp -f $*.d $*.d.tmp
+	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@rm -f $*.d.tmp
+ifndef XLF
+	$(CC) -c $(CPPFLAGS) $(CXXFLAGS) $*.c -o $*.o
+endif
+
+# file to import compilation options inside c++
+PlumedConfig.h: PlumedConfig.h.in ../Makefile.conf
+	@echo Building PlumedConfig.h, an includable c++ header with some compilation options
+	@sed "s/@SOEXT@/$(SOEXT)/g" $< > $@
+
+# file to import compilation options inside a bash script
+compile_options.sh:
+	@echo Building compile_options.sh, a sourceable bash script with some compilation options
+	@echo "compile='"$(CXX) -c -I$(realpath .) $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
+	@echo "link='"$(LDSO) -o"'" >> $@
+	@echo "soext='"$(SOEXT)"'" >> $@
+
+# Individual dependencies
+
+-include $(ALL_SRC_DEP)
+
+# if machine dependent configuration has not been found:
+else
+
+.PHONY: error
+error:
+	@echo No configuration available
+	@echo First run ./configure.sh in the root directory
+endif
+
+# this target is available anyway
+
+.PHONY: clean
 clean:
 	rm -f *.o
+	rm -f *.d
 	rm -f *.cdep
 	rm -f *.cppdep
 	rm -f PlumedConfig.h
 	rm -f Plumed.inc*
 	rm -f *~
+	rm -f *.tmp
+	rm -f *.so
+	rm -f *.dylib
 	rm -f compile_options.sh
-ifdef SOEXT
-	rm -f *.$(SOEXT)
-endif
-
-Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) libplumed.$(SOEXT) Plumed.o
-	echo "PLUMED_OBJ=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  > $@
-	echo "PLUMED_SHARED_OBJ=" $(realpath libplumed.$(SOEXT)) >> $@
-	echo "PLUMED_WRAPPER=" $(realpath Plumed.o) >> $@
-	echo "PLUMED_INCLUDE="-I$(realpath ../include) >> $@
-	echo "PLUMED_LIBS="$(LIBS) >> $@
-	echo "PLUMED_DYNAMIC_LIBS="$(DYNAMIC_LIBS) >> $@
-	echo "PLUMED_LDFLAGS="$(LDFLAGS) >> $@
-
-Plumed.inc.runtime: Plumed.inc
-	echo "# PLUMED: runtime installation" > $@
-	cat $< >> $@
-	echo PLUMED_LOAD= '$$(PLUMED_WRAPPER) $$(PLUMED_LIBS) $$(PLUMED_LDFLAGS)' >> $@
-	echo PLUMED_DEPENDENCIES= >> $@
-
-Plumed.inc.static: Plumed.inc
-	echo "# PLUMED: static installation" > $@
-	cat $< >> $@
-	echo PLUMED_LOAD= '$$(PLUMED_OBJ) $$(PLUMED_LIBS) $$(PLUMED_DYNAMIC_LIBS) $$(PLUMED_LDFLAGS)' >> $@
-	echo PLUMED_DEPENDENCIES='$$(PLUMED_OBJ)' >> $@
-
-Plumed.inc.shared: Plumed.inc
-	echo "# PLUMED: shared installation" > $@
-	cat $< >> $@
-	echo PLUMED_LOAD= '$$(PLUMED_SHARED_OBJ) $$(PLUMED_LIBS) $$(PLUMED_LDFLAGS)' >> $@
-	echo PLUMED_DEPENDENCIES='$$(PLUMED_SHARED_OBJ)' >> $@
-
-$(ALL_SRC_DEP): $(ALL_SRC) $(srcdir)/*.h $(srcdir)/PlumedConfig.h
-
-%.cppdep : %.cpp
-ifdef GCCDEP
-	$(GCCDEP) $(CPPFLAGS) -MM $< -o $@
-endif
-
-%.cdep : %.c
-ifdef GCCDEP
-	$(GCCDEP) $(CPPFLAGS) -MM $< -o $@
-endif
-
-# Individual dependencies
-
-ifneq ($(MAKECMDGOALS),clean)
--include $(ALL_SRC_DEP)
-endif
 
