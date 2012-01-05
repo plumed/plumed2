@@ -1,6 +1,7 @@
 #include <vector>
 #include <cassert>
 #include <cmath>
+
 #include "Grid.h"
 
 using namespace std;
@@ -363,6 +364,7 @@ void Grid::writeToFile(FILE* file){
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}
+   if(dimension_>1 && getIndices(i)[dimension_-2]==0){fprintf(file,"\n");} 
    for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",xx[j]);}
    fprintf(file,"  %14.9f  ",f);
    if(usederiv_){for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",der[j]);}}
@@ -438,9 +440,19 @@ void SparseGrid::writeToFile(FILE* file){
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}
+   if(dimension_>1 && getIndices(i)[dimension_-2]==0){fprintf(file,"\n");}
    for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",xx[j]);}
    fprintf(file,"  %14.9f  ",f);
    if(usederiv_){for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",der[j]);}}
    fprintf(file,"\n");
  }
 }
+
+// auxiliary function not member of the class 
+Grid* readGridFromFile(FILE* file, bool dospline, bool dosparse, bool doder)
+{
+ Grid* grid=NULL;
+// TO DO
+ return grid;
+} 
+
