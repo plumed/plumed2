@@ -9,21 +9,33 @@ using namespace std;
 using namespace PLMD;
 
 void RMSD::setFromPDB(const PDB&pdb, string mytype ){
-  myoptimalalignment=NULL; 
-  alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
-  if (mytype=="SIMPLE"){ 	alignmentMethod=SIMPLE; log.printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
-;}
-  else if (mytype=="OPTIMAL"){ 	alignmentMethod=OPTIMAL; log.printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n"); }
-  else assert(0);
-  setReference(pdb.getPositions());
-  setAlign(pdb.getOccupancy());
-  setDisplace(pdb.getBeta());
+
+	setReference(pdb.getPositions());
+	setAlign(pdb.getOccupancy());
+	setDisplace(pdb.getBeta());
+
+	myoptimalalignment=NULL;
+
+	alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
+	if (mytype=="SIMPLE"){
+		alignmentMethod=SIMPLE;
+		log.printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
+	;}
+	else if (mytype=="OPTIMAL"){
+		alignmentMethod=OPTIMAL;
+		log.printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n");
+	}
+	else assert(0);
+
 }
 
 void RMSD::clear(){
   reference.clear();
   align.clear();
   displace.clear();
+}
+RMSD::~RMSD(){
+	if(myoptimalalignment!=NULL) delete myoptimalalignment;
 }
 
 string RMSD::getMethod(){
@@ -67,9 +79,14 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 		break;	
 	case OPTIMAL:
 		if (myoptimalalignment==NULL){ // do full initialization	
+			//
+			// I create the object only here
+			// since the alignment object require to know both position and reference
+			// and it is possible only at calculate time
+			//
 			myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
         }
-		// this changes the P1 according the running frame
+		// this changes the P0 according the running frame
 		(*myoptimalalignment).assignP0(positions);
 
 		ret=(*myoptimalalignment).calculate(true, derivatives);

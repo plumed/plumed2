@@ -32,6 +32,10 @@ OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  
 
 }
 
+OptimalAlignment::~OptimalAlignment(){
+	if (mykearsley!=NULL)delete mykearsley;
+}
+
 void OptimalAlignment::assignP0(  const std::vector<Vector> & p0 ){
 	this->p0=p0;
 	if(mykearsley!=NULL){mykearsley->assignP0(p0);}else{cerr<<"kearsley is not initialized"<<endl; exit(0);}
@@ -260,8 +264,7 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 	if (rmsd){
 		ret=sqrt(ret);
 			double tmp=0.5/ret;
-			for(int ii=0;ii<alignmap.size();ii++){
-					i=alignmap[ii];
+			for(int i=0;i<natoms;i++){
 					derrdp0[i][0]=derrdp0[i][0]*tmp;
 					derrdp0[i][1]=derrdp0[i][1]*tmp;
 					derrdp0[i][2]=derrdp0[i][2]*tmp;
@@ -288,7 +291,7 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	fakederivatives.resize(p0.size());
 	fast=false;
 	// randomizing alignments and  displacements
-	for (i=0;i<p0.size();i++){
+/*	for (i=0;i<p0.size();i++){
 		// draw a random number
 	    delta=drand48();
 	    delta1=drand48();
@@ -300,7 +303,7 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	    if(delta>delta1){
 	    	displace[i]=delta;
 	    }else{displace[i]=0.;}
-	}
+	}*/
 	//// get initial value of the error and derivative of it
 	assignAlign(align);
 	assignDisplace(displace);

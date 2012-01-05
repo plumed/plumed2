@@ -36,6 +36,8 @@ private:
 public:
 	/// the contructor
 	OptimalAlignment( const  std::vector<double>  & align,  const std::vector<double>   & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log &log );
+	/// the destructor: delete kearsley
+	~OptimalAlignment();
 	/// assignment of the running frame p0
 	void assignP0(  const std::vector<Vector> & p0 );
 	/// assignment to the reference frame p1

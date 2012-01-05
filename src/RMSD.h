@@ -24,6 +24,8 @@ class RMSD
 public:
 /// initialize the log in the constructor
   RMSD(Log & log ): myoptimalalignment(NULL),log(log){};
+/// the destructor needs to delete the myalignment object eventually
+  ~RMSD();
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure
