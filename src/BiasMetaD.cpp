@@ -2,7 +2,6 @@
 #include "ActionRegister.h"
 #include "Grid.h"
 #include "PlumedMain.h"
-#include <iostream>
 #include <cassert>
 
 #define DP2CUTOFF 6.25
@@ -110,6 +109,7 @@ PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
 BiasMetaD::~BiasMetaD(){
   if(BiasGrid_) delete BiasGrid_;
   if(hillsfile_) fclose(hillsfile_);
+  if(gridfile_) fclose(gridfile_);
   delete [] dp_;
 }
 
@@ -338,9 +338,9 @@ double BiasMetaD::getHeight(const vector<double>& cv)
 
 void BiasMetaD::calculate()
 {
-  vector<double> cv;
   unsigned ncv=getNumberOfArguments();
-  for(unsigned i=0;i<ncv;++i){cv.push_back(getArgument(i));}
+  vector<double> cv(ncv);
+  for(unsigned i=0;i<ncv;++i){cv[i]=getArgument(i);}
 
   double* der=new double[ncv];
   for(unsigned i=0;i<ncv;++i){der[i]=0.0;}
