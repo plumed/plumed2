@@ -37,6 +37,8 @@ public:
  std::vector<double> getDx() const;
 /// get number of bins
  std::vector<unsigned> getNbin() const;
+/// get if periodic
+ std::vector<bool> getIsPeriodic() const;
 /// get grid dimension
  unsigned getDimension() const;
  

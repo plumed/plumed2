@@ -3,6 +3,7 @@
 #include "PlumedException.h"
 #include <sstream>
 #include <cstring>
+#include <cassert>
 
 using namespace PLMD;
 using namespace std;
@@ -173,5 +174,46 @@ void Tools::interpretLabel(vector<string>&s){
     s[0]=s[1];
     s[1]="LABEL="+s0.substr(0,l-1);
   }
+}
+
+Grid* Tools::readGridFromFile(FILE* file, bool dosparse, bool dospline, bool doder)
+{
+ Grid* grid=NULL;
+ unsigned nvar,ibool;
+ char str1[50],str2[50];
+ fscanf(file,"%s %s %u",str1,str2,&ibool);
+ bool hasder=bool(ibool);
+ if(doder){assert(doder==hasder);}
+ fscanf(file,"%s %s %u",str1,str2,&nvar);
+
+ vector<unsigned> gbin(nvar);
+ vector<double>   gmin(nvar),gmax(nvar);
+ vector<bool>     gpbc(nvar);
+ fscanf(file,"%s %s",str1,str2);
+ for(unsigned i=0;i<nvar;++i){fscanf(file,"%u",&gbin[i]);}
+ fscanf(file,"%s %s",str1,str2);
+ for(unsigned i=0;i<nvar;++i){fscanf(file,"%lf",&gmin[i]);}
+ fscanf(file,"%s %s",str1,str2);
+ for(unsigned i=0;i<nvar;++i){fscanf(file,"%lf",&gmax[i]);}
+ fscanf(file,"%s %s",str1,str2);
+ for(unsigned i=0;i<nvar;++i){fscanf(file,"%u",&ibool);gpbc[i]=bool(ibool);}
+
+ if(!dosparse){grid=new Grid(gmin,gmax,gbin,gpbc,dospline,doder);}
+ else{grid=new SparseGrid(gmin,gmax,gbin,gpbc,dospline,doder);}
+
+ vector<double> xx(nvar),dder(nvar);
+ vector<double> dx=grid->getDx();
+ double f,x;
+ while(1){
+  int nread;
+  for(unsigned i=0;i<nvar;++i){nread=fscanf(file,"%lf",&x);xx[i]=x+dx[i]/2.0;}
+  if(nread<1){break;}
+  fscanf(file,"%lf",&f);
+  if(hasder){for(unsigned i=0;i<nvar;++i){fscanf(file,"%lf",&dder[i]);}}
+  unsigned index=grid->getIndex(xx);
+  if(doder){grid->setValueAndDerivatives(index,f,dder);}
+  else{grid->setValue(index,f);}
+ }
+ return grid;
 }
 

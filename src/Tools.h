@@ -2,6 +2,7 @@
 #define __PLUMED_Tools_h
 
 #include "AtomNumber.h"
+#include "Grid.h"
 #include <vector>
 #include <string>
 #include <cstdio>
@@ -72,6 +73,8 @@ public:
   static void removeDuplicates(std::vector<T>& vec);
 /// interpret ":" syntax for labels
   static void interpretLabel(std::vector<std::string>&s);
+/// read grid from file
+  static Grid* readGridFromFile(FILE*,bool,bool,bool);
 };
 
 template <class T>
@@ -128,8 +131,6 @@ double Tools::pbc(double x){
     return x-int(x);
   } else return x-floor(x+0.5);
 }
-
-
 
 }
 
