@@ -113,11 +113,6 @@ void Value::clearDerivatives(){
 }
 
 inline
-double Value::difference(double d)const{
-  return difference(get(),d);
-}
-
-inline
 bool Value::checkForced()const{
   return forced;
 }
@@ -138,6 +133,11 @@ double Value::difference(double d1,double d2)const{
     s=Tools::pbc(s);
     return s*max_minus_min;
   } else plumed_merror("periodicity should be set to compute differences");
+}
+
+inline
+double Value::difference(double d)const{
+  return difference(get(),d);
 }
 
 }
