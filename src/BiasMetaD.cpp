@@ -3,7 +3,7 @@
 #include "Grid.h"
 #include "PlumedMain.h"
 #include "Atoms.h"
-#include <cassert>
+#include "PlumedException.h"
 
 #define DP2CUTOFF 6.25
 
@@ -131,31 +131,31 @@ restart_(false),
 grid_(false)
 {
   parseVector("SIGMA",sigma0_);
-  assert(sigma0_.size()==getNumberOfArguments());
+  plumed_assert(sigma0_.size()==getNumberOfArguments());
   parse("HEIGHT",height0_);
-  assert(height0_>0.0);
+  plumed_assert(height0_>0.0);
   parse("PACE",stride_);
-  assert(stride_>0);
+  plumed_assert(stride_>0);
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
   parseFlag("RESTART",restart_);
   parse("BIASFACTOR",biasf_);
-  assert(biasf_>=1.0);
+  plumed_assert(biasf_>=1.0);
   parse("TEMP",temp_);
   if(biasf_>1.0){
-   assert(temp_>0.0);
+   plumed_assert(temp_>0.0);
    welltemp_=true;
   }
   vector<double> gmin;
   parseVector("GRID_MIN",gmin);
-  assert(gmin.size()==getNumberOfArguments() || gmin.size()==0);
+  plumed_assert(gmin.size()==getNumberOfArguments() || gmin.size()==0);
   vector<double> gmax;
   parseVector("GRID_MAX",gmax);
-  assert(gmax.size()==getNumberOfArguments() || gmax.size()==0);
+  plumed_assert(gmax.size()==getNumberOfArguments() || gmax.size()==0);
   vector<unsigned> gbin;
   parseVector("GRID_BIN",gbin);
-  assert(gbin.size()==getNumberOfArguments() || gbin.size()==0);
-  assert(gmin.size()==gmax.size() && gmin.size()==gbin.size());
+  plumed_assert(gbin.size()==getNumberOfArguments() || gbin.size()==0);
+  plumed_assert(gmin.size()==gmax.size() && gmin.size()==gbin.size());
   bool sparsegrid=false;
   parseFlag("GRID_SPARSE",sparsegrid);
   bool nospline=false;
@@ -165,8 +165,8 @@ grid_(false)
   parse("GRID_WSTRIDE",wgridstride_);
   string gridfname;
   parse("GRID_WFILE",gridfname); 
-  if(grid_&&gridfname.length()>0){assert(wgridstride_>0);}
-  if(grid_&&wgridstride_>0){assert(gridfname.length()>0);}
+  if(grid_&&gridfname.length()>0){plumed_assert(wgridstride_>0);}
+  if(grid_&&wgridstride_>0){plumed_assert(gridfname.length()>0);}
 
   checkRead();
 

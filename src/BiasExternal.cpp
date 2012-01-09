@@ -3,7 +3,7 @@
 #include "Grid.h"
 #include "Tools.h"
 #include "PlumedMain.h"
-#include <cassert>
+#include "PlumedException.h"
 
 
 using namespace std;
@@ -62,7 +62,7 @@ BiasGrid_(NULL)
 {
   string filename;
   parse("FILE",filename);
-  assert(filename.length()>0);
+  plumed_assert(filename.length()>0);
   bool sparsegrid=false;
   parseFlag("SPARSE",sparsegrid);
   bool nospline=false;
@@ -81,9 +81,9 @@ BiasGrid_(NULL)
   FILE* gridfile=fopen(filename.c_str(),"r");  
   BiasGrid_=Grid::create(gridfile,sparsegrid,spline,true);
   fclose(gridfile);
-  assert(BiasGrid_->getDimension()==getNumberOfArguments());
+  plumed_assert(BiasGrid_->getDimension()==getNumberOfArguments());
   for(unsigned i=0;i<getNumberOfArguments();++i){
-   assert(getArguments()[i]->isPeriodic()==BiasGrid_->getIsPeriodic()[i]);
+   plumed_assert(getArguments()[i]->isPeriodic()==BiasGrid_->getIsPeriodic()[i]);
   } 
 }
 
