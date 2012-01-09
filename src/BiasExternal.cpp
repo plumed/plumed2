@@ -1,7 +1,6 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 #include "Grid.h"
-#include "Tools.h"
 #include "PlumedMain.h"
 #include "PlumedException.h"
 
