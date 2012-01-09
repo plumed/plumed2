@@ -1,13 +1,15 @@
 #ifndef __PLUMED_ActionRegister_h
 #define __PLUMED_ActionRegister_h
 
-#include "Action.h"
 #include <string>
 #include <map>
 #include <set>
 #include <iostream>
 
 namespace PLMD{
+
+class Action;
+class ActionOptions;
 
 /// Register holding all the allowed keywords.
 /// This is a register which holds a map between strings (directives) and function pointers.

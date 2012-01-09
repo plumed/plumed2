@@ -1,6 +1,7 @@
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
 #include "PlumedMain.h"
+#include "ActionSet.h"
 
 using namespace std;
 using namespace PLMD;

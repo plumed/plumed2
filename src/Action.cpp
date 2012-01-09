@@ -2,6 +2,8 @@
 #include "PlumedMain.h"
 #include "Log.h"
 #include "PlumedException.h"
+#include "Atoms.h"
+#include "ActionSet.h"
 #include <iostream>
 
 using namespace PLMD;

@@ -2,6 +2,7 @@
 #include "ActionRegister.h"
 #include "Grid.h"
 #include "PlumedMain.h"
+#include "Atoms.h"
 #include <cassert>
 
 #define DP2CUTOFF 6.25

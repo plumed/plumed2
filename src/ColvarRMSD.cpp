@@ -3,6 +3,7 @@
 #include "ActionRegister.h"
 #include "PDB.h"
 #include "RMSD.h"
+#include "Atoms.h"
 
 using namespace std;
 

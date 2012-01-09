@@ -2,13 +2,9 @@
 #define __PLUMED_PlumedMain_h
 
 #include "WithCmd.h"
-#include "ActionSet.h"
-#include "Atoms.h"
-#include "PlumedCommunicator.h"
 #include <cstdio>
 #include <string>
 #include <vector>
-#include "DLLoader.h"
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -34,6 +30,10 @@ namespace PLMD {
 class ActionAtomistic;
 class ActionPilot;
 class Log;
+class Atoms;
+class ActionSet;
+class DLLoader;
+class PlumedCommunicator;
 
 /// Main plumed object.
 /// In MD engines this object is not manipulated directly but it is wrapped in
@@ -46,10 +46,10 @@ class PlumedMain:
 public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.
-  PlumedCommunicator comm;
+  PlumedCommunicator&comm;
 
 private:
-  DLLoader dlloader;
+  DLLoader& dlloader;
 
   WithCmd* grex;
 /// Flag to avoid double initialization
@@ -57,7 +57,7 @@ private:
 /// Name of MD engine
   std::string MDEngine;
 /// Log stream
-  Log log;
+  Log& log;
 
 
 /// Present step number.
@@ -72,10 +72,10 @@ private:
   std::string plumedDat;
 
 /// Object containing information about atoms (such as positions,...).
-  Atoms     atoms;           // atomic coordinates
+  Atoms&    atoms;           // atomic coordinates
 
 /// Set of actions found in plumed.dat file
-  ActionSet actionSet;
+  ActionSet& actionSet;
 
 /// Set of Pilot actions.
 /// These are the action the, if they are Pilot::onStep(), can trigger execution

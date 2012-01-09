@@ -1,6 +1,7 @@
 #include "ActionSetup.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
+#include "Atoms.h"
 #include <cassert>
 
 using namespace std;

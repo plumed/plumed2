@@ -1,6 +1,7 @@
 #include "ActionAtomistic.h"
 #include "ActionPilot.h"
 #include "ActionRegister.h"
+#include "Pbc.h"
 #include <cstdio>
 #include <cassert>
 

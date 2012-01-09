@@ -5,6 +5,7 @@
 #include "AtomNumber.h"
 #include "Tools.h"
 #include "PlumedMain.h"
+#include "Atoms.h"
 
 #include <vector>
 #include <string>

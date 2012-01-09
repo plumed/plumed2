@@ -12,24 +12,36 @@
 #include "ActionRegister.h"
 #include "GREX.h"
 #include "PlumedException.h"
+#include "Atoms.h"
+#include "ActionSet.h"
+#include "Log.h"
+#include "DLLoader.h"
+#include "PlumedCommunicator.h"
 
 using namespace PLMD;
 using namespace std;
 
 PlumedMain::PlumedMain():
+  comm(*new PlumedCommunicator),
+  dlloader(*new DLLoader),
   grex(NULL),
   initialized(false),
-  log(comm),
+  log(*new Log(comm)),
   step(0),
   active(false),
-  atoms(*this),
-  actionSet((*this)),
+  atoms(*new Atoms(*this)),
+  actionSet(*new ActionSet(*this)),
   bias(0.0),
   novirial(false)
 {}
 
 PlumedMain::~PlumedMain(){
+  delete &actionSet;
+  delete &atoms;
+  delete &log;
   if(grex) delete grex;
+  delete &dlloader;
+  delete &comm;
 }
 
 /////////////////////////////////////////////////////////////

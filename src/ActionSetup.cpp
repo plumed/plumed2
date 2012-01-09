@@ -1,5 +1,6 @@
 #include "ActionSetup.h"
 #include "PlumedMain.h"
+#include "ActionSet.h"
 #include <cassert>
 
 using namespace PLMD;

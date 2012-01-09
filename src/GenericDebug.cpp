@@ -1,5 +1,6 @@
 #include "ActionRegister.h"
 #include "ActionPilot.h"
+#include "ActionSet.h"
 #include "PlumedMain.h"
 
 using namespace std;

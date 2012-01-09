@@ -1,11 +1,13 @@
 #include "ActionAtomistic.h"
 #include "PlumedMain.h"
+#include "ActionSet.h"
 #include <vector>
 #include <string>
 #include "ActionWithValue.h"
 #include "Colvar.h"
 #include "ActionWithVirtualAtom.h"
 #include "PlumedException.h"
+#include "Atoms.h"
 
 using namespace std;
 using namespace PLMD;

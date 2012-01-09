@@ -1,6 +1,7 @@
 #include "ActionRegister.h"
 #include "ActionPilot.h"
 #include "PlumedMain.h"
+#include "ActionSet.h"
 
 namespace PLMD{
 

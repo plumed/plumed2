@@ -2,6 +2,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "NeighborList.h"
+#include "PlumedCommunicator.h"
 
 #include <string>
 #include <cmath>

@@ -2,7 +2,6 @@
 #define __PLUMED_Grex_h
 
 #include "WithCmd.h"
-#include "PlumedCommunicator.h"
 #include <string>
 #include <vector>
 
@@ -10,13 +9,14 @@ namespace PLMD{
 
 class PlumedMain;
 class Atoms;
+class PlumedCommunicator;
 
 class GREX:
   public WithCmd
 {
   bool initialized;
-  PlumedCommunicator intracomm;
-  PlumedCommunicator intercomm;
+  PlumedCommunicator& intracomm;
+  PlumedCommunicator& intercomm;
   PlumedMain& plumedMain;
   Atoms&      atoms;
   int partner;

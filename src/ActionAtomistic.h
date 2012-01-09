@@ -2,7 +2,6 @@
 #define __PLUMED_ActionAtomistic_h
 
 #include "Action.h"
-#include "Atoms.h"
 #include <vector>
 #include <set>
 #include "Pbc.h"

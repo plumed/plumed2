@@ -1,5 +1,8 @@
 #include "GREX.h"
 #include "PlumedMain.h"
+#include "Atoms.h"
+#include "Tools.h"
+#include "PlumedCommunicator.h"
 #include <sstream>
 
 using namespace std;
@@ -7,6 +10,8 @@ using namespace PLMD;
 
 GREX::GREX(PlumedMain&p):
   initialized(false),
+  intracomm(*new PlumedCommunicator),
+  intercomm(*new PlumedCommunicator),
   plumedMain(p),
   atoms(p.getAtoms()),
   partner(-1), // = unset
@@ -16,6 +21,8 @@ GREX::GREX(PlumedMain&p):
 }
 
 GREX::~GREX(){
+  delete &intercomm;
+  delete &intracomm;
 }
 
 #define CHECK_INIT(ini,word) plumed_massert(ini,"cmd(\"" + word +"\") should be only used after GREX initialization")
