@@ -8,7 +8,7 @@
 using namespace std;
 using namespace PLMD;
 
-void RMSD::setFromPDB(const PDB&pdb, string mytype ){
+void RMSD::set(const PDB&pdb, string mytype ){
 
 	setReference(pdb.getPositions());
 	setAlign(pdb.getOccupancy());

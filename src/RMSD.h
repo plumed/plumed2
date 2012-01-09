@@ -29,7 +29,7 @@ public:
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure
-  void setFromPDB(const PDB&, std::string mytype);
+  void set(const PDB&, std::string mytype);
 /// set reference coordinates
   void setReference(const std::vector<Vector> & reference);
 /// set weights

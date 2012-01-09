@@ -62,7 +62,7 @@ PLUMED_COLVAR_INIT(ao),rmsd(log)
 
   pdb.read(reference,0.1/plumed.getAtoms().getUnits().length);
 
-  rmsd.setFromPDB(pdb,type);
+  rmsd.set(pdb,type);
 
   requestAtoms(pdb.getAtomNumbers());
 
