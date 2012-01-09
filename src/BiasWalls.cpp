@@ -72,15 +72,15 @@ eps(getNumberOfArguments(),1.0),
 offset(getNumberOfArguments(),0.0)
 {
   parseVector("OFFSET",kappa);
-  assert(offset.size()==getNumberOfArguments());
+  plumed_assert(offset.size()==getNumberOfArguments());
   parseVector("EPS",kappa);
-  assert(eps.size()==getNumberOfArguments());
+  plumed_assert(eps.size()==getNumberOfArguments());
   parseVector("EXP",kappa);
-  assert(exp.size()==getNumberOfArguments());
+  plumed_assert(exp.size()==getNumberOfArguments());
   parseVector("KAPPA",kappa);
-  assert(kappa.size()==getNumberOfArguments());
+  plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("AT",at);
-  assert(at.size()==getNumberOfArguments());
+  plumed_assert(at.size()==getNumberOfArguments());
   checkRead();
 
   log.printf("  at");
@@ -134,15 +134,15 @@ eps(getNumberOfArguments(),1.0),
 offset(getNumberOfArguments(),0.0)
 {
   parseVector("OFFSET",kappa);
-  assert(offset.size()==getNumberOfArguments());
+  plumed_assert(offset.size()==getNumberOfArguments());
   parseVector("EPS",kappa);
-  assert(eps.size()==getNumberOfArguments());
+  plumed_assert(eps.size()==getNumberOfArguments());
   parseVector("EXP",kappa);
-  assert(exp.size()==getNumberOfArguments());
+  plumed_assert(exp.size()==getNumberOfArguments());
   parseVector("KAPPA",kappa);
-  assert(kappa.size()==getNumberOfArguments());
+  plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("AT",at);
-  assert(at.size()==getNumberOfArguments());
+  plumed_assert(at.size()==getNumberOfArguments());
   checkRead();
 
   log.printf("  at");
