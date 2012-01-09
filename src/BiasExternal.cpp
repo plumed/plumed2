@@ -79,7 +79,7 @@ BiasGrid_(NULL)
 
 // read grid
   FILE* gridfile=fopen(filename.c_str(),"r");  
-  BiasGrid_=Tools::readGridFromFile(gridfile,sparsegrid,spline,true);
+  BiasGrid_=Grid::create(gridfile,sparsegrid,spline,true);
   fclose(gridfile);
   assert(BiasGrid_->getDimension()==getNumberOfArguments());
   for(unsigned i=0;i<getNumberOfArguments();++i){

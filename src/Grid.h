@@ -63,6 +63,9 @@ public:
 /// write header for grid file
  void writeHeader(FILE* file);
 
+/// read grid from file
+ static Grid* create(FILE*,bool,bool,bool);
+
 /// get grid size
  virtual unsigned getSize() const;
 /// get grid value
