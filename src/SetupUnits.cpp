@@ -2,7 +2,7 @@
 #include "ActionRegister.h"
 #include "PlumedMain.h"
 #include "Atoms.h"
-#include <cassert>
+#include "PlumedException.h"
 
 using namespace std;
 
@@ -77,7 +77,7 @@ ActionSetup(ao)
     u.length=-1.0;
     Tools::convert(s,u.length);
     numeric=true;
-    assert(u.length>0.0);
+    plumed_massert(u.length>0.0,"length units should be positive");
   }
   if(!numeric) log.printf("  length: %s\n",s.c_str());
   else         log.printf("  length: %f nm\n",u.length);
@@ -95,7 +95,7 @@ ActionSetup(ao)
     u.energy=-1.0;
     Tools::convert(s,u.energy);
     numeric=true;
-    assert(u.energy>0.0);
+    plumed_massert(u.energy>0.0,"energy units should be positive");
   }
   if(!numeric) log.printf("  energy: %s\n",s.c_str());
   else         log.printf("  energy: %f kj/mol\n",u.energy);
@@ -113,7 +113,7 @@ ActionSetup(ao)
     u.time=-1.0;
     Tools::convert(s,u.time);
     numeric=true;
-    assert(u.time>0.0);
+    plumed_massert(u.time>0.0,"time units should be positive");
   }
   if(!numeric) log.printf("  time: %s\n",s.c_str());
   else         log.printf("  time: %f ns\n",u.time);

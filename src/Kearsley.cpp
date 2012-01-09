@@ -1,5 +1,4 @@
 #include "Kearsley.h"
-#include <cassert>
 #include <cmath>
 #include <iostream>
 #include "Matrix.h"

@@ -1,7 +1,6 @@
 #include "OptimalAlignment.h"
 #include "Kearsley.h"
 #include "Log.h"
-#include <cassert>
 #include <cmath>
 #include <iostream>
 

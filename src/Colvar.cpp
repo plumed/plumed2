@@ -2,7 +2,6 @@
 #include "PlumedMain.h"
 #include <vector>
 #include <string>
-#include <cassert>
 
 using namespace std;
 using namespace PLMD;

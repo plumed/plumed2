@@ -3,7 +3,6 @@
 #include "PlumedException.h"
 #include <sstream>
 #include <cstring>
-#include <cassert>
 
 using namespace PLMD;
 using namespace std;
@@ -183,7 +182,7 @@ Grid* Tools::readGridFromFile(FILE* file, bool dosparse, bool dospline, bool dod
  char str1[50],str2[50];
  fscanf(file,"%s %s %u",str1,str2,&ibool);
  bool hasder=bool(ibool);
- if(doder){assert(doder==hasder);}
+ if(doder){plumed_assert(doder==hasder);}
  fscanf(file,"%s %s %u",str1,str2,&nvar);
 
  vector<unsigned> gbin(nvar);

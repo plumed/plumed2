@@ -24,7 +24,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
  if(!do_pair){
   nallpairs_=nlist0_*nlist1_;
  }else{
-  assert(nlist0_==nlist1_);
+  plumed_assert(nlist0_==nlist1_);
   nallpairs_=nlist0_;
  }
  initialize();
@@ -73,7 +73,7 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
 void NeighborList::update(const vector<Vector>& positions) {
  neighbors_.clear();
 // check if positions array has the correct length 
- assert(positions.size()==fullatomlist_.size());
+ plumed_assert(positions.size()==fullatomlist_.size());
  for(unsigned int i=0;i<nallpairs_;++i){
    pair<unsigned,unsigned> index=getIndexPair(i);
    unsigned index0=index.first;
