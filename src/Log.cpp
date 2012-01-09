@@ -53,4 +53,8 @@ void Log::set(FILE*f){
   fp=f;
 }
 
+void Log::flush(){
+  fflush(fp);
+}
+
 

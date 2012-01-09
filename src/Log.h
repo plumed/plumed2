@@ -34,6 +34,7 @@ public:
   void setFile(std::string str);
 /// Link to an already open FILE stream
   void set(FILE*f);
+  void flush();
 /// Standard printf-like function
   int printf(const char*fmt,...);
   template <class T>
