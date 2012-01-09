@@ -2,14 +2,14 @@
 #define __PLUMED_RMSD_h
 
 #include "Vector.h"
-#include "Log.h"
 #include <vector>
 #include <string>
-#include "OptimalAlignment.h" 
 
 namespace PLMD{
 
+class Log;
 class PDB;
+class OptimalAlignment;
 
 /// A class that implements RMSD calculations
 class RMSD

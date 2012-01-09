@@ -4,6 +4,8 @@
 #include <iostream>
 #include "Matrix.h"
 #include "Tensor.h"
+#include "Log.h"
+#include "Matrix.h"
 
 using namespace std;
 using namespace PLMD;

@@ -3,11 +3,12 @@
 
 #include "Vector.h"
 #include "Tensor.h"
-#include "Kearsley.h"
-#include "Log.h"
 #include <vector>
 
 namespace PLMD{
+
+class Log;
+class Kearsley;
 
 /// A class that is intended to include or combine various optimal alignment algorithms
 

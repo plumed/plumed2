@@ -3,11 +3,11 @@
 
 #include "Vector.h"
 #include "Tensor.h"
-#include "Log.h"
-#include "Matrix.h"
 #include <vector>
 
 namespace PLMD{
+
+class Log;
 
 /*! A class that implements Kearsley's calculation
  which is optimal alignment via quaternion and
