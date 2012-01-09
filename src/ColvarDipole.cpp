@@ -3,7 +3,6 @@
 
 #include <string>
 #include <cmath>
-#include <cassert>
 
 using namespace std;
 

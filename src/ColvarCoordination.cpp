@@ -60,7 +60,7 @@ reduceListAtNextStep(false)
   parse("MM",mm);
   parse("R_0",r_0);
   parse("D_0",d_0);
-  assert(r_0>0); // this is the only compulsory option
+  plumed_assert(r_0>0); // this is the only compulsory option
   switchingFunction.set(nn,mm,r_0,d_0);
 
   bool nopbc=!pbc;
@@ -79,9 +79,9 @@ reduceListAtNextStep(false)
   parseFlag("NLIST",doneigh);
   if(doneigh){
    parse("NL_CUTOFF",nl_cut);
-   assert(nl_cut>0.);
+   plumed_assert(nl_cut>0.);
    parse("NL_STRIDE",nl_st);
-   assert(nl_st>0);
+   plumed_assert(nl_st>0);
   }
   
   checkRead();

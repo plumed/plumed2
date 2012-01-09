@@ -64,11 +64,11 @@ min(getNumberOfArguments(),-1.0),
 kappa(getNumberOfArguments(),0.0)
 {
   parseVector("KAPPA",kappa);
-  assert(kappa.size()==getNumberOfArguments());
+  plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("MIN",min);
-  assert(min.size()==getNumberOfArguments());
+  plumed_assert(min.size()==getNumberOfArguments());
   parseVector("TO",to);
-  assert(to.size()==getNumberOfArguments());
+  plumed_assert(to.size()==getNumberOfArguments());
   checkRead();
 
   log.printf("  min");
