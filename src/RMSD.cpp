@@ -69,8 +69,6 @@ void RMSD::setDisplace(const vector<double> & displace){
 
 double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives){
 
-  const unsigned n=reference.size();
-
   double ret=0.;
 
   switch(alignmentMethod){
@@ -108,7 +106,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 		                     std::vector<Vector>  & derivatives) {
 	  double dist(0);
 	  double norm(0);
-	  int n=reference.size();
+	  unsigned n=reference.size();
 	  for(unsigned i=0;i<n;i++){
 	      Vector d=delta(reference[i],positions[i]);
 	      derivatives[i]=2.0*d;

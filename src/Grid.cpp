@@ -108,7 +108,7 @@ vector<unsigned> Grid::getIndices(const vector<double> & x) const {
  plumed_assert(x.size()==dimension_);
  vector<unsigned> indices;
  for(unsigned int i=0;i<dimension_;++i){
-   indices.push_back(floor((x[i]-min_[i])/dx_[i]));
+   indices.push_back(unsigned(floor((x[i]-min_[i])/dx_[i])));
  }
  return indices;
 }
@@ -202,7 +202,7 @@ vector<unsigned> Grid::getNeighbors
 vector<unsigned> Grid::getSplineNeighbors(const vector<unsigned> & indices)const{
  plumed_assert(indices.size()==dimension_);
  vector<unsigned> neighbors;
- unsigned nneigh=pow(2.0,int(dimension_));
+ unsigned nneigh=unsigned(pow(2.0,int(dimension_)));
  
  for(unsigned int i=0;i<nneigh;++i){
   unsigned tmp=i;

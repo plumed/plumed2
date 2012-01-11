@@ -19,7 +19,7 @@ Kearsley::Kearsley(const vector<Vector> &p0, const vector<Vector> &p1, const vec
 	com1_is_removed=false;
 	this->align=align;
 	// now make an initial allocation
-	int n=p0.size();
+//	int n=p0.size();
 	// eventually here one should make a "hard" resize of all the structures
 //	log.printf("Reallocating a size of %d atoms to kearsley structure\n",n);
 

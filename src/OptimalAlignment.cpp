@@ -88,7 +88,7 @@ double OptimalAlignment::calculate(bool rmsd, std::vector<Vector> & derivatives)
 /// this does the weighed alignment if the vector of alignment is different from displacement
 double OptimalAlignment::weightedAlignment( bool rmsd){
 	double tmp0,tmp1,walign,wdisplace,const1,ret;
-	unsigned  i,j,k,l,m,n,o,oo,mm,kk;
+	unsigned  i,k,l,m,n,o,oo,mm;
 
 	unsigned natoms=p0.size();
 
@@ -265,7 +265,7 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 	if (rmsd){
 		ret=sqrt(ret);
 			double tmp=0.5/ret;
-			for(int i=0;i<natoms;i++){
+			for(unsigned i=0;i<natoms;i++){
 					derrdp0[i][0]=derrdp0[i][0]*tmp;
 					derrdp0[i][1]=derrdp0[i][1]*tmp;
 					derrdp0[i][2]=derrdp0[i][2]*tmp;
@@ -286,8 +286,7 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	log.printf("-------------------------------------------\n");
 	log.printf("TEST1: derivative of the value (derr_dr0/derr_dr1)\n");
 	//// test 1
-	unsigned i,j,l,m;
-	double step=1.e-8,olderr,delta,delta1,err;
+	double step=1.e-8,olderr,delta,err;
 	vector<Vector> fakederivatives;
 	fakederivatives.resize(p0.size());
 	fast=false;
