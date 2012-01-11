@@ -1,0 +1,51 @@
+REGRESSION TEST
+
+If your system is configured and you compiled everything
+just try the tests with
+> make
+
+To do many tests in parallel, as usual
+> make -j 4
+
+ATTENTION
+
+!!!! Up to now it is only possible to do regtests with simplemd
+!!!! As soon as possible we should add the possibility
+!!!! of doing them with a driver
+
+HOW TO ADD A NEW TEST
+
+Add a new directory rtXXX, let's say rt105, and go there:
+> cd rt105
+
+Link the common makefile
+> ln -s ../scripts/test.make ./Makefile
+
+Put in the rt105 directory a "config" files as this one
+> cat "type=simplemd" > config
+Later, we will use it to enforce different types
+of test (e.g. driver based)
+
+Put in the rt105 directory all the input files that you need
+(typically: in input.xyz plumed.dat)
+
+Make:
+> make
+
+Copy from the newly generated tmp directory the files that you
+want to check and rename them into xxx.reference
+> cp rt5/COLVAR COLVAR.reference
+
+Add to the git repository all the files in the rt105 directory,
+but for report.txt and tmp directory:
+> git add .
+(this should work since report.txt and tmp are git-ignored)
+In this manner, other people will be able to perform the test
+
+HOW TO RESET A TEST
+If you get an error from a test but you think that the new
+result is the correct one, just go to its directory and type
+> make reset
+Then commit the modified references
+
+

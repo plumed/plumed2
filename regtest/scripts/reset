@@ -1,0 +1,8 @@
+#!/bin/bash
+
+make
+
+for file in *.reference
+do
+  cp "tmp/${file%.reference}" "${file}"
+done

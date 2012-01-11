@@ -1,0 +1,65 @@
+#!/bin/bash
+
+{
+
+date
+echo "Running regtest in $(pwd)"
+
+rm -fr tmp
+mkdir tmp
+cd tmp
+cp -f ../* .
+
+test -f config || {
+  echo "FAILURE: config not found"
+  exit 1
+}
+
+source ./config
+
+echo "++ Test type: $type"
+
+case "$type" in
+(simplemd)
+  test -f ../../../test/simplemd/simplemd || {
+    echo "FAILURE: simplemd is not compiled"
+    exit 1
+  }
+  test -f in || {
+    echo "FAILURE: in file not present"
+    exit 1
+  }
+  echo "Run simplemd"
+  ../../../test/simplemd/simplemd < in > out 2> err
+  echo "Done. Here is the error file:"
+  cat err
+  ;;
+(*) echo "unknown test type" ; exit 1 ;;
+esac
+
+
+if ls *.reference > /dev/null
+then
+for file in *.reference ; do
+  new="${file%.reference}"
+  if test -f "$new" ; then
+    out="$(diff "$file" "$new")"
+    test -n "$out" && {
+      echo FAILURE
+      echo "Diff for ${file%.reference}:"
+      diff "${file}" "${file%.reference}"
+    }
+  else
+    echo FAILURE
+    echo FILE $new does not exist
+  fi
+done
+else
+    echo WARNING
+    echo no file has been checked
+fi
+
+
+cd ../
+
+} | tee report.txt

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+N=0
+
+echo
+echo
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo "+ Test session ended at $(date)"
+
+for file in */report.txt
+do
+  grep -q FAILURE $file &&
+{
+  ((N++))
+  echo + ERROR in test ${file%/report.txt}
+  echo + check file $file for more information
+}
+done
+
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo "+ Final report:"
+echo "+ $N errors found"
+if ((N==0)) ; then
+echo "+ No errors. Well done!!"
+else
+echo "+ Find the bug!"
+echo "+ To replace references, go to the test directory and"
+echo "+ type 'make reset'"
+fi
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
+echo
+echo
+
