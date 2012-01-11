@@ -50,12 +50,12 @@ void ColvarDipole::calculate()
 
  deriv.resize(getPositions().size());
  for(unsigned int i=0;i<ga_lista.size();i++) {
-   dipje += (getCharges(ga_lista[i].index()))*getPositions(i);
+   dipje += (getCharges(i))*getPositions(i);
  }
  dipole = dipje.modulo();
 
  for(unsigned int i=0;i<ga_lista.size();i++) {
-   double dfunc=getCharges(ga_lista[i].index())/dipole;
+   double dfunc=getCharges(i)/dipole;
    deriv[i] = deriv[i] + (dfunc)*dipje;
    virial=virial-Tensor(getPositions(i),deriv[i]);
  }
