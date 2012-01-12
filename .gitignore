@@ -7,7 +7,10 @@
 *.so
 *.tmp
 *.dylib
+*.dll
 *.swp
+*.exe
+a.out
 makefile.dep
 /Makefile.conf
 /sourceme.sh

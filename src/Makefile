@@ -6,7 +6,7 @@
 ifdef CXX
 
 # source/objects for plumed kernel
-SRC_KERNEL=$(subst PlumedStatic.cpp,,$(wildcard *.cpp))
+SRC_KERNEL=$(subst main.cpp,,$(subst PlumedStatic.cpp,,$(wildcard *.cpp)))
 OBJ_KERNEL=$(SRC_KERNEL:.cpp=.o)
 
 # source/object for plumed wrapper
@@ -17,14 +17,18 @@ OBJ_WRAPPER=PlumedStatic.o
 SRC_DYNAMIC_WRAPPER=Plumed.c
 OBJ_DYNAMIC_WRAPPER=Plumed.o
 
+# source/object for plumed main program
+SRC_MAIN=main.cpp
+OBJ_MAIN=main.o
+
 # all sources
-ALL_SRC=$(SRC_KERNEL) $(SRC_WRAPPER) $(SRC_DYNAMIC_WRAPPER)
+ALL_SRC=$(SRC_KERNEL) $(SRC_WRAPPER) $(SRC_DYNAMIC_WRAPPER) $(SRC_MAIN)
 
 # all objects
-ALL_SRC_OBJ=$(SRC_KERNEL:.cpp=.o) $(SRC_WRAPPER:.cpp=.o) $(SRC_DYNAMIC_WRAPPER:.c.o)
+ALL_OBJ=$(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
 # dependency files
-ALL_SRC_DEP=$(ALL_SRC_OBJ:.o=.d)
+ALL_DEP=$(ALL_OBJ:.o=.d)
 
 # plumed kernel
 PLUMED_KERNEL=libplumedKernel.$(SOEXT)
@@ -32,9 +36,14 @@ PLUMED_KERNEL=libplumedKernel.$(SOEXT)
 # plumed library
 PLUMED_SHARED_OBJ=libplumed.$(SOEXT)
 
+# plumed main exec
+PLUMED_MAIN_STATIC=plumed-static
+PLUMED_MAIN_SHARED=plumed-shared
+
 # default target
 .PHONY: all
 all: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(OBJ_WRAPPER) \
+     $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) \
      Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static \
      compile_options.sh
 
@@ -43,6 +52,12 @@ $(PLUMED_KERNEL):$(OBJ_KERNEL)
 
 $(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
+
+$(PLUMED_MAIN_STATIC): main.o $(OBJ_KERNEL) $(OBJ_WRAPPER)
+	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
+	
+$(PLUMED_MAIN_SHARED): main.o $(PLUMED_SHARED_OBJ)
+	$(LD) $(LDFLAGS) main.o $(realpath $(PLUMED_SHARED_OBJ)) -o $@ $(LIBS)
 
 Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) libplumed.$(SOEXT) Plumed.o
 	@echo Building Plumed.inc
@@ -75,7 +90,7 @@ Plumed.inc.shared: Plumed.inc
 	@echo PLUMED_LOAD= '$$(PLUMED_SHARED_OBJ) $$(PLUMED_LIBS) $$(PLUMED_LDFLAGS)' >> $@
 	@echo PLUMED_DEPENDENCIES='$$(PLUMED_SHARED_OBJ)' >> $@
 
-$(ALL_SRC_DEP): PlumedConfig.h
+$(ALL_DEP): PlumedConfig.h
 
 # rule for c++
 %.o: %.cpp
@@ -113,7 +128,7 @@ compile_options.sh:
 
 # Individual dependencies
 
--include $(ALL_SRC_DEP)
+-include $(ALL_DEP)
 
 # if machine dependent configuration has not been found:
 else
@@ -139,4 +154,5 @@ clean:
 	rm -f *.so
 	rm -f *.dylib
 	rm -f compile_options.sh
+	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED)
 
