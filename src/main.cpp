@@ -1,4 +1,7 @@
 #include "CLTool.h"
+#ifdef __PLUMED_MPI
+#include "mpi.h"
+#endif
 
 using namespace PLMD;
 
@@ -8,5 +11,12 @@ using namespace PLMD;
 /// not be linked with external MD codes, so as 
 /// to avoid linker error.
 int main(int argc,char**argv){
-  return CLTool::globalMain(argc,argv);
+#ifdef __PLUMED_MPI
+  MPI_Init(&argc,&argv);
+#endif
+  int ret=CLTool::globalMain(argc,argv);
+#ifdef __PLUMED_MPI
+  MPI_Finalize();
+#endif
+  return ret;
 }

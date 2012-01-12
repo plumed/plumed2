@@ -20,13 +20,13 @@ class CLToolDriver:
 public CLTool
 {
 public:
-  int main(int argc,char**argv,FILE*in,FILE*out);
+  int main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc);
 };
 
 
 PLUMED_REGISTER_CLTOOL(CLToolDriver,"driver")
 
-int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out){
+int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc){
 
 // to avoid warnings:
  (void) in;
@@ -73,6 +73,7 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out){
     Tools::convert(line,natoms);
     if(checknatoms==0){
       checknatoms=natoms;
+      if(PlumedCommunicator::initialized()) p.cmd("setMPIComm",&pc.Get_comm());
       p.cmd("setNatoms",&natoms);
       p.cmd("setMDEngine","driver");
       p.cmd("setTimestep",&timestep);

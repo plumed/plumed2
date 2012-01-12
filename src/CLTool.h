@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include "PlumedCommunicator.h"
 
 
 namespace PLMD{
@@ -24,9 +25,9 @@ Inherits from this class to create a new command-line tool.
 */
 class CLTool{
 public:
-  static int globalMain(int argc, char **argv,FILE*in=stdin,FILE*out=stdout);
+  static int globalMain(int argc, char **argv,FILE*in=stdin,FILE*out=stdout,PlumedCommunicator&pc=PlumedCommunicator::Get_world());
 /// virtual function mapping to the specific main for each tool
-  virtual int main(int argc, char **argv,FILE*in,FILE*out)=0;
+  virtual int main(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator&pc)=0;
   virtual ~CLTool(){};
 };
 

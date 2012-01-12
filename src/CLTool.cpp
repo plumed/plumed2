@@ -28,7 +28,7 @@ will be available also e.g. on Windows (I am thinking
 about VMD plugin etc)
 */
 
-int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out){
+int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& pc){
   int i;
   for(i=1;i<argc;i++){
     string arg(argv[i]);
@@ -47,7 +47,7 @@ int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out){
   cl=cltoolRegister().create(command);
   if(!cl) plumed_merror("unknown command " + command);
 
-  int ret=cl->main(argc-i,&argv[i],in,out);
+  int ret=cl->main(argc-i,&argv[i],in,out,pc);
 
   delete cl;
 
