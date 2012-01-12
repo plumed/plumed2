@@ -110,7 +110,7 @@ bool Tools::getline(FILE* fp,string & line){
     line.append(buffer);
     if(buffer[strlen(buffer)-1]=='\n') break;
   };
-  if(*(line.end()-1)=='\n') line.erase(line.end()-1);
+  if(line.length()>0) if(*(line.end()-1)=='\n') line.erase(line.end()-1);
   return ret;
 }
 
