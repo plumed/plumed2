@@ -1,14 +1,16 @@
 #!/bin/bash
 
 N=0
+M=0
 
 echo
 echo
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Test session ended at $(date)"
 
-for file in */report.txt
+for file in rt*/report.txt
 do
+  ((M++))
   grep -q FAILURE $file &&
 {
   ((N++))
@@ -19,9 +21,9 @@ done
 
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Final report:"
-echo "+ $N errors found"
+echo "+ $M tests performed, $N errors found"
 if ((N==0)) ; then
-echo "+ No errors. Well done!!"
+echo "+ Well done!!"
 else
 echo "+ Find the bug!"
 echo "+ To replace references, go to the test directory and"
