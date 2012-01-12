@@ -1,5 +1,4 @@
 #include "ActionRegister.h"
-#include "Log.h"
 #include "Tools.h"
 #include "Action.h"
 #include <algorithm>
