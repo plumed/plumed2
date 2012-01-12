@@ -22,12 +22,12 @@ double Angle::compute(const Vector& v1,const Vector& v2,Vector& d1,Vector& d2)co
 
     const double dpnn(dp*nn);
 
-    if(dpnn==1.0){
+    if(dpnn>=1.0-epsilon){
       d1=Vector(0.0,0.0,0.0);
       d2=Vector(0.0,0.0,0.0);
       return 0.0;
     }
-    if(dpnn==-1.0){
+    if(dpnn<=-1.0+epsilon){
       d1=Vector(0.0,0.0,0.0);
       d2=Vector(0.0,0.0,0.0);
       return pi;
