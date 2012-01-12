@@ -9,11 +9,11 @@ ifdef CXX
 SRC_KERNEL=$(subst PlumedStatic.cpp,,$(wildcard *.cpp))
 OBJ_KERNEL=$(SRC_KERNEL:.cpp=.o)
 
-# source/objects for plumed wrapper
+# source/object for plumed wrapper
 SRC_WRAPPER=PlumedStatic.cpp
 OBJ_WRAPPER=PlumedStatic.o
 
-# source/objects for plumed dynamic wrapper
+# source/object for plumed dynamic wrapper
 SRC_DYNAMIC_WRAPPER=Plumed.c
 OBJ_DYNAMIC_WRAPPER=Plumed.o
 
@@ -38,10 +38,10 @@ all: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(OBJ_WRAPPER) \
      Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static \
      compile_options.sh
 
-libplumedKernel.$(SOEXT): $(OBJ_KERNEL)
+$(PLUMED_KERNEL):$(OBJ_KERNEL)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 
-libplumed.$(SOEXT): $(OBJ_KERNEL) $(OBJ_WRAPPER)
+$(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 
 Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) libplumed.$(SOEXT) Plumed.o
