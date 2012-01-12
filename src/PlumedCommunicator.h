@@ -64,6 +64,9 @@ public:
 /// Tests if MPI library is initialized
   static bool initialized();
 
+/// Returns MPI_COMM_WORLD if MPI is initialized, otherwise the default communicator
+  static PlumedCommunicator & Get_world();
+
 /// Wrapper for MPI_Allreduce with MPI_SUM
   template <class T>
   void Sum(T*,int);

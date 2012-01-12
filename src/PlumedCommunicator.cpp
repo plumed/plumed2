@@ -22,6 +22,15 @@ int PlumedCommunicator::Get_rank()const{
   return r;
 }
 
+PlumedCommunicator& PlumedCommunicator::Get_world(){
+  static PlumedCommunicator c;
+#ifdef __PLUMED_MPI
+  if(initialized()) c.communicator=MPI_COMM_WORLD;
+#endif
+  return c;
+}
+
+
 int PlumedCommunicator::Get_size()const{
   int s=1;
 #ifdef __PLUMED_MPI
@@ -33,7 +42,7 @@ int PlumedCommunicator::Get_size()const{
 void PlumedCommunicator::Set_comm(MPI_Comm c){
 #ifdef __PLUMED_MPI
   if(initialized()){
-    if(communicator!=MPI_COMM_SELF) MPI_Comm_free(&communicator);
+    if(communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD) MPI_Comm_free(&communicator);
     if(c!=MPI_COMM_SELF) MPI_Comm_dup(c,&communicator);
   }
 #else
@@ -43,7 +52,7 @@ void PlumedCommunicator::Set_comm(MPI_Comm c){
 
 PlumedCommunicator::~PlumedCommunicator(){
 #ifdef __PLUMED_MPI
-  if(initialized() && communicator!=MPI_COMM_SELF) MPI_Comm_free(&communicator);
+  if(initialized() && communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD) MPI_Comm_free(&communicator);
 #endif
 }
 
