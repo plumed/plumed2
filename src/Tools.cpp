@@ -103,7 +103,7 @@ bool Tools::getParsedLine(FILE* fp,vector<string> & words){
 
 bool Tools::getline(FILE* fp,string & line){
   line="";
-  const int bufferlength=5;
+  const int bufferlength=1024;
   char buffer[bufferlength];
   bool ret;
   while((ret=fgets(buffer,bufferlength,fp))){
