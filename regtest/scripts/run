@@ -1,9 +1,25 @@
 #!/bin/bash
 
+export valgrind=env
+
+echo ciao
+
+for opt in ${*}
+do
+case "$opt" in
+(--valgrind) valgrind="valgrind --leak-check=full --show-reachable=yes" ;;
+(*) echo error ; exit ;;
+esac
+done
+
 {
 
 date
 echo "Running regtest in $(pwd)"
+
+if [ "$valgrind" = valgrind ] ; then
+echo "using valgrind"
+fi
 
 rm -fr tmp
 mkdir tmp
@@ -30,7 +46,8 @@ case "$type" in
     exit 1
   }
   echo "Run simplemd"
-  ../../../test/simplemd/simplemd < in > out 2> err
+  echo $valgrind ../../../test/simplemd/simplemd
+  $valgrind ../../../test/simplemd/simplemd < in > out 2> err
   echo "Done. Here is the error file:"
   cat err
   ;;
@@ -40,7 +57,8 @@ case "$type" in
     exit 1
   }
   echo "Run driver"
-  ../../../src/plumed-shared driver $arg > out 2> err
+  echo $valgrind ../../../src/plumed-shared driver $arg > out 2> err
+  $valgrind ../../../src/plumed-shared driver $arg > out 2> err
   echo "Done. Here is the error file:"
   cat err
  ;;

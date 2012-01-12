@@ -1,15 +1,21 @@
 SUBDIRS = $(subst /Makefile,,$(wildcard rt*/Makefile))
 SUBDIRSCLEAN = $(addsuffix .clean,$(SUBDIRS))
+SUBDIRSVALGRIND = $(addsuffix .valgrind,$(SUBDIRS))
 
-.PHONY: all clean $(SUBDIRS) $(SUBDIRSCLEAN)
+.PHONY: all clean valgrind $(SUBDIRS) $(SUBDIRSCLEAN) $(SUBDIRSVALGRIND)
 
 all: $(SUBDIRS)
 	scripts/check
 
 clean: $(SUBDIRSCLEAN)
 
+valgrind: $(SUBDIRSVALGRIND)
+
 $(SUBDIRS):
 	$(MAKE) -C $@
 
 $(SUBDIRSCLEAN): %.clean:
 	$(MAKE) -C $* clean
+
+$(SUBDIRSVALGRIND): %.valgrind:
+	$(MAKE) -C $* valgrind
