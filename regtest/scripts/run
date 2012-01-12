@@ -34,6 +34,16 @@ case "$type" in
   echo "Done. Here is the error file:"
   cat err
   ;;
+(driver)
+  test -f ../../../src/plumed-shared || {
+    echo "FAILURE: driver is not compiled"
+    exit 1
+  }
+  echo "Run driver"
+  ../../../src/plumed-shared driver $arg > out 2> err
+  echo "Done. Here is the error file:"
+  cat err
+ ;;
 (*) echo "unknown test type" ; exit 1 ;;
 esac
 
