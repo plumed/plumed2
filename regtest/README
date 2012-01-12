@@ -7,12 +7,6 @@ just try the tests with
 To do many tests in parallel, as usual
 > make -j 4
 
-ATTENTION
-
-!!!! Up to now it is only possible to do regtests with simplemd
-!!!! As soon as possible we should add the possibility
-!!!! of doing them with a driver
-
 HOW TO ADD A NEW TEST
 
 Add a new directory rtXXX, let's say rt105, and go there:
@@ -21,13 +15,22 @@ Add a new directory rtXXX, let's say rt105, and go there:
 Link the common makefile
 > ln -s ../scripts/test.make ./Makefile
 
-Put in the rt105 directory a "config" files as this one
-> cat "type=simplemd" > config
-Later, we will use it to enforce different types
-of test (e.g. driver based)
+Put in the rt105 directory a "config" files containing the
+options which define your test.
+Presently, you can try one of the following:
 
-Put in the rt105 directory all the input files that you need
-(typically: in input.xyz plumed.dat)
+(A) testing with simplemd
+type="simplemd"
+
+(B) testing with the driver. the arg variable allows to pass command
+    line arguments to the driver
+type="driver"
+arg="--plumed=plumed.dat --timestep=0.05 trajectory.xyz"
+
+Put in the rt105 directory all the input files that you need.
+Typically:
+  for simplemd: in input.xyz plumed.dat
+  for driver: trajectory.xyz plumed.dat
 
 Make:
 > make
