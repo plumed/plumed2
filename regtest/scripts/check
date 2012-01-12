@@ -1,7 +1,8 @@
 #!/bin/bash
 
-N=0
-M=0
+nerror=0
+nok=0
+notapp=0
 
 echo
 echo
@@ -10,19 +11,24 @@ echo "+ Test session ended at $(date)"
 
 for file in rt*/report.txt
 do
-  ((M++))
-  grep -q FAILURE $file &&
-{
-  ((N++))
-  echo + ERROR in test ${file%/report.txt}
-  echo + check file $file for more information
-}
+  if grep -q NOT_APPLIABLE $file ; then
+    ((notapp++))
+    echo + test ${file%/report.txt} NOT APPLIABLE
+    echo + check file $file for more information
+  elif grep -q FAILURE $file ; then
+    ((nerror++))
+    echo + ERROR in test ${file%/report.txt}
+    echo + check file $file for more information
+  else
+    ((nok++))
+  fi
 done
 
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Final report:"
-echo "+ $M tests performed, $N errors found"
-if ((N==0)) ; then
+echo "+ $((nok+nerror)) tests performed, $notapp tests not appliable"
+echo "+ $nerror errors found"
+if ((nerror==0)) ; then
 echo "+ Well done!!"
 else
 echo "+ Find the bug!"

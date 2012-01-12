@@ -31,9 +31,27 @@ test -f config || {
   exit 1
 }
 
+mpiprocs=0
+
 source ./config
 
 echo "++ Test type: $type"
+echo "++ Arguments: $arg"
+echo "++ Processors: $mpiprocs"
+
+mpi=env
+
+if ((mpiprocs>0)); then
+mpi="mpirun -np $mpiprocs"
+
+grep -q __PLUMED_MPI ../../../src/compile_options.sh ||
+{
+  echo "NOT_APPLIABLE (MPI NOT INSTALLED)"
+  exit 0;
+}
+
+
+fi
 
 case "$type" in
 (simplemd)
@@ -46,8 +64,7 @@ case "$type" in
     exit 1
   }
   echo "Run simplemd"
-  echo $valgrind ../../../test/simplemd/simplemd
-  $valgrind ../../../test/simplemd/simplemd < in > out 2> err
+  $valgrind $mpi ../../../test/simplemd/simplemd < in > out 2> err
   echo "Done. Here is the error file:"
   cat err
   ;;
@@ -57,8 +74,7 @@ case "$type" in
     exit 1
   }
   echo "Run driver"
-  echo $valgrind ../../../src/plumed-shared driver $arg > out 2> err
-  $valgrind ../../../src/plumed-shared driver $arg > out 2> err
+  $valgrind $mpi ../../../src/plumed-shared driver $arg > out 2> err
   echo "Done. Here is the error file:"
   cat err
  ;;
