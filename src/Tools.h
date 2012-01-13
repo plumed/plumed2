@@ -72,6 +72,8 @@ public:
   static void removeDuplicates(std::vector<T>& vec);
 /// interpret ":" syntax for labels
   static void interpretLabel(std::vector<std::string>&s);
+/// list files in a directory
+  static std::vector<std::string> ls(const std::string&);
 };
 
 template <class T>
