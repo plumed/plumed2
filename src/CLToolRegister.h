@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <iostream>
+#include <vector>
 
 namespace PLMD{
 
@@ -37,6 +38,8 @@ public:
   CLTool* create(const CLToolOptions&ao);
   void remove(creator_pointer);
   ~CLToolRegister();
+/// Returns a list of the allowed CLTools
+  std::vector<std::string> list()const;
 };
 
 /// Function returning a reference to the CLToolRegister.

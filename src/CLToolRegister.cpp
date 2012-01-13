@@ -53,10 +53,7 @@ CLTool* CLToolRegister::create(const CLToolOptions&ao){
 
 
 std::ostream & PLMD::operator<<(std::ostream &log,const CLToolRegister&ar){
-  vector<string> s;
-  for(CLToolRegister::const_mIterator it=ar.m.begin();it!=ar.m.end();++it)
-    s.push_back((*it).first);
-  sort(s.begin(),s.end());
+  vector<string> s(ar.list());
   for(unsigned i=0;i<s.size();i++) log<<"  "<<s[i]<<"\n";
   if(ar.disabled.size()>0){
     s.assign(ar.disabled.size(),"");
@@ -69,5 +66,14 @@ std::ostream & PLMD::operator<<(std::ostream &log,const CLToolRegister&ar){
   };
   return log;
 }
+
+vector<string> CLToolRegister::list()const{
+  vector<string> s;
+  for(const_mIterator it=m.begin();it!=m.end();++it)
+    s.push_back((*it).first);
+  sort(s.begin(),s.end());
+  return s;
+}
+
 
 
