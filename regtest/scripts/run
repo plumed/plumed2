@@ -10,6 +10,13 @@ case "$opt" in
 esac
 done
 
+if test -z "$PLUMED_ROOT" 
+then
+  echo "Set your PLUMED_ROOT variable first."
+  echo "Did you source the sourceme.sh file?."
+  exit
+fi
+
 {
 
 date
@@ -53,7 +60,7 @@ fi
 
 case "$type" in
 (simplemd)
-  test -f ../../../test/simplemd/simplemd || {
+  test -f $PLUMED_ROOT/test/simplemd/simplemd || {
     echo "FAILURE: simplemd is not compiled"
     exit 1
   }
@@ -62,7 +69,7 @@ case "$type" in
     exit 1
   }
   echo "Run simplemd"
-  $mpi $valgrind ../../../test/simplemd/simplemd < in > out 2> err
+  $mpi $valgrind $PLUMED_ROOT/test/simplemd/simplemd < in > out 2> err
   echo "Done. Here is the error file:"
   cat err
   ;;
