@@ -32,7 +32,7 @@ clean:
 	$(LDSO) -o $@ $^
 
 %.o: %.cpp
-	$(CXX) -M $(CPPFLAGS) $(CXXFLAGS) $*.cpp > $*.d
+	$(CXX) -c -MM -MF$*.d $(CPPFLAGS) $(CXXFLAGS) $*.cpp
 	@cp -f $*.d $*.d.tmp
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
@@ -41,7 +41,7 @@ ifndef XLF
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $*.cpp -o $*.o
 endif
 %.o: %.c
-	$(CC) -M $(CPPFLAGS) $(CXXFLAGS) $*.c > $*.d
+	$(CCC) -c -MM -MF$*.d $(CPPFLAGS) $(CFLAGS) $*.c
 	@cp -f $*.d $*.d.tmp
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
