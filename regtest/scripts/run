@@ -62,7 +62,7 @@ case "$type" in
     exit 1
   }
   echo "Run simplemd"
-  $valgrind $mpi ../../../test/simplemd/simplemd < in > out 2> err
+  $mpi $valgrind ../../../test/simplemd/simplemd < in > out 2> err
   echo "Done. Here is the error file:"
   cat err
   ;;
@@ -72,7 +72,7 @@ case "$type" in
     exit 1
   }
   echo "Run driver"
-  $valgrind $mpi ../../../src/plumed-shared driver $arg > out 2> err
+  $mpi $valgrind ../../../src/plumed-shared driver $arg > out 2> err
   echo "Done. Here is the error file:"
   cat err
  ;;
