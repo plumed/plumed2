@@ -37,7 +37,8 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
  string plumedFile("plumed.dat");
  string dumpforces("");
  string trajectoryFile("");
- double timestep(1.0);
+ double timestep(0.001);
+ unsigned stride(1);
  bool printhelp=false;
 
 // Start parsing options
@@ -62,6 +63,12 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
       prefix="";
     } else if(a=="--timestep"){
       prefix="--timestep=";
+    } else if(a.find("--stride=")==0){
+      a.erase(0,a.find("=")+1);
+      Tools::convert(a,stride);
+      prefix="";
+    } else if(a=="--stride"){
+      prefix="--stride=";
     } else if(a.find("--dumpforces=")==0){
       a.erase(0,a.find("=")+1);
       dumpforces=a;
@@ -85,7 +92,8 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
  "Options:\n"
  "  [--help|-h]     : prints this help\n"
  "  [--plumed FILE] : plumed script file (default: plumed.dat)\n"
- "  [--timestep TS] : time between frames (default: 1.0)\n"
+ "  [--timestep TS] : timestep (default: 0.001) in picoseconds\n"
+ "  [--stride ST]   : stride between frames (default: 1)\n"
 );
     return 0;
   }
@@ -149,7 +157,7 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
    p.cmd("setStep",&step);
    p.cmd("calc");
 
-    step++;
+    step+=stride;
   }
 
   fclose(fp);
