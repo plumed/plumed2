@@ -21,6 +21,9 @@ public CLTool
 {
 public:
   int main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc);
+  string description()const{
+    return "analyze trajectories with plumed";
+  }
 };
 
 
