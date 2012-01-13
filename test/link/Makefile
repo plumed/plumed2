@@ -8,32 +8,32 @@ EXE=plumed plumedf plumedc \
 
 all: $(EXE)
 
-plumed-dummy: main.o $(PLUMED_WRAPPER)
-	$(LD) $(LDFLAGS) $^ -o $@ $(PLUMED_LIBS)
+plumed-dummy: main.o $(PLUMED_RUNTIME_DEPENDENCIES)
+	$(LD) main.o -o $@ $(PLUMED_RUNTIME_LOAD)
 
-plumed-static: main.o $(PLUMED_OBJ)
-	$(LD) $(LDFLAGS) $^ -o $@ $(PLUMED_LIBS) $(PLUMED_DYNAMIC_LIBS)
+plumed-static: main.o $(PLUMED_STATIC_DEPENDENCIES)
+	$(LD) main.o -o $@ $(PLUMED_STATIC_LOAD)
 
-plumed: main.o $(PLUMED_SHARED_OBJ)
-	$(LD) $(LDFLAGS) $^ -o $@ $(PLUMED_LIBS)
+plumed: main.o $(PLUMED_SHARED_DEPENDENCIES)
+	$(LD) main.o -o $@ $(PLUMED_SHARED_LOAD)
 
-plumedf-dummy: mainf.o $(PLUMED_WRAPPER)
-	$(LDF90) $(LDFLAGS) $^ -o $@ $(PLUMED_LIBS)
+plumedf-dummy: mainf.o $(PLUMED_RUNTIME_DEPENDENCIES)
+	$(LDF90) mainf.o -o $@ $(PLUMED_RUNTIME_LOAD)
 
-plumedf-static: mainf.o $(PLUMED_OBJ)
-	$(LDF90) $(LDFLAGS) $^ -o $@ $(PLUMED_LIBS) $(PLUMED_DYNAMIC_LIBS)
+plumedf-static: mainf.o $(PLUMED_STATIC_DEPENDENCIES)
+	$(LDF90) mainf.o -o $@ $(PLUMED_STATIC_LOAD)
 
-plumedf: mainf.o $(PLUMED_SHARED_OBJ)
-	$(LDF90) $(LDFLAGS) $^ -o $@ $(PLUMED_LIBS)
+plumedf: mainf.o $(PLUMED_SHARED_DEPENDENCIES)
+	$(LDF90) mainf.o -o $@ $(PLUMED_SHARED_LOAD)
 
-plumedc-dummy: mainc.o $(PLUMED_WRAPPER)
-	$(LD) $(LDFLAGS) $^ -o $@ $(PLUMED_LIBS)
+plumedc-dummy: mainc.o $(PLUMED_RUNTIME_DEPENDENCIES)
+	$(LD) mainc.o -o $@ $(PLUMED_RUNTIME_LOAD)
 
-plumedc-static: mainc.o $(PLUMED_OBJ)
-	$(LD) $(LDFLAGS) $^ -o $@ $(PLUMED_LIBS) $(PLUMED_DYNAMIC_LIBS)
+plumedc-static: mainc.o $(PLUMED_STATIC_DEPENDENCIES)
+	$(LD) mainc.o -o $@ $(PLUMED_STATIC_LOAD)
 
-plumedc: mainc.o $(PLUMED_SHARED_OBJ)
-	$(LD) $(LDFLAGS) $^ -o $@ $(PLUMED_LIBS)
+plumedc: mainc.o $(PLUMED_SHARED_DEPENDENCIES)
+	$(LD) mainc.o -o $@ $(PLUMED_SHARED_LOAD)
 
 clean:
 	rm -f *.o

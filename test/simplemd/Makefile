@@ -9,14 +9,14 @@ EXE=simplemd-dummy simplemd-static simplemd
 
 all: $(EXE)
 
-simplemd-dummy: $(OBJ) $(PLUMED_WRAPPER)
-	$(LDF90) $(PLUMED_LDFLAGS) $^ -o $@ $(PLUMED_LIBS)
+simplemd-dummy: $(OBJ) $(PLUMED_RUNTIME_DEPENDENCIES)
+	$(LDF90) $(OBJ) -o $@ $(PLUMED_RUNTIME_LOAD)
 
-simplemd-static: $(OBJ) $(PLUMED_OBJ)
-	$(LDF90) $(PLUMED_LDFLAGS) $^ -o $@ $(PLUMED_LIBS) $(PLUMED_DYNAMIC_LIBS)
+simplemd-static: $(OBJ) $(PLUMED_STATIC_DEPENDENCIES)
+	$(LDF90) $(OBJ) -o $@ $(PLUMED_STATIC_LOAD)
 
-simplemd: $(OBJ) $(PLUMED_SHARED_OBJ)
-	$(LDF90) $(PLUMED_LDFLAGS) $^ -o $@ $(PLUMED_LIBS)
+simplemd: $(OBJ) $(PLUMED_SHARED_DEPENDENCIES)
+	$(LDF90) $(OBJ) -o $@ $(PLUMED_SHARED_LOAD)
 
 clean:
 	rm -f *.o

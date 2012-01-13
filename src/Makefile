@@ -61,34 +61,34 @@ $(PLUMED_MAIN_SHARED): main.o $(PLUMED_SHARED_OBJ)
 
 Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) libplumed.$(SOEXT) Plumed.o
 	@echo Building Plumed.inc
-	@echo "PLUMED_OBJ=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  > $@
-	@echo "PLUMED_SHARED_OBJ=" $(realpath libplumed.$(SOEXT)) >> $@
-	@echo "PLUMED_WRAPPER=" $(realpath Plumed.o) >> $@
 	@echo "PLUMED_INCLUDE="-I$(realpath ../include) >> $@
-	@echo "PLUMED_LIBS="$(LIBS) >> $@
-	@echo "PLUMED_DYNAMIC_LIBS="$(DYNAMIC_LIBS) >> $@
-	@echo "PLUMED_LDFLAGS="$(LDFLAGS) >> $@
+	@echo "PLUMED_RUNTIME_LOAD=" $(realpath Plumed.o) $(LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_STATIC_LOAD=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_SHARED_LOAD=" $(realpath libplumed.$(SOEXT)) $(LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
+	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
+	@echo "PLUMED_RUNTIME_DEPENDENCIES=" $(realpath libplumed.$(SOEXT))  >> $@
 
 Plumed.inc.runtime: Plumed.inc
 	@echo Building Plumed.inc, runtime-linking version
 	@echo "# PLUMED: runtime installation" > $@
 	@cat $< >> $@
-	@echo PLUMED_LOAD= '$$(PLUMED_WRAPPER) $$(PLUMED_LIBS) $$(PLUMED_LDFLAGS)' >> $@
-	@echo PLUMED_DEPENDENCIES= >> $@
+	@echo PLUMED_LOAD= '$$(PLUMED_RUNTIME_LOAD)' >> $@
+	@echo PLUMED_DEPENDENCIES= '$$(PLUMED_RUNTIME_DEPENDENCIES)' >> $@
 
 Plumed.inc.static: Plumed.inc
 	@echo Building Plumed.inc, static version
 	@echo "# PLUMED: static installation" > $@
 	@cat $< >> $@
-	@echo PLUMED_LOAD= '$$(PLUMED_OBJ) $$(PLUMED_LIBS) $$(PLUMED_DYNAMIC_LIBS) $$(PLUMED_LDFLAGS)' >> $@
-	@echo PLUMED_DEPENDENCIES='$$(PLUMED_OBJ)' >> $@
+	@echo PLUMED_LOAD= '$$(PLUMED_STATIC_LOAD)' >> $@
+	@echo PLUMED_DEPENDENCIES= '$$(PLUMED_STATIC_DEPENDENCIES)' >> $@
 
 Plumed.inc.shared: Plumed.inc
 	@echo Building Plumed.inc, shared version
 	@echo "# PLUMED: shared installation" > $@
 	@cat $< >> $@
-	@echo PLUMED_LOAD= '$$(PLUMED_SHARED_OBJ) $$(PLUMED_LIBS) $$(PLUMED_LDFLAGS)' >> $@
-	@echo PLUMED_DEPENDENCIES='$$(PLUMED_SHARED_OBJ)' >> $@
+	@echo PLUMED_LOAD= '$$(PLUMED_SHARED_LOAD)' >> $@
+	@echo PLUMED_DEPENDENCIES= '$$(PLUMED_SHARED_DEPENDENCIES)' >> $@
 
 $(ALL_DEP): PlumedConfig.h
 
