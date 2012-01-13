@@ -38,28 +38,63 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
  string dumpforces("");
  string trajectoryFile("");
  double timestep(1.0);
+ bool printhelp=false;
 
- for(int i=1;i<argc;i++){
-   string arg(argv[i]);
-   if(arg.length()<1) continue;
-   if(arg[0]=='-'){
-     if(arg.find("--plumed=")==0){
-       arg.erase(0,arg.find("=")+1);
-       plumedFile=arg;
-     } else if(arg.find("--timestep=")==0){
-       arg.erase(0,arg.find("=")+1);
-       Tools::convert(arg,timestep);
-     } else if(arg.find("--dumpforces=")==0){
-       arg.erase(0,arg.find("=")+1);
-       dumpforces=arg;
-       plumed_merror("not yet");
-     } else plumed_merror("driver: unknown options "+arg);
-   } else {
-     if(trajectoryFile.length()==0) trajectoryFile=arg;
-     else plumed_merror("driver: maximum one file at a time");
-   }
- }
- if(trajectoryFile.length()==0) plumed_merror("please specify a trajectory");
+// Start parsing options
+  string prefix("");
+  string a("");
+  for(int i=1;i<argc;i++){
+    a=prefix+argv[i];
+    if(a.length()==0) continue;
+    if(a=="-h" || a=="--help"){
+      printhelp=true;
+      break;
+    }
+    if(a.find("--plumed=")==0){
+      a.erase(0,a.find("=")+1);
+      plumedFile=a;
+      prefix="";
+    } else if(a=="--plumed"){
+      prefix="--plumed=";
+    } else if(a.find("--timestep=")==0){
+      a.erase(0,a.find("=")+1);
+      Tools::convert(a,timestep);
+      prefix="";
+    } else if(a=="--timestep"){
+      prefix="--timestep=";
+    } else if(a.find("--dumpforces=")==0){
+      a.erase(0,a.find("=")+1);
+      dumpforces=a;
+      plumed_merror("not yet");
+    } else if(a[0]=='-') {
+      string msg="ERROR: Unknown option " +a;
+      fprintf(stderr,"%s\n",msg.c_str());
+      return 1;
+    } else if(trajectoryFile.length()==0){
+      trajectoryFile=a;
+    } else {
+      string msg="ERROR: maximum one file at a time";
+      fprintf(stderr,"%s\n",msg.c_str());
+      return 1;
+    }
+  }
+
+  if(printhelp){
+    fprintf(out,"%s",
+ "Usage: driver [options] trajectory.xyz\n"
+ "Options:\n"
+ "  [--help|-h]     : prints this help\n"
+ "  [--plumed FILE] : plumed script file (default: plumed.dat)\n"
+ "  [--timestep TS] : time between frames (default: 1.0)\n"
+);
+    return 0;
+  }
+
+  if(trajectoryFile.length()==0){
+    string msg="ERROR: please specify a trajectory";
+    fprintf(stderr,"%s\n",msg.c_str());
+    return 1;
+  }
 
   Plumed p;
   int checknatoms=0;

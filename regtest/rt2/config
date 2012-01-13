@@ -1,3 +1,3 @@
 type=driver
 # this is to test a different name
-arg="--plumed=plumed.dat --timestep=0.05 trajectory.xyz"
+arg="--plumed plumed.dat --timestep 0.05 trajectory.xyz"
