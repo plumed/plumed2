@@ -35,7 +35,7 @@ case "$conf" in
   SOEXT=so
 esac
 
-echo 'export PATH="$PATH:'"$PWD"'/tools/"' >> sourceme.sh
+echo 'export PATH="$PATH:'"$PWD"'/src/"' >> sourceme.sh
 # this is just for mac:
 echo 'export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:'"$PWD"'/src/"' >> sourceme.sh
 

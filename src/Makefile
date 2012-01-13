@@ -38,7 +38,7 @@ PLUMED_SHARED_OBJ=libplumed.$(SOEXT)
 
 # plumed main exec
 PLUMED_MAIN_STATIC=plumed-static
-PLUMED_MAIN_SHARED=plumed-shared
+PLUMED_MAIN_SHARED=plumed
 
 # default target
 .PHONY: all

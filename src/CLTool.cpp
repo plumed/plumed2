@@ -86,7 +86,7 @@ int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator
         "  plumed [command] -h : to print help for a specific command\n"
         "Options:\n"
         "  [help|-h|--help] : to print this help\n"
-        "  --has-mpi : fails if plumed is running with MPI\n"
+        "  [--has-mpi]      : fails if plumed is running with MPI\n"
         "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0;j<availableCxx.size();++j){

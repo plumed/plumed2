@@ -2,4 +2,4 @@ Plumed.inc*
 PlumedConfig.h
 /compile_options.sh
 /plumed-static
-/plumed-shared
+/plumed

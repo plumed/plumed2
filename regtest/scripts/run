@@ -42,11 +42,11 @@ mpi=env
 if ((mpiprocs>0)); then
 mpi="mpirun -np $mpiprocs"
 
-grep -q __PLUMED_MPI ../../../src/compile_options.sh ||
-{
+if ! plumed --has-mpi
+then
   echo "NOT_APPLIABLE (MPI NOT INSTALLED)"
   exit 0;
-}
+fi
 
 
 fi
@@ -67,12 +67,8 @@ case "$type" in
   cat err
   ;;
 (driver)
-  test -f ../../../src/plumed-shared || {
-    echo "FAILURE: driver is not compiled"
-    exit 1
-  }
   echo "Run driver"
-  $mpi $valgrind ../../../src/plumed-shared driver $arg > out 2> err
+  $mpi $valgrind plumed driver $arg > out 2> err
   echo "Done. Here is the error file:"
   cat err
  ;;
