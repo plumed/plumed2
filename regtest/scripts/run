@@ -2,8 +2,6 @@
 
 export valgrind=env
 
-echo ciao
-
 for opt in ${*}
 do
 case "$opt" in
