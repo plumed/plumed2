@@ -227,7 +227,7 @@ void plumed_f_gcreate(void){
   plumed_gcreate();
 }
 
-void plumed_f_gcmd(const char*key,const void*val){
+void plumed_f_gcmd(char*key,void*val){
   plumed_gcmd(key,val);
 }
 
@@ -241,7 +241,7 @@ void plumed_f_create(char*c){
   plumed_c2f(p,c);
 }
 
-void plumed_f_cmd(char*c,const char*key,const void*val){
+void plumed_f_cmd(char*c,char*key,void*val){
   plumed p;
   p=plumed_f2c(c);
   plumed_cmd(p,key,val);
@@ -272,11 +272,11 @@ void plumed_f_global(char*c){
   void upper ##__ implem
 
 IMPLEMENT(plumed_f_gcreate,     PLUMED_F_GCREATE,     (void){plumed_f_gcreate();})
-IMPLEMENT(plumed_f_gcmd,        PLUMED_F_GCMD,        (const char* key,const void* val){plumed_f_gcmd(key,val);})
+IMPLEMENT(plumed_f_gcmd,        PLUMED_F_GCMD,        (char* key,void* val){plumed_f_gcmd(key,val);})
 IMPLEMENT(plumed_f_gfinalize,   PLUMED_F_GFINALIZE,   (void){plumed_f_gfinalize();})
 IMPLEMENT(plumed_f_ginitialized,PLUMED_F_GINITIALIZED,(int*i){plumed_f_ginitialized(i);})
 IMPLEMENT(plumed_f_create,      PLUMED_F_CREATE,      (char*c){plumed_f_create(c);})
-IMPLEMENT(plumed_f_cmd,         PLUMED_F_CMD,         (char*c,const char* key,const void* val){plumed_f_cmd(c,key,val);})
+IMPLEMENT(plumed_f_cmd,         PLUMED_F_CMD,         (char*c,char* key,void* val){plumed_f_cmd(c,key,val);})
 IMPLEMENT(plumed_f_finalize,    PLUMED_F_FINALIZE,    (char*c){plumed_f_finalize(c);})
 IMPLEMENT(plumed_f_installed,   PLUMED_F_INSTALLED,   (int*i){plumed_f_installed(i);})
 IMPLEMENT(plumed_f_global,      PLUMED_F_GLOBAL,      (char*c){plumed_f_global(c);})
