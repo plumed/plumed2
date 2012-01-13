@@ -1,9 +1,10 @@
-#include <unistd.h>
-
 #include "../src/ActionRegister.h"
 #include "../src/ActionAtomistic.h"
 #include "../src/ActionPilot.h"
 #include "../src/PlumedMain.h"
+#include "../src/Atoms.h"
+#include "../src/PlumedException.h"
+#include <unistd.h>
 
 extern "C" {
 #include "vmdsock.h"
@@ -209,7 +210,7 @@ void IMD::receive(){
       }
       else if(itype==2) comm.Bcast(&transferRate,1,0);
       else if(itype==3) plumed.exit();
-      else assert(0);
+      else plumed_assert(0);
     }
   }
 
