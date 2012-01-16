@@ -54,7 +54,7 @@ int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator
     vector<string> tmp;
     tmp=Tools::ls(string(root+"/scripts"));
     for(unsigned j=0;j<tmp.size();++j){
-      unsigned ff=tmp[j].find(".sh");
+      size_t ff=tmp[j].find(".sh");
       if(ff==string::npos) tmp[j].erase();
       else                 tmp[j].erase(ff);
     }
