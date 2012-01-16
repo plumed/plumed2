@@ -36,6 +36,7 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
 
  string plumedFile("plumed.dat");
  string dumpforces("");
+ string dumpforcesFmt("%f");
  string trajectoryFile("");
  double timestep(0.001);
  unsigned stride(1);
@@ -69,10 +70,18 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
       prefix="";
     } else if(a=="--stride"){
       prefix="--stride=";
-    } else if(a.find("--dumpforces=")==0){
+    } else if(a.find("--dump-forces=")==0){
       a.erase(0,a.find("=")+1);
       dumpforces=a;
-      plumed_merror("not yet");
+      prefix="";
+    } else if(a=="--dump-forces"){
+      prefix="--dump-forces=";
+    } else if(a.find("--dump-forces-fmt=")==0){
+      a.erase(0,a.find("=")+1);
+      dumpforcesFmt=a;
+      prefix="";
+    } else if(a=="--dump-forces-fmt"){
+      prefix="--dump-forces-fmt=";
     } else if(a[0]=='-') {
       string msg="ERROR: Unknown option " +a;
       fprintf(stderr,"%s\n",msg.c_str());
@@ -90,10 +99,13 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
     fprintf(out,"%s",
  "Usage: driver [options] trajectory.xyz\n"
  "Options:\n"
- "  [--help|-h]     : prints this help\n"
- "  [--plumed FILE] : plumed script file (default: plumed.dat)\n"
- "  [--timestep TS] : timestep (default: 0.001) in picoseconds\n"
- "  [--stride ST]   : stride between frames (default: 1)\n"
+ "  [--help|-h]             : prints this help\n"
+ "  [--plumed FILE]         : plumed script file (default: plumed.dat)\n"
+ "  [--timestep TS]         : timestep (default: 0.001) in picoseconds\n"
+ "  [--stride ST]           : stride between frames (default: 1)\n"
+ "  [--stride ST]           : stride between frames (default: 1)\n"
+ "  [--dump-forces FILE]    : dump forces on file FILE (default: do not dump)\n"
+ "  [--dump-forces-fmt FMT] : dump forces on file FILE (default: %f)\n"
 );
     return 0;
   }
@@ -110,6 +122,16 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
   
 
   FILE* fp=fopen(trajectoryFile.c_str(),"r");
+
+  FILE* fp_forces=NULL;
+  if(dumpforces.length()>0){
+    if(PlumedCommunicator::initialized() && pc.Get_size()>1){
+      string n;
+      Tools::convert(pc.Get_rank(),n);
+      dumpforces+="."+n;
+    }
+    fp_forces=fopen(dumpforces.c_str(),"w");
+  }
   
   std::string line;
   while(Tools::getline(fp,line)){
@@ -142,7 +164,7 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
     words=Tools::getWords(line);
     plumed_massert(words.size()==3,"needed box in second line");
     for(unsigned i=0;i<3;i++) Tools::convert(words[0],cell[4*i]);
-    for(unsigned i=0;i<natoms;i++){
+    for(int i=0;i<natoms;i++){
       ok=Tools::getline(fp,line);
       plumed_massert(ok,"premature end of file");
       char dummy[1000];
@@ -154,12 +176,28 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
    p.cmd("setPositions",&coordinates[0]);
    p.cmd("setMasses",&masses[0]);
    p.cmd("setBox",&cell[0]);
+   p.cmd("setVirial",&virial[0]);
    p.cmd("setStep",&step);
    p.cmd("calc");
+
+// this is necessary as only processor zero is adding to the virial:
+   pc.Bcast(&virial[0],9,0);
+
+   if(fp_forces){
+     fprintf(fp_forces,"%d\n",natoms);
+// I use only a few digits for the forces since this is meant to be used
+// with the regtests. Probably there should be an option for this
+     string fmt=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
+     fprintf(fp_forces,fmt.c_str(),virial[0],virial[4],virial[8]);
+     fmt="X "+fmt;
+     for(int i=0;i<natoms;i++)
+       fprintf(fp_forces,fmt.c_str(),forces[3*i],forces[3*i+1],forces[3*i+2]);
+   }
 
     step+=stride;
   }
 
+  if(fp_forces) fclose(fp_forces);
   fclose(fp);
   
   return 0;
