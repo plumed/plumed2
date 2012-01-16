@@ -5,26 +5,28 @@
 # if machine dependent configuration has been found:
 ifdef CXX
 
-# source/objects for plumed kernel
-SRC_KERNEL=$(subst main.cpp,,$(subst PlumedStatic.cpp,,$(wildcard *.cpp)))
-OBJ_KERNEL=$(SRC_KERNEL:.cpp=.o)
-
-# source/object for plumed wrapper
+# source for plumed wrapper
 SRC_WRAPPER=PlumedStatic.cpp
-OBJ_WRAPPER=PlumedStatic.o
 
-# source/object for plumed dynamic wrapper
+# source for plumed dynamic wrapper
 SRC_DYNAMIC_WRAPPER=Plumed.c
-OBJ_DYNAMIC_WRAPPER=Plumed.o
 
-# source/object for plumed main program
+# source for plumed main program
+# this should not be linked into libraries
 SRC_MAIN=main.cpp
-OBJ_MAIN=main.o
+
+# source for plumed kernel
+# everything else
+SRC_KERNEL=$(filter-out $(SRC_MAIN) $(SRC_WRAPPER),$(wildcard *.cpp))
 
 # all sources
 ALL_SRC=$(SRC_KERNEL) $(SRC_WRAPPER) $(SRC_DYNAMIC_WRAPPER) $(SRC_MAIN)
 
-# all objects
+# corresponding objects:
+OBJ_WRAPPER=PlumedStatic.o
+OBJ_DYNAMIC_WRAPPER=Plumed.o
+OBJ_MAIN=$(SRC_MAIN:.cpp=.o)
+OBJ_KERNEL=$(SRC_KERNEL:.cpp=.o)
 ALL_OBJ=$(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
 # dependency files
@@ -33,7 +35,7 @@ ALL_DEP=$(ALL_OBJ:.o=.d)
 # plumed kernel
 PLUMED_KERNEL=libplumedKernel.$(SOEXT)
 
-# plumed library
+# plumed library (kernel + wrapper)
 PLUMED_SHARED_OBJ=libplumed.$(SOEXT)
 
 # plumed main exec
@@ -53,21 +55,21 @@ $(PLUMED_KERNEL):$(OBJ_KERNEL)
 $(PLUMED_SHARED_OBJ): $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
 
-$(PLUMED_MAIN_STATIC): main.o $(OBJ_KERNEL) $(OBJ_WRAPPER)
+$(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS) $(DYNAMIC_LIBS)
 	
-$(PLUMED_MAIN_SHARED): main.o $(PLUMED_SHARED_OBJ)
-	$(LD) $(LDFLAGS) main.o $(realpath $(PLUMED_SHARED_OBJ)) -o $@ $(LIBS)
+$(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(PLUMED_SHARED_OBJ)
+	$(LD) $(LDFLAGS) $(OBJ_MAIN) $(realpath $(PLUMED_SHARED_OBJ)) -o $@ $(LIBS)
 
-Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) libplumed.$(SOEXT) Plumed.o
+Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_SHARED_OBJ) $(OBJ_DYNAMIC_WRAPPER)
 	@echo Building Plumed.inc
 	@echo "PLUMED_INCLUDE="-I$(realpath ../include) >> $@
-	@echo "PLUMED_RUNTIME_LOAD=" $(realpath Plumed.o) $(LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_RUNTIME_LOAD=" $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_STATIC_LOAD=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
-	@echo "PLUMED_SHARED_LOAD=" $(realpath libplumed.$(SOEXT)) $(LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_SHARED_LOAD=" $(realpath $(PLUMED_SHARED_OBJ)) $(LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
-	@echo "PLUMED_RUNTIME_DEPENDENCIES=" $(realpath libplumed.$(SOEXT))  >> $@
+	@echo "PLUMED_RUNTIME_DEPENDENCIES=" $(realpath $(PLUMED_SHARED_OBJ))  >> $@
 
 Plumed.inc.runtime: Plumed.inc
 	@echo Building Plumed.inc, runtime-linking version
