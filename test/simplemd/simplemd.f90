@@ -63,6 +63,13 @@ if(plumedavailable>0)plumed=.true.
 
 IF(plumed) THEN
   CALL plumed_f_create(iplumed)
+  if(KIND(positions)==SELECTED_REAL_KIND(5,20))then
+    CALL plumed_f_cmd(iplumed,"setRealPrecision"//char(0),4)
+  else if(KIND(positions)==SELECTED_REAL_KIND(10,100))then
+    CALL plumed_f_cmd(iplumed,"setRealPrecision"//char(0),8)
+  else
+    STOP "cannot decide real size"
+  endif
 END IF
 
 argcount = command_argument_count()
