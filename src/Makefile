@@ -41,11 +41,12 @@ PLUMED_SHARED_OBJ=libplumed.$(SOEXT)
 # plumed main exec
 PLUMED_MAIN_STATIC=plumed-static
 PLUMED_MAIN_SHARED=plumed
+PLUMED_MAIN_RUNTIME=plumed-runtime
 
 # default target
 .PHONY: all
 all: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(OBJ_WRAPPER) \
-     $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) \
+     $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
      Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static \
      compile_options.sh
 
@@ -60,6 +61,9 @@ $(PLUMED_MAIN_STATIC): $(OBJ_MAIN) $(OBJ_KERNEL) $(OBJ_WRAPPER)
 	
 $(PLUMED_MAIN_SHARED): $(OBJ_MAIN) $(PLUMED_SHARED_OBJ)
 	$(LD) $(LDFLAGS) $(OBJ_MAIN) $(realpath $(PLUMED_SHARED_OBJ)) -o $@ $(LIBS)
+
+$(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
+	$(LD) $(LDFLAGS) $^ -o $@ $(LIBS)
 
 Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_SHARED_OBJ) $(OBJ_DYNAMIC_WRAPPER)
 	@echo Building Plumed.inc
@@ -123,7 +127,8 @@ endif
 # file to import compilation options inside c++
 PlumedConfig.h: PlumedConfig.h.in ../Makefile.conf
 	@echo Building PlumedConfig.h, an includable c++ header with some compilation options
-	@sed "s/@SOEXT@/$(SOEXT)/g" $< > $@
+	@sed "s/@SOEXT@/$(SOEXT)/g" $< | \
+         sed "s|@PLUMED_ROOT@|$(PWD:src=)|g" > $@
 
 # file to import compilation options inside a bash script
 compile_options.sh:
@@ -161,5 +166,5 @@ clean:
 	rm -f *.so
 	rm -f *.dylib
 	rm -f compile_options.sh
-	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED)
+	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
 

@@ -1,5 +1,8 @@
+#include "PlumedConfig.h"
 #include "PlumedException.h"
+#include "PlumedCommunicator.h"
 #include "CLTool.h"
+#include "CLToolMain.h"
 #include "CLToolRegister.h"
 #include "Tools.h"
 #include "DLLoader.h"
@@ -12,30 +15,74 @@
 using namespace std;
 using namespace PLMD;
 
+CLToolMain::CLToolMain():
+argc(0),
+in(stdin),
+out(stdout),
+comm(*new PlumedCommunicator)
+{
+}
+
+CLToolMain::~CLToolMain(){
+  delete &comm;
+}
+
+#define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"CLTool " + word + "\")");
+
+void CLToolMain::cmd(const std::string& word,void*val){
+  if(false){
+  } else if(word=="setArgc"){
+       CHECK_NULL(val,word);
+       argc=*static_cast<int*>(val);
+  } else if(word=="setArgv"){
+       CHECK_NULL(val,word);
+       char**v=static_cast<char**>(val);
+       for(int i=0;i<argc;++i) argv.push_back(string(v[i]));
+  } else if(word=="setArgvLine"){
+       CHECK_NULL(val,word);
+       const char*v=static_cast<char*>(val);
+       argv=Tools::getWords(v);
+  } else if(word=="setIn"){
+       CHECK_NULL(val,word);
+       in=static_cast<FILE*>(val);
+  } else if(word=="setOut"){
+       CHECK_NULL(val,word);
+       out=static_cast<FILE*>(val);
+  } else if(word=="setMPIComm"){
+       comm.Set_comm(val);
+  } else if(word=="setMPIFComm"){
+       comm.Set_fcomm(val);
+  } else if(word=="run"){
+       CHECK_NULL(val,word);
+       char**v=new char* [argc];
+       for(int i=0;i<argc;++i){
+         v[i]=new char [argv[i].length()+1];
+         for(unsigned c=0;c<argv[i].length();++c) v[i][c]=argv[i][c];
+         v[i][argv[i].length()]=0;
+       }
+       int ret=run(argc,v,in,out,comm);
+       for(int i=0;i<argc;++i) delete [] v[i];
+       delete [] v;
+       *static_cast<int*>(val)=ret;
+  } else {
+    plumed_merror("cannot interpret cmd(\"CLTool " + word + "\"). check plumed developers manual to see the available commands.");
+  }
+}
+
 /**
 This is the entry point to the command line tools
 included in the plumed library.
 */
 
-int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& pc){
+int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& pc){
   int i;
   bool printhelp=false;
 
   DLLoader dlloader;
 
-// Check if PLUMED_ROOT is defined
-  string root;
-  {
-    char* croot=getenv("PLUMED_ROOT");
-    if(!croot){
-      string msg=
-         "ERROR: I cannot find PLUMED\n"
-         "Please set PLUMED_ROOT environment variable\n";
-      fprintf(stderr,"%s",msg.c_str());
-      return 1;
-    }
-    root=croot;
-  }
+  string root=plumedRoot;
+  int err=setenv("PLUMED_ROOT",root.c_str(),1);
+  plumed_massert(err==0,"error setting environment variable");
 
 // Check if PLUMED_ROOT/patches/ directory exists (as a further check)
   {

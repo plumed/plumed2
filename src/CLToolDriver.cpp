@@ -2,6 +2,7 @@
 #include "CLToolRegister.h"
 #include "Tools.h"
 #include "Plumed.h"
+#include "PlumedCommunicator.h"
 #include <cstdio>
 #include <string>
 #include <vector>

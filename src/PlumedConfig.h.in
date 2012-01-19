@@ -1,11 +1,14 @@
 #ifndef __PLUMED_PlumedConfig_h
 #define __PLUMED_PlumedConfig_h
 
+#include <string>
+
 namespace PLMD{
 
 // nothing yet
 
 const std::string soext("@SOEXT@");
+const std::string plumedRoot("@PLUMED_ROOT@");
 
 }
 

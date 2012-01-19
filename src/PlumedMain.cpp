@@ -17,6 +17,7 @@
 #include "Log.h"
 #include "DLLoader.h"
 #include "PlumedCommunicator.h"
+#include "CLToolMain.h"
 
 using namespace PLMD;
 using namespace std;
@@ -24,6 +25,7 @@ using namespace std;
 PlumedMain::PlumedMain():
   comm(*new PlumedCommunicator),
   dlloader(*new DLLoader),
+  cltool(NULL),
   grex(NULL),
   initialized(false),
   log(*new Log(comm)),
@@ -39,7 +41,8 @@ PlumedMain::~PlumedMain(){
   delete &actionSet;
   delete &atoms;
   delete &log;
-  if(grex) delete grex;
+  if(grex)  delete grex;
+  if(cltool) delete cltool;
   delete &dlloader;
   delete &comm;
 }
@@ -244,6 +247,12 @@ void PlumedMain::cmd(const std::string & word,void*val){
        std::string kk=words[1];
        for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
        grex->cmd(kk.c_str(),val);
+     } else if(nw>1 && words[0]=="CLTool"){
+       CHECK_NOTINIT(initialized,word);
+       if(!cltool) cltool=new CLToolMain;
+       std::string kk=words[1];
+       for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
+       cltool->cmd(kk.c_str(),val);
      } else{
        plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
      };

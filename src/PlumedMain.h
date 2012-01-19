@@ -51,6 +51,7 @@ public:
 private:
   DLLoader& dlloader;
 
+  WithCmd* cltool;
   WithCmd* grex;
 /// Flag to avoid double initialization
   bool  initialized;
