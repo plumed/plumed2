@@ -2,6 +2,7 @@
 #include "CLTool.h"
 #include "CLToolRegister.h"
 #include "Tools.h"
+#include "DLLoader.h"
 #include <string>
 #include <cstdlib>
 #include <cstdio>
@@ -19,6 +20,8 @@ included in the plumed library.
 int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& pc){
   int i;
   bool printhelp=false;
+
+  DLLoader dlloader;
 
 // Check if PLUMED_ROOT is defined
   string root;
@@ -46,22 +49,6 @@ int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator
     }
   }
 
-// Build list of available C++ tools:
-  vector<string> availableCxx=cltoolRegister().list();
-// Build list of available shell tools:
-  vector<string> availableShell;
-  {
-    vector<string> tmp;
-    tmp=Tools::ls(string(root+"/scripts"));
-    for(unsigned j=0;j<tmp.size();++j){
-      size_t ff=tmp[j].find(".sh");
-      if(ff==string::npos) tmp[j].erase();
-      else                 tmp[j].erase(ff);
-    }
-    for(unsigned j=0;j<tmp.size();++j) if(tmp[j].length()>0) availableShell.push_back(tmp[j]);
-  }
-
-  
 // Start parsing options
   string prefix("");
   string a("");
@@ -80,19 +67,46 @@ int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator
         fprintf(stderr,"--no-mpi option should can only be used as the first option");
         return 1;
       }
+    } else if(a.find("--load=")==0){
+      a.erase(0,a.find("=")+1);
+      prefix="";
+      void *p=dlloader.load(a);
+      if(!p){
+        fprintf(stderr,"ERROR: cannot load library %s\n",a.c_str());
+        fprintf(stderr,"ERROR: %s\n",dlloader.error().c_str());
+        return 1;
+      }
+    } else if(a=="--load"){
+      prefix="--load=";
     } else if(a[0]=='-') {
       string msg="ERROR: Unknown option " +a;
       fprintf(stderr,"%s\n",msg.c_str());
       return 1;
     } else break;
   }
-  if(printhelp){
+// Build list of available C++ tools:
+  vector<string> availableCxx=cltoolRegister().list();
+// Build list of available shell tools:
+  vector<string> availableShell;
+  {
+    vector<string> tmp;
+    tmp=Tools::ls(string(root+"/scripts"));
+    for(unsigned j=0;j<tmp.size();++j){
+      size_t ff=tmp[j].find(".sh");
+      if(ff==string::npos) tmp[j].erase();
+      else                 tmp[j].erase(ff);
+    }
+    for(unsigned j=0;j<tmp.size();++j) if(tmp[j].length()>0) availableShell.push_back(tmp[j]);
+  }
+
+ if(printhelp){
     string msg=
         "Usage: plumed [options] [command] [command options]\n"
         "  plumed [command] -h : to print help for a specific command\n"
         "Options:\n"
-        "  [help|-h|--help] : to print this help\n"
-        "  [--has-mpi]      : fails if plumed is running with MPI\n"
+        "  [help|-h|--help]    : to print this help\n"
+        "  [--has-mpi]         : fails if plumed is running with MPI\n"
+        "  [--load LIB]        : loads a shared object (typically a plugin library)\n"
         "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0;j<availableCxx.size();++j){
