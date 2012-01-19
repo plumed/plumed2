@@ -1,9 +1,11 @@
 #include "CLTool.h"
+#include <cstring>
 #ifdef __PLUMED_MPI
 #include "mpi.h"
 #endif
 
 using namespace PLMD;
+using namespace std;
 
 /// This main just wraps the CLTool::globalMain static
 /// function. The object file generated from this .cpp
@@ -11,12 +13,14 @@ using namespace PLMD;
 /// not be linked with external MD codes, so as 
 /// to avoid linker error.
 int main(int argc,char**argv){
+  bool nompi=false;
+  if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
 #ifdef __PLUMED_MPI
-  MPI_Init(&argc,&argv);
+  if(!nompi) MPI_Init(&argc,&argv);
 #endif
   int ret=CLTool::globalMain(argc,argv);
 #ifdef __PLUMED_MPI
-  MPI_Finalize();
+  if(!nompi) MPI_Finalize();
 #endif
   return ret;
 }

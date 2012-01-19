@@ -74,6 +74,12 @@ int CLTool::globalMain(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator
     } else if(a=="--has-mpi"){
       if(PlumedCommunicator::initialized()) return 0;
       else return 1;
+    } else if(a=="--no-mpi"){
+// this is ignored, as it is parsed in main
+      if(i>1){
+        fprintf(stderr,"--no-mpi option should can only be used as the first option");
+        return 1;
+      }
     } else if(a[0]=='-') {
       string msg="ERROR: Unknown option " +a;
       fprintf(stderr,"%s\n",msg.c_str());
