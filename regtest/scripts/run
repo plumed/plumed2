@@ -62,6 +62,12 @@ plumed="plumed --no-mpi"
 
 fi
 
+if ((mpiprocs>0)) && [[ "$valgrind" != "env" ]]
+then
+  echo "NOT_APPLIABLE (MPI cannot be used with valgrind)"
+  exit 0;
+fi
+
 case "$type" in
 (simplemd)
   test -f $PLUMED_ROOT/test/simplemd/simplemd || {

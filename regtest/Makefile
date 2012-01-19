@@ -10,6 +10,7 @@ all: $(SUBDIRS)
 clean: $(SUBDIRSCLEAN)
 
 valgrind: $(SUBDIRSVALGRIND)
+	scripts/check
 
 $(SUBDIRS):
 	$(MAKE) -C $@
