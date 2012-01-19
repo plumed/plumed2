@@ -54,6 +54,7 @@ void CLToolMain::cmd(const std::string& word,void*val){
        comm.Set_fcomm(val);
   } else if(word=="run"){
        CHECK_NULL(val,word);
+       argc=argv.size();
        char**v=new char* [argc];
        for(int i=0;i<argc;++i){
          v[i]=new char [argv[i].length()+1];
