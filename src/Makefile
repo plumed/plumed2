@@ -73,7 +73,7 @@ Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_SHARED_OBJ) $(OBJ_DYNAMIC_WRAP
 	@echo "PLUMED_SHARED_LOAD=" $(realpath $(PLUMED_SHARED_OBJ)) $(LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
-	@echo "PLUMED_RUNTIME_DEPENDENCIES=" $(realpath $(PLUMED_SHARED_OBJ))  >> $@
+	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath $(PLUMED_SHARED_OBJ))  >> $@
 
 Plumed.inc.runtime: Plumed.inc
 	@echo Building Plumed.inc, runtime-linking version
