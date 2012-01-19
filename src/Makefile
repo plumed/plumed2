@@ -30,7 +30,7 @@ OBJ_KERNEL=$(SRC_KERNEL:.cpp=.o)
 ALL_OBJ=$(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
 # dependency files
-ALL_DEP=$(ALL_OBJ:.o=.d)
+ALL_DEP=$(addprefix deps/,$(ALL_OBJ:.o=.d))
 
 # plumed kernel
 PLUMED_KERNEL=libplumedKernel.$(SOEXT)
@@ -98,8 +98,10 @@ $(ALL_DEP): PlumedConfig.h
 %.o: %.cpp
 	$(CXX) -c -MM -MF$*.d $(CPPFLAGS) $(CXXFLAGS) $*.cpp
 	@cp -f $*.d $*.d.tmp
+	@-test -d deps || mkdir deps
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@mv $*.d deps/$*.d
 	@rm -f $*.d.tmp
 ifndef XLF
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $*.cpp -o $*.o
@@ -109,8 +111,10 @@ endif
 %.o: %.c
 	$(CC) -c -MM -MF$*.d -M $(CPPFLAGS) $(CFLAGS) $*.c
 	@cp -f $*.d $*.d.tmp
+	@test -d deps || mkdir deps
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@mv $*.d deps/$*.d
 	@rm -f $*.d.tmp
 ifndef XLF
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $*.c -o $*.o
@@ -147,6 +151,7 @@ endif
 clean:
 	rm -f *.o
 	rm -f *.d
+	rm -fr deps
 	rm -f *.cdep
 	rm -f *.cppdep
 	rm -f PlumedConfig.h
