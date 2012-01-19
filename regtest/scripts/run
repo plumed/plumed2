@@ -45,6 +45,7 @@ echo "++ Arguments: $arg"
 echo "++ Processors: $mpiprocs"
 
 mpi=env
+plumed=plumed
 
 if ((mpiprocs>0)); then
 mpi="mpirun -np $mpiprocs"
@@ -55,6 +56,9 @@ then
   exit 0;
 fi
 
+else
+
+plumed="plumed --no-mpi"
 
 fi
 
@@ -75,7 +79,11 @@ case "$type" in
   ;;
 (driver)
   echo "Run driver"
+if ((mpiprocs==0)) ; then
+  $mpi $valgrind plumed --no-mpi driver $arg > out 2> err
+else
   $mpi $valgrind plumed driver $arg > out 2> err
+fi
   echo "Done. Here is the error file:"
   cat err
  ;;
