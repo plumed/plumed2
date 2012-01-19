@@ -4,3 +4,4 @@ PlumedConfig.h
 /plumed-static
 /plumed
 /plumed-runtime
+*.xxd

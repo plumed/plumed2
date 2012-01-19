@@ -96,7 +96,7 @@ Plumed.inc.shared: Plumed.inc
 	@echo PLUMED_LOAD= '$$(PLUMED_SHARED_LOAD)' >> $@
 	@echo PLUMED_DEPENDENCIES= '$$(PLUMED_SHARED_DEPENDENCIES)' >> $@
 
-$(ALL_DEP): PlumedConfig.h
+$(ALL_DEP): PlumedConfig.h Makefile.conf.xxd
 
 # rule for c++
 %.o: %.cpp
@@ -137,6 +137,9 @@ compile_options.sh:
 	@echo "link='"$(LDSO) -o"'" >> $@
 	@echo "soext='"$(SOEXT)"'" >> $@
 
+Makefile.conf.xxd: ../Makefile.conf
+	cat ../Makefile.conf | xxd -i > Makefile.conf.xxd
+
 # Individual dependencies
 
 -include $(ALL_DEP)
@@ -165,6 +168,7 @@ clean:
 	rm -f *.tmp
 	rm -f *.so
 	rm -f *.dylib
+	rm -f *.xxd
 	rm -f compile_options.sh
 	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
 
