@@ -3,6 +3,7 @@
 #include "Log.h"
 #include <cmath>
 #include <iostream>
+#include <cstdlib>
 
 using namespace std;
 using namespace PLMD;

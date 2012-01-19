@@ -1,6 +1,7 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <cstdio>
 
 #include "Grid.h"
 #include "PlumedException.h"
