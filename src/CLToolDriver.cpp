@@ -17,20 +17,24 @@ Class defining the driver
 The driver is a tool to use plumed to process
 an existing trajectory.
 */
+template<typename real>
 class CLToolDriver:
 public CLTool
 {
 public:
   int main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc);
-  string description()const{
-    return "analyze trajectories with plumed";
-  }
+  string description()const;
 };
 
+template<typename real>
+string CLToolDriver<real>::description()const{ return "analyze trajectories with plumed"; }
 
-PLUMED_REGISTER_CLTOOL(CLToolDriver,"driver")
+template<>
+string CLToolDriver<float>::description()const{ return "analyze trajectories with plumed (single precision version)"; }
 
-int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc){
+
+template<typename real>
+int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc){
 
 // to avoid warnings:
  (void) in;
@@ -39,9 +43,10 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
  string dumpforces("");
  string dumpforcesFmt("%f");
  string trajectoryFile("");
- double timestep(0.001);
+ real timestep(real(0.001));
  unsigned stride(1);
  bool printhelp=false;
+ bool printhelpdebug=false;
 
 // Start parsing options
   string prefix("");
@@ -52,8 +57,18 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
     if(a=="-h" || a=="--help"){
       printhelp=true;
       break;
-    }
-    if(a.find("--plumed=")==0){
+    } else if(a=="--help-debug"){
+      printhelp=true;
+      printhelpdebug=true;
+      break;
+    } else if(a=="--debug-float"){
+      if(sizeof(real)!=sizeof(float)){
+        CLTool* cl=new CLToolDriver<float>;
+        int ret=cl->main(argc,argv,in,out,pc);
+        delete cl;
+        return ret;
+      }
+    } else if(a.find("--plumed=")==0){
       a.erase(0,a.find("=")+1);
       plumedFile=a;
       prefix="";
@@ -61,7 +76,9 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
       prefix="--plumed=";
     } else if(a.find("--timestep=")==0){
       a.erase(0,a.find("=")+1);
-      Tools::convert(a,timestep);
+      double t;
+      Tools::convert(a,t);
+      timestep=real(t);
       prefix="";
     } else if(a=="--timestep"){
       prefix="--timestep=";
@@ -101,15 +118,21 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
  "Usage: driver [options] trajectory.xyz\n"
  "Options:\n"
  "  [--help|-h]             : prints this help\n"
+ "  [--help-debug]          : prints this help plus special options for debug\n"
  "  [--plumed FILE]         : plumed script file (default: plumed.dat)\n"
  "  [--timestep TS]         : timestep (default: 0.001) in picoseconds\n"
- "  [--stride ST]           : stride between frames (default: 1)\n"
  "  [--stride ST]           : stride between frames (default: 1)\n"
  "  [--dump-forces FILE]    : dump forces on file FILE (default: do not dump)\n"
  "  [--dump-forces-fmt FMT] : dump forces on file FILE (default: %f)\n"
 );
+  if(printhelpdebug)
+    fprintf(out,"%s",
+ "Additional options for debug (only to be used in regtest):\n"
+ "  [--debug-float]         : turns on the single precision version (to check float interface)\n"
+);
     return 0;
   }
+
 
   if(trajectoryFile.length()==0){
     string msg="ERROR: please specify a trajectory";
@@ -118,6 +141,8 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
   }
 
   Plumed p;
+  int rr=sizeof(real);
+  p.cmd("setRealPrecision",&rr);
   int checknatoms=0;
   int step=0;
   
@@ -135,11 +160,17 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
   }
   
   std::string line;
+  std::vector<real> coordinates;
+  std::vector<real> forces;
+  std::vector<real> masses;
+  std::vector<real> cell;
+  std::vector<real> virial;
+
   while(Tools::getline(fp,line)){
 
     int natoms;
     bool ok;
-    Tools::convert(line,natoms);
+    sscanf(line.c_str(),"%d",&natoms);
     if(checknatoms==0){
       checknatoms=natoms;
       if(PlumedCommunicator::initialized()) p.cmd("setMPIComm",&pc.Get_comm());
@@ -152,25 +183,36 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
     }
     plumed_massert(checknatoms==natoms,"number of atom changed");
 
-    std::vector<double> coordinates(3*natoms,0.0);
-    std::vector<double> forces(3*natoms,0.0);
-    std::vector<double> masses(natoms,1.0);
-    std::vector<double> cell(9,0.0);
-    std::vector<double> virial(9,0.0);
+    coordinates.assign(3*natoms,real(0.0));
+    forces.assign(3*natoms,real(0.0));
+    masses.assign(natoms,real(1.0));
+    cell.assign(9,real(0.0));
+    virial.assign(9,real(0.0));
 
     ok=Tools::getline(fp,line);
     plumed_massert(ok,"premature end of file");
 
     std::vector<std::string> words;
     words=Tools::getWords(line);
-    plumed_massert(words.size()==3,"needed box in second line");
-    for(unsigned i=0;i<3;i++) Tools::convert(words[0],cell[4*i]);
+    std::vector<double> celld(9,0.0);
+    if(words.size()==3){
+      sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[4],&celld[8]);
+    } else if(words.size()==9){
+      sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+             &celld[0], &celld[1], &celld[2],
+             &celld[3], &celld[4], &celld[5],
+             &celld[6], &celld[7], &celld[8]);
+    } else plumed_merror("needed box in second line");
+    for(unsigned i=0;i<9;i++)cell[i]=real(celld[i]);
     for(int i=0;i<natoms;i++){
       ok=Tools::getline(fp,line);
       plumed_massert(ok,"premature end of file");
       char dummy[1000];
-// this is much faster than getWord
-      std::sscanf(line.c_str(),"%s %lf %lf %lf",dummy,&coordinates[3*i],&coordinates[3*i+1],&coordinates[3*i+2]);
+      double cc[3];
+      std::sscanf(line.c_str(),"%s %lf %lf %lf",dummy,&cc[0],&cc[1],&cc[2]);
+      coordinates[3*i]=real(cc[0]);
+      coordinates[3*i+1]=real(cc[1]);
+      coordinates[3*i+2]=real(cc[2]);
     }
 
    p.cmd("setForces",&forces[0]);
@@ -203,6 +245,12 @@ int CLToolDriver::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
   
   return 0;
 }
+
+typedef CLToolDriver<double> Driver;
+typedef CLToolDriver<float>  DriverSp;
+
+PLUMED_REGISTER_CLTOOL(Driver,"driver")
+
 
 
 
