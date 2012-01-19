@@ -66,8 +66,8 @@ void plumed_dummy_cmd(void*p,const char*key,const void*val){
   (void) p;   /* avoid warning on unused parameter */
   (void) key; /* avoid warning on unused parameter */
   (void) val; /* avoid warning on unused parameter */
-  fprintf(stderr,"+++ ERROR +++");
-  fprintf(stderr,"YOU ARE TRYING TO USE PLUMED, BUT IT IS NOT AVAILABLE\n");
+  fprintf(stderr,"+++ ERROR: you are trying to use plumed, but it is not available +++\n");
+  fprintf(stderr,"+++ Check your PLUMED_KERNEL environment variable +++\n");
   exit(1);
 }
 
@@ -104,14 +104,15 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
   if(first && f==NULL){
     path=getenv("PLUMED_KERNEL");
     if(path && (*path)){
-      fprintf(stderr,"+++ PLUMED kernel is being loaded as \"%s\" ...",path);
+      fprintf(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
+      fprintf(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
       p=dlopen(path,RTLD_NOW|RTLD_GLOBAL);
       if(p){
-        fprintf(stderr,"ok\n");
+        fprintf(stderr,"+++ PLUMED kernel successfully loaded +++\n");
         installed=1;
       } else{
-        fprintf(stderr,"NOT FOUND !!!\n");
-        fprintf(stderr,"ERROR MSG: %s\n",dlerror());
+        fprintf(stderr,"+++ PLUMED kernel not found ! +++\n");
+        fprintf(stderr,"+++ error message from dlopen(): %s\n",dlerror());
       }
     }
   }
