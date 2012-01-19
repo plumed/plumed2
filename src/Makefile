@@ -3,7 +3,7 @@
 -include ../Makefile.conf
 
 # if machine dependent configuration has been found:
-ifdef CXX
+ifdef GCCDEP
 
 # source for plumed wrapper
 SRC_WRAPPER=PlumedStatic.cpp
@@ -113,7 +113,7 @@ endif
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
 	@rm -f $*.d.tmp
 ifndef XLF
-	$(CC) -c $(CPPFLAGS) $(CXXFLAGS) $*.c -o $*.o
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $*.c -o $*.o
 endif
 
 # file to import compilation options inside c++
