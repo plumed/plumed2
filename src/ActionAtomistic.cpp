@@ -25,7 +25,6 @@ lockRequestAtoms(false)
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ){
-  ActionWithValue::registerKeywords(keys);
 }
 
 

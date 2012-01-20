@@ -12,7 +12,6 @@ void ActionWithValue::enforceNumericalDerivatives(){
 }
 
 void ActionWithValue::registerKeywords(Keywords& keys){
-  Action::registerKeywords( keys );
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
 }
 
