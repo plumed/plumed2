@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <string>
 #include <sstream>
+#include "Tools.h"
 
 namespace PLMD{
 
@@ -39,6 +40,8 @@ public:
   int printf(const char*fmt,...);
   template <class T>
   friend Log& operator<<(Log&,const T &);
+/// Prints a keyword on the log
+  void printKeyword( const std::string& key, const std::string& documentation );
 };
 
 /// Write using << syntax
