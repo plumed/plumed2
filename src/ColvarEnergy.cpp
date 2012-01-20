@@ -38,6 +38,7 @@ public:
   ColvarEnergy(const ActionOptions&);
 // active methods:
   virtual void calculate();
+  static void registerKeywords( Keywords& keys );
 };
 
 
@@ -56,6 +57,11 @@ components(false)
   isEnergy=true;
   addValueWithDerivatives("");
   getValue("")->setPeriodicity(false);
+}
+
+void ColvarEnergy::registerKeywords( Keywords& keys ){
+  ActionWithValue::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES"); 
 }
 
 

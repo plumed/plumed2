@@ -20,6 +20,9 @@ protected:
                            ActionWithArguments(const ActionOptions&);
   virtual                 ~ActionWithArguments(){};
 public:
+/// Registers the list of keywords
+  static void registerKeywords( Keywords& keys );
+
 /// Returns an array of pointers to the arguments
   std::vector<Value*>    & getArguments();
 /// Returns the value of an argument

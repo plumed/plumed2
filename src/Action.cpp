@@ -8,12 +8,26 @@
 
 using namespace PLMD;
 
+Keywords ActionOptions::emptyKeys;
+
 ActionOptions::ActionOptions(PlumedMain&p,const std::vector<std::string>&l):
 plumed(p),
-line(l)
+line(l),
+keys(emptyKeys)
 {
 }
 
+ActionOptions::ActionOptions(PlumedMain&p,const std::vector<std::string>&l,const Keywords&keys):
+plumed(p),
+line(l),
+keys(keys)
+{
+}
+
+void Action::registerKeywords( Keywords& keys ){
+  plumed_assert( keys.size()==0 );
+  keys.add( "optional", "LABEL", "a label for the action so that it can be referenced" );
+}
 
 Action::Action(const ActionOptions&ao):
   name(ao.line[0]),
@@ -21,7 +35,8 @@ Action::Action(const ActionOptions&ao):
   active(false),
   plumed(ao.plumed),
   log(plumed.getLog()),
-  comm(plumed.comm)
+  comm(plumed.comm),
+  keywords(ao.keys)
 {
   line.erase(line.begin());
   log.printf("Action %s\n",name.c_str());

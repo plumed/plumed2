@@ -37,9 +37,14 @@ class GenericCOM:
 public:
   GenericCOM(const ActionOptions&ao);
   void calculate();
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(GenericCOM,"COM")
+
+void GenericCOM::registerKeywords(Keywords& keys){
+  ActionWithVirtualAtom::registerKeywords(keys);
+}
 
 GenericCOM::GenericCOM(const ActionOptions&ao):
   Action(ao),

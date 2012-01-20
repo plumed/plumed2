@@ -48,11 +48,17 @@ class GenericWholeMolecules:
   Vector & modifyPosition(AtomNumber);
 public:
   GenericWholeMolecules(const ActionOptions&ao);
+  static void registerKeywords( Keywords& keys );
   void calculate();
   void apply(){};
 };
 
 PLUMED_REGISTER_ACTION(GenericWholeMolecules,"WHOLEMOLECULES")
+
+void GenericWholeMolecules::registerKeywords( Keywords& keys ){
+  ActionAtomistic::registerKeywords( keys );
+  keys.add("input","MOLECULE","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of MOLECULE keywords: MOLECULE1, MOLECULE2,...");
+}
 
 inline
 Vector & GenericWholeMolecules::modifyPosition(AtomNumber i){
@@ -67,7 +73,7 @@ ActionAtomistic(ao)
   vector<AtomNumber> merge;
   for(int i=0;;i++){
     string is; Tools::convert(i,is);
-    string name="GROUP"+is;
+    string name="MOLECULE"+is;
     vector<AtomNumber> group;
     parseAtomList(name,group);
     if(group.size()==0)break;

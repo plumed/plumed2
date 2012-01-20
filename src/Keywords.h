@@ -40,6 +40,7 @@ public:
   void addFlag( const std::string k, const bool def, const std::string d );
   void remove( const std::string );
   void clear();
+  unsigned size() const;
   bool exists( const std::string k ) const ;
   KeyType style( const std::string ) const ;
   void print( Log& log ) const ;

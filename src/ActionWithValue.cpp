@@ -8,7 +8,12 @@ using namespace PLMD;
 void ActionWithValue::enforceNumericalDerivatives(){
   numericalDerivatives=true;
   log.printf("  WARNING: Numerical derivatives will be used\n");
-  log.printf("    (probably this object does not implement analytical derivatives yet)\n");
+  log.printf("    (there is probably no implementation of the analytical derivatives in this action)\n");
+}
+
+void ActionWithValue::registerKeywords(Keywords& keys){
+  Action::registerKeywords( keys );
+  keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
 }
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
@@ -18,7 +23,7 @@ ActionWithValue::ActionWithValue(const ActionOptions&ao):
   hasMultipleValues(false),
   hasUnnamedValue(false)
 {
-  parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
+  if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
   if(numericalDerivatives) log.printf("  using numerical derivatives\n");
 }
 

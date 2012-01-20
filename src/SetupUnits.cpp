@@ -47,13 +47,22 @@ UNITS LENGTH=nm TIME=0.001
 //+ENDPLUMEDOC
 
 class SetupUnits :
-  public ActionSetup
+  public virtual ActionSetup
 {
 public:
+  static void registerKeywords( Keywords& keys );
   SetupUnits(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(SetupUnits,"UNITS")
+
+void SetupUnits::registerKeywords( Keywords& keys ){
+  ActionSetup::registerKeywords(keys);
+  keys.add("optional","LENGTH","the units of lengths.  Either specify a conversion factor from the default, nm, or A (for angstroms) or um");
+  keys.add("optional","ENERGY","the units of energy.  Either specify a conversion factor from the default, kj/mol, or use j/mol or kcal/mol");
+  keys.add("optional","TIME","the units of time.  Either specify a conversion factor from the default, ps, or use ns or fs");
+  keys.addFlag("NATURAL",false,"use natural units");
+}
 
 SetupUnits::SetupUnits(const ActionOptions&ao):
 Action(ao),

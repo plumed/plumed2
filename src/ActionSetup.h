@@ -11,6 +11,8 @@ class ActionSetup :
 public:
 /// Constructor
   ActionSetup(const ActionOptions&ao);
+/// Creator of keywords
+  static void registerKeywords( Keywords& keys ); 
 /// Do nothing.
   void calculate(){};
 /// Do nothing.

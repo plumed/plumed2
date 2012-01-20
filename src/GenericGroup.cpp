@@ -33,6 +33,7 @@ class GenericGroup:
 public:
   GenericGroup(const ActionOptions&ao);
   ~GenericGroup();
+  static void registerKeywords( Keywords& keys );
   void calculate(){};
   void apply(){};
 };
@@ -51,6 +52,12 @@ GenericGroup::GenericGroup(const ActionOptions&ao):
   log.printf("  of atoms ");
   for(unsigned i=0;i<atoms.size();i++) log.printf(" %d",atoms[i].serial());
   log.printf("\n");
+}
+
+void GenericGroup::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
+  keys.add("input", "ATOMS", "the numerical indexes for the set of atoms in the group");
 }
 
 GenericGroup::~GenericGroup(){

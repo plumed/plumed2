@@ -29,11 +29,21 @@ class GenericDebug:
   bool novirial;
 public:
   GenericDebug(const ActionOptions&ao);
+/// Register all the relevant keywords for the action  
+  static void registerKeywords( Keywords& keys );
   void calculate(){};
   void apply();
 };
 
 PLUMED_REGISTER_ACTION(GenericDebug,"DEBUG")
+
+void GenericDebug::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys );
+  ActionPilot::registerKeywords(keys);
+  keys.add("optional","logActivity","write in the log which actions are inactive and which are inactive");
+  keys.add("optional","logRequestedAtoms","write in the log which atoms have been requested at a given time");
+  keys.add("optional","NOVIRIAL","switch off the virial contribution for the entirity of the simulation");
+}
 
 GenericDebug::GenericDebug(const ActionOptions&ao):
 Action(ao),

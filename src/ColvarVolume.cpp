@@ -37,6 +37,8 @@ public:
   ColvarVolume(const ActionOptions&);
 // active methods:
   virtual void calculate();
+/// Register all the keywords for this action
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(ColvarVolume,"VOLUME")
@@ -56,6 +58,12 @@ components(false)
   getValue("")->setPeriodicity(false);
 
   requestAtoms(atoms);
+}
+
+void ColvarVolume::registerKeywords( Keywords& keys ){
+  ActionWithValue::registerKeywords( keys );
+  keys.remove("NUMERICAL_DERIVATIVES"); 
+  keys.addFlag("COMPONENTS",false,"use xx, yy, zz, alpha, beta, gamma as the colvars rather than the box volume");
 }
 
 

@@ -59,6 +59,13 @@ KeyType Keywords::style( const std::string k ) const {
   plumed_assert(false);
 }
 
+unsigned Keywords::size() const {
+  plumed_assert( keys.size()==documentation.size() );
+  plumed_assert( keys.size()==types.size() );
+  plumed_assert( keys.size()==defaults.size() );
+  return keys.size();
+}
+
 bool Keywords::exists( const std::string k ) const {
   plumed_assert( keys.size()==documentation.size() ); 
   plumed_assert( keys.size()==types.size() );

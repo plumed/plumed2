@@ -35,12 +35,19 @@ class GenericDumpAtoms:
 public:
   GenericDumpAtoms(const ActionOptions&);
   ~GenericDumpAtoms();
+  static void registerKeywords( Keywords& keys );
   void calculate(){};
   void apply(){};
   void update();
 };
 
 PLUMED_REGISTER_ACTION(GenericDumpAtoms,"DUMPATOMS")
+
+void GenericDumpAtoms::registerKeywords( Keywords& keys ){
+  ActionAtomistic::registerKeywords( keys );
+  keys.add("input", "ATOMS", "the atom indices whose positions you would like to print out");
+  keys.add("compulsory", "FILE", "file on which to output coordinates");
+}
 
 GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   Action(ao),

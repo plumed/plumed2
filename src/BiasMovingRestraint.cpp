@@ -85,9 +85,18 @@ class BiasMovingRestraint : public Bias{
 public:
   BiasMovingRestraint(const ActionOptions&);
   void calculate();
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(BiasMovingRestraint,"MOVINGRESTRAINT")
+
+void BiasMovingRestraint::registerKeywords( Keywords& keys ){
+  Bias::registerKeywords(keys);
+  keys.add("optional","VERSE","Tells plumed whether the restraint is only acting for CV larger (U), or smaller (L) than the position of the restraint");
+  keys.add("numbered","STEP","Tells plumed the step numbers at which things happen");
+  keys.add("numbered","AT","The position of the restraint at the times correponding to the STEPs indicated.");
+  keys.add("numbered","KAPPA","The value of the force constants at the times corresponding to the STEPs indicated.");
+}
 
 BiasMovingRestraint::BiasMovingRestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao)

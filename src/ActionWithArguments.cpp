@@ -6,6 +6,11 @@
 using namespace std;
 using namespace PLMD;
 
+void ActionWithArguments::registerKeywords(Keywords& keys){
+  ActionWithValue::registerKeywords( keys );
+  keys.add("input","ARG","a list of plumed actions that provide the input to this action");
+}
+
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){
   vector<string> c;
   arg.clear();

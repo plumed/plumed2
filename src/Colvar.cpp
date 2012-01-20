@@ -14,6 +14,11 @@ isEnergy(false)
 {
 }
 
+void Colvar::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
+}  
 
 void Colvar::requestAtoms(const vector<AtomNumber> & a){
   ActionAtomistic::requestAtoms(a);

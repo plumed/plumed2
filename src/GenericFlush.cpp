@@ -37,6 +37,7 @@ public:
   {
     checkRead();
   }
+  static void registerKeywords( Keywords& keys );
   void calculate(){};
   void apply(){
     log.flush();
@@ -47,6 +48,10 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(GenericFlush,"FLUSH")
+
+void GenericFlush::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys );
+}
 
 }
 

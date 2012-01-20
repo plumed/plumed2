@@ -29,6 +29,7 @@ public:
   bool checkIsEnergy(){return isEnergy;};
   Colvar(const ActionOptions&);
   ~Colvar(){};
+  static void registerKeywords( Keywords& keys );
 };
 
 inline

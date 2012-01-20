@@ -24,6 +24,11 @@ lockRequestAtoms(false)
   plumed.getAtoms().add(this);
 }
 
+void ActionAtomistic::registerKeywords( Keywords& keys ){
+  ActionWithValue::registerKeywords(keys);
+}
+
+
 void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
   Atoms&atoms(plumed.getAtoms());

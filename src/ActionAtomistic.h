@@ -71,6 +71,7 @@ public:
   ActionAtomistic(const ActionOptions&ao);
   ~ActionAtomistic();
 
+  static void registerKeywords( Keywords& keys );
 
   void clearOutputForces();
 

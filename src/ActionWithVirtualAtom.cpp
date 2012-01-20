@@ -6,6 +6,11 @@ using namespace std;
 
 namespace PLMD{
 
+void ActionWithVirtualAtom::registerKeywords(Keywords& keys){
+  Action::registerKeywords(keys);
+  ActionAtomistic::registerKeywords(keys);
+}
+
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao)

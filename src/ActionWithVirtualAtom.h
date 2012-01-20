@@ -34,6 +34,7 @@ public:
   AtomNumber getIndex()const;
   ActionWithVirtualAtom(const ActionOptions&ao);
   ~ActionWithVirtualAtom();
+  static void registerKeywords(Keywords& keys);
 };
 
 inline

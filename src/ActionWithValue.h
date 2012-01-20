@@ -33,6 +33,10 @@ protected:
 public:
   ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
+
+/// Register all the relevant keywords for the action  
+  static void registerKeywords( Keywords& keys );
+
 /// Add a new value without derivatives.
 /// This should be used for values which are only evaluated (e.g. for printing)
 /// but for which we do not make derivatives available so that forces cannot

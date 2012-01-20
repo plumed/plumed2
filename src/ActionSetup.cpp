@@ -16,3 +16,7 @@ ActionSetup::ActionSetup(const ActionOptions&ao):
   }
 }
 
+void ActionSetup::registerKeywords( Keywords& keys ){
+  Action::registerKeywords(keys);
+}
+

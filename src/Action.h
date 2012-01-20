@@ -22,9 +22,13 @@ class ActionOptions{
   PlumedMain& plumed;
 /// Input line which sets up the action
   std::vector<std::string> line;
+/// The documentation for this action
+  const Keywords& keys;
+  static Keywords emptyKeys;
 public:
 /// Constructor
   ActionOptions(PlumedMain&p,const std::vector<std::string>&);
+  ActionOptions(PlumedMain&p,const std::vector<std::string>&,const Keywords& keys);
 };
 
 /// Base class for all the input Actions.
@@ -108,12 +112,16 @@ public:
 
   PlumedCommunicator& comm;
 
+  const Keywords& keywords;
 /// Prepare an Action for calculation
 /// This can be used by Action if they need some special preparation
 /// before calculation. Typical case is for collective variables
 /// which would like to change their list of requested atoms.
 /// By default (if not overridden) does nothing.
   virtual void prepare();
+
+/// Register all the relevant keywords for the action  
+  static void registerKeywords( Keywords& keys );
 
   virtual void lockRequests(){};
   virtual void unlockRequests(){};
