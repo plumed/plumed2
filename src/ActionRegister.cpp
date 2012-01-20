@@ -29,12 +29,15 @@ void ActionRegister::remove(creator_pointer f){
   }
 }
 
-void ActionRegister::add(string key,creator_pointer f){
+void ActionRegister::add(string key,creator_pointer f,keywords_pointer k){
   if(m.count(key)){
     m.erase(key);
     disabled.insert(key);
   }else{
     m.insert(pair<string,creator_pointer>(key,f));
+    Keywords kk;
+    k(kk);
+    mk.insert(pair<string,Keywords>(key,kk));
   };
 }
 

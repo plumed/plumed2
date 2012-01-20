@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <iostream>
+#include "Keywords.h"
 
 namespace PLMD{
 
@@ -25,19 +26,27 @@ class ActionRegister{
   friend std::ostream &operator<<(std::ostream &,const ActionRegister&);
 /// Pointer to a function which, given the options, create an Action
   typedef Action*(*creator_pointer)(const ActionOptions&);
+/// Pointer to a function which, returns the keywords allowed
+  typedef void(*keywords_pointer)(Keywords&);
 /// Map action to a function which creates the related object
   std::map<std::string,creator_pointer> m;
 /// Iterator over the map
   typedef std::map<std::string,creator_pointer>::iterator mIterator;
 /// Iterator over the map
   typedef std::map<std::string,creator_pointer>::const_iterator const_mIterator;
+/// Map action to a function which documents the related object
+  std::map<std::string,Keywords> mk;
+/// Iterator over the map
+  typedef std::map<std::string,Keywords>::iterator mIteratork;
+/// Iterator over the map
+  typedef std::map<std::string,Keywords>::const_iterator const_mIteratork;
 /// Set of disabled actions (which were registered more than once)
   std::set<std::string> disabled;
 public:
 /// Register a new class.
 /// \param key The name of the directive to be used in the input file
 /// \param key A pointer to a function which creates an object of that class
-  void add(std::string key,creator_pointer);
+  void add(std::string key,creator_pointer,keywords_pointer);
 /// Verify if a directive is present in the register
   bool check(std::string action);
 /// Create an Action of the type indicated in the options
@@ -69,7 +78,7 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
   static class classname##RegisterMe{ \
     static PLMD::Action* create(const PLMD::ActionOptions&ao){return new classname(ao);} \
   public: \
-    classname##RegisterMe(){PLMD::actionRegister().add(directive,create);}; \
+    classname##RegisterMe(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);}; \
     ~classname##RegisterMe(){PLMD::actionRegister().remove(create);}; \
   } classname##RegisterMeObject;
 

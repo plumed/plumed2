@@ -6,6 +6,8 @@
 
 namespace PLMD{
 
+class Keywords;
+
 /// Action representing a function of other actions
 class Function:
   public ActionWithValue,
@@ -17,6 +19,7 @@ public:
   void apply();
   void setDerivatives(int,double);
   void setDerivatives(Value*,int,double);
+  static void registerKeywords(Keywords&);
 };
 
 inline

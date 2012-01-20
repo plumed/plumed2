@@ -56,6 +56,15 @@ public:
 
 PLUMED_REGISTER_ACTION(GenericDumpDerivatives,"DUMPDERIVATIVES")
 
+void GenericDumpDerivatives::registerKeywords(Keywords& keys){
+  Action::registerKeywords(keys);
+  ActionPilot::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+  keys.add("compulsory","STRIDE","1","the frequency with which the derivatives should be output");
+  keys.add("compulsory","FILE","the name of the file on which to output the derivatives");
+  keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
+}
+
 GenericDumpDerivatives::GenericDumpDerivatives(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),

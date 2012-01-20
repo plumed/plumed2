@@ -30,5 +30,10 @@ void Function::apply(){
   }
 }
 
+void Function::registerKeywords(Keywords& keys){
+  Action::registerKeywords(keys);
+  ActionWithValue::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+}
 
 

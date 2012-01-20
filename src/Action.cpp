@@ -17,9 +17,9 @@ keys(emptyKeys)
 {
 }
 
-ActionOptions::ActionOptions(PlumedMain&p,const std::vector<std::string>&l,const Keywords&keys):
-plumed(p),
-line(l),
+ActionOptions::ActionOptions(const ActionOptions&ao,const Keywords&keys):
+plumed(ao.plumed),
+line(ao.line),
 keys(keys)
 {
 }

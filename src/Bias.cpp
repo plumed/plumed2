@@ -13,6 +13,12 @@ outputForces(getArguments().size(),0.0)
 {
 }
 
+void Bias::registerKeywords( Keywords& keys ){
+  ActionPilot::registerKeywords(keys);
+  ActionWithValue::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+}
+
 
 void Bias::apply(){
   if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){

@@ -9,6 +9,8 @@
 
 namespace PLMD{
 
+class Keywords;
+
 /// Action defining a bias which can act on other Action's
 class Bias :
   public ActionPilot,
@@ -20,6 +22,7 @@ protected:
   void resetOutputForces();
   void setOutputForces(int i,double g);
 public:
+  static void registerKeywords(Keywords&);
   Bias(const ActionOptions&ao);
   void apply();
 };

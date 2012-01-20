@@ -28,7 +28,7 @@ class ActionOptions{
 public:
 /// Constructor
   ActionOptions(PlumedMain&p,const std::vector<std::string>&);
-  ActionOptions(PlumedMain&p,const std::vector<std::string>&,const Keywords& keys);
+  ActionOptions(const ActionOptions&,const Keywords& keys);
 };
 
 /// Base class for all the input Actions.
