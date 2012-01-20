@@ -9,15 +9,24 @@ echo
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Test session ended at $(date)"
 
-for file in rt*/report.txt
+dirs=$(
+  for file in rt*/Makefile
+  do
+    echo ${file%Makefile}
+  done
+)
+
+
+for dir in $dirs
 do
+  file=${dir}report.txt
   if grep -q NOT_APPLIABLE $file ; then
     ((notapp++))
-    echo + test ${file%/report.txt} NOT APPLIABLE
+    echo + test $dir NOT APPLIABLE
     echo + check file $file for more information
   elif grep -q FAILURE $file ; then
     ((nerror++))
-    echo + ERROR in test ${file%/report.txt}
+    echo + ERROR in test $dir
     echo + check file $file for more information
   else
     ((nok++))
