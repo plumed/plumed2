@@ -82,16 +82,13 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
   DLLoader dlloader;
 
   string root=plumedRoot;
-  int err=setenv("PLUMED_ROOT",root.c_str(),1);
-  plumed_massert(err==0,"error setting environment variable");
 
-// Check if PLUMED_ROOT/patches/ directory exists (as a further check)
+// Check if plumedRoot/patches/ directory exists (as a further check)
   {
     vector<string> files=Tools::ls(root);
     if(find(files.begin(),files.end(),"patches")==files.end()) {
       string msg=
-         "ERROR: I cannot find $PLUMED_ROOT/patches/ directory\n"
-         "Check your PLUMED_ROOT variable\n";
+         "ERROR: I cannot find "+root+"+/patches/ directory\n";
       fprintf(stderr,"%s",msg.c_str());
       return 1;
     }
@@ -165,7 +162,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
       fprintf(out,"  plumed %s\n", manual.c_str());
     }
     for(unsigned j=0;j<availableShell.size();++j){
-      string cmd=root+"/scripts/"+availableShell[j]+".sh --description";
+      string cmd="env PLUMED_ROOT="+root+" "+root+"/scripts/"+availableShell[j]+".sh --description";
       FILE *fp=popen(cmd.c_str(),"r");
       string line,manual;
       while(Tools::getline(fp,line))manual+=line;
@@ -194,7 +191,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
   if(find(availableShell.begin(),availableShell.end(),command)!=availableShell.end()){
     plumed_massert(in==stdin,"shell tools can only work on stdin");
     plumed_massert(out==stdout,"shell tools can only work on stdin");
-    string cmd=root+"/scripts/"+command+".sh";
+    string cmd="env PLUMED_ROOT="+root+" "+root+"/scripts/"+command+".sh";
     for(int j=i+1;j<argc;j++) cmd+=string(" ")+argv[j];
     system(cmd.c_str());
     return 0;
