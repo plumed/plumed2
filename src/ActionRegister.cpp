@@ -35,25 +35,26 @@ void ActionRegister::add(string key,creator_pointer f,keywords_pointer k){
     disabled.insert(key);
   }else{
     m.insert(pair<string,creator_pointer>(key,f));
-    Keywords kk;
-    k(kk);
+    // Create keywords using a function pointer
+    Keywords kk; k(kk);
+    // Store array of keywords inside an associative array 
+    // we can then find them using the keyword
     mk.insert(pair<string,Keywords>(key,kk));
   };
 }
 
 bool ActionRegister::check(string key){
-  if(m.count(key)>0) return true;
+  if(m.count(key)>0 && mk.count(key)>0) return true;
   return false;
 }
 
 Action* ActionRegister::create(const ActionOptions&ao){
   if(ao.line.size()<1)return NULL;
-  Action* action;
-  if(check(ao.line[0])) action=m[ao.line[0]](ao);
+  Action* action; ActionOptions nao( ao,mk[ao.line[0]] );
+  if(check(ao.line[0])) action=m[ao.line[0]](nao);
   else action=NULL;
   return action;
 }
-
 
 std::ostream & PLMD::operator<<(std::ostream &log,const ActionRegister&ar){
   vector<string> s;
