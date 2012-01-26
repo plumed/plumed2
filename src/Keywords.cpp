@@ -78,13 +78,19 @@ bool Keywords::exists( const std::string k ) const {
 }
 
 void Keywords::print_html() const {
-  std::cout<<"\\par Specifying the input\n\n";
-  std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-  for(unsigned i=0;i<keys.size();++i){
-      if ( types[i].isInput() ) print_html_item( i );
-  }
-  std::cout<<"</table>\n\n";
   unsigned nkeys=0;
+  for(unsigned i=0;i<keys.size();++i){
+     if ( types[i].isInput() ) nkeys++;
+  }
+  if( nkeys>0 ){
+    std::cout<<"\\par Specifying the input\n\n";
+    std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
+    for(unsigned i=0;i<keys.size();++i){
+        if ( types[i].isInput() ) print_html_item( i );
+    }
+    std::cout<<"</table>\n\n";
+  }
+  nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
      if ( types[i].isCompulsory() ) nkeys++;
   }

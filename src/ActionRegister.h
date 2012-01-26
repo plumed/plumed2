@@ -52,6 +52,8 @@ public:
 /// Create an Action of the type indicated in the options
 /// \param ao object containing information for initialization, such as the full input line, a pointer to PlumedMain, etc
   Action* create(const ActionOptions&ao);
+/// Print out the keywords for an action in html ready for input into the manual
+  bool printManual(const std::string& action); 
   void remove(creator_pointer);
   ~ActionRegister();
 };
