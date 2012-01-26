@@ -10,21 +10,10 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION COMBINE
 /**
-Calculate the polynomial combination of other variables
+Calculate a polynomial combination of a set of other variables
 
-\par Syntax
-\verbatim
-COMBINE ARG=x1,x2,... [POWERS=p1,p2,...] [COEFFICIENTS=c1,c2,...] [NORMALIZE]
-\endverbatim
-The resulting variable has value
-\f$
-  \sum_i c_i x_i^{p_i}
-\f$. When not present, powers and coefficient are implicitly equal to 1.
-If NORMALIZE is present, the c coefficients are first normalized.
-
-
-\par Example
-The following input is printing the distance between atoms 3 and 5
+\par Examples
+The following input tells plumed to print the distance between atoms 3 and 5
 its square (as computed from the x,y,z components) and the distance
 again as computed from the square root of the square.
 \verbatim
@@ -49,10 +38,19 @@ class FunctionCombine :
 public:
   FunctionCombine(const ActionOptions&);
   void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 
 PLUMED_REGISTER_ACTION(FunctionCombine,"COMBINE")
+
+void FunctionCombine::registerKeywords(Keywords& keys){
+  Function::registerKeywords(keys);
+  keys.add("compulsory","COEFFICIENTS","the coefficients of the arguments in your function");
+  keys.add("compulsory","POWERS","the powers to which you are raising each of the arguments in your function");
+  keys.add("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
+  keys.addFlag("NORMALIZE",false,"normalize all the coefficents so that in total they are equal to one");
+}
 
 FunctionCombine::FunctionCombine(const ActionOptions&ao):
 Action(ao),

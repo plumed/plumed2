@@ -4,6 +4,10 @@
 using namespace PLMD;
 using namespace std;
 
+void ActionPilot::registerKeywords(Keywords& keys){
+  keys.add("compulsory","STRIDE","the frequency with which this action is to be performed"); 
+}
+
 ActionPilot::ActionPilot(const ActionOptions&ao):
 Action(ao),
 stride(1)

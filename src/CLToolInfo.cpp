@@ -10,6 +10,12 @@ using namespace std;
 
 namespace PLMD {
 
+//+PLUMEDOC TOOLS info
+/**
+This is a tool that allows you to obtain information about your plumed version
+*/
+//+ENDPLUMEDOC
+
 class CLToolInfo:
 public CLTool
 {

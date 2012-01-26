@@ -17,25 +17,30 @@ namespace PLMD {
 
 //+PLUMEDOC GENERIC WHOLEMOLECULES
 /**
-Rebuild molecules with pbc
+This action is used to rebuild molecules that can become split by the periodic
+boundary conditions in a manner similar to the ALIGN_ATOMS keyword of plumed1.
 
-\par syntax
-\verbatim
-WHOLEMOLECULES [STRIDE=s] GROUP0=list0 [ GROUP1=list1 [ GROUP2=list2 [ ... ] ] ]
-\endverbatim
-
-Similar to the ALIGN_ATOMS keyword of plumed 1. It rebuilds molecules
-correctly according to pbc. It can rebuild multiple groups, and
-it can be applied more than once. To see its effects, use
-a variable without pbc or the \ref DUMPATOMS directive.
+Running some CVs without this command can cause there to be discontinuities changes
+in the CV value and artifacts in the calculations.  This command can be applied 
+more than once.  To see what effect is has use a variable without pbc or use
+the \ref DUMPATOMS directive to output the atomic positions.
 
 \attention
-This directive is modifying the stored position in the precise moment
-when it get executed. This means that only collective variables
-which are below this in the input script will see the corrected positions.
+This directive modifies the stored position at the precise moment
+it is executed. This means that only collective variables
+which are below it in the input script will see the corrected positions.
 As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
-it acts at every step.
+this action is performed at every MD step.
+
+\par Examples
+This command instructs plumed to reconstruct the molecule containing atoms 1-20
+at every step of the calculation.
+
+\verbatim
+WHOLEMOLECULES STRIDE=1 MOLECULE=1-20
+\endverbatim
+
 */
 //+ENDPLUMEDOC
 

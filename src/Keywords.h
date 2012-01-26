@@ -13,7 +13,7 @@ namespace PLMD{
 class KeyType{
 friend class Keyword;
 private:
-  enum {compulsory,flag,optional,input,numbered,modifier} style;
+  enum {compulsory,flag,optional,input,numbered,modifier,hidden} style;
 public:
   KeyType( const std::string& type );
   bool isCompulsory() const { return (style==compulsory); }

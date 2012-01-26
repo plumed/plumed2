@@ -12,16 +12,23 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR ANGLE
 /**
-Calculate the angle between three atoms
+Calculate the angle between three atoms.  Alternatively if four atoms appear in the atom
+specification calculate the angle between the vector joining atoms 1 and 2 and that joineing
+atoms 3 and 4.
 
-\par Syntax
+\par Examples
+
+This command tells plumed to calculate the angle between the vector connecting atom 1 to atom 2 and
+the vector connecting atom 2 to atom 3
 \verbatim
-ANGLE ATOMS=x,y,z [PBC]
+ANGLE ATOMS=1,2,3 
 \endverbatim
-If the PBC flag is present, distance is computed using periodic boundary conditions.
 
-If *four* atoms are passed, the angle between the vector joining atoms 1-2
-and the vector joining atoms 3-4 is computed
+This command tells plumed to calculate the angle between vector connecting atom 1 to atom 2 and
+the vector connecting atom 3 to atom 4
+\verbatim
+ANGLE ATOMS=1,2,3,4 
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -33,9 +40,15 @@ public:
   ColvarAngle(const ActionOptions&);
 // active methods:
   virtual void calculate();
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(ColvarAngle,"ANGLE")
+
+void ColvarAngle::registerKeywords( Keywords& keys ){
+  Colvar::registerKeywords(keys);
+  keys.add("input","ATOMS","the list of atoms involved in this collective variable");
+}
 
 ColvarAngle::ColvarAngle(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),

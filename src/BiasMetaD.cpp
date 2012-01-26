@@ -45,7 +45,7 @@ you need to specify the grid boundaries with GRID_MIN and GRID_MAX and the numbe
 of bins with GRID_BIN. An experimental sparse grid can be activated with GRID_SPARSE.
 The use of spline can be disabled with GRID_NOSPLINE. You can dump the grid on file
 with GRID_WFILE every GRID_WSTRIDE steps.
-\par Example
+\par Examples
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
 and the distance between atoms 2 and 4. The value of the CVs and
@@ -103,9 +103,28 @@ public:
   ~BiasMetaD();
   void calculate();
   void update();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
+
+void BiasMetaD::registerKeywords(Keywords& keys){
+  Bias::registerKeywords(keys);
+  keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
+  keys.add("compulsory","HEIGHT","the heights of the Gaussian hills");
+  keys.add("compulsory","PACE","the frequency for hill addition");
+  keys.add("compulsory","FILE","a file in which the list of added hills is stored");
+  keys.addFlag("RESTART",false,"restart the calculation from a previous metadynamics calculation.");
+  keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
+  keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
+  keys.add("optional","GRID_MIN","the lower bounds for the grid");
+  keys.add("optional","GRID_MAX","the upper bounds for the grid");
+  keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.add("optional","GRID_SPARSE","use a sparse grid to store hills");
+  keys.add("optional","GRID_NOSPLINE","don't use spline interpolation with grids");
+  keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
+  keys.add("optional","GRID_WFILE","the file on which to write the grid");
+}
 
 BiasMetaD::~BiasMetaD(){
   if(BiasGrid_) delete BiasGrid_;

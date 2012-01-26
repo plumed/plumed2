@@ -10,22 +10,22 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS RESTRAINT
 /**
-Adds an harmonic and/or linear restraint on one or more variables
+Adds harmonic and/or linear restraints on one or more variables.  
 
-\par Syntax
-\verbatim
-RESTRAINT ARG=x1,x2,... KAPPA=k1,k2,... SLOPE=m1,m2,... AT=a1,a2,...
-\endverbatim
-KAPPA and SLOPE specifies an array of force constants, one for each variable,
-and AT the center of the restraints. Thus, the resulting potential is
-\f$
+Either or both
+of SLOPE and KAPPA must be present to specify the linear and harmonic force constants
+respectively.  The resulting potential is given by: 
+\f[
   \sum_i \frac{k_i}{2} (x_i-a_i)^2 + m_i*(x_i-a_i)
-\f$.
+\f].
 
-\par Example
-The following input is restraining the distance between atoms 3 and 5
+The number of components for any vector of force constants must be equal to the number
+of arguments to the action.
+
+\par Examples
+The following input tells plumed to restrain the distance between atoms 3 and 5
 and the distance between atoms 2 and 4, at different equilibrium
-values, and it is printing the energy of the restraint
+values, and to print the energy of the restraint
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
@@ -44,9 +44,17 @@ class BiasRestraint : public Bias{
 public:
   BiasRestraint(const ActionOptions&);
   void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(BiasRestraint,"RESTRAINT")
+
+void BiasRestraint::registerKeywords(Keywords& keys){
+   Bias::registerKeywords(keys);
+   keys.add("optional","SLOPE","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
+   keys.add("optional","KAPPA","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
+   keys.add("compulsory","AT","");
+}
 
 BiasRestraint::BiasRestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),

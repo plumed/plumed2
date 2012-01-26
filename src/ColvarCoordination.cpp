@@ -14,7 +14,19 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR COORDINATION
 /**
-This is just a template variable
+This keyword can be used to calculate the coordination numbers for atoms in your system. 
+We use the following switching function to make the coordination number differentiable:
+
+\f[
+s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\right)^m }
+\f]
+
+\par Examples
+
+The following example instructs plumed to the average coordination number of the atoms in group 1-10 with the atoms in group 20-100.  These coordination numbers count the number of atoms within the group that are within 0.3 nm of the central atom.  A neighbour list is used to make this calculation faster, this neighbour list is updated every 100 steps.
+\verbatim
+COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NL_CUTOFF=0.5 UPDATE=100 
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -33,9 +45,25 @@ public:
 // active methods:
   virtual void calculate();
   virtual void prepare();
+  static void registerKeywords( Keywords& keys );
 };
 
 PLUMED_REGISTER_ACTION(ColvarCoordination,"COORDINATION")
+
+void ColvarCoordination::registerKeywords( Keywords& keys ){
+  Colvar::registerKeywords(keys);
+  keys.addFlag("SERIAL",false,"perform the calcualtion of the coordination number in serial");
+  keys.addFlag("PAIR",false,"Evaulate the switching functions for only the 1st element of the 1st group with the first element in the second group etc only");
+  keys.addFlag("NLIST",false,"Use a neighbour list to speed up the calculation");
+  keys.add("input","GROUPA","The list of central atoms for which we are calculating our coordination numbers");
+  keys.add("input","GROUPB","The list of neighbourhood atoms for which we are using to calculate coordination numbers");
+  keys.add("optional","NN","(default=6) The n parameter of the switching function ");
+  keys.add("optional","MM","(default=12) The m parameter of the switching function ");
+  keys.add("optional","D_0","(default=0) The d_0 parameter of the switching function");
+  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","NL_CUTOFF","The cutoff for the neighbour list");
+  keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbour list");
+}
 
 ColvarCoordination::ColvarCoordination(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),

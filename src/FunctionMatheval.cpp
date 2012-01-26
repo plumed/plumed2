@@ -13,21 +13,10 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION MATHEVAL
 /**
-Calculate the combination of variables using a matheval expression
+Calculate a combination of variables using a matheval expression.
 
-\par Syntax
-\verbatim
-MATHEVAL ARG=x1,x2,... [VAR=v1,v2,...] [FUNC=func]
-\endverbatim
-Compute the expression func on the arguments x1,x2,.... If VAR is present,
-it determines the names of the variables used in the FUNC string using
-libmatheval syntax.
-If VAR is absent, the names are set to x,y,z. With more than 3 arguments explicit
-names are compulsory
-
-
-\par Example
-The following input is printing the angle between vectors
+\par Examples
+The following input tells plumed to print the angle between vectors
 identified by atoms 1,2 and atoms 2,3
 its square (as computed from the x,y,z components) and the distance
 again as computed from the square root of the square.
@@ -65,11 +54,18 @@ public:
   FunctionMatheval(const ActionOptions&);
   ~FunctionMatheval();
   void calculate();
+  static void registerKeywords(Keywords& keys);
 };
-
 
 #ifdef __PLUMED_HAS_MATHEVAL
 PLUMED_REGISTER_ACTION(FunctionMatheval,"MATHEVAL")
+
+void FunctionMatheval::registerKeywords(Keywords& keys){
+  Function::registerKeywords(keys);
+  keys.add("compulsory","FUNC","the function you wish to evaluate");
+  keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
+
+}
 
 FunctionMatheval::FunctionMatheval(const ActionOptions&ao):
 Action(ao),

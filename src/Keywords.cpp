@@ -15,6 +15,8 @@ KeyType::KeyType( const std::string& type ){
       style=numbered;
   } else if( type=="modifier" ){
       style=modifier;
+  } else if( type=="hidden" ){
+      style=hidden;
   } else {
       plumed_assert(false);    // Invalid keyword specifier
   }

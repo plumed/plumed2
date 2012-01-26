@@ -10,7 +10,14 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR DIPOLE 
 /**
-This is just a template variable
+Calcualte the dipole moment for a group of atoms.
+
+\par Examples
+The following tells plumed to calculate the dipole of the group of atoms containing
+the atoms from 1-10.
+\verbatim
+DIPOLE GROUP=1-10
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -20,9 +27,16 @@ class ColvarDipole : public Colvar {
 public:
   ColvarDipole(const ActionOptions&);
   virtual void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(ColvarDipole,"DIPOLE")
+
+void ColvarDipole::registerKeywords(Keywords& keys){
+  Colvar::registerKeywords(keys);
+  keys.add("input","GROUP","the group of atoms we are calculating the dipole moment for");
+  keys.remove("PBC"); keys.remove("NOPBC");
+}
 
 ColvarDipole::ColvarDipole(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao)

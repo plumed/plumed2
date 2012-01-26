@@ -12,19 +12,19 @@ namespace PLMD{
 
 //+PLUMEDOC GENERIC GROUP
 /**
-Define a group of atoms
+Define a group of atoms so that a particular list of atoms can be referenced with a single label
+in definitions of CVs or virtual atoms.
 
-\par Syntax
+\par Examples
+This command creates a group of atoms containing atoms 1,2 and 3 and assigns the label
+g1 to this group.  When the label g1 appears in atom lists it is automatically expanded 
+and replaced by the list of atoms (i.e. atoms 1,2 and 3). 
 \verbatim
-GROUP LABEL=label ATOMS=x,y,z,...
+GROUP ATOMS=1,2,3 LABEL=g1
 \endverbatim
-The label is associated to a group of atoms which is then automatically
-expanded when used in multi-atoms options
 
 */
 //+ENDPLUMEDOC
-
-
 
 class GenericGroup:
   public ActionAtomistic

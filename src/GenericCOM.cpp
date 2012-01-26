@@ -5,20 +5,15 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC GENERIC COM
+//+PLUMEDOC VATOM COM
 /**
-Calculate the center of mass of a group of atoms
+Calculate the center of mass for a group of atoms.  The computed
+center of mass is stored as a virtual atom that can be accessed in
+an atom list through the the label for the COM action that creates it.
 
-\par Syntax
-\verbatim
-COM LABEL=label ATOMS=x,y,z,...
-\endverbatim
-The center of mass of atoms x,y,z,... is computed and stored in a virtual
-atom which can be accessed through the label "label"
-
-\par Example
-The following input is printing the distance between the
-center of mass of atoms 1,2,3,4,5,6,7 and that of atoms 15,20:
+\par Examples
+The following input instructs plumed to print the distance between the
+center of mass for atoms 1,2,3,4,5,6,7 and that for atoms 15,20:
 \verbatim
 COM ATOMS=1-7         LABEL=c1
 COM ATOMS=15,20       LABEL=c2

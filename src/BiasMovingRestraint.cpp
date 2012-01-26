@@ -92,10 +92,10 @@ PLUMED_REGISTER_ACTION(BiasMovingRestraint,"MOVINGRESTRAINT")
 
 void BiasMovingRestraint::registerKeywords( Keywords& keys ){
   Bias::registerKeywords(keys);
-  keys.add("optional","VERSE","Tells plumed whether the restraint is only acting for CV larger (U), or smaller (L) than the position of the restraint");
-  keys.add("numbered","STEP","Tells plumed the step numbers at which things happen");
-  keys.add("numbered","AT","The position of the restraint at the times correponding to the STEPs indicated.");
-  keys.add("numbered","KAPPA","The value of the force constants at the times corresponding to the STEPs indicated.");
+  keys.add("compulsory","VERSE","B","Tells plumed whether the restraint is only acting for CV larger (U) or smaller (L) than the restraint or whether it is acting on both sides (B)");
+  keys.add("numbered","STEP","This keyword appears multiple times as STEPx with x=0,1,2,...,n.  Each value given represents the MD step at which the restraint parameters take the values KAPPAx and ATx.");
+  keys.add("numbered","AT","ATx is equal to the position of the restraint at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no ATx is specified for STEPx then the values of AT are kept constant during the interval of time between STEPx-1 and STEPx.");
+  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no ATx is specified for STEPx then the values of KAPPAx are kept constant during the interval of time between STEPx-1 and STEPx.");
 }
 
 BiasMovingRestraint::BiasMovingRestraint(const ActionOptions&ao):

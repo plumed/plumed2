@@ -11,12 +11,13 @@ using namespace std;
 
 namespace PLMD {
 
+//+PLUMEDOC TOOLS driver
 /**
-Class defining the driver
-
-The driver is a tool to use plumed to process
+driver is a tool that allows one to to use plumed to post-process
 an existing trajectory.
 */
+//+ENDPLUMEDOC
+
 template<typename real>
 class CLToolDriver:
 public CLTool

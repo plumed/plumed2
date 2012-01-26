@@ -11,19 +11,12 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR DISTANCE
 /**
-Calculate the distance between two atoms.
+Calculate the distance between a pair of atoms.
 
-\par Syntax
-\verbatim
-DISTANCE ATOMS=x,y [COMPONENTS] [PBC]
-\endverbatim
-If the COMPONENTS flag is present, the three components of the distance
-can be accessed respectively as label.x label.y and label.z .
-If the PBC flag is present, distance is computed using periodic boundary conditions.
+\par Examples
 
-\par Example
-The following input is printing the distance between atoms 3 and 5,
-the distance between atoms 2 and 4 and its x component.
+The following input tells plumed to print the distance between atoms 3 and 5,
+the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
 \verbatim
 DISTANCE ATOMS=3,5             LABEL=d1
 DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
@@ -39,12 +32,19 @@ class ColvarDistance : public Colvar {
   bool pbc;
 
 public:
+  static void registerKeywords( Keywords& keys );
   ColvarDistance(const ActionOptions&);
 // active methods:
   virtual void calculate();
 };
 
 PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
+
+void ColvarDistance::registerKeywords( Keywords& keys ){
+  Colvar::registerKeywords( keys );
+  keys.add("input","ATOMS","the pair of atom that we are calculating the distance between");
+  keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as <label>.x, <label>.y and <label>.z");  
+}
 
 ColvarDistance::ColvarDistance(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),

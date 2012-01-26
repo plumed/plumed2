@@ -14,6 +14,7 @@ outputForces(getArguments().size(),0.0)
 }
 
 void Bias::registerKeywords( Keywords& keys ){
+  Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);

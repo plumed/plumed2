@@ -9,18 +9,12 @@ using namespace std;
 
 //+PLUMEDOC GENERIC FLUSH
 /**
-Periodically flush open files.
+This command instructs plumed to flush all the open files with a user specified frequency.  This
+is useful for preventing data loss that would otherwise arrise as a consequence of the code
+storing data for printing in the buffers
 
-\par Syntax
-\verbatim
-FLUSH [STRIDE=s]
-\endverbatim
-This directive is used to flush all the open files periodically.
-It understands the keyword STRIDE,
-which is the number of timesteps between flushings
-
-\par Example
-This input is flushing all the output files every 100 steps
+\par Examples
+A command like this in the input will instruct plumed to flush all the output files every 100 steps
 \verbatim
 FLUSH STRIDE=100
 \endverbatim
@@ -51,6 +45,8 @@ PLUMED_REGISTER_ACTION(GenericFlush,"FLUSH")
 
 void GenericFlush::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
+  ActionPilot::registerKeywords( keys );
+  keys.remove("LABEL");
 }
 
 }

@@ -12,22 +12,11 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS EXTERNAL 
 /**
-Restraint from external potential defined on a grid
+Calculate a restraint that is defined on a grid that is read in at start up
 
-\par Syntax
-\verbatim
-EXTERNAL ...
-  ARG=x1,x2,... 
-  FILE=filename
-  [NOSPLINE]
-  [SPARSE]
-... EXTERNAL 
-\endverbatim
-FILE the name of the file where the external potential is stored, 
-NOSPLINE to disable the use of splines, SPARSE to use a sparse grid.
-\par Example
-The following input is for a calculation with an external potential
-defined in the file bias.dat and acting on the distance between atoms 3 and 5.
+\par Examples
+The following is an input for a calculation with an external potential that is
+defined in the file bias.dat and that acts on the distance between atoms 3 and 5.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 EXTERNAL ARG=d1 FILENAME=bias.dat LABEL=external 
@@ -46,10 +35,17 @@ public:
   BiasExternal(const ActionOptions&);
   ~BiasExternal();
   void calculate();
-
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(BiasExternal,"EXTERNAL")
+
+void BiasExternal::registerKeywords(Keywords& keys){
+  Bias::registerKeywords(keys);
+  keys.add("compulsory","FILE","the name of the file containing the external potential");
+  keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
+  keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
+}
 
 BiasExternal::~BiasExternal(){
   delete BiasGrid_;

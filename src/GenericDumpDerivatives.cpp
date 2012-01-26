@@ -8,26 +8,18 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC GENERIC DUMPDERIVATIVES
+//+PLUMEDOC ANALYSIS DUMPDERIVATIVES
 /**
+Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).
 
-Dump the derivatives of one or more objects with respect to their input parameters
-on a file. For collective variables, these are the derivatives of the collective
-variable (or of one of its components) with respect to atom positions and to cell
-vectors (virial-like form). For functions, there are the the derivatives with respect
-the function arguments.
+For a CV this line in input instructs plumed to print the derivative of the CV with respect to the atom positions 
+and the cell vectors (virial-like form).  In contrast, for a function or bias the derivative with respect to the input "CVs"
+will be output.  This command is most often used to test whether or not analytic derivatives have been implemented correctly.  This
+can be done by outputting the derivatives calculated analytically and numerically.  You can control the buffering of output using the \ref FLUSH keyword.
 
-\par Syntax
-\verbatim
-DUMPDERIVATIVES ARG=what [STRIDE=s] [FILE=file]
-\endverbatim
-It can print at the same time derivatives of more than one object, but they should
-have the same number of parameters. Typically, this can be used to test numerical
-derivatives againts analytical ones
-
-\par Example
-The following input is writing on file deriv distanceB both
-the analytical and numerical derivatives of distance between atoms 1 and 2.
+\par Examples
+The following input instructs plumed to write a file called deriv that contains both the 
+analytical and numerical derivatives of the distance between atoms 1 and 2.
 \verbatim
 DISTANCE ATOM=1,2 LABEL=distance
 DISTANCE ATOM=1,2 LABEL=distanceN NUMERICAL_DERIVATIVES
@@ -49,6 +41,7 @@ public ActionWithArguments
 public:
   void calculate(){};
   GenericDumpDerivatives(const ActionOptions&);
+  static void registerKeywords(Keywords& keys);
   void apply(){};
   void update();
   ~GenericDumpDerivatives();

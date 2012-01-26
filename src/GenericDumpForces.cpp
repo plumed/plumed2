@@ -8,18 +8,26 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC GENERIC DUMPFORCES
+//+PLUMEDOC ANALYSIS DUMPFORCES
 /**
+Dump the force acting on one of a values in a file.  
 
-Dump the force acting on a value on a file. E.g., for a CV it dumps
-the force on the CV itself. Notice that to have the forces on atoms
-one should multiply this times the output of DUMPDERIVATIVES.
+For a CV this command will dump
+the force on the CV itself. Be aware that in order to have the forces on the atoms
+you should multiply the output from this argument by the output from DUMPDERIVATIVES.
+Furthermore, also note that you can output the forces on multiple quantities simultaneously
+by specifying more than one argument. You can control the buffering of output using the \ref FLUSH keyword.
 
-\par Syntax
+
+\par Examples
+The following input instructs plumed to write a file called forces that contains
+the force acting on the distance between atoms 1 and 2. 
 \verbatim
-DUMPFORCES ARG=what [STRIDE=s] [FILE=file]
+DISTANCE ATOM=1,2 LABEL=distance
+DUMPFORCES ARG=distance STRIDE=1 FILE=forces
 \endverbatim
-It can print at the same time forces on more than one object.
+
+(See also \ref DISTANCE)
 
 */
 //+ENDPLUMEDOC
@@ -33,12 +41,20 @@ public ActionWithArguments
 public:
   void calculate(){};
   GenericDumpForces(const ActionOptions&);
+  static void registerKeywords(Keywords& keys);
   void apply(){};
   void update();
   ~GenericDumpForces();
 };
 
 PLUMED_REGISTER_ACTION(GenericDumpForces,"DUMPFORCES")
+
+void GenericDumpForces::registerKeywords(Keywords& keys){
+  Action::registerKeywords(keys);
+  ActionPilot::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+  keys.add("compulsory","FILE","the name of the file on which to output the forces");
+}
 
 GenericDumpForces::GenericDumpForces(const ActionOptions&ao):
 Action(ao),

@@ -12,22 +12,22 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR TORSION
 /**
-Calculate the torsion between four atoms.
-\par Syntax
-\verbatim
-TORSION ATOMS=a0,a1,a2,a3 [PBC]
-\endverbatim
-If the PBC flag is present, distance is computed using periodic boundary conditions.
+Calculate the torsion between four atoms or alternatively use this command
+to calculate the angle between two vectors projected on the plane
+orthogonal to an axis. 
 
-Alternatively, compute the angle between two vectors projected on the plane
-orthogonal to an axis, such as
+\par Examples
+
+The torsional angle between atoms 1, 2, 3 and 4 can be calculated using:
+
 \verbatim
-TORSION V1=a0,a1 AXIS=a2,a3 V2=a4,a5
+TORSION ATOMS=1,2,3,4
 \endverbatim
-Thus, two following variables are exactly the same one:
+
+or alternatively using:
+
 \verbatim
-TORSION ATOMS=a0,a1,a2,a3
-TORSION V1=a1,a0 AXIS=a1,a2 V2=a2,a3
+TORSION VECTOR1=2,1 AXIS=2,3 VECTOR2=3,4
 \endverbatim
 
 */
@@ -40,9 +40,18 @@ public:
   ColvarTorsion(const ActionOptions&);
 // active methods:
   virtual void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(ColvarTorsion,"TORSION")
+
+void ColvarTorsion::registerKeywords(Keywords& keys){
+   Colvar::registerKeywords( keys );
+   keys.add("input","ATOMS","the four atoms involved in the torsional angle");
+   keys.add("input","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTOR1 and VECTOR2 keywords."); 
+   keys.add("input","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
+   keys.add("input","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
+}
 
 ColvarTorsion::ColvarTorsion(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),

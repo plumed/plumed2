@@ -9,23 +9,13 @@ namespace PLMD{
 
 //+PLUMEDOC GENERIC PRINT
 /**
-Print quantities on a file.
+Print quantities to a file.  This directive can be used multiple times
+in the input so you can print files with different strides or print different quantities 
+to different files.  You can control the buffering of output using the \ref FLUSH keyword.
 
-\par Syntax
-\verbatim
-PRINT ARG=what [STRIDE=s] [FILE=file] [FMT=fmt]
-\endverbatim
-Similarly to Actions of type \ref Bias, it accepts keywords
-ARG and STRIDE to specify which quantities should be printed and
-how frequently. It also accepts a keyword FMT specifying (in printf() style)
-the format for the written numbers and a keyword FILE specifying the
-name of the output file (if omitted, plumed log will be used).
-This directive can be used multiple times to write multiple files,
-perhaps at different stride.
-
-\par Example
-The following input is printing the distance between atoms 3 and 5 on file COLVAR
-every 10 steps, and the distance and total energy on file COLVAR_ALL
+\par Examples
+The following input instructs plumed to print the distance between atoms 3 and 5 on a file 
+called COLVAR every 10 steps, and the distance and total energy on a file called COLVAR_ALL
 every 1000 steps.
 \verbatim
 DISTANCE ATOMS=2,5 LABEL=distance
@@ -58,12 +48,22 @@ public:
   void calculate(){};
   void prepare();
   GenericPrint(const ActionOptions&);
+  static void registerKeywords(Keywords& keys);
   void apply(){};
   void update();
   ~GenericPrint();
 };
 
 PLUMED_REGISTER_ACTION(GenericPrint,"PRINT")
+
+void GenericPrint::registerKeywords(Keywords& keys){
+  Action::registerKeywords(keys);
+  ActionPilot::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+  keys.add("compulsory","FILE","the name of the file on which to output these quantities");
+  keys.add("optional","FMT","the format that should be used to output real numbers");
+  keys.add("hidden","_ROTATE","some funky thing implemented by GBussi");
+}
 
 GenericPrint::GenericPrint(const ActionOptions&ao):
 Action(ao),

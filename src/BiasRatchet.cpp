@@ -16,8 +16,6 @@ Adds an ratchet-and-pawl like restraint on one or more variables
 \verbatim
 ABMD ARG=x1,x2,... KAPPA=k1,k2,... MIN=a1,a2,... TO=a1,a2,...
 \endverbatim
-KAPPA specifies an array of force constants, one for each variable,
-and TO the target values of the restraints. Thus, the resulting potential is
 \f$
 V(\rho(t)) = \left \{ \begin{array}{ll} \frac{\alpha}{2}\left(\rho(t)-\rho_m(t)\right)^2, &\rho(t)>\rho_m(t)\\
               0, & \rho(t)\le\rho_m(t), \end{array} \right .
@@ -31,10 +29,10 @@ and
 \rho_m(t)=\min_{0\le\tau\le t}\rho(\tau).
 \f$.
 
-\par Example
-The following input is restraining the distance between atoms 3 and 5
+\par Examples
+The following input sets up a restraint on the distance between atoms 3 and 5
 and the distance between atoms 2 and 4, at different equilibrium
-values, and it is printing the energy of the restraint
+values, and tells plumed to print the energy of the restraint
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
@@ -53,9 +51,17 @@ class BiasRatchet : public Bias{
 public:
   BiasRatchet(const ActionOptions&);
   void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(BiasRatchet,"ABMD")
+
+void BiasRatchet::registerKeywords(Keywords& keys){
+  Bias::registerKeywords(keys);
+  keys.add("compulsory","TO","The array of a values in the above equation");
+  keys.add("compulsory","KAPPA","The array of force constants.");
+  keys.add("compulsory","MIN","Also the array of a values in the above equation - I don't understand.");
+}
 
 BiasRatchet::BiasRatchet(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),

@@ -13,13 +13,8 @@ namespace PLMD{
 /**
 Calculate the volume of the simulation box.
 
-\par Syntax
-\verbatim
-VOLUME
-\endverbatim
-
-\par Example
-The following input is printing the volume of the system
+\par Examples
+The following input tells plumed to print the volume of the system
 \verbatim
 VOLUME LABEL=vol
 PRINT ARG=vol
@@ -61,7 +56,9 @@ components(false)
 }
 
 void ColvarVolume::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
+  ActionAtomistic::registerKeywords( keys );
   keys.remove("NUMERICAL_DERIVATIVES"); 
   keys.addFlag("COMPONENTS",false,"use xx, yy, zz, alpha, beta, gamma as the colvars rather than the box volume");
 }

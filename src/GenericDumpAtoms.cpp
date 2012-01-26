@@ -13,17 +13,23 @@ namespace PLMD
 
 //+PLUMEDOC GENERIC DUMPATOMS
 /**
-  Dump atom positions
 
-\par syntax
+This command can be used to output the positions of a particular set of atoms.
+The atoms required are ouput in a xyz formatted file.  Importantly, if your
+input file contains actions that edit the atoms position (e.g. \ref WHOLEMOLECULES)
+and the DUMPDERIVATIVES command appears after this instruction, then the eddited
+atom positions are output.  You can control the buffering of output using the \ref FLUSH keyword.
+
+\par Examples
+
+The following input instructs plumed to print out the positions of atoms
+1-10 together with the position of the center of mass of atoms 11-20 every
+10 steps to a file called file.xyz.
 \verbatim
-DUMPATOMS [STRIDE=s] FILE=file.xyz ATOMS=list
+COM ATOMS=11-20 LABEL=c1
+DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1
 \endverbatim
 
-Listed atoms are written on file.xyz (currently only xyz format).
-The positions are those stored in plumed exactly at the point where
-the directive is put in the input file. This is relevant for directives
-editing atom positions (e.g. \ref WHOLEMOLECULES).
 */
 //+ENDPLUMEDOC
 
@@ -44,6 +50,8 @@ public:
 PLUMED_REGISTER_ACTION(GenericDumpAtoms,"DUMPATOMS")
 
 void GenericDumpAtoms::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys );
+  ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("input", "ATOMS", "the atom indices whose positions you would like to print out");
   keys.add("compulsory", "FILE", "file on which to output coordinates");

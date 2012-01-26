@@ -11,7 +11,13 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR TEMPLATE
 /**
-This is just a template variable
+This file provides a template for if you want to introduce a new CV.
+
+<!-----You should add a description of your CV here---->
+
+\par Examples
+
+<!---You should put an example of how to use your CV here--->
 
 */
 //+ENDPLUMEDOC
@@ -23,9 +29,19 @@ public:
   ColvarTemplate(const ActionOptions&);
 // active methods:
   virtual void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(ColvarTemplate,"TEMPLATE")
+
+void ColvarTemplate::registerKeywords(Keywords& keys){
+  Colvar::registerKeywords(keys);
+  keys.addFlag("TEMPLATE_DEFAULT_OFF_FLAG",false,"flags that are by default not performed should be specified like this");
+  keys.addFlag("TEMPLATE_DEFAULT_ON_FLAG",true,"flags that are by default performed should be specified like this");
+  keys.add("compulsory","TEMPLATE_COMPULSORY","all compulsory keywords should be added like this with a description here");
+  keys.add("optional","TEMPLATE_OPTIONAL","all optional keywords that have input should be added like a description here");
+  keys.add("input","TEMPLATE_INPUT","the keyword with which you specify what atoms to use should be added like this");
+}
 
 ColvarTemplate::ColvarTemplate(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),

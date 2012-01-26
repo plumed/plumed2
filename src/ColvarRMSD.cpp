@@ -11,16 +11,24 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR RMSD
 /**
-Calculate the RMSD with respect to a reference structure
+Calculate the RMSD with respect to a reference structure.  To perform
+an ??optimal?? (what does this mean algorithmical speed wise?) alignment
+using the Kearsley algorithm then use TYPE=OPTIMAL.  Otherwise
+use TYPE=SIMPLE, which will not perform optimal alignment and will only 
+remove the translation of the center of mass.
 
-\par Syntax
-for an optimal alignment following Kearsley algorithm then 
+\attention
+The documentation here needs some work as it is not very clear to me 
+sorry GAT. 
+
+\par Examples
+
+The following tells plumed to calculate the RMSD distance between
+the positions of the atoms in the reference file and their instantaneous
+position.  The Kearseley algorithm is used so this is done optimally.
+
 \verbatim
 RMSD REFERENCE=file.pdb TYPE=OPTIMAL
-\endverbatim
-else, for simple case (no optimal alignment but only translation) 
-\verbatim
-RMSD REFERENCE=file.pdb TYPE=SIMPLE
 \endverbatim
 
 ...
@@ -38,9 +46,16 @@ class ColvarRMSD : public Colvar {
 public:
   ColvarRMSD(const ActionOptions&);
   virtual void calculate();
+  static void registerKeywords(Keywords& keys);
 };
 
 PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
+
+void ColvarRMSD::registerKeywords(Keywords& keys){
+  Colvar::registerKeywords(keys);
+  keys.add("input","REFERENCE","a file in pdb format containing the reference structure.  The atoms involved in the CV are specified in the pdb file");
+  keys.add("optional","TYPE","(default=SIMPLE) the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
+}
 
 ColvarRMSD::ColvarRMSD(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),rmsd(log)

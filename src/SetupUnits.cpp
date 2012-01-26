@@ -8,35 +8,19 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC SETUP UNITS
+//+PLUMEDOC GENERIC UNITS
 /**
-Sets internal units.
-
-\par syntax
-\verbatim
-UNITS [LENGTH=ll] [TIME=tt] [ENERGY=ee]
-\endverbatim
-
-This directive is used to set internal units for PLUMED. It accepts
-the keywords LENGTH, TIME and ENERGY, fixing the units of
-the corresponding quantity. All the other quantities are derived,
-e.g. forces are measured in ENERGY/LENGTH. The following
-values are accepted:
-- LENGTH: nm (default), A, um
-- ENERGY: kj/mol (default), j/mol, kcal/mol
-- TIME ps (default), ns ,fs
-
-This directive needs to be used at the beginning of the plumed.dat file,
-before any other directive which may take as input a quantity measured
-in the aforementioned units.
+This command sets the internal units for the code.  A new unit can be set by either
+specifying how to convert from the plumed default unit into that new unit or by using
+the shortcuts described below.  This directive MUST appear at the BEGINNING of the 
+plumed.dat file.  The same units must be used througout the plumed.dat file.
 
 \par Examples
 \verbatim
 # this is using nm - kj/mol - fs
 UNITS LENGTH=nm TIME=fs
 \endverbatim
-If a number is found, it is interpreted as a multiplication
-with respect to the default
+If a number, x, is found, the new unit is equal to x (default units)
 \verbatim
 # this is using nm - kj/mol - fs
 UNITS LENGTH=nm TIME=0.001
