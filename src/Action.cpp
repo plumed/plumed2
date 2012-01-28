@@ -26,7 +26,7 @@ keys(keys)
 
 void Action::registerKeywords( Keywords& keys ){
   plumed_assert( keys.size()==0 );
-  keys.add( "optional", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using <label>.<component>" );
+  keys.add( "optional", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using label.component" );
 }
 
 Action::Action(const ActionOptions&ao):
