@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <map>
 #include <iostream>
 #include "Tools.h"
 #include "Log.h"
@@ -34,9 +35,12 @@ private:
   std::vector<KeyType> types;
   std::vector<std::string> keys;
   std::vector<std::string> documentation;
-  std::vector<bool> defaults;
+//  std::vector<bool> defaults;
+  std::map<std::string,bool> booldefs; 
+  std::map<std::string,std::string> numdefs;
 public:
   void add( const std::string, const std::string, const std::string );
+  void add( const std::string t, const std::string k, const std::string def, const std::string d );
   void addFlag( const std::string k, const bool def, const std::string d );
   void remove( const std::string );
   void clear();

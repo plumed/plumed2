@@ -57,9 +57,9 @@ void ColvarCoordination::registerKeywords( Keywords& keys ){
   keys.addFlag("NLIST",false,"Use a neighbour list to speed up the calculation");
   keys.add("input","GROUPA","The list of central atoms for which we are calculating our coordination numbers");
   keys.add("input","GROUPB","The list of neighbourhood atoms for which we are using to calculate coordination numbers");
-  keys.add("optional","NN","(default=6) The n parameter of the switching function ");
-  keys.add("optional","MM","(default=12) The m parameter of the switching function ");
-  keys.add("optional","D_0","(default=0) The d_0 parameter of the switching function");
+  keys.add("compulsory","NN","6","The n parameter of the switching function ");
+  keys.add("compulsory","MM","12","The m parameter of the switching function ");
+  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbour list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbour list");

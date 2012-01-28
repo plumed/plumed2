@@ -56,9 +56,9 @@ void BiasUWalls::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
-  keys.add("optional","OFFSET","the offset for the start of the wall.  The o_i in the expression for a wall.");
-  keys.add("optional","EXP","the powers for the walls.  The e_i in the expression for a wall.");
-  keys.add("optional","EPS","the values for s_i in the expression for a wall");
+  keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
+  keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
+  keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
 }
 
 BiasUWalls::BiasUWalls(const ActionOptions&ao):

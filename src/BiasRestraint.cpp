@@ -51,9 +51,9 @@ PLUMED_REGISTER_ACTION(BiasRestraint,"RESTRAINT")
 
 void BiasRestraint::registerKeywords(Keywords& keys){
    Bias::registerKeywords(keys);
-   keys.add("optional","SLOPE","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
-   keys.add("optional","KAPPA","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
-   keys.add("compulsory","AT","");
+   keys.add("compulsory","SLOPE","0.0","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
+   keys.add("compulsory","KAPPA","0.0","specifies that the restraint is harmonic and what the values of the force constants on each of the variables are");
+   keys.add("compulsory","AT","the position of the restraint");
 }
 
 BiasRestraint::BiasRestraint(const ActionOptions&ao):
