@@ -18,6 +18,7 @@ void Bias::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
+  keys.add("compulsory","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
 }
 
 

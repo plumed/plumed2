@@ -53,6 +53,7 @@ void GenericDumpForces::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
+  keys.add("compulsory","STRIDE","the frequency with which the forces should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the forces");
 }
 
