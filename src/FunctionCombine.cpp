@@ -48,7 +48,6 @@ void FunctionCombine::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.add("compulsory","COEFFICIENTS","the coefficients of the arguments in your function");
   keys.add("compulsory","POWERS","the powers to which you are raising each of the arguments in your function");
-  keys.add("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
   keys.addFlag("NORMALIZE",false,"normalize all the coefficents so that in total they are equal to one");
 }
 
