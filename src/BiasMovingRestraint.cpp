@@ -99,27 +99,24 @@ void BiasMovingRestraint::registerKeywords( Keywords& keys ){
 }
 
 BiasMovingRestraint::BiasMovingRestraint(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao)
+PLUMED_BIAS_INIT(ao),
+verse(getNumberOfArguments())
 {
   parseVector("VERSE",verse);
-  if(verse.size()==0) verse.assign(getNumberOfArguments(),"B");
-  assert(verse.size()==getNumberOfArguments());
+  vector<int> ss(1); ss[0]=-1;
+  std::vector<double> kk( getNumberOfArguments() ), aa( getNumberOfArguments() );
   for(int i=0;;i++){
-    int ss=-1;
-    std::vector<double> kk,aa;
-    string s;
-    Tools::convert(i,s);
-    parse("STEP"+s,ss);
-    if(ss<0) break;
-    for(unsigned j=0;j<step.size();j++) assert(ss>step[j]);
-    step.push_back(ss);
-    parseVector("KAPPA"+s,kk);
-    if(kk.size()==0 && i>0) kk=kappa[i-1];
-    assert(kk.size()==getNumberOfArguments());
+    // Read in step 
+    if( !parseNumberedVector("STEP",i,ss) ) break;
+    for(unsigned j=0;j<step.size();j++) plumed_massert(ss[0]>step[j],"in moving restraint step number must always increase");
+    step.push_back(ss[0]);
+
+    // Try to read kappa
+    if( !parseNumberedVector("KAPPA",i,kk) ) kk=kappa[i-1]; 
     kappa.push_back(kk);
-    parseVector("AT"+s,aa);
-    if(aa.size()==0 && i>0) aa=at[i-1];
-    assert(aa.size()==getNumberOfArguments());
+
+    // Now read AT
+    if( !parseNumberedVector("AT",i,aa) ) aa=at[i-1];
     at.push_back(aa);
   }
   checkRead();

@@ -10,6 +10,15 @@ ActionWithValue(ao),
 ActionWithArguments(ao)
 {
     setNumberOfParameters(getNumberOfArguments());
+    double min(0),max(0); std::vector<std::string> period;
+    parseVector("PERIODIC",period);
+    if(period.size()==1 && period[0]=="NO"){
+      getValue("")->setPeriodicity(false);
+    } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
+      getValue("")->setPeriodicity(true);
+      getValue("")->setDomain(min,max);
+    } else error("missing PERIODIC keyword");
+    checkRead();
 }
 
 void Function::apply(){
@@ -34,7 +43,7 @@ void Function::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
-  keys.add("compulsory","PERIODIC","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
+  keys.add("compulsory","PERIODIC","nosize","if the output of your function is periodic then you should specify the periodicity of the function.  If the output is not periodic you must state this using PERIODIC=NO");
 }
 
 

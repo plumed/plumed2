@@ -65,7 +65,7 @@ void BiasRatchet::registerKeywords(Keywords& keys){
 
 BiasRatchet::BiasRatchet(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
-to(0),
+to(getNumberOfArguments(),0),
 min(getNumberOfArguments(),-1.0),
 kappa(getNumberOfArguments(),0.0)
 {

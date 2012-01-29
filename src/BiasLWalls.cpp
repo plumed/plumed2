@@ -63,7 +63,7 @@ void BiasLWalls::registerKeywords(Keywords& keys){
 
 BiasLWalls::BiasLWalls(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
-at(0),
+at(getNumberOfArguments(),0),
 kappa(getNumberOfArguments(),0.0),
 exp(getNumberOfArguments(),2.0),
 eps(getNumberOfArguments(),1.0),

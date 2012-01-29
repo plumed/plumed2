@@ -91,6 +91,10 @@ protected:
   template<class T>
   void parseVector(const std::string&key,std::vector<T>&t);
 
+/// Parse a vector with a number
+  template<class T>
+  bool parseNumberedVector(const std::string& key, const int no, std::vector<T>&t);
+
 /// Parse one keyword as boolean flag
   void parseFlag(const std::string&key,bool&t);
 
@@ -195,20 +199,89 @@ const std::string & Action::getName()const{
 
 template<class T>
 void Action::parse(const std::string&key,T&t){
-  if(!Tools::parse(line,key,t)){
-    log.printf("ERROR parsing keyword %s\n",key.c_str());
-    log.printf("%s\n",getDocumentation().c_str());
-    this->exit(1);
+//  if(!Tools::parse(line,key,t)){
+//    log.printf("ERROR parsing keyword %s\n",key.c_str());
+//    log.printf("%s\n",getDocumentation().c_str());
+//    this->exit(1);
+//  }
+  // Check keyword has been registered
+  if( !keywords.exists(key) ){
+      log.printf("ERROR in action %s with label %s : keyword %s has not been registered",name.c_str(),label.c_str(),key.c_str() );
+      this->exit(1);
   }
+  // Now try to read the keyword
+  bool found; std::string def; 
+  found=Tools::parse(line,key,t);
+  
+  // If it isn't read and it is compulsory see if a default value was specified 
+  if ( !found && keywords.style(key,"compulsory") ){
+       if( keywords.getDefaultValue(key,def) ){
+          if( def.length()==0 || !Tools::convert(def,t) ){
+             log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
+             this->exit(1);
+          }           
+       } else {
+          error("keyword " + key + " is comulsory for this action");
+       }
+  }   
 }
 
 template<class T>
 void Action::parseVector(const std::string&key,std::vector<T>&t){
-  if(!Tools::parseVector(line,key,t)){
-    log.printf("ERROR parsing keyword %s\n",key.c_str());
-    log.printf("%s\n",getDocumentation().c_str());
-    this->exit(1);
+//  if(!Tools::parseVector(line,key,t)){
+//    log.printf("ERROR parsing keyword %s\n",key.c_str());
+//    log.printf("%s\n",getDocumentation().c_str());
+//    this->exit(1);
+//  }
+
+  // Check keyword has been registered
+  if( !keywords.exists(key) ){
+      log.printf("ERROR in action %s with label %s : keyword %s has not been registered",name.c_str(),label.c_str(),key.c_str() );
+      this->exit(1);
+  }    
+  unsigned size=t.size();
+
+  // Now try to read the keyword
+  bool found; std::string def; T val;
+  found=Tools::parseVector(line,key,t);
+
+  // Check vectors size is correct (not if this is atoms or ARG)
+  if( !keywords.style(key,"input") && found ){
+     bool skipcheck=false;
+     if( keywords.style(key,"compulsory") ){ keywords.getDefaultValue(key,def); skipcheck=(def=="nosize"); }
+     if( !skipcheck && t.size()!=size ) error("vector read in for keyword " + key + " has the wrong size");
   }
+
+  // If it isn't read and it is compulsory see if a default value was specified 
+  if ( !found && keywords.style(key,"compulsory") ){
+       if( keywords.getDefaultValue(key,def) ){
+          if( def.length()==0 || !Tools::convert(def,val) ){
+             log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
+             this->exit(1);
+          } else {
+             for(unsigned i=0;i<t.size();++i) t[i]=val;
+          }          
+       } else {
+          error("keyword " + key + " is compulsory for this action");
+       }
+  }  
+}
+
+template<class T>
+bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t){
+  if( !keywords.exists(key) ){
+      log.printf("ERROR in action %s with label %s : keyword %s has not been registered",name.c_str(),label.c_str(),key.c_str() );
+      this->exit(1);
+  }
+  if( !keywords.style(key,"numbered") ){
+      log.printf("ERROR in action %s with label %s : keyword %s is not numbered",name.c_str(),label.c_str(),key.c_str() );
+      this->exit(1);
+  }
+  unsigned size=t.size();
+  std::string num; Tools::convert(no,num);
+  bool found=Tools::parseVector(line,key+num,t);
+  if (found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
+  return found;
 }
 
 inline

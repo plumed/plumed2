@@ -58,16 +58,16 @@ void BiasRestraint::registerKeywords(Keywords& keys){
 
 BiasRestraint::BiasRestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
-at(0),
+at(getNumberOfArguments()),
 kappa(getNumberOfArguments(),0.0),
 slope(getNumberOfArguments(),0.0)
 {
   parseVector("SLOPE",slope);
-  assert(slope.size()==getNumberOfArguments());
+//  assert(slope.size()==getNumberOfArguments());
   parseVector("KAPPA",kappa);
-  assert(kappa.size()==getNumberOfArguments());
+//  assert(kappa.size()==getNumberOfArguments());
   parseVector("AT",at);
-  assert(at.size()==getNumberOfArguments());
+//  assert(at.size()==getNumberOfArguments());
   checkRead();
 
   log.printf("  at");

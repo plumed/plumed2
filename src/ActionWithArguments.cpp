@@ -7,7 +7,7 @@ using namespace std;
 using namespace PLMD;
 
 void ActionWithArguments::registerKeywords(Keywords& keys){
-  keys.add("compulsory","ARG","the input for this action is the output from one or more other actions. The particular output that you used is referenced using that action of interests label. If the label appears on its own then the default output is taken.  If * appears then the default output from all actions is taken.  Some actions have multi-component outputs, each component of the output has a specific label so for instance an action labelled dist may have three componets x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*");
+  keys.add("compulsory","ARG","nosize","the input for this action is the output from one or more other actions. The particular output that you used is referenced using that action of interests label. If the label appears on its own then the default output is taken.  If * appears then the default output from all actions is taken.  Some actions have multi-component outputs, each component of the output has a specific label so for instance an action labelled dist may have three componets x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*");
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){

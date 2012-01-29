@@ -40,7 +40,7 @@ PLUMED_REGISTER_ACTION(GenericDebug,"DEBUG")
 void GenericDebug::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords(keys);
-  keys.add("compulsory","STRIDE","the frequency with which this action is to be performed");
+  keys.add("compulsory","STRIDE","1","the frequency with which this action is to be performed");
   keys.add("optional","logActivity","write in the log which actions are inactive and which are inactive");
   keys.add("optional","logRequestedAtoms","write in the log which atoms have been requested at a given time");
   keys.add("optional","NOVIRIAL","switch off the virial contribution for the entirity of the simulation");

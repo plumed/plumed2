@@ -88,7 +88,7 @@ template <class T>
 bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std::vector<T>&val){
   std::string s;
   if(!getKey(line,key+"=",s)) return false;
-  if(s.length()==0) return true;
+//  if(s.length()==0) return true;
   val.clear();
   std::vector<std::string> words=getWords(s,",");
   for(unsigned i=0;i<words.size();++i){
@@ -116,7 +116,7 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
       return true;
     }
   }
-  return true;
+  return false;
 }
 
 inline

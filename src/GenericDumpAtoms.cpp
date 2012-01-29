@@ -53,7 +53,7 @@ void GenericDumpAtoms::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.add("compulsory","STRIDE","the frequency with which the atoms should be output");
+  keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
   keys.add("input", "ATOMS", "the atom indices whose positions you would like to print out");
   keys.add("compulsory", "FILE", "file on which to output coordinates");
 }

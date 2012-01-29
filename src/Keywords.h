@@ -23,6 +23,7 @@ public:
   bool isInput() const { return (style==input); }
   bool isNumbered() const { return (style==numbered); }
   bool isModifier() const { return (style==modifier); }
+  bool isHidden() const { return (style==hidden); }
 };
 
 /// This function can be used to print out the keyword and its documentation in html
@@ -35,7 +36,6 @@ private:
   std::vector<KeyType> types;
   std::vector<std::string> keys;
   std::vector<std::string> documentation;
-//  std::vector<bool> defaults;
   std::map<std::string,bool> booldefs; 
   std::map<std::string,std::string> numdefs;
 public:
@@ -46,10 +46,12 @@ public:
   void clear();
   unsigned size() const;
   bool exists( const std::string k ) const ;
-  KeyType style( const std::string ) const ;
+  bool style( const std::string k, const std::string t ) const ;
   void print( Log& log ) const ;
   void print_html() const ;
   void print_html_item( const unsigned& j ) const;
+  bool getLogicalDefault( std::string key, bool& def ) const ;
+  bool getDefaultValue( std::string key, std::string& def ) const ;
 };
 
 }

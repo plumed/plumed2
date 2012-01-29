@@ -76,10 +76,24 @@ void Action::fflush(){
 }
 
 void Action::parseFlag(const std::string&key,bool & t){
+  // Check keyword has been registered
+  if( !keywords.exists(key) ){
+      log.printf("ERROR in action %s with label %s : keyword %s has not been registered",name.c_str(),label.c_str(),key.c_str() );
+      this->exit(1);
+  }
+
+  // Check keyword is a flag
+  if( !keywords.style(key,"flag") ){
+      log.printf("ERROR in action %s with label %s : keyword %s is not a flag",name.c_str(),label.c_str(),key.c_str() );
+      this->exit(1);
+  }
+
+  // Read in the flag otherwise get the default value from the keywords object
   if(!Tools::parseFlag(line,key,t)){
-    log.printf("ERROR parsing keyword %s\n",key.c_str());
-    log.printf("%s\n",getDocumentation().c_str());
-    this->exit(1);
+     if ( !keywords.getLogicalDefault(key,t) ){
+        log.printf("ERROR in action %s with label %s : flag %s has no default",name.c_str(),label.c_str(),key.c_str() );
+        this->exit(1);
+     } 
   }
 }
 

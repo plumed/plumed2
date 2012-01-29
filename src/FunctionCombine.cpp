@@ -46,8 +46,8 @@ PLUMED_REGISTER_ACTION(FunctionCombine,"COMBINE")
 
 void FunctionCombine::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
-  keys.add("compulsory","COEFFICIENTS","the coefficients of the arguments in your function");
-  keys.add("compulsory","POWERS","the powers to which you are raising each of the arguments in your function");
+  keys.add("compulsory","COEFFICIENTS","1.0","the coefficients of the arguments in your function");
+  keys.add("compulsory","POWERS","1.0","the powers to which you are raising each of the arguments in your function");
   keys.addFlag("NORMALIZE",false,"normalize all the coefficents so that in total they are equal to one");
 }
 
@@ -72,18 +72,6 @@ powers(getNumberOfArguments(),1.0)
   }
 
   addValueWithDerivatives("");
-  vector<string> period;
-
-  double min(0),max(0);
-  parseVector("PERIODIC",period);
-  if(period.size()==0){
-  }else if(period.size()==1 && period[0]=="NO"){
-    getValue("")->setPeriodicity(false);
-  } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
-    getValue("")->setPeriodicity(true);
-    getValue("")->setDomain(min,max);
-  } else assert(0);
-
   checkRead();
 
   log.printf("  with coefficients:");

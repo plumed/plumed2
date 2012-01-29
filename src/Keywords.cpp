@@ -30,7 +30,12 @@ void Keywords::add( const std::string t, const std::string k, const std::string 
 
 void Keywords::add( const std::string t, const std::string k, const std::string  def, const std::string d ){
   plumed_assert( !exists(k) ); plumed_assert( t=="compulsory" ); // An optional keyword can't have a default
-  types.push_back( KeyType(t) ); keys.push_back(k); documentation.push_back( "( default=" + def + " ) " + d ); 
+  types.push_back( KeyType(t) ); keys.push_back(k); 
+  if( def=="nosize" ) {
+     documentation.push_back( d );
+  } else {
+     documentation.push_back( "( default=" + def + " ) " + d ); 
+  } 
   numdefs.insert( std::pair<std::string,std::string>(k,def) );
 } 
 
@@ -61,12 +66,47 @@ void Keywords::clear() {
   types.clear(); keys.clear(); documentation.clear(); //defaults.clear();
 }
 
-KeyType Keywords::style( const std::string k ) const {
+bool Keywords::style( const std::string k, const std::string t ) const {
   plumed_assert( exists(k) );
-  for(unsigned i=0;i<keys.size();++i){
-     if( keys[i]==k ) return types[i];
+
+  if( t=="compulsory" ){
+     for(unsigned i=0;i<keys.size();++i){
+        if( keys[i]==k ) return types[i].isCompulsory();
+     }
+     plumed_assert(false);
+  } else if( t=="flag" ){
+     for(unsigned i=0;i<keys.size();++i){
+        if( keys[i]==k ) return types[i].isFlag();
+     }
+     plumed_assert(false);
+  } else if( t=="optional" ){
+     for(unsigned i=0;i<keys.size();++i){
+        if( keys[i]==k ) return types[i].isOptional();
+     }
+     plumed_assert(false);
+  } else if( t=="input" ){
+     for(unsigned i=0;i<keys.size();++i){
+        if( keys[i]==k ) return types[i].isInput();
+     }
+     plumed_assert(false);
+  } else if( t=="numbered" ){
+     for(unsigned i=0;i<keys.size();++i){
+        if( keys[i]==k ) return types[i].isNumbered();
+     }
+     plumed_assert(false);
+  } else if( t=="modifier" ){
+     for(unsigned i=0;i<keys.size();++i){
+        if( keys[i]==k ) return types[i].isModifier();
+     }
+     plumed_assert(false);
+  } else if( t=="hidden" ){
+      for(unsigned i=0;i<keys.size();++i){
+        if( keys[i]==k ) return types[i].isHidden();
+     }
+     plumed_assert(false);
+  } else {
+     plumed_assert(false);
   }
-  plumed_assert(false);
 }
 
 unsigned Keywords::size() const {
@@ -203,5 +243,25 @@ void Keywords::print_html_item( const unsigned& j ) const {
   printf("<td width=15%%> <b> %s </b></td>\n",keys[j].c_str() );
   printf("<td> %s </td>\n",documentation[j].c_str() );
   printf("</tr>\n");
+}
+
+bool Keywords::getLogicalDefault( std::string key, bool& def ) const {
+   if( booldefs.find(key)!=booldefs.end() ){ 
+     def=booldefs.find(key)->second;
+     return true;
+   } else {
+     return false;
+   }
+}
+
+bool Keywords::getDefaultValue( std::string key, std::string& def ) const {
+   plumed_assert( style(key,"compulsory") );
+
+   if( numdefs.find(key)!=numdefs.end() ){
+      def=numdefs.find(key)->second;
+      return true;
+   } else {
+      return false;
+   }
 }
 
