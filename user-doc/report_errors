@@ -1,0 +1,12 @@
+#!/bin/bash
+
+nerrors=`wc -l errors | awk '{print NF}'`
+if [ $nerrors -eq 0 ] ; then
+  rm errors
+else
+  echo "************************************************"
+  echo "Found the following errors in your documentation"
+  echo ""
+  cat errors
+  echo "************************************************"
+fi  

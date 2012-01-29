@@ -1,45 +1,146 @@
 #! /bin/bash
+rm -rf automatic
 mkdir automatic
 
+# Check for files that register actions with no documentation
+touch errors
+for file in ../src/*.cpp
+do
+  nreg=`grep "PLUMED_REGISTER_ACTION" $file | wc -l | awk '{print $1}'`
+  if [ $nreg -gt 0 ] ; then
+       ndoc=`grep PLUMEDOC $file | wc -l | awk '{print $1}'`
+       if [ $ndoc -eq 0 ] ; then
+          echo The following file registered an action but provided no documentation: $file >> errors
+       fi
+  fi 
+done
+
+# Create the list of codes that plumed works with from the set of available patches
+for file in ../patches/*.config
+do
+   echo "- $file" | sed -e 's/.config//' | sed -e 's/..\/patches\///' >> automatic/codes.list
+done
+
+## Check for utilities that register actions with no documentation
+#for file in ../utilities/*.cpp
+#do
+#  ndoc=`grep PLUMEDOC $file | grep TOOL | wc -l | awk '{print $1}'`
+#  if [ $ndoc -eq 0 ] ; then
+#     echo The following utility has been provided without documentation: $file >> errors
+#  fi
+#done
+
+# Generate all the documentation pages for colvar modifiers
+#rm -f modifier_file
+#echo "\\section mod Working with distributions" > modifier_file
+#echo "As described above you can use this colvar to calculate one or multiple CVs.  Obviously, if you have calculated multiple CVs then you have a distribution of CVs.  As such plumed allows you to calculate a number of functions of this distribution.  These quantities and their derivatives are then stored as the values of the colvar.  N.B.  You cannot calcualte the values of the colvars and these functions of the distribution from a single line in input.  You can however calculate multiple functions of the distribution." >> modifier_file
+#cat ../*/*cpp |
+#awk '{
+#  if($1=="//+ENDPLUMEDOC"){
+#     inside=0
+#  }
+#  if(inside && $1!="/**" && $1!="*/") print $0 >> "modifier_file"
+#  if($1=="//+PLUMEDOC"){
+#     if($2=="MODIFIER"){
+#        print "\\par " $3 >> "modifier_file"   
+#        inside=1;
+#     }
+#  } 
+#}'  
+
+# Generate all the documentation pages from comments
 cat ../*/*cpp |
 awk '{
-  if($1=="//+ENDPLUMEDOC") inside=0;
+  if($1=="//+ENDPLUMEDOC"){
+     inside=0;
+     print "*/" >output
+  }
   if(inside && $1!="/**" && $1!="*/") print $0 >output
   if($1=="//+PLUMEDOC"){
-    if($2=="COLVAR" || $2=="FUNCTION" || $2=="BIAS" || $2=="GENERIC" || $2=="SETUP"){
-      output="automatic/"$2".txt";
-      print "\\section "$3 > output
+    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="VATOM" || $2=="GENERIC" || $2=="TOOLS" ){
+      lfile="automatic/"$2".list"
+      print "- \\subpage "$3 > lfile
+      output="automatic/"$3".tmp";
+      print "/**" > output
+      print "\\page "$3 > output
+      print "\\section "$3 >output
       inside=1;
     }
   }
 }'
 
-for file in Bias Colvar Functions GenericDirectives InputDirectives Setup
+# Generate all the documentation from keywords
+source ../sourceme.sh
+for file in automatic/*.tmp
+do
+  foundexample=`grep "\par Examples" $file | wc -l | awk '{print $1}'`
+  flag=`echo $file | sed -e 's/.tmp//g' | sed -e 's/automatic\///g'`
+  ../src/plumed manual --action=$flag > automatic/$flag.man 2> shit
+  rm shit 
+  check=`wc -l automatic/$flag.man | awk '{print $1}'`
+  if [ $check -eq 0 ] ; then 
+     echo Full manual for action $flag will not be generated as you are building the manual from a code where this action was not compiled >> errors
+  elif [ $foundexample -eq 0 ] 
+  then
+    echo There are no examples inside documentation for action: $flag >> errors
+  fi
+  cat automatic/$flag.tmp |
+    { 
+     while read -r LINE ;
+      do
+        if [ "$LINE" = "\par Examples" ]
+        then
+          cat automatic/$flag.man 
+          iscol=`grep $flag automatic/COLVAR.list | wc -l`
+          if [ $iscol -gt 0 ] ; then
+               fname=`grep PLUMED_REGISTER_ACTION ../src/*.cpp | grep $flag | sed -e 's/:/ /g' | awk '{print $1}'`
+               hasmod=`grep ColvarWithModifiers $fname | wc -l | awk '{print $1}'` 
+               if [ $hasmod -gt 0 ] ; then
+                    cat modifier_file
+               fi
+          fi
+          echo -E "$LINE"
+        else
+          echo -E "$LINE"
+        fi
+      done
+    } > automatic/$flag.txt
+done
+
+for file in Bias Colvar Functions Installation Intro
 do
 
 cat $file.txt |
 {
-  while read -r LINE ;
+ while read -r LINE ;
   do
   if [ "$LINE" = "@COLVAR@" ]
   then
-    cat automatic/COLVAR.txt
+    cat automatic/COLVAR.list
+  elif [ "$LINE" = "@ANALYSIS@" ]
+  then
+    cat automatic/ANALYSIS.list
   elif [ "$LINE" = "@BIAS@" ]
   then
-    cat automatic/BIAS.txt
+    cat automatic/BIAS.list
   elif [ "$LINE" = "@FUNCTION@" ]
   then
-    cat automatic/FUNCTION.txt
-  elif [ "$LINE" = "@GENERIC@" ]
+    cat automatic/FUNCTION.list
+  elif [ "$LINE" = "@TOPOLOGY@" ]
   then
-    cat automatic/GENERIC.txt
-  elif [ "$LINE" = "@SETUP@" ]
+    cat automatic/TOPOLOGY.list
+  elif [ "$LINE" = "@VATOM@" ]
   then
-    cat automatic/SETUP.txt
+    cat automatic/VATOM.list
+  elif [ "$LINE" = "@TOOLS@" ]
+  then
+    cat automatic/TOOLS.list
+  elif [ "$LINE" = "@CODES@" ]
+  then
+    cat automatic/codes.list
   else
     echo -E "$LINE"
   fi
-  done
+   done
 } > ${file}PP.txt
 done
-

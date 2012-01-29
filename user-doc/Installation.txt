@@ -2,6 +2,10 @@
 
 \page Installation Installation
 
+At the present times plumed can be added to the following list of codes:
+
+@CODES@
+
 \section CompilingPlumed Compiling Plumed
 
 [Configuration]

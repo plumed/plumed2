@@ -1,18 +1,171 @@
 /**
 \mainpage Introduction
 
-This is the user manual. If you want to modify PLUMED or to understand how it works internally,
-have a look at the <a href="../../developer-doc/html/index.html"> developer manual </a>.
-
-PLUMED 2.0 is a major rewriting of PLUMED. (...)
+Plumed is a plugin that works with a large number of molecular dynamics codes.  It can be used
+to analyse features of the dynamics on-the-fly or to perform a wide variety of free energy methods.
+The original plumed 1.0 was highly successful and had over 1000 users.  Plumed 2.0 constitues an 
+extensive rewrite of the original in a way that makes it more modular and thus easier to implement 
+new methods, more straightforward to add it to MD codes and hopefully simpler to use.  
+This is the user manual -  i f you want to modify PLUMED or to understand how it works internally, have a look at the 
+<a href="../../developer-doc/html/index.html"> developer manual </a>.  Alternatively, to look at a list of the new 
+features available in plumed 2.0 and to work out how to install plumed 2.0 in your MD code check out:
 
 - \subpage WhatsNew
-- \subpage Installation
-- \subpage BasicUsage
-- \subpage AdvancedTopics
-- \subpage Tools
-- \subpage Reference
+- \subpage Installation 
 
+\section qintro A quick introduction
+
+To run plumed 2.0 you need to provide one input file.  In this file you specify what it
+is that plumed should do during the course of the run.  Typically this will involve calculating 
+one or more collective variables, perhaps calculating a function of these CVs
+ and then doing some analysis of values of your collective variables/functions or running
+some free energy method.  Details as to how to perform all these tasks and how to use the various trajectory
+analsyis tools that come with plumed are given in:
+
+- \subpage Colvar
+- \subpage Function
+- \subpage Methods
+
+Plumed can be used in one of two ways.  It can be incorporated into any one of the MD codes listed on the
+\ref Installation page and used to analyse or bias a molecular dynamics run on the fly.  Alternatively, one
+can use it as a standalone tool for postprocessing the results from molecular dynamics or enhanced sampling calculations.
+To use plumed in this second way you will issue a command something like:
+
+\verbatim
+plumed <toolname> <list of input flags for that tool>
+\endverbatim
+
+The following is a list of the various standalone tools that plumed contains.
+
+@TOOLS@
+
+For all these tools and to use plumed as a pluggin in an MD calculation you will need an input file.  Within
+this input file every line is an instruction for plumed to perform some particular action.  This could be
+ the calculation of a colvar, an occasional analysis of the trajectory or a biassing of the dynamics.  The first
+word in these lines specify what particular action is to be performed.  This is then followed by a number of keywords
+which provide plumed with more details as to how the action is to be performed.  These keywords are either single words
+(in which they tell plumed to do the calculation in a particular way - for example NOPBC tells plumed to not use the periodic
+bounadry conditions when calculating a particular colvar) or they can be words followed by an equals sign and a comma separated 
+list - WITH NO SPACES - of numbers or characters (so for example ATOMS=1,2,3,4 tells plumed to use atom numbers 1,2,3 and 4 in 
+the calculation of a particular colvar).  
+
+The most important of these keywords is the label keyword as it is only by using these labels that we can pass data 
+from one action to another.  As an example if you do:
+
+\verbatim
+DISTANCE ATOMS=1,2
+\endverbatim
+
+Then plumed will do nothing other than read in your input file.  In contrast if you do:
+
+\verbatim
+DISTANCE ATOMS=1,2 LABEL=d1
+PRINT ARG=d1 FILE=colvar STRIDE=10
+\endverbatim
+
+then plumed will print out the value of the distance between atoms 1 and 2 every 10 steps to the file colvar as you have told
+plumed to take the value calculated by the action d1 and to print it.  
+
+By default the plumed inputs and outputs quantities in the following units:
+
+- Energy - kJ/mol
+- Length - nanometers
+- Time - picoseconds
+
+Unlike plumed 1.0 the units used are independent of the MD engine you are using.  If you want to change these units you can do this using the 
+\subpage UNITS keyword. 
+
+Those are the essentials but there are a few other tricks that we didn't know where else to put in the manual so we stuck them here.
+
+\section comments Comments
+
+If you are an organised sort of person who likes to remember what the hell you were trying to do when you ran a 
+particular simulation you might find it useful to put comments in your input file.  In plumed you can do this as 
+comments can be added using a # sign.  On any given line everything after the # sign is ignored so 
+erm... yes add lines of comments or trailing comments to your hearts content as shown below (using Shakespeare is optional):
+
+\verbatim
+# This is the distance between two atoms:
+DISTANCE ATOM=1,2 LABEL=d1
+UPPER_WALL ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall. That I, one Snout by name, present a wall.
+\endverbatim
+
+An alternative to including comments in this way is to use line starting ENDPLUMED.  Everything in the plumed input after this
+keyword will be ignored.
+
+\section ContinuationLines Continuation lines
+
+If your input lines get very long then editing them using vi and other such text editors becomes a massive pain in the arse.  
+We at plumed are aware of this fact and thus have provided a way of doing line continuations so as to make your life that much 
+easier - aren't we kind?  Well no not really, we have to use this code too.  Anyway, you can do continuations by using the "..." syntax
+as this makes this: 
+
+\verbatim
+DISTANCE ATOMS1=1,300 ATOMS2=1,400 ATOMS3=1,500
+\endverbatim
+
+equivalent to this:
+
+\verbatim
+DISTANCE ...
+# we can also insert comments here
+  ATOMS1=1,300
+# multiple kewords per line are allowed
+  ATOMS2=1,400 ATOMS3=1,500
+#empty lines are also allowed
+
+... DISTANCE
+\endverbatim
+
+\section includes Including other files in the plumed input
+
+If, for some reason, you want to spread your plumed input over a number of files you can use INCLUDE as shown below:
+
+\verbatim
+INCLUDE filename
+\endverbatim
+
+So, for example, a single "plumed.dat" file:
+
+\verbatim
+DISTANCE ATOMS=0,1 LABEL=dist
+RESTRAINTG ARG=dist
+\endverbatim
+
+could be split up into two files as shown below:
+ 
+\verbatim
+DISTANCE ATOMS=0,1 LABEL=dist
+INCLUDE toBeIncluded.dat
+\endverbatim
+plus a "toBeIncluded.dat" file
+\verbatim
+RESTRAINTG ARG=dist
+\endverbatim
+
+However, when you do this it is important to recognise that INCLUDE is a real directive that is only resolved
+after all the \ref Comments have been stripped and the \ContinuationLines have been unrolled.  This means it
+is not possible to do things like:
+
+\verbatim
+# this is wrong:
+DISTANCE INCLUDE options.dat
+RESTRAINTG ARG=dist
+\endverbatim
+
+\section load Loading shared libraries
+
+You can introduce new functionality into plumed by placing it directly into the src directory and recompiling the 
+plumed libraries.  Alternatively, if you want to keep your code independent from the rest of plumed (perhaps
+so you can release it independely - we won't be offended), then you can create your own dynamic library.  To use this 
+in conjuction with plumed you can then load it at runtime by using the LOAD keyword as shown below:
+
+\verbatim
+LOAD library.so
+\endverbatim
+ 
+N.B.  If your system uses a different suffix for dynamic libraries (e.g. macs use .dylib) then PLUMED will try to 
+automatically adjust the suffix accordingly.
 
 */
 

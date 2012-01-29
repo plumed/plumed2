@@ -2,17 +2,85 @@
 
 \page Colvar Collective Variables
 
-The following keywords are available for all directives of this section:
-- NUMERICAL_DERIVATIVES:
-  This flag can be used to enforce calculation of derivatives with respect to
-  atom positions and cell vectors by means of numerical differences
+Chemical systems contain an enormous number atoms, which, in most cases makes it simply impossible for
+us to understand anything by monitoring the atom postions directly.  Consquentially,
+we introduce Collective variables (CVs) that describe the chemical processes we are 
+interested in and monitor these simpler quantities instead.  These CVs are used in all of the methods 
+implemented in plumed - they're values can be monitored using \ref PRINT, \ref Function of them can be calculated
+or they can be analyzed or biased using the \ref Methods implemented in plumed.  Before doing any of these things
+however we first have to inform plumed how to calculate them.    
+ 
+\section atomSpecs Specifying Atoms
+
+The vast majority of the CVs implemented in plumed are calculated from a list of atom positions.  Within plumed
+atoms are always specified according to their numerical indices in the molecular dynamics input file.  This can
+be done either using a comma separated list of numbers or, if a long list atom of contiguous atoms is required, 
+by using the shortcut 10-100, which specifies all the atom indexes between 10 and 100 (including 10 and 100).  So for example:
+
 \verbatim
-DISTANCE  ATOMS=1,5 LABEL=d1 NUMERICAL_DERIVATIVES
+TORSION ATOMS=1,2,3,4
 \endverbatim
 
-\attention The rest of this page is automatically generated from the source
-files
+could also be specified using:
 
+\verbatim
+TORIONS ATOMS=1-4
+\endverbatim
+
+In addition, for certain colvars, pdb files can be read in using the following keywords:
+
+@TOPOLOGY@
+
+The read in pdb files are used by plumed to define things like residues, the backbone atoms and so on.  These can then be
+used within the input to colvars to make inputting the lists of atoms involved more straightforward.  Documentation for 
+how these shortcuts can be used can be found in the documentation for the various CVs.
+
+Lastly, if you have a list of colvar that is particularly laborious to write out that you need to use multiple times in the 
+input you can create a static group of atoms and then use the label of the group to specify the correpsonding list of 
+atoms in your various colvars.  For more details see \ref GROUP.
+
+\section vatoms Virtual Atoms
+
+Sometimes, when calculating a colvar, you may not want to use the positions of a number of atoms directly.  Instead
+ you may wish to use the position of a virtual atom whose position is generated based on the positions of a collection 
+of other atoms.  For example you might want to use the center of mass of a group of atoms.  Plumed has a number of routines
+for calculating the positions of these virtual atoms from lists of atoms:
+
+@VATOM@
+
+To specify to a colvar that you want to use the position of a virtual atom to calculate a colvar rather than one of the atoms
+in your system you simply use the label for your virtual atom in place of the usual numerical index.  Virtual
+atoms and normal atoms can be mixed together in the input to colvars as shown below:
+
+\verbatim
+COM ATOMS=1,10 LABEL=com1
+DISTANCE ATOMS=11,com1
+\endverbatim 
+
+If you don't want to calculate CVs from the virtual atom.  That is to say you just want to monitor the position of a virtual atom 
+(or any set of atoms) over the course of your trajectory you can do this using \ref DUMPATOMS.
+
+\section mols Molecules
+
+PLUMED is designed so that for the majority of the CVs implemented the periodic boundary conditions are treated 
+in the same manner as they would be treated in the host code.  In some codes this can be problematic when the colvars
+you are using involve some property of a molecule.  These codes allow the atoms in the molecules to become separated by 
+periodic boundaries, a fact which plumed could only deal with were the topology passed from the MD code to plumed.  Making this
+work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
+in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
+in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In plumed 1.0 this was done
+using the ALIGN_ATOMS keyword.  In plumed 2.0 the same effect can be acchieved using any one from the following list of commands
+
+- \subpage WHOLEMOLECULES
+@TOPOLOGY@
+
+The most general of these is the \ref WHOLEMOLECULES keywords.  However, there are advantages in using the others as oftentimes
+by defining a topology using a pdb file you can take advantage of shortcuts when specifying other colvars.  For example, if you
+use the \ref PROTEIN_TOPOLOGY keyword you can then later refer to the atoms in a specific residue by the residue number.
+
+\section cvavail CV Documentation
+
+The following list contains all the colvars that are currently implemented in plumed 2.0.
 
 @COLVAR@
 
