@@ -6,6 +6,7 @@ SUBDIRSVALGRIND = $(addsuffix .valgrind,$(SUBDIRS))
 
 all: $(SUBDIRS)
 	scripts/check
+	scripts/what
 
 clean: $(SUBDIRSCLEAN)
 
