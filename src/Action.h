@@ -78,11 +78,6 @@ protected:
 /// Return the timestep
   double getTimeStep()const;
 
-/// Check if Action was properly read.
-/// This checks if Action::line is empty. It must be called after
-/// a final Action has been initialized
-  void checkRead();
-
 /// Parse one keyword as generic type
   template<class T>
   void parse(const std::string&key,T&t);
@@ -104,6 +99,11 @@ protected:
 public:
   Action(const ActionOptions&);
   virtual ~Action();
+
+/// Check if Action was properly read.
+/// This checks if Action::line is empty. It must be called after
+/// a final Action has been initialized
+  void checkRead();
 
   PlumedCommunicator& comm;
 

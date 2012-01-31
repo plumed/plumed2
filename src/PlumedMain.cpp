@@ -318,6 +318,7 @@ void PlumedMain::readInputFile(std::string str){
         log<<"\n";
         exit(1);
       };
+      action->checkRead();
       actionSet.push_back(action);
     };
   };
