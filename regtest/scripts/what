@@ -1,7 +1,7 @@
 #!/bin/bash
 
 naction=0
-for file in $PLUMED_ROOT/src/*.cpp ; do
+for file in $(plumed info --root)/src/*.cpp ; do
   nreg=`grep "PLUMED_REGISTER_ACTION" $file | wc -l | awk '{print $1}'`
   if [ $nreg -gt 0 ] ; then
      naction=$(($naction+1))
