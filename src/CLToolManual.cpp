@@ -51,7 +51,14 @@ int CLToolManual::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& 
     if(a.find("--action=")==0){
       a.erase(0,a.find("=")+1);
       action=a; 
-    } 
+      prefix="";
+    } else if(a=="--action"){
+      prefix="--action=";
+    } else {
+      string msg="ERROR: unknown option"+a;
+      fprintf(stderr,"%s\n",msg.c_str());
+      return 1;
+    }
  } 
 
  if(printhelp){
