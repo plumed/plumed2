@@ -33,7 +33,7 @@ Log::Log(PlumedCommunicator &comm):
   toBeClosed(false),
   comm(comm){
   buffer=new char[buflen];
-  buffer[0]='\0';
+  for(int i=0;i<buflen;i++) buffer[i]='\0';
 }
 
 Log::~Log(){

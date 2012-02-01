@@ -107,9 +107,11 @@ bool Tools::getline(FILE* fp,string & line){
   const int bufferlength=1024;
   char buffer[bufferlength];
   bool ret;
+  for(int i=0;i<bufferlength;i++) buffer[i]='\0';
   while((ret=fgets(buffer,bufferlength,fp))){
     line.append(buffer);
-    if(buffer[strlen(buffer)-1]=='\n') break;
+    unsigned ss=strlen(buffer);
+    if(ss>0) if(buffer[ss-1]=='\n') break;
   };
   if(line.length()>0) if(*(line.end()-1)=='\n') line.erase(line.end()-1);
   return ret;
