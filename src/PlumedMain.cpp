@@ -18,6 +18,7 @@
 #include "DLLoader.h"
 #include "PlumedCommunicator.h"
 #include "CLToolMain.h"
+#include "Stopwatch.h"
 
 using namespace PLMD;
 using namespace std;
@@ -26,6 +27,7 @@ PlumedMain::PlumedMain():
   comm(*new PlumedCommunicator),
   dlloader(*new DLLoader),
   cltool(NULL),
+  stopwatch(*new Stopwatch),
   grex(NULL),
   initialized(false),
   log(*new Log(comm)),
@@ -35,13 +37,20 @@ PlumedMain::PlumedMain():
   actionSet(*new ActionSet(*this)),
   bias(0.0),
   novirial(false)
-{}
+{
+  stopwatch.start();
+  stopwatch.pause();
+}
 
 PlumedMain::~PlumedMain(){
+  stopwatch.start();
+  stopwatch.stop();
+  if(initialized) log<<stopwatch;
   delete &actionSet;
   delete &atoms;
   delete &log;
   if(grex)  delete grex;
+  delete &stopwatch;
   if(cltool) delete cltool;
   delete &dlloader;
   delete &comm;
@@ -55,6 +64,8 @@ PlumedMain::~PlumedMain(){
 #define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"" + word + "\")");
 
 void PlumedMain::cmd(const std::string & word,void*val){
+
+  stopwatch.start();
 
   if(false){
 // for efficiency, words frequently used are checked first
@@ -256,6 +267,8 @@ void PlumedMain::cmd(const std::string & word,void*val){
        plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
      };
   };
+
+ stopwatch.pause();
 }
 
 /////
@@ -358,6 +371,8 @@ void PlumedMain::prepareCalc(){
 // traverse them in this order:
 void PlumedMain::prepareDependencies(){
 
+  stopwatch.start("1 Prepare dependencies");
+
 // activate all the actions which are on step
 // activation is recursive and enables also the dependencies
 // before doing that, the prepare() method is called to see if there is some
@@ -388,11 +403,15 @@ void PlumedMain::prepareDependencies(){
   }
   atoms.setCollectEnergy(collectEnergy);
 
+  stopwatch.stop("1 Prepare dependencies");
+
 }
 
 void PlumedMain::shareData(){
 // atom positions are shared (but only if there is something to do)
   if(!active)return;
+  stopwatch.start("2 Sharing data");
+  stopwatch.stop("2 Sharing data");
   atoms.share();
 }
 
@@ -404,12 +423,15 @@ void PlumedMain::performCalc(){
 
 void PlumedMain::waitData(){
   if(!active)return;
+  stopwatch.start("3 Waiting for data");
   atoms.wait();
+  stopwatch.stop("3 Waiting for data");
 }
 
 
 void PlumedMain::justCalculate(){
 
+  stopwatch.start("4 Calculating (forward loop)");
   bias=0.0;
 
 // calculate the active actions in order (assuming *backward* dependence)
@@ -432,10 +454,12 @@ void PlumedMain::justCalculate(){
       }
     }
   }
+  stopwatch.stop("4 Calculating (forward loop)");
 }
 
 void PlumedMain::justApply(){
   
+  stopwatch.start("5 Applying (backward loop)");
 // apply them in reverse order
   for(ActionSet::reverse_iterator p=actionSet.rbegin();p!=actionSet.rend();++p){
     if((*p)->isActive()) (*p)->apply();
@@ -451,6 +475,7 @@ void PlumedMain::justApply(){
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
     if((*p)->isActive()) (*p)->update();
   }
+  stopwatch.stop("5 Applying (backward loop)");
 }
 
 void PlumedMain::load(std::vector<std::string> & words){

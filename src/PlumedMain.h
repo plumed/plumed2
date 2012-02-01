@@ -34,6 +34,7 @@ class Atoms;
 class ActionSet;
 class DLLoader;
 class PlumedCommunicator;
+class Stopwatch;
 
 /// Main plumed object.
 /// In MD engines this object is not manipulated directly but it is wrapped in
@@ -52,6 +53,7 @@ private:
   DLLoader& dlloader;
 
   WithCmd* cltool;
+  Stopwatch& stopwatch;
   WithCmd* grex;
 /// Flag to avoid double initialization
   bool  initialized;
