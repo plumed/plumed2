@@ -40,7 +40,9 @@ Action::Action(const ActionOptions&ao):
 {
   line.erase(line.begin());
   log.printf("Action %s\n",name.c_str());
-  parse("LABEL",label);
+
+  if ( keywords.exists("LABEL") ){ parse("LABEL",label); }
+
   if(label.length()==0){
     std::string s; Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
@@ -77,22 +79,15 @@ void Action::fflush(){
 
 void Action::parseFlag(const std::string&key,bool & t){
   // Check keyword has been registered
-  if( !keywords.exists(key) ){
-      log.printf("ERROR in action %s with label %s : keyword %s has not been registered",name.c_str(),label.c_str(),key.c_str() );
-      this->exit(1);
-  }
-
+  plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
   // Check keyword is a flag
-  if( !keywords.style(key,"flag") ){
-      log.printf("ERROR in action %s with label %s : keyword %s is not a flag",name.c_str(),label.c_str(),key.c_str() );
-      this->exit(1);
-  }
+  plumed_massert(keywords.style(key,"flag"), "keyword " + key + " is not a flag");
 
   // Read in the flag otherwise get the default value from the keywords object
   if(!Tools::parseFlag(line,key,t)){
      if ( !keywords.getLogicalDefault(key,t) ){
         log.printf("ERROR in action %s with label %s : flag %s has no default",name.c_str(),label.c_str(),key.c_str() );
-        this->exit(1);
+        plumed_assert(0);
      } 
   }
 }
@@ -130,11 +125,14 @@ std::string Action::getDocumentation()const{
 
 void Action::checkRead(){
   if(line.size()>0){
-    log.printf("ERROR READING INPUT FILE\n");
-    log.printf("I CANNOT UNDERSTAND THE FOLLOWING WORDS:\n");
-    for(unsigned i=0;i<line.size();i++) log.printf("  %s\n",line[i].c_str());
-    log.printf("STOP!!\n");
-    exit(1);
+    std::string msg="cannot understand the following words from the input line : ";
+    for(unsigned i=0;i<line.size();i++) msg = msg + line[i] + ", ";
+    error(msg);
+//    log.printf("ERROR READING INPUT FILE\n");
+//    log.printf("I CANNOT UNDERSTAND THE FOLLOWING WORDS:\n");
+//    for(unsigned i=0;i<line.size();i++) log.printf("  %s\n",line[i].c_str());
+//    log.printf("STOP!!\n");
+//    exit(1);
   }
 }
 

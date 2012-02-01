@@ -47,6 +47,7 @@ void GenericFlush::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   keys.add("compulsory","STRIDE","the frequency with which all the open files should be flushed");
+  keys.remove("LABEL");
 }
 
 }

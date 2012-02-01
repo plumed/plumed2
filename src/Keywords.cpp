@@ -59,7 +59,7 @@ void Keywords::remove( const std::string k ){
       found=true;
     } else break;
   }
-  plumed_assert(found); // You have tried to forbid a keyword that isn't there
+  plumed_massert(found,"You are trying to forbid a keyword that isn't there"); // You have tried to forbid a keyword that isn't there
 }
 
 void Keywords::clear() {
@@ -117,9 +117,8 @@ unsigned Keywords::size() const {
 }
 
 bool Keywords::exists( const std::string k ) const {
-  plumed_assert( keys.size()==documentation.size() ); 
-  plumed_assert( keys.size()==types.size() );
-//  plumed_assert( keys.size()==defaults.size() );
+  plumed_massert( keys.size()==documentation.size(), "documentation doesn't match keys" ); 
+  plumed_massert( keys.size()==types.size(), "types doesn't match keys" );
 
   for(unsigned i=0;i<keys.size();++i){
      if( keys[i]==k ) return true;

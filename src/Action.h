@@ -205,10 +205,8 @@ void Action::parse(const std::string&key,T&t){
 //    this->exit(1);
 //  }
   // Check keyword has been registered
-  if( !keywords.exists(key) ){
-      log.printf("ERROR in action %s with label %s : keyword %s has not been registered",name.c_str(),label.c_str(),key.c_str() );
-      this->exit(1);
-  }
+  plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
+
   // Now try to read the keyword
   bool found; std::string def; 
   found=Tools::parse(line,key,t);
@@ -235,10 +233,7 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
 //  }
 
   // Check keyword has been registered
-  if( !keywords.exists(key) ){
-      log.printf("ERROR in action %s with label %s : keyword %s has not been registered",name.c_str(),label.c_str(),key.c_str() );
-      this->exit(1);
-  }    
+  plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
   unsigned size=t.size();
 
   // Now try to read the keyword
@@ -269,14 +264,9 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
 
 template<class T>
 bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t){
-  if( !keywords.exists(key) ){
-      log.printf("ERROR in action %s with label %s : keyword %s has not been registered",name.c_str(),label.c_str(),key.c_str() );
-      this->exit(1);
-  }
-  if( !keywords.style(key,"numbered") ){
-      log.printf("ERROR in action %s with label %s : keyword %s is not numbered",name.c_str(),label.c_str(),key.c_str() );
-      this->exit(1);
-  }
+  plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
+  plumed_massert(keywords.style(key,"numbered"),"keyword " + key + " has not been registered so you can read in numbered versions");
+
   unsigned size=t.size();
   std::string num; Tools::convert(no,num);
   bool found=Tools::parseVector(line,key+num,t);
