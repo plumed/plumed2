@@ -13,34 +13,36 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
   for(unsigned i=0;i<c.size();i++){
     std::size_t dot=c[i].find_first_of('.');
     if(dot!=string::npos){
+// if it contains a dot:
       string a=c[i].substr(0,dot);
       string name=c[i].substr(dot+1);
       if(a=="*"){
         plumed_massert(name=="*","arguments in the form *.something are not allowed, but for *.*");
+// this is *.*: all the values
         std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
         for(unsigned j=0;j<all.size();j++){
-          for(int k=0;k<all[j]->getNumberOfValues();++k){
-            arg.push_back(all[j]->getValue(k));
-          }
+          for(int k=0;k<all[j]->getNumberOfValues();++k) arg.push_back(all[j]->getValue(k));
         };
       } else {
         ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
         plumed_massert(action,"cannot find action named " + a);
         if(name=="*"){
-          vector<string> s=action->getValueNames();
-          for(unsigned j=0;j<s.size();j++)arg.push_back(action->getValue(s[j]));
+// this is something.*: all the values in "something"
+          for(int k=0;k<action->getNumberOfValues();++k) arg.push_back(action->getValue(k));
         } else {
+// this is something.x: take that component
           plumed_massert(action->hasNamedValue(name),"action " + a + " has no component with name "+ name);
           arg.push_back(action->getValue(name));
         }
       }
     } else if(c[i]=="*"){
+// this is *: all the values (same as *.*)
       std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
       for(unsigned j=0;j<all.size();j++){
-        plumed_massert(all[j]->hasNamedValue(""),"action " + all[j]->getLabel() + " has no default component (unnamed one)");
-        arg.push_back(all[j]->getValue(""));
+        for(int k=0;k<all[j]->getNumberOfValues();++k) arg.push_back(all[j]->getValue(k));
       };
     } else{
+// this is something: take the unnamed component
       ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
       plumed_massert(action,"cannot find action named " +c[i]);
       plumed_massert(action->hasNamedValue(""),"action "+c[i]+" has no default component (unnamed one)");
