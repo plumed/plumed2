@@ -224,7 +224,6 @@ void PlumedMain::cmd(const std::string & word,void*val){
        MDEngine=static_cast<char*>(val);
   } else if(word=="setLog"){
        CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
        log.set(static_cast<FILE*>(val));
   } else if(word=="setLogFile"){
        CHECK_NOTINIT(initialized,word);
