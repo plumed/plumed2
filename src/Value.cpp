@@ -40,7 +40,8 @@ void Value::setDomain(double min,double max){
 
 
 const std::string Value::getFullName()const{
-  return action.getLabel()+"."+name;
+  if(name.length()==0) return action.getLabel();
+  else return action.getLabel()+"."+name;
 }
 
 void Value::enableDerivatives()
