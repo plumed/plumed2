@@ -62,6 +62,8 @@ protected:
   AtomNumber getAbsoluteIndex(int i)const;
 /// Parse a list of atoms
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
+/// Parse an list of atom with a numbred keyword
+  bool parseNumberedAtomList(const std::string&key,const unsigned& num, std::vector<AtomNumber> &t);
 /// Get reference to Pbc
   const Pbc & getPbc() const;
 public:

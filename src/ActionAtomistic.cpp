@@ -140,6 +140,42 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
   }
 }
 
+bool ActionAtomistic::parseNumberedAtomList(const std::string&key,const unsigned& num, std::vector<AtomNumber> &t){
+  vector<string> strings;
+  if( !parseNumberedVector(key,num,strings) ) return false;
+  Tools::interpretRanges(strings);
+  t.resize(0);
+  for(unsigned i=0;i<strings.size();++i){
+   bool ok=false;
+   AtomNumber atom;
+   ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
+   if(ok) t.push_back(atom);
+// here we check if the atom name is the name of a group
+   if(!ok){
+     const Atoms&atoms(plumed.getAtoms());
+     if(atoms.groups.count(strings[i])){
+       map<string,vector<unsigned> >::const_iterator m=atoms.groups.find(strings[i]);
+       for(unsigned j=0;j<(*m).second.size();j++) t.push_back(AtomNumber::index((*m).second[j]));
+       ok=true;
+     }
+   }
+// here we check if the atom name is the name of an added virtual atom
+   if(!ok){
+     const ActionSet&actionSet(plumed.getActionSet());
+     for(ActionSet::const_iterator a=actionSet.begin();a!=actionSet.end();++a){
+       ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(*a);
+       if(c) if(c->getLabel()==strings[i]){
+         ok=true;
+         t.push_back(c->getIndex());
+         break;
+       }
+     }
+   }
+   plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
+  }
+} 
+
+
 void ActionAtomistic::retrieveAtoms(){
   box=plumed.getAtoms().box;
   pbc.setBox(box);
