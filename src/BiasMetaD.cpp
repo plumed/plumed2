@@ -113,15 +113,15 @@ void BiasMetaD::registerKeywords(Keywords& keys){
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","HEIGHT","the heights of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
-  keys.add("compulsory","FILE","a file in which the list of added hills is stored");
+  keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");
   keys.addFlag("RESTART",false,"restart the calculation from a previous metadynamics calculation.");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
-  keys.add("optional","GRID_SPARSE","use a sparse grid to store hills");
-  keys.add("optional","GRID_NOSPLINE","don't use spline interpolation with grids");
+  keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
+  keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
   keys.add("optional","GRID_WFILE","the file on which to write the grid");
 }
@@ -165,13 +165,14 @@ grid_(false)
    plumed_assert(temp_>0.0);
    welltemp_=true;
   }
-  vector<double> gmin;
+
+  vector<double> gmin(getNumberOfArguments());
   parseVector("GRID_MIN",gmin);
   plumed_assert(gmin.size()==getNumberOfArguments() || gmin.size()==0);
-  vector<double> gmax;
+  vector<double> gmax(getNumberOfArguments());
   parseVector("GRID_MAX",gmax);
   plumed_assert(gmax.size()==getNumberOfArguments() || gmax.size()==0);
-  vector<unsigned> gbin;
+  vector<unsigned> gbin(getNumberOfArguments());
   parseVector("GRID_BIN",gbin);
   plumed_assert(gbin.size()==getNumberOfArguments() || gbin.size()==0);
   plumed_assert(gmin.size()==gmax.size() && gmin.size()==gbin.size());
@@ -184,6 +185,7 @@ grid_(false)
   parse("GRID_WSTRIDE",wgridstride_);
   string gridfname;
   parse("GRID_WFILE",gridfname); 
+
   if(grid_&&gridfname.length()>0){plumed_assert(wgridstride_>0);}
   if(grid_&&wgridstride_>0){plumed_assert(gridfname.length()>0);}
 
