@@ -259,18 +259,22 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
        } else {
           error("keyword " + key + " is compulsory for this action");
        }
-  }  
+  } else if ( !found ){
+       t.resize(0);
+  } 
 }
 
 template<class T>
 bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
-  plumed_massert(keywords.style(key,"numbered"),"keyword " + key + " has not been registered so you can read in numbered versions");
+  plumed_massert( ( keywords.style(key,"numbered") || keywords.style(key,"input") ),"keyword " + key + " has not been registered so you can read in numbered versions");
 
   unsigned size=t.size();
   std::string num; Tools::convert(no,num);
   bool found=Tools::parseVector(line,key+num,t);
-  if (found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
+  if(  keywords.style(key,"numbered") ){
+    if (found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
+  }
   return found;
 }
 
