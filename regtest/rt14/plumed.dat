@@ -1,0 +1,14 @@
+RMSD LABEL=rmsd REFERENCE=reference.pdb TYPE=SIMPLE
+
+ABMD ARG=rmsd KAPPA=20 MIN=1.0 TO=2.0 LABEL=abmd
+
+PRINT ...
+  STRIDE=1
+  ARG=rmsd,abmd.bias 
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+FLUSH STRIDE=100
+
+ENDPLUMED
+
