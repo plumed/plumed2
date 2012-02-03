@@ -58,6 +58,7 @@ normalize(false),
 coefficients(getNumberOfArguments(),1.0),
 powers(getNumberOfArguments(),1.0)
 {
+  printf("In function combine\n");
   parseVector("COEFFICIENTS",coefficients);
   assert(coefficients.size()==static_cast<unsigned>(getNumberOfArguments()));
   parseVector("POWERS",powers);
@@ -70,8 +71,16 @@ powers(getNumberOfArguments(),1.0)
     for(unsigned i=0;i<coefficients.size();i++) n+=coefficients[i];
     for(unsigned i=0;i<coefficients.size();i++) coefficients[i]*=(1.0/n);
   }
-
+ 
   addValueWithDerivatives("");
+  double min(0),max(0); std::vector<std::string> period;
+  parseVector("PERIODIC",period);
+  if(period.size()==1 && period[0]=="NO"){
+    getValue("")->setPeriodicity(false);
+  } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
+    getValue("")->setPeriodicity(true);
+    getValue("")->setDomain(min,max);
+  } else error("missing PERIODIC keyword");
   checkRead();
 
   log.printf("  with coefficients:");

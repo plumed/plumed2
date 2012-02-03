@@ -85,6 +85,14 @@ names(getNumberOfArguments())
   assert(var.size()==getNumberOfArguments());
   parse("FUNC",func);
   addValueWithDerivatives("");
+  double min(0),max(0); std::vector<std::string> period;
+  parseVector("PERIODIC",period);
+  if(period.size()==1 && period[0]=="NO"){
+    getValue("")->setPeriodicity(false);
+  } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
+    getValue("")->setPeriodicity(true);
+    getValue("")->setDomain(min,max);
+  } else error("missing PERIODIC keyword");
   checkRead();
 
   evaluator=evaluator_create(const_cast<char*>(func.c_str()));
