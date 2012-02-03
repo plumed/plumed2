@@ -24,18 +24,14 @@ class ActionWithValue:
   bool hasMultipleValues;
   bool hasUnnamedValue;
 protected:
-/// Enforce the use of numerical derivatives.
-/// This may be useful during the implementation of new collective
-/// variables. Before implementing the derivatives, the used can
-/// just tell plumed to use finite difference irrespectively of
-/// the NUMERICAL_DERIVATIVES keyword in the input file
-  void enforceNumericalDerivatives();
 public:
   ActionWithValue(const ActionOptions&ao);
   ~ActionWithValue();
 
 /// Register all the relevant keywords for the action  
   static void registerKeywords( Keywords& keys );
+/// Insist that numerical derivatives should always be used for an action and make this fact appear in the manual
+  static void noAnalyticalDerivatives(Keywords& keys);
 
 /// Add a new value without derivatives.
 /// This should be used for values which are only evaluated (e.g. for printing)

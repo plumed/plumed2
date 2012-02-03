@@ -5,14 +5,13 @@
 using namespace std;
 using namespace PLMD;
 
-void ActionWithValue::enforceNumericalDerivatives(){
-  numericalDerivatives=true;
-  log.printf("  WARNING: Numerical derivatives will be used\n");
-  log.printf("    (there is probably no implementation of the analytical derivatives in this action)\n");
-}
-
 void ActionWithValue::registerKeywords(Keywords& keys){
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
+}
+
+void ActionWithValue::noAnalyticalDerivatives(Keywords& keys){
+   keys.remove("NUMERICAL_DERIVATIVES");
+   keys.addFlag("NUMERICAL_DERIVATIVES",true,"analytical derivatives are not implemented for this keyword so numerical derivatives are always used");
 }
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
