@@ -62,6 +62,7 @@ PLUMED_REGISTER_ACTION(GenericWholeMolecules,"WHOLEMOLECULES")
 
 void GenericWholeMolecules::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
+  keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("input","MOLECULE","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of MOLECULE keywords: MOLECULE1, MOLECULE2,...");
 }
 
@@ -77,11 +78,10 @@ ActionAtomistic(ao)
 {
   vector<AtomNumber> merge;
   for(int i=0;;i++){
-    string is; Tools::convert(i,is);
-    string name="MOLECULE"+is;
+    //string is; Tools::convert(i,is);
+    //string name="MOLECULE"+is;
     vector<AtomNumber> group;
-    parseAtomList(name,group);
-    if(group.size()==0)break;
+    if(!parseNumberedAtomList("MOLECULE",i,group) ) break;
     groups.push_back(group);
     merge.insert(merge.end(),group.begin(),group.end());
   }
