@@ -1,0 +1,14 @@
+ang1: ANGLE ATOMS=2,6,3
+ang2: ANGLE ATOMS=2,6,7,3
+
+UPPER_WALLS ARG=ang1 AT=0.3 KAPPA=20.0 LABEL=uwall
+LOWER_WALLS ARG=ang2 AT=0.2 KAPPA=40.0 EXP=4 EPS=0.3 OFFSET=0.1 LABEL=lwall
+
+PRINT ...
+  STRIDE=10
+  ARG=uwall.bias,uwall.force2,lwall.bias,lwall.force2 
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+ENDPLUMED
+
