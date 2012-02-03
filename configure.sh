@@ -41,6 +41,5 @@ echo 'export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:'"$PWD"'/src/"' >> sourceme.s
 
 cat << EOF >> sourceme.sh
 export PLUMED_KERNEL="$PWD/src/libplumedKernel.$SOEXT"
-export PLUMED_ROOT="$PWD"
 EOF
 
