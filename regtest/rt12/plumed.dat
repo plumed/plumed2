@@ -1,0 +1,15 @@
+mu1: DIPOLE GROUP=1-10
+vol: VOLUME 
+
+EXTERNAL ARG=mu1,vol FILE=potential LABEL=ext
+
+PRINT ...
+  STRIDE=1
+  ARG=mu1,vol,ext.bias 
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+FLUSH STRIDE=100
+
+ENDPLUMED
+
