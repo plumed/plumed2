@@ -6,7 +6,7 @@ LOWER_WALLS ARG=ang2 AT=0.2 KAPPA=40.0 EXP=4 EPS=0.3 OFFSET=0.1 LABEL=lwall
 
 PRINT ...
   STRIDE=10
-  ARG=uwall.bias,uwall.force2,lwall.bias,lwall.force2 
+  ARG=*.bias,*.force2  
   FILE=COLVAR FMT=%6.3f
 ... PRINT
 
