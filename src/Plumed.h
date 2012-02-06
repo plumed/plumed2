@@ -334,31 +334,6 @@ bool Plumed::installed(){
 }
 
 inline
-bool Plumed::ginitialized(){
-  return plumed_ginitialized();
-}
-
-inline
-void Plumed::gcreate(){
-  plumed_gcreate();
-}
-
-inline
-void Plumed::gcmd(const char* key,const void* val){
-  plumed_gcmd(key,val);
-}
-
-inline
-void Plumed::gfinalize(){
-  plumed_gfinalize();
-}
-
-inline
-Plumed Plumed::global(){
-  return plumed_global();
-}
-
-inline
 Plumed::Plumed():
   cloned(false){
   main=plumed_create();
@@ -395,6 +370,31 @@ void Plumed::cmd(const char*key,const void*val){
 inline
 Plumed::~Plumed(){
   if(!cloned)plumed_finalize(main);
+}
+
+inline
+bool Plumed::ginitialized(){
+  return plumed_ginitialized();
+}
+
+inline
+void Plumed::gcreate(){
+  plumed_gcreate();
+}
+
+inline
+void Plumed::gcmd(const char* key,const void* val){
+  plumed_gcmd(key,val);
+}
+
+inline
+void Plumed::gfinalize(){
+  plumed_gfinalize();
+}
+
+inline
+Plumed Plumed::global(){
+  return plumed_global();
 }
 
 }
