@@ -84,7 +84,9 @@ AtomNumber & AtomNumber::setIndex(unsigned i){
 
 inline
 AtomNumber AtomNumber::serial(unsigned i){
-  return AtomNumber(i+1);
+  plumed_massert(i>0,"serial of an atom cannot be zero");
+  plumed_massert(i<std::numeric_limits<unsigned>::max()/2,"serial cannot be negative");
+  return AtomNumber(i-1);
 }
 
 inline
