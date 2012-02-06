@@ -44,6 +44,7 @@ public ActionPilot,
 public ActionWithArguments
 {
   string file;
+  string fmt;
   FILE* fp;
 public:
   void calculate(){};
@@ -59,13 +60,17 @@ GenericDumpDerivatives::GenericDumpDerivatives(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
+fmt("%15.10f"),
 fp(NULL)
 {
   parse("FILE",file);
   assert(file.length()>0);
+  parse("FMT",fmt);
+  fmt=" "+fmt;
   if(comm.Get_rank()==0){
     fp=fopen(file.c_str(),"wa");
     log.printf("  on file %s\n",file.c_str());
+    log.printf("  with format %s\n",fmt.c_str());
     fprintf(fp,"%s","#! FIELDS time parameter");
     const std::vector<Value*>& arguments(getArguments());
     assert(arguments.size()>0);
@@ -91,7 +96,7 @@ void GenericDumpDerivatives::update(){
     fprintf(fp," %f",getTime());
     fprintf(fp," %u",ipar);
     for(unsigned i=0;i<getNumberOfArguments();i++){
-      fprintf(fp," %15.10f",arguments[i]->getDerivatives()[ipar]);
+      fprintf(fp,fmt.c_str(),arguments[i]->getDerivatives()[ipar]);
     };
     fprintf(fp,"\n");
   }
