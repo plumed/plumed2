@@ -4,10 +4,6 @@
 
 namespace PLMD{
 
-double Vector::modulo()const{
-  return sqrt(modulo2());
-}
-
 /// Small auxiliary class.
 /// I use it to test a few things that I am scary of and could introduce bugs.
 /// It checks at startup that Vector satifies some requirement so as to allow
@@ -15,8 +11,10 @@ double Vector::modulo()const{
 static class VectorChecks{
 public:
   VectorChecks(){
-    if(sizeof(Vector)==3*sizeof(double)) return;
-    plumed_merror("sizeof(Vector)!=3*sizeof(double). PLUMED cannot work properly in these conditions.");
+    if( sizeof(VectorGeneric<2>)==2*sizeof(double)
+     && sizeof(VectorGeneric<3>)==3*sizeof(double)
+     && sizeof(VectorGeneric<4>)==4*sizeof(double)) return;
+    plumed_merror("sizeof(VectorGeneric<x>)!=x*sizeof(double). PLUMED cannot work properly in these conditions.");
   }
 } checks;
 

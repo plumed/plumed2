@@ -1,18 +1,29 @@
 #ifndef __PLUMED_Vector_h
 #define __PLUMED_Vector_h
 
+#include <cmath>
+#include <cassert>
+
 namespace PLMD{
 
 /**
-3d vector of double
+Class implementing fixed size vectors of doubles
 
-Class implementing a standard three-component vector of double.
-Vector elements are initialized to zero by default,
-Useful to simplify syntax.
+This class implements a vector of doubles with size fixed at
+compile time. It is useful for small fixed size objects (e.g.
+3d vectors) as it does not waste space to store the vector size.
+Moreover, as the compiler knows the size, it can be completely
+opimized inline.
 All the methods are inlined for better optimization.
+Vector elements are initialized to zero by default. Notice that
+this means that constructor is a bit slow. This point might change
+in future if we find performance issues.
 Accepts both [] and () syntax for access.
 Several functions are declared as friends even if not necessary so as to
-properly appear in Doxygen documentation..
+properly appear in Doxygen documentation.
+
+Aliases are defined to simplify common declarations (Vector, Vector2d, Vector3d, Vector4d).
+Also notice that some operations are only available for 3 dimensional vectors.
 
 Example of usage
 \verbatim
@@ -21,13 +32,13 @@ Example of usage
 using namespace PLMD;
 
 int main(){
-  Vector v1;
+  VectorGeneric<3> v1;
   v1[0]=3.0;
 // use equivalently () and [] syntax:
   v1(1)=5.0;
 // initialize with components
-  Vector v2=Vector(1.0,2.0,3.0);
-  Vector v3=crossProduct(v1,v2);
+  VectorGeneric<3> v2=VectorGeneric<3>(1.0,2.0,3.0);
+  VectorGeneric<3> v3=crossProduct(v1,v2);
   double d=dotProduct(v1,v2);
   v3+=v1;
   v2=v1+2.0*v3;
@@ -35,13 +46,18 @@ int main(){
 \endverbatim
 
 */
-class Vector{
-  double d[3];
+
+template <unsigned n>
+class VectorGeneric{
+  double d[n];
 public:
-/// create it with components x0, x1 and x2
-  Vector(double x0,double x1,double x2);
+/// Create it with preassigned components.
+/// Only available for sizes 2, 3 and 4
+  VectorGeneric(double,double);
+  VectorGeneric(double,double,double);
+  VectorGeneric(double,double,double,double);
 /// create it null
-  Vector();
+  VectorGeneric();
 /// set it to zero
   void clear();
 /// array-like access [i]
@@ -53,173 +69,244 @@ public:
 /// parenthesis access (i)
   const double & operator()(unsigned i)const;
 /// increment
-  Vector& operator +=(const Vector& b);
+  VectorGeneric& operator +=(const VectorGeneric& b);
 /// decrement
-  Vector& operator -=(const Vector& b);
+  VectorGeneric& operator -=(const VectorGeneric& b);
 /// multiply
-  Vector& operator *=(double s);
+  VectorGeneric& operator *=(double s);
 /// divide
-  Vector& operator /=(double s);
+  VectorGeneric& operator /=(double s);
 /// sign +
-  Vector operator +()const;
+  VectorGeneric operator +()const;
 /// sign -
-  Vector operator -()const;
+  VectorGeneric operator -()const;
 /// return v1+v2
-  friend Vector operator+(const Vector&,const Vector&);
+  template<unsigned m>
+  friend VectorGeneric<m> operator+(const VectorGeneric<m>&,const VectorGeneric<m>&);
 /// return v1-v2
-  friend Vector operator-(const Vector&,const Vector&);
+  template<unsigned m>
+  friend VectorGeneric<m> operator-(const VectorGeneric<m>&,const VectorGeneric<m>&);
 /// return s*v
-  friend Vector operator*(double,const Vector&);
+  template<unsigned m>
+  friend VectorGeneric<m> operator*(double,const VectorGeneric<m>&);
 /// return v*s
-  friend Vector operator*(const Vector&,double);
+  template<unsigned m>
+  friend VectorGeneric<m> operator*(const VectorGeneric<m>&,double);
 /// return v/s
-  friend Vector operator/(const Vector&,double);
+  template<unsigned m>
+  friend VectorGeneric<m> operator/(const VectorGeneric<m>&,double);
 /// return v2-v1
-  friend Vector delta(const Vector&v1,const Vector&v2);
+  template<unsigned m>
+  friend VectorGeneric<m> delta(const VectorGeneric<m>&v1,const VectorGeneric<m>&v2);
 /// return v1 .scalar. v2
-  friend double dotProduct(const Vector&,const Vector&);
+  template<unsigned m>
+  friend double dotProduct(const VectorGeneric<m>&,const VectorGeneric<m>&);
 /// return v1 .vector. v2
-  friend Vector crossProduct(const Vector&,const Vector&);
+/// Only available for size 3
+  friend VectorGeneric<3> crossProduct(const VectorGeneric<3>&,const VectorGeneric<3>&);
 /// compute the squared modulo
   double modulo2()const;
-/// compute the modulo
+/// Compute the modulo.
+/// Shortcut for sqrt(v.modulo2())
   double modulo()const;
 };
 
+template<>
 inline
-Vector::Vector(){
-  d[0]=0.0;
-  d[1]=0.0;
-  d[2]=0.0;
+VectorGeneric<2>:: VectorGeneric(double x0,double x1){
+  d[0]=x0;
+  d[1]=x1;
 }
 
+template<>
 inline
-Vector::Vector(double x0,double x1,double x2){
+VectorGeneric<3>:: VectorGeneric(double x0,double x1,double x2){
   d[0]=x0;
   d[1]=x1;
   d[2]=x2;
 }
 
+template<>
 inline
-void Vector::clear(){
-  d[0]=0.0;
-  d[1]=0.0;
-  d[2]=0.0;
+VectorGeneric<4>:: VectorGeneric(double x0,double x1,double x2,double x3){
+  d[0]=x0;
+  d[1]=x1;
+  d[2]=x2;
+  d[3]=x3;
 }
 
-inline
-double & Vector::operator[](unsigned i){
+template <unsigned n>
+VectorGeneric<n>::VectorGeneric(){
+  for(unsigned i=0;i<n;i++) d[i]=0.0;
+}
+
+template <unsigned n>
+void VectorGeneric<n>::clear(){
+  for(unsigned i=0;i<n;i++) d[i]=0.0;
+}
+
+template <unsigned n>
+double & VectorGeneric<n>::operator[](unsigned i){
   return d[i];
 }
 
-inline
-const double & Vector::operator[](unsigned i)const{
+template <unsigned n>
+const double & VectorGeneric<n>::operator[](unsigned i)const{
   return d[i];
 }
 
-inline
-double & Vector::operator()(unsigned i){
+template <unsigned n>
+double & VectorGeneric<n>::operator()(unsigned i){
   return d[i];
 }
 
-inline
-const double & Vector::operator()(unsigned i)const{
+template <unsigned n>
+const double & VectorGeneric<n>::operator()(unsigned i)const{
   return d[i];
 }
 
-inline
-Vector& Vector::operator +=(const Vector& b){
-  d[0]+=b(0);
-  d[1]+=b(1);
-  d[2]+=b(2);
+template <unsigned n>
+VectorGeneric<n>& VectorGeneric<n>::operator +=(const VectorGeneric<n>& b){
+  for(unsigned i=0;i<n;i++) d[i]+=b.d[i];
   return *this;
 }
 
-inline
-Vector& Vector::operator -=(const Vector& b){
-  d[0]-=b(0);
-  d[1]-=b(1);
-  d[2]-=b(2);
+template <unsigned n>
+VectorGeneric<n>& VectorGeneric<n>::operator -=(const VectorGeneric<n>& b){
+  for(unsigned i=0;i<n;i++) d[i]-=b.d[i];
   return *this;
 }
 
-inline
-Vector& Vector::operator *=(double s){
-  d[0]*=s;
-  d[1]*=s;
-  d[2]*=s;
+template <unsigned n>
+VectorGeneric<n>& VectorGeneric<n>::operator *=(double s){
+  for(unsigned i=0;i<n;i++) d[i]*=s;
   return *this;
 }
 
-inline
-Vector& Vector::operator /=(double s){
+template <unsigned n>
+VectorGeneric<n>& VectorGeneric<n>::operator /=(double s){
   double x=1.0/s;
-  d[0]*=x;
-  d[1]*=x;
-  d[2]*=x;
+  return (*this)*=x;
+}
+
+template <unsigned n>
+VectorGeneric<n>  VectorGeneric<n>::operator +()const{
   return *this;
 }
 
-inline
-Vector  Vector::operator +()const{
-  return *this;
+template <unsigned n>
+VectorGeneric<n> VectorGeneric<n>::operator -()const{
+  VectorGeneric<n> r;
+  for(unsigned i=0;i<n;i++) r[i]=-d[i];
+  return r;
 }
 
-inline
-Vector  Vector::operator -()const{
-  return Vector(-d[0],-d[1],-d[2]);
+template <unsigned n>
+VectorGeneric<n> operator+(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2){
+  VectorGeneric<n> v(v1);
+  return v+=v2;
 }
 
-inline
-Vector operator+(const Vector&v1,const Vector&v2){
-  return Vector(v1[0]+v2[0],v1[1]+v2[1],v1[2]+v2[2]);
+template <unsigned n>
+VectorGeneric<n> operator-(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2){
+  VectorGeneric<n> v(v1);
+  return v-=v2;
 }
 
-inline
-Vector operator-(const Vector&v1,const Vector&v2){
-  return Vector(v1[0]-v2[0],v1[1]-v2[1],v1[2]-v2[2]);
+template <unsigned n>
+VectorGeneric<n> operator*(double s,const VectorGeneric<n>&v){
+  VectorGeneric<n> vv(v);
+  return vv*=s;
 }
 
-inline
-Vector operator*(double s,const Vector&v){
-  return Vector(s*v[0],s*v[1],s*v[2]);
-}
-
-inline
-Vector operator*(const Vector&v,double s){
+template <unsigned n>
+VectorGeneric<n> operator*(const VectorGeneric<n>&v,double s){
   return s*v;
 }
 
-inline
-Vector operator/(const Vector&v,double s){
+template <unsigned n>
+VectorGeneric<n> operator/(const VectorGeneric<n>&v,double s){
   return v*(1.0/s);
 }
 
-inline
-Vector delta(const Vector&v1,const Vector&v2){
-  return Vector(v2[0]-v1[0],v2[1]-v1[1],v2[2]-v1[2]);
+template <unsigned n>
+VectorGeneric<n> delta(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2){
+  return v2-v1;
 }
 
-inline
-double Vector::modulo2()const{
-  return d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
+template <unsigned n>
+double VectorGeneric<n>::modulo2()const{
+  double r=0.0;
+  for(unsigned i=0;i<n;i++) r+=d[i]*d[i];
+  return r;
 }
 
+template <unsigned n>
+double dotProduct(const VectorGeneric<n>& v1,const VectorGeneric<n>& v2){
+  double r=0.0;
+  for(unsigned i=0;i<n;i++) r+=v1[i]*v2[i];
+  return r;
+}
+
+// faster, specialized version for 2d
 inline
-double dotProduct(const Vector& v1,const Vector& v2){
+double dotProduct(const VectorGeneric<2>& v1,const VectorGeneric<2>& v2){
+  return v1[0]*v2[0]+v1[1]*v2[1];
+}
+
+template<>
+inline
+double VectorGeneric<2>::modulo2()const{
+  return d[0]*d[0]+d[1]*d[1];
+}
+
+// faster, specialized version for 3d
+inline
+double dotProduct(const VectorGeneric<3>& v1,const VectorGeneric<3>& v2){
   return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
 }
 
+template<>
 inline
-Vector crossProduct(const Vector& v1,const Vector& v2){
-  return Vector(
-    v1[1]*v2[2]-v1[2]*v2[1],
-    v1[2]*v2[0]-v1[0]*v2[2],
-    v1[0]*v2[1]-v1[1]*v2[0]);
+double VectorGeneric<3>::modulo2()const{
+  return d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
 }
 
+// faster, specialized version for 4d
+inline
+double dotProduct(const VectorGeneric<4>& v1,const VectorGeneric<4>& v2){
+  return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]+v1[3]*v2[3];
 }
 
+template<>
+inline
+double VectorGeneric<4>::modulo2()const{
+  return d[0]*d[0]+d[1]*d[1]+d[2]*d[2]+d[3]*d[3];
+}
+
+inline
+VectorGeneric<3> crossProduct(const VectorGeneric<3>& v1,const VectorGeneric<3>& v2){
+ return VectorGeneric<3>(
+   v1[1]*v2[2]-v1[2]*v2[1],
+   v1[2]*v2[0]-v1[0]*v2[2],
+   v1[0]*v2[1]-v1[1]*v2[0]);
+}
+
+template<unsigned n>
+double VectorGeneric<n>::modulo()const{
+  return sqrt(modulo2());
+}
+
+/// Alias for two dimensional vectors;
+typedef VectorGeneric<2> Vector2d;
+/// Alias for three dimensional vectors;
+typedef VectorGeneric<3> Vector3d;
+/// Alias for four dimensional vectors;
+typedef VectorGeneric<4> Vector4d;
+/// Alias for three dimensional vectors;
+typedef Vector3d Vector;
+
+}
 
 #endif
 
