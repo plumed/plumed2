@@ -16,6 +16,11 @@ namespace PLMD{
 /**
 MetaDynamics on one or more variables
 
+In a metadynamics simulations a history dependent bias composed of 
+intermittently added Gaussian functions is added to the potential \cite metad.
+This potential forces the system away from the kinetic traps in the potential energy surface
+and out into the unexplored parts of the energy landscape.
+
 \par Syntax
 \verbatim
 METAD ...

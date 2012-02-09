@@ -1249,6 +1249,10 @@ GENERATE_LEGEND        = YES
 
 DOT_CLEANUP            = YES
 
+# Create a bibliography
+
+CITE_BIB_FILES         = bibliography.bib
+
 #---------------------------------------------------------------------------
 # Configuration::additions related to the search engine   
 #---------------------------------------------------------------------------
