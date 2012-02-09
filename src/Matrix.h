@@ -134,21 +134,21 @@ public:
 
 template <typename T> void mult( const Matrix<T>& A , const Matrix<T>& B , Matrix<T>& C ){
   assert(A.cl==B.rw);
-  if( A.rw !=C.rw  || B.cl !=C.cl ){ C.resize( A.rw , B.cl ); } C= (T) 0; 
+  if( A.rw !=C.rw  || B.cl !=C.cl ){ C.resize( A.rw , B.cl ); } C=static_cast<T>( 0 ); 
   for(unsigned i=0;i<A.rw;++i) for(unsigned j=0;j<B.cl;++j) for (unsigned k=0; k<A.cl; ++k) C(i,j)+=A(i,k)*B(k,j); 
 }
 
 template <typename T> void mult( const Matrix<T>& A, const std::vector<T>& B, std::vector<T>& C){
   assert( A.cl==B.size() );
   if( C.size()!=A.rw  ){ C.resize(A.rw); } 
-  for(unsigned i=0;i<A.rw;++i){ C[i]= (T) 0; }
+  for(unsigned i=0;i<A.rw;++i){ C[i]= static_cast<T>( 0 ); }
   for(unsigned i=0;i<A.rw;++i) for(unsigned k=0;k<A.cl;++k) C[i]+=A(i,k)*B[k] ;
 }
 
 template <typename T> void mult( const std::vector<T>& A, const Matrix<T>& B, std::vector<T>& C){
   assert( B.rw==A.size() );
   if( C.size()!=B.cl ){C.resize( B.cl );} 
-  for(unsigned i=0;i<B.cl;++i){ C[i]= (T) 0; }
+  for(unsigned i=0;i<B.cl;++i){ C[i]=static_cast<T>( 0 ); }
   for(unsigned i=0;i<B.cl;++i) for(unsigned k=0;k<B.rw;++k) C[i]+=A[k]*B(k,i); 
 }
 
@@ -176,7 +176,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    assert( A.rw==A.cl ); assert( A.isSymmetric()==1 );
    double *da=new double[A.sz]; unsigned k=0; double *evals=new double[ A.cl ];
    // Transfer the matrix to the local array
-   for (unsigned i=0; i<A.cl; ++i) for (unsigned j=0; j<A.rw; ++j) da[k++]=(double) A(j,i);
+   for (unsigned i=0; i<A.cl; ++i) for (unsigned j=0; j<A.rw; ++j) da[k++]=static_cast<double>( A(j,i) );
 
    int n=A.cl; int lwork=-1, liwork=-1, m, info, one=1;
    double *work=new double[A.cl]; int *iwork=new int[A.cl];
@@ -190,7 +190,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
 
    // Retrieve correct sizes for work and iwork then reallocate
    liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
-   lwork=(int) work[0]; delete [] work; work=new double[lwork];
+   lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
 
    F77_FUNC(dsyevr,DSYEVR)("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
@@ -227,7 +227,7 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ){
   } else {
      double *da=new double[A.sz]; int *ipiv=new int[A.cl];
      unsigned k=0; int n=A.rw, info;
-     for(unsigned i=0;i<A.cl;++i) for(unsigned j=0;j<A.rw;++j) da[k++]=(double) A(j,i);
+     for(unsigned i=0;i<A.cl;++i) for(unsigned j=0;j<A.rw;++j) da[k++]=static_cast<double>( A(j,i) );
 
      F77_FUNC(dgetrf, DGETRF)(&n,&n,da,&n,ipiv,&info);
      if(info!=0) return info;
@@ -236,7 +236,7 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ){
      F77_FUNC(dgetri, DGETRI)(&n,da,&n,ipiv,work,&lwork,&info);
      if(info!=0) return info;
 
-     lwork=(int) work[0]; delete [] work; work=new double[lwork];
+     lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
      F77_FUNC(dgetri, DGETRI)(&n,da,&n,ipiv,work,&lwork,&info);
      if(info!=0) return info;
 
@@ -255,11 +255,11 @@ template <typename T> void cholesky( const Matrix<T>& A, Matrix<T>& B ){
    Matrix<T> L(A.rw ,A.cl); L=0.;
    std::vector<T> D(A.rw,0.);
    for(unsigned i=0; i<A.rw; ++i){
-      L(i,i)=(T) 1;
+      L(i,i)=static_cast<T>( 1 );
       for (unsigned j=0; j<i; ++j){
          L(i,j)=A(i,j);
          for (unsigned k=0; k<j; ++k) L(i,j)-=L(i,k)*L(j,k)*D[k];
-         if (D[j]!=0.) L(i,j)/=D[j]; else L(i,j)=(T) 0;
+         if (D[j]!=0.) L(i,j)/=D[j]; else L(i,j)=static_cast<T>( 0 );
       }
       D[i]=A(i,i);
       for (unsigned k=0; k<i; ++k) D[i]-=L(i,k)*L(i,k)*D[k];
@@ -287,7 +287,7 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
 
    double *da=new double[M.sz]; unsigned k=0; double *evals=new double[M.cl];
    // Transfer the matrix to the local array
-   for (unsigned i=0; i<M.rw; ++i) for (unsigned j=0; j<M.cl; ++j) da[k++]=(double) M(j,i);
+   for (unsigned i=0; i<M.rw; ++i) for (unsigned j=0; j<M.cl; ++j) da[k++]=static_cast<double>( M(j,i) );
 
    int n=M.cl; int lwork=-1, liwork=-1, info, m, one=1;
    double *work=new double[M.rw]; int *iwork=new int[M.rw];
@@ -299,7 +299,7 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
    if (info!=0) return info;
 
    // Retrieve correct sizes for work and iwork then reallocate
-   lwork=(int) work[0]; delete [] work; work=new double[lwork];
+   lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
    liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
 
    F77_FUNC(dsyevr,DSYEVR)("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
