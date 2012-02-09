@@ -1,0 +1,16 @@
+ene: ENERGY
+
+RESTRAINT ...
+  ARG=ene
+  KAPPA=0.008
+  AT=-530
+...
+
+PRINT ...
+  STRIDE=10
+  ARG=*
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+ENDPLUMED
+

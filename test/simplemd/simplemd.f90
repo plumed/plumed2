@@ -198,6 +198,7 @@ IF(plumed) THEN
   CALL plumed_f_cmd(iplumed,"setStep"//char(0),istep)
   CALL plumed_f_cmd(iplumed,"setPositions"//char(0),positions)
   CALL plumed_f_cmd(iplumed,"setBox"//char(0),cell9)
+  CALL plumed_f_cmd(iplumed,"setEnergy"//char(0),engconf)
   CALL plumed_f_cmd(iplumed,"calc"//char(0),0)
 ENDIF
 
