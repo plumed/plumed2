@@ -71,7 +71,11 @@ in a wide variety of MD codes.  Consequentially, we have implemented a more prag
 in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In plumed 1.0 this was done
 using the ALIGN_ATOMS keyword.  In plumed 2.0 the same effect can be acchieved using any one from the following list of commands
 
-- \subpage WHOLEMOLECULES
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr>
+<td width=5%> \subpage WHOLEMOLECULES </td> <td> With this command you can specify the atoms in each of your molecules </td> 
+</tr> 
+</table>
 @TOPOLOGY@
 
 The most general of these is the \ref WHOLEMOLECULES keywords.  However, there are advantages in using the others as oftentimes
