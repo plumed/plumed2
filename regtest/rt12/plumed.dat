@@ -1,4 +1,4 @@
-mu1: DIPOLE GROUP=1-10
+mu1: DISTANCE ATOMS=1,10
 vol: VOLUME 
 
 EXTERNAL ARG=mu1,vol FILE=potential LABEL=ext
