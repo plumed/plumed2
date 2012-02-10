@@ -29,7 +29,7 @@ OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  
 	// fast behaviour: if all the alignment and displacement are 1.0 then go for fast 
 	fast=true;
 	for (unsigned i=0;i<align.size();i++ ){
-		if(align[i]!=displace[i])fast=false;
+                if(align[i]!=displace[i] || align[i]!=1.0)fast=false;
 	}
 
 }

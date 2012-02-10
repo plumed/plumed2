@@ -1,17 +1,15 @@
-# !!!!!!!
-# THERE IS A BUG IN RMSD:
-# rmsd1 and rmsd2 should be almost equal, but they are not
-# !!!!!!!
 rmsd0:   RMSD TYPE=OPTIMAL REFERENCE=test0.pdb
 rmsds0:  RMSD TYPE=SIMPLE  REFERENCE=test0.pdb
 rmsd1:   RMSD TYPE=OPTIMAL REFERENCE=test1.pdb
 rmsds1:  RMSD TYPE=SIMPLE  REFERENCE=test1.pdb
 rmsd2:   RMSD TYPE=OPTIMAL REFERENCE=test2.pdb
 rmsds2:  RMSD TYPE=SIMPLE  REFERENCE=test2.pdb
+rmsd3:   RMSD TYPE=OPTIMAL REFERENCE=test3.pdb
+rmsds3:  RMSD TYPE=SIMPLE  REFERENCE=test3.pdb
 
 sum: COMBINE ARG=* PERIODIC=NO
 
-RESTRAINT ARG=sum AT=1.0 KAPPA=1.0
+RESTRAINT ARG=sum AT=20.0 KAPPA=1.0
 
 PRINT ...
   STRIDE=1
