@@ -52,13 +52,18 @@ double Kearsley::calculate(bool rmsd) {
 		cerr<<"Kearsley: looks like you have not properly allocated the vectors: they do not contain anything"<<endl;
 		exit(0);
 	}
-	double rr1[4],rr0[4],q[4],dddq[4][4][4],gamma[3][3][3],rrsq;
+        Vector rr1,rr0;
+        Vector4d q;
+	double dddq[4][4][4],gamma[3][3][3],rrsq;
 	Matrix<double> m=Matrix<double>(4,4);
-	double dm_r1[4][4][3],dm_r0[4][4][3];
-	double pi1[3][3],pi0[3][3];
+//	double dm_r1[4][4][3],dm_r0[4][4][3];
+        Vector dm_r1[4][4];
+        Vector dm_r0[4][4];
+        Tensor pi1,pi0;
 	Tensor d;
 	Tensor dinv;
-	double xx[3], totalign=0.,  s, tmp1, err;
+        Vector xx;
+	double totalign=0.,  s, tmp1, err;
 	unsigned  i,j,k,l,ii,ll,jj,mm,n,nn,iii;
 	bool verbose=false;
 
@@ -88,22 +93,20 @@ double Kearsley::calculate(bool rmsd) {
 
 	if(com0_is_removed==false){
 
-		for(j=0;j<3;j++)xx[j]=0.;
+		xx.clear();
 
 		if(do_center) {// if you dont need to center no prob...
-			for(j=0;j<3;j++){
-				for(i=0;i<alignmap.size();i++){
-					xx[j]+=p0[alignmap[i]][j]*align[alignmap[i]];
-				}
+			for(i=0;i<alignmap.size();i++){
+				xx+=p0[alignmap[i]]*align[alignmap[i]];
 			}
-			for(j=0;j<3;j++)xx[j]=xx[j]/(totalign);
+			xx/=(totalign);
 		}
 
-		for(j=0;j<3;j++)com0[j]=xx[j];
+		com0=xx;
 
 		if (p0reset.size()==0){p0reset.resize(natoms);}
 		for(i=0;i<natoms;i++){
-			for(j=0;j<3;j++)p0reset[i][j]=p0[i][j]-xx[j];
+			p0reset[i]=p0[i]-xx;
 		}
 		com0_is_removed=true;
 
@@ -119,23 +122,21 @@ double Kearsley::calculate(bool rmsd) {
 
 	if(com1_is_removed==false){
 
-		for(j=0;j<3;j++)xx[j]=0.;
+		xx.clear();
 
 		if(do_center) {// if you dont need to center no prob...
-			for(j=0;j<3;j++){
-				for(i=0;i<alignmap.size();i++){
-					xx[j]+=p1[alignmap[i]][j]*align[alignmap[i]];
-				}
+			for(i=0;i<alignmap.size();i++){
+				xx+=p1[alignmap[i]]*align[alignmap[i]];
 			}
-			for(j=0;j<3;j++)xx[j]=xx[j]/(totalign);
+			xx/=(totalign);
 		}
 
-		for(j=0;j<3;j++)com1[j]=xx[j];
+		com1=xx;
 
 		if (p1reset.size()==0){p1reset.resize(natoms);}
 
 		for(i=0;i<natoms;i++){
-				for(j=0;j<3;j++)p1reset[i][j]=p1[i][j]-xx[j];
+				p1reset[i]=p1[i]-xx;
 		}
 		com1_is_removed=true;
 
@@ -153,10 +154,7 @@ double Kearsley::calculate(bool rmsd) {
 	if(fake){
 	// case of trivial alignment
          // set rotmat
-		rotmat0on1[0][0]= 1.0 ; rotmat0on1[0][1]= 0.0 ; rotmat0on1[0][2]= 0.0;
-		rotmat0on1[1][0]= 0.0 ; rotmat0on1[1][1]= 1.0 ; rotmat0on1[1][2]= 0.0;
-		rotmat0on1[2][0]= 0.0 ; rotmat0on1[2][1]= 0.0 ; rotmat0on1[2][2]= 0.0;
-		//
+                rotmat0on1=Tensor::identity();
 		if (p0reset.size()==0){p0reset.resize(natoms);}
 		if (p1reset.size()==0){p1reset.resize(natoms);}
 
@@ -167,9 +165,7 @@ double Kearsley::calculate(bool rmsd) {
 
 		err=0.;
 		for(i=0;i<natoms;i++){
-			if(align[i]>0.)err+=align[i]*(  (p0reset[i][0]-p1reset[i][0])* (p0reset[i][0]-p1reset[i][0])
-										+ (p0reset[i][1]-p1reset[i][1])* (p0reset[i][1]-p1reset[i][1])
-										+ (p0reset[i][2]-p1reset[i][2])* (p0reset[i][2]-p1reset[i][2])  );
+			if(align[i]>0.)err+=align[i]*modulo2(p0reset[i]-p1reset[i]);
 		}
 
 		return 0.;
@@ -188,14 +184,10 @@ double Kearsley::calculate(bool rmsd) {
 
 		// adopt scaled coordinates
 
-		rr1[0]=p1reset[k][0]*tmp1;
-        rr1[1]=p1reset[k][1]*tmp1;
-        rr1[2]=p1reset[k][2]*tmp1;
-        rr0[0]=p0reset[k][0]*tmp1;
-        rr0[1]=p0reset[k][1]*tmp1;
-        rr0[2]=p0reset[k][2]*tmp1;
+	rr1=p1reset[k]*tmp1;
+        rr0=p0reset[k]*tmp1;
 
-        rrsq=(pow(rr0[0],2)+pow(rr0[1],2)+pow(rr0[2],2)+pow(rr1[0],2)+pow(rr1[1],2)+pow(rr1[2],2));
+	rrsq=modulo2(rr0)+modulo2(rr1);
 
         m(0,0) +=  rrsq+2.*(-rr0[0]*rr1[0]-rr0[1]*rr1[1]-rr0[2]*rr1[2]);
         m(1,1) +=  rrsq+2.*(-rr0[0]*rr1[0]+rr0[1]*rr1[1]+rr0[2]*rr1[2]);
@@ -366,12 +358,8 @@ double Kearsley::calculate(bool rmsd) {
 
 		// once again: derivative respect to scaled distance
 
-		rr1[0]=2.*p1reset[i][0]*tmp1;
-		rr1[1]=2.*p1reset[i][1]*tmp1;
-		rr1[2]=2.*p1reset[i][2]*tmp1;
-		rr0[0]=2.*p0reset[i][0]*tmp1;
-		rr0[1]=2.*p0reset[i][1]*tmp1;
-		rr0[2]=2.*p0reset[i][2]*tmp1;
+		rr1=2.*p1reset[i]*tmp1;
+		rr0=2.*p0reset[i]*tmp1;
 
 
 		dm_r1 [0][0][0]=(rr1[0]-rr0[0]);
@@ -459,25 +447,20 @@ double Kearsley::calculate(bool rmsd) {
 		 * write the diagonal
 		 */
 
-		for(j=0;j<3;j++){
+		dm_r1[1][0]=dm_r1[0][1];
+		dm_r1[2][0]=dm_r1[0][2];
+		dm_r1[3][0]=dm_r1[0][3];
+		dm_r1[2][1]=dm_r1[1][2];
+		dm_r1[3][1]=dm_r1[1][3];
+		dm_r1[3][2]=dm_r1[2][3];
 
-			dm_r1[1][0][j]=dm_r1[0][1][j];
-			dm_r1[2][0][j]=dm_r1[0][2][j];
-			dm_r1[3][0][j]=dm_r1[0][3][j];
-			dm_r1[2][1][j]=dm_r1[1][2][j];
-			dm_r1[3][1][j]=dm_r1[1][3][j];
-			dm_r1[3][2][j]=dm_r1[2][3][j];
+		dm_r0[1][0]=dm_r0[0][1];
+		dm_r0[2][0]=dm_r0[0][2];
+		dm_r0[3][0]=dm_r0[0][3];
+		dm_r0[2][1]=dm_r0[1][2];
+		dm_r0[3][1]=dm_r0[1][3];
+		dm_r0[3][2]=dm_r0[2][3];
 
-			dm_r0[1][0][j]=dm_r0[0][1][j];
-			dm_r0[2][0][j]=dm_r0[0][2][j];
-			dm_r0[3][0][j]=dm_r0[0][3][j];
-			dm_r0[2][1][j]=dm_r0[1][2][j];
-			dm_r0[3][1][j]=dm_r0[1][3][j];
-			dm_r0[3][2][j]=dm_r0[2][3][j];
-
-
-
-		};
 
 		//log.printf("DMDR0 ALIGN %f AT %d VAL %f\n",align[i],i,dm_r0[0][0][j]);
 
@@ -486,32 +469,24 @@ double Kearsley::calculate(bool rmsd) {
 		 * pi matrix : coefficents in per theory
 		 */
 
-		for(j=0;j<3;j++){
-			pi1[0][j]=0.;
-			pi1[1][j]=0.;
-			pi1[2][j]=0.;
-			pi0[0][j]=0.;
-			pi0[1][j]=0.;
-			pi0[2][j]=0.;
+                pi0.clear();
+		pi1.clear();
+		derr_dr1[i].clear();
+		derr_dr0[i].clear();
 
-			derr_dr1[i][j]=0.;
-			derr_dr0[i][j]=0.;
-
-
-			for(k=0;k<4;k++){
-				for(l=0;l<4;l++){
-					derr_dr1[i][j]+=q[k]*q[l]*dm_r1[l][k][j];
-					derr_dr0[i][j]+=q[k]*q[l]*dm_r0[l][k][j];
-					for(mm=0;mm<3;mm++){
-						pi0[mm][j]+=eigenvecs(mm+1,k)*dm_r0[l][k][j]*q[l];
-						pi1[mm][j]+=eigenvecs(mm+1,k)*dm_r1[l][k][j]*q[l];
-					};
+		for(k=0;k<4;k++){
+			for(l=0;l<4;l++){
+				derr_dr1[i]+=(q[k]*q[l])*dm_r1[l][k];
+				derr_dr0[i]+=(q[k]*q[l])*dm_r0[l][k];
+				for(mm=0;mm<3;mm++)for(j=0;j<3;j++){
+					pi0[mm][j]+=eigenvecs(mm+1,k)*dm_r0[l][k][j]*q[l];
+					pi1[mm][j]+=eigenvecs(mm+1,k)*dm_r1[l][k][j]*q[l];
 				};
 			};
-			derr_dr1[i][j]=derr_dr1[i][j]/totalign;
-			derr_dr0[i][j]=derr_dr0[i][j]/totalign;
-
 		};
+		derr_dr1[i]/=totalign;
+		derr_dr0[i]/=totalign;
+
 
 
 		for(j=0;j<3;j++){
@@ -545,25 +520,20 @@ double Kearsley::calculate(bool rmsd) {
 	bool comcorr_r1=true;
 
 	if(comcorr_r1){
-		for(l=0;l<3;l++){
-			for(k=0;k<alignmap.size();k++){
-				i=alignmap[k];
-				array_3_n[i][l]=align[i]*derr_dr1[i][l];
-				tmp1=align[i]/totalign;
-				if(do_center){
-					for(jj=0;jj<alignmap.size();jj++){
-						j=alignmap[jj];
-						array_3_n[i][l]-=tmp1*align[j]*derr_dr1[j][l];
-					}
+		for(k=0;k<alignmap.size();k++){
+			i=alignmap[k];
+			array_3_n[i]=align[i]*derr_dr1[i];
+			tmp1=align[i]/totalign;
+			if(do_center){
+				for(jj=0;jj<alignmap.size();jj++){
+					j=alignmap[jj];
+					array_3_n[i]-=tmp1*align[j]*derr_dr1[j];
 				}
-
 			}
 		}
-		for(l=0;l<3;l++){
-			for(k=0;k<alignmap.size();k++){
-				i=alignmap[k];
-				derr_dr1[i][l]=array_3_n[i][l];
-			}
+		for(k=0;k<alignmap.size();k++){
+			i=alignmap[k];
+			derr_dr1[i]=array_3_n[i];
 		}
 	}
 
@@ -573,24 +543,20 @@ double Kearsley::calculate(bool rmsd) {
 	// correction for r0 frame
 	//
 	if(do_comcorr_r0){
-		for(l=0;l<3;l++){
-			for(k=0;k<alignmap.size();k++){
-				i=alignmap[k];
-				array_3_n[i][l]=align[i]*derr_dr0[i][l];
-				tmp1=align[i]/totalign;
-				if(do_center){
-					for(jj=0;jj<alignmap.size();jj++){
-						j=alignmap[jj];
-						array_3_n[i][l]-=tmp1*align[j]*derr_dr0[j][l];
-					}
+		for(k=0;k<alignmap.size();k++){
+			i=alignmap[k];
+			array_3_n[i]=align[i]*derr_dr0[i];
+			tmp1=align[i]/totalign;
+			if(do_center){
+				for(jj=0;jj<alignmap.size();jj++){
+					j=alignmap[jj];
+					array_3_n[i]-=tmp1*align[j]*derr_dr0[j];
 				}
 			}
 		}
-		for(l=0;l<3;l++){
-			for(k=0;k<alignmap.size();k++){
-				i=alignmap[k];
-				derr_dr0[i][l]=array_3_n[i][l];
-			}
+		for(k=0;k<alignmap.size();k++){
+			i=alignmap[k];
+			derr_dr0[i]=array_3_n[i];
 		}
 	}
 
@@ -661,27 +627,14 @@ double Kearsley::calculate(bool rmsd) {
 
 		if(p1.size()!=p1rotated.size())p1rotated.resize(p1.size());
 
-		//exit(0);
+//		exit(0);
 
-		for(i=0;i<natoms;i++){
-			p1rotated[i][0]=d[0][0]*p1reset[i][0]+
-					        d[0][1]*p1reset[i][1]+
-					        d[0][2]*p1reset[i][2];
-			p1rotated[i][1]=d[1][0]*p1reset[i][0]+
-					        d[1][1]*p1reset[i][1]+
-					        d[1][2]*p1reset[i][2];
-			p1rotated[i][2]=d[2][0]*p1reset[i][0]+
-					        d[2][1]*p1reset[i][1]+
-					        d[2][2]*p1reset[i][2];
-		}
-
+		for(i=0;i<natoms;i++) p1rotated[i]=matmul(d,p1reset[i]);
 
 		// reallocate difference vectors
 		if(p1.size()!=diff1on0.size())diff1on0.resize(p1.size());
 		for(i=0;i<natoms;i++){
-			diff1on0[i][0]=p1rotated[i][0]-p0reset[i][0];
-			diff1on0[i][1]=p1rotated[i][1]-p0reset[i][1];
-			diff1on0[i][2]=p1rotated[i][2]-p0reset[i][2];
+			diff1on0[i]=p1rotated[i]-p0reset[i];
 		}
 
 		if(verbose){
@@ -701,44 +654,14 @@ double Kearsley::calculate(bool rmsd) {
 
 
 
-	// wonderful supersoviet hardcoded 3x3 matrix inversion ;)
-	double det;
-	det=         d[0][0]*(d[2][2]*d[1][1]-d[2][1]*d[1][2])
-				-d[1][0]*(d[2][2]*d[0][1]-d[2][1]*d[0][2])
-				+d[2][0]*(d[1][2]*d[0][1]-d[1][1]*d[0][2]);
-
-	dinv[0][0]= (d[2][2]*d[1][1]-d[2][1]*d[1][2])/det;//a22a11-a21a12
-	dinv[0][1]=-(d[2][2]*d[0][1]-d[2][1]*d[0][2])/det;//-(a22a01-a21a02)
-	dinv[0][2]= (d[1][2]*d[0][1]-d[1][1]*d[0][2])/det;//a12a01-a11a02
-
-	dinv[1][0]=-(d[2][2]*d[1][0]-d[2][0]*d[1][2])/det;  //-(a22a10-a20a12)
-	dinv[1][1]= (d[2][2]*d[0][0]-d[2][0]*d[0][2])/det;	// 	a22a00-a20a02
-	dinv[1][2]=-(d[1][2]*d[0][0]-d[1][0]*d[0][2])/det;	// 	-(a12a00-a10a02)
-
-	dinv[2][0]= (d[2][1]*d[1][0]-d[2][0]*d[1][1])/det;  //  a21a10-a20a11
-	dinv[2][1]=-(d[2][1]*d[0][0]-d[2][0]*d[0][1])/det;	//	-(a21a00-a20a01)
-	dinv[2][2]= (d[1][1]*d[0][0]-d[1][0]*d[0][1])/det;  //a11a00-a10a01
+        dinv=inverse(d);
 
 	bool do_p0rotated=true;
 	if (do_p0rotated){
 		if(p0.size()!=p0rotated.size())p0rotated.resize(p0.size());
-		for(i=0;i<natoms;i++){
-			p0rotated[i][0]=dinv[0][0]*p0reset[i][0]+
-							dinv[0][1]*p0reset[i][1]+
-							dinv[0][2]*p0reset[i][2];
-			p0rotated[i][1]=dinv[1][0]*p0reset[i][0]+
-							dinv[1][1]*p0reset[i][1]+
-							dinv[1][2]*p0reset[i][2];
-			p0rotated[i][2]=dinv[2][0]*p0reset[i][0]+
-							dinv[2][1]*p0reset[i][1]+
-							dinv[2][2]*p0reset[i][2];
-		}
+		for(i=0;i<natoms;i++) p0rotated[i]=matmul(dinv,p0reset[i]);
 		if(p1.size()!=diff0on1.size())diff0on1.resize(p1.size());
-		for(i=0;i<natoms;i++){
-			diff0on1[i][0]=p0rotated[i][0]-p1reset[i][0];
-			diff0on1[i][1]=p0rotated[i][1]-p1reset[i][1];
-			diff0on1[i][2]=p0rotated[i][2]-p1reset[i][2];
-		}
+		for(i=0;i<natoms;i++) diff0on1[i]=p0rotated[i]-p1reset[i];
 		if(verbose){
 			log.printf("P0-RESET AND INVERSE ROTATED\n");
 			for(i=0;i<natoms;i++){
@@ -766,13 +689,8 @@ double Kearsley::calculate(bool rmsd) {
 		double tmp=0.5/err;
 		for(ii=0;ii<alignmap.size();ii++){
 				i=alignmap[ii];
-				derrdp0[i][0]=derrdp0[i][0]*tmp;
-				derrdp0[i][1]=derrdp0[i][1]*tmp;
-				derrdp0[i][2]=derrdp0[i][2]*tmp;
-				derrdp1[i][0]=derrdp1[i][0]*tmp;
-				derrdp1[i][1]=derrdp1[i][1]*tmp;
-				derrdp1[i][2]=derrdp1[i][2]*tmp;
-
+				derrdp0[i]*=tmp;
+				derrdp1[i]*=tmp;
 		}
 
 	}
