@@ -109,6 +109,12 @@ public:
 /// Compute the modulo.
 /// Shortcut for sqrt(v.modulo2())
   double modulo()const;
+/// friend version of modulo2 (to simplify some syntax)
+  template<unsigned m>
+  friend double modulo2(const VectorGeneric<m>&);
+/// friend version of modulo (to simplify some syntax)
+  template<unsigned m>
+  friend double modulo(const VectorGeneric<m>&);
 };
 
 template<>
@@ -296,6 +302,17 @@ template<unsigned n>
 double VectorGeneric<n>::modulo()const{
   return sqrt(modulo2());
 }
+
+template<unsigned n>
+double modulo2(const VectorGeneric<n>&v){
+  return v.modulo2();
+}
+
+template<unsigned n>
+double modulo(const VectorGeneric<n>&v){
+  return v.modulo();
+}
+
 
 /// Alias for two dimensional vectors;
 typedef VectorGeneric<2> Vector2d;
