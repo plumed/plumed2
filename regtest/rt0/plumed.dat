@@ -1,3 +1,7 @@
+# !!!!!!!
+# THERE IS A BUG IN RMSD:
+# rmsd1 and rmsd2 should be almost equal, but they are not
+# !!!!!!!
 rmsd0:   RMSD TYPE=OPTIMAL REFERENCE=test0.pdb
 rmsds0:  RMSD TYPE=SIMPLE  REFERENCE=test0.pdb
 rmsd1:   RMSD TYPE=OPTIMAL REFERENCE=test1.pdb
