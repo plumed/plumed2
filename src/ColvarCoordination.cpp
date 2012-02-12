@@ -55,8 +55,8 @@ void ColvarCoordination::registerKeywords( Keywords& keys ){
   keys.addFlag("SERIAL",false,"perform the calcualtion of the coordination number in serial");
   keys.addFlag("PAIR",false,"Evaulate the switching functions for only the 1st element of the 1st group with the first element in the second group etc only");
   keys.addFlag("NLIST",false,"Use a neighbour list to speed up the calculation");
-  keys.add("input","GROUPA","The list of central atoms for which we are calculating our coordination numbers");
-  keys.add("input","GROUPB","The list of neighbourhood atoms for which we are using to calculate coordination numbers");
+  keys.add("atoms","GROUPA","The list of central atoms for which we are calculating our coordination numbers");
+  keys.add("atoms","GROUPB","The list of neighbourhood atoms for which we are using to calculate coordination numbers");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","12","The m parameter of the switching function ");
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");

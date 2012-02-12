@@ -14,20 +14,17 @@ namespace PLMD{
 class KeyType{
 friend class Keyword;
 private:
-  enum {compulsory,flag,optional,input,numbered,modifier,hidden} style;
+  enum {compulsory,flag,optional,atoms,numbered,nohtml,hidden} style;
 public:
   KeyType( const std::string& type );
   bool isCompulsory() const { return (style==compulsory); }
   bool isFlag() const { return (style==flag); }
   bool isOptional() const { return (style==optional); }
-  bool isInput() const { return (style==input); }
+  bool isAtomList() const { return (style==atoms); }
   bool isNumbered() const { return (style==numbered); }
-  bool isModifier() const { return (style==modifier); }
+  bool isNoHTML() const { return (style==nohtml); }
   bool isHidden() const { return (style==hidden); }
 };
-
-/// This function can be used to print out the keyword and its documentation in html
-//void print_html( Log& log, const std::string& key, const std::string& documentation );
 
 /// This class holds the keywords and their documentation
 class Keywords{

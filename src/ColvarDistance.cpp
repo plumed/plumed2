@@ -42,7 +42,7 @@ PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
 
 void ColvarDistance::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
-  keys.add("input","ATOMS","the pair of atom that we are calculating the distance between");
+  keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");  
 }
 

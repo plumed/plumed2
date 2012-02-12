@@ -47,7 +47,7 @@ PLUMED_REGISTER_ACTION(ColvarAngle,"ANGLE")
 
 void ColvarAngle::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords(keys);
-  keys.add("input","ATOMS","the list of atoms involved in this collective variable");
+  keys.add("atoms","ATOMS","the list of atoms involved in this collective variable");
 }
 
 ColvarAngle::ColvarAngle(const ActionOptions&ao):

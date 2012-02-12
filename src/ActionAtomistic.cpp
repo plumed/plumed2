@@ -56,7 +56,7 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
 
 void ActionAtomistic::calculateNumericalDerivatives(){
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  plumed_massert(a,"only Actions with a value can be derived");
+  plumed_massert(a,"only Actions with a value can be differentiated");
   const int nval=a->getNumberOfValues();
   const int natoms=getNatoms();
   std::vector<Vector> value(nval*natoms);
@@ -106,6 +106,7 @@ void ActionAtomistic::calculateNumericalDerivatives(){
 }
 
 void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber> &t){
+  plumed_massert( keywords.style(key,"atoms"), "keyword " + key + " should be registered as atoms");
   vector<string> strings;
   parseVector(key,strings);
   Tools::interpretRanges(strings);
@@ -141,6 +142,7 @@ void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber
 }
 
 bool ActionAtomistic::parseNumberedAtomList(const std::string&key,const unsigned& num, std::vector<AtomNumber> &t){
+  plumed_massert( keywords.style(key,"atoms"), "keyword " + key + " should be registered as atoms");
   vector<string> strings;
   if( !parseNumberedVector(key,num,strings) ) return false;
   Tools::interpretRanges(strings);

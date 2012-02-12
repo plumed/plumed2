@@ -234,16 +234,17 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
 
   // Check keyword has been registered
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
-  unsigned size=t.size();
+  unsigned size=t.size(); bool skipcheck=false;
+  if(size==0) skipcheck=true;
 
   // Now try to read the keyword
   bool found; std::string def; T val;
   found=Tools::parseVector(line,key,t);
 
   // Check vectors size is correct (not if this is atoms or ARG)
-  if( !keywords.style(key,"input") && found ){
-     bool skipcheck=false;
-     if( keywords.style(key,"compulsory") ){ keywords.getDefaultValue(key,def); skipcheck=(def=="nosize"); }
+  if( !keywords.style(key,"atoms") && found ){
+//     bool skipcheck=false;
+//     if( keywords.style(key,"compulsory") ){ keywords.getDefaultValue(key,def); skipcheck=(def=="nosize"); }
      if( !skipcheck && t.size()!=size ) error("vector read in for keyword " + key + " has the wrong size");
   }
 
@@ -267,13 +268,14 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
 template<class T>
 bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
-  plumed_massert( ( keywords.style(key,"numbered") || keywords.style(key,"input") ),"keyword " + key + " has not been registered so you can read in numbered versions");
+  plumed_massert( ( keywords.style(key,"numbered") || keywords.style(key,"atoms") ),"keyword " + key + " has not been registered so you can read in numbered versions");
 
-  unsigned size=t.size();
+  unsigned size=t.size(); bool skipcheck=false;
+  if(size==0) skipcheck=true;
   std::string num; Tools::convert(no,num);
   bool found=Tools::parseVector(line,key+num,t);
   if(  keywords.style(key,"numbered") ){
-    if (found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
+    if (!skipcheck && found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
   }
   return found;
 }

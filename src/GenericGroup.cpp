@@ -57,7 +57,7 @@ GenericGroup::GenericGroup(const ActionOptions&ao):
 void GenericGroup::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.add("input", "ATOMS", "the numerical indexes for the set of atoms in the group");
+  keys.add("atoms", "ATOMS", "the numerical indexes for the set of atoms in the group");
 }
 
 GenericGroup::~GenericGroup(){

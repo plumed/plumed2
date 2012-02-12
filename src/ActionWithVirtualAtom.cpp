@@ -9,7 +9,7 @@ namespace PLMD{
 void ActionWithVirtualAtom::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionAtomistic::registerKeywords(keys);
-  keys.add("input","ATOMS","the list of atoms which are involved the virtual atom's definition");
+  keys.add("atoms","ATOMS","the list of atoms which are involved the virtual atom's definition");
 }
 
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):

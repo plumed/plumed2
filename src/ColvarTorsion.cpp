@@ -47,10 +47,10 @@ PLUMED_REGISTER_ACTION(ColvarTorsion,"TORSION")
 
 void ColvarTorsion::registerKeywords(Keywords& keys){
    Colvar::registerKeywords( keys );
-   keys.add("input","ATOMS","the four atoms involved in the torsional angle");
-   keys.add("input","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTOR1 and VECTOR2 keywords."); 
-   keys.add("input","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
-   keys.add("input","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
+   keys.add("atoms","ATOMS","the four atoms involved in the torsional angle");
+   keys.add("atoms","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTOR1 and VECTOR2 keywords."); 
+   keys.add("atoms","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
+   keys.add("atoms","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
 }
 
 ColvarTorsion::ColvarTorsion(const ActionOptions&ao):

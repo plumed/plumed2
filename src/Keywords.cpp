@@ -9,12 +9,12 @@ KeyType::KeyType( const std::string& type ){
       style=flag;
   } else if( type=="optional" ){
       style=optional;
-  } else if( type=="input" ){
-      style=input;
+  } else if( type=="atoms" ){
+      style=atoms;
   } else if( type=="numbered" ){
       style=numbered;
-  } else if( type=="modifier" ){
-      style=modifier;
+  } else if( type=="nohtml" ){
+      style=nohtml;
   } else if( type=="hidden" ){
       style=hidden;
   } else {
@@ -31,11 +31,7 @@ void Keywords::add( const std::string t, const std::string k, const std::string 
 void Keywords::add( const std::string t, const std::string k, const std::string  def, const std::string d ){
   plumed_assert( !exists(k) ); plumed_assert( t=="compulsory" ); // An optional keyword can't have a default
   types.push_back( KeyType(t) ); keys.push_back(k); 
-  if( def=="nosize" ) {
-     documentation.push_back( d );
-  } else {
-     documentation.push_back( "( default=" + def + " ) " + d ); 
-  } 
+  documentation.push_back( "( default=" + def + " ) " + d ); 
   numdefs.insert( std::pair<std::string,std::string>(k,def) );
 } 
 
@@ -84,9 +80,9 @@ bool Keywords::style( const std::string k, const std::string t ) const {
         if( keys[i]==k ) return types[i].isOptional();
      }
      plumed_assert(false);
-  } else if( t=="input" ){
+  } else if( t=="atoms" ){
      for(unsigned i=0;i<keys.size();++i){
-        if( keys[i]==k ) return types[i].isInput();
+        if( keys[i]==k ) return types[i].isAtomList();
      }
      plumed_assert(false);
   } else if( t=="numbered" ){
@@ -94,9 +90,9 @@ bool Keywords::style( const std::string k, const std::string t ) const {
         if( keys[i]==k ) return types[i].isNumbered();
      }
      plumed_assert(false);
-  } else if( t=="modifier" ){
+  } else if( t=="nohtml" ){
      for(unsigned i=0;i<keys.size();++i){
-        if( keys[i]==k ) return types[i].isModifier();
+        if( keys[i]==k ) return types[i].isNoHTML();
      }
      plumed_assert(false);
   } else if( t=="hidden" ){
@@ -129,13 +125,13 @@ bool Keywords::exists( const std::string k ) const {
 void Keywords::print_html() const {
   unsigned nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isInput() ) nkeys++;
+     if ( types[i].isAtomList() ) nkeys++;
   }
   if( nkeys>0 ){
     std::cout<<"\\par Specifying the atoms involved\n\n";
     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
     for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isInput() ) print_html_item( i );
+        if ( types[i].isAtomList() ) print_html_item( i );
     }
     std::cout<<"</table>\n\n";
   }
@@ -190,11 +186,17 @@ void Keywords::print_html() const {
 }
 
 void Keywords::print( Log& log ) const {
-  log.printf( "The input for this keyword can be specified using one of the following \n\n");
-  for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isInput() ) log.printKeyword( keys[i], documentation[i] );
-  }
   unsigned nkeys=0;
+  for(unsigned i=0;i<keys.size();++i){
+     if ( types[i].isAtomList() ) nkeys++;
+  }
+  if (nkeys>0 ){
+     log.printf( "The input for this keyword can be specified using one of the following \n\n");
+     for(unsigned i=0;i<keys.size();++i){
+        if ( types[i].isAtomList() ) log.printKeyword( keys[i], documentation[i] );
+     }
+  }
+  nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
      if ( types[i].isCompulsory() ) nkeys++;
   }
@@ -227,11 +229,11 @@ void Keywords::print( Log& log ) const {
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isOptional() ) nkeys++;
+     if ( types[i].isOptional() || types[i].isNoHTML() ) nkeys++;
   }
   if( nkeys>0 ){
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isOptional() ) log.printKeyword( keys[i], documentation[i] );
+        if ( types[i].isOptional() || types[i].isNoHTML() ) log.printKeyword( keys[i], documentation[i] );
      }
      log.printf("\n");
   }
