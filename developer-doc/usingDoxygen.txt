@@ -1,32 +1,150 @@
 // This document is formatted for Doxygen
 /**
 
-\page usingDoxygen Using doxygen to create plumed documentation
+\page usingDoxygen Creating plumed documentation
 
-Plumed's documentation is created automatically from comments in the source code using the following packages:
+To create the plumed manual you should go to the <b> user-doc </b> directory and type <b> make </b>. 
+This command works because user documentation for all the PLMD::Action is inside the source code.  If
+you look at the documentation page for any of the actions that are implemented in plumed you will
+see that it is composed of three pars:
+
+- A short introduction which describes what the method does.
+- A description of the various keywords for the calculation.
+- An example/some examples of how the PLMD::Action can be used.
+
+Furthermore, you will also have noticed that if you make an error in the input for any PLMD::Action the 
+descriptions of all the keywords from the manual appears in the log file.  This is possible because manual
+pages for PLMD::Action are inside the code and because the manual is created using the 
+following packages:
 
 - Doxygen:   http://www.doxygen.org
 - Graphviz:  http://www.graphviz.org/ 
 
-To create documentation you need only type it in the top part of your cpp source code files.  
+In addition a special class, PLMD::Keywords, is used to store the descriptions of the syntax for any given
+action so that this data can be produced in the output when the user makes a mistake in input.  In the following
+a step-by-step explanaition as to how to use the documentation prodcuing functionality of plumed is provided.  When
+you have finished creating your new documentation they should be incorporated automatically in the manul the next 
+time you make the manual.  Furthermore, a number of checks of your manual are performed when you make the manual
+so any errors should be straightforward to find. 
 
-\section sampleInput Creating sample input
+\section registerkeys Registering Keywords
 
-You can create sample input by typing:
+When you implement any new PLMD::Action in plumed you must first create the documentation for the keywords that you
+will use to read the input for your new method.  In fact you cannot read in undocumented keywords using plumed.  The
+documentation for keywords is created in a static method of the action called registerKeywords.  This method
+should be declared in the definition of the class as follows:
 
 \verbatim
+static void registerKeywords(Keywords& keys);
+\endverbatim
+
+The static atribute allows one to use the registerKeywords routine when no instances of the class have been created.
+This is essential as keywordRegistration in plumed is done before the list of PLMD::Action is created.  This means
+that when the keywords are created plumed has no understanding of the hierachy of inherited Actions.  Hence, before
+adding your own Keywords you must ensure that the keywords for the class from which your new class inherits have been
+added.  In pracise this is done by calling PLMD::Colvar::registerKeywords, PLMD::Function::registerKeywords or 
+PLMD::Bias::registerKeywords for a new PLMD::Colvar, PLMD::Function or PLMD::Bias respectively.  To be clear these
+functions will ensure that generic keywords such as LABEL, NUMERICAL_DERIVATIVES or ARG are registered and explained in the
+manual.  If your method requires the derivatives of some value and you have no way of implementing the analytical derivatives
+you should also call PLMD::ActionWithValue::noAnalyticalDerivatives.  This routine will ensure that plumed's numerical
+derivatives routines are used to calculation your derivatives automatically and will ensure that a message is put in the plumed
+manual so that other users are aware that numerical derivatives are being used. 
+
+Once you have called the reigsterKeywords routine for the PLMD::Action above yours in the hierachy you can begin to add
+the keywords for your new method.  These keywords will have one of 5 attributes:
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr>
+<td width=5%%> <b> compulsory </b> </td> <td> These are the quantities that must be defined in order to perform your action </td> 
+</tr> <tr>
+<td> <b> optional </b> </td> <td> If there is some alternate way of performing your calculation that requires numerical input you should declare your keyword as optional </td>
+</tr> <tr>
+<td> <b> flag </b> </td> <td> This is used to declare keywords such as NOPBC that tell plumed to turn on/off some feature of the calculation </td>
+</tr> <tr>
+<td> <b> atoms </b> </td> <td> If you are reading a list of atoms after the keyword then you should use this keyword </td>
+</tr> <tr>
+<td> <b> numbered </b> </td> <td> If you need to read in a list of similar keywords such as keyword0, keyword1, keyword2... then you must use this option  </td>
+</tr> <tr>
+<td> <b> nohtml </b> </td> <td> Specifies that the manual information should only appear in the log file on a crash and not in the html version manual.  This is used for when there is a special methods for generating the documentation for the keyword in the manual. </td>
+</tr>
+</table>
+
+All keywords (other than flags) are added using the add method of PLMD::Keywords.  This command has the following syntax:
+
 \verbatim
-EXAMPLE - AN EXAMPLE INPUT LINE
-\ endverbatim  /*** But with no space between the \ and the endverbatim
+keys.add( attribute, keyword, explanation );
 \endverbatim
 
-which will put the following into the manual:
+where <i> attribute </i> is one of the options from the above table, <i> keyword </i> is the word that appears on the input line and <i> explanation </i> is an explantion
+of what the keyword does.  If your keyword is compulsory it can also be added using:
 
-\verbatim 
-EXAMPLE - AN EXAMPLE INPUT LINE
+\verbatim
+keys.add( attribute, keyword, default, explanation );
 \endverbatim
 
-\section formula Creating latex formulae
+where <i> default </i> is a string containing the default value to use for the quantity.
+
+Flags are added using the add flag method, this has syntax:
+
+\verbatim
+keys.addFlag( keyword, default, explantion );   
+\endverbatim
+
+where default is a bool that tells plumed if by default this option is/is not in use.  
+
+\section reading Reading the input keywords
+
+Keywords are read in using either PLMD::Action::parse, PLMD::Action::parseVector, PLMD::Action::parseNumberedVector or PLMD::Action::parseFlag.  
+These routines will use the information provided during keyword registration to check the sanity of any input.  For instance if you declare a 
+compulsory keyword and do not specify a default value then the code will automatically complain if the particular keyword is missing from input.  
+In addition, if the vector you pass to PLMD::Action::parseVector and PLMD::Action::parseNumberedVector has a
+size greater than 0 plumed will assume that the input should contain a vector of this size and will complain if it finds a different sized vector.
+
+\section errors Generating errors
+
+You may need to check for other mistakes in input.  When you find these mistakes you can report them to users using PLMD::Action::error.  This routine will 
+output a description of how the input to your Action should appear.  It takes as input a string that describes the particular nature of the error that the user has made.
+
+\section manual Creating the rest of the manual
+
+The remainder of the manual - the detailed description of your action and some examples of how the PLMD::Action can be used - is created 
+from the comments at the top of the cpp file that contains the various subroutines that your PLMD::Action performs.  This is converted
+to manual using Doxygen as this allows one to incorporate equations, bibliographic information and bits and pieces of HTML.  At the
+start of the block of manual information the following lines should appear:
+
+\verbatim
+//+PLUMEDOC TYPE ACTIONNAME 
+/*
+\endverbatim
+
+ACTIONAME is the first word that appears on the input line - i.e. it is the command that a user would use in input in order to make
+use of your particular PLMD::Action.  TYPE, meanwhile, tells Doxygen where in the manual the Docuementation should be placed.  TYPE
+should be one of the following:
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr> 
+<td width=5%%> <b> COLVAR </b> </td> <td> This is used if your PLMD::Action is the calculation of a CV </td>
+</tr> <tr>
+<td width=5%%> <b> FUNCTION </b> </td> <td> This is used if your PLMD::Action calculates some Function of a set of CVs </td>
+</tr> <tr>
+<td width=5%%> <b> VATOM </b> </td> <td> This is used if your PLMD::Action calculates the position of a new atom e.g. for COM </td>
+</tr> <tr>
+<td width=5%%> <b> ANALYSIS </b> </td> <td> This is used if your PLMD::Action does some analysis of the trajectory </td>
+</tr> <tr>
+<td width=5%%> <b> BIAS </b> </td> <td> This is used if your PLMD::Action is a bias that adds supplemental forces to the potential in order to enhance sampling </td>
+</tr> <tr>
+<td width=5%%> <b> TOPOLOGY </b> </td> <td> This is used if your PLMD::Action defines a molecular topology that makes reading in atoms more straighforward </td>
+</tr> <tr>
+<td width=5%%> <b> GENERIC </b> </td> <td> This should be used if you want to specify manually where in the manual your documentation should appear.  If you feel this really is the correct way to incorporate your new feature please contact the core developers so as to discuss it. </td>
+</tr> 
+</table>
+
+Immediately after the start comment symbol you should place a single line that describes in a sentence or two what it is your PLMD::Action does.  This information will
+appear beside the link to your more detailed manual page in the general pages of the user manual.  The code will use everything up to the first blank
+line in input to create this brief description.  You can then write a longer description of your PLMD::Action to appear at the start of its
+particular page in the manual.  As described below this description can incorporate equations and bibliographic information.
+
+\par Creating latex formulae
 
 You can add formulae in latex using:
 
@@ -60,7 +178,7 @@ And this is an equation array:
  g &=& \frac{2}{3}
 \f} 
 
-\section lists Creating lists
+\par Creating lists
 
 You can create lists of data using: 
 
@@ -74,22 +192,65 @@ which becomes:
 - First item in list
 - Second item in list
 
-\section formatting Formatting your documentation
+\par Formatting your documentation
 
 You can create a new section in your documentation using:
 
 \verbatim
-\section formula Creating latex formulae
+\section manual Creating the rest of the manual
 \endverbatim
 
-In fact I used this very command earlier in writing this page.  I can therefore reference it here (\ref formula) by using:
+In fact I used this very command earlier in writing this page.  I can therefore reference it here (\ref manual) by using:
 
 \verbatim
-\ref formula
+\ref manual 
 \endverbatim
 
-I can also reference external webpages by typing web addresses directly in my documentation.
+You can also reference external webpages by typing web addresses directly in the documentation.
 
+\par Adding citations
 
+You can create citations using:
+
+\verbatim
+\cite bibtex-tag
+\endverbatim
+
+This command uses an interface between Doxygen and bibtex to create bibliographic data.  Inside
+the user-doc directory you will find a bibtex file called bibliography.bib that contains all
+the references that are included in the user documentation for plumed.  To add your reference
+you should add bibliographic data for the article you want to cite in this file.
+
+\par Creating some examples
+
+Your manual entry <b>must</b> contain some examples as to how your PLMD::Action.  These should be included as follows:
+
+\verbatim
+\par Examples
+
+The following input tells plumed to print the distance between atoms 3 and 5,
+the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
+\verbatim
+DISTANCE ATOMS=3,5             LABEL=d1
+DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
+PRINT ARG=d1,d2,d2.x
+\ endverbatim  /*** But with no space between the \ and the endverbatim
+\endverbatim 
+
+In the manual this will be converted to:
+
+\par Examples
+
+The following input tells plumed to print the distance between atoms 3 and 5,
+the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
+\verbatim
+DISTANCE ATOMS=3,5             LABEL=d1
+DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
+PRINT ARG=d1,d2,d2.x
+\endverbatim
+
+Please be aware of the blank line between after the title of the paragraph.  If this line is not present your manual will look ugly.  
+Also be aware that your Examples section <b> must </b> be called Examples and not Example because of a perculiarity in the 
+script that generates the manual.
 
 */

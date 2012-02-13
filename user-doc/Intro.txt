@@ -144,7 +144,7 @@ RESTRAINTG ARG=dist
 \endverbatim
 
 However, when you do this it is important to recognise that INCLUDE is a real directive that is only resolved
-after all the \ref Comments have been stripped and the \ContinuationLines have been unrolled.  This means it
+after all the \ref comments have been stripped and the \ref ContinuationLines have been unrolled.  This means it
 is not possible to do things like:
 
 \verbatim
