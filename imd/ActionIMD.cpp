@@ -59,6 +59,7 @@ class IMD :
   void receive();
   void sendCoordinates();
 public:
+  static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();
   IMD(const ActionOptions&);
@@ -66,6 +67,15 @@ public:
 };
 
 PLUMED_REGISTER_ACTION(IMD,"IMD")
+
+void IMD::registerKeywords( Keywords& keys ){
+  keys.addFlag("WAIT",false,"");
+  keys.addFlag("NOWAIT",true,"");
+  keys.addFlag("WRAP",false,"");
+  keys.add("compulsory","HOST","");
+  keys.add("compulsory","PORT","");
+  keys.add("compulsory","FSCALE","1.0","");
+}
 
 IMD::IMD(const ActionOptions& ao):
   Action(ao),
