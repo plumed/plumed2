@@ -96,7 +96,7 @@ void ColvarRMSD::calculate(){
   setValue(r);
   for(unsigned i=0;i<derivs.size();i++) setAtomsDerivatives(i,derivs[i]);
   Tensor virial;
-  for(unsigned i=0;i<derivs.size();i++) virial=virial+(-1.0*Tensor(getPositions(i),derivs[i]));
+  for(unsigned i=0;i<derivs.size();i++) virial=virial+(-1.0*Tensor(getPosition(i),derivs[i]));
   setBoxDerivatives(virial);
 }
 

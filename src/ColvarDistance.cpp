@@ -90,9 +90,9 @@ void ColvarDistance::calculate(){
 
   Vector distance;
   if(pbc){
-    distance=pbcDistance(getPositions(0),getPositions(1));
+    distance=pbcDistance(getPosition(0),getPosition(1));
   } else {
-    distance=delta(getPositions(0),getPositions(1));
+    distance=delta(getPosition(0),getPosition(1));
   }
   const double value=distance.modulo();
   const double invvalue=1.0/value;

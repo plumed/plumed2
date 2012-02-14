@@ -17,7 +17,11 @@ class Colvar :
 protected:
   bool isEnergy;
   void requestAtoms(const std::vector<AtomNumber> & a);
-// These are so as to map to 3d vectors for atoms:
+// Set the derivatives for a particular atom equal to the input Vector
+// This routine is called setAtomsDerivatives because not because you
+// are setting the derivative of many atoms but because you are setting
+// the derivatives of a particular atom.  The s is an apostrophe s 
+// but you can't put apostrophes in function names
   void           setAtomsDerivatives(int,const Vector&);
   void           setAtomsDerivatives(Value*,int,const Vector&);
   void           setBoxDerivatives(const Tensor&);

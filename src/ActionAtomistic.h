@@ -37,7 +37,7 @@ protected:
 /// LISTS OF ATOMS
   void requestAtoms(const std::vector<AtomNumber> & a);
 /// Get position of i-th atom
-  const Vector & getPositions(int)const;
+  const Vector & getPosition(int)const;
 /// Get position of i-th atom
   const Tensor & getBox()const;
 /// Get the array of all positions
@@ -87,7 +87,7 @@ public:
 };
 
 inline
-const Vector & ActionAtomistic::getPositions(int i)const{
+const Vector & ActionAtomistic::getPosition(int i)const{
   return positions[i];
 }
 

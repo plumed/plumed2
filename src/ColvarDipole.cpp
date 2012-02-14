@@ -59,22 +59,24 @@ void ColvarDipole::calculate()
 {
  double dipole=0.;
  Tensor virial;
- vector<Vector> deriv;
+ vector<Vector> deriv(getNumberOfAtoms());
  Vector dipje;
 
- deriv.resize(getPositions().size());
+// deriv.resize(getPositions().size());
+// deriv.resize(getNumberOfAtoms());
  for(unsigned int i=0;i<ga_lista.size();i++) {
-   dipje += (getCharges(i))*getPositions(i);
+   dipje += (getCharges(i))*getPosition(i);
  }
  dipole = dipje.modulo();
 
  for(unsigned int i=0;i<ga_lista.size();i++) {
    double dfunc=getCharges(i)/dipole;
    deriv[i] = deriv[i] + (dfunc)*dipje;
-   virial=virial-Tensor(getPositions(i),deriv[i]);
+   virial=virial-Tensor(getPosition(i),deriv[i]);
  }
 
- for(unsigned i=0;i<getPositions().size();++i) setAtomsDerivatives(i,deriv[i]);
+// for(unsigned i=0;i<getPositions().size();++i) setAtomsDerivatives(i,deriv[i]);
+ for(unsigned i=0;i<getNumberOfAtoms();++i) setAtomsDerivatives(i,deriv[i]);
  setValue           (dipole);
  setBoxDerivatives  (virial);
 }

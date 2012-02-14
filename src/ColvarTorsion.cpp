@@ -105,13 +105,13 @@ void ColvarTorsion::calculate(){
 
   Vector d0,d1,d2;
   if(pbc){
-    d0=pbcDistance(getPositions(1),getPositions(0));
-    d1=pbcDistance(getPositions(3),getPositions(2));
-    d2=pbcDistance(getPositions(5),getPositions(4));
+    d0=pbcDistance(getPosition(1),getPosition(0));
+    d1=pbcDistance(getPosition(3),getPosition(2));
+    d2=pbcDistance(getPosition(5),getPosition(4));
   } else {
-    d0=delta(getPositions(1),getPositions(0));
-    d1=delta(getPositions(3),getPositions(2));
-    d2=delta(getPositions(5),getPositions(4));
+    d0=delta(getPosition(1),getPosition(0));
+    d1=delta(getPosition(3),getPosition(2));
+    d2=delta(getPosition(5),getPosition(4));
   }
   Vector dd0,dd1,dd2;
   Torsion t;

@@ -89,7 +89,7 @@ void GenericDumpAtoms::update(){
            );
   }
   for(unsigned i=0;i<getNumberOfAtoms();++i){
-    fprintf(fp,"X %f %f %f\n",getPositions(i)(0),getPositions(i)(1),getPositions(i)(2));
+    fprintf(fp,"X %f %f %f\n",getPosition(i)(0),getPosition(i)(1),getPosition(i)(2));
   }
 }
 

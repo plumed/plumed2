@@ -161,8 +161,8 @@ void ColvarCoordination::calculate()
 
  double ncoord=0.;
  Tensor virial;
- vector<Vector> deriv;
- deriv.resize(getPositions().size());
+ vector<Vector> deriv(getNumberOfAtoms());
+// deriv.resize(getPositions().size());
 
  if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
    nl->update(getPositions());
@@ -184,9 +184,9 @@ void ColvarCoordination::calculate()
   unsigned i0=nl->getClosePair(i).first;
   unsigned i1=nl->getClosePair(i).second;
   if(pbc){
-   distance=pbcDistance(getPositions(i0),getPositions(i1));
+   distance=pbcDistance(getPosition(i0),getPosition(i1));
   } else {
-   distance=delta(getPositions(i0),getPositions(i1));
+   distance=delta(getPosition(i0),getPosition(i1));
   }
 
   double dfunc=0.;

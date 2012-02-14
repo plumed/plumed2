@@ -85,11 +85,11 @@ void ColvarAngle::calculate(){
 
   Vector dij,dik;
   if(pbc){
-    dij=pbcDistance(getPositions(2),getPositions(3));
-    dik=pbcDistance(getPositions(1),getPositions(0));
+    dij=pbcDistance(getPosition(2),getPosition(3));
+    dik=pbcDistance(getPosition(1),getPosition(0));
   } else {
-    dij=delta(getPositions(2),getPositions(3));
-    dik=delta(getPositions(1),getPositions(0));
+    dij=delta(getPosition(2),getPosition(3));
+    dik=delta(getPosition(1),getPosition(0));
   }
   Vector ddij,ddik;
   Angle a;
