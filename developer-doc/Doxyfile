@@ -464,10 +464,11 @@ INPUT                  = ./Intro.txt \
                          ./freeTemplate.txt \
                          ./funcTemplate.txt \
                          ./mdTemplate.txt \
-                         ./plmdIntro.txt \
+                         ./plmdIntroPP.txt \
                          ./usingDoxygen.txt \
                          ./parsing.txt \
-                         ../src
+                         ./toolboxPP.txt \
+                         ./automatic
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

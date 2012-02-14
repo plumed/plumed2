@@ -1,4 +1,6 @@
 /html
 /latex
 /*.tmp
+/automatic
+/*PP.txt
 

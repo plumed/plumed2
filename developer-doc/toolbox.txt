@@ -1,0 +1,20 @@
+// This document is formatted for Doxygen
+/**
+
+\page toolbox Classes available in plumed
+
+The following classes can be incorporate all sorts of functionality in PLMD::Action objects.
+If you implement a new class that you think might be useful to others please add it to the 
+list below by including the following inside the header file.
+
+\verbatim
+//+DEVELDOC TOOLBOX myClassName
+/**
+A brief description of what your class does
+*/
+//+ENDDEVELDOC
+\endverbatim 
+
+@TOOLBOX@
+
+*/

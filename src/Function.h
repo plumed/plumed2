@@ -6,6 +6,12 @@
 
 namespace PLMD{
 
+//+DEVELDOC INHERIT Function
+/**
+Inherit from here if you are implementing a function of a set of CVs
+*/
+//+ENDDEVELDOC
+
 class Keywords;
 
 /// Action representing a function of other actions

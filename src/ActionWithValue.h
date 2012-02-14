@@ -8,6 +8,13 @@
 
 namespace PLMD{
 
+//+DEVELDOC MULTI-INHERIT ActionWithValue
+/**
+Used to create a PLMD::Action that has some scalar or vectorial output that may or may not have some derivatives.  
+This is used for PLMD::Bias, PLMD::Colvar and PLMD::Function 
+*/
+//+ENDDEVELDOC
+
 /// Action which can take one or more values.
 /// This object contains an array of PLMD::Value, one for each component.
 /// It also stores all the derivatives of these values wrt the parameters

@@ -5,6 +5,12 @@
 
 namespace PLMD{
 
+//+DEVELDOC MULTI-INHERIT ActionSetup
+/**
+Used to create a PLMD::Action that do something during setup only e.g. PLMD::SetupUnits
+*/
+//+ENDDEVELDOC
+
 /// Action executed only at startup
 class ActionSetup :
   public virtual Action {

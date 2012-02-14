@@ -9,6 +9,12 @@
 
 namespace PLMD{
 
+//+DEVELDOC INHERIT Bias
+/**
+Inherit from here if you are implementing a new form of simulation bias
+*/
+//+ENDDEVELDOC
+
 class Keywords;
 
 /// Action defining a bias which can act on other Action's

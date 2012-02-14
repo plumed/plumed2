@@ -7,6 +7,13 @@
 
 namespace PLMD{
 
+//+DEVELDOC MULTI-INHERIT ActionWithArguments
+/**
+This is used to create PLMD::Action objects that take the output from some other Action as input.  
+This is used in PLMD::Function and PLMD::Bias
+*/
+//+ENDDEVELDOC
+
 /// Action which takes other Action's as arguments.
 /// Arguments are objects of type PLMD::Value, and
 /// are addressed using the ARG= keyword on the directive line

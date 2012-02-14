@@ -2,7 +2,8 @@
 .PHONY: all clean
 
 all:
+	./extract
 	doxygen
 
 clean:
-	rm -fr html latex *~
+	rm -fr automatic html latex *~ *PP.txt

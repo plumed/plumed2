@@ -3,66 +3,284 @@
 
 \page ABriefIntroduction A brief introduction to the plumed core
 
-\section intro Introduction
+Plumed 2, unlike its predecessor plumed 1, which was written in plain C, is written in C++.  
+C++, unlike C, fortran and many of the other languages that are commonly used in the 
+atomistic simulation community, is an object oriented programming language.  As such the way things
+are done in plumed may feel unfamiliar to developers in the scientific community who,
+if our experience is anything to go by, are more used to programming in non-object
+oriented languages.  For this reason we have tried in what follows to explain how
+we have used the features of object oriented programming in plumed 2.  We
+hope that this guide is helpful and appologize in advance to any developers
+who feel patronized.     
 
-Every line in a plumed input file, regardless of whether it specifies that one is to calculate a colvar, a function of colvars or a bias, instructs plumed to create a PLMD::Actionobject.  Any call to plumed tells it perform all the actions defined in the plumed input file one after the other.  For programmers (like this author) unfamiliar with some of the more advanced features of C++ this may seem somewhat bizzare.  After all calculating a metadynamics bias is very different to calculating a collective coordinate.  This is possible however because plumed classes inherit variables and methods from each other.  This means that we can write a PLMD::Bias, PLMD::Colvar or PLMD::Function class in which we can call all the methods and variables in PLMD::Action as if they were inside the PLMD::Bias, PLMD::Colvar or PLMD::Function.  Consequently, we can avoid duplication by placing all the functionality that is common to calculating biases and colvars in a single object (PLMD::Action), which we can inherit into the PLMD::Bias and PLMD::Colvar classes that contain all the functionality that is not common to the two things.  Furthermore, we can include virtual methods in the PLMD::Action class that we know our PLMD::Bias and PLMD::Colvar objects will perform but that we know will be performed differently by the two classes (for example we know that both will probably calculate something but that each will do this differently).  These two facts make it straightforward to write a plumed core, which just performs a series of actions, that can be modified and added to by other contributors later.  
+\section intro Object oriented programming
 
-\section free-energy Free energy methods in plumed
+The main objective in object oriented programming is to write code that is more 
+resilient to bugs.  There are two ways that object oriented programing allows
+us to acchieve these aims:
 
-Many of the free energy methods that are implemented in plumed are reliant on the definition of some collective coordinates.   A bias potential is then added on these collective coordinates, which then introduces new forces on to the underlying atoms.  Oftentimes however, one may not want to bias the collective coordinates directly.  Instead one might be interested in biasing a function of the collective coordinates, which adds a further layer of complexity. Therefore the mode of action for a free energy method is, in the most general case, as follows:
+- In object oriented programs one generally needs fewer lines of code
+- Object oriented programming allows us to use the compiler to do many more checks of the code 
 
-- Get the atomic positions, \f$x\f$.
-- Compute the collective coordinates from the positions, \f$s(x)\f$.
-- Compute functions \f$f[s(x)]\f$ of the collective coordinates from \f$s(x)\f$. 
-- Compute the bias \f$B| f[s(x)] |\f$, which is a function of \f$f[s(x)]\f$ and the derivative of the bias with respect to \f$f[s(x)]\f$, \f$\frac{\textrm{d}B}{\textrm{d}f}\f$.
-- Compute the derivative of the bias with respect to the collective coordinates, \f$\frac{\textrm{d}B}{\textrm{d}s} = \frac{\textrm{d}B}{\textrm{d}f} \frac{\textrm{d}f}{\textrm{d}s}\f$
-- Compute the derivative of the bias with respect to the atomic positions, \f$\frac{\textrm{d}b}{\textrm{d}x} = \frac{\textrm{d}B}{\textrm{d}f} \frac{\textrm{d}f}{\textrm{d}s} \frac{\textrm{d}s}{\textrm{d}x} \f$
-- Apply the resulting forces to the atoms of the system.
+To be clear though object oriented programming does not allow us to do things that 
+would be impossible with other programming languages.  All programs perform some set of 
+mathematical operations.  Any programming language can be used to implement these mathematical 
+operations.  The only advantage of C++ is that the advanced, object-oriented features of the 
+language make implementing things more straighforward. 
 
-From this mode of action we might therefore imagine that data flows through plumed as described below:
+As you are no doubt aware, in C one can create structures to order the variables in your code.  
+A naive way of thinking about the objects, or more correctly classes, that one uses in C++ is
+that these are structures that also contain functions.  This is useful for making neat header files
+as the parameters are kept near the functions.  However, at this level of thinking the C++ way 
+of doing things:
 
-- From the MD code pass the atom positions, \f$x\f$ to PLMD::Colvar, calculate colvars, \f$s(x)\f$ and derivatives \f$\frac{\textrm{d}s}{\textrm{d}x}\f$.
-- Pass \f$s(x)\f$ from PLMD::Colvar to PLMD::Function, calculate functions \f$f[s(x)]\f$ and derivatives \f$\frac{\textrm{d}f}{\textrm{d}s}\f$.
-- Pass \f$f[s(x)]\f$ from PLMD::Function to PLMD::Bias, calclate the bias \f$B| f[(x)] |\f$ and derivatives \f$\frac{\textrm{d}B}{\textrm{d}f}\f$.
-- Pass the derivative \f$\frac{\textrm{d}B}{\textrm{d}f}\f$ of the bias from PLMD::Bias to PLMD::Function and compute the derivative of the bias with repect to the cvs \f$\frac{\textrm{d}B}{\textrm{d}f} \frac{\textrm{d}f}{\textrm{d}s}\f$.
-- Pass the derivative \f$\frac{\textrm{d}B}{\textrm{d}f} \frac{\textrm{d}f}{\textrm{d}s}\f$ from PLMD::Function to PLMD::Colvar and compute the derivative of the bias with respect to the atomic coordinates \f$\frac{\textrm{d}B}{\textrm{d}f}\frac{\textrm{d}f}{\textrm{d}s}\frac{\textrm{d}s}{\textrm{d}x}\f$.
-- Pass the derivatives \f$\frac{\textrm{d}B}{\textrm{d}f}\frac{\textrm{d}f}{\textrm{d}s}\frac{\textrm{d}s}{\textrm{d}x}\f$ to the MD code and apply the forces.
+\verbatim
+class fclass {
+bool param0;
+int param1,param2;
+double param3;
+double f( double x );
+}; 
+\endverbatim
 
-This is roughly the way that plumed 1.0 operated.  Plumed 2.0 operates differently so that new CVs and free energy methods can be implemented more straightforwardly.  The work flow for plumed 2.0 is therefore:  
+is not much better than the C way of doing things:
 
-- Iterate over the list of PLMD::Action objects, establish whether any contain PLMD::ActionPilot objects.  
-- For the PLMD::ActionPilot objects check if we are supposed to perform an action at this particular MD step.  If it is activate the action.
-- When any object is activated it automatically activates all objects that it depends on (for example before computing the bias in metadynamics we must compute the collective variables). The list of dependence is built based on the arguments of each objects as specified in the ARG keyword, which are stored in the PLMD::ActionWithArguments class (i.e. when peforming metadynamics one must make sure that all the collective coordinates on which the bias depends are calculated first).
-- Iterate over the list of all the active PLMD::Action objects calculating all values and derivatives and store them inside PLMD::ActionWithValue objects (N.B. a PLMD::ActionWithValue holds a vector of PLMD::Value objects), following the same order in which they are introduced in the input file. This is done by calling the virtual method PLMD::Action::apply().
-- As already mentioned the dependencies of PLMD::Function and PLMD::Bias objects on the PLMD::Colvar objects are given by the properties of the PLMD::ActionWithArguments class.  The reason for this apparently-arbitrary, additional layer of complexity being that PLMD::Bias objects can depend on both PLMD::Function objects and PLMD::Colvar objects.  PLMD::ActionWithArguments is a list of PLMD::Values.  It is used to tell a PLMD::Action that it must wait for data to be loaded in the set of listed PLMD::Value (by other PLMD::Actions) prior to calculating the particlar PLMD::Action.  In practise this means that the order for the directives in the input matters in plumed 2 as the various PLMD::Actions are always passed through in the order they are read in from input.  
-- By this stage we have computed \f$s(x)\f$, \f$f[s(x)]\f$, \f$B| f[s(x)] |\f$, \f$\frac{\textrm{d}B}{\textrm{d}f}\f$, \f$\frac{\textrm{d}f}{\textrm{d}s}\f$ and \f$\frac{\textrm{d}s}{\textrm{d}x}\f$.  This data has all been stored inside PLMD::Value objects.  In other words, unlike in the previously described workflows, the data is stored in a manner that does not descriminate between the results from calculations in PLMD::Colvar, PLMD::Function and PLMD::Bias.  Instead, all the data is stored in equivalent PLMD::Value objects. Plumed understands that one cannot compute \f$f[s(x)]\f$ or \f$B| f[s(x)] |\f$ without first computing \f$s(x)\f$ and \f$f[s(x)]\f$ as this information is stored inside the PLMD::ActionWithArguments objects.        
-- Next we apply the chain rule to calculate the derivative of the bias with respect to the atomic positions in three steps.   To this aim we just iterate over all the PLMD::Action objects in the reverse order and use the virtual method PLMD::Action::apply(), which behaves differently on bias, colvars, and functions.
-- For objects of type PLMD::Bias it passes \f$-\frac{\textrm{d}B}{\textrm{d}v}\f$ to the PLMD::Value objects listed in the PLMD::ActionWithArguments object.   
-- For object of type PLMD::Function it computes the forces on the argumetns. If there is a bias on any of these objects we will have passed information on \f$-\frac{\textrm{d}B}{\textrm{d}f}\f$ to the relevant PLMD::Value objects in this classes PLMD::ActionWithValue class.  Hence, we can calculate \f$-\frac{\textrm{d}B}{\textrm{d}s} = -\frac{\textrm{d}B}{\textrm{d}f}\frac{\textrm{d}f}{\textrm{d}s}\f$ and pass this information to the PLMD::Value objects listed in PLMD::ActionWithArguments.
-- For objects of type PLMD::Colvar it applies the forces to the atoms.  Once again if there is a bias (or a bias on a function of one of these values) \f$-\frac{\textrm{d}B}{\textrm{d}s}\f$ will have been passed to the relevant PLMD::Value class so that we can calculate \f$-\frac{\textrm{d}B}{\textrm{d}x} = -\frac{\textrm{d}B}{\textrm{d}f}\frac{\textrm{d}f}{\textrm{d}s}\frac{\textrm{d}s}{\textrm{d}s}\f$.  We now apply these forces to the atoms using the PLMD::ActionAtomistic class.
+\verbatim
+struct fparams {
+bool param0;
+int param1,param2;
+double param3;
+}; 
+double f( double x, struct fparams myparams ); 
+\endverbatim
 
-The above list describes the function of the majority of the classes in the plumed core.  In practise to add to plumed you do not need to understand the details of how each of these classes functions as you shouldn't need to touch them.  It is perhaps useful to understand what each one is doing however so that you can better understand the code structure.  
-\section parallel Multiple Replicas
+<b>
+Nevertheless for reasons that will hopefully become clear as you read this document every bias, 
+colvar and function that is implemented in plumed 2.0 is inside its own separate class.
+</b>
 
-Many free energy methods are reliant on running a number of parallel MD simulations.  From the point of view of implementation these algorithms can be broadly categorised thus:
+\section publicprivate Public and private members
 
-- Embarrasingly parallel algorithms such as umbrella sampling that require no communication between simulations.
-- Simulations with time dependent biases, which are sped up by collecting the time dependent bias on a number of nodes simultaneously.  An example of this sort is multiple walkers metadynamics.
-- Replica exchange simulations in which different parameters are used for simulations on different nodes and periodic attempts are made to exchange parameters between configurations on different nodes.
+The variables in a C struct can be accessed anywhere in the code.  Any function in the code
+can copy the information from a structure or change the values of the variables in the structure.  This
+was a particularly fun feature of plumed 1.0 - a code in which every function could change any of the variables
+in the code!  Problems with this approach occurs when a new function accidentally changes the 
+value of some variable in a widely used structure that should never have been changed.  As one can imagine this can cause 
+drastic problems in other areas of the code.  To prevent errors like this C++ provides a set of functionalities to 
+allow one to specify what any given function can do to the members of a class.  This is not possible in 
+C and it was the ability to use this functionality to create flexible, easily-extendable code that motivated
+our choice of C++ for plumed 2.  The example class below shows how this is done in practise:
 
-The first of these types of simulations is trivial to implement in plumed as all the "communication" between nodes is done in post processing and thus nothing needs to be added to plumed.  Similarly the second relies little work in the plumed core as generally the objects being communicated are highly method development.  For developers implementing these sorts of methods we recommend looking into the implemation of multiple walkers metadynamics.  In this method the hills are passed between nodes and in plumed this is done by writing and reading files.
+\section constructors Constructors
 
-The third method in the above list is the most involved in terms of implementation.  The first complication for implementing these sorts of methods in plumed is that different algorithms implement them differently.  For instance, during a swapping event gromacs exchanges the configuration information on the two nodes.  This makes the bussiness of the plumed core trivial as in the next call to plumed the swap of configurations will mean that a different configuration will be received.  Hence, one needs only to sort the accept/reject move in the method of interest.  That is to say gromacs looks after all the communication between replicas.
+As someone who learnt to program in fortran it was this aspect of C++, more than any other, that confused me 
+the most.  In actually though it is rather simple and I don't really know why I was confused.  In essence every 
+class must contain some method for creating it.  This class should set the initial values of all the variables
+inside the class.  Obviously the functions (or more correctly methods) that the class
+contains cannot be used untill an instance of the class has been created using the constructor. 
 
-Many other codes implement replica exchange by exchanging the parameters between nodes while keeping the configurations on a the nodes fixed.  From the point of view of plumed this means that we must exchange the bias between the different nodes during an exchange step.  In other words we must swap the list PLMD::Actions between the two nodes taking care to preserve the history dependent part on the new node.  The functionality to do this passing is inside PLMD::SomeClassOrOther and is done by passing information in files.  From the point of view of someone implementing some new biassing functionality this means that one is forced by the inheritence to write a routine called ??? that tells plumed how to pass any time dependent parts of the bias between nodes.  
+An example of how all this works in practise is given below:
 
-\section restart Restarting
+\verbatim
+class myclass{
+private:
+  bool b;
+  int i;
+  double d;
+public:
+  myclass( bool bb, int ii, double dd ) : b(bb), i(ii), d(dd) {}
+  static double g(int j);
+  double f( double x );
+};
 
-Plumed 2.0, unlike plumed 1.0, contains functionality to perform a restart of a previous simulation.  If we are allowed to be philosophical for a moment we can think of a restart as simply an exchange of information between two nodes in which there is a long time delay between the sending of the data and the receiving of it.  Hence, to prevent code from being replicated and because all the replica exchange bussiness is done through files, all the checkpointing in plumed is done using the functionality described in the previous section.  
+// Here there are currently no instances of myclass and so I cannot run f
+// I can run g however as it is a static member of the class - I run it using
+double d=myclass::g(j);
+
+// Create an instance of the class using the constructor
+myclass thisIsTheInstance(false, 3, 6.5);
+// Run the method called f 
+double s=thisIsTheInstance.f(4.0); 
+\endverbatim         
+
+<b>
+In plumed 2.0 all the lines in the input file are read in inside the constructors.  This ensures
+that the parameters inside any given method are set correctly from the outset.
+</b> 
+
+\section operators Operators
+
+Addition, subtraction, multiplication, division and so on are all functions (they are obviously
+not variables).  We usually don't think of them as functions however because we use 
+these operations all the time.  C++ recognizes that the short cuts of +, -, *, / and so on
+ are very useful.  It thus allows one to define operators in our new classes that explain
+to the compiler what a given symbol means for a given class.  Among other things we can define:
+
+- How to perform the logical operators !=, ==, etc
+- How to perform arithmatic for a class: +, -, /, *, +=, -= etc
+- What brackets mean i.e. the meanings of (), [] 
+
+We do not use this extensively in plumed 2.0 but it does occasionally appear.
+
+\section inclusion Including the functionality of one class in a new class 1: Inclusion
+
+There are various ways that one can include the functionality of one class inside a second class.
+By far the simplest is to create an instance of class 1 inside class 2 as shown below:
+
+\verbatim
+class class1 {
+private:
+  double d1,d2,d3;
+public:
+  class1();
+  void f(double x);
+};
+
+class class2 {
+private:
+  class1 myclass;
+public:
+  class2();
+  // The methods of class 2 here
+};
+\endverbatim
+
+This is really simple one includes a class in this way in exactly the same way that one includes a 
+double, int or whatever variable.
+
+<b>
+This kind of inclusion is used extensively in plumed 1.0 and there are a huge number of classes that you
+can re-use in this way to create new colvars, functions or biases.  For a full list of the classes that are 
+available see \subpage toolbox.
+</b>
+
+\section inheritance Including the functionality of one class in a second class 2: Inheritance
+
+There is an alternate way of reusing the functionality from one class in a second class that is available
+in C++.  This method is called inheritance and it offers some advantages over simply including class A
+inside class B as described above.  To create a class called B that inherits from A one writes:
+
+\verbatim
+class B : public A {
+// Contents of class B
+};  
+\endverbatim
+
+One advantage of this method over inclusion is that I can use protected members to more closely control
+what members of A class B is allowed to access.  Hence, rather than simply having private and public members
+I now have:
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr>
+<td> <b> public </b> </td> <td> These members can be accessed by anyone </td>
+</tr> <tr> 
+<td> <b> protected </b> </td> <td> These members can only be accessed by the methods of class A and class B </td>
+</tr> <tr>
+<td> <b> private </b> </td> <td> These members can only by accessed by the methods of class A (not by class B) </td>
+</tr>
+</table>
+
+In addition, I can use inheritance to treat pointers to objects of class B as if they were pointers to objects of 
+class A.  In other words, if I create an object of type B I can convert it to an object of type A using dynamic_cast
+as shown below:
+
+\verbatim
+B* mynewB=new B();   // This is a special way of calling the constructor so you get a pointer
+A* BpretendingToBeA=dynamic_cast<A*>(mynewB); 
+\endverbatim
+
+All the colvars and free energy methods of plumed use inheritence.  In fact all these methods are 
+built on a single base class called PLMD::Action.  This class contains all the functionality for
+reading stuff from input, the stuff for controlling the dependencies Actions and a set of controls
+that decide which actions are performed when.  All the functionality for the different methods is
+then built on this root.  As you can see (PLMD::Action) the inheritence tree for the code is 
+quite complicated.  However, in practise your new class will in all probability inherit from one
+of the following classes:
+
+@INHERIT@ 
+
+\section minheritance Including the functionality of one class in a second class 3: Multiple inheritance
+
+Immediately above the PLMD::Action root of the inheritance tree in plumed there is a very complicated looking
+layer in the inheritance structure of the code.  This layer looks ugly because in this layer
+we are using multiple inheritance - the classes in the layer above inherit from multiple classes simultaneously.
+This way of incorporating functionality from classes is unique to C++ and brings with it a special set of
+ difficulties in programming.  Its great advantage is though that one can 
+create classes that incorporate bring a set of particular attributes.  This will perhaps be most clear
+if we explain what each of the classes in the multiple inheritence layer does separately and how these
+functionalities are used in Colvars, Functions and Biases. 
+
+@MULTIINHERIT@
+
+Please be aware that, unless you are doing something really wacky, you should be able to implement whatever
+you need to implement without writing classes that take advantage of multiple inheritance.  Furthermore,
+you should not need to touch the classes in this region of the code.  The information here is there for
+completeness only.  If you feel you really must change something in this part of the code please contact the
+developers before doing anything.     
+
+\section static-poly Static Polymorphism
+
+Polymorhpism is a way of using the same code to do many different things.  As an example consider a 
+Matrix.  The elements of a Matrix can be ints, doubles, floats or even some fancy new class
+but we would still want the operator (i,j) to return the element in row i and column j.  That is to
+say the operator (const int i, const int j) of a matrix is indepedent of what is actually inside the
+matrix.  Using C++ we can use so called template classes to implement thse kinds of things and can then 
+re-use them to do an enormous variety of different operations.  To see how this works in practise take
+a look at PLMD::Matrix, which is a working version of our Matrix example.  Be aware that all the 
+routines in a template class must be inside the header file.  To use a template within the code
+you declare it as follows:
+
+\verbatim
+Matrix<double> mat;   // This is a matrix of doubles
+\endverbatim
+
+<b>
+The most common way we use this kind of functionality in plumed 2.0 is when we take advantage of the
+features that are available in the C++ standard library.  For more details on the standard library
+visit \ref http://www.cplusplus.com/reference/
+</b>  
+
+\section dynamic-poly Dynamic Polymorhpism
+
+When you run a calculation with plumed the code calculates a number of CVs.  The bias and the forces
+due to the bias are then calculated and in the final step these forces are propegated back onto the 
+atoms using the chain rule.  As we have pointed out in information on how to calculate the various CVs
+and biases are provided in the classes for the individual action.  For example PLMD::ColvarDistance
+contains the function that calculates a distance between atoms, while PLMD::BiasMeTaD contains
+the function for doing metadynamics.  What may thus seem remarkable to the programmer unfamiliar with
+C++ is that the class that calls the functions that calculate the CVs, biases and so on only uses 
+PLMD::Action.  To make that clear it looks like the code can calculate the distances between
+atoms without ever calling any of the routines from PLMD::ColvarDistance!      
+
+We can program in this way because we take advantage of dynamic polymorhpism.  If you look at the
+documenation for PLMD::Action you will see that the method PLMD::Action::calculate is declare inside
+PLMD::Action as:
+
+\verbatim
+virtual void calculate()=0;
+\endverbatim
+
+This kind of declaration promises two things to a class:
+
+- That the class will only ever be used in derived classes.  No PLMD::Action class is ever 
+constructed in the code. The functionality in PLMD::Action is only ever used in the derived classes 
+that inherit PLMD::Action.  Classes like PLMD::Action are called abstract base classes.
+- That in one of the classes that inherits PLMD::Action a method called calculate will be defined.
+
+The great advantage of declaring calculate() inside PLMD::Action in this way is that the calculate 
+routine that we declare in the derived class is a member of PLMD::Action.  We thus can thus write
+a class for doing all the bussiness of plumed in the manner described previously.
+
+\section conc Conclusion
+
+The above is meant to give you some feel as to how plumed works.  If there is stuff you do not
+understand it is not necessarily that important.  The great advantage of the code as it is currently
+written is that you can implement new methods without touching the core of the code.  So in conclusion
+give it a go and have fun!
 
 \section Notes Notes
 
-Information about C++
+More information about C++
 http://www.parashift.com/c++-faq-lite/
 
 */

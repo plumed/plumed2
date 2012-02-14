@@ -10,7 +10,9 @@ Plumed 2.0 is written in C++ and uses many of the advanced, object-oriented feat
 - \ref HowToAddAFunction
 - \ref HowToAddABias 
 
-For more curious contributors we provide a brief introduction to the internal structure of plumed here:
+When you do these tasks please use the library of functionalities that is described in \subpage toolbox.
+
+For more curious contributors we describe briefly how we make use of the various features of C++ here:
 
 \ref ABriefIntroduction 
 

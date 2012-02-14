@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# Create a directory to put all the files in
+rm -rf automatic
+mkdir automatic
+
+for file in ../src/*.cpp ; do
+    stripf=`echo $file | sed -e 's/..\/src\///g'`
+    ofile=`echo automatic/$stripf`
+    echo $ofile
+    cat $file | 
+       awk -v output=$ofile -v inside=0 '{
+           if(inside==2 && NF==0){
+              inside=1
+              if(lowercase==0){
+                 printf("%s","///To view the user manual <a href=\"../../user-doc/html/") >> output
+                       for(i=1;i<=n;i++){ printf("_%s", actionarray[i]) >> output }
+                       print ".html\"> click here </a>." >> output
+              } else {
+                 printf("%s","///To view the user manual <a href=\"../../user-doc/html/") >> output 
+                       printf("%s",action) >> output
+                       print ".html\"> click here </a>." >> output
+              }
+          }
+           if(inside==2 && $1!="/**" && $1!="*/" && $1!="//+ENDPLUMEDOC"){
+              print "///" $0 >> output
+           }
+           if($1=="//+PLUMEDOC"){
+              inside=2
+              action=tolower($3)
+              firstchar=substr($3, 1, 1 )
+              n=split(action,actionarray,"");
+              lowercase=0
+              if( firstchar==actionarray[1] ) lowercase=1 
+           }
+           if(inside==0){
+              print $0 >> output 
+           }
+           if($1=="//+ENDPLUMEDOC" && inside==1){
+              inside=0
+           }
+           if($1=="//+ENDPLUMEDOC" && inside==2){
+              inside=0
+              if(lowercase==0){
+                 printf("%s","///To view the more detailed manual <a href=\"../../user-doc/html/") >> output
+                       for(i=1;i<=n;i++){ printf("_%s", actionarray[i]) >> output }
+                       print ".html\"> click here </a>." >> output
+              } else {
+                 printf("%s","///To view the more detailed manual <a href=\"../../user-doc/html/") >> output 
+                       printf("%s",action) >> output
+                       print ".html\"> click here </a>." >> output
+              }
+           }
+       }'
+done 
+
+for file in ../src/*.h ; do
+    stripf=`echo $file | sed -e 's/..\/src\///g'`    
+    ofile=`echo automatic/$stripf`   
+    echo $ofile
+    cat $file | awk -v output=$ofile -v inside=0 '{
+           if($1=="//+ENDDEVELDOC" && inside==1){
+              inside=0
+              print "</td> </tr>" >> lfile
+           }
+           if(inside==1 && $1!="/**" && $1!="*/"){
+              print $0 >> lfile
+           }
+           if($1=="//+DEVELDOC"){
+              inside=1
+              lfile="automatic/"$2".list"
+              print "<tr> <td width=10%%> PLMD::"$3 "</td> <td>" >> lfile
+           }
+           if(inside==0 && $1!="//+ENDDEVELDOC"){
+              print $0 >> output 
+           }
+    }'
+done
+
+for file in toolbox plmdIntro ; do
+
+cat $file.txt | 
+    {
+ while read -r LINE ;
+  do
+    if [ "$LINE" = "@TOOLBOX@" ]
+    then
+      echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+      cat automatic/TOOLBOX.list
+      echo "</table>"
+    elif [ "$LINE" = "@MULTIINHERIT@" ]
+    then
+      echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+      cat automatic/MULTI-INHERIT.list
+      echo "</table>"
+    elif [ "$LINE" = "@INHERIT@" ]
+    then
+      echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+      cat automatic/INHERIT.list
+      echo "</table>"
+    else
+        echo -E "$LINE"
+    fi
+  done
+  } > ${file}PP.txt
+
+done
