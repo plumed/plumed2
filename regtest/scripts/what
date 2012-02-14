@@ -1,32 +1,15 @@
 #!/bin/bash
 
-naction=0
-for file in $(plumed info --root)/src/*.cpp ; do
-  nreg=`grep "PLUMED_REGISTER_ACTION" $file | wc -l | awk '{print $1}'`
-  if [ $nreg -gt 0 ] ; then
-     naction=$(($naction+1))
-     action[$naction]=`grep "PLUMED_REGISTER_ACTION" $file | sed -e 's/,/ /g' | sed -e 's/(/ /g' | sed -e 's/)/ /g' | awk '{print $3}' | sed -e 's/\([\"]\)//g' `
+for action in $(
+  cat $(plumed info --root)/src/*.cpp |  grep PLUMED_REGISTER_ACTION |
+  sed -e 's/,/ /g
+          s/(/ /g
+          s/)/ /g' | awk '{print $3}' | sed -e 's/\([\"]\)//g'
+)
+do
+  if  ! grep -q $action $(plumed info --root)/regtest/rt*/plumed.dat
+  then
+    echo "WARNING : There are no regtests for action $action"
   fi
 done
 
-for((i=1;i<=naction;i++)) ; do
-  found[$i]=0
-done
-
-for file in $(plumed info --root)/regtest/rt*/plumed.dat ; do
-
-  for((i=1;i<=naction;i++)) ; do
-      searchcommand=`echo grep ${action[$i]} $file`
-      ntimes=`$searchcommand | wc -l | awk '{print $1}'`
-      if [ $ntimes -gt 0 ] ; then
-         found[$i]=1
-      fi
-  done
-  
-done
-
-for((i=1;i<=naction;i++)) ; do
-    if [ ${found[$i]} -eq 0 ] ; then
-       echo WARNING : There are no regtests for action ${action[$i]}
-    fi
-done
