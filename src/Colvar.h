@@ -42,15 +42,16 @@ void Colvar::setAtomsDerivatives(Value*v,int i,const Vector&d){
 
 inline
 void Colvar::setBoxDerivatives(Value* v,const Tensor&d){
-  v->setDerivatives(3*getNatoms()+0,d(0,0));
-  v->setDerivatives(3*getNatoms()+1,d(0,1));
-  v->setDerivatives(3*getNatoms()+2,d(0,2));
-  v->setDerivatives(3*getNatoms()+3,d(1,0));
-  v->setDerivatives(3*getNatoms()+4,d(1,1));
-  v->setDerivatives(3*getNatoms()+5,d(1,2));
-  v->setDerivatives(3*getNatoms()+6,d(2,0));
-  v->setDerivatives(3*getNatoms()+7,d(2,1));
-  v->setDerivatives(3*getNatoms()+8,d(2,2));
+  unsigned nat=getNumberOfAtoms();
+  v->setDerivatives(3*nat+0,d(0,0));
+  v->setDerivatives(3*nat+1,d(0,1));
+  v->setDerivatives(3*nat+2,d(0,2));
+  v->setDerivatives(3*nat+3,d(1,0));
+  v->setDerivatives(3*nat+4,d(1,1));
+  v->setDerivatives(3*nat+5,d(1,2));
+  v->setDerivatives(3*nat+6,d(2,0));
+  v->setDerivatives(3*nat+7,d(2,1));
+  v->setDerivatives(3*nat+8,d(2,2));
 }
 
 inline

@@ -82,9 +82,9 @@ PLUMED_COLVAR_INIT(ao),rmsd(log)
 
   requestAtoms(pdb.getAtomNumbers());
 
-  derivs.resize(getNatoms());
+  derivs.resize(getNumberOfAtoms());
   log.printf("  reference from file %s\n",reference.c_str());
-  log.printf("  which contains %d atoms\n",getNatoms());
+  log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  method for alignment : %s \n",rmsd.getMethod().c_str() );
 
 }

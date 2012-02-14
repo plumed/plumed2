@@ -70,11 +70,14 @@ GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   checkRead();
   assert(file.length()>0);
   fp=fopen(file.c_str(),"w");
+  log.printf("  printing the following atoms :");
+  for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial() );
+  log.printf("\n");
   requestAtoms(atoms);
 }
 
 void GenericDumpAtoms::update(){
-  fprintf(fp,"%d\n",getNatoms());
+  fprintf(fp,"%d\n",getNumberOfAtoms());
   const Tensor & t(getPbc().getBox());
   if(getPbc().isOrthorombic()){
     fprintf(fp," %f %f %f\n",t(0,0),t(1,1),t(2,2));
@@ -85,7 +88,7 @@ void GenericDumpAtoms::update(){
                  t(2,0),t(2,1),t(2,2)
            );
   }
-  for(unsigned i=0;i<getNatoms();++i){
+  for(unsigned i=0;i<getNumberOfAtoms();++i){
     fprintf(fp,"X %f %f %f\n",getPositions(i)(0),getPositions(i)(1),getPositions(i)(2));
   }
 }
