@@ -45,9 +45,9 @@ protected:
 /// Get energy
   const double & getEnergy()const;
 /// Get mass of i-th atom
-  double getMasses(int i)const;
+  double getMass(int i)const;
 /// Get charge of i-th atom
-  double getCharges(int i)const;
+  double getCharge(int i)const;
 /// Get a reference to forces array
   std::vector<Vector> & modifyForces();
 /// Get a reference to virial array
@@ -92,12 +92,12 @@ const Vector & ActionAtomistic::getPosition(int i)const{
 }
 
 inline
-double ActionAtomistic::getMasses(int i)const{
+double ActionAtomistic::getMass(int i)const{
   return masses[i];
 }
 
 inline
-double ActionAtomistic::getCharges(int i)const{
+double ActionAtomistic::getCharge(int i)const{
   return charges[i];
 }
 

@@ -58,11 +58,11 @@ void GenericCOM::calculate(){
   Vector pos;
   double mass(0.0),charge(0.0);
   vector<Tensor> deriv(getNumberOfAtoms());
-  for(unsigned i=0;i<getNumberOfAtoms();i++) mass+=getMasses(i);
-  for(unsigned i=0;i<getNumberOfAtoms();i++) charge+=getCharges(i);
+  for(unsigned i=0;i<getNumberOfAtoms();i++) mass+=getMass(i);
+  for(unsigned i=0;i<getNumberOfAtoms();i++) charge+=getCharge(i);
   for(unsigned i=0;i<getNumberOfAtoms();i++){
-    pos+=(getMasses(i)/mass)*getPosition(i);
-    deriv[i]=(getMasses(i)/mass)*Tensor::identity();
+    pos+=(getMass(i)/mass)*getPosition(i);
+    deriv[i]=(getMass(i)/mass)*Tensor::identity();
   }
   setPosition(pos);
   setMass(mass);
