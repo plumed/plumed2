@@ -79,7 +79,7 @@ ActionAtomistic(ao)
   vector<AtomNumber> merge;
   for(int i=0;;i++){
     vector<AtomNumber> group;
-    parseNumberedAtomList("ENTITY",i,group); 
+    parseAtomList("ENTITY",i,group); 
     if( group.size()==0 ) break;
     log.printf("  atoms in entity %d : ",i);
     for(unsigned j=0;j<group.size();++j) log.printf("%d ",group[j].serial() );

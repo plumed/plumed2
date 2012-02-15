@@ -66,10 +66,10 @@ protected:
   Vector pbcDistance(const Vector&,const Vector&)const;
 /// Get the absolute index of an atom
   AtomNumber getAbsoluteIndex(int i)const;
-/// Parse a list of atoms
+/// Parse a list of atoms without a numbered keyword
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 /// Parse an list of atom with a numbred keyword
-  bool parseNumberedAtomList(const std::string&key,const unsigned& num, std::vector<AtomNumber> &t);
+  void parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t);
 /// Get reference to Pbc
   const Pbc & getPbc() const;
 public:

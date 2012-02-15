@@ -105,48 +105,21 @@ void ActionAtomistic::calculateNumericalDerivatives(){
   }
 }
 
-void ActionAtomistic::parseAtomList(const std::string&key,std::vector<AtomNumber> &t){
-  plumed_massert( keywords.style(key,"atoms"), "keyword " + key + " should be registered as atoms");
-  vector<string> strings;
-  parseVector(key,strings);
-  Tools::interpretRanges(strings);
-  t.resize(0);
-  for(unsigned i=0;i<strings.size();++i){
-   bool ok=false;
-   AtomNumber atom;
-   ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
-   if(ok) t.push_back(atom);
-// here we check if the atom name is the name of a group
-   if(!ok){
-     const Atoms&atoms(plumed.getAtoms());
-     if(atoms.groups.count(strings[i])){
-       map<string,vector<unsigned> >::const_iterator m=atoms.groups.find(strings[i]);
-       for(unsigned j=0;j<(*m).second.size();j++) t.push_back(AtomNumber::index((*m).second[j]));
-       ok=true;
-     }
-   }
-// here we check if the atom name is the name of an added virtual atom
-   if(!ok){
-     const ActionSet&actionSet(plumed.getActionSet());
-     for(ActionSet::const_iterator a=actionSet.begin();a!=actionSet.end();++a){
-       ActionWithVirtualAtom* c=dynamic_cast<ActionWithVirtualAtom*>(*a);
-       if(c) if(c->getLabel()==strings[i]){
-         ok=true;
-         t.push_back(c->getIndex());
-         break;
-       }
-     }
-   }
-   plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
-  }
+void ActionAtomistic::parseAtomList(const std::string&key, std::vector<AtomNumber> &t){
+  parseAtomList(key,-1,t);
 }
 
-bool ActionAtomistic::parseNumberedAtomList(const std::string&key,const unsigned& num, std::vector<AtomNumber> &t){
+void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t){
   plumed_massert( keywords.style(key,"atoms"), "keyword " + key + " should be registered as atoms");
   vector<string> strings;
-  if( !parseNumberedVector(key,num,strings) ) return false;
-  Tools::interpretRanges(strings);
-  t.resize(0);
+  if( num<0 ){
+      parseVector(key,strings);
+      if(strings.size()==0) return;
+  } else {
+      if ( !parseNumberedVector(key,num,strings) ) return;
+  }
+
+  Tools::interpretRanges(strings); t.resize(0);
   for(unsigned i=0;i<strings.size();++i){
    bool ok=false;
    AtomNumber atom;
