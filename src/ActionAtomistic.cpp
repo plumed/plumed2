@@ -25,6 +25,7 @@ lockRequestAtoms(false)
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ){
+  (void) keys; // avoid warning
 }
 
 
