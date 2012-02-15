@@ -231,7 +231,7 @@ void IMD::calculate(){
     double scale=10.0*plumed.getAtoms().getUnits().length;
     Vector ref;
     for(int i=0;i<natoms;i++){
-      Vector pos=getPositions(i);
+      Vector pos=getPosition(i);
       if(wrap) pos=pbcDistance(ref,pos);
       coord[3*i+0]=static_cast<float>((pos[0]*scale));
       coord[3*i+1]=static_cast<float>((pos[1]*scale));
