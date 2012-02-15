@@ -14,9 +14,12 @@ This is used in PLMD::Function and PLMD::Bias
 */
 //+ENDDEVELDOC
 
-/// Action which takes other Action's as arguments.
-/// Arguments are objects of type PLMD::Value, and
-/// are addressed using the ARG= keyword on the directive line
+/// PLMD::Action objects that inherit from PLMD::ActionWithArguments take 
+/// values and components calculated in other PLMD::Action objects and
+/// use this information to calculate some new function.  If you have 
+/// only one list of arguments you should use the reserved keyword <b> ARG </b> 
+/// when you use parseArgumentList.
+
 class ActionWithArguments:
   public virtual Action
 {

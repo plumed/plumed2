@@ -22,14 +22,31 @@ KeyType::KeyType( const std::string& type ){
   }
 }
 
+void Keywords::reserve( const std::string t, const std::string k, const std::string d ){
+  plumed_assert( !exists(k) );  plumed_assert( t!="flag");  // Cannot reserve flags at the moment - if you need it let me know
+  plumed_assert( !reserved(k) );
+  reserved_types.push_back( KeyType(t) ); reserved_keys.push_back(k); reserved_documentation.push_back(d);
+}
+
+void Keywords::use( const std::string k ){
+  plumed_assert( reserved(k) );
+  for(unsigned i=0;i<reserved_keys.size();++i){
+     if(reserved_keys[i]==k){ 
+       types.push_back( reserved_types[i] ); keys.push_back( reserved_keys[i] ); documentation.push_back( reserved_documentation[i] );
+     }
+  }
+}
+
 void Keywords::add( const std::string t, const std::string k, const std::string d ){
   plumed_assert( !exists(k) ); plumed_assert( t!="flag");  // Use addFlag to add flags
+  plumed_assert( !reserved(k) );
   types.push_back( KeyType(t) ); keys.push_back(k); documentation.push_back(d); 
   //defaults.push_back(false);
 }
 
 void Keywords::add( const std::string t, const std::string k, const std::string  def, const std::string d ){
   plumed_assert( !exists(k) ); plumed_assert( t=="compulsory" ); // An optional keyword can't have a default
+  plumed_assert( !reserved(k) );
   types.push_back( KeyType(t) ); keys.push_back(k); 
   documentation.push_back( "( default=" + def + " ) " + d ); 
   numdefs.insert( std::pair<std::string,std::string>(k,def) );
@@ -37,6 +54,7 @@ void Keywords::add( const std::string t, const std::string k, const std::string 
 
 void Keywords::addFlag( const std::string k, const bool def, const std::string d ){
   plumed_assert( !exists(k) ); std::string defstr, flag="flag";
+  plumed_assert( !reserved(k) );
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
   types.push_back( KeyType(flag) ); keys.push_back(k); documentation.push_back( defstr + d ); //defaults.push_back(def);
   booldefs.insert( std::pair<std::string,bool>(k,def) );
@@ -118,6 +136,16 @@ bool Keywords::exists( const std::string k ) const {
 
   for(unsigned i=0;i<keys.size();++i){
      if( keys[i]==k ) return true;
+  }
+  return false;
+}
+
+bool Keywords::reserved( const std::string k ) const {
+  plumed_massert( reserved_keys.size()==reserved_documentation.size(), "documentation doesn't match keys" );
+  plumed_massert( reserved_keys.size()==reserved_types.size(), "types doesn't match keys" );
+
+  for(unsigned i=0;i<reserved_keys.size();++i){
+     if( reserved_keys[i]==k ) return true;
   }
   return false;
 }

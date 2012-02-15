@@ -115,6 +115,7 @@ PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
 
 void BiasMetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
+  keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","HEIGHT","the heights of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");

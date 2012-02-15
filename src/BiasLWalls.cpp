@@ -54,6 +54,7 @@ PLUMED_REGISTER_ACTION(BiasLWalls,"LOWER_WALLS")
 
 void BiasLWalls::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
+  keys.use("ARG");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");

@@ -100,6 +100,20 @@ compulsory keyword and do not specify a default value then the code will automat
 In addition, if the vector you pass to PLMD::Action::parseVector and PLMD::Action::parseNumberedVector has a
 size greater than 0 plumed will assume that the input should contain a vector of this size and will complain if it finds a different sized vector.
 
+\section reserved Reserved Keywords
+
+To maintain some consistency for end users of the code certain keywords (e.g. ARG, PERIODIC) are reserved.
+The reserved keywords for PLMD::Colvar, PLMD::Function and PLMD::Bias are explained inside the documentation for
+these actions.  To use one of the registered keywords you shold insert the following command into the registerKeywords
+method of your new function.
+
+\verbatim
+keys.use( keyword );
+\endverbatim
+
+where <i> keyword </i> is a string that tells the method which reserved keyword you wish to use.  To be clear
+when you use a reserved keyword all the parsing and registering for it is looked after automatically.
+
 \section errors Generating errors
 
 You may need to check for other mistakes in input.  When you find these mistakes you can report them to users using PLMD::Action::error.  This routine will 

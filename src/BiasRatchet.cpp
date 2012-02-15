@@ -58,6 +58,7 @@ PLUMED_REGISTER_ACTION(BiasRatchet,"ABMD")
 
 void BiasRatchet::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
+  keys.use("ARG");
   keys.add("compulsory","TO","The array of a values in the above equation");
   keys.add("compulsory","KAPPA","The array of force constants.");
   keys.add("compulsory","MIN","Also the array of a values in the above equation - I don't understand.");

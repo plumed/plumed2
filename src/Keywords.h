@@ -31,6 +31,12 @@ class Keywords{
 friend class Action;
 private:
 /// Whether the keyword is compulsory, optional...
+  std::vector<KeyType> reserved_types;
+/// The names of the keyword
+  std::vector<std::string> reserved_keys;
+/// The documentation for the keywords
+  std::vector<std::string> reserved_documentation;
+/// Whether the keyword is compulsory, optional...
   std::vector<KeyType> types;
 /// The names of the keyword
   std::vector<std::string> keys;
@@ -53,6 +59,10 @@ private:
 /// Return the number of defined keywords 
   unsigned size() const;
 public:
+/// Reserve a keyword 
+  void reserve( const std::string t, const std::string k, const std::string d );
+/// Use one of the reserved keywords
+  void use( const std::string k );
 /// Add a new keyword of type t with name k and description d
   void add( const std::string t, const std::string k, const std::string d );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
@@ -67,6 +77,8 @@ public:
 //   unsigned size() const;
 /// Check if there is a keyword with name k
   bool exists( const std::string k ) const ;
+/// Check the keyword k has been reserved
+  bool reserved( const std::string k ) const ;
 /// Check if the keyword with name k has style t
   bool style( const std::string k, const std::string t ) const ;
 // /// Print the documentation to the log file (used by PLMD::Action::error)

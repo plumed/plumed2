@@ -73,18 +73,7 @@ powers(getNumberOfArguments(),1.0)
     for(unsigned i=0;i<coefficients.size();i++) coefficients[i]*=(1.0/n);
   }
  
-<<<<<<< HEAD
-  addValueWithDerivatives(); getPntrToComponent(0)->resizeDerivatives(getNumberOfArguments());
-=======
   addValueWithDerivatives(); 
->>>>>>> 6166262... Made it so that we don't have to resize the values in the individual
-  double min(0),max(0); std::vector<std::string> period;
-  parseVector("PERIODIC",period);
-  if(period.size()==1 && period[0]=="NO"){
-     setNotPeriodic();
-  } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
-     setPeriodic(min,max);
-  } else error("missing PERIODIC keyword");
   checkRead();
 
   log.printf("  with coefficients:");
