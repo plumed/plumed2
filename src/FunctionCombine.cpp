@@ -88,7 +88,7 @@ void FunctionCombine::calculate(){
   double combine=0.0;
   for(unsigned i=0;i<coefficients.size();++i){
     combine+=coefficients[i]*pow(getArgument(i),powers[i]);
-    setDerivatives(i,coefficients[i]*powers[i]*pow(getArgument(i),powers[i]-1.0));
+    setDerivative(i,coefficients[i]*powers[i]*pow(getArgument(i),powers[i]-1.0));
   };
   setValue(combine);
 }

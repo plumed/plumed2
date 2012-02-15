@@ -95,7 +95,7 @@ void BiasRestraint::calculate(){
     const double m=slope[i];
     const double f=-(k*cv+m);
     ene+=0.5*k*cv*cv+m*cv;
-    setOutputForces(i,f);
+    setOutputForce(i,f);
     totf2+=f*f;
   };
   getPntrToComponent("bias")->set(ene);

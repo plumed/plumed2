@@ -115,7 +115,7 @@ void BiasUWalls::calculate(){
     if(uscale>0.) {
       const double f=-(k/epsilon)*exponent*pow(uscale, exponent-1);
       ene+=k*pow(uscale, exponent);
-      setOutputForces(i,f);
+      setOutputForce(i,f);
       totf2+=f*f;
     }
   };

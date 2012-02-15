@@ -115,7 +115,7 @@ void BiasLWalls::calculate(){
     if(lscale<0.) {
       const double f=-(k/epsilon)*exponent*pow(lscale, exponent-1);
       ene+=k*pow(lscale, exponent);
-      setOutputForces(i,f);
+      setOutputForce(i,f);
       totf2+=f*f;
     }
   };

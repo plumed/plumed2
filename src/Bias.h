@@ -26,7 +26,7 @@ class Bias :
   std::vector<double> outputForces;
 protected:
   void resetOutputForces();
-  void setOutputForces(int i,double g);
+  void setOutputForce(int i,double g);
 public:
   static void registerKeywords(Keywords&);
   Bias(const ActionOptions&ao);
@@ -34,7 +34,7 @@ public:
 };
 
 inline
-void Bias::setOutputForces(int i,double f){
+void Bias::setOutputForce(int i,double f){
   outputForces[i]=f;
 }
 

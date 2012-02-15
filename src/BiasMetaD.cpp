@@ -378,7 +378,7 @@ void BiasMetaD::calculate()
 // set Forces 
   for(unsigned i=0;i<ncv;++i){
    const double f=-der[i];
-   setOutputForces(i,f);
+   setOutputForce(i,f);
   }
 
   delete [] der;

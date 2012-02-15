@@ -166,7 +166,7 @@ void BiasMovingRestraint::calculate(){
     if(verse[i]=="L" && cv>0) continue;
     assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
     ene+=0.5*k*cv*cv;
-    setOutputForces(i,f);
+    setOutputForce(i,f);
     totf2+=f*f;
   };
   getPntrToComponent("bias")->set(ene);

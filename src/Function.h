@@ -20,8 +20,8 @@ class Function:
   public ActionWithArguments
 {
 protected:
-  void setDerivatives(int,double);
-  void setDerivatives(Value*,int,double);
+  void setDerivative(int,double);
+  void setDerivative(Value*,int,double);
   void addValueWithDerivatives();
   void addComponentWithDerivatives( const std::string& name ); 
 public:
@@ -32,13 +32,13 @@ public:
 };
 
 inline
-void Function::setDerivatives(Value*v,int i,double d){
+void Function::setDerivative(Value*v,int i,double d){
   v->addDerivative(i,d);
 }
 
 inline
-void Function::setDerivatives(int i,double d){
-  setDerivatives(getPntrToValue(),i,d);
+void Function::setDerivative(int i,double d){
+  setDerivative(getPntrToValue(),i,d);
 }
 
 }

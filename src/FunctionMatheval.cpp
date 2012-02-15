@@ -117,7 +117,7 @@ void FunctionMatheval::calculate(){
   setValue(evaluator_evaluate(evaluator,names.size(),&names[0],&values[0]));
 
   for(unsigned i=0;i<getNumberOfArguments();i++){
-    setDerivatives(i,evaluator_evaluate(evaluator_deriv[i],names.size(),&names[0],&values[0]));
+    setDerivative(i,evaluator_evaluate(evaluator_deriv[i],names.size(),&names[0],&values[0]));
   }
 }
 

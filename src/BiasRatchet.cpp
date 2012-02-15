@@ -106,7 +106,7 @@ void BiasRatchet::calculate(){
     if(min[i]<0.||cv2<min[i]) min[i] = cv2; 
     else {
       const double f = -2.*k*(cv2-min[i])*cv;
-      setOutputForces(i,f);
+      setOutputForce(i,f);
       ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
       totf2+=f*f;
     }
