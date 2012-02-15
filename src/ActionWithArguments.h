@@ -24,40 +24,43 @@ class ActionWithArguments:
   bool lockRequestArguments;
 
 protected:
-                           ActionWithArguments(const ActionOptions&);
-  virtual                 ~ActionWithArguments(){};
 ///
   double getProjection(unsigned i,unsigned j)const;
 public:
 /// Registers the list of keywords
   static void registerKeywords( Keywords& keys );
-
-/// Returns an array of pointers to the arguments
-  std::vector<Value*>    & getArguments();
 /// Returns the value of an argument
-  double                   getArgument(int)const;
+  double getArgument( const unsigned n ) const;
+/// Return a pointer to specific argument
+  Value* getPntrToArgument( const unsigned n );
 /// Returns the number of arguments
-  unsigned                 getNumberOfArguments()const;
-///
-  void                     calculateNumericalDerivatives();
+  unsigned getNumberOfArguments() const ;
 /// Takes the difference taking into account pbc for arg i
-  double                   difference(int,double,double)const;
+  double difference(int, double, double) const;
 /// Parse a list of arguments
-  void                     parseArgumentList(const std::string&key,std::vector<Value*>&args);
-  void                     requestArguments(const std::vector<Value*> &arg);
+  void parseArgumentList(const std::string&key,std::vector<Value*>&args);
+/// Setup the dependencies
+  void requestArguments(const std::vector<Value*> &arg);
+public:
+  ActionWithArguments(const ActionOptions&);
+  virtual ~ActionWithArguments(){};
+/// Registers the list of keywords
+  static void registerKeywords( Keywords& keys );
+/// Calculate the numerical derivatives
+  void calculateNumericalDerivatives();
   void lockRequests();
   void unlockRequests();
 };
 
 
 inline
-std::vector<Value*> & ActionWithArguments::getArguments(){
-  return arguments;
+Value* ActionWithArguments::getPntrToArgument( const unsigned n ){
+  return arguments[n];
 }
 
 inline
-double ActionWithArguments::getArgument(int i)const{
-  return arguments[i]->get();
+double ActionWithArguments::getArgument(const unsigned n) const {
+  return arguments[n]->get();
 }
 
 inline

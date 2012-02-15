@@ -68,11 +68,10 @@ fp(NULL)
   if(comm.Get_rank()==0){
     fp=fopen(file.c_str(),"wa");
     log.printf("  on file %s\n",file.c_str());
+    if( getNumberOfArguments()==0 ) error("no arguments have been specified");
     fprintf(fp,"%s","#! FIELDS time parameter");
-    const std::vector<Value*>& arguments(getArguments());
-    assert(arguments.size()>0);
-    for(unsigned i=0;i<arguments.size();i++){
-      fprintf(fp," %s",arguments[i]->getFullName().c_str());
+    for(unsigned i=0;i<getNumberOfArguments();i++){
+      fprintf(fp," %s",getPntrToArgument(i)->getName().c_str());
     };
     fprintf(fp,"%s","\n");
   }
@@ -82,10 +81,9 @@ fp(NULL)
 
 void GenericDumpForces::update(){
   if(comm.Get_rank()!=0)return;
-  const std::vector<Value*>& arguments(getArguments());
   fprintf(fp," %f",getTime());
   for(unsigned i=0;i<getNumberOfArguments();i++){
-    fprintf(fp," %15.10f",arguments[i]->getForce());
+    fprintf(fp," %15.10f",getPntrToArgument(i)->getForce());
   };
   fprintf(fp,"\n");
 }

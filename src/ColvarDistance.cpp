@@ -68,17 +68,12 @@ pbc(true)
 
   if(!components){
 
-    addValueWithDerivatives("");
-    getValue("")->setPeriodicity(false);
+    addValueWithDerivatives(); setNotPeriodic();
 
-  }else{
-
-    addValueWithDerivatives("x");
-    getValue("x")->setPeriodicity(false);
-    addValueWithDerivatives("y");
-    getValue("y")->setPeriodicity(false);
-    addValueWithDerivatives("z");
-    getValue("z")->setPeriodicity(false);
+  } else{
+    addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
+    addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
+    addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
   }
 
   requestAtoms(atoms);
@@ -106,24 +101,24 @@ void ColvarDistance::calculate(){
 
   }else{
 
-    Value* valuex=getValue("x");
-    Value* valuey=getValue("y");
-    Value* valuez=getValue("z");
+    Value* valuex=getPntrToComponent("x");
+    Value* valuey=getPntrToComponent("y");
+    Value* valuez=getPntrToComponent("z");
 
     setAtomsDerivatives (valuex,0,Vector(-1,0,0));
     setAtomsDerivatives (valuex,1,Vector(+1,0,0));
     setBoxDerivatives   (valuex,Tensor(distance,Vector(-1,0,0)));
-    setValue            (valuex,distance[0]);
+    valuex->set(distance[0]);
 
     setAtomsDerivatives (valuey,0,Vector(0,-1,0));
     setAtomsDerivatives (valuey,1,Vector(0,+1,0));
     setBoxDerivatives   (valuey,Tensor(distance,Vector(0,-1,0)));
-    setValue            (valuey,distance[1]);
+    valuey->set(distance[1]);
 
     setAtomsDerivatives (valuez,0,Vector(0,0,-1));
     setAtomsDerivatives (valuez,1,Vector(0,0,+1));
     setBoxDerivatives   (valuez,Tensor(distance,Vector(0,0,-1)));
-    setValue            (valuez,distance[2]);
+    valuez->set(distance[2]);
   };
 }
 

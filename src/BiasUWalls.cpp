@@ -97,8 +97,8 @@ offset(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<eps.size();i++) log.printf(" %f",eps[i]);
   log.printf("\n");
 
-  addValue("bias");
-  addValue("force2");
+  addComponent("bias");
+  addComponent("force2");
 }
 
 void BiasUWalls::calculate(){
@@ -118,9 +118,8 @@ void BiasUWalls::calculate(){
       totf2+=f*f;
     }
   };
-  Value* value;
-  value=getValue("bias"); setValue(value,ene);
-  value=getValue("force2");  setValue(value,totf2);
+  getPntrToComponent("bias")->set(ene);
+  getPntrToComponent("force2")->set(totf2);
 }
 
 }

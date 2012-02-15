@@ -70,15 +70,15 @@ BiasGrid_(NULL)
   if(spline){log.printf("  External potential uses spline interpolation\n");}
   if(sparsegrid){log.printf("  External potential uses sparse grid\n");}
   
-  addValue("bias");
+  addComponent("bias");
 
 // read grid
   FILE* gridfile=fopen(filename.c_str(),"r");  
   BiasGrid_=Grid::create(gridfile,sparsegrid,spline,true);
   fclose(gridfile);
-  plumed_assert(BiasGrid_->getDimension()==getNumberOfArguments());
+  if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
   for(unsigned i=0;i<getNumberOfArguments();++i){
-   plumed_assert(getArguments()[i]->isPeriodic()==BiasGrid_->getIsPeriodic()[i]);
+    if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias"); 
   } 
 }
 
@@ -91,8 +91,7 @@ void BiasExternal::calculate()
 
   double ene=BiasGrid_->getValueAndDerivatives(cv,der);
 
-  Value* value=getValue("bias");
-  setValue(value,ene);
+  getPntrToComponent("bias")->set(ene);
 
 // set Forces 
   for(unsigned i=0;i<ncv;++i){

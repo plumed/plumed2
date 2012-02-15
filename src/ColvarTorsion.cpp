@@ -93,10 +93,7 @@ pbc(true)
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(true);
-  getValue("")->setDomain(-pi,pi);
-
+  addValueWithDerivatives(); setPeriodic(-pi,pi);
   requestAtoms(atoms);
 }
 

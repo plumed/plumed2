@@ -69,9 +69,7 @@ PLUMED_COLVAR_INIT(ao),rmsd(log)
   checkRead();
 
 
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(false);
-
+  addValueWithDerivatives(); setNotPeriodic();
   PDB pdb;
 
   // read everything in ang and transform to nm

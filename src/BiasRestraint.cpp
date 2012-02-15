@@ -80,8 +80,8 @@ slope(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<slope.size();i++) log.printf(" %f",slope[i]);
   log.printf("\n");
 
-  addValue("bias");
-  addValue("force2");
+  addComponent("bias");
+  addComponent("force2");
 }
 
 
@@ -97,9 +97,8 @@ void BiasRestraint::calculate(){
     setOutputForces(i,f);
     totf2+=f*f;
   };
-  Value* value;
-  value=getValue("bias"); setValue(value,ene);
-  value=getValue("force2");  setValue(value,totf2);
+  getPntrToComponent("bias")->set(ene);
+  getPntrToComponent("force2")->set(totf2);
 }
 
 }

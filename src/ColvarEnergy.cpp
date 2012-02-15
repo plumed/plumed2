@@ -47,11 +47,9 @@ PLUMED_COLVAR_INIT(ao),
 components(false)
 {
   assert(!checkNumericalDerivatives());
-  std::vector<AtomNumber> atoms;
-  requestAtoms(atoms);
   isEnergy=true;
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(false);
+  addValueWithDerivatives(); setNotPeriodic();
+  getPntrToValue()->resizeDerivatives(1);
 }
 
 void ColvarEnergy::registerKeywords( Keywords& keys ){
@@ -64,7 +62,8 @@ void ColvarEnergy::registerKeywords( Keywords& keys ){
 
 // calculator
 void ColvarEnergy::calculate(){
-  setValue(getEnergy());
+  setValue( getEnergy() );
+  getPntrToComponent(0)->addDerivative(0,1.0);
 }
 
 }

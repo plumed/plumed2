@@ -60,7 +60,7 @@ pbc(true)
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
-  addValueWithDerivatives("");
+  addValueWithDerivatives(); setNotPeriodic();
 
   requestAtoms(atoms);
 }

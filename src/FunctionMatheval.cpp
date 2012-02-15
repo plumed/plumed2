@@ -62,6 +62,7 @@ PLUMED_REGISTER_ACTION(FunctionMatheval,"MATHEVAL")
 
 void FunctionMatheval::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
+  keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
   keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
 
@@ -84,14 +85,17 @@ names(getNumberOfArguments())
   }
   assert(var.size()==getNumberOfArguments());
   parse("FUNC",func);
-  addValueWithDerivatives("");
+<<<<<<< HEAD
+  addValueWithDerivatives(); getPntrToComponent(0)->resizeDerivatives(getNumberOfArguments());
+=======
+  addValueWithDerivatives(); 
+>>>>>>> 6166262... Made it so that we don't have to resize the values in the individual
   double min(0),max(0); std::vector<std::string> period;
   parseVector("PERIODIC",period);
   if(period.size()==1 && period[0]=="NO"){
-    getValue("")->setPeriodicity(false);
+    setNotPeriodic();
   } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
-    getValue("")->setPeriodicity(true);
-    getValue("")->setDomain(min,max);
+    setPeriodic(min,max);
   } else error("missing PERIODIC keyword");
   checkRead();
 

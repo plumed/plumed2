@@ -43,8 +43,7 @@ PLUMED_COLVAR_INIT(ao)
 {
   parseAtomList("GROUP",ga_lista);
   checkRead();
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(false);
+  addValueWithDerivatives(); setNotPeriodic();
 
   log.printf("  of %d atoms\n",ga_lista.size());
   for(unsigned int i=0;i<ga_lista.size();++i){

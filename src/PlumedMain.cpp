@@ -454,9 +454,8 @@ void PlumedMain::justCalculate(){
     if((*p)->isActive()){
       if((*p)->checkNumericalDerivatives()) (*p)->calculateNumericalDerivatives();
       else (*p)->calculate();
-      if(av)for(int i=0;i<av->getNumberOfValues();++i){
-        if(av->getValue(i)->getName()=="bias") bias+=av->getValue(i)->get();
-      }
+      // This retrieves components called bias 
+      if(av) bias+=av->getOutputQuantity("bias");
       if(av)av->setGradientsIfNeeded();	
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(*p);
       if(avv)avv->setGradientsIfNeeded();	

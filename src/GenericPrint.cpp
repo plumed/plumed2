@@ -80,9 +80,8 @@ rotate(0)
       fp=fopen(file.c_str(),"a");
       log.printf("  on file %s\n",file.c_str());
       fprintf(fp,"#! FIELDS time");
-      const std::vector<Value*>& arguments(getArguments());
-      for(unsigned i=0;i<arguments.size();i++){
-        fprintf(fp," %s",arguments[i]->getFullName().c_str());
+      for(unsigned i=0;i<getNumberOfArguments();i++){
+        fprintf(fp," %s",getPntrToArgument(i)->getName().c_str());
       };
       fprintf(fp,"\n");
     }
@@ -99,7 +98,7 @@ rotate(0)
   parse("_ROTATE",rotate);
   if(rotate>0){
     rotateCountdown=rotate;
-    rotateArguments=getArguments();
+    for(unsigned i=0;i<getNumberOfArguments();++i) rotateArguments.push_back( getPntrToArgument(i) );
     vector<Value*> a(1,rotateArguments[0]);
     requestArguments(vector<Value*>(1,rotateArguments[0]));
     rotateLast=0;

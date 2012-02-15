@@ -58,7 +58,7 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
 void ActionAtomistic::calculateNumericalDerivatives(){
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
   plumed_massert(a,"only Actions with a value can be differentiated");
-  const int nval=a->getNumberOfValues();
+  const int nval=a->getNumberOfComponents();
   const int natoms=getNumberOfAtoms();
   std::vector<Vector> value(nval*natoms);
   std::vector<Tensor> valuebox(nval);
@@ -70,8 +70,8 @@ void ActionAtomistic::calculateNumericalDerivatives(){
     positions[i][k]=positions[i][k]+delta;
     calculate();
     positions[i][k]=savedPositions[i][k];
-    for(int j=0;j<nval;j++){
-      value[j*natoms+i][k]=a->getValue(j)->get();
+    for(unsigned j=0;j<nval;j++){
+      value[j*natoms+i][k]=a->getOutputQuantity(j);
     }
   }
  for(int i=0;i<3;i++) for(int k=0;k<3;k++){
@@ -84,24 +84,24 @@ void ActionAtomistic::calculateNumericalDerivatives(){
    box(i,k)=arg0;
    pbc.setBox(box);
    for(int j=0;j<natoms;j++) positions[j]=savedPositions[j];
-   for(int j=0;j<nval;j++) valuebox[j](i,k)=a->getValue(j)->get();
+   for(unsigned j=0;j<nval;j++) valuebox[j](i,k)=a->getOutputQuantity(j);
  }
 
   calculate();
-
-  for(int j=0;j<nval;j++){
-    Value* v=a->getValue(j);
+  a->clearDerivatives();
+  for(unsigned j=0;j<nval;j++){
+    Value* v=a->copyOutput(j);
     double ref=v->get();
     if(v->hasDerivatives()){
       for(int i=0;i<natoms;i++) for(int k=0;k<3;k++) {
         double d=(value[j*natoms+i][k]-ref)/delta;
-        v->setDerivatives(3*i+k,d);
+        v->addDerivative(3*i+k,d);
       }
       Tensor virial;
       for(int i=0;i<3;i++) for(int k=0;k<3;k++)virial(i,k)= (valuebox[j](i,k)-ref)/delta;
 // BE CAREFUL WITH NON ORTHOROMBIC CELL
       virial=-1.0*matmul(box.transpose(),virial.transpose());
-      for(int i=0;i<3;i++) for(int k=0;k<3;k++) v->setDerivatives(3*natoms+3*k+i,virial(i,k));
+      for(int i=0;i<3;i++) for(int k=0;k<3;k++) v->addDerivative(3*natoms+3*k+i,virial(i,k));
     }
   }
 }

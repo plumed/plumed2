@@ -49,9 +49,7 @@ components(false)
   if(components){
 // todo
   }
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(false);
-
+  addValueWithDerivatives(); setNotPeriodic();
   requestAtoms(atoms);
 }
 

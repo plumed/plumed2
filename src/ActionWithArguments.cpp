@@ -11,47 +11,57 @@ void ActionWithArguments::registerKeywords(Keywords& keys){
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){
-  vector<string> c;
-  arg.clear();
-  parseVector(key,c);
+  vector<string> c; arg.clear(); parseVector(key,c);
+
   for(unsigned i=0;i<c.size();i++){
-    std::size_t dot=c[i].find_first_of('.');
-    if(dot!=string::npos){
-// if it contains a dot:
+      std::size_t dot=c[i].find_first_of('.');
       string a=c[i].substr(0,dot);
       string name=c[i].substr(dot+1);
-      if(a=="*"){
-        plumed_massert(name=="*","arguments in the form *.something are not allowed, but for *.*");
-// this is *.*: all the values
-        std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-        for(unsigned j=0;j<all.size();j++){
-          for(int k=0;k<all[j]->getNumberOfValues();++k) arg.push_back(all[j]->getValue(k));
-        };
-      } else {
-        ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-        plumed_massert(action,"cannot find action named " + a);
-        if(name=="*"){
-// this is something.*: all the values in "something"
-          for(int k=0;k<action->getNumberOfValues();++k) arg.push_back(action->getValue(k));
+      if(c[i].find(".")!=string::npos){    // if it contains a dot:
+        if(a=="*" && name=="*"){
+           // Take all values from all actions
+           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
+           if( all.size()==0 ) error("your input file is not telling plumed to calculate anything");
+           for(unsigned j=0;j<all.size();j++){
+             for(int k=0;k<all[j]->getNumberOfComponents();++k) arg.push_back(all[j]->copyOutput(k));
+           }
+        } else if ( name=="*"){
+           // Take all the values from an action with a specific name
+           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
+           if(!action) error("cannot find action named " + a);
+           for(int k=0;k<action->getNumberOfComponents();++k) arg.push_back(action->copyOutput(k));
+        } else if ( a=="*" ){
+           // Take components from all actions with a specific name
+           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
+           if( all.size()==0 ) error("your input file is not telling plumed to calculate anything");
+           std::string lab; unsigned nval=0;
+           for(unsigned j=0;j<all.size();j++){
+              std::string flab; flab=all[j]->getLabel() + "." + name;
+              if( all[j]->exists(flab) ){ arg.push_back(all[j]->copyOutput(flab)); nval++; }
+           }
+           if(nval==0) error("found no actions with a component called " + name );
         } else {
-// this is something.x: take that component
-          plumed_massert(action->hasNamedValue(name),"action " + a + " has no component with name "+ name);
-          arg.push_back(action->getValue(name));
+           // Take values with a specific name
+           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
+           if(!action) error("cannot find action named " + a);
+           if( !(action->exists(c[i])) ) error("action " + a + " has no component named " + name );
+           arg.push_back(action->copyOutput(c[i]));
+        }
+      } else {    // if it doesn't contain a dot
+        if(c[i]=="*"){
+           // Take all values from all actions
+           std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
+           if( all.size()==0 ) error("your input file is not telling plumed to calculate anything");
+           for(unsigned j=0;j<all.size();j++){
+             for(int k=0;k<all[j]->getNumberOfComponents();++k) arg.push_back(all[j]->copyOutput(k));
+           }
+        } else {
+           ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
+           if(!action) error("cannot find action named " + c[i]);
+           if( !(action->exists(c[i])) ) error("action " + c[i] + " has no component named " + c[i] );
+           arg.push_back(action->copyOutput(c[i]));
         }
       }
-    } else if(c[i]=="*"){
-// this is *: all the values (same as *.*)
-      std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-      for(unsigned j=0;j<all.size();j++){
-        for(int k=0;k<all[j]->getNumberOfValues();++k) arg.push_back(all[j]->getValue(k));
-      };
-    } else{
-// this is something: take the unnamed component
-      ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
-      plumed_massert(action,"cannot find action named " +c[i]);
-      plumed_massert(action->hasNamedValue(""),"action "+c[i]+" has no default component (unnamed one)");
-      arg.push_back(action->getValue(""));
-    }
   }
 }
 
@@ -59,7 +69,19 @@ void ActionWithArguments::requestArguments(const vector<Value*> &arg){
   plumed_massert(!lockRequestArguments,"requested argument list can only be changed in the prepare() method");
   arguments=arg;
   clearDependencies();
-  for(unsigned i=0;i<arguments.size();i++) addDependency(&arguments[i]->getAction());
+  std::string fullname,name;
+  for(unsigned i=0;i<arguments.size();i++){
+     fullname=arguments[i]->getName();
+     if(fullname.find(".")!=string::npos){
+       std::size_t dot=fullname.find_first_of('.');
+       name=fullname.substr(0,dot);
+     } else {
+       name=fullname;
+     }
+     ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(name);
+     if(!action) error("cannot find action named (in requestArguments - this is weird)" + name);
+     addDependency(action);
+  }
 }
 
 ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
@@ -71,7 +93,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
 
   if(arg.size()>0){
     log.printf("  with arguments");
-    for(unsigned i=0;i<arg.size();i++) log.printf(" %s",arg[i]->getFullName().c_str());
+    for(unsigned i=0;i<arg.size();i++) log.printf(" %s",arg[i]->getName().c_str());
     log.printf("\n");
   }
 
@@ -82,23 +104,24 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
 void ActionWithArguments::calculateNumericalDerivatives(){
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
   plumed_massert(a,"cannot compute numerical derivatives for an action without values");
-  const int nval=a->getNumberOfValues();
-  const int npar=a->getNumberOfParameters();
+  const int nval=a->getNumberOfComponents();
+  const int npar=arguments.size();
   std::vector<double> value (nval*npar);
   for(int i=0;i<npar;i++){
     double arg0=arguments[i]->get();
     arguments[i]->set(arg0+sqrt(epsilon));
     calculate();
     arguments[i]->set(arg0);
-    for(int j=0;j<nval;j++){
-      value[i*nval+j]=a->getValue(j)->get();
+    for(unsigned j=0;j<nval;j++){
+      value[i*nval+j]=a->getOutputQuantity(j);
     }
   }
   calculate();
+  a->clearDerivatives();
   std::vector<double> value0(nval);
-  for(int j=0;j<nval;j++){
-    Value* v=a->getValue(j);
-    if(v->hasDerivatives())for(int i=0;i<npar;i++) v->setDerivatives(i,(value[i*nval+j]-a->getValue(j)->get())/sqrt(epsilon));
+  for(unsigned j=0;j<nval;j++){
+    Value* v=a->copyOutput(j);
+    if( v->hasDerivatives() ) for(int i=0;i<npar;i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/sqrt(epsilon));
   }
 }
 

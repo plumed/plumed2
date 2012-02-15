@@ -73,16 +73,16 @@ fp(NULL)
     fp=fopen(file.c_str(),"wa");
     log.printf("  on file %s\n",file.c_str());
     log.printf("  with format %s\n",fmt.c_str());
-    fprintf(fp,"%s","#! FIELDS time parameter");
-    const std::vector<Value*>& arguments(getArguments());
-    assert(arguments.size()>0);
-    unsigned npar=arguments[0]->getDerivatives().size();
-    assert(npar>0);
-    for(unsigned i=1;i<arguments.size();i++){
-      assert(npar==arguments[i]->getDerivatives().size());
+    unsigned nargs=getNumberOfArguments();
+    if( nargs==0 ) error("no arguments specified");
+    unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
+    if( npar==0 ) error("one or more arguments has no derivatives");
+    for(unsigned i=1;i<nargs;i++){
+        if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
     }
-    for(unsigned i=0;i<arguments.size();i++){
-      fprintf(fp," %s",arguments[i]->getFullName().c_str());
+    fprintf(fp,"%s","#! FIELDS time parameter");
+    for(unsigned i=0;i<nargs;i++){
+      fprintf(fp," %s",getPntrToArgument(i)->getName().c_str());
     };
     fprintf(fp,"%s","\n");
   }
@@ -92,13 +92,12 @@ fp(NULL)
 
 void GenericDumpDerivatives::update(){
   if(comm.Get_rank()!=0)return;
-  const std::vector<Value*>& arguments(getArguments());
-  unsigned npar=arguments[0]->getDerivatives().size();
+  unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
   for(unsigned ipar=0;ipar<npar;ipar++){
     fprintf(fp," %f",getTime());
     fprintf(fp," %u",ipar);
     for(unsigned i=0;i<getNumberOfArguments();i++){
-      fprintf(fp,fmt.c_str(),arguments[i]->getDerivatives()[ipar]);
+      fprintf( fp, fmt.c_str(),getPntrToArgument(i)->getDerivative(ipar) );
     };
     fprintf(fp,"\n");
   }

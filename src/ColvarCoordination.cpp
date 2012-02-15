@@ -114,9 +114,7 @@ reduceListAtNextStep(false)
   
   checkRead();
 
-  addValueWithDerivatives("");
-  getValue("")->setPeriodicity(false);
-
+  addValueWithDerivatives(); setNotPeriodic();
   if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st);
   else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
   

@@ -218,7 +218,7 @@ grid_(false)
    if(wgridstride_>0){log.printf("  Grid is written on file %s with stride %d\n",gridfname.c_str(),wgridstride_);} 
  }
   
-  addValue("bias");
+  addComponent("bias");
 
 // for performance
    dp_ = new double[getNumberOfArguments()];
@@ -227,11 +227,11 @@ grid_(false)
   if(grid_){
    vector<bool> pbc;
    for(unsigned i=0;i<getNumberOfArguments();++i){
-    pbc.push_back(getArguments()[i]->isPeriodic());
+    pbc.push_back(getPntrToArgument(i)->isPeriodic());
 // if periodic, use CV domain for grid boundaries
     if(pbc[i]){
      double dmin,dmax;
-     getArguments()[i]->getDomain(dmin,dmax);
+     getPntrToArgument(i)->getDomain(dmin,dmax);
      gmin[i]=dmin;
      gmax[i]=dmax;
     }
@@ -309,7 +309,7 @@ vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
  vector<unsigned> nneigh;
  for(unsigned i=0;i<getNumberOfArguments();++i){
   double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[i];
-  nneigh.push_back((unsigned)ceil(cutoff/BiasGrid_->getDx()[i]));
+  nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
  }
  return nneigh;
 }
@@ -372,9 +372,7 @@ void BiasMetaD::calculate()
   double* der=new double[ncv];
   for(unsigned i=0;i<ncv;++i){der[i]=0.0;}
   double ene=getBiasAndDerivatives(cv,der);
-
-  Value* value=getValue("bias");
-  setValue(value,ene);
+  getPntrToComponent("bias")->set(ene);
 
 // set Forces 
   for(unsigned i=0;i<ncv;++i){

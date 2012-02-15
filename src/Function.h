@@ -19,23 +19,26 @@ class Function:
   public ActionWithValue,
   public ActionWithArguments
 {
+protected:
+  void setDerivatives(int,double);
+  void setDerivatives(Value*,int,double);
+  void addValueWithDerivatives();
+  void addComponentWithDerivatives( const std::string& name ); 
 public:
   Function(const ActionOptions&);
   virtual ~Function(){};
   void apply();
-  void setDerivatives(int,double);
-  void setDerivatives(Value*,int,double);
   static void registerKeywords(Keywords&);
 };
 
 inline
 void Function::setDerivatives(Value*v,int i,double d){
-  v->setDerivatives(i,d);
+  v->addDerivative(i,d);
 }
 
 inline
 void Function::setDerivatives(int i,double d){
-  setDerivatives(getValue(0),i,d);
+  setDerivatives(getPntrToValue(),i,d);
 }
 
 }

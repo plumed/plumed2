@@ -20,6 +20,9 @@ class Colvar :
   public ActionAtomistic,
   public ActionWithValue
   {
+private:
+/// This is used by apply to retrive the forces on the atoms
+  std::vector<double> forces;
 protected:
   bool isEnergy;
   void requestAtoms(const std::vector<AtomNumber> & a);
@@ -44,34 +47,34 @@ public:
 
 inline
 void Colvar::setAtomsDerivatives(Value*v,int i,const Vector&d){
-  v->setDerivatives(3*i+0,d[0]);
-  v->setDerivatives(3*i+1,d[1]);
-  v->setDerivatives(3*i+2,d[2]);
+  v->addDerivative(3*i+0,d[0]);
+  v->addDerivative(3*i+1,d[1]);
+  v->addDerivative(3*i+2,d[2]);
 }
 
 
 inline
 void Colvar::setBoxDerivatives(Value* v,const Tensor&d){
   unsigned nat=getNumberOfAtoms();
-  v->setDerivatives(3*nat+0,d(0,0));
-  v->setDerivatives(3*nat+1,d(0,1));
-  v->setDerivatives(3*nat+2,d(0,2));
-  v->setDerivatives(3*nat+3,d(1,0));
-  v->setDerivatives(3*nat+4,d(1,1));
-  v->setDerivatives(3*nat+5,d(1,2));
-  v->setDerivatives(3*nat+6,d(2,0));
-  v->setDerivatives(3*nat+7,d(2,1));
-  v->setDerivatives(3*nat+8,d(2,2));
+  v->addDerivative(3*nat+0,d(0,0));
+  v->addDerivative(3*nat+1,d(0,1));
+  v->addDerivative(3*nat+2,d(0,2));
+  v->addDerivative(3*nat+3,d(1,0));
+  v->addDerivative(3*nat+4,d(1,1));
+  v->addDerivative(3*nat+5,d(1,2));
+  v->addDerivative(3*nat+6,d(2,0));
+  v->addDerivative(3*nat+7,d(2,1));
+  v->addDerivative(3*nat+8,d(2,2));
 }
 
 inline
 void Colvar::setAtomsDerivatives(int i,const Vector&d){
-  setAtomsDerivatives(getValue(0),i,d);
+  setAtomsDerivatives(getPntrToValue(),i,d);
 }
 
 inline
 void Colvar::setBoxDerivatives(const Tensor&d){
-  setBoxDerivatives(getValue(0),d);
+  setBoxDerivatives(getPntrToValue(),d);
 }
 
 }

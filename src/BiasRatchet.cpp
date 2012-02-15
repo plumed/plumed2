@@ -87,9 +87,9 @@ kappa(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
 
-  for(unsigned i=0;i<getNumberOfArguments();i++) {char str_min[6]; sprintf(str_min,"min_%u",i+1); addValue(str_min);}
-  addValue("bias");
-  addValue("force2");
+  for(unsigned i=0;i<getNumberOfArguments();i++) {char str_min[6]; sprintf(str_min,"min_%u",i+1); addComponent(str_min);}
+  addComponent("bias");
+  addComponent("force2");
 }
 
 
@@ -111,11 +111,10 @@ void BiasRatchet::calculate(){
     }
     char str_min[6]; 
     sprintf(str_min,"min_%u",i+1); 
-    value=getValue(str_min);
-    setValue(value,min[i]);
+    getPntrToComponent(str_min)->set(min[i]);
   };
-  value=getValue("bias"); setValue(value,ene);
-  value=getValue("force2");  setValue(value,totf2);
+  getPntrToComponent("bias")->set(ene);
+  getPntrToComponent("force2")->set(totf2);
 }
 
 }
