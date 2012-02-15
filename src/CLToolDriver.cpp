@@ -229,8 +229,6 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
 
    if(fp_forces){
      fprintf(fp_forces,"%d\n",natoms);
-// I use only a few digits for the forces since this is meant to be used
-// with the regtests. Probably there should be an option for this
      string fmt=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
      fprintf(fp_forces,fmt.c_str(),virial[0],virial[4],virial[8]);
      fmt="X "+fmt;
