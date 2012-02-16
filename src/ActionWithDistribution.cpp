@@ -25,6 +25,8 @@ ActionWithDistribution::~ActionWithDistribution(){
 }
 
 void ActionWithDistribution::addDistributionFunction( std::string name, DistributionFunction* fun ){
+   if(all_values) all_values=false;  // Possibly will add functionality to delete all values here
+
    // Check function is good 
    if( !fun->check() ) error( fun->errorMessage() );
 
@@ -48,7 +50,6 @@ void ActionWithDistribution::readDistributionKeywords(){
  // Read Less_THAN keyword
  std::vector<std::string> params; parseVector("LESS_THAN",params);
  if( params.size()!=0 ){
-     all_values=false;
      addDistributionFunction( "lt" + params[0], new less_than(params) );
   }
 
