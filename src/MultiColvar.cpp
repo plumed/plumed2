@@ -120,7 +120,6 @@ void MultiColvar::requestAtoms(){
    for(unsigned i=0;i<real_atoms.size();++i){
        if( index_translator[i]>0 ){ a.push_back(real_atoms[i]); index_translator[i]=nn; nn++; }
    }
-   printf("In requestion atoms number of atoms is %d \n",a.size() );
 
    ActionAtomistic::requestAtoms(a);
    if( usingDistributionFunctions() ){
@@ -128,7 +127,6 @@ void MultiColvar::requestAtoms(){
    } else {
        for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives( getThisFunctionsNumberOfDerivatives(i) );
    }
-   printf("Test two : %d\n",getPntrToComponent(0)->getNumberOfDerivatives());
 }
 
 // This is the preparation for neighbour list update
@@ -192,7 +190,6 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in ){
   double value=compute( pos, der, vir );
   // Put all this in the value we are passing back
   for(unsigned i=0;i<natoms;++i){
-      //printf("Adding derivative to atom %d\n",i);
       value_in->addDerivative( 3*i+0,der[i][0] );
       value_in->addDerivative( 3*i+1,der[i][1] );
       value_in->addDerivative( 3*i+2,der[i][2] );
