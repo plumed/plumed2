@@ -79,8 +79,9 @@ void ActionWithDistribution::calculate(){
       for(unsigned j=0;j<totals.size();++j) totals[j]=0.0;
 
       // Create a value to store stuff in 
-      Value* tmpvalue=new Value("me",true );
-      Value* tmp2value=new Value("me",true );
+      Value* tmpvalue=new Value();
+      Value* tmp2value=new Value();
+      unsigned kk;
       for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){
           // Make sure we have enough derivatives in this value
           unsigned nder=getThisFunctionsNumberOfDerivatives(i);
