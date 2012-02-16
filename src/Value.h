@@ -63,8 +63,8 @@ public:
   void set(double);
 /// Get the value of the function
   double get() const;
-  void setPeriodicity(bool);
-  void setDomain(double,double);
+/// Find out if the value has been set
+  bool valueHasBeenSet() const;
 /// Check if the value is periodic
   bool isPeriodic() const;
 /// Get the domain of the quantity
@@ -81,6 +81,8 @@ public:
   void clearDerivatives();
 /// Add some derivative to the ith component of the derivatives array
   void addDerivative(int i,double d);
+/// Apply the chain rule to the derivatives
+  void chainRule(double df);
 /// Get the derivative with respect to component n
   double getDerivative(const unsigned n) const;
 /// Clear the input force on the variable
@@ -91,7 +93,6 @@ public:
   double getForce() const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false
   bool applyForce( std::vector<double>& forces ) const ;
-
 /// Calculate the difference between the instantaneous value of the function and some other point
   double difference(double)const;
 /// Calculate the difference between two values of this function
@@ -103,12 +104,18 @@ public:
 
 inline
 void Value::set(double v){
+  value_set=true;
   value=v;
 }
 
 inline
 double Value::get()const{
   return value;
+}
+
+inline
+bool Value::valueHasBeenSet() const {
+  return value_set;
 }
 
 inline
@@ -142,7 +149,12 @@ void Value::resizeDerivatives(int n){
 inline
 void Value::addDerivative(int i,double d){
   plumed_massert(i<derivatives.size(),"derivative is out of bounds");
-  derivatives[i]=d;
+  derivatives[i]+=d;
+}
+
+inline
+void Value::chainRule(double df){
+  for(unsigned i=0;i<derivatives.size();++i) derivatives[i]*=df;
 }
 
 inline
@@ -153,6 +165,7 @@ void Value::clearInputForce(){
 
 inline
 void Value::clearDerivatives(){
+  value_set=false;
   derivatives.assign(derivatives.size(),0.0);
 }
 
