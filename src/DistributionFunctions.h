@@ -52,6 +52,24 @@ bool DistributionFunction::check() const {
   return fine;
 }
 
+class sum : public DistributionFunction {
+public:
+  sum( const std::vector<std::string>& parameters );
+  double compute( const double val, double& df );
+  double last_step( const double total, double& df );
+  std::string message();
+};
+
+class mean : public DistributionFunction {
+private:
+  double nvalues;
+public:
+  mean( const std::vector<std::string>& parameters );
+  double compute( const double val, double& df );
+  double last_step( const double total, double& df );
+  std::string message();
+};
+
 class less_than : public DistributionFunction {
 private:
   double r_0;
@@ -59,6 +77,28 @@ private:
   SwitchingFunction sf;
 public:
   less_than( const std::vector<std::string>& parameters );
+  double compute( const double val, double& df );
+  double last_step( const double total, double& df );
+  std::string message();
+};
+
+class more_than : public DistributionFunction {
+private:
+  double r_0;
+  unsigned nn,mm;
+  SwitchingFunction sf;
+public:
+  more_than( const std::vector<std::string>& parameters );
+  double compute( const double val, double& df );
+  double last_step( const double total, double& df );
+  std::string message();
+};
+
+class min : public DistributionFunction {
+private:
+  double beta;
+public:
+  min( const std::vector<std::string>& parameters );
   double compute( const double val, double& df );
   double last_step( const double total, double& df );
   std::string message();

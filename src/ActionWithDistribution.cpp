@@ -4,12 +4,12 @@ using namespace std;
 using namespace PLMD;
 
 void ActionWithDistribution::registerKeywords(Keywords& keys){
-//  keys.add("optional","MIN", "take the minimum value from these variables");
+  keys.add("nohtml","MIN","take the minimum value from these variables.  The continuous version of the minimum described above is calculated and beta must be specified in input");
 //  keys.add("optional","MAX", "take the maximum value from these variables");
-//  keys.add("optional","SUM", "take the sum of these variables");
-//  keys.add("optional","AVERAGE", "take the average value of these variables");
+  keys.add("nohtml","SUM", "take the sum of these variables");
+  keys.add("nohtml","AVERAGE", "take the average value of these variables");
   keys.add("nohtml","LESS_THAN", "take the number of variables less than the specified target.  This quantity is made differentiable using a switching function.  You can control the parameters of this switching function by specifying three numbers to the keyword (r_0, nn and mm).  If you are happy with the default values of nn=6 and mm=12 then you need only specify the target r_0.  The number of values less than the target is stored in a value called lt<target>.");
-//  keys.add("optional","MORE_THAN", "take the number of variables more than target");
+  keys.add("nohtml","MORE_THAN", "take the number of variables more than the specified target.  This quantity is made differentiable using a switching function.  You can control the parameters of this switching function by specifying three numbers to the keyword (r_0, nn and mm).  If you are happy with the default values of nn=6 and mm=12 then you need only specify the target r_0.  The number of values less than the target is stored in a value called gt<target>.");
 //  keys.add("optional","HISTOGRAM", "create a discretized histogram of the distribution");
 }
 
@@ -25,32 +25,53 @@ ActionWithDistribution::~ActionWithDistribution(){
 }
 
 void ActionWithDistribution::addDistributionFunction( std::string name, DistributionFunction* fun ){
-   if(all_values) all_values=false;  // Possibly will add functionality to delete all values here
+  if(all_values) all_values=false;  // Possibly will add functionality to delete all values here
 
-   // Check function is good 
-   if( !fun->check() ) error( fun->errorMessage() );
+  // Check function is good 
+  if( !fun->check() ) error( fun->errorMessage() );
 
-   // Add a value
-   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-   a->addComponentWithDerivatives( name );
-   unsigned fno=a->getNumberOfComponents()-1;
-   final_values.push_back( a->copyOutput( fno ) );
+  // Add a value
+  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
+  a->addComponentWithDerivatives( name );
+  unsigned fno=a->getNumberOfComponents()-1;
+  final_values.push_back( a->copyOutput( fno ) );
 
-   // Add the function   
-   plumed_massert( fno==functions.size(), "Number of functions does not match number of values" );
-   functions.push_back( fun );
-   log.printf("  value %s contains %s\n",( (a->copyOutput( fno ))->getName() ).c_str(),( functions[fno]->message() ).c_str() );
+  // Add the function   
+  plumed_massert( fno==functions.size(), "Number of functions does not match number of values" );
+  functions.push_back( fun );
+  log.printf("  value %s contains %s\n",( (a->copyOutput( fno ))->getName() ).c_str(),( functions[fno]->message() ).c_str() );
 }
 
 void ActionWithDistribution::readDistributionKeywords(){
- read=true; 
- ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
- plumed_massert(a,"can only do distribution on ActionsWithValue");
+  read=true; bool dothis; std::vector<std::string> params;
+  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
+  plumed_massert(a,"can only do distribution on ActionsWithValue");
 
- // Read Less_THAN keyword
- std::vector<std::string> params; parseVector("LESS_THAN",params);
- if( params.size()!=0 ){
+  // Read SUM keyword
+  parseFlag("SUM",dothis);
+  if( dothis ){
+     addDistributionFunction( "sum", new sum(params) );   
+  }
+  // Read AVERAGE keyword
+  parseFlag("AVERAGE",dothis);
+  if( dothis ){
+     params.resize(1); Tools::convert(getNumberOfFunctionsInDistribution(),params[0]);
+     addDistributionFunction( "average", new mean(params) );
+  }
+  // Read MIN keyword
+  parseVector("MIN",params);
+  if( params.size()!=0 ){ 
+     addDistributionFunction( "min", new min(params) );
+  }
+  // Read Less_THAN keyword
+  parseVector("LESS_THAN",params);
+  if( params.size()!=0 ){
      addDistributionFunction( "lt" + params[0], new less_than(params) );
+  }
+  // Read MORE_THAN keyword
+  parseVector("MORE_THAN",params);
+  if( params.size()!=0 ){
+     addDistributionFunction( "gt" + params[0], new more_than(params) );
   }
 
   if(all_values){
