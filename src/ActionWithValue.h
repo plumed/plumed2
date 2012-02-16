@@ -45,6 +45,7 @@ This is used for PLMD::Bias, PLMD::Colvar and PLMD::Function
 class ActionWithValue : 
   public virtual Action
 {
+friend class ActionWithDistribution;
 private:
 /// An array containing the values for this action
   std::vector<Value*> values;
