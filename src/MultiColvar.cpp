@@ -37,6 +37,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   keys.addFlag("PBC",true,"use the periodic boundary conditions when calculating distances");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
+  keys.reserve("atoms","ATOMS","the atoms involved in each of the collective variables you wish to calculate.  To compute a single CV use ATOMS.  If you use ATOMS1, ATOMS2, ATOMS3... multiple CVs will be calculated - one for each ATOM keyword you specify (all ATOM keywords should define the same number of atoms).  The eventual number of quantities calculated by this action will depend on what functions of the distribution you choose to calculate."); 
   ActionWithDistribution::registerKeywords( keys );
 } 
 
@@ -54,12 +55,21 @@ usepbc(true)
   }
 }
 
+void MultiColvar::readAtoms( int& natoms ){
+  if( keywords.exists("ATOMS") ) readAtomsKeyword( natoms );
+
+  if( !readatoms ) error("No atoms have been read in");
+  readDistributionKeywords();  // And read the ActionWithDistributionKeywords
+  requestAtoms();              // Request the atoms in ActionAtomistic and set up the value sizes
+}
+
 void MultiColvar::readAtomsKeyword( int& natoms ){ 
-  if(readatoms) error("Cannot read multiple input directvies simulataneously");
+  if( readatoms) return; 
 
   std::vector<AtomNumber> t;
   parseAtomList("ATOMS",t); 
   if( t.size()!=0 ){
+     readatoms=true;
      if( natoms>0 && t.size()!=natoms ){
         std::string nat; Tools::convert(natoms, nat );
         error("ATOMS keyword did not specify " + nat  + " atoms.");
@@ -97,14 +107,9 @@ void MultiColvar::readAtomsKeyword( int& natoms ){
            index_translator.push_back(1);
         }
         t.resize(0); ColvarAtoms.push_back( newlist );
-        newlist.clear(); readone=true;
+        newlist.clear(); readatoms=true;
      }
-     if( !readone ) return; 
   }
-
-  readatoms=true;              // Assert that we have read in the input atoms
-  readDistributionKeywords();  // And read the ActionWithDistributionKeywords
-  requestAtoms();              // Request the atoms in ActionAtomistic and set up the value sizes
 }
 
 void MultiColvar::requestAtoms(){
@@ -115,6 +120,7 @@ void MultiColvar::requestAtoms(){
    for(unsigned i=0;i<real_atoms.size();++i){
        if( index_translator[i]>0 ){ a.push_back(real_atoms[i]); index_translator[i]=nn; nn++; }
    }
+   printf("In requestion atoms number of atoms is %d \n",a.size() );
 
    ActionAtomistic::requestAtoms(a);
    if( usingDistributionFunctions() ){
@@ -122,6 +128,7 @@ void MultiColvar::requestAtoms(){
    } else {
        for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives( getThisFunctionsNumberOfDerivatives(i) );
    }
+   printf("Test two : %d\n",getPntrToComponent(0)->getNumberOfDerivatives());
 }
 
 // This is the preparation for neighbour list update

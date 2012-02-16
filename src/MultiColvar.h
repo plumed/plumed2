@@ -50,9 +50,11 @@ private:
   std::vector<unsigned> index_translator;
   std::vector<AtomNumber> real_atoms;
   std::vector<AtomList> ColvarAtoms;
-protected:
-/// Read the keyword ATOMS
+/// Read in ATOMS keyword
   void readAtomsKeyword( int& natoms );
+protected:
+/// Read in all the keywords that can be used to define atoms
+  void readAtoms( int& natoms );
 /// Update the atoms request
   void requestAtoms();
 /// Get the separation between a pair of vectors
