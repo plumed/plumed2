@@ -143,6 +143,8 @@ public:
 
   unsigned int addVirtualAtom(ActionWithVirtualAtom*);
   void removeVirtualAtom(ActionWithVirtualAtom*);
+  ActionWithVirtualAtom* getVirtualAtomsAction(unsigned)const;
+  bool isVirtualAtom(unsigned)const;
   void insertGroup(const std::string&name,const std::vector<unsigned>&a);
   void removeGroup(const std::string&name);
   void writeBinary(std::ostream&)const;
@@ -157,6 +159,17 @@ inline
 const int & Atoms::getNatoms()const{
   return natoms;
 }
+
+inline
+bool Atoms::isVirtualAtom(unsigned i)const{
+  return i>=getNatoms();
+}
+
+inline
+ActionWithVirtualAtom* Atoms::getVirtualAtomsAction(unsigned i)const{
+  return virtualAtomsActions[i-getNatoms()];
+}
+
 
 
 }

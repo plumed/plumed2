@@ -44,7 +44,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   unique.clear();
   for(unsigned i=0;i<indexes.size();i++){
     plumed_massert(indexes[i]<n,"atom out of range");
-    if(indexes[i]>=atoms.getNatoms()) addDependency(atoms.virtualAtomsActions[indexes[i]-atoms.getNatoms()]);
+    if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
 // only real atoms are requested to lower level Atoms class
     else unique.insert(indexes[i]);
   }
