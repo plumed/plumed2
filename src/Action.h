@@ -282,7 +282,8 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
 template<class T>
 bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
-  plumed_massert( ( keywords.style(key,"numbered") || keywords.style(key,"atoms") ),"keyword " + key + " has not been registered so you can read in numbered versions");
+  plumed_massert( ( keywords.style(key,"nohtml") || keywords.style(key,"numbered") || keywords.style(key,"atoms") ),
+                    "keyword " + key + " has not been registered so you can read in numbered versions");
 
   unsigned size=t.size(); bool skipcheck=false;
   if(size==0) skipcheck=true;
@@ -290,6 +291,8 @@ bool Action::parseNumberedVector(const std::string&key, const int no, std::vecto
   bool found=Tools::parseVector(line,key+num,t);
   if(  keywords.style(key,"numbered") ){
     if (!skipcheck && found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
+  } else if ( !found ){
+    t.resize(0);
   }
   return found;
 }
