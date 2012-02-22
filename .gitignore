@@ -8,11 +8,12 @@
 *.tmp
 *.dylib
 *.dll
-*.swp
+*.sw?
 *.exe
 a.out
 makefile.dep
 /Makefile.conf
 /sourceme.sh
 /tmp
+/codes
 core
