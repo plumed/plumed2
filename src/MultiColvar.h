@@ -4,6 +4,7 @@
 #include "ActionAtomistic.h"
 #include "ActionWithValue.h"
 #include "ActionWithDistribution.h"
+#include "DynamicList.h"
 #include <vector>
 
 #define PLUMED_MULTICOLVAR_INIT(ao) Action(ao),MultiColvar(ao)
@@ -12,30 +13,30 @@ namespace PLMD {
 
 class MultiColvar;
 
-class AtomList {
-private:
-  MultiColvar* mcolvar;
-  std::vector<unsigned> all_atoms;
-  std::vector<unsigned> current_atoms;
-public:
-  AtomList( MultiColvar* c );
-  void addAtom( const unsigned n ); 
-  void clear();
-  void getAtoms(std::vector<Vector>& positions ) const ;
-  unsigned getNumberOfAtoms() const;
-  unsigned getAtomNumber( const unsigned& i ) const ;
-};
-
-inline
-unsigned AtomList::getNumberOfAtoms() const {
-  return current_atoms.size();
-}
-
-inline
-unsigned AtomList::getAtomNumber( const unsigned& i ) const {
-  plumed_massert(i<current_atoms.size(),"There are not enough atoms");
-  return all_atoms[ current_atoms[i] ];
-}
+//class AtomList {
+//private:
+//  MultiColvar* mcolvar;
+//  std::vector<unsigned> all_atoms;
+//  std::vector<unsigned> current_atoms;
+//public:
+//  AtomList( MultiColvar* c );
+//  void addAtom( const unsigned n ); 
+//  void clear();
+//  void getAtoms(std::vector<Vector>& positions ) const ;
+//  unsigned getNumberOfAtoms() const;
+//  unsigned getAtomNumber( const unsigned& i ) const ;
+//};
+//
+//inline
+//unsigned AtomList::getNumberOfAtoms() const {
+//  return current_atoms.size();
+//}
+//
+//inline
+//unsigned AtomList::getAtomNumber( const unsigned& i ) const {
+//  plumed_massert(i<current_atoms.size(),"There are not enough atoms");
+//  return all_atoms[ current_atoms[i] ];
+//}
 
 /// Action representing a collective variable
 class MultiColvar :
@@ -43,15 +44,16 @@ class MultiColvar :
   public ActionWithValue,
   public ActionWithDistribution
   {
-friend class AtomList;
+//friend class AtomList;
 private:
   bool usepbc;
   bool readatoms;
-  std::vector<unsigned> index_translator;
-  std::vector<AtomNumber> real_atoms;
-  std::vector<AtomList> ColvarAtoms;
+  DynamicList all_atoms;
+  std::vector<DynamicList> colvar_atoms;
 /// Read in ATOMS keyword
   void readAtomsKeyword( int& natoms );
+/// Retrieve the positions of the atoms
+  void retrieveAtoms( const unsigned& j, std::vector<Vector>& pos ); 
 protected:
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
@@ -59,8 +61,6 @@ protected:
   void requestAtoms();
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
-/// Get the position of a particular atom in the array
-  Vector getAtomPosition( const unsigned j ) const ;
 public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){};
@@ -81,20 +81,12 @@ public:
 
 inline
 unsigned MultiColvar::getNumberOfFunctionsInDistribution(){
-  return ColvarAtoms.size();
+  return colvar_atoms.size();
 }
 
 inline
 unsigned MultiColvar::getThisFunctionsNumberOfDerivatives( const unsigned& j ){
-  return 3*ColvarAtoms[j].getNumberOfAtoms() + 9;
-}
-
-inline
-Vector MultiColvar::getAtomPosition( const unsigned j ) const {
-  plumed_massert(j<real_atoms.size(),"Atoms has gone out of bounds");
-  unsigned atom=index_translator[j];
-  plumed_massert(atom>=0,"Atom has currently not been requested");
-  return getPosition(atom);
+  return 3*colvar_atoms[j].getNumberActive() + 9;
 }
 
 }

@@ -6,31 +6,6 @@
 using namespace std;
 using namespace PLMD;
 
-AtomList::AtomList( MultiColvar* c ) : 
-mcolvar(c)
-{
-}
-
-void AtomList::addAtom(const unsigned n ){
-  all_atoms.push_back(n);                            // The full set of atoms
-  current_atoms.push_back(all_atoms.size()-1);       // The list of atoms that are currently active
-}
-
-void AtomList::clear(){
-  all_atoms.resize(0); 
-  current_atoms.resize(0);
-}
-
-void AtomList::getAtoms( std::vector<Vector>& positions ) const {
-  unsigned natoms=positions.size();
-  if( positions.size()!=natoms ) positions.resize(natoms);
-
-  unsigned atom;
-  for(unsigned i=0;i<current_atoms.size();++i){
-      positions[i]=mcolvar->getAtomPosition( getAtomNumber(i) );
-  }
-}
-
 void MultiColvar::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
@@ -59,6 +34,15 @@ void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("ATOMS") ) readAtomsKeyword( natoms );
 
   if( !readatoms ) error("No atoms have been read in");
+
+  // Now set up all the lists for the first time
+  for(unsigned i=0;i<colvar_atoms.size();++i){
+     colvar_atoms[i].activateAll();
+     colvar_atoms[i].updateActiveMembers();
+     activateLinks( colvar_atoms[i], all_atoms );
+  }
+  all_atoms.updateActiveMembers();
+
   readDistributionKeywords();  // And read the ActionWithDistributionKeywords
   requestAtoms();              // Request the atoms in ActionAtomistic and set up the value sizes
 }
@@ -76,18 +60,17 @@ void MultiColvar::readAtomsKeyword( int& natoms ){
      } else {
         natoms=t.size();
      }
-     AtomList newlist(this);
+     DynamicList newlist;
      for(unsigned i=0;i<natoms;++i){ 
-        newlist.addAtom(i); 
-        real_atoms.push_back( t[i] ); 
-        index_translator.push_back(1); 
+        newlist.addIndexToList(i);
+        all_atoms.addIndexToList( t[i].index() ); 
      }
-     ColvarAtoms.push_back( newlist );
+     colvar_atoms.push_back( newlist );
      log.printf("  Colvar 1 is calculated from atoms : ");
      for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
      log.printf("\n");
   } else {
-     bool readone=false; AtomList newlist(this);
+     bool readone=false; DynamicList newlist;
      for(int i=1;;++i ){
         parseAtomList("ATOMS", i, t );
         if( t.size()==0 ) break;
@@ -102,24 +85,23 @@ void MultiColvar::readAtomsKeyword( int& natoms ){
             error("ATOMS" + ss + " keyword has the wrong number of atoms"); 
         }
         for(unsigned j=0;j<natoms;++j){ 
-           newlist.addAtom( natoms*(i-1)+j ); 
-           real_atoms.push_back( t[j] ); 
-           index_translator.push_back(1);
+           newlist.addIndexToList( natoms*(i-1)+j ); 
+           all_atoms.addIndexToList( t[j].index() );
         }
-        t.resize(0); ColvarAtoms.push_back( newlist );
+        t.resize(0); colvar_atoms.push_back( newlist );
         newlist.clear(); readatoms=true;
      }
   }
 }
 
 void MultiColvar::requestAtoms(){
-   plumed_massert( index_translator.size()==real_atoms.size(), "There are not translations for all the atom numbers");
-   std::vector<AtomNumber> a; 
+   unsigned natoms=all_atoms.getNumberActive();
+   std::vector<AtomNumber> a(natoms); 
+   for(unsigned i=0;i<natoms;++i) a[i].setIndex( all_atoms(i) );
 
-   unsigned nn=0; 
-   for(unsigned i=0;i<real_atoms.size();++i){
-       if( index_translator[i]>0 ){ a.push_back(real_atoms[i]); index_translator[i]=nn; nn++; }
-   }
+//   printf("Requesting atoms : ");
+//   for(unsigned i=0;i<natoms;++i) printf(" %d",a[i].serial() );
+//   printf("\n");
 
    ActionAtomistic::requestAtoms(a);
    if( usingDistributionFunctions() ){
@@ -181,11 +163,19 @@ void MultiColvar::requestAtoms(){
 //  }
 //}
 
+void MultiColvar::retrieveAtoms( const unsigned& j, std::vector<Vector>& pos ){
+  unsigned natoms=colvar_atoms[j].getNumberActive();
+  plumed_assert( pos.size()==natoms );
+  for(unsigned i=0;i<natoms;++i){
+      pos[i]=getPosition( colvar_atoms[j](i) );
+  }
+}
+
 void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in ){
-  Tensor vir; unsigned natoms=ColvarAtoms[j].getNumberOfAtoms();
+  Tensor vir; unsigned natoms=colvar_atoms[j].getNumberActive();
   std::vector<Vector> pos(natoms), der(natoms); 
   // Retrieve the atoms
-  ColvarAtoms[j].getAtoms( pos );
+  retrieveAtoms( j, pos );  
   // Compute the derivatives
   double value=compute( pos, der, vir );
   // Put all this in the value we are passing back
@@ -210,9 +200,9 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in ){
 
 void MultiColvar::mergeDerivatives( const unsigned j, Value* value_in, Value* value_out ){    
 
-  unsigned thisatom; unsigned innat=ColvarAtoms[j].getNumberOfAtoms();
+  unsigned thisatom; unsigned innat=colvar_atoms[j].getNumberActive();
   for(unsigned i=0;i<innat;++i){
-     thisatom=index_translator[ ColvarAtoms[j].getAtomNumber(i) ];
+     thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
      plumed_assert( thisatom>=0 ); 
      value_out->addDerivative( 3*thisatom+0, value_in->getDerivative(3*i+0) );
      value_out->addDerivative( 3*thisatom+1, value_in->getDerivative(3*i+1) );
