@@ -44,6 +44,8 @@ public:
   static bool convert(const std::string & str,std::string & t);
 /// Convert an int to a string
   static void convert(int i,std::string & str);
+/// Convert a double to a string
+  static void double2string(double d, std::string& str);
 /// Remove trailing blanks
   static void trim(std::string & s);
 /// Remove trailing comments
