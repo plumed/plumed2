@@ -9,6 +9,7 @@
 #include "Value.h"
 #include "Tools.h"
 #include "SwitchingFunction.h"
+#include "HistogramBead.h"
 
 namespace PLMD{
 
@@ -89,6 +90,17 @@ private:
   SwitchingFunction sf;
 public:
   more_than( const std::vector<std::string>& parameters );
+  double compute( const double val, double& df );
+  double last_step( const double total, double& df );
+  std::string message();
+};
+
+class within : public DistributionFunction {
+private:
+  double a,b,sigma;
+  HistogramBead hist;
+public:
+  within( const std::vector<std::string>& parameters );
   double compute( const double val, double& df );
   double last_step( const double total, double& df );
   std::string message();
