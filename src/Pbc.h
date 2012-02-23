@@ -12,6 +12,7 @@ class Pbc{
   Tensor invBox;
 public:
   Pbc();
+  double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
   Vector distance(const Vector&,const Vector&)const;
   void setBox(const Tensor&);
   const Tensor& getBox()const;

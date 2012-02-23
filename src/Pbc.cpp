@@ -37,6 +37,11 @@ void Pbc::setBox(const Tensor&b){
   else type=generic;
 }
 
+double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const {
+  if(pbc){ return ( distance(v1,v2) ).modulo(); }
+  else{ return ( delta(v1,v2) ).modulo(); }
+}
+
 Vector Pbc::distance(const Vector&v1,const Vector&v2)const{
   Vector d=delta(v1,v2);
   if(type==unset){
