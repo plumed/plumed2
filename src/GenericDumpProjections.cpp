@@ -38,6 +38,7 @@ void GenericDumpProjections::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
+  keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the derivatives should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the derivatives");
   keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
@@ -59,10 +60,9 @@ fp(NULL)
     log.printf("  on file %s\n",file.c_str());
     log.printf("  with format %s\n",fmt.c_str());
     fprintf(fp,"%s","#! FIELDS time ");
-    const std::vector<Value*>& arguments(getArguments());
     for(unsigned i=0;i<getNumberOfArguments();i++){
       for(unsigned j=0;j<getNumberOfArguments();j++){
-        fprintf(fp," %s-%s",arguments[i]->getFullName().c_str(),arguments[j]->getFullName().c_str());
+         fprintf(fp," %s-%s",getPntrToArgument(i)->getName().c_str(),getPntrToArgument(j)->getName().c_str());
       }
     };
     fprintf(fp,"%s","\n");

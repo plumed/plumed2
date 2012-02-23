@@ -50,6 +50,8 @@ public:
   void calculateNumericalDerivatives();
   void lockRequests();
   void unlockRequests();
+/// Returns an array of pointers to the arguments
+  std::vector<Value*>    & getArguments();
 };
 
 
@@ -81,6 +83,11 @@ void ActionWithArguments::lockRequests(){
 inline
 void ActionWithArguments::unlockRequests(){
   lockRequestArguments=false;
+}
+
+inline
+std::vector<Value*> & ActionWithArguments::getArguments(){
+  return arguments;
 }
 
 }

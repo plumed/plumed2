@@ -64,10 +64,10 @@ protected:
   void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
   void setPeriodic( const double min, const double max );
-/// Set the value of quantity with name <label>
-  void setValue( const double& f);
 /// Get a pointer to the default value
   Value* getPntrToValue();
+/// Set the default value (the one without name)
+  void setValue(const double& d);
 
 // -------- The action has multiple components ---------- //
 
@@ -122,8 +122,6 @@ public:
   void setGradientsIfNeeded();
 /// Set the value
   void setValue(Value*,double);
-/// Set the default value (the one without name)
-  void setValue(double);
 /// Check if numerical derivatives should be used
   bool checkNumericalDerivatives() const ;
 };

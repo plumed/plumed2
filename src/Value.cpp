@@ -9,7 +9,9 @@
 
 using namespace PLMD;
 
-Value::Value(const std::string& name, const bool withderiv):
+Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv):
+  action(av),
+  value_set(false),
   value(0.0),
   name(name),
   hasDeriv(withderiv),
@@ -49,12 +51,11 @@ void Value::getDomain(double&min,double&max) const {
   min=this->min;
   max=this->max;
 }
-<<<<<<< HEAD
 
 void Value::setGradients(){
   gradients.clear();
-  ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(&action);
-  ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(&action);
+  ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
+  ActionWithArguments*aw=dynamic_cast<ActionWithArguments*>(action);
   if(aa){
     Atoms&atoms((aa->plumed).getAtoms());
     for(unsigned j=0;j<aa->getNumberOfAtoms();++j){

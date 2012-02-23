@@ -29,6 +29,10 @@ A class for holding the value of a function together with its derivatives.
 class Value{
 friend class ActionWithValue;
 private:
+/// The action in which this quantity is calculated
+  ActionWithValue* action;
+/// Had the value been set
+  bool value_set;
 /// The value of the quantity
   double value;
 /// The force acting on this quantity
@@ -51,8 +55,10 @@ private:
 /// Complete the setup of the periodicity
   void setupPeriodicity();
 public:
-  void setGradients();
-  Value(const std::string& name, const bool withderiv);
+/// A constructor that can be used to make Vectors of values
+  Value() : action(NULL), hasDeriv(true) {} ;
+/// A constructor that is used throughout the code to setup the value poiters
+  Value(ActionWithValue* av, const std::string& name, const bool withderiv);
 /// Set the value of the function 
   void set(double);
 /// Get the value of the function
@@ -90,6 +96,9 @@ public:
   double difference(double)const;
 /// Calculate the difference between two values of this function
   double difference(double,double)const;
+/// This sets up the gradients
+  void setGradients();
+  static double projection(const Value&,const Value&);
 };
 
 inline

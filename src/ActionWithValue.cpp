@@ -58,12 +58,12 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 
 void ActionWithValue::addValue(){
   plumed_massert(values.size()==0,"You have already added the default value for this action");
-  values.push_back(new Value(getLabel(), false ) );
+  values.push_back(new Value(this,getLabel(), false ) );
 }
 
 void ActionWithValue::addValueWithDerivatives(){
   plumed_massert(values.size()==0,"You have already added the default value for this action");
-  values.push_back(new Value(getLabel(), true ) );
+  values.push_back(new Value(this,getLabel(), true ) );
 }
 
 void ActionWithValue::setNotPeriodic(){
@@ -94,7 +94,7 @@ void ActionWithValue::addComponent( const std::string& name ){
      plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
      plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
-  values.push_back(new Value(thename, false ) );
+  values.push_back(new Value(this,thename, false ) );
 }
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name ){
@@ -103,7 +103,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ){
      plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
      plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
-  values.push_back(new Value(thename, true ) );
+  values.push_back(new Value(this,thename, true ) );
 }
 
 int ActionWithValue::getComponent( const std::string& name ) const {
@@ -125,7 +125,7 @@ void ActionWithValue::componentIsNotPeriodic( const std::string& name ){
 
 void ActionWithValue::setGradientsIfNeeded(){
   if(isOptionOn("GRADIENTS")) {
- 	 for(unsigned i=0;i<values.size();i++) values[i]->setGradients();
+     for(unsigned i=0;i<values.size();i++) values[i]->setGradients();
   }
 }
 
