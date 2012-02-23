@@ -120,12 +120,12 @@ void Action::setOption(const std::string &s){
 // This overloads the action and activate some options  
   options.insert(s);
   for(Dependencies::iterator p=after.begin();p!=after.end();p++) (*p)->setOption(s);
-};
+}
 
 void Action::clearOptions(){
 // This overloads the action and activate some options  
   options.clear();
-};
+}
 
 
 void Action::clearDependencies(){

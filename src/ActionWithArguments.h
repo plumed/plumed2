@@ -29,9 +29,6 @@ class ActionWithArguments:
 protected:
 ///
   double getProjection(unsigned i,unsigned j)const;
-public:
-/// Registers the list of keywords
-  static void registerKeywords( Keywords& keys );
 /// Returns the value of an argument
   double getArgument( const unsigned n ) const;
 /// Return a pointer to specific argument
