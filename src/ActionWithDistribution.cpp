@@ -118,9 +118,17 @@ void ActionWithDistribution::readDistributionKeywords(){
         final_values.push_back( a->copyOutput(i) );
      }
   } else {
-     totals.resize( a->getNumberOfComponents() );
      plumed_massert( functions.size()==final_values.size(), "number of functions does not match number of values" );
+     totals.resize( a->getNumberOfComponents() );
+     // This sets up the dynamic list that holds what we are calculating
+     for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ members.addIndexToList(i); }
+     resetMembers();
   }
+}
+
+void ActionWithDistribution::resetMembers(){
+  members.activateAll(); 
+  members.updateActiveMembers();
 }
 
 void ActionWithDistribution::calculate(){
@@ -135,27 +143,38 @@ void ActionWithDistribution::calculate(){
       Value* tmpvalue=new Value();
       Value* tmp2value=new Value();
       unsigned kk;
-      for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){
+      for(unsigned i=0;i<members.getNumberActive();++i){
+          // Retrieve the function we are calculating from the dynamic list
+          kk=members[i];
           // Make sure we have enough derivatives in this value
-          unsigned nder=getThisFunctionsNumberOfDerivatives(i);
+          unsigned nder=getThisFunctionsNumberOfDerivatives(kk);
           if( tmpvalue->getNumberOfDerivatives()!=nder ){
               tmpvalue->resizeDerivatives( nder );
               tmp2value->resizeDerivatives( nder );
           }
  
           // Calculate the value of this particular function 
-          calculateThisFunction( i, tmpvalue );
+          calculateThisFunction( kk, tmpvalue );
+          // Skip if we are not calculating this particular value
+          if( !tmpvalue->valueHasBeenSet() ){ members.deactivate(kk); continue; }
           // Now incorporate the derivative of the function into the derivatives for the min etc
           for(unsigned j=0;j<totals.size();++j){
              totals[j]+=functions[j]->calculate( tmpvalue, tmp2value );
-             mergeDerivatives( i, tmp2value, final_values[j] );
+             mergeDerivatives( kk, tmp2value, final_values[j] );
              tmp2value->clearDerivatives();
           }
           tmpvalue->clearDerivatives();
       }
-      //
+      // Update the dynamic list
+      members.updateActiveMembers();
+      // Delete the tmpvalues
       delete tmpvalue; delete tmp2value;
       // Set the final value of the function
       for(unsigned j=0;j<totals.size();++j) functions[j]->finish( totals[j], final_values[j] );
   }
+
+  for(unsigned i=0;i<totals.size();++i){
+      if( !final_values[i]->valueHasBeenSet() ) error("error in input for this action.  Not all values have been set"); 
+  }
+
 }

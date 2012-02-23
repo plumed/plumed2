@@ -6,6 +6,7 @@
 #include "Value.h"
 #include "PlumedException.h"
 #include "DistributionFunctions.h"
+#include "DynamicList.h"
 #include <vector>
 
 namespace PLMD{
@@ -22,11 +23,15 @@ private:
   std::vector<Value*> final_values;
 /// Pointers to the functions we are using on each value
   std::vector<DistributionFunction*> functions;
+/// The list of quantities that should be calculated
+  DynamicList members;
 protected:
 /// Add a distribution function to the list
   void addDistributionFunction( std::string name, DistributionFunction* fun );
 /// Read the keywords for the distribution (this routine must be called after construction of ActionWithValue)
   void readDistributionKeywords();
+/// This resets members so that we calculate all functions - this is used for neighbour list update
+  void resetMembers();
 public:
   static void registerKeywords(Keywords& keys);
   ActionWithDistribution(const ActionOptions&ao);

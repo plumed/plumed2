@@ -26,13 +26,25 @@ private:
   std::vector<unsigned> active;
 public:
 /// An operator that returns the element from the current active list
-  inline unsigned operator () (const unsigned& i) const { return active[i]; }
+  inline unsigned operator [] (const unsigned& i) const { 
+     plumed_assert(!inactive); plumed_assert( i<active.size() );
+     return active[i]; 
+  }
+/// An operator that returns the element from the full list (used in neighbour lists)
+  inline unsigned operator () (const unsigned& i) const {
+     plumed_assert( i<all.size() );
+     return all[i];
+  }
 /// Clear the list
   void clear();
+/// Return the total number of elements in the list
+  unsigned fullSize() const;
 /// Return the number of elements that are currently active
   unsigned getNumberActive() const;
 /// Add something to the active list
   void addIndexToList( const unsigned ii );
+/// Make a particular element inactive
+  void deactivate( const unsigned ii ); 
 /// Make everything in the list inactive
   void deactivateAll();
 /// Make something active
@@ -49,6 +61,11 @@ void DynamicList::clear() {
 }
 
 inline
+unsigned DynamicList::fullSize() const {
+  return all.size();
+}
+
+inline
 unsigned DynamicList::getNumberActive() const {
   return active.size();
 }
@@ -59,17 +76,29 @@ void DynamicList::addIndexToList( const unsigned ii ){
 }
 
 inline
+void DynamicList::deactivate( const unsigned ii ){
+  plumed_massert(ii<all.size(),"ii is out of bounds");
+  translator[ii]=-1; inactive=true;
+  for(unsigned i=0;i<translator.size();++i){
+     if(translator[i]>0){ inactive=false; break; }
+  }
+}
+
+inline
 void DynamicList::deactivateAll(){
+  inactive=true;
   for(unsigned i=0;i<translator.size();++i) translator[i]=-1;
 }
 
 inline
 void DynamicList::activate( const unsigned ii ){
-  translator[ii]=1;
+  plumed_massert(ii<all.size(),"ii is out of bounds");
+  inactive=false; translator[ii]=1;
 }
 
 inline
 void DynamicList::activateAll(){
+  inactive=false;
   for(unsigned i=0;i<translator.size();++i) translator[i]=1;
 }
 
@@ -77,7 +106,7 @@ inline
 void DynamicList::updateActiveMembers(){
   unsigned kk=0; active.resize(0);
   for(unsigned i=0;i<all.size();++i){
-      if( translator[i]>0 ){ translator[i]=kk; active.push_back( all[i] ); kk++; } 
+      if( translator[i]>=0 ){ translator[i]=kk; active.push_back( all[i] ); kk++; } 
   }
   plumed_assert( kk==active.size() );
   if( kk==0 ) inactive=true;
@@ -85,7 +114,9 @@ void DynamicList::updateActiveMembers(){
 
 inline
 unsigned linkIndex( const unsigned ii, const DynamicList& l1, const DynamicList& l2 ){
+  plumed_massert(ii<l1.active.size(),"ii is out of bounds");
   unsigned kk; kk=l1.active[ii];
+  plumed_massert(kk<l2.all.size(),"the lists are mismatched");
   plumed_massert( l2.translator[kk]>=0, "This index is not currently in the second list" );
   unsigned nn; nn=l2.translator[kk]; 
   return nn; 
