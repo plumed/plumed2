@@ -4,6 +4,7 @@
 #include "ActionPilot.h"
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
+#include "ActionWithVirtualAtom.h"
 #include "Atoms.h"
 #include <set>
 #include "PlumedConfig.h"
@@ -381,7 +382,10 @@ void PlumedMain::prepareDependencies(){
 //
 
 // First switch off all actions
-  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++) (*p)->deactivate();
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++){
+     (*p)->deactivate();
+     (*p)->clearOptions();
+  }
 
 // for optimization, an "active" flag remains false if no action at all is active
   active=false;
@@ -399,6 +403,7 @@ void PlumedMain::prepareDependencies(){
       if(Colvar *c=dynamic_cast<Colvar*>(*p)) {
         if(c->checkIsEnergy()) collectEnergy=true;
       }
+      if((*p)->checkNeedsGradients()) (*p)->setOption("GRADIENTS");
     }
   }
   atoms.setCollectEnergy(collectEnergy);
@@ -452,6 +457,9 @@ void PlumedMain::justCalculate(){
       if(av)for(int i=0;i<av->getNumberOfValues();++i){
         if(av->getValue(i)->getName()=="bias") bias+=av->getValue(i)->get();
       }
+      if(av)av->setGradientsIfNeeded();	
+      ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(*p);
+      if(avv)avv->setGradientsIfNeeded();	
     }
   }
   stopwatch.stop("4 Calculating (forward loop)");

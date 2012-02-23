@@ -26,6 +26,8 @@ class ActionWithArguments:
 protected:
                            ActionWithArguments(const ActionOptions&);
   virtual                 ~ActionWithArguments(){};
+///
+  double getProjection(unsigned i,unsigned j)const;
 public:
 /// Registers the list of keywords
   static void registerKeywords( Keywords& keys );

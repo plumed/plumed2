@@ -60,7 +60,10 @@ private:
 /// Switch to activate Action on this step.
   bool active;
 
-protected:
+/// Option that you might have enabled 
+  std::set<std::string> options; 
+
+public:
 
 /// Reference to main plumed object
   PlumedMain& plumed;
@@ -165,17 +168,28 @@ public:
 /// Set action to active
   virtual void activate();
 
+///
+  virtual void setOption(const std::string &s);
+
+  virtual void clearOptions();
+
 /// Set action to inactive
   virtual void deactivate();
 
 /// Check if action is active
   bool isActive()const;
 
+/// Check if an option is on
+  bool isOptionOn(const std::string &s)const;
+
 /// Return dependencies
   const Dependencies & getDependencies()const{return after;}
 
 /// Check if numerical derivatives should be performed
   virtual bool checkNumericalDerivatives()const{return false;}
+
+/// Check if the action needs gradient
+  virtual bool checkNeedsGradients()const{return false;}
 
 /// Perform calculation using numerical derivatives
   virtual void calculateNumericalDerivatives();
@@ -282,12 +296,18 @@ bool Action::parseNumberedVector(const std::string&key, const int no, std::vecto
 
 inline
 void Action::deactivate(){
+  options.clear();
   active=false;
 }
 
 inline
 bool Action::isActive()const{
   return active;
+}
+
+inline
+bool Action::isOptionOn(const std::string &s)const{
+  return options.count(s);
 }
 
 }

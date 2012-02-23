@@ -91,4 +91,9 @@ void ActionWithValue::clearDerivatives(){
   for(unsigned i=0;i<values.size();i++) values[i]->clearDerivatives();
 }
 
+void ActionWithValue::setGradientsIfNeeded(){
+  if(isOptionOn("GRADIENTS")) {
+ 	 for(unsigned i=0;i<values.size();i++) values[i]->setGradients();
+  }
+}
 

@@ -3,8 +3,11 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include "PlumedException.h"
 #include "Tools.h"
+#include "AtomNumber.h"
+#include "Vector.h"
 
 namespace PLMD{
 
@@ -21,6 +24,7 @@ class Value{
   double inputForce;
   bool forced;
   std::vector<double> derivatives;
+  std::map<AtomNumber,Vector> gradients;
   std::string name;
   bool deriv;
   enum {unset,periodic,notperiodic} periodicity;
@@ -28,6 +32,7 @@ class Value{
   double max_minus_min;
   double inv_max_minus_min;
 public:
+  void setGradients();
   Value(ActionWithValue&action,const std::string& name);
   void set(double);
   double get()const;
@@ -53,6 +58,7 @@ public:
 
 /// check if a force has been added at this step
   bool checkForced()const;
+  static double projection(const Value&,const Value&);
 
 };
 

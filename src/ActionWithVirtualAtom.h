@@ -23,6 +23,7 @@ class ActionWithVirtualAtom:
 {
   unsigned index;
   std::vector<Tensor> derivatives;
+  std::map<AtomNumber,Tensor> gradients;
   void apply();
 protected:
 /// Set position of the virtual atom
@@ -36,11 +37,14 @@ protected:
 /// Set the derivatives of virtual atom coordinate wrt atoms on which it dependes
   void setAtomsDerivatives(const std::vector<Tensor> &d);
 public:
+  void setGradients();
+  const std::map<AtomNumber,Tensor> & getGradients()const;
 /// Return the atom id of the corresponding virtual atom
   AtomNumber getIndex()const;
   ActionWithVirtualAtom(const ActionOptions&ao);
   ~ActionWithVirtualAtom();
   static void registerKeywords(Keywords& keys);
+  void setGradientsIfNeeded();
 };
 
 inline
@@ -66,6 +70,11 @@ void ActionWithVirtualAtom::setCharge(double c){
 inline
 void ActionWithVirtualAtom::setAtomsDerivatives(const std::vector<Tensor> &d){
   derivatives=d;
+}
+
+inline
+const std::map<AtomNumber,Tensor> & ActionWithVirtualAtom::getGradients()const{
+  return gradients;
 }
 
 }

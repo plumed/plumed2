@@ -34,7 +34,7 @@ class ActionAtomistic :
 
   bool                  lockRequestAtoms; // forbid changes to request atoms
 
-protected:
+public:
 /// Request an array of atoms.
 /// This method is used to ask for a list of atoms. Atoms
 /// should be asked for by number. If this routine is called

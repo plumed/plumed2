@@ -10,6 +10,7 @@ void ActionWithVirtualAtom::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionAtomistic::registerKeywords(keys);
   keys.add("atoms","ATOMS","the list of atoms which are involved the virtual atom's definition");
+  keys.addFlag("CALC_GRADIENTS", false, "  calculate the vector of gradients");
 }
 
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
@@ -33,6 +34,31 @@ void ActionWithVirtualAtom::apply(){
 void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a){
   ActionAtomistic::requestAtoms(a);
   derivatives.resize(a.size());
+}
+
+void ActionWithVirtualAtom::setGradients(){
+  Atoms&atoms(plumed.getAtoms());
+  gradients.clear();
+  for(unsigned i=0;i<getNumberOfAtoms();i++){
+    AtomNumber an=getAbsoluteIndex(i);
+    // this case if the atom is a virtual one 	 
+    if(atoms.isVirtualAtom(an.index())){
+      const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an.index());
+      for(std::map<AtomNumber,Tensor>::const_iterator p=a->gradients.begin();p!=a->gradients.end();++p){
+        gradients[(*p).first]+=matmul(derivatives[i],(*p).second);
+      }
+    // this case if the atom is a normal one 	 
+    } else {
+      gradients[an]+=derivatives[i];
+    }
+  }
+}
+
+
+void ActionWithVirtualAtom::setGradientsIfNeeded(){
+  if(isOptionOn("GRADIENTS")) { 
+	setGradients() ;	
+  }
 }
 
 }

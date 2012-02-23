@@ -102,6 +102,15 @@ void ActionWithArguments::calculateNumericalDerivatives(){
   }
 }
 
+double ActionWithArguments::getProjection(unsigned i,unsigned j)const{
+  plumed_massert(i<arguments.size()," making projections with an index which  is too large");
+  plumed_massert(j<arguments.size()," making projections with an index which  is too large");
+  const Value* v1=arguments[i];
+  const Value* v2=arguments[j];
+  return Value::projection(*v1,*v2);
+}
+
+
 
 
 

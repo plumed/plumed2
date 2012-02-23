@@ -73,6 +73,8 @@ public:
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters
   void clearDerivatives();
+/// Calculate the gradients and store them for all the values (need for projections) 
+  void setGradientsIfNeeded();
 /// Set the value
   void setValue(Value*,double);
 /// Set the default value (the one without name)
