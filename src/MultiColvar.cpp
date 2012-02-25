@@ -92,7 +92,8 @@ void MultiColvar::readAtoms( int& natoms ){
 }
 
 void MultiColvar::createNeighbourList( std::vector<std::pair<unsigned,unsigned> >& pairs ){
-  if( !keywords.exists("NL_CUTOFF") ) error("You have not asserted that you are using the neighbour list when registering keywords");
+  plumed_massert(!setupList,"Neighbour list has already been set up");
+  plumed_massert(keywords.exists("NL_CUTOFF"),"You have not asserted that you are using the neighbour list when registering keywords");
   
   if( updateFreq>0 ){
      for(unsigned i=0;i<pairs.size();++i) nlist.addPair( pairs[i].first, pairs[i].second ); 
