@@ -39,13 +39,16 @@ std::string less_than::message(){
   return ostr.str();
 }
 
-double less_than::compute( const double p, double& df ){
-  double f; f=sf.calculate(p, df); df*=p;
+double less_than::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
+  copyDerivatives( value_in, value_out );
+  double p, df, f; p=value_in->get(); 
+  f=sf.calculate(p, df); df*=p;
+  value_out->chainRule(df); value_out->set(f);
   return f;
 }
 
-double less_than::last_step( const double p, double& df ){
-  df=1.0; return p;
+void less_than::finish( const double& p, Value* value_out ){
+  value_out->set(p);
 }
 
 }

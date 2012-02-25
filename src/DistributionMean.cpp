@@ -25,12 +25,13 @@ std::string mean::message(){
   return ostr.str();
 }
 
-double mean::compute( const double p, double& df ){
-  df=1.0; return p;
+double mean::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
+  copyDerivatives( value_in, value_out ); value_out->set( value_in->get() );
+  return value_in->get();
 }
 
-double mean::last_step( const double p, double& df ){
-  df=1.0/nvalues; return p/nvalues;
+void mean::finish( const double& p, Value* value_out ){
+  value_out->chainRule(1.0/nvalues); value_out->set(p/nvalues); 
 }
 
 }

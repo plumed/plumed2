@@ -33,14 +33,17 @@ std::string min::message(){
   return ostr.str();
 }
 
-double min::compute( const double p, double& df ){
-  double tmp=exp( beta/p ); df=tmp/(p*p); 
+double min::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
+  copyDerivatives( value_in, value_out );
+  double p, df, tmp; p=value_in->get();
+  tmp=exp( beta/p ); df=tmp/(p*p); 
+  value_out->chainRule(df); value_out->set(tmp);
   return tmp;
 }
 
-double min::last_step( const double p, double& df ){
-  double dist=beta/std::log(p); df=dist*dist/p;
-  return dist;
+void min::finish( const double& p, Value* value_out ){
+  double df, dist=beta/std::log(p); df=dist*dist/p;
+  value_out->chainRule(df); value_out->set(dist);
 }
 
 }

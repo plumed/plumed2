@@ -67,7 +67,7 @@ public:
 /// Merge the derivatives 
   void mergeDerivatives( const unsigned j, Value* value_in, Value* value_out );
 /// Calcualte the colvar
-  void calculateThisFunction( const unsigned& j, Value* value_in );
+  void calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux );
 /// And a virtual function which actually computes the colvar
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0;  
 };

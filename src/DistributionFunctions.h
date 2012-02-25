@@ -26,15 +26,15 @@ class DistributionFunction {
 private:
   bool fine;
   std::string errorMsg;
+protected:
+  void copyDerivatives( Value* value_in, Value* value_out );
 public:
   DistributionFunction( const std::vector<std::string>& parameters );
-  double calculate( Value* value_in, Value* value_out );
-  void finish( const double& total, Value* value_out );
+  virtual double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out )=0;
+  virtual void finish( const double& total, Value* value_out )=0;
   void error(const std::string& msg);
   bool check() const;
   std::string errorMessage() const ;
-  virtual double compute( const double val, double& df )=0;
-  virtual double last_step( const double total, double& df )=0;
   virtual std::string message()=0;
 }; 
 
@@ -56,8 +56,8 @@ bool DistributionFunction::check() const {
 class sum : public DistributionFunction {
 public:
   sum( const std::vector<std::string>& parameters );
-  double compute( const double val, double& df );
-  double last_step( const double total, double& df );
+  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void finish( const double& total, Value* value_out );
   std::string message();
 };
 
@@ -66,8 +66,8 @@ private:
   double nvalues;
 public:
   mean( const std::vector<std::string>& parameters );
-  double compute( const double val, double& df );
-  double last_step( const double total, double& df );
+  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void finish( const double& total, Value* value_out );
   std::string message();
 };
 
@@ -78,8 +78,8 @@ private:
   SwitchingFunction sf;
 public:
   less_than( const std::vector<std::string>& parameters );
-  double compute( const double val, double& df );
-  double last_step( const double total, double& df );
+  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void finish( const double& total, Value* value_out );
   std::string message();
 };
 
@@ -90,8 +90,8 @@ private:
   SwitchingFunction sf;
 public:
   more_than( const std::vector<std::string>& parameters );
-  double compute( const double val, double& df );
-  double last_step( const double total, double& df );
+  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void finish( const double& total, Value* value_out );
   std::string message();
 };
 
@@ -101,8 +101,8 @@ private:
   HistogramBead hist;
 public:
   within( const std::vector<std::string>& parameters );
-  double compute( const double val, double& df );
-  double last_step( const double total, double& df );
+  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void finish( const double& total, Value* value_out );
   std::string message();
 };
 
@@ -111,8 +111,8 @@ private:
   double beta;
 public:
   min( const std::vector<std::string>& parameters );
-  double compute( const double val, double& df );
-  double last_step( const double total, double& df );
+  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void finish( const double& total, Value* value_out );
   std::string message();
 };
 

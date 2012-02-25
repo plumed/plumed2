@@ -134,8 +134,9 @@ void ActionWithDistribution::resetMembers(){
 void ActionWithDistribution::calculate(){
   plumed_massert( read, "you must have a call to readDistributionKeywords somewhere" );  
 
+  std::vector<Value> aux;
   if(all_values){
-      for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i) calculateThisFunction( i, final_values[i] );
+      for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i) calculateThisFunction( i, final_values[i], aux );
   } else {
       // Reset all totals
       for(unsigned j=0;j<totals.size();++j) totals[j]=0.0;
@@ -154,12 +155,12 @@ void ActionWithDistribution::calculate(){
           }
  
           // Calculate the value of this particular function 
-          calculateThisFunction( kk, tmpvalue );
+          calculateThisFunction( kk, tmpvalue, aux );
           // Skip if we are not calculating this particular value
           if( !tmpvalue->valueHasBeenSet() ){ members.deactivate(kk); continue; }
           // Now incorporate the derivative of the function into the derivatives for the min etc
           for(unsigned j=0;j<totals.size();++j){
-             totals[j]+=functions[j]->calculate( tmpvalue, tmp2value );
+             totals[j]+=functions[j]->calculate( tmpvalue, aux, tmp2value );
              mergeDerivatives( kk, tmp2value, final_values[j] );
              tmp2value->clearDerivatives();
           }

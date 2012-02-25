@@ -45,7 +45,7 @@ public:
 /// Get the number of functions from which we are calculating the distribtuion
   virtual unsigned getNumberOfFunctionsInDistribution()=0;
 /// Calculate one of the functions in the distribution
-  virtual void calculateThisFunction( const unsigned& j, Value* value_in )=0;
+  virtual void calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux )=0;
 /// Get the number of derivatives for a given function
   virtual unsigned getThisFunctionsNumberOfDerivatives( const unsigned& j )=0;
 };

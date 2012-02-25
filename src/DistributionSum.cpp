@@ -24,12 +24,13 @@ std::string sum::message(){
   return ostr.str();
 }
 
-double sum::compute( const double p, double& df ){
-  df=1.0; return p;
+double sum::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
+  copyDerivatives( value_in, value_out ); value_out->set( value_in->get() );
+  return value_in->get();
 }
 
-double sum::last_step( const double p, double& df ){
-  df=1.0; return p;
+void sum::finish( const double& p, Value* value_out ){
+  value_out->set(p);
 }
 
 }

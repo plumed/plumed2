@@ -46,13 +46,15 @@ std::string within::message(){
   return ostr.str();
 }
 
-double within::compute( const double p, double& df ){
-  double f; f=hist.calculate( p , df );
+double within::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
+  copyDerivatives( value_in, value_out ); 
+  double df, f; f=hist.calculate( value_in->get() , df );
+  value_out->chainRule(df); value_out->set(f);
   return f;
 }
 
-double within::last_step( const double p, double& df ){
-  df=1.0; return p;
+void within::finish( const double& p, Value* value_out ){
+  value_out->set(p);
 }
 
 }

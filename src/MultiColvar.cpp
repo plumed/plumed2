@@ -278,7 +278,7 @@ void MultiColvar::retrieveAtoms( const unsigned& j, std::vector<Vector>& pos ){
   }
 }
 
-void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in ){
+void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux ){
   plumed_massert(setupList,"You have not written any code to setup the neighbour list");
   unsigned natoms=colvar_atoms[j].getNumberActive();
 
