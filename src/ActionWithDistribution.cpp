@@ -77,7 +77,6 @@ void ActionWithDistribution::calculate(){
   } else {
       // Reset all totals
       for(unsigned j=0;j<totals.size();++j) totals[j]=0.0;
-
       // Create a value to store stuff in 
       Value* tmpvalue=new Value();
       Value* tmp2value=new Value();

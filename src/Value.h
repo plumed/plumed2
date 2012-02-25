@@ -125,7 +125,7 @@ const std::string& Value::getName()const{
 
 inline
 unsigned Value::getNumberOfDerivatives() const {
-  plumed_massert(derivatives.size()!=0,"the derivatives array for this value has zero size");
+  plumed_massert(hasDeriv,"the derivatives array for this value has zero size");
   return derivatives.size();
 }
 
