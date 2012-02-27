@@ -80,6 +80,10 @@ public:
    Matrix<T>(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {} 
    /// Resize the matrix 
    void resize( const unsigned nr, const unsigned nc ){ rw=nr; cl=nc; sz=nr*nc; data.resize(sz); }
+   /// Return the number of rows
+   inline unsigned nrows() const { return rw; } 
+   /// Return the number of columns
+   inline unsigned ncols() const { return cl; }
    /// Return element i,j of the matrix
    inline T operator () (const unsigned& i, const unsigned& j) const { return data[j+i*cl]; }
    /// Return a referenre to element i,j of the matrix
