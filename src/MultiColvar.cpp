@@ -369,9 +369,12 @@ void MultiColvar::apply(){
   if( usingDistributionFunctions() ) forces.resize(3*getNumberOfAtoms()+9);
 
   for(int i=0;i<getNumberOfComponents();++i){
-     nder=getThisFunctionsNumberOfDerivatives(i);
-     if( !usingDistributionFunctions() && forces.size()!=nder ) forces.resize(nder);
- 
+
+     if( !usingDistributionFunctions() ){
+       nder=getThisFunctionsNumberOfDerivatives(i); 
+       if (forces.size()!=nder ) forces.resize(nder);
+     } 
+
      if( getPntrToComponent(i)->applyForce( forces ) ){
         for(unsigned j=0;j<nat;++j){
            f[j][0]+=forces[3*j+0];
