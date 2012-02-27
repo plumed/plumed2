@@ -11,6 +11,98 @@ stuff from list2 in list1
 */      
 //+ENDDEVELDOC 
 
+/**
+A PLMD::DynamicList can be used to change what elements in a list should be looped over at any given
+time. This class is, for the most part, used in tandem with PLMD::NeighbourList.  For complex reasons
+related to the PLMD::MultiColvar object the dynamic list class is separate from PLMD::NeighbourList.
+This is no bad thing though as there may be occasions where one needs to change the elements currently
+involved in a calculation using some non neighbour list based method.  To be clear though PLMD::NeighbourList
+will look after everything connected with PLMD::DynamicList other than the initial setup of PLMD::DynamicList
+and the loops over the active elements of the list.
+
+The essence of a dynamic list is as follows.  Consider the following loop:
+
+\verbatim
+std::vector<something> aa;
+for(unsigned i=0;i<aa.size();++i){ aa[i].doSomething(); }
+\endverbatim
+
+This takes all the members in aa and does something or other to them - simple.  Now it may well
+be that the precise set of things from aa that you want to do in any given time or place is not
+always the same.  We can thus use dynamic lists to control what particular things are done are done
+at a given time.  That is to say we can use PLMD::DynamicList to specify a subset of things from
+aa to do at a given time.  This is done by:
+
+\verbatim
+DynamicList list; std::vector<something> aa; unsigned kk;
+for(unsigned i=0;i<list.getNumberActive();++i){ kk=list[i]; aa[kk].doSomething(); }
+\endverbatim    
+
+where we somewhere set up the list and make some decisions (in PLMD::NeighbourList for example) as to what elements 
+from aa are currently active. 
+
+\section Setup
+
+Setting up a dynamic list is a matter of declaring it and passing a set of indices to it.  For the example
+above with aa one can do this using:
+
+\verbatim
+DynamicList list;
+for(unsigned i=0;i<aa.size();++i) list.addIndexToList( i );
+\endverbatim 
+
+Doing this creates the list of all members.
+
+\section arse1 Cycling over the full set of members
+
+To cycle over the full set of members in the list one should do:
+
+\verbatim
+for(unsigned i=0;i<list.fullSize();++i){ kk=list(i); aa[kk].doSomething(); }
+\endverbatim
+
+If the DynamicList was set up as per the example above then this code is equivalent to:
+
+\verbatim
+for(unsigned i=0;i<aa.size();++i){ aa[i].doSomething(); }
+\endverbatim
+
+\section arse2 Activating and deactivating members
+
+The important bussiness comes when we start activating and deactivating members.  When we create
+a dynamic list none of the members are active for bussiness.  Hence, getNumberActive() returns 0.
+There are four routines that we can use to change this situation.
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr>
+<td width=5%> activateAll() </td> <td> make all members active </td>
+</tr><tr>
+<td> activate(i) </td> <td> make the ith element of the list active (in the example above this mean we doSomething() for element i of aa) </td>
+</tr><tr>
+<td> deactivateAll() </td> <td> make all members inactive </td>
+</tr><tr>
+<td> deactivate(i) </td> <td> make th ith element of the list active (in the example above this mean we dont doSomething() for element i of aa) </td>
+</tr>
+</table>
+
+Once you have activated and deactivated members to your hearts content you can then update the dynamic list using
+PLMD::DynamicList::updateActiveMembers().  Once this is done you can loop over only the members you have specifically
+made active using:
+
+\verbatim
+DynamicList list; 
+for(unsigned i=0;i<list.getNumberActive();++i){ kk=list[i]; aa[kk].doSomething(); }
+\endverbatim   
+
+as was described above.
+
+\section arse3 A final note
+
+Please be aware that the PLMD::DynamicList class is much more complex that this description implies.  Much of this complexity is
+there to do tasks that are specific to PLMD::MultiColvar and is thus not described in the documentation above.  The functionality
+described above is what we believe can be used in other contexts.
+*/
+
 class DynamicList {
 /// This routine returns the index of the ith element in the first list from the second list
 friend unsigned linkIndex( const unsigned, const DynamicList& , const DynamicList& ); 
