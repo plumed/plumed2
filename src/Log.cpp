@@ -58,7 +58,7 @@ void Log::flush(){
 }
 
 void Log::printKeyword( const std::string& key, const std::string& documentation ){
-  unsigned nlines; nlines=floor( documentation.length() / 60 );
+  unsigned nlines; nlines=floor( double(documentation.length() / 60) );
   if ( nlines==0 ){
      printf("%23s - %-60s \n", key.c_str(), documentation.c_str() );
   } else {

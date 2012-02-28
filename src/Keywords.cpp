@@ -121,6 +121,8 @@ bool Keywords::style( const std::string k, const std::string t ) const {
   } else {
      plumed_assert(false);
   }
+// this is to avoid warnings:
+  return false;
 }
 
 unsigned Keywords::size() const {

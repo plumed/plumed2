@@ -48,8 +48,8 @@ inline
 double HistogramBead::calculate( double x, double& df ) const {
 	const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
 	assert(init); double lowB, upperB, val=0;
-	lowB = ( lowb - x ) / ( sqrt(2) * width );
-	upperB = ( highb - x ) / ( sqrt(2) * width ) ;
+	lowB = ( lowb - x ) / ( sqrt(2.0) * width );
+	upperB = ( highb - x ) / ( sqrt(2.0) * width ) ;
 	df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( sqrt(2*pi)*width );
 	return 0.5*( erf( upperB ) - erf( lowB ) );
 }
