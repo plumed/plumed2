@@ -322,8 +322,15 @@ public:
   void cmd(const char*key,const void*val=NULL);
 /**
    Destructor
+
+   Destructor is virtual so as to allow correct inheritance from Plumed object.
+   To avoid linking problems with g++, I specify "inline" also here (in principle
+   it should be enough to specify it down in the definition of the function, but
+   for some reason that I do not understand g++ does not inline it properly in that
+   case and complains when Plumed.h is included but Plumed.o is not linked. Anyway, the
+   way it is done here seems to work properly).
 */
-  ~Plumed();
+  inline virtual ~Plumed();
 };
 
 /* All methods are inlined so as to avoid the compilation of an extra c++ file */
