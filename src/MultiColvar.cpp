@@ -13,7 +13,6 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.addFlag("PBC",true,"use the periodic boundary conditions when calculating distances");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.reserve("optional","NL_CUTOFF","the cutoff for the neighbour list");
-  keys.reserve("optional","NL_STRIDE","the frequency with which the neighbour list should be updated");
   keys.reserve("hidden","NL_CHEAT","a cheat keyword to tell us if we are using products");
   keys.reserve("atoms","ATOMS","the atoms involved in each of the collective variables you wish to calculate. "
                                "To compute a single CV use ATOMS.  If you use ATOMS1, ATOMS2, ATOMS3... multiple CVs "
@@ -22,7 +21,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                "action will depend on what functions of the distribution you choose to calculate."); 
   keys.reserve("atoms","GROUP","this keyword is used for colvars that are calculated from a pair of atoms. "
                                "One colvar is calculated for each distinct pair of atoms in the group.");
-  keys.reserve("atoms","GROUPA","this keyword is used for colvars that are calculate from a pair of atoms and must appaer with the keyword GROUPB. "
+  keys.reserve("atoms","GROUPA","this keyword is used for colvars that are calculated from a pair of atoms and must appaer with the keyword GROUPB. "
                                 "Every pair of atoms which involves one atom from GROUPA and one atom from GROUPB defines one colvar");
   keys.reserve("atoms","GROUPB","this keyword is used for colvars that are calculate from a pair of atoms and must appaer with the keyword GROUPA. "
                                 "Every pair of atoms which involves one atom from GROUPA and one atom from GROUPB defines one colvar");
@@ -49,26 +48,22 @@ ActionWithValue(ao),
 ActionWithDistribution(ao),
 readatoms(false),
 usepbc(true),
-setupList(true),
-updateFreq(0),
-lastUpdate(0),
-reduceAtNextStep(false)
+setupList(true)
 {
   if( keywords.style("NOPBC", "flag") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
     usepbc=!nopbc; parseFlag("PBC",usepbc);
   }
 
+  // If we are using neighbour lists set them up
+  if( keywords.exists("NL_STRIDE") ) setupList=false;
+
   // Setup the neighbour list
-  if( keywords.exists("NL_CUTOFF") ){
+  if( isTimeForNeighbourListUpdate() ){
       double rcut=0; parse("NL_CUTOFF",rcut);
-      if( rcut>0 ){
-          if( keywords.exists("NL_CHEAT") ) nlist.setup("product",rcut);
-          else nlist.setup("sum",rcut); 
-          parse("NL_STRIDE",updateFreq);
-          if( updateFreq==0 ) error("found neighbour list cutoff but no frequency for update use NL_STRIDE");
-      } 
-      setupList=false; 
+      if( rcut==0 ) error("Found NL_STRIDE but missing NL_CUTOFF");
+      if( keywords.exists("NL_CHEAT") ) nlist.setup("product", rcut );
+      else nlist.setup("sum", rcut );
   }
 }
 
@@ -95,9 +90,9 @@ void MultiColvar::createNeighbourList( std::vector<std::pair<unsigned,unsigned> 
   plumed_massert(!setupList,"Neighbour list has already been set up");
   plumed_massert(keywords.exists("NL_CUTOFF"),"You have not asserted that you are using the neighbour list when registering keywords");
   
-  if( updateFreq>0 ){
+  if( getUpdateFreq()>0 ){
      for(unsigned i=0;i<pairs.size();++i) nlist.addPair( pairs[i].first, pairs[i].second ); 
-     log.printf("  neighbour list cutoff is %f.  Neighbour list will be updated every %d steps\n", nlist.get_cutoff(), updateFreq );
+     log.printf("  neighbour list cutoff is %f.  Neighbour list will be updated every %d steps\n", nlist.get_cutoff(), getUpdateFreq() );
   }
   setupList=true;
 }
@@ -238,23 +233,18 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   }
 }
 
-void MultiColvar::prepare(){
-// Before a neighbour list update make sure we have the full set of atoms
-  if(reduceAtNextStep){
-     for(unsigned i=0;i<colvar_atoms.size();++i) activateLinks( colvar_atoms[i], all_atoms );
-     all_atoms.updateActiveMembers(); requestAtoms();
-     reduceAtNextStep=false;
-  }
-  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-     for(unsigned i=0;i<colvar_atoms.size();++i){
-       colvar_atoms[i].activateAll(); colvar_atoms[i].updateActiveMembers();
-     }
-     all_atoms.updateActiveMembers(); requestAtoms();
-     // And reset the ActionWithDistribution 
-     resetMembers();
-     reduceAtNextStep=true;
-     lastUpdate=getStep();
-  }
+void MultiColvar::prepareForNeighbourListUpdate(){
+   for(unsigned i=0;i<colvar_atoms.size();++i){
+      colvar_atoms[i].activateAll(); colvar_atoms[i].updateActiveMembers();
+   }
+   all_atoms.activateAll(); 
+   all_atoms.updateActiveMembers();
+   requestAtoms(); 
+}
+
+void MultiColvar::completeNeighbourListUpdate(){
+   for(unsigned i=0;i<colvar_atoms.size();++i) activateLinks( colvar_atoms[i], all_atoms );
+   all_atoms.updateActiveMembers(); requestAtoms();
 }
 
 void MultiColvar::requestAtoms(){
@@ -288,7 +278,7 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
   retrieveAtoms( j, pos );
 
   // Update the neighbour list if it is time
-  if( reduceAtNextStep ){
+  if( isTimeForNeighbourListUpdate() ){
       // Update the neighbour list
       nlist.update( pos, usepbc, getPbc(), colvar_atoms[j] );
       // Get the new number of atoms

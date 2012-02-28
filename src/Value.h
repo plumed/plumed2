@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include "PlumedException.h"
+#include "PlumedCommunicator.h"
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "Vector.h"
@@ -81,6 +82,8 @@ public:
   void clearDerivatives();
 /// Add some derivative to the ith component of the derivatives array
   void addDerivative(int i,double d);
+/// Gather the derivatives
+  void gatherDerivatives( PlumedCommunicator& comm );
 /// Apply the chain rule to the derivatives
   void chainRule(double df);
 /// Get the derivative with respect to component n

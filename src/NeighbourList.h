@@ -1,6 +1,7 @@
 #ifndef __PLUMED_NeighbourList_h
 #define __PLUMED_NeighbourList_h
 
+#include "PlumedCommunicator.h"
 #include "DynamicList.h"
 
 namespace PLMD {
@@ -49,7 +50,7 @@ The code to do this would appear as follows:
 NeighbourList<AVector,AMetric> nlist;
 DynamicList list;
 if( updateTime ){
-    nlist.update( inst, aa, false, list )
+    nlist.update( inst, aa, false, list );
 }
 
 double dist, val=0;
@@ -62,7 +63,7 @@ for(unsigned i=0;i<list.getNumberActive();++i){
 
 The first part of this code controls the updating of the neighbour list.  During a neighbour list update
 step we calculate the full set of distances between inst and the full set of aa.  Much as we did in the previous
-bit of code.  During the course of this process we generate a PLMD::DynamicList that tells us, which points 
+bit of code.  During the course of this process we note in the PLMD::DynamicList, which points 
 from aa are within rcut of inst.  When it comes to calculating val we need only cycle over these "active" points.
 Hence, in the second loop, we use PLMD::DynamicList::getNumberActive() together with PLMD::DynamicLists [] operator
 so that we only calculate the distances for those points in aa that during the last update step
@@ -126,6 +127,7 @@ class NeighbourList {
 private:
 /// Has the neighbour list been setup
   bool set;
+/// Are we using mpi
 /// What sort of quantity is this
 /// product = resultant quantity is a product of distances so if one is out of range then we don't calculate
 /// sum = resultant quantity is a sum of distances so we should calculate always 
@@ -156,7 +158,7 @@ public:
 
 template<class T, class D>
 void NeighbourList<T,D>::setup( const std::string& type, const double cutoff ){
-  set=true; rcut=cutoff;
+  set=true; rcut=cutoff; 
   if( type=="product" ){ style=product; } 
   else if (type=="sum"){ style=sum; } 
   else { plumed_massert(0,"invalid type in setup for neighbour list"); }
@@ -208,7 +210,7 @@ void NeighbourList<T,D>::update( const T& where, const std::vector<T>& vecs, con
       dist=distf.distance( pbc, where, vecs[i] );
       if( dist<=rcut ) list.activate(i);  
   }
-  list.updateActiveMembers();
+  list.updateActiveMembers(); 
 }
 
 template<class T, class D>

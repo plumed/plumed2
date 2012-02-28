@@ -13,13 +13,26 @@ void ActionWithDistribution::registerKeywords(Keywords& keys){
   keys.add("nohtml","HISTOGRAM", "create a discretized histogram of the distribution.  This keyword's input should consist of one or two numbers");
   keys.add("nohtml","RANGE", "the range in which to calculate the histogram");
   keys.add("nohtml", "WITHIN", "The number of values within a certain range.  This keyword's input should consist of one or two numbers.");
+  keys.reserve("optional","NL_STRIDE","the frequency with which the neighbour list should be updated");
+}
+
+void ActionWithDistribution::autoParallelize(Keywords& keys){
+  keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize over collective variables");
 }
 
 ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   Action(ao),
   read(false),
-  all_values(true)
+  all_values(true),
+  serial(true),
+  updateFreq(0),
+  lastUpdate(0),
+  reduceAtNextStep(false)
 {
+  if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
+  if(serial)log.printf("  doing calculation in serial\n");
+  if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
+  if(updateFreq>0) reduceAtNextStep=true;
 }
 
 ActionWithDistribution::~ActionWithDistribution(){
@@ -111,7 +124,7 @@ void ActionWithDistribution::readDistributionKeywords(){
      if( a->checkNumericalDerivatives() && getNumberOfFunctionsInDistribution()>1 ){
          error("Can only use numerical derivatives for distribution functions or single colvars");
      }
-     std::string ss;
+     std::string ss; 
      for(int i=0;i<getNumberOfFunctionsInDistribution();++i){
         Tools::convert(i,ss);
         a->addComponentWithDerivatives( "value" + ss );
@@ -122,29 +135,49 @@ void ActionWithDistribution::readDistributionKeywords(){
      totals.resize( a->getNumberOfComponents() );
      // This sets up the dynamic list that holds what we are calculating
      for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ members.addIndexToList(i); }
-     resetMembers();
+     members.activateAll(); members.updateActiveMembers();
   }
 }
 
-void ActionWithDistribution::resetMembers(){
-  members.activateAll(); 
-  members.updateActiveMembers();
+//void ActionWithDistribution::resetMembers(){
+//  members.activateAll(); 
+//  members.updateActiveMembers();
+//}
+
+void ActionWithDistribution::prepare(){
+ if(reduceAtNextStep){
+    completeNeighbourListUpdate();
+    reduceAtNextStep=false;
+ }
+ if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
+    members.activateAll();
+    members.updateActiveMembers();
+    prepareForNeighbourListUpdate();
+    reduceAtNextStep=true;
+    lastUpdate=getStep();
+ }
 }
 
 void ActionWithDistribution::calculate(){
   plumed_massert( read, "you must have a call to readDistributionKeywords somewhere" );  
 
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  if(serial){ stride=1; rank=0; }
+
   std::vector<Value> aux;
   if(all_values){
-      for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i) calculateThisFunction( i, final_values[i], aux );
+      // It is not at all straightforward to parallelize this.  Also is it worth it?
+      for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ calculateThisFunction( i, final_values[i], aux ); }
   } else {
       // Reset all totals
       for(unsigned j=0;j<totals.size();++j) totals[j]=0.0;
       // Create a value to store stuff in 
       Value* tmpvalue=new Value();
       Value* tmp2value=new Value();
+
       unsigned kk;
-      for(unsigned i=0;i<members.getNumberActive();++i){
+      for(unsigned i=rank;i<members.getNumberActive();i+=stride){
           // Retrieve the function we are calculating from the dynamic list
           kk=members[i];
           // Make sure we have enough derivatives in this value
@@ -156,8 +189,9 @@ void ActionWithDistribution::calculate(){
  
           // Calculate the value of this particular function 
           calculateThisFunction( kk, tmpvalue, aux );
+
           // Skip if we are not calculating this particular value
-          if( !tmpvalue->valueHasBeenSet() ){ members.deactivate(kk); continue; }
+          if( reduceAtNextStep && !tmpvalue->valueHasBeenSet() ){ members.deactivate(kk); continue; }
           // Now incorporate the derivative of the function into the derivatives for the min etc
           for(unsigned j=0;j<totals.size();++j){
              totals[j]+=functions[j]->calculate( tmpvalue, aux, tmp2value );
@@ -166,12 +200,18 @@ void ActionWithDistribution::calculate(){
           }
           tmpvalue->clearDerivatives();
       }
-      // Update the dynamic list
-      members.updateActiveMembers();
+      // Update the dynamic list during neighbour list update
+      if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
+      // MPI Gather the totals and derivatives
+      if(!serial){ 
+         comm.Sum( &totals[0],totals.size() ); 
+         for(unsigned j=0;j<totals.size();++j){ final_values[j]->gatherDerivatives( comm ); }
+      }
+
       // Delete the tmpvalues
       delete tmpvalue; delete tmp2value;
       // Set the final value of the function
-      for(unsigned j=0;j<totals.size();++j) functions[j]->finish( totals[j], final_values[j] );
+      for(unsigned j=0;j<totals.size();++j) functions[j]->finish( totals[j], final_values[j] ); 
   }
 
   for(unsigned i=0;i<totals.size();++i){

@@ -137,6 +137,14 @@ is greater than rcut one can safely skip the entire calculation.  To specify tha
 PLMD::MultiColvar::useNeighbourList with the first argument set equal to sum.  To specify the second type call 
 PLMD::MultiColvar::useNeighbourList with the first argument set equal to product.
 
+\par Parallelism
+
+The most optimal way to parallelize your CV will depend on what it is your CV calculates.  In fact it will probably even
+depend on what the user puts in the input file.  If you know what you are doing feel free to parallelize your CV 
+however you feel is best. However, the simplest way to parallize a long list of CVs (a multi-colvar) and functions thereof
+is to parallelize over CVs.  Even if you are unsure of what you are doing with MPI you can turn this form of parallelism on
+by calling PLMD::ActionWithDistribution::autoParallelize from within your registerKeywords functions.     
+
 \section label4 The constructor
 
 The constructor reads the plumed input files and as such it must:
@@ -205,12 +213,9 @@ private:
 /// The lists of the atoms involved in each of the individual colvars
 /// note these refer to the atoms in all_atoms
   std::vector<DynamicList> colvar_atoms;
-/// The stuff to control the frequency of the neighbour list update
+/// Has the neighbor list been set up 
   bool setupList;
-  int updateFreq;
-  unsigned lastUpdate;
-  bool reduceAtNextStep;
-/// The neighbour list we use the same one for every colvar
+/// The neighbor list we use the same one for every colvar
   NeighbourList<Vector,Pbc> nlist;
 /// Read in ATOMS keyword
   void readAtomsKeyword( int& natoms );
@@ -234,14 +239,17 @@ public:
   ~MultiColvar(){};
   static void registerKeywords( Keywords& keys );
   static void useNeighbourList( const std::string& style, Keywords& keys );
-/// If it is a neighbour list update step make sure we are requesting all atoms
-  void prepare();
 /// Apply the forces on the values
   void apply();
 /// Return the number of Colvars this is calculating
   unsigned getNumberOfFunctionsInDistribution();  
 /// Return the number of derivatives for a given colvar
   unsigned getThisFunctionsNumberOfDerivatives( const unsigned& j ); 
+/// Expand the lists of atoms so we get them all when it is time to update the neighbor lists
+  void prepareForNeighbourListUpdate();
+/// Contract the lists of atoms once we have finished updating the neighbor lists so we only get
+/// the required subset of atoms 
+  void completeNeighbourListUpdate();
 /// Merge the derivatives 
   void mergeDerivatives( const unsigned j, Value* value_in, Value* value_out );
 /// Calcualte the colvar

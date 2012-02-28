@@ -17,6 +17,12 @@ private:
   bool read;
 /// This tells us we are calculating all values (not doing anything to the distribution)
   bool all_values;
+/// Do all calculations in serial
+  bool serial;
+/// Everything for controlling the updating of neighbor lists
+  int updateFreq;
+  unsigned lastUpdate;
+  bool reduceAtNextStep;
 /// Accumulators for the values
   std::vector<double> totals;
 /// Pointers to the values for this object
@@ -30,16 +36,33 @@ protected:
   void addDistributionFunction( std::string name, DistributionFunction* fun );
 /// Read the keywords for the distribution (this routine must be called after construction of ActionWithValue)
   void readDistributionKeywords();
+/// Find out if we are running the calculation without mpi
+  bool getSerial() const ;
 /// This resets members so that we calculate all functions - this is used for neighbour list update
-  void resetMembers();
+//  void resetMembers();
+/// Find out if it is time to do neighbor list update
+  bool isTimeForNeighbourListUpdate() const ;
+/// Get the frequency with which to update neighbor lists
+  int getUpdateFreq() const ;
 public:
   static void registerKeywords(Keywords& keys);
+/// By calling this function during register keywords you tell plumed to use a
+/// a default method to parallelize the calculation.
+  static void autoParallelize(Keywords& keys);
   ActionWithDistribution(const ActionOptions&ao);
   ~ActionWithDistribution();
+/// Prepare everything for neighbour list update
+  virtual void prepare();
 /// Calculate the values of the object
   void calculate();
 /// Are we using distributions 
   bool usingDistributionFunctions() const;
+/// Overwrite this in your inherited actions if neighbour list update is more complicated
+/// than just calculating everything and seeing whats big.
+  virtual void prepareForNeighbourListUpdate(){};
+/// Overwrite this in your inherited actions if neighbour list update is more complicated
+/// than just calculating everything and seeing whats big.
+  virtual void completeNeighbourListUpdate(){};
 /// Merge the derivatives
   virtual void mergeDerivatives( const unsigned j, Value* value_in, Value* value_out )=0;
 /// Get the number of functions from which we are calculating the distribtuion
@@ -51,8 +74,23 @@ public:
 };
 
 inline
+bool ActionWithDistribution::getSerial() const {
+  return serial;
+}
+
+inline
 bool ActionWithDistribution::usingDistributionFunctions() const {
   return !all_values;
+}
+
+inline
+bool ActionWithDistribution::isTimeForNeighbourListUpdate() const {
+  return reduceAtNextStep;
+}
+
+inline
+int ActionWithDistribution::getUpdateFreq() const {
+  return updateFreq;
 }
 
 }
