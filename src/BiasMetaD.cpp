@@ -4,6 +4,7 @@
 #include "PlumedMain.h"
 #include "Atoms.h"
 #include "PlumedException.h"
+#include "FlexibleBin.h"
 
 #define DP2CUTOFF 6.25
 
@@ -93,6 +94,9 @@ private:
   bool welltemp_;
   bool restart_;
   bool grid_;
+  int adaptive_;
+  FlexibleBin *flexbin;
+  
   
   void   readGaussians(FILE*);
   void   writeGaussian(const Gaussian&,FILE*);
@@ -109,6 +113,7 @@ public:
   void calculate();
   void update();
   static void registerKeywords(Keywords& keys);
+  bool checkNeedsGradients()const{if(adaptive_==FlexibleBin::geometry){return true;}else{return false;}};
 };
 
 PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
@@ -130,6 +135,7 @@ void BiasMetaD::registerKeywords(Keywords& keys){
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
   keys.add("optional","GRID_WFILE","the file on which to write the grid");
+  keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance or time dimensions");
 }
 
 BiasMetaD::~BiasMetaD(){
@@ -141,7 +147,6 @@ BiasMetaD::~BiasMetaD(){
 
 BiasMetaD::BiasMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
-sigma0_(getNumberOfArguments(),0.0),
 hillsfile_(NULL),
 BiasGrid_(NULL),
 gridfile_(NULL),
@@ -153,10 +158,31 @@ stride_(0),
 wgridstride_(0),
 welltemp_(false),
 restart_(false),
-grid_(false)
+grid_(false),
+adaptive_(FlexibleBin::none)
 {
+  string adaptiveoption;
+  adaptiveoption="NONE";
+  parse("ADAPTIVE",adaptiveoption);
+  if (adaptiveoption=="GEOM"){
+		  log.printf("  Uses Geometry-based hills width: sigma must be in distance units\n");
+		  adaptive_=FlexibleBin::geometry;	
+  }else if (adaptiveoption=="DIFF"){
+		  log.printf("  Uses Diffusion-based hills width: sigma must be in time units\n");
+		  adaptive_=FlexibleBin::diffusion;	
+  }else if (adaptiveoption=="NONE"){
+		  adaptive_=FlexibleBin::none;	
+  }else{
+		  plumed_merror("I do not know this type of adaptive scheme");	
+  }
   parseVector("SIGMA",sigma0_);
-  plumed_assert(sigma0_.size()==getNumberOfArguments());
+  if (adaptive_==FlexibleBin::none){
+ 	 plumed_assert(sigma0_.size()==getNumberOfArguments());
+  }else{
+  	// now initialize the flexible bin
+ 	 plumed_assert(sigma0_.size()==1);
+  	 flexbin=new FlexibleBin(adaptive_,this); 
+  }
   parse("HEIGHT",height0_);
   plumed_assert(height0_>0.0);
   parse("PACE",stride_);
@@ -197,9 +223,10 @@ grid_(false)
 
   checkRead();
 
-  log.printf("  Gaussian width");
+  log.printf("  Gaussian width ");
+  if (adaptive_==FlexibleBin::diffusion)log.printf(" (Note: The units of sigma are in time) ");
+  if (adaptive_==FlexibleBin::geometry)log.printf(" (Note: The units of sigma are in dist units) ");
   for(unsigned i=0;i<sigma0_.size();++i) log.printf(" %f",sigma0_[i]);
-  log.printf("\n");
   log.printf("  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_); 
   log.printf("  Gaussian file %s\n",hillsfname.c_str());
@@ -370,6 +397,9 @@ void BiasMetaD::calculate()
   vector<double> cv(ncv);
   for(unsigned i=0;i<ncv;++i){cv[i]=getArgument(i);}
 
+  // if you use adaptive, call the FlexibleBin 
+  if (adaptive_!=FlexibleBin::none)flexbin->update(sigma0_[0]); 
+
   double* der=new double[ncv];
   for(unsigned i=0;i<ncv;++i){der[i]=0.0;}
   double ene=getBiasAndDerivatives(cv,der);
@@ -400,5 +430,6 @@ void BiasMetaD::update(){
    BiasGrid_->writeToFile(gridfile_); 
   }
 }
+
 
 }
