@@ -93,10 +93,10 @@ public:
   double getForce() const ;
 /// Apply the forces to the derivatives using the chain rule (if there are no forces this routine returns false
   bool applyForce( std::vector<double>& forces ) const ;
-/// Calculate the difference between the instantaneous value of the function and some other point
+/// Calculate the difference between the instantaneous value of the function and some other point: other_point-inst_val
   double difference(double)const;
-/// Calculate the difference between two values of this function
-  double difference(double,double)const;
+/// Calculate the difference between two values of this function: d2 -d1 
+  double difference(double d1,double d2)const;
 /// This sets up the gradients
   void setGradients();
   static double projection(const Value&,const Value&);
