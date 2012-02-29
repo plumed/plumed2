@@ -4,6 +4,7 @@
 #include <string>
 #include <set>
 #include <cassert>
+#include "MatrixSquareBracketsAccess.h"
 #include "Tools.h"
 #include "Log.h"
 
@@ -43,7 +44,9 @@ template <typename T> T norm( const std::vector<T>& A ){
 
 /// This class stores a full matrix and allows one to do some simple matrix operations
 template <typename T>
-class Matrix {
+class Matrix:
+  public MatrixSquareBracketsAccess<Matrix<T>,T>
+  {
    /// Matrix matrix multiply
    template <typename U> friend void mult( const Matrix<U>& , const Matrix<U>& , Matrix<U>& );
    /// Matrix times a std::vector 
