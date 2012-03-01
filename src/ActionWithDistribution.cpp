@@ -91,8 +91,8 @@ void ActionWithDistribution::readDistributionKeywords(){
       }
       double lb,ub,delr=(range[1]-range[0])/static_cast<double>(nbins);
       for(int i=0;i<nbins;++i){
-          lb=range[0]+i*delr; Tools::double2string( lb, hparams[0] );
-          ub=range[0]+(i+1)*delr; Tools::double2string( ub, hparams[1] );
+          lb=range[0]+i*delr; Tools::convert( lb, hparams[0] );
+          ub=range[0]+(i+1)*delr; Tools::convert( ub, hparams[1] );
           addDistributionFunction( "between" + hparams[0] + "&" +hparams[1], new within(hparams) );
       }
   }

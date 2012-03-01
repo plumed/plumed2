@@ -1,7 +1,6 @@
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "PlumedException.h"
-#include <sstream>
 #include <cstring>
 #include <dirent.h>
 
@@ -141,18 +140,6 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
     }
   };
   return false;
-}
-
-void Tools::convert(int i,std::string & str){
-        std::ostringstream ostr;
-        ostr<<i;
-        str=ostr.str();
-}
-
-void Tools::double2string(double d,std::string & str){
-        std::ostringstream ostr;
-        ostr<<d;
-        str=ostr.str();
 }
 
 void Tools::interpretRanges(std::vector<std::string>&s){
