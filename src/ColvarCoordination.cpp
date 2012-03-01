@@ -34,7 +34,7 @@ COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NL_CUTOFF=0.5 UPDATE=100
 class ColvarCoordination : public Colvar {
   bool pbc;
   bool serial;
-  NeighborList *nl;
+  NeighborList<Vector,Pbc,AtomNumber> *nl;
   SwitchingFunction switchingFunction;
 
   bool reduceListAtNextStep;
@@ -115,8 +115,8 @@ reduceListAtNextStep(false)
   checkRead();
 
   addValueWithDerivatives(); setNotPeriodic();
-  if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st);
-  else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
+  if(doneigh)  nl= new NeighborList<Vector,Pbc,AtomNumber>(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st);
+  else         nl= new NeighborList<Vector,Pbc,AtomNumber>(ga_lista,gb_lista,dopair,pbc,getPbc());
   
   requestAtoms(nl->getFullAtomList());
  
