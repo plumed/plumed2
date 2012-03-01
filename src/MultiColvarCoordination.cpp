@@ -46,6 +46,7 @@ PLUMED_REGISTER_ACTION(MultiColvarCoordination,"COORDINATIONNUMBER")
 
 void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
+  ActionWithDistribution::autoParallelize( keys );
   MultiColvar::useNeighbourList("sum",keys);
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
