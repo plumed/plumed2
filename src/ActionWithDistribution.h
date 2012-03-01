@@ -32,10 +32,10 @@ private:
 /// The list of quantities that should be calculated
   DynamicList members;
 protected:
-/// Add a distribution function to the list
+/// Add a distribution function to the list (this routine must be called after construction of ActionWithValue)
   void addDistributionFunction( std::string name, DistributionFunction* fun );
-/// Read the keywords for the distribution (this routine must be called after construction of ActionWithValue)
-  void readDistributionKeywords();
+/// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
+  void requestDistribution();
 /// Find out if we are running the calculation without mpi
   bool getSerial() const ;
 /// This resets members so that we calculate all functions - this is used for neighbour list update

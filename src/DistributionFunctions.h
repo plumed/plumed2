@@ -22,6 +22,15 @@ on.  This class is used in PLMD::ActionWithDistribution.
 */
 //+ENDDEVELDOC
 
+class DistributionFunctionDocs {
+/// The documentation for this particular thing
+  std::map<std::string,std::string> alldocs;
+public:
+  DistributionFunctionDocs();
+/// Print the documentation for the object named 
+  void printDocs(const std::string& name);
+};
+
 class DistributionFunction {
 private:
   bool fine;
@@ -55,6 +64,7 @@ bool DistributionFunction::check() const {
 
 class sum : public DistributionFunction {
 public:
+  static void writeDocs( std::string& docs );
   sum( const std::vector<std::string>& parameters );
   double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
@@ -65,6 +75,7 @@ class mean : public DistributionFunction {
 private:
   double nvalues;
 public:
+  static void writeDocs( std::string& docs );
   mean( const std::vector<std::string>& parameters );
   double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
@@ -77,6 +88,7 @@ private:
   unsigned nn,mm;
   SwitchingFunction sf;
 public:
+  static void writeDocs( std::string& docs );
   less_than( const std::vector<std::string>& parameters );
   double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
@@ -89,6 +101,7 @@ private:
   unsigned nn,mm;
   SwitchingFunction sf;
 public:
+  static void writeDocs( std::string& docs ); 
   more_than( const std::vector<std::string>& parameters );
   double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
@@ -100,6 +113,7 @@ private:
   double a,b,sigma;
   HistogramBead hist;
 public:
+  static void writeDocs( std::string& docs );;
   within( const std::vector<std::string>& parameters );
   double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
@@ -110,6 +124,7 @@ class min : public DistributionFunction {
 private:
   double beta;
 public:
+  static void writeDocs( std::string& docs );
   min( const std::vector<std::string>& parameters );
   double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );

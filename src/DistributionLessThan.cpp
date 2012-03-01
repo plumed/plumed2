@@ -2,20 +2,18 @@
 
 namespace PLMD {
 
-//+PLUMEDOC MODIFIER LESS_THAN
-/**
-
-Calculate the number of functions that are less than a target value.  To make this quantity continuous it is calculated using:
-\f$
-\sigma = \sum_i \frac{ 1 - \left(\frac{ s_i }{ r_0 }\right)^{n} }{ 1 - \left(\frac{ s_i }{ r_0 }\right)^{m} }
-\f$
-, where \f$r_0\f$ is specied after the LESS_THAN keyword.  By default \f$n\f$ and \f$m\f$ are set equal to 6 and 12 respectively.
-These values can be adjusted by using using three arguments for less than (\f$r_0\f$, \f$n\f$, \f$m\f$).  Once calculated the final value is referenced
-using label.lt\f$r_0\f$. 
-
-*/
-//+ENDPLUMEDOC
-
+void less_than::writeDocs(std::string& docs){
+  std::ostringstream ostr;
+  ostr<<"\\par LESS_THAN\n\n"; 
+  ostr<<"Calculate the number of functions that are less than a target value.  To make this quantity continuous it is calculated using:\n";
+  ostr<<"\\f$\n";
+  ostr<<"\\sigma = \\sum_i \\frac{ 1 - \\left(\\frac{ s_i }{ r_0 }\\right)^{n} }{ 1 - \\left(\\frac{ s_i }{ r_0 }\\right)^{m} }\n";
+  ostr<<"\\f$\n";
+  ostr<<", where \\f$r_0\\f$ is specied after the LESS_THAN keyword.  By default \\f$n\\f$ and \\f$m\\f$ are set equal to 6 and 12 respectively.\n";
+  ostr<<"These values can be adjusted by using using three arguments for less than (\\f$r_0\\f$, \\f$n\\f$, \\f$m\\f$).  Once calculated the final value is referenced\n";
+  ostr<<"using label.lt\\f$r_0\\f$.\n"; 
+  docs=ostr.str();
+}
 
 less_than::less_than( const std::vector<std::string>& parameters ) :
 DistributionFunction(parameters)

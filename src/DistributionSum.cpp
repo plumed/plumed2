@@ -2,15 +2,13 @@
 
 namespace PLMD {
 
-//+PLUMEDOC MODIFIER SUM
-/**
-
-Calculate the sum of all the colvars in the distribution.  Once calculated the final value is referenced
-using lable.sum.
-
-*/
-//+ENDPLUMEDOC
-
+void sum::writeDocs(std::string& docs){
+  std::ostringstream ostr;
+  ostr<<"\\par SUM \n\n";
+  ostr<<"Calculate the sum of all the colvars in the distribution.  Once calculated the final value is referenced\n";
+  ostr<<"using lable.sum.\n";
+  docs=ostr.str();
+}
 
 sum::sum( const std::vector<std::string>& parameters ) :
 DistributionFunction(parameters)

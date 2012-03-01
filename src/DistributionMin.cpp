@@ -2,20 +2,20 @@
 
 namespace PLMD {
 
-//+PLUMEDOC MODIFIER MIN
-/**
-
-Calculate the minimum from the set of defined colvars.  To make this quantity continuous the minimum is calculated using:
-
-\f[
-\textrm{min} = \frac{\beta}{ \log \sum_i \exp\left( \frac{\beta}{s_i} \right) }
-\f]
-
-The keyword MIN=\f$\beta\f$ tells plumed to calculate this quantity and sets \f$\beta\f$ to an appropriate value.  Once 
-calcualted the final value is referneced using label.min  
-
-*/
-//+ENDPLUMEDOC
+void min::writeDocs(std::string& docs){
+  std::ostringstream ostr;
+  ostr<<"\\par MIN"<<std::endl;
+  ostr<<std::endl;
+  ostr<<"Calculate the minimum value.  To make this quantity continuous the minimum is calculated using:"<<std::endl;
+  ostr<<std::endl;
+  ostr<<"\\f["<<std::endl;
+  ostr<<"\\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) }"<<std::endl;
+  ostr<<"\\f]"<<std::endl;
+  ostr<<std::endl;
+  ostr<<"The keyword MIN=\\f$\\beta\\f$ tells plumed to calculate this quantity and sets \\f$\\beta\\f$ to an appropriate value.  Once"<<std::endl;
+  ostr<<"calcualted the final value is referneced using label.min"<<std::endl;  
+  docs=ostr.str();
+}
 
 min::min( const std::vector<std::string>& parameters ) :
 DistributionFunction(parameters)

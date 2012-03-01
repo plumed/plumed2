@@ -33,6 +33,15 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                   "of the atoms specifies using SPECIESB is within the specified cutoff");
   keys.reserve("atoms","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
+  keys.add("nohtml","MIN","take the minimum value from these variables.  The continuous version of the minimum described above is calculated and beta must be specified in input");
+//  keys.add("optional","MAX", "take the maximum value from these variables");
+  keys.add("nohtml","SUM", "take the sum of these variables");
+  keys.add("nohtml","AVERAGE", "take the average value of these variables");
+  keys.add("nohtml","LESS_THAN", "take the number of variables less than the specified target.  This quantity is made differentiable using a switching function.  You can control the parameters of this switching function by specifying three numbers to the keyword (r_0, nn and mm).  If you are happy with the default values of nn=6 and mm=12 then you need only specify the target r_0.  The number of values less than the target is stored in a value called lt<target>.");
+  keys.add("nohtml","MORE_THAN", "take the number of variables more than the specified target.  This quantity is made differentiable using a switching function.  You can control the parameters of this switching function by specifying three numbers to the keyword (r_0, nn and mm).  If you are happy with the default values of nn=6 and mm=12 then you need only specify the target r_0.  The number of values less than the target is stored in a value called gt<target>.");
+  keys.add("nohtml","HISTOGRAM", "create a discretized histogram of the distribution.  This keyword's input should consist of one or two numbers");
+  keys.add("nohtml","RANGE", "the range in which to calculate the histogram");
+  keys.add("nohtml", "WITHIN", "The number of values within a certain range.  This keyword's input should consist of one or two numbers.");
   ActionWithDistribution::registerKeywords( keys );
 } 
 
@@ -82,8 +91,72 @@ void MultiColvar::readAtoms( int& natoms ){
   }
   all_atoms.updateActiveMembers();
 
-  readDistributionKeywords();  // And read the ActionWithDistributionKeywords
-  requestAtoms();              // Request the atoms in ActionAtomistic and set up the value sizes
+  // -- Now read in distribution keywords -- //
+  bool dothis; std::vector<std::string> params;
+
+  // Read SUM keyword
+  parseFlag("SUM",dothis);
+  if( dothis && keywords.exists("NL_CHEAT") && isTimeForNeighborListUpdate() ) error("cannot use SUM and neighbor list for this keyword");
+  if( dothis ){
+     addDistributionFunction( "sum", new sum(params) );
+  }
+  // Read AVERAGE keyword
+  parseFlag("AVERAGE",dothis);
+  if( dothis && keywords.exists("NL_CHEAT") && isTimeForNeighborListUpdate() ) error("cannot use AVERAGE and neighbor list for this keyword");
+  if( dothis ){
+     params.resize(1); Tools::convert(getNumberOfFunctionsInDistribution(),params[0]);
+     addDistributionFunction( "average", new mean(params) );
+  }
+  // Read MIN keyword
+  parseVector("MIN",params);
+  if( params.size()!=0 && keywords.exists("NL_CHEAT") && isTimeForNeighborListUpdate() ) error("cannot use MIN and neighbor list for this keyword");
+  if( params.size()!=0 ){
+     addDistributionFunction( "min", new min(params) );
+  }
+  // Read Less_THAN keyword
+  parseVector("LESS_THAN",params);
+  if( params.size()!=0 ){
+     addDistributionFunction( "lt" + params[0], new less_than(params) );
+  }
+  // Read MORE_THAN keyword
+  parseVector("MORE_THAN",params);
+  if( params.size()!=0 ){
+     addDistributionFunction( "gt" + params[0], new more_than(params) );
+  }
+  // Read HISTOGRAM keyword
+  parseVector("HISTOGRAM",params);
+  if( params.size()!=0 ){
+      std::vector<double> range(2); parseVector("RANGE",range);
+      if(range[1]<range[0]) error("range is meaningless");
+      int nbins; Tools::convert(params[0],nbins);
+      std::vector<std::string> hparams(2);
+      if(params.size()==2){
+          hparams.resize(3);
+          hparams[2]=params[1];
+      } else if(params.size()!=1){
+          error("Histogram keyword should either specify just the number"
+                " of bins or the number of bins and the ammount of smearing");
+      }
+      double lb,ub,delr=(range[1]-range[0])/static_cast<double>(nbins);
+      for(int i=0;i<nbins;++i){
+          lb=range[0]+i*delr; Tools::convert( lb, hparams[0] );
+          ub=range[0]+(i+1)*delr; Tools::convert( ub, hparams[1] );
+          addDistributionFunction( "between" + hparams[0] + "&" +hparams[1], new within(hparams) );
+      }
+  }
+  // Read within keywords
+  parseVector("WITHIN",params);
+  if( params.size()!=0 ){
+      addDistributionFunction( "between" + params[0] + "&" +params[1], new within(params) );
+  } else {
+      for(unsigned i=1;;++i){
+         if( !parseNumberedVector("WITHIN",i,params) ) break;
+         addDistributionFunction( "between" + params[0] + "&" +params[1], new within(params) );
+      }
+  }
+
+  requestDistribution();  // And setup the ActionWithDistribution
+  requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes
 }
 
 void MultiColvar::createNeighborList( std::vector<std::pair<unsigned,unsigned> >& pairs ){
