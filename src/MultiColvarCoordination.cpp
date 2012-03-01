@@ -47,7 +47,7 @@ PLUMED_REGISTER_ACTION(MultiColvarCoordination,"COORDINATIONNUMBER")
 void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
-  MultiColvar::useNeighbourList("sum",keys);
+  MultiColvar::useNeighborList("sum",keys);
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","12","The m parameter of the switching function ");
@@ -72,7 +72,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Setup the neighbour list
   std::vector< std::pair<unsigned,unsigned> > pairs(natoms-1);
   for(unsigned i=1;i<natoms;++i){ pairs[i-1].first=0; pairs[i-1].second=i; }
-  createNeighbourList( pairs );
+  createNeighborList( pairs );
   // And check everything has been read in correctly
   checkRead();
 }

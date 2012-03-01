@@ -12,7 +12,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   keys.addFlag("PBC",true,"use the periodic boundary conditions when calculating distances");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.reserve("optional","NL_CUTOFF","the cutoff for the neighbour list");
+  keys.reserve("optional","NL_CUTOFF","the cutoff for the neighbor list");
   keys.reserve("hidden","NL_CHEAT","a cheat keyword to tell us if we are using products");
   keys.reserve("atoms","ATOMS","the atoms involved in each of the collective variables you wish to calculate. "
                                "To compute a single CV use ATOMS.  If you use ATOMS1, ATOMS2, ATOMS3... multiple CVs "
@@ -36,7 +36,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   ActionWithDistribution::registerKeywords( keys );
 } 
 
-void MultiColvar::useNeighbourList( const std::string& style, Keywords& keys ){
+void MultiColvar::useNeighborList( const std::string& style, Keywords& keys ){
   keys.use("NL_CUTOFF"); keys.use("NL_STRIDE");
   if(style=="product") keys.use("NL_CHEAT");
 }
@@ -55,11 +55,11 @@ setupList(true)
     usepbc=!nopbc; parseFlag("PBC",usepbc);
   }
 
-  // If we are using neighbour lists set them up
+  // If we are using neighbor lists set them up
   if( keywords.exists("NL_STRIDE") ) setupList=false;
 
-  // Setup the neighbour list
-  if( isTimeForNeighbourListUpdate() ){
+  // Setup the neighbor list
+  if( isTimeForNeighborListUpdate() ){
       double rcut=0; parse("NL_CUTOFF",rcut);
       if( rcut==0 ) error("Found NL_STRIDE but missing NL_CUTOFF");
       if( keywords.exists("NL_CHEAT") ) nlist.setup("product", rcut );
@@ -86,13 +86,13 @@ void MultiColvar::readAtoms( int& natoms ){
   requestAtoms();              // Request the atoms in ActionAtomistic and set up the value sizes
 }
 
-void MultiColvar::createNeighbourList( std::vector<std::pair<unsigned,unsigned> >& pairs ){
-  plumed_massert(!setupList,"Neighbour list has already been set up");
-  plumed_massert(keywords.exists("NL_CUTOFF"),"You have not asserted that you are using the neighbour list when registering keywords");
+void MultiColvar::createNeighborList( std::vector<std::pair<unsigned,unsigned> >& pairs ){
+  plumed_massert(!setupList,"Neighbor list has already been set up");
+  plumed_massert(keywords.exists("NL_CUTOFF"),"You have not asserted that you are using the neighbor list when registering keywords");
   
   if( getUpdateFreq()>0 ){
      for(unsigned i=0;i<pairs.size();++i) nlist.addPair( pairs[i].first, pairs[i].second ); 
-     log.printf("  neighbour list cutoff is %f.  Neighbour list will be updated every %d steps\n", nlist.get_cutoff(), getUpdateFreq() );
+     log.printf("  neighbor list cutoff is %f.  Neighbor list will be updated every %d steps\n", nlist.get_cutoff(), getUpdateFreq() );
   }
   setupList=true;
 }
@@ -233,7 +233,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   }
 }
 
-void MultiColvar::prepareForNeighbourListUpdate(){
+void MultiColvar::prepareForNeighborListUpdate(){
    for(unsigned i=0;i<colvar_atoms.size();++i){
       colvar_atoms[i].activateAll(); colvar_atoms[i].updateActiveMembers();
    }
@@ -242,7 +242,7 @@ void MultiColvar::prepareForNeighbourListUpdate(){
    requestAtoms(); 
 }
 
-void MultiColvar::completeNeighbourListUpdate(){
+void MultiColvar::completeNeighborListUpdate(){
    for(unsigned i=0;i<colvar_atoms.size();++i) activateLinks( colvar_atoms[i], all_atoms );
    all_atoms.updateActiveMembers(); requestAtoms();
 }
@@ -269,7 +269,7 @@ void MultiColvar::retrieveAtoms( const unsigned& j, std::vector<Vector>& pos ){
 }
 
 void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux ){
-  plumed_massert(setupList,"You have not written any code to setup the neighbour list");
+  plumed_massert(setupList,"You have not written any code to setup the neighbor list");
   unsigned natoms=colvar_atoms[j].getNumberActive();
 
   if ( natoms==0 ) return;   // Do nothing if there are no active atoms in the colvar
@@ -277,9 +277,9 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
   // Retrieve the atoms
   retrieveAtoms( j, pos );
 
-  // Update the neighbour list if it is time
-  if( isTimeForNeighbourListUpdate() ){
-      // Update the neighbour list
+  // Update the neighbor list if it is time
+  if( isTimeForNeighborListUpdate() ){
+      // Update the neighbor list
       nlist.update( pos, usepbc, getPbc(), colvar_atoms[j] );
       // Get the new number of atoms
       natoms=colvar_atoms[j].getNumberActive();

@@ -56,7 +56,7 @@ PLUMED_REGISTER_ACTION(MultiColvarDistance,"DISTANCES")
 void MultiColvarDistance::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
-  MultiColvar::useNeighbourList("product",keys);
+  MultiColvar::useNeighborList("product",keys);
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
 }
 
@@ -68,7 +68,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Setup the neighbour list
   std::vector< std::pair<unsigned,unsigned> > pairs(1);
   pairs[0].first=0; pairs[0].second=1;
-  createNeighbourList( pairs );
+  createNeighborList( pairs );
   // And check everything has been read in correctly
   checkRead();
 }

@@ -41,7 +41,7 @@ protected:
 /// This resets members so that we calculate all functions - this is used for neighbour list update
 //  void resetMembers();
 /// Find out if it is time to do neighbor list update
-  bool isTimeForNeighbourListUpdate() const ;
+  bool isTimeForNeighborListUpdate() const ;
 /// Get the frequency with which to update neighbor lists
   int getUpdateFreq() const ;
 public:
@@ -59,10 +59,10 @@ public:
   bool usingDistributionFunctions() const;
 /// Overwrite this in your inherited actions if neighbour list update is more complicated
 /// than just calculating everything and seeing whats big.
-  virtual void prepareForNeighbourListUpdate(){};
+  virtual void prepareForNeighborListUpdate(){};
 /// Overwrite this in your inherited actions if neighbour list update is more complicated
 /// than just calculating everything and seeing whats big.
-  virtual void completeNeighbourListUpdate(){};
+  virtual void completeNeighborListUpdate(){};
 /// Merge the derivatives
   virtual void mergeDerivatives( const unsigned j, Value* value_in, Value* value_out )=0;
 /// Get the number of functions from which we are calculating the distribtuion
@@ -84,7 +84,7 @@ bool ActionWithDistribution::usingDistributionFunctions() const {
 }
 
 inline
-bool ActionWithDistribution::isTimeForNeighbourListUpdate() const {
+bool ActionWithDistribution::isTimeForNeighborListUpdate() const {
   return reduceAtNextStep;
 }
 

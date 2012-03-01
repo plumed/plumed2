@@ -13,7 +13,7 @@ void ActionWithDistribution::registerKeywords(Keywords& keys){
   keys.add("nohtml","HISTOGRAM", "create a discretized histogram of the distribution.  This keyword's input should consist of one or two numbers");
   keys.add("nohtml","RANGE", "the range in which to calculate the histogram");
   keys.add("nohtml", "WITHIN", "The number of values within a certain range.  This keyword's input should consist of one or two numbers.");
-  keys.reserve("optional","NL_STRIDE","the frequency with which the neighbour list should be updated");
+  keys.reserve("optional","NL_STRIDE","the frequency with which the neighbor list should be updated");
 }
 
 void ActionWithDistribution::autoParallelize(Keywords& keys){
@@ -64,17 +64,20 @@ void ActionWithDistribution::readDistributionKeywords(){
 
   // Read SUM keyword
   parseFlag("SUM",dothis);
+  if( dothis && keywords.exists("NL_CHEAT") && updateFreq>0 ) error("cannot use SUM and neighbor list for this keyword");
   if( dothis ){
      addDistributionFunction( "sum", new sum(params) );   
   }
   // Read AVERAGE keyword
   parseFlag("AVERAGE",dothis);
+  if( dothis && keywords.exists("NL_CHEAT") && updateFreq>0 ) error("cannot use AVERAGE and neighbor list for this keyword"); 
   if( dothis ){
      params.resize(1); Tools::convert(getNumberOfFunctionsInDistribution(),params[0]);
      addDistributionFunction( "average", new mean(params) );
   }
   // Read MIN keyword
   parseVector("MIN",params);
+  if( params.size()!=0 && keywords.exists("NL_CHEAT") && updateFreq>0 ) error("cannot use MIN and neighbor list for this keyword");
   if( params.size()!=0 ){ 
      addDistributionFunction( "min", new min(params) );
   }
@@ -139,20 +142,15 @@ void ActionWithDistribution::readDistributionKeywords(){
   }
 }
 
-//void ActionWithDistribution::resetMembers(){
-//  members.activateAll(); 
-//  members.updateActiveMembers();
-//}
-
 void ActionWithDistribution::prepare(){
  if(reduceAtNextStep){
-    completeNeighbourListUpdate();
+    completeNeighborListUpdate();
     reduceAtNextStep=false;
  }
  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
     members.activateAll();
     members.updateActiveMembers();
-    prepareForNeighbourListUpdate();
+    prepareForNeighborListUpdate();
     reduceAtNextStep=true;
     lastUpdate=getStep();
  }
@@ -200,7 +198,7 @@ void ActionWithDistribution::calculate(){
           }
           tmpvalue->clearDerivatives();
       }
-      // Update the dynamic list during neighbour list update
+      // Update the dynamic list 
       if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
       // MPI Gather the totals and derivatives
       if(!serial){ 
