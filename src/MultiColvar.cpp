@@ -12,8 +12,6 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   keys.addFlag("PBC",true,"use the periodic boundary conditions when calculating distances");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.reserve("optional","NL_CUTOFF","the cutoff for the neighbor list");
-  keys.reserve("hidden","NL_CHEAT","a cheat keyword to tell us if we are using products");
   keys.reserve("atoms","ATOMS","the atoms involved in each of the collective variables you wish to calculate. "
                                "To compute a single CV use ATOMS.  If you use ATOMS1, ATOMS2, ATOMS3... multiple CVs "
                                "will be calculated - one for each ATOM keyword you specify (all ATOM keywords should "
@@ -45,34 +43,17 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   ActionWithDistribution::registerKeywords( keys );
 } 
 
-void MultiColvar::useNeighborList( const std::string& style, Keywords& keys ){
-  keys.use("NL_CUTOFF"); keys.use("NL_STRIDE");
-  if(style=="product") keys.use("NL_CHEAT");
-}
-
 MultiColvar::MultiColvar(const ActionOptions&ao):
 Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithDistribution(ao),
 readatoms(false),
-usepbc(true),
-setupList(true)
+usepbc(true)
 {
   if( keywords.style("NOPBC", "flag") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
     usepbc=!nopbc; parseFlag("PBC",usepbc);
-  }
-
-  // If we are using neighbor lists set them up
-  if( keywords.exists("NL_STRIDE") ) setupList=false;
-
-  // Setup the neighbor list
-  if( isTimeForNeighborListUpdate() ){
-      double rcut=0; parse("NL_CUTOFF",rcut);
-      if( rcut==0 ) error("Found NL_STRIDE but missing NL_CUTOFF");
-      if( keywords.exists("NL_CHEAT") ) nlist.setup("product", rcut );
-      else nlist.setup("sum", rcut );
   }
 }
 
@@ -83,33 +64,22 @@ void MultiColvar::readAtoms( int& natoms ){
 
   if( !readatoms ) error("No atoms have been read in");
 
-  // Now set up all the lists for the first time
-  for(unsigned i=0;i<colvar_atoms.size();++i){
-     colvar_atoms[i].activateAll();
-     colvar_atoms[i].updateActiveMembers();
-     activateLinks( colvar_atoms[i], all_atoms );
-  }
-  all_atoms.updateActiveMembers();
-
   // -- Now read in distribution keywords -- //
   bool dothis; std::vector<std::string> params;
 
   // Read SUM keyword
   parseFlag("SUM",dothis);
-  if( dothis && keywords.exists("NL_CHEAT") && isTimeForNeighborListUpdate() ) error("cannot use SUM and neighbor list for this keyword");
   if( dothis ){
      addDistributionFunction( "sum", new sum(params) );
   }
   // Read AVERAGE keyword
   parseFlag("AVERAGE",dothis);
-  if( dothis && keywords.exists("NL_CHEAT") && isTimeForNeighborListUpdate() ) error("cannot use AVERAGE and neighbor list for this keyword");
   if( dothis ){
      params.resize(1); Tools::convert(getNumberOfFunctionsInDistribution(),params[0]);
      addDistributionFunction( "average", new mean(params) );
   }
   // Read MIN keyword
   parseVector("MIN",params);
-  if( params.size()!=0 && keywords.exists("NL_CHEAT") && isTimeForNeighborListUpdate() ) error("cannot use MIN and neighbor list for this keyword");
   if( params.size()!=0 ){
      addDistributionFunction( "min", new min(params) );
   }
@@ -159,17 +129,6 @@ void MultiColvar::readAtoms( int& natoms ){
   requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes
 }
 
-void MultiColvar::createNeighborList( std::vector<std::pair<unsigned,unsigned> >& pairs ){
-  plumed_massert(!setupList,"Neighbor list has already been set up");
-  plumed_massert(keywords.exists("NL_CUTOFF"),"You have not asserted that you are using the neighbor list when registering keywords");
-  
-  if( getUpdateFreq()>0 ){
-     for(unsigned i=0;i<pairs.size();++i) nlist.addPair( pairs[i].first, pairs[i].second ); 
-     log.printf("  neighbor list cutoff is %f.  Neighbor list will be updated every %d steps\n", nlist.get_cutoff(), getUpdateFreq() );
-  }
-  setupList=true;
-}
-
 void MultiColvar::readAtomsKeyword( int& natoms ){ 
   if( readatoms) return; 
 
@@ -183,17 +142,17 @@ void MultiColvar::readAtomsKeyword( int& natoms ){
      } else {
         natoms=t.size();
      }
-     DynamicList newlist;
+     DynamicList<unsigned> newlist;
      for(unsigned i=0;i<natoms;++i){ 
         newlist.addIndexToList(i);
-        all_atoms.addIndexToList( t[i].index() ); 
+        all_atoms.addIndexToList( t[i] ); 
      }
      colvar_atoms.push_back( newlist );
      log.printf("  Colvar 1 is calculated from atoms : ");
      for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
      log.printf("\n");
   } else {
-     bool readone=false; DynamicList newlist;
+     bool readone=false; DynamicList<unsigned> newlist;
      for(int i=1;;++i ){
         parseAtomList("ATOMS", i, t );
         if( t.size()==0 ) break;
@@ -209,7 +168,7 @@ void MultiColvar::readAtomsKeyword( int& natoms ){
         }
         for(unsigned j=0;j<natoms;++j){ 
            newlist.addIndexToList( natoms*(i-1)+j ); 
-           all_atoms.addIndexToList( t[j].index() );
+           all_atoms.addIndexToList( t[j] );
         }
         t.resize(0); colvar_atoms.push_back( newlist );
         newlist.clear(); readatoms=true;
@@ -231,8 +190,8 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
   parseAtomList("GROUP",t);
   if( t.size()!=0 ){
       readatoms=true;
-      for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i].index() );
-      DynamicList newlist; 
+      for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
+      DynamicList<unsigned> newlist; 
       for(unsigned i=1;i<t.size();++i){ 
           for(unsigned j=0;j<i;++j){ 
              newlist.addIndexToList(i); newlist.addIndexToList(j);
@@ -247,9 +206,9 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
          readatoms=true;
          parseAtomList("GROUPB",t2);
          if ( t2.size()==0 ) error("GROUPB keyword defines no atoms or is missing. Use either GROUPA and GROUPB or just GROUP"); 
-         for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i].index() ); 
-         for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i].index() ); 
-         DynamicList newlist;
+         for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] ); 
+         for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] ); 
+         DynamicList<unsigned> newlist;
          for(unsigned i=0;i<t1.size();++i){
              for(unsigned j=0;j<t2.size();++j){
                  newlist.addIndexToList(i); newlist.addIndexToList( t1.size() + j );
@@ -271,8 +230,8 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   parseAtomList("SPECIES",t);
   if( t.size()!=0 ){
       readatoms=true; natoms=t.size();
-      for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i].index() );
-      DynamicList newlist;
+      for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
+      DynamicList<unsigned> newlist;
       for(unsigned i=0;i<t.size();++i){
           newlist.addIndexToList(i);
           log.printf("  Colvar %d involves central atom %d and atoms : ", colvar_atoms.size()+1,t[i].serial() );
@@ -290,9 +249,9 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
          parseAtomList("SPECIESB",t2);
          if ( t2.size()==0 ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
          natoms=1+t2.size();
-         for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i].index() );
-         for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i].index() );
-         DynamicList newlist;
+         for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] );
+         for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] );
+         DynamicList<unsigned> newlist;
          for(unsigned i=0;i<t1.size();++i){
             newlist.addIndexToList(i);
             log.printf("  Colvar %d involves central atom %d and atoms : ", colvar_atoms.size()+1,t1[i].serial() );
@@ -316,58 +275,40 @@ void MultiColvar::prepareForNeighborListUpdate(){
 }
 
 void MultiColvar::completeNeighborListUpdate(){
-   for(unsigned i=0;i<colvar_atoms.size();++i) activateLinks( colvar_atoms[i], all_atoms );
+   for(unsigned i=0;i<colvar_atoms.size();++i){
+      colvar_atoms[i].mpi_gatherActiveMembers( comm );
+      activateLinks( colvar_atoms[i], all_atoms );
+   }
    all_atoms.updateActiveMembers(); requestAtoms();
 }
 
 void MultiColvar::requestAtoms(){
-   unsigned natoms=all_atoms.getNumberActive();
-   std::vector<AtomNumber> a(natoms); 
-   for(unsigned i=0;i<natoms;++i) a[i].setIndex( all_atoms[i] );
-
-   ActionAtomistic::requestAtoms(a);
+   ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
    if( usingDistributionFunctions() ){
-       for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*a.size()+9);
+       for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*getNumberOfAtoms()+9);
    } else {
        for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives( getThisFunctionsNumberOfDerivatives(i) );
    }
 }
 
-void MultiColvar::retrieveAtoms( const unsigned& j, std::vector<Vector>& pos ){
-  unsigned natoms=colvar_atoms[j].getNumberActive();
-  plumed_assert( pos.size()==natoms );
-  for(unsigned i=0;i<natoms;++i){
-      pos[i]=getPosition( colvar_atoms[j][i] );
-  }
-}
-
 void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux ){
-  plumed_massert(setupList,"You have not written any code to setup the neighbor list");
   unsigned natoms=colvar_atoms[j].getNumberActive();
 
   if ( natoms==0 ) return;   // Do nothing if there are no active atoms in the colvar
-  Tensor vir; std::vector<Vector> pos(natoms), der(natoms); 
   // Retrieve the atoms
-  retrieveAtoms( j, pos );
-
-  // Update the neighbor list if it is time
-  if( isTimeForNeighborListUpdate() ){
-      // Update the neighbor list
-      nlist.update( pos, usepbc, getPbc(), colvar_atoms[j] );
-      // Get the new number of atoms
-      natoms=colvar_atoms[j].getNumberActive();
-      // Return if there are no atoms 
-      if( natoms==0 ) return;
-      // Resize everything if there are atoms
-      pos.resize( natoms ); der.resize( natoms );
-      // Resize the value's derivatives
-      value_in->resizeDerivatives( 3*natoms + 9 );
-      // Re-retrieve the atoms
-      retrieveAtoms( j, pos ); 
-  }
+  Tensor vir; std::vector<Vector> pos(natoms), der(natoms); 
+  for(unsigned i=0;i<natoms;++i) pos[i]=getPosition( colvar_atoms[j][i] );
   
   // Compute the derivatives
+  stopcondition=false; current=j;
   double value=compute( pos, der, vir );
+
+  // This is the end of neighbor list update
+  if(stopcondition){
+     plumed_massert(isTimeForNeighborListUpdate(), "found stop but not during neighbor list step");
+     return;
+  }
+
   // Put all this in the value we are passing back
   for(unsigned i=0;i<natoms;++i){
       value_in->addDerivative( 3*i+0,der[i][0] );

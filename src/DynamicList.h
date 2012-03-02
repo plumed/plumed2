@@ -103,29 +103,32 @@ there to do tasks that are specific to PLMD::MultiColvar and is thus not describ
 described above is what we believe can be used in other contexts.
 */
 
+template <typename T>
 class DynamicList {
 /// This routine returns the index of the ith element in the first list from the second list
-friend unsigned linkIndex( const unsigned, const DynamicList& , const DynamicList& ); 
+template <typename U>
+friend unsigned linkIndex( const unsigned, const DynamicList<unsigned>& , const DynamicList<U>& ); 
 /// This routine activates everything from the second list that is required from the first
-friend void activateLinks( const DynamicList& , DynamicList& );
+template <typename U>
+friend void activateLinks( const DynamicList<unsigned>& , DynamicList<U>& );
 private:
   bool inactive;
 /// This is the list of all the relevent members
-  std::vector<unsigned> all;
+  std::vector<T> all;
 /// This tells us what members of all are on/off at any given time
   std::vector<unsigned> onoff;
 /// This translates a position from all to active
   std::vector<int> translator;
 /// This is the list of active members
-  std::vector<unsigned> active;
+  std::vector<T> active;
 public:
 /// An operator that returns the element from the current active list
-  inline unsigned operator [] (const unsigned& i) const { 
+  inline T operator [] (const unsigned& i) const { 
      plumed_assert(!inactive); plumed_assert( i<active.size() );
      return active[i]; 
   }
 /// An operator that returns the element from the full list (used in neighbour lists)
-  inline unsigned operator () (const unsigned& i) const {
+  inline T operator () (const unsigned& i) const {
      plumed_assert( i<all.size() );
      return all[i];
   }
@@ -137,7 +140,7 @@ public:
 /// Return the number of elements that are currently active
   unsigned getNumberActive() const;
 /// Add something to the active list
-  void addIndexToList( const unsigned ii );
+  void addIndexToList( const T ii );
 /// Make a particular element inactive
   void deactivate( const unsigned ii ); 
 /// Make everything in the list inactive
@@ -150,31 +153,38 @@ public:
   void mpi_gatherActiveMembers(PlumedCommunicator& comm);
 /// Get the list of active members
   void updateActiveMembers();
+/// Retriee the list of active objects
+  std::vector<T>& retrieveActiveList(); 
 };
 
-inline
-void DynamicList::clear() {
+template <typename T>
+std::vector<T>& DynamicList<T>::retrieveActiveList(){
+  return active;
+}
+
+template <typename T>
+void DynamicList<T>::clear() {
   all.resize(0); translator.resize(0); onoff.resize(0); active.resize(0);
 }
 
-inline
-unsigned DynamicList::fullSize() const {
+template <typename T>
+unsigned DynamicList<T>::fullSize() const {
   return all.size();
 }
 
-inline
-unsigned DynamicList::getNumberActive() const {
+template <typename T>
+unsigned DynamicList<T>::getNumberActive() const {
   if( inactive && active.size()!=0 ) plumed_assert(0);
   return active.size();
 }
 
-inline
-void DynamicList::addIndexToList( const unsigned ii ){
+template <typename T>
+void DynamicList<T>::addIndexToList( const T ii ){
   all.push_back(ii); translator.push_back( all.size()-1 ); onoff.push_back(0);
 }
 
-inline
-void DynamicList::deactivate( const unsigned ii ){
+template <typename T>
+void DynamicList<T>::deactivate( const unsigned ii ){
   plumed_massert(ii<all.size(),"ii is out of bounds");
   onoff[ii]=0; inactive=true;
   for(unsigned i=0;i<onoff.size();++i){
@@ -182,26 +192,26 @@ void DynamicList::deactivate( const unsigned ii ){
   }
 }
 
-inline
-void DynamicList::deactivateAll(){
+template <typename T>
+void DynamicList<T>::deactivateAll(){
   inactive=true;
   for(unsigned i=0;i<onoff.size();++i) onoff[i]=0;
 }
 
-inline
-void DynamicList::activate( const unsigned ii ){
+template <typename T>
+void DynamicList<T>::activate( const unsigned ii ){
   plumed_massert(ii<all.size(),"ii is out of bounds");
   inactive=false; onoff[ii]=1;
 }
 
-inline
-void DynamicList::activateAll(){
+template <typename T>
+void DynamicList<T>::activateAll(){
   inactive=false;
   for(unsigned i=0;i<onoff.size();++i) onoff[i]=1;
 }
 
-inline
-void DynamicList::mpi_gatherActiveMembers(PlumedCommunicator& comm){
+template <typename T>
+void DynamicList<T>::mpi_gatherActiveMembers(PlumedCommunicator& comm){
   comm.Sum(&onoff[0],onoff.size());
   unsigned size=comm.Get_size();
   // When we mpi gather onoff to be on it should be active on ALL nodes
@@ -209,8 +219,8 @@ void DynamicList::mpi_gatherActiveMembers(PlumedCommunicator& comm){
   updateActiveMembers();
 }
 
-inline
-void DynamicList::updateActiveMembers(){
+template <typename T>
+void DynamicList<T>::updateActiveMembers(){
   unsigned kk=0; active.resize(0);
   for(unsigned i=0;i<all.size();++i){
       if( onoff[i]==1 ){ translator[i]=kk; active.push_back( all[i] ); kk++; }
@@ -219,8 +229,8 @@ void DynamicList::updateActiveMembers(){
   if( kk==0 ) inactive=true;
 }
 
-inline
-unsigned linkIndex( const unsigned ii, const DynamicList& l1, const DynamicList& l2 ){
+template <typename U>
+unsigned linkIndex( const unsigned ii, const DynamicList<unsigned>& l1, const DynamicList<U>& l2 ){
   plumed_massert(ii<l1.active.size(),"ii is out of bounds");
   unsigned kk; kk=l1.active[ii];
   plumed_massert(kk<l2.all.size(),"the lists are mismatched");
@@ -229,8 +239,8 @@ unsigned linkIndex( const unsigned ii, const DynamicList& l1, const DynamicList&
   return nn; 
 }
 
-inline
-void activateLinks( const DynamicList& l1, DynamicList& l2 ){
+template <typename U>
+void activateLinks( const DynamicList<unsigned>& l1, DynamicList<U>& l2 ){
   for(unsigned i=0;i<l1.active.size();++i) l2.activate( l1.active[i] );
 }
 

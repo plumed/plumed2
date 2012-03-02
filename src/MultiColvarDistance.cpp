@@ -44,6 +44,8 @@ PRINT ARG=d1.lt0.1
 
 
 class MultiColvarDistance : public MultiColvar {
+private:
+  double rcut;
 public:
   static void registerKeywords( Keywords& keys );
   MultiColvarDistance(const ActionOptions&);
@@ -56,19 +58,21 @@ PLUMED_REGISTER_ACTION(MultiColvarDistance,"DISTANCES")
 void MultiColvarDistance::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
-  MultiColvar::useNeighborList("product",keys);
+  keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
 }
 
 MultiColvarDistance::MultiColvarDistance(const ActionOptions&ao):
-PLUMED_MULTICOLVAR_INIT(ao)
+PLUMED_MULTICOLVAR_INIT(ao),
+rcut(-1)
 {
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
-  // Setup the neighbour list
-  std::vector< std::pair<unsigned,unsigned> > pairs(1);
-  pairs[0].first=0; pairs[0].second=1;
-  createNeighborList( pairs );
+  // Read the cutoff for the neighbour list
+  if( isTimeForNeighborListUpdate() ){
+      parse("NL_CUTOFF",rcut);
+      if( rcut>0 ) log.printf("  ignoring distances greater than %lf in neighbor list\n",rcut);
+  }
   // And check everything has been read in correctly
   checkRead();
 }
@@ -77,8 +81,14 @@ double MultiColvarDistance::compute( const std::vector<Vector>& pos, std::vector
    Vector distance; 
    distance=getSeparation( pos[0], pos[1] );
    const double value=distance.modulo();
-   const double invvalue=1.0/value; 
+   const double invvalue=1.0/value;
 
+   // Check at neighbor list update time whether this distance is big
+   if( isTimeForNeighborListUpdate() && rcut>0 ){
+       if( value>rcut ){ stopCalculatingThisCV(); return 0.0; }
+   } 
+
+   // And finish the calculation
    deriv[0]=-invvalue*distance;
    deriv[1]=invvalue*distance;
    virial=-invvalue*Tensor(distance,distance);

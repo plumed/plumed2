@@ -23,6 +23,8 @@ private:
   int updateFreq;
   unsigned lastUpdate;
   bool reduceAtNextStep;
+/// The tolerance on the accumulators for neighbour list
+  double tolerance;
 /// Accumulators for the values
   std::vector<double> totals;
 /// Pointers to the values for this object
@@ -30,7 +32,7 @@ private:
 /// Pointers to the functions we are using on each value
   std::vector<DistributionFunction*> functions;
 /// The list of quantities that should be calculated
-  DynamicList members;
+  DynamicList<unsigned> members;
 protected:
 /// Add a distribution function to the list (this routine must be called after construction of ActionWithValue)
   void addDistributionFunction( std::string name, DistributionFunction* fun );
@@ -38,8 +40,6 @@ protected:
   void requestDistribution();
 /// Find out if we are running the calculation without mpi
   bool getSerial() const ;
-/// This resets members so that we calculate all functions - this is used for neighbour list update
-//  void resetMembers();
 /// Find out if it is time to do neighbor list update
   bool isTimeForNeighborListUpdate() const ;
 /// Get the frequency with which to update neighbor lists
@@ -57,12 +57,14 @@ public:
   void calculate();
 /// Are we using distributions 
   bool usingDistributionFunctions() const;
-/// Overwrite this in your inherited actions if neighbour list update is more complicated
+/// Overwrite this in your inherited actions if neighbor list update is more complicated
 /// than just calculating everything and seeing whats big.
   virtual void prepareForNeighborListUpdate(){};
-/// Overwrite this in your inherited actions if neighbour list update is more complicated
+/// Overwrite this in your inherited actions if neighbor list update is more complicated
 /// than just calculating everything and seeing whats big.
   virtual void completeNeighborListUpdate(){};
+/// Ensure that nothing gets done for your deactivated colvars
+  virtual void deactivate( const unsigned j )=0;
 /// Merge the derivatives
   virtual void mergeDerivatives( const unsigned j, Value* value_in, Value* value_out )=0;
 /// Get the number of functions from which we are calculating the distribtuion

@@ -4,7 +4,8 @@ using namespace std;
 using namespace PLMD;
 
 void ActionWithDistribution::registerKeywords(Keywords& keys){
-  keys.reserve("optional","NL_STRIDE","the frequency with which the neighbor list should be updated");
+  keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated.");
+  keys.add("optional","NL_TOL","when accumulating sums quantities that contribute less than this will be ignored.");
 }
 
 void ActionWithDistribution::autoParallelize(Keywords& keys){
@@ -18,12 +19,16 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   serial(true),
   updateFreq(0),
   lastUpdate(0),
-  reduceAtNextStep(false)
+  reduceAtNextStep(false),
+  tolerance(0)
 {
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   if(serial)log.printf("  doing calculation in serial\n");
   if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
-  if(updateFreq>0) reduceAtNextStep=true;
+  if( keywords.exists("NL_TOL") ){
+      if(updateFreq>0 && keywords.exists("NL_TOL") ){ tolerance=epsilon; parse("NL_TOL",tolerance); }
+      log.printf("  updating calculation every %d steps.  Ignoring contributions less than %lf\n",updateFreq,tolerance);
+  }
 }
 
 ActionWithDistribution::~ActionWithDistribution(){
@@ -52,6 +57,9 @@ void ActionWithDistribution::requestDistribution(){
   read=true; bool dothis; std::vector<std::string> params;
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
   plumed_massert(a,"can only do distribution on ActionsWithValue");
+
+  // We prepare the first step as if we are doing a neighbor list update
+  prepareForNeighborListUpdate(); reduceAtNextStep=true;
 
   if(all_values){
      if( a->checkNumericalDerivatives() && getNumberOfFunctionsInDistribution()>1 ){
@@ -104,7 +112,7 @@ void ActionWithDistribution::calculate(){
       Value* tmpvalue=new Value();
       Value* tmp2value=new Value();
 
-      unsigned kk;
+      unsigned kk; double contribution; bool keep;
       for(unsigned i=rank;i<members.getNumberActive();i+=stride){
           // Retrieve the function we are calculating from the dynamic list
           kk=members[i];
@@ -119,14 +127,20 @@ void ActionWithDistribution::calculate(){
           calculateThisFunction( kk, tmpvalue, aux );
 
           // Skip if we are not calculating this particular value
-          if( reduceAtNextStep && !tmpvalue->valueHasBeenSet() ){ members.deactivate(kk); continue; }
+          if( reduceAtNextStep && !tmpvalue->valueHasBeenSet() ){ members.deactivate(kk); deactivate(kk); continue; }
+
           // Now incorporate the derivative of the function into the derivatives for the min etc
+          keep=false;
           for(unsigned j=0;j<totals.size();++j){
-             totals[j]+=functions[j]->calculate( tmpvalue, aux, tmp2value );
+             contribution=functions[j]->calculate( tmpvalue, aux, tmp2value );
+             if( updateFreq>0 || contribution>=tolerance ){ keep=true; totals[j]+=contribution; } 
              mergeDerivatives( kk, tmp2value, final_values[j] );
              tmp2value->clearDerivatives();
           }
           tmpvalue->clearDerivatives();
+          // If the contribution of this quantity is very small at neighbour list time ignore it
+          // untill next neighbour list time
+          if( reduceAtNextStep && !keep ){ members.deactivate(kk); deactivate(kk); } 
       }
       // Update the dynamic list 
       if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }

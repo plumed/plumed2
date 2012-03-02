@@ -4,7 +4,6 @@
 #include "ActionAtomistic.h"
 #include "ActionWithValue.h"
 #include "ActionWithDistribution.h"
-#include "NeighbourList.h"
 #include <vector>
 
 #define PLUMED_MULTICOLVAR_INIT(ao) Action(ao),MultiColvar(ao)
@@ -57,7 +56,7 @@ private:
    // Declare all the variables you need here  
 public:
   static void registerKeywords( Keywords& keys );
-  MultiColvarCoordination(const ActionOptions&);
+  MyNewMultiColvar(const ActionOptions&);
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
 };
 
@@ -124,19 +123,6 @@ keys.use("ATOMS");
 
 for all the keywords in the first cell of the particular record that you want to use from the table above.
 
-\par Using the neighbor list
-
-To use the neighbor lists to make your calculations faster you must call PLMD::MultiColvar::useNeighborList from
-within your registerKeyword routine.  In calling this you must specify whether the individual collective coordinate 
-you are calculating are something like \f$\sum_{i=0}^N \sigma(r_i)\f$ or are somethign like \f$\prod_{i=0}^N \sigma(r_i)\f$.
-Obviously, neighbor lists can be used in both these cases as both quantities contain switching functions \f$\sigma(r_i)\f$
-that are small when \f$r_i\f$ is large (greater than rcut).  However, the behvaiour on update will be 
-different in the two different cases.  In the first case (the sum) if one distance is greater than rcut then its
-particular contribution can be ignored.  By contrast in the second case (the product) if ANY of the distances in the neighbor list
-is greater than rcut one can safely skip the entire calculation.  To specify that your new CV is of the first type call
-PLMD::MultiColvar::useNeighborList with the first argument set equal to sum.  To specify the second type call 
-PLMD::MultiColvar::useNeighborList with the first argument set equal to product.
-
 \par Parallelism
 
 The most optimal way to parallelize your CV will depend on what it is your CV calculates.  In fact it will probably even
@@ -151,43 +137,11 @@ The constructor reads the plumed input files and as such it must:
 
 - Read all the keywords that are specific to your new CV 
 - Read in the atoms involved in the CV
-- Setup the neighbor list if required
 - And finally check that readin was succesful
 
-The first of these tasks is dealt with in detail on the following page: \usingDoxygen.  Furthermore, to do the second and forth
+The first of these tasks is dealt with in detail on the following page: \usingDoxygen.  Furthermore, to do the second and third 
 tasks on this list one simply calls PLMD::MultiColvar::readAtoms and PLMD::Action::checkRead.  (you must have decided which of the 
-keywords described above you are using to read the atoms however for readAtoms to work).  The third task is slightly more onerous
-but is hardly difficult as it is simply a matter of creating a vector of pairs of atom indices that should be calculated by the neighbor
-list.  If you used ATOMS to read in the atoms indices the positions, when they are passed to the neighbor list, are in the same order
-as they are in your input keyword.  Thus, if we have an input like:
-
-\verbatim
-MYNEWCV ATOMS1=2,3,4 ATOMS2=5,6,7
-\endverbatim
-
-and we set up the neighbor list using:
-
-\verbatim
-std::vector< std::pair<unsigned,unsigned> > pairs;
-pairs.push_back( std::pair<unsigned,unsigned>( 0, 1 );
-pairs.push_back( std::pair<unsigned,unsigned>( 1, 2 );
-createNeighborList( pairs );
-\endverbatim
- 
-Then when it comes to neighbor list update time for our first colvar the distances used to update the neighbor list will be that between
-2 and 3 and that between atoms 3 and 4.  Meanwhile, for the second colvar it will be that between atoms 5 and 6 and that between atoms 6 and 7.
-
-Things are slightly more complex when SPECIES is used but as, when one is using this keyword, one is typically calculating the distance between
-some central atom and its immediate sphere of neighbors one can copy the following code verbatim:
-
-\verbatim
-int natoms; readAtoms( natoms );
-std::vector< std::pair<unsigned,unsigned> > pairs(natoms-1);
-for(unsigned i=1;i<natoms;++i){ pairs[i-1].first=0; pairs[i-1].second=i; }
-createNeighborList( pairs );
-\endverbatim     
-
-(the central atom is always the first position of the positions array).
+keywords described above you are using to read the atoms however for readAtoms to work).  
 
 \section label5 Compute
 
@@ -195,9 +149,20 @@ Compute is the routine that actually calculates the colvar.  It takes as input a
 repect to the atomic positions, the virial and the value of the colvar (this is the double that the routine returns).  When calculating
 multiple colvars using a MultiColvar this routine will be called more than once with different sets of atomic positions.  The input std::vector
 of positions has the atomic positions ordered in the way they were specified to the ATOMS keyword.  If SPECIES is used the central atom is 
-in the first position of the position vector and the atoms in the coordination sphere are in the remaining elements.  Neighbor list updating
-is done elsewhere inside the code.  Hence, the positions vector that is passed to compute only ever contains the positions of atoms that are within the 
-cutoff specified to the neighbor list.  
+in the first position of the position vector and the atoms in the coordination sphere are in the remaining elements.  
+
+\section lab4 Neighbor Lists
+
+You can and should use PLMD::NeighborList to make your calculation as fast and possible.  If you use this class you should
+set up the neighbor list in the constructor as per the instructions in the header for the class. In your compute routine
+you update the neighbor list as follows:
+
+\verbatim
+if( isTimeForNeighborListUpdate() ){ nl->update(pos); updateAtoms( nl->getFullAtomList() ); }
+\endverabtim 
+
+NL_TOL and NL_STRIDE are read in elsewhere and will be looked after automatically.
+
 */
 
 class MultiColvar :
@@ -209,36 +174,37 @@ private:
   bool usepbc;
   bool readatoms;
 /// The list of all the atoms involved in the colvar
-  DynamicList all_atoms;
+  DynamicList<AtomNumber> all_atoms;
 /// The lists of the atoms involved in each of the individual colvars
 /// note these refer to the atoms in all_atoms
-  std::vector<DynamicList> colvar_atoms;
-/// Has the neighbor list been set up 
-  bool setupList;
-/// The neighbor list we use the same one for every colvar
-  NeighbourList<Vector,Pbc> nlist;
+  std::vector< DynamicList<unsigned> > colvar_atoms;
+/// Used to stop calculating during neighbor list update
+  bool stopcondition;
+/// Used to make sure we update the correct atoms during neighbor list update
+  unsigned current;
 /// Read in ATOMS keyword
   void readAtomsKeyword( int& natoms );
 /// Read in the various GROUP keywords
   void readGroupsKeyword( int& natoms );
 /// Read in the various SPECIES keywords
   void readSpeciesKeyword( int& natoms );
-/// Retrieve the positions of the atoms
-  void retrieveAtoms( const unsigned& j, std::vector<Vector>& pos );
 /// Update the atoms request
   void requestAtoms();
 protected:
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
-/// Create a neighbor list that is composed of these atoms
-  void createNeighborList( std::vector<std::pair<unsigned,unsigned> >& pairs );
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
+/// Stop a calculation during neighbor list update steps
+  void stopCalculatingThisCV();
+/// Update the list of atoms after the neighbor list step
+  void updateAtoms( const std::vector<AtomNumber>& aa );
+/// Do we use pbc to calculate this quantity
+  bool usesPbc() const ;
 public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){};
   static void registerKeywords( Keywords& keys );
-  static void useNeighborList( const std::string& style, Keywords& keys );
 /// Apply the forces on the values
   void apply();
 /// Return the number of Colvars this is calculating
@@ -252,6 +218,8 @@ public:
   void completeNeighborListUpdate();
 /// Merge the derivatives 
   void mergeDerivatives( const unsigned j, Value* value_in, Value* value_out );
+/// Turn of atom requests when this colvar is deactivated cos its small
+  void deactivate( const unsigned j );
 /// Calcualte the colvar
   void calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux );
 /// And a virtual function which actually computes the colvar
@@ -264,8 +232,31 @@ unsigned MultiColvar::getNumberOfFunctionsInDistribution(){
 }
 
 inline
+void MultiColvar::deactivate( const unsigned j ){
+  colvar_atoms[j].deactivateAll();
+}
+
+inline
 unsigned MultiColvar::getThisFunctionsNumberOfDerivatives( const unsigned& j ){
   return 3*colvar_atoms[j].getNumberActive() + 9;
+}
+
+inline
+void MultiColvar::stopCalculatingThisCV(){
+  plumed_massert(isTimeForNeighborListUpdate(),"found stop but not during neighbor list step");
+  stopcondition=true;
+}
+
+inline
+void MultiColvar::updateAtoms( const std::vector<AtomNumber>& aa ){
+  plumed_massert(isTimeForNeighborListUpdate(),"found updateAtoms but not during neighbor list step");
+  colvar_atoms[current].deactivateAll();
+  for(unsigned i=0;i<aa.size();++i) colvar_atoms[current].activate( aa[i].index() );
+}
+
+inline
+bool MultiColvar::usesPbc() const {
+  return usepbc;
 }
 
 }
