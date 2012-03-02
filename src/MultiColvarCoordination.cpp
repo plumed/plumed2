@@ -12,21 +12,22 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR COORDINATIONNUMBER
 /**
-Calculate the coordination numbers of atoms.  You can then calculate functions of the distribution of
-coordination numbers such as the minimum, the number less than a certain quantity and so on. 
+Calculate the coordination numbers of atoms so that  you can then calculate functions of the distribution of
+coordination numbers such as the minimum, the number less than a certain quantity and so on.   
 
 \par Examples
 
 The following input tells plumed to calculate the coordination numbers of atoms 1-100 with themselves.
-100 coordination numbers will be calculated in this example.
+The minimum coordination number is then calculated.
 \verbatim
-COORDINATIONNUMBER SPECIES=1-100 R_0=1.0
+COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 MIN=0.1
 \endverbatim
 
 The following input tells plumed to calculate how many atoms from 1-100 are within 3.0 of each of the atoms
-from 101-110.  In the first 101 is the central atom, in the second 102 is the central atom and so on.
+from 101-110.  In the first 101 is the central atom, in the second 102 is the central atom and so on.  The 
+number of coordination numbers more than 6 is then computed.
 \verbatim
-COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0
+COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN=6.0
 \endverbatim
 
 */
@@ -55,6 +56,7 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","R_0","The r_0 parameter of the switching function");
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
+  keys.remove("AVERAGE");
 }
 
 MultiColvarCoordination::MultiColvarCoordination(const ActionOptions&ao):

@@ -34,18 +34,26 @@ public:
 class DistributionFunction {
 private:
   bool fine;
+  double last_add;
   std::string errorMsg;
 protected:
   void copyDerivatives( Value* value_in, Value* value_out );
 public:
   DistributionFunction( const std::vector<std::string>& parameters );
-  virtual double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out )=0;
+  virtual void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out )=0;
   virtual void finish( const double& total, Value* value_out )=0;
+  virtual bool sizableContribution(Value* val, const double& tol);
+  virtual void gather( PlumedCommunicator& comm ){};
   void error(const std::string& msg);
   bool check() const;
   std::string errorMessage() const ;
   virtual std::string message()=0;
 }; 
+
+inline
+bool DistributionFunction::sizableContribution( Value* val, const double& tol ){
+  return (val->get()>=tol);
+}
 
 inline 
 void DistributionFunction::error( const std::string& msg ){
@@ -63,22 +71,30 @@ bool DistributionFunction::check() const {
 }
 
 class sum : public DistributionFunction {
+private:
+  double nval;
+  double prev_nval;
 public:
   static void writeDocs( std::string& docs );
   sum( const std::vector<std::string>& parameters );
-  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  inline bool sizableContribution(Value* val, const double& tol){ return true; }
+  void gather( PlumedCommunicator& comm );
   void finish( const double& total, Value* value_out );
   std::string message();
 };
 
 class mean : public DistributionFunction {
 private:
-  double nvalues;
+  double nval;
+  double prev_nval;
 public:
   static void writeDocs( std::string& docs );
   mean( const std::vector<std::string>& parameters );
-  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
+  inline bool sizableContribution(Value* val, const double& tol){ return true; }
+  void gather( PlumedCommunicator& comm );
   std::string message();
 };
 
@@ -86,11 +102,12 @@ class less_than : public DistributionFunction {
 private:
   double r_0;
   unsigned nn,mm;
+  double total, last_add;
   SwitchingFunction sf;
 public:
   static void writeDocs( std::string& docs );
   less_than( const std::vector<std::string>& parameters );
-  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
   std::string message();
 };
@@ -103,7 +120,7 @@ private:
 public:
   static void writeDocs( std::string& docs ); 
   more_than( const std::vector<std::string>& parameters );
-  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
   std::string message();
 };
@@ -115,7 +132,7 @@ private:
 public:
   static void writeDocs( std::string& docs );;
   within( const std::vector<std::string>& parameters );
-  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
   std::string message();
 };
@@ -126,7 +143,7 @@ private:
 public:
   static void writeDocs( std::string& docs );
   min( const std::vector<std::string>& parameters );
-  double calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
   std::string message();
 };

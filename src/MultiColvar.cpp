@@ -13,8 +13,8 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.addFlag("PBC",true,"use the periodic boundary conditions when calculating distances");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.reserve("atoms","ATOMS","the atoms involved in each of the collective variables you wish to calculate. "
-                               "To compute a single CV use ATOMS.  If you use ATOMS1, ATOMS2, ATOMS3... multiple CVs "
-                               "will be calculated - one for each ATOM keyword you specify (all ATOM keywords should "
+                               "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one CV will be "
+                               "calculated for each ATOM keyword you specify (all ATOM keywords should "
                                "define the same number of atoms).  The eventual number of quantities calculated by this "
                                "action will depend on what functions of the distribution you choose to calculate."); 
   keys.reserve("atoms","GROUP","this keyword is used for colvars that are calculated from a pair of atoms. "
@@ -33,7 +33,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                   "the documentation for that keyword");
   keys.add("nohtml","MIN","take the minimum value from these variables.  The continuous version of the minimum described above is calculated and beta must be specified in input");
 //  keys.add("optional","MAX", "take the maximum value from these variables");
-  keys.add("nohtml","SUM", "take the sum of these variables");
+  keys.reserve("nohtml","SUM", "take the sum of these variables");
   keys.add("nohtml","AVERAGE", "take the average value of these variables");
   keys.add("nohtml","LESS_THAN", "take the number of variables less than the specified target.  This quantity is made differentiable using a switching function.  You can control the parameters of this switching function by specifying three numbers to the keyword (r_0, nn and mm).  If you are happy with the default values of nn=6 and mm=12 then you need only specify the target r_0.  The number of values less than the target is stored in a value called lt<target>.");
   keys.add("nohtml","MORE_THAN", "take the number of variables more than the specified target.  This quantity is made differentiable using a switching function.  You can control the parameters of this switching function by specifying three numbers to the keyword (r_0, nn and mm).  If you are happy with the default values of nn=6 and mm=12 then you need only specify the target r_0.  The number of values less than the target is stored in a value called gt<target>.");
@@ -68,33 +68,40 @@ void MultiColvar::readAtoms( int& natoms ){
   bool dothis; std::vector<std::string> params;
 
   // Read SUM keyword
-  parseFlag("SUM",dothis);
+  if( keywords.exists("SUM") ) parseFlag("SUM",dothis);
+  else dothis=false;
   if( dothis ){
+     params.resize(1); Tools::convert(getNumberOfFunctionsInDistribution(),params[0]);
      addDistributionFunction( "sum", new sum(params) );
   }
   // Read AVERAGE keyword
-  parseFlag("AVERAGE",dothis);
+  if( keywords.exists("AVERAGE") ) parseFlag("AVERAGE",dothis);
+  else dothis=false;
   if( dothis ){
      params.resize(1); Tools::convert(getNumberOfFunctionsInDistribution(),params[0]);
      addDistributionFunction( "average", new mean(params) );
   }
   // Read MIN keyword
-  parseVector("MIN",params);
+  if( keywords.exists("MIN") ) parseVector("MIN",params);
+  else params.resize(0);
   if( params.size()!=0 ){
      addDistributionFunction( "min", new min(params) );
   }
   // Read Less_THAN keyword
-  parseVector("LESS_THAN",params);
+  if( keywords.exists("LESS_THAN") ) parseVector("LESS_THAN",params);
+  else params.resize(0);
   if( params.size()!=0 ){
      addDistributionFunction( "lt" + params[0], new less_than(params) );
   }
   // Read MORE_THAN keyword
-  parseVector("MORE_THAN",params);
+  if( keywords.exists("MORE_THAN") ) parseVector("MORE_THAN",params);
+  else params.resize(0);
   if( params.size()!=0 ){
      addDistributionFunction( "gt" + params[0], new more_than(params) );
   }
   // Read HISTOGRAM keyword
-  parseVector("HISTOGRAM",params);
+  if( keywords.exists("HISTOGRAM") ) parseVector("HISTOGRAM",params);
+  else params.resize(0);
   if( params.size()!=0 ){
       std::vector<double> range(2); parseVector("RANGE",range);
       if(range[1]<range[0]) error("range is meaningless");
@@ -115,10 +122,11 @@ void MultiColvar::readAtoms( int& natoms ){
       }
   }
   // Read within keywords
-  parseVector("WITHIN",params);
+  if( keywords.exists("WITHIN") ) parseVector("WITHIN",params);
+  else params.resize(0);
   if( params.size()!=0 ){
       addDistributionFunction( "between" + params[0] + "&" +params[1], new within(params) );
-  } else {
+  } else if( keywords.exists("WITHIN") ){
       for(unsigned i=1;;++i){
          if( !parseNumberedVector("WITHIN",i,params) ) break;
          addDistributionFunction( "between" + params[0] + "&" +params[1], new within(params) );
@@ -132,47 +140,26 @@ void MultiColvar::readAtoms( int& natoms ){
 void MultiColvar::readAtomsKeyword( int& natoms ){ 
   if( readatoms) return; 
 
-  std::vector<AtomNumber> t;
-  parseAtomList("ATOMS",t); 
-  if( t.size()!=0 ){
-     readatoms=true;
-     if( natoms>0 && t.size()!=natoms ){
-        std::string nat; Tools::convert(natoms, nat );
-        error("ATOMS keyword did not specify " + nat  + " atoms.");
-     } else {
-        natoms=t.size();
-     }
-     DynamicList<unsigned> newlist;
-     for(unsigned i=0;i<natoms;++i){ 
-        newlist.addIndexToList(i);
-        all_atoms.addIndexToList( t[i] ); 
-     }
-     colvar_atoms.push_back( newlist );
-     log.printf("  Colvar 1 is calculated from atoms : ");
+  std::vector<AtomNumber> t; DynamicList<unsigned> newlist;
+  for(int i=1;;++i ){
+     parseAtomList("ATOMS", i, t );
+     if( t.size()==0 ) break;
+
+     log.printf("  Colvar %d is calculated from atoms : ", i);
      for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
-     log.printf("\n");
-  } else {
-     bool readone=false; DynamicList<unsigned> newlist;
-     for(int i=1;;++i ){
-        parseAtomList("ATOMS", i, t );
-        if( t.size()==0 ) break;
+     log.printf("\n"); 
 
-        log.printf("  Colvar %d is calculated from atoms : ", i);
-        for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
-        log.printf("\n"); 
-
-        if( i==1 && natoms<0 ) natoms=t.size();
-        if( t.size()!=natoms ){
-            std::string ss; Tools::convert(i,ss); 
-            error("ATOMS" + ss + " keyword has the wrong number of atoms"); 
-        }
-        for(unsigned j=0;j<natoms;++j){ 
-           newlist.addIndexToList( natoms*(i-1)+j ); 
-           all_atoms.addIndexToList( t[j] );
-        }
-        t.resize(0); colvar_atoms.push_back( newlist );
-        newlist.clear(); readatoms=true;
+     if( i==1 && natoms<0 ) natoms=t.size();
+     if( t.size()!=natoms ){
+         std::string ss; Tools::convert(i,ss); 
+         error("ATOMS" + ss + " keyword has the wrong number of atoms"); 
      }
+     for(unsigned j=0;j<natoms;++j){ 
+        newlist.addIndexToList( natoms*(i-1)+j ); 
+        all_atoms.addIndexToList( t[j] );
+     }
+     t.resize(0); colvar_atoms.push_back( newlist );
+     newlist.clear(); readatoms=true;
   }
 }
 

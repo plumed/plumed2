@@ -43,11 +43,10 @@ std::string within::message(){
   return ostr.str();
 }
 
-double within::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
+void within::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
   copyDerivatives( value_in, value_out ); 
   double df, f; f=hist.calculate( value_in->get() , df );
   value_out->chainRule(df); value_out->set(f);
-  return f;
 }
 
 void within::finish( const double& p, Value* value_out ){

@@ -13,7 +13,8 @@ void sum::writeDocs(std::string& docs){
 sum::sum( const std::vector<std::string>& parameters ) :
 DistributionFunction(parameters)
 {
-  plumed_massert(parameters.size()==0,"parameters should have zero size");
+  plumed_massert(parameters.size()==1,"should pass one parameter total values");
+  Tools::convert(parameters[0],prev_nval);
 }
 
 std::string sum::message(){
@@ -22,12 +23,18 @@ std::string sum::message(){
   return ostr.str();
 }
 
-double sum::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
+void sum::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
   copyDerivatives( value_in, value_out ); value_out->set( value_in->get() );
-  return value_in->get();
+  nval+=1.0;
+}
+
+void sum::gather( PlumedCommunicator& comm ){
+  comm.Sum(&nval,1); 
 }
 
 void sum::finish( const double& p, Value* value_out ){
+  if ( nval!=prev_nval ) printf("WARNING: A neighbor list is causing discontinuities in a sum");
+  prev_nval=nval; nval=0;
   value_out->set(p);
 }
 

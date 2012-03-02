@@ -37,12 +37,11 @@ std::string less_than::message(){
   return ostr.str();
 }
 
-double less_than::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
+void less_than::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
   copyDerivatives( value_in, value_out );
   double p, df, f; p=value_in->get(); 
   f=sf.calculate(p, df); df*=p;
   value_out->chainRule(df); value_out->set(f);
-  return f;
 }
 
 void less_than::finish( const double& p, Value* value_out ){

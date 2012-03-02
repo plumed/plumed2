@@ -33,15 +33,15 @@ std::string min::message(){
   return ostr.str();
 }
 
-double min::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
+void min::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
   copyDerivatives( value_in, value_out );
   double p, df, tmp; p=value_in->get();
   tmp=exp( beta/p ); df=tmp/(p*p); 
   value_out->chainRule(df); value_out->set(tmp);
-  return tmp;
 }
 
 void min::finish( const double& p, Value* value_out ){
+  if(p==0){ plumed_massert(0,"Error in calculating minimum.  There is probably an NL_CUTOFF in your input that is too small"); }
   double df, dist=beta/std::log(p); df=dist*dist/p;
   value_out->chainRule(df); value_out->set(dist);
 }
