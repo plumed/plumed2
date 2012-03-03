@@ -181,6 +181,7 @@ void Action::prepare(){
 void Action::error( const std::string msg ){
   log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
   keywords.print( log );
+  plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
   this->exit(1);
 }
 

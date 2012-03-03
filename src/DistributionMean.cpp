@@ -14,7 +14,7 @@ mean::mean( const std::vector<std::string>& parameters ) :
 DistributionFunction(parameters)
 {
   plumed_massert(parameters.size()==1,"should pass one parameter total values");
-  Tools::convert(parameters[0],prev_nval);
+  Tools::convert(parameters[0],prev_nval); nval=0.;
 }
 
 std::string mean::message(){

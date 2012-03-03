@@ -41,6 +41,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   MultiColvarCoordination(const ActionOptions&);
+  ~MultiColvarCoordination();
 // active methods:
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
 };
@@ -90,6 +91,10 @@ PLUMED_MULTICOLVAR_INIT(ao)
 
   // And check everything has been read in correctly
   checkRead();
+}
+
+MultiColvarCoordination::~MultiColvarCoordination(){
+  delete nl;
 }
 
 double MultiColvarCoordination::compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){

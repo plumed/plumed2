@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cassert>
 #include <vector>
+#include <iostream>
 #include "Value.h"
 #include "Tools.h"
 #include "SwitchingFunction.h"
@@ -130,7 +131,7 @@ private:
   double a,b,sigma;
   HistogramBead hist;
 public:
-  static void writeDocs( std::string& docs );;
+  static void writeDocs( std::string& docs );
   within( const std::vector<std::string>& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
   void finish( const double& total, Value* value_out );
