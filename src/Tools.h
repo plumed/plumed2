@@ -25,8 +25,10 @@ const double pi(3.14159265358979323846264338327950288419716939937510582097494459
 class Tools{
 public:
 /// Split the line in words using separators.
-  static std::vector<std::string> getWords(const std::string & line,const char* sep=" \t\n");
-  static std::vector<std::string> getWords(const std::string & line,const char* sep,const char* quote);
+/// It also take into account parenthesis. Outer parenthesis found are removed from
+/// output, and the text between them is considered as a single word. Only the
+/// outer parenthesis are processed, to allow nesting them.
+  static std::vector<std::string> getWords(const std::string & line,const char* sep=" \t\n",const char* parenthesis="(");
 /// Get a line from the file pointer fp
   static bool getline(std::FILE* fp,std::string & line);
 /// Get a parsed line from the file pointer fp.
@@ -92,7 +94,7 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
   if(!getKey(line,key+"=",s)) return false;
 //  if(s.length()==0) return true;
   val.clear();
-  std::vector<std::string> words=getWords(s,",");
+  std::vector<std::string> words=getWords(s,"\t\n ,");
   for(unsigned i=0;i<words.size();++i){
     T v;
     if(!convert(words[i],v))return false;
