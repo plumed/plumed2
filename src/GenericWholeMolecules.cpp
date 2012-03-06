@@ -68,7 +68,7 @@ void GenericWholeMolecules::registerKeywords( Keywords& keys ){
 
 inline
 Vector & GenericWholeMolecules::modifyPosition(AtomNumber i){
-  return plumed.getAtoms().positions[i.index()];
+  return atoms.positions[i.index()];
 }
 
 GenericWholeMolecules::GenericWholeMolecules(const ActionOptions&ao):

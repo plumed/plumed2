@@ -14,14 +14,15 @@ using namespace PLMD;
 
 ActionAtomistic::~ActionAtomistic(){
 // forget the pending request
-  plumed.getAtoms().remove(this);
+  atoms.remove(this);
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 Action(ao),
-lockRequestAtoms(false)
+lockRequestAtoms(false),
+atoms(plumed.getAtoms())
 {
-  plumed.getAtoms().add(this);
+  atoms.add(this);
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ){
@@ -31,7 +32,6 @@ void ActionAtomistic::registerKeywords( Keywords& keys ){
 
 void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
-  Atoms&atoms(plumed.getAtoms());
   int nat=a.size();
   indexes=a;
   positions.resize(nat);
@@ -127,7 +127,6 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
    if(ok) t.push_back(atom);
 // here we check if the atom name is the name of a group
    if(!ok){
-     const Atoms&atoms(plumed.getAtoms());
      if(atoms.groups.count(strings[i])){
        map<string,vector<AtomNumber> >::const_iterator m=atoms.groups.find(strings[i]);
        t.insert(t.end(),m->second.begin(),m->second.end());
@@ -152,24 +151,24 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
 
 
 void ActionAtomistic::retrieveAtoms(){
-  box=plumed.getAtoms().box;
+  box=atoms.box;
   pbc.setBox(box);
-  const vector<Vector> & p(plumed.getAtoms().positions);
-  const vector<double> & c(plumed.getAtoms().charges);
-  const vector<double> & m(plumed.getAtoms().masses);
+  const vector<Vector> & p(atoms.positions);
+  const vector<double> & c(atoms.charges);
+  const vector<double> & m(atoms.masses);
   for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j].index()];
   for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j].index()];
   for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j].index()];
   Colvar*cc=dynamic_cast<Colvar*>(this);
-  if(cc && cc->checkIsEnergy()) energy=plumed.getAtoms().getEnergy();
+  if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
 }
 
 void ActionAtomistic::applyForces(){
-  vector<Vector>   & f(plumed.getAtoms().forces);
-  Tensor           & v(plumed.getAtoms().virial);
+  vector<Vector>   & f(atoms.forces);
+  Tensor           & v(atoms.virial);
   for(unsigned j=0;j<indexes.size();j++) f[indexes[j].index()]+=forces[j];
   v+=virial;
-  plumed.getAtoms().forceOnEnergy+=forceOnEnergy;
+  atoms.forceOnEnergy+=forceOnEnergy;
 }
 
 

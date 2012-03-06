@@ -74,7 +74,7 @@ PLUMED_COLVAR_INIT(ao),rmsd(log)
 
   // read everything in ang and transform to nm
 
-  pdb.read(reference,0.1/plumed.getAtoms().getUnits().length);
+  pdb.read(reference,0.1/atoms.getUnits().length);
 
   rmsd.set(pdb,type);
 

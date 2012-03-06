@@ -17,16 +17,16 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao)
 {
-  index=plumed.getAtoms().addVirtualAtom(this);
+  index=atoms.addVirtualAtom(this);
   log.printf("  serial associated to this virtual atom is %d\n",index.serial());
 }
 
 ActionWithVirtualAtom::~ActionWithVirtualAtom(){
-  plumed.getAtoms().removeVirtualAtom(this);
+  atoms.removeVirtualAtom(this);
 }
 
 void ActionWithVirtualAtom::apply(){
-  const Vector & f(plumed.getAtoms().forces[index.index()]);
+  const Vector & f(atoms.forces[index.index()]);
   for(unsigned i=0;i<getNumberOfAtoms();i++) modifyForces()[i]=matmul(derivatives[i],f);
 }
 
@@ -36,7 +36,6 @@ void ActionWithVirtualAtom::requestAtoms(const std::vector<AtomNumber> & a){
 }
 
 void ActionWithVirtualAtom::setGradients(){
-  Atoms&atoms(plumed.getAtoms());
   gradients.clear();
   for(unsigned i=0;i<getNumberOfAtoms();i++){
     AtomNumber an=getAbsoluteIndex(i);

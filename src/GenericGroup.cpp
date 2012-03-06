@@ -46,7 +46,7 @@ GenericGroup::GenericGroup(const ActionOptions&ao):
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  plumed.getAtoms().insertGroup(getLabel(),atoms);
+  this->atoms.insertGroup(getLabel(),atoms);
   log.printf("  of atoms ");
   for(unsigned i=0;i<atoms.size();i++) log.printf(" %d",atoms[i].serial());
   log.printf("\n");
@@ -59,7 +59,7 @@ void GenericGroup::registerKeywords( Keywords& keys ){
 }
 
 GenericGroup::~GenericGroup(){
-  plumed.getAtoms().removeGroup(getLabel());
+  atoms.removeGroup(getLabel());
 }
 
 }

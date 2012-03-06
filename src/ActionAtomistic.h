@@ -8,6 +8,8 @@
 
 namespace PLMD {
 
+class Atoms;
+
 //+DEVELDOC MULTI-INHERIT ActionAtomistic
 /**
 This is used to create PLMD::Action objects that access the positions of the atoms from the MD code
@@ -33,6 +35,9 @@ class ActionAtomistic :
   double                forceOnEnergy;
 
   bool                  lockRequestAtoms; // forbid changes to request atoms
+
+protected:
+  Atoms&                atoms;
 
 public:
 /// Request an array of atoms.

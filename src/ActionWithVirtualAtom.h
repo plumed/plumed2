@@ -54,17 +54,17 @@ AtomNumber ActionWithVirtualAtom::getIndex()const{
 
 inline
 void ActionWithVirtualAtom::setPosition(const Vector & pos){
-  plumed.getAtoms().positions[index.index()]=pos;
+  atoms.positions[index.index()]=pos;
 }
 
 inline
 void ActionWithVirtualAtom::setMass(double m){
-  plumed.getAtoms().masses[index.index()]=m;
+  atoms.masses[index.index()]=m;
 }
 
 inline
 void ActionWithVirtualAtom::setCharge(double c){
-  plumed.getAtoms().charges[index.index()]=c;
+  atoms.charges[index.index()]=c;
 }
 
 inline
