@@ -46,7 +46,8 @@ Value* ActionWithValue::copyOutput( const std::string& name ) const {
   for(unsigned i=0;i<values.size();++i){
      if (values[i]->name==name) return values[i];
   }
-  plumed_massert(0,"there is no pointer with name " + name);
+  plumed_merror("there is no pointer with name " + name);
+  return NULL;
 }
 
 Value* ActionWithValue::copyOutput( const unsigned& n ) const {
