@@ -68,7 +68,7 @@ void Atoms::setForces(void*p,int i){
 }
 
 void Atoms::share(){
-  std::set<int> unique;
+  std::set<AtomNumber> unique;
   if(dd && int(gatindex.size())<natoms){
     for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
       unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
@@ -78,13 +78,13 @@ void Atoms::share(){
 }
 
 void Atoms::shareAll(){
-  std::set<int> unique;
+  std::set<AtomNumber> unique;
   if(dd && int(gatindex.size())<natoms)
-    for(int i=0;i<natoms;i++) unique.insert(i);
+    for(int i=0;i<natoms;i++) unique.insert(AtomNumber::index(i));
   share(unique);
 }
 
-void Atoms::share(const std::set<int>& unique){
+void Atoms::share(const std::set<AtomNumber>& unique){
   mdatoms->getBox(box);
   mdatoms->getMasses(gatindex,masses);
   mdatoms->getCharges(gatindex,charges);
@@ -95,14 +95,14 @@ void Atoms::share(const std::set<int>& unique){
       for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();
     }
     int count=0;
-    for(std::set<int>::const_iterator p=unique.begin();p!=unique.end();++p){
-      if(dd.g2l[*p]>=0){
-        dd.indexToBeSent[count]=*p;
-        dd.positionsToBeSent[5*count+0]=positions[*p][0];
-        dd.positionsToBeSent[5*count+1]=positions[*p][1];
-        dd.positionsToBeSent[5*count+2]=positions[*p][2];
-        dd.positionsToBeSent[5*count+3]=masses[*p];
-        dd.positionsToBeSent[5*count+4]=charges[*p];
+    for(std::set<AtomNumber>::const_iterator p=unique.begin();p!=unique.end();++p){
+      if(dd.g2l[p->index()]>=0){
+        dd.indexToBeSent[count]=p->index();
+        dd.positionsToBeSent[5*count+0]=positions[p->index()][0];
+        dd.positionsToBeSent[5*count+1]=positions[p->index()][1];
+        dd.positionsToBeSent[5*count+2]=positions[p->index()][2];
+        dd.positionsToBeSent[5*count+3]=masses[p->index()];
+        dd.positionsToBeSent[5*count+4]=charges[p->index()];
         count++;
       }
     }
@@ -256,11 +256,13 @@ double Atoms::getTimeStep()const{
 }
 
 void Atoms::createFullList(int*n){
+  vector<AtomNumber> fullListTmp;
   for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive())
-    fullList.insert(fullList.end(),actions[i]->getUnique().begin(),actions[i]->getUnique().end());
-  std::sort(fullList.begin(),fullList.end());
-  int nn=std::unique(fullList.begin(),fullList.end())-fullList.begin();
+    fullListTmp.insert(fullListTmp.end(),actions[i]->getUnique().begin(),actions[i]->getUnique().end());
+  std::sort(fullListTmp.begin(),fullListTmp.end());
+  int nn=std::unique(fullListTmp.begin(),fullListTmp.end())-fullListTmp.begin();
   fullList.resize(nn);
+  for(unsigned i=0;i<nn;++i) fullList[i]=fullListTmp[i].index();
   *n=nn;
 }
 
@@ -293,11 +295,11 @@ void Atoms::resizeVectors(unsigned n){
   charges.resize(n);
 }
 
-unsigned Atoms::addVirtualAtom(ActionWithVirtualAtom*a){
+AtomNumber Atoms::addVirtualAtom(ActionWithVirtualAtom*a){
   unsigned n=positions.size();
   resizeVectors(n+1);
   virtualAtomsActions.push_back(a);
-  return n;
+  return AtomNumber::index(n);
 }
 
 void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a){
@@ -307,7 +309,7 @@ void Atoms::removeVirtualAtom(ActionWithVirtualAtom*a){
   virtualAtomsActions.pop_back();
 }
 
-void Atoms::insertGroup(const std::string&name,const std::vector<unsigned>&a){
+void Atoms::insertGroup(const std::string&name,const std::vector<AtomNumber>&a){
   plumed_massert(groups.count(name)==0,"group named "+name+" already exists");
   groups[name]=a;
 }

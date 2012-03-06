@@ -33,8 +33,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
   Atoms&atoms(plumed.getAtoms());
   int nat=a.size();
-  indexes.resize(nat);
-  for(int i=0;i<nat;i++) indexes[i]=a[i].index();
+  indexes=a;
   positions.resize(nat);
   forces.resize(nat);
   masses.resize(nat);
@@ -43,7 +42,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   clearDependencies();
   unique.clear();
   for(unsigned i=0;i<indexes.size();i++){
-    plumed_massert(indexes[i]<n,"atom out of range");
+    plumed_massert(indexes[i].index()<n,"atom out of range");
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
 // only real atoms are requested to lower level Atoms class
     else unique.insert(indexes[i]);
@@ -130,8 +129,8 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
    if(!ok){
      const Atoms&atoms(plumed.getAtoms());
      if(atoms.groups.count(strings[i])){
-       map<string,vector<unsigned> >::const_iterator m=atoms.groups.find(strings[i]);
-       for(unsigned j=0;j<(*m).second.size();j++) t.push_back(AtomNumber::index((*m).second[j]));
+       map<string,vector<AtomNumber> >::const_iterator m=atoms.groups.find(strings[i]);
+       t.insert(t.end(),m->second.begin(),m->second.end());
        ok=true;
      }
    }
@@ -158,9 +157,9 @@ void ActionAtomistic::retrieveAtoms(){
   const vector<Vector> & p(plumed.getAtoms().positions);
   const vector<double> & c(plumed.getAtoms().charges);
   const vector<double> & m(plumed.getAtoms().masses);
-  for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j]];
-  for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j]];
-  for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j]];
+  for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j].index()];
+  for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j].index()];
+  for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j].index()];
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) energy=plumed.getAtoms().getEnergy();
 }
@@ -168,7 +167,7 @@ void ActionAtomistic::retrieveAtoms(){
 void ActionAtomistic::applyForces(){
   vector<Vector>   & f(plumed.getAtoms().forces);
   Tensor           & v(plumed.getAtoms().virial);
-  for(unsigned j=0;j<indexes.size();j++) f[indexes[j]]+=forces[j];
+  for(unsigned j=0;j<indexes.size();j++) f[indexes[j].index()]+=forces[j];
   v+=virial;
   plumed.getAtoms().forceOnEnergy+=forceOnEnergy;
 }

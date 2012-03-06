@@ -18,8 +18,7 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   ActionAtomistic(ao)
 {
   index=plumed.getAtoms().addVirtualAtom(this);
-  AtomNumber a=AtomNumber::index(index);
-  log.printf("  serial associated to this virtual atom is %d\n",a.serial());
+  log.printf("  serial associated to this virtual atom is %d\n",index.serial());
 }
 
 ActionWithVirtualAtom::~ActionWithVirtualAtom(){
@@ -27,7 +26,7 @@ ActionWithVirtualAtom::~ActionWithVirtualAtom(){
 }
 
 void ActionWithVirtualAtom::apply(){
-  const Vector & f(plumed.getAtoms().forces[index]);
+  const Vector & f(plumed.getAtoms().forces[index.index()]);
   for(unsigned i=0;i<getNumberOfAtoms();i++) modifyForces()[i]=matmul(derivatives[i],f);
 }
 
@@ -42,8 +41,8 @@ void ActionWithVirtualAtom::setGradients(){
   for(unsigned i=0;i<getNumberOfAtoms();i++){
     AtomNumber an=getAbsoluteIndex(i);
     // this case if the atom is a virtual one 	 
-    if(atoms.isVirtualAtom(an.index())){
-      const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an.index());
+    if(atoms.isVirtualAtom(an)){
+      const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
       for(std::map<AtomNumber,Tensor>::const_iterator p=a->gradients.begin();p!=a->gradients.end();++p){
         gradients[(*p).first]+=matmul(derivatives[i],(*p).second);
       }

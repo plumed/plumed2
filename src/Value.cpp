@@ -64,8 +64,8 @@ void Value::setGradients(){
     Atoms&atoms((aa->plumed).getAtoms());
     for(unsigned j=0;j<aa->getNumberOfAtoms();++j){
       AtomNumber an=aa->getAbsoluteIndex(j);
-      if(atoms.isVirtualAtom(an.index())){
-        const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an.index());
+      if(atoms.isVirtualAtom(an)){
+        const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
         for(std::map<AtomNumber,Tensor>::const_iterator p=a->getGradients().begin();p!=a->getGradients().end();++p){
 // controllare l'ordine del matmul:
           gradients[(*p).first]+=matmul(Vector(derivatives[3*j],derivatives[3*j+1],derivatives[3*j+2]),(*p).second);

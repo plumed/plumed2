@@ -5,6 +5,7 @@
 #include "Tensor.h"
 #include "Units.h"
 #include "PlumedException.h"
+#include "AtomNumber.h"
 #include <vector>
 #include <set>
 #include <map>
@@ -35,7 +36,7 @@ class Atoms
   double energy;
   bool   collectEnergy;
 
-  std::map<std::string,std::vector<unsigned> > groups;
+  std::map<std::string,std::vector<AtomNumber> > groups;
 
   void resizeVectors(unsigned);
 
@@ -81,7 +82,7 @@ class Atoms
 
   DomainDecomposition dd;
 
-  void share(const std::set<int>&);
+  void share(const std::set<AtomNumber>&);
 
 public:
 
@@ -141,11 +142,11 @@ public:
   const Units& getUnits(){return units;};
   void updateUnits();
 
-  unsigned int addVirtualAtom(ActionWithVirtualAtom*);
+  AtomNumber addVirtualAtom(ActionWithVirtualAtom*);
   void removeVirtualAtom(ActionWithVirtualAtom*);
-  ActionWithVirtualAtom* getVirtualAtomsAction(unsigned)const;
-  bool isVirtualAtom(unsigned)const;
-  void insertGroup(const std::string&name,const std::vector<unsigned>&a);
+  ActionWithVirtualAtom* getVirtualAtomsAction(AtomNumber)const;
+  bool isVirtualAtom(AtomNumber)const;
+  void insertGroup(const std::string&name,const std::vector<AtomNumber>&a);
   void removeGroup(const std::string&name);
   void writeBinary(std::ostream&)const;
   void readBinary(std::istream&);
@@ -161,13 +162,13 @@ const int & Atoms::getNatoms()const{
 }
 
 inline
-bool Atoms::isVirtualAtom(unsigned i)const{
-  return i>=getNatoms();
+bool Atoms::isVirtualAtom(AtomNumber i)const{
+  return i.index()>=getNatoms();
 }
 
 inline
-ActionWithVirtualAtom* Atoms::getVirtualAtomsAction(unsigned i)const{
-  return virtualAtomsActions[i-getNatoms()];
+ActionWithVirtualAtom* Atoms::getVirtualAtomsAction(AtomNumber i)const{
+  return virtualAtomsActions[i.index()-getNatoms()];
 }
 
 

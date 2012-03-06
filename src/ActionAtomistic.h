@@ -19,8 +19,8 @@ class ActionAtomistic :
   virtual public Action
   {
 
-  std::vector<int>      indexes;         // the set of needed atoms
-  std::set<int>         unique;
+  std::vector<AtomNumber> indexes;         // the set of needed atoms
+  std::set<AtomNumber>  unique;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
   Tensor                box;
@@ -89,7 +89,7 @@ public:
   void applyForces();
   void lockRequests();
   void unlockRequests();
-  const std::set<int> & getUnique()const;
+  const std::set<AtomNumber> & getUnique()const;
 };
 
 inline
@@ -109,7 +109,7 @@ double ActionAtomistic::getCharge(int i)const{
 
 inline
 AtomNumber ActionAtomistic::getAbsoluteIndex(int i)const{
-  return AtomNumber::index(indexes[i]);
+  return indexes[i];
 }
 
 inline
@@ -165,7 +165,7 @@ void ActionAtomistic::unlockRequests(){
 }
 
 inline
-const std::set<int> & ActionAtomistic::getUnique()const{
+const std::set<AtomNumber> & ActionAtomistic::getUnique()const{
   return unique;
 }
 
