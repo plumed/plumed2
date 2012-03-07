@@ -57,10 +57,11 @@ void ColvarCoordination::registerKeywords( Keywords& keys ){
   keys.addFlag("NLIST",false,"Use a neighbour list to speed up the calculation");
   keys.add("atoms","GROUPA","The list of central atoms for which we are calculating our coordination numbers");
   keys.add("atoms","GROUPB","The list of neighbourhood atoms for which we are using to calculate coordination numbers");
-  keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","12","The m parameter of the switching function ");
-  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
-  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","NN","The n parameter of the switching function ");
+  keys.add("optional","MM","The m parameter of the switching function ");
+  keys.add("optional","D_0","The d_0 parameter of the switching function");
+  keys.add("optional","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","SWITCH","A generic switching function");
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbour list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbour list");
 }
@@ -77,20 +78,23 @@ reduceListAtNextStep(false)
   vector<AtomNumber> ga_lista,gb_lista;
   parseAtomList("GROUPA",ga_lista);
   parseAtomList("GROUPB",gb_lista);
-  
-  int nn,mm;
-  double r_0,d_0;
-  nn=6;
-  mm=12;
-  r_0=-1;
-  d_0=0.0;
-  parse("NN",nn);
-  parse("MM",mm);
-  parse("R_0",r_0);
-  parse("D_0",d_0);
-  plumed_assert(r_0>0); // this is the only compulsory option
-  switchingFunction.set(nn,mm,r_0,d_0);
 
+  string sw;
+  parse("SWITCH",sw);
+  if(sw.length()>0) switchingFunction.set(sw);
+  else {
+    int nn=6;
+    int mm=12;
+    double d0=0.0;
+    double r0=0.0;
+    parse("R_0",r0);
+    plumed_massert(r0>0.0,"R_0 is compulsory");
+    parse("D_0",r0);
+    parse("NN",nn);
+    parse("MM",mm);
+    switchingFunction.set(nn,mm,r0,d0);
+  }
+  
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
