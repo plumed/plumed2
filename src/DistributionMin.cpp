@@ -35,7 +35,7 @@ std::string min::message(){
 }
 
 void min::calculate( Value* value_in, std::vector<Value>& aux ){
-  copyDerivatives( 0, value_in );
+  copyValue( 0, value_in );
   double p, df, tmp; p=value_in->get();
   tmp=exp( beta/p ); df=tmp/(p*p); 
   chainRule( 0, df ); setValue( 0, tmp ); 

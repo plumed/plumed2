@@ -6,6 +6,20 @@
 using namespace std;
 using namespace PLMD;
 
+std::string SwitchingFunction::documentation(){
+  std::ostringstream ostr;
+  ostr<<"Within plumed you can use the following switching functions ";
+  ostr<<"\\f$s(r)=\\frac{ 1 - \\left(\\frac{ r - d_0 }{ r_0 }\\right)^{n} }{ 1 - \\left(\\frac{ r - d_0 }{ r_0 }\\right)^{m} } \\f$, ";
+  ostr<<"\\f$s(r)=\\exp\\left(-\\frac{ r - d_0 }{ r_0 }\\right)\\f$ or using \\f$s(r)=\\exp\\left(-\\frac{ (r - d_0)^2 }{ 2r_0^2 }\\right)\\f$. ";
+  ostr<<"The first of these options is specified using the syntax (SPLINE R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$ NN=\\f$n\\f$ MM=\\f$m\\f$) and if ";
+  ostr<<"the D_0, NN and MM keywords are missing they are assumed equal to 0, 6 and 12 respectively.  The second form is specified using ";
+  ostr<<"(EXP R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$) and if the D_0 is missing it is assumed equal to 0.  The third form is specified using ";
+  ostr<<"(GAUSSIAN R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$) and if the D_0 is missing it is assumed equal to 0. You can add the D_MAX flag to ";
+  ostr<<"all switching function definitions to specify that if the input \\f$r\\f$ is greater than this value the value of the switching ";
+  ostr<<"function is very small and can thus be assumed to equal zero.";
+  return ostr.str();
+}
+
 void SwitchingFunction::set(const std::string & definition){
   vector<string> data=Tools::getWords(definition);
   plumed_assert(data.size()>=1);
@@ -33,6 +47,25 @@ void SwitchingFunction::set(const std::string & definition){
   else if(name=="GAUSSIAN") type=gaussian;
   else plumed_merror("Cannot understand switching function type '"+name+"'");
   plumed_massert(data.size()==0,"Error reading");
+}
+
+std::string SwitchingFunction::description() const {
+  std::ostringstream ostr;
+  ostr<<1./invr0<<".  Using ";
+  if(type==spline){
+     ostr<<"spline ";
+  } else if(type==exponential){
+     ostr<<"exponential ";
+  } else if(type==gaussian){
+     ostr<<"gaussian ";
+  } else{
+     plumed_merror("Unknown switching function type");
+  }
+  ostr<<" swiching function with parameters d0="<<d0;
+  if(type==spline){
+    ostr<<" nn="<<nn<<" mm="<<mm;
+  }
+  return ostr.str(); 
 }
 
 double SwitchingFunction::calculate(double distance,double&dfunc)const{

@@ -35,11 +35,14 @@ void MultiColvar::registerKeywords( Keywords& keys ){
 //  keys.add("optional","MAX", "take the maximum value from these variables");
   keys.reserve("nohtml","SUM", "take the sum of these variables");
   keys.add("nohtml","AVERAGE", "take the average value of these variables");
-  keys.add("nohtml","LESS_THAN", "take the number of variables less than the specified target.  This quantity is made differentiable using a switching function.  You can control the parameters of this switching function by specifying three numbers to the keyword (r_0, nn and mm).  If you are happy with the default values of nn=6 and mm=12 then you need only specify the target r_0.  The number of values less than the target is stored in a value called lt<target>.");
-  keys.add("nohtml","MORE_THAN", "take the number of variables more than the specified target.  This quantity is made differentiable using a switching function.  You can control the parameters of this switching function by specifying three numbers to the keyword (r_0, nn and mm).  If you are happy with the default values of nn=6 and mm=12 then you need only specify the target r_0.  The number of values less than the target is stored in a value called gt<target>.");
+  keys.add("nohtml","LESS_THAN", "take the number of variables less than the specified target and store it in a value called lt<target>. " + SwitchingFunction::documentation() );
+  keys.add("nohtml","MORE_THAN", "take the number of variables more than the specified target and store it in a value called gt<target>. " + SwitchingFunction::documentation() ); 
   keys.add("nohtml","HISTOGRAM", "create a discretized histogram of the distribution.  This keyword's input should consist of one or two numbers");
   keys.add("nohtml","RANGE", "the range in which to calculate the histogram");
   keys.add("nohtml", "WITHIN", "The number of values within a certain range.  This keyword's input should consist of one or two numbers.");
+  keys.reserve("nohtml","CV_DENSITY_X","Takes 2/3 params specifying the upper and lower boundaries of a bin in x in fractional coordinates and the ammount of smearing to use");
+  keys.reserve("nohtml","CV_DENSITY_Y","Takes 2/3 params specifying the upper and lower boundaries of a bin in y in fractional coordinates and the ammount of smearing to use");
+  keys.reserve("nohtml","CV_DENSITY_Z","Takes 2/3 params specifying the upper and lower boundaries of a bin in z in fractional coordinates and the ammount of smearing to use");
   ActionWithDistribution::registerKeywords( keys );
 } 
 
@@ -49,6 +52,7 @@ ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithDistribution(ao),
 readatoms(false),
+needsCentralAtomPosition(false),
 usepbc(true)
 {
   if( keywords.style("NOPBC", "flag") ){ 
@@ -88,16 +92,24 @@ void MultiColvar::readAtoms( int& natoms ){
      addDistributionFunction( "min", new min(params) );
   }
   // Read Less_THAN keyword
-  if( keywords.exists("LESS_THAN") ) parseVector("LESS_THAN",params);
-  else params.resize(0);
-  if( params.size()!=0 ){
-     addDistributionFunction( "lt" + params[0], new less_than(params) );
+  std::string tmpparam="none";
+  if( keywords.exists("LESS_THAN") ) parse("LESS_THAN",tmpparam);
+  if( tmpparam!="none" ){
+     std::vector<std::string> data=Tools::getWords(tmpparam);
+     std::string r0; Tools::parse(data,"R_0",r0); 
+     params.resize(0); params.push_back(tmpparam);
+     addDistributionFunction( "lt" + r0, new less_than(params) );
+     params.resize(0);
   }
   // Read MORE_THAN keyword
-  if( keywords.exists("MORE_THAN") ) parseVector("MORE_THAN",params);
-  else params.resize(0);
-  if( params.size()!=0 ){
-     addDistributionFunction( "gt" + params[0], new more_than(params) );
+  tmpparam="none";
+  if( keywords.exists("MORE_THAN") ) parse("MORE_THAN",tmpparam);
+  if( tmpparam!="none" ){
+     std::vector<std::string> data=Tools::getWords(tmpparam);     
+     std::string r0; Tools::parse(data,"R_0",r0);
+     params.resize(0); params.push_back(tmpparam);
+     addDistributionFunction( "gt" + r0, new more_than(params) );
+     params.resize(0);
   }
   // Read HISTOGRAM keyword
   if( keywords.exists("HISTOGRAM") ) parseVector("HISTOGRAM",params);
@@ -130,6 +142,102 @@ void MultiColvar::readAtoms( int& natoms ){
       for(unsigned i=1;;++i){
          if( !parseNumberedVector("WITHIN",i,params) ) break;
          addDistributionFunction( "between" + params[0] + "&" +params[1], new within(params) );
+      }
+  }
+
+  // Establish whether or not this is a density ( requires special method )
+  std::string dens="notdensity"; 
+  if( keywords.exists("SPECIES") && !keywords.exists("SPECIESA") && !keywords.exists("SPECIESB") ){ dens="isdensity"; }
+
+  // Read CV_DENSITY keywords
+  if( keywords.exists("CV_DENSITY_X") ){
+      plumed_massert( keywords.exists("CV_DENSITY_Y") && keywords.exists("CV_DENSITY_Z"), "please use CV_DENSITY_Y and CV_DENSITY_Z");
+      std::vector<double> xbin,ybin,zbin;
+      parseVector("CV_DENSITY_X",xbin); parseVector("CV_DENSITY_Y",ybin); parseVector("CV_DENSITY_Z",zbin);
+      if( xbin.size()!=0 || ybin.size()!=0 || zbin.size()!=0 ){
+          needsCentralAtomPosition=true;
+          // Sort out xbin
+          if( xbin.size()==0 ){ 
+              xbin.push_back(0.0); xbin.push_back(1.0); xbin.push_back(20.0);
+          } else if( xbin.size()==2){
+              xbin.push_back(0.5);
+          } else if( xbin.size()!=3){
+              error("CV_DENSITY_X should have two or three arguments");
+          }
+          // Sort out ybin
+          if( ybin.size()==0 ){ 
+              ybin.push_back(0.0); ybin.push_back(1.0); ybin.push_back(20.0);
+          } else if( ybin.size()==2){
+              ybin.push_back(0.5);
+          } else if( ybin.size()!=3){
+              error("CV_DENSITY_Y should have two or three arguments");
+          }
+          // Sort out zbin
+          if( zbin.size()==0 ){ 
+              zbin.push_back(0.0); zbin.push_back(1.0); zbin.push_back(20.0);
+          } else if( zbin.size()==2){
+              zbin.push_back(0.5);
+          } else if( zbin.size()!=3){
+              error("CV_DENSITY_Z should have two or three arguments");
+          }
+          params.resize(10);
+          Tools::convert( xbin[0], params[0] );
+          Tools::convert( xbin[1], params[1] );
+          Tools::convert( xbin[2], params[2] );
+          Tools::convert( ybin[0], params[3] ); 
+          Tools::convert( ybin[1], params[4] );
+          Tools::convert( ybin[2], params[5] );
+          Tools::convert( zbin[0], params[6] ); 
+          Tools::convert( zbin[1], params[7] );
+          Tools::convert( zbin[2], params[8] );
+          params[9]=dens;
+          addDistributionFunction( "meanCVinBox" , new cvdens(params) ); 
+      } else {
+          std::vector<double> xbin,ybin,zbin; params.resize(10);
+          for(unsigned i=1;;++i){
+              parseNumberedVector("CV_DENSITY_X",i,xbin); 
+              parseNumberedVector("CV_DENSITY_Y",i,ybin);
+              parseNumberedVector("CV_DENSITY_Z",i,zbin);
+              if( xbin.size()==0 && ybin.size()==0 && zbin.size()==0 ) break;
+              needsCentralAtomPosition=true;
+              // Sort out xbin
+              if( xbin.size()==0 ){ 
+                  xbin.push_back(0.0); xbin.push_back(1.0); xbin.push_back(20.0);
+              } else if( xbin.size()==2){
+                  xbin.push_back(0.5);
+              } else if( xbin.size()!=3){
+                  error("CV_DENSITY_X should have two or three arguments");
+              }
+              // Sort out ybin
+              if( ybin.size()==0 ){
+                  ybin.push_back(0.0); ybin.push_back(1.0); ybin.push_back(20.0);
+              } else if( ybin.size()==2){
+                  ybin.push_back(0.5);
+              } else if( ybin.size()!=3){
+                  error("CV_DENSITY_Y should have two or three arguments");
+              }
+              // Sort out zbin
+              if( zbin.size()==0 ){
+                  zbin.push_back(0.0); zbin.push_back(1.0); zbin.push_back(20.0);
+              } else if( zbin.size()==2){
+                  zbin.push_back(0.5);
+              } else if( zbin.size()!=3){
+                  error("CV_DENSITY_Z should have two or three arguments");
+              }
+              Tools::convert( xbin[0], params[0] );
+              Tools::convert( xbin[1], params[1] );
+              Tools::convert( xbin[2], params[2] );
+              Tools::convert( ybin[0], params[3] );
+              Tools::convert( ybin[1], params[4] );
+              Tools::convert( ybin[2], params[5] );
+              Tools::convert( zbin[0], params[6] );
+              Tools::convert( zbin[1], params[7] );
+              Tools::convert( zbin[2], params[8] );
+              params[9]=dens;
+              std::string lab; Tools::convert(i,lab);
+              addDistributionFunction( "meanCVforXin" + lab , new cvdens(params) ); 
+              xbin.resize(0); ybin.resize(0); zbin.resize(0);
+          }
       }
   }
 
@@ -210,8 +318,8 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
 void MultiColvar::readSpeciesKeyword( int& natoms ){
   if( readatoms ) return ;
 
-  if( !keywords.exists("SPECIESA") ) error("use SPECIESA and SPECIESB keywords as well as SPECIES");
-  if( !keywords.exists("SPECIESB") ) error("use SPECIESA and SPECIESB keywords as well as SPECIES");
+//  if( !keywords.exists("SPECIESA") ) error("use SPECIESA and SPECIESB keywords as well as SPECIES");
+//  if( !keywords.exists("SPECIESB") ) error("use SPECIESA and SPECIESB keywords as well as SPECIES");
 
   std::vector<AtomNumber> t;
   parseAtomList("SPECIES",t);
@@ -219,16 +327,28 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
       readatoms=true; natoms=t.size();
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
       DynamicList<unsigned> newlist;
-      for(unsigned i=0;i<t.size();++i){
-          newlist.addIndexToList(i);
-          log.printf("  Colvar %d involves central atom %d and atoms : ", colvar_atoms.size()+1,t[i].serial() );
-          for(unsigned j=0;j<t.size();++j){
-              if(i!=j){ newlist.addIndexToList(j); log.printf("%d ",t[j].serial() ); }
+      if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ){
+          for(unsigned i=0;i<t.size();++i){
+              newlist.addIndexToList(i);
+              log.printf("  Colvar %d involves central atom %d and atoms : ", colvar_atoms.size()+1,t[i].serial() );
+              for(unsigned j=0;j<t.size();++j){
+                  if(i!=j){ newlist.addIndexToList(j); log.printf("%d ",t[j].serial() ); }
+              }
+              log.printf("\n");
+              colvar_atoms.push_back( newlist ); newlist.clear();
           }
-          log.printf("\n");
-          colvar_atoms.push_back( newlist ); newlist.clear();
+      } else if( !( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) ){
+          DynamicList<unsigned> newlist;
+          log.printf("  involving atoms : ");
+          for(unsigned i=0;i<t.size();++i){ 
+             newlist.addIndexToList(i); log.printf(" %d",t[i].serial() ); 
+             colvar_atoms.push_back( newlist ); newlist.clear();
+          }
+          log.printf("\n");  
+      } else {
+          plumed_massert(0,"SPECIES keyword is not for density or coordination like CV");
       }
-  } else {
+  } else if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) {
       std::vector<AtomNumber> t1,t2;
       parseAtomList("SPECIESA",t1);
       if( t1.size()!=0 ){
@@ -249,7 +369,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
             colvar_atoms.push_back( newlist ); newlist.clear(); 
          }
       }
-  }
+  } 
 }
 
 void MultiColvar::prepareForNeighborListUpdate(){
@@ -278,13 +398,17 @@ void MultiColvar::requestAtoms(){
    }
 }
 
+void MultiColvar::getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& cpos){
+   plumed_massert(0,"gradient and related cv distribution functions are not available in this colvar");
+}
+
 void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux ){
   unsigned natoms=colvar_atoms[j].getNumberActive();
 
   if ( natoms==0 ) return;   // Do nothing if there are no active atoms in the colvar
   // Retrieve the atoms
   Tensor vir; std::vector<Vector> pos(natoms), der(natoms); 
-  for(unsigned i=0;i<natoms;++i) pos[i]=getPosition( colvar_atoms[j][i] );
+  for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); der.clear(); }
   
   // Compute the derivatives
   stopcondition=false; current=j;
@@ -314,6 +438,14 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
 
   // And store the value
   value_in->set(value);
+
+  if(needsCentralAtomPosition){
+     if( aux.size()!=3 ){ 
+        aux.resize(3); 
+        for(unsigned i=0;i<3;++i) aux[i].resizeDerivatives( value_in->getNumberOfDerivatives() );
+     }
+     getCentralAtom( pos, aux ); 
+  }
 }
 
 void MultiColvar::mergeDerivatives( const unsigned j, Value* value_in, Value* value_out ){    

@@ -44,10 +44,11 @@ private:
   std::vector<Value*> accumulators;
 protected:
   void addAccumulator( const bool wderiv );
-  void copyDerivatives( const unsigned nn, Value* value_in );
+  void copyValue( const unsigned nn, Value* value_in );
   void extractDerivatives( const unsigned nn, Value* value_in );
   void setValue( const unsigned nn, const double f );
   void chainRule( const unsigned nn, const double f );
+  void multiplyValue( const unsigned nn, Value* val );
   Value* getPntrToAccumulator( const unsigned nn );
 public:
   DistributionFunction( const std::vector<std::string>& parameters );
@@ -165,6 +166,20 @@ public:
   min( const std::vector<std::string>& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
+  std::string message();
+};
+
+class cvdens : public DistributionFunction {
+private:
+  bool isDensity;
+  double ax, bx, xsig, ay, by, ysig, az, bz, zsig;
+  std::vector<unsigned> dir;
+  std::vector<HistogramBead> beads;
+public:
+  static void writeDocs( std::string& docs );
+  cvdens( const std::vector<std::string>& parameters );
+  void calculate( Value* value_in, std::vector<Value>& aux );
+  void finish( Value* value_out ); 
   std::string message();
 };
 

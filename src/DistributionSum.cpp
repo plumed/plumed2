@@ -26,8 +26,7 @@ std::string sum::message(){
 }
 
 void sum::calculate( Value* value_in, std::vector<Value>& aux ){
-  copyDerivatives( 0, value_in ); 
-  setValue( 0, value_in->get() );
+  copyValue( 0, value_in ); 
   setValue( 1, 1.0 );
 }
 

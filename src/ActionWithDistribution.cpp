@@ -26,8 +26,12 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   if(serial)log.printf("  doing calculation in serial\n");
   if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
   if( keywords.exists("NL_TOL") ){
-      if(updateFreq>0 && keywords.exists("NL_TOL") ){ tolerance=epsilon; parse("NL_TOL",tolerance); }
-      log.printf("  updating calculation every %d steps.  Ignoring contributions less than %lf\n",updateFreq,tolerance);
+      if(updateFreq>0 && keywords.exists("NL_TOL") ){ 
+         tolerance=epsilon; parse("NL_TOL",tolerance); 
+         log.printf("  updating calculation every %d steps.  Ignoring contributions less than %lf\n",updateFreq,tolerance);
+      } else if( updateFreq>0 ){ 
+         log.printf("  updating calculation every %d steps.\n");  
+      }
   }
 }
 
@@ -137,6 +141,7 @@ void ActionWithDistribution::calculate(){
          }
       }
       tmpvalue->clearDerivatives();
+      for(unsigned i=0;i<aux.size();++i) aux[i].clearDerivatives();
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
       if( reduceAtNextStep && !keep ){ members.deactivate(kk); deactivate(kk); } 

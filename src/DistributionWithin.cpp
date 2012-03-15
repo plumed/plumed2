@@ -45,7 +45,7 @@ std::string within::message(){
 }
 
 void within::calculate( Value* value_in, std::vector<Value>& aux ){
-  copyDerivatives( 0, value_in ); 
+  copyValue( 0, value_in ); 
   double df, f; f=hist.calculate( value_in->get() , df );
   chainRule(0, df); setValue(0, f);
 }

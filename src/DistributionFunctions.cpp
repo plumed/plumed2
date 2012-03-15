@@ -47,7 +47,7 @@ void DistributionFunction::reset(){
   }
 }
 
-void DistributionFunction::copyDerivatives( const unsigned nn, Value* value_in  ){
+void DistributionFunction::copyValue( const unsigned nn, Value* value_in  ){
   plumed_massert( nn<accumulators.size(), "not enough accumulators in distribution function");
   plumed_massert( hasDeriv[nn], "trying to copy derivatives to an accumulator with no derivatives");
 
@@ -55,6 +55,7 @@ void DistributionFunction::copyDerivatives( const unsigned nn, Value* value_in  
   if( nder!=thesevalues[nn]->getNumberOfDerivatives() ){ thesevalues[nn]->resizeDerivatives(nder); }
   thesevalues[nn]->clearDerivatives();
   for(unsigned i=0;i<value_in->getNumberOfDerivatives();++i) thesevalues[nn]->addDerivative( i, value_in->getDerivative(i) );
+  thesevalues[nn]->set( value_in->get() );
 }
 
 void DistributionFunction::extractDerivatives( const unsigned nn, Value* value_out  ){
@@ -74,6 +75,16 @@ void DistributionFunction::chainRule( const unsigned nn, const double f ){
   plumed_massert( hasDeriv[nn], "trying to do chain rule on an accumulator with no derivatives");
   thesevalues[nn]->chainRule(f);
 } 
+
+void DistributionFunction::multiplyValue( const unsigned nn, Value* val ){
+  plumed_massert( nn<accumulators.size(), "not enough accumulators in distribution function");
+  plumed_massert( hasDeriv[nn], "trying to do product rule on an accumulator with no derivatives");
+  Value* tmpvalue = new Value(); 
+  tmpvalue->resizeDerivatives( val->getNumberOfDerivatives() );
+  product( thesevalues[nn], val, tmpvalue ); 
+  copyValue( nn, tmpvalue );  
+  delete tmpvalue;
+}
 
 void DistributionFunction::mergeDerivatives( const unsigned kk, ActionWithDistribution& action ){
   for(unsigned i=0;i<accumulators.size();++i){
@@ -115,5 +126,7 @@ void DistributionFunction::retrieveDataFromBuffers( unsigned& bufsize, const std
       }
   }
 }
+
+
 
 }

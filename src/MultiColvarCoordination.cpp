@@ -30,20 +30,22 @@ number of coordination numbers more than 6 is then computed.
 COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN=6.0
 \endverbatim
 
+\bug Analytical derivatives for off diagonal elements of virial are incorrect when you use GRADIENT/SUBCELL
+
 */
 //+ENDPLUMEDOC
 
 
 class MultiColvarCoordination : public MultiColvar {
 private:
-  NeighborList *nl;
+  double nl_cut;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
   MultiColvarCoordination(const ActionOptions&);
-  ~MultiColvarCoordination();
 // active methods:
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  void getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& pos);
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarCoordination,"COORDINATIONNUMBER")
@@ -52,24 +54,32 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
-  keys.add("compulsory","NN","6","The n parameter of the switching function ");
-  keys.add("compulsory","MM","12","The m parameter of the switching function ");
-  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
-  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","SWITCH","A switching function that defines which atoms are in the first coordination sphere. " + SwitchingFunction::documentation() );
+  keys.add("optional","NN","The n parameter of the switching function ");
+  keys.add("optional","MM","The m parameter of the switching function ");
+  keys.add("optional","D_0","The d_0 parameter of the switching function");
+  keys.add("optional","R_0","The r_0 parameter of the switching function");
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.remove("AVERAGE");
+  // Use density keywords
+  keys.use("CV_DENSITY_X"); keys.use("CV_DENSITY_Y"); keys.use("CV_DENSITY_Z");
 }
 
 MultiColvarCoordination::MultiColvarCoordination(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the switching function
-  double r_0=-1.0, d_0; int nn, mm;
-  parse("NN",nn); parse("MM",mm);
-  parse("R_0",r_0); parse("D_0",d_0);
-  if( r_0<0.0 ) error("you must set a value for R_0");
-  switchingFunction.set(nn,mm,r_0,d_0);
-  log.printf("  switching function parameters : r_0=%f, d_0=%f, nn=%d and mm=%d\n", r_0, d_0, nn, mm); 
+  std::string sw; parse("SWITCH",sw);
+  if(sw.length()>0){
+     switchingFunction.set(sw);
+  } else { 
+     double r_0=-1.0, d_0; int nn, mm;
+     parse("NN",nn); parse("MM",mm);
+     parse("R_0",r_0); parse("D_0",d_0);
+     if( r_0<0.0 ) error("you must set a value for R_0");
+     switchingFunction.set(nn,mm,r_0,d_0);
+  }
+  log.printf("  coordination of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
 
   // Read in the atoms
   int natoms; readAtoms( natoms );
@@ -80,42 +90,54 @@ PLUMED_MULTICOLVAR_INIT(ao)
   for(unsigned i=1;i<natoms;++i){ aa.setIndex(i); gb_lista.push_back(aa); }
 
   // Setup the neighbor list
-  double nl_cut=-1.0;
+  nl_cut=-1.0;
   if( isTimeForNeighborListUpdate() ) parse("NL_CUTOFF",nl_cut); 
   if(nl_cut>0.0){
-     nl = new NeighborList(ga_lista,gb_lista,false,usesPbc(),getPbc(),nl_cut,0);
      log.printf("  ignoring distances greater than %lf in neighbor list\n",nl_cut); 
-  } else {
-     nl = new NeighborList(ga_lista,gb_lista,false,usesPbc(),getPbc());
-  }
+  } 
 
   // And check everything has been read in correctly
   checkRead();
 }
 
-MultiColvarCoordination::~MultiColvarCoordination(){
-  delete nl;
-}
-
 double MultiColvarCoordination::compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
    double value=0, dfunc; Vector distance;
 
-   // Update the neighbor list at neighbor list update time
-   if( isTimeForNeighborListUpdate() ){ nl->update(pos); updateAtoms( nl->getFullAtomList() ); }
-
    // Calculate the coordination number
-   for(unsigned i=0;i<nl->size();++i){
-      unsigned i0=nl->getClosePair(i).first;
-      unsigned i1=nl->getClosePair(i).second;
-
-      distance=getSeparation( pos[i0], pos[i1] );
-      value += switchingFunction.calculate( distance.modulo(), dfunc );  
-      deriv[0] = deriv[0] + (-dfunc)*distance;
-      deriv[i] = deriv[i] + dfunc*distance;
-      virial = virial + (-dfunc)*Tensor(distance,distance);
+   double dd;
+   for(unsigned i=1;i<pos.size();++i){
+      distance=getSeparation( pos[0], pos[i] ); dd=distance.modulo();
+      if( nl_cut<0 ){
+         value += switchingFunction.calculate( distance.modulo(), dfunc );
+         deriv[0] = deriv[0] + (-dfunc)*distance;
+         deriv[i] = deriv[i] + (dfunc)*distance;
+         virial = virial + (-dfunc)*Tensor(distance,distance);
+      } else if( dd<=nl_cut ){
+         value += switchingFunction.calculate( distance.modulo(), dfunc );  
+         deriv[0] = deriv[0] + (-dfunc)*distance;
+         deriv[i] = deriv[i] + (dfunc)*distance;
+         virial = virial + (-dfunc)*Tensor(distance,distance);
+      } else if( isTimeForNeighborListUpdate() ){
+         removeAtomRequest( i );   
+      }
    }
 
    return value;
+}
+
+void MultiColvarCoordination::getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& cpos){
+   plumed_assert( cpos.size()==3 );
+   Vector fracp; fracp=getPbc().realToScaled(pos[0]);
+   Vector ff,cc;
+   cpos[0].set(fracp[0]);
+   ff.clear(); ff[0]=1.0; cc=getPbc().realToScaled(ff);
+   for(unsigned i=0;i<3;++i) cpos[0].addDerivative( i, cc[i] );
+   cpos[1].set(fracp[1]);
+   ff.clear(); ff[1]=1.0; cc=getPbc().realToScaled(ff);
+   for(unsigned i=0;i<3;++i) cpos[1].addDerivative( i, cc[i] );
+   cpos[2].set(fracp[2]);
+   ff.clear(); ff[2]=1.0; cc=getPbc().realToScaled(ff);
+   for(unsigned i=0;i<3;++i) cpos[2].addDerivative( i, cc[i] );
 }
 
 }

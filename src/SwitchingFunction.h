@@ -25,9 +25,11 @@ class SwitchingFunction{
   int nn,mm;
   double invr0,d0,dmax;
 public:
+  static std::string documentation();
   SwitchingFunction();
   void set(int nn,int mm,double r_0,double d_0);
   void set(const std::string& definition);
+  std::string description() const ;
   double calculate(double x,double&df)const;
 };
 

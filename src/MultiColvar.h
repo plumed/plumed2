@@ -151,18 +151,6 @@ multiple colvars using a MultiColvar this routine will be called more than once 
 of positions has the atomic positions ordered in the way they were specified to the ATOMS keyword.  If SPECIES is used the central atom is 
 in the first position of the position vector and the atoms in the coordination sphere are in the remaining elements.  
 
-\section lab4 Neighbor Lists
-
-You can and should use PLMD::NeighborList to make your calculation as fast and possible.  If you use this class you should
-set up the neighbor list in the constructor as per the instructions in the header for the class. In your compute routine
-you update the neighbor list as follows:
-
-\verbatim
-if( isTimeForNeighborListUpdate() ){ nl->update(pos); updateAtoms( nl->getFullAtomList() ); }
-\endverabtim 
-
-NL_TOL and NL_STRIDE are read in elsewhere and will be looked after automatically.
-
 */
 
 class MultiColvar :
@@ -173,6 +161,7 @@ class MultiColvar :
 private:
   bool usepbc;
   bool readatoms;
+  bool needsCentralAtomPosition;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
 /// The lists of the atoms involved in each of the individual colvars
@@ -198,7 +187,7 @@ protected:
 /// Stop a calculation during neighbor list update steps
   void stopCalculatingThisCV();
 /// Update the list of atoms after the neighbor list step
-  void updateAtoms( const std::vector<AtomNumber>& aa );
+  void removeAtomRequest( const unsigned& aa );
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
 public:
@@ -223,7 +212,9 @@ public:
 /// Calcualte the colvar
   void calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux );
 /// And a virtual function which actually computes the colvar
-  virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0;  
+  virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0; 
+/// A virtual routine to get the position of the central atom - used for things like cv gradient
+  virtual void getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& pos); 
 };
 
 inline
@@ -248,10 +239,9 @@ void MultiColvar::stopCalculatingThisCV(){
 }
 
 inline
-void MultiColvar::updateAtoms( const std::vector<AtomNumber>& aa ){
-  plumed_massert(isTimeForNeighborListUpdate(),"found updateAtoms but not during neighbor list step");
-  colvar_atoms[current].deactivateAll();
-  for(unsigned i=0;i<aa.size();++i) colvar_atoms[current].activate( aa[i].index() );
+void MultiColvar::removeAtomRequest( const unsigned& i ){
+  plumed_massert(isTimeForNeighborListUpdate(),"found removeAtomRequest but not during neighbor list step");
+  colvar_atoms[current].deactivate(i); 
 }
 
 inline
