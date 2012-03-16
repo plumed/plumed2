@@ -29,6 +29,7 @@ DistributionFunction(parameters)
   } else {
      error("LESS_THAN keyword takes one of three arguments");
   }
+  addAccumulator( true );
 }
 
 std::string less_than::message(){
@@ -37,15 +38,16 @@ std::string less_than::message(){
   return ostr.str();
 }
 
-void less_than::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
-  copyDerivatives( value_in, value_out );
+void less_than::calculate( Value* value_in, std::vector<Value>& aux ){
+  copyDerivatives( 0, value_in );
   double p, df, f; p=value_in->get(); 
   f=sf.calculate(p, df); df*=p;
-  value_out->chainRule(df); value_out->set(f);
+  chainRule( 0, df ); setValue( 0, f );
 }
 
-void less_than::finish( const double& p, Value* value_out ){
-  value_out->set(p);
+void less_than::finish( Value* value_out ){
+  extractDerivatives( 0, value_out );
+  value_out->set( getPntrToAccumulator(0)->get() );
 }
 
 }

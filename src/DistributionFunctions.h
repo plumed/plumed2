@@ -32,19 +32,35 @@ public:
   void printDocs(const std::string& name);
 };
 
+class ActionWithDistribution;
+
 class DistributionFunction {
 private:
   bool fine;
   double last_add;
   std::string errorMsg;
+  std::vector<bool> hasDeriv;
+  std::vector<Value*> thesevalues;
+  std::vector<Value*> accumulators;
 protected:
-  void copyDerivatives( Value* value_in, Value* value_out );
+  void addAccumulator( const bool wderiv );
+  void copyDerivatives( const unsigned nn, Value* value_in );
+  void extractDerivatives( const unsigned nn, Value* value_in );
+  void setValue( const unsigned nn, const double f );
+  void chainRule( const unsigned nn, const double f );
+  Value* getPntrToAccumulator( const unsigned nn );
 public:
   DistributionFunction( const std::vector<std::string>& parameters );
-  virtual void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out )=0;
-  virtual void finish( const double& total, Value* value_out )=0;
-  virtual bool sizableContribution(Value* val, const double& tol);
-  virtual void gather( PlumedCommunicator& comm ){};
+  ~DistributionFunction();
+  void setNumberOfDerivatives( const unsigned nder );
+  void reset();
+  void mergeDerivatives( const unsigned kk, ActionWithDistribution& action );
+  unsigned requiredBufferSpace() const ;
+  void copyDataToBuffers( unsigned& bufsize, std::vector<double>& buffers ) const ;
+  void retrieveDataFromBuffers( unsigned& bufsize, const std::vector<double>& buffers );
+  virtual void calculate( Value* value_in, std::vector<Value>& aux )=0;
+  virtual void finish( Value* value_out )=0;
+  virtual bool sizableContribution(const double& tol);
   void error(const std::string& msg);
   bool check() const;
   std::string errorMessage() const ;
@@ -52,8 +68,8 @@ public:
 }; 
 
 inline
-bool DistributionFunction::sizableContribution( Value* val, const double& tol ){
-  return (val->get()>=tol);
+bool DistributionFunction::sizableContribution( const double& tol ){
+  return (thesevalues[0]->get()>=tol);
 }
 
 inline 
@@ -71,6 +87,12 @@ bool DistributionFunction::check() const {
   return fine;
 }
 
+inline
+Value* DistributionFunction::getPntrToAccumulator( const unsigned nn ){
+  plumed_assert( nn<accumulators.size() );
+  return accumulators[nn];
+}
+
 class sum : public DistributionFunction {
 private:
   double nval;
@@ -78,24 +100,21 @@ private:
 public:
   static void writeDocs( std::string& docs );
   sum( const std::vector<std::string>& parameters );
-  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
-  inline bool sizableContribution(Value* val, const double& tol){ return true; }
-  void gather( PlumedCommunicator& comm );
-  void finish( const double& total, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux );
+  inline bool sizableContribution( const double& tol ){ return true; }
+  void finish( Value* value_out );
   std::string message();
 };
 
 class mean : public DistributionFunction {
 private:
   double nval;
-  double prev_nval;
 public:
   static void writeDocs( std::string& docs );
   mean( const std::vector<std::string>& parameters );
-  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
-  void finish( const double& total, Value* value_out );
-  inline bool sizableContribution(Value* val, const double& tol){ return true; }
-  void gather( PlumedCommunicator& comm );
+  void calculate( Value* value_in, std::vector<Value>& aux );
+  void finish( Value* value_out );
+  inline bool sizableContribution( const double& tol ){ return true; }
   std::string message();
 };
 
@@ -108,8 +127,8 @@ private:
 public:
   static void writeDocs( std::string& docs );
   less_than( const std::vector<std::string>& parameters );
-  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
-  void finish( const double& total, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux );
+  void finish( Value* value_out );
   std::string message();
 };
 
@@ -121,8 +140,8 @@ private:
 public:
   static void writeDocs( std::string& docs ); 
   more_than( const std::vector<std::string>& parameters );
-  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
-  void finish( const double& total, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux );
+  void finish( Value* value_out );
   std::string message();
 };
 
@@ -133,8 +152,8 @@ private:
 public:
   static void writeDocs( std::string& docs );
   within( const std::vector<std::string>& parameters );
-  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
-  void finish( const double& total, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux );
+  void finish( Value* value_out );
   std::string message();
 };
 
@@ -144,8 +163,8 @@ private:
 public:
   static void writeDocs( std::string& docs );
   min( const std::vector<std::string>& parameters );
-  void calculate( Value* value_in, std::vector<Value>& aux, Value* value_out );
-  void finish( const double& total, Value* value_out );
+  void calculate( Value* value_in, std::vector<Value>& aux );
+  void finish( Value* value_out );
   std::string message();
 };
 

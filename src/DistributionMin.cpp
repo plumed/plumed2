@@ -25,6 +25,7 @@ DistributionFunction(parameters)
   } else {
      error("MIN keyword should have one argument - the value for beta");
   }
+  addAccumulator( true );
 }
 
 std::string min::message(){
@@ -33,16 +34,18 @@ std::string min::message(){
   return ostr.str();
 }
 
-void min::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
-  copyDerivatives( value_in, value_out );
+void min::calculate( Value* value_in, std::vector<Value>& aux ){
+  copyDerivatives( 0, value_in );
   double p, df, tmp; p=value_in->get();
   tmp=exp( beta/p ); df=tmp/(p*p); 
-  value_out->chainRule(df); value_out->set(tmp);
+  chainRule( 0, df ); setValue( 0, tmp ); 
 }
 
-void min::finish( const double& p, Value* value_out ){
-  if(p==0){ plumed_massert(0,"Error in calculating minimum.  There is probably an NL_CUTOFF in your input that is too small"); }
-  double df, dist=beta/std::log(p); df=dist*dist/p;
+void min::finish( Value* value_out ){
+  double a=getPntrToAccumulator(0)->get();
+  if( a==0 ) plumed_massert(0,"Error in calculating minimum.  There is probably an NL_CUTOFF in your input that is too small");
+  extractDerivatives( 0, value_out );
+  double df, dist=beta/std::log( a ); df=dist*dist/a;
   value_out->chainRule(df); value_out->set(dist);
 }
 

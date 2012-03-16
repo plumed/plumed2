@@ -39,10 +39,6 @@ bool Value::isPeriodic()const{
   return periodicity==periodic;
 }
 
-void Value::gatherDerivatives( PlumedCommunicator& comm ){
-  comm.Sum( &derivatives[0], derivatives.size() );
-} 
-
 bool Value::applyForce(std::vector<double>& forces ) const {
   plumed_massert( derivatives.size()==forces.size()," forces array has wrong size" );
   if( !hasForce ) return false;

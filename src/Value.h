@@ -29,6 +29,10 @@ A class for holding the value of a function together with its derivatives.
 /// you are implementing please feel free to use it.
 class Value{
 friend class ActionWithValue;
+/// This calculates val1*val2 and sorts out the derivatives
+friend void product( Value* val1, Value* val2, Value* valout );
+/// This calculates va1/val2 and sorts out the derivatives
+friend void quotient( Value* val1, Value* val2, Value* valout );
 private:
 /// The action in which this quantity is calculated
   ActionWithValue* action;
@@ -62,6 +66,8 @@ public:
   Value(ActionWithValue* av, const std::string& name, const bool withderiv);
 /// Set the value of the function 
   void set(double);
+/// Add something to the value of the function
+  void add(double);
 /// Get the value of the function
   double get() const;
 /// Find out if the value has been set
@@ -82,8 +88,6 @@ public:
   void clearDerivatives();
 /// Add some derivative to the ith component of the derivatives array
   void addDerivative(int i,double d);
-/// Gather the derivatives
-  void gatherDerivatives( PlumedCommunicator& comm );
 /// Apply the chain rule to the derivatives
   void chainRule(double df);
 /// Get the derivative with respect to component n
@@ -106,9 +110,39 @@ public:
 };
 
 inline
+void product( Value* val1, Value* val2, Value* valout ){
+  plumed_assert( val1->derivatives.size()==val2->derivatives.size() );
+  plumed_assert( valout->derivatives.size()==val1->derivatives.size() );
+  valout->value_set=false; valout->derivatives.assign(valout->derivatives.size(),0.0);
+  double u, v; u=val1->value; v=val2->value;
+  for(unsigned i=0;i<val1->derivatives.size();++i){
+     valout->addDerivative(i, u*val2->derivatives[i] + v*val1->derivatives[i] );
+  }
+  valout->set( u*v );
+}
+
+inline
+void quotient( Value* val1, Value* val2, Value* valout ){
+  plumed_assert( val1->derivatives.size()==val2->derivatives.size() );
+  plumed_assert( valout->derivatives.size()==val1->derivatives.size() );
+  valout->value_set=false; valout->derivatives.assign(valout->derivatives.size(),0.0);
+  double u, v; u=val1->value; v=val2->value;
+  for(unsigned i=0;i<val1->derivatives.size();++i){
+     valout->addDerivative(i, v*val1->derivatives[i] - u*val2->derivatives[i] );
+  }
+  valout->chainRule( 1/(v*v) ); valout->set( u / v );
+}
+
+inline
 void Value::set(double v){
   value_set=true;
   value=v;
+}
+
+inline
+void Value::add(double v){
+  value_set=true;
+  value+=v;
 }
 
 inline

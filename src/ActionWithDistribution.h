@@ -25,8 +25,8 @@ private:
   bool reduceAtNextStep;
 /// The tolerance on the accumulators for neighbour list
   double tolerance;
-/// Accumulators for the values
-  std::vector<double> totals;
+/// The buffers we use for mpi summing DistributionFunction objects
+  std::vector<double> buffer;
 /// Pointers to the values for this object
   std::vector<Value*> final_values;
 /// Pointers to the functions we are using on each value

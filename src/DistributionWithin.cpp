@@ -35,6 +35,7 @@ DistributionFunction(parameters)
   }
   if(a>=b) error("For WITHIN keyword upper bound is greater than lower bound");
   hist.set(a,b,sigma);
+  addAccumulator( true );
 }
 
 std::string within::message(){
@@ -43,14 +44,15 @@ std::string within::message(){
   return ostr.str();
 }
 
-void within::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
-  copyDerivatives( value_in, value_out ); 
+void within::calculate( Value* value_in, std::vector<Value>& aux ){
+  copyDerivatives( 0, value_in ); 
   double df, f; f=hist.calculate( value_in->get() , df );
-  value_out->chainRule(df); value_out->set(f);
+  chainRule(0, df); setValue(0, f);
 }
 
-void within::finish( const double& p, Value* value_out ){
-  value_out->set(p);
+void within::finish( Value* value_out ){
+  extractDerivatives( 0, value_out );
+  value_out->set( getPntrToAccumulator(0)->get() );
 }
 
 }

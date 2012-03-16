@@ -14,7 +14,9 @@ sum::sum( const std::vector<std::string>& parameters ) :
 DistributionFunction(parameters)
 {
   plumed_massert(parameters.size()==1,"should pass one parameter total values");
-  Tools::convert(parameters[0],prev_nval); nval=0.0;
+  Tools::convert(parameters[0],nval); 
+  addAccumulator( true );
+  addAccumulator( false );
 }
 
 std::string sum::message(){
@@ -23,19 +25,15 @@ std::string sum::message(){
   return ostr.str();
 }
 
-void sum::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
-  copyDerivatives( value_in, value_out ); value_out->set( value_in->get() );
-  nval+=1.0;
+void sum::calculate( Value* value_in, std::vector<Value>& aux ){
+  copyDerivatives( 0, value_in ); 
+  setValue( 0, value_in->get() );
+  setValue( 1, 1.0 );
 }
 
-void sum::gather( PlumedCommunicator& comm ){
-  comm.Sum(&nval,1); 
-}
-
-void sum::finish( const double& p, Value* value_out ){
-  if ( nval!=prev_nval ) printf("WARNING: A neighbor list is causing discontinuities in a sum");
-  prev_nval=nval; nval=0;
-  value_out->set(p);
+void sum::finish( Value* value_out ){
+  if ( getPntrToAccumulator(1)->get()!=nval ) printf("WARNING: A neighbor list is causing discontinuities in a sum");
+  extractDerivatives( 0, value_out ); value_out->set( getPntrToAccumulator(0)->get() );
 }
 
 }

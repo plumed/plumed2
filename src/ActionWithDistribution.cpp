@@ -65,7 +65,6 @@ void ActionWithDistribution::requestDistribution(){
      error("No function has been specified");
   } else {
      plumed_massert( functions.size()==final_values.size(), "number of functions does not match number of values" );
-     totals.resize( final_values.size() );
      // This sets up the dynamic list that holds what we are calculating
      for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ members.addIndexToList(i); }
      members.activateAll(); members.updateActiveMembers();
@@ -75,12 +74,28 @@ void ActionWithDistribution::requestDistribution(){
 void ActionWithDistribution::prepare(){
  if(reduceAtNextStep){
     completeNeighborListUpdate();
+    // Setup the functions by declaring enough space to hold the derivatives
+    for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( final_values[0]->getNumberOfDerivatives() );
+    // Setup the buffers for mpi gather
+    if(!serial){
+       unsigned bufsize=0;
+       for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
+       buffer.resize( bufsize ); 
+    }
     reduceAtNextStep=false;
  }
  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
     members.activateAll();
     members.updateActiveMembers();
     prepareForNeighborListUpdate();
+    // Setup the functions by declaring enough space to hold the derivatives
+    for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( final_values[0]->getNumberOfDerivatives() );
+    // Setup the buffers for mpi gather
+    if(!serial){
+       unsigned bufsize=0;
+       for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
+       buffer.resize( bufsize ); 
+    }
     reduceAtNextStep=true;
     lastUpdate=getStep();
  }
@@ -94,11 +109,10 @@ void ActionWithDistribution::calculate(){
   if(serial){ stride=1; rank=0; }
 
   std::vector<Value> aux;
-  // Reset all totals
-  for(unsigned j=0;j<totals.size();++j) totals[j]=0.0;
+  // Reset everything
+  for(unsigned j=0;j<functions.size();++j) functions[j]->reset();
   // Create a value to store stuff in 
   Value* tmpvalue=new Value();
-  Value* tmp2value=new Value();
 
   unsigned kk; double contribution; bool keep;
   for(unsigned i=rank;i<members.getNumberActive();i+=stride){
@@ -106,10 +120,7 @@ void ActionWithDistribution::calculate(){
       kk=members[i];
       // Make sure we have enough derivatives in this value
       unsigned nder=getThisFunctionsNumberOfDerivatives(kk);
-      if( tmpvalue->getNumberOfDerivatives()!=nder ){
-          tmpvalue->resizeDerivatives( nder );
-          tmp2value->resizeDerivatives( nder );
-      }
+      if( tmpvalue->getNumberOfDerivatives()!=nder ) tmpvalue->resizeDerivatives( nder );
  
       // Calculate the value of this particular function 
       calculateThisFunction( kk, tmpvalue, aux );
@@ -118,12 +129,12 @@ void ActionWithDistribution::calculate(){
       if( reduceAtNextStep && !tmpvalue->valueHasBeenSet() ){ members.deactivate(kk); deactivate(kk); continue; }
 
       // Now incorporate the derivative of the function into the derivatives for the min etc
-      keep=false;
-      for(unsigned j=0;j<totals.size();++j){
-         functions[j]->calculate( tmpvalue, aux, tmp2value );
-         if( updateFreq>0 || functions[j]->sizableContribution(tmp2value,tolerance) ){ keep=true; totals[j]+=tmp2value->get(); } 
-         mergeDerivatives( kk, tmp2value, final_values[j] );
-         tmp2value->clearDerivatives();
+      if( updateFreq>0 ){ keep=false; } else { keep=true; }
+      for(unsigned j=0;j<functions.size();++j){
+         functions[j]->calculate( tmpvalue, aux );
+         if( functions[j]->sizableContribution( tolerance ) ){ 
+             keep=true; functions[j]->mergeDerivatives( kk, *this );
+         }
       }
       tmpvalue->clearDerivatives();
       // If the contribution of this quantity is very small at neighbour list time ignore it
@@ -132,14 +143,19 @@ void ActionWithDistribution::calculate(){
   }
   // Update the dynamic list 
   if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
-  // MPI Gather the totals and derivatives
+  // MPI Gather everything
   if(!serial){ 
-     comm.Sum( &totals[0],totals.size() ); 
-     for(unsigned j=0;j<totals.size();++j){ final_values[j]->gatherDerivatives( comm ); functions[j]->gather(comm); }
+     unsigned bufsize=0;
+     for(unsigned i=0;i<functions.size();++i) functions[i]->copyDataToBuffers( bufsize, buffer );
+     plumed_assert( bufsize==buffer.size() ); 
+     comm.Sum( &buffer[0],buffer.size() ); 
+     bufsize=0;
+     for(unsigned i=0;i<functions.size();++i) functions[i]->retrieveDataFromBuffers( bufsize, buffer );
+     plumed_assert( bufsize==buffer.size() );
   }
 
   // Delete the tmpvalues
-  delete tmpvalue; delete tmp2value;
+  delete tmpvalue; 
   // Set the final value of the function
-  for(unsigned j=0;j<totals.size();++j) functions[j]->finish( totals[j], final_values[j] ); 
+  for(unsigned j=0;j<final_values.size();++j) functions[j]->finish( final_values[j] ); 
 }
