@@ -47,7 +47,7 @@ awk '{
      print $0 > lfile
   }
   if($1=="//+PLUMEDOC"){
-    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="VATOM" || $2=="GENERIC" || $2=="TOOLS" ){
+    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="VATOM" || $2=="GENERIC" || $2=="TOOLS" ){
       lfile="automatic/"$2".list"
       
       print "<tr> <td width=5%> \\subpage ", $3,"</td> <td>" > lfile
@@ -101,6 +101,11 @@ cat $file.txt |
   then
     echo "<table align=center frame=void width=95%% cellpadding=5%%>"
     cat automatic/COLVAR.list
+    echo "</table>"
+  elif [ "$LINE" = "@MCOLVAR@" ]
+  then
+    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+    cat automatic/MCOLVAR.list
     echo "</table>"
   elif [ "$LINE" = "@ANALYSIS@" ]
   then
