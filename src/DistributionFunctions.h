@@ -23,15 +23,6 @@ on.  This class is used in PLMD::ActionWithDistribution.
 */
 //+ENDDEVELDOC
 
-class DistributionFunctionDocs {
-/// The documentation for this particular thing
-  std::map<std::string,std::string> alldocs;
-public:
-  DistributionFunctionDocs();
-/// Print the documentation for the object named 
-  void printDocs(const std::string& name);
-};
-
 class ActionWithDistribution;
 
 class DistributionFunction {
@@ -51,7 +42,7 @@ protected:
   void multiplyValue( const unsigned nn, Value* val );
   Value* getPntrToAccumulator( const unsigned nn );
 public:
-  DistributionFunction( const std::vector<std::string>& parameters );
+  DistributionFunction( const std::string& parameters );
   ~DistributionFunction();
   void setNumberOfDerivatives( const unsigned nder );
   void reset();
@@ -99,8 +90,7 @@ private:
   double nval;
   double prev_nval;
 public:
-  static void writeDocs( std::string& docs );
-  sum( const std::vector<std::string>& parameters );
+  sum( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   inline bool sizableContribution( const double& tol ){ return true; }
   void finish( Value* value_out );
@@ -111,8 +101,7 @@ class mean : public DistributionFunction {
 private:
   double nval;
 public:
-  static void writeDocs( std::string& docs );
-  mean( const std::vector<std::string>& parameters );
+  mean( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   inline bool sizableContribution( const double& tol ){ return true; }
@@ -126,8 +115,8 @@ private:
   double total, last_add;
   SwitchingFunction sf;
 public:
-  static void writeDocs( std::string& docs );
-  less_than( const std::vector<std::string>& parameters );
+  static std::string documentation();
+  less_than( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   std::string message();
@@ -139,8 +128,8 @@ private:
   unsigned nn,mm;
   SwitchingFunction sf;
 public:
-  static void writeDocs( std::string& docs ); 
-  more_than( const std::vector<std::string>& parameters );
+  static std::string documentation(); 
+  more_than( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   std::string message();
@@ -151,8 +140,8 @@ private:
   double a,b,sigma;
   HistogramBead hist;
 public:
-  static void writeDocs( std::string& docs );
-  within( const std::vector<std::string>& parameters );
+  static std::string documentation();
+  within( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   std::string message();
@@ -162,8 +151,8 @@ class min : public DistributionFunction {
 private:
   double beta;
 public:
-  static void writeDocs( std::string& docs );
-  min( const std::vector<std::string>& parameters );
+  static std::string documentation();
+  min( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   std::string message();
@@ -172,12 +161,11 @@ public:
 class cvdens : public DistributionFunction {
 private:
   bool isDensity;
-  double ax, bx, xsig, ay, by, ysig, az, bz, zsig;
   std::vector<unsigned> dir;
   std::vector<HistogramBead> beads;
 public:
-  static void writeDocs( std::string& docs );
-  cvdens( const std::vector<std::string>& parameters );
+  static std::string documentation();
+  cvdens( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out ); 
   std::string message();

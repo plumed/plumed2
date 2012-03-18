@@ -3,6 +3,8 @@
 
 #include <cassert>
 #include <cmath>
+#include <string>
+#include <vector>
 
 namespace PLMD {
 
@@ -19,7 +21,13 @@ private:
 	double highb;
 	double width;
 public:
+        static std::string documentation( bool dir );
+        static std::string histodocs( bool dir );
+        static void generateBins( const std::string& params, const std::string& dd, std::vector<std::string>& bins );  
 	HistogramBead();
+        std::string description() const ;
+        bool hasBeenSet() const;
+        void set(const std::string& params, const std::string& dd);
 	void set(double l, double h, double w);
 	double calculate(double x, double&df) const;
 	double getlowb() const ;
@@ -35,7 +43,11 @@ init(false)
 inline
 void HistogramBead::set( double l, double h, double w){
 	init=true; lowb=l; highb=h; width=w*(h-l); 
-	plumed_assert( highb>lowb && width>0 );
+}
+
+inline
+bool HistogramBead::hasBeenSet() const {
+  return init;
 }
 
 inline

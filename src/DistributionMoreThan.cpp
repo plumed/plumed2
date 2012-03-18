@@ -2,22 +2,17 @@
 
 namespace PLMD {
 
-void more_than::writeDocs(std::string& docs){
+std::string more_than::documentation(){
   std::ostringstream ostr;
-  ostr<<"\\par MORE_THAN\n\n";
-  ostr<<"Calculate the number of functions that are more than a target value using \\f$1.0 - s(r)\\f$, where \\f$s(r)\\f$ is a switching function. ";
-  ostr<<SwitchingFunction::documentation()<<"\n";
-  docs=ostr.str();
+  ostr<<"This is calculated using \\f$1.0 - s(r)\\f$, where \\f$s(r)\\f$ is a switching function. ";
+  ostr<<SwitchingFunction::documentation();
+  return ostr.str();
 }
 
-more_than::more_than( const std::vector<std::string>& parameters ) :
+more_than::more_than( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  if( parameters.size()==1 ){
-     sf.set( parameters[0] );
-  } else {
-     error("MORE_THAN keyword takes one switching function as argument");
-  }
+  sf.set( parameters );
   addAccumulator( true );
 }
 

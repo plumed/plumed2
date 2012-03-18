@@ -90,6 +90,10 @@ public:
   template<class T>
   void parse(const std::string&key,T&t);
 
+/// Parse one numbered keyword as generic type
+  template<class T>
+  bool parseNumbered(const std::string&key, const int no, T&t);
+
 /// Parse one keyword as std::vector
   template<class T>
   void parseVector(const std::string&key,std::vector<T>&t);
@@ -236,6 +240,19 @@ void Action::parse(const std::string&key,T&t){
           error("keyword " + key + " is comulsory for this action");
        }
   }   
+}
+
+template<class T>
+bool Action::parseNumbered(const std::string&key, const int no, T&t){
+  // Check keyword has been registered
+  plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
+  plumed_massert( ( keywords.style(key,"nohtml") || keywords.style(key,"numbered") ),
+                    "keyword " + key + " has not been registered so you can read in numbered versions");
+
+  // Now try to read the keyword
+  bool found; std::string def;
+  std::string num; Tools::convert(no,num);
+  return Tools::parse(line,key+num,t);
 }
 
 template<class T>

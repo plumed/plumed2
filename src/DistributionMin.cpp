@@ -2,29 +2,21 @@
 
 namespace PLMD {
 
-void min::writeDocs(std::string& docs){
+std::string min::documentation(){
   std::ostringstream ostr;
-  ostr<<"\\par MIN"<<std::endl;
-  ostr<<std::endl;
-  ostr<<"Calculate the minimum value.  To make this quantity continuous the minimum is calculated using:"<<std::endl;
-  ostr<<std::endl;
-  ostr<<"\\f["<<std::endl;
-  ostr<<"\\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) }"<<std::endl;
-  ostr<<"\\f]"<<std::endl;
-  ostr<<std::endl;
-  ostr<<"The keyword MIN=\\f$\\beta\\f$ tells plumed to calculate this quantity and sets \\f$\\beta\\f$ to an appropriate value.  Once"<<std::endl;
-  ostr<<"calcualted the final value is referneced using label.min"<<std::endl;  
-  docs=ostr.str();
+  ostr<<"To make this quantity continuous the minimum is calculated using ";
+  ostr<<"\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ ";
+  ostr<<"The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)";
+  return ostr.str();
 }
 
-min::min( const std::vector<std::string>& parameters ) :
+min::min( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  if( parameters.size()==1 ){
-     Tools::convert(parameters[0],beta);
-  } else {
-     error("MIN keyword should have one argument - the value for beta");
-  }
+  std::vector<std::string> data=Tools::getWords(parameters);
+  if( data.size()!=1 ){ error("There should only be a value for beta in the input to MIN"); return; }
+  bool found_beta=Tools::parse(data,"BETA",beta);
+  if (!found_beta){ error("No value for BETA specified in call to MIN"); return; } 
   addAccumulator( true );
 }
 

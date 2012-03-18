@@ -1,4 +1,4 @@
-#! FIELDS time parameter d1.meanCVinBox d1n.meanCVinBox
+#! FIELDS time parameter d1.subcell d1n.subcell
  0.000000 0  0.20051  0.20051
  0.000000 1  0.00000  0.00000
  0.000000 2  0.00000  0.00000

@@ -2,41 +2,40 @@
 
 namespace PLMD {
 
-void cvdens::writeDocs( std::string& docs ){
+std::string cvdens::documentation(){
   std::ostringstream ostr;
-  ostr<<"\\par CV_DENSITY_X/CV_DENSITY_Y/CV_DENSITY_Z \n\n";
-  docs=ostr.str();
+  ostr<<"To make this quantity continuous it is calculated using \\f$ a = \\frac{\\sum_{i=1}^N s_i w(x_i)w(y_i)w(z_i)}{\\sum_{i=1}^N w(x_i)w(y_i)w(z_i)}\\f$ ";
+  ostr<<"where the sum is over the collective variables \\f$ s_i \\f$ which can be thought to be at \\f$ (x_i,y_i,z_i)\\f$. The three \\f$w(x)\\f$ functions ";
+  ostr<<"specify the extent of the subregion in which we are calculating the average CV in each direction. To make these assignment functions continuous they ";
+  ostr<<"are calculated using "<<HistogramBead::documentation(true)<<".  If no parameters for the \\f$ w(d) \\f$ function in a particular direction is specified ";
+  ostr<<"then the subcell is assumed to incorporate the entirity of the box in that direction."; 
+  return ostr.str();
 }
 
-cvdens::cvdens( const std::vector<std::string>& parameters ) :
+cvdens::cvdens( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  Tools::convert(parameters[0],ax);
-  Tools::convert(parameters[1],bx);
-  Tools::convert(parameters[2],xsig);
-  Tools::convert(parameters[3],ay);
-  Tools::convert(parameters[4],by);
-  Tools::convert(parameters[5],ysig);
-  Tools::convert(parameters[6],az);
-  Tools::convert(parameters[7],bz);
-  Tools::convert(parameters[8],zsig);
-  beads.resize(3);
-  if( !(ax==0.0 && bx==1.0) ){ beads[0].set(ax,bx,xsig); dir.push_back(0); }
-  if( !(ay==0.0 && by==1.0) ){ beads[1].set(ay,by,ysig); dir.push_back(1); } 
-  if( !(az==0.0 && bz==1.0) ){ beads[2].set(az,bz,zsig); dir.push_back(2); }
-  plumed_assert( dir.size()>0 && dir.size()<=3 );
+  HistogramBead xbin; xbin.set(parameters, "X"); 
+  if ( xbin.hasBeenSet() ){ beads.push_back(xbin); dir.push_back(0); }
+  HistogramBead ybin; ybin.set(parameters, "Y");
+  if ( ybin.hasBeenSet() ){ beads.push_back(ybin); dir.push_back(1); }
+  HistogramBead zbin; zbin.set(parameters, "Z");
+  if ( zbin.hasBeenSet() ){ beads.push_back(zbin); dir.push_back(2); }  
+  plumed_assert( beads.size()>=1 );
+
+  isDensity=(parameters.find("density")!=std::string::npos);
   addAccumulator( true );    // This holds the numerator - value of cv times "location in box" 
   addAccumulator( true );    // This holds the denominator - number of atoms in box
-  isDensity=( parameters[9]=="isdensity" );
 }
 
 std::string cvdens::message(){
   std::ostringstream ostr;
   ostr<<"average value of cv for ";
   for(unsigned i=0;i<dir.size();++i){
-     if( dir[i]==0 ) ostr<<"x between "<<ax<<" and "<< bx<<" ";
-     if( dir[i]==1 ) ostr<<"y between "<<ay<<" and "<< by<<" ";
-     if( dir[i]==2 ) ostr<<"z between "<<az<<" and "<< bz<<" ";
+     if( dir[i]==0 ) ostr<<"x "<<beads[i].description();
+     if( dir[i]==1 ) ostr<<"y "<<beads[i].description();
+     if( dir[i]==2 ) ostr<<"z "<<beads[i].description();
+     if( dir.size()>1 && i!=(dir.size()-1) ) ostr<<", "; 
   }
   return ostr.str();
 }
@@ -47,7 +46,7 @@ void cvdens::calculate( Value* value_in, std::vector<Value>& aux ){
   double f, df;
   copyValue( 0, value_in );
   for(unsigned i=0;i<dir.size();++i){
-     f=beads[ dir[i] ].calculate( aux[ dir[i] ].get(), df );
+     f=beads[i].calculate( aux[ dir[i] ].get(), df );
      aux[ dir[i] ].chainRule(df); aux[ dir[i] ].set(f);
      multiplyValue( 0, &aux[ dir[i] ] );
      if( i==0 ){ copyValue( 1, &aux[ dir[i] ] ); }

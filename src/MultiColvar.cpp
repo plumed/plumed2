@@ -1,5 +1,6 @@
 #include "MultiColvar.h"
 #include "PlumedMain.h"
+#include "DistributionFunctions.h"
 #include <vector>
 #include <string>
 
@@ -31,18 +32,15 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                   "of the atoms specifies using SPECIESB is within the specified cutoff");
   keys.reserve("atoms","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
-  keys.add("nohtml","MIN","take the minimum value from these variables.  The continuous version of the minimum described above is calculated and beta must be specified in input");
+  keys.add("optional","MIN","calculate the minimum value and store it in a value called min. " + min::documentation() );
 //  keys.add("optional","MAX", "take the maximum value from these variables");
-  keys.reserve("nohtml","SUM", "take the sum of these variables");
-  keys.add("nohtml","AVERAGE", "take the average value of these variables");
-  keys.add("nohtml","LESS_THAN", "take the number of variables less than the specified target and store it in a value called lt<target>. " + SwitchingFunction::documentation() );
-  keys.add("nohtml","MORE_THAN", "take the number of variables more than the specified target and store it in a value called gt<target>. " + SwitchingFunction::documentation() ); 
-  keys.add("nohtml","HISTOGRAM", "create a discretized histogram of the distribution.  This keyword's input should consist of one or two numbers");
-  keys.add("nohtml","RANGE", "the range in which to calculate the histogram");
-  keys.add("nohtml", "WITHIN", "The number of values within a certain range.  This keyword's input should consist of one or two numbers.");
-  keys.reserve("nohtml","CV_DENSITY_X","Takes 2/3 params specifying the upper and lower boundaries of a bin in x in fractional coordinates and the ammount of smearing to use");
-  keys.reserve("nohtml","CV_DENSITY_Y","Takes 2/3 params specifying the upper and lower boundaries of a bin in y in fractional coordinates and the ammount of smearing to use");
-  keys.reserve("nohtml","CV_DENSITY_Z","Takes 2/3 params specifying the upper and lower boundaries of a bin in z in fractional coordinates and the ammount of smearing to use");
+  keys.reserve("optional","SUM", "take the sum of these variables and store it in a value called sum.");
+  keys.add("optional","AVERAGE", "take the average value of these variables and store it in value called average.");
+  keys.add("optional","LESS_THAN", "take the number of variables less than the specified target and store it in a value called lt<target>. " + less_than::documentation() );
+  keys.add("optional","MORE_THAN", "take the number of variables more than the specified target and store it in a value called gt<target>. " + more_than::documentation() ); 
+  keys.add("optional","HISTOGRAM", "create a discretized histogram of the distribution of collective variables.  " + HistogramBead::histodocs(false) );
+  keys.add("numbered", "WITHIN", "calculate the number variabels that are within a certain range and store it in a value called between<lowerbound>&<upperbound>. " + within::documentation() );
+  keys.reserve("numbered", "SUBCELL", "calculate the average value of the CV within a portion of the box and store it in a value called subcell. " + cvdens::documentation() );
   ActionWithDistribution::registerKeywords( keys );
 } 
 
@@ -69,177 +67,104 @@ void MultiColvar::readAtoms( int& natoms ){
   if( !readatoms ) error("No atoms have been read in");
 
   // -- Now read in distribution keywords -- //
-  bool dothis; std::vector<std::string> params;
+  bool dothis; std::string params;
 
   // Read SUM keyword
   if( keywords.exists("SUM") ) parseFlag("SUM",dothis);
   else dothis=false;
   if( dothis ){
-     params.resize(1); Tools::convert(getNumberOfFunctionsInDistribution(),params[0]);
-     addDistributionFunction( "sum", new sum(params) );
+     Tools::convert(getNumberOfFunctionsInDistribution(),params);
+     addDistributionFunction( "sum", new sum(params) ); 
+     params.clear();
   }
   // Read AVERAGE keyword
   if( keywords.exists("AVERAGE") ) parseFlag("AVERAGE",dothis);
   else dothis=false;
   if( dothis ){
-     params.resize(1); Tools::convert(getNumberOfFunctionsInDistribution(),params[0]);
+     Tools::convert(getNumberOfFunctionsInDistribution(),params);
      addDistributionFunction( "average", new mean(params) );
+     params.clear();
   }
   // Read MIN keyword
-  if( keywords.exists("MIN") ) parseVector("MIN",params);
-  else params.resize(0);
+  if( keywords.exists("MIN") ) parse("MIN",params);
   if( params.size()!=0 ){
      addDistributionFunction( "min", new min(params) );
+     params.clear();
   }
   // Read Less_THAN keyword
-  std::string tmpparam="none";
-  if( keywords.exists("LESS_THAN") ) parse("LESS_THAN",tmpparam);
-  if( tmpparam!="none" ){
-     std::vector<std::string> data=Tools::getWords(tmpparam);
-     std::string r0; Tools::parse(data,"R_0",r0); 
-     params.resize(0); params.push_back(tmpparam);
+  if( keywords.exists("LESS_THAN") ) parse("LESS_THAN",params);
+  if( params.size()!=0 ){
+     std::vector<std::string> data=Tools::getWords(params);
+     std::string r0;  
+     if( !Tools::parse(data,"R_0",r0) ) error("Did not find R_0 parameter in switching function definition for LESS_THAN");
      addDistributionFunction( "lt" + r0, new less_than(params) );
-     params.resize(0);
+     params.clear();
   }
   // Read MORE_THAN keyword
-  tmpparam="none";
-  if( keywords.exists("MORE_THAN") ) parse("MORE_THAN",tmpparam);
-  if( tmpparam!="none" ){
-     std::vector<std::string> data=Tools::getWords(tmpparam);     
-     std::string r0; Tools::parse(data,"R_0",r0);
-     params.resize(0); params.push_back(tmpparam);
+  if( keywords.exists("MORE_THAN") ) parse("MORE_THAN",params);
+  if( params.size()!=0 ){
+     std::vector<std::string> data=Tools::getWords(params);     
+     std::string r0; 
+     if( !Tools::parse(data,"R_0",r0) ) error("Did not find R_0 parameter in switching function definition for MORE_THAN");
      addDistributionFunction( "gt" + r0, new more_than(params) );
-     params.resize(0);
+     params.clear();
   }
   // Read HISTOGRAM keyword
-  if( keywords.exists("HISTOGRAM") ) parseVector("HISTOGRAM",params);
-  else params.resize(0);
+  if( keywords.exists("HISTOGRAM") ) parse("HISTOGRAM",params);
   if( params.size()!=0 ){
-      std::vector<double> range(2); parseVector("RANGE",range);
-      if(range[1]<range[0]) error("range is meaningless");
-      int nbins; Tools::convert(params[0],nbins);
-      std::vector<std::string> hparams(2);
-      if(params.size()==2){
-          hparams.resize(3);
-          hparams[2]=params[1];
-      } else if(params.size()!=1){
-          error("Histogram keyword should either specify just the number"
-                " of bins or the number of bins and the ammount of smearing");
-      }
-      double lb,ub,delr=(range[1]-range[0])/static_cast<double>(nbins);
-      for(int i=0;i<nbins;++i){
-          lb=range[0]+i*delr; Tools::convert( lb, hparams[0] );
-          ub=range[0]+(i+1)*delr; Tools::convert( ub, hparams[1] );
-          addDistributionFunction( "between" + hparams[0] + "&" +hparams[1], new within(hparams) );
-      }
+       std::vector<std::string> bins;
+       HistogramBead::generateBins( params, "", bins );
+       for(unsigned i=0;i<bins.size();++i){
+           std::vector<std::string> data=Tools::getWords(bins[i]); std::string lowb,upb;
+           if( !Tools::parse(data,"LOWER",lowb) ) error("Lower bound for WITHIN not found");
+           if( !Tools::parse(data,"UPPER",upb) ) error("Upper bound for WITHIN not found");
+           addDistributionFunction( "between" + lowb + "&" + upb, new within( bins[i] ) );
+       }
+       params.clear();
   }
   // Read within keywords
-  if( keywords.exists("WITHIN") ) parseVector("WITHIN",params);
-  else params.resize(0);
-  if( params.size()!=0 ){
-      addDistributionFunction( "between" + params[0] + "&" +params[1], new within(params) );
-  } else if( keywords.exists("WITHIN") ){
-      for(unsigned i=1;;++i){
-         if( !parseNumberedVector("WITHIN",i,params) ) break;
-         addDistributionFunction( "between" + params[0] + "&" +params[1], new within(params) );
-      }
+  if( keywords.exists("WITHIN") ){
+     parse("WITHIN",params);
+     if( params.size()!=0 ){
+         std::vector<std::string> data=Tools::getWords(params); std::string lowb,upb; 
+         if( !Tools::parse(data,"LOWER",lowb) ) error("Lower bound for WITHIN not found");
+         if( !Tools::parse(data,"UPPER",upb) ) error("Upper bound for WITHIN not found");
+         addDistributionFunction( "between" + lowb + "&" + upb, new within(params) );
+         params.clear();
+     } else if( keywords.exists("WITHIN") ){
+         for(unsigned i=1;;++i){
+            if( !parseNumbered("WITHIN",i,params) ) break;
+            std::vector<std::string> data=Tools::getWords(params); std::string lowb,upb;
+            if( !Tools::parse(data,"LOWER",lowb) ) error("Lower bound for WITHIN not found");
+            if( !Tools::parse(data,"UPPER",upb) ) error("Upper bound for WITHIN not found");
+            addDistributionFunction( "between" + lowb + "&" + upb, new within(params) );
+            params.clear();
+         }
+     }
   }
 
   // Establish whether or not this is a density ( requires special method )
-  std::string dens="notdensity"; 
-  if( keywords.exists("SPECIES") && !keywords.exists("SPECIESA") && !keywords.exists("SPECIESB") ){ dens="isdensity"; }
+  std::string dens; 
+  if( keywords.exists("SPECIES") && !keywords.exists("SPECIESA") && !keywords.exists("SPECIESB") ){ dens="density"; }
 
   // Read CV_DENSITY keywords
-  if( keywords.exists("CV_DENSITY_X") ){
-      plumed_massert( keywords.exists("CV_DENSITY_Y") && keywords.exists("CV_DENSITY_Z"), "please use CV_DENSITY_Y and CV_DENSITY_Z");
-      std::vector<double> xbin,ybin,zbin;
-      parseVector("CV_DENSITY_X",xbin); parseVector("CV_DENSITY_Y",ybin); parseVector("CV_DENSITY_Z",zbin);
-      if( xbin.size()!=0 || ybin.size()!=0 || zbin.size()!=0 ){
-          needsCentralAtomPosition=true;
-          // Sort out xbin
-          if( xbin.size()==0 ){ 
-              xbin.push_back(0.0); xbin.push_back(1.0); xbin.push_back(20.0);
-          } else if( xbin.size()==2){
-              xbin.push_back(0.5);
-          } else if( xbin.size()!=3){
-              error("CV_DENSITY_X should have two or three arguments");
-          }
-          // Sort out ybin
-          if( ybin.size()==0 ){ 
-              ybin.push_back(0.0); ybin.push_back(1.0); ybin.push_back(20.0);
-          } else if( ybin.size()==2){
-              ybin.push_back(0.5);
-          } else if( ybin.size()!=3){
-              error("CV_DENSITY_Y should have two or three arguments");
-          }
-          // Sort out zbin
-          if( zbin.size()==0 ){ 
-              zbin.push_back(0.0); zbin.push_back(1.0); zbin.push_back(20.0);
-          } else if( zbin.size()==2){
-              zbin.push_back(0.5);
-          } else if( zbin.size()!=3){
-              error("CV_DENSITY_Z should have two or three arguments");
-          }
-          params.resize(10);
-          Tools::convert( xbin[0], params[0] );
-          Tools::convert( xbin[1], params[1] );
-          Tools::convert( xbin[2], params[2] );
-          Tools::convert( ybin[0], params[3] ); 
-          Tools::convert( ybin[1], params[4] );
-          Tools::convert( ybin[2], params[5] );
-          Tools::convert( zbin[0], params[6] ); 
-          Tools::convert( zbin[1], params[7] );
-          Tools::convert( zbin[2], params[8] );
-          params[9]=dens;
-          addDistributionFunction( "meanCVinBox" , new cvdens(params) ); 
+  if( keywords.exists("SUBCELL") ){
+      parse("SUBCELL",params); params=params + dens;
+      if( params.size()!=0 ){
+          needsCentralAtomPosition=true; 
+          addDistributionFunction( "subcell", new cvdens(params) );
+          params.clear();
       } else {
-          std::vector<double> xbin,ybin,zbin; params.resize(10);
-          for(unsigned i=1;;++i){
-              parseNumberedVector("CV_DENSITY_X",i,xbin); 
-              parseNumberedVector("CV_DENSITY_Y",i,ybin);
-              parseNumberedVector("CV_DENSITY_Z",i,zbin);
-              if( xbin.size()==0 && ybin.size()==0 && zbin.size()==0 ) break;
-              needsCentralAtomPosition=true;
-              // Sort out xbin
-              if( xbin.size()==0 ){ 
-                  xbin.push_back(0.0); xbin.push_back(1.0); xbin.push_back(20.0);
-              } else if( xbin.size()==2){
-                  xbin.push_back(0.5);
-              } else if( xbin.size()!=3){
-                  error("CV_DENSITY_X should have two or three arguments");
-              }
-              // Sort out ybin
-              if( ybin.size()==0 ){
-                  ybin.push_back(0.0); ybin.push_back(1.0); ybin.push_back(20.0);
-              } else if( ybin.size()==2){
-                  ybin.push_back(0.5);
-              } else if( ybin.size()!=3){
-                  error("CV_DENSITY_Y should have two or three arguments");
-              }
-              // Sort out zbin
-              if( zbin.size()==0 ){
-                  zbin.push_back(0.0); zbin.push_back(1.0); zbin.push_back(20.0);
-              } else if( zbin.size()==2){
-                  zbin.push_back(0.5);
-              } else if( zbin.size()!=3){
-                  error("CV_DENSITY_Z should have two or three arguments");
-              }
-              Tools::convert( xbin[0], params[0] );
-              Tools::convert( xbin[1], params[1] );
-              Tools::convert( xbin[2], params[2] );
-              Tools::convert( ybin[0], params[3] );
-              Tools::convert( ybin[1], params[4] );
-              Tools::convert( ybin[2], params[5] );
-              Tools::convert( zbin[0], params[6] );
-              Tools::convert( zbin[1], params[7] );
-              Tools::convert( zbin[2], params[8] );
-              params[9]=dens;
-              std::string lab; Tools::convert(i,lab);
-              addDistributionFunction( "meanCVforXin" + lab , new cvdens(params) ); 
-              xbin.resize(0); ybin.resize(0); zbin.resize(0);
-          }
+         for(unsigned i=1;;++i){
+            if( !parseNumbered("SUBCELL",i,params) ) break;
+            params=params+dens;
+            needsCentralAtomPosition=true;
+            std::string num; Tools::convert(i, num);
+            addDistributionFunction( "subcell"+num, new cvdens(params) );
+            params.clear();
+         }
       }
-  }
+  } 
 
   requestDistribution();  // And setup the ActionWithDistribution
   requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes

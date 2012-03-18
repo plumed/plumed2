@@ -74,7 +74,7 @@ void Keywords::remove( const std::string k ){
       found=true;
     } else break;
   }
-  plumed_massert(found,"You are trying to forbid a keyword that isn't there"); // You have tried to forbid a keyword that isn't there
+  plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there"); // You have tried to forbid a keyword that isn't there
 }
 
 void Keywords::clear() {
@@ -183,6 +183,7 @@ void Keywords::print_html() const {
      if ( types[i].isNumbered() ) nkeys++;
   }
   if( nkeys>0 ){
+     std::cout<<"\\par Numbered keywords\n\n";
      std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
         if ( types[i].isNumbered() ) print_html_item( i );
@@ -214,22 +215,6 @@ void Keywords::print_html() const {
      std::cout<<"\n";
   }
   std::cout<<"</table>\n\n";
-
-  nkeys=0;
-  for(unsigned i=0;i<keys.size();++i){
-     if( types[i].isNoHTML() ) nkeys++;
-  }
-  if( nkeys>0 ){
-     std::cout<<"\\section mod Working with distributions \n\n";
-     std::cout<<"This action can be used to calculate a number of quantities from a distribution of quantities of this type.\n";
-     std::cout<<"Plumed allows you to then calculate functions of the resulting distribution and store\n";
-     std::cout<<"the value of these distributions and the derivatives in the values of the colvar.\n";
-     std::cout<<"The options for doing this for this particular Action are as follows.\n\n";
-     DistributionFunctionDocs ddDoc; 
-     for(unsigned i=0;i<keys.size();++i){
-         if( types[i].isNoHTML() ) ddDoc.printDocs(keys[i]);
-     } 
-  }
 }
 
 void Keywords::print( Log& log ) const {

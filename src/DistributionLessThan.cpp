@@ -2,22 +2,16 @@
 
 namespace PLMD {
 
-void less_than::writeDocs(std::string& docs){
+std::string less_than::documentation(){
   std::ostringstream ostr;
-  ostr<<"\\par LESS_THAN\n\n"; 
-  ostr<<"Calculate the number of functions that are less than a target value using a switching function. "<<SwitchingFunction::documentation()<<"\n";
-  docs=ostr.str();
+  ostr<<SwitchingFunction::documentation();
+  return ostr.str();
 }
 
-less_than::less_than( const std::vector<std::string>& parameters ) :
+less_than::less_than( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  printf("Hello from less than %d\n",parameters.size() );
-  if( parameters.size()==1 ){
-     sf.set( parameters[0] ); 
-  } else {
-     error("LESS_THAN keyword takes one switching function as argument");
-  }
+  sf.set( parameters ); 
   addAccumulator( true );
 }
 

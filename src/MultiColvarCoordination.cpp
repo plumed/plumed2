@@ -62,7 +62,7 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.remove("AVERAGE");
   // Use density keywords
-  keys.use("CV_DENSITY_X"); keys.use("CV_DENSITY_Y"); keys.use("CV_DENSITY_Z");
+  keys.use("SUBCELL"); 
 }
 
 MultiColvarCoordination::MultiColvarCoordination(const ActionOptions&ao):

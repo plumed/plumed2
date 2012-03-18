@@ -36,9 +36,9 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   // Note we don't parallelize this as it would be stupid
   keys.use("SPECIES"); keys.remove("AVERAGE"); keys.remove("LESS_THAN"); 
   keys.remove("MIN"); keys.remove("MORE_THAN"); keys.remove("HISTOGRAM");
-  keys.remove("RANGE"); keys.remove("WITHIN");
+  keys.remove("WITHIN");
   // Use density keywords
-  keys.use("CV_DENSITY_X"); keys.use("CV_DENSITY_Y"); keys.use("CV_DENSITY_Z");
+  keys.use("SUBCELL"); 
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):

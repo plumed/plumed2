@@ -2,19 +2,10 @@
 
 namespace PLMD {
 
-void mean::writeDocs(std::string& docs){
-  std::ostringstream ostr;
-  ostr<<"\\par AVERAGE \n\n";
-  ostr<<"Calculate the average of all the colvars in the distribution.  Once calculated the final value is referenced\n";
-  ostr<<"using lable.average.\n";
-  docs=ostr.str();
-}
-
-mean::mean( const std::vector<std::string>& parameters ) :
+mean::mean( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  plumed_massert(parameters.size()==1,"should pass one parameter total values");
-  Tools::convert(parameters[0],nval); 
+  Tools::convert(parameters,nval); 
   addAccumulator( true );
   addAccumulator( false );
 }

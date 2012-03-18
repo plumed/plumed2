@@ -2,19 +2,10 @@
 
 namespace PLMD {
 
-void sum::writeDocs(std::string& docs){
-  std::ostringstream ostr;
-  ostr<<"\\par SUM \n\n";
-  ostr<<"Calculate the sum of all the colvars in the distribution.  Once calculated the final value is referenced\n";
-  ostr<<"using lable.sum.\n";
-  docs=ostr.str();
-}
-
-sum::sum( const std::vector<std::string>& parameters ) :
+sum::sum( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  plumed_massert(parameters.size()==1,"should pass one parameter total values");
-  Tools::convert(parameters[0],nval); 
+  Tools::convert(parameters,nval); 
   addAccumulator( true );
   addAccumulator( false );
 }
