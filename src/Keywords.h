@@ -50,6 +50,8 @@ private:
   void print_html_item( const unsigned& j ) const;
 /// Print the documentation to the log file (used by PLMD::Action::error)
   void print( Log& log ) const ;
+/// Print a particular keyword
+  void printKeyword( const unsigned& j, Log& log ) const ;
 /// find out whether flag key is on or off by default.
   bool getLogicalDefault( std::string key, bool& def ) const ;
 /// Get the value of the default for the keyword named key

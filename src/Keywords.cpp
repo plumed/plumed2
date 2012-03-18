@@ -240,7 +240,7 @@ void Keywords::print( Log& log ) const {
   if (nkeys>0 ){
      log.printf( "The input for this keyword can be specified using one of the following \n\n");
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isAtomList() ) log.printKeyword( keys[i], documentation[i] );
+        if ( types[i].isAtomList() ) printKeyword( i, log );   //log.printKeyword( keys[i], documentation[i] );
      }
   }
   nkeys=0;
@@ -250,7 +250,7 @@ void Keywords::print( Log& log ) const {
   if( nkeys>0 ){
      log.printf( "\n The compulsory keywords for this action are: \n\n");
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isCompulsory() ) log.printKeyword( keys[i], documentation[i] );
+        if ( types[i].isCompulsory() ) printKeyword( i, log );   //log.printKeyword( keys[i], documentation[i] );
      }
   }
   // This is a special option specifically for steered MD
@@ -260,7 +260,7 @@ void Keywords::print( Log& log ) const {
   }
   if( nkeys>0 ){
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isNumbered() ) log.printKeyword( keys[i], documentation[i] );
+        if ( types[i].isNumbered() ) printKeyword( i, log );   //log.printKeyword( keys[i], documentation[i] );
      }
   }
   nkeys=0;
@@ -270,7 +270,7 @@ void Keywords::print( Log& log ) const {
   if( nkeys>0 ){
      log.printf( "\n The following options are available: \n\n");
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isFlag() ) log.printKeyword( keys[i], documentation[i] );
+        if ( types[i].isFlag() ) printKeyword( i, log );   //log.printKeyword( keys[i], documentation[i] );
      }
      log.printf("\n");
   }
@@ -280,10 +280,27 @@ void Keywords::print( Log& log ) const {
   }
   if( nkeys>0 ){
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isOptional() || types[i].isNoHTML() ) log.printKeyword( keys[i], documentation[i] );
+        if ( types[i].isOptional() || types[i].isNoHTML() ) printKeyword( i, log );   //log.printKeyword( keys[i], documentation[i] );
      }
      log.printf("\n");
   }
+}
+
+void Keywords::printKeyword( const unsigned& j, Log& log ) const {
+  bool killdot=( documentation[j].find("\\f$")!=std::string::npos ); // Check for latex
+  std::vector<std::string> w=Tools::getWords( documentation[j] );
+  log.printf("%23s - ", keys[j].c_str() );
+  unsigned nl=0; std::string blank=" ";
+  for(unsigned i=0;i<w.size();++i){
+      nl+=w[i].length() + 1;
+      if( nl>60 ){
+         log.printf("\n%23s   %s ", blank.c_str(), w[i].c_str() ); nl=0;
+      } else {
+         log.printf("%s ", w[i].c_str() );
+      }
+      if( killdot && w[i].find(".")!=std::string::npos ) break; // If there is latex only write up to first dot
+  }
+  log.printf("\n");
 }
 
 void Keywords::print_html_item( const unsigned& j ) const {
