@@ -46,6 +46,14 @@ bool Value::applyForce(std::vector<double>& forces ) const {
   return true;
 }
 
+void Value::setNotPeriodic(){
+  min=0; max=0; periodicity=notperiodic;
+}
+
+void Value::setDomain(const double& pmin,const double& pmax){
+  min=pmin; max=pmax; setupPeriodicity();
+}
+
 void Value::getDomain(double&min,double&max) const {
   plumed_massert(periodicity==periodic,"function should be periodic");
   min=this->min;

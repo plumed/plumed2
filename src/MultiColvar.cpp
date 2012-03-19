@@ -34,8 +34,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                   "the documentation for that keyword");
   keys.add("optional","MIN","calculate the minimum value and store it in a value called min. " + min::documentation() );
 //  keys.add("optional","MAX", "take the maximum value from these variables");
-  keys.reserve("optional","SUM", "take the sum of these variables and store it in a value called sum.");
-  keys.add("optional","AVERAGE", "take the average value of these variables and store it in value called average.");
+  keys.addFlag("AVERAGE",false,"take the average value of these variables and store it in value called average.");
   keys.add("optional","LESS_THAN", "take the number of variables less than the specified target and store it in a value called lt<target>. " + less_than::documentation() );
   keys.add("optional","MORE_THAN", "take the number of variables more than the specified target and store it in a value called gt<target>. " + more_than::documentation() ); 
   keys.add("optional","HISTOGRAM", "create a discretized histogram of the distribution of collective variables.  " + HistogramBead::histodocs(false) );
@@ -50,6 +49,7 @@ ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithDistribution(ao),
 readatoms(false),
+setperiods(false),
 needsCentralAtomPosition(false),
 usepbc(true)
 {
@@ -69,14 +69,6 @@ void MultiColvar::readAtoms( int& natoms ){
   // -- Now read in distribution keywords -- //
   bool dothis; std::string params;
 
-  // Read SUM keyword
-  if( keywords.exists("SUM") ) parseFlag("SUM",dothis);
-  else dothis=false;
-  if( dothis ){
-     Tools::convert(getNumberOfFunctionsInDistribution(),params);
-     addDistributionFunction( "sum", new sum(params) ); 
-     params.clear();
-  }
   // Read AVERAGE keyword
   if( keywords.exists("AVERAGE") ) parseFlag("AVERAGE",dothis);
   else dothis=false;
@@ -166,6 +158,7 @@ void MultiColvar::readAtoms( int& natoms ){
       }
   } 
 
+  if( !usingDistributionFunctions() ) setupField(1);  // Setup the field if we are not using any of the above 
   requestDistribution();  // And setup the ActionWithDistribution
   requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes
 }
@@ -297,6 +290,34 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   } 
 }
 
+void MultiColvar::checkRead(){
+  plumed_massert(setperiods, "You must set the periodicity of the various component functions");
+  Action::checkRead();
+}
+
+void MultiColvar::setNotPeriodic(){
+  setperiods=true;
+  if( !usingDistributionFunctions() ){
+      std::string num;
+      for(unsigned i=0;i<getNumberOfComponents();++i){
+          Tools::convert(i+1,num);
+          componentIsNotPeriodic( "fval"+num );
+      }
+  }
+}
+
+void MultiColvar::setPeriodicDomain( const double& min, const double max ){
+  setperiods=true;
+  if( !usingDistributionFunctions() ){
+     std::string num;
+     for(unsigned i=0;i<getNumberOfComponents();++i){ 
+         Tools::convert(i+1,num);
+         componentIsPeriodic( "fval"+num , min, max );
+     }
+  }     
+}
+
+
 void MultiColvar::prepareForNeighborListUpdate(){
    for(unsigned i=0;i<colvar_atoms.size();++i){
       colvar_atoms[i].activateAll(); colvar_atoms[i].updateActiveMembers();
@@ -319,7 +340,7 @@ void MultiColvar::requestAtoms(){
    if( usingDistributionFunctions() ){
        for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*getNumberOfAtoms()+9);
    } else {
-       for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives( getThisFunctionsNumberOfDerivatives(i) );
+       for(unsigned i=0;i<getNumberOfComponents();++i){ getPntrToComponent(i)->resizeDerivatives( getThisFunctionsNumberOfDerivatives(i) ); }
    }
 }
 
@@ -397,6 +418,26 @@ void MultiColvar::mergeDerivatives( const unsigned j, Value* value_in, Value* va
   value_out->addDerivative( 3*outnat+8, value_in->getDerivative(3*innat+8) );
 }
 
+void MultiColvar::derivedFieldSetup( const double sigma ){
+  const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
+  log.printf("  generating field cv from histogram in which each component CV is represented by a Gaussian of width %f\n",sigma);
+  fsigma2=2*sigma*sigma;
+  fsigma4=fsigma2*fsigma2;
+  fnorm = 1.0 / ( sqrt(2*pi)*sigma );
+  for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){
+       std::string ss; Tools::convert(i+1,ss);
+       addComponentWithDerivatives("fval"+ss); 
+  }
+}
+
+void MultiColvar::setFieldOutputValue( const unsigned& j, Value* value_in ){
+  plumed_assert( value_in->getNumberOfDerivatives()==getPntrToComponent(j)->getNumberOfDerivatives() );
+  Value* value_out=getPntrToComponent(j);
+  for(unsigned i=0;i<value_in->getNumberOfDerivatives();++i){ value_out->addDerivative( i, value_in->getDerivative(i) ); }
+  // And store the value
+  value_out->set( value_in->get() );
+}
+
 Vector MultiColvar::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
   if(usepbc){ return pbcDistance( vec1, vec2 ); }
   else{ return delta( vec1, vec2 ); }
@@ -416,29 +457,38 @@ void MultiColvar::apply(){
   unsigned nat=getNumberOfAtoms(); std::vector<double> forces; unsigned nder;
   if( usingDistributionFunctions() ) forces.resize(3*getNumberOfAtoms()+9);
 
+  unsigned vstart=3*nat-9; unsigned thisatom;
   for(int i=0;i<getNumberOfComponents();++i){
 
      if( !usingDistributionFunctions() ){
        nder=getThisFunctionsNumberOfDerivatives(i); 
        if (forces.size()!=nder ) forces.resize(nder);
-     } 
-
-     if( getPntrToComponent(i)->applyForce( forces ) ){
+       if( getPntrToComponent(i)->applyForce( forces ) ){
+           for(unsigned j=0;j<forces.size();++j){
+               thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
+               plumed_assert( thisatom>=0 );
+               f[thisatom][0]+=forces[3*j+0];
+               f[thisatom][1]+=forces[3*j+1];
+               f[thisatom][2]+=forces[3*j+2];
+           }
+           vstart=nder-9;
+       }
+     } else if( getPntrToComponent(i)->applyForce( forces ) ){
         for(unsigned j=0;j<nat;++j){
            f[j][0]+=forces[3*j+0];
            f[j][1]+=forces[3*j+1];
            f[j][2]+=forces[3*j+2];
         }
-        v(0,0)+=forces[3*nat+0];
-        v(0,1)+=forces[3*nat+1];
-        v(0,2)+=forces[3*nat+2];
-        v(1,0)+=forces[3*nat+3];
-        v(1,1)+=forces[3*nat+4];
-        v(1,2)+=forces[3*nat+5];
-        v(2,0)+=forces[3*nat+6];
-        v(2,1)+=forces[3*nat+7];
-        v(2,2)+=forces[3*nat+8];
      }
+     v(0,0)+=forces[vstart+0];
+     v(0,1)+=forces[vstart+1];
+     v(0,2)+=forces[vstart+2];
+     v(1,0)+=forces[vstart+3];
+     v(1,1)+=forces[vstart+4];
+     v(1,2)+=forces[vstart+5];
+     v(2,0)+=forces[vstart+6];
+     v(2,1)+=forces[vstart+7];
+     v(2,2)+=forces[vstart+8];
   }
 }
 

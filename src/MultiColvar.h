@@ -161,7 +161,10 @@ class MultiColvar :
 private:
   bool usepbc;
   bool readatoms;
+  bool setperiods;
   bool needsCentralAtomPosition;
+/// Constants for fields
+  double fsigma2, fsigma4, fnorm;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
 /// The lists of the atoms involved in each of the individual colvars
@@ -190,6 +193,11 @@ protected:
   void removeAtomRequest( const unsigned& aa );
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
+/// Check the readin
+  void checkRead();
+/// Set the periodicities of the base quantities for the fields
+  void setNotPeriodic();
+  void setPeriodicDomain( const double& min, const double max );
 public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){};
@@ -215,6 +223,10 @@ public:
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0; 
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
   virtual void getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& pos); 
+/// Setup everything that needs to be setup for field cvs
+  void derivedFieldSetup( const double sigma );
+/// Set the output values for the field (important if we to apply forces on fields)
+  void setFieldOutputValue( const unsigned& j, Value* value_in );
 };
 
 inline

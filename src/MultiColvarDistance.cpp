@@ -51,6 +51,7 @@ public:
   MultiColvarDistance(const ActionOptions&);
 // active methods:
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  bool isPeriodic(const unsigned nn){ return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarDistance,"DISTANCES")
@@ -73,6 +74,8 @@ rcut(-1)
       parse("NL_CUTOFF",rcut);
       if( rcut>0 ) log.printf("  ignoring distances greater than %lf in neighbor list\n",rcut);
   }
+  // Functon is not periodic
+  setNotPeriodic();
   // And check everything has been read in correctly
   checkRead();
 }

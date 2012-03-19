@@ -27,6 +27,7 @@ public:
 // active methods:
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
   void getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& pos);
+  bool isPeriodic(const unsigned nn){ return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarDensity,"DENSITY")
@@ -45,6 +46,8 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   int nat; readAtoms( nat ); 
+  // Functon is not periodic
+  setNotPeriodic();
   // And check everything has been read in correctly
   checkRead(); 
 }

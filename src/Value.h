@@ -74,6 +74,10 @@ public:
   bool valueHasBeenSet() const;
 /// Check if the value is periodic
   bool isPeriodic() const;
+/// Set the function not periodic
+  void setNotPeriodic();
+/// Set the domain of the function
+  void setDomain(const double&, const double&); 
 /// Get the domain of the quantity
   void getDomain(double&,double&) const;
 /// Get the name of the quantity

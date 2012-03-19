@@ -16,6 +16,7 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   Action(ao),
   read(false),
   all_values(true),
+  use_field(false),
   serial(true),
   updateFreq(0),
   lastUpdate(0),
@@ -58,21 +59,35 @@ void ActionWithDistribution::addDistributionFunction( std::string name, Distribu
 }
 
 void ActionWithDistribution::requestDistribution(){
-  read=true; bool dothis; std::vector<std::string> params;
+  read=true; 
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
   plumed_massert(a,"can only do distribution on ActionsWithValue");
 
+  if(all_values){
+      error("No function has been specified");
+  } else if( !use_field ){
+      plumed_massert( functions.size()==final_values.size(), "number of functions does not match number of values" );
+  }
+  // This sets up the dynamic list that holds what we are calculating
+  for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ members.addIndexToList(i); }
+  members.activateAll(); members.updateActiveMembers();
   // We prepare the first step as if we are doing a neighbor list update
   prepareForNeighborListUpdate(); reduceAtNextStep=true;
+}
 
-  if(all_values){
-     error("No function has been specified");
-  } else {
-     plumed_massert( functions.size()==final_values.size(), "number of functions does not match number of values" );
-     // This sets up the dynamic list that holds what we are calculating
-     for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ members.addIndexToList(i); }
-     members.activateAll(); members.updateActiveMembers();
-  }
+void ActionWithDistribution::setupField( unsigned ldim ){
+  plumed_massert( ldim<=2 , "fields don't work with more than two dimensions" );
+  all_values=false; use_field=true;
+   
+  // Setup the field stuff in derived class
+  double sigma=0.01;
+  derivedFieldSetup( sigma );
+
+  // Setup the field
+  unsigned np; 
+  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
+  plumed_massert(a,"can only do fields on ActionsWithValue");
+  myfield.setup( getNumberOfFunctionsInDistribution(), np, a->getNumberOfComponents(), ldim );
 }
 
 void ActionWithDistribution::prepare(){
@@ -82,9 +97,15 @@ void ActionWithDistribution::prepare(){
     for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( final_values[0]->getNumberOfDerivatives() );
     // Setup the buffers for mpi gather
     if(!serial){
-       unsigned bufsize=0;
-       for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
-       buffer.resize( bufsize ); 
+       if( use_field ){
+         std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() );
+         for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
+         myfield.resizeBaseQuantityBuffers( cv_sizes ); 
+       } else {
+         unsigned bufsize=0;
+         for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
+         buffer.resize( bufsize ); 
+       }
     }
     reduceAtNextStep=false;
  }
@@ -96,9 +117,15 @@ void ActionWithDistribution::prepare(){
     for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( final_values[0]->getNumberOfDerivatives() );
     // Setup the buffers for mpi gather
     if(!serial){
-       unsigned bufsize=0;
-       for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
-       buffer.resize( bufsize ); 
+       if( use_field ){
+         std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() );
+         for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
+         myfield.resizeBaseQuantityBuffers( cv_sizes ); 
+       } else {
+         unsigned bufsize=0;
+         for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
+         buffer.resize( bufsize ); 
+       }
     }
     reduceAtNextStep=true;
     lastUpdate=getStep();
@@ -106,8 +133,51 @@ void ActionWithDistribution::prepare(){
 }
 
 void ActionWithDistribution::calculate(){
-  plumed_massert( read, "you must have a call to requestDistribution somewhere" );  
+  plumed_massert( read, "you must have a call to requestDistribution somewhere" );
 
+  if( use_field ) calculateField();
+  else calculateFunctions();
+}
+
+void ActionWithDistribution::calculateField(){
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  if(serial){ stride=1; rank=0; }
+
+  // Set everything in the field to zero
+  myfield.clear();
+  unsigned kk; std::vector<Value> aux; Value* tmpvalue=new Value();
+  // A loop over the functions in the distribution
+  for(unsigned i=rank;i<members.getNumberActive();i+=stride){
+      // Retrieve the function we are calculating from the dynamic list
+      kk=members[i];
+      // Make sure we have enough derivatives in this value
+      unsigned nder=getThisFunctionsNumberOfDerivatives(kk);
+      if( tmpvalue->getNumberOfDerivatives()!=nder ){ tmpvalue->resizeDerivatives(nder); }
+      
+      // Calculate the value of this particular function 
+      calculateThisFunction( kk, tmpvalue, aux );
+      // Transfer the value to the field buffers
+      myfield.setBaseQuantity( kk, tmpvalue ); 
+
+      // Skip if we are not calculating this particular value
+      if( reduceAtNextStep && !tmpvalue->valueHasBeenSet() ){ members.deactivate(kk); deactivate(kk); }
+
+      // Reset everything ready for next step
+      tmpvalue->clearDerivatives();
+  }
+  if(!serial){ myfield.gatherBaseQuantities( comm ); }
+  // Set the output values for this quantity (we use these to chain rule)
+  for(unsigned i=0;i<myfield.get_NdX();++i){
+     unsigned nder=getThisFunctionsNumberOfDerivatives(i);
+     if( tmpvalue->getNumberOfDerivatives()!=nder ){ tmpvalue->resizeDerivatives(nder); }
+     myfield.extractBaseQuantity( i, tmpvalue );
+     setFieldOutputValue( i, tmpvalue );
+  }
+  delete tmpvalue;
+}
+
+void ActionWithDistribution::calculateFunctions(){
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial){ stride=1; rank=0; }
@@ -125,6 +195,11 @@ void ActionWithDistribution::calculate(){
       // Make sure we have enough derivatives in this value
       unsigned nder=getThisFunctionsNumberOfDerivatives(kk);
       if( tmpvalue->getNumberOfDerivatives()!=nder ) tmpvalue->resizeDerivatives( nder );
+      // Retrieve the periodicity of this value
+      if( isPeriodic(kk) ){ 
+         double min, max; retrieveDomain( kk, min, max );
+         tmpvalue->setDomain( min, max ); 
+      } else { tmpvalue->setNotPeriodic(); }
  
       // Calculate the value of this particular function 
       calculateThisFunction( kk, tmpvalue, aux );
@@ -163,4 +238,56 @@ void ActionWithDistribution::calculate(){
   delete tmpvalue; 
   // Set the final value of the function
   for(unsigned j=0;j<final_values.size();++j) functions[j]->finish( final_values[j] ); 
+}
+
+void ActionWithDistribution::retrieveDomain( const unsigned nn, double& min, double& max ){
+  plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithDistribution can retrieve the domain");
+}
+
+void ActionWithDistribution::FieldClass::setup( const unsigned nfunc, const unsigned np, const unsigned D, const unsigned d ){
+// Set everything for base quantities 
+  baseq_nder.resize(nfunc); baseq_starts.resize(nfunc); 
+// Set everything for grid
+  npoints=np; ndX=D; ndx=d; nper=(ndX+1)*(ndx+1); grid_buffer.resize( npoints*nper );
+}
+
+void ActionWithDistribution::FieldClass::clear(){
+  baseq_buffer.assign( baseq_buffer.size(), 0.0 );
+  grid_buffer.assign( grid_buffer.size(), 0.0 );
+}
+
+void ActionWithDistribution::FieldClass::resizeBaseQuantityBuffers( const std::vector<unsigned>& cv_sizes ){
+  plumed_assert( cv_sizes.size()==baseq_nder.size() && cv_sizes.size()==baseq_starts.size() );
+  unsigned nn=0;
+  for(unsigned i=0;i<cv_sizes.size();++i){
+      baseq_starts[i]=nn; baseq_nder[i]=cv_sizes[i]; nn+=cv_sizes[i]+1;
+  }
+  baseq_buffer.resize(nn); // And resize the buffers
+}
+
+void ActionWithDistribution::FieldClass::setBaseQuantity( const unsigned nn, Value* val ){
+  plumed_assert( nn<baseq_nder.size() ); 
+  plumed_assert( val->getNumberOfDerivatives()==baseq_nder[nn] );
+
+  unsigned kk=baseq_starts[nn];
+  baseq_buffer[kk]=val->get(); kk++;
+  for(unsigned i=0;i<val->getNumberOfDerivatives();++i){ baseq_buffer[kk]=val->getDerivative(i); kk++; }
+  if( (nn+1)==baseq_starts.size() ){ plumed_assert( kk==baseq_buffer.size() ); }
+  else{ plumed_assert( kk==baseq_starts[nn+1] ); }
+}
+
+void ActionWithDistribution::FieldClass::gatherBaseQuantities( PlumedCommunicator& comm ){
+  comm.Sum( &baseq_buffer[0],baseq_buffer.size() );
+}
+
+void ActionWithDistribution::FieldClass::extractBaseQuantity( const unsigned nn, Value* val ){
+  plumed_assert( nn<baseq_nder.size() ); 
+  if( baseq_nder[nn]!=val->getNumberOfDerivatives() ) val->resizeDerivatives(baseq_nder[nn]); 
+
+  val->clearDerivatives();
+  unsigned kk=baseq_starts[nn];
+  val->set( baseq_buffer[kk] ); kk++;
+  for(unsigned i=0;i<val->getNumberOfDerivatives();++i){ val->addDerivative( i, baseq_buffer[kk] ); kk++; }
+  if( (nn+1)==baseq_starts.size() ){ plumed_assert( kk==baseq_buffer.size() ); }
+  else{ plumed_assert( kk==baseq_starts[nn+1] ); }
 }

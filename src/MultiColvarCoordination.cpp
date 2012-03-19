@@ -46,6 +46,7 @@ public:
 // active methods:
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
   void getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& pos);
+  bool isPeriodic(const unsigned nn){ return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarCoordination,"COORDINATIONNUMBER")
@@ -95,7 +96,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
   if(nl_cut>0.0){
      log.printf("  ignoring distances greater than %lf in neighbor list\n",nl_cut); 
   } 
-
+  // Functon is not periodic
+  setNotPeriodic();
   // And check everything has been read in correctly
   checkRead();
 }
