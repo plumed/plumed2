@@ -8,12 +8,12 @@ using namespace PLMD;
 std::string HistogramBead::documentation( bool dir ) {
   std::ostringstream ostr;
   if(dir){
-     ostr<<"\\f$ w(d)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma_d} \\exp\\left( -\\frac{d^2}{2\\sigma_d^2} \\right) \\textrm{d}d \\f$";
-     ostr<<"where \\f$ \\sigma_d=(b_d-a_d)k_d \\f$.  The parameters of the functions are specifed in fractional coordinates using ";
+     ostr<<"\\f$ w(x)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma_d} \\exp\\left( -\\frac{(x'-x)^2}{2\\sigma_x^2} \\right) \\textrm{d}x' \\f$";
+     ostr<<"where \\f$ \\sigma_x=(b_x-a_x)k_x \\f$.  The parameters of the functions are specifed in fractional coordinates using ";
      ostr<<"(XLOWER=\\f$a_x\\f$ XUPPER=\\f$b_x\\f$ XSMEAR=\\f$k_x\\f$ YLOWER=\\f$a_y\\f$ YUPPER=\\f$b_y\\f$ YSMEAR=\\f$k_y\\f$ ZLOWER=\\f$a_z\\f$ ZUPPER=\\f$b_z\\f$ ZSMEAR=\\f$k_z\\f$).";
      ostr<<"If any of the SMEAR keywords are not present then the default \\f$k_x=0.5\\f$ is used in that direction. ";
   } else {
-     ostr<<"\\f$ w(r)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left( -\\frac{r^2}{2\\sigma^2} \\right) \\textrm{d}r \\f$";
+     ostr<<"\\f$ w(r)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left( -\\frac{(r - r')^2}{2\\sigma^2} \\right) \\textrm{d}r' \\f$";
      ostr<<"where \\f$ \\sigma=(b-a)k \\f$.  The parameters of the function are specified using (LOWER=\\f$a\\f$ UPPER=\\f$b\\f$ SMEAR=\\f$k\\f$). ";
      ostr<<"If the SMEAR keyword is not present then by default \\f$k=0.5\\f$.";
   }
@@ -26,19 +26,12 @@ std::string HistogramBead::description() const {
   return ostr.str();
 }
 
-std::string HistogramBead::histodocs( bool dir ) {
+std::string HistogramBead::histodocs() {
   std::ostringstream ostr;
-  if(dir){
-     ostr<<"The range is divided into a discete number of bins and the number of values that fall within each bin is calculated using ";
-     ostr<<"\\f$ w(x)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma_x} \\exp\\left( -\\frac{x^2}{2\\sigma_x^2} \\right) \\textrm{d}x \\f$";
-     ostr<<"where \\f$ \\sigma_x=(b_x-a_x)*k_x \\f$.  The particular range of interest and number of bins are specified using ";
-     ostr<<"(XNBINS=\\f$n\\f$ XLOWER=\\f$a_x\\f$ XUPPER=\\f$b_x\\f$ XSMEAR=\\f$k_x\\f$). If the SMEAR keyword is not present then by default \\f$k=0.5\\f$";
-  } else { 
-     ostr<<"The range is divided into a discete number of bins and the number of values that fall within each bin is calculated using ";
-     ostr<<"\\f$ w(r)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left( -\\frac{r^2}{2\\sigma^2} \\right) \\textrm{d}r \\f$";
-     ostr<<"where \\f$ \\sigma=(b-a)k \\f$.  The particular range of interest and number of bins are specified using ";
-     ostr<<"(NBINS=\\f$n\\f$ LOWER=\\f$a\\f$ UPPER=\\f$b\\f$ SMEAR=\\f$x\\f$). If the SMEAR keyword is not present then by default \\f$k=0.5\\f$";
-  }
+  ostr<<"The range is divided into a discete number of bins and the number of values that fall within each bin is calculated using ";
+  ostr<<"\\f$ w(r)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left( -\\frac{(r'-r)^2}{2\\sigma^2} \\right) \\textrm{d}r' \\f$";
+  ostr<<"where \\f$ \\sigma=(b-a)k \\f$.  The particular range of interest and number of bins are specified using ";
+  ostr<<"(NBINS=\\f$n\\f$ LOWER=\\f$a\\f$ UPPER=\\f$b\\f$ SMEAR=\\f$x\\f$). If the SMEAR keyword is not present then by default \\f$k=0.5\\f$";
   return ostr.str();
 }
 
@@ -84,6 +77,10 @@ void HistogramBead::set( const std::string& params, const std::string& dd, std::
   width=smear*(highb-lowb); init=true;
   if( dd.size()==0 ){ if( data.size()!=0) errormsg="Error reading within"; }
 }
+
+void HistogramBead::set( double l, double h, double w){
+        init=true; lowb=l; highb=h; width=w*(h-l);  
+}      
 
 void HistogramBead::printKeywords( Log& log ) const {
   Keywords hkeys;

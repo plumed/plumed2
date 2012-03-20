@@ -45,7 +45,7 @@ public:
   MultiColvarCoordination(const ActionOptions&);
 // active methods:
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
-  void getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& pos);
+  void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
   bool isPeriodic(const unsigned nn){ return false; }
 };
 
@@ -63,7 +63,7 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.remove("AVERAGE");
   // Use density keywords
-  keys.use("SUBCELL"); 
+  keys.use("SUBCELL"); keys.use("GRADIENT"); 
 }
 
 MultiColvarCoordination::MultiColvarCoordination(const ActionOptions&ao):
@@ -127,19 +127,8 @@ double MultiColvarCoordination::compute( const std::vector<Vector>& pos, std::ve
    return value;
 }
 
-void MultiColvarCoordination::getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& cpos){
-   plumed_assert( cpos.size()==3 );
-   Vector fracp; fracp=getPbc().realToScaled(pos[0]);
-   Vector ff,cc;
-   cpos[0].set(fracp[0]);
-   ff.clear(); ff[0]=1.0; cc=getPbc().realToScaled(ff);
-   for(unsigned i=0;i<3;++i) cpos[0].addDerivative( i, cc[i] );
-   cpos[1].set(fracp[1]);
-   ff.clear(); ff[1]=1.0; cc=getPbc().realToScaled(ff);
-   for(unsigned i=0;i<3;++i) cpos[1].addDerivative( i, cc[i] );
-   cpos[2].set(fracp[2]);
-   ff.clear(); ff[2]=1.0; cc=getPbc().realToScaled(ff);
-   for(unsigned i=0;i<3;++i) cpos[2].addDerivative( i, cc[i] );
+void MultiColvarCoordination::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
+   cpos=pos[0]; deriv[0]=Tensor::identity();
 }
 
 }

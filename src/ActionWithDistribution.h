@@ -6,6 +6,7 @@
 #include "Value.h"
 #include "PlumedException.h"
 #include "DistributionFunctions.h"
+#include "CubicInterpolation.h"
 #include "DynamicList.h"
 #include <vector>
 
@@ -71,10 +72,21 @@ private:
      void extractBaseQuantity( const unsigned nn, Value* val );
    /// Get number of high dimensional derivatives 
      unsigned get_NdX() const ;
+   /// Get number of low dimensional derivatives
+     unsigned get_Ndx() const ;
+   /// Add some stress
+     void addStress( const unsigned ii, const Value& x);
+   /// Add some derivative
+     void addDerivative( const unsigned ii, const unsigned nn, const Value& dx ); 
+   /// Complete the field calculation by doing mpi_sum
+     void gatherField( PlumedCommunicator& comm );
    };
-   // This holds everything for the field
+/// This holds everything for the field
    FieldClass myfield;
-
+/// This holds the interpolator for the field
+   CInterpolation* f_interpolator;
+// This holds the interpolators for the derivatives of the field
+   std::vector<CInterpolation*> df_interpolators;
 /// Calculate if this is a function of the distribution
   void calculateFunctions();
 /// Calculate the field if this is a field
@@ -133,6 +145,8 @@ public:
   virtual void derivedFieldSetup( const double sig )=0;
 /// Set the kkth output of the field 
   virtual void setFieldOutputValue( const unsigned& kk, Value* tmpvalue )=0;
+/// Calculate the contribution of a particular value to the field
+  virtual void calculateFieldContribution( const unsigned& j, const std::vector<double>& hisp, Value* tmpvalue, Value& tmpstress, std::vector<Value>& tmpder )=0;
 };
 
 inline
@@ -159,6 +173,27 @@ inline
 unsigned ActionWithDistribution::FieldClass::get_NdX() const {
   return ndX;
 }
+
+inline
+unsigned ActionWithDistribution::FieldClass::get_Ndx() const {
+  return ndx;
+}
+
+inline
+void ActionWithDistribution::FieldClass::addStress( const unsigned ii, const Value& x){
+  plumed_assert( x.getNumberOfDerivatives()==ndx ); plumed_assert( ii<npoints );
+  grid_buffer[ii*nper]+=x.get(); 
+  for(unsigned k=0;k<ndx;++k) grid_buffer[ ii*nper + k + 1 ]+=x.getDerivative(k); 
+}
+
+inline
+void ActionWithDistribution::FieldClass::addDerivative( const unsigned ii, const unsigned nn, const Value& dx ){
+  plumed_assert( dx.getNumberOfDerivatives()==ndx ); 
+  plumed_assert( ii<npoints && nn<ndX );
+  grid_buffer[ ii*nper + (nn+1)*(1+ndx) ]+=dx.get();
+  for(unsigned k=0;k<ndx;++k) grid_buffer[ ii*nper + (nn+1)*(1+ndx) + k + 1 ]+=dx.getDerivative(k);
+}
+
 
 }
 

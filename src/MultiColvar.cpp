@@ -38,9 +38,10 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.addFlag("AVERAGE",false,"take the average value of these variables and store it in value called average.");
   keys.add("optional","LESS_THAN", "take the number of variables less than the specified target and store it in a value called lt<target>. " + less_than::documentation() );
   keys.add("optional","MORE_THAN", "take the number of variables more than the specified target and store it in a value called gt<target>. " + more_than::documentation() ); 
-  keys.add("optional","HISTOGRAM", "create a discretized histogram of the distribution of collective variables.  " + HistogramBead::histodocs(false) );
+  keys.add("optional","HISTOGRAM", "create a discretized histogram of the distribution of collective variables.  " + HistogramBead::histodocs() );
   keys.add("numbered", "WITHIN", "calculate the number variabels that are within a certain range and store it in a value called between<lowerbound>&<upperbound>. " + within::documentation() );
   keys.reserve("numbered", "SUBCELL", "calculate the average value of the CV within a portion of the box and store it in a value called subcell. " + cvdens::documentation() );
+  keys.reserve("numbered", "GRADIENT", "calcualte the gradient of a CV across the box and store it in value called gradient. " + gradient::documentation() );
   ActionWithDistribution::registerKeywords( keys );
 } 
 
@@ -124,14 +125,15 @@ void MultiColvar::readAtoms( int& natoms ){
 
   // Establish whether or not this is a density ( requires special method )
   std::string dens; 
-  if( keywords.exists("SPECIES") && !keywords.exists("SPECIESA") && !keywords.exists("SPECIESB") ){ dens="density"; }
+  if( keywords.exists("SPECIES") && !keywords.exists("SPECIESA") && !keywords.exists("SPECIESB") ){ dens=" density"; }
 
   // Read CV_DENSITY keywords
   if( keywords.exists("SUBCELL") ){
-      parse("SUBCELL",params); params=params + dens;
+      parse("SUBCELL",params); 
       if( params.size()!=0 ){
+          params=params + dens;
           needsCentralAtomPosition=true; 
-          addDistributionFunction( "subcell", new cvdens(params) );
+          addDistributionFunction( "SUBCELL", new cvdens(params) );
           params.clear();
       } else {
          for(unsigned i=1;;++i){
@@ -139,7 +141,27 @@ void MultiColvar::readAtoms( int& natoms ){
             params=params+dens;
             needsCentralAtomPosition=true;
             std::string num; Tools::convert(i, num);
-            addDistributionFunction( "subcell"+num, new cvdens(params) );
+            addDistributionFunction( "SUBCELL"+num, new cvdens(params) );
+            params.clear();
+         }
+      }
+  } 
+
+  // Read GRADIENT keywords
+  if( keywords.exists("GRADIENT") ){
+      parse("GRADIENT",params); 
+      if( params.size()!=0 ){
+          params=params + dens;
+          needsCentralAtomPosition=true;
+          addDistributionFunction( "GRADIENT", new gradient(params) );
+          params.clear();
+      } else {
+         for(unsigned i=1;;++i){
+            if( !parseNumbered("GRADIENT",i,params) ) break;
+            params=params+dens;
+            needsCentralAtomPosition=true;
+            std::string num; Tools::convert(i, num);
+            addDistributionFunction( "GRADIENT"+num, new gradient(params) );
             params.clear();
          }
       }
@@ -331,7 +353,7 @@ void MultiColvar::requestAtoms(){
    }
 }
 
-void MultiColvar::getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& cpos){
+void MultiColvar::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
    plumed_massert(0,"gradient and related cv distribution functions are not available in this colvar");
 }
 
@@ -340,7 +362,7 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
 
   if ( natoms==0 ) return;   // Do nothing if there are no active atoms in the colvar
   // Retrieve the atoms
-  Tensor vir; std::vector<Vector> pos(natoms), der(natoms); 
+  Tensor vir; std::vector<Vector> pos(natoms), der(natoms); vir.clear();
   for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); der.clear(); }
   
   // Compute the derivatives
@@ -351,6 +373,28 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
   if(stopcondition){
      plumed_massert(isTimeForNeighborListUpdate(), "found stop but not during neighbor list step");
      return;
+  }
+
+  if(needsCentralAtomPosition){
+     if( aux.size()!=3 ){
+        aux.resize(3);
+        for(unsigned i=0;i<3;++i) aux[i].resizeDerivatives( value_in->getNumberOfDerivatives() );
+     }
+     std::vector<Tensor> deriv(natoms); Vector cpos, fpos;
+     getCentralAtom( pos, cpos, deriv );
+     fpos=getPbc().realToScaled( cpos );
+     aux[0].set(fpos[0]);
+     aux[1].set(fpos[1]);
+     aux[2].set(fpos[2]);
+     Tensor dbox, ibox( getPbc().getInvBox().transpose() );
+     for(unsigned i=0;i<natoms;++i){
+         dbox=matmul( ibox, deriv[i] );
+         for(unsigned j=0;j<3;++j){
+             aux[0].addDerivative( 3*i+j, dbox(0,j) );
+             aux[1].addDerivative( 3*i+j, dbox(1,j) );
+             aux[2].addDerivative( 3*i+j, dbox(2,j) );
+         }
+     }
   }
 
   // Put all this in the value we are passing back
@@ -371,14 +415,14 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
 
   // And store the value
   value_in->set(value);
+}
 
-  if(needsCentralAtomPosition){
-     if( aux.size()!=3 ){ 
-        aux.resize(3); 
-        for(unsigned i=0;i<3;++i) aux[i].resizeDerivatives( value_in->getNumberOfDerivatives() );
-     }
-     getCentralAtom( pos, aux ); 
-  }
+void MultiColvar::calculateFieldContribution( const unsigned& j, const std::vector<double>& at, Value* value_in, Value& stress, std::vector<Value>& der ){
+  plumed_assert(at.size()==1 && der.size()==1 );
+
+  double dd, ss; dd=at[0]-value_in->get(); ss=fnorm*exp( -dd*dd/ fsigma2 );
+  stress.set( ss ); stress.addDerivative( 0, ( dd / fsigma2 )*ss );
+  der[0].set( -( dd / fsigma2 )*ss ); der[0].addDerivative( 0, ss*( ( dd*dd/fsigma4 ) + 1 ) );
 }
 
 void MultiColvar::mergeDerivatives( const unsigned j, Value* value_in, Value* value_out ){    

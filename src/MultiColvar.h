@@ -222,11 +222,13 @@ public:
 /// And a virtual function which actually computes the colvar
   virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0; 
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
-  virtual void getCentralAtom( const std::vector<Vector>& pos, std::vector<Value>& pos); 
+  virtual void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ); 
 /// Setup everything that needs to be setup for field cvs
   void derivedFieldSetup( const double sigma );
 /// Set the output values for the field (important if we to apply forces on fields)
   void setFieldOutputValue( const unsigned& j, Value* value_in );
+/// Calculate the contribution to the field at the point thisp
+  void calculateFieldContribution( const unsigned& j, const std::vector<double>& thisp, Value* tmpvalue, Value& tmpstress, std::vector<Value>& tmpder );
 };
 
 inline

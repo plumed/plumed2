@@ -41,10 +41,12 @@ protected:
   void setValue( const unsigned nn, const double f );
   void chainRule( const unsigned nn, const double f );
   void multiplyValue( const unsigned nn, Value* val );
+  unsigned getNumberOfAccumulators() const ;
+  Value* getPntrToValue( const unsigned nn );
   Value* getPntrToAccumulator( const unsigned nn );
 public:
   DistributionFunction( const std::string& parameters );
-  ~DistributionFunction();
+  virtual ~DistributionFunction();
   void setNumberOfDerivatives( const unsigned nder );
   void reset();
   void mergeDerivatives( const unsigned kk, ActionWithDistribution& action );
@@ -80,6 +82,18 @@ std::string DistributionFunction::errorMessage() const {
 inline
 bool DistributionFunction::check() const {
   return fine;
+}
+
+inline
+unsigned DistributionFunction::getNumberOfAccumulators() const {
+  plumed_assert( thesevalues.size()==accumulators.size() );
+  return thesevalues.size();
+}
+
+inline
+Value* DistributionFunction::getPntrToValue( const unsigned nn ){
+  plumed_assert( nn<accumulators.size() );
+  return thesevalues[nn];
 }
 
 inline
@@ -183,6 +197,22 @@ public:
   cvdens( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out ); 
+  std::string message();
+  void printKeywords( Log& log );
+  std::string getLabel();
+};
+
+class gradient : public DistributionFunction {
+private:
+  bool isDensity;
+  std::vector<unsigned> dir, bounds;
+  std::vector<Value> final_bin;
+  std::vector<HistogramBead> beads;
+public:
+  static std::string documentation();
+  gradient( const std::string& parameters );
+  void calculate( Value* value_in, std::vector<Value>& aux );
+  void finish( Value* value_out );
   std::string message();
   void printKeywords( Log& log );
   std::string getLabel();

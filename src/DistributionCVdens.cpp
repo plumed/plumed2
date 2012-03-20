@@ -27,6 +27,7 @@ DistributionFunction(parameters)
   isDensity=(parameters.find("density")!=std::string::npos);
   addAccumulator( true );    // This holds the numerator - value of cv times "location in box" 
   addAccumulator( true );    // This holds the denominator - number of atoms in box
+  addAccumulator( true );    // This holds a tempory value during the calculation 
 }
 
 std::string cvdens::message(){
@@ -75,11 +76,13 @@ void cvdens::calculate( Value* value_in, std::vector<Value>& aux ){
   double f, df;
   copyValue( 0, value_in );
   for(unsigned i=0;i<dir.size();++i){
+     copyValue( 2, &aux[ dir[i] ] ); 
      f=beads[i].calculate( aux[ dir[i] ].get(), df );
-     aux[ dir[i] ].chainRule(df); aux[ dir[i] ].set(f);
-     multiplyValue( 0, &aux[ dir[i] ] );
-     if( i==0 ){ copyValue( 1, &aux[ dir[i] ] ); }
-     else{ multiplyValue( 1, &aux[ dir[i] ] ); }
+     getPntrToValue(2)->chainRule(df); getPntrToValue(2)->set(f);
+     multiplyValue( 0, getPntrToValue(2) );
+     if(i==0){ copyValue( 1, getPntrToValue(2) ); } 
+     else{ multiplyValue( 1, getPntrToValue(2) ); }
+     getPntrToValue(2)->clearDerivatives();
   }
 }
 

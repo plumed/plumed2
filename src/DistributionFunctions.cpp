@@ -48,6 +48,7 @@ void DistributionFunction::extractDerivatives( const unsigned nn, Value* value_o
   plumed_massert( nn<accumulators.size(), "not enough accumulators in distribution function");
   plumed_massert( hasDeriv[nn], "trying to copy derivatives from an accumulator with no derivatives");
   plumed_assert( accumulators[nn]->getNumberOfDerivatives()==value_out->getNumberOfDerivatives() );
+  value_out->clearDerivatives();
   for(unsigned i=0;i<value_out->getNumberOfDerivatives();++i) value_out->addDerivative( i, accumulators[nn]->getDerivative(i) );
 }
 

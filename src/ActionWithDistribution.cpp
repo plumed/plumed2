@@ -1,4 +1,5 @@
 #include "ActionWithDistribution.h"
+#include "MultiColvar.h"
 
 using namespace std;
 using namespace PLMD;
@@ -17,13 +18,15 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   read(false),
   all_values(true),
   use_field(false),
-  serial(true),
+  serial(false),
   updateFreq(0),
   lastUpdate(0),
   reduceAtNextStep(false),
-  tolerance(0)
+  tolerance(0),
+  f_interpolator(NULL)
 {
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
+  else serial=true;
   if(serial)log.printf("  doing calculation in serial\n");
   if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
   if( keywords.exists("NL_TOL") ){
@@ -37,11 +40,24 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
 }
 
 ActionWithDistribution::~ActionWithDistribution(){
-  for(unsigned i=0;i<functions.size();++i) delete functions[i];
+  delete f_interpolator;
+  if( !use_field ){
+     for(unsigned i=0;i<functions.size();++i) delete functions[i];
+  } else {
+     for(unsigned i=0;i<df_interpolators.size();++i) delete df_interpolators[i]; 
+  }
 }
 
 void ActionWithDistribution::addDistributionFunction( std::string name, DistributionFunction* fun ){
   if(all_values) all_values=false;  // Possibly will add functionality to delete all values here
+
+  // Some sanity checks
+  gradient* gfun=dynamic_cast<gradient*>(fun);
+  cvdens* cvfun=dynamic_cast<cvdens*>(fun);
+  if( gfun || cvfun ){
+      MultiColvar* mcheck=dynamic_cast<MultiColvar*>(this);
+      if(!mcheck) plumed_massert(mcheck,"cannot do gradient or cvdens if this is not a MultiColvar");
+  } 
 
   // Check function is good 
   if( !fun->check() ){
@@ -131,6 +147,17 @@ void ActionWithDistribution::setupField( unsigned ldim ){
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
   plumed_massert(a,"can only do fields on ActionsWithValue");
   myfield.setup( getNumberOfFunctionsInDistribution(), np, a->getNumberOfComponents(), ldim );
+
+  // Setup the interpolators
+  if( ldim==1 ){
+      f_interpolator=new InterpolateCubic( nspline, min, max );
+      for(unsigned i=0;i<a->getNumberOfComponents();++i) df_interpolators.push_back( new InterpolateCubic( nspline, min, max ) );
+  } else if( ldim==2 ) {
+      f_interpolator=new InterpolateBicubic( nspline, min, max );
+      for(unsigned i=0;i<a->getNumberOfComponents();++i) df_interpolators.push_back( new InterpolateBicubic( nspline, min, max ) );
+  } else {
+      plumed_assert(0);
+  }
 }
 
 void ActionWithDistribution::prepare(){
@@ -210,13 +237,53 @@ void ActionWithDistribution::calculateField(){
       tmpvalue->clearDerivatives();
   }
   if(!serial){ myfield.gatherBaseQuantities( comm ); }
-  // Set the output values for this quantity (we use these to chain rule)
+  // Set the output values for this quantity (we use these to chain rule forces)
   for(unsigned i=0;i<myfield.get_NdX();++i){
      unsigned nder=getThisFunctionsNumberOfDerivatives(i);
      if( tmpvalue->getNumberOfDerivatives()!=nder ){ tmpvalue->resizeDerivatives(nder); }
      myfield.extractBaseQuantity( i, tmpvalue );
      setFieldOutputValue( i, tmpvalue );
   }
+
+  std::vector<double> thisp( myfield.get_Ndx() ); bool keep;
+  Value tmpstress; tmpstress.resizeDerivatives( myfield.get_Ndx() );
+  std::vector<Value> tmpder; tmpder.resize( myfield.get_NdX() );
+  for(unsigned i=0;i<myfield.get_NdX();++i) tmpder[i].resizeDerivatives( myfield.get_Ndx() );
+
+  // Now loop over the spline points
+  unsigned ik=0;
+  for(unsigned i=0;i<f_interpolator->getNumberOfSplinePoints();++i){
+      f_interpolator->getSplinePoint(i,thisp);
+      // Calculate the contributions of all the active colvars
+      if( updateFreq>0 ){ keep=false; } else { keep=true; }
+      for(unsigned j=0;j<members.getNumberActive();++j){
+          if( (ik++)%stride!=rank ) continue;  // Ensures we parallelize the double loop over nodes
+
+          kk=members[j];
+          unsigned nder=getThisFunctionsNumberOfDerivatives(j);
+          if( tmpvalue->getNumberOfDerivatives()!=nder ){ tmpvalue->resizeDerivatives(nder); }
+          myfield.extractBaseQuantity( i, tmpvalue );
+          // Calculate the field at point i that arises because of the jth component of the field
+          calculateFieldContribution( j, thisp, tmpvalue, tmpstress, tmpder );
+          if( tmpstress.get()>tolerance ){
+              myfield.addStress( i, tmpstress ); keep=true;
+              for(unsigned k=0;k<myfield.get_NdX();++k) myfield.addDerivative( i, k, tmpder[k] );
+          }
+          // Reset all the tempory values we have used to do this calculation
+          tmpvalue->clearDerivatives(); tmpstress.clearDerivatives();
+          for(unsigned k=0;k<myfield.get_NdX();++k) tmpder[k].clearDerivatives();
+      }
+      // If the contribution of this quantity is very small at neighbour list time ignore it
+      // untill next neighbour list time
+      if( reduceAtNextStep && !keep ){ members.deactivate(kk); deactivate(kk); }
+  }
+  // Update the dynamic list 
+  if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
+  // Accumulate the field
+  if(!serial) myfield.gatherField( comm );
+
+  // And set up the interpololators  
+
   delete tmpvalue;
 }
 
@@ -268,12 +335,13 @@ void ActionWithDistribution::calculateFunctions(){
   if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
   // MPI Gather everything
   if(!serial){ 
+     for(unsigned i=0;i<buffer.size();++i) buffer[i]=0.0;
      unsigned bufsize=0;
-     for(unsigned i=0;i<functions.size();++i) functions[i]->copyDataToBuffers( bufsize, buffer );
+     for(unsigned i=0;i<functions.size();++i) functions[i]->copyDataToBuffers( bufsize, buffer ); 
      plumed_assert( bufsize==buffer.size() ); 
      comm.Sum( &buffer[0],buffer.size() ); 
      bufsize=0;
-     for(unsigned i=0;i<functions.size();++i) functions[i]->retrieveDataFromBuffers( bufsize, buffer );
+     for(unsigned i=0;i<functions.size();++i) functions[i]->retrieveDataFromBuffers( bufsize, buffer ); 
      plumed_assert( bufsize==buffer.size() );
   }
 
@@ -347,3 +415,8 @@ void ActionWithDistribution::FieldClass::extractBaseQuantity( const unsigned nn,
   if( (nn+1)==baseq_starts.size() ){ plumed_assert( kk==baseq_buffer.size() ); }
   else{ plumed_assert( kk==baseq_starts[nn+1] ); }
 }
+
+void ActionWithDistribution::FieldClass::gatherField( PlumedCommunicator& comm ){
+  comm.Sum( &grid_buffer[0],grid_buffer.size() );
+}
+

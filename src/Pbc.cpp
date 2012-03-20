@@ -89,4 +89,9 @@ const Tensor& Pbc::getBox()const{
   return box;
 }
 
+const Tensor& Pbc::getInvBox()const{
+  return invBox;
+}
+
+
 

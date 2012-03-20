@@ -23,7 +23,7 @@ private:
 	double width;
 public:
         static std::string documentation( bool dir );
-        static std::string histodocs( bool dir );
+        static std::string histodocs();
         static void generateBins( const std::string& params, const std::string& dd, std::vector<std::string>& bins );  
 	HistogramBead();
         std::string description() const ;
@@ -40,11 +40,6 @@ inline
 HistogramBead::HistogramBead():
 init(false)
 {		
-} 	
-
-inline
-void HistogramBead::set( double l, double h, double w){
-	init=true; lowb=l; highb=h; width=w*(h-l); 
 }
 
 inline
