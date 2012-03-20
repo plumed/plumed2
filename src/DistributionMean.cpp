@@ -16,6 +16,14 @@ std::string mean::message(){
   return ostr.str();
 }
 
+void mean::printKeywords( Log& log ){
+  plumed_massert( 0, "it should be impossible to get here");
+}
+
+std::string mean::getLabel(){
+  return "average";
+}
+
 void mean::calculate( Value* value_in, std::vector<Value>& aux ){
   copyValue( 0, value_in ); 
   setValue( 1, 1.0 );

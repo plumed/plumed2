@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <string>
+#include "Keywords.h"
 #include "PlumedException.h"
 
 namespace PLMD {
@@ -28,9 +29,11 @@ public:
   static std::string documentation();
   SwitchingFunction();
   void set(int nn,int mm,double r_0,double d_0);
-  void set(const std::string& definition);
+  void set(const std::string& definition, std::string& errormsg);
   std::string description() const ;
   double calculate(double x,double&df)const;
+  double get_r0() const;
+  void printKeywords( Log& log ) const ;
 };
 
 }

@@ -11,7 +11,9 @@ std::string within::documentation(){
 within::within( const std::string& parameters ) :
 DistributionFunction(parameters)
 { 
-  hist.set( parameters, "" );
+  std::string errormsg;
+  hist.set( parameters, "", errormsg );
+  if( errormsg.size()!=0 ) error( errormsg );
   addAccumulator( true );
 }
 
@@ -19,6 +21,17 @@ std::string within::message(){
   std::ostringstream ostr;
   ostr<<"number of values "<<hist.description(); 
   return ostr.str();
+}
+
+void within::printKeywords( Log& log ){
+  hist.printKeywords( log );
+}
+
+std::string within::getLabel(){
+  std::string lb, ub;
+  Tools::convert( hist.getlowb(), lb );
+  Tools::convert( hist.getbigb(), ub );
+  return "between" + lb + "&" + ub;
 }
 
 void within::calculate( Value* value_in, std::vector<Value>& aux ){

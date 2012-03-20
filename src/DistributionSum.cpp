@@ -16,6 +16,14 @@ std::string sum::message(){
   return ostr.str();
 }
 
+void sum::printKeywords( Log& log ){
+  plumed_massert( 0, "it should be impossible to get here");
+}
+
+std::string sum::getLabel(){
+  return "sum";
+}
+
 void sum::calculate( Value* value_in, std::vector<Value>& aux ){
   copyValue( 0, value_in ); 
   setValue( 1, 1.0 );

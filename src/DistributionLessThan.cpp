@@ -11,7 +11,9 @@ std::string less_than::documentation(){
 less_than::less_than( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  sf.set( parameters ); 
+  std::string errormsg;
+  sf.set( parameters, errormsg ); 
+  if( errormsg.size()!=0 ) error( errormsg ); 
   addAccumulator( true );
 }
 
@@ -19,6 +21,16 @@ std::string less_than::message(){
   std::ostringstream ostr;
   ostr<<"number of values less than "<<sf.description();
   return ostr.str();
+}
+
+void less_than::printKeywords( Log& log ){
+  sf.printKeywords( log );
+}
+
+std::string less_than::getLabel(){
+  std::string vv;
+  Tools::convert( sf.get_r0(), vv );
+  return "lt" + vv;
 }
 
 void less_than::calculate( Value* value_in, std::vector<Value>& aux ){

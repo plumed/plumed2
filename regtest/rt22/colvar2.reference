@@ -1,4 +1,4 @@
-#! FIELDS time c1.subcell
+#! FIELDS time c1.averageForYin0&0.5
  0.000000  1.20277
  0.050000  1.20462
  0.100000  1.21685

@@ -26,6 +26,16 @@ std::string min::message(){
   return ostr.str();
 }
 
+void min::printKeywords( Log& log ){
+  Keywords mkeys; 
+  mkeys.add("compulsory","BETA","the value of beta for the equation in the manual");
+  mkeys.print(log);
+}
+
+std::string min::getLabel(){
+  return "min";
+}
+
 void min::calculate( Value* value_in, std::vector<Value>& aux ){
   copyValue( 0, value_in );
   double p, df, tmp; p=value_in->get();

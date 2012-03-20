@@ -79,6 +79,8 @@ private:
   void calculateFunctions();
 /// Calculate the field if this is a field
   void calculateField();
+/// Errors for input in field
+  void field_error( const std::string msg );
 protected:
 /// Add a distribution function to the list (this routine must be called after construction of ActionWithValue)
   void addDistributionFunction( std::string name, DistributionFunction* fun );

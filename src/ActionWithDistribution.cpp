@@ -44,11 +44,16 @@ void ActionWithDistribution::addDistributionFunction( std::string name, Distribu
   if(all_values) all_values=false;  // Possibly will add functionality to delete all values here
 
   // Check function is good 
-  if( !fun->check() ) error( fun->errorMessage() );
+  if( !fun->check() ){
+     log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",name.c_str(), getName().c_str(), getLabel().c_str(), ( fun->errorMessage() ).c_str() );
+     fun->printKeywords( log ); 
+     plumed_merror("ERROR for keyword " + name + " in action "  + getName() + " with label " + getLabel() + " : " + fun->errorMessage() );
+     exit(1);
+  }
 
   // Add a value
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  a->addComponentWithDerivatives( name );
+  a->addComponentWithDerivatives( fun->getLabel() );
   unsigned fno=a->getNumberOfComponents()-1;
   final_values.push_back( a->copyOutput( fno ) );
 
@@ -76,15 +81,53 @@ void ActionWithDistribution::requestDistribution(){
 }
 
 void ActionWithDistribution::setupField( unsigned ldim ){
+  plumed_massert( keywords.exists("FIELD"), "you have chosen to use fields but have not written documentation for the FIELD keyword"); 
   plumed_massert( ldim<=2 , "fields don't work with more than two dimensions" );
+  
+  std::string fieldin;
+  parse("FIELD",fieldin);
+  if( fieldin.size()==0 ) return ;
   all_values=false; use_field=true;
-   
+  std::vector<std::string> data=Tools::getWords(fieldin);
+
+  std::vector<unsigned> nspline; std::vector<double> min,max; double sigma;
+  bool found_s=Tools::parseVector( data,"NSPLINE", nspline ); 
+  if(!found_s) field_error("did not find NPLINE keyword");
+  if(nspline.size()!=ldim){
+     std::string ll,ww; 
+     Tools::convert(ldim,ll);
+     Tools::convert(nspline.size(),ww);
+     field_error("found " + ww + " values for NSPLINE when expecting only " + ll);
+  }
+  bool found_min=Tools::parseVector( data, "MIN", min );
+  if(!found_min) field_error("did not find MIN keyword");
+  if(min.size()!=ldim){ 
+     std::string ll,ww; 
+     Tools::convert(ldim,ll);
+     Tools::convert(min.size(),ww);
+     field_error("found " + ww + " values for MIN when expecting only " + ll);
+  }
+  bool found_max=Tools::parseVector( data, "MAX", max );
+  if(!found_max) field_error("did not find MAX keyword");
+  if(max.size()!=ldim){
+     std::string ll,ww;
+     Tools::convert(ldim,ll);
+     Tools::convert(max.size(),ww);
+     field_error("found " + ww + " values for MAX when expecting only " + ll);
+  }
+  bool found_sigma=Tools::parse( data, "SIGMA", sigma );
+  if(!found_sigma) field_error("did not find SIGMA keyword");
+
+  if( data.size()!=0 ){
+      std::string err="found the following rogue keywords : ";
+      for(unsigned i=0;i<data.size();++i) err=err + data[i] + ", ";
+      field_error(err); 
+  }
   // Setup the field stuff in derived class
-  double sigma=0.01;
   derivedFieldSetup( sigma );
 
   // Setup the field
-  unsigned np; 
+  unsigned np=1; for(unsigned i=0;i<nspline.size();++i) np*=nspline[i]; 
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
   plumed_massert(a,"can only do fields on ActionsWithValue");
   myfield.setup( getNumberOfFunctionsInDistribution(), np, a->getNumberOfComponents(), ldim );
@@ -242,6 +285,19 @@ void ActionWithDistribution::calculateFunctions(){
 
 void ActionWithDistribution::retrieveDomain( const unsigned nn, double& min, double& max ){
   plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithDistribution can retrieve the domain");
+}
+
+void ActionWithDistribution::field_error( const std::string msg ){
+  Keywords field_keys;
+  field_keys.add("compulsory","NPSPLINE","the number of points in each direction at which to calculate the value of the field");
+  field_keys.add("compulsory","MIN","the minimum value at which the value of the field should be calculated in each direction");
+  field_keys.add("compulsory","MAX","the maximum value at which the value of the field should be calculated in each direction");
+  field_keys.add("compulsory","SIGMA","the value of the sigma parameter in the field");
+
+  log.printf("ERROR for keyword FIELD in action %s with label %s : %s \n \n",getName().c_str(), getLabel().c_str(), msg.c_str() );
+  field_keys.print( log );
+  plumed_merror("ERROR for keyword FIELD in action "  + getName() + " with label " + getLabel() + " : " + msg );
+  exit(1); 
 }
 
 void ActionWithDistribution::FieldClass::setup( const unsigned nfunc, const unsigned np, const unsigned D, const unsigned d ){

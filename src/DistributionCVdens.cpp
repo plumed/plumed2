@@ -15,13 +15,14 @@ std::string cvdens::documentation(){
 cvdens::cvdens( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  HistogramBead xbin; xbin.set(parameters, "X"); 
+  std::string errors;
+  HistogramBead xbin; xbin.set(parameters, "X", errors); 
   if ( xbin.hasBeenSet() ){ beads.push_back(xbin); dir.push_back(0); }
-  HistogramBead ybin; ybin.set(parameters, "Y");
+  HistogramBead ybin; ybin.set(parameters, "Y", errors);
   if ( ybin.hasBeenSet() ){ beads.push_back(ybin); dir.push_back(1); }
-  HistogramBead zbin; zbin.set(parameters, "Z");
+  HistogramBead zbin; zbin.set(parameters, "Z", errors);
   if ( zbin.hasBeenSet() ){ beads.push_back(zbin); dir.push_back(2); }  
-  plumed_assert( beads.size()>=1 );
+  if( beads.size()==0 ) error("no subcell has been specified");
 
   isDensity=(parameters.find("density")!=std::string::npos);
   addAccumulator( true );    // This holds the numerator - value of cv times "location in box" 
@@ -38,6 +39,34 @@ std::string cvdens::message(){
      if( dir.size()>1 && i!=(dir.size()-1) ) ostr<<", "; 
   }
   return ostr.str();
+}
+
+void cvdens::printKeywords( Log& log ){
+  Keywords dkeys;
+  dkeys.add("optional","XLOWER","the lower boundary in x of the subcell in fractional coordinates.  If this keyword is absent then the lower boundary is placed at 0.0"); 
+  dkeys.add("optional","XUPPER","the upper boundary in x of the subcell in fractional coordinates.  If this keyword is absent then the upper boundary is placed at 1.0");
+  dkeys.add("optional","XSMEAR","(default=0.5) the width of the Gaussian that is used to smear the density in the x direction");
+  dkeys.add("optional","YLOWER","the lower boundary in y of the subcell in fractional coordinates.  If this keyword is absent then the lower boundary is placed at 0.0");
+  dkeys.add("optional","YUPPER","the upper boundary in y of the subcell in fractional coordinates.  If this keyword is absent then the upper boundary is placed at 1.0");
+  dkeys.add("optional","YSMEAR","(default=0.5) the width of the Gaussian that is used to smear the density in the y direction");
+  dkeys.add("optional","ZLOWER","the lower boundary in z of the subcell in fractional coordinates.  If this keyword is absent then the lower boundary is placed at 0.0");
+  dkeys.add("optional","ZUPPER","the upper boundary in z of the subcell in fractional coordinates.  If this keyword is absent then the upper boundary is placed at 1.0");
+  dkeys.add("optional","ZSMEAR","(default=0.5) the width of the Gaussian that is used to smear the density in the z direction"); 
+  dkeys.print(log);
+}
+
+std::string cvdens::getLabel(){
+  std::string lb,ub,lab;
+  if(isDensity) lab = "densityFor";
+  else lab = "averageFor";
+  for(unsigned i=0;i<dir.size();++i){
+     Tools::convert( beads[i].getlowb(),  lb ); 
+     Tools::convert( beads[i].getbigb(), ub );
+     if(dir[i]==0) lab=lab + "Xin" + lb +"&" + ub; 
+     if(dir[i]==1) lab=lab + "Yin" + lb +"&" + ub;
+     if(dir[i]==2) lab=lab + "Zin" + lb +"&" + ub;
+  }
+  return lab;
 }
 
 void cvdens::calculate( Value* value_in, std::vector<Value>& aux ){

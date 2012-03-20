@@ -68,19 +68,27 @@ void HistogramBead::generateBins( const std::string& params, const std::string& 
   if( dd.size()==0 ) plumed_massert(data.size()==0,"Error reading histogram"); 
 }
 
-void HistogramBead::set( const std::string& params, const std::string& dd ){
+void HistogramBead::set( const std::string& params, const std::string& dd, std::string& errormsg ){
   if( dd.size()!=0 && params.find(dd)==std::string::npos) return;
   std::vector<std::string> data=Tools::getWords(params);
   plumed_assert(data.size()>=1);
 
   double smear;
   bool found_r=Tools::parse(data,dd+"LOWER",lowb);
-  plumed_massert(found_r,"Lower bound for within not specified");
+  if( !found_r ) errormsg="Lower bound has not been specified use LOWER";
   found_r=Tools::parse(data,dd+"UPPER",highb);
-  plumed_massert(found_r,"Lower bound for within not specified");
-  plumed_massert(lowb<highb,"Range specification is dubious");
+  if( !found_r ) errormsg="Upper bound has not been specified use UPPER"; 
+  if( lowb>=highb ) errormsg="Lower bound is higher than upper bound"; 
   
   smear=0.5; bool found_b=Tools::parse(data,dd+"SMEAR",smear);
   width=smear*(highb-lowb); init=true;
-  if( dd.size()==0 ) plumed_massert(data.size()==0,"Error reading within"); 
+  if( dd.size()==0 ){ if( data.size()!=0) errormsg="Error reading within"; }
+}
+
+void HistogramBead::printKeywords( Log& log ) const {
+  Keywords hkeys;
+  hkeys.add("compulsory","LOWER","the lower boundary for this particular bin");
+  hkeys.add("compulsory","UPPER","the upper boundary for this particular bin");
+  hkeys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution"); 
+  hkeys.print( log );
 }

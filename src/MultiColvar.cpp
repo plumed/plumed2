@@ -32,6 +32,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                   "of the atoms specifies using SPECIESB is within the specified cutoff");
   keys.reserve("atoms","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
+  keys.add("optional","FIELD","create a field cv from these collective variables.");
   keys.add("optional","MIN","calculate the minimum value and store it in a value called min. " + min::documentation() );
 //  keys.add("optional","MAX", "take the maximum value from these variables");
   keys.addFlag("AVERAGE",false,"take the average value of these variables and store it in value called average.");
@@ -74,31 +75,25 @@ void MultiColvar::readAtoms( int& natoms ){
   else dothis=false;
   if( dothis ){
      Tools::convert(getNumberOfFunctionsInDistribution(),params);
-     addDistributionFunction( "average", new mean(params) );
+     addDistributionFunction("AVERAGE", new mean(params) );
      params.clear();
   }
   // Read MIN keyword
   if( keywords.exists("MIN") ) parse("MIN",params);
   if( params.size()!=0 ){
-     addDistributionFunction( "min", new min(params) );
+     addDistributionFunction("MIN", new min(params) );
      params.clear();
   }
   // Read Less_THAN keyword
   if( keywords.exists("LESS_THAN") ) parse("LESS_THAN",params);
   if( params.size()!=0 ){
-     std::vector<std::string> data=Tools::getWords(params);
-     std::string r0;  
-     if( !Tools::parse(data,"R_0",r0) ) error("Did not find R_0 parameter in switching function definition for LESS_THAN");
-     addDistributionFunction( "lt" + r0, new less_than(params) );
+     addDistributionFunction("LESS_THAN", new less_than(params) );
      params.clear();
   }
   // Read MORE_THAN keyword
   if( keywords.exists("MORE_THAN") ) parse("MORE_THAN",params);
   if( params.size()!=0 ){
-     std::vector<std::string> data=Tools::getWords(params);     
-     std::string r0; 
-     if( !Tools::parse(data,"R_0",r0) ) error("Did not find R_0 parameter in switching function definition for MORE_THAN");
-     addDistributionFunction( "gt" + r0, new more_than(params) );
+     addDistributionFunction("MORE_THAN", new more_than(params) );
      params.clear();
   }
   // Read HISTOGRAM keyword
@@ -107,10 +102,7 @@ void MultiColvar::readAtoms( int& natoms ){
        std::vector<std::string> bins;
        HistogramBead::generateBins( params, "", bins );
        for(unsigned i=0;i<bins.size();++i){
-           std::vector<std::string> data=Tools::getWords(bins[i]); std::string lowb,upb;
-           if( !Tools::parse(data,"LOWER",lowb) ) error("Lower bound for WITHIN not found");
-           if( !Tools::parse(data,"UPPER",upb) ) error("Upper bound for WITHIN not found");
-           addDistributionFunction( "between" + lowb + "&" + upb, new within( bins[i] ) );
+           addDistributionFunction( "HISTOGRAM", new within( bins[i] ) );
        }
        params.clear();
   }
@@ -118,18 +110,13 @@ void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("WITHIN") ){
      parse("WITHIN",params);
      if( params.size()!=0 ){
-         std::vector<std::string> data=Tools::getWords(params); std::string lowb,upb; 
-         if( !Tools::parse(data,"LOWER",lowb) ) error("Lower bound for WITHIN not found");
-         if( !Tools::parse(data,"UPPER",upb) ) error("Upper bound for WITHIN not found");
-         addDistributionFunction( "between" + lowb + "&" + upb, new within(params) );
+         addDistributionFunction( "WITHIN", new within(params) );
          params.clear();
      } else if( keywords.exists("WITHIN") ){
          for(unsigned i=1;;++i){
             if( !parseNumbered("WITHIN",i,params) ) break;
-            std::vector<std::string> data=Tools::getWords(params); std::string lowb,upb;
-            if( !Tools::parse(data,"LOWER",lowb) ) error("Lower bound for WITHIN not found");
-            if( !Tools::parse(data,"UPPER",upb) ) error("Upper bound for WITHIN not found");
-            addDistributionFunction( "between" + lowb + "&" + upb, new within(params) );
+            std::string ss; Tools::convert(i,ss);
+            addDistributionFunction( "WITHIN" + ss, new within(params) );
             params.clear();
          }
      }

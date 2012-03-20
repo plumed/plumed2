@@ -48,8 +48,6 @@ private:
   std::map<std::string,std::string> numdefs;
 /// Print the documentation for the jth keyword in html
   void print_html_item( const unsigned& j ) const;
-/// Print the documentation to the log file (used by PLMD::Action::error)
-  void print( Log& log ) const ;
 /// Print a particular keyword
   void printKeyword( const unsigned& j, Log& log ) const ;
 /// find out whether flag key is on or off by default.
@@ -61,6 +59,8 @@ private:
 /// Return the number of defined keywords 
   unsigned size() const;
 public:
+/// Print the documentation to the log file (used by PLMD::Action::error)
+  void print( Log& log ) const ;
 /// Reserve a keyword 
   void reserve( const std::string t, const std::string k, const std::string d );
 /// Use one of the reserved keywords

@@ -1,4 +1,4 @@
-#! FIELDS time d1.subcell
+#! FIELDS time d1.densityForXin0&0.5
  0.000000 42.78380
  0.050000 42.77599
  0.100000 42.75937

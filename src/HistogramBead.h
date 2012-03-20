@@ -5,6 +5,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include "Keywords.h"
 
 namespace PLMD {
 
@@ -27,11 +28,12 @@ public:
 	HistogramBead();
         std::string description() const ;
         bool hasBeenSet() const;
-        void set(const std::string& params, const std::string& dd);
+        void set(const std::string& params, const std::string& dd, std::string& errormsg);
 	void set(double l, double h, double w);
 	double calculate(double x, double&df) const;
 	double getlowb() const ;
 	double getbigb() const ;
+	void printKeywords(Log& log) const;
 };	
 
 inline

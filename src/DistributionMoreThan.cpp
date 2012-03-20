@@ -12,7 +12,9 @@ std::string more_than::documentation(){
 more_than::more_than( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  sf.set( parameters );
+  std::string errormsg;
+  sf.set( parameters, errormsg );
+  if( errormsg.size()!=0 ) error( errormsg );
   addAccumulator( true );
 }
 
@@ -20,6 +22,16 @@ std::string more_than::message(){
   std::ostringstream ostr;
   ostr<<"number of values more than "<<sf.description();
   return ostr.str();
+}
+
+void more_than::printKeywords( Log& log ){
+  sf.printKeywords( log );
+}
+
+std::string more_than::getLabel(){
+  std::string vv;
+  Tools::convert( sf.get_r0(), vv );
+  return "gt" + vv;
 }
 
 void more_than::calculate( Value* value_in, std::vector<Value>& aux ){

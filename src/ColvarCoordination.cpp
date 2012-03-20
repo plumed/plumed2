@@ -79,9 +79,9 @@ reduceListAtNextStep(false)
   parseAtomList("GROUPA",ga_lista);
   parseAtomList("GROUPB",gb_lista);
 
-  string sw;
+  string sw,errors;
   parse("SWITCH",sw);
-  if(sw.length()>0) switchingFunction.set(sw);
+  if(sw.length()>0) switchingFunction.set(sw,errors);
   else {
     int nn=6;
     int mm=12;

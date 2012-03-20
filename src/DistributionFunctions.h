@@ -9,6 +9,7 @@
 #include <iostream>
 #include "Value.h"
 #include "Tools.h"
+#include "Keywords.h"
 #include "SwitchingFunction.h"
 #include "HistogramBead.h"
 
@@ -57,6 +58,8 @@ public:
   bool check() const;
   std::string errorMessage() const ;
   virtual std::string message()=0;
+  virtual void printKeywords( Log& log )=0;
+  virtual std::string getLabel()=0;
 }; 
 
 inline
@@ -95,6 +98,8 @@ public:
   inline bool sizableContribution( const double& tol ){ return true; }
   void finish( Value* value_out );
   std::string message();
+  void printKeywords( Log& log );
+  std::string getLabel();
 };
 
 class mean : public DistributionFunction {
@@ -106,6 +111,8 @@ public:
   void finish( Value* value_out );
   inline bool sizableContribution( const double& tol ){ return true; }
   std::string message();
+  void printKeywords( Log& log );
+  std::string getLabel();
 };
 
 class less_than : public DistributionFunction {
@@ -120,6 +127,8 @@ public:
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   std::string message();
+  void printKeywords( Log& log );
+  std::string getLabel();
 };
 
 class more_than : public DistributionFunction {
@@ -133,6 +142,8 @@ public:
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   std::string message();
+  void printKeywords( Log& log );
+  std::string getLabel();
 };
 
 class within : public DistributionFunction {
@@ -145,6 +156,8 @@ public:
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   std::string message();
+  void printKeywords( Log& log );
+  std::string getLabel();
 };
 
 class min : public DistributionFunction {
@@ -156,6 +169,8 @@ public:
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   std::string message();
+  void printKeywords( Log& log );
+  std::string getLabel();
 };
 
 class cvdens : public DistributionFunction {
@@ -169,6 +184,8 @@ public:
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out ); 
   std::string message();
+  void printKeywords( Log& log );
+  std::string getLabel();
 };
 
 }

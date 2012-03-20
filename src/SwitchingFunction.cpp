@@ -20,9 +20,9 @@ std::string SwitchingFunction::documentation(){
   return ostr.str();
 }
 
-void SwitchingFunction::set(const std::string & definition){
+void SwitchingFunction::set(const std::string & definition,std::string& errormsg){
   vector<string> data=Tools::getWords(definition);
-  plumed_assert(data.size()>=1);
+  //plumed_assert(data.size()>=1);
   string name=data[0];
   data.erase(data.begin());
   invr0=0.0;
@@ -32,7 +32,8 @@ void SwitchingFunction::set(const std::string & definition){
 
   double r0;
   bool found_r0=Tools::parse(data,"R_0",r0);
-  plumed_massert(found_r0,"R_0 is needed");
+  if(!found_r0) errormsg="R_0 is required";
+//  plumed_massert(found_r0,"R_0 is needed");
   invr0=1.0/r0;
   Tools::parse(data,"D_0",d0);
   Tools::parse(data,"D_MAX",dmax);
@@ -45,8 +46,11 @@ void SwitchingFunction::set(const std::string & definition){
     Tools::parse(data,"MM",mm);
   } else if(name=="EXP") type=exponential;
   else if(name=="GAUSSIAN") type=gaussian;
-  else plumed_merror("Cannot understand switching function type '"+name+"'");
-  plumed_massert(data.size()==0,"Error reading");
+  else errormsg="cannot understand switching function type '"+name+"'";
+  if( data.size()!=0 ){
+      errormsg="found the following rogue keywords in switching function input : ";
+      for(unsigned i=0;i<data.size();++i) errormsg = errormsg + data[i] + " "; 
+  }
 }
 
 std::string SwitchingFunction::description() const {
@@ -128,6 +132,25 @@ void SwitchingFunction::set(int nn,int mm,double r0,double d0){
   this->dmax=pow(0.00001,1./(nn-mm));
 }
 
+double SwitchingFunction::get_r0() const {
+  return 1./invr0;
+}
+
+void SwitchingFunction::printKeywords( Log& log ) const {
+  Keywords skeys;
+  skeys.add("compulsory","R_0","the value of R_0 in the switching function");
+  skeys.add("compulsory","D_0","0.0","the value of D_0 in the switching function");
+  skeys.add("optional","D_MAX","the value at which the switching function can be assumed equal to zero");
+  if(type==spline){
+     skeys.add("compulsory","NN","6","the value of n in the switching function");
+     skeys.add("compulsory","MM","12","the value of m in the switching function");
+  } else if(type==exponential){
+  } else if(type==gaussian){
+  } else {
+     return;
+  } 
+  skeys.print(log);
+}
 
 
 
