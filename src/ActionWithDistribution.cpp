@@ -70,6 +70,7 @@ void ActionWithDistribution::addDistributionFunction( std::string name, Distribu
   // Add a value
   ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
   a->addComponentWithDerivatives( fun->getLabel() );
+  a->componentIsNotPeriodic( fun->getLabel() );
   unsigned fno=a->getNumberOfComponents()-1;
   final_values.push_back( a->copyOutput( fno ) );
 
