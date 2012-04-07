@@ -47,7 +47,9 @@ public:
 /// Registers the list of keywords
   static void registerKeywords( Keywords& keys );
 /// Calculate the numerical derivatives
-  void calculateNumericalDerivatives();
+/// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
+/// are doing.  The default will be correct for the vast majority of cases
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void lockRequests();
   void unlockRequests();
 /// Returns an array of pointers to the arguments

@@ -4,9 +4,9 @@
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
 #include "Value.h"
+#include "Field.h"
 #include "PlumedException.h"
 #include "DistributionFunctions.h"
-#include "CubicInterpolation.h"
 #include "DynamicList.h"
 #include <vector>
 
@@ -36,68 +36,17 @@ private:
   std::vector<DistributionFunction*> functions;
 /// The list of quantities that should be calculated
   DynamicList<unsigned> members;
-// ---- STUFF FOR FIELDS ------ //
-
-   // A class for storing the field
-   class FieldClass {
-   private:
-   /// Total number of points
-     unsigned npoints;
-   /// Number of high dimensionality vectors
-     unsigned ndX;
-   /// Number of low dimensionality vectors
-     unsigned ndx;
-   /// Number of doubles for each point in the grid
-     unsigned nper;
-   /// The sizes of all the base quantities
-     std::vector<unsigned> baseq_nder;
-   /// The start in baseq_buffer for each function
-     std::vector<unsigned> baseq_starts;
-   /// Storage space for the input data
-     std::vector<double> baseq_buffer;
-   /// Storage space for the grid
-     std::vector<double> grid_buffer;
-   public:
-   /// Setup the field
-     void setup( const unsigned nfunc, const unsigned np, const unsigned D, const unsigned d );
-   /// Set everything for the field equal to zero
-     void clear();
-   /// Set the sizes of all the base quantity buffers
-     void resizeBaseQuantityBuffers( const std::vector<unsigned>& cv_sizes );
-   /// Set the derivatives for one of the base quantities
-     void setBaseQuantity( const unsigned nn, Value* val );
-   /// Gather the values and derivatives for all the base quantities
-     void gatherBaseQuantities( PlumedCommunicator& comm );
-   /// Extract one of the base quantities
-     void extractBaseQuantity( const unsigned nn, Value* val );
-   /// Get number of high dimensional derivatives 
-     unsigned get_NdX() const ;
-   /// Get number of low dimensional derivatives
-     unsigned get_Ndx() const ;
-   /// Add some stress
-     void addStress( const unsigned ii, const Value& x);
-   /// Add some derivative
-     void addDerivative( const unsigned ii, const unsigned nn, const Value& dx ); 
-   /// Complete the field calculation by doing mpi_sum
-     void gatherField( PlumedCommunicator& comm );
-   };
 /// This holds everything for the field
-   FieldClass myfield;
-/// This holds the interpolator for the field
-   CInterpolation* f_interpolator;
-// This holds the interpolators for the derivatives of the field
-   std::vector<CInterpolation*> df_interpolators;
+   Field* myfield;
 /// Calculate if this is a function of the distribution
   void calculateFunctions();
-/// Calculate the field if this is a field
-  void calculateField();
-/// Errors for input in field
-  void field_error( const std::string msg );
+/// Setup stuff for the derivatives of the field
+  void setNumberOfFieldDerivatives( const unsigned D );
 protected:
 /// Add a distribution function to the list (this routine must be called after construction of ActionWithValue)
   void addDistributionFunction( std::string name, DistributionFunction* fun );
 /// Setup a field cv
-  void setupField( unsigned ldim );
+  void setupField( unsigned ldim, const std::string ftype );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void requestDistribution();
 /// Find out if we are running the calculation without mpi
@@ -126,7 +75,7 @@ public:
 /// than just calculating everything and seeing whats big.
   virtual void completeNeighborListUpdate(){};
 /// Ensure that nothing gets done for your deactivated colvars
-  virtual void deactivate( const unsigned j )=0;
+  virtual void deactivateValue( const unsigned j )=0;
 /// Merge the derivatives
   virtual void mergeDerivatives( const unsigned j, Value* value_in, Value* value_out )=0;
 /// Are the base quantities periodic
@@ -143,11 +92,18 @@ public:
 
 /// Setup the values for this field cv and set the value of SIGMA
   virtual void derivedFieldSetup( const double sig )=0;
-/// Set the kkth output of the field 
-  virtual void setFieldOutputValue( const unsigned& kk, Value* tmpvalue )=0;
+/// Get the number of derivatives of the field
+  virtual unsigned getNumberOfFieldDerivatives()=0;
 /// Calculate the contribution of a particular value to the field
   virtual void calculateFieldContribution( const unsigned& j, const std::vector<double>& hisp, Value* tmpvalue, Value& tmpstress, std::vector<Value>& tmpder )=0;
+/// Return a pointer to the field 
+  Field* getField();
 };
+
+inline
+Field* ActionWithDistribution::getField() {
+  return myfield;
+} 
 
 inline
 bool ActionWithDistribution::getSerial() const {
@@ -169,33 +125,6 @@ int ActionWithDistribution::getUpdateFreq() const {
   return updateFreq;
 }
 
-inline
-unsigned ActionWithDistribution::FieldClass::get_NdX() const {
-  return ndX;
 }
-
-inline
-unsigned ActionWithDistribution::FieldClass::get_Ndx() const {
-  return ndx;
-}
-
-inline
-void ActionWithDistribution::FieldClass::addStress( const unsigned ii, const Value& x){
-  plumed_assert( x.getNumberOfDerivatives()==ndx ); plumed_assert( ii<npoints );
-  grid_buffer[ii*nper]+=x.get(); 
-  for(unsigned k=0;k<ndx;++k) grid_buffer[ ii*nper + k + 1 ]+=x.getDerivative(k); 
-}
-
-inline
-void ActionWithDistribution::FieldClass::addDerivative( const unsigned ii, const unsigned nn, const Value& dx ){
-  plumed_assert( dx.getNumberOfDerivatives()==ndx ); 
-  plumed_assert( ii<npoints && nn<ndX );
-  grid_buffer[ ii*nper + (nn+1)*(1+ndx) ]+=dx.get();
-  for(unsigned k=0;k<ndx;++k) grid_buffer[ ii*nper + (nn+1)*(1+ndx) + k + 1 ]+=dx.getDerivative(k);
-}
-
-
-}
-
 #endif
 

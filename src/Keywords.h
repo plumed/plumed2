@@ -14,14 +14,13 @@ namespace PLMD{
 class KeyType{
 friend class Keyword;
 private:
-  enum {compulsory,flag,optional,atoms,numbered,nohtml,hidden} style;
+  enum {compulsory,flag,optional,atoms,nohtml,hidden} style;
 public:
   KeyType( const std::string& type );
   bool isCompulsory() const { return (style==compulsory); }
   bool isFlag() const { return (style==flag); }
   bool isOptional() const { return (style==optional); }
   bool isAtomList() const { return (style==atoms); }
-  bool isNumbered() const { return (style==numbered); }
   bool isNoHTML() const { return (style==nohtml); }
   bool isHidden() const { return (style==hidden); }
 };
@@ -34,12 +33,16 @@ private:
   std::vector<KeyType> reserved_types;
 /// The names of the keyword
   std::vector<std::string> reserved_keys;
+/// The allowance of stuff like key1, key2 etc
+  std::vector<bool> reserved_allowmultiple;
 /// The documentation for the keywords
   std::vector<std::string> reserved_documentation;
 /// Whether the keyword is compulsory, optional...
   std::vector<KeyType> types;
 /// The names of the keyword
   std::vector<std::string> keys;
+/// Do we allow stuff like key1, key2 etc
+  std::vector<bool> allowmultiple;
 /// The documentation for the keywords
   std::vector<std::string> documentation;
 /// The default values for the flags (are they on or of)
@@ -58,6 +61,8 @@ private:
   void clear();
 /// Return the number of defined keywords 
   unsigned size() const;
+/// Check if numbered keywords are allowed for this action
+  bool numbered( const std::string k ) const ;
 public:
 /// Print the documentation to the log file (used by PLMD::Action::error)
   void print( Log& log ) const ;
@@ -73,24 +78,16 @@ public:
   void addFlag( const std::string k, const bool def, const std::string d );
 /// Remove the keyword with name k
   void remove( const std::string k );
-// /// Clear all the keywords
-//   void clear();
-// /// Return the number of defined keywords 
-//   unsigned size() const;
 /// Check if there is a keyword with name k
   bool exists( const std::string k ) const ;
 /// Check the keyword k has been reserved
   bool reserved( const std::string k ) const ;
 /// Check if the keyword with name k has style t
   bool style( const std::string k, const std::string t ) const ;
-// /// Print the documentation to the log file (used by PLMD::Action::error)
-//   void print( Log& log ) const ;
 /// Print an html version of the documentation
   void print_html() const ;
-// /// find out whether flag key is on or off by default.
-//   bool getLogicalDefault( std::string key, bool& def ) const ;
-// /// Get the value of the default for the keyword named key
-//   bool getDefaultValue( std::string key, std::string& def ) const ;
+/// Change the style of a keyword
+  void reset_style( const std::string k, const std::string style );
 };
 
 }

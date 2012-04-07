@@ -27,6 +27,15 @@ bold(0)
   lb.resize( np.size() ); ub.resize( np.size() );
 }
 
+CInterpolation::~CInterpolation(){
+  splinepoints.resize(0,0); lb.resize(0); ub.resize(0); np.resize(0); stride.resize(0);
+}
+
+void CInterpolation::getNumbersOfPoints( std::vector<unsigned>& nspline ) const {
+  nspline.resize( np.size() );
+  for(unsigned i=0;i<np.size();++i) nspline[i]=np[i];
+}
+
 unsigned CInterpolation::findBox( const std::vector<double>& pos ){
   plumed_massert( pos.size()==np.size(), "position size does not match the size of the grid");
 
@@ -194,6 +203,7 @@ double InterpolateBicubic::get_fdf( const std::vector<double>& pos ){
        c3=cbase; c2=c3-1; c1=c2-1; c0=c1-1; cbase=c0-1;
        f= t*f + ( ( (*c3)*u + (*c2) )*u + (*c1) )*u + (*c0);
    }
+   delete cbase; delete c3; delete c2; delete c1; delete c0;
    return f;
 }
 

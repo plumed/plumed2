@@ -21,7 +21,9 @@ protected:
   double getCrossTermDenominator( const unsigned i, const unsigned j ) const ;
 public:
   CInterpolation( const std::vector<unsigned>& dd, const std::vector<double>& fmin, const std::vector<double>& fmax );
+  virtual ~CInterpolation();
   unsigned getNumberOfSplinePoints() const ;
+  void getNumbersOfPoints( std::vector<unsigned>& nspline ) const ;
   void getSplinePoint( const unsigned nn, std::vector<double>& pp ) const ;
   void getGridBoundaries( std::vector<double>& gmin, std::vector<double>& gmax ) const ;
   virtual void set_table( const std::vector<Value>& ff )=0;

@@ -224,6 +224,7 @@ private:
   unsigned nval;
   unsigned power;
 public:
+  static std::string documentation();
   static void generateParameters(const unsigned& number, const unsigned& nder, std::string& params );
   moment( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );

@@ -61,6 +61,7 @@ void MultiColvarDistance::registerKeywords( Keywords& keys ){
   ActionWithDistribution::autoParallelize( keys );
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
+  keys.use("FIELD");
 }
 
 MultiColvarDistance::MultiColvarDistance(const ActionOptions&ao):

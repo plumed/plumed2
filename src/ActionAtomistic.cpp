@@ -6,6 +6,7 @@
 #include "ActionWithValue.h"
 #include "Colvar.h"
 #include "ActionWithVirtualAtom.h"
+#include "ActionWithField.h"
 #include "PlumedException.h"
 #include "Atoms.h"
 
@@ -54,9 +55,12 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
   return pbc.distance(v1,v2);
 }
 
-void ActionAtomistic::calculateNumericalDerivatives(){
-  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  plumed_massert(a,"only Actions with a value can be differentiated");
+void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
+  if(!a){
+    a=dynamic_cast<ActionWithValue*>(this);
+    plumed_massert(a,"only Actions with a value can be differentiated");
+  }
+
   const int nval=a->getNumberOfComponents();
   const int natoms=getNumberOfAtoms();
   std::vector<Vector> value(nval*natoms);
@@ -67,7 +71,7 @@ void ActionAtomistic::calculateNumericalDerivatives(){
   for(int i=0;i<natoms;i++) for(int k=0;k<3;k++){
     savedPositions[i][k]=positions[i][k];
     positions[i][k]=positions[i][k]+delta;
-    calculate();
+    a->calculate();
     positions[i][k]=savedPositions[i][k];
     for(unsigned j=0;j<nval;j++){
       value[j*natoms+i][k]=a->getOutputQuantity(j);
@@ -79,14 +83,14 @@ void ActionAtomistic::calculateNumericalDerivatives(){
    box(i,k)=box(i,k)+delta;
    pbc.setBox(box);
    for(int j=0;j<natoms;j++) positions[j]=pbc.scaledToReal(positions[j]);
-   calculate();
+   a->calculate();
    box(i,k)=arg0;
    pbc.setBox(box);
    for(int j=0;j<natoms;j++) positions[j]=savedPositions[j];
    for(unsigned j=0;j<nval;j++) valuebox[j](i,k)=a->getOutputQuantity(j);
  }
 
-  calculate();
+  a->calculate();
   a->clearDerivatives();
   for(unsigned j=0;j<nval;j++){
     Value* v=a->copyOutput(j);

@@ -63,7 +63,8 @@ PLUMED_REGISTER_ACTION(GenericWholeMolecules,"WHOLEMOLECULES")
 void GenericWholeMolecules::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
-  keys.add("atoms","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY1, ENTITY2,...");
+  keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY1, ENTITY2,...");
+  keys.reset_style("ENTITY","atoms");
 }
 
 inline

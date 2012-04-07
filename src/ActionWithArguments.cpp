@@ -1,6 +1,7 @@
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
 #include "PlumedMain.h"
+#include "ActionWithField.h"
 #include "ActionSet.h"
 
 using namespace std;
@@ -101,22 +102,25 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   }
 }
 
-void ActionWithArguments::calculateNumericalDerivatives(){
-  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  plumed_massert(a,"cannot compute numerical derivatives for an action without values");
+void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ){
+  if(!a){
+    a=dynamic_cast<ActionWithValue*>(this);
+    plumed_massert(a,"cannot compute numerical derivatives for an action without values");
+  }
+
   const int nval=a->getNumberOfComponents();
   const int npar=arguments.size();
   std::vector<double> value (nval*npar);
   for(int i=0;i<npar;i++){
     double arg0=arguments[i]->get();
     arguments[i]->set(arg0+sqrt(epsilon));
-    calculate();
+    a->calculate();
     arguments[i]->set(arg0);
     for(unsigned j=0;j<nval;j++){
       value[i*nval+j]=a->getOutputQuantity(j);
     }
   }
-  calculate();
+  a->calculate();
   a->clearDerivatives();
   std::vector<double> value0(nval);
   for(unsigned j=0;j<nval;j++){

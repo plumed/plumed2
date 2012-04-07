@@ -4,6 +4,7 @@
 #include <string>
 #include <set>
 #include "Keywords.h"
+#include "Value.h"
 #include "Tools.h"
 #include "Log.h"
 
@@ -196,7 +197,9 @@ public:
   virtual bool checkNeedsGradients()const{return false;}
 
 /// Perform calculation using numerical derivatives
-  virtual void calculateNumericalDerivatives();
+/// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
+/// are doing.
+  virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 
   FILE *fopen(const char *path, const char *mode);
   int   fclose(FILE*fp);
@@ -246,8 +249,7 @@ template<class T>
 bool Action::parseNumbered(const std::string&key, const int no, T&t){
   // Check keyword has been registered
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
-  plumed_massert( ( keywords.style(key,"nohtml") || keywords.style(key,"numbered") ),
-                    "keyword " + key + " has not been registered so you can read in numbered versions");
+  if( !keywords.numbered(key) ) error("numbered keywords are not allowed for " + key );
 
   // Now try to read the keyword
   bool found; std::string def;
@@ -299,14 +301,13 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
 template<class T>
 bool Action::parseNumberedVector(const std::string&key, const int no, std::vector<T>&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
-  plumed_massert( ( keywords.style(key,"nohtml") || keywords.style(key,"numbered") || keywords.style(key,"atoms") ),
-                    "keyword " + key + " has not been registered so you can read in numbered versions");
+  if( !keywords.numbered(key) ) error("numbered keywords are not allowed for " + key );
 
   unsigned size=t.size(); bool skipcheck=false;
   if(size==0) skipcheck=true;
   std::string num; Tools::convert(no,num);
   bool found=Tools::parseVector(line,key+num,t);
-  if(  keywords.style(key,"numbered") ){
+  if(  keywords.style(key,"compulsory") ){
     if (!skipcheck && found && t.size()!=size ) error("vector read in for keyword " + key + num + " has the wrong size");  
   } else if ( !found ){
     t.resize(0);

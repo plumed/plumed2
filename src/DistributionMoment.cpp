@@ -2,6 +2,13 @@
 
 namespace PLMD {
 
+std::string moment::documentation(){
+  std::ostringstream ostr;
+  ostr<<"The \\f$m\\f$th moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is ";
+  ostr<<"the average for the distribution.  The moment keyword takes a single integer as input; namely, the value of \\f$m\\f$.";  
+  return ostr.str();
+}
+
 void moment::generateParameters(const unsigned& number, const unsigned& nder, std::string& params ){
   std::ostringstream ostr;
   ostr<<"NUMBER="<<nder<<" POWER="<<number;

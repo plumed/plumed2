@@ -1,4 +1,5 @@
 #include "Action.h"
+#include "ActionWithValue.h"
 #include "PlumedMain.h"
 #include "Log.h"
 #include "PlumedException.h"
@@ -144,11 +145,12 @@ void Action::checkRead(){
     std::string msg="cannot understand the following words from the input line : ";
     for(unsigned i=0;i<line.size();i++) msg = msg + line[i] + ", ";
     error(msg);
-//    log.printf("ERROR READING INPUT FILE\n");
-//    log.printf("I CANNOT UNDERSTAND THE FOLLOWING WORDS:\n");
-//    for(unsigned i=0;i<line.size();i++) log.printf("  %s\n",line[i].c_str());
-//    log.printf("STOP!!\n");
-//    exit(1);
+  }
+  // Check numerical derivatives
+  if( checkNumericalDerivatives() ){
+      ActionWithValue* aa=dynamic_cast<ActionWithValue*>(this);
+      plumed_assert(aa);
+      if( aa->getNumberOfComponents()==0 ) error("cannot calculate numerical derivatives for this action");
   }
 }
 
@@ -170,7 +172,7 @@ void Action::exit(int c){
   plumed.exit(c);
 }
 
-void Action::calculateNumericalDerivatives(){
+void Action::calculateNumericalDerivatives( ActionWithValue* a ){
   plumed_merror("if you get here it means that you are trying to use numerical derivatives for a class that does not implement them");
 }
 

@@ -13,11 +13,12 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   keys.addFlag("PBC",true,"use the periodic boundary conditions when calculating distances");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.reserve("atoms","ATOMS","the atoms involved in each of the collective variables you wish to calculate. "
+  keys.reserve("numbered","ATOMS","the atoms involved in each of the collective variables you wish to calculate. "
                                "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one CV will be "
                                "calculated for each ATOM keyword you specify (all ATOM keywords should "
                                "define the same number of atoms).  The eventual number of quantities calculated by this "
                                "action will depend on what functions of the distribution you choose to calculate."); 
+  keys.reset_style("ATOMS","atoms");
   keys.reserve("atoms","GROUP","this keyword is used for colvars that are calculated from a pair of atoms. "
                                "One colvar is calculated for each distinct pair of atoms in the group.");
   keys.reserve("atoms","GROUPA","this keyword is used for colvars that are calculated from a pair of atoms and must appaer with the keyword GROUPB. "
@@ -32,7 +33,11 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                   "of the atoms specifies using SPECIESB is within the specified cutoff");
   keys.reserve("atoms","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
-  keys.add("optional","FIELD","create a field cv from these collective variables.");
+  keys.reserve("optional","FIELD","create a field cv from these collective variables.  From a distribution of collective variables we calculate a 1D-field using " 
+                                  " \\f$\\psi(z)=\\frac{\\sum_i G(z-s_i,\\sigma)}{\\int \\textrm{d}z \\sum_i G(z-s_i,\\sigma)}\\f$ where \\f$ G(z-s_i,\\sigma)\\f$ "
+                                  " is a normalized Gaussian function with standard deviation \\f$\\sigma\\f$ centered at the value of the \\f$i\\f$th collective variable"
+                                  " \\f$s_i$\\f$.  In other words we use a histogram calculated from the values of all the constituent collective variables. " 
+                                  + Field::documentation() );
   keys.add("optional","MIN","calculate the minimum value and store it in a value called min. " + min::documentation() );
 //  keys.add("optional","MAX", "take the maximum value from these variables");
   keys.addFlag("AVERAGE",false,"take the average value of these variables and store it in value called average.");
@@ -40,7 +45,8 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.add("optional","MORE_THAN", "take the number of variables more than the specified target and store it in a value called gt<target>. " + more_than::documentation() ); 
   keys.add("optional","HISTOGRAM", "create a discretized histogram of the distribution of collective variables.  " + HistogramBead::histodocs() );
   keys.add("numbered", "WITHIN", "calculate the number variabels that are within a certain range and store it in a value called between<lowerbound>&<upperbound>. " + within::documentation() );
-  keys.add("numbered","MOMENT","calculate the ith moment of the distribution of collective variables.");
+  keys.add("numbered","MOMENT","calculate the mth moment of the distribution of collective variables.  " + moment::documentation() + 
+                               "  To calculate multiple moments use repeated instances of the moment keyword MOMENT1, MOMENT2, MOMENT3...  ");
   keys.reserve("numbered", "SUBCELL", "calculate the average value of the CV within a portion of the box and store it in a value called subcell. " + cvdens::documentation() );
   keys.reserve("numbered", "GRADIENT", "calcualte the gradient of a CV across the box and store it in value called gradient. " + gradient::documentation() );
   ActionWithDistribution::registerKeywords( keys );
@@ -188,7 +194,7 @@ void MultiColvar::readAtoms( int& natoms ){
       }
   } 
 
-  if( !usingDistributionFunctions() ) setupField(1);  // Setup the field if we are not using any of the above 
+  if( !usingDistributionFunctions() ) setupField(1, "identity");  // Setup the field if we are not using any of the above 
   requestDistribution();  // And setup the ActionWithDistribution
   requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes
 }
@@ -202,7 +208,7 @@ void MultiColvar::readAtomsKeyword( int& natoms ){
      if( t.size()==0 ) break;
 
      log.printf("  Colvar %d is calculated from atoms : ", i);
-     for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
+     for(unsigned j=0;j<t.size();++j) log.printf("%d ",t[j].serial() );
      log.printf("\n"); 
 
      if( i==1 && natoms<0 ) natoms=t.size();
@@ -439,11 +445,52 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
 }
 
 void MultiColvar::calculateFieldContribution( const unsigned& j, const std::vector<double>& at, Value* value_in, Value& stress, std::vector<Value>& der ){
-  plumed_assert(at.size()==1 && der.size()==1 );
+  plumed_assert( at.size()==1 && j<colvar_atoms.size() );
+  plumed_assert( stress.getNumberOfDerivatives()==1 && der[j].getNumberOfDerivatives()==1 );
+  
+  double dd, ss, du; dd=at[0]-value_in->get(); 
+  ss=fnorm*exp( -(dd*dd)/(2*fsigma2) ); du=dd/fsigma2;
+  stress.set( ss ); stress.addDerivative( 0, -du*ss );
+  value_in->chainRule( du*ss ); 
+  int thisatom; unsigned innat=colvar_atoms[j].getNumberActive();
+  for(unsigned i=0;i<innat;++i){
+     thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
+     plumed_assert( thisatom>=0 );
+     der[3*thisatom+0].add( value_in->getDerivative(3*i+0) );
+     der[3*thisatom+1].add( value_in->getDerivative(3*i+1) );
+     der[3*thisatom+2].add( value_in->getDerivative(3*i+2) );
+  }
+  // Easy to merge the virial
+  unsigned outnat=getNumberOfAtoms(); 
+  der[3*outnat+0].add( value_in->getDerivative(3*innat+0) );
+  der[3*outnat+1].add( value_in->getDerivative(3*innat+1) );
+  der[3*outnat+2].add( value_in->getDerivative(3*innat+2) );
+  der[3*outnat+3].add( value_in->getDerivative(3*innat+3) );
+  der[3*outnat+4].add( value_in->getDerivative(3*innat+4) );
+  der[3*outnat+5].add( value_in->getDerivative(3*innat+5) );
+  der[3*outnat+6].add( value_in->getDerivative(3*innat+6) );
+  der[3*outnat+7].add( value_in->getDerivative(3*innat+7) );
+  der[3*outnat+8].add( value_in->getDerivative(3*innat+8) );
 
-  double dd, ss; dd=at[0]-value_in->get(); ss=fnorm*exp( -dd*dd/ fsigma2 );
-  stress.set( ss ); stress.addDerivative( 0, ( dd / fsigma2 )*ss );
-  der[0].set( -( dd / fsigma2 )*ss ); der[0].addDerivative( 0, ss*( ( dd*dd/fsigma4 ) + 1 ) );
+  value_in->chainRule( 1./(fsigma2*du) - du );
+  for(unsigned i=0;i<innat;++i){
+     thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
+     plumed_assert( thisatom>=0 );
+     der[3*thisatom+0].addDerivative( 0, value_in->getDerivative(3*i+0) );
+     der[3*thisatom+1].addDerivative( 0, value_in->getDerivative(3*i+1) );
+     der[3*thisatom+2].addDerivative( 0, value_in->getDerivative(3*i+2) );
+  }
+  // Easy to merge the virial
+  der[3*outnat+0].addDerivative( 0, value_in->getDerivative(3*innat+0) );
+  der[3*outnat+1].addDerivative( 0, value_in->getDerivative(3*innat+1) );
+  der[3*outnat+2].addDerivative( 0, value_in->getDerivative(3*innat+2) );
+  der[3*outnat+3].addDerivative( 0, value_in->getDerivative(3*innat+3) );
+  der[3*outnat+4].addDerivative( 0, value_in->getDerivative(3*innat+4) );
+  der[3*outnat+5].addDerivative( 0, value_in->getDerivative(3*innat+5) );
+  der[3*outnat+6].addDerivative( 0, value_in->getDerivative(3*innat+6) );
+  der[3*outnat+7].addDerivative( 0, value_in->getDerivative(3*innat+7) );
+  der[3*outnat+8].addDerivative( 0, value_in->getDerivative(3*innat+8) );
+//  der[j].set( du*ss ); der[j].addDerivative( 0, ss*( 1./fsigma2 - du*du  ) );
 }
 
 void MultiColvar::mergeDerivatives( const unsigned j, Value* value_in, Value* value_out ){    
@@ -473,21 +520,8 @@ void MultiColvar::mergeDerivatives( const unsigned j, Value* value_in, Value* va
 void MultiColvar::derivedFieldSetup( const double sigma ){
   const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
   log.printf("  generating field cv from histogram in which each component CV is represented by a Gaussian of width %f\n",sigma);
-  fsigma2=2*sigma*sigma;
-  fsigma4=fsigma2*fsigma2;
-  fnorm = 1.0 / ( sqrt(2*pi)*sigma );
-  for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){
-       std::string ss; Tools::convert(i+1,ss);
-       addComponentWithDerivatives("fval"+ss); 
-  }
-}
-
-void MultiColvar::setFieldOutputValue( const unsigned& j, Value* value_in ){
-  plumed_assert( value_in->getNumberOfDerivatives()==getPntrToComponent(j)->getNumberOfDerivatives() );
-  Value* value_out=getPntrToComponent(j);
-  for(unsigned i=0;i<value_in->getNumberOfDerivatives();++i){ value_out->addDerivative( i, value_in->getDerivative(i) ); }
-  // And store the value
-  value_out->set( value_in->get() );
+  fsigma2=sigma*sigma;
+  fnorm = 1.0 / ( sqrt(2*pi)*sigma ); 
 }
 
 Vector MultiColvar::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
@@ -506,31 +540,16 @@ void MultiColvar::apply(){
   }
   v.clear();
 
-  unsigned nat=getNumberOfAtoms(); std::vector<double> forces; unsigned nder;
-  if( usingDistributionFunctions() ) forces.resize(3*getNumberOfAtoms()+9);
+  unsigned nat=getNumberOfAtoms(); 
+  std::vector<double> forces(3*getNumberOfAtoms()+9); 
 
-  unsigned vstart=3*nat-9; unsigned thisatom;
+  unsigned vstart=3*getNumberOfAtoms(); 
   for(int i=0;i<getNumberOfComponents();++i){
-
-     if( !usingDistributionFunctions() ){
-       nder=getThisFunctionsNumberOfDerivatives(i); 
-       if (forces.size()!=nder ) forces.resize(nder);
-       if( getPntrToComponent(i)->applyForce( forces ) ){
-           for(unsigned j=0;j<forces.size();++j){
-               thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
-               plumed_assert( thisatom>=0 );
-               f[thisatom][0]+=forces[3*j+0];
-               f[thisatom][1]+=forces[3*j+1];
-               f[thisatom][2]+=forces[3*j+2];
-           }
-           vstart=nder-9;
-       }
-     } else if( getPntrToComponent(i)->applyForce( forces ) ){
-        for(unsigned j=0;j<nat;++j){
-           f[j][0]+=forces[3*j+0];
-           f[j][1]+=forces[3*j+1];
-           f[j][2]+=forces[3*j+2];
-        }
+    if( getPntrToComponent(i)->applyForce( forces ) ){
+     for(unsigned j=0;j<nat;++j){
+        f[j][0]+=forces[3*j+0];
+        f[j][1]+=forces[3*j+1];
+        f[j][2]+=forces[3*j+2];
      }
      v(0,0)+=forces[vstart+0];
      v(0,1)+=forces[vstart+1];
@@ -541,6 +560,26 @@ void MultiColvar::apply(){
      v(2,0)+=forces[vstart+6];
      v(2,1)+=forces[vstart+7];
      v(2,2)+=forces[vstart+8];
+    }
+  }
+ 
+  if( getField() ){
+     if( getField()->applyForces( forces ) ){
+       for(unsigned j=0;j<nat;++j){
+          f[j][0]+=forces[3*j+0];
+          f[j][1]+=forces[3*j+1];
+          f[j][2]+=forces[3*j+2];
+       }
+       v(0,0)+=forces[vstart+0];
+       v(0,1)+=forces[vstart+1];
+       v(0,2)+=forces[vstart+2];
+       v(1,0)+=forces[vstart+3];
+       v(1,1)+=forces[vstart+4];
+       v(1,2)+=forces[vstart+5];
+       v(2,0)+=forces[vstart+6];
+       v(2,1)+=forces[vstart+7];
+       v(2,2)+=forces[vstart+8];
+     }
   }
 }
 

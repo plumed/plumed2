@@ -164,7 +164,7 @@ private:
   bool setperiods;
   bool needsCentralAtomPosition;
 /// Constants for fields
-  double fsigma2, fsigma4, fnorm;
+  double fsigma2, fnorm;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
 /// The lists of the atoms involved in each of the individual colvars
@@ -216,7 +216,7 @@ public:
 /// Merge the derivatives 
   void mergeDerivatives( const unsigned j, Value* value_in, Value* value_out );
 /// Turn of atom requests when this colvar is deactivated cos its small
-  void deactivate( const unsigned j );
+  void deactivateValue( const unsigned j );
 /// Calcualte the colvar
   void calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux );
 /// And a virtual function which actually computes the colvar
@@ -225,8 +225,8 @@ public:
   virtual void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ); 
 /// Setup everything that needs to be setup for field cvs
   void derivedFieldSetup( const double sigma );
-/// Set the output values for the field (important if we to apply forces on fields)
-  void setFieldOutputValue( const unsigned& j, Value* value_in );
+/// Returns the number of coordinates of the field
+  unsigned getNumberOfFieldDerivatives();
 /// Calculate the contribution to the field at the point thisp
   void calculateFieldContribution( const unsigned& j, const std::vector<double>& thisp, Value* tmpvalue, Value& tmpstress, std::vector<Value>& tmpder );
 };
@@ -237,7 +237,12 @@ unsigned MultiColvar::getNumberOfFunctionsInDistribution(){
 }
 
 inline
-void MultiColvar::deactivate( const unsigned j ){
+unsigned MultiColvar::getNumberOfFieldDerivatives(){
+  return 3*getNumberOfAtoms()+9; 
+}
+
+inline
+void MultiColvar::deactivateValue( const unsigned j ){
   colvar_atoms[j].deactivateAll();
 }
 
