@@ -29,7 +29,8 @@ Grid::Grid(const vector<double> & gmin, const vector<double> & gmax, const vecto
  if(dospline_) plumed_assert(dospline_==usederiv_);
  maxsize_=1;
  for(unsigned int i=0;i<dimension_;++i){
-  dx_.push_back((max_[i]-min_[i])/(double)nbin_[i]);
+  dx_.push_back( (max_[i]-min_[i])/static_cast<double>( nbin_[i] ) );
+  if( !pbc_[i] ){ max_[i] += dx_[i]; nbin_[i] += 1; }
   maxsize_*=nbin_[i];
  }
  if(doclear) clear();
@@ -57,6 +58,12 @@ vector<double> Grid::getMax() const {
 
 vector<double> Grid::getDx() const {
  return dx_;
+}
+
+double Grid::getBinVolume() const {
+ double vol=1.;
+ for(unsigned i=0;i<dx_.size();++i) vol*=dx_[i];
+ return vol;  
 }
 
 vector<bool> Grid::getIsPeriodic() const {

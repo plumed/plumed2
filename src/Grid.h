@@ -35,6 +35,8 @@ public:
  std::vector<double> getMax() const;
 /// get bin size
  std::vector<double> getDx() const;
+/// get bin volume
+ double getBinVolume() const;
 /// get number of bins
  std::vector<unsigned> getNbin() const;
 /// get if periodic

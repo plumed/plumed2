@@ -99,7 +99,6 @@ double InterpolateCubic::get_fdf( const std::vector<double>& pos ){
   plumed_assert( pos.size()==1 );
   
   unsigned mybox=findBox( pos );
-  printf("Found box %d\n", mybox);
   double d1=ub[0] - lb[0]; 
   double b=( pos[0] - lb[0] ) / d1, a=( ub[0] - pos[0] ) / d1;
   
