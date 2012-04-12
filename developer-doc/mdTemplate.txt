@@ -3,7 +3,14 @@
 
 \page HowToPlumedYourMD How to add plumed to an MD code
 
-Plumed ships with scripts that can be used to add it to many of the standard MD packages.  Obviously though, if no patch is provided for the MD code you use then you will have to write one yourself.  Plumed has been designed so that it can be added to an MD code either statically or as a dynamic library.  It is NOT possible to compile plumed as a static library and link the library.  Furthermore, unlike the previous version of plumed, the plumed source code is not compiled at the same time as your MD code is compiled.  Instead plumed now has its own makefile and is compiled separately to the MD engines that rely on it.  This makes plumed patches considerably simpler as now they only do two things:
+Plumed ships with scripts that can be used to add it to many of the standard MD packages.  Obviously though, if no patch is provided for the MD code you use then you will have to write one yourself.  Plumed has been designed so that it can be added to an MD code
+either statically (i.e. as a collection of objects) or as a dynamic library.
+For technical reasons it
+is NOT possible to pack all the plumed objects as a static library and link the library
+(if you really want to know it: when static librearies are linked the linker
+typically discards all the objects which are not used; plumed is using an
+automatic registration process which is not compatible with this choice).
+Furthermore, unlike the previous version of plumed, the plumed source code is not compiled at the same time as your MD code is compiled.  Instead plumed now has its own makefile and is compiled separately to the MD engines that rely on it.  This makes plumed patches considerably simpler as now they only do two things:
 
 - Modify the makefile so that the plumed is linked to the MD code
 - Modify the source code to add all the required calls to plumed
@@ -14,41 +21,58 @@ Once the plumed source code has been compiled a file src/Plumed.inc is
 generated. This file should be included in your MD code's makefile as it
 informs the code where to find all the plumed source. There are three possible
 ways to link PLUMED: static (linking the .o files directly), shared (linking
-the libPlumed.so library) or runtime (which links only a wrapper to plumed,
-whereas the location of the remaining part on plumed, i.e. the libPlumedKernel.so,
+the libplumed.so library) or runtime (which links only a wrapper to plumed,
+whereas the location of the remaining part on plumed, i.e. the libplumedKernel.so,
 can be specified at runtime). The relevant variables are
-- \$(PLUMED_OBJ) all the objects that form the plumed library
-- \$(PLUMED_SHARED_OBJ) a single shared library containing the full plumed library
-- \$(PLUMED_WRAPPER) an object containing only the plumed wrapper
-- \$(PLUMED_LIBS) are libraries which should be linked to the MD code (usually
-  just the library containing functions for dynamic loading)
-- \$(PLUMED_DYNAMIC_LIBS) are libraries on which plumed depends on (e.g.
-  matheval, etc), which should be linked explicitely only in case of static
-  linking.
+- \$(PLUMED_STATIC_LOAD) the options to be added to the linker for static
+  linking, i.e. all the plumed objects with their full path,
+   plus special linking options, plus al the libraries used by plumed (e.g.
+  matheval)
+- \$(PLUMED_SHARED_LOAD) the options to be added to the linker for shared
+  linking, i.e. full plumed shared library (libplumed.so) with its full path
+  plus special linking options.
+- \$(PLUMED_RUNTIME_LOAD) the options to be added to the linker for runtime
+  linking, i.e. the wrapper object with its full path plus special linking options.
 
-The libPlumedKernel.so basically contains the same objects as the
-\$(PLUMED_SHARED_OBJ) except for the \$(PLUMED_WRAPPER).
+The libplumedKernel.so basically contains the same objects as the
+libplumed.so except for the wrapper.
 
 The simplest approach is to take advantage of the three variants
 src/Plumed.inc.static , src/Plumed.inc.shared and src/Plumed.inc.runtime .
 Including one of those, it is sufficient to add to the linker line the macro
 \$(PLUMED_LOAD).
 
-The best way to patch your MD file is thus:
+The best way to patch your MD file is:
+- go into the root directory of the MD code and type
+\verbatim
+> plumed patch --new name-of-the-code
+\endverbatim
+  this will create a new (empty) patch file for your MD code
+- patch the code with the empty patch
+\verbatim
+> plumed patch --patch --engine name-of-the-code
+\endverbatim
+  this will produce a symbolic link Plumed.inc in the root directory of the MD
+  code
+- make a backup copy of the Makefile of your MD code, naming it
+  Makefile.preplumed
+\verbatim 
+> cp src/Makefile src/Makefile.preplumed
+\endverbatim
+- edit the Makefile including the Plumed.inc file
+  (e.g. "include ../Plumed.inc") and adding "\$(PLUMED_LOAD)" to the linking
+command
+- save your modification into the plumed patch
+\verbatim
+> plumed patch --save
+\endverbatim
 
-- include in the MD Makefile a file "Plumed.inc" located in the root directory
-  of MD (e.g. with "include ../../Plumed.inc"). The patch script will provide
-  that file on patching
-
-- add "\$(PLUMED_LOAD)" to the linking command in the Makefile.
-
-The patching system will then link the proper variant of .inc file to
-MDROOT/Plumed.inc depending on the arguments to "plumed patch":
-- --static 
-- --shared 
-- --runtime 
+Now you can patch/unpatch your MD code, automatically linking PLUMED, as if it
+was an officially released interface.
 
 \section language Language dependence
+
+The next step is to add proper calls to plumed into the MD source code.
 
 The interface between plumed and the MD codes is written is plain C so it is compatible with codes that are written in plain C, C++ and fortran.  This interface contains four routines:
 
