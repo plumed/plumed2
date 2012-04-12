@@ -13,6 +13,8 @@ Actions (choose one):
                     print a list of available MD engines
   -s, --save
                     save (FOR DEVELOPERS)
+  -n NEWENGINE, --new NEWENGINE
+                    create a new patch named NEWENGINE
 Options:
   -e ENGINE, --engine ENGINE
                     set MD engine to ENGINE (default: choose interactively)
@@ -36,6 +38,7 @@ engine=""
 diff=""
 mode=static
 force=""
+newpatch=
 
 multiple_actions=
 
@@ -51,6 +54,7 @@ do
     (--save|-s)         test -n "$action" && multiple_actions=yes ; action=save ;;
     (--revert|-R|-r)    test -n "$action" && multiple_actions=yes ; action=revert ;;
     (--list-engines|-l) test -n "$action" && multiple_actions=yes ; action=list ;;
+    (--new=*)           test -n "$action" && multiple_actions=yes ; action=new ; newpatch="${prefix_option#--new=}" ;;
     (--description)     echo "patch an MD engine" ; exit ;;
     (--engine=*) engine="${prefix_option#--engine=}" ;;
     (--mode=*) mode="${prefix_option#--mode=}" ;;
@@ -59,6 +63,7 @@ do
     (--root) prefix="--root=" ;;
     (--diff|-d) prefix="--diff=" ;;
     (--mode|-m) prefix="--mode=" ;;
+    (--new|-n) prefix="--new=" ;;
     (--static) mode=static ;;
     (--shared) mode=shared ;;
     (--runtime) mode=runtime ;;
@@ -113,6 +118,19 @@ then
     b="${b%.diff}"
     echo "  $b"
   done
+  exit
+fi
+
+if [ "$action" == new ]
+then
+  echo "Creating a new patch"
+  if [[ -e "$PLUMED_ROOT"/patches/"$newpatch".diff ]] ; then
+      echo "ERROR: patch $newpatch is already defined"
+      exit
+  fi
+  touch "$PLUMED_ROOT"/patches/"$newpatch".diff
+  echo "Created file $PLUMED_ROOT/patches/$newpatch.diff"
+  echo "Also consider the possibility of adding a $PLUMED_ROOT/patches/$newpatch.config file"
   exit
 fi
 
