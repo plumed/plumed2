@@ -2,6 +2,8 @@
 #define __PLUMED_Plumed_h
 
 /**
+\page ReferencePlumedH Reference for interfacing MD codes with PLUMED
+
   Plumed.h and Plumed.c contain the external plumed interface, which is used to
   integrate it with MD engines. This interface is very general, and is expected
   not to change across plumed versions. Plumed.c also implements a dummy version
@@ -39,43 +41,58 @@
   The global object should still be initialized and finalized properly.
 
   The basic method to send a message to plumed is
+\verbatim
   (C) plumed_cmd
   (C++) PLMD::Plumed::cmd
   (FORTRAN)  PLUMED_F_CMD
+\endverbatim
 
   To initialize a plumed object, use:
+\verbatim
   (C)        plumed_create
   (C++)      (constructor of PLMD::Plumed)
   (FORTRAN)  PLUMED_F_CREATE
+\endverbatim
 
   To finalize it, use
+\verbatim
   (C)        plumed_finalize
   (C++)      (destructor of PLMD::Plumed)
   (FORTRAN)  PLUMED_F_FINALIZE
+\endverbatim
 
   To access to the global-object, use
+\verbatim
   (C)        plumed_gcreate, plumed_gfinalize, plumed_gcmd
   (C++)      PLMD::Plumed::gcreate, PLMD::Plumed::gfinalize, PLMD::Plumed::gcmd
   (FORTRAN)  PLUMED_F_GCREATE, PLUMED_F_GFINALIZE, PLUMED_F_GCMD
+\endverbatim
 
   To check if the global object has been initialized, use
+\verbatim
   (C)        plumed_g_initialized
   (C++)      PLMD::Plumed::g_initialized
   (FORTRAN)  PLUMED_F_GINITIALIZED
+\endverbatim
 
   To check if plumed library is available (this is useful for runtime linking), use
+\verbatim
   (C)        plumed_installed 
   (C++)      PLMD::Plumed::installed
   (FORTRAN)  PLUMED_F_INSTALLED
+\endverbatim
 
   To convert handlers use
+\verbatim
   (C)        plumed_c2f                 (C to FORTRAN)
   (C)        plumed_f2c                 (FORTRAN to C)
   (C++)      Plumed(plumed) constructor (C to C++)
   (C++)      operator plumed() cast     (C++ to C)
   (C++)      Plumed(char*)  constructor (FORTRAN to C++)
   (C++)      toFortran(char*)           (C++ to FORTRAN)
+\endverbatim
 
+\verbatim
   FORTRAN interface
     SUBROUTINE PLUMED_F_INSTALLED(i)
       INTEGER,           INTENT(OUT)   :: i
@@ -96,6 +113,7 @@
       UNSPECIFIED_TYPE,  INTENT(INOUT) :: val(*)
     SUBROUTINE PLUMED_F_FINALIZE(p)
       CHARACTER(LEN=32), INTENT(IN)    :: p
+\endverbatim
 
   The main routine is "cmd", which accepts two arguments:
   key is a string containing the name of the command
@@ -106,9 +124,11 @@
   New commands will be added, but backward compatibility will be retained as long as possible.
 
   To pass plumed a callback function use the following syntax (not available in FORTRAN yet)
+\verbatim
     plumed_function_holder ff;
     ff.p=your_function;
     plumed_cmd(plumed,"xxxx",&ff);
+\endverbatim
   (this is passing the your_function() function to the "xxxx" command)
 */
 
