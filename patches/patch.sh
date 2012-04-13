@@ -12,9 +12,9 @@ Actions (choose one):
   -l, --list-engines
                     print a list of available MD engines
   -s, --save
-                    save (FOR DEVELOPERS)
+                    save (*)
   -n NEWENGINE, --new NEWENGINE
-                    create a new patch named NEWENGINE
+                    create a new patch named NEWENGINE (*)
 Options:
   -e ENGINE, --engine ENGINE
                     set MD engine to ENGINE (default: choose interactively)
@@ -27,9 +27,12 @@ Options:
   --runtime
                     same as --mode runtime
   -d FILE, --diff FILE
-                    set the path to diff file (default: ROOT/patches/ENGINE.diff) (FOR TESTING)
+                    set the path to diff file (default: ROOT/patches/ENGINE.diff) (*)
   -f, --force
-                    force patching (FOR TESTING)
+                    force patching (*)
+
+(*) These options are for developers or for testing only. Be sure to know what
+    you are doing before you use them.
 "
 
 prefix=""
