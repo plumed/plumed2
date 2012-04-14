@@ -40,6 +40,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.add("optional","MORE_THAN", "take the number of variables more than the specified target and store it in a value called gt<target>. " + more_than::documentation() ); 
   keys.add("optional","HISTOGRAM", "create a discretized histogram of the distribution of collective variables.  " + HistogramBead::histodocs() );
   keys.add("numbered", "WITHIN", "calculate the number variabels that are within a certain range and store it in a value called between<lowerbound>&<upperbound>. " + within::documentation() );
+  keys.add("numbered","MOMENT","calculate the ith moment of the distribution of collective variables.");
   keys.reserve("numbered", "SUBCELL", "calculate the average value of the CV within a portion of the box and store it in a value called subcell. " + cvdens::documentation() );
   keys.reserve("numbered", "GRADIENT", "calcualte the gradient of a CV across the box and store it in value called gradient. " + gradient::documentation() );
   ActionWithDistribution::registerKeywords( keys );
@@ -118,6 +119,26 @@ void MultiColvar::readAtoms( int& natoms ){
             if( !parseNumbered("WITHIN",i,params) ) break;
             std::string ss; Tools::convert(i,ss);
             addDistributionFunction( "WITHIN" + ss, new within(params) );
+            params.clear();
+         }
+     }
+  }
+
+  // Read moment keywords
+  if( keywords.exists("MOMENT") ){
+     unsigned number=0;
+     parse("MOMENT",number);
+     if( number>0 ){
+        moment::generateParameters(number, getNumberOfFunctionsInDistribution(), params );
+        addDistributionFunction( "MOMENT", new moment(params) );
+        params.clear();
+     } else {
+         unsigned number=0;
+         for(unsigned i=1;;++i){
+            if( !parseNumbered("MOMENT",i,number) ) break;
+            std::string ss; Tools::convert(i,ss);
+            moment::generateParameters(number, getNumberOfFunctionsInDistribution(), params ); 
+            addDistributionFunction( "MOMENT" + ss, new moment(params) );
             params.clear();
          }
      }

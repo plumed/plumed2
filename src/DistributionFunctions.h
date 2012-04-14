@@ -48,6 +48,7 @@ public:
   DistributionFunction( const std::string& parameters );
   virtual ~DistributionFunction();
   void setNumberOfDerivatives( const unsigned nder );
+  void clear();
   void reset();
   void mergeDerivatives( const unsigned kk, ActionWithDistribution& action );
   unsigned requiredBufferSpace() const ;
@@ -211,6 +212,20 @@ private:
 public:
   static std::string documentation();
   gradient( const std::string& parameters );
+  void calculate( Value* value_in, std::vector<Value>& aux );
+  void finish( Value* value_out );
+  std::string message();
+  void printKeywords( Log& log );
+  std::string getLabel();
+};
+
+class moment : public DistributionFunction {
+private:
+  unsigned nval;
+  unsigned power;
+public:
+  static void generateParameters(const unsigned& number, const unsigned& nder, std::string& params );
+  moment( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
   std::string message();

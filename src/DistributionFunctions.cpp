@@ -22,7 +22,7 @@ void DistributionFunction::addAccumulator( const bool wderiv ){
 
 void DistributionFunction::setNumberOfDerivatives( const unsigned nder ){
   for(unsigned i=0;i<accumulators.size();++i){
-      if(hasDeriv[i]) accumulators[i]->resizeDerivatives(nder);
+      if(hasDeriv[i]) accumulators[i]->resizeDerivatives(nder); 
       else accumulators[i]->resizeDerivatives(0);
   }
 }
@@ -30,6 +30,12 @@ void DistributionFunction::setNumberOfDerivatives( const unsigned nder ){
 void DistributionFunction::reset(){
   for(unsigned i=0;i<accumulators.size();++i){
       accumulators[i]->set(0); accumulators[i]->clearDerivatives();
+  }
+}
+
+void DistributionFunction::clear(){
+  for(unsigned i=0;i<thesevalues.size();++i){
+      thesevalues[i]->set(0); thesevalues[i]->clearDerivatives();
   }
 }
 
@@ -75,8 +81,10 @@ void DistributionFunction::multiplyValue( const unsigned nn, Value* val ){
 
 void DistributionFunction::mergeDerivatives( const unsigned kk, ActionWithDistribution& action ){
   for(unsigned i=0;i<accumulators.size();++i){
-     accumulators[i]->add( thesevalues[i]->get() );
-     if(hasDeriv[i]){ action.mergeDerivatives( kk, thesevalues[i], accumulators[i] ); }
+     if( thesevalues[i]->valueHasBeenSet() ){
+         accumulators[i]->add( thesevalues[i]->get() );
+         if(hasDeriv[i]){ action.mergeDerivatives( kk, thesevalues[i], accumulators[i] ); }
+     }
   }
 }
 
