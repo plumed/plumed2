@@ -146,12 +146,6 @@ void Action::checkRead(){
     for(unsigned i=0;i<line.size();i++) msg = msg + line[i] + ", ";
     error(msg);
   }
-  // Check numerical derivatives
-  if( checkNumericalDerivatives() ){
-      ActionWithValue* aa=dynamic_cast<ActionWithValue*>(this);
-      plumed_assert(aa);
-      if( aa->getNumberOfComponents()==0 ) error("cannot calculate numerical derivatives for this action");
-  }
 }
 
 int Action::getStep()const{
