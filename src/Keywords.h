@@ -68,7 +68,7 @@ public:
 /// Reserve a keyword 
   void reserve( const std::string & t, const std::string & k, const std::string & d );
 /// Use one of the reserved keywords
-  void use( const std::string & k );
+  void use( const std::string  k );
 /// Add a new keyword of type t with name k and description d
   void add( const std::string & t, const std::string & k, const std::string & d );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d

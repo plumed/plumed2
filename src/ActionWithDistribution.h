@@ -46,7 +46,7 @@ protected:
 /// Add a distribution function to the list (this routine must be called after construction of ActionWithValue)
   void addDistributionFunction( std::string name, DistributionFunction* fun );
 /// Setup a field cv
-  void setupField( unsigned ldim, const std::string & ftype );
+  void addField( std::string key, Field* ff );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void requestDistribution();
 /// Find out if we are running the calculation without mpi
@@ -55,6 +55,8 @@ protected:
   bool isTimeForNeighborListUpdate() const ;
 /// Get the frequency with which to update neighbor lists
   int getUpdateFreq() const ;
+/// Get the jth active member
+  unsigned getActiveMember( const unsigned& j ) const ;
 public:
   static void registerKeywords(Keywords& keys);
 /// By calling this function during register keywords you tell plumed to use a
@@ -82,6 +84,8 @@ public:
   virtual bool isPeriodic(const unsigned nn)=0;
 /// What are the domains of the base quantities
   virtual void retrieveDomain( const unsigned nn, double& min, double& max);
+/// Get the number of derivatives for this action
+//  virtual unsigned getNumberOfDerivatives()=0;
 /// Get the number of functions from which we are calculating the distribtuion
   virtual unsigned getNumberOfFunctionsInDistribution()=0;
 /// Calculate one of the functions in the distribution
@@ -96,6 +100,7 @@ public:
   virtual unsigned getNumberOfFieldDerivatives()=0;
 /// Calculate the contribution of a particular value to the field
   virtual void calculateFieldContribution( const unsigned& j, const std::vector<double>& hisp, Value* tmpvalue, Value& tmpstress, std::vector<Value>& tmpder )=0;
+//  virtual void mergeFieldDerivatives( const std::vector<double>& der, Value* value_out )=0;
 /// Return a pointer to the field 
   Field* getField();
 };
@@ -123,6 +128,12 @@ bool ActionWithDistribution::isTimeForNeighborListUpdate() const {
 inline
 int ActionWithDistribution::getUpdateFreq() const {
   return updateFreq;
+}
+
+inline
+unsigned ActionWithDistribution::getActiveMember( const unsigned& j ) const {
+  plumed_assert( j<members.getNumberActive() );
+  return members[j];
 }
 
 }

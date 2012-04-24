@@ -44,6 +44,23 @@ ActionWithDistribution::~ActionWithDistribution(){
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
 }
 
+void ActionWithDistribution::addField( std::string key, Field* ff ){
+  all_values=false; use_field=true; 
+  std::string freport, fieldin; 
+  if( key.length()==0 ) fieldin="yes";
+  else parse(key,fieldin);
+  if( fieldin.length()==0 ) return ;
+  myfield=ff; myfield->read( fieldin, getNumberOfFunctionsInDistribution(), freport );
+  if( !myfield->check() ){
+     log.printf("ERROR for keyword FIELD in action %s with label %s : %s \n \n", getName().c_str(), getLabel().c_str(), ( myfield->errorMessage() ).c_str() );
+     myfield->printKeywords( log );
+     plumed_merror("ERROR for keyword FIELD in action "  + getName() + " with label " + getLabel() + " : " + myfield->errorMessage() );
+     exit(1);
+  }
+  log.printf("  %s\n", freport.c_str() );
+  derivedFieldSetup( myfield->get_sigma() );
+}
+
 void ActionWithDistribution::addDistributionFunction( std::string name, DistributionFunction* fun ){
   if(all_values) all_values=false;  // Possibly will add functionality to delete all values here
 
@@ -93,36 +110,18 @@ void ActionWithDistribution::requestDistribution(){
   prepareForNeighborListUpdate(); reduceAtNextStep=true;
 }
 
-void ActionWithDistribution::setupField( unsigned ldim, const std::string & ftype ){
-  plumed_massert( keywords.exists("FIELD"), "you have chosen to use fields but have not written documentation for the FIELD keyword"); 
-  plumed_massert( ldim<=2 , "fields don't work with more than two dimensions" );
-  
-  std::string fieldin;
-  parse("FIELD",fieldin);
-  if( fieldin.size()==0 ) return;
-  all_values=false; use_field=true; std::string freport;
-  myfield = new Field(); myfield->read( fieldin, getNumberOfFunctionsInDistribution(), ldim, ftype, freport );
-  if( !myfield->check() ){
-     log.printf("ERROR for keyword FIELD in action %s with label %s : %s \n \n", getName().c_str(), getLabel().c_str(), ( myfield->errorMessage() ).c_str() );
-     myfield->printKeywords( log );
-     plumed_merror("ERROR for keyword FIELD in action "  + getName() + " with label " + getLabel() + " : " + myfield->errorMessage() );
-     exit(1);
-  }
-  log.printf("  %s\n", freport.c_str() );
-  // Setup the field stuff in derived class
-  derivedFieldSetup( myfield->get_sigma() );
-}
-
 void ActionWithDistribution::prepare(){
  if(reduceAtNextStep){
     completeNeighborListUpdate();
     // Setup the functions by declaring enough space to hold the derivatives
-    for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( final_values[0]->getNumberOfDerivatives() );
+    ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
+    for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( (av->getPntrToComponent(i))->getNumberOfDerivatives() );
     // Setup the buffers for mpi gather
     if( use_field ){
-      std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() );
-      for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
-      myfield->resizeBaseQuantityBuffers( cv_sizes ); myfield->resizeDerivatives( getNumberOfFieldDerivatives() );
+      std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() ); 
+      for(unsigned i=0;i<cv_sizes.size();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
+      myfield->resizeBaseQuantityBuffers( cv_sizes ); 
+      myfield->resizeDerivatives( getNumberOfFieldDerivatives() );
     } else {
       unsigned bufsize=0;
       for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
@@ -135,12 +134,14 @@ void ActionWithDistribution::prepare(){
     members.updateActiveMembers();
     prepareForNeighborListUpdate();
     // Setup the functions by declaring enough space to hold the derivatives
-    for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( final_values[0]->getNumberOfDerivatives() );
+    ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
+    for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( (av->getPntrToComponent(i))->getNumberOfDerivatives() );
     // Setup the buffers for mpi gather
     if( use_field ){
-      std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() );
-      for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
-      myfield->resizeBaseQuantityBuffers( cv_sizes ); myfield->resizeDerivatives( getNumberOfFieldDerivatives() );
+      std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() ); unsigned kk;
+      for(unsigned i=0;i<cv_sizes.size();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
+      myfield->resizeBaseQuantityBuffers( cv_sizes ); 
+      myfield->resizeDerivatives( getNumberOfFieldDerivatives() );
     } else {
       unsigned bufsize=0;
       for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
@@ -167,7 +168,7 @@ void ActionWithDistribution::calculate(){
   unsigned kk; bool keep;
   for(unsigned i=rank;i<members.getNumberActive();i+=stride){
       // Retrieve the function we are calculating from the dynamic list
-      kk=members[i];
+      kk=members[i]; 
       // Make sure we have enough derivatives in this value
       unsigned nder=getThisFunctionsNumberOfDerivatives(kk);
       if( tmpvalue->getNumberOfDerivatives()!=nder ) tmpvalue->resizeDerivatives( nder );
@@ -227,7 +228,6 @@ void ActionWithDistribution::calculate(){
         tmpder[i].set(0);   // This is really important don't delete it
         tmpder[i].resizeDerivatives( myfield->get_Ndx() );
      }
-
      // Now loop over the spline points
      unsigned ik=0;
      for(unsigned i=0;i<myfield->getNumberOfSplinePoints();++i){
@@ -238,6 +238,7 @@ void ActionWithDistribution::calculate(){
              if( (ik++)%stride!=rank ) continue;  // Ensures we parallelize the double loop over nodes
 
              kk=members[j];
+             //if( myfield->calculateContributionAtPoint( i, kk, this ) ){ keep=true; } 
              unsigned nder=getThisFunctionsNumberOfDerivatives(j);
              if( tmpvalue->getNumberOfDerivatives()!=nder ){ tmpvalue->resizeDerivatives(nder); }
              myfield->extractBaseQuantity( kk, tmpvalue );

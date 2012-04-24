@@ -57,7 +57,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   MyNewMultiColvar(const ActionOptions&);
-  virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
 };
 
 PLUMED_REGISTER_ACTION(MyNewMultiColvar,"MYCVKEYWORD")
@@ -204,6 +204,8 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Apply the forces on the values
   void apply();
+/// Get the number of derivatives for this action
+  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Return the number of Colvars this is calculating
   unsigned getNumberOfFunctionsInDistribution();  
 /// Return the number of derivatives for a given colvar
@@ -220,25 +222,25 @@ public:
 /// Calcualte the colvar
   void calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux );
 /// And a virtual function which actually computes the colvar
-  virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0; 
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0; 
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
   virtual void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ); 
 /// Setup everything that needs to be setup for field cvs
-  void derivedFieldSetup( const double sigma );
-/// Returns the number of coordinates of the field
-  unsigned getNumberOfFieldDerivatives();
+  virtual void derivedFieldSetup( const double sigma );
 /// Calculate the contribution to the field at the point thisp
-  void calculateFieldContribution( const unsigned& j, const std::vector<double>& thisp, Value* tmpvalue, Value& tmpstress, std::vector<Value>& tmpder );
+  virtual void calculateFieldContribution( const unsigned& j, const std::vector<double>& thisp, Value* tmpvalue, Value& tmpstress, std::vector<Value>& tmpder );
+/// Merge the derivatives of the bias wrt to the field
+  virtual void mergeFieldDerivatives( const std::vector<double>& der, Value* value_out );
 };
+
+inline
+unsigned MultiColvar::getNumberOfDerivatives(){
+  return 3*getNumberOfAtoms()+9;
+} 
 
 inline
 unsigned MultiColvar::getNumberOfFunctionsInDistribution(){
   return colvar_atoms.size();
-}
-
-inline
-unsigned MultiColvar::getNumberOfFieldDerivatives(){
-  return 3*getNumberOfAtoms()+9; 
 }
 
 inline

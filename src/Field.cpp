@@ -19,52 +19,56 @@ std::string Field::documentation(){
    return ostr.str();
 }
 
+Field::Field( const std::string ftype, const unsigned d ){
+  if( ftype=="identity") fstyle=identity;
+  else if( ftype=="gaussian") fstyle=gaussian;
+  else errormsg = "type " + ftype + " is not implemented in field";
+  ndx=d;
+}
+
 Field::~Field(){
   delete f_interpolator;
   for(unsigned i=0;i<df_interpolators.size();++i) delete df_interpolators[i];
 }
 
-void Field::read( const std::string& input, const unsigned nfunc, const unsigned d, const std::string & ftype, std::string& report ){
-  if( ftype=="identity") fstyle=identity;
-  else if( ftype=="gaussian") fstyle=gaussian;
-  else error("type " + ftype + " is not implemented in field"); 
-
+void Field::read( const std::string& input, const unsigned nfunc, std::string& report ){
   std::vector<std::string> data=Tools::getWords(input);
   std::vector<unsigned> nspline; std::vector<double> min,max; 
+
   bool found_s=Tools::parseVector( data,"NSPLINE", nspline );
   if(!found_s) error("did not find NPLINE keyword");
-  if(nspline.size()!=d){
+  if(nspline.size()!=ndx){
      std::string ll,ww;
-     Tools::convert(d,ll);
+     Tools::convert(ndx,ll);
      Tools::convert(nspline.size(),ww);
      error("found " + ww + " values for NSPLINE when expecting only " + ll);
   }
   bool found_min=Tools::parseVector( data, "MIN", min );
   if(!found_min) error("did not find MIN keyword");
-  if(min.size()!=d){ 
+  if(min.size()!=ndx){ 
      std::string ll,ww;
-     Tools::convert(d,ll);
+     Tools::convert(ndx,ll);
      Tools::convert(min.size(),ww);
      error("found " + ww + " values for MIN when expecting only " + ll);
   }
   bool found_max=Tools::parseVector( data, "MAX", max );
   if(!found_max) error("did not find MAX keyword");
-  if(max.size()!=d){ 
+  if(max.size()!=ndx){ 
      std::string ll,ww;
-     Tools::convert(d,ll);
+     Tools::convert(ndx,ll);
      Tools::convert(max.size(),ww);
      error("found " + ww + " values for MAX when expecting only " + ll);
   }
   bool found_sigma=Tools::parse( data, "SIGMA", sigma );
   if(!found_sigma) error("did not find SIGMA keyword");
 
-  if( !data.empty() ){
+  if( data.size()!=0 ){
       std::string err="found the following rogue keywords : ";
       for(unsigned i=0;i<data.size();++i) err=err + data[i] + ", ";
       error(err);
   }
   std::ostringstream ostr;
-  ostr<<"generating "<<d<<" dimensional field min : ";
+  ostr<<"generating "<<ndx<<" dimensional field min : ";
   for(unsigned i=0;i<min.size();++i) ostr<<min[i]<<" ";
   ostr<<"max : ";
   for(unsigned i=0;i<max.size();++i) ostr<<max[i]<<" ";
@@ -76,7 +80,7 @@ void Field::read( const std::string& input, const unsigned nfunc, const unsigned
   baseq_nder.resize(nfunc); baseq_starts.resize(nfunc);
 // Set everything for grid
   unsigned np=1; for(unsigned i=0;i<nspline.size();++i) np*=nspline[i];
-  npoints=np; ndx=d;
+  npoints=np; 
 
   // Setup the interpolators
   if( ndx==1 ) f_interpolator=new InterpolateCubic( nspline, min, max );
@@ -104,8 +108,9 @@ void Field::resizeDerivatives( const unsigned D ){
 }
 
 void Field::retrieveBoundaries( std::vector<double>& min, std::vector<double>& max ){
-  min.resize(ndx); f_interpolator->getSplinePoint( 0, min ); 
-  max.resize(ndx); f_interpolator->getSplinePoint( f_interpolator->getNumberOfSplinePoints()-1, max );
+  min.resize(ndx); max.resize(ndx);
+  f_interpolator->getSplinePoint( 0, min ); 
+  f_interpolator->getSplinePoint( f_interpolator->getNumberOfSplinePoints()-1, max );
 }
 
 void Field::clear(){
@@ -114,8 +119,13 @@ void Field::clear(){
   grid_buffer.assign( grid_buffer.size(), 0.0 );
 }
 
+void Field::get_nspline( std::vector<unsigned>& nspline ) const {
+  plumed_assert( ndx==1 );
+  nspline[0]=npoints;
+}
+
 void Field::resizeBaseQuantityBuffers( const std::vector<unsigned>& cv_sizes ){
-  plumed_assert( cv_sizes.size()==baseq_nder.size() && cv_sizes.size()==baseq_starts.size() );
+  baseq_nder.resize( cv_sizes.size() ); baseq_starts.resize( cv_sizes.size() );
   unsigned nn=0;
   for(unsigned i=0;i<cv_sizes.size();++i){
       baseq_starts[i]=nn; baseq_nder[i]=cv_sizes[i]; nn+=cv_sizes[i]+1;
@@ -166,7 +176,7 @@ double Field::calculateField( const std::vector<double>& pp ) const {
 }
 
 void Field::calculateFieldDerivatives( const std::vector<double>& pp, std::vector<double>& der ) const {
-  plumed_assert( der.size()==df_interpolators.size() );
+  plumed_assert( der.size()==ndX );
   if( fstyle==identity ){
      for(unsigned i=0;i<der.size();++i) der[i]=df_interpolators[i]->get_fdf(pp);
   } else if( fstyle==gaussian ) {

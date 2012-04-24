@@ -39,8 +39,8 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
   reserved_keys.push_back(k); reserved_documentation.push_back(fd);
 }
 
-void Keywords::use( const std::string & k ){
-  plumed_assert( reserved(k) );
+void Keywords::use( const std::string k ){
+  plumed_massert( reserved(k), "the " + k + " keyword is reserved");
   for(unsigned i=0;i<reserved_keys.size();++i){
      if(reserved_keys[i]==k){ 
        types.push_back( reserved_types[i] ); keys.push_back( reserved_keys[i] ); 
@@ -118,6 +118,7 @@ void Keywords::remove( const std::string & k ){
 
 bool Keywords::numbered( const std::string & k ) const {
   unsigned j=0; 
+  if( style( k,"atoms") ) return true;
   while(true){
     for(j=0;j<keys.size();j++) if(keys[j]==k) break;
     if( j<keys.size() ){

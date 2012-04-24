@@ -355,13 +355,19 @@ void Grid::writeHeader(FILE* file){
  fprintf(file,"#! DERIVATIVE %d\n",int(usederiv_));
  fprintf(file,"#! NVAR      %2u\n",dimension_);
  fprintf(file,"#! BIN"); 
- for(unsigned i=0;i<dimension_;++i){fprintf(file," %14u",nbin_[i]);}
+ for(unsigned i=0;i<dimension_;++i){
+    if( !pbc_[i] ) fprintf(file," %14u",nbin_[i]-1);
+    else fprintf(file," %14u",nbin_[i]);
+ }
  fprintf(file,"\n");
  fprintf(file,"#! MIN");
  for(unsigned i=0;i<dimension_;++i){fprintf(file," %14.9f",min_[i]);}                        
  fprintf(file,"\n");
  fprintf(file,"#! MAX");
- for(unsigned i=0;i<dimension_;++i){fprintf(file," %14.9f",max_[i]);} 
+ for(unsigned i=0;i<dimension_;++i){
+   if( !pbc_[i] ) fprintf(file," %14.9f",max_[i]-dx_[i]);
+   else fprintf(file," %14.9f",max_[i]);
+ } 
  fprintf(file,"\n");
  fprintf(file,"#! PBC");
  for(unsigned i=0;i<dimension_;++i){fprintf(file," %14d",int(pbc_[i]));}

@@ -50,7 +50,9 @@ public:
   static void registerKeywords( Keywords& keys );
   MultiColvarDistance(const ActionOptions&);
 // active methods:
-  virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+/// Returns the number of coordinates of the field
+  unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(const unsigned nn){ return false; }
 };
 
@@ -61,7 +63,7 @@ void MultiColvarDistance::registerKeywords( Keywords& keys ){
   ActionWithDistribution::autoParallelize( keys );
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
-  keys.use("FIELD");
+  keys.use("DISTRIBUTION");
 }
 
 MultiColvarDistance::MultiColvarDistance(const ActionOptions&ao):
@@ -70,6 +72,8 @@ rcut(-1)
 {
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
+  // And setup the ActionWithDistribution
+  requestDistribution();          
   // Read the cutoff for the neighbour list
   if( isTimeForNeighborListUpdate() ){
       parse("NL_CUTOFF",rcut);
@@ -81,7 +85,11 @@ rcut(-1)
   checkRead();
 }
 
-double MultiColvarDistance::compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
+unsigned MultiColvarDistance::getNumberOfFieldDerivatives(){
+  return 3*getNumberOfAtoms() + 9;
+} 
+
+double MultiColvarDistance::compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
    Vector distance; 
    distance=getSeparation( pos[0], pos[1] );
    const double value=distance.modulo();

@@ -145,3 +145,12 @@ Value* ActionWithValue::getPntrToComponent( int n ){
   plumed_massert(n<values.size(),"you have requested a pointer that is out of bounds");
   return values[n];
 }
+
+void ActionWithValue::mergeFieldDerivatives( const std::vector<double>& derivatives, Value* val_out ){
+  plumed_assert( derivatives.size()==getNumberOfComponents() );
+  for(unsigned i=0;i<derivatives.size();++i){
+      for(unsigned j=0;j<getPntrToComponent(i)->getNumberOfDerivatives();++j){
+          val_out->addDerivative( j, derivatives[i]*getPntrToComponent(i)->getDerivative(j) );
+      }
+  }    
+}

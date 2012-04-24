@@ -45,19 +45,21 @@ void DistributionFunction::copyValue( const unsigned nn, Value* value_in  ){
   plumed_massert( nn<accumulators.size(), "not enough accumulators in distribution function");
   plumed_massert( hasDeriv[nn], "trying to copy derivatives to an accumulator with no derivatives");
 
-  unsigned nder=value_in->getNumberOfDerivatives(); 
-  if( nder!=thesevalues[nn]->getNumberOfDerivatives() ){ thesevalues[nn]->resizeDerivatives(nder); }
-  thesevalues[nn]->clearDerivatives();
-  for(unsigned i=0;i<value_in->getNumberOfDerivatives();++i) thesevalues[nn]->addDerivative( i, value_in->getDerivative(i) );
-  thesevalues[nn]->set( value_in->get() );
+  copy( value_in, thesevalues[nn] );
+//  unsigned nder=value_in->getNumberOfDerivatives(); 
+//  if( nder!=thesevalues[nn]->getNumberOfDerivatives() ){ thesevalues[nn]->resizeDerivatives(nder); }
+//  thesevalues[nn]->clearDerivatives();
+//  for(unsigned i=0;i<value_in->getNumberOfDerivatives();++i) thesevalues[nn]->addDerivative( i, value_in->getDerivative(i) );
+//  thesevalues[nn]->set( value_in->get() );
 }
 
 void DistributionFunction::extractDerivatives( const unsigned nn, Value* value_out  ){
   plumed_massert( nn<accumulators.size(), "not enough accumulators in distribution function");
   plumed_massert( hasDeriv[nn], "trying to copy derivatives from an accumulator with no derivatives");
   plumed_assert( accumulators[nn]->getNumberOfDerivatives()==value_out->getNumberOfDerivatives() );
-  value_out->clearDerivatives();
-  for(unsigned i=0;i<value_out->getNumberOfDerivatives();++i) value_out->addDerivative( i, accumulators[nn]->getDerivative(i) );
+  copy( accumulators[nn], value_out );
+//  value_out->clearDerivatives();
+//  for(unsigned i=0;i<value_out->getNumberOfDerivatives();++i) value_out->addDerivative( i, accumulators[nn]->getDerivative(i) );
 }
 
 void DistributionFunction::setValue( const unsigned nn, const double f ){

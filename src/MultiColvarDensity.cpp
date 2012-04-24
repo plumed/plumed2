@@ -25,8 +25,10 @@ public:
   static void registerKeywords( Keywords& keys );
   MultiColvarDensity(const ActionOptions&);
 // active methods:
-  virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
+  /// Returns the number of coordinates of the field
+  unsigned getNumberOfFieldDerivatives(){ plumed_assert(0); };
   bool isPeriodic(const unsigned nn){ return false; }
 };
 
@@ -47,13 +49,14 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   int nat; readAtoms( nat ); 
+  requestDistribution();
   // Functon is not periodic
   setNotPeriodic();
   // And check everything has been read in correctly
   checkRead(); 
 }
 
-double MultiColvarDensity::compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
+double MultiColvarDensity::compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
   return 1.0;
 }
 

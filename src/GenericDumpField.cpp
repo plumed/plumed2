@@ -30,6 +30,7 @@ public ActionPilot
 {
 private:
   int fnum;
+  double norm;
   Field* myfield;
   std::vector<unsigned> ngrid;
   std::string fbase;
@@ -50,7 +51,8 @@ void GenericDumpField::registerKeywords(Keywords& keys){
   keys.add("compulsory","FIELD","the field we are writing out");
   keys.add("compulsory","STRIDE","the frequency with which to output the field");
   keys.add("compulsory","FILE_BASE","field","the base name to use to output the field");
-  keys.add("compulsory","NGRID","number of grid points to use in each direction");
+  keys.add("compulsory","NORM","the normalization to use");
+  keys.add("optional","NGRID","number of grid points to use in each direction");
 }
 
 GenericDumpField::GenericDumpField(const ActionOptions& ao):
@@ -68,9 +70,12 @@ ActionPilot(ao)
 
   ngrid.resize( myfield->get_Ndx() ); 
   parseVector("NGRID",ngrid);
+  if( ngrid.size()==0 ){ ngrid.resize( myfield->get_Ndx() ); myfield->get_nspline( ngrid ); }
+  if( ngrid.size()!=myfield->get_Ndx() ) error("grid size is wrong");
+  unsigned nn; parse("NORM",nn); norm=static_cast<double>(nn);
 
   parse("FILE_BASE",fbase);
-  log.printf("  printing field on files named %s\n",fbase.c_str() );
+  log.printf("  printing field %s with %d norm on files named %s\n",ll.c_str(),nn,fbase.c_str() );
   log.printf("  printing %d dimensional field %s on a grid with dimensions ",ngrid.size(), ll.c_str() );
   for(unsigned i=0;i<ngrid.size();++i) log.printf("%d ",ngrid[i]);
   log.printf("\n");
@@ -85,17 +90,17 @@ void GenericDumpField::update(){
   Grid gg( min, max, ngrid, pbc, false, false );
 
   // Check field is properly normalized
-  double norm=0; std::vector<double> pp( myfield->get_Ndx() );
+  double norm1=0; std::vector<double> pp( myfield->get_Ndx() );
   for(unsigned i=0;i<gg.getSize();++i){
       gg.getPoint( i, pp ); gg.setValue( i, myfield->calculateField( pp ) );
-      norm+=gg.getValue(i);
+      norm1+=pow(gg.getValue(i), norm);
   } 
-  norm*=gg.getBinVolume(); 
+  norm1*=gg.getBinVolume(); 
 
-  double norm2=0.0;
+  double norm2=0.0, normali=pow( norm1, 1./norm );
   for(unsigned i=0;i<gg.getSize();++i){
-      gg.getPoint( i, pp ); gg.setValue( i, gg.getValue(i)/norm );
-      norm2+=gg.getValue(i);
+      gg.setValue( i, gg.getValue(i)/normali );
+      norm2+=pow(gg.getValue(i), norm);
   } 
   norm2*=gg.getBinVolume();
 

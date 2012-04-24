@@ -32,7 +32,8 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                   "of the atoms specifies using SPECIESB is within the specified cutoff");
   keys.reserve("atoms","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
-  keys.reserve("optional","FIELD","create a field cv from these collective variables.  From a distribution of collective variables we calculate a 1D-field using " 
+  keys.reserve("optional","DISTRIBUTION","create a field cv from the distribution of thest  collective variables.  From a distribution of collective variables "
+                                  "we calculate a 1D-field using " 
                                   " \\f$\\psi(z)=\\frac{\\sum_i G(z-s_i,\\sigma)}{\\int \\textrm{d}z \\sum_i G(z-s_i,\\sigma)}\\f$ where \\f$ G(z-s_i,\\sigma)\\f$ "
                                   " is a normalized Gaussian function with standard deviation \\f$\\sigma\\f$ centered at the value of the \\f$i\\f$th collective variable"
                                   " \\f$s_i\\f$.  In other words we use a histogram calculated from the values of all the constituent collective variables. " 
@@ -193,8 +194,7 @@ void MultiColvar::readAtoms( int& natoms ){
       }
   } 
 
-  if( !usingDistributionFunctions() ) setupField(1, "identity");  // Setup the field if we are not using any of the above 
-  requestDistribution();  // And setup the ActionWithDistribution
+  if( !usingDistributionFunctions() && keywords.exists("DISTRIBUTION") ) addField("DISTRIBUTION", new Field( "identity",1 ) );
   requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes
 }
 
@@ -374,9 +374,7 @@ void MultiColvar::requestAtoms(){
    ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
    if( usingDistributionFunctions() ){
        for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*getNumberOfAtoms()+9);
-   } else {
-       for(unsigned i=0;i<getNumberOfComponents();++i){ getPntrToComponent(i)->resizeDerivatives( getThisFunctionsNumberOfDerivatives(i) ); }
-   }
+   } 
 }
 
 void MultiColvar::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
@@ -393,7 +391,7 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
   
   // Compute the derivatives
   stopcondition=false; current=j;
-  double value=compute( pos, der, vir );
+  double value=compute( j, pos, der, vir );
 
   // This is the end of neighbor list update
   if(stopcondition){
@@ -445,51 +443,85 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
 
 void MultiColvar::calculateFieldContribution( const unsigned& j, const std::vector<double>& at, Value* value_in, Value& stress, std::vector<Value>& der ){
   plumed_assert( at.size()==1 && j<colvar_atoms.size() );
-  plumed_assert( stress.getNumberOfDerivatives()==1 && der[j].getNumberOfDerivatives()==1 );
+  plumed_assert( stress.getNumberOfDerivatives()==1 );
   
   double dd, ss, du; dd=at[0]-value_in->get(); 
   ss=fnorm*exp( -(dd*dd)/(2*fsigma2) ); du=dd/fsigma2;
   stress.set( ss ); stress.addDerivative( 0, -du*ss );
-  value_in->chainRule( du*ss ); 
-  int thisatom; unsigned innat=colvar_atoms[j].getNumberActive();
-  for(unsigned i=0;i<innat;++i){
-     thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
-     plumed_assert( thisatom>=0 );
-     der[3*thisatom+0].add( value_in->getDerivative(3*i+0) );
-     der[3*thisatom+1].add( value_in->getDerivative(3*i+1) );
-     der[3*thisatom+2].add( value_in->getDerivative(3*i+2) );
-  }
-  // Easy to merge the virial
-  unsigned outnat=getNumberOfAtoms(); 
-  der[3*outnat+0].add( value_in->getDerivative(3*innat+0) );
-  der[3*outnat+1].add( value_in->getDerivative(3*innat+1) );
-  der[3*outnat+2].add( value_in->getDerivative(3*innat+2) );
-  der[3*outnat+3].add( value_in->getDerivative(3*innat+3) );
-  der[3*outnat+4].add( value_in->getDerivative(3*innat+4) );
-  der[3*outnat+5].add( value_in->getDerivative(3*innat+5) );
-  der[3*outnat+6].add( value_in->getDerivative(3*innat+6) );
-  der[3*outnat+7].add( value_in->getDerivative(3*innat+7) );
-  der[3*outnat+8].add( value_in->getDerivative(3*innat+8) );
+  unsigned nfder=getNumberOfFieldDerivatives();
 
-  value_in->chainRule( 1./(fsigma2*du) - du );
-  for(unsigned i=0;i<innat;++i){
-     thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
-     plumed_assert( thisatom>=0 );
-     der[3*thisatom+0].addDerivative( 0, value_in->getDerivative(3*i+0) );
-     der[3*thisatom+1].addDerivative( 0, value_in->getDerivative(3*i+1) );
-     der[3*thisatom+2].addDerivative( 0, value_in->getDerivative(3*i+2) );
+  // If we are differentiating with respect to cvs and then applying to atoms later
+  if( nfder==getNumberOfFunctionsInDistribution() ){
+      der[j].add(du*ss); der[j].addDerivative( 0, du*ss*(1./(fsigma2*du) - du) );
+  // If we are differentiating with respect to atomic posisitions
+  } else if( nfder==(3*getNumberOfAtoms()+9) ){
+      int thisatom; unsigned innat=colvar_atoms[j].getNumberActive();
+      value_in->chainRule( du*ss );
+      for(unsigned i=0;i<innat;++i){
+         thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
+         plumed_assert( thisatom>=0 );
+         der[3*thisatom+0].add( value_in->getDerivative(3*i+0) );
+         der[3*thisatom+1].add( value_in->getDerivative(3*i+1) );
+         der[3*thisatom+2].add( value_in->getDerivative(3*i+2) );
+      }
+      // Easy to merge the virial
+      unsigned outnat=getNumberOfAtoms(); 
+      der[3*outnat+0].add( value_in->getDerivative(3*innat+0) );
+      der[3*outnat+1].add( value_in->getDerivative(3*innat+1) );
+      der[3*outnat+2].add( value_in->getDerivative(3*innat+2) );
+      der[3*outnat+3].add( value_in->getDerivative(3*innat+3) );
+      der[3*outnat+4].add( value_in->getDerivative(3*innat+4) );
+      der[3*outnat+5].add( value_in->getDerivative(3*innat+5) );
+      der[3*outnat+6].add( value_in->getDerivative(3*innat+6) );
+      der[3*outnat+7].add( value_in->getDerivative(3*innat+7) );
+      der[3*outnat+8].add( value_in->getDerivative(3*innat+8) );
+
+      value_in->chainRule( 1./(fsigma2*du) - du );
+      for(unsigned i=0;i<innat;++i){
+         thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
+         plumed_assert( thisatom>=0 );
+         der[3*thisatom+0].addDerivative( 0, value_in->getDerivative(3*i+0) );
+         der[3*thisatom+1].addDerivative( 0, value_in->getDerivative(3*i+1) );
+         der[3*thisatom+2].addDerivative( 0, value_in->getDerivative(3*i+2) );
+      }
+      // Easy to merge the virial
+      der[3*outnat+0].addDerivative( 0, value_in->getDerivative(3*innat+0) );
+      der[3*outnat+1].addDerivative( 0, value_in->getDerivative(3*innat+1) );
+      der[3*outnat+2].addDerivative( 0, value_in->getDerivative(3*innat+2) );
+      der[3*outnat+3].addDerivative( 0, value_in->getDerivative(3*innat+3) );
+      der[3*outnat+4].addDerivative( 0, value_in->getDerivative(3*innat+4) );
+      der[3*outnat+5].addDerivative( 0, value_in->getDerivative(3*innat+5) );
+      der[3*outnat+6].addDerivative( 0, value_in->getDerivative(3*innat+6) );
+      der[3*outnat+7].addDerivative( 0, value_in->getDerivative(3*innat+7) );
+      der[3*outnat+8].addDerivative( 0, value_in->getDerivative(3*innat+8) );
+  } else {
+      plumed_assert(0);
   }
-  // Easy to merge the virial
-  der[3*outnat+0].addDerivative( 0, value_in->getDerivative(3*innat+0) );
-  der[3*outnat+1].addDerivative( 0, value_in->getDerivative(3*innat+1) );
-  der[3*outnat+2].addDerivative( 0, value_in->getDerivative(3*innat+2) );
-  der[3*outnat+3].addDerivative( 0, value_in->getDerivative(3*innat+3) );
-  der[3*outnat+4].addDerivative( 0, value_in->getDerivative(3*innat+4) );
-  der[3*outnat+5].addDerivative( 0, value_in->getDerivative(3*innat+5) );
-  der[3*outnat+6].addDerivative( 0, value_in->getDerivative(3*innat+6) );
-  der[3*outnat+7].addDerivative( 0, value_in->getDerivative(3*innat+7) );
-  der[3*outnat+8].addDerivative( 0, value_in->getDerivative(3*innat+8) );
-//  der[j].set( du*ss ); der[j].addDerivative( 0, ss*( 1./fsigma2 - du*du  ) );
+}
+
+void MultiColvar::mergeFieldDerivatives( const std::vector<double>& der, Value* value_out ){
+  unsigned nfder=getNumberOfFieldDerivatives(); 
+  plumed_assert( der.size()==nfder && value_out->getNumberOfDerivatives()==(3*getNumberOfAtoms()+9) );
+
+  if( nfder==(3*getNumberOfAtoms()+9) &&
+      nfder==getNumberOfFunctionsInDistribution() ){
+       error("Major problems for field - can't decide how to do derivatives");
+  }
+  if( nfder==getNumberOfFunctionsInDistribution() ){
+     Value* tmpvalue=new Value();
+     for(unsigned j=0;j<der.size();++j){
+         unsigned kk=getActiveMember(j);
+         unsigned nder=getThisFunctionsNumberOfDerivatives(kk);
+         if( tmpvalue->getNumberOfDerivatives()!=nder ){ tmpvalue->resizeDerivatives(nder); }
+         getField()->extractBaseQuantity( j, tmpvalue );
+         tmpvalue->chainRule( der[j] ); mergeDerivatives(kk, tmpvalue, value_out );
+     }
+     delete tmpvalue;
+  } else if( nfder==(3*getNumberOfAtoms()+9) ){
+     for(unsigned j=0;j<der.size();++j) value_out->addDerivative( j, der[j] );
+  } else {
+     plumed_assert(0);
+  }
 }
 
 void MultiColvar::mergeDerivatives( const unsigned j, Value* value_in, Value* value_out ){    
@@ -563,21 +595,25 @@ void MultiColvar::apply(){
   }
  
   if( getField() ){
+     forces.resize( getField()->get_NdX() );
      if( getField()->applyForces( forces ) ){
+       Value* tmpval=new Value(); tmpval->resizeDerivatives( 3*getNumberOfAtoms()+9 );
+       mergeFieldDerivatives( forces, tmpval );
        for(unsigned j=0;j<nat;++j){
-          f[j][0]+=forces[3*j+0];
-          f[j][1]+=forces[3*j+1];
-          f[j][2]+=forces[3*j+2];
+          f[j][0]+=tmpval->getDerivative(3*j+0);
+          f[j][1]+=tmpval->getDerivative(3*j+1);
+          f[j][2]+=tmpval->getDerivative(3*j+2);
        }
-       v(0,0)+=forces[vstart+0];
-       v(0,1)+=forces[vstart+1];
-       v(0,2)+=forces[vstart+2];
-       v(1,0)+=forces[vstart+3];
-       v(1,1)+=forces[vstart+4];
-       v(1,2)+=forces[vstart+5];
-       v(2,0)+=forces[vstart+6];
-       v(2,1)+=forces[vstart+7];
-       v(2,2)+=forces[vstart+8];
+       v(0,0)+=tmpval->getDerivative(vstart+0);
+       v(0,1)+=tmpval->getDerivative(vstart+1);
+       v(0,2)+=tmpval->getDerivative(vstart+2);
+       v(1,0)+=tmpval->getDerivative(vstart+3);
+       v(1,1)+=tmpval->getDerivative(vstart+4);
+       v(1,2)+=tmpval->getDerivative(vstart+5);
+       v(2,0)+=tmpval->getDerivative(vstart+6);
+       v(2,1)+=tmpval->getDerivative(vstart+7);
+       v(2,2)+=tmpval->getDerivative(vstart+8);
+       delete tmpval;
      }
   }
 }

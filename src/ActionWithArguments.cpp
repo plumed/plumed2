@@ -1,7 +1,6 @@
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
 #include "PlumedMain.h"
-#include "ActionWithField.h"
 #include "ActionSet.h"
 
 using namespace std;

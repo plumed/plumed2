@@ -42,13 +42,14 @@ private:
   bool wasforced;
   std::vector<double> forces;
 public:
+  Field( const std::string ftype, const unsigned d );
   ~Field();
 /// Write the documentation for the field
   static std::string documentation();
 /// Write out the keywords for this action
   static void printKeywords( Log& log );
 /// Read in the stuff for the field
-  void read( const std::string& input, const unsigned nfunc, const unsigned d, const std::string & ftype, std::string& report );
+  void read( const std::string& input, const unsigned nfunc, std::string& report );
 /// Store an error message if something goes wrong during readin
   void error( const std::string & msg );
 /// Return the value of the error message
@@ -57,6 +58,8 @@ public:
   bool check() const ;
 /// Set the number of high dimensional coordinates
   void resizeDerivatives( const unsigned D );
+/// Resize the final number of derivatives
+  void resizeOutDerivatives( const unsigned D );
 /// Get the upper and lower boundaries of the grid
   void retrieveBoundaries( std::vector<double>& min, std::vector<double>& max );
 /// Set up to recalculate everything in the field
@@ -73,6 +76,12 @@ public:
   unsigned get_NdX() const ;
 /// Get number of low dimensional derivatives
   unsigned get_Ndx() const ;
+/// Return the number of base quantities
+  unsigned get_nbase() const ;
+/// Return the total number of derivatives
+  unsigned get_nderivatives() const ;
+/// Get number of splines
+  void get_nspline( std::vector<unsigned>& nspline ) const ;
 /// Get the value of sigma
   double get_sigma() const ;
 /// Get the number of spline points
@@ -105,6 +114,11 @@ unsigned Field::get_NdX() const {
 inline
 unsigned Field::get_Ndx() const {
   return ndx;
+}
+
+inline
+unsigned Field::get_nbase() const {
+  return baseq_nder.size();
 }
 
 inline

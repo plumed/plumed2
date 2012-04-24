@@ -125,6 +125,10 @@ public:
   void setValue(Value*,double);
 /// Check if numerical derivatives should be used
   bool checkNumericalDerivatives() const ;
+// These are things for using vectors of values as fields
+  virtual void checkFieldsAllowed(){ error("cannot use this action as a field"); }
+  virtual unsigned getNumberOfDerivatives();
+  virtual void mergeFieldDerivatives( const std::vector<double>& derivatives, Value* val_out );
 };
 
 inline
@@ -160,6 +164,13 @@ inline
 bool ActionWithValue::checkNumericalDerivatives() const {
   return numericalDerivatives;
 }
+
+inline
+unsigned ActionWithValue::getNumberOfDerivatives(){
+  plumed_assert( values.size()!=0 );
+  return values[0]->getNumberOfDerivatives(); 
+} 
+
 
 
 }

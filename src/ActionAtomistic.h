@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include "Pbc.h"
+#include "PDB.h"
 
 namespace PLMD {
 
@@ -97,6 +98,9 @@ public:
   void lockRequests();
   void unlockRequests();
   const std::set<AtomNumber> & getUnique()const;
+/// Read in an input file containing atom positions and calculate the action for the atomic 
+/// configuration therin
+  void readAndCalculate( const PDB& pdb );
 };
 
 inline

@@ -44,8 +44,10 @@ public:
   static void registerKeywords( Keywords& keys );
   MultiColvarCoordination(const ActionOptions&);
 // active methods:
-  virtual double compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
+/// Returns the number of coordinates of the field
+  unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(const unsigned nn){ return false; }
 };
 
@@ -63,7 +65,7 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.remove("AVERAGE");
   // Use density keywords
-  keys.use("SUBCELL"); keys.use("GRADIENT"); 
+  keys.use("SUBCELL"); keys.use("GRADIENT"); keys.use("DISTRIBUTION");
 }
 
 MultiColvarCoordination::MultiColvarCoordination(const ActionOptions&ao):
@@ -84,6 +86,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
 
   // Read in the atoms
   int natoms; readAtoms( natoms );
+  // And setup the ActionWithDistribution
+  requestDistribution();
 
   // Create the groups for the neighbor list
   std::vector<AtomNumber> ga_lista, gb_lista; AtomNumber aa;
@@ -102,7 +106,11 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double MultiColvarCoordination::compute( const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
+unsigned MultiColvarCoordination::getNumberOfFieldDerivatives(){
+  return getNumberOfFunctionsInDistribution();
+} 
+
+double MultiColvarCoordination::compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number
