@@ -93,7 +93,7 @@ void ActionWithDistribution::requestDistribution(){
   prepareForNeighborListUpdate(); reduceAtNextStep=true;
 }
 
-void ActionWithDistribution::setupField( unsigned ldim, const std::string ftype ){
+void ActionWithDistribution::setupField( unsigned ldim, const std::string & ftype ){
   plumed_massert( keywords.exists("FIELD"), "you have chosen to use fields but have not written documentation for the FIELD keyword"); 
   plumed_massert( ldim<=2 , "fields don't work with more than two dimensions" );
   

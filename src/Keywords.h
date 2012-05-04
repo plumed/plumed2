@@ -62,32 +62,32 @@ private:
 /// Return the number of defined keywords 
   unsigned size() const;
 /// Check if numbered keywords are allowed for this action
-  bool numbered( const std::string k ) const ;
+  bool numbered( const std::string & k ) const ;
 public:
 /// Print the documentation to the log file (used by PLMD::Action::error)
   void print( Log& log ) const ;
 /// Reserve a keyword 
-  void reserve( const std::string t, const std::string k, const std::string d );
+  void reserve( const std::string & t, const std::string & k, const std::string & d );
 /// Use one of the reserved keywords
-  void use( const std::string k );
+  void use( const std::string & k );
 /// Add a new keyword of type t with name k and description d
-  void add( const std::string t, const std::string k, const std::string d );
+  void add( const std::string & t, const std::string & k, const std::string & d );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
-  void add( const std::string t, const std::string k, const std::string def, const std::string d );
+  void add( const std::string & t, const std::string & k, const std::string & def, const std::string & d );
 /// Add a falg with name k that is by default on if def is true and off if def is false.  d should provide a description of the flag
-  void addFlag( const std::string k, const bool def, const std::string d );
+  void addFlag( const std::string & k, const bool def, const std::string & d );
 /// Remove the keyword with name k
-  void remove( const std::string k );
+  void remove( const std::string & k );
 /// Check if there is a keyword with name k
-  bool exists( const std::string k ) const ;
+  bool exists( const std::string & k ) const ;
 /// Check the keyword k has been reserved
-  bool reserved( const std::string k ) const ;
+  bool reserved( const std::string & k ) const ;
 /// Check if the keyword with name k has style t
-  bool style( const std::string k, const std::string t ) const ;
+  bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation
   void print_html() const ;
 /// Change the style of a keyword
-  void reset_style( const std::string k, const std::string style );
+  void reset_style( const std::string & k, const std::string & style );
 };
 
 }

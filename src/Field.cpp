@@ -21,7 +21,7 @@ Field::~Field(){
   for(unsigned i=0;i<df_interpolators.size();++i) delete df_interpolators[i];
 }
 
-void Field::read( const std::string& input, const unsigned nfunc, const unsigned d, const std::string ftype, std::string& report ){
+void Field::read( const std::string& input, const unsigned nfunc, const unsigned d, const std::string & ftype, std::string& report ){
   if( ftype=="identity") fstyle=identity;
   else if( ftype=="gaussian") fstyle=gaussian;
   else error("type " + ftype + " is not implemented in field"); 
@@ -209,7 +209,7 @@ void Field::addForces( std::vector<double>& inforces ){
 }
 
 
-void Field::error( const std::string msg){
+void Field::error( const std::string & msg){
   errormsg=msg; 
 }
 

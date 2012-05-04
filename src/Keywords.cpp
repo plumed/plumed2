@@ -21,7 +21,7 @@ KeyType::KeyType( const std::string& type ){
   }
 }
 
-void Keywords::reserve( const std::string t, const std::string k, const std::string d ){
+void Keywords::reserve( const std::string & t, const std::string & k, const std::string & d ){
   plumed_assert( !exists(k) );  plumed_assert( t!="flag");  // Cannot reserve flags at the moment - if you need it let me know
   plumed_assert( !reserved(k) );
   std::string fd;
@@ -37,7 +37,7 @@ void Keywords::reserve( const std::string t, const std::string k, const std::str
   reserved_keys.push_back(k); reserved_documentation.push_back(fd);
 }
 
-void Keywords::use( const std::string k ){
+void Keywords::use( const std::string & k ){
   plumed_assert( reserved(k) );
   for(unsigned i=0;i<reserved_keys.size();++i){
      if(reserved_keys[i]==k){ 
@@ -48,7 +48,7 @@ void Keywords::use( const std::string k ){
   }
 }
 
-void Keywords::reset_style( const std::string k, const std::string style ){
+void Keywords::reset_style( const std::string & k, const std::string & style ){
   if( exists(k) ){ 
     for(unsigned i=0;i<keys.size();++i){
         if( keys[i]==k ){ types[i]=KeyType(style); }
@@ -62,7 +62,7 @@ void Keywords::reset_style( const std::string k, const std::string style ){
   }
 }
 
-void Keywords::add( const std::string t, const std::string k, const std::string d ){
+void Keywords::add( const std::string & t, const std::string & k, const std::string & d ){
   plumed_assert( !exists(k) ); plumed_assert( t!="flag");  // Use addFlag to add flags
   plumed_assert( !reserved(k) );
   std::string fd;
@@ -78,7 +78,7 @@ void Keywords::add( const std::string t, const std::string k, const std::string 
   keys.push_back(k); documentation.push_back(fd); 
 }
 
-void Keywords::add( const std::string t, const std::string k, const std::string  def, const std::string d ){
+void Keywords::add( const std::string & t, const std::string & k, const std::string &  def, const std::string & d ){
   plumed_assert( !exists(k) ); plumed_assert( t=="compulsory" ); // An optional keyword can't have a default
   plumed_assert( !reserved(k) );
   types.push_back( KeyType(t) ); keys.push_back(k); 
@@ -87,7 +87,7 @@ void Keywords::add( const std::string t, const std::string k, const std::string 
   numdefs.insert( std::pair<std::string,std::string>(k,def) );
 } 
 
-void Keywords::addFlag( const std::string k, const bool def, const std::string d ){
+void Keywords::addFlag( const std::string & k, const bool def, const std::string & d ){
   plumed_assert( !exists(k) ); std::string defstr, flag="flag";
   plumed_assert( !reserved(k) );
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
@@ -98,7 +98,7 @@ void Keywords::addFlag( const std::string k, const bool def, const std::string d
   booldefs.insert( std::pair<std::string,bool>(k,def) );
 } 
 
-void Keywords::remove( const std::string k ){
+void Keywords::remove( const std::string & k ){
   bool found=false; unsigned j=0;
 
   while(true){
@@ -114,7 +114,7 @@ void Keywords::remove( const std::string k ){
   plumed_massert(found,"You are trying to forbid " + k + " a keyword that isn't there"); // You have tried to forbid a keyword that isn't there
 }
 
-bool Keywords::numbered( const std::string k ) const {
+bool Keywords::numbered( const std::string & k ) const {
   unsigned j=0; 
   while(true){
     for(j=0;j<keys.size();j++) if(keys[j]==k) break;
@@ -130,7 +130,7 @@ void Keywords::clear() {
   types.clear(); keys.clear(); documentation.clear(); allowmultiple.clear();   //defaults.clear();
 }
 
-bool Keywords::style( const std::string k, const std::string t ) const {
+bool Keywords::style( const std::string & k, const std::string & t ) const {
   plumed_assert( exists(k) );
 
   if( t=="compulsory" ){
@@ -177,7 +177,7 @@ unsigned Keywords::size() const {
   return keys.size();
 }
 
-bool Keywords::exists( const std::string k ) const {
+bool Keywords::exists( const std::string & k ) const {
   plumed_massert( keys.size()==documentation.size(), "documentation doesn't match keys" ); 
   plumed_massert( keys.size()==types.size(), "types doesn't match keys" );
   plumed_assert(  keys.size()==allowmultiple.size() );
@@ -188,7 +188,7 @@ bool Keywords::exists( const std::string k ) const {
   return false;
 }
 
-bool Keywords::reserved( const std::string k ) const {
+bool Keywords::reserved( const std::string & k ) const {
   plumed_massert( reserved_keys.size()==reserved_documentation.size(), "documentation doesn't match keys" );
   plumed_massert( reserved_keys.size()==reserved_types.size(), "types doesn't match keys" );
   plumed_massert( reserved_keys.size()==reserved_allowmultiple.size(),"allowmultiple doesn't match keys" );

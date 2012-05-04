@@ -50,9 +50,9 @@ public:
 /// Write out the keywords for this action
   static void printKeywords( Log& log );
 /// Read in the stuff for the field
-  void read( const std::string& input, const unsigned nfunc, const unsigned d, const std::string ftype, std::string& report );
+  void read( const std::string& input, const unsigned nfunc, const unsigned d, const std::string & ftype, std::string& report );
 /// Store an error message if something goes wrong during readin
-  void error( const std::string msg );
+  void error( const std::string & msg );
 /// Return the value of the error message
   std::string errorMessage() const ;
 /// Check if there was a problem on readin

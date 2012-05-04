@@ -46,7 +46,7 @@ protected:
 /// Add a distribution function to the list (this routine must be called after construction of ActionWithValue)
   void addDistributionFunction( std::string name, DistributionFunction* fun );
 /// Setup a field cv
-  void setupField( unsigned ldim, const std::string ftype );
+  void setupField( unsigned ldim, const std::string & ftype );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void requestDistribution();
 /// Find out if we are running the calculation without mpi

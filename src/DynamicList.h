@@ -140,7 +140,7 @@ public:
 /// Return the number of elements that are currently active
   unsigned getNumberActive() const;
 /// Add something to the active list
-  void addIndexToList( const T ii );
+  void addIndexToList( const T & ii );
 /// Make a particular element inactive
   void deactivate( const unsigned ii ); 
 /// Make everything in the list inactive
@@ -179,7 +179,7 @@ unsigned DynamicList<T>::getNumberActive() const {
 }
 
 template <typename T>
-void DynamicList<T>::addIndexToList( const T ii ){
+void DynamicList<T>::addIndexToList( const T & ii ){
   all.push_back(ii); translator.push_back( all.size()-1 ); onoff.push_back(0);
 }
 
