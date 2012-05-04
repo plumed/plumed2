@@ -382,7 +382,7 @@ void PlumedMain::prepareDependencies(){
 //
 
 // First switch off all actions
-  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++){
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
      (*p)->deactivate();
      (*p)->clearOptions();
   }
@@ -398,7 +398,7 @@ void PlumedMain::prepareDependencies(){
 
 // also, if one of them is the total energy, tell to atoms that energy should be collected
   bool collectEnergy=false;
-  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();p++){
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
     if((*p)->isActive()){
       if(Colvar *c=dynamic_cast<Colvar*>(*p)) {
         if(c->checkIsEnergy()) collectEnergy=true;

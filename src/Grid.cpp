@@ -490,7 +490,7 @@ void SparseGrid::writeToFile(FILE* file){
  vector<double> der(dimension_);
  double f;
  writeHeader(file);
- for(iterator it=map_.begin();it!=map_.end();it++){
+ for(iterator it=map_.begin();it!=map_.end();++it){
    unsigned i=(*it).first;
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 

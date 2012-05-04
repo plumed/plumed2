@@ -165,7 +165,7 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
 
 void Tools::interpretRanges(std::vector<std::string>&s){
   vector<string> news;
-  for(vector<string>::iterator p=s.begin();p!=s.end();p++){
+  for(vector<string>::iterator p=s.begin();p!=s.end();++p){
     vector<string> words;
     words=getWords(*p,"-");
     int a,b;

@@ -113,14 +113,14 @@ void Action::activate(){
     prepare();
     this->lockRequests();
   }
-  for(Dependencies::iterator p=after.begin();p!=after.end();p++) (*p)->activate();
+  for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->activate();
   active=true;
 }
 
 void Action::setOption(const std::string &s){
 // This overloads the action and activate some options  
   options.insert(s);
-  for(Dependencies::iterator p=after.begin();p!=after.end();p++) (*p)->setOption(s);
+  for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->setOption(s);
 }
 
 void Action::clearOptions(){
@@ -130,7 +130,7 @@ void Action::clearOptions(){
 
 
 void Action::clearDependencies(){
-  for(Dependencies::iterator p=after.begin();p!=after.end();p++){
+  for(Dependencies::iterator p=after.begin();p!=after.end();++p){
     (*p)->before.erase(this);
   };
   this->after.clear();
