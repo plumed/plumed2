@@ -155,7 +155,7 @@ read_input(FILE*   fp,
 void read_natoms(const string & inputfile,int & natoms){
 // read the number of atoms in file "input.xyz"
   FILE* fp=fopen(inputfile.c_str(),"r");
-  fscanf(fp,"%d",&natoms);
+  fscanf(fp,"%1000d",&natoms);
   fclose(fp);
 }
 
@@ -166,9 +166,9 @@ void read_positions(const string& inputfile,int natoms,vector<Vector>& positions
   char buffer[256];
   char atomname[256];
   fgets(buffer,256,fp);
-  fscanf(fp,"%lf %lf %lf",&cell[0],&cell[1],&cell[2]);
+  fscanf(fp,"%1000lf %1000lf %1000lf",&cell[0],&cell[1],&cell[2]);
   for(int i=0;i<natoms;i++){
-    fscanf(fp,"%s %lf %lf %lf",atomname,&positions[i][0],&positions[i][1],&positions[i][2]);
+    fscanf(fp,"%255s %1000lf %1000lf %1000lf",atomname,&positions[i][0],&positions[i][1],&positions[i][2]);
 // note: atomname is read but not used
   }
   fclose(fp);
