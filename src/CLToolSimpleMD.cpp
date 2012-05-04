@@ -391,10 +391,17 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
     plumed->cmd("setRealPrecision",&s);
   }
 
-  read_input(stdin,temperature,tstep,friction,forcecutoff,
+  FILE* mystdin=stdin;
+
+  if(argc==2) mystdin=fopen(argv[1],"r");
+
+  read_input(mystdin,temperature,tstep,friction,forcecutoff,
              listcutoff,nstep,nconfig,nstat,
              wrapatoms,inputfile,outputfile,trajfile,statfile,
              maxneighbour,idum);
+
+  if(argc==2) fclose(mystdin);
+
 
 // number of atoms is read from file inputfile
   read_natoms(inputfile,natoms);
