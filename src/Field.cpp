@@ -55,7 +55,7 @@ void Field::read( const std::string& input, const unsigned nfunc, const unsigned
   bool found_sigma=Tools::parse( data, "SIGMA", sigma );
   if(!found_sigma) error("did not find SIGMA keyword");
 
-  if( data.size()!=0 ){
+  if( !data.empty() ){
       std::string err="found the following rogue keywords : ";
       for(unsigned i=0;i<data.size();++i) err=err + data[i] + ", ";
       error(err);

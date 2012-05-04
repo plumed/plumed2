@@ -81,7 +81,7 @@ ActionAtomistic(ao)
   for(int i=0;;i++){
     vector<AtomNumber> group;
     parseAtomList("ENTITY",i,group); 
-    if( group.size()==0 ) break;
+    if( group.empty() ) break;
     log.printf("  atoms in entity %d : ",i);
     for(unsigned j=0;j<group.size();++j) log.printf("%d ",group[j].serial() );
     log.printf("\n");

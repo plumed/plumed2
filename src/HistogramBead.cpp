@@ -58,7 +58,7 @@ void HistogramBead::generateBins( const std::string& params, const std::string& 
      bins.push_back( dd + "LOWER=" + lb + " " + dd + "UPPER=" + ub + " " + dd + "SMEAR=" + smear );
   }
   plumed_assert(bins.size()==nbins);
-  if( dd.size()==0 ) plumed_massert(data.size()==0,"Error reading histogram"); 
+  if( dd.empty() ) plumed_massert(data.empty(),"Error reading histogram"); 
 }
 
 void HistogramBead::set( const std::string& params, const std::string& dd, std::string& errormsg ){
@@ -75,7 +75,7 @@ void HistogramBead::set( const std::string& params, const std::string& dd, std::
   
   smear=0.5; bool found_b=Tools::parse(data,dd+"SMEAR",smear);
   width=smear*(highb-lowb); init=true;
-  if( dd.size()==0 ){ if( data.size()!=0) errormsg="Error reading within"; }
+  if( dd.empty() ){ if( !data.empty()) errormsg="Error reading within"; }
 }
 
 void HistogramBead::set( double l, double h, double w){

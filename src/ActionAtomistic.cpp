@@ -118,7 +118,7 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   vector<string> strings;
   if( num<0 ){
       parseVector(key,strings);
-      if(strings.size()==0) return;
+      if(strings.empty()) return;
   } else {
       if ( !parseNumberedVector(key,num,strings) ) return;
   }

@@ -48,7 +48,7 @@ double Kearsley::calculate(bool rmsd) {
 			cerr<<"size of align is :"<<align.size()<<endl;
 			exit(0);
 	}
-	if(p0.size()==0 || p1.size()==0  ){
+	if(p0.empty() || p1.empty()  ){
 		cerr<<"Kearsley: looks like you have not properly allocated the vectors: they do not contain anything"<<endl;
 		exit(0);
 	}
@@ -104,7 +104,7 @@ double Kearsley::calculate(bool rmsd) {
 
 		com0=xx;
 
-		if (p0reset.size()==0){p0reset.resize(natoms);}
+		if (p0reset.empty()){p0reset.resize(natoms);}
 		for(i=0;i<natoms;i++){
 			p0reset[i]=p0[i]-xx;
 		}
@@ -133,7 +133,7 @@ double Kearsley::calculate(bool rmsd) {
 
 		com1=xx;
 
-		if (p1reset.size()==0){p1reset.resize(natoms);}
+		if (p1reset.empty()){p1reset.resize(natoms);}
 
 		for(i=0;i<natoms;i++){
 				p1reset[i]=p1[i]-xx;

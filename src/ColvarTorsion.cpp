@@ -70,14 +70,14 @@ pbc(true)
   checkRead();
 
   if(atoms.size()==4){
-    assert(v1.size()==0 && v2.size()==0 && axis.size()==0);
+    assert((v1.empty()) && (v2.empty()) && (axis.empty()));
     log.printf("  between atoms %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
     atoms.resize(6);
     atoms[5]=atoms[3];
     atoms[4]=atoms[2];
     atoms[3]=atoms[2];
     atoms[2]=atoms[1];
-  }else if(atoms.size()==0){
+  }else if(atoms.empty()){
     assert(v1.size()==2 && v2.size()==2 && axis.size()==2);
     log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
                 v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());

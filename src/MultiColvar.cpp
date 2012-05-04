@@ -205,7 +205,7 @@ void MultiColvar::readAtomsKeyword( int& natoms ){
   std::vector<AtomNumber> t; DynamicList<unsigned> newlist;
   for(int i=1;;++i ){
      parseAtomList("ATOMS", i, t );
-     if( t.size()==0 ) break;
+     if( t.empty() ) break;
 
      log.printf("  Colvar %d is calculated from atoms : ", i);
      for(unsigned j=0;j<t.size();++j) log.printf("%d ",t[j].serial() );
@@ -237,7 +237,7 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
   
   std::vector<AtomNumber> t;
   parseAtomList("GROUP",t);
-  if( t.size()!=0 ){
+  if( !t.empty() ){
       readatoms=true;
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
       DynamicList<unsigned> newlist; 
@@ -251,10 +251,10 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
   } else {
       std::vector<AtomNumber> t1,t2; 
       parseAtomList("GROUPA",t1);
-      if( t1.size()!=0 ){
+      if( !t1.empty() ){
          readatoms=true;
          parseAtomList("GROUPB",t2);
-         if ( t2.size()==0 ) error("GROUPB keyword defines no atoms or is missing. Use either GROUPA and GROUPB or just GROUP"); 
+         if ( t2.empty() ) error("GROUPB keyword defines no atoms or is missing. Use either GROUPA and GROUPB or just GROUP"); 
          for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] ); 
          for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] ); 
          DynamicList<unsigned> newlist;
@@ -277,7 +277,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
 
   std::vector<AtomNumber> t;
   parseAtomList("SPECIES",t);
-  if( t.size()!=0 ){
+  if( !t.empty() ){
       readatoms=true; natoms=t.size();
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
       DynamicList<unsigned> newlist;
@@ -305,10 +305,10 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   } else if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) {
       std::vector<AtomNumber> t1,t2;
       parseAtomList("SPECIESA",t1);
-      if( t1.size()!=0 ){
+      if( !t1.empty() ){
          readatoms=true; 
          parseAtomList("SPECIESB",t2);
-         if ( t2.size()==0 ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
+         if ( t2.empty() ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
          natoms=1+t2.size();
          for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] );
          for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] );

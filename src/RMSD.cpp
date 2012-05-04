@@ -51,8 +51,8 @@ string RMSD::getMethod(){
 void RMSD::setReference(const vector<Vector> & reference){
   unsigned n=reference.size();
   this->reference=reference;
-  plumed_massert(align.size()==0,"you should first clear() an RMSD object, then set a new referece");
-  plumed_massert(displace.size()==0,"you should first clear() an RMSD object, then set a new referece");
+  plumed_massert(align.empty(),"you should first clear() an RMSD object, then set a new referece");
+  plumed_massert(displace.empty(),"you should first clear() an RMSD object, then set a new referece");
   align.resize(n,1.0);
   displace.resize(n,1.0);
 }

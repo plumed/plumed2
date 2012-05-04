@@ -22,7 +22,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         if(a=="*" && name=="*"){
            // Take all values from all actions
            std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-           if( all.size()==0 ) error("your input file is not telling plumed to calculate anything");
+           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
            for(unsigned j=0;j<all.size();j++){
              for(int k=0;k<all[j]->getNumberOfComponents();++k) arg.push_back(all[j]->copyOutput(k));
            }
@@ -34,7 +34,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         } else if ( a=="*" ){
            // Take components from all actions with a specific name
            std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-           if( all.size()==0 ) error("your input file is not telling plumed to calculate anything");
+           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
            std::string lab; unsigned nval=0;
            for(unsigned j=0;j<all.size();j++){
               std::string flab; flab=all[j]->getLabel() + "." + name;
@@ -52,7 +52,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         if(c[i]=="*"){
            // Take all values from all actions
            std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-           if( all.size()==0 ) error("your input file is not telling plumed to calculate anything");
+           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
            for(unsigned j=0;j<all.size();j++){
              for(int k=0;k<all[j]->getNumberOfComponents();++k) arg.push_back(all[j]->copyOutput(k));
            }
@@ -93,7 +93,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
      vector<Value*> arg;
      parseArgumentList("ARG",arg);
 
-     if(arg.size()>0){
+     if(!arg.empty()){
        log.printf("  with arguments");
        for(unsigned i=0;i<arg.size();i++) log.printf(" %s",arg[i]->getName().c_str());
        log.printf("\n");

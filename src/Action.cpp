@@ -141,7 +141,7 @@ std::string Action::getDocumentation()const{
 }
 
 void Action::checkRead(){
-  if(line.size()>0){
+  if(!line.empty()){
     std::string msg="cannot understand the following words from the input line : ";
     for(unsigned i=0;i<line.size();i++) msg = msg + line[i] + ", ";
     error(msg);

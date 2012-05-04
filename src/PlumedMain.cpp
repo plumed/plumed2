@@ -310,7 +310,7 @@ void PlumedMain::readInputFile(std::string str){
   FILE*fp=fopen(str.c_str(),"r");
   std::vector<std::string> words;
   while(Tools::getParsedLine(fp,words)){
-    if(words.size()==0)continue;
+    if(words.empty())continue;
     else if(words[0]=="ENDPLUMED") break;
     else if(words[0]=="LOAD") load(words);
     else if(words[0]=="_SET_SUFFIX"){

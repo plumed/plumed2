@@ -47,7 +47,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   } else if(name=="EXP") type=exponential;
   else if(name=="GAUSSIAN") type=gaussian;
   else errormsg="cannot understand switching function type '"+name+"'";
-  if( data.size()!=0 ){
+  if( !data.empty() ){
       errormsg="found the following rogue keywords in switching function input : ";
       for(unsigned i=0;i<data.size();++i) errormsg = errormsg + data[i] + " "; 
   }

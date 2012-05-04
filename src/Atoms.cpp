@@ -267,7 +267,7 @@ void Atoms::createFullList(int*n){
 }
 
 void Atoms::getFullList(int**x){
-  if(fullList.size()>0) *x=&fullList[0];
+  if(!fullList.empty()) *x=&fullList[0];
   else *x=NULL;
 }
 

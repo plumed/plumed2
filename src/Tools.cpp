@@ -104,7 +104,7 @@ bool Tools::getParsedLine(FILE* fp,vector<string> & words){
     trim(line);
     if(line.length()==0) continue;
     vector<string> w=getWords(line);
-    if(w.size()==0) continue;
+    if(w.empty()) continue;
     if(inside && *(w.begin())=="..."){
       inside=false;
       if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" lines, if present, should be equal to first word of directive");

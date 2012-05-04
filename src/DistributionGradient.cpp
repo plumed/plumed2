@@ -60,7 +60,7 @@ isDensity(false)
     bounds.push_back( beads.size() );
     final_bin.resize( beads.size() );
     bool idens=Tools::parseFlag(data,"density",isDensity);
-    if( data.size()!=0 ){
+    if( ! data.empty() ){
         std::string msg="found the following rogue keywords in switching function input : ";
         for(unsigned i=0;i<data.size();++i) msg = msg + data[i] + " "; 
         error(msg);
