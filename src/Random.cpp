@@ -1,6 +1,6 @@
 #include "Random.h"
 #include <cmath>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sstream>
 
 using namespace PLMD;
