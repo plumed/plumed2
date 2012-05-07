@@ -13,6 +13,18 @@
   library at link time (on all systems) or directly at runtime (on system where
   dynamic loading is enabled) to include plumed features.
 
+  Why is Plumed.c written in C and not C++? The reason is that the resulting Plumed.o
+  needs to be linked with the host MD code immediately (whereas the rest of plumed
+  could be linked a posteriori). Imagine the MD code is written in FORTRAN: when we
+  link the Plumed.o file we would like not to need any C++ library linked. In this
+  manner, we do not need to know which C++ compiler will be used to compile plumed.
+  The C++ library is only linked to the "rest" of plumed, which actually use it.
+  Anyway, Plumed.c is written in such a manner to allow its compilation also in C++
+  (C++ is a bit stricter than C; compatibility is checked when PlumedStatic.cpp,
+  which basically includes Plumed.c, is compiled with the C++ compiler). This will
+  allow e.g. MD codes written in C++ to just incorporate Plumed.c (maybe renamed into
+  Plumed.cpp), without the need of configuring a plain C compiler.
+
   Plumed interface can be used from C, C++ and FORTRAN. Everything concerning plumed
   is hidden inside a single object type, which is described in C by a structure
   (struct plumed), in C++ by a class (PLMD::Plumed) and in FORTRAN by a
