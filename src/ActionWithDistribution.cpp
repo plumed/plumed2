@@ -164,7 +164,7 @@ void ActionWithDistribution::calculate(){
   // Create a value to store stuff in 
   Value* tmpvalue=new Value();
 
-  unsigned kk; double contribution; bool keep;
+  unsigned kk; bool keep;
   for(unsigned i=rank;i<members.getNumberActive();i+=stride){
       // Retrieve the function we are calculating from the dynamic list
       kk=members[i];

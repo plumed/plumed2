@@ -57,10 +57,10 @@ Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithDistribution(ao),
+usepbc(true),
 readatoms(false),
 setperiods(false),
-needsCentralAtomPosition(false),
-usepbc(true)
+needsCentralAtomPosition(false)
 {
   if( keywords.style("NOPBC", "flag") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);

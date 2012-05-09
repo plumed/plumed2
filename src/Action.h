@@ -252,7 +252,7 @@ bool Action::parseNumbered(const std::string&key, const int no, T&t){
   if( !keywords.numbered(key) ) error("numbered keywords are not allowed for " + key );
 
   // Now try to read the keyword
-  bool found; std::string def;
+  std::string def;
   std::string num; Tools::convert(no,num);
   return Tools::parse(line,key+num,t);
 }

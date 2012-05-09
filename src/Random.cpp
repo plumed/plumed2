@@ -11,9 +11,9 @@ const double Random::AM=1.0/IM;
 const double Random::RNMX=(1.0-EPS); // 1.0-EPS;
 
 Random::Random(const std::string & name):
-  name(name),
   switchGaussian(false),
-  saveGaussian(0.0)
+  saveGaussian(0.0),
+  name(name)
 {
 	iv[0]=0;
 	setSeed(0);
