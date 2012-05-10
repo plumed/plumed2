@@ -41,7 +41,7 @@ mpi=env
 plumed=plumed
 
 if ((mpiprocs>0)); then
-mpi="mpirun -np $mpiprocs"
+mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
 
 if ! plumed --has-mpi
 then
