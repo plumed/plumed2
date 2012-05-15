@@ -31,6 +31,12 @@ clean:
 %.$(SOEXT) : %.o
 	$(LDSO) -o $@ $^
 
+# this compiler is used for dependencies generation
+# if unset, use normal CXX
+ifndef CXXDEP
+CXXDEP=$(CXX)
+endif
+
 %.o: %.cpp
 	$(CXXDEP) -c -MM -MF$*.d $(CPPFLAGS) $(CXXFLAGS) $*.cpp
 	@cp -f $*.d $*.d.tmp
