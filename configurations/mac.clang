@@ -3,7 +3,7 @@
 DOUBLEPRECISION=-fdefault-real-8
 
 LIBS=-ldl
-DYNAMIC_LIBS= -L/opt/local/lib -lmatheval -lstdc++ -llapack -lblas
+DYNAMIC_LIBS= -L/opt/local/lib -lmatheval -lstdc++ -framework Accelerate
 
 WARNINGS=-pedantic -Wall -Wextra -Wfloat-equal -Wwrite-strings -Wpointer-arith -Wcast-qual \
          -Wcast-align -Wconversion  \
