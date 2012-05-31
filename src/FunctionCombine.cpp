@@ -59,7 +59,6 @@ normalize(false),
 coefficients(getNumberOfArguments(),1.0),
 powers(getNumberOfArguments(),1.0)
 {
-  printf("In function combine\n");
   parseVector("COEFFICIENTS",coefficients);
   assert(coefficients.size()==static_cast<unsigned>(getNumberOfArguments()));
   parseVector("POWERS",powers);
