@@ -3,6 +3,8 @@
 
 #include <cmath>
 #include <cassert>
+#include <algorithm>
+#include <utility>
 
 using namespace std;
 
