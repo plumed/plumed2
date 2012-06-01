@@ -390,7 +390,7 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
   if ( natoms==0 ) return;   // Do nothing if there are no active atoms in the colvar
   // Retrieve the atoms
   Tensor vir; std::vector<Vector> pos(natoms), der(natoms); vir.clear();
-  for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); der.clear(); }
+  for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); der[i].clear(); }
   
   // Compute the derivatives
   stopcondition=false; current=j;
