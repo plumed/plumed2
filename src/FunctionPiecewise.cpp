@@ -11,14 +11,34 @@ namespace PLMD{
 //+PLUMEDOC FUNCTION PIECEWISE
 /**
 
+Compute a piecewise straight line of its arguments, passing through
+a set of ordered control points. For variables lesser than the first
+(greater than the last) point, the value of the first (last) point is used.
+
+\f[
+\frac{y_{i+1}-y_i}{x_{i+1}-x_i}(s-x_i)+y_i ;  if x_i<s<x_{i+1}
+\f]
+\f[
+y_N ; if x>x_N 
+\f]
+\f[
+y_1 ; if x<x_1 
+\f]
+
+Control points are passed using the POINT1=... POINT2=... syntax as in the example below
+
+If one argument is supplied, it results in a scalar quantity.
+If multiple arguments are supplied, it results
+in a vector of arguments.
+
 \par Examples
 \verbatim
+dist1: DISTANCE ATOMS=1,10
+dist2: DISTANCE ATOMS=2,11
 
-
-
-
-PIECEWISE  LABEL=distance  ARG=distance2 POWERS=0.5
-PRINT ARG=distance,distance2
+pw: PIECEWISE POINT1=1,10 POINT2=2,pi POINT3=3,10 ARG=dist1,
+ppww: PIECEWISE POINT1=1,10 POINT2=2,pi POINT3=3,10 ARG=dist1,dist2
+PRINT ARG=pw,ppww.1,ppww.2
 \endverbatim
 (See also \ref PRINT and \ref DISTANCE).
 
@@ -44,7 +64,6 @@ PLUMED_REGISTER_ACTION(FunctionPiecewise,"PIECEWISE")
 void FunctionPiecewise::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
-//  keys.use("PERIODIC");
   keys.add("numbered","POINT","This keyword appears multiple times as POINTx with x=0,1,2,...,n.");
   keys.reset_style("POINT","compulsory");
 }
@@ -60,6 +79,10 @@ Function(ao)
      points.push_back(std::pair<double,double>(pp[0],pp[1]));
      if(i>0 && points[i].first<=points[i-1].first) error("points abscissas should be monotonously increasing");
   }
+
+  for(int i=0;i<getNumberOfArguments();i++)
+    if(getPntrToArgument(i)->isPeriodic())
+    error("Cannot use PIECEWISE on periodic arguments");
 
   if(getNumberOfArguments()==1){
     addValueWithDerivatives(); 
