@@ -208,7 +208,7 @@ void ActionWithDistribution::calculate(){
      unsigned bufsize=0;
      for(unsigned i=0;i<functions.size();++i) functions[i]->copyDataToBuffers( bufsize, buffer ); 
      plumed_assert( bufsize==buffer.size() ); 
-     comm.Sum( &buffer[0],buffer.size() ); 
+     if(buffer.size()>0) comm.Sum( &buffer[0],buffer.size() ); 
      bufsize=0;
      for(unsigned i=0;i<functions.size();++i) functions[i]->retrieveDataFromBuffers( bufsize, buffer ); 
      plumed_assert( bufsize==buffer.size() );
