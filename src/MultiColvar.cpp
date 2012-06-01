@@ -36,7 +36,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.reserve("optional","FIELD","create a field cv from these collective variables.  From a distribution of collective variables we calculate a 1D-field using " 
                                   " \\f$\\psi(z)=\\frac{\\sum_i G(z-s_i,\\sigma)}{\\int \\textrm{d}z \\sum_i G(z-s_i,\\sigma)}\\f$ where \\f$ G(z-s_i,\\sigma)\\f$ "
                                   " is a normalized Gaussian function with standard deviation \\f$\\sigma\\f$ centered at the value of the \\f$i\\f$th collective variable"
-                                  " \\f$s_i$\\f$.  In other words we use a histogram calculated from the values of all the constituent collective variables. " 
+                                  " \\f$s_i\\f$.  In other words we use a histogram calculated from the values of all the constituent collective variables. " 
                                   + Field::documentation() );
   keys.add("optional","MIN","calculate the minimum value and store it in a value called min. " + min::documentation() );
 //  keys.add("optional","MAX", "take the maximum value from these variables");
