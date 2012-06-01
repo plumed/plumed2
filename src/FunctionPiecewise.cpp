@@ -112,7 +112,7 @@ void FunctionPiecewise::calculate(){
     if(p==0){
       f=points[0].second;
       d=0.0;
-    } if(p==points.size()){
+    } else if(p==points.size()){
       f=points[points.size()-1].second;
       d=0.0;
     } else {
