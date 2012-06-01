@@ -31,8 +31,6 @@ void Function::addValueWithDerivatives(){
      } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
         setPeriodic(min,max);
      } else error("missing PERIODIC keyword");
-  } else {
-     plumed_massert(0,"You should use the reserved keyword PERIODIC to read in the periodicity for single value functions");
   }
 } 
   

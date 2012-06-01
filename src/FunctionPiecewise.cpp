@@ -13,6 +13,10 @@ namespace PLMD{
 
 \par Examples
 \verbatim
+
+
+
+
 PIECEWISE  LABEL=distance  ARG=distance2 POWERS=0.5
 PRINT ARG=distance,distance2
 \endverbatim
@@ -40,7 +44,7 @@ PLUMED_REGISTER_ACTION(FunctionPiecewise,"PIECEWISE")
 void FunctionPiecewise::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
-  keys.use("PERIODIC");
+//  keys.use("PERIODIC");
   keys.add("numbered","POINT","This keyword appears multiple times as POINTx with x=0,1,2,...,n.");
   keys.reset_style("POINT","compulsory");
 }

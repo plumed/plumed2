@@ -3,9 +3,7 @@ d2: DISTANCE ATOMS=2,3
 d3: DISTANCE ATOMS=3,4
 d4: DISTANCE ATOMS=4,5
 
-# for some reason that I do not completely understand I was not
-# able to remove the need for PERIODIC here:
-p:  PIECEWISE ARG=d1 POINT0=1.2,10 POINT1=1.3,0 POINT2=1.4,5 PERIODIC=NO
+p:  PIECEWISE ARG=d1 POINT0=1.2,10 POINT1=1.3,0 POINT2=1.4,5
 pp:  PIECEWISE ARG=d1,d2 POINT0=1.2,10 POINT1=1.3,0 POINT2=1.4,5
 
 RESTRAINT ARG=p AT=5.0 KAPPA=1.0
