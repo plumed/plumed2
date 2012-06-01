@@ -33,6 +33,11 @@ mpiprocs=0
 
 source ./config
 
+for file in $extra_files
+do
+  cp -f ../$file .
+done
+
 echo "++ Test type: $type"
 echo "++ Arguments: $arg"
 echo "++ Processors: $mpiprocs"

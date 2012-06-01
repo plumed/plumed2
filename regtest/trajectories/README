@@ -1,0 +1,2 @@
+If you want to use a standard trajectory from here, just set
+extra_files=../trajectories/name-of-the-file
