@@ -35,7 +35,7 @@ PLUMED_REGISTER_ACTION(ColvarDipole,"DIPOLE")
 void ColvarDipole::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
   keys.add("atoms","GROUP","the group of atoms we are calculating the dipole moment for");
-  keys.remove("PBC"); keys.remove("NOPBC");
+  keys.remove("NOPBC");
 }
 
 ColvarDipole::ColvarDipole(const ActionOptions&ao):

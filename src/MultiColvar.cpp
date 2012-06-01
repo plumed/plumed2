@@ -11,7 +11,6 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.addFlag("PBC",true,"use the periodic boundary conditions when calculating distances");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.reserve("numbered","ATOMS","the atoms involved in each of the collective variables you wish to calculate. "
                                "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one CV will be "
@@ -64,7 +63,7 @@ needsCentralAtomPosition(false)
 {
   if( keywords.style("NOPBC", "flag") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
-    usepbc=!nopbc; parseFlag("PBC",usepbc);
+    usepbc=!nopbc;
   }
 }
 

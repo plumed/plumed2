@@ -58,7 +58,6 @@ pbc(true)
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
-  parseFlag("PBC",pbc);
   checkRead();
 
   log.printf("  between atoms %d %d\n",atoms[0].serial(),atoms[1].serial());

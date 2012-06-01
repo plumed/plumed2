@@ -98,7 +98,6 @@ reduceListAtNextStep(false)
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
-  parseFlag("PBC",pbc);
 
 // pair stuff
   bool dopair=false;

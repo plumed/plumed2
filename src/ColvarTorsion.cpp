@@ -66,7 +66,6 @@ pbc(true)
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
-  parseFlag("PBC",pbc);
   checkRead();
 
   if(atoms.size()==4){
