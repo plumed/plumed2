@@ -28,7 +28,8 @@ public:
 /// It also take into account parenthesis. Outer parenthesis found are removed from
 /// output, and the text between them is considered as a single word. Only the
 /// outer parenthesis are processed, to allow nesting them.
-  static std::vector<std::string> getWords(const std::string & line,const char* sep=" \t\n",const char* parenthesis="(");
+/// parlevel, if not NULL, is increased or decreased according to the number of opened/closed parenthesis
+  static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="(");
 /// Get a line from the file pointer fp
   static bool getline(std::FILE* fp,std::string & line);
 /// Get a parsed line from the file pointer fp.

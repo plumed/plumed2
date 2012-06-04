@@ -56,10 +56,11 @@ bool Tools::convert(const string & str,string & t){
         return true;
 }
 
-vector<string> Tools::getWords(const string & line,const char* separators,const char* parenthesis){
+vector<string> Tools::getWords(const string & line,const char* separators,int * parlevel,const char* parenthesis){
   plumed_massert(strlen(parenthesis)==1,"multiple parenthesis type not available");
   plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
                   "only ( [ { allowed as parenthesis");
+  if(!separators) separators=" \t\n";
   const string sep(separators);
   char openpar=parenthesis[0];
   char closepar;
@@ -69,28 +70,30 @@ vector<string> Tools::getWords(const string & line,const char* separators,const 
   vector<string> words;
   string word;
   int parenthesisLevel=0;
+  if(parlevel) parenthesisLevel=*parlevel;
   for(unsigned i=0;i<line.length();i++){
     bool found=false;
     bool onParenthesis=false;
     if(line[i]==openpar || line[i]==closepar) onParenthesis=true;
     if(line[i]==closepar){
       parenthesisLevel--;
-      plumed_massert(parenthesisLevel>=0,"Unmatching parenthesis in '" + line + "'");
+      plumed_massert(parenthesisLevel>=0,"Extra closed parenthesis in '" + line + "'");
     }
     if(parenthesisLevel==0) for(unsigned j=0;j<sep.length();j++) if(line[i]==sep[j]) found=true;
 // If at parenthesis level zero (outer) 
     if(!(parenthesisLevel==0 && (found||onParenthesis))) word.push_back(line[i]);
     if(line[i]==openpar) parenthesisLevel++;
     if(found && word.length()>0){
-      plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
+      if(!parlevel) plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
       words.push_back(word);
       word.clear();
     }
   }
   if(word.length()>0){
-    plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
+    if(!parlevel) plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
     words.push_back(word);
   }
+  if(parlevel) *parlevel=parenthesisLevel;
   return words;
 }
 
@@ -99,11 +102,13 @@ bool Tools::getParsedLine(FILE* fp,vector<string> & words){
   words.clear();
   bool stat;
   bool inside=false;
+  int parlevel=0;
+  bool mergenext=false;
   while((stat=getline(fp,line))){
     trimComments(line);
     trim(line);
     if(line.length()==0) continue;
-    vector<string> w=getWords(line);
+    vector<string> w=getWords(line,NULL,&parlevel);
     if(w.empty()) continue;
     if(inside && *(w.begin())=="..."){
       inside=false;
@@ -114,9 +119,16 @@ bool Tools::getParsedLine(FILE* fp,vector<string> & words){
       inside=true;
       w.erase(w.end()-1);
     };
-    for(unsigned i=0;i<w.size();++i) words.push_back(w[i]);
+    int i0=0;
+    if(mergenext && words.size()>0 && w.size()>0){
+      words[words.size()-1]+=w[0];
+      i0=1;
+    }
+    for(unsigned i=i0;i<w.size();++i) words.push_back(w[i]);
+    mergenext=(parlevel>0);
     if(!inside)break;
   }
+  plumed_massert(parlevel==0,"non matching parenthesis");
   if(words.size()>0) return true;
   return stat;
 }
