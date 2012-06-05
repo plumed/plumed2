@@ -2,14 +2,12 @@
 #define __PLUMED_Field_h
 
 #include "PlumedException.h"
-#include "PlumedCommunicator.h"
-#include "Keywords.h"
-#include "Field.h"
-#include "Tools.h"
 #include "Value.h"
 #include "CubicInterpolation.h"
 
 namespace PLMD{
+
+class PlumedCommunicator;
 
 // A class for storing the field
 class Field {

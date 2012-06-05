@@ -1,11 +1,9 @@
 #ifndef __PLUMED_Stopwatch_h
 #define __PLUMED_Stopwatch_h
 
-#include "PlumedException.h"
-
 #include <string>
 #include <map>
-#include <iostream>
+#include <iosfwd>
 
 namespace PLMD{
 
@@ -119,11 +117,6 @@ public:
 /// Dump all timers on an ostream
   friend std::ostream& operator<<(std::ostream&,const Stopwatch&);
 };
-
-inline
-std::ostream& operator<<(std::ostream&os,const Stopwatch&sw){
-  return sw.log(os);
-}
 
 }
 

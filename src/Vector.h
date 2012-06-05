@@ -2,7 +2,6 @@
 #define __PLUMED_Vector_h
 
 #include <cmath>
-#include <cassert>
 
 namespace PLMD{
 

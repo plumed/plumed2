@@ -4,8 +4,8 @@
 #include <string>
 #include <map>
 #include <set>
-#include <iostream>
 #include <vector>
+#include <iosfwd>
 
 namespace PLMD{
 

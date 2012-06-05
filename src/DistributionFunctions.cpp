@@ -1,5 +1,7 @@
 #include "ActionWithDistribution.h"
 #include "DistributionFunctions.h"
+#include "PlumedException.h"
+#include "Value.h"
 
 namespace PLMD {
 

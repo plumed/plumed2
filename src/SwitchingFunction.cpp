@@ -1,7 +1,8 @@
 #include "SwitchingFunction.h"
+#include "Tools.h"
+#include "Keywords.h"
 #include <vector>
 #include <limits>
-#include "Tools.h"
 
 using namespace std;
 using namespace PLMD;

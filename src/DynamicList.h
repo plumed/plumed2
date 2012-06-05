@@ -1,6 +1,8 @@
 #ifndef __PLUMED_DynamicList_h
 #define __PLUMED_DynamicList_h
 
+#include "PlumedCommunicator.h"
+
 namespace PLMD {
 
 //+DEVELDOC TOOLBOX DynamicList

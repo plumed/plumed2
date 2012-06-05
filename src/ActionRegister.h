@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include <set>
-#include <iostream>
+#include <iosfwd>
 #include "Keywords.h"
 
 namespace PLMD{

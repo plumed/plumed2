@@ -1,5 +1,7 @@
 #include "Keywords.h"
 #include "DistributionFunctions.h"
+#include "Log.h"
+#include <iostream>
 
 using namespace PLMD;
 

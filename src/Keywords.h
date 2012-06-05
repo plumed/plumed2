@@ -4,11 +4,10 @@
 #include <string>
 #include <set>
 #include <map>
-#include <iostream>
-#include "Tools.h"
-#include "Log.h"
 
 namespace PLMD{
+
+class Log;
 
 /// This class lets me pass keyword types easily
 class KeyType{

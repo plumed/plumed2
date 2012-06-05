@@ -5,9 +5,10 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include "Keywords.h"
 
 namespace PLMD {
+
+class Log;
 
 //+DEVELDOC TOOLBOX HistogramBead
 /**

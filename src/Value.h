@@ -5,7 +5,6 @@
 #include <string>
 #include <map>
 #include "PlumedException.h"
-#include "PlumedCommunicator.h"
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "Vector.h"

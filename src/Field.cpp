@@ -1,4 +1,7 @@
 #include "Field.h"
+#include "PlumedCommunicator.h"
+#include "Keywords.h"
+
 
 using namespace PLMD;
 

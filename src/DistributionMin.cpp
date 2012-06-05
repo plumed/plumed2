@@ -1,4 +1,5 @@
 #include "DistributionFunctions.h"
+#include "Keywords.h"
 
 namespace PLMD {
 

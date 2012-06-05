@@ -1,7 +1,9 @@
 
 #include "Stopwatch.h"
+#include "PlumedException.h"
 
 #include <cstdio>
+#include <iostream>
 
 /*
 Different clocks can be used
@@ -21,6 +23,15 @@ clock_gettime (#define __CLOCK_GETTIME):
 
 using namespace PLMD;
 using namespace std;
+
+// this is needed for friend operators
+namespace PLMD{
+
+std::ostream& operator<<(std::ostream&os,const Stopwatch&sw){
+  return sw.log(os);
+}
+
+}
 
 Stopwatch::Time::operator double()const{
   return sec+0.000000001*nsec;

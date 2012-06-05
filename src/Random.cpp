@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <sstream>
+#include <iostream>
 
 using namespace PLMD;
 

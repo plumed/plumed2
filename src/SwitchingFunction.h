@@ -1,12 +1,11 @@
 #ifndef __PLUMED_SwitchingFunction_h
 #define __PLUMED_SwitchingFunction_h
 
-#include <cmath>
 #include <string>
-#include "Keywords.h"
-#include "PlumedException.h"
 
 namespace PLMD {
+
+class Log;
 
 //+DEVELDOC TOOLBOX SwitchingFunction
 /**

@@ -2,16 +2,12 @@
 #define __PLUMED_DistributionFunction_h
 
 #include <string>
-#include <sstream> 
 #include <cstring>
-#include <cassert>
 #include <vector>
-#include <iostream>
-#include "Value.h"
-#include "Tools.h"
-#include "Keywords.h"
+#include "PlumedException.h"
 #include "SwitchingFunction.h"
 #include "HistogramBead.h"
+#include "Value.h"
 
 namespace PLMD{
 
