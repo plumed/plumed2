@@ -31,6 +31,10 @@ Put in the rt105 directory all the input files that you need.
 Typically:
   for simplemd: in input.xyz plumed.dat
   for driver: trajectory.xyz plumed.dat
+Many tests share can share the same trajectory file. Just add
+to the config file a line similar to
+extra_files="../trajectories/name-of-the-file"
+to include a common trajectory file
 
 Make:
 > make
