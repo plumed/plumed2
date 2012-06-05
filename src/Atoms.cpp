@@ -136,9 +136,9 @@ void Atoms::share(const std::set<AtomNumber>& unique){
       }
     }
   }
-  virial.clear();
-  for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].clear();
-  for(unsigned i=getNatoms();i<positions.size();i++) forces[i].clear(); // virtual atoms
+  virial.zero();
+  for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].zero();
+  for(unsigned i=getNatoms();i<positions.size();i++) forces[i].zero(); // virtual atoms
   forceOnEnergy=0.0;
 }
 

@@ -17,9 +17,9 @@ double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3)const
 
 double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3,Vector& d1,Vector& d2,Vector& d3)const{
 
-  d1.clear();
-  d2.clear();
-  d3.clear();
+  d1.zero();
+  d2.zero();
+  d3.zero();
 
   const double modv2(v2.modulo());
   const Vector nv2(v2/modv2);

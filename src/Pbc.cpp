@@ -7,8 +7,8 @@ using namespace PLMD;
 Pbc::Pbc():
   type(unset)
 {
-  box.clear();
-  invBox.clear();
+  box.zero();
+  invBox.zero();
 }
 
 

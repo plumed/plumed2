@@ -59,7 +59,7 @@ public:
 /// create it null
   VectorGeneric();
 /// set it to zero
-  void clear();
+  void zero();
 /// array-like access [i]
   double & operator[](unsigned i);
 /// array-like access [i]
@@ -147,7 +147,7 @@ VectorGeneric<n>::VectorGeneric(){
 }
 
 template <unsigned n>
-void VectorGeneric<n>::clear(){
+void VectorGeneric<n>::zero(){
   for(unsigned i=0;i<n;i++) d[i]=0.0;
 }
 

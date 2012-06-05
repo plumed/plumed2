@@ -146,7 +146,7 @@ Tensor & ActionAtomistic::modifyVirial(){
 
 inline
 void ActionAtomistic::clearOutputForces(){
-  for(unsigned i=0;i<forces.size();++i)forces[i].clear();
+  for(unsigned i=0;i<forces.size();++i)forces[i].zero();
   forceOnEnergy=0.0;
 }
 

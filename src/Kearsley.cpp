@@ -93,7 +93,7 @@ double Kearsley::calculate(bool rmsd) {
 
 	if(com0_is_removed==false){
 
-		xx.clear();
+		xx.zero();
 
 		if(do_center) {// if you dont need to center no prob...
 			for(i=0;i<alignmap.size();i++){
@@ -122,7 +122,7 @@ double Kearsley::calculate(bool rmsd) {
 
 	if(com1_is_removed==false){
 
-		xx.clear();
+		xx.zero();
 
 		if(do_center) {// if you dont need to center no prob...
 			for(i=0;i<alignmap.size();i++){
@@ -469,10 +469,10 @@ double Kearsley::calculate(bool rmsd) {
 		 * pi matrix : coefficents in per theory
 		 */
 
-                pi0.clear();
-		pi1.clear();
-		derr_dr1[i].clear();
-		derr_dr0[i].clear();
+                pi0.zero();
+		pi1.zero();
+		derr_dr1[i].zero();
+		derr_dr0[i].zero();
 
 		for(k=0;k<4;k++){
 			for(l=0;l<4;l++){

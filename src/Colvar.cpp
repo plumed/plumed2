@@ -41,7 +41,7 @@ void Colvar::apply(){
     f[i][1]=0.0;
     f[i][2]=0.0;
   }
-  v.clear();
+  v.zero();
 
   if(!isEnergy){
     for(int i=0;i<getNumberOfComponents();++i){

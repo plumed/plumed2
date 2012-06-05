@@ -56,7 +56,7 @@ public:
 /// initialize a tensor with 9 values, in standard C order
   TensorGeneric(double,double,double,double,double,double,double,double,double);
 /// set it to zero
-  void clear();
+  void zero();
 /// access element
   double & operator() (unsigned i,unsigned j);
 /// access element
@@ -153,7 +153,7 @@ TensorGeneric<3,3>::TensorGeneric(double d00,double d01,double d02,double d10,do
 }
 
 template<unsigned n,unsigned m>
-void TensorGeneric<n,m>::clear(){
+void TensorGeneric<n,m>::zero(){
   for(unsigned i=0;i<n*m;i++)d[i]=0.0;
 }
 

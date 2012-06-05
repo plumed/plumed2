@@ -67,7 +67,7 @@ void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits){
 template <class T>
 void MDAtomsTyped<T>::getBox(Tensor&box)const{
   if(this->box) for(int i=0;i<3;i++)for(int j=0;j<3;j++) box(i,j)=this->box[3*i+j]*scaleb;
-  else box.clear();
+  else box.zero();
 }
 
 template <class T>
