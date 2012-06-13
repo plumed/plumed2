@@ -109,14 +109,32 @@ class Stopwatch{
   std::ostream& log(std::ostream&)const;
 public:
 /// Start timer named "name"
-  void start(const char*name="");
+  void start(const std::string&name);
+  void start();
 /// Stop timer named "name"
-  void stop(const char*name="");
+  void stop(const std::string&name);
+  void stop();
 /// Pause timer named "name"
-  void pause(const char*name="");
+  void pause(const std::string&name);
+  void pause();
 /// Dump all timers on an ostream
   friend std::ostream& operator<<(std::ostream&,const Stopwatch&);
 };
+
+inline
+void Stopwatch::start(){
+  start("");
+}
+
+inline
+void Stopwatch::stop(){
+  stop("");
+}
+
+inline
+void Stopwatch::pause(){
+  pause("");
+}
 
 }
 

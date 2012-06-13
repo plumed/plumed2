@@ -108,15 +108,15 @@ void Stopwatch::Watch::pause(){
   running=false;
 } 
 
-void Stopwatch::start(const char*name){
+void Stopwatch::start(const std::string & name){
   watches[name].start();
 }
 
-void Stopwatch::stop(const char*name){
+void Stopwatch::stop(const std::string & name){
   watches[name].stop();
 }
 
-void Stopwatch::pause(const char*name){
+void Stopwatch::pause(const std::string & name){
   watches[name].pause();
 }
 
