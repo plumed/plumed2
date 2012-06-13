@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <string.h>
+#include <limits.h>
 
 /* DECLARATION USED ONLY IN THIS FILE */
 
@@ -172,33 +172,45 @@ int plumed_ginitialized(void){
 }
 
 void plumed_c2f(plumed p,char*c){
-  int n,i;
+  unsigned i;
+  unsigned char* cc;
 /*
-  Since a bug here would be almost impossible to
-  find, I prefer to stay safer and use a longer buffer
-  to temporarily store the pointer. Then, 32 characters
-  are copied to the target array.
+  Convert the address stored in p.p into a proper FORTRAN string
+  made of only ASCII characters. For this to work, the two following
+  assertions should be satisfied:
 */
-  char cc[256];
+  assert(CHAR_BIT<=12);
+  assert(sizeof(p.p)<=16);
+
   assert(c);
-  n=sprintf(cc,"%31p",p.p);
-  assert(n==31);
-  for(i=0;i<32;i++) c[i]=cc[i];
+  cc=(unsigned char*)&p.p;
+  for(i=0;i<sizeof(p.p);i++){
+/*
+  characters will range between '0' (ASCII 48) and 'o' (ASCII 111=48+63)
+*/
+    c[2*i]=cc[i]/64+48;
+    c[2*i+1]=cc[i]%64+48;
+  }
 }
 
 plumed plumed_f2c(const char*c){
   plumed p;
-  char* cc;
+  unsigned i;
+  unsigned char* cc;
+
+  assert(CHAR_BIT<=12);
+  assert(sizeof(p.p)<=16);
+
   assert(c);
-/* this is to avoid sscanf implementations which are not const-correct */
-  cc=(char*)c;
-  sscanf(cc,"%p",&p.p);
+  cc=(unsigned char*)&p.p;
+  for(i=0;i<sizeof(p.p);i++){
+/*
+  perform the reversed transform
+*/
+    cc[i]=(c[2*i]-48)*64 + (c[2*i+1]-48);
+  }
   return p;
 }
-
-
-/*
-*/
 
 
 #ifdef __cplusplus
