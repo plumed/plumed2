@@ -1,4 +1,5 @@
 #include "Action.h"
+#include "ActionWithValue.h"
 #include "PlumedMain.h"
 #include "Log.h"
 #include "PlumedException.h"
@@ -112,14 +113,14 @@ void Action::activate(){
     prepare();
     this->lockRequests();
   }
-  for(Dependencies::iterator p=after.begin();p!=after.end();p++) (*p)->activate();
+  for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->activate();
   active=true;
 }
 
 void Action::setOption(const std::string &s){
 // This overloads the action and activate some options  
   options.insert(s);
-  for(Dependencies::iterator p=after.begin();p!=after.end();p++) (*p)->setOption(s);
+  for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->setOption(s);
 }
 
 void Action::clearOptions(){
@@ -129,7 +130,7 @@ void Action::clearOptions(){
 
 
 void Action::clearDependencies(){
-  for(Dependencies::iterator p=after.begin();p!=after.end();p++){
+  for(Dependencies::iterator p=after.begin();p!=after.end();++p){
     (*p)->before.erase(this);
   };
   this->after.clear();
@@ -140,15 +141,10 @@ std::string Action::getDocumentation()const{
 }
 
 void Action::checkRead(){
-  if(line.size()>0){
+  if(!line.empty()){
     std::string msg="cannot understand the following words from the input line : ";
     for(unsigned i=0;i<line.size();i++) msg = msg + line[i] + ", ";
     error(msg);
-//    log.printf("ERROR READING INPUT FILE\n");
-//    log.printf("I CANNOT UNDERSTAND THE FOLLOWING WORDS:\n");
-//    for(unsigned i=0;i<line.size();i++) log.printf("  %s\n",line[i].c_str());
-//    log.printf("STOP!!\n");
-//    exit(1);
   }
 }
 
@@ -170,7 +166,7 @@ void Action::exit(int c){
   plumed.exit(c);
 }
 
-void Action::calculateNumericalDerivatives(){
+void Action::calculateNumericalDerivatives( ActionWithValue* a ){
   plumed_merror("if you get here it means that you are trying to use numerical derivatives for a class that does not implement them");
 }
 
@@ -178,13 +174,14 @@ void Action::prepare(){
   return;
 }
 
-void Action::error( const std::string msg ){
+void Action::error( const std::string & msg ){
   log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
   keywords.print( log );
+  plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );
   this->exit(1);
 }
 
-void Action::warning( const std::string msg ){
+void Action::warning( const std::string & msg ){
   log.printf("WARNING for action %s with label %s : %s \n", name.c_str(), label.c_str(), msg.c_str() ); 
 }
 

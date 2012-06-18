@@ -1,6 +1,7 @@
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
 #include "PlumedMain.h"
+#include "ActionWithField.h"
 #include "ActionSet.h"
 
 using namespace std;
@@ -21,7 +22,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         if(a=="*" && name=="*"){
            // Take all values from all actions
            std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-           if( all.size()==0 ) error("your input file is not telling plumed to calculate anything");
+           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
            for(unsigned j=0;j<all.size();j++){
              for(int k=0;k<all[j]->getNumberOfComponents();++k) arg.push_back(all[j]->copyOutput(k));
            }
@@ -33,7 +34,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         } else if ( a=="*" ){
            // Take components from all actions with a specific name
            std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-           if( all.size()==0 ) error("your input file is not telling plumed to calculate anything");
+           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
            std::string lab; unsigned nval=0;
            for(unsigned j=0;j<all.size();j++){
               std::string flab; flab=all[j]->getLabel() + "." + name;
@@ -51,7 +52,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         if(c[i]=="*"){
            // Take all values from all actions
            std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-           if( all.size()==0 ) error("your input file is not telling plumed to calculate anything");
+           if( all.empty() ) error("your input file is not telling plumed to calculate anything");
            for(unsigned j=0;j<all.size();j++){
              for(int k=0;k<all[j]->getNumberOfComponents();++k) arg.push_back(all[j]->copyOutput(k));
            }
@@ -92,7 +93,7 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
      vector<Value*> arg;
      parseArgumentList("ARG",arg);
 
-     if(arg.size()>0){
+     if(!arg.empty()){
        log.printf("  with arguments");
        for(unsigned i=0;i<arg.size();i++) log.printf(" %s",arg[i]->getName().c_str());
        log.printf("\n");
@@ -101,22 +102,25 @@ ActionWithArguments::ActionWithArguments(const ActionOptions&ao):
   }
 }
 
-void ActionWithArguments::calculateNumericalDerivatives(){
-  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  plumed_massert(a,"cannot compute numerical derivatives for an action without values");
+void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ){
+  if(!a){
+    a=dynamic_cast<ActionWithValue*>(this);
+    plumed_massert(a,"cannot compute numerical derivatives for an action without values");
+  }
+
   const int nval=a->getNumberOfComponents();
   const int npar=arguments.size();
   std::vector<double> value (nval*npar);
   for(int i=0;i<npar;i++){
     double arg0=arguments[i]->get();
     arguments[i]->set(arg0+sqrt(epsilon));
-    calculate();
+    a->calculate();
     arguments[i]->set(arg0);
     for(unsigned j=0;j<nval;j++){
       value[i*nval+j]=a->getOutputQuantity(j);
     }
   }
-  calculate();
+  a->calculate();
   a->clearDerivatives();
   std::vector<double> value0(nval);
   for(unsigned j=0;j<nval;j++){

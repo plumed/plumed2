@@ -21,7 +21,7 @@ Inherit from here if you are calculating the position of a virtual atom (eg a ce
 class ActionWithVirtualAtom:
   public ActionAtomistic
 {
-  unsigned index;
+  AtomNumber index;
   std::vector<Tensor> derivatives;
   std::map<AtomNumber,Tensor> gradients;
   void apply();
@@ -49,22 +49,22 @@ public:
 
 inline
 AtomNumber ActionWithVirtualAtom::getIndex()const{
-  return AtomNumber::index(index);
+  return index;
 }
 
 inline
 void ActionWithVirtualAtom::setPosition(const Vector & pos){
-  plumed.getAtoms().positions[index]=pos;
+  atoms.positions[index.index()]=pos;
 }
 
 inline
 void ActionWithVirtualAtom::setMass(double m){
-  plumed.getAtoms().masses[index]=m;
+  atoms.masses[index.index()]=m;
 }
 
 inline
 void ActionWithVirtualAtom::setCharge(double c){
-  plumed.getAtoms().charges[index]=c;
+  atoms.charges[index.index()]=c;
 }
 
 inline

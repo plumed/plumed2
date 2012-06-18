@@ -1,6 +1,7 @@
 #ifndef __PLUMED_Tensor_h
 #define __PLUMED_Tensor_h
 
+#include "MatrixSquareBracketsAccess.h"
 #include "Vector.h"
 
 namespace PLMD{
@@ -16,7 +17,8 @@ opimized inline.
 Matrix elements are initialized to zero by default. Notice that
 this means that constructor is a bit slow. This point might change
 in future if we find performance issues.
-Accepts both [] and () syntax for access.
+It takes advantage of MatrixSquareBracketsAccess to provide both
+() and [] syntax for access.
 Several functions are declared as friends even if not necessary so as to
 properly appear in Doxygen documentation.
 
@@ -40,34 +42,10 @@ int main(){
 \endverbatim
 */
 template <unsigned n,unsigned m>
-class TensorGeneric{
+class TensorGeneric:
+  public MatrixSquareBracketsAccess<TensorGeneric<n,m>,double>
+{
   double d[n*m];
-/// Small utility class which just contains a pointer to the tensor so as
-/// to be able to use the [][] syntax (const version)
-/// See C++ FAQ 13.12
-  class Const_row{
-    friend class TensorGeneric; // this so as to allow only Tensor to instantiate Const_row
-                         // the user should not manipulate it directly
-    const TensorGeneric& t;
-    const unsigned i;
-    Const_row(const TensorGeneric&t,unsigned i); // constructor is private and cannot be manipulated by the user
-  public:
-  /// access element
-    const double & operator[] (unsigned j)const;
-  };
-/// Small utility class which just contains a pointer to the tensor so as
-/// to be able to use the [][] syntax
-/// See C++ FAQ 13.12
-  class Row{
-    friend class TensorGeneric; // this so as to allow only Tensor to instantiate Const_row
-                         // the user should not manipulate it directly
-    TensorGeneric& t;
-    const unsigned i;
-    Row(TensorGeneric&t,unsigned i); // constructor is private and cannot be manipulated by the user
-  public:
-  /// access element
-    double & operator[] (unsigned j);
-  };
 public:
 /// initialize the tensor to zero
   TensorGeneric();
@@ -78,15 +56,11 @@ public:
 /// initialize a tensor with 9 values, in standard C order
   TensorGeneric(double,double,double,double,double,double,double,double,double);
 /// set it to zero
-  void clear();
+  void zero();
 /// access element
   double & operator() (unsigned i,unsigned j);
 /// access element
   const double & operator() (unsigned i,unsigned j)const;
-/// access element (with [][] syntax)
-  Row operator[] (unsigned i);
-/// access element (with [][] syntax)
-  Const_row operator[] (unsigned i)const;
 /// increment
   TensorGeneric& operator +=(const TensorGeneric<n,m>& b);
 /// decrement
@@ -146,14 +120,6 @@ public:
 };
 
 template<unsigned n,unsigned m>
-TensorGeneric<n,m>::Const_row::Const_row(const TensorGeneric<n,m>&t,unsigned i):
-  t(t),i(i){}
-
-template<unsigned n,unsigned m>
-TensorGeneric<n,m>::Row::Row(TensorGeneric<n,m>&t,unsigned i):
-  t(t),i(i){}
-
-template<unsigned n,unsigned m>
 TensorGeneric<n,m>::TensorGeneric(){
   for(unsigned i=0;i<n*m;i++)d[i]=0.0;
 }
@@ -187,7 +153,7 @@ TensorGeneric<3,3>::TensorGeneric(double d00,double d01,double d02,double d10,do
 }
 
 template<unsigned n,unsigned m>
-void TensorGeneric<n,m>::clear(){
+void TensorGeneric<n,m>::zero(){
   for(unsigned i=0;i<n*m;i++)d[i]=0.0;
 }
 
@@ -199,26 +165,6 @@ double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j){
 template<unsigned n,unsigned m>
 const double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j)const{
   return d[m*i+j];
-}
-
-template<unsigned n,unsigned m>
-const double & TensorGeneric<n,m>::Const_row::operator[] (unsigned j)const{
-  return t(i,j);
-}
-
-template<unsigned n,unsigned m>
-double & TensorGeneric<n,m>::Row::operator[] (unsigned j){
-  return t(i,j);
-}
-
-template<unsigned n,unsigned m>
-typename TensorGeneric<n,m>::Row TensorGeneric<n,m>::operator[] (unsigned i){
-  return Row(*this,i);
-}
-
-template<unsigned n,unsigned m>
-typename TensorGeneric<n,m>::Const_row TensorGeneric<n,m>::operator[] (unsigned i)const{
-  return Const_row(*this,i);
 }
 
 template<unsigned n,unsigned m>

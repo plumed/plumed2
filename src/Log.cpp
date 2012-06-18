@@ -57,25 +57,3 @@ void Log::flush(){
   fflush(fp);
 }
 
-void Log::printKeyword( const std::string& key, const std::string& documentation ){
-  unsigned nlines; nlines=floor( documentation.length() / 60 );
-  if ( nlines==0 ){
-     printf("%23s - %-60s \n", key.c_str(), documentation.c_str() );
-  } else {
-     std::vector<std::string> w=Tools::getWords( documentation );
-     std::vector<unsigned> lens( nlines + 1 );
-     unsigned ll=1, nl=0; 
-     for(unsigned i=0;i<w.size();++i){
-        nl+=w[i].length() + 1;
-        if( nl>=ll*60 ){ lens[ll]=nl-1-w[i].length(); ll++; }
-     }
-
-     printf("%23s - %-60s \n", key.c_str(), documentation.substr(0,lens[1]).c_str() );
-     std::string blank=" ";
-     for(unsigned i=1;i<nlines;++i){
-        printf("%23s   %-60s \n", blank.c_str(), documentation.substr(lens[i],lens[i+1]-lens[i]).c_str() );
-     }
-     printf("%23s   %-60s  \n", blank.c_str(), documentation.substr(lens[nlines]).c_str() );
-  }
-}
-

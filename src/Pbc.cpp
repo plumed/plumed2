@@ -7,8 +7,8 @@ using namespace PLMD;
 Pbc::Pbc():
   type(unset)
 {
-  box.clear();
-  invBox.clear();
+  box.zero();
+  invBox.zero();
 }
 
 
@@ -88,5 +88,10 @@ bool Pbc::isOrthorombic()const{
 const Tensor& Pbc::getBox()const{
   return box;
 }
+
+const Tensor& Pbc::getInvBox()const{
+  return invBox;
+}
+
 
 

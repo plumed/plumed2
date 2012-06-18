@@ -29,8 +29,9 @@ OBJ_MAIN=$(SRC_MAIN:.cpp=.o)
 OBJ_KERNEL=$(SRC_KERNEL:.cpp=.o)
 ALL_OBJ=$(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
-# dependency files
-ALL_DEP=$(addprefix deps/,$(ALL_OBJ:.o=.d))
+# dependency files for all c++ sources
+CPP_SRC=$(wildcard *.cpp)
+ALL_DEP=$(addprefix deps/,$(CPP_SRC:.cpp=.d))
 
 # plumed kernel
 PLUMED_KERNEL=libplumedKernel.$(SOEXT)
@@ -67,7 +68,7 @@ $(PLUMED_MAIN_RUNTIME): $(OBJ_MAIN) $(OBJ_DYNAMIC_WRAPPER)
 
 Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_SHARED_OBJ) $(OBJ_DYNAMIC_WRAPPER)
 	@echo Building Plumed.inc
-	@echo "PLUMED_INCLUDE="-I$(realpath ../include) >> $@
+	@echo "PLUMED_INCLUDE="-I$(realpath ../include) > $@
 	@echo "PLUMED_RUNTIME_LOAD=" $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_STATIC_LOAD=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_SHARED_LOAD=" $(realpath $(PLUMED_SHARED_OBJ)) $(LIBS) $(LDFLAGS) >> $@
@@ -98,9 +99,15 @@ Plumed.inc.shared: Plumed.inc
 
 $(ALL_DEP): PlumedConfig.h Makefile.conf.xxd
 
+# this compiler is used for dependencies generation
+# if unset, use normal CXX
+ifndef CXXDEP
+CXXDEP=$(CXX)
+endif
+
 # rule for c++
 %.o: %.cpp
-	$(CXX) -c -MM -MF$*.d $(CPPFLAGS) $(CXXFLAGS) $*.cpp
+	$(CXXDEP) -c -MM -MF$*.d $(CPPFLAGS) $(CXXFLAGS) $*.cpp
 	@cp -f $*.d $*.d.tmp
 	@-test -d deps || mkdir deps
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
@@ -113,16 +120,10 @@ endif
 
 # rule for c
 %.o: %.c
-	$(CC) -c -MM -MF$*.d -M $(CPPFLAGS) $(CFLAGS) $*.c
-	@cp -f $*.d $*.d.tmp
-	@test -d deps || mkdir deps
-	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
-	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
-	@mv $*.d deps/$*.d
-	@rm -f $*.d.tmp
-ifndef XLF
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $*.c -o $*.o
-endif
+
+# there is a single C file here, and this is its dependency:
+Plumed.o: Plumed.c Plumed.h
 
 # file to import compilation options inside c++
 PlumedConfig.h: PlumedConfig.h.in ../Makefile.conf

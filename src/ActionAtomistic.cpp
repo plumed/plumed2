@@ -6,6 +6,7 @@
 #include "ActionWithValue.h"
 #include "Colvar.h"
 #include "ActionWithVirtualAtom.h"
+#include "ActionWithField.h"
 #include "PlumedException.h"
 #include "Atoms.h"
 
@@ -14,14 +15,15 @@ using namespace PLMD;
 
 ActionAtomistic::~ActionAtomistic(){
 // forget the pending request
-  plumed.getAtoms().remove(this);
+  atoms.remove(this);
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 Action(ao),
-lockRequestAtoms(false)
+lockRequestAtoms(false),
+atoms(plumed.getAtoms())
 {
-  plumed.getAtoms().add(this);
+  atoms.add(this);
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ){
@@ -31,10 +33,8 @@ void ActionAtomistic::registerKeywords( Keywords& keys ){
 
 void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   plumed_massert(!lockRequestAtoms,"requested atom list can only be changed in the prepare() method");
-  Atoms&atoms(plumed.getAtoms());
   int nat=a.size();
-  indexes.resize(nat);
-  for(int i=0;i<nat;i++) indexes[i]=a[i].index();
+  indexes=a;
   positions.resize(nat);
   forces.resize(nat);
   masses.resize(nat);
@@ -43,7 +43,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   clearDependencies();
   unique.clear();
   for(unsigned i=0;i<indexes.size();i++){
-    plumed_massert(indexes[i]<n,"atom out of range");
+    plumed_massert(indexes[i].index()<n,"atom out of range");
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
 // only real atoms are requested to lower level Atoms class
     else unique.insert(indexes[i]);
@@ -55,9 +55,12 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
   return pbc.distance(v1,v2);
 }
 
-void ActionAtomistic::calculateNumericalDerivatives(){
-  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  plumed_massert(a,"only Actions with a value can be differentiated");
+void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
+  if(!a){
+    a=dynamic_cast<ActionWithValue*>(this);
+    plumed_massert(a,"only Actions with a value can be differentiated");
+  }
+
   const int nval=a->getNumberOfComponents();
   const int natoms=getNumberOfAtoms();
   std::vector<Vector> value(nval*natoms);
@@ -68,7 +71,7 @@ void ActionAtomistic::calculateNumericalDerivatives(){
   for(int i=0;i<natoms;i++) for(int k=0;k<3;k++){
     savedPositions[i][k]=positions[i][k];
     positions[i][k]=positions[i][k]+delta;
-    calculate();
+    a->calculate();
     positions[i][k]=savedPositions[i][k];
     for(unsigned j=0;j<nval;j++){
       value[j*natoms+i][k]=a->getOutputQuantity(j);
@@ -80,14 +83,14 @@ void ActionAtomistic::calculateNumericalDerivatives(){
    box(i,k)=box(i,k)+delta;
    pbc.setBox(box);
    for(int j=0;j<natoms;j++) positions[j]=pbc.scaledToReal(positions[j]);
-   calculate();
+   a->calculate();
    box(i,k)=arg0;
    pbc.setBox(box);
    for(int j=0;j<natoms;j++) positions[j]=savedPositions[j];
    for(unsigned j=0;j<nval;j++) valuebox[j](i,k)=a->getOutputQuantity(j);
  }
 
-  calculate();
+  a->calculate();
   a->clearDerivatives();
   for(unsigned j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
@@ -115,7 +118,7 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
   vector<string> strings;
   if( num<0 ){
       parseVector(key,strings);
-      if(strings.size()==0) return;
+      if(strings.empty()) return;
   } else {
       if ( !parseNumberedVector(key,num,strings) ) return;
   }
@@ -128,10 +131,9 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
    if(ok) t.push_back(atom);
 // here we check if the atom name is the name of a group
    if(!ok){
-     const Atoms&atoms(plumed.getAtoms());
      if(atoms.groups.count(strings[i])){
-       map<string,vector<unsigned> >::const_iterator m=atoms.groups.find(strings[i]);
-       for(unsigned j=0;j<(*m).second.size();j++) t.push_back(AtomNumber::index((*m).second[j]));
+       map<string,vector<AtomNumber> >::const_iterator m=atoms.groups.find(strings[i]);
+       t.insert(t.end(),m->second.begin(),m->second.end());
        ok=true;
      }
    }
@@ -153,24 +155,24 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
 
 
 void ActionAtomistic::retrieveAtoms(){
-  box=plumed.getAtoms().box;
+  box=atoms.box;
   pbc.setBox(box);
-  const vector<Vector> & p(plumed.getAtoms().positions);
-  const vector<double> & c(plumed.getAtoms().charges);
-  const vector<double> & m(plumed.getAtoms().masses);
-  for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j]];
-  for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j]];
-  for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j]];
+  const vector<Vector> & p(atoms.positions);
+  const vector<double> & c(atoms.charges);
+  const vector<double> & m(atoms.masses);
+  for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j].index()];
+  for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j].index()];
+  for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j].index()];
   Colvar*cc=dynamic_cast<Colvar*>(this);
-  if(cc && cc->checkIsEnergy()) energy=plumed.getAtoms().getEnergy();
+  if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
 }
 
 void ActionAtomistic::applyForces(){
-  vector<Vector>   & f(plumed.getAtoms().forces);
-  Tensor           & v(plumed.getAtoms().virial);
-  for(unsigned j=0;j<indexes.size();j++) f[indexes[j]]+=forces[j];
+  vector<Vector>   & f(atoms.forces);
+  Tensor           & v(atoms.virial);
+  for(unsigned j=0;j<indexes.size();j++) f[indexes[j].index()]+=forces[j];
   v+=virial;
-  plumed.getAtoms().forceOnEnergy+=forceOnEnergy;
+  atoms.forceOnEnergy+=forceOnEnergy;
 }
 
 

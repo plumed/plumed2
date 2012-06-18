@@ -2,7 +2,7 @@
 #include <cstring>
 
 #ifdef __PLUMED_MPI
-#include "mpi.h"
+#include <mpi.h>
 #endif
 
 using namespace std;

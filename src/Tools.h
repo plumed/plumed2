@@ -8,6 +8,7 @@
 #include <cmath>
 #include <limits>
 #include <algorithm>
+#include <sstream>
 
 namespace PLMD{
 
@@ -24,8 +25,11 @@ const double pi(3.14159265358979323846264338327950288419716939937510582097494459
 class Tools{
 public:
 /// Split the line in words using separators.
-  static std::vector<std::string> getWords(const std::string & line,const char* sep=" \t\n");
-  static std::vector<std::string> getWords(const std::string & line,const char* sep,const char* quote);
+/// It also take into account parenthesis. Outer parenthesis found are removed from
+/// output, and the text between them is considered as a single word. Only the
+/// outer parenthesis are processed, to allow nesting them.
+/// parlevel, if not NULL, is increased or decreased according to the number of opened/closed parenthesis
+  static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="(");
 /// Get a line from the file pointer fp
   static bool getline(std::FILE* fp,std::string & line);
 /// Get a parsed line from the file pointer fp.
@@ -42,10 +46,9 @@ public:
   static bool convert(const std::string & str,AtomNumber & t);
 /// Convert a string to a string (i.e. copy)
   static bool convert(const std::string & str,std::string & t);
-/// Convert an int to a string
-  static void convert(int i,std::string & str);
-/// Convert a double to a string
-  static void double2string(double d, std::string& str);
+/// Convert anything into a string
+  template<typename T>
+  static void convert(T i,std::string & str);
 /// Remove trailing blanks
   static void trim(std::string & s);
 /// Remove trailing comments
@@ -92,7 +95,7 @@ bool Tools::parseVector(std::vector<std::string>&line,const std::string&key,std:
   if(!getKey(line,key+"=",s)) return false;
 //  if(s.length()==0) return true;
   val.clear();
-  std::vector<std::string> words=getWords(s,",");
+  std::vector<std::string> words=getWords(s,"\t\n ,");
   for(unsigned i=0;i<words.size();++i){
     T v;
     if(!convert(words[i],v))return false;
@@ -131,6 +134,13 @@ double Tools::pbc(double x){
   } else if(std::numeric_limits<int>::round_style == std::round_to_nearest) {
     return x-int(x);
   } else return x-floor(x+0.5);
+}
+
+template<typename T>
+void Tools::convert(T i,std::string & str){
+        std::ostringstream ostr;
+        ostr<<i;
+        str=ostr.str();
 }
 
 }

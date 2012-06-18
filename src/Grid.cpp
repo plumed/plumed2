@@ -29,7 +29,8 @@ Grid::Grid(const vector<double> & gmin, const vector<double> & gmax, const vecto
  if(dospline_) plumed_assert(dospline_==usederiv_);
  maxsize_=1;
  for(unsigned int i=0;i<dimension_;++i){
-  dx_.push_back((max_[i]-min_[i])/(double)nbin_[i]);
+  dx_.push_back( (max_[i]-min_[i])/static_cast<double>( nbin_[i] ) );
+  if( !pbc_[i] ){ max_[i] += dx_[i]; nbin_[i] += 1; }
   maxsize_*=nbin_[i];
  }
  if(doclear) clear();
@@ -57,6 +58,12 @@ vector<double> Grid::getMax() const {
 
 vector<double> Grid::getDx() const {
  return dx_;
+}
+
+double Grid::getBinVolume() const {
+ double vol=1.;
+ for(unsigned i=0;i<dx_.size();++i) vol*=dx_[i];
+ return vol;  
 }
 
 vector<bool> Grid::getIsPeriodic() const {
@@ -383,22 +390,22 @@ Grid* Grid::create(FILE* file, bool dosparse, bool dospline, bool doder)
  Grid* grid=NULL;
  unsigned nvar,ibool;
  char str1[50],str2[50];
- fscanf(file,"%s %s %u",str1,str2,&ibool);
+ fscanf(file,"%49s %49s %1000u",str1,str2,&ibool);
  bool hasder=bool(ibool);
  if(doder){plumed_assert(doder==hasder);}
- fscanf(file,"%s %s %u",str1,str2,&nvar);
+ fscanf(file,"%49s %49s %1000u",str1,str2,&nvar);
 
  vector<unsigned> gbin(nvar);
  vector<double>   gmin(nvar),gmax(nvar);
  vector<bool>     gpbc(nvar);
- fscanf(file,"%s %s",str1,str2);
- for(unsigned i=0;i<nvar;++i){fscanf(file,"%u",&gbin[i]);}
- fscanf(file,"%s %s",str1,str2);
- for(unsigned i=0;i<nvar;++i){fscanf(file,"%lf",&gmin[i]);}
- fscanf(file,"%s %s",str1,str2);
- for(unsigned i=0;i<nvar;++i){fscanf(file,"%lf",&gmax[i]);}
- fscanf(file,"%s %s",str1,str2);
- for(unsigned i=0;i<nvar;++i){fscanf(file,"%u",&ibool);gpbc[i]=bool(ibool);}
+ fscanf(file,"%49s %49s",str1,str2);
+ for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000u",&gbin[i]);}
+ fscanf(file,"%49s %49s",str1,str2);
+ for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000lf",&gmin[i]);}
+ fscanf(file,"%49s %49s",str1,str2);
+ for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000lf",&gmax[i]);}
+ fscanf(file,"%49s %49s",str1,str2);
+ for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000u",&ibool);gpbc[i]=bool(ibool);}
 
  if(!dosparse){grid=new Grid(gmin,gmax,gbin,gpbc,dospline,doder);}
  else{grid=new SparseGrid(gmin,gmax,gbin,gpbc,dospline,doder);}
@@ -408,10 +415,10 @@ Grid* Grid::create(FILE* file, bool dosparse, bool dospline, bool doder)
  double f,x;
  while(1){
   int nread;
-  for(unsigned i=0;i<nvar;++i){nread=fscanf(file,"%lf",&x);xx[i]=x+dx[i]/2.0;}
+  for(unsigned i=0;i<nvar;++i){nread=fscanf(file,"%1000lf",&x);xx[i]=x+dx[i]/2.0;}
   if(nread<1){break;}
-  fscanf(file,"%lf",&f);
-  if(hasder){for(unsigned i=0;i<nvar;++i){fscanf(file,"%lf",&dder[i]);}}
+  fscanf(file,"%1000lf",&f);
+  if(hasder){for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000lf",&dder[i]);}}
   unsigned index=grid->getIndex(xx);
   if(doder){grid->setValueAndDerivatives(index,f,dder);}
   else{grid->setValue(index,f);}
@@ -483,7 +490,7 @@ void SparseGrid::writeToFile(FILE* file){
  vector<double> der(dimension_);
  double f;
  writeHeader(file);
- for(iterator it=map_.begin();it!=map_.end();it++){
+ for(iterator it=map_.begin();it!=map_.end();++it){
    unsigned i=(*it).first;
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 

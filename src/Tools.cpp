@@ -1,7 +1,6 @@
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "PlumedException.h"
-#include <sstream>
 #include <cstring>
 #include <dirent.h>
 
@@ -57,20 +56,44 @@ bool Tools::convert(const string & str,string & t){
         return true;
 }
 
-vector<string> Tools::getWords(const string & line,const char* separators){
+vector<string> Tools::getWords(const string & line,const char* separators,int * parlevel,const char* parenthesis){
+  plumed_massert(strlen(parenthesis)==1,"multiple parenthesis type not available");
+  plumed_massert(parenthesis[0]=='(' || parenthesis[0]=='[' || parenthesis[0]=='{',
+                  "only ( [ { allowed as parenthesis");
+  if(!separators) separators=" \t\n";
   const string sep(separators);
+  char openpar=parenthesis[0];
+  char closepar;
+  if(openpar=='(') closepar=')';
+  if(openpar=='[') closepar=']';
+  if(openpar=='{') closepar='}';
   vector<string> words;
   string word;
+  int parenthesisLevel=0;
+  if(parlevel) parenthesisLevel=*parlevel;
   for(unsigned i=0;i<line.length();i++){
     bool found=false;
-    for(unsigned j=0;j<sep.length();j++) if(line[i]==sep[j]) found=true;
-    if(!found) word.push_back(line[i]);
+    bool onParenthesis=false;
+    if(line[i]==openpar || line[i]==closepar) onParenthesis=true;
+    if(line[i]==closepar){
+      parenthesisLevel--;
+      plumed_massert(parenthesisLevel>=0,"Extra closed parenthesis in '" + line + "'");
+    }
+    if(parenthesisLevel==0) for(unsigned j=0;j<sep.length();j++) if(line[i]==sep[j]) found=true;
+// If at parenthesis level zero (outer) 
+    if(!(parenthesisLevel==0 && (found||onParenthesis))) word.push_back(line[i]);
+    if(line[i]==openpar) parenthesisLevel++;
     if(found && word.length()>0){
+      if(!parlevel) plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
       words.push_back(word);
       word.clear();
     }
   }
-  if(word.length()>0) words.push_back(word);
+  if(word.length()>0){
+    if(!parlevel) plumed_massert(parenthesisLevel==0,"Unmatching parenthesis in '" + line + "'");
+    words.push_back(word);
+  }
+  if(parlevel) *parlevel=parenthesisLevel;
   return words;
 }
 
@@ -79,12 +102,14 @@ bool Tools::getParsedLine(FILE* fp,vector<string> & words){
   words.clear();
   bool stat;
   bool inside=false;
+  int parlevel=0;
+  bool mergenext=false;
   while((stat=getline(fp,line))){
     trimComments(line);
     trim(line);
     if(line.length()==0) continue;
-    vector<string> w=getWords(line);
-    if(w.size()==0) continue;
+    vector<string> w=getWords(line,NULL,&parlevel);
+    if(w.empty()) continue;
     if(inside && *(w.begin())=="..."){
       inside=false;
       if(w.size()==2) plumed_massert(w[1]==words[0],"second word in terminating \"...\" lines, if present, should be equal to first word of directive");
@@ -94,9 +119,16 @@ bool Tools::getParsedLine(FILE* fp,vector<string> & words){
       inside=true;
       w.erase(w.end()-1);
     };
-    for(unsigned i=0;i<w.size();++i) words.push_back(w[i]);
+    int i0=0;
+    if(mergenext && words.size()>0 && w.size()>0){
+      words[words.size()-1]+=w[0];
+      i0=1;
+    }
+    for(unsigned i=i0;i<w.size();++i) words.push_back(w[i]);
+    mergenext=(parlevel>0);
     if(!inside)break;
   }
+  plumed_massert(parlevel==0,"non matching parenthesis");
   if(words.size()>0) return true;
   return stat;
 }
@@ -143,21 +175,9 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
   return false;
 }
 
-void Tools::convert(int i,std::string & str){
-        std::ostringstream ostr;
-        ostr<<i;
-        str=ostr.str();
-}
-
-void Tools::double2string(double d,std::string & str){
-        std::ostringstream ostr;
-        ostr<<d;
-        str=ostr.str();
-}
-
 void Tools::interpretRanges(std::vector<std::string>&s){
   vector<string> news;
-  for(vector<string>::iterator p=s.begin();p!=s.end();p++){
+  for(vector<string>::iterator p=s.begin();p!=s.end();++p){
     vector<string> words;
     words=getWords(*p,"-");
     int a,b;

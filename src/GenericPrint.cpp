@@ -62,7 +62,7 @@ void GenericPrint::registerKeywords(Keywords& keys){
   ActionWithArguments::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the quantities of interest should be output");
-  keys.add("compulsory","FILE","the name of the file on which to output these quantities");
+  keys.add("optional","FILE","the name of the file on which to output these quantities");
   keys.add("optional","FMT","the format that should be used to output real numbers");
   keys.add("hidden","_ROTATE","some funky thing implemented by GBussi");
 }

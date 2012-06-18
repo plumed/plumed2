@@ -290,11 +290,11 @@ void BiasMetaD::readGaussians(FILE* file)
  int nhills=0;
  rewind(file);
  while(1){
-  if(fscanf(file, "%lf", &dummy)!=1){break;}
-  for(unsigned i=0;i<ncv;++i){fscanf(file, "%lf", &(center[i]));}
-  for(unsigned i=0;i<ncv;++i){fscanf(file, "%lf", &(sigma[i]));}
-  fscanf(file, "%lf", &height);
-  fscanf(file, "%lf", &dummy);
+  if(fscanf(file, "%1000lf", &dummy)!=1){break;}
+  for(unsigned i=0;i<ncv;++i){fscanf(file, "%1000lf", &(center[i]));}
+  for(unsigned i=0;i<ncv;++i){fscanf(file, "%1000lf", &(sigma[i]));}
+  fscanf(file, "%1000lf", &height);
+  fscanf(file, "%1000lf", &dummy);
   nhills++;
   if(welltemp_){height*=(biasf_-1.0)/biasf_;}
   addGaussian(Gaussian(center,sigma,height));

@@ -2,59 +2,47 @@
 
 namespace PLMD {
 
-//+PLUMEDOC MODIFIER WITHIN
-/**
+std::string within::documentation(){
+  std::ostringstream ostr;
+  ostr<<"To make this quantity continuous it is calculated using "<<HistogramBead::documentation(false);
+  return ostr.str();
+}
 
-Calculates the number of colvars that are within a certain range.  To make this quantity continuous it is calculated using:
-
-\f[
-S = \sum_i \int_a^b G( s_i, \sigma*(b-a) )
-\f]
-
-where \f$G( s_i, \sigma )\f$ is a normalized Gaussian function of width \f$\sigma\f$ centered at the value of the colvar \f$s_i\f$.  \f$a\f$ and \f$b\f$ are
-the lower and upper bounds of the range of interest respectively.  The values of \f$a\f$ and \f$b\f$ must be specified using the WITHIN keyword.  If this keyword
-has three input numbers then the third is assumed to be the value of \f$\sigma\f$.  You can specify that you want to investigate multiple rangles by using multiple instances 
-of the WITHIN keyword (WITHIN1,WITHIN2 etc).  Alternatively, if you want to calculate a discretized distribution function you can use the HISTOGRAM keyword in 
-tandem with the RANGE keyword.  HISTOGRAM takes as input the number of bins in your distribution and (optionally) the value of the smearing parameter \f$\sigma\f$.
-RANGE takes the upper and lower bound of the histogram.  The interval between the upper and lower bound specified using RANGE is then divided into 
-equal-width bins.  
-
-*/
-//+ENDPLUMEDOC
-
-within::within( const std::vector<std::string>& parameters ) :
+within::within( const std::string& parameters ) :
 DistributionFunction(parameters)
 { 
-  if( parameters.size()==3 ){
-     Tools::convert(parameters[0],a);
-     Tools::convert(parameters[1],b); 
-     Tools::convert(parameters[2],sigma);
-  } else if(parameters.size()==2){
-     Tools::convert(parameters[0],a);
-     Tools::convert(parameters[1],b);
-     sigma=0.5;
-  } else {
-     error("WITHIN keyword takes two or three arguments");
-  }
-  if(a>=b) error("For WITHIN keyword upper bound is greater than lower bound");
-  hist.set(a,b,sigma);
+  std::string errormsg;
+  hist.set( parameters, "", errormsg );
+  if( errormsg.size()!=0 ) error( errormsg );
+  addAccumulator( true );
 }
 
 std::string within::message(){
   std::ostringstream ostr;
-  ostr<<"number of values between "<<a<<" and "<<b<<" The value of the smearing parameter is "<<sigma;
+  ostr<<"number of values "<<hist.description(); 
   return ostr.str();
 }
 
-double within::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
-  copyDerivatives( value_in, value_out ); 
-  double df, f; f=hist.calculate( value_in->get() , df );
-  value_out->chainRule(df); value_out->set(f);
-  return f;
+void within::printKeywords( Log& log ){
+  hist.printKeywords( log );
 }
 
-void within::finish( const double& p, Value* value_out ){
-  value_out->set(p);
+std::string within::getLabel(){
+  std::string lb, ub;
+  Tools::convert( hist.getlowb(), lb );
+  Tools::convert( hist.getbigb(), ub );
+  return "between" + lb + "&" + ub;
+}
+
+void within::calculate( Value* value_in, std::vector<Value>& aux ){
+  copyValue( 0, value_in ); 
+  double df, f; f=hist.calculate( value_in->get() , df );
+  chainRule(0, df); setValue(0, f);
+}
+
+void within::finish( Value* value_out ){
+  extractDerivatives( 0, value_out );
+  value_out->set( getPntrToAccumulator(0)->get() );
 }
 
 }

@@ -2,53 +2,47 @@
 
 namespace PLMD {
 
-//+PLUMEDOC MODIFIER LESS_THAN
-/**
+std::string less_than::documentation(){
+  std::ostringstream ostr;
+  ostr<<SwitchingFunction::documentation();
+  return ostr.str();
+}
 
-Calculate the number of functions that are less than a target value.  To make this quantity continuous it is calculated using:
-\f$
-\sigma = \sum_i \frac{ 1 - \left(\frac{ s_i }{ r_0 }\right)^{n} }{ 1 - \left(\frac{ s_i }{ r_0 }\right)^{m} }
-\f$
-, where \f$r_0\f$ is specied after the LESS_THAN keyword.  By default \f$n\f$ and \f$m\f$ are set equal to 6 and 12 respectively.
-These values can be adjusted by using using three arguments for less than (\f$r_0\f$, \f$n\f$, \f$m\f$).  Once calculated the final value is referenced
-using label.lt\f$r_0\f$. 
-
-*/
-//+ENDPLUMEDOC
-
-
-less_than::less_than( const std::vector<std::string>& parameters ) :
+less_than::less_than( const std::string& parameters ) :
 DistributionFunction(parameters)
 {
-  if( parameters.size()==3 ){
-     Tools::convert(parameters[0],r_0);
-     Tools::convert(parameters[1],nn); Tools::convert(parameters[2],mm);
-     sf.set(nn, mm, r_0, 0.0 );
-  } else if(parameters.size()==1){
-     Tools::convert(parameters[0],r_0);
-     nn=6; mm=12;
-     sf.set(nn, mm, r_0, 0.0 );
-  } else {
-     error("LESS_THAN keyword takes one of three arguments");
-  }
+  std::string errormsg;
+  sf.set( parameters, errormsg ); 
+  if( errormsg.size()!=0 ) error( errormsg ); 
+  addAccumulator( true );
 }
 
 std::string less_than::message(){
   std::ostringstream ostr;
-  ostr<<"number of values less than "<<r_0<<".  Switching function parameters are "<<nn<<" and "<<mm;
+  ostr<<"number of values less than "<<sf.description();
   return ostr.str();
 }
 
-double less_than::calculate( Value* value_in, std::vector<Value>& aux, Value* value_out ){
-  copyDerivatives( value_in, value_out );
-  double p, df, f; p=value_in->get(); 
-  f=sf.calculate(p, df); df*=p;
-  value_out->chainRule(df); value_out->set(f);
-  return f;
+void less_than::printKeywords( Log& log ){
+  sf.printKeywords( log );
 }
 
-void less_than::finish( const double& p, Value* value_out ){
-  value_out->set(p);
+std::string less_than::getLabel(){
+  std::string vv;
+  Tools::convert( sf.get_r0(), vv );
+  return "lt" + vv;
+}
+
+void less_than::calculate( Value* value_in, std::vector<Value>& aux ){
+  copyValue( 0, value_in );
+  double p, df, f; p=value_in->get(); 
+  f=sf.calculate(p, df); df*=p;
+  chainRule( 0, df ); setValue( 0, f );
+}
+
+void less_than::finish( Value* value_out ){
+  extractDerivatives( 0, value_out );
+  value_out->set( getPntrToAccumulator(0)->get() );
 }
 
 }

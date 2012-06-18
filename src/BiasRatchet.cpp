@@ -95,7 +95,6 @@ kappa(getNumberOfArguments(),0.0)
 
 
 void BiasRatchet::calculate(){
-  Value* value;
   double ene=0.0;
   double totf2=0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){

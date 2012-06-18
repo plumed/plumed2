@@ -8,6 +8,8 @@
 
 namespace PLMD {
 
+class Atoms;
+
 //+DEVELDOC MULTI-INHERIT ActionAtomistic
 /**
 This is used to create PLMD::Action objects that access the positions of the atoms from the MD code
@@ -19,8 +21,8 @@ class ActionAtomistic :
   virtual public Action
   {
 
-  std::vector<int>      indexes;         // the set of needed atoms
-  std::set<int>         unique;
+  std::vector<AtomNumber> indexes;         // the set of needed atoms
+  std::set<AtomNumber>  unique;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
   Tensor                box;
@@ -33,6 +35,9 @@ class ActionAtomistic :
   double                forceOnEnergy;
 
   bool                  lockRequestAtoms; // forbid changes to request atoms
+
+protected:
+  Atoms&                atoms;
 
 public:
 /// Request an array of atoms.
@@ -83,13 +88,15 @@ public:
 
   void clearOutputForces();
 
-  void   calculateNumericalDerivatives();
+/// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
+/// are doing.  The default will be correct for the vast majority of cases
+  void   calculateNumericalDerivatives( ActionWithValue* a=NULL );
 
   void retrieveAtoms();
   void applyForces();
   void lockRequests();
   void unlockRequests();
-  const std::set<int> & getUnique()const;
+  const std::set<AtomNumber> & getUnique()const;
 };
 
 inline
@@ -109,7 +116,7 @@ double ActionAtomistic::getCharge(int i)const{
 
 inline
 AtomNumber ActionAtomistic::getAbsoluteIndex(int i)const{
-  return AtomNumber::index(indexes[i]);
+  return indexes[i];
 }
 
 inline
@@ -139,7 +146,7 @@ Tensor & ActionAtomistic::modifyVirial(){
 
 inline
 void ActionAtomistic::clearOutputForces(){
-  for(unsigned i=0;i<forces.size();++i)forces[i].clear();
+  for(unsigned i=0;i<forces.size();++i)forces[i].zero();
   forceOnEnergy=0.0;
 }
 
@@ -165,7 +172,7 @@ void ActionAtomistic::unlockRequests(){
 }
 
 inline
-const std::set<int> & ActionAtomistic::getUnique()const{
+const std::set<AtomNumber> & ActionAtomistic::getUnique()const{
   return unique;
 }
 

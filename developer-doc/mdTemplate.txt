@@ -3,7 +3,14 @@
 
 \page HowToPlumedYourMD How to add plumed to an MD code
 
-Plumed ships with scripts that can be used to add it to many of the standard MD packages.  Obviously though, if no patch is provided for the MD code you use then you will have to write one yourself.  Plumed has been designed so that it can be added to an MD code either statically or as a dynamic library.  It is NOT possible to compile plumed as a static library and link the library.  Furthermore, unlike the previous version of plumed, the plumed source code is not compiled at the same time as your MD code is compiled.  Instead plumed now has its own makefile and is compiled separately to the MD engines that rely on it.  This makes plumed patches considerably simpler as now they only do two things:
+Plumed ships with scripts that can be used to add it to many of the standard MD packages.  Obviously though, if no patch is provided for the MD code you use then you will have to write one yourself.  Plumed has been designed so that it can be added to an MD code
+either statically (i.e. as a collection of objects) or as a dynamic library.
+For technical reasons it
+is NOT possible to pack all the plumed objects as a static library and link the library
+(if you really want to know it: when static librearies are linked the linker
+typically discards all the objects which are not used; plumed is using an
+automatic registration process which is not compatible with this choice).
+Furthermore, unlike the previous version of plumed, the plumed source code is not compiled at the same time as your MD code is compiled.  Instead plumed now has its own makefile and is compiled separately to the MD engines that rely on it.  This makes plumed patches considerably simpler as now they only do two things:
 
 - Modify the makefile so that the plumed is linked to the MD code
 - Modify the source code to add all the required calls to plumed
@@ -14,64 +21,91 @@ Once the plumed source code has been compiled a file src/Plumed.inc is
 generated. This file should be included in your MD code's makefile as it
 informs the code where to find all the plumed source. There are three possible
 ways to link PLUMED: static (linking the .o files directly), shared (linking
-the libPlumed.so library) or runtime (which links only a wrapper to plumed,
-whereas the location of the remaining part on plumed, i.e. the libPlumedKernel.so,
+the libplumed.so library) or runtime (which links only a wrapper to plumed,
+whereas the location of the remaining part on plumed, i.e. the libplumedKernel.so,
 can be specified at runtime). The relevant variables are
-- \$(PLUMED_OBJ) all the objects that form the plumed library
-- \$(PLUMED_SHARED_OBJ) a single shared library containing the full plumed library
-- \$(PLUMED_WRAPPER) an object containing only the plumed wrapper
-- \$(PLUMED_LIBS) are libraries which should be linked to the MD code (usually
-  just the library containing functions for dynamic loading)
-- \$(PLUMED_DYNAMIC_LIBS) are libraries on which plumed depends on (e.g.
-  matheval, etc), which should be linked explicitely only in case of static
-  linking.
+- \$(PLUMED_STATIC_LOAD) the options to be added to the linker for static
+  linking, i.e. all the plumed objects with their full path,
+   plus special linking options, plus al the libraries used by plumed (e.g.
+  matheval)
+- \$(PLUMED_SHARED_LOAD) the options to be added to the linker for shared
+  linking, i.e. full plumed shared library (libplumed.so) with its full path
+  plus special linking options.
+- \$(PLUMED_RUNTIME_LOAD) the options to be added to the linker for runtime
+  linking, i.e. the wrapper object with its full path plus special linking options.
 
-The libPlumedKernel.so basically contains the same objects as the
-\$(PLUMED_SHARED_OBJ) except for the \$(PLUMED_WRAPPER).
+The libplumedKernel.so basically contains the same objects as the
+libplumed.so except for the wrapper.
 
 The simplest approach is to take advantage of the three variants
 src/Plumed.inc.static , src/Plumed.inc.shared and src/Plumed.inc.runtime .
 Including one of those, it is sufficient to add to the linker line the macro
 \$(PLUMED_LOAD).
 
-The best way to patch your MD file is thus:
+The best way to patch your MD file is:
+- go into the root directory of the MD code and type
+\verbatim
+> plumed patch --new name-of-the-code
+\endverbatim
+  this will create a new (empty) patch file for your MD code
+- patch the code with the empty patch
+\verbatim
+> plumed patch --patch --engine name-of-the-code
+\endverbatim
+  this will produce a symbolic link Plumed.inc in the root directory of the MD
+  code
+- make a backup copy of the Makefile of your MD code, naming it
+  Makefile.preplumed
+\verbatim 
+> cp src/Makefile src/Makefile.preplumed
+\endverbatim
+- edit the Makefile including the Plumed.inc file
+  (e.g. "include ../Plumed.inc") and adding "\$(PLUMED_LOAD)" to the linking
+command
+- save your modification into the plumed patch
+\verbatim
+> plumed patch --save
+\endverbatim
 
-- include in the MD Makefile a file "Plumed.inc" located in the root directory
-  of MD (e.g. with "include ../../Plumed.inc"). The patch script will provide
-  that file on patching
-
-- add "\$(PLUMED_LOAD)" to the linking command in the Makefile.
-
-The patching system will then link the proper variant of .inc file to
-MDROOT/Plumed.inc depending on the arguments to "plumed patch":
-- --static 
-- --shared 
-- --runtime 
+Now you can patch/unpatch your MD code, automatically linking PLUMED, as if it
+was an officially released interface.
 
 \section language Language dependence
 
-The interface between plumed and the MD codes is written is plain C so it is compatible with codes that are written in plain C, C++ and fortran.  This interface contains four routines:
+The next step is to add proper calls to plumed into the MD source code.
 
-- plumed_installed - This routine ensures that a version of plumed is available
-- plumed_create - This routine creates the plumed object
-- plumed_command - This routine passes some infomration to plumed or instructs plumed to perform some action
-- plumed_finalize - This routine destroys the plumed objects
+The interface between plumed and the MD codes is written is plain C so it is compatible with codes that are written in plain C, C++ and fortran.
+To use this interface one should first create a plumed object (plumed_create()), then sent to it
+messages (using plumed_cmd()) and deallocate it (plumed_finalize()) at the end
+of the simulation. All of these routines have C++ and FORTRAN equivalents.
+Notice that in C the plumed object is represented using a struct (plumed), in
+C++ it is represented using a class (PLMD::Plumed) and in FORTRAN using a
+string of 32 characters (CHARACTER(LEN=32)).
+Also notice that whenever passing strings from FORTRAN you should add to them
+"char(0)" as
+a string terminator to be sure that the string is properly interpreted
+(e.g. "pass-this-string"//char(0)).
 
-The first of these takes in an int*, which is set equal to 1 if a version of plumed is found.  The remaining three routines can be called in one of three ways.  In C++ codes you can either declare a PLMD::Plumed object from plumed or inherit the PLMD::Plumed class.  You can then call the methods of this class to do the above.  In this case the creation and desctruction of the plumed object is looked after and one need only use the cmd method (which is essentially a wrapper to plumed_cmd) to pass various pieces of data between you md code and plumed as described below.  For C and C++ codes one can also store the plumed object dynamically in which case these routines are called as:
+As people might get confused by
+the idea of "plumed being an object", we also added the possibility of using
+a "generic global plumed instance", which can be accessed
+using routines with a _g_ in the name (plumed_g_create(),
+plumed_g_cmd() and plumed_g_finalize()).
 
-- plumed_create() - which will return a pointer to plumed object that must be saved.
-- plumed_cmd(plumed, const char*, const void* ) - here the first argument must be the pointer returned by plumed_create while the second and third describe are used to pass a pointer to some data in the code along with guidance as to what the data is.
-- plumed_finalize(plumed) - here the argument is the pointer return by plumed_create.
+This interface is very general, will not change in future releases, and is
+fully contained in Plumed.h and Plumed.c files. For a reference to it, see
+\ref ReferencePlumedH
 
-while for fortran codes you must store the plumed pointer as a global object and use the global interface by calling:
-
-- plumed_g_create()
-- plumed_g_command(const char* ,const void* ) - Clearly the two arguments here are the second two arguments in plumed_cmd
-- plumed_g_finalize()     
 
 \section mdImplementation A practical example
 
-We now describe how to pass data to plumed in from an MD code that is written in C/C++.  If your code is written in fortran follow the same procedure but use the global routines as described in the previous section.  In files containing calls to plumed you will have to include the Plumed.h file.  In addition, you will also have to define a plumed obect that is visible in all these routines and you will probably like to define some sort of plumedswitch, which can be read in from the input to your code and used to tell the code whether or not this is to be a run with plumed.  Finally, you might like to include something in input so that you specify the name of the plumed input file.  How these things are best done will depend on your code and so we leave it to your discretion.  
+We now describe how to pass data to plumed in from an MD code that is written in C/C++.
+In C or C++ files containing calls to plumed you will have to include the Plumed.h file.
+In addition, you will also have to define a plumed obect that is visible in all these routines
+and you will probably like to define some sort of plumedswitch,
+which can be read in from the input to your code and used to tell the code whether or not this is to be a run with plumed.
+Finally, you might like to include something in input so that you specify the name of the plumed input file.
+How these things are best done will depend on your code and so we leave it to your discretion.  
 
 Plumed must perform three actions inside your MD code:
 
@@ -79,14 +113,16 @@ Plumed must perform three actions inside your MD code:
 - It must be called every MD step so that the forces from the bias can be computed.
 - It must be finalized when the simulation is completed
 
+The only routine which can be used to send message to plumed is plumed_cmd
+(or, equivalently, Plumed::cmd in C++ and plumed_f_cmd in FORTRAN).
+
 The various calls that can be used during initialization are as follows:
 
 \verbatim
 plumed plumedmain; plumedmain=plumed_create();                 // Create the plumed object
 
 // Calls to pass data to plumed
-plumed_cmd(plumedmain,"setRealPrecision",&real_precision);     // Pass a pointer to the precision used in the code to plumed
-plumed_cmd(plumedmain,"setKBoltzman",&kB);                     // Pass a pointer to the value of boltzmanns constant in this code (why?)
+plumed_cmd(plumedmain,"setRealPrecision",&real_precision);     // Pass a pointer to an integer containing the size of a real number (4 or 8)
 plumed_cmd(plumedmain,"setMDEnergyUnits",&energyUnits);        // Pass a pointer to the conversion factor between the energy unit used in your code and kJ mol-1
 plumed_cmd(plumedmain,"setMDLengthUnits",&lengthUnits);        // Pass a pointer to the conversion factor between the length unit used in your code and nm 
 plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);            // Pass a pointer to the conversion factor between the time unit used in your code and fs?
@@ -103,11 +139,11 @@ plumed_cmd(plumedmain,"init",NULL);                            // Do all the ini
 plumed_cmd(plumedmain,"read",read);                            // Read the plumed input.  N.B. This is called during init and so this call is only required in special cases. 
 \endverbatim
 
-Please note that if your code is in fortran the mpi communicator should be passed using:
+Please note that if your code is in FORTRAN you should append a "char(0)"
+token to every string. Also, remember that FORTRAN is by default passing
+arguments by reference, so that the "&" symbols which are required in C are
+not necessary in FORTRAN.
 
-\verbatim
-call plumed_g_cmd("setMPIFComm"//char(0),MPI_COMM_WORLD)
-\endverbatim
 
 The various calls that can be used pass data and calculate the forces due to the bias are as follows:
 
@@ -161,8 +197,19 @@ Plumed has functionality to deal with parallel MD codes.  The particular form of
 plumed_cmd(plumedmain,"setAtomsNlocal",&nlocal);            // Pass a pointer to the number of atoms on this node
 plumed_cmd(plumedmain,"setAtomsGatindex",gatindex);         // Pass an array containing the indices of all the atoms on this node (used for domain decomposition)
 plumed_cmd(plumedmain,"setAtomsContiguous",&start);         // Number the atoms on this node from start to start+nlocal   (used for particle decomposition)
-plumed_cmd(plumedmain,"getApiVersion",api);                 // Pass the api version that plumed is using (what does this mean)???
 \endverbatim 
+
+\section apiversion Inquiring for the plumed version
+
+New functionalities might be added in the future to plumed. The description of
+all the possible "commands" sent to plumed is called its API (application
+programming interface). If you want to know which API is supported by plumed
+you can use this call:
+\verbatim
+plumed_cmd(plumedmain,"getApiVersion",&api);                 // Pass the api version that plumed is using
+\endverbatim 
+With the current version, this will set the api variable (an integer) to 1. As
+we add new features, this number will be increased.
 
 \section Saving the diffs
 

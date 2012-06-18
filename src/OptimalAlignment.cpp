@@ -359,6 +359,9 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	}
 	exit(0);
 
+// This is to avoid warnings:
+  return 0.0;
+
 }
 
 

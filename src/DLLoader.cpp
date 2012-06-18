@@ -1,9 +1,8 @@
 #include "DLLoader.h"
+
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
 #endif
-
-#include <iostream>
 
 using namespace PLMD;
 
@@ -38,9 +37,8 @@ const std::string & DLLoader::error(){
 DLLoader::~DLLoader(){
 #ifdef __PLUMED_HAS_DLOPEN
   while(!handles.empty()){
-    void* p=handles.top();
+    dlclose(handles.top());
     handles.pop();
-    dlclose(p);
   }
 #endif
 }

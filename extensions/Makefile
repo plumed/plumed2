@@ -31,23 +31,20 @@ clean:
 %.$(SOEXT) : %.o
 	$(LDSO) -o $@ $^
 
+# this compiler is used for dependencies generation
+# if unset, use normal CXX
+ifndef CXXDEP
+CXXDEP=$(CXX)
+endif
+
 %.o: %.cpp
-	$(CXX) -c -MM -MF$*.d $(CPPFLAGS) $(CXXFLAGS) $*.cpp
+	$(CXXDEP) -c -MM -MF$*.d $(CPPFLAGS) $(CXXFLAGS) $*.cpp
 	@cp -f $*.d $*.d.tmp
 	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
 	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
 	@rm -f $*.d.tmp
 ifndef XLF
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $*.cpp -o $*.o
-endif
-%.o: %.c
-	$(CCC) -c -MM -MF$*.d $(CPPFLAGS) $(CFLAGS) $*.c
-	@cp -f $*.d $*.d.tmp
-	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
-	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
-	@rm -f $*.d.tmp
-ifndef XLF
-	$(CC) -c $(CPPFLAGS) $(CXXFLAGS) $*.c -o $*.o
 endif
 
 # Individual dependencies

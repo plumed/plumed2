@@ -48,7 +48,7 @@ double Kearsley::calculate(bool rmsd) {
 			cerr<<"size of align is :"<<align.size()<<endl;
 			exit(0);
 	}
-	if(p0.size()==0 || p1.size()==0  ){
+	if(p0.empty() || p1.empty()  ){
 		cerr<<"Kearsley: looks like you have not properly allocated the vectors: they do not contain anything"<<endl;
 		exit(0);
 	}
@@ -93,7 +93,7 @@ double Kearsley::calculate(bool rmsd) {
 
 	if(com0_is_removed==false){
 
-		xx.clear();
+		xx.zero();
 
 		if(do_center) {// if you dont need to center no prob...
 			for(i=0;i<alignmap.size();i++){
@@ -104,7 +104,7 @@ double Kearsley::calculate(bool rmsd) {
 
 		com0=xx;
 
-		if (p0reset.size()==0){p0reset.resize(natoms);}
+		if (p0reset.empty()){p0reset.resize(natoms);}
 		for(i=0;i<natoms;i++){
 			p0reset[i]=p0[i]-xx;
 		}
@@ -122,7 +122,7 @@ double Kearsley::calculate(bool rmsd) {
 
 	if(com1_is_removed==false){
 
-		xx.clear();
+		xx.zero();
 
 		if(do_center) {// if you dont need to center no prob...
 			for(i=0;i<alignmap.size();i++){
@@ -133,7 +133,7 @@ double Kearsley::calculate(bool rmsd) {
 
 		com1=xx;
 
-		if (p1reset.size()==0){p1reset.resize(natoms);}
+		if (p1reset.empty()){p1reset.resize(natoms);}
 
 		for(i=0;i<natoms;i++){
 				p1reset[i]=p1[i]-xx;
@@ -189,24 +189,24 @@ double Kearsley::calculate(bool rmsd) {
 
 	rrsq=modulo2(rr0)+modulo2(rr1);
 
-        m(0,0) +=  rrsq+2.*(-rr0[0]*rr1[0]-rr0[1]*rr1[1]-rr0[2]*rr1[2]);
-        m(1,1) +=  rrsq+2.*(-rr0[0]*rr1[0]+rr0[1]*rr1[1]+rr0[2]*rr1[2]);
-        m(2,2) +=  rrsq+2.*(+rr0[0]*rr1[0]-rr0[1]*rr1[1]+rr0[2]*rr1[2]);
-        m(3,3) +=  rrsq+2.*(+rr0[0]*rr1[0]+rr0[1]*rr1[1]-rr0[2]*rr1[2]);
-        m(0,1) += 2.*(-rr0[1]*rr1[2]+rr0[2]*rr1[1]);
-        m(0,2) += 2.*( rr0[0]*rr1[2]-rr0[2]*rr1[0]);
-        m(0,3) += 2.*(-rr0[0]*rr1[1]+rr0[1]*rr1[0]);
-        m(1,2) -= 2.*( rr0[0]*rr1[1]+rr0[1]*rr1[0]);
-        m(1,3) -= 2.*( rr0[0]*rr1[2]+rr0[2]*rr1[0]);
-        m(2,3) -= 2.*( rr0[1]*rr1[2]+rr0[2]*rr1[1]);
+        m[0][0] +=  rrsq+2.*(-rr0[0]*rr1[0]-rr0[1]*rr1[1]-rr0[2]*rr1[2]);
+        m[1][1] +=  rrsq+2.*(-rr0[0]*rr1[0]+rr0[1]*rr1[1]+rr0[2]*rr1[2]);
+        m[2][2] +=  rrsq+2.*(+rr0[0]*rr1[0]-rr0[1]*rr1[1]+rr0[2]*rr1[2]);
+        m[3][3] +=  rrsq+2.*(+rr0[0]*rr1[0]+rr0[1]*rr1[1]-rr0[2]*rr1[2]);
+        m[0][1] += 2.*(-rr0[1]*rr1[2]+rr0[2]*rr1[1]);
+        m[0][2] += 2.*( rr0[0]*rr1[2]-rr0[2]*rr1[0]);
+        m[0][3] += 2.*(-rr0[0]*rr1[1]+rr0[1]*rr1[0]);
+        m[1][2] -= 2.*( rr0[0]*rr1[1]+rr0[1]*rr1[0]);
+        m[1][3] -= 2.*( rr0[0]*rr1[2]+rr0[2]*rr1[0]);
+        m[2][3] -= 2.*( rr0[1]*rr1[2]+rr0[2]*rr1[1]);
 
 	};
-	m(1,0) = m(0,1);
-	m(2,0) = m(0,2);
-	m(2,1) = m(1,2);
-	m(3,0) = m(0,3);
-	m(3,1) = m(1,3);
-	m(3,2) = m(2,3);
+	m[1][0] = m[0][1];
+	m[2][0] = m[0][2];
+	m[2][1] = m[1][2];
+	m[3][0] = m[0][3];
+	m[3][1] = m[1][3];
+	m[3][2] = m[2][3];
 
 	// diagonalize the 4x4 matrix
 
@@ -469,10 +469,10 @@ double Kearsley::calculate(bool rmsd) {
 		 * pi matrix : coefficents in per theory
 		 */
 
-                pi0.clear();
-		pi1.clear();
-		derr_dr1[i].clear();
-		derr_dr0[i].clear();
+                pi0.zero();
+		pi1.zero();
+		derr_dr1[i].zero();
+		derr_dr0[i].zero();
 
 		for(k=0;k<4;k++){
 			for(l=0;l<4;l++){

@@ -2,6 +2,8 @@
 #define __PLUMED_Plumed_h
 
 /**
+\page ReferencePlumedH Reference for interfacing MD codes with PLUMED
+
   Plumed.h and Plumed.c contain the external plumed interface, which is used to
   integrate it with MD engines. This interface is very general, and is expected
   not to change across plumed versions. Plumed.c also implements a dummy version
@@ -10,6 +12,18 @@
   host MD distribution. In this manner, it will be sufficient to link the plumed
   library at link time (on all systems) or directly at runtime (on system where
   dynamic loading is enabled) to include plumed features.
+
+  Why is Plumed.c written in C and not C++? The reason is that the resulting Plumed.o
+  needs to be linked with the host MD code immediately (whereas the rest of plumed
+  could be linked a posteriori). Imagine the MD code is written in FORTRAN: when we
+  link the Plumed.o file we would like not to need any C++ library linked. In this
+  manner, we do not need to know which C++ compiler will be used to compile plumed.
+  The C++ library is only linked to the "rest" of plumed, which actually use it.
+  Anyway, Plumed.c is written in such a manner to allow its compilation also in C++
+  (C++ is a bit stricter than C; compatibility is checked when PlumedStatic.cpp,
+  which basically includes Plumed.c, is compiled with the C++ compiler). This will
+  allow e.g. MD codes written in C++ to just incorporate Plumed.c (maybe renamed into
+  Plumed.cpp), without the need of configuring a plain C compiler.
 
   Plumed interface can be used from C, C++ and FORTRAN. Everything concerning plumed
   is hidden inside a single object type, which is described in C by a structure
@@ -39,43 +53,58 @@
   The global object should still be initialized and finalized properly.
 
   The basic method to send a message to plumed is
+\verbatim
   (C) plumed_cmd
   (C++) PLMD::Plumed::cmd
   (FORTRAN)  PLUMED_F_CMD
+\endverbatim
 
   To initialize a plumed object, use:
+\verbatim
   (C)        plumed_create
   (C++)      (constructor of PLMD::Plumed)
   (FORTRAN)  PLUMED_F_CREATE
+\endverbatim
 
   To finalize it, use
+\verbatim
   (C)        plumed_finalize
   (C++)      (destructor of PLMD::Plumed)
   (FORTRAN)  PLUMED_F_FINALIZE
+\endverbatim
 
   To access to the global-object, use
+\verbatim
   (C)        plumed_gcreate, plumed_gfinalize, plumed_gcmd
   (C++)      PLMD::Plumed::gcreate, PLMD::Plumed::gfinalize, PLMD::Plumed::gcmd
   (FORTRAN)  PLUMED_F_GCREATE, PLUMED_F_GFINALIZE, PLUMED_F_GCMD
+\endverbatim
 
   To check if the global object has been initialized, use
+\verbatim
   (C)        plumed_g_initialized
   (C++)      PLMD::Plumed::g_initialized
   (FORTRAN)  PLUMED_F_GINITIALIZED
+\endverbatim
 
   To check if plumed library is available (this is useful for runtime linking), use
+\verbatim
   (C)        plumed_installed 
   (C++)      PLMD::Plumed::installed
   (FORTRAN)  PLUMED_F_INSTALLED
+\endverbatim
 
   To convert handlers use
+\verbatim
   (C)        plumed_c2f                 (C to FORTRAN)
   (C)        plumed_f2c                 (FORTRAN to C)
   (C++)      Plumed(plumed) constructor (C to C++)
   (C++)      operator plumed() cast     (C++ to C)
   (C++)      Plumed(char*)  constructor (FORTRAN to C++)
   (C++)      toFortran(char*)           (C++ to FORTRAN)
+\endverbatim
 
+\verbatim
   FORTRAN interface
     SUBROUTINE PLUMED_F_INSTALLED(i)
       INTEGER,           INTENT(OUT)   :: i
@@ -96,6 +125,7 @@
       UNSPECIFIED_TYPE,  INTENT(INOUT) :: val(*)
     SUBROUTINE PLUMED_F_FINALIZE(p)
       CHARACTER(LEN=32), INTENT(IN)    :: p
+\endverbatim
 
   The main routine is "cmd", which accepts two arguments:
   key is a string containing the name of the command
@@ -106,9 +136,11 @@
   New commands will be added, but backward compatibility will be retained as long as possible.
 
   To pass plumed a callback function use the following syntax (not available in FORTRAN yet)
+\verbatim
     plumed_function_holder ff;
     ff.p=your_function;
     plumed_cmd(plumed,"xxxx",&ff);
+\endverbatim
   (this is passing the your_function() function to the "xxxx" command)
 */
 
@@ -322,8 +354,15 @@ public:
   void cmd(const char*key,const void*val=NULL);
 /**
    Destructor
+
+   Destructor is virtual so as to allow correct inheritance from Plumed object.
+   To avoid linking problems with g++, I specify "inline" also here (in principle
+   it should be enough to specify it down in the definition of the function, but
+   for some reason that I do not understand g++ does not inline it properly in that
+   case and complains when Plumed.h is included but Plumed.o is not linked. Anyway, the
+   way it is done here seems to work properly).
 */
-  ~Plumed();
+  inline virtual ~Plumed();
 };
 
 /* All methods are inlined so as to avoid the compilation of an extra c++ file */

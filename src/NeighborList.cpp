@@ -92,28 +92,22 @@ void NeighborList::update(const vector<Vector>& positions) {
 
 void NeighborList::setRequestList() {
  requestlist_.clear();
- vector<unsigned> tmp;
  for(unsigned int i=0;i<size();++i){
-  tmp.push_back(fullatomlist_[neighbors_[i].first].index());
-  tmp.push_back(fullatomlist_[neighbors_[i].second].index());
+  requestlist_.push_back(fullatomlist_[neighbors_[i].first]);
+  requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
  }
- Tools::removeDuplicates(tmp);
- for(unsigned int i=0;i<tmp.size();++i){
-  AtomNumber an;
-  an.setIndex(tmp[i]);
-  requestlist_.push_back(an);
- }
+ Tools::removeDuplicates(requestlist_);
 }
 
 vector<AtomNumber>& NeighborList::getReducedAtomList() {
  std::vector< pair<unsigned,unsigned> > newneighbors;
  for(unsigned int i=0;i<size();++i){
   unsigned newindex0,newindex1;
-  unsigned index0=fullatomlist_[neighbors_[i].first].index();
-  unsigned index1=fullatomlist_[neighbors_[i].second].index();
+  AtomNumber index0=fullatomlist_[neighbors_[i].first];
+  AtomNumber index1=fullatomlist_[neighbors_[i].second];
   for(unsigned j=0;j<requestlist_.size();++j){
-   if(requestlist_[j].index()==index0) newindex0=j;
-   if(requestlist_[j].index()==index1) newindex1=j;
+   if(requestlist_[j]==index0) newindex0=j;
+   if(requestlist_[j]==index1) newindex1=j;
   }
   newneighbors.push_back(pair<unsigned,unsigned>(newindex0,newindex1));
  }

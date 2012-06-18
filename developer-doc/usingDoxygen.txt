@@ -63,7 +63,7 @@ the keywords for your new method.  These keywords will have one of 5 attributes:
 </tr> <tr>
 <td> <b> atoms </b> </td> <td> If you are reading a list of atoms after the keyword then you should use this keyword </td>
 </tr> <tr>
-<td> <b> numbered </b> </td> <td> If you need to read in a list of similar keywords such as keyword0, keyword1, keyword2... then you must use this option  </td>
+<td> <b> numbered </b> </td> <td> If you need to read in a list of similar keywords such as keyword0, keyword1, keyword2... then you must use this option.  These keywords will be assumed to be optional.  However, you can set them to be atoms or whatever by using reset_style(keyword,newstyle).  </td>
 </tr> <tr>
 <td> <b> nohtml </b> </td> <td> Specifies that the manual information should only appear in the log file on a crash and not in the html version manual.  This is used for when there is a special methods for generating the documentation for the keyword in the manual. </td>
 </tr>

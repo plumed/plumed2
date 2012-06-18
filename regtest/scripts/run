@@ -33,6 +33,11 @@ mpiprocs=0
 
 source ./config
 
+for file in $extra_files
+do
+  cp -f ../$file .
+done
+
 echo "++ Test type: $type"
 echo "++ Arguments: $arg"
 echo "++ Processors: $mpiprocs"
@@ -41,7 +46,7 @@ mpi=env
 plumed=plumed
 
 if ((mpiprocs>0)); then
-mpi="mpirun -np $mpiprocs"
+mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
 
 if ! plumed --has-mpi
 then
@@ -63,16 +68,12 @@ fi
 
 case "$type" in
 (simplemd)
-  test -f $(plumed info --root)/test/simplemd/simplemd || {
-    echo "FAILURE: simplemd is not compiled"
-    exit 1
-  }
   test -f in || {
     echo "FAILURE: in file not present"
     exit 1
   }
   echo "Run simplemd"
-  $mpi $valgrind $(plumed info --root)/test/simplemd/simplemd < in > out 2> err
+  $mpi $valgrind $plumed simplemd < in > out 2> err
   echo "Done. Here is the error file:"
   cat err
   ;;

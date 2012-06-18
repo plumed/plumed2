@@ -59,8 +59,6 @@ pbc(true)
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
-  parseFlag("PBC",pbc);
-  checkRead();
 
   if(atoms.size()==3){
     log.printf("  between atoms %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial());
@@ -76,6 +74,7 @@ pbc(true)
 
   addValueWithDerivatives(); setNotPeriodic();
   requestAtoms(atoms);
+  checkRead();
 }
 
 // calculator

@@ -3,8 +3,8 @@
 #include <vector>
 #include <string>
 #include <set>
-#include <cassert>
-#include "Tools.h"
+#include "PlumedException.h"
+#include "MatrixSquareBracketsAccess.h"
 #include "Log.h"
 
 #if defined(F77_NO_UNDERSCORE)
@@ -30,7 +30,7 @@ namespace PLMD{
 
 /// Calculate the dot product between two vectors 
 template <typename T> T dotProduct( const std::vector<T>& A, const std::vector<T>& B ){
-   assert( A.size()==B.size() );
+   plumed_assert( A.size()==B.size() );
    T val; for(unsigned i=0;i<A.size();++i){ val+=A[i]*B[i]; }
    return val;
 }
@@ -43,7 +43,9 @@ template <typename T> T norm( const std::vector<T>& A ){
 
 /// This class stores a full matrix and allows one to do some simple matrix operations
 template <typename T>
-class Matrix {
+class Matrix:
+  public MatrixSquareBracketsAccess<Matrix<T>,T>
+  {
    /// Matrix matrix multiply
    template <typename U> friend void mult( const Matrix<U>& , const Matrix<U>& , Matrix<U>& );
    /// Matrix times a std::vector 
@@ -80,6 +82,10 @@ public:
    Matrix<T>(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {} 
    /// Resize the matrix 
    void resize( const unsigned nr, const unsigned nc ){ rw=nr; cl=nc; sz=nr*nc; data.resize(sz); }
+   /// Return the number of rows
+   inline unsigned nrows() const { return rw; } 
+   /// Return the number of columns
+   inline unsigned ncols() const { return cl; }
    /// Return element i,j of the matrix
    inline T operator () (const unsigned& i, const unsigned& j) const { return data[j+i*cl]; }
    /// Return a referenre to element i,j of the matrix
@@ -91,13 +97,13 @@ public:
    }
    /// Set the Matrix equal to another Matrix
    Matrix<T>& operator=(const Matrix<T>& m){
-     assert( m.rw==rw && m.cl==cl );
+     plumed_assert( m.rw==rw && m.cl==cl );
      data=m.data; 
      return *this;
    }
    /// Set the Matrix equal to the value of a standard vector - used for readin
    Matrix<T>& operator=(const std::vector<T>& v){
-     assert( v.size()==sz );
+     plumed_assert( v.size()==sz );
      for(unsigned i=0;i<sz;++i){ data[i]=v[i]; }
      return *this;
    }
@@ -108,7 +114,7 @@ public:
    }
    /// Matrix addition
    Matrix<T>& operator+=(const Matrix<T>& m){ 
-    assert( m.rw==rw && m.cl==cl );
+    plumed_assert( m.rw==rw && m.cl==cl );
     data+=m.data;
     return *this;
   }
@@ -119,7 +125,7 @@ public:
   }
   /// Matrix subtraction
   Matrix<T>& operator-=(const Matrix<T>& m){
-    assert( m.rw==rw && m.cl==cl );
+    plumed_assert( m.rw==rw && m.cl==cl );
     data-=m.data; 
     return *this;
   }
@@ -133,20 +139,20 @@ public:
 };
 
 template <typename T> void mult( const Matrix<T>& A , const Matrix<T>& B , Matrix<T>& C ){
-  assert(A.cl==B.rw);
+  plumed_assert(A.cl==B.rw);
   if( A.rw !=C.rw  || B.cl !=C.cl ){ C.resize( A.rw , B.cl ); } C=static_cast<T>( 0 ); 
   for(unsigned i=0;i<A.rw;++i) for(unsigned j=0;j<B.cl;++j) for (unsigned k=0; k<A.cl; ++k) C(i,j)+=A(i,k)*B(k,j); 
 }
 
 template <typename T> void mult( const Matrix<T>& A, const std::vector<T>& B, std::vector<T>& C){
-  assert( A.cl==B.size() );
+  plumed_assert( A.cl==B.size() );
   if( C.size()!=A.rw  ){ C.resize(A.rw); } 
   for(unsigned i=0;i<A.rw;++i){ C[i]= static_cast<T>( 0 ); }
   for(unsigned i=0;i<A.rw;++i) for(unsigned k=0;k<A.cl;++k) C[i]+=A(i,k)*B[k] ;
 }
 
 template <typename T> void mult( const std::vector<T>& A, const Matrix<T>& B, std::vector<T>& C){
-  assert( B.rw==A.size() );
+  plumed_assert( B.rw==A.size() );
   if( C.size()!=B.cl ){C.resize( B.cl );} 
   for(unsigned i=0;i<B.cl;++i){ C[i]=static_cast<T>( 0 ); }
   for(unsigned i=0;i<B.cl;++i) for(unsigned k=0;k<B.rw;++k) C[i]+=A[k]*B(k,i); 
@@ -173,7 +179,7 @@ template <typename T> void matrixOut( Log& ostr, const Matrix<T>& mat){
 template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eigenvals, Matrix<double>& eigenvecs ){
 
    // Check matrix is square and symmetric 
-   assert( A.rw==A.cl ); assert( A.isSymmetric()==1 );
+   plumed_assert( A.rw==A.cl ); plumed_assert( A.isSymmetric()==1 );
    double *da=new double[A.sz]; unsigned k=0; double *evals=new double[ A.cl ];
    // Transfer the matrix to the local array
    for (unsigned i=0; i<A.cl; ++i) for (unsigned j=0; j<A.rw; ++j) da[k++]=static_cast<double>( A(j,i) );
@@ -251,7 +257,7 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ){
 
 template <typename T> void cholesky( const Matrix<T>& A, Matrix<T>& B ){
 
-   assert( A.rw==A.cl && A.isSymmetric() );
+   plumed_assert( A.rw==A.cl && A.isSymmetric() );
    Matrix<T> L(A.rw ,A.cl); L=0.;
    std::vector<T> D(A.rw,0.);
    for(unsigned i=0; i<A.rw; ++i){
@@ -272,7 +278,7 @@ template <typename T> void cholesky( const Matrix<T>& A, Matrix<T>& B ){
 
 template <typename T> void chol_elsolve( const Matrix<T>& M, const std::vector<T>& b, std::vector<T>& y ){
 
-   assert( M.rw==M.cl && M(0,1)==0.0 && b.size()==M.rw );
+   plumed_assert( M.rw==M.cl && M(0,1)==0.0 && b.size()==M.rw );
    if( y.size()!=M.rw ){ y.resize( M.rw ); }
    for(unsigned i=0;i<M.rw;++i){
       y[i]=b[i];
@@ -283,7 +289,7 @@ template <typename T> void chol_elsolve( const Matrix<T>& M, const std::vector<T
 
 template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
    // Check matrix is square and symmetric
-   assert( M.rw==M.cl || M.isSymmetric() );
+   plumed_assert( M.rw==M.cl || M.isSymmetric() );
 
    double *da=new double[M.sz]; unsigned k=0; double *evals=new double[M.cl];
    // Transfer the matrix to the local array

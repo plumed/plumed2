@@ -46,6 +46,14 @@ bool Value::applyForce(std::vector<double>& forces ) const {
   return true;
 }
 
+void Value::setNotPeriodic(){
+  min=0; max=0; periodicity=notperiodic;
+}
+
+void Value::setDomain(const double& pmin,const double& pmax){
+  min=pmin; max=pmax; setupPeriodicity();
+}
+
 void Value::getDomain(double&min,double&max) const {
   plumed_massert(periodicity==periodic,"function should be periodic");
   min=this->min;
@@ -60,8 +68,8 @@ void Value::setGradients(){
     Atoms&atoms((aa->plumed).getAtoms());
     for(unsigned j=0;j<aa->getNumberOfAtoms();++j){
       AtomNumber an=aa->getAbsoluteIndex(j);
-      if(atoms.isVirtualAtom(an.index())){
-        const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an.index());
+      if(atoms.isVirtualAtom(an)){
+        const ActionWithVirtualAtom* a=atoms.getVirtualAtomsAction(an);
         for(std::map<AtomNumber,Tensor>::const_iterator p=a->getGradients().begin();p!=a->getGradients().end();++p){
 // controllare l'ordine del matmul:
           gradients[(*p).first]+=matmul(Vector(derivatives[3*j],derivatives[3*j+1],derivatives[3*j+2]),(*p).second);

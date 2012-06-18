@@ -46,7 +46,8 @@ Value* ActionWithValue::copyOutput( const std::string& name ) const {
   for(unsigned i=0;i<values.size();++i){
      if (values[i]->name==name) return values[i];
   }
-  plumed_massert(0,"there is no pointer with name " + name);
+  plumed_merror("there is no pointer with name " + name);
+  return NULL;
 }
 
 Value* ActionWithValue::copyOutput( const unsigned& n ) const {
@@ -57,12 +58,12 @@ Value* ActionWithValue::copyOutput( const unsigned& n ) const {
 // -- HERE WE HAVE THE STUFF FOR THE DEFAULT VALUE -- //
 
 void ActionWithValue::addValue(){
-  plumed_massert(values.size()==0,"You have already added the default value for this action");
+  plumed_massert(values.empty(),"You have already added the default value for this action");
   values.push_back(new Value(this,getLabel(), false ) );
 }
 
 void ActionWithValue::addValueWithDerivatives(){
-  plumed_massert(values.size()==0,"You have already added the default value for this action");
+  plumed_massert(values.empty(),"You have already added the default value for this action");
   values.push_back(new Value(this,getLabel(), true ) );
 }
 

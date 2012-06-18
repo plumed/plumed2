@@ -18,7 +18,6 @@ void Colvar::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.addFlag("PBC",true,"use the periodic boundary conditions when calculating distances");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }  
 
@@ -42,7 +41,7 @@ void Colvar::apply(){
     f[i][1]=0.0;
     f[i][2]=0.0;
   }
-  v.clear();
+  v.zero();
 
   if(!isEnergy){
     for(int i=0;i<getNumberOfComponents();++i){
