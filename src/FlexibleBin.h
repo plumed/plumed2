@@ -12,14 +12,20 @@ class FlexibleBin{
 	private:
 		double sigma;	
 		const int type;
-		// for diffusion based metrics: do allocate the accumulators 
-		vector<double> average;
-		vector<double> variance;	
+		// this contains all the infos about the CVs including periodicity
 		ActionWithArguments *paction;
+		// variance is the matrix that really matters
+		vector<double> variance;	
+		// this is only there
+		vector<double> average;
 	public:
-		FlexibleBin(int type,ActionWithArguments *paction);
+		/// a constructor that takes the pointer of the action that contains it
+		FlexibleBin(int type,ActionWithArguments *paction, double const &d);
 		~FlexibleBin();
-		void update(double const s);
+		/// update the average (always for diffusion) or calculate the geom covariance (  only when do_when_zero is zero)
+		void update(bool nowAddAHill );
+		vector<double> getMatrix() const;
+		vector<double> getInverseMatrix() const;
 		enum AdaptiveHillsType { none, diffusion, geometry }; 
 };
 

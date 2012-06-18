@@ -36,6 +36,8 @@ public:
   unsigned getNumberOfArguments() const ;
 /// Takes the difference taking into account pbc for arg i
   double difference(int, double, double) const;
+/// Takes one value and brings it back into the pbc of argument i 
+  double bringBackInPbc(int i,double d1)const;
 /// Parse a list of arguments
   void parseArgumentList(const std::string&key,std::vector<Value*>&args);
 /// Setup the dependencies
@@ -72,6 +74,11 @@ unsigned ActionWithArguments::getNumberOfArguments()const{
 inline
 double ActionWithArguments::difference(int i,double d1,double d2)const{
   return arguments[i]->difference(d1,d2);
+}
+
+inline
+double ActionWithArguments::bringBackInPbc(int i,double d1)const{
+  return arguments[i]->bringBackInPbc(d1);
 }
 
 inline

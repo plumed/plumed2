@@ -88,7 +88,7 @@ public:
 /// Set all the derivatives to zero
   void clearDerivatives();
 /// Add some derivative to the ith component of the derivatives array
-  void addDerivative(int i,double d);
+  void addDerivative(unsigned i,double d);
 /// Apply the chain rule to the derivatives
   void chainRule(double df);
 /// Get the derivative with respect to component n
@@ -107,6 +107,8 @@ public:
   double difference(double d1,double d2)const;
 /// This returns the pointer to the action where this value is calculated
   ActionWithValue* getPntrToAction();
+/// Bring back one value into the correct pbc if needed, else give back the value
+  double bringBackInPbc(double d1)const;
 /// This sets up the gradients
   void setGradients();
   static double projection(const Value&,const Value&);
@@ -196,7 +198,7 @@ void Value::resizeDerivatives(int n){
 }
 
 inline
-void Value::addDerivative(int i,double d){
+void Value::addDerivative(unsigned i,double d){
   plumed_massert(i<derivatives.size(),"derivative is out of bounds");
   derivatives[i]+=d;
 }
@@ -239,6 +241,11 @@ double Value::difference(double d1,double d2)const{
     s=Tools::pbc(s);
     return s*max_minus_min;
   } else plumed_merror("periodicity should be set to compute differences");
+}
+
+inline
+double Value::bringBackInPbc(double d1)const{
+	return difference(min , d1);
 }
 
 inline
