@@ -1,5 +1,4 @@
 #include "Function.h"
-#include "Colvar.h"
 
 using namespace PLMD;
 using namespace std;

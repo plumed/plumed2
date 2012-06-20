@@ -1,5 +1,4 @@
 #include "ActionPilot.h"
-#include "PlumedMain.h"
 
 using namespace PLMD;
 using namespace std;

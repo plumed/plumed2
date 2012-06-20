@@ -1,6 +1,5 @@
 #include "ActionWithVirtualAtom.h"
 #include "Atoms.h"
-#include "PlumedMain.h"
 
 using namespace std;
 

@@ -1,5 +1,4 @@
 #include "ActionWithValue.h"
-#include "PlumedMain.h"
 #include "PlumedException.h"
 
 using namespace std;

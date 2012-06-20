@@ -3,7 +3,6 @@
 
 #include "ActionRegister.h"
 #include "ActionAtomistic.h"
-#include "PlumedMain.h"
 #include "Atoms.h"
 
 using namespace std;

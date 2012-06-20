@@ -5,7 +5,6 @@
 #include "AtomNumber.h"
 #include "Vector.h"
 #include "Tensor.h"
-#include "PlumedMain.h"
 #include "Atoms.h"
 
 namespace PLMD{

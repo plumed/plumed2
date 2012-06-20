@@ -1,5 +1,4 @@
 #include "Colvar.h"
-#include "PlumedMain.h"
 #include <vector>
 #include <string>
 
