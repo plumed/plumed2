@@ -53,7 +53,7 @@ reduceListAtNextStep(false)
   parseFlag("SUM",dosum);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;  parseFlag("PBC",pbc);
+  pbc=!nopbc;  
 
   // Read in the atoms
   std::vector<AtomNumber> t, ga_lista, gb_lista;
