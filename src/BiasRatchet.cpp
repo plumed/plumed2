@@ -10,7 +10,7 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS ABMD 
 /**
-Adds an ratchet-and-pawl like restraint on one or more variables
+Adds a ratchet-and-pawl like restraint on one or more variables
 
 \par Syntax
 \verbatim
@@ -59,9 +59,9 @@ PLUMED_REGISTER_ACTION(BiasRatchet,"ABMD")
 void BiasRatchet::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","TO","The array of a values in the above equation");
+  keys.add("compulsory","TO","The array of target values");
   keys.add("compulsory","KAPPA","The array of force constants.");
-  keys.add("compulsory","MIN","Also the array of a values in the above equation - I don't understand.");
+  keys.add("optional","MIN","Array of starting values (usefull for restarting)");
 }
 
 BiasRatchet::BiasRatchet(const ActionOptions&ao):
@@ -73,7 +73,6 @@ kappa(getNumberOfArguments(),0.0)
   parseVector("KAPPA",kappa);
   plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("MIN",min);
-  plumed_assert(min.size()==getNumberOfArguments());
   parseVector("TO",to);
   plumed_assert(to.size()==getNumberOfArguments());
   checkRead();
