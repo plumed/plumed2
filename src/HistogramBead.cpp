@@ -32,7 +32,8 @@ std::string HistogramBead::histodocs() {
   ostr<<"The range is divided into a discete number of bins and the number of values that fall within each bin is calculated using ";
   ostr<<"\\f$ w(r)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left( -\\frac{(r'-r)^2}{2\\sigma^2} \\right) \\textrm{d}r' \\f$";
   ostr<<"where \\f$ \\sigma=(b-a)k \\f$.  The particular range of interest and number of bins are specified using ";
-  ostr<<"(NBINS=\\f$n\\f$ LOWER=\\f$a\\f$ UPPER=\\f$b\\f$ SMEAR=\\f$x\\f$). If the SMEAR keyword is not present then by default \\f$k=0.5\\f$";
+  ostr<<"(NBINS=\\f$n\\f$ LOWER=\\f$a\\f$ UPPER=\\f$b\\f$ SMEAR=\\f$x\\f$). If the SMEAR keyword is not present then by default \\f$k=0.5\\f$. ";
+  ostr<<"You can calculate a normalized histogram using the NORM flag (N.B. Don't use this if you are using derivatives of the histogram and neighbor lists)";
   return ostr.str();
 }
 
@@ -51,12 +52,15 @@ void HistogramBead::generateBins( const std::string& params, const std::string& 
   plumed_massert(range[0]<range[1],"Range specification is dubious"); 
   bool found_b=Tools::parse(data,dd+"SMEAR",smear);
   if(!found_b){ Tools::convert(0.5,smear); }  
+  bool usenorm=false; std::string normstr;
+  if(dd=="") bool found_n=Tools::parseFlag(data,dd+"NORM",usenorm);
+  if(usenorm && dd==""){ normstr="NORM"; } else { normstr=""; } 
 
   std::string lb,ub; double delr = ( range[1]-range[0] ) / static_cast<double>( nbins );
   for(unsigned i=0;i<nbins;++i){
      Tools::convert( range[0]+i*delr, lb );
      Tools::convert( range[0]+(i+1)*delr, ub );
-     bins.push_back( dd + "LOWER=" + lb + " " + dd + "UPPER=" + ub + " " + dd + "SMEAR=" + smear );
+     bins.push_back( dd + "LOWER=" + lb + " " + dd + "UPPER=" + ub + " " + dd + "SMEAR=" + smear + " " + normstr );
   }
   plumed_assert(bins.size()==nbins);
   if( dd.empty() ) plumed_massert(data.empty(),"Error reading histogram"); 
@@ -76,6 +80,7 @@ void HistogramBead::set( const std::string& params, const std::string& dd, std::
   
   smear=0.5; bool found_b=Tools::parse(data,dd+"SMEAR",smear);
   width=smear*(highb-lowb); init=true;
+  bool usenorm; bool found_n=Tools::parseFlag(data,dd+"NORM",usenorm);
   if( dd.empty() ){ if( !data.empty()) errormsg="Error reading within"; }
 }
 
@@ -88,5 +93,6 @@ void HistogramBead::printKeywords( Log& log ) const {
   hkeys.add("compulsory","LOWER","the lower boundary for this particular bin");
   hkeys.add("compulsory","UPPER","the upper boundary for this particular bin");
   hkeys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution"); 
+  hkeys.addFlag("NORM",false,"normalize the histogram according to the number of values we are histograming");
   hkeys.print( log );
 }

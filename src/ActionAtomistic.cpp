@@ -174,19 +174,12 @@ void ActionAtomistic::applyForces(){
   atoms.forceOnEnergy+=forceOnEnergy;
 }
 
-void ActionAtomistic::readAndCalculate( const PDB& pdb ){
+void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ){
   for(unsigned j=0;j<indexes.size();j++){
       if( indexes[j].index()>pdb.size() ) error("there are not enough atoms in the input pdb file");
-      if( pdb.getAtomNumbers()[j].index()!=j ) error("there are atoms missing in the pdb file");  
+      if( pdb.getAtomNumbers()[j].index()!=indexes[j].index() ) error("there are atoms missing in the pdb file");  
       positions[j]=pdb.getPositions()[indexes[j].index()];
   }
   for(unsigned j=0;j<indexes.size();j++) charges[j]=pdb.getBeta()[indexes[j].index()];
   for(unsigned j=0;j<indexes.size();j++) masses[j]=pdb.getOccupancy()[indexes[j].index()];
-  prepare(); calculate();
 }
-
-
-
-
-
-

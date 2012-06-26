@@ -17,7 +17,6 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   Action(ao),
   read(false),
   all_values(true),
-  use_field(false),
   serial(false),
   updateFreq(0),
   lastUpdate(0),
@@ -45,11 +44,10 @@ ActionWithDistribution::~ActionWithDistribution(){
 }
 
 void ActionWithDistribution::addField( std::string key, Field* ff ){
-  all_values=false; use_field=true; 
-  std::string freport, fieldin; 
-  if( key.length()==0 ) fieldin="yes";
-  else parse(key,fieldin);
+  plumed_assert( key.length()!=0 );
+  std::string fieldin; parse(key,fieldin);
   if( fieldin.length()==0 ) return ;
+  all_values=false;  std::string freport;
   myfield=ff; myfield->read( fieldin, getNumberOfFunctionsInDistribution(), freport );
   if( !myfield->check() ){
      log.printf("ERROR for keyword FIELD in action %s with label %s : %s \n \n", getName().c_str(), getLabel().c_str(), ( myfield->errorMessage() ).c_str() );
@@ -100,9 +98,8 @@ void ActionWithDistribution::requestDistribution(){
 
   if(all_values){
       error("No function has been specified");
-  } else if( !use_field ){
-      plumed_massert( functions.size()==final_values.size(), "number of functions does not match number of values" );
-  }
+  } 
+  plumed_massert( functions.size()==final_values.size(), "number of functions does not match number of values" );
   // This sets up the dynamic list that holds what we are calculating
   for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ members.addIndexToList(i); }
   members.activateAll(); members.updateActiveMembers();
@@ -117,12 +114,13 @@ void ActionWithDistribution::prepare(){
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
     for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( (av->getPntrToComponent(i))->getNumberOfDerivatives() );
     // Setup the buffers for mpi gather
-    if( use_field ){
+    if( myfield ){
       std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() ); 
       for(unsigned i=0;i<cv_sizes.size();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
       myfield->resizeBaseQuantityBuffers( cv_sizes ); 
       myfield->resizeDerivatives( getNumberOfFieldDerivatives() );
-    } else {
+    } 
+    if( functions.size()!=0 ){
       unsigned bufsize=0;
       for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
       buffer.resize( bufsize ); 
@@ -137,12 +135,13 @@ void ActionWithDistribution::prepare(){
     ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
     for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( (av->getPntrToComponent(i))->getNumberOfDerivatives() );
     // Setup the buffers for mpi gather
-    if( use_field ){
+    if( myfield ){
       std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() ); unsigned kk;
       for(unsigned i=0;i<cv_sizes.size();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
       myfield->resizeBaseQuantityBuffers( cv_sizes ); 
       myfield->resizeDerivatives( getNumberOfFieldDerivatives() );
-    } else {
+    } 
+    if( functions.size()!=0 ){
       unsigned bufsize=0;
       for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
       buffer.resize( bufsize ); 

@@ -50,8 +50,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
 {
   int nat; readAtoms( nat ); 
   requestDistribution();
-  // Functon is not periodic
-  setNotPeriodic();
   // And check everything has been read in correctly
   checkRead(); 
 }

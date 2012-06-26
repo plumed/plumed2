@@ -103,6 +103,12 @@ double Value::projection(const Value& v1,const Value&v2){
   return proj;
 }
 
+ActionWithValue* Value::getPntrToAction(){
+  plumed_assert( action!=NULL );
+  return action;
+}
+
+
 
 
 

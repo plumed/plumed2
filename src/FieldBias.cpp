@@ -36,8 +36,8 @@ FieldBias::FieldBias(const ActionOptions&ao):
   std::string ll; parse("FIELD",ll);
   ActionWithDistribution* field=plumed.getActionSet().selectWithLabel<ActionWithDistribution*>(ll);
   if(field){
-     if( field->usingDistributionFunctions() ) error("action " + ll + " calculates a colvar and not a field"); 
      myfield=field->getField();
+     if(!myfield) error("input action " + ll + " does not calcualte a field");
      apply_action=dynamic_cast<ActionWithValue*>( field );
   } else {
      apply_action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(ll);

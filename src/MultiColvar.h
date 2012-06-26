@@ -161,7 +161,6 @@ class MultiColvar :
 private:
   bool usepbc;
   bool readatoms;
-  bool setperiods;
   bool needsCentralAtomPosition;
 /// Constants for fields
   double fsigma2, fnorm;
@@ -193,11 +192,6 @@ protected:
   void removeAtomRequest( const unsigned& aa );
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
-/// Check the readin
-  void checkRead();
-/// Set the periodicities of the base quantities for the fields
-  void setNotPeriodic();
-  void setPeriodicDomain( const double& min, const double max );
 public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){};

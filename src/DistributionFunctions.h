@@ -159,6 +159,7 @@ public:
 
 class within : public DistributionFunction {
 private:
+  bool usenorm;
   double a,b,sigma;
   HistogramBead hist;
 public:

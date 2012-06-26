@@ -79,8 +79,6 @@ rcut(-1)
       parse("NL_CUTOFF",rcut);
       if( rcut>0 ) log.printf("  ignoring distances greater than %lf in neighbor list\n",rcut);
   }
-  // Functon is not periodic
-  setNotPeriodic();
   // And check everything has been read in correctly
   checkRead();
 }

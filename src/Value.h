@@ -109,6 +109,8 @@ public:
   double difference(double)const;
 /// Calculate the difference between two values of this function
   double difference(double,double)const;
+/// This returns the pointer to the action where this value is calculated
+  ActionWithValue* getPntrToAction();
 /// This sets up the gradients
   void setGradients();
   static double projection(const Value&,const Value&);

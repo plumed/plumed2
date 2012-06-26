@@ -152,6 +152,7 @@ public:
   void readBinary(std::istream&);
   double getKBoltzmann()const;
   double getMDKBoltzmann()const;
+  bool usingNaturalUnits()const;
   void setNaturalUnits(bool n){naturalUnits=n;};
   void setMDNaturalUnits(bool n){MDnaturalUnits=n;};
 };
@@ -169,6 +170,11 @@ bool Atoms::isVirtualAtom(AtomNumber i)const{
 inline
 ActionWithVirtualAtom* Atoms::getVirtualAtomsAction(AtomNumber i)const{
   return virtualAtomsActions[i.index()-getNatoms()];
+}
+
+inline
+bool Atoms::usingNaturalUnits() const {
+  return naturalUnits;
 }
 
 

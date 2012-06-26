@@ -59,7 +59,7 @@ ActionWithValue(ao),
 ActionWithDistribution(ao),
 usepbc(true),
 readatoms(false),
-setperiods(false),
+//setperiods(false),
 needsCentralAtomPosition(false)
 {
   if( keywords.style("NOPBC", "flag") ){ 
@@ -194,7 +194,7 @@ void MultiColvar::readAtoms( int& natoms ){
       }
   } 
 
-  if( !usingDistributionFunctions() && keywords.exists("DISTRIBUTION") ) addField("DISTRIBUTION", new Field( "identity",1 ) );
+  if( keywords.exists("DISTRIBUTION") ) addField("DISTRIBUTION", new Field( "identity",1 ) );
   requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes
 }
 
@@ -325,34 +325,6 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   } 
 }
 
-void MultiColvar::checkRead(){
-  plumed_massert(setperiods, "You must set the periodicity of the various component functions");
-  Action::checkRead();
-}
-
-void MultiColvar::setNotPeriodic(){
-  setperiods=true;
-  if( !usingDistributionFunctions() ){
-      std::string num;
-      for(unsigned i=0;i<getNumberOfComponents();++i){
-          Tools::convert(i+1,num);
-          componentIsNotPeriodic( "fval"+num );
-      }
-  }
-}
-
-void MultiColvar::setPeriodicDomain( const double& min, const double max ){
-  setperiods=true;
-  if( !usingDistributionFunctions() ){
-     std::string num;
-     for(unsigned i=0;i<getNumberOfComponents();++i){ 
-         Tools::convert(i+1,num);
-         componentIsPeriodic( "fval"+num , min, max );
-     }
-  }     
-}
-
-
 void MultiColvar::prepareForNeighborListUpdate(){
    for(unsigned i=0;i<colvar_atoms.size();++i){
       colvar_atoms[i].activateAll(); colvar_atoms[i].updateActiveMembers();
@@ -372,9 +344,7 @@ void MultiColvar::completeNeighborListUpdate(){
 
 void MultiColvar::requestAtoms(){
    ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-   if( usingDistributionFunctions() ){
-       for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*getNumberOfAtoms()+9);
-   } 
+   for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*getNumberOfAtoms()+9);
 }
 
 void MultiColvar::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){

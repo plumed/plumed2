@@ -18,8 +18,6 @@ private:
   bool read;
 /// This tells us we are calculating all values (not doing anything to the distribution)
   bool all_values;
-/// This tells us we are using the field cvs
-  bool use_field;
 /// Do all calculations in serial
   bool serial;
 /// Everything for controlling the updating of neighbor lists
@@ -68,8 +66,6 @@ public:
   virtual void prepare();
 /// Calculate the values of the object
   void calculate();
-/// Are we using distributions 
-  bool usingDistributionFunctions() const;
 /// Overwrite this in your inherited actions if neighbor list update is more complicated
 /// than just calculating everything and seeing whats big.
   virtual void prepareForNeighborListUpdate(){};
@@ -84,8 +80,6 @@ public:
   virtual bool isPeriodic(const unsigned nn)=0;
 /// What are the domains of the base quantities
   virtual void retrieveDomain( const unsigned nn, double& min, double& max);
-/// Get the number of derivatives for this action
-//  virtual unsigned getNumberOfDerivatives()=0;
 /// Get the number of functions from which we are calculating the distribtuion
   virtual unsigned getNumberOfFunctionsInDistribution()=0;
 /// Calculate one of the functions in the distribution
@@ -113,11 +107,6 @@ Field* ActionWithDistribution::getField() {
 inline
 bool ActionWithDistribution::getSerial() const {
   return serial;
-}
-
-inline
-bool ActionWithDistribution::usingDistributionFunctions() const {
-  return ( !all_values && !use_field );
 }
 
 inline

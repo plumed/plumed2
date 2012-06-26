@@ -100,7 +100,7 @@ public:
   const std::set<AtomNumber> & getUnique()const;
 /// Read in an input file containing atom positions and calculate the action for the atomic 
 /// configuration therin
-  void readAndCalculate( const PDB& pdb );
+  void readAtomsFromPDB( const PDB& pdb );
 };
 
 inline
