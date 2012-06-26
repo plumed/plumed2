@@ -175,6 +175,9 @@ void ActionAtomistic::applyForces(){
 }
 
 void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ){
+  Colvar*cc=dynamic_cast<Colvar*>(this);
+  if(cc && cc->checkIsEnergy()) error("can't read energies from pdb files");
+
   for(unsigned j=0;j<indexes.size();j++){
       if( indexes[j].index()>pdb.size() ) error("there are not enough atoms in the input pdb file");
       if( pdb.getAtomNumbers()[j].index()!=indexes[j].index() ) error("there are atoms missing in the pdb file");  
