@@ -100,8 +100,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   if(nl_cut>0.0){
      log.printf("  ignoring distances greater than %lf in neighbor list\n",nl_cut); 
   } 
-  // Functon is not periodic
-  setNotPeriodic();
   // And check everything has been read in correctly
   checkRead();
 }
