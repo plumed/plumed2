@@ -185,7 +185,17 @@ void Action::warning( const std::string & msg ){
   log.printf("WARNING for action %s with label %s : %s \n", name.c_str(), label.c_str(), msg.c_str() ); 
 }
 
-
+void Action::calculateFromPDB( const PDB& pdb ){
+  activate();
+  for(Dependencies::iterator p=after.begin();p!=after.end();++p){
+     ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
+     if(av){ av->clearInputForces(); av->clearDerivatives(); }
+     (*p)->readAtomsFromPDB( pdb ); 
+     (*p)->calculate();
+  }
+  readAtomsFromPDB( pdb );
+  calculate();
+}
 
 
 

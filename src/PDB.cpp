@@ -27,7 +27,8 @@ unsigned PDB::size()const{
   return positions.size();
 }
 
-void PDB::read(const std::string&file,double scale){
+void PDB::read(const std::string&file,bool naturalUnits,double scale){
+  if(naturalUnits) scale=1.0;
   FILE* fp=fopen(file.c_str(),"r");
   //cerr<<file<<endl;
   string line;
