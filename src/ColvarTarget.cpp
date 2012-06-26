@@ -33,7 +33,7 @@ PLUMED_REGISTER_ACTION(TargetFrame,"TARGET")
 void TargetFrame::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure");
+  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure. " + PDB::documentation() );
   keys.add("optional","REFERENCE_VEC","the vector of values for the CVs at the reference point (if you use this you don't need REFERENCE)");
 }
 

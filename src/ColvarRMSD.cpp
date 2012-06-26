@@ -53,7 +53,7 @@ PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
 
 void ColvarRMSD::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
-  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure.  The atoms involved in the CV are specified in the pdb file");
+  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV. " + PDB::documentation() );
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
 }
 

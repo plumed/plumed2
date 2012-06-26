@@ -7,6 +7,15 @@ using namespace std;
 
 namespace PLMD{
 
+std::string PDB::documentation(){
+  std::ostringstream ostr;
+  ostr<<"In PDB files the atomic coordinates and box lengths should be in Angstroms unless you are working with natural units. ";
+  ostr<<"If you are working with natural units then the coordinates should be in your natural length unit. In the PDB files used ";
+  ostr<<"by plumed the beta column is used to specify the charges on the atoms and the occupancy column is used to specify the atomic masses. ";
+  ostr<<"For more details on the PDB file format visit http://www.wwpdb.org/docs.html";
+  return ostr.str();
+}
+
 const std::vector<Vector> & PDB::getPositions()const{
   return positions;
 }
