@@ -93,9 +93,18 @@ FieldBias::FieldBias(const ActionOptions&ao):
 
   blocks[0]=0;
   for(unsigned i=1;i<blocks.size();++i){
-      for(unsigned j=0;j<i;++j) blocks[i]+=blocks[j];
-      if( i<=nrem ) blocks[i]+=nn + 1;
-      else blocks[i]+=nn;
+      blocks[i]=blocks[i-1];
+      if( blocks[i]<bias->getSize() ){
+         if( i<=nrem ) blocks[i]+=nn + 1;
+         else blocks[i]+=nn;
+      } else {
+         warning("number of integration points is less than number of nodes so some nodes are idle : consider running in serial");
+      }
+  }
+  if(!serial){
+     for(unsigned i=0;i<stride;++i){
+         log.printf("  node %d is doing integration of %d points\n",i,blocks[i+1]-blocks[i]);
+     }
   }
   plumed_assert( blocks[blocks.size()-1]==bias->getSize() );
 
