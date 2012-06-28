@@ -45,6 +45,9 @@ void PDB::read(const std::string&file,bool naturalUnits,double scale){
     while(line.length()<80) line.push_back(' ');
     string record=line.substr(0,6);
     string serial=line.substr(6,5);
+    string atomname=line.substr(12,4);
+    string chainID=line.substr(21,1);
+    string resnum=line.substr(22,4);
     string x=line.substr(30,8);
     string y=line.substr(38,8);
     string z=line.substr(46,8);
@@ -54,10 +57,11 @@ void PDB::read(const std::string&file,bool naturalUnits,double scale){
     if(record=="TER") break;
     if(record=="END") break;
     if(record=="ATOM" || record=="HETATM"){
-      AtomNumber a;
+      AtomNumber a; unsigned resno;
       double o,b;
       Vector p;
       Tools::convert(serial,a);
+      Tools::convert(resnum,resno);
       Tools::convert(occ,o);
       Tools::convert(bet,b);
       Tools::convert(x,p[0]);
@@ -66,6 +70,11 @@ void PDB::read(const std::string&file,bool naturalUnits,double scale){
       // scale into nm
       p*=scale;
       numbers.push_back(a);
+      std::size_t startpos=atomname.find_first_not_of(" \t");
+      std::size_t endpos=atomname.find_last_not_of(" \t");
+      atomsymb.push_back( atomname.substr(startpos, endpos-startpos+1) );
+      residue.push_back(resno);
+      chain.push_back(chainID);
       occupancy.push_back(o);
       beta.push_back(b);
       positions.push_back(p);
@@ -74,6 +83,77 @@ void PDB::read(const std::string&file,bool naturalUnits,double scale){
   fclose(fp);
 }
 
+void PDB::getChainNames( std::vector<std::string>& chains ) const {
+  chains.resize(0);
+  chains.push_back( chain[0] );
+  for(unsigned i=1;i<size();++i){
+     if( chains[chains.size()-1]!=chain[i] ) chains.push_back( chain[i] );
+  }
+} 
+
+void PDB::getResidueRange( const std::string& chainname, unsigned& res_start, unsigned& res_end, std::string& errmsg ) const {
+  bool inres=false, foundchain=false;
+  for(unsigned i=0;i<size();++i){
+     if( chain[i]==chainname ){
+         if(!inres){
+           if(foundchain) errmsg="found second start of chain named " + chainname;
+           res_start=residue[i];
+         }
+         inres=true; foundchain=true;
+     } else if( inres && chain[i]!=chainname ){
+         inres=false;
+         res_end=residue[i-1];
+     }
+  }
+  if(inres) res_end=residue[size()-1];
+}
+
+void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const {
+  bool inres=false, foundchain=false;
+  for(unsigned i=0;i<size();++i){
+     if( chain[i]==chainname ){
+         if(!inres){
+           if(foundchain) errmsg="found second start of chain named " + chainname;
+           a_start=numbers[i];
+         } 
+         inres=true; foundchain=true;
+     } else if( inres && chain[i]!=chainname ){
+         inres=false;
+         a_end=numbers[i-1];
+     }
+  }       
+  if(inres) a_end=numbers[size()-1];
+} 
+
+bool PDB::getBackbone( const unsigned& resnumber, const std::vector<std::string>& backnames, std::vector<AtomNumber>& backnumbers ) const {
+  backnumbers.resize(0); bool foundresidue=false; unsigned bno=0;
+  for(unsigned i=0;i<size();++i){
+     if( residue[i]==resnumber ){
+         foundresidue=true;
+         if( backnames[bno]==atomsymb[i] ){
+             backnumbers.push_back( numbers[i] ); bno++;
+         }
+     }
+  }
+  if(!foundresidue){ return false; }
+  if( backnumbers.size()!=backnames.size() ){ return false; }
+  return true;
+}
+
+std::string PDB::getChainID(const unsigned& resnumber) const {
+  for(unsigned i=0;i<size();++i){
+     if(resnumber==residue[i]) return chain[i];
+  }
+  plumed_massert(0,"Not enough residues in pdb input file");
+}
+
+unsigned PDB::getNumberOfResidues() const {
+  unsigned nres=0;
+  for(unsigned i=0;i<size();++i){
+     if( residue[i]>nres ) nres=residue[i];
+  }
+  return nres;
+} 
 
 }
 

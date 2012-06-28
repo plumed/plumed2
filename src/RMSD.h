@@ -31,6 +31,8 @@ public:
   void clear();
 /// set reference, align and displace from input pdb structure
   void set(const PDB&, std::string mytype);
+/// set the type of alignment we are doing
+  void setType(std::string mytype);
 /// set reference coordinates
   void setReference(const std::vector<Vector> & reference);
 /// set weights

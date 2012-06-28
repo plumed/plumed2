@@ -185,6 +185,10 @@ private:
 protected:
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
+/// Read in the atoms that form the backbone of a polymeric chain
+  void readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths );
+/// Add a colvar to the set of colvars we are calculating (in practise just a list of atoms)
+  void addColvar( const std::vector<unsigned>& newatoms );
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Stop a calculation during neighbor list update steps
