@@ -61,10 +61,6 @@ reduceListAtNextStep(false)
      parseAtomList("ATOMS", i, t );
      if( t.empty() ) break;
 
-     log.printf("  The %dth contact is calculated from atoms : ", i);
-     for(unsigned j=0;j<t.size();++j) log.printf("%d ",t[j].serial() );
-     log.printf("\n");
-
      if( t.size()!=2 ){
          std::string ss; Tools::convert(i,ss);
          error("ATOMS" + ss + " keyword has the wrong number of atoms");
@@ -80,27 +76,35 @@ reduceListAtNextStep(false)
   nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
   requestAtoms(nl->getFullAtomList());
 
-  // Set up if it is just a list of contacts
-  if(dosum){
-     addValueWithDerivatives(); setNotPeriodic();
-     log.printf("  colvar is sum of all contacts in contact map");
-  }
-
   // Read in switching functions
-  std::string sw, errors; parse("SWITCH",sw);
-  for(unsigned i=0;i<ga_lista.size();++i) sfs.push_back( SwitchingFunction() );
-  if(sw.length()>0){
+  std::string errors; sfs.resize( ga_lista.size() ); unsigned nswitch=0;
+  for(unsigned i=0;i<ga_lista.size();++i){
+      std::string num, sw1; Tools::convert(i+1, num);
+      if( !parseNumbered( "SWITCH", i+1, sw1 ) ) break;
+      nswitch++; sfs[i].set(sw1,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
+  }
+  if( nswitch==0 ){
+     std::string sw; parse("SWITCH",sw);
+     if(sw.length()==0) error("no switching function specified use SWITCH keyword");
      for(unsigned i=0;i<ga_lista.size();++i){
         sfs[i].set(sw,errors);
         if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
      }
-  } else {
-     for(unsigned i=0;i<ga_lista.size();++i){
-         std::string num, sw1; Tools::convert(i+1, num);
-         if( !parseNumbered( "SWITCH", i+1, sw1 ) ) error("missing SWITCH" + num + " keyword");
-         sfs[i].set(sw1,errors);
-         if( errors.length()!=0 ) error("problem reading SWITCH" + num + " keyword : " + errors );
-     }
+  } else if( nswitch!=sfs.size()  ){
+     std::string num; Tools::convert(nswitch+1, num);
+     error("missing SWITCH" + num + " keyword");
+  }
+
+  // Ouput details of all contacts 
+  for(unsigned i=0;i<sfs.size();++i){
+     log.printf("  The %dth contact is calculated from atoms : %d %d. Inflection point of switching function is at %s\n", i+1, ga_lista[i].serial(), gb_lista[i].serial() , ( sfs[i].description() ).c_str() );
+  }
+
+  // Set up if it is just a list of contacts
+  if(dosum){
+     addValueWithDerivatives(); setNotPeriodic();
+     log.printf("  colvar is sum of all contacts in contact map");
   }
   checkRead();
 }
