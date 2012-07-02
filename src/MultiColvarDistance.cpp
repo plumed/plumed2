@@ -61,7 +61,6 @@ PLUMED_REGISTER_ACTION(MultiColvarDistance,"DISTANCES")
 void MultiColvarDistance::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
-  keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
   keys.use("DISTRIBUTION");
 }
@@ -74,11 +73,6 @@ rcut(-1)
   int natoms=2; readAtoms( natoms );
   // And setup the ActionWithDistribution
   requestDistribution();          
-  // Read the cutoff for the neighbour list
-  if( isTimeForNeighborListUpdate() ){
-      parse("NL_CUTOFF",rcut);
-      if( rcut>0 ) log.printf("  ignoring distances greater than %lf in neighbor list\n",rcut);
-  }
   // And check everything has been read in correctly
   checkRead();
 }
@@ -92,11 +86,6 @@ double MultiColvarDistance::compute( const unsigned& j, const std::vector<Vector
    distance=getSeparation( pos[0], pos[1] );
    const double value=distance.modulo();
    const double invvalue=1.0/value;
-
-   // Check at neighbor list update time whether this distance is big
-   if( isTimeForNeighborListUpdate() && rcut>0 ){
-       if( value>rcut ){ stopCalculatingThisCV(); return 0.0; }
-   } 
 
    // And finish the calculation
    deriv[0]=-invvalue*distance;

@@ -170,8 +170,6 @@ private:
 /// The lists of the atoms involved in each of the individual colvars
 /// note these refer to the atoms in all_atoms
   std::vector< DynamicList<unsigned> > colvar_atoms;
-/// Used to stop calculating during neighbor list update
-  bool stopcondition;
 /// Used to make sure we update the correct atoms during neighbor list update
   unsigned current;
 /// Read in ATOMS keyword
@@ -191,8 +189,6 @@ protected:
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
-/// Stop a calculation during neighbor list update steps
-  void stopCalculatingThisCV();
 /// Update the list of atoms after the neighbor list step
   void removeAtomRequest( const unsigned& aa );
 /// Do we use pbc to calculate this quantity
@@ -220,6 +216,8 @@ public:
   void deactivateValue( const unsigned j );
 /// Calcualte the colvar
   void calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux );
+/// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
+  virtual bool contributionIsSmall( const std::vector<Vector>& pos ){ return false; }
 /// And a virtual function which actually computes the colvar
   virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0; 
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
@@ -250,12 +248,6 @@ void MultiColvar::deactivateValue( const unsigned j ){
 inline
 unsigned MultiColvar::getThisFunctionsNumberOfDerivatives( const unsigned& j ){
   return 3*colvar_atoms[j].getNumberActive() + 9;
-}
-
-inline
-void MultiColvar::stopCalculatingThisCV(){
-  plumed_massert(isTimeForNeighborListUpdate(),"found stop but not during neighbor list step");
-  stopcondition=true;
 }
 
 inline

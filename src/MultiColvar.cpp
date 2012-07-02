@@ -392,15 +392,11 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
   Tensor vir; std::vector<Vector> pos(natoms), der(natoms); vir.zero();
   for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); der[i].zero(); }
   
-  // Compute the derivatives
-  stopcondition=false; current=j;
-  double value=compute( j, pos, der, vir );
+  // Do a quick check on the size of this contribution
+  if( contributionIsSmall( pos ) ) return;
 
-  // This is the end of neighbor list update
-  if(stopcondition){
-     plumed_massert(isTimeForNeighborListUpdate(), "found stop but not during neighbor list step");
-     return;
-  }
+  // Compute the derivatives
+  current=j; double value=compute( j, pos, der, vir );
 
   if(needsCentralAtomPosition){
      if( aux.size()!=3 ){

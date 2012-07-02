@@ -38,7 +38,7 @@ COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN=6.0
 
 class MultiColvarCoordination : public MultiColvar {
 private:
-  double nl_cut;
+//  double nl_cut;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
@@ -62,7 +62,6 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   keys.add("optional","MM","The m parameter of the switching function ");
   keys.add("optional","D_0","The d_0 parameter of the switching function");
   keys.add("optional","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","NL_CUTOFF","The cutoff for the neighbor list");
   keys.remove("AVERAGE");
   // Use density keywords
   keys.use("SUBCELL"); keys.use("GRADIENT"); keys.use("DISTRIBUTION");
@@ -93,13 +92,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   std::vector<AtomNumber> ga_lista, gb_lista; AtomNumber aa;
   aa.setIndex(0); ga_lista.push_back(aa);
   for(unsigned i=1;i<natoms;++i){ aa.setIndex(i); gb_lista.push_back(aa); }
-
-  // Setup the neighbor list
-  nl_cut=-1.0;
-  if( isTimeForNeighborListUpdate() ) parse("NL_CUTOFF",nl_cut); 
-  if(nl_cut>0.0){
-     log.printf("  ignoring distances greater than %lf in neighbor list\n",nl_cut); 
-  } 
   // And check everything has been read in correctly
   checkRead();
 }
@@ -112,16 +104,12 @@ double MultiColvarCoordination::compute( const unsigned& j, const std::vector<Ve
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number
-   double dd;
+   double dd, sw;
    for(unsigned i=1;i<pos.size();++i){
       distance=getSeparation( pos[0], pos[i] ); dd=distance.modulo();
-      if( nl_cut<0 ){
-         value += switchingFunction.calculate( distance.modulo(), dfunc );
-         deriv[0] = deriv[0] + (-dfunc)*distance;
-         deriv[i] = deriv[i] + (dfunc)*distance;
-         virial = virial + (-dfunc)*Tensor(distance,distance);
-      } else if( dd<=nl_cut ){
-         value += switchingFunction.calculate( distance.modulo(), dfunc );  
+      sw = switchingFunction.calculate( distance.modulo(), dfunc );
+      if( sw>=getTolerance() ){    //  nl_cut<0 ){
+         value += sw;             // switchingFunction.calculate( distance.modulo(), dfunc );
          deriv[0] = deriv[0] + (-dfunc)*distance;
          deriv[i] = deriv[i] + (dfunc)*distance;
          virial = virial + (-dfunc)*Tensor(distance,distance);

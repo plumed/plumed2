@@ -5,7 +5,7 @@ using namespace std;
 using namespace PLMD;
 
 void ActionWithDistribution::registerKeywords(Keywords& keys){
-  keys.add("optional","NL_TOL","when accumulating sums quantities that contribute less than this will be ignored.");
+  keys.add("optional","TOL","when accumulating sums quantities that contribute less than this will be ignored.");
   keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities that contributed less than NL_TOL at the previous neighbor list update step are ignored.");
 }
 
@@ -27,14 +27,13 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   else serial=true;
   if(serial)log.printf("  doing calculation in serial\n");
+  tolerance=epsilon; 
+  if( keywords.exists("TOL") ) parse("TOL",tolerance);
   if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
-  if( keywords.exists("NL_TOL") ){
-      if(updateFreq>0 && keywords.exists("NL_TOL") ){ 
-         tolerance=epsilon; parse("NL_TOL",tolerance); 
-         log.printf("  updating calculation every %d steps.  Ignoring contributions less than %lf\n",updateFreq,tolerance);
-      } else if( updateFreq>0 ){ 
-         log.printf("  updating calculation every %d steps.\n");  
-      }
+  if(updateFreq>0){
+    log.printf("  Updating contributors every %d steps. Ignoring contributions less than %lf\n",updateFreq,tolerance);
+  } else {
+    log.printf("  Updating contributors every step.  ignoring contributions less than %lf\n",tolerance);
   }
 }
 
@@ -181,10 +180,14 @@ void ActionWithDistribution::calculate(){
       calculateThisFunction( kk, tmpvalue, aux );
 
       // Skip if we are not calculating this particular value
-      if( reduceAtNextStep && !tmpvalue->valueHasBeenSet() ){ members.deactivate(kk); deactivateValue(kk); continue; }
+      if( reduceAtNextStep && !tmpvalue->valueHasBeenSet() ){ 
+         members.deactivate(kk); deactivateValue(kk); continue; 
+      } else if( !tmpvalue->valueHasBeenSet() ){
+         continue;
+      }
 
       // Now incorporate the derivative of the function into the derivatives for the min etc
-      if( updateFreq>0 ){ keep=false; } else { keep=true; }
+      keep=false;
       for(unsigned j=0;j<functions.size();++j){
          functions[j]->clear(); functions[j]->calculate( tmpvalue, aux );
          if( functions[j]->sizableContribution( tolerance ) ){ 

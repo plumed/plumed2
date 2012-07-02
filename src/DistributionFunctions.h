@@ -45,13 +45,13 @@ public:
   void setNumberOfDerivatives( const unsigned nder );
   void clear();
   void reset();
+  bool sizableContribution(const double& tol);
   void mergeDerivatives( const unsigned kk, ActionWithDistribution& action );
   unsigned requiredBufferSpace() const ;
   void copyDataToBuffers( unsigned& bufsize, std::vector<double>& buffers ) const ;
   void retrieveDataFromBuffers( unsigned& bufsize, const std::vector<double>& buffers );
   virtual void calculate( Value* value_in, std::vector<Value>& aux )=0;
   virtual void finish( Value* value_out )=0;
-  virtual bool sizableContribution(const double& tol);
   void error(const std::string& msg);
   bool check() const;
   std::string errorMessage() const ;
@@ -62,7 +62,11 @@ public:
 
 inline
 bool DistributionFunction::sizableContribution( const double& tol ){
-  return (thesevalues[0]->get()>=tol);
+  bool sizable=false;
+  for(unsigned i=0;i<thesevalues.size();++i){
+     if( fabs( thesevalues[i]->get() )>=tol ) sizable=true;
+  }
+  return sizable;     
 }
 
 inline 
@@ -105,7 +109,6 @@ private:
 public:
   sum( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
-  inline bool sizableContribution( const double& tol ){ return true; }
   void finish( Value* value_out );
   std::string message();
   void printKeywords( Log& log );
@@ -119,7 +122,6 @@ public:
   mean( const std::string& parameters );
   void calculate( Value* value_in, std::vector<Value>& aux );
   void finish( Value* value_out );
-  inline bool sizableContribution( const double& tol ){ return true; }
   std::string message();
   void printKeywords( Log& log );
   std::string getLabel();
