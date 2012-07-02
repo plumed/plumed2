@@ -14,9 +14,12 @@ namespace PLMD {
 //+ENDPLUMEDOC
 
 class ColvarAntibetaRMSD : public MultiColvarSecondaryStructureRMSD {
+private:
+  double s_cutoff;
 public:
   static void registerKeywords( Keywords& keys );
   ColvarAntibetaRMSD(const ActionOptions&);
+  bool contributionIsSmall( const std::vector<Vector>& pos );
 }; 
 
 PLUMED_REGISTER_ACTION(ColvarAntibetaRMSD,"ANTIBETARMSD")
@@ -27,11 +30,14 @@ void ColvarAntibetaRMSD::registerKeywords( Keywords& keys ){
                                       "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
                                       "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
                                       "only sheet-like configurations involving a single chain are counted");
+  keys.add("optional","STRANDS_CUTOFF","If any two strands are further apart than this cutoff then it is assumed that this distances makes no "
+                                       "contribution to the final value");
 }
 
 ColvarAntibetaRMSD::ColvarAntibetaRMSD(const ActionOptions&ao):
 Action(ao),
-MultiColvarSecondaryStructureRMSD(ao)
+MultiColvarSecondaryStructureRMSD(ao),
+s_cutoff(0)
 {
   // read in the backbone atoms
   std::vector<std::string> backnames(5); std::vector<unsigned> chains;
@@ -49,6 +55,9 @@ MultiColvarSecondaryStructureRMSD(ao)
   } else {
       error( style + " is not a valid directive for the STYLE keyword");
   }
+
+  parse("STRANDS_CUTOFF",s_cutoff);
+  if( s_cutoff>0) log.printf("  ignoring contributions from strands that are more than %f apart\n",s_cutoff);
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
   if( intra_chain ){
@@ -127,6 +136,14 @@ MultiColvarSecondaryStructureRMSD(ao)
 
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().length, 0.1/atoms.getUnits().length ); 
+}
+
+bool ColvarAntibetaRMSD::contributionIsSmall( const std::vector<Vector>& pos ){
+  if(s_cutoff==0) return false;
+
+  Vector distance; distance=getSeparation( pos[6],pos[21] );  // This is the CA of the two residues at the centers of the two chains
+  if( distance.modulo()>s_cutoff ) return true;
+  return false;
 }
 
 }

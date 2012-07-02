@@ -61,7 +61,6 @@ ActionWithValue(ao),
 ActionWithDistribution(ao),
 usepbc(true),
 readatoms(false),
-//setperiods(false),
 needsCentralAtomPosition(false)
 {
   if( keywords.style("NOPBC", "flag") ){ 

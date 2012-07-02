@@ -12,8 +12,10 @@ namespace PLMD {
 
 class MultiColvarSecondaryStructureRMSD : public MultiColvar {
 private:
-  RMSD* secondary_rmsd;
-  DRMSD* secondary_drmsd;
+  std::string alignType;
+  std::vector<Vector> new_deriv;
+  std::vector<RMSD*> secondary_rmsd;
+  std::vector<DRMSD*> secondary_drmsd;
 protected:
   void setSecondaryStructure( std::vector<Vector>& structure, double bondlength, double units );
 public:

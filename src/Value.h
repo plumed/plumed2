@@ -58,7 +58,7 @@ private:
   void setupPeriodicity();
 public:
 /// A constructor that can be used to make Vectors of values
-  Value() : action(NULL), hasDeriv(true) {} ;
+  Value();
 /// A constructor that is used throughout the code to setup the value poiters
   Value(ActionWithValue* av, const std::string& name, const bool withderiv);
 /// Set the value of the function 
