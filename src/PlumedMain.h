@@ -35,6 +35,7 @@ class ActionSet;
 class DLLoader;
 class PlumedCommunicator;
 class Stopwatch;
+class Citations;
 
 /// Main plumed object.
 /// In MD engines this object is not manipulated directly but it is wrapped in
@@ -61,7 +62,8 @@ private:
   std::string MDEngine;
 /// Log stream
   Log& log;
-
+/// Citations holder
+  Citations& citations;
 
 /// Present step number.
   int step;
@@ -93,6 +95,9 @@ private:
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
+
+/// Add a citation, returning a string containing the reference number, something like "[10]"
+  std::string cite(const std::string&);
 
 public:
   PlumedMain();

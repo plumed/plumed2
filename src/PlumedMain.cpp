@@ -20,6 +20,7 @@
 #include "PlumedCommunicator.h"
 #include "CLToolMain.h"
 #include "Stopwatch.h"
+#include "Citations.h"
 
 using namespace PLMD;
 using namespace std;
@@ -32,6 +33,7 @@ PlumedMain::PlumedMain():
   grex(NULL),
   initialized(false),
   log(*new Log(comm)),
+  citations(*new Citations),
   step(0),
   active(false),
   atoms(*new Atoms(*this)),
@@ -48,6 +50,7 @@ PlumedMain::~PlumedMain(){
   stopwatch.stop();
   if(initialized) log<<stopwatch;
   delete &actionSet;
+  delete &citations;
   delete &atoms;
   delete &log;
   if(grex)  delete grex;
@@ -302,6 +305,10 @@ void PlumedMain::init(){
   }
   atoms.updateUnits();
   log.printf("Timestep: %f\n",atoms.getTimeStep());
+  log<<"Relevant bibliography:\n";
+  log<<citations;
+  log<<"Please read and cite where appropriate!\n";
+  log<<"Finished setupt\n";
 }
 
 void PlumedMain::readInputFile(std::string str){
@@ -535,6 +542,10 @@ FILE* PlumedMain::fopen(const char *path, const char *mode){
 
 int PlumedMain::fclose(FILE*fp){
   return std::fclose(fp);
+}
+
+std::string PlumedMain::cite(const std::string&item){
+  return citations.cite(item);
 }
 
 

@@ -251,6 +251,12 @@ grid_(false)
   }else{
    hillsfile_=fopen(hillsfname.c_str(),"w");
   } 
+
+  log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
+  if(welltemp_) log<<plumed.cite(
+    "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
+  log<<"\n";
+
 }
 
 void BiasMetaD::readGaussians(FILE* file)
