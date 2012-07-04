@@ -391,7 +391,7 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
     plumed->cmd("setRealPrecision",&s);
   }
 
-  FILE* mystdin=stdin;
+  FILE* mystdin=in;
 
   if(argc==2) mystdin=fopen(argv[1],"r");
 
@@ -407,22 +407,22 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
   read_natoms(inputfile,natoms);
 
 // write the parameters in output so they can be checked
-  fprintf(stdout,"%s %s\n","Starting configuration           :",inputfile.c_str());
-  fprintf(stdout,"%s %s\n","Final configuration              :",outputfile.c_str());
-  fprintf(stdout,"%s %d\n","Number of atoms                  :",natoms);
-  fprintf(stdout,"%s %f\n","Temperature                      :",temperature);
-  fprintf(stdout,"%s %f\n","Time step                        :",tstep);
-  fprintf(stdout,"%s %f\n","Friction                         :",friction);
-  fprintf(stdout,"%s %f\n","Cutoff for forces                :",forcecutoff);
-  fprintf(stdout,"%s %f\n","Cutoff for neighbour list        :",listcutoff);
-  fprintf(stdout,"%s %d\n","Number of steps                  :",nstep);
-  fprintf(stdout,"%s %d\n","Stride for trajectory            :",nconfig);
-  fprintf(stdout,"%s %s\n","Trajectory file                  :",trajfile.c_str());
-  fprintf(stdout,"%s %d\n","Stride for statistics            :",nstat);
-  fprintf(stdout,"%s %s\n","Statistics file                  :",statfile.c_str());
-  fprintf(stdout,"%s %d\n","Max average number of neighbours :",maxneighbour);
-  fprintf(stdout,"%s %d\n","Seed                             :",idum);
-  fprintf(stdout,"%s %s\n","Are atoms wrapped on output?     :",(wrapatoms?"T":"F"));
+  fprintf(out,"%s %s\n","Starting configuration           :",inputfile.c_str());
+  fprintf(out,"%s %s\n","Final configuration              :",outputfile.c_str());
+  fprintf(out,"%s %d\n","Number of atoms                  :",natoms);
+  fprintf(out,"%s %f\n","Temperature                      :",temperature);
+  fprintf(out,"%s %f\n","Time step                        :",tstep);
+  fprintf(out,"%s %f\n","Friction                         :",friction);
+  fprintf(out,"%s %f\n","Cutoff for forces                :",forcecutoff);
+  fprintf(out,"%s %f\n","Cutoff for neighbour list        :",listcutoff);
+  fprintf(out,"%s %d\n","Number of steps                  :",nstep);
+  fprintf(out,"%s %d\n","Stride for trajectory            :",nconfig);
+  fprintf(out,"%s %s\n","Trajectory file                  :",trajfile.c_str());
+  fprintf(out,"%s %d\n","Stride for statistics            :",nstat);
+  fprintf(out,"%s %s\n","Statistics file                  :",statfile.c_str());
+  fprintf(out,"%s %d\n","Max average number of neighbours :",maxneighbour);
+  fprintf(out,"%s %d\n","Seed                             :",idum);
+  fprintf(out,"%s %s\n","Are atoms wrapped on output?     :",(wrapatoms?"T":"F"));
 
 // Setting the seed
   random.setSeed(idum);
@@ -463,7 +463,7 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
 // neighbour list are computed, and reference positions are saved
   compute_list(natoms,listsize,positions,cell,listcutoff,point,list);
 
-  fprintf(stdout,"List size: %d\n",point[natoms-1]);
+  fprintf(out,"List size: %d\n",point[natoms-1]);
   for(int iatom=0;iatom<natoms;++iatom) for(int k=0;k<3;++k) positions0[iatom][k]=positions[iatom][k];
 
 // forces are computed before starting md
@@ -494,8 +494,8 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
     if(recompute_list){
       compute_list(natoms,listsize,positions,cell,listcutoff,point,list);
       for(int iatom=0;iatom<natoms;++iatom) for(int k=0;k<3;++k) positions0[iatom][k]=positions[iatom][k];
-      fprintf(stdout,"Neighbour list recomputed at step %d\n",istep);
-      fprintf(stdout,"List size: %d\n",point[natoms-1]);
+      fprintf(out,"Neighbour list recomputed at step %d\n",istep);
+      fprintf(out,"List size: %d\n",point[natoms-1]);
     }
 
     compute_forces(natoms,listsize,positions,cell,forcecutoff,point,list,forces,engconf);
