@@ -10,7 +10,9 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS MOVINGRESTRAINT
 /**
-Moving restraint (similar to \ref RESTRAINT, but dynamic)
+Moving restraint
+
+Similar to \ref RESTRAINT, but dynamic.
 
 \par Syntax
 \verbatim

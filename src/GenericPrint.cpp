@@ -9,7 +9,9 @@ namespace PLMD{
 
 //+PLUMEDOC GENERIC PRINT
 /**
-Print quantities to a file.  This directive can be used multiple times
+Print quantities to a file.
+
+This directive can be used multiple times
 in the input so you can print files with different strides or print different quantities 
 to different files.  You can control the buffering of output using the \ref FLUSH keyword.
 

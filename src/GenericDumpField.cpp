@@ -10,7 +10,10 @@ namespace PLMD {
 
 //+PLUMEDOC ANALYSIS DUMPFIELD
 /**
-Print out the instantaneous of a field that would be used to represent the instantaneous
+Print out the instantaneous of a field.
+
+Print out the instantaneous of a field
+that would be used to represent the instantaneous
 state of the system in a method such as \ref FIELD_METAD 
 
 \par Examples
