@@ -11,6 +11,7 @@
 using namespace std;
 using namespace PLMD;
 
+namespace PLMD{
 
 class CLToolSimpleMD:
 public PLMD::CLTool
@@ -538,6 +539,8 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
 
 
 };
+
+}
 
 
 PLUMED_REGISTER_CLTOOL(CLToolSimpleMD,"simplemd")
