@@ -460,9 +460,6 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = ./Intro.txt \
-                         ./cvTemplate.txt \
-                         ./freeTemplate.txt \
-                         ./funcTemplate.txt \
                          ./mdTemplate.txt \
                          ./plmdIntro.txt \
                          ./usingDoxygen.txt \

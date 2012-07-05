@@ -11,10 +11,11 @@ namespace PLMD{
 
 /**
 \ingroup INHERIT
-Inherit from here if you are implementing a new form of simulation bias
+This is the abstract base class to use for implementing new simulation biases, within it there is 
+information as to how to go about implementing a new bias.
+ 
 */
 
-/// Action defining a bias which can act on other Action's
 class Bias :
   public ActionPilot,
   public ActionWithValue,

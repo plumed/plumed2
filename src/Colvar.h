@@ -98,7 +98,7 @@ void ColvarNAME::calculate(){
   vector<double> derivatives; /--- The derivative of the cv with respect to the atom positions ---/
 \endverbatim
 
-Insert the code to calculate your cv, its derivatives and its contribution to the virial here.  N.B. Please use, where possible, the plumed's set of CV calculation tools.
+Insert the code to calculate your cv, its derivatives and its contribution to the virial here. Please use, where possible, the library of tools described in \ref TOOLBOX.
 
 \verbatim
 /---- Having calculated the cv, its derivative and the contribution to the virial you now
