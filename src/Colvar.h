@@ -49,6 +49,8 @@ Insert declarations for your colvar's parameters here using plumed's \ref parsin
 
 \verbatim
 public:
+ /---- This routine is used to create the descriptions of all the keywords used by your CV
+ static void registerKeywords( Keywords& keys ); 
  /---- This is the constructor for your colvar.  It is this routine that will do all the reading.
        Hence it takes as input a line from the input file.
   ColvarNAME(const ActionOptions&);
@@ -62,6 +64,17 @@ public:
         The first is the name of your ColvarClass and the second is the keyword for your CV
         (the first word in the input line for your CV).
 PLUMED_REGISTER_ACTION(ColvarNAME,"KEYWORD")
+
+ /----- The following routine creates the documentation for the keyowrds used by your CV
+void ColvarNAME::registerKeywords( Keywords& keys ){
+  Colvar::registerKeywords(keys);
+\endverbatim
+
+In here you should add all your descriptions of the keywords used by your colvar. Descriptions as to how to
+do this can be found here: \ref usingDoxygen
+
+\verbatim
+}
 
  /---- We now write the actual readin (constructor) and calculations routines for the colvar
 

@@ -45,9 +45,11 @@ class FunctionNAME :
 Insert declarations for your function's parameters here.
 
 \verbatim
+  /---- This routine is used to create the descriptions of all the keywords used by your new function 
+  static void registerKeywords( Keywords& keys );
   /---- This is the constructor for your function.  It is this routine that will do all the reading.
        Hence it takes as input a line from the input file.
-FunctionCombine(const ActionOptions&);
+  FunctionNAME(const ActionOptions&);
   /---- This is the routine that will be used to calculate the value of the function, whenever its calculation is required.
         This routine and the constructor above must be present - if either of them are not the code will not compile.
   void calculate();
@@ -58,6 +60,17 @@ FunctionCombine(const ActionOptions&);
           The first is the name of your FunctionClass and the second is the keyword for your function
           (the first word in the input line for your function).
 PLUMED_REGISTER_ACTION(FunctionNAME,"COMBINE")
+
+/----- The following routine creates the documentation for the keyowrds used by your CV
+void FunctionNAME::registerKeywords( Keywords& keys ){
+  Function::registerKeywords(keys);
+\endverbatim
+
+In here you should add all your descriptions of the keywords used by your colvar. Descriptions as to how to
+do this can be found here: \ref usingDoxygen
+
+\verbatim
+}
 
 FunctionNAME::FunctionNAME(const ActionOptions&ao):
 /--- These two lines set up various things in the plumed core whcih functions rely on.
