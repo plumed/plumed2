@@ -12,6 +12,12 @@
 
 namespace PLMD{
 
+/**
+\ingroup MULTIINHERIT
+This is used to create PLMD::Action objects that are computed by calculating the same function multiple
+times.  This is used in PLMD::MultiColvar.
+*/
+
 class ActionWithDistribution : public virtual Action {
 private:
 /// This is used to ensure that we have properly read the action
