@@ -10,7 +10,7 @@ Plumed 2.0 is written in C++ and uses many of the advanced, object-oriented feat
 - \ref HowToAddAFunction
 - \ref HowToAddABias 
 
-When you do these tasks please use the library of functionalities that is described in \subpage toolbox.
+When you do these tasks please use the library of routines that is described in the \subpage TOOLBOX.
 
 For more curious contributors we describe briefly how we make use of the various features of C++ here:
 
@@ -27,13 +27,13 @@ http://www.parashift.com/c++-faq-lite/
 
 \defgroup TOOLBOX Tool Box
 @{
-Classed which can be used used to incorporate all sorts of functionality in PLMD::Action objects.
+The following classes can be incorporate all sorts of functionality in PLMD::Action objects.
 
-To add a class to this group, just put a
+If you implement a new class that you think might be useful to others please add it to the 
+list below by including the following inside the header file.
 \verbatim
 \ingroup TOOLBOX
 \endverbatim
-statement in it.
 @}
 
 \defgroup MULTIINHERIT Classes for multiple inheritance
@@ -44,7 +44,19 @@ To add a class to this group, just put a
 \verbatim
 \ingroup MULTIINHERIT 
 \endverbatim
-statement in it.
+statement somwhere inside the header.
 @}
+
+\defgroup INHERIT Step by step guides
+@{
+Classes which can be used to create CVs, functions, biases and so on.
+
+To add a class to this group, just put a
+\verbatim
+\ingroup INHERIT
+\endverbatim
+statement somewhere inside the header.
+@}
+
 
 */

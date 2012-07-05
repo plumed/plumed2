@@ -9,11 +9,10 @@
 
 namespace PLMD {
 
-//+DEVELDOC INHERIT Colvar
 /**
+\ingroup INHERIT
 Inherit from here if you are implementing a CV
 */
-//+ENDDEVELDOC
 
 /// Action representing a collective variable
 class Colvar :

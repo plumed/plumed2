@@ -197,7 +197,7 @@ then built on this root.  As you can see (PLMD::Action) the inheritence tree for
 quite complicated.  However, in practise your new class will in all probability inherit from one
 of the following classes:
 
-@INHERIT@ 
+\ref INHERIT 
 
 \section minheritance Including the functionality of one class in a second class 3: Multiple inheritance
 
@@ -207,7 +207,7 @@ we are using multiple inheritance - the classes in the layer above inherit from 
 This way of incorporating functionality from classes is unique to C++ and brings with it a special set of
  difficulties in programming.  Its great advantage is though that one can 
 create classes that incorporate bring a set of particular attributes.  This will perhaps be most clear
-if we explain what each of the classes in the multiple inheritence layer does separately and how these
+if you look at what each of the classes in the multiple inheritence layer is doing and see how these
 functionalities are used in Colvars, Functions and Biases. 
 
 \ref MULTIINHERIT

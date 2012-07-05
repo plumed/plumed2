@@ -6,4 +6,4 @@ all:
 	doxygen
 
 clean:
-	rm -fr automatic html latex *~ *PP.txt
+	rm -fr automatic html latex *~ 

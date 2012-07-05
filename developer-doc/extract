@@ -4,6 +4,7 @@
 rm -rf automatic
 mkdir automatic
 
+cp ../src/*.h automatic
 for file in ../src/*.cpp ; do
     stripf=`echo $file | sed -e 's/..\/src\///g'`
     ofile=`echo automatic/$stripf`
@@ -53,55 +54,3 @@ for file in ../src/*.cpp ; do
            }
        }'
 done 
-
-for file in ../src/*.h ; do
-    stripf=`echo $file | sed -e 's/..\/src\///g'`    
-    ofile=`echo automatic/$stripf`   
-    echo $ofile
-    cat $file | awk -v output=$ofile -v inside=0 '{
-           if($1=="//+ENDDEVELDOC" && inside==1){
-              inside=0
-              print "</td> </tr>" >> lfile
-           }
-           if(inside==1 && $1!="/**" && $1!="*/"){
-              print $0 >> lfile
-           }
-           if($1=="//+DEVELDOC"){
-              inside=1
-              lfile="automatic/"$2".list"
-              print "<tr> <td width=10%%> PLMD::"$3 "</td> <td>" >> lfile
-           }
-           if(inside==0 && $1!="//+ENDDEVELDOC"){
-              print $0 >> output 
-           }
-    }'
-done
-
-for file in toolbox plmdIntro ; do
-
-cat $file.txt | 
-    {
- while read -r LINE ;
-  do
-    if [ "$LINE" = "@TOOLBOX@" ]
-    then
-      echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-      cat automatic/TOOLBOX.list
-      echo "</table>"
-    elif [ "$LINE" = "@MULTIINHERIT@" ]
-    then
-      echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-      cat automatic/MULTI-INHERIT.list
-      echo "</table>"
-    elif [ "$LINE" = "@INHERIT@" ]
-    then
-      echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-      cat automatic/INHERIT.list
-      echo "</table>"
-    else
-        echo -E "$LINE"
-    fi
-  done
-  } > ${file}PP.txt
-
-done
