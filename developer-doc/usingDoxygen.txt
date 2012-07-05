@@ -23,7 +23,7 @@ following packages:
 In addition a special class, PLMD::Keywords, is used to store the descriptions of the syntax for any given
 action so that this data can be produced in the output when the user makes a mistake in input.  In the following
 a step-by-step explanaition as to how to use the documentation prodcuing functionality of plumed is provided.  When
-you have finished creating your new documentation they should be incorporated automatically in the manul the next 
+you have finished creating your new documentation they should be incorporated automatically in the manual the next 
 time you make the manual.  Furthermore, a number of checks of your manual are performed when you make the manual
 so any errors should be straightforward to find. 
 
@@ -45,7 +45,7 @@ adding your own Keywords you must ensure that the keywords for the class from wh
 added.  In pracise this is done by calling PLMD::Colvar::registerKeywords, PLMD::Function::registerKeywords or 
 PLMD::Bias::registerKeywords for a new PLMD::Colvar, PLMD::Function or PLMD::Bias respectively.  To be clear these
 functions will ensure that generic keywords such as LABEL, NUMERICAL_DERIVATIVES or ARG are registered and explained in the
-manual.  If your method requires the derivatives of some value and you have no way of implementing the analytical derivatives
+manual. If your method requires the derivatives of some value and you have no way of implementing the analytical derivatives
 you should also call PLMD::ActionWithValue::noAnalyticalDerivatives.  This routine will ensure that plumed's numerical
 derivatives routines are used to calculation your derivatives automatically and will ensure that a message is put in the plumed
 manual so that other users are aware that numerical derivatives are being used. 
@@ -64,9 +64,6 @@ the keywords for your new method.  These keywords will have one of 5 attributes:
 <td> <b> atoms </b> </td> <td> If you are reading a list of atoms after the keyword then you should use this keyword </td>
 </tr> <tr>
 <td> <b> numbered </b> </td> <td> If you need to read in a list of similar keywords such as keyword0, keyword1, keyword2... then you must use this option.  These keywords will be assumed to be optional.  However, you can set them to be atoms or whatever by using reset_style(keyword,newstyle).  </td>
-</tr> <tr>
-<td> <b> nohtml </b> </td> <td> Specifies that the manual information should only appear in the log file on a crash and not in the html version manual.  This is used for when there is a special methods for generating the documentation for the keyword in the manual. </td>
-</tr>
 </table>
 
 All keywords (other than flags) are added using the add method of PLMD::Keywords.  This command has the following syntax:
@@ -139,6 +136,8 @@ should be one of the following:
 <tr> 
 <td width=5%%> <b> COLVAR </b> </td> <td> This is used if your PLMD::Action is the calculation of a CV </td>
 </tr> <tr>
+<td width=5%%> <b> MCOLVAR </b> </td> <td> This is used if your PLMD::Action calculates some Function of a distribution of CVs </td>
+</tr> <tr>
 <td width=5%%> <b> FUNCTION </b> </td> <td> This is used if your PLMD::Action calculates some Function of a set of CVs </td>
 </tr> <tr>
 <td width=5%%> <b> VATOM </b> </td> <td> This is used if your PLMD::Action calculates the position of a new atom e.g. for COM </td>
@@ -146,8 +145,6 @@ should be one of the following:
 <td width=5%%> <b> ANALYSIS </b> </td> <td> This is used if your PLMD::Action does some analysis of the trajectory </td>
 </tr> <tr>
 <td width=5%%> <b> BIAS </b> </td> <td> This is used if your PLMD::Action is a bias that adds supplemental forces to the potential in order to enhance sampling </td>
-</tr> <tr>
-<td width=5%%> <b> TOPOLOGY </b> </td> <td> This is used if your PLMD::Action defines a molecular topology that makes reading in atoms more straighforward </td>
 </tr> <tr>
 <td width=5%%> <b> GENERIC </b> </td> <td> This should be used if you want to specify manually where in the manual your documentation should appear.  If you feel this really is the correct way to incorporate your new feature please contact the core developers so as to discuss it. </td>
 </tr> 
