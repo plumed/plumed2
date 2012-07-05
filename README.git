@@ -1,5 +1,5 @@
 Clone the repository
-$git clone git+ssh://gbussi@qe-forge.org/scmrepos/git/plumed2/plumed2.git
+$git clone git@git.assembla.com:plumed2.git
 $cd plumed2
 
 Stay up to date
