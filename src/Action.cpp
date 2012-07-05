@@ -98,9 +98,7 @@ void Action::parseFlag(const std::string&key,bool & t){
 }
 
 void Action::addDependency(Action*action){
-  plumed_massert(this->after.count(action)==action->before.count(this),"internal consistency of dependencies");
-  this->after.insert(action);
-  action->before.insert(this);
+  after.insert(action);
 }
 
 void Action::activate(){
@@ -130,10 +128,7 @@ void Action::clearOptions(){
 
 
 void Action::clearDependencies(){
-  for(Dependencies::iterator p=after.begin();p!=after.end();++p){
-    (*p)->before.erase(this);
-  };
-  this->after.clear();
+  after.clear();
 }
 
 std::string Action::getDocumentation()const{

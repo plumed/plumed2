@@ -56,8 +56,6 @@ public:
 private:
 /// Actions on which this Action depends.
   Dependencies after;
-/// Actions depending on this Action.
-  Dependencies before;
  
 /// Switch to activate Action on this step.
   bool active;
