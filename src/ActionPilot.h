@@ -5,17 +5,16 @@
 
 namespace PLMD{
 
-//+DEVELDOC MULTI-INHERIT ActionPilot
 /**
-This is used to create PLMD::Action objects that are run with some set frequency.  Any PLMD::Action 
+\ingroup MULTIINHERIT
+This is used to create PLMD::Action objects that are run with some set frequency.
+Any PLMD::Action 
 that does not inherit from PLMD::Action is only run when some other Action requires the output from 
 it in order to run.  This class is used in PLMD::Bias
+ Action which drives the execution of other Action's.
+ Action's of this kind are executed with a fixed stride
+ which is specified on the directive line with a STRIDE= keyword
 */
-//+ENDDEVELDOC
-
-/// Action which drives the execution of other Action's.
-/// Action's of this kind are executed with a fixed stride
-/// which is specified on the directive line with a STRIDE= keyword
 class ActionPilot:
   public virtual Action
 {

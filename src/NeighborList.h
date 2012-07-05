@@ -8,15 +8,9 @@
 
 namespace PLMD{
 
-//+DEVELDOC TOOLBOX NeighborList
-/**
-A class for creating neighbour lists of atoms.
-*/
-//+ENDDEVELDOC
-
-
 class Pbc;
 
+/// \ingroup TOOLBOX
 /// A class that implements neighbor lists from two lists or a single list of atoms
 class NeighborList  
 {

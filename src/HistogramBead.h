@@ -10,11 +10,10 @@ namespace PLMD {
 
 class Log;
 
-//+DEVELDOC TOOLBOX HistogramBead
 /**
+\ingroup TOOLBOX
 A class for calculating whether or not values are within a given range using : \f$ \sum_i \int_a^b G( s_i, \sigma*(b-a) ) \f$    
 */      
-//+ENDDEVELDOC 
 
 class HistogramBead{
 private:	

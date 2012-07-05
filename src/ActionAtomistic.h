@@ -11,13 +11,8 @@ namespace PLMD {
 
 class Atoms;
 
-//+DEVELDOC MULTI-INHERIT ActionAtomistic
-/**
-This is used to create PLMD::Action objects that access the positions of the atoms from the MD code
-*/
-//+ENDDEVELDOC
-
-/// Action which can access to atomistic data
+/// \ingroup MULTIINHERIT
+/// Action used to create objects that access the positions of the atoms from the MD code
 class ActionAtomistic :
   virtual public Action
   {

@@ -6,6 +6,7 @@
 namespace PLMD{
 
 /**
+\ingroup TOOLBOX
 Class implementing fixed size vectors of doubles
 
 This class implements a vector of doubles with size fixed at

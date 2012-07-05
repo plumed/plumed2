@@ -7,18 +7,16 @@
 
 namespace PLMD{
 
-//+DEVELDOC MULTI-INHERIT ActionWithArguments
 /**
+\ingroup MULTIINHERIT
 This is used to create PLMD::Action objects that take the output from some other Action as input.  
 This is used in PLMD::Function and PLMD::Bias
+ PLMD::Action objects that inherit from PLMD::ActionWithArguments take 
+ values and components calculated in other PLMD::Action objects and
+ use this information to calculate some new function.  If you have 
+ only one list of arguments you should use the reserved keyword <b> ARG </b> 
+ when you use parseArgumentList.
 */
-//+ENDDEVELDOC
-
-/// PLMD::Action objects that inherit from PLMD::ActionWithArguments take 
-/// values and components calculated in other PLMD::Action objects and
-/// use this information to calculate some new function.  If you have 
-/// only one list of arguments you should use the reserved keyword <b> ARG </b> 
-/// when you use parseArgumentList.
 
 class ActionWithArguments:
   public virtual Action

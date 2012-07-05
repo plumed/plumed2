@@ -11,14 +11,13 @@
 
 namespace PLMD{
 
-//+DEVELDOC TOOLBOX DistributionFunction
 /**
+\ingroup TOOLBOX
 DistributionFunction is an abstract base class.  The classes that inherit
 from it can be used to calculate functions of a distribution of values such
 as the number of values less than a target, the minimum, the average and so 
 on.  This class is used in PLMD::ActionWithDistribution.  
 */
-//+ENDDEVELDOC
 
 class ActionWithDistribution;
 

@@ -25,4 +25,26 @@ Lastly, we ask that contributors endeavor to maintain the portability of plumed 
 Information about C++
 http://www.parashift.com/c++-faq-lite/
 
+\defgroup TOOLBOX Tool Box
+@{
+Classed which can be used used to incorporate all sorts of functionality in PLMD::Action objects.
+
+To add a class to this group, just put a
+\verbatim
+\ingroup TOOLBOX
+\endverbatim
+statement in it.
+@}
+
+\defgroup MULTIINHERIT Classes for multiple inheritance
+@{
+Classes for multiple inheritance
+
+To add a class to this group, just put a
+\verbatim
+\ingroup MULTIINHERIT 
+\endverbatim
+statement in it.
+@}
+
 */

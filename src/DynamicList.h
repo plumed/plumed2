@@ -5,15 +5,11 @@
 
 namespace PLMD {
 
-//+DEVELDOC TOOLBOX DynamicList
 /**
+\ingroup TOOLBOX
 A class for storing a list that changes which members are active as a function of time.  It also
 contains friends method that allows you to link two dynamic lists so that you can request 
 stuff from list2 in list1
-*/      
-//+ENDDEVELDOC 
-
-/**
 A PLMD::DynamicList can be used to change what elements in a list should be looped over at any given
 time. This class is, for the most part, used in tandem with PLMD::NeighbourList.  For complex reasons
 related to the PLMD::MultiColvar object the dynamic list class is separate from PLMD::NeighbourList.
