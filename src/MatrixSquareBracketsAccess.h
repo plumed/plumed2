@@ -6,6 +6,10 @@ namespace PLMD{
 /**
 Utility class to add [][] access
 
+\tparam T The type of the matrix class.
+\tparam C The type of the returned value.
+\tparam I The type of the index (default unsigned).
+
 It implements the trick described in C++ FAQ 13.12 to allow [][] access
 to matrix-like classes, based on the (,) syntax, thus translating
 [i][j] into (i,j).  In practice, one only needs to implement the (,) syntax and to inherit from
@@ -35,6 +39,7 @@ int main(){
   m[0][1]=3.0;
   return 0;
 }
+\endverbatim
 
 */
 

@@ -8,6 +8,8 @@ namespace PLMD{
 /**
 Class implementing fixed size vectors of doubles
 
+\tparam n The number of elements of the vector.
+
 This class implements a vector of doubles with size fixed at
 compile time. It is useful for small fixed size objects (e.g.
 3d vectors) as it does not waste space to store the vector size.

@@ -11,7 +11,9 @@ using namespace std;
 // Since the Plumed.h file may be included in host MD codes, **NEVER** MODIFY THE CODE IN THIS FILE
 // unless you know exactly what you are doing
 
-/* Holder for plumedmain function pointers */
+/**
+  Container for plumedmain function pointers (create, cmd and finalize).
+*/
 typedef struct {
   void*(*create)();
   void(*cmd)(void*,const char*,const void*);

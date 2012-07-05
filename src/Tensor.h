@@ -9,6 +9,9 @@ namespace PLMD{
 /**
 Class implementing fixed size matrices of doubles
 
+\tparam n The number rows
+\tparam m The number columns
+
 This class implements a matrix of doubles with size fixed at
 compile time. It is useful for small fixed size objects (e.g.
 3x3 tensors) as it does not waste space to store the vector size.
