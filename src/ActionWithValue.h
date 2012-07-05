@@ -56,9 +56,9 @@ protected:
 
 // -------- The action has one value only  ---------------- //
 
-/// Add a value with the name <label>
+/// Add a value with the name label
   void addValue();
-/// Add a value with the name <label> that has derivatives
+/// Add a value with the name label that has derivatives
   void addValueWithDerivatives();
 /// Set your default value to have no periodicity
   void setNotPeriodic();
@@ -71,9 +71,9 @@ protected:
 
 // -------- The action has multiple components ---------- //
 
-/// Add a value with a name like <label>.name
+/// Add a value with a name like label.name
   void addComponent( const std::string& name );
-/// Add a value with a name like <label>.name that has derivatives
+/// Add a value with a name like label.name that has derivatives
   void addComponentWithDerivatives( const std::string& name );
 /// Set your value component to have no periodicity
   void componentIsNotPeriodic( const std::string& name );
