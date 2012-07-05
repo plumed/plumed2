@@ -37,11 +37,13 @@ class PlumedCommunicator;
 class Stopwatch;
 class Citations;
 
-/// Main plumed object.
-/// In MD engines this object is not manipulated directly but it is wrapped in
-/// plumed or PLMD::Plumed objects. Its main method is cmd(),
-/// which defines completely the external plumed interface.
-/// It does not contain any static data.
+/**
+Main plumed object.
+In MD engines this object is not manipulated directly but it is wrapped in
+plumed or PLMD::Plumed objects. Its main method is cmd(),
+which defines completely the external plumed interface.
+It does not contain any static data.
+*/
 class PlumedMain:
   public WithCmd
 {
@@ -148,7 +150,11 @@ public:
   void setSuffix(const std::string&);
 /// get the value of the bias
   double getBias()const;
+/// Opens a file.
+/// Similar to plain fopen, but, if it finds an error in opening the file, it also tries with
+/// path+suffix.  This trick is useful for multiple replica simulations.
   FILE* fopen(const char *path, const char *mode);
+/// Closes a file opened with PlumedMain::fopen()
   int fclose(FILE*fp);
 };
 

@@ -200,7 +200,12 @@ public:
 /// are doing.
   virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 
+/// Opens a file.
+/// This is similar to plain fopen, but with some extra functionality.
+/// * When opened for writing, processors other than the one with rank 0 just open /dev/null
+/// * PlumedMain::fopen is used, so that other tricks may appear (see \ref PlumedMain::fopen)
   FILE *fopen(const char *path, const char *mode);
+/// Closes a file opened with Action::fclose().
   int   fclose(FILE*fp);
 
 /// Calculate the action given a pdb file as input.  This is used to initialize
