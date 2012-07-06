@@ -21,6 +21,7 @@
 #include "CLToolMain.h"
 #include "Stopwatch.h"
 #include "Citations.h"
+#include "ExchangePatterns.h"
 
 using namespace PLMD;
 using namespace std;
@@ -39,7 +40,8 @@ PlumedMain::PlumedMain():
   atoms(*new Atoms(*this)),
   actionSet(*new ActionSet(*this)),
   bias(0.0),
-  novirial(false)
+  novirial(false),
+  random_exchanges(false)
 {
   stopwatch.start();
   stopwatch.pause();
@@ -244,6 +246,18 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
        log.setFile(static_cast<char*>(val));
+  } else if(word=="getRandomExchanges"){
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
+       getRandomEx((*static_cast<bool*>(val)));
+  } else if(word=="setExchangesSeed"){
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
+       setExchangesSeed((*static_cast<int*>(val)));
+  } else if(word=="getExchangesList"){
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
+       getExchangesList((static_cast<int*>(val)));
   } else {
 // multi word commands
 
@@ -323,6 +337,9 @@ void PlumedMain::readInputFile(std::string str){
     else if(words[0]=="_SET_SUFFIX"){
       plumed_assert(words.size()==2);
       setSuffix(words[1]);
+    }
+    else if(words[0]=="RANDOM_EXCHANGES"){
+      setRandomEx(true);
     }
     else if(words[0]=="INCLUDE"){
       plumed_assert(words.size()==2);

@@ -101,6 +101,9 @@ public:
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);
 
+/// Flag to switch on the random exchages pattern usefull for BIAS-EXCHANGE metadynamics
+  bool random_exchanges;
+
 public:
   PlumedMain();
 // this is to access to WithCmd versions of cmd (allowing overloading of a virtual method)
@@ -156,6 +159,10 @@ public:
   FILE* fopen(const char *path, const char *mode);
 /// Closes a file opened with PlumedMain::fopen()
   int fclose(FILE*fp);
+/// Set or Get the flag for random exchanges
+  void setRandomEx(const bool);
+  void getRandomEx(bool&);
+//  void getExchangeList(int*);
 };
 
 /////
@@ -181,6 +188,15 @@ void PlumedMain::setSuffix(const std::string&s){
   suffix=s;
 }
 
+inline
+void PlumedMain::setRandomEx(const bool flag){
+  random_exchanges=flag;
+}
+
+inline
+void PlumedMain::getRandomEx(bool &flag){
+  flag=random_exchanges;
+}
 
 }
 
