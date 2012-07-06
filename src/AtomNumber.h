@@ -7,6 +7,7 @@
 namespace PLMD{
 
 /**
+\ingroup TOOLBOX
  Simple class to store the index of an atom.
  It is just an unsigned, with all the methods inlined for better efficiency.
  Its special thing is that it is only accessed through serial(), index(),

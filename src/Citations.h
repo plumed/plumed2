@@ -8,6 +8,7 @@
 namespace PLMD{
 
 /**
+\ingroup TOOLBOX
 Class taking care of bibliography.
 
 This class contains a vector of citations. To add a new citations, use cite(). To print

@@ -7,6 +7,7 @@
 namespace PLMD{
 
 /**
+\ingroup TOOLBOX
 Class to deal with Plumed runtime errors.
 
 This class, or better the related macros, can be used to detect programming

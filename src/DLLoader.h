@@ -6,6 +6,7 @@
 
 namespace PLMD{
 
+/// \ingroup TOOLBOX
 /// Class taking care of dynamic loading.
 /// It contains wrappers to the dlopen() routine.
 /// It is designed so that when an object of this class goes

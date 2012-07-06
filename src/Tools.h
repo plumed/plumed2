@@ -12,15 +12,19 @@
 
 namespace PLMD{
 
+/// \ingroup TOOLBOX
 /// Very small non-zero number
 const double epsilon(std::numeric_limits<double>::epsilon());
 
+/// \ingroup TOOLBOX
 /// Boltzman constant in kj/K
 const double kBoltzmann(0.0083144621);
 
+/// \ingroup TOOLBOX
 /// PI
 const double pi(3.141592653589793238462643383279502884197169399375105820974944592307);
 
+/// \ingroup TOOLBOX
 /// Empty class which just contains several (static) tools
 class Tools{
 public:

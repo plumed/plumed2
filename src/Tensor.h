@@ -7,6 +7,7 @@
 namespace PLMD{
 
 /**
+\ingroup TOOLBOX
 Class implementing fixed size matrices of doubles
 
 \tparam n The number rows
@@ -335,10 +336,13 @@ TensorGeneric<3,3> dcrossDv2(const VectorGeneric<3>&v1,const VectorGeneric<3>&v2
     -v1[1],v1[0],0.0);
 }
 
+/// \ingroup TOOLBOX
 typedef TensorGeneric<2,2> Tensor2d;
+/// \ingroup TOOLBOX
 typedef TensorGeneric<3,3> Tensor3d;
+/// \ingroup TOOLBOX
 typedef TensorGeneric<4,4> Tensor4d;
-
+/// \ingroup TOOLBOX
 typedef Tensor3d Tensor;
 
 

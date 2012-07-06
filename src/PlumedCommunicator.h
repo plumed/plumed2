@@ -15,6 +15,7 @@ namespace PLMD{
   };
 #endif
 
+/// \ingroup TOOLBOX
 /// Class containing wrappers to MPI.
 /// All the MPI related stuff is relegated here.
 class PlumedCommunicator{

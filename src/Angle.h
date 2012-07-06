@@ -5,6 +5,7 @@
 
 namespace PLMD{
 
+/// \ingroup TOOLBOX
 /// Class to compute angles.
 /// I define it as a class even if it does not contain anything. The reason
 /// is that in the future I would like to extend it to contain options about

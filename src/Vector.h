@@ -316,13 +316,17 @@ double modulo(const VectorGeneric<n>&v){
 }
 
 
-/// Alias for two dimensional vectors;
+/// \ingroup TOOLBOX
+/// Alias for two dimensional vectors
 typedef VectorGeneric<2> Vector2d;
-/// Alias for three dimensional vectors;
+/// \ingroup TOOLBOX
+/// Alias for three dimensional vectors
 typedef VectorGeneric<3> Vector3d;
-/// Alias for four dimensional vectors;
+/// \ingroup TOOLBOX
+/// Alias for four dimensional vectors
 typedef VectorGeneric<4> Vector4d;
-/// Alias for three dimensional vectors;
+/// \ingroup TOOLBOX
+/// Alias for three dimensional vectors
 typedef Vector3d Vector;
 
 }

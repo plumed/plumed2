@@ -6,6 +6,7 @@
 
 namespace PLMD{ 
 
+/// \ingroup TOOLBOX
 class Grid  
 {
  std::vector<double> grid_;

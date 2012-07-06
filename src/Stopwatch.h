@@ -8,6 +8,7 @@
 namespace PLMD{
 
 /**
+\ingroup TOOLBOX
 Class implementing stopwatch to time execution.
 
 Each instance of this class is a container which
