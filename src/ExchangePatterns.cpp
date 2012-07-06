@@ -17,7 +17,6 @@ void setExchangesSeed(int seed)
 void getExchangesList(int *ind)
 {
   int nrepl = length(ind);
-  printf("NREPL is %i random %lf\n ", nrepl, random.RandU01()); fflush(stdout);
   /* in principle here we can add a switch(patter) case in order to get a list of exchanges dependent on a specific pattern */
   for(int i=0;i<nrepl;i++) {
     int stat=1;
