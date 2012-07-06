@@ -10,9 +10,8 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION PIECEWISE
 /**
-
-Compute a piecewise straight line of its arguments, passing through
-a set of ordered control points. For variables lesser than the first
+Compute a piecewise straight line through its arguments that passes through
+a set of ordered control points. For variables less than the first
 (greater than the last) point, the value of the first (last) point is used.
 
 \f[
@@ -64,7 +63,7 @@ PLUMED_REGISTER_ACTION(FunctionPiecewise,"PIECEWISE")
 void FunctionPiecewise::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("numbered","POINT","This keyword appears multiple times as POINTx with x=0,1,2,...,n.");
+  keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
   keys.reset_style("POINT","compulsory");
 }
 

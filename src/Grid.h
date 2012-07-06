@@ -2,6 +2,7 @@
 #define __PLUMED_Grid_h
 
 #include <vector>
+#include <string>
 #include <map>
 
 namespace PLMD{ 
@@ -93,6 +94,8 @@ public:
  virtual void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
  virtual void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
 
+/// Write a description of the format the the grid file
+ static std::string formatDocs();
 /// dump grid on file
  virtual void writeToFile(FILE*);
 

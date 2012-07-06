@@ -5,8 +5,8 @@ using namespace std;
 using namespace PLMD;
 
 void ActionWithDistribution::registerKeywords(Keywords& keys){
-  keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated.");
   keys.add("optional","NL_TOL","when accumulating sums quantities that contribute less than this will be ignored.");
+  keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities that contributed less than NL_TOL at the previous neighbor list update step are ignored.");
 }
 
 void ActionWithDistribution::autoParallelize(Keywords& keys){

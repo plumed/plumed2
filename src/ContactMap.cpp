@@ -11,8 +11,21 @@ using namespace std;
 
 namespace PLMD {
 
-//+PLUMEDOC MCOLVAR CONTACTMAP
+//+PLUMEDOC COLVAR CONTACTMAP
 /**
+Calculate the distances between a number of pairs of atoms and transform each distance by a switching function.
+
+\par Examples
+
+The following example calculates switching functions based on the distances between atoms
+1 and 2, 3 and 4 and 4 and 5. The values of these three switching functions are then output
+to a file named colvar.
+
+\verbatim
+CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH=(SPLINE R_0=1.5) LABEL=f1
+PRINT ARG=f1.* FILE=colvar
+\endverbatim
+(See also \ref PRINT)
 
 */
 //+ENDPLUMEDOC

@@ -10,12 +10,13 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS ABMD 
 /**
-Adds a ratchet-and-pawl like restraint on one or more variables
+Adds a ratchet-and-pawl like restraint on one or more variables.
 
-\par Syntax
-\verbatim
-ABMD ARG=x1,x2,... KAPPA=k1,k2,... MIN=a1,a2,... TO=a1,a2,...
-\endverbatim
+This action can be used to evolve a system towards a target value in
+CV space using an harmonic potential moving with the thermal fluctuations of the CV
+\cite ballone \cite provasi10abmd \cite camilloni11abmd. The biasing potential in this 
+method is as follows:
+
 \f$
 V(\rho(t)) = \left \{ \begin{array}{ll} \frac{\alpha}{2}\left(\rho(t)-\rho_m(t)\right)^2, &\rho(t)>\rho_m(t)\\
               0, & \rho(t)\le\rho_m(t), \end{array} \right .
@@ -28,6 +29,12 @@ and
 \f$
 \rho_m(t)=\min_{0\le\tau\le t}\rho(\tau).
 \f$.
+
+The method is based on the introduction of a biasing potential which is zero when
+the system is moving towards the desired arrival point and which damps the
+fluctuations when the system attempts to move in the opposite direction. As in the
+case of the ratchet and pawl system, propelled by thermal motion of the solvent
+molecules, the biasing potential does not exert work on the system.
 
 \par Examples
 The following input sets up a restraint on the distance between atoms 3 and 5

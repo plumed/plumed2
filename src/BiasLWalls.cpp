@@ -10,14 +10,10 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS LOWER_WALLS
 /**
-Adds a lower wall on one or more variables
+Adds a lower wall on one or more variables.
 
-\par Syntax
-\verbatim
-LOWER_WALLS ARG=x1,x2,... KAPPA=k1,k2,... AT=a1,a2,... OFFSET=o1,o2,... EXP=e1,e2,... EPS=s1,s2,...
-\endverbatim
-KAPPA specifies an array of force constants, one for each variable,
-and AT the center of the restraints, but with an OFFSET. Thus, the resulting potential is
+The expression for the bias due to the wall is given by:
+
 \f$
   \sum_i {k_i}((x_i-a_i+o_i)/s_i)^e_i
 \f$

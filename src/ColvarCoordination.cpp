@@ -21,6 +21,9 @@ We use the following switching function to make the coordination number differen
 s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\right)^m }
 \f]
 
+To make your calculation faster you can use a neighbor list, which makes it that only a
+relevant subset of the pairwise distance are calculated at every step.
+
 \par Examples
 
 The following example instructs plumed to the average coordination number of the atoms in group 1-10 with the atoms in group 20-100.  These coordination numbers count the number of atoms within the group that are within 0.3 nm of the central atom.  A neighbour list is used to make this calculation faster, this neighbour list is updated every 100 steps.

@@ -14,42 +14,50 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS METAD 
 /**
-MetaDynamics on one or more variables
+Used to performed MetaDynamics on one or more collective variables.
 
 In a metadynamics simulations a history dependent bias composed of 
 intermittently added Gaussian functions is added to the potential \cite metad.
-This potential forces the system away from the kinetic traps in the potential energy surface
-and out into the unexplored parts of the energy landscape.
 
-\par Syntax
-\verbatim
-METAD ...
-  ARG=x1,x2,... 
-  SIGMA=s1,s2,... 
-  HEIGHT=w 
-  PACE=s
-  [FILE=filename]
-  [RESTART]
-  [BIASFACTOR=biasf]
-  [TEMP=temp]
-  [GRID_MIN=min1,min2]
-  [GRID_MAX=max1,max2]
-  [GRID_BIN=bin1,bin2]
-  [GRID_NOSPLINE]
-  [GRID_SPARSE]
-  [GRID_WFILE=filename]
-  [GRID_WSTRIDE=ws]
-... METAD
-\endverbatim
-SIGMA specifies an array of Gaussian widths, one for each variable,
-HEIGHT the Gaussian height, PACE the Gaussian deposition stride in steps,
-FILE the name of the file where the Gaussians are written to (or read from), 
-RESTART to restart the run, BIASFACTOR the bias factor of well-tempered metad, 
-TEMP the temperature. To store the bias potential on a grid,
-you need to specify the grid boundaries with GRID_MIN and GRID_MAX and the number
-of bins with GRID_BIN. An experimental sparse grid can be activated with GRID_SPARSE.
-The use of spline can be disabled with GRID_NOSPLINE. You can dump the grid on file
-with GRID_WFILE every GRID_WSTRIDE steps.
+\f[
+V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
+\exp\left(
+-\sum_{i=1}^{d} \frac{(s_i-s_i^{(0)}(k \tau))^2}{2\sigma_i^2}
+\right).
+\f]
+
+This potential forces the system away from the kinetic traps in the potential energy surface
+and out into the unexplored parts of the energy landscape. Information on the Gaussian
+functions from which this potential is composed is output to a file called HILLS, which 
+is used both the restart the calculation and to reconstruct the free energy as a function of the CVs. 
+The free energy can be reconstructed from a metadynamics calculation because the final bias is given
+by: 
+
+\f[
+V(\vec{s}) = -F(\vec(s))
+\f]
+
+During post processing the free energy can be calculated in this way using the \subpage sum_hills
+utility.
+
+In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics 
+calculation increases with the length of the simulation as one has to, at every step, evaluate 
+the values of a larger and larger number of Gaussians. To avoid this issue you can in plumed 2.0 
+store the bias on a grid.  This approach is similar to that proposed in \cite babi+08jcp but has the 
+advantage that the grid spacing is independent on the Gaussian width.
+
+Another option that is available in plumed 2.0 is well-tempered metadynamics \cite Barducci:2008. In this
+varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
+given by:
+
+\f[
+V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta T} \exp\left(
+-\sum_{i=1}^{d} \frac{(s_i({q})-s_i({q}(t'))^2}{2\sigma_i^2}
+\right),
+\f]
+
+This method ensures that the bias converges more smoothly. 
+
 \par Examples
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
@@ -58,7 +66,7 @@ the metadynamics bias potential are written to the COLVAR file every 100 steps.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
-METAD ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 STRIDE=500 LABEL=restraint
+METAD ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 PACE=500 LABEL=restraint
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endverbatim
 (See also \ref DISTANCE \ref PRINT).

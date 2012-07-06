@@ -12,7 +12,7 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION SORT
 /**
-Just sorts its arguments
+This function can be used to sort colvars according to their magnitudes.
 
 \par Examples
 The following input tells plumed to print the distance of the closest and of

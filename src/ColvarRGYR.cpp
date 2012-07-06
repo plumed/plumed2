@@ -13,6 +13,19 @@ namespace PLMD{
 /**
 Calculate the radius of gyration for a chain of atoms.
 
+The radius of gyration is calculated using:
+
+\f[
+s_{\rm Gyr}=\Big ( \frac{\sum_i^{n}  
+ \vert {r}_i -{r}_{\rm COM} \vert ^2 }{\sum_i^{n} m_i} \Big)^{1/2} 
+\f]
+
+with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
+
+\f[
+{r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ m_i }{\sum_i^{n} m_i}
+\f]
+
 \bug This was a very quick implementation of RGYR for a project that I am working on. It has very little of the functionality that is available in plumed 1.0. 
 
 \par Examples

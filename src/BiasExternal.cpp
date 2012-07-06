@@ -11,7 +11,7 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS EXTERNAL 
 /**
-Calculate a restraint that is defined on a grid that is read in at start up
+Calculate a restraint that is defined on a grid that is read during start up
 
 \par Examples
 The following is an input for a calculation with an external potential that is
@@ -42,7 +42,7 @@ PLUMED_REGISTER_ACTION(BiasExternal,"EXTERNAL")
 void BiasExternal::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","FILE","the name of the file containing the external potential");
+  keys.add("compulsory","FILE","the name of the file containing the external potential. " + Grid::formatDocs() );
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
 }

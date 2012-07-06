@@ -1,6 +1,7 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <sstream>
 #include <cstdio>
 
 #include "Grid.h"
@@ -8,6 +9,20 @@
 
 using namespace std;
 using namespace PLMD;
+
+std::string Grid::formatDocs(){
+  std::ostringstream ostr;
+  ostr<<"The grid in this file should be specified as follows. There should first be a header in which the ";
+  ostr<<"fact of whether or not derivatives the file also contains derivatives  (DERIVATIVES), the number of variables (NVAR), the ";
+  ostr<<"number of bins (BIN) in each dimension, the minimum value (MIN) for each direction, the maximum value ";
+  ostr<<"for each direction (MAX) and whether or not each of the directions is periodic (PBC). In the header ";
+  ostr<<"each of these pieces of information are specified on a single line which is started with the characters ";
+  ostr<<"#!. The values of the function (and the derivatives) at each point in the grid then follow. This data ";
+  ostr<<"should be formatted so that it can be plotted with gnuplot so the left-most column should contain the ";
+  ostr<<"slowest changing variable and in an xy surface for example there should be a blank space whenver the value ";
+  ostr<<"of x changes. An example grid file can be found in regtest/rt12/potential.";  
+  return ostr.str();
+}
 
 Grid::Grid(const vector<double> & gmin, const vector<double> & gmax, const vector<unsigned> & nbin,
            const vector<bool> & pbc, bool dospline, bool usederiv, bool doclear){

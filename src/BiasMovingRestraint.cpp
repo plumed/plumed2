@@ -10,29 +10,19 @@ namespace PLMD{
 
 //+PLUMEDOC BIAS MOVINGRESTRAINT
 /**
-Moving restraint
+Add a time-dependent, harmonic restraint on one or more variables, this form
+of bias can be used to performed steered MD and Jarzynski sampling \cite jarzynski.
 
-Similar to \ref RESTRAINT, but dynamic.
+The harmoic restraint on your system is given by:
 
-\par Syntax
-\verbatim
-RESTRAINT ...
-  ARG=x1,x2,...
-  VERSE=v1,v2,...
-  STEP0=s0 [ STEP1=s1 [STEP2=s2 [...] ] ] 
-  KAPPA0=k01,k02,... [ KAPPA1=k11,k12,... [ KAPPA2=k21,k22,... [...] ] ] 
-  AT0=a01,a02,...    [ AT1=a11,a12,...    [ AT1=a21,a22,...    [...] ] ]
-... RESTRAINT
-\endverbatim
-The STEPx keyword, with x=0,1,2,...,n respresent the MD step at
-which the restraint parameters take value KAPPAx and ATx. The meaning
-of KAPPA and AT is the same as for \ref RESTRAINT. For step numbers less than
-STEP0 or larger than STEPn, parameters for x=0 and x=n are used respectively.
-For intermediate steps, parameters are linearly interpolated. If
-a parameter is missing, its value at the present step is kept.
-The VERSE keyword can set for each variable is the restraint is
-only acting for CV larger ("U") or smaller ("L") than the
-restraint. Default is "B" which is acting in both cases.
+\f[
+V(\vec{s},t) = \frac{1}{2} \kappa(t) ( \vec{s} - \vec{s}_0(t) )^2 
+\f]
+
+The time dependence of \f$\kappa\f$ and \f$\vec{s}_0\f$ are specified by a list of
+STEP, KAPPA and AT keywords.  These keywords tell plumed what values \f$\kappa\f$ and \f$\vec{s}_0\f$
+should have at the time specified by the corresponding STEP keyword.  Inbetween these times
+the values of \f$\kappa\f$ and \f$\vec{s}_0\f$ are linearly interpolated.
 
 \par Examples
 The following input is dragging the distance between atoms 2 and 4
