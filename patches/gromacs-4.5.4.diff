@@ -1,3 +1,32 @@
+patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/Makefile" << \EOF_EOF
+--- ./src/kernel/Makefile.preplumed
++++ ./src/kernel/Makefile
+@@ -16,10 +16,11 @@
+ 
+ 
+ # Note: Makefile is automatically generated from Makefile.in by the configure
+ # script, and Makefile.in is generated from Makefile.am by automake.
+ 
++include ../../Plumed.inc
+ 
+ 
+ 
+ pkgdatadir = $(datadir)/gromacs
+ pkgincludedir = $(includedir)/gromacs
+@@ -141,11 +142,11 @@
+ am_mdrun_OBJECTS = gctio.$(OBJEXT) ionize.$(OBJEXT) do_gct.$(OBJEXT) \
+ 	repl_ex.$(OBJEXT) xutils.$(OBJEXT) runner.$(OBJEXT) \
+ 	md.$(OBJEXT) mdrun.$(OBJEXT) genalg.$(OBJEXT) \
+ 	md_openmm.$(OBJEXT)
+ mdrun_OBJECTS = $(am_mdrun_OBJECTS)
+-mdrun_LDADD = $(LDADD)
++mdrun_LDADD = $(LDADD) $(PLUMED_LOAD)
+ mdrun_DEPENDENCIES = $(lib_LTLIBRARIES) ../mdlib/libmd_mpi.la \
+ 	../gmxlib/libgmx_mpi.la
+ pdb2gmx_SOURCES = pdb2gmx.c
+ pdb2gmx_OBJECTS = pdb2gmx.$(OBJEXT)
+ pdb2gmx_LDADD = $(LDADD)
+EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 --- ./src/kernel/md.c.preplumed
 +++ ./src/kernel/md.c
@@ -150,117 +179,6 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
          
          if (bTCR)
 EOF_EOF
-patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
---- ./src/kernel/repl_ex.c.preplumed
-+++ ./src/kernel/repl_ex.c
-@@ -49,10 +49,16 @@
- #include "names.h"
- #include "mvdata.h"
- #include "domdec.h"
- #include "partdec.h"
- 
-+/* PLUMED */
-+#include "../../Plumed.h"
-+extern int    plumedswitch;
-+extern plumed plumedmain;
-+/* END PLUMED */
-+
- typedef struct gmx_repl_ex
- {
-     int  repl;
-     int  nrepl;
-     real temp;
-@@ -607,10 +613,26 @@
-     snew(bEx,re->nrepl);
-     snew(prob,re->nrepl);
- 
-     exchange = -1;
-     m = (step / re->nst) % 2;
-+
-+    if(plumedswitch){
-+      int partner=re->repl;
-+
-+      for(i=1; i<re->nrepl; i++) {
-+        if (i % 2 != m) continue;
-+        a = re->ind[i-1];
-+        b = re->ind[i];
-+        if(re->repl==a) partner=b;
-+        if(re->repl==b) partner=a;
-+      }
-+      plumed_cmd(plumedmain,"GREX setPartner",&partner);
-+      plumed_cmd(plumedmain,"GREX calculate",NULL);
-+      plumed_cmd(plumedmain,"GREX shareAllDeltaBias",NULL);
-+    }
-+
-     for(i=1; i<re->nrepl; i++)
-     {
-         a = re->ind[i-1];
-         b = re->ind[i];
-         bPrint = (re->repl==a || re->repl==b);
-@@ -648,10 +670,20 @@
-                 if (bPrint)
-                 {
-                     fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
-                 }
-                 delta += dpV;
-+                if(plumedswitch){
-+                  real adb,bdb,dplumed;
-+                  char buf[300];
-+                  sprintf(buf,"GREX getDeltaBias %d",a); plumed_cmd(plumedmain,buf,&adb);
-+                  sprintf(buf,"GREX getDeltaBias %d",b); plumed_cmd(plumedmain,buf,&bdb);
-+                  dplumed=adb*betaA+bdb*betaB;
-+                  delta+=dplumed;
-+                  if (bPrint)
-+                    fprintf(fplog,"  dplumed = %10.3e  d = %10.3e",dplumed,delta);
-+                }
-             }
-             if (bPrint)
-             {
-                 fprintf(fplog,"\n");
-             }
-@@ -728,10 +760,12 @@
-     gmx_multisim_t *ms;
-     int  exchange=-1,shift;
-     gmx_bool bExchanged=FALSE;
-     
-     ms = cr->ms;
-+
-+    if(plumedswitch)plumed_cmd(plumedmain,"GREX prepare",NULL);
-   
-     if (MASTER(cr))
-     {
-         exchange = get_replica_exchange(fplog,ms,re,ener,det(state->box),
-                                         step,time);
-EOF_EOF
-patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/Makefile" << \EOF_EOF
---- ./src/kernel/Makefile.preplumed
-+++ ./src/kernel/Makefile
-@@ -16,10 +16,11 @@
- 
- 
- # Note: Makefile is automatically generated from Makefile.in by the configure
- # script, and Makefile.in is generated from Makefile.am by automake.
- 
-+include ../../Plumed.inc
- 
- 
- 
- pkgdatadir = $(datadir)/gromacs
- pkgincludedir = $(includedir)/gromacs
-@@ -141,11 +142,11 @@
- am_mdrun_OBJECTS = gctio.$(OBJEXT) ionize.$(OBJEXT) do_gct.$(OBJEXT) \
- 	repl_ex.$(OBJEXT) xutils.$(OBJEXT) runner.$(OBJEXT) \
- 	md.$(OBJEXT) mdrun.$(OBJEXT) genalg.$(OBJEXT) \
- 	md_openmm.$(OBJEXT)
- mdrun_OBJECTS = $(am_mdrun_OBJECTS)
--mdrun_LDADD = $(LDADD)
-+mdrun_LDADD = $(LDADD) $(PLUMED_LOAD)
- mdrun_DEPENDENCIES = $(lib_LTLIBRARIES) ../mdlib/libmd.la \
- 	../gmxlib/libgmx.la
- pdb2gmx_SOURCES = pdb2gmx.c
- pdb2gmx_OBJECTS = pdb2gmx.$(OBJEXT)
- pdb2gmx_LDADD = $(LDADD)
-EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
 --- ./src/kernel/mdrun.c.preplumed
 +++ ./src/kernel/mdrun.c
@@ -346,4 +264,96 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
  
    if (MULTIMASTER(cr)) {
        thanx(stderr);
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
+--- ./src/kernel/repl_ex.c.preplumed
++++ ./src/kernel/repl_ex.c
+@@ -49,10 +49,16 @@
+ #include "names.h"
+ #include "mvdata.h"
+ #include "domdec.h"
+ #include "partdec.h"
+ 
++/* PLUMED */
++#include "../../Plumed.h"
++extern int    plumedswitch;
++extern plumed plumedmain;
++/* END PLUMED */
++
+ typedef struct gmx_repl_ex
+ {
+     int  repl;
+     int  nrepl;
+     real temp;
+@@ -607,10 +613,36 @@
+     snew(bEx,re->nrepl);
+     snew(prob,re->nrepl);
+ 
+     exchange = -1;
+     m = (step / re->nst) % 2;
++
++    if(plumedswitch){
++      int partner=re->repl;
++      int test=0;
++      plumed_cmd(plumedmain,"getRandomExchanges",&test);
++      if(test){
++        int *list;
++        snew(list,re->nrepl);
++        plumed_cmd(plumedmain,"setExchangesSeed",&re->seed);
++        plumed_cmd(plumedmain,"getExchangesList",list);
++        for(i=0; i<re->nrepl; i++) re->ind[i]=list[i];
++        sfree(list);
++      }
++
++      for(i=1; i<re->nrepl; i++) {
++        if (i % 2 != m) continue;
++        a = re->ind[i-1];
++        b = re->ind[i];
++        if(re->repl==a) partner=b;
++        if(re->repl==b) partner=a;
++      }
++      plumed_cmd(plumedmain,"GREX setPartner",&partner);
++      plumed_cmd(plumedmain,"GREX calculate",NULL);
++      plumed_cmd(plumedmain,"GREX shareAllDeltaBias",NULL);
++    }
++
+     for(i=1; i<re->nrepl; i++)
+     {
+         a = re->ind[i-1];
+         b = re->ind[i];
+         bPrint = (re->repl==a || re->repl==b);
+@@ -648,10 +680,20 @@
+                 if (bPrint)
+                 {
+                     fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
+                 }
+                 delta += dpV;
++                if(plumedswitch){
++                  real adb,bdb,dplumed;
++                  char buf[300];
++                  sprintf(buf,"GREX getDeltaBias %d",a); plumed_cmd(plumedmain,buf,&adb);
++                  sprintf(buf,"GREX getDeltaBias %d",b); plumed_cmd(plumedmain,buf,&bdb);
++                  dplumed=adb*betaA+bdb*betaB;
++                  delta+=dplumed;
++                  if (bPrint)
++                    fprintf(fplog,"  dplumed = %10.3e  d = %10.3e",dplumed,delta);
++                }
+             }
+             if (bPrint)
+             {
+                 fprintf(fplog,"\n");
+             }
+@@ -728,10 +770,12 @@
+     gmx_multisim_t *ms;
+     int  exchange=-1,shift;
+     gmx_bool bExchanged=FALSE;
+     
+     ms = cr->ms;
++
++    if(plumedswitch)plumed_cmd(plumedmain,"GREX prepare",NULL);
+   
+     if (MASTER(cr))
+     {
+         exchange = get_replica_exchange(fplog,ms,re,ener,det(state->box),
+                                         step,time);
 EOF_EOF
