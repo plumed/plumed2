@@ -460,15 +460,11 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = ./Intro.txt \
-                         ./cvTemplate.txt \
-                         ./freeTemplate.txt \
-                         ./funcTemplate.txt \
                          ./mdTemplate.txt \
-                         ./plmdIntroPP.txt \
+                         ./plmdIntro.txt \
                          ./usingDoxygen.txt \
                          ./parsing.txt \
-                         ./toolboxPP.txt \
-                         ./automatic
+                         ./automatic 
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

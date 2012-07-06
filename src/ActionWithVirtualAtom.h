@@ -9,11 +9,10 @@
 
 namespace PLMD{
 
-//+DEVELDOC INHERIT ActionWithVirtualAtom
 /**
+\ingroup INHERIT
 Inherit from here if you are calculating the position of a virtual atom (eg a center of mass)
 */
-//+ENDDEVELDOC
 
 /// Class to add a single virtual atom to the system.
 /// (it might be extended to add multiple virtual atoms).

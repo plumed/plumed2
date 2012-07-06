@@ -6,6 +6,7 @@
 namespace PLMD{
 
 /**
+\ingroup TOOLBOX
 Class implementing fixed size vectors of doubles
 
 \tparam n The number of elements of the vector.

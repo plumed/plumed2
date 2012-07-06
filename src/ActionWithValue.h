@@ -8,39 +8,38 @@
 
 namespace PLMD{
 
-//+DEVELDOC MULTI-INHERIT ActionWithValue
 /**
+\ingroup MULTIINHERIT
 Used to create a PLMD::Action that has some scalar or vectorial output that may or may not have some derivatives.  
 This is used for PLMD::Bias, PLMD::Colvar and PLMD::Function 
+
+The vast majority of the PLMD::Action objects that are implemented in
+plumed calculate some quantity or a set of quantities.  This could be
+the value of a CV, the value of a function or the potential due to a bias.
+PLMD::ActionWithValue provides the functionality for storing these quantities
+and (in tandem with PLMD::ActionWithArguments) the functionality for passing
+quantities between PLMD::Actions.  When you are deciding what quantities
+your new PLMD::Action will need to store using PLMD::ActionWithValue you must
+ask yourself the following two questions:
+
+- Do I need to differentiate my output quantities 
+- Is my PLMD::Action calculating a single thing or does the output have multiple components  
+
+If the answer to the first of these questions is yes then you must setup your values
+you using either PLMD::ActionWithValue::addValueWithDerivatives() or 
+PLMD::ActionWithValue::addComponentWithDerivatives.  If the answer is no you 
+can set up values using PLMD::ActionWithValue::addValue() or PLMD::ActionWithValue::addComponent().
+The precise routine you use to setup your values will depend on your answer to the
+second question.  As you are probably aware if the output of your PLMD::Action is a 
+single quantity you can reference that quantity in the input file using the label of the 
+PLMD::Action it was calculated in.  If your action <b> outputs only one quantity </b> 
+we call that quantity the <b> value </b> of the Action.  To set the <b> value </b> and get pointers to it 
+you should <b> use the set of routines that have the word value in the name </b>.  If, by contrast, 
+your PLMD::Action calculates multiple quantities then these quantities are referenced in input using the
+label.component syntax.  We refer to these <b> multiple quantities </b> the <b> components </b> 
+of the PLMD::Action.  Perhaps unsurprisingly, when you manipulate the <b> components </b> of an
+PLMD::Action you should use <b> the routines with the word component in the name. </b>
 */
-//+ENDDEVELDOC
-
-/// The vast majority of the PLMD::Action objects that are implemented in
-/// plumed calculate some quantity or a set of quantities.  This could be
-/// the value of a CV, the value of a function or the potential due to a bias.
-/// PLMD::ActionWithValue provides the functionality for storing these quantities
-/// and (in tandem with PLMD::ActionWithArguments) the functionality for passing
-/// quantities between PLMD::Actions.  When you are deciding what quantities
-/// your new PLMD::Action will need to store using PLMD::ActionWithValue you must
-/// ask yourself the following two questions:
-
-/// - Do I need to differentiate my output quantities 
-/// - Is my PLMD::Action calculating a single thing or does the output have multiple components  
-
-/// If the answer to the first of these questions is yes then you must setup your values
-/// you using either PLMD::ActionWithValue::addValueWithDerivatives() or 
-/// PLMD::ActionWithValue::addComponentWithDerivatives.  If the answer is no you 
-/// can set up values using PLMD::ActionWithValue::addValue() or PLMD::ActionWithValue::addComponent().
-/// The precise routine you use to setup your values will depend on your answer to the
-/// second question.  As you are probably aware if the output of your PLMD::Action is a 
-/// single quantity you can reference that quantity in the input file using the label of the 
-/// PLMD::Action it was calculated in.  If your action <b> outputs only one quantity </b> 
-/// we call that quantity the <b> value </b> of the Action.  To set the <b> value </b> and get pointers to it 
-/// you should <b> use the set of routines that have the word value in the name </b>.  If, by contrast, 
-/// your PLMD::Action calculates multiple quantities then these quantities are referenced in input using the
-/// label.component syntax.  We refer to these <b> multiple quantities </b> the <b> components </b> 
-/// of the PLMD::Action.  Perhaps unsurprisingly, when you manipulate the <b> components </b> of an
-/// PLMD::Action you should use <b> the routines with the word component in the name. </b>
 
 class ActionWithValue : 
   public virtual Action
@@ -57,9 +56,9 @@ protected:
 
 // -------- The action has one value only  ---------------- //
 
-/// Add a value with the name <label>
+/// Add a value with the name label
   void addValue();
-/// Add a value with the name <label> that has derivatives
+/// Add a value with the name label that has derivatives
   void addValueWithDerivatives();
 /// Set your default value to have no periodicity
   void setNotPeriodic();
@@ -72,9 +71,9 @@ protected:
 
 // -------- The action has multiple components ---------- //
 
-/// Add a value with a name like <label>.name
+/// Add a value with a name like label.name
   void addComponent( const std::string& name );
-/// Add a value with a name like <label>.name that has derivatives
+/// Add a value with a name like label.name that has derivatives
   void addComponentWithDerivatives( const std::string& name );
 /// Set your value component to have no periodicity
   void componentIsNotPeriodic( const std::string& name );

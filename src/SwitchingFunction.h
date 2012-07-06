@@ -7,13 +7,8 @@ namespace PLMD {
 
 class Log;
 
-//+DEVELDOC TOOLBOX SwitchingFunction
-/**
-A class for calculating the switching function : \f$\frac{1 - \left( \frac{r-d_0}{r_0} \right)^n}{1 - \left( \frac{r-d_0}{r_0} \right)^m}\f$
-*/
-//+ENDDEVELDOC
-
-/// Small class to compure switching functions.
+/// \ingroup TOOLBOX
+/// Small class to compure switching functions in the form 
 /// In the future we might extend it so as to be set using
 /// a string:
 /// void set(std::string);

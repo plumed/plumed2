@@ -11,6 +11,7 @@ class Log;
 class PDB;
 class OptimalAlignment;
 
+/// \ingroup TOOLBOX
 /// A class that implements RMSD calculations
 class RMSD
 {

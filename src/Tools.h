@@ -72,7 +72,7 @@ public:
   static bool parseFlag(std::vector<std::string>&line,const std::string&key,bool&val);
 /// Interpret atom ranges
   static void interpretRanges(std::vector<std::string>&);
-/// Remove duplicates from a vector of types <T> 
+/// Remove duplicates from a vector of type T 
   template <typename T>
   static void removeDuplicates(std::vector<T>& vec);
 /// interpret ":" syntax for labels

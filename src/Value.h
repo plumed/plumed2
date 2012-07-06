@@ -13,12 +13,8 @@ namespace PLMD{
 
 class ActionWithValue;
 
-//+DEVELDOC TOOLBOX Value
-/**
-A class for holding the value of a function together with its derivatives.
-*/
-//+ENDDEVELDOC
-
+/// \ingroup TOOLBOX
+/// A class for holding the value of a function together with its derivatives.
 /// Typically, an  object of type PLMD::ActionWithValue will contain one 
 /// object of type PLUMD::Value that will be named after the label.  If the 
 /// PLMD::ActionWithValue is part of a class that calculates multiple components 

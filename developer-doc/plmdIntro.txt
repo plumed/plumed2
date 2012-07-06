@@ -24,8 +24,8 @@ us to acchieve these aims:
 
 To be clear though object oriented programming does not allow us to do things that 
 would be impossible with other programming languages.  All programs perform some set of 
-mathematical operations.  Any programming language can be used to implement these mathematical 
-operations.  The only advantage of C++ is that the advanced, object-oriented features of the 
+mathematical operations and any programming language can be used to implement these mathematical 
+operations. The only advantage of C++ is that the advanced, object-oriented features of the 
 language make implementing things more straighforward. 
 
 As you are no doubt aware, in C one can create structures to order the variables in your code.  
@@ -61,22 +61,30 @@ colvar and function that is implemented in plumed 2.0 is inside its own separate
 
 \section publicprivate Public and private members
 
-The variables in a C struct can be accessed anywhere in the code.  Any function in the code
+The variables in a C struct can be accessed anywhere in the code - any function in the code
 can copy the information from a structure or change the values of the variables in the structure.  This
-was a particularly fun feature of plumed 1.0 - a code in which every function could change any of the variables
-in the code!  Problems with this approach occurs when a new function accidentally changes the 
-value of some variable in a widely used structure that should never have been changed.  As one can imagine this can cause 
-drastic problems in other areas of the code.  To prevent errors like this C++ provides a set of functionalities to 
+was a particularly fun feature of plumed 1.0, every function in the old code could change any of the variables
+in the code!  Obviously this causes problems as new functions can accidentally change the 
+values of some variable in a widely used structure that should never have been changed.  As one can imagine this can cause 
+drastic problems.  To prevent errors like this C++ provides a set of functionalities to 
 allow one to specify what any given function can do to the members of a class.  This is not possible in 
 C and it was the ability to use this functionality to create flexible, easily-extendable code that motivated
 our choice of C++ for plumed 2.  The example class below shows how this is done in practise:
 
+\verbatim
+class myclass{
+private:
+  bool b;  //--This can only be accessed when you are in one of the methods in the class
+public:
+  int i;  //--This can be acessed by anywhere in the code
+};
+
 \section constructors Constructors
 
 As someone who learnt to program in fortran it was this aspect of C++, more than any other, that confused me 
-the most.  In actually though it is rather simple and I don't really know why I was confused.  In essence every 
-class must contain some method for creating it.  This class should set the initial values of all the variables
-inside the class.  Obviously the functions (or more correctly methods) that the class
+the most. In actually though it is rather simple and I don't really know why I was confused. In essence every 
+class must contain some method for creating it. This class should set the initial values of all the variables
+inside the class. Obviously the functions (or more correctly methods) that the class
 contains cannot be used untill an instance of the class has been created using the constructor. 
 
 An example of how all this works in practise is given below:
@@ -97,9 +105,9 @@ public:
 // I can run g however as it is a static member of the class - I run it using
 double d=myclass::g(j);
 
-// Create an instance of the class using the constructor
+// Now I create an instance of the class using the constructor
 myclass thisIsTheInstance(false, 3, 6.5);
-// Run the method called f 
+// so that I can run the method called f 
 double s=thisIsTheInstance.f(4.0); 
 \endverbatim         
 
@@ -151,7 +159,7 @@ double, int or whatever variable.
 <b>
 This kind of inclusion is used extensively in plumed 1.0 and there are a huge number of classes that you
 can re-use in this way to create new colvars, functions or biases.  For a full list of the classes that are 
-available see \subpage toolbox.
+available see \subpage TOOLBOX.
 </b>
 
 \section inheritance Including the functionality of one class in a second class 2: Inheritance
@@ -189,15 +197,14 @@ B* mynewB=new B();   // This is a special way of calling the constructor so you 
 A* BpretendingToBeA=dynamic_cast<A*>(mynewB); 
 \endverbatim
 
-All the colvars and free energy methods of plumed use inheritence.  In fact all these methods are 
-built on a single base class called PLMD::Action.  This class contains all the functionality for
+All the colvars and free energy methods of plumed use inheritence. In fact all these methods are 
+built on a single base class called PLMD::Action. This class contains all the functionality for
 reading stuff from input, the stuff for controlling the dependencies Actions and a set of controls
-that decide which actions are performed when.  All the functionality for the different methods is
-then built on this root.  As you can see (PLMD::Action) the inheritence tree for the code is 
-quite complicated.  However, in practise your new class will in all probability inherit from one
-of the following classes:
-
-@INHERIT@ 
+that decide which actions are performed when. All the functionality for the different methods is
+then built on this root. As you can see (PLMD::Action) the inheritence tree for the code is 
+quite complicated.  However, in practise if you are implementing a CV, function, bias or virtual atom
+the correct start point is with one of the classes listed on this page \ref INHERIT all of which contain
+detailed descriptions of how to use them. 
 
 \section minheritance Including the functionality of one class in a second class 3: Multiple inheritance
 
@@ -207,13 +214,9 @@ we are using multiple inheritance - the classes in the layer above inherit from 
 This way of incorporating functionality from classes is unique to C++ and brings with it a special set of
  difficulties in programming.  Its great advantage is though that one can 
 create classes that incorporate bring a set of particular attributes.  This will perhaps be most clear
-if we explain what each of the classes in the multiple inheritence layer does separately and how these
-functionalities are used in Colvars, Functions and Biases. 
-
-@MULTIINHERIT@
-
-Please be aware that, unless you are doing something really wacky, you should be able to implement whatever
-you need to implement without writing classes that take advantage of multiple inheritance.  Furthermore,
+if you look at what each of the classes in the multiple inheritence layer is doing (see \ref MULTIINHERIT) and see how these
+functionalities are used in Colvars, Functions and Biases.  Please be aware that, unless you are doing something really wacky, 
+you should be able to implement whatever you need to implement without writing classes that take advantage of multiple inheritance. Furthermore,
 you should not need to touch the classes in this region of the code.  The information here is there for
 completeness only.  If you feel you really must change something in this part of the code please contact the
 developers before doing anything.     
@@ -244,8 +247,7 @@ visit \ref http://www.cplusplus.com/reference/
 
 When you run a calculation with plumed the code calculates a number of CVs.  The bias and the forces
 due to the bias are then calculated and in the final step these forces are propegated back onto the 
-atoms using the chain rule.  As we have pointed out in information on how to calculate the various CVs
-and biases are provided in the classes for the individual action.  For example PLMD::ColvarDistance
+atoms using the chain rule.  For example PLMD::ColvarDistance
 contains the function that calculates a distance between atoms, while PLMD::BiasMeTaD contains
 the function for doing metadynamics.  What may thus seem remarkable to the programmer unfamiliar with
 C++ is that the class that calls the functions that calculate the CVs, biases and so on only uses 
@@ -264,8 +266,8 @@ This kind of declaration promises two things to a class:
 
 - That the class will only ever be used in derived classes.  No PLMD::Action class is ever 
 constructed in the code. The functionality in PLMD::Action is only ever used in the derived classes 
-that inherit PLMD::Action.  Classes like PLMD::Action are called abstract base classes.
-- That in one of the classes that inherits PLMD::Action a method called calculate will be defined.
+that inherit PLMD::Action. Classes like PLMD::Action are called abstract base classes.
+- That in one of the classes that inherits from PLMD::Action a method called calculate will be defined.
 
 The great advantage of declaring calculate() inside PLMD::Action in this way is that the calculate 
 routine that we declare in the derived class is a member of PLMD::Action.  We thus can thus write

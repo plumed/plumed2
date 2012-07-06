@@ -12,10 +12,11 @@ namespace PLMD {
 
 class MultiColvar;
 
-/// Action for multiple collective coordinates and distributions
-/// of collective variables.
-
 /**
+\ingroup INHERIT
+This is the abstract base class to use for creating distributions of colvars and functions
+thereof, whtin it there is information as to how to go implementing these types of functions.
+
 As you are no doubt aware within plumed 2 you can calculate multiple 
 instances of a collective coorinate from a single line in the input file.
 One can then calculate functions such as the minimum, number less than,...
@@ -38,7 +39,7 @@ of this manual the documentation is created using Doxygen.  You are implementing
 should read:
 
 \verbatim
-//+PLUMEDOC COLVAR MYCVKEYWORD 
+//+PLUMEDOC MCOLVAR MYCVKEYWORD 
 \endverbatim 
 
 Your documentation should contain a description of what your CV calculates and some examples.  You do not
