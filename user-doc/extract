@@ -51,6 +51,7 @@ awk '{
       lfile="automatic/"$2".list"
       
       print "<tr> <td width=5%> \\subpage ", $3,"</td> <td>" > lfile
+      if(output!="")close(output);
       output="automatic/"$3".tmp";
       print "/**" > output
       print "\\page "$3 > output
