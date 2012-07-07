@@ -23,10 +23,11 @@ class ActionWithArguments:
 {
   std::vector<Value*> arguments;
   bool lockRequestArguments;
-
-protected:
-///
+public:
+/// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
+/// Registers the list of keywords
+  static void registerKeywords( Keywords& keys );
 /// Returns the value of an argument
   double getArgument( const unsigned n ) const;
 /// Return a pointer to specific argument
@@ -42,8 +43,6 @@ protected:
 public:
   ActionWithArguments(const ActionOptions&);
   virtual ~ActionWithArguments(){};
-/// Registers the list of keywords
-  static void registerKeywords( Keywords& keys );
 /// Calculate the numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
 /// are doing.  The default will be correct for the vast majority of cases
