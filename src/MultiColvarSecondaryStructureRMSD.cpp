@@ -7,7 +7,13 @@ namespace PLMD {
 void MultiColvarSecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
-  keys.add("atoms","BACKBONE","");
+  keys.add("atoms","BACKBONE","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
+                              "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
+                              "\\ref MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
+                              "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
+                              "you are interested in as a list of numbers. Please be aware that to form secondary structure elements your chain "
+                              "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
+                              "As such if you define portions of the chain with fewer than N residues the code will crash."); 
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD.");
   keys.remove("MORE_THAN");
 }
@@ -18,6 +24,8 @@ MultiColvar(ao)
 {
   parse("TYPE",alignType);
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
+
+  log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 }
 
 MultiColvarSecondaryStructureRMSD::~MultiColvarSecondaryStructureRMSD(){

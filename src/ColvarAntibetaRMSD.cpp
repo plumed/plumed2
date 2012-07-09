@@ -5,10 +5,38 @@
 
 namespace PLMD {
 
-//+PLUMEDOC MCOLVAR ANTIBETARMSD
+//+PLUMEDOC COLVAR ANTIBETARMSD
 /**
+Probe the antiparallel beta sheet content of your protein structure.
+
+Two protein segments containing three continguous residues can form an antiparallel beta sheet. 
+Although if the two segments are part of the same protein chain they must be separated by 
+a minimum of 2 residues to make room for the turn. This colvar thus generates the set of 
+all possible six residue sections that could conceivably form an antiparallel beta sheet 
+and calculates the RMSD distance between the configuration in which the residues find themselves
+and an idealized antiparallel beta sheet structure. These distances can be calculated by either 
+aligning the instantaneous structure with the reference structure and measuring each
+atomic displacement or by calculating differences between the set of interatomic
+distances in the reference and instantaneous structures. 
+
+This colvar is based on the following reference \ref pietrucci09jctc.  The authors of 
+this paper use the set of distances from the antiparallel beta sheet configurations to measure 
+the number of segments that have an antiparallel beta sheetconfiguration. To do something 
+similar using this implementation you must use the LESS_THAN keyword. Furthermore, 
+based on reference \ref pietrucci09jctc we would recommend using the following
+switching function definition (SPLINE R_0=0.08 NN=8 MM=12) when your input file
+is in units of nm. 
 
 \par Examples
+
+The following input calculates the number of six residue segments of 
+protein that are in an antiparallel beta sheet configuration.
+
+\verbatim
+MOLINFO STRUCTURE=helix.pdb
+ANTIBETARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(SPLINE R_0=0.08 NN=8 MM=12) LABEL=a
+\endverbatim
+(see also \ref MOLINFO)
 
 */
 //+ENDPLUMEDOC
@@ -30,8 +58,10 @@ void ColvarAntibetaRMSD::registerKeywords( Keywords& keys ){
                                       "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
                                       "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
                                       "only sheet-like configurations involving a single chain are counted");
-  keys.add("optional","STRANDS_CUTOFF","If any two strands are further apart than this cutoff then it is assumed that this distances makes no "
-                                       "contribution to the final value");
+  keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart then the calculation "
+                                       "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
+                                       "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
+                                       "However, if you are using some other option, then this cannot be used");
 }
 
 ColvarAntibetaRMSD::ColvarAntibetaRMSD(const ActionOptions&ao):

@@ -5,10 +5,36 @@
 
 namespace PLMD {
 
-//+PLUMEDOC MCOLVAR ALPHARMSD
+//+PLUMEDOC COLVAR ALPHARMSD
 /**
+Probe the alpha helical content of a protein structure.
+
+Any chain of six contiguous residues in a protein chain can form an alpha helix. This
+colvar thus generates the set of all possible six residue sections and calculates
+the RMSD distance between the configuration in which the residues find themselves
+and an idealized alpha helical structure. These distances can be calculated by either 
+aligning the instantaneous structure with the reference structure and measuring each
+atomic displacement or by calculating differences between the set of interatomic
+distances in the reference and instantaneous structures. 
+
+This colvar is based on the following reference \ref pietrucci09jctc.  The authors of 
+this paper use the set of distances from the alpha helix configurations to measure 
+the number of segments that have an alpha helical configuration. To do something 
+similar using this implementation you must use the LESS_THAN keyword. Furthermore, 
+based on reference \ref pietrucci09jctc we would recommend using the following
+switching function definition (SPLINE R_0=0.08 NN=8 MM=12) when your input file
+is in units of nm. 
 
 \par Examples
+
+The following input calculates the number of six residue segments of 
+protein that are in an alpha helical configuration.
+
+\verbatim
+MOLINFO STRUCTURE=helix.pdb
+ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(SPLINE R_0=0.08 NN=8 MM=12) LABEL=a
+\endverbatim
+(see also \ref MOLINFO)
 
 */
 //+ENDPLUMEDOC
