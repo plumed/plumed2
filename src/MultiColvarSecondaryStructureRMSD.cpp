@@ -32,8 +32,9 @@ void MultiColvarSecondaryStructureRMSD::setSecondaryStructure( std::vector<Vecto
      structure[i][0]*=units; structure[i][1]*=units; structure[i][2]*=units;
   }
 
-  int natoms; readAtoms(natoms);
-  requestDistribution();
+  if( secondary_drmsd.size()==0 && secondary_rmsd.size()==0 ){ 
+     int natoms; readAtoms(natoms); requestDistribution();
+  }
 
   // If we are in natural units get conversion factor from nm into natural length units
   if( plumed.getAtoms().usingNaturalUnits() ){
