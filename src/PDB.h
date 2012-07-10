@@ -43,8 +43,8 @@ public:
   bool getBackbone( const unsigned& resnumber, const std::vector<std::string>& backnames, std::vector<AtomNumber>& backnumbers ) const ;  
 /// Get the chain ID that a particular residue is a part of
   std::string getChainID(const unsigned& resnumber) const;
-/// Get the number of residues in the pdb file 
-  unsigned getNumberOfResidues() const;
+/// This allows you to give atoms a new name - this is used to rename the HB1 atoms in GLY residues CB so that alpharmsd works
+  void renameAtoms( const std::string& old_name, const std::string& new_name );
 };
 
 }

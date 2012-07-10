@@ -126,17 +126,20 @@ void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomN
 } 
 
 bool PDB::getBackbone( const unsigned& resnumber, const std::vector<std::string>& backnames, std::vector<AtomNumber>& backnumbers ) const {
-  backnumbers.resize(0); bool foundresidue=false; unsigned bno=0;
+  plumed_assert( backnames.size()==backnumbers.size() ); 
+  bool foundresidue=false; std::vector<bool> found( backnames.size(), false );
   for(unsigned i=0;i<size();++i){
      if( residue[i]==resnumber ){
          foundresidue=true;
-         if( backnames[bno]==atomsymb[i] ){
-             backnumbers.push_back( numbers[i] ); bno++;
+         for(unsigned bno=0;bno<backnames.size();++bno){
+            if( backnames[bno]==atomsymb[i] ){ backnumbers[bno]=numbers[i]; found[bno]=true; } 
          }
      }
   }
   if(!foundresidue){ return false; }
-  if( backnumbers.size()!=backnames.size() ){ return false; }
+  for(unsigned i=0;i<found.size();++i){
+      if( !found[i] ) return false;
+  }
   return true;
 }
 
@@ -147,13 +150,11 @@ std::string PDB::getChainID(const unsigned& resnumber) const {
   plumed_massert(0,"Not enough residues in pdb input file");
 }
 
-unsigned PDB::getNumberOfResidues() const {
-  unsigned nres=0;
+void PDB::renameAtoms( const std::string& old_name, const std::string& new_name ){
   for(unsigned i=0;i<size();++i){
-     if( residue[i]>nres ) nres=residue[i];
-  }
-  return nres;
-} 
+      if( atomsymb[i]==old_name ) atomsymb[i]=new_name;
+  } 
+}
 
 }
 

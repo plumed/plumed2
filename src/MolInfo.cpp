@@ -20,6 +20,9 @@ using this command you can find the backbone atoms in your structure automatical
 Please be aware that the pdb parser in plumed is far from perfect. You should thus check the log file
 and examine what plumed is actually doing whenenver you use the MOLINFO action.
 
+\bug At the moment all atoms named HA1 are treated as if they are CB atoms.  This makes it possible to deal
+with GLY residues in colvars like \ref ALPHARMSD. 
+
 \par Examples
 
 In the following example the MOLINFO command is used to provide the information on which atoms
@@ -77,6 +80,7 @@ ActionSetup(ao)
        log.printf("  chain named %s contains residues %d to %d and atoms %d to %d \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
     }
   }
+  pdb.renameAtoms("HA1","CB");  // This is a hack to make this work with GLY residues 
 }
 
 void MolInfo::getBackbone( std::vector<std::string>& restrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone ){
@@ -91,9 +95,14 @@ void MolInfo::getBackbone( std::vector<std::string>& restrings, const std::vecto
   } else {
       if( restrings.size()==1 ){
           if( restrings[0]=="all" ){
-              unsigned nres=pdb.getNumberOfResidues();
-              std::string nn; Tools::convert(nres,nn);
-              restrings[0] = "1-" + nn;
+              std::vector<std::string> chains; pdb.getChainNames( chains );
+              for(unsigned i=0;i<chains.size();++i){
+                  unsigned r_start, r_end; std::string errmsg, mm, nn;  
+                  pdb.getResidueRange( chains[i], r_start, r_end, errmsg );
+                  Tools::convert(r_start,mm); Tools::convert(r_end,nn);
+                  if(i==0) restrings[0] = mm + "-" + nn;
+                  else restrings.push_back(  mm + "-" + nn );
+              }
           }
       }
       Tools::interpretRanges(restrings);
@@ -114,11 +123,11 @@ void MolInfo::getBackbone( std::vector<std::string>& restrings, const std::vecto
       segments.push_back( thissegment );
 
       // And now get the backbone atoms from each segment
-      backbone.resize( segments.size() );
+      backbone.resize( segments.size() ); 
+      std::vector<AtomNumber> atomnumbers( atnames.size() );
       for(unsigned i=0;i<segments.size();++i){
           for(unsigned j=0;j<segments[i].size();++j){
               bool terminus=( j==0 || j==segments[i].size()-1 );
-              std::vector<AtomNumber> atomnumbers;
               bool foundatoms=pdb.getBackbone( segments[i][j], atnames, atomnumbers );
               if( terminus && !foundatoms ){
                   std::string num; Tools::convert( segments[i][j], num );

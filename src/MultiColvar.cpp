@@ -212,14 +212,14 @@ void MultiColvar::readAtoms( int& natoms ){
 }
 
 void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
-  plumed_massert( !readatoms, "I can only read atons using the BACKBONE keyword" );
-  plumed_massert( keywords.exists("BACKBONE"), "To read in the backbone atoms the keyword BACKBONE must be registered");
+  plumed_massert( !readatoms, "I can only read atons using the RESIDUES keyword" );
+  plumed_massert( keywords.exists("RESIDUES"), "To read in the backbone atoms the keyword RESIDUES must be registered");
   readatoms=true;
 
   std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
   if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
 
-  std::vector<std::string> resstrings; parseVector( "BACKBONE", resstrings );
+  std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
   std::vector< std::vector<AtomNumber> > backatoms; 
   moldat[0]->getBackbone( resstrings, backnames, backatoms );
 

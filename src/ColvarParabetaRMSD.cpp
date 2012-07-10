@@ -58,10 +58,10 @@ PLUMED_REGISTER_ACTION(ColvarParabetaRMSD,"PARABETARMSD")
 
 void ColvarParabetaRMSD::registerKeywords( Keywords& keys ){
   MultiColvarSecondaryStructureRMSD::registerKeywords( keys );
-  keys.add("compulsory","STYLE","all","Parallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
-                                      "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
-                                      "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
-                                      "only sheet-like configurations involving a single chain are counted");
+//  keys.add("compulsory","STYLE","all","Parallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
+//                                      "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
+//                                      "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
+//                                      "only sheet-like configurations involving a single chain are counted");
   keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart then the calculation "
                                        "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
                                        "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
@@ -78,17 +78,17 @@ s_cutoff(0)
   backnames[0]="N"; backnames[1]="CA"; backnames[2]="CB"; backnames[3]="C"; backnames[4]="O";
   readBackboneAtoms( backnames, chains );
 
-  bool intra_chain,inter_chain; 
-  std::string style; parse("STYLE",style);
-  if( style=="all" ){ 
-      intra_chain=true; inter_chain=true;
-  } else if( style=="inter"){
-      intra_chain=false; inter_chain=true;
-  } else if( style=="intra"){
-      intra_chain=true; inter_chain=false;
-  } else {
-      error( style + " is not a valid directive for the STYLE keyword");
-  }
+  bool intra_chain=true, inter_chain=false; 
+//  std::string style; parse("STYLE",style);
+//  if( style=="all" ){ 
+//      intra_chain=true; inter_chain=true;
+//  } else if( style=="inter"){
+//      intra_chain=false; inter_chain=true;
+//  } else if( style=="intra"){
+//      intra_chain=true; inter_chain=false;
+//  } else {
+//      error( style + " is not a valid directive for the STYLE keyword");
+//  }
 
   parse("STRANDS_CUTOFF",s_cutoff);
   if( s_cutoff>0) log.printf("  ignoring contributions from strands that are more than %f apart\n",s_cutoff);
@@ -113,27 +113,27 @@ s_cutoff(0)
     }
   }
   // This constructs all conceivable sections of antibeta sheet that form between chains
-  if( inter_chain ){
-      if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
-      unsigned iprev,jprev,inres,jnres; std::vector<unsigned> nlist(30);
-      for(unsigned ichain=1;ichain<chains.size();++ichain){
-         iprev=0; for(unsigned i=0;i<ichain;++i) iprev+=chains[i];
-         inres=chains[ichain]/5; plumed_assert( chains[ichain]%5==0 ); 
-         for(unsigned ires=0;ires<inres-2;++ires){
-            for(unsigned jchain=0;jchain<ichain;++jchain){
-                jprev=0; for(unsigned i=0;i<jchain;++i) jprev+=chains[i];
-                jnres=chains[jchain]/5; plumed_assert( chains[jchain]%5==0 );
-                for(unsigned jres=0;jres<jnres-2;++jres){
-                    for(unsigned k=0;k<15;++k){
-                       nlist[k]=iprev+ ires*5+k;
-                       nlist[k+15]=jprev+ jres*5+k;
-                    } 
-                    addColvar( nlist );
-                }
-            }
-         }
-      } 
-  }
+//  if( inter_chain ){
+//      if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
+//      unsigned iprev,jprev,inres,jnres; std::vector<unsigned> nlist(30);
+//      for(unsigned ichain=1;ichain<chains.size();++ichain){
+//         iprev=0; for(unsigned i=0;i<ichain;++i) iprev+=chains[i];
+//         inres=chains[ichain]/5; plumed_assert( chains[ichain]%5==0 ); 
+//         for(unsigned ires=0;ires<inres-2;++ires){
+//            for(unsigned jchain=0;jchain<ichain;++jchain){
+//                jprev=0; for(unsigned i=0;i<jchain;++i) jprev+=chains[i];
+//                jnres=chains[jchain]/5; plumed_assert( chains[jchain]%5==0 );
+//                for(unsigned jres=0;jres<jnres-2;++jres){
+//                    for(unsigned k=0;k<15;++k){
+//                       nlist[k]=iprev+ ires*5+k;
+//                       nlist[k+15]=jprev+ jres*5+k;
+//                    } 
+//                    addColvar( nlist );
+//                }
+//            }
+//         }
+//      } 
+//  }
 
   // Build the reference structure ( in angstroms )
   std::vector<Vector> reference(30);
