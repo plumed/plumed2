@@ -63,7 +63,7 @@ usepbc(true),
 readatoms(false),
 needsCentralAtomPosition(false)
 {
-  if( keywords.style("NOPBC", "flag") ){ 
+  if( keywords.exists("NOPBC") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
     usepbc=!nopbc;
   }

@@ -5,6 +5,9 @@
 #include "AtomNumber.h"
 #include "Tools.h"
 #include "Atoms.h"
+#include "PlumedMain.h"
+#include "ActionSet.h"
+#include "MolInfo.h"
 
 #include <vector>
 #include <string>
@@ -40,6 +43,15 @@ at every step of the calculation.
 WHOLEMOLECULES STRIDE=1 MOLECULE=1-20
 \endverbatim
 
+This command instructs plumed to reconstruct the chain of backbone atoms in a 
+protein
+
+\verbatim
+MOLINFO REFERENCE=helix.pdb
+WHOLEMOLECULES STRIDE=1 RESIDUES=ALL RES_ATOMS=N,CA,CB,C,O
+\endverbatim
+(See also \ref MOLINFO)
+
 */
 //+ENDPLUMEDOC
 
@@ -64,6 +76,11 @@ void GenericWholeMolecules::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY1, ENTITY2,...");
   keys.reset_style("ENTITY","atoms");
+  keys.add("atoms","RESIDUES","this command specifies a set of residues which all must be aligned. It must be used in tandem with the \\ref MOLINFO "
+                              "action and the RES_ATOMS keyword. If you wish to use all the residues from all the chains in your system you can do so by "
+                              "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
+                              "you are interested in as a list of numbers"); 
+  keys.add("optional","RES_ATOMS","this command tells plumed what atoms should be aligned in each of the residues that are being aligned");
 }
 
 inline
@@ -87,6 +104,25 @@ ActionAtomistic(ao)
     groups.push_back(group);
     merge.insert(merge.end(),group.begin(),group.end());
   }
+
+  // Read residues to align from MOLINFO
+  vector<string> resstrings; parseVector("RESIDUES",resstrings);
+  if( resstrings.size()>0 ){
+      vector<string> backnames; parseVector("RES_ATOMS",backnames);
+      if(backnames.size()==0) error("Found RESIDUES keyword without any specification of the atoms that should be in a residue - use RES_ATOMS");
+      std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
+      if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
+      std::vector< std::vector<AtomNumber> > backatoms;
+      moldat[0]->getBackbone( resstrings, backnames, backatoms );
+      for(unsigned i=0;i<backatoms.size();++i){
+          log.printf("  atoms in entity %d : ", groups.size()+1 );
+          for(unsigned j=0;j<backatoms[i].size();++j) log.printf("%d ",backatoms[i][j].serial() );
+          log.printf("\n");
+          groups.push_back( backatoms[i] );
+          merge.insert(merge.end(),backatoms[i].begin(),backatoms[i].end()); 
+      }
+  }
+
   checkRead();
   Tools::removeDuplicates(merge);
   requestAtoms(merge);

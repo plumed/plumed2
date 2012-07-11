@@ -6,7 +6,7 @@ using namespace PLMD;
 
 void ActionWithDistribution::registerKeywords(Keywords& keys){
   keys.add("optional","TOL","when accumulating sums quantities that contribute less than this will be ignored.");
-  keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities that contributed less than NL_TOL at the previous neighbor list update step are ignored.");
+  keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities that contributed less than TOL at the previous neighbor list update step are ignored.");
 }
 
 void ActionWithDistribution::autoParallelize(Keywords& keys){
@@ -33,7 +33,9 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   if(updateFreq>0){
     log.printf("  Updating contributors every %d steps. Ignoring contributions less than %lf\n",updateFreq,tolerance);
   } else {
-    log.printf("  Updating contributors every step.  ignoring contributions less than %lf\n",tolerance);
+    log.printf("  Updating contributors every step.");
+    if( tolerance>0) log.printf(" Ignoring contributions less than %lf\n",tolerance);
+    else log.printf("\n");
   }
 }
 

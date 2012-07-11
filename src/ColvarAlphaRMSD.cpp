@@ -17,13 +17,17 @@ aligning the instantaneous structure with the reference structure and measuring 
 atomic displacement or by calculating differences between the set of interatomic
 distances in the reference and instantaneous structures. 
 
-This colvar is based on the following reference \ref pietrucci09jctc.  The authors of 
+This colvar is based on the following reference \cite pietrucci09jctc.  The authors of 
 this paper use the set of distances from the alpha helix configurations to measure 
 the number of segments that have an alpha helical configuration. To do something 
 similar using this implementation you must use the LESS_THAN keyword. Furthermore, 
-based on reference \ref pietrucci09jctc we would recommend using the following
+based on reference \cite pietrucci09jctc we would recommend using the following
 switching function definition (SPLINE R_0=0.08 NN=8 MM=12) when your input file
 is in units of nm. 
+
+Please be aware that for codes like gromacs you must ensure that plumed 
+reconstructs the chains involved in your CV when you calculate this CV. 
+For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 
