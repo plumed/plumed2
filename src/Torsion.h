@@ -18,7 +18,7 @@ namespace PLMD{
 class Torsion{
 // still empty, but may accomodate some options in the future
 public:
-/// Compute the angle between the porjections of v1 and v3 on the plane orthogonal
+/// Compute the angle between the projections of v1 and v3 on the plane orthogonal
 /// to v2. To have a "normal" definition (= plumed1), use it as
 /// compute(r01,r12,r23);
 /// See ColvarTorsion for a practical usage...

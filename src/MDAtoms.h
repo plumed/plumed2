@@ -18,7 +18,7 @@ ordering indexes (to deal with domain decomposition codes) and layout
 
 The class is abstract, but it is possible to allocate a new pointer with
 create(n), where n is the actual size of MD-reals e.g.
-\verbatin
+\verbatim
   MDAtomsBase mdatoms=MDAtomsBase::create(sizeof(float));
 // ...
   delete mdatoms;
