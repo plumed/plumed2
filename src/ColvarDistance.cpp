@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC COLVAR DISTANCE
-/**
+/*
 Calculate the distance between a pair of atoms.
 
 \par Examples

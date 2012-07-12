@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC ANALYSIS DUMPDERIVATIVES
-/**
+/*
 Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).
 
 For a CV this line in input instructs plumed to print the derivative of the CV with respect to the atom positions 

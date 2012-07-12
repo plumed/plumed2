@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC BIAS ABMD 
-/**
+/*
 Adds a ratchet-and-pawl like restraint on one or more variables.
 
 This action can be used to evolve a system towards a target value in

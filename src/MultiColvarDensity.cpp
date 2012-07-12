@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC MCOLVAR DENSITY
-/**
+/*
 Calculate functions of the density of atoms as a function of the box.  This allows one to calculate
 density gradients, number of atoms in half the box and so on.
 

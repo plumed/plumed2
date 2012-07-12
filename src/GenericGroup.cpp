@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC GENERIC GROUP
-/**
+/*
 Define a group of atoms so that a particular list of atoms can be referenced with a single label
 in definitions of CVs or virtual atoms.
 

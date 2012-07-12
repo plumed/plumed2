@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC FUNCTION COMBINE
-/**
+/*
 Calculate a polynomial combination of a set of other variables
 
 \par Examples

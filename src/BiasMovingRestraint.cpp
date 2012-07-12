@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC BIAS MOVINGRESTRAINT
-/**
+/*
 Add a time-dependent, harmonic restraint on one or more variables, this form
 of bias can be used to performed steered MD and Jarzynski sampling \cite jarzynski.
 

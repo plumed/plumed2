@@ -8,7 +8,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC GENERIC DEBUG
-/**
+/*
   Set some debug options
 
 \par syntax

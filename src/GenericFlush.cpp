@@ -8,7 +8,7 @@ namespace PLMD{
 using namespace std;
 
 //+PLUMEDOC GENERIC FLUSH
-/**
+/*
 This command instructs plumed to flush all the open files with a user specified frequency.  This
 is useful for preventing data loss that would otherwise arrise as a consequence of the code
 storing data for printing in the buffers

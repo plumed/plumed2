@@ -12,7 +12,7 @@ using namespace std;
 namespace PLMD {
 
 //+PLUMEDOC COLVAR CONTACTMAP
-/**
+/*
 Calculate the distances between a number of pairs of atoms and transform each distance by a switching function.
 
 \par Examples

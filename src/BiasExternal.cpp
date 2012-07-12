@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC BIAS EXTERNAL 
-/**
+/*
 Calculate a restraint that is defined on a grid that is read during start up
 
 \par Examples

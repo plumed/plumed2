@@ -8,7 +8,7 @@
 namespace PLMD {
 
 //+PLUMEDOC BIAS FIELD_METAD 
-/**
+/*
 Field metadynamics is a method for enhancing sampling, which, much like conventional
 metadynamcis, generates a bias based on the history of visited configurations.  However,
 unlike metadynamics, for which the instantaneous state of the system is represented using

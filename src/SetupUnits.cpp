@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC GENERIC UNITS
-/**
+/*
 This command sets the internal units for the code.  A new unit can be set by either
 specifying how to convert from the plumed default unit into that new unit or by using
 the shortcuts described below.  This directive MUST appear at the BEGINNING of the 

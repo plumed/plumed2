@@ -12,7 +12,7 @@ namespace PLMD{
 
 
 //+PLUMEDOC FUNCTION MATHEVAL
-/**
+/*
 Calculate a combination of variables using a matheval expression.
 
 \par Examples
