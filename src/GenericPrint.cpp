@@ -7,7 +7,7 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC GENERIC PRINT
+//+PLUMEDOC ANALYSIS PRINT
 /*
 Print quantities to a file.
 
