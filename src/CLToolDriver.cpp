@@ -3,6 +3,7 @@
 #include "Tools.h"
 #include "Plumed.h"
 #include "PlumedCommunicator.h"
+#include "Random.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -48,6 +49,8 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
  unsigned stride(1);
  bool printhelp=false;
  bool printhelpdebug=false;
+ bool debug_dd=false;
+ bool debug_pd=false;
 
 // Start parsing options
   string prefix("");
@@ -69,6 +72,10 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
         delete cl;
         return ret;
       }
+    } else if(a=="--debug-pd"){
+      debug_pd=true;
+    } else if(a=="--debug-dd"){
+      debug_dd=true;
     } else if(a.find("--plumed=")==0){
       a.erase(0,a.find("=")+1);
       plumedFile=a;
@@ -130,10 +137,15 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
     fprintf(out,"%s",
  "Additional options for debug (only to be used in regtest):\n"
  "  [--debug-float]         : turns on the single precision version (to check float interface)\n"
+ "  [--debug-dd]            : use a fake domain decomposition\n"
+ "  [--debug-pd]            : use a fake particle decomposition\n"
 );
     return 0;
   }
 
+  if(debug_dd) plumed_merror("debug_dd not yet implemented");
+  plumed_massert(!(debug_dd&debug_pd),"cannot use debug-dd and debug-pd at the same time");
+  if(debug_pd) plumed_massert(PlumedCommunicator::initialized(),"needs mpi for debug-pd");
 
   if(trajectoryFile.length()==0){
     string msg="ERROR: please specify a trajectory";
@@ -167,10 +179,17 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
   std::vector<real> cell;
   std::vector<real> virial;
 
+// variables to test particle decomposition
+  int pd_nlocal;
+  int pd_start;
+// random stream to choose decompositions
+  Random rnd;
+
   while(Tools::getline(fp,line)){
 
     int natoms;
     bool ok;
+    bool first_step=false;
     sscanf(line.c_str(),"%d",&natoms);
     if(checknatoms==0){
       checknatoms=natoms;
@@ -181,6 +200,9 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
       p.cmd("setPlumedDat",plumedFile.c_str());
       p.cmd("setLog",out);
       p.cmd("init");
+      pd_nlocal=natoms;
+      pd_start=0;
+      first_step=true;
     }
     plumed_massert(checknatoms==natoms,"number of atom changed");
 
@@ -189,6 +211,30 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
     masses.assign(natoms,real(1.0));
     cell.assign(9,real(0.0));
     virial.assign(9,real(0.0));
+
+    if(debug_pd && ( first_step || rnd.U01()>0.5)){
+      int npe=pc.Get_size();
+      vector<int> loc(npe,0);
+      vector<int> start(npe,0);
+      for(int i=0;i<npe-1;i++){
+        int cc=(natoms*2*rnd.U01())/npe;
+        if(start[i]+cc>natoms) cc=natoms-start[i];
+        loc[i]=cc;
+        start[i+1]=start[i]+loc[i];
+      }
+      loc[npe-1]=natoms-start[npe-1];
+      pc.Bcast(&loc[0],npe,0);
+      pc.Bcast(&start[0],npe,0);
+      pd_nlocal=loc[pc.Get_rank()];
+      pd_start=start[pc.Get_rank()];
+      if(pc.Get_rank()==0){
+        fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
+        fprintf(out,"DRIVER: "); for(int i=0;i<npe;i++) fprintf(out,"%d ",loc[i]); printf("\n");
+        fprintf(out,"DRIVER: "); for(int i=0;i<npe;i++) fprintf(out,"%d ",start[i]); printf("\n");
+      }
+      p.cmd("setAtomsNlocal",&pd_nlocal);
+      p.cmd("setAtomsContiguous",&pd_start);
+    }
 
     ok=Tools::getline(fp,line);
     plumed_massert(ok,"premature end of file");
@@ -211,14 +257,16 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
       char dummy[1000];
       double cc[3];
       std::sscanf(line.c_str(),"%s %lf %lf %lf",dummy,&cc[0],&cc[1],&cc[2]);
-      coordinates[3*i]=real(cc[0]);
-      coordinates[3*i+1]=real(cc[1]);
-      coordinates[3*i+2]=real(cc[2]);
+      if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ){
+        coordinates[3*i]=real(cc[0]);
+        coordinates[3*i+1]=real(cc[1]);
+        coordinates[3*i+2]=real(cc[2]);
+      }
     }
 
-   p.cmd("setForces",&forces[0]);
-   p.cmd("setPositions",&coordinates[0]);
-   p.cmd("setMasses",&masses[0]);
+   p.cmd("setForces",&forces[3*pd_start]);
+   p.cmd("setPositions",&coordinates[3*pd_start]);
+   p.cmd("setMasses",&masses[3*pd_start]);
    p.cmd("setBox",&cell[0]);
    p.cmd("setVirial",&virial[0]);
    p.cmd("setStep",&step);
@@ -226,6 +274,7 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
 
 // this is necessary as only processor zero is adding to the virial:
    pc.Bcast(&virial[0],9,0);
+   if(debug_pd) pc.Sum(&forces[0],natoms*3);
 
    if(fp_forces){
      fprintf(fp_forces,"%d\n",natoms);
