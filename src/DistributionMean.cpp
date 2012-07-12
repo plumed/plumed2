@@ -19,41 +19,45 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DistributionFunctions.h"
+#include "FunctionVessel.h"
+#include "MultiColvar.h"
 
 namespace PLMD {
 
-mean::mean( const std::string& parameters ) :
-DistributionFunction(parameters)
+class mean : public NormedSumVessel {
+private:
+  MultiColvar* mycolv;
+public:
+  static void reserveKeyword( Keywords& keys );
+  mean( const VesselOptions& da );
+  void getWeight( const unsigned& i, Value& weight );
+  void compute( const unsigned& i, const unsigned& j, Value& theval );
+};
+
+PLUMED_REGISTER_VESSEL(mean,"AVERAGE")
+
+void mean::reserveKeyword( Keywords& keys ){
+  keys.reserveFlag("AVERAGE",false,"take the average value of these variables and store it in value called average.");
+}
+
+mean::mean( const VesselOptions& da ) :
+NormedSumVessel(da)
 {
-  Tools::convert(parameters,nval); 
-  addAccumulator( true );
-  addAccumulator( false );
+  mycolv=dynamic_cast<MultiColvar*>( getAction() );
+  plumed_massert( mycolv, "average is used to take the average values of multi colvars");
+
+  useNorm();
+  addOutput("average");
+  log.printf("  value %s.average contains the average value\n",(getAction()->getLabel()).c_str());
 }
 
-std::string mean::message(){
-  std::ostringstream ostr;
-  ostr<<"the average value"; 
-  return ostr.str();
+void mean::compute( const unsigned& i, const unsigned& j, Value& theval ){
+  plumed_assert( j==0 );
+  mycolv->retreiveLastCalculatedValue( theval ); 
 }
 
-void mean::printKeywords( Log& log ){
-  plumed_massert( 0, "it should be impossible to get here");
-}
-
-std::string mean::getLabel(){
-  return "average";
-}
-
-void mean::calculate( Value* value_in, std::vector<Value>& aux ){
-  copyValue( 0, value_in ); 
-  setValue( 1, 1.0 );
-}
-
-void mean::finish( Value* value_out ){
-  if ( getPntrToAccumulator(1)->get()!=nval ) printf("WARNING: A neighbor list is causing discontinuities in an average");
-  extractDerivatives( 0, value_out );
-  value_out->chainRule(1.0/nval); value_out->set(getPntrToAccumulator(0)->get()/nval); 
+void mean::getWeight( const unsigned& i, Value& weight ){
+  mycolv->retrieveColvarWeight( i, weight );
 }
 
 }

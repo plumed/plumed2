@@ -25,6 +25,7 @@
 #include "Action.h"
 #include "Value.h"
 #include "PlumedException.h"
+#include "VesselValueAccess.h"
 #include <vector>
 
 namespace PLMD{
@@ -65,7 +66,8 @@ PLMD::Action you should use <b> the routines with the word component in the name
 class ActionWithValue : 
   public virtual Action
 {
-friend class ActionWithDistribution;
+friend class VesselAccumulator;
+friend class moment;
 private:
 /// An array containing the values for this action
   std::vector<Value*> values;

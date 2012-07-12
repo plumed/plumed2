@@ -184,13 +184,18 @@ private:
   bool usepbc;
   bool readatoms;
   bool needsCentralAtomPosition;
-/// Constants for fields
-  double fsigma2, fnorm;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
 /// The lists of the atoms involved in each of the individual colvars
 /// note these refer to the atoms in all_atoms
   std::vector< DynamicList<unsigned> > colvar_atoms;
+/// These are used to store the values of CVs etc so they can be retrieved by distribution
+/// functions
+  Tensor vir;
+  std::vector<Vector> der;
+  std::vector<Tensor> central_derivs;
+  Value thisval;
+  std::vector<Value> catom_pos;
 /// Used to make sure we update the correct atoms during neighbor list update
   unsigned current;
 /// Read in ATOMS keyword
@@ -223,32 +228,36 @@ public:
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Return the number of Colvars this is calculating
-  unsigned getNumberOfFunctionsInDistribution();  
+  unsigned getNumberOfFunctionsInAction();  
 /// Return the number of derivatives for a given colvar
-  unsigned getThisFunctionsNumberOfDerivatives( const unsigned& j ); 
+  unsigned getNumberOfDerivatives( const unsigned& j );
+/// Retrieve the value that was calculated last
+  void retreiveLastCalculatedValue( Value& myvalue );
+/// Retrieve the position of the central atom
+  void retrieveCentralAtomPos( std::vector<Value>& cpos ) const ;
+/// Make sure we calculate the position of the central atom
+  void useCentralAtom();
+/// Get the weight of the colvar
+  virtual void retrieveColvarWeight( const unsigned& i, Value& ww );
 /// Expand the lists of atoms so we get them all when it is time to update the neighbor lists
   void prepareForNeighborListUpdate();
 /// Contract the lists of atoms once we have finished updating the neighbor lists so we only get
 /// the required subset of atoms 
   void completeNeighborListUpdate();
 /// Merge the derivatives 
-  void mergeDerivatives( const unsigned j, Value* value_in, Value* value_out );
+  void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value& value_out );
 /// Turn of atom requests when this colvar is deactivated cos its small
   void deactivateValue( const unsigned j );
 /// Calcualte the colvar
-  void calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux );
+  bool calculateThisFunction( const unsigned& j );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
-  virtual bool contributionIsSmall( std::vector<Vector>& pos ){ return false; }
+  virtual bool contributionIsSmall( std::vector<Vector>& pos ){ plumed_assert( !isPossibleToSkip() ); return false; }
 /// And a virtual function which actually computes the colvar
   virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0; 
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
   virtual void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ); 
-/// Setup everything that needs to be setup for field cvs
-  virtual void derivedFieldSetup( const double sigma );
-/// Calculate the contribution to the field at the point thisp
-  virtual void calculateFieldContribution( const unsigned& j, const std::vector<double>& thisp, Value* tmpvalue, Value& tmpstress, std::vector<Value>& tmpder );
-/// Merge the derivatives of the bias wrt to the field
-  virtual void mergeFieldDerivatives( const std::vector<double>& der, Value* value_out );
+/// Is this a density?
+  virtual bool isDensity(){ return false; }
 };
 
 inline
@@ -257,7 +266,7 @@ unsigned MultiColvar::getNumberOfDerivatives(){
 } 
 
 inline
-unsigned MultiColvar::getNumberOfFunctionsInDistribution(){
+unsigned MultiColvar::getNumberOfFunctionsInAction(){
   return colvar_atoms.size();
 }
 
@@ -267,7 +276,12 @@ void MultiColvar::deactivateValue( const unsigned j ){
 }
 
 inline
-unsigned MultiColvar::getThisFunctionsNumberOfDerivatives( const unsigned& j ){
+void MultiColvar::retreiveLastCalculatedValue( Value& myvalue ){
+  copy( thisval, myvalue );  
+}
+
+inline
+unsigned MultiColvar::getNumberOfDerivatives( const unsigned& j ){
   return 3*colvar_atoms[j].getNumberActive() + 9;
 }
 

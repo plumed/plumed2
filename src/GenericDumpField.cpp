@@ -24,7 +24,7 @@
 #include "ActionWithDistribution.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "Field.h"
+#include "FieldVessel.h"
 #include "Grid.h"
 
 namespace PLMD {
@@ -55,7 +55,7 @@ public ActionPilot
 private:
   int fnum;
   double norm;
-  Field* myfield;
+  FieldVessel* myfield;
   std::vector<unsigned> ngrid;
   std::string fbase;
 public:
@@ -86,15 +86,21 @@ ActionPilot(ao)
 
   // Find the field we are using
   std::string ll; parse("FIELD",ll);
-  ActionWithDistribution* field=plumed.getActionSet().selectWithLabel<ActionWithDistribution*>(ll);
-  if(!field) error("cannot find action named " + ll);
-  myfield=field->getField();
-  if(!myfield) error("action " + ll + " calculates a colvar and not a field");
+  std::size_t dot=ll.find_first_of('.');
+  std::string actionname=ll.substr(0,dot), vesselname=ll.substr(dot+1);
+  ActionWithDistribution* field=plumed.getActionSet().selectWithLabel<ActionWithDistribution*>(actionname);
+  if(!field) error("cannot find action named " + actionname);
+  Vessel* myves=field->getVessel( vesselname );
+  myfield=dynamic_cast<FieldVessel*>( myves );
+  if(!myfield) error("action " + actionname + " contains no field named " + vesselname);
   addDependency(field);
 
   ngrid.resize( myfield->get_Ndx() ); 
   parseVector("NGRID",ngrid);
-  if( ngrid.size()==0 ){ ngrid.resize( myfield->get_Ndx() ); myfield->get_nspline( ngrid ); }
+  if( ngrid.size()==0 ){ 
+     ngrid.resize( myfield->get_Ndx() ); 
+     for(unsigned i=0;i<ngrid.size();++i) ngrid[i]=myfield->get_nspline()[i];
+  }
   if( ngrid.size()!=myfield->get_Ndx() ) error("grid size is wrong");
   unsigned nn; parse("NORM",nn); norm=static_cast<double>(nn);
 
@@ -108,8 +114,7 @@ ActionPilot(ao)
 }
 
 void GenericDumpField::update(){
-  std::vector<double> min, max; myfield->retrieveBoundaries( min, max );
-  plumed_assert( min.size()==ngrid.size() && max.size()==ngrid.size() );
+  std::vector<double> min( myfield->get_min() ), max( myfield->get_max() ); 
   std::vector<bool> pbc(min.size(), false ); 
   Grid gg( min, max, ngrid, pbc, false, false );
 

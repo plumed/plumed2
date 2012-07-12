@@ -57,10 +57,11 @@ void ActionRegister::add(string key,creator_pointer f,keywords_pointer k){
   }else{
     m.insert(pair<string,creator_pointer>(key,f));
     // Create keywords using a function pointer
-    Keywords kk; k(kk);
-    // Store array of keywords inside an associative array 
-    // we can then find them using the keyword
-    mk.insert(pair<string,Keywords>(key,kk));
+    // Keywords kk; k(kk);
+    // // Store array of keywords inside an associative array 
+    // // we can then find them using the keyword
+    // Store a pointer to the function that creates keywords
+    mk.insert(pair<string,keywords_pointer>(key,k));
   };
 }
 
@@ -71,7 +72,8 @@ bool ActionRegister::check(string key){
 
 Action* ActionRegister::create(const ActionOptions&ao){
   if(ao.line.size()<1)return NULL;
-  Action* action; ActionOptions nao( ao,mk[ao.line[0]] );
+  Keywords keys; mk[ao.line[0]](keys);
+  Action* action; ActionOptions nao( ao,keys );
   if(check(ao.line[0])) action=m[ao.line[0]](nao);
   else action=NULL;
   return action;
@@ -79,7 +81,7 @@ Action* ActionRegister::create(const ActionOptions&ao){
 
 bool ActionRegister::printManual( const std::string& action ){
   if ( check(action) ){
-     mk[action].print_html();
+     Keywords keys; mk[action](keys); keys.print_html();
      return true;
   } else {
      return false;

@@ -19,58 +19,58 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DistributionFunctions.h"
-#include "Keywords.h"
+
+#include "FunctionVessel.h"
+#include "ActionWithDistribution.h"
 
 namespace PLMD {
 
-std::string min::documentation(){
-  std::ostringstream ostr;
-  ostr<<"To make this quantity continuous the minimum is calculated using ";
-  ostr<<"\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ ";
-  ostr<<"The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)";
-  return ostr.str();
+class min : public SumVessel {
+private:
+  double beta;
+public:
+  static void reserveKeyword( Keywords& keys );
+  min( const VesselOptions& da );
+  double compute( const unsigned& i, const double& val, double& df );
+  double final_computations( const unsigned& i, const double& valin, double& df );
+  void printKeywords();
+};
+
+PLUMED_REGISTER_VESSEL(min,"MIN")
+
+void min::reserveKeyword( Keywords& keys ){
+  keys.reserve("optional","MIN","calculate the minimum value and store it in a value called min. "
+                                "To make this quantity continuous the minimum is calculated using "
+                                "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
+                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
 }
 
-min::min( const std::string& parameters ) :
-DistributionFunction(parameters)
+min::min( const VesselOptions& da ) :
+SumVessel(da)
 {
-  std::vector<std::string> data=Tools::getWords(parameters);
+  std::vector<std::string> data=Tools::getWords(da.parameters);
   if( data.size()!=1 ){ error("There should only be a value for beta in the input to MIN"); return; }
   bool found_beta=Tools::parse(data,"BETA",beta);
   if (!found_beta){ error("No value for BETA specified in call to MIN"); return; } 
-  addAccumulator( true );
+
+  addOutput("min");
+  log.printf("  value %s.min contains the minimum value. beta is equal to %f\n",(getAction()->getLabel()).c_str(),beta);
 }
 
-std::string min::message(){
-  std::ostringstream ostr;
-  ostr<<"the minimum value. beta is equal to "<<beta; 
-  return ostr.str();
-}
-
-void min::printKeywords( Log& log ){
+void min::printKeywords(){
   Keywords mkeys; 
   mkeys.add("compulsory","BETA","the value of beta for the equation in the manual");
   mkeys.print(log);
 }
 
-std::string min::getLabel(){
-  return "min";
+double min::compute( const unsigned& i, const double& val, double& df ){
+  double f; f=exp( beta/val ); df=f/(val*val);
+  return f;
 }
 
-void min::calculate( Value* value_in, std::vector<Value>& aux ){
-  copyValue( 0, value_in );
-  double p, df, tmp; p=value_in->get();
-  tmp=exp( beta/p ); df=tmp/(p*p); 
-  chainRule( 0, df ); setValue( 0, tmp ); 
-}
-
-void min::finish( Value* value_out ){
-  double a=getPntrToAccumulator(0)->get();
-  if( a==0 ) plumed_massert(0,"Error in calculating minimum.  There is probably an NL_CUTOFF in your input that is too small");
-  extractDerivatives( 0, value_out );
-  double df, dist=beta/std::log( a ); df=dist*dist/a;
-  value_out->chainRule(df); value_out->set(dist);
+double min::final_computations( const unsigned& i, const double& valin, double& df ){
+  double dist; dist=beta/std::log( valin ); df=dist*dist/valin;
+  return dist;
 }
 
 }

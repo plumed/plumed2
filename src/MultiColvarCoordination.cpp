@@ -22,6 +22,7 @@
 #include "MultiColvar.h"
 #include "NeighborList.h"
 #include "ActionRegister.h"
+#include "SwitchingFunction.h"
 
 #include <string>
 #include <cmath>
@@ -83,8 +84,9 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   keys.add("optional","MM","The m parameter of the switching function ");
   keys.add("optional","D_0","The d_0 parameter of the switching function");
   keys.add("optional","R_0","The r_0 parameter of the switching function");
-  keys.remove("AVERAGE");
-  // Use density keywords
+  // Use actionWithDistributionKeywords
+  keys.use("AVERAGE"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
+  keys.use("MIN"); keys.use("WITHIN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.use("SUBCELL"); keys.use("GRADIENT"); keys.use("DISTRIBUTION");
 }
 
@@ -118,7 +120,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 unsigned MultiColvarCoordination::getNumberOfFieldDerivatives(){
-  return getNumberOfFunctionsInDistribution();
+  return getNumberOfFunctionsInAction();
 } 
 
 double MultiColvarCoordination::compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){

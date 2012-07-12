@@ -19,51 +19,48 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DistributionFunctions.h"
+
+#include "FunctionVessel.h"
+#include "SwitchingFunction.h"
+#include "ActionWithDistribution.h"
 
 namespace PLMD {
 
-std::string less_than::documentation(){
-  std::ostringstream ostr;
-  ostr<<SwitchingFunction::documentation();
-  return ostr.str();
+class less_than : public SumVessel {
+private:
+  SwitchingFunction sf;
+public:
+  static void reserveKeyword( Keywords& keys ); 
+  less_than( const VesselOptions& da );
+  double compute( const unsigned& i, const double& val, double& df ); 
+  void printKeywords( Log& log );
+};
+
+PLUMED_REGISTER_VESSEL(less_than,"LESS_THAN")
+
+void less_than::reserveKeyword( Keywords& keys ){
+  keys.reserve("optional","LESS_THAN", "take the number of variables less than the specified target and "
+                                       "store it in a value called lt<target>. " + SwitchingFunction::documentation() );
 }
 
-less_than::less_than( const std::string& parameters ) :
-DistributionFunction(parameters)
+less_than::less_than( const VesselOptions& da ) :
+SumVessel(da)
 {
-  std::string errormsg;
-  sf.set( parameters, errormsg ); 
+  std::string errormsg; sf.set( da.parameters, errormsg ); 
   if( errormsg.size()!=0 ) error( errormsg ); 
-  addAccumulator( true );
-}
-
-std::string less_than::message(){
-  std::ostringstream ostr;
-  ostr<<"number of values less than "<<sf.description();
-  return ostr.str();
+  std::string vv; Tools::convert( sf.get_r0(), vv );
+  addOutput("lt" + vv);
+  log.printf("  value %s.lt%s contains number of values less than %s\n",(getAction()->getLabel()).c_str(),vv.c_str(),(sf.description()).c_str() );
 }
 
 void less_than::printKeywords( Log& log ){
   sf.printKeywords( log );
 }
 
-std::string less_than::getLabel(){
-  std::string vv;
-  Tools::convert( sf.get_r0(), vv );
-  return "lt" + vv;
-}
-
-void less_than::calculate( Value* value_in, std::vector<Value>& aux ){
-  copyValue( 0, value_in );
-  double p, df, f; p=value_in->get(); 
-  f=sf.calculate(p, df); df*=p;
-  chainRule( 0, df ); setValue( 0, f );
-}
-
-void less_than::finish( Value* value_out ){
-  extractDerivatives( 0, value_out );
-  value_out->set( getPntrToAccumulator(0)->get() );
+double less_than::compute( const unsigned& i, const double& val, double& df ){
+  plumed_assert( i==0 );
+  double f; f = sf.calculate(val, df); df*=val;
+  return f;
 }
 
 }

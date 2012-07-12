@@ -56,7 +56,7 @@ class ActionRegister{
 /// Iterator over the map
   typedef std::map<std::string,creator_pointer>::const_iterator const_mIterator;
 /// Map action to a function which documents the related object
-  std::map<std::string,Keywords> mk;
+  std::map<std::string,keywords_pointer> mk;
 /// Iterator over the map
   typedef std::map<std::string,Keywords>::iterator mIteratork;
 /// Iterator over the map

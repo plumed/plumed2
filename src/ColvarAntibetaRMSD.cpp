@@ -73,6 +73,7 @@ public:
   static void registerKeywords( Keywords& keys );
   ColvarAntibetaRMSD(const ActionOptions&);
   bool contributionIsSmall( std::vector<Vector>& pos );
+  bool isPossibleToSkip();
 }; 
 
 PLUMED_REGISTER_ACTION(ColvarAntibetaRMSD,"ANTIBETARMSD")
@@ -190,6 +191,11 @@ s_cutoff(0)
 
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().length, 0.1/atoms.getUnits().length ); 
+}
+
+bool ColvarAntibetaRMSD::isPossibleToSkip(){
+  if(s_cutoff!=0) return true;
+  return false;
 }
 
 bool ColvarAntibetaRMSD::contributionIsSmall( std::vector<Vector>& pos ){

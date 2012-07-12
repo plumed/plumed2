@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Keywords.h"
-#include "DistributionFunctions.h"
 #include "Log.h"
 #include <iostream>
 
@@ -35,90 +34,137 @@ KeyType::KeyType( const std::string& type ){
       style=optional;
   } else if( type=="atoms" ){
       style=atoms;
-  } else if( type=="nohtml" ){
-      style=nohtml;
   } else if( type=="hidden" ){
       style=hidden;
   } else {
-      plumed_assert(false);    // Invalid keyword specifier
+      plumed_massert(false,"invalid keyword specifier " + type);   
   }
 }
 
+void KeyType::setStyle( const std::string& type ){
+  if( type=="compulsory" ){
+      style=compulsory;
+  } else if( type=="flag" ){
+      style=flag;
+  } else if( type=="optional" ){
+      style=optional;
+  } else if( type=="atoms" ){
+      style=atoms;
+  } else if( type=="hidden" ){
+      style=hidden;
+  } else {
+      plumed_massert(false,"invalid keyword specifier " + type);    
+  }  
+}
+
+void Keywords::add( const Keywords& newkeys ){
+  newkeys.copyData( keys, reserved_keys, types, allowmultiple, documentation, booldefs, numdefs  ); 
+}
+
+void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am, 
+                         std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums ) const {
+  for(unsigned i=0;i<keys.size();++i){
+     std::string thiskey=keys[i];
+     for(unsigned j=0;j<kk.size();++j) plumed_massert( thiskey!=kk[j], "keyword " + thiskey + " is in twice" );
+     for(unsigned j=0;j<rk.size();++j) plumed_massert( thiskey!=rk[j], "keyword " + thiskey + " is in twice" );
+     kk.push_back( thiskey ); 
+     plumed_massert( types.count( thiskey ), "no type data on keyword " + thiskey + " to copy" );
+     tt.insert( std::pair<std::string,KeyType>( thiskey,types.find(thiskey)->second) );
+     plumed_massert( allowmultiple.count( thiskey ), "no numbered data on keyword " + thiskey + " to copy" ); 
+     am.insert( std::pair<std::string,bool>(thiskey,allowmultiple.find(thiskey)->second) );
+     plumed_massert( documentation.count( thiskey ), "no documentation for keyword " + thiskey + " to copy" ); 
+     docs.insert( std::pair<std::string,std::string>(thiskey,documentation.find(thiskey)->second) );
+     if( booldefs.count( thiskey ) ) bools.insert( std::pair<std::string,bool>( thiskey,booldefs.find(thiskey)->second) ); 
+     if( numdefs.count( thiskey ) ) nums.insert( std::pair<std::string,std::string>( thiskey,numdefs.find(thiskey)->second) );
+  }
+  for(unsigned i=0;i<reserved_keys.size();++i){
+     std::string thiskey=reserved_keys[i];
+     for(unsigned j=0;j<kk.size();++j) plumed_massert( thiskey!=kk[j], "keyword " + thiskey + " is in twice" );
+     for(unsigned j=0;j<rk.size();++j) plumed_massert( thiskey!=rk[j], "keyword " + thiskey + " is in twice" );
+     rk.push_back( thiskey ); 
+     plumed_massert( types.count( thiskey ), "no type data on keyword " + thiskey + " to copy" );
+     tt.insert( std::pair<std::string,KeyType>( thiskey,types.find(thiskey)->second) );
+     plumed_massert( allowmultiple.count( thiskey ), "no numbered data on keyword " + thiskey + " to copy" ); 
+     am.insert( std::pair<std::string,bool>(thiskey,allowmultiple.find(thiskey)->second) );
+     plumed_massert( documentation.count( thiskey ), "no documentation for keyword " + thiskey + " to copy" ); 
+     docs.insert( std::pair<std::string,std::string>(thiskey,documentation.find(thiskey)->second) );
+     if( booldefs.count( thiskey ) ) bools.insert( std::pair<std::string,bool>( thiskey,booldefs.find(thiskey)->second) ); 
+     if( numdefs.count( thiskey ) ) nums.insert( std::pair<std::string,std::string>( thiskey,numdefs.find(thiskey)->second) );
+  }
+}   
+
 void Keywords::reserve( const std::string & t, const std::string & k, const std::string & d ){
-  plumed_assert( !exists(k) );  plumed_assert( t!="flag");  // Cannot reserve flags at the moment - if you need it let me know
-  plumed_assert( !reserved(k) );
+  plumed_assert( !exists(k) && !reserved(k) );
   std::string fd;
   if( t=="numbered" ){
      fd=d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
-     reserved_allowmultiple.push_back(true);
-     reserved_types.push_back( KeyType("optional") );
+     allowmultiple.insert( std::pair<std::string,bool>(k,true) );
+     types.insert( std::pair<std::string,KeyType>(k,KeyType("optional")) );
   } else {
      fd=d;
-     reserved_allowmultiple.push_back(false);
-     reserved_types.push_back( KeyType(t) );
+     allowmultiple.insert( std::pair<std::string,bool>(k,false) );
+     types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
   }
-  reserved_keys.push_back(k); reserved_documentation.push_back(fd);
+  documentation.insert( std::pair<std::string,std::string>(k,fd) ); 
+  reserved_keys.push_back(k); 
+}
+
+void Keywords::reserveFlag( const std::string & k, const bool def, const std::string & d ){
+  plumed_assert( !exists(k) && !reserved(k) ); 
+  std::string defstr, flag="flag";
+  if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
+  types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
+  documentation.insert( std::pair<std::string,std::string>(k,defstr + d) ); 
+  allowmultiple.insert( std::pair<std::string,bool>(k,false) );
+  booldefs.insert( std::pair<std::string,bool>(k,def) ); 
+  reserved_keys.push_back(k); 
 }
 
 void Keywords::use( const std::string k ){
-  plumed_massert( reserved(k), "the " + k + " keyword is reserved");
+  plumed_massert( reserved(k), "the " + k + " keyword is not reserved");
   for(unsigned i=0;i<reserved_keys.size();++i){
-     if(reserved_keys[i]==k){ 
-       types.push_back( reserved_types[i] ); keys.push_back( reserved_keys[i] ); 
-       documentation.push_back( reserved_documentation[i] );
-       allowmultiple.push_back( reserved_allowmultiple[i] );
-     }
+     if(reserved_keys[i]==k) keys.push_back( reserved_keys[i] ); 
   }
 }
 
 void Keywords::reset_style( const std::string & k, const std::string & style ){
-  if( exists(k) ){ 
-    for(unsigned i=0;i<keys.size();++i){
-        if( keys[i]==k ){ types[i]=KeyType(style); }
-    }
-  } else if ( reserved(k) ){
-    for(unsigned i=0;i<reserved_keys.size();++i){
-       if( reserved_keys[i]==k ){ reserved_types[i]=KeyType(style); }
-    }
-  } else {
-    plumed_assert(0);
-  }
+  plumed_assert( exists(k) || reserved(k) );
+  (types.find(k)->second).setStyle(style); 
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string & d ){
-  plumed_assert( !exists(k) ); plumed_assert( t!="flag");  // Use addFlag to add flags
-  plumed_assert( !reserved(k) );
+  plumed_assert( !exists(k) && t!="flag" && !reserved(k) );  
   std::string fd;
   if( t=="numbered" ){
      fd=d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
-     allowmultiple.push_back(true);
-     types.push_back( KeyType("optional") );
+     allowmultiple.insert( std::pair<std::string,bool>(k,true) );
+     types.insert( std::pair<std::string,KeyType>(k, KeyType("optional")) );
   } else { 
      fd=d;
-     allowmultiple.push_back(false);
-     types.push_back( KeyType(t) );
+     allowmultiple.insert( std::pair<std::string,bool>(k,false) );
+     types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
   }
-  keys.push_back(k); documentation.push_back(fd); 
+  documentation.insert( std::pair<std::string,std::string>(k,fd) );
+  keys.push_back(k);  
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string &  def, const std::string & d ){
-  plumed_assert( !exists(k) ); plumed_assert( t=="compulsory" ); // An optional keyword can't have a default
-  plumed_assert( !reserved(k) );
-  types.push_back( KeyType(t) ); keys.push_back(k); 
-  documentation.push_back( "( default=" + def + " ) " + d ); 
-  allowmultiple.push_back(false);
+  plumed_assert( !exists(k) && !reserved(k) &&  t=="compulsory" ); // An optional keyword can't have a default
+  types.insert(  std::pair<std::string,KeyType>(k, KeyType(t)) ); 
+  documentation.insert( std::pair<std::string,std::string>(k,"( default=" + def + " ) " + d) );
+  allowmultiple.insert( std::pair<std::string,bool>(k,false) );
   numdefs.insert( std::pair<std::string,std::string>(k,def) );
+  keys.push_back(k); 
 } 
 
 void Keywords::addFlag( const std::string & k, const bool def, const std::string & d ){
-  plumed_assert( !exists(k) ); std::string defstr, flag="flag";
-  plumed_assert( !reserved(k) );
+  plumed_assert( !exists(k) && !reserved(k) ); std::string defstr, flag="flag";
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
-  types.push_back( KeyType(flag) ); 
-  keys.push_back(k); 
-  documentation.push_back( defstr + d ); //defaults.push_back(def);
-  allowmultiple.push_back(false); 
-  booldefs.insert( std::pair<std::string,bool>(k,def) );
+  types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
+  documentation.insert( std::pair<std::string,std::string>(k,defstr + d) );
+  allowmultiple.insert( std::pair<std::string,bool>(k,false) );
+  booldefs.insert( std::pair<std::string,bool>(k,def) ); 
+  keys.push_back(k);  
 } 
 
 void Keywords::remove( const std::string & k ){
@@ -127,10 +173,7 @@ void Keywords::remove( const std::string & k ){
   while(true){
     for(j=0;j<keys.size();j++) if(keys[j]==k)break;
     if(j<keys.size()){
-      types.erase(types.begin()+j);
       keys.erase(keys.begin()+j);
-      allowmultiple.erase(allowmultiple.begin()+j); 
-      documentation.erase(documentation.begin()+j);
       found=true;
     } else break;
   }
@@ -140,72 +183,27 @@ void Keywords::remove( const std::string & k ){
 bool Keywords::numbered( const std::string & k ) const {
   unsigned j=0; 
   if( style( k,"atoms") ) return true;
-  while(true){
-    for(j=0;j<keys.size();j++) if(keys[j]==k) break;
-    if( j<keys.size() ){
-        return allowmultiple[j];
-    } else break;
-  }
-  plumed_massert(0,"Did not find keyword " + k );
-  return false;
-}
-
-void Keywords::clear() {
-  types.clear(); keys.clear(); documentation.clear(); allowmultiple.clear();   //defaults.clear();
+  plumed_massert( allowmultiple.count(k), "Did not find keyword " + k );
+  return allowmultiple.find(k)->second;
 }
 
 bool Keywords::style( const std::string & k, const std::string & t ) const {
-  plumed_assert( exists(k) );
+  plumed_massert( types.count(k), "Did not find keyword " + k );
 
-  if( t=="compulsory" ){
-     for(unsigned i=0;i<keys.size();++i){
-        if( keys[i]==k ) return types[i].isCompulsory();
-     }
-     plumed_assert(false);
-  } else if( t=="flag" ){
-     for(unsigned i=0;i<keys.size();++i){
-        if( keys[i]==k ) return types[i].isFlag();
-     }
-     plumed_assert(false);
-  } else if( t=="optional" ){
-     for(unsigned i=0;i<keys.size();++i){
-        if( keys[i]==k ) return types[i].isOptional();
-     }
-     plumed_assert(false);
-  } else if( t=="atoms" ){
-     for(unsigned i=0;i<keys.size();++i){
-        if( keys[i]==k ) return types[i].isAtomList();
-     }
-     plumed_assert(false);
-  } else if( t=="nohtml" ){
-     for(unsigned i=0;i<keys.size();++i){
-        if( keys[i]==k ) return types[i].isNoHTML();
-     }
-     plumed_assert(false);
-  } else if( t=="hidden" ){
-      for(unsigned i=0;i<keys.size();++i){
-        if( keys[i]==k ) return types[i].isHidden();
-     }
-     plumed_assert(false);
-  } else {
-     plumed_assert(false);
-  }
-// this is to avoid warnings:
-  return false;
+  if( (types.find(k)->second).toString()==t ) return true;
+  return false; 
 }
 
 unsigned Keywords::size() const {
-  plumed_assert( keys.size()==documentation.size() );
-  plumed_assert( keys.size()==types.size() );
-  plumed_assert(  keys.size()==allowmultiple.size() );
   return keys.size();
 }
 
-bool Keywords::exists( const std::string & k ) const {
-  plumed_massert( keys.size()==documentation.size(), "documentation doesn't match keys" ); 
-  plumed_massert( keys.size()==types.size(), "types doesn't match keys" );
-  plumed_assert(  keys.size()==allowmultiple.size() );
+std::string Keywords::getKeyword( const unsigned i ) const {
+  plumed_assert( i<size() );
+  return keys[i];
+}
 
+bool Keywords::exists( const std::string & k ) const {
   for(unsigned i=0;i<keys.size();++i){
      if( keys[i]==k ) return true;
   }
@@ -213,10 +211,6 @@ bool Keywords::exists( const std::string & k ) const {
 }
 
 bool Keywords::reserved( const std::string & k ) const {
-  plumed_massert( reserved_keys.size()==reserved_documentation.size(), "documentation doesn't match keys" );
-  plumed_massert( reserved_keys.size()==reserved_types.size(), "types doesn't match keys" );
-  plumed_massert( reserved_keys.size()==reserved_allowmultiple.size(),"allowmultiple doesn't match keys" );
-
   for(unsigned i=0;i<reserved_keys.size();++i){
      if( reserved_keys[i]==k ) return true;
   }
@@ -226,49 +220,49 @@ bool Keywords::reserved( const std::string & k ) const {
 void Keywords::print_html() const {
   unsigned nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isAtomList() ) nkeys++;
+     if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
   }
   if( nkeys>0 ){
     std::cout<<"\\par Specifying the atoms involved\n\n";
     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
     for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isAtomList() ) print_html_item( i );
+        if ( (types.find(keys[i])->second).isAtomList() ) print_html_item( keys[i] );
     }
     std::cout<<"</table>\n\n";
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isCompulsory() ) nkeys++;
+     if ( (types.find(keys[i])->second).isCompulsory() ) nkeys++;
   }
   if( nkeys>0 ){
      std::cout<< "\\par Compulsory keywords\n\n";
      std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isCompulsory() ) print_html_item( i );
+        if ( (types.find(keys[i])->second).isCompulsory() ) print_html_item( keys[i] );
      }
      std::cout<<"</table>\n\n";
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isFlag() ) nkeys++;
+     if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
   }
   if( nkeys>0 ){
      std::cout<<"\\par Options\n\n";
      std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isFlag() ) print_html_item( i );
+        if ( (types.find(keys[i])->second).isFlag() ) print_html_item( keys[i] );
      }
      std::cout<<"\n";
   }
   std::cout<<"</table>\n\n";
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isOptional() ) nkeys++;
+     if ( (types.find(keys[i])->second).isOptional() ) nkeys++;
   }
   if( nkeys>0 ){
      std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isOptional() ) print_html_item( i );
+        if ( (types.find(keys[i])->second).isOptional() ) print_html_item( keys[i] );
      }
      std::cout<<"\n";
   }
@@ -278,51 +272,51 @@ void Keywords::print_html() const {
 void Keywords::print( Log& log ) const {
   unsigned nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isAtomList() ) nkeys++;
+     if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
   }
   if (nkeys>0 ){
      log.printf( "The input for this keyword can be specified using one of the following \n\n");
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isAtomList() ) printKeyword( i, log );   //log.printKeyword( keys[i], documentation[i] );
+        if ( (types.find(keys[i])->second).isAtomList() ) printKeyword( keys[i], log );   //log.printKeyword( keys[i], documentation[i] );
      }
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isCompulsory() ) nkeys++;
+     if ( (types.find(keys[i])->second).isCompulsory() ) nkeys++;
   }
   if( nkeys>0 ){
      log.printf( "\n The compulsory keywords for this action are: \n\n");
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isCompulsory() ) printKeyword( i, log );   //log.printKeyword( keys[i], documentation[i] );
+        if ( (types.find(keys[i])->second).isCompulsory() ) printKeyword( keys[i], log );   //log.printKeyword( keys[i], documentation[i] );
      }
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isFlag() ) nkeys++;
+     if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
   }
   if( nkeys>0 ){
      log.printf( "\n The following options are available: \n\n");
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isFlag() ) printKeyword( i, log );   //log.printKeyword( keys[i], documentation[i] );
+        if ( (types.find(keys[i])->second).isFlag() ) printKeyword( keys[i], log );   //log.printKeyword( keys[i], documentation[i] );
      }
      log.printf("\n");
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( types[i].isOptional() || types[i].isNoHTML() ) nkeys++;
+     if ( (types.find(keys[i])->second).isOptional() ) nkeys++;
   }
   if( nkeys>0 ){
      for(unsigned i=0;i<keys.size();++i){
-        if ( types[i].isOptional() || types[i].isNoHTML() ) printKeyword( i, log );   //log.printKeyword( keys[i], documentation[i] );
+        if ( (types.find(keys[i])->second).isOptional() ) printKeyword( keys[i], log );   //log.printKeyword( keys[i], documentation[i] );
      }
      log.printf("\n");
   }
 }
 
-void Keywords::printKeyword( const unsigned& j, Log& log ) const {
-  bool killdot=( documentation[j].find("\\f$")!=std::string::npos ); // Check for latex
-  std::vector<std::string> w=Tools::getWords( documentation[j] );
-  log.printf("%23s - ", keys[j].c_str() );
+void Keywords::printKeyword( const std::string& key, Log& log ) const {
+  bool killdot=( (documentation.find(key)->second).find("\\f$")!=std::string::npos ); // Check for latex
+  std::vector<std::string> w=Tools::getWords( documentation.find(key)->second );
+  log.printf("%23s - ", key.c_str() );
   unsigned nl=0; std::string blank=" ";
   for(unsigned i=0;i<w.size();++i){
       nl+=w[i].length() + 1;
@@ -336,10 +330,10 @@ void Keywords::printKeyword( const unsigned& j, Log& log ) const {
   log.printf("\n");
 }
 
-void Keywords::print_html_item( const unsigned& j ) const {
+void Keywords::print_html_item( const std::string& key ) const {
   printf("<tr>\n");
-  printf("<td width=15%%> <b> %s </b></td>\n",keys[j].c_str() );
-  printf("<td> %s </td>\n",documentation[j].c_str() );
+  printf("<td width=15%%> <b> %s </b></td>\n",key.c_str() );
+  printf("<td> %s </td>\n",(documentation.find(key)->second).c_str() );
   printf("</tr>\n");
 }
 
