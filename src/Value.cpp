@@ -9,6 +9,19 @@
 
 using namespace PLMD;
 
+Value::Value():
+  action(NULL), 
+  value_set(false), 
+  value(0.0), 
+  hasDeriv(true), 
+  periodicity(unset), 
+  min(0.0), 
+  max(0.0), 
+  max_minus_min(0.0), 
+  inv_max_minus_min(0.0)
+{
+}
+
 Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv):
   action(av),
   value_set(false),

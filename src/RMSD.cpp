@@ -14,7 +14,10 @@ void RMSD::set(const PDB&pdb, string mytype ){
 	setReference(pdb.getPositions());
 	setAlign(pdb.getOccupancy());
 	setDisplace(pdb.getBeta());
+        setType(mytype);
+}
 
+void RMSD::setType(string mytype){
 	myoptimalalignment=NULL;
 
 	alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation

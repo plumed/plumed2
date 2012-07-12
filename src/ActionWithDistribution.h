@@ -61,6 +61,8 @@ protected:
   int getUpdateFreq() const ;
 /// Get the jth active member
   unsigned getActiveMember( const unsigned& j ) const ;
+/// Get the tolerance 
+  double getTolerance() const ;
 public:
   static void registerKeywords(Keywords& keys);
 /// By calling this function during register keywords you tell plumed to use a
@@ -129,6 +131,11 @@ inline
 unsigned ActionWithDistribution::getActiveMember( const unsigned& j ) const {
   plumed_assert( j<members.getNumberActive() );
   return members[j];
+}
+
+inline
+double ActionWithDistribution::getTolerance() const {
+  return tolerance;
 }
 
 }

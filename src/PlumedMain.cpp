@@ -440,8 +440,8 @@ void PlumedMain::shareData(){
 // atom positions are shared (but only if there is something to do)
   if(!active)return;
   stopwatch.start("2 Sharing data");
-  stopwatch.stop("2 Sharing data");
   atoms.share();
+  stopwatch.stop("2 Sharing data");
 }
 
 void PlumedMain::performCalc(){

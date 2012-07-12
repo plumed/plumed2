@@ -42,6 +42,14 @@ $git pull # to stay up-to-date with remote work
 $git checkout new-feature
 $git rebase master
 
+Alternatively just merge work on master
+$git pull origin master
+N.B. This will not update the list of branches
+
+Collect the changes to the log and get rid of branches that have 
+been deleted on the remote repo
+$git fectch --all --prune
+
 After several commits, your new feature is ready for merge.
 $git checkout master
 $git pull # to stay up-to-date with remote work
@@ -55,6 +63,8 @@ $git checkout master
 $git merge new-feature
 Remove the branch
 $git branch -d new-feature
+Remove a remote branch
+$git push origin :crap-branch
 Analyze the results
 $gitk --all
 If everything seems right, push your master branch to the central repository

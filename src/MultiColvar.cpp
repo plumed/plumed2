@@ -1,6 +1,8 @@
 #include "MultiColvar.h"
 #include "PlumedMain.h"
 #include "DistributionFunctions.h"
+#include "ActionSet.h"
+#include "MolInfo.h"
 #include <vector>
 #include <string>
 
@@ -59,14 +61,25 @@ ActionWithValue(ao),
 ActionWithDistribution(ao),
 usepbc(true),
 readatoms(false),
-//setperiods(false),
 needsCentralAtomPosition(false)
 {
-  if( keywords.style("NOPBC", "flag") ){ 
+  if( keywords.exists("NOPBC") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
     usepbc=!nopbc;
   }
 }
+
+void MultiColvar::addColvar( const std::vector<unsigned>& newatoms ){
+  if( colvar_atoms.size()>0 ) plumed_assert( colvar_atoms[0].fullSize()==newatoms.size() );
+  DynamicList<unsigned> newlist;
+  log.printf("  Colvar %d is calculated from atoms : ", colvar_atoms.size()+1);
+  for(unsigned i=0;i<newatoms.size();++i){
+     log.printf("%d ",all_atoms(newatoms[i]).serial() );
+     newlist.addIndexToList( newatoms[i] );
+  }
+  log.printf("\n");
+  colvar_atoms.push_back( newlist );
+} 
 
 void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("ATOMS") ) readAtomsKeyword( natoms );
@@ -196,6 +209,25 @@ void MultiColvar::readAtoms( int& natoms ){
 
   if( keywords.exists("DISTRIBUTION") ) addField("DISTRIBUTION", new Field( "identity",1 ) );
   requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes
+}
+
+void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
+  plumed_massert( !readatoms, "I can only read atons using the RESIDUES keyword" );
+  plumed_massert( keywords.exists("RESIDUES"), "To read in the backbone atoms the keyword RESIDUES must be registered");
+  readatoms=true;
+
+  std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
+  if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
+
+  std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
+  std::vector< std::vector<AtomNumber> > backatoms; 
+  moldat[0]->getBackbone( resstrings, backnames, backatoms );
+
+  chain_lengths.resize( backatoms.size() );
+  for(unsigned i=0;i<backatoms.size();++i){
+     chain_lengths[i]=backatoms[i].size();
+     for(unsigned j=0;j<backatoms[i].size();++j) all_atoms.addIndexToList( backatoms[i][j] );
+  }
 }
 
 void MultiColvar::readAtomsKeyword( int& natoms ){ 
@@ -359,15 +391,11 @@ void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std
   Tensor vir; std::vector<Vector> pos(natoms), der(natoms); vir.zero();
   for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); der[i].zero(); }
   
-  // Compute the derivatives
-  stopcondition=false; current=j;
-  double value=compute( j, pos, der, vir );
+  // Do a quick check on the size of this contribution
+  if( contributionIsSmall( pos ) ) return;
 
-  // This is the end of neighbor list update
-  if(stopcondition){
-     plumed_massert(isTimeForNeighborListUpdate(), "found stop but not during neighbor list step");
-     return;
-  }
+  // Compute the derivatives
+  current=j; double value=compute( j, pos, der, vir );
 
   if(needsCentralAtomPosition){
      if( aux.size()!=3 ){
