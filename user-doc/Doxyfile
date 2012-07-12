@@ -461,7 +461,9 @@ WARN_LOGFILE           =
 
 INPUT                  = IntroPP.txt \
                          BiasPP.txt \
+                         AnalysisPP.txt \
                          ColvarPP.txt \ 
+                         GenericPP.txt \
                          FunctionsPP.txt \
                          ToolsPP.txt \ 
                          InstallationPP.txt \

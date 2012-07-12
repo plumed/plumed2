@@ -11,7 +11,7 @@ using namespace std;
 namespace PLMD
 {
 
-//+PLUMEDOC GENERIC DUMPATOMS
+//+PLUMEDOC ANALYSIS DUMPATOMS
 /*
 
 This command can be used to output the positions of a particular set of atoms.

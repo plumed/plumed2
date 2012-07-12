@@ -1,0 +1,11 @@
+/**
+
+\page Generic Generic
+
+Here you can find other possible plumed directives
+which do not fall in any of the other groups.
+
+@GENERIC@
+
+*/
+

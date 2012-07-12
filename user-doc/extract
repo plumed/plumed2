@@ -91,7 +91,7 @@ do
     } > automatic/$flag.txt
 done
 
-for file in Bias Colvar Functions Installation Intro
+for file in Bias Colvar Functions Installation Intro Analysis Generic
 do
 
 cat $file.txt |
@@ -112,6 +112,11 @@ cat $file.txt |
   then
     echo "<table align=center frame=void width=95%% cellpadding=5%%>"
     cat automatic/ANALYSIS.list
+    echo "</table>"
+  elif [ "$LINE" = "@GENERIC@" ]
+  then
+    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+    cat automatic/GENERIC.list
     echo "</table>"
   elif [ "$LINE" = "@BIAS@" ]
   then
