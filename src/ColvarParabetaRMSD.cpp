@@ -6,7 +6,7 @@
 namespace PLMD {
 
 //+PLUMEDOC COLVAR PARABETARMSD
-/**
+/*
 Probe the parallel beta sheet content of your protein structure.
 
 Two protein segments containing three continguous residues can form a parallel beta sheet. 

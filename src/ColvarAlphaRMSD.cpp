@@ -6,7 +6,7 @@
 namespace PLMD {
 
 //+PLUMEDOC COLVAR ALPHARMSD
-/**
+/*
 Probe the alpha helical content of a protein structure.
 
 Any chain of six contiguous residues in a protein chain can form an alpha helix. This

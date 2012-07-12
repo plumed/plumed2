@@ -6,7 +6,7 @@
 namespace PLMD {
 
 //+PLUMEDOC COLVAR ANTIBETARMSD
-/**
+/*
 Probe the antiparallel beta sheet content of your protein structure.
 
 Two protein segments containing three continguous residues can form an antiparallel beta sheet. 

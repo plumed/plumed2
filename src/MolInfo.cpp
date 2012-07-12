@@ -6,7 +6,7 @@
 namespace PLMD {
 
 //+PLUMEDOC TOPOLOGY MOLINFO
-/**
+/*
 
 This command is used to provide information on the molecules that are present in your system.
 
