@@ -1,14 +1,10 @@
 /**
 
-\page Methods Methods
+\page Bias Bias
 
-Once you have calculated a number of collective variables plumed allows you to either analyse
-your trajectory or to run a number of enhanced sampling algorithms.  The list of available 
-on-the-fly analysis tools contains:
-
-@ANALYSIS@
-
-while the list of available enhanced sampling algorithms contains: 
+Once you have calculated a number of collective variables plumed allows you to
+run a number of enhanced sampling algorithms.
+The list of available enhanced sampling algorithms contains: 
 
 @BIAS@
 
