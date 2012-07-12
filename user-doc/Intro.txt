@@ -26,6 +26,7 @@ analsyis tools that come with plumed are given in:
 - \subpage Function
 - \subpage Analysis
 - \subpage Bias
+- \subpage Generic
 
 Plumed can be used in one of two ways.  It can be incorporated into any one of the MD codes listed on the
 \ref Installation page and used to analyse or bias a molecular dynamics run on the fly.  Alternatively, one
