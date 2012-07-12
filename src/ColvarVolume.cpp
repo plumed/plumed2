@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC COLVAR VOLUME
-/**
+/*
 Calculate the volume of the simulation box.
 
 \par Examples

@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC COLVAR TEMPLATE
-/**
+/*
 This file provides a template for if you want to introduce a new CV.
 
 <!-----You should add a description of your CV here---->

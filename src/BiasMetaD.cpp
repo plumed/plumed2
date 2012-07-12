@@ -14,7 +14,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC BIAS METAD 
-/**
+/*
 Used to performed MetaDynamics on one or more collective variables.
 
 In a metadynamics simulations a history dependent bias composed of 

@@ -8,7 +8,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC GENERIC PRINT
-/**
+/*
 Print quantities to a file.
 
 This directive can be used multiple times

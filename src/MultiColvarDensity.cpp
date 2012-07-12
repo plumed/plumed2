@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC MCOLVAR DENSITY
-/**
+/*
 Calculate functions of the density of atoms as a function of the box.  This allows one to calculate
 density gradients, number of atoms in half the box and so on.
 
@@ -48,7 +48,7 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   // Note we don't parallelize this as it would be stupid
   keys.use("SPECIES"); keys.remove("AVERAGE"); keys.remove("LESS_THAN"); 
   keys.remove("MIN"); keys.remove("MORE_THAN"); keys.remove("HISTOGRAM");
-  keys.remove("WITHIN");
+  keys.remove("WITHIN"); keys.remove("MOMENT");
   // Use density keywords
   keys.use("SUBCELL"); keys.use("GRADIENT");
 }

@@ -1,56 +1,76 @@
 #!/bin/bash
 
-# Create a directory to put all the files in
-rm -rf automatic
-mkdir automatic
+cat ../src/*cpp | grep PLUMED_REGISTER_ACTION |
+  sed '
+   s/PLUMED_REGISTER_ACTION(/ /
+   s/,"/ /
+   s/")//
+' |
+awk '{
+  printf("%s","/// \\class PLMD::"$1"\n");
+  action=tolower($2);
+  firstchar=substr($2,1,1);
+  n=split(action,actionarray,"");
+  lowercase=0;
+  if(firstchar==actionarray[1]) lowercase=1;
+  printf("%s","/// Provides the keyword <a href=\"../../user-doc/html/");
+  for(i=1;i<=n;i++){printf("_%s", actionarray[i])};
+  printf("%s",".html\"> "$2" </a>\n");
+}' >  links-to-user-manual.txt
 
-cp ../src/*.h automatic
-for file in ../src/*.cpp ; do
-    stripf=`echo $file | sed -e 's/..\/src\///g'`
-    ofile=`echo automatic/$stripf`
-    echo $ofile
-    cat $file | 
-       awk -v output=$ofile -v inside=0 '{
-           if(inside==2 && NF==0){
-              inside=1
-              if(lowercase==0){
-                 printf("%s","///To view the user manual <a href=\"../../user-doc/html/") >> output
-                       for(i=1;i<=n;i++){ printf("_%s", actionarray[i]) >> output }
-                       print ".html\"> click here </a>." >> output
-              } else {
-                 printf("%s","///To view the user manual <a href=\"../../user-doc/html/") >> output 
-                       printf("%s",action) >> output
-                       print ".html\"> click here </a>." >> output
-              }
-          }
-           if(inside==2 && $1!="/**" && $1!="*/" && $1!="//+ENDPLUMEDOC"){
-              print "///" $0 >> output
-           }
-           if($1=="//+PLUMEDOC"){
-              inside=2
-              action=tolower($3)
-              firstchar=substr($3, 1, 1 )
-              n=split(action,actionarray,"");
-              lowercase=0
-              if( firstchar==actionarray[1] ) lowercase=1 
-           }
-           if(inside==0){
-              print $0 >> output 
-           }
-           if($1=="//+ENDPLUMEDOC" && inside==1){
-              inside=0
-           }
-           if($1=="//+ENDPLUMEDOC" && inside==2){
-              inside=0
-              if(lowercase==0){
-                 printf("%s","///To view the more detailed manual <a href=\"../../user-doc/html/") >> output
-                       for(i=1;i<=n;i++){ printf("_%s", actionarray[i]) >> output }
-                       print ".html\"> click here </a>." >> output
-              } else {
-                 printf("%s","///To view the more detailed manual <a href=\"../../user-doc/html/") >> output 
-                       printf("%s",action) >> output
-                       print ".html\"> click here </a>." >> output
-              }
-           }
-       }'
-done 
+
+# Create a directory to put all the files in
+#rm -rf automatic
+#mkdir automatic
+#
+#cp ../src/*{.h,.cpp} automatic
+
+#for file in ../src/*.cpp ; do
+#    stripf=`echo $file | sed -e 's/..\/src\///g'`
+#    ofile=`echo automatic/$stripf`
+#    echo $ofile
+#    cat $file | 
+#       awk -v output=$ofile -v inside=0 '{
+#           if(inside==2 && NF==0){
+#              inside=1
+#              if(lowercase==0){
+#                 printf("%s","///To view the user manual <a href=\"../../user-doc/html/") >> output
+#                       for(i=1;i<=n;i++){ printf("_%s", actionarray[i]) >> output }
+#                       print ".html\"> click here </a>." >> output
+#              } else {
+#                 printf("%s","///To view the user manual <a href=\"../../user-doc/html/") >> output 
+#                       printf("%s",action) >> output
+#                       print ".html\"> click here </a>." >> output
+#              }
+#          }
+#           if(inside==2 && $1!="/**" && $1!="*/" && $1!="//+ENDPLUMEDOC"){
+#              print "///" $0 >> output
+#           }
+#           if($1=="//+PLUMEDOC"){
+#              inside=2
+#              action=tolower($3)
+#              firstchar=substr($3, 1, 1 )
+#              n=split(action,actionarray,"");
+#              lowercase=0
+#              if( firstchar==actionarray[1] ) lowercase=1 
+#           }
+#           if(inside==0){
+#              print $0 >> output 
+#           }
+#           if($1=="//+ENDPLUMEDOC" && inside==1){
+#              inside=0
+#           }
+#           if($1=="//+ENDPLUMEDOC" && inside==2){
+#              inside=0
+#              if(lowercase==0){
+#                 printf("%s","///To view the more detailed manual <a href=\"../../user-doc/html/") >> output
+#                       for(i=1;i<=n;i++){ printf("_%s", actionarray[i]) >> output }
+#                       print ".html\"> click here </a>." >> output
+#              } else {
+#                 printf("%s","///To view the more detailed manual <a href=\"../../user-doc/html/") >> output 
+#                       printf("%s",action) >> output
+#                       print ".html\"> click here </a>." >> output
+#              }
+#           }
+#       }'
+# done 

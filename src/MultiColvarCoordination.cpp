@@ -11,7 +11,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC MCOLVAR COORDINATIONNUMBER
-/**
+/*
 Calculate the coordination numbers of atoms so that  you can then calculate functions of the distribution of
 coordination numbers such as the minimum, the number less than a certain quantity and so on.   
 

@@ -9,9 +9,11 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC FUNCTION PIECEWISE
-/**
+/*
 Compute a piecewise straight line through its arguments that passes through
-a set of ordered control points. For variables less than the first
+a set of ordered control points. 
+
+For variables less than the first
 (greater than the last) point, the value of the first (last) point is used.
 
 \f[

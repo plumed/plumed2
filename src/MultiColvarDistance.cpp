@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC MCOLVAR DISTANCES
-/**
+/*
 Calculate the distances between one or many pairs of atoms.  You can then calculate functions of the distribution of
 distances such as the minimum, the number less than a certain quantity and so on. 
 

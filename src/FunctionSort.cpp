@@ -11,7 +11,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC FUNCTION SORT
-/**
+/*
 This function can be used to sort colvars according to their magnitudes.
 
 \par Examples

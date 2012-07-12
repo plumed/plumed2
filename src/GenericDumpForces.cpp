@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC ANALYSIS DUMPFORCES
-/**
+/*
 Dump the force acting on one of a values in a file.  
 
 For a CV this command will dump

@@ -6,7 +6,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC VATOM COM
-/**
+/*
 Calculate the center of mass for a group of atoms.  The computed
 center of mass is stored as a virtual atom that can be accessed in
 an atom list through the the label for the COM action that creates it.

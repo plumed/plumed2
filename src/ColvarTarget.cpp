@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD {
 
 //+PLUMEDOC FUNCTION TARGET
-/**
+/*
 This function measures the pythagorean distance from a particular structure measured in the space defined by some 
 set of collective variables.
 

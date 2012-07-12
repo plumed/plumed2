@@ -9,7 +9,7 @@
 namespace PLMD{
 
 //+PLUMEDOC COLVAR ENERGY
-/**
+/*
 Calculate the total energy of the simulation box.
 
 \par Examples

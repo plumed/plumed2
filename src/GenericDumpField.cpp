@@ -9,7 +9,7 @@
 namespace PLMD {
 
 //+PLUMEDOC ANALYSIS DUMPFIELD
-/**
+/*
 Print out the instantaneous of a field.
 
 Print out the instantaneous of a field

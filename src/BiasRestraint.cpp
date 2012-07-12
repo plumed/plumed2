@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC BIAS RESTRAINT
-/**
+/*
 Adds harmonic and/or linear restraints on one or more variables.  
 
 Either or both

@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC BIAS LOWER_WALLS
-/**
+/*
 Adds a lower wall on one or more variables.
 
 The expression for the bias due to the wall is given by:

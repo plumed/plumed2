@@ -41,8 +41,8 @@ awk '{
      print "</td> </tr>" > lfile
      inside=1
   }
-  if(inside==1 && $1!="/**" && $1!="*/") print $0 >output
-  if(inside==2 && $1!="/**" && $1!="*/" ){
+  if(inside==1 && $1!="/*" && $1!="*/") print $0 >output
+  if(inside==2 && $1!="/*" && $1!="*/" ){
      print $0 > output
      print $0 > lfile
   }

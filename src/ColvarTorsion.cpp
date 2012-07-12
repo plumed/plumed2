@@ -11,7 +11,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC COLVAR TORSION
-/**
+/*
 Calculate the torsion between four atoms or alternatively use this command
 to calculate the angle between two vectors projected on the plane
 orthogonal to an axis. 

@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC ANALYSIS DUMPPROJECTIONS
-/**
+/*
 Dump the derivatives with respect to the input parameters for one or more objects (generally CVs, functions or biases).
 
 */

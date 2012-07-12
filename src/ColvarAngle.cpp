@@ -11,7 +11,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC COLVAR ANGLE
-/**
+/*
 Calculate the angle between three atoms.  Alternatively if four atoms appear in the atom
 specification calculate the angle between the vector joining atoms 1 and 2 and that joineing
 atoms 3 and 4.

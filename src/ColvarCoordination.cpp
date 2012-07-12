@@ -13,7 +13,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC COLVAR COORDINATION
-/**
+/*
 This keyword can be used to calculate the coordination numbers for atoms in your system. 
 We use the following switching function to make the coordination number differentiable:
 

@@ -15,7 +15,7 @@ using namespace PLMD;
 namespace PLMD {
 
 //+PLUMEDOC GENERIC WHOLEMOLECULES
-/**
+/*
 This action is used to rebuild molecules that can become split by the periodic
 boundary conditions in a manner similar to the ALIGN_ATOMS keyword of plumed1.
 

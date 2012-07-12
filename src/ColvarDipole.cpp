@@ -9,7 +9,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC COLVAR DIPOLE 
-/**
+/*
 Calcualte the dipole moment for a group of atoms.
 
 \par Examples

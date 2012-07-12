@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC COLVAR RMSD
-/**
+/*
 Calculate the RMSD with respect to a reference structure.  To perform
 an ??optimal?? (what does this mean algorithmical speed wise?) alignment
 using the Kearsley algorithm then use TYPE=OPTIMAL.  Otherwise

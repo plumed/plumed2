@@ -10,7 +10,7 @@ using namespace std;
 namespace PLMD{
 
 //+PLUMEDOC COLVAR RGYR
-/**
+/*
 Calculate the radius of gyration for a chain of atoms.
 
 The radius of gyration is calculated using:
