@@ -46,8 +46,8 @@ class FunctionPathMSD : public Function {
   double lambda;
   bool pbc;
   int neigh_size;
-  int neigh_stride;
-  vector<int> neighlist;
+  double neigh_stride;
+  vector< pair<unsigned,double> > neighpair;
 public:
   FunctionPathMSD(const ActionOptions&);
 // active methods:
@@ -64,7 +64,9 @@ void FunctionPathMSD::registerKeywords(Keywords& keys){
   keys.add("optional","NEIGH_SIZE","all optional keywords that have input should be added like a description here");
   keys.add("optional","NEIGH_STRIDE","all optional keywords that have input should be added like a description here");
 }
-
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// this below is useful when one wants to sort a vector of double and have back the order 
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // create a custom sorter
 typedef vector<double>::const_iterator myiter;
 struct ordering {
@@ -83,21 +85,27 @@ vector<int> increasingOrder( vector<double> &v){
    // now sort according the second value
    sort(order.begin(), order.end(), ordering());
    typedef vector< pair<unsigned , myiter> >::const_iterator pairiter;
-
    vector<int> vv(v.size());n=0;
    for ( pairiter it = order.begin(); it != order.end(); ++it ){
-   //    cerr<<(*it).first<<" "<<(*(*it).second)<<endl;
        vv[n]=(*it).first;n++; 
    }
    return vv;
+};
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+struct pairordering {
+       bool operator ()(pair<unsigned , double> const& a, pair<unsigned , double> const& b) {
+           return (a).second > (b).second;
+       };
 };
 
 FunctionPathMSD::FunctionPathMSD(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 pbc(true),
-neigh_stride(-1),
-neigh_size(-1)
+neigh_size(-1),
+neigh_stride(-1.)
 {
 //  bool nopbc=!pbc;
 //  parseFlag("NOPBC",nopbc);
@@ -144,10 +152,10 @@ neigh_size(-1)
   }   
   log.printf("  Consistency check completed! Your path cvs look good!\n"); 
   // do some neighbor printout
-  if(neigh_stride!=-1 || neigh_size!=-1){
+  if(neigh_stride>0. || neigh_size>0){
            log.printf("  Neighbor list enabled: \n");
            log.printf("                size   :  %d elements\n",neigh_size);
-           log.printf("                stride :  %d steps\n",neigh_stride);
+           log.printf("                stride :  %f time \n",neigh_stride);
   }else{
            log.printf("  Neighbor list NOT enabled \n");
   }
@@ -160,34 +168,52 @@ void FunctionPathMSD::calculate(){
   double s_path=0.;
   double partition=0.;
   double tmp;
-  // no neighbor list
-  if(neigh_size<0 ){
-    neighlist.resize(getNumberOfArguments());  
-    for(unsigned i=0;i<getNumberOfArguments();i++)neighlist[i]=i; 
-  }else{
-  // if on step, recalculate
-     
-  // use the neighbor list 
+  if(neighpair.empty()){
+       neighpair.resize(getNumberOfArguments());  
+       for(unsigned i=0;i<getNumberOfArguments();i++)neighpair[i].first=i; 
   }
+
   Value* val_s_path=getPntrToComponent("s");
   Value* val_z_path=getPntrToComponent("z");
-  vector<double> zvec(getNumberOfArguments());
-  for(unsigned i=0;i<getNumberOfArguments();i++){ 
-    zvec[i]=exp(-lambda*getArgument(i));
-    s_path+=(i+1)*zvec[i];
-    partition+=zvec[i];
+  typedef  vector< pair<unsigned,double> >::iterator pairiter;
+  for(pairiter it=neighpair.begin();it!=neighpair.end();++it){ 
+    unsigned n=(*it).first;
+    (*it).second=exp(-lambda*getArgument(n));
+    s_path+=(n+1)*(*it).second;
+    partition+=(*it).second;
   }
   s_path/=partition;
   val_s_path->set(s_path);
   val_z_path->set(-(1./lambda)*cmathLog(partition));
-  for(unsigned i=0;i<getNumberOfArguments();i++){ 
-    tmp=lambda*zvec[i]*(s_path-(i+1))/partition;
-    setDerivative(val_s_path,i,tmp);
-    setDerivative(val_z_path,i,zvec[i]/partition);
+  for(pairiter it=neighpair.begin();it!=neighpair.end();++it){ 
+    unsigned n=(*it).first;
+    double expval=(*it).second;
+    tmp=lambda*expval*(s_path-(n+1))/partition;
+    setDerivative(val_s_path,n,tmp);
+    setDerivative(val_z_path,n,expval/partition);
   }
+
   // neighbor list: rank and activate the chain for the next step 
-  vector<int> order=increasingOrder(zvec); // this is the order of the exponential, therefore we should take from the back 
-     
+
+  // neighbor list: if neigh_size<0 never sort and keep the full vector
+  // neighbor list: if neigh_size>0  
+  //                if the size is full -> sort the vector and decide the dependencies for next step 
+  //                if the size is not full -> check if next step will need the full dependency otherwise keep this dependencies 
+
+  if (neigh_size>0){
+     if(neighpair.size()==getNumberOfArguments()){ // I just did the complete round: need to sort, shorten and give it a go
+		sort(neighpair.begin(),neighpair.end(),pairordering());
+                neighpair.resize(neigh_size);
+     }else{
+        if( int(getStep())%int(neigh_stride/getTimeStep())==0 ){
+                 log.printf(" Time %f : recalculating full neighlist \n",getStep()*getTimeStep());
+     		 neighpair.resize(getNumberOfArguments());  
+     		 for(unsigned i=0;i<getNumberOfArguments();i++)neighpair[i].first=i; 
+        }
+     } 
+  }
+  // TODO prepare dependencies for next step n 
+    
 
 }
 
