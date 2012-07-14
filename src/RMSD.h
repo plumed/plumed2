@@ -47,9 +47,9 @@ public:
   		                     const std::vector<Vector> & positions,
   		                     const std::vector<Vector> & reference ,
   		                     Log &log,
-  		                     std::vector<Vector>  & derivatives);
+  		                     std::vector<Vector>  & derivatives, bool squared=false);
 /// Compute rmsd
-  double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives);
+  double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false);
 };
 
 }

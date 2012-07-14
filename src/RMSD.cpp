@@ -70,14 +70,14 @@ void RMSD::setDisplace(const vector<double> & displace){
   this->displace=displace;
 }
 
-double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives){
+double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared){
 
   double ret=0.;
 
   switch(alignmentMethod){
 	case SIMPLE:
 		//	do a simple alignment without rotation 
-		ret=simpleAlignment(align,displace,positions,reference,log,derivatives);
+		ret=simpleAlignment(align,displace,positions,reference,log,derivatives,squared);
 		break;	
 	case OPTIMAL:
 		if (myoptimalalignment==NULL){ // do full initialization	
@@ -91,7 +91,7 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 		// this changes the P0 according the running frame
 		(*myoptimalalignment).assignP0(positions);
 
-		ret=(*myoptimalalignment).calculate(true, derivatives);
+		ret=(*myoptimalalignment).calculate(squared, derivatives);
 		//(*myoptimalalignment).weightedFindiffTest(false);
 
 		break;	
@@ -106,7 +106,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 		                     const std::vector<Vector> & positions,
 		                     const std::vector<Vector> & reference ,
 		                     Log &log,
-		                     std::vector<Vector>  & derivatives) {
+		                     std::vector<Vector>  & derivatives, bool squared) {
 	  double dist(0);
 	  double norm(0);
 	  unsigned n=reference.size();
@@ -117,9 +117,14 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 	      norm+=displace[i];
       }
 
+     double ret; 
+     if(!squared){
 	// sqrt and normalization
-     double ret=sqrt(dist/norm);
+        ret=sqrt(dist/norm);
 	///// sqrt and normalization on derivatives
-	  for(unsigned i=0;i<n;i++){derivatives[i]*=(0.5/ret/norm);}
-	  return ret;
+        for(unsigned i=0;i<n;i++){derivatives[i]*=(0.5/ret/norm);}
+      }else{
+        ret=dist/norm;
+      }
+      return ret;
 }

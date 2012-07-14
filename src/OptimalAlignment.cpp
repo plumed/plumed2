@@ -58,7 +58,9 @@ void OptimalAlignment::assignDisplace(  const std::vector<double> & displace ){
 }
 
 
-double OptimalAlignment::calculate(bool rmsd, std::vector<Vector> & derivatives){
+double OptimalAlignment::calculate(bool squared, std::vector<Vector> & derivatives){
+
+	bool rmsd=!squared ;  
 
 	double err;
 

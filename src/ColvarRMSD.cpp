@@ -41,6 +41,8 @@ class ColvarRMSD : public Colvar {
 	
   RMSD rmsd;
 	
+  bool squared; 
+
   vector<Vector> derivs;
 
 public:
@@ -55,16 +57,18 @@ void ColvarRMSD::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV. " + PDB::documentation() );
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
+  keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
 }
 
 ColvarRMSD::ColvarRMSD(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),rmsd(log)
+PLUMED_COLVAR_INIT(ao),rmsd(log),squared(false)
 {
   string reference;
   parse("REFERENCE",reference);
   string type;	
   type.assign("SIMPLE");
   parse("TYPE",type);
+  parseFlag("SQUARED",squared);
 
   checkRead();
 
@@ -83,13 +87,14 @@ PLUMED_COLVAR_INIT(ao),rmsd(log)
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  method for alignment : %s \n",rmsd.getMethod().c_str() );
+  if(squared)log.printf("  chosen to use SQARED option for MSD instead of RMSD\n");
 
 }
 
 
 // calculator
 void ColvarRMSD::calculate(){
-  double r=rmsd.calculate(getPositions(),derivs);
+  double r=rmsd.calculate(getPositions(),derivs,squared);
   setValue(r);
   for(unsigned i=0;i<derivs.size();i++) setAtomsDerivatives(i,derivs[i]);
   Tensor virial;
