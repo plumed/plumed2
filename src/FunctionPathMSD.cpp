@@ -9,6 +9,7 @@ double (*cmathLog)(double) = log;
 #include <string>
 #include <cstring>
 #include <cassert>
+#include "ColvarRMSD.h"
 
 using namespace std;
 
@@ -16,13 +17,25 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION PATHMSD
 /*
-This file provides a template for if you want to introduce a new CV.
 
-<!-----You should add a description of your CV here---->
+This is the Path Collective Variables implementation 
+( see \cite brand07 ).
+This variable computes the progress along a given set of frames that is provided  
+in input ("s" component) and the distance from them ("z" component). 
+It is a function of MSD that are obtained by the joint use of MSD variable and SQUARED flag 
 
 \par Examples
 
-<!---You should put an example of how to use your CV here--->
+Here below is a case where you have defined three frames and you want to  
+calculate the progress alng the path and the distance from it in p1
+
+\verbatim
+t1: RMSD REFERENCE=frame_1.dat TYPE=OPTIMAL SQUARED
+t2: RMSD REFERENCE=frame_21.dat TYPE=OPTIMAL SQUARED
+t3: RMSD REFERENCE=frame_42.dat TYPE=OPTIMAL SQUARED
+p1: PATHMSD ARG=t1,t2,t3 LAMBDA=500.0 
+PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -42,8 +55,6 @@ PLUMED_REGISTER_ACTION(FunctionPathMSD,"PATHMSD")
 
 void FunctionPathMSD::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
-//  keys.addFlag("TEMPLATE_DEFAULT_OFF_FLAG",false,"flags that are by default not performed should be specified like this");
-//  keys.addFlag("TEMPLATE_DEFAULT_ON_FLAG",true,"flags that are by default performed should be specified like this");
   keys.use("ARG");
   keys.add("compulsory","LAMBDA","all compulsory keywords should be added like this with a description here");
   keys.add("optional","NEIGHLIST","all optional keywords that have input should be added like a description here");
@@ -66,8 +77,22 @@ pbc(true)
        // for each value get the name and the label of the corresponding action
        std::string mylabel=getPntrToArgument(i)->getPntrToAction()->getLabel(); 
        std::string myname=getPntrToArgument(i)->getPntrToAction()->getName(); 
-       log.printf("ARG  %s TYPE %s \n",mylabel.c_str(),myname.c_str());
-       if(myname!="RMSD")plumed_merror("This argument is not of RMSD type!!!");
+       //log.printf("ARG  %s TYPE %s \n",mylabel.c_str(),myname.c_str());
+       //if(myname!="RMSD")plumed_merror("This argument is not of RMSD type!!!");
+       // check of the SQUARED flag is set in all the dependent variables
+       ColvarRMSD* ptr=dynamic_cast<ColvarRMSD*>(getPntrToArgument(i)->getPntrToAction());
+       if(ptr){
+            log.printf("The cv type for %s is ColvarRMSD: good! \n",mylabel.c_str());
+            if((*ptr).squared){
+               log.printf("You enabled the SQUARED option in RMSD! it is the original flavour ! \n");
+            }else{
+               log.printf("BEWARE: In ARG %s  You did not enable the SQUARED option in RMSD! it is not the original flavour!\n",mylabel.c_str());
+               plumed_merror("There are problems in the pathcv setup. Check the log!!!");
+            }
+       }else{
+            log.printf("Hey, the CV %s used for the path has wrong type. Must be RMSD with added SQUARED flag!  \n");
+            plumed_merror("There are problems in the pathcv setup. Check the log!!!");
+       }
   }   
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");

@@ -1,9 +1,10 @@
-#include "Colvar.h"
+#include "ColvarRMSD.h"
 #include "PlumedMain.h"
 #include "ActionRegister.h"
 #include "PDB.h"
 #include "RMSD.h"
 #include "Atoms.h"
+
 
 using namespace std;
 
@@ -35,21 +36,6 @@ RMSD REFERENCE=file.pdb TYPE=OPTIMAL
 
 */
 //+ENDPLUMEDOC
-
-   
-class ColvarRMSD : public Colvar {
-	
-  RMSD rmsd;
-	
-  bool squared; 
-
-  vector<Vector> derivs;
-
-public:
-  ColvarRMSD(const ActionOptions&);
-  virtual void calculate();
-  static void registerKeywords(Keywords& keys);
-};
 
 PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
 
