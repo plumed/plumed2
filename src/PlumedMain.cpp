@@ -322,7 +322,7 @@ void PlumedMain::init(){
   log<<"Relevant bibliography:\n";
   log<<citations;
   log<<"Please read and cite where appropriate!\n";
-  log<<"Finished setupt\n";
+  log<<"Finished setup\n";
 }
 
 void PlumedMain::readInputFile(std::string str){
