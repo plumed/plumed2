@@ -23,6 +23,7 @@ This is the Path Collective Variables implementation
 This variable computes the progress along a given set of frames that is provided  
 in input ("s" component) and the distance from them ("z" component). 
 It is a function of MSD that are obtained by the joint use of MSD variable and SQUARED flag 
+(see below).
 
 \par Examples
 
@@ -82,18 +83,33 @@ pbc(true)
        // check of the SQUARED flag is set in all the dependent variables
        ColvarRMSD* ptr=dynamic_cast<ColvarRMSD*>(getPntrToArgument(i)->getPntrToAction());
        if(ptr){
-            log.printf("The cv type for %s is ColvarRMSD: good! \n",mylabel.c_str());
+            log.printf("  The cv type for %s is ColvarRMSD: good! \n",mylabel.c_str());
             if((*ptr).squared){
-               log.printf("You enabled the SQUARED option in RMSD! it is the original flavour ! \n");
+               log.printf("  You enabled the SQUARED option in RMSD! it is the original flavour ! \n");
             }else{
-               log.printf("BEWARE: In ARG %s  You did not enable the SQUARED option in RMSD! it is not the original flavour!\n",mylabel.c_str());
+               log.printf("  BEWARE: In ARG %s  You did not enable the SQUARED option in RMSD! it is not the original flavour!\n",mylabel.c_str());
                plumed_merror("There are problems in the pathcv setup. Check the log!!!");
             }
        }else{
-            log.printf("Hey, the CV %s used for the path has wrong type. Must be RMSD with added SQUARED flag!  \n");
-            plumed_merror("There are problems in the pathcv setup. Check the log!!!");
+            log.printf("  Hey, the CV %s used for the path has wrong type. Must be RMSD with added SQUARED flag!  \n",mylabel.c_str());
+            plumed_merror("  There are problems in the pathcv setup. Check the log!!!");
+       }
+       // check structural consistency: indexing must be the same 
+       if(i!=0){
+       		ColvarRMSD* ptr0=dynamic_cast<ColvarRMSD*>(getPntrToArgument(i)->getPntrToAction());
+                if( ptr->getNumberOfAtoms() != ptr0->getNumberOfAtoms()  ){
+	            log.printf("  Hey, the CV %s used for the path has wrong number of atoms compared to the other frames involved in the path cv!! Check it out!  \n",mylabel.c_str());
+       		 	    plumed_merror("There are problems in the pathcv setup. Check the log!!!");
+		}
+                for( unsigned ii=0; ii< ptr->getNumberOfAtoms();ii++ ){
+                     if(  ptr->getAbsoluteIndex(ii)!=ptr0->getAbsoluteIndex(ii) ){
+		            log.printf("  Hey, the CV %s used for the path has wrong number of atoms compared to the other frames involved in the path cv!! Check it out!  \n",mylabel.c_str());
+       		 	    plumed_merror("There are problems in the pathcv setup. Check the log!!!");
+                     }
+                } 
        }
   }   
+  log.printf("  Consistency check completed! Your path cvs look good!\n"); 
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
 }
