@@ -2,6 +2,7 @@
 #define __PLUMED_PlumedMain_h
 
 #include "WithCmd.h"
+#include "ExchangePatterns.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -36,6 +37,7 @@ class DLLoader;
 class PlumedCommunicator;
 class Stopwatch;
 class Citations;
+class ExchangePatterns;
 
 /**
 Main plumed object.
@@ -94,6 +96,8 @@ private:
 /// The total bias (=total energy of the restraints)
   double bias;
 
+/// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
+  ExchangePatterns exchangepatterns;
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
@@ -198,9 +202,8 @@ public:
 /// Closes a file opened with PlumedMain::fopen()
   int fclose(FILE*fp);
 /// Set or Get the flag for random exchanges
-  void setRandomEx(const bool);
-  void getRandomEx(bool&);
-//  void getExchangeList(int*);
+  void setExchangePatternsFlag(const bool);
+  void getExchangePatternsFlag(bool&);
 };
 
 /////
@@ -227,12 +230,12 @@ void PlumedMain::setSuffix(const std::string&s){
 }
 
 inline
-void PlumedMain::setRandomEx(const bool flag){
+void PlumedMain::setExchangePatternsFlag(const bool flag){
   random_exchanges=flag;
 }
 
 inline
-void PlumedMain::getRandomEx(bool &flag){
+void PlumedMain::getExchangePatternsFlag(bool &flag){
   flag=random_exchanges;
 }
 

@@ -1,8 +1,14 @@
 #ifndef __PLUMED_ExchangePatterns_h
 #define __PLUMED_ExchangePatterns_h
 
+#include "Random.h"
+
 namespace PLMD {
-  void setExchangesSeed(int seed);
-  void getExchangesList(int *ind);
+  class ExchangePatterns {
+    Random random;
+public:
+  void setSeed(int seed);
+  void getList(int *ind, int nrepl);
+};
 }
 #endif

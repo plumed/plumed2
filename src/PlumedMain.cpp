@@ -21,7 +21,6 @@
 #include "CLToolMain.h"
 #include "Stopwatch.h"
 #include "Citations.h"
-#include "ExchangePatterns.h"
 
 using namespace PLMD;
 using namespace std;
@@ -249,15 +248,15 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else if(word=="getRandomExchanges"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       getRandomEx((*static_cast<bool*>(val)));
+       getExchangePatternsFlag((*static_cast<bool*>(val)));
   } else if(word=="setExchangesSeed"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       setExchangesSeed((*static_cast<int*>(val)));
+       exchangepatterns.setSeed((*static_cast<int*>(val)));
   } else if(word=="getExchangesList"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       getExchangesList((static_cast<int*>(val)));
+       exchangepatterns.getList((static_cast<int*>(val)),comm.Get_size());
   } else {
 // multi word commands
 
@@ -339,7 +338,7 @@ void PlumedMain::readInputFile(std::string str){
       setSuffix(words[1]);
     }
     else if(words[0]=="RANDOM_EXCHANGES"){
-      setRandomEx(true);
+      setExchangePatternsFlag(true);
     }
     else if(words[0]=="INCLUDE"){
       plumed_assert(words.size()==2);
