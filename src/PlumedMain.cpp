@@ -39,8 +39,7 @@ PlumedMain::PlumedMain():
   atoms(*new Atoms(*this)),
   actionSet(*new ActionSet(*this)),
   bias(0.0),
-  novirial(false),
-  random_exchanges(false)
+  novirial(false)
 {
   stopwatch.start();
   stopwatch.pause();
@@ -248,7 +247,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else if(word=="getRandomExchanges"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       getExchangePatternsFlag((*static_cast<bool*>(val)));
+       exchangepatterns.getFlag((*static_cast<int*>(val)));
   } else if(word=="setExchangesSeed"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
@@ -338,7 +337,7 @@ void PlumedMain::readInputFile(std::string str){
       setSuffix(words[1]);
     }
     else if(words[0]=="RANDOM_EXCHANGES"){
-      setExchangePatternsFlag(true);
+      exchangepatterns.setFlag(exchangepatterns.RANDOM);
     }
     else if(words[0]=="INCLUDE"){
       plumed_assert(words.size()==2);
