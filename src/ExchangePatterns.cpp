@@ -9,7 +9,7 @@ void ExchangePatterns::setFlag(const int flag){
 }
 
 void ExchangePatterns::getFlag(int &flag){
-  PatternFlag=flag;
+  flag=PatternFlag;
 }
 
 void ExchangePatterns::setSeed(int seed)
