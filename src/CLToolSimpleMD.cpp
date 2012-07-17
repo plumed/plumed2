@@ -91,6 +91,7 @@ read_input(FILE*   fp,
       if(line[i]!=' ')break;
       line.erase(i);
     }
+    if(line.length()==0) continue;
     sscanf(line.c_str(),"%s",buffer);
     string keyword=buffer;
     if(keyword=="temperature")
