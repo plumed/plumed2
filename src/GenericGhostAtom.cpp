@@ -75,11 +75,11 @@ void GenericGhostAtom::calculate(){
 
 // auxiliary vector
   Vector n02 = delta(getPosition(0), getPosition(2));
-  double n02_norm = n02.modulo();
-  n02 /= n02_norm;
 
 // second versor 
-  n.push_back(crossProduct(n[0],n02));
+  Vector n03 = crossProduct(n[0],n02);
+  double n03_norm = n03.modulo();
+  n.push_back(n03/n03_norm);
 
 // third versor 
   n.push_back(crossProduct(n[0],n[1]));
@@ -98,31 +98,36 @@ void GenericGhostAtom::calculate(){
 // some useful tensors for derivatives 
   Tensor dn0d0  = (-Tensor::identity()+Tensor(n[0],n[0]))/n01.modulo();
   Tensor dn0d1  = (+Tensor::identity()-Tensor(n[0],n[0]))/n01.modulo();
-  Tensor dn02d0 = (-Tensor::identity()+Tensor(n02,n02))/n02_norm;
-  Tensor dn02d2 = (+Tensor::identity()-Tensor(n02,n02))/n02_norm;
+  Tensor dn02d0 = -Tensor::identity();
+  Tensor dn02d2 =  Tensor::identity();
 
 // derivative of n1 = n0 x n02
   Tensor dn1d0, dn1d1, dn1d2;
+  Vector aux0, aux1, aux2; 
 
   for(unsigned j=0;j<3;++j){
-// derivative of n1 = n0 x n02 with respect to point 0
+// derivative of n0 x n02 with respect to point 0
    Vector tmp00  = Vector( dn0d0(0,j),  dn0d0(1,j),  dn0d0(2,j));
    Vector tmp020 = Vector(dn02d0(0,j), dn02d0(1,j), dn02d0(2,j));
    Vector tmp0   = crossProduct(tmp00,n02) + crossProduct(n[0],tmp020);
-// derivative of n1 = n0 x n02 with respect to point 1
+   aux0[j]       = dotProduct(tmp0,n[1]);
+// derivative of n0 x n02 with respect to point 1
    Vector tmp01  = Vector( dn0d1(0,j),  dn0d1(1,j),  dn0d1(2,j));
    Vector tmp1   = crossProduct(tmp01,n02);
-// derivative of n1 = n0 x n02 with respect to point 2
+   aux1[j]       = dotProduct(tmp1,n[1]);
+// derivative of n0 x n02 with respect to point 2
    Vector tmp022 = Vector(dn02d2(0,j), dn02d2(1,j), dn02d2(2,j));
    Vector tmp2   = crossProduct(n[0],tmp022);
+   aux2[j]       = dotProduct(tmp2,n[1]);
+// derivative of n1 = (n0 x n02) / || (n0 x n02) ||
    for(unsigned i=0;i<3;++i) {
-    dn1d0(i,j) = tmp0[i];
-    dn1d1(i,j) = tmp1[i];
-    dn1d2(i,j) = tmp2[i];
+    dn1d0(i,j) = ( tmp0[i] - aux0[j] * n[1][i] ) / n03_norm;
+    dn1d1(i,j) = ( tmp1[i] - aux1[j] * n[1][i] ) / n03_norm; 
+    dn1d2(i,j) = ( tmp2[i] - aux2[j] * n[1][i] ) / n03_norm;
    }
   }
 
-// Derivative of the last versor n2 = n0 x ( n0 x n02 ) = n0( n0 n02 ) - n02 
+// Derivative of the last versor n2 = n0 x n1 =  ( n0( n0 n02 ) - n02 ) / || n0 x n02 ||
 // Scalar product and derivatives
   double n0_n02 = dotProduct(n[0],n02); 
   Vector dn0_n02d0, dn0_n02d1, dn0_n02d2;
@@ -136,12 +141,11 @@ void GenericGhostAtom::calculate(){
   }
 
   Tensor dn2d0, dn2d1, dn2d2;
-
   for(unsigned i=0;i<3;++i){
    for(unsigned j=0;j<3;++j){
-    dn2d0(i,j) = dn0d0(i,j) * n0_n02 + n[0][i] * dn0_n02d0[j] - dn02d0(i,j);
-    dn2d1(i,j) = dn0d1(i,j) * n0_n02 + n[0][i] * dn0_n02d1[j];
-    dn2d2(i,j) =                       n[0][i] * dn0_n02d2[j] - dn02d2(i,j);
+    dn2d0(i,j) = ( dn0d0(i,j) * n0_n02 + n[0][i] * dn0_n02d0[j] - dn02d0(i,j) - ( n[0][i] * n0_n02 - n02[i] ) * aux0[j] / n03_norm ) / n03_norm;
+    dn2d1(i,j) = ( dn0d1(i,j) * n0_n02 + n[0][i] * dn0_n02d1[j]               - ( n[0][i] * n0_n02 - n02[i] ) * aux1[j] / n03_norm ) / n03_norm;
+    dn2d2(i,j) = (                       n[0][i] * dn0_n02d2[j] - dn02d2(i,j) - ( n[0][i] * n0_n02 - n02[i] ) * aux2[j] / n03_norm ) / n03_norm;
    }
   }
 
