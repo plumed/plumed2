@@ -60,6 +60,7 @@ read_input(FILE*   fp,
            string& trajfile,
            string& statfile,
            int&    maxneighbours,
+           int&    ndim,
            int&    idum)
 {
   temperature=1.0;
@@ -72,6 +73,7 @@ read_input(FILE*   fp,
   nstat=1;
   maxneighbours=1000;
   idum=0;
+  ndim=3;
   wrapatoms=false;
   statfile="";
   trajfile="";
@@ -130,6 +132,8 @@ read_input(FILE*   fp,
     }
     else if(keyword=="idum")
       sscanf(line.c_str(),"%s %d",buffer,&idum);
+    else if(keyword=="ndim")
+      sscanf(line.c_str(),"%s %d",buffer,&ndim);
     else{
       fprintf(stderr,"Unknown keywords :%s\n",keyword.c_str());
       exit(1);
@@ -150,6 +154,10 @@ read_input(FILE*   fp,
   }
   if(statfile.length()==0){
       fprintf(stderr,"Specify stat file\n");
+      exit(1);
+  }
+  if(ndim<1 || ndim>3){
+      fprintf(stderr,"ndim should be 1,2 or 3\n");
       exit(1);
   }
 }
@@ -176,9 +184,9 @@ void read_positions(const string& inputfile,int natoms,vector<Vector>& positions
   fclose(fp);
 }
 
-void randomize_velocities(const int natoms,const double temperature,const vector<double>&masses,vector<Vector>& velocities,Random&random){
+void randomize_velocities(const int natoms,const int ndim,const double temperature,const vector<double>&masses,vector<Vector>& velocities,Random&random){
 // randomize the velocities according to the temperature
-  for(int iatom=0;iatom<natoms;iatom++) for(int i=0;i<3;i++)
+  for(int iatom=0;iatom<natoms;iatom++) for(int i=0;i<ndim;i++)
       velocities[iatom][i]=sqrt(temperature/masses[iatom])*random.Gaussian();
 }
 
@@ -280,7 +288,7 @@ void compute_engkin(const int natoms,const vector<double>& masses,const vector<V
 }
 
 
-void thermostat(const int natoms,const vector<double>& masses,const double dt,const double friction,
+void thermostat(const int natoms,const int ndim,const vector<double>& masses,const double dt,const double friction,
                 const double temperature,vector<Vector>& velocities,double & engint,Random & random){
 // Langevin thermostat, implemented as decribed in Bussi and Parrinello, Phys. Rev. E (2007)
 // it is a linear combination of old velocities and new, randomly chosen, velocity,
@@ -289,7 +297,7 @@ void thermostat(const int natoms,const vector<double>& masses,const double dt,co
   c1=exp(-friction*dt);
   for(int iatom=0;iatom<natoms;iatom++){
     c2=sqrt((1.0-c1*c1)*temperature/masses[iatom]);
-    for(int i=0;i<3;i++){
+    for(int i=0;i<ndim;i++){
       engint+=0.5*masses[iatom]*velocities[iatom][i]*velocities[iatom][i];
       velocities[iatom][i]=c1*velocities[iatom][i]+c2*random.Gaussian();
       engint-=0.5*masses[iatom]*velocities[iatom][i]*velocities[iatom][i];
@@ -322,7 +330,7 @@ void write_positions(const string& trajfile,int natoms,const vector<Vector>& pos
 }
 
 void write_statistics(const string & statfile,const int istep,const double tstep,
-                      const int natoms,const double engkin,const double engconf,const double engint){
+                      const int natoms,const int ndim,const double engkin,const double engconf,const double engint){
 // write statistics on file statfile
   if(write_statistics_first){
 // first time this routine is called, open the file
@@ -335,7 +343,7 @@ void write_statistics(const string & statfile,const int istep,const double tstep
     write_statistics_fp=fopen(statfile.c_str(),"a");
     write_statistics_last_time_reopened=istep;
   }
-  fprintf(write_statistics_fp,"%d %f %f %f %f %f\n",istep,istep*tstep,2.0*engkin/(3.0*natoms),engconf,engkin+engconf,engkin+engconf+engint);
+  fprintf(write_statistics_fp,"%d %f %f %f %f %f\n",istep,istep*tstep,2.0*engkin/double(ndim*natoms),engconf,engkin+engconf,engkin+engconf+engint);
 }
 
 
@@ -367,6 +375,7 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
   int         nconfig;           // stride for output of configurations
   int         nstat;             // stride for output of statistics
   int         maxneighbour;      // maximum average number of neighbours per atom
+  int         ndim;              // dimensionality of the system (1, 2, or 3)
   int         idum;              // seed
   bool        wrapatoms;         // if true, atomic coordinates are written wrapped in minimal cell
   string      inputfile;         // name of file with starting configuration (xyz)
@@ -400,7 +409,7 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
   read_input(mystdin,temperature,tstep,friction,forcecutoff,
              listcutoff,nstep,nconfig,nstat,
              wrapatoms,inputfile,outputfile,trajfile,statfile,
-             maxneighbour,idum);
+             maxneighbour,ndim,idum);
 
   if(argc==2) fclose(mystdin);
 
@@ -423,6 +432,7 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
   fprintf(out,"%s %d\n","Stride for statistics            :",nstat);
   fprintf(out,"%s %s\n","Statistics file                  :",statfile.c_str());
   fprintf(out,"%s %d\n","Max average number of neighbours :",maxneighbour);
+  fprintf(out,"%s %d\n","Dimensionality                   :",ndim);
   fprintf(out,"%s %d\n","Seed                             :",idum);
   fprintf(out,"%s %s\n","Are atoms wrapped on output?     :",(wrapatoms?"T":"F"));
 
@@ -452,7 +462,7 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
   read_positions(inputfile,natoms,positions,cell);
 
 // velocities are randomized according to temperature
-  randomize_velocities(natoms,temperature,masses,velocities,random);
+  randomize_velocities(natoms,ndim,temperature,masses,velocities,random);
 
   if(plumed){
     plumed->cmd("setNatoms",&natoms);
@@ -471,6 +481,10 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
 // forces are computed before starting md
   compute_forces(natoms,listsize,positions,cell,forcecutoff,point,list,forces,engconf);
 
+// remove forces if ndim<3
+  if(ndim<3)
+  for(int iatom=0;iatom<natoms;++iatom) for(int k=ndim;k<3;++k) forces[iatom][k]=0.0;
+
 // here is the main md loop
 // Langevin thermostat is applied before and after a velocity-Verlet integrator
 // the overall structure is:
@@ -483,7 +497,7 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
 //   thermostat
 //   (eventually dump output informations)
   for(int istep=0;istep<nstep;istep++){
-    thermostat(natoms,masses,0.5*tstep,friction,temperature,velocities,engint,random);
+    thermostat(natoms,ndim,masses,0.5*tstep,friction,temperature,velocities,engint,random);
 
     for(int iatom=0;iatom<natoms;iatom++) for(int k=0;k<3;k++)
       velocities[iatom][k]+=forces[iatom][k]*0.5*tstep/masses[iatom];
@@ -514,18 +528,21 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
       plumed->cmd("setBox",cell9);
       plumed->cmd("calc");
     }
+// remove forces if ndim<3
+   if(ndim<3)
+    for(int iatom=0;iatom<natoms;++iatom) for(int k=ndim;k<3;++k) forces[iatom][k]=0.0;
 
     for(int iatom=0;iatom<natoms;iatom++) for(int k=0;k<3;k++)
       velocities[iatom][k]+=forces[iatom][k]*0.5*tstep/masses[iatom];
 
-    thermostat(natoms,masses,0.5*tstep,friction,temperature,velocities,engint,random);
+    thermostat(natoms,ndim,masses,0.5*tstep,friction,temperature,velocities,engint,random);
 
 // kinetic energy is calculated
   compute_engkin(natoms,masses,velocities,engkin);
 
 // eventually, write positions and statistics
     if((istep+1)%nconfig==0) write_positions(trajfile,natoms,positions,cell,wrapatoms);
-    if((istep+1)%nstat==0)   write_statistics(statfile,istep+1,tstep,natoms,engkin,engconf,engint);
+    if((istep+1)%nstat==0)   write_statistics(statfile,istep+1,tstep,natoms,ndim,engkin,engconf,engint);
 
   }
 
