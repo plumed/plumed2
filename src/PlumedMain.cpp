@@ -244,7 +244,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
        log.setFile(static_cast<char*>(val));
-  } else if(word=="getRandomExchanges"){
+  } else if(word=="getExchangesFlag"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
        exchangepatterns.getFlag((*static_cast<int*>(val)));

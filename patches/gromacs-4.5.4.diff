@@ -295,8 +295,8 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +    if(plumedswitch){
 +      int partner=re->repl;
 +      int test=0;
-+      plumed_cmd(plumedmain,"getRandomExchanges",&test);
-+      if(test){
++      plumed_cmd(plumedmain,"getExchangesFlag",&test);
++      if(test>0){
 +        int *list;
 +        snew(list,re->nrepl);
 +        plumed_cmd(plumedmain,"setExchangesSeed",&re->seed);
