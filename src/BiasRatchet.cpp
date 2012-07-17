@@ -1,10 +1,10 @@
 #include "Bias.h"
+#include "Random.h"
 #include "ActionRegister.h"
-
 #include <cassert>
+#include <ctime>
 
 using namespace std;
-
 
 namespace PLMD{
 
@@ -55,6 +55,9 @@ class BiasRatchet : public Bias{
   std::vector<double> to;
   std::vector<double> min;
   std::vector<double> kappa;
+  std::vector<double> temp;
+  std::vector<double> seed;
+  vector<Random> random;
 public:
   BiasRatchet(const ActionOptions&);
   void calculate();
@@ -69,17 +72,23 @@ void BiasRatchet::registerKeywords(Keywords& keys){
   keys.add("compulsory","TO","The array of target values");
   keys.add("compulsory","KAPPA","The array of force constants.");
   keys.add("optional","MIN","Array of starting values (usefull for restarting)");
+  keys.add("optional","NOISE","Array of noise intensities (add a temperature to the Ratchet)");
+  keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the Ratchet)");
 }
 
 BiasRatchet::BiasRatchet(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
 to(getNumberOfArguments(),0),
 min(getNumberOfArguments(),-1.0),
-kappa(getNumberOfArguments(),0.0)
+kappa(getNumberOfArguments(),0.0),
+temp(getNumberOfArguments(),0.0),
+seed(getNumberOfArguments(),time(0))
 {
   parseVector("KAPPA",kappa);
   plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("MIN",min);
+  parseVector("NOISE",temp);
+  parseVector("SEED",seed);
   parseVector("TO",to);
   plumed_assert(to.size()==getNumberOfArguments());
   checkRead();
@@ -95,6 +104,7 @@ kappa(getNumberOfArguments(),0.0)
   log.printf("\n");
 
   for(unsigned i=0;i<getNumberOfArguments();i++) {char str_min[6]; sprintf(str_min,"min_%u",i+1); addComponent(str_min);}
+  for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(seed[i]);}
   addComponent("bias");
   addComponent("force2");
 }
@@ -107,9 +117,13 @@ void BiasRatchet::calculate(){
     const double cv=difference(i,to[i],getArgument(i));
     const double cv2=cv*cv;
     const double k=kappa[i];
+    double diff=temp[i];
+    if(cv2<=diff) { diff=0.; temp[i]=0.; }
+    double noise = 2.*random[i].Gaussian()*diff;
 
     if(min[i]<0.||cv2<min[i]) min[i] = cv2; 
     else {
+      min[i] += noise;  
       const double f = -2.*k*(cv2-min[i])*cv;
       setOutputForce(i,f);
       ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
