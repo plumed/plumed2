@@ -26,8 +26,8 @@ switching function definition (SPLINE R_0=0.08 NN=8 MM=12) when your input file
 is in units of nm. 
 
 Please be aware that for codes like gromacs you must ensure that plumed 
-reconstructs the chains involved in your CV when you calculate this CV. 
-For more details as to how to do this see \ref WHOLEMOLECULES.
+reconstructs the chains involved in your CV when you calculate this CV using
+anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 

@@ -15,7 +15,7 @@ void MultiColvarSecondaryStructureRMSD::registerKeywords( Keywords& keys ){
                               "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
                               "As such if you define portions of the chain with fewer than N residues the code will crash."); 
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD.");
-  keys.remove("NOPBC"); keys.remove("MORE_THAN"); keys.remove("HISTOGRAM"); keys.remove("WITHIN"); keys.remove("MOMENT");
+  keys.remove("MORE_THAN"); keys.remove("HISTOGRAM"); keys.remove("WITHIN"); keys.remove("MOMENT");
 }
 
 MultiColvarSecondaryStructureRMSD::MultiColvarSecondaryStructureRMSD(const ActionOptions&ao):
@@ -69,7 +69,8 @@ double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std:
   if( secondary_drmsd.size()>0 ){
     r=secondary_drmsd[0]->calculate( pos, getPbc(), deriv, virial ); 
     for(unsigned i=1;i<secondary_drmsd.size();++i){
-        nr=secondary_drmsd[i]->calculate( pos, getPbc(), new_deriv, new_virial );
+        if( usesPbc() ) nr=secondary_drmsd[i]->calculate( pos, getPbc(), new_deriv, new_virial );
+        else nr=secondary_drmsd[i]->calculate( pos, getPbc(), new_deriv, new_virial );
         if(nr<r){
            r=nr;
            for(unsigned i=0;i<new_deriv.size();++i) deriv[i]=new_deriv[i];

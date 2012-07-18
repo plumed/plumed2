@@ -28,8 +28,8 @@ switching function definition (SPLINE R_0=0.08 NN=8 MM=12) when your input file
 is in units of nm. 
 
 Please be aware that for codes like gromacs you must ensure that plumed 
-reconstructs the chains involved in your CV when you calculate this CV. 
-For more details as to how to do this see \ref WHOLEMOLECULES.
+reconstructs the chains involved in your CV when you calculate this CV using
+anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 
@@ -219,7 +219,7 @@ bool ColvarParabetaRMSD::contributionIsSmall( std::vector<Vector>& pos ){
       Vector origin_old, origin_new; origin_old=pos[21];
       origin_new=pos[6]+distance;
       for(unsigned i=15;i<30;++i){
-          pos[i]=origin_new + getSeparation( origin_old, pos[i] );
+          pos[i]+=( origin_new - origin_old ); 
       }
   }   
   return false;
