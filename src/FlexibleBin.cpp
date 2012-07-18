@@ -98,7 +98,7 @@ void FlexibleBin::update(bool nowAddAHill){
 
 vector<double> FlexibleBin::getMatrix() const{
 	return variance;
-};
+}
 
 ///
 /// Calculate the matrix of  (dcv_i/dx)*(dcv_j/dx)^-1 
@@ -137,4 +137,4 @@ vector<double> FlexibleBin::getInverseMatrix() const{
 	//paction->log<<"------------ END GET INVERSE MATRIX ---------------\n";
 
 	return uppervec;  
-};
+}
