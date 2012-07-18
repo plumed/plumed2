@@ -82,7 +82,8 @@ to(getNumberOfArguments(),0),
 min(getNumberOfArguments(),-1.0),
 kappa(getNumberOfArguments(),0.0),
 temp(getNumberOfArguments(),0.0),
-seed(getNumberOfArguments(),time(0))
+seed(getNumberOfArguments(),time(0)),
+random(getNumberOfArguments())
 {
   parseVector("KAPPA",kappa);
   plumed_assert(kappa.size()==getNumberOfArguments());
