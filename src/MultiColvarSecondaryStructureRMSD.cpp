@@ -24,7 +24,6 @@ MultiColvar(ao)
 {
   parse("TYPE",alignType);
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
-
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 }
 
@@ -68,9 +67,9 @@ double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std:
   double r,nr; Tensor new_virial;
 
   if( secondary_drmsd.size()>0 ){
-    r=secondary_drmsd[0]->calculate( pos, deriv, virial ); 
+    r=secondary_drmsd[0]->calculate( pos, getPbc(), deriv, virial ); 
     for(unsigned i=1;i<secondary_drmsd.size();++i){
-        nr=secondary_drmsd[i]->calculate( pos, new_deriv, new_virial );
+        nr=secondary_drmsd[i]->calculate( pos, getPbc(), new_deriv, new_virial );
         if(nr<r){
            r=nr;
            for(unsigned i=0;i<new_deriv.size();++i) deriv[i]=new_deriv[i];
@@ -93,6 +92,11 @@ double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std:
 
 unsigned MultiColvarSecondaryStructureRMSD::getNumberOfFieldDerivatives(){
   plumed_massert(0,"Fields are not allowed for secondary structure variables");
+}
+
+bool MultiColvarSecondaryStructureRMSD::usingRMSD() const {
+  if( secondary_rmsd.size()>0 ) return true;
+  else return false;
 }
 
 }

@@ -36,20 +36,49 @@ double DRMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector
   for(unsigned i=1;i<natoms;++i){
      for(unsigned j=0;j<i;++j){
         if( targets(i,j)>0 ){
-            distance=delta( positions[i] , positions[j] ); len=distance.modulo();  
+            distance=delta( positions[i] , positions[j] ); 
+            len=distance.modulo();  
             diff=len-targets(i,j); drmsd+=diff*diff; 
             derivatives[i]+=-( diff / len ) * distance;
             derivatives[j]+= ( diff / len ) * distance;
+            virial=virial-( diff / len ) * Tensor(distance,distance);
         }
      }
   }
   drmsd=sqrt( drmsd / npairs ); 
      
-  double idrmsd=1.0/( drmsd * npairs );
+  double idrmsd=1.0/( drmsd * npairs ); virial*=idrmsd;
   for(unsigned i=0;i<natoms;++i){
-      derivatives[i]=idrmsd*derivatives[i]; virial+=( -1.0*Tensor(positions[i],derivatives[i]) );
+      derivatives[i]=idrmsd*derivatives[i]; 
   }
 
   return drmsd;
 }
+
+double DRMSD::calculate(const std::vector<Vector> & positions, const Pbc& pbc, std::vector<Vector> &derivatives, Tensor& virial) const {
+  assert(positions.size()==natoms && derivatives.size()==natoms );
+
+  Vector distance; double len,diff,drmsd=0;
+  for(unsigned i=1;i<natoms;++i){
+     for(unsigned j=0;j<i;++j){
+        if( targets(i,j)>0 ){
+            distance=pbc.distance( positions[i] , positions[j] ); 
+            len=distance.modulo();  
+            diff=len-targets(i,j); drmsd+=diff*diff;
+            derivatives[i]+=-( diff / len ) * distance;
+            derivatives[j]+= ( diff / len ) * distance;
+            virial=virial-( diff / len ) * Tensor(distance,distance); 
+        }
+     }
+  }
+  drmsd=sqrt( drmsd / npairs );
+    
+  double idrmsd=1.0/( drmsd * npairs ); virial*=idrmsd;
+  for(unsigned i=0;i<natoms;++i){
+      derivatives[i]=idrmsd*derivatives[i]; 
+  }
+
+  return drmsd;
+}
+
 

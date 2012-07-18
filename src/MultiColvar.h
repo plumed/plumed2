@@ -217,7 +217,7 @@ public:
 /// Calcualte the colvar
   void calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
-  virtual bool contributionIsSmall( const std::vector<Vector>& pos ){ return false; }
+  virtual bool contributionIsSmall( std::vector<Vector>& pos ){ return false; }
 /// And a virtual function which actually computes the colvar
   virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0; 
 /// A virtual routine to get the position of the central atom - used for things like cv gradient

@@ -2,13 +2,16 @@
 #define __PLUMED_MolInfo_h
 
 #include "ActionSetup.h"
+#include "ActionAtomistic.h"
 #include "PlumedMain.h"
 #include "PlumedException.h"
 #include "PDB.h"
 
 namespace PLMD {
 
-class MolInfo : public virtual ActionSetup {
+class MolInfo : 
+public ActionSetup,  
+public ActionAtomistic {
 private:
   PDB pdb;
   std::vector< std::vector<AtomNumber> > read_backbone;

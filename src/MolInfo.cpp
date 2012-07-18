@@ -44,21 +44,23 @@ void MolInfo::registerKeywords( Keywords& keys ){
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","STRUCTURE","a file in pdb format containing a reference structure. "
                                     "This is used to defines the atoms in the various residues, chains, etc . " + PDB::documentation() );
-  keys.add("numbered","CHAIN","(for masochists without pdb files) The atoms involved in each of the chains of interest in the structure.");
+  keys.add("atoms","CHAIN","(for masochists ( a.k.a. Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
 }
 
 MolInfo::MolInfo( const ActionOptions&ao ):
 Action(ao),
-ActionSetup(ao)
+ActionSetup(ao),
+ActionAtomistic(ao)
 {
   std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
   if( moldat.size()!=0 ) error("cannot use more than one MOLINFO action in input");
 
   std::vector<AtomNumber> backbone;
-  parseVector("CHAIN",backbone);
+  parseAtomList("CHAIN",backbone);
   if( read_backbone.size()==0 ){
       for(unsigned i=1;;++i){
-          if( !parseNumberedVector("CHAIN",i,backbone) ) break;
+          parseAtomList("CHAIN",i,backbone);
+          if( backbone.size()==0 ) break;
           read_backbone.push_back(backbone);
           backbone.resize(0);
       }

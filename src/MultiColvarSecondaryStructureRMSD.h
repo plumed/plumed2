@@ -18,6 +18,7 @@ private:
   std::vector<DRMSD*> secondary_drmsd;
 protected:
   void setSecondaryStructure( std::vector<Vector>& structure, double bondlength, double units );
+  bool usingRMSD() const ;
 public:
   static void registerKeywords( Keywords& keys );
   MultiColvarSecondaryStructureRMSD(const ActionOptions&);
