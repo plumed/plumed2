@@ -1,4 +1,20 @@
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+for file in *.c *.cpp *.h PlumedConfig.h.in
+do
+
+if [ $file == "PlumedConfig.h" ] ; then
+
+continue
+
+fi
+
+echo "Applying LGPL header to file $file"
+
+{
+
+plus="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+
+cat << EOF 
+/* $plus
    Copyright (c) 2012 The PLUMED team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
@@ -18,30 +34,21 @@
 
    You should have received a copy of the GNU Lesser General Public License
    along with PLUMED.  If not, see <http://www.gnu.org/licenses/>.
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_MolInfo_h
-#define __PLUMED_MolInfo_h
+$plus */
+EOF
 
-#include "ActionSetup.h"
-#include "ActionAtomistic.h"
-#include "PlumedMain.h"
-#include "PlumedException.h"
-#include "PDB.h"
+awk -v plus=$plus 'BEGIN{
+  inheader=0;
+}{
+  if($1=="/*" && $2==plus) inheader=1;
+  if(inheader==0) print $0
+  if($1==plus && $2=="*/")  inheader=0;
+}' $file
 
-namespace PLMD {
+} > $file.tmp
 
-class MolInfo : 
-public ActionSetup,  
-public ActionAtomistic {
-private:
-  PDB pdb;
-  std::vector< std::vector<AtomNumber> > read_backbone;
-public:
-  static void registerKeywords( Keywords& keys );
-  MolInfo(const ActionOptions&ao);
-  void getBackbone( std::vector<std::string>& resstrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone );
-};
+mv $file.tmp $file
 
-}
+done
 
-#endif
+
