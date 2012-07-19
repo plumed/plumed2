@@ -47,7 +47,9 @@ awk -v plus=$plus 'BEGIN{
 
 } > $file.tmp
 
-mv $file.tmp $file
+cmp -s $file $file.tmp || cp $file.tmp $file
+
+rm $file.tmp
 
 done
 
