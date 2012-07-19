@@ -33,7 +33,7 @@ std::string SwitchingFunction::documentation(){
   ostr<<"Within plumed you can use the following switching functions ";
   ostr<<"\\f$s(r)=\\frac{ 1 - \\left(\\frac{ r - d_0 }{ r_0 }\\right)^{n} }{ 1 - \\left(\\frac{ r - d_0 }{ r_0 }\\right)^{m} } \\f$, ";
   ostr<<"\\f$s(r)=\\exp\\left(-\\frac{ r - d_0 }{ r_0 }\\right)\\f$ or using \\f$s(r)=\\exp\\left(-\\frac{ (r - d_0)^2 }{ 2r_0^2 }\\right)\\f$. ";
-  ostr<<"The first of these options is specified using the syntax (SPLINE R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$ NN=\\f$n\\f$ MM=\\f$m\\f$) and if ";
+  ostr<<"The first of these options is specified using the syntax (RATIONAL R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$ NN=\\f$n\\f$ MM=\\f$m\\f$) and if ";
   ostr<<"the D_0, NN and MM keywords are missing they are assumed equal to 0, 6 and 12 respectively.  The second form is specified using ";
   ostr<<"(EXP R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$) and if the D_0 is missing it is assumed equal to 0.  The third form is specified using ";
   ostr<<"(GAUSSIAN R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$) and if the D_0 is missing it is assumed equal to 0. You can add the D_MAX flag to ";
@@ -60,7 +60,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   Tools::parse(data,"D_0",d0);
   Tools::parse(data,"D_MAX",dmax);
 
-  if(name=="SPLINE"){
+  if(name=="RATIONAL"){
     type=spline;
     nn=6;
     mm=12;

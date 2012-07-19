@@ -43,7 +43,7 @@ this paper use the set of distances from the alpha helix configurations to measu
 the number of segments that have an alpha helical configuration. To do something 
 similar using this implementation you must use the LESS_THAN keyword. Furthermore, 
 based on reference \cite pietrucci09jctc we would recommend using the following
-switching function definition (SPLINE R_0=0.08 NN=8 MM=12) when your input file
+switching function definition (RATIONAL R_0=0.08 NN=8 MM=12) when your input file
 is in units of nm. 
 
 Please be aware that for codes like gromacs you must ensure that plumed 
@@ -57,7 +57,7 @@ protein that are in an alpha helical configuration.
 
 \verbatim
 MOLINFO STRUCTURE=helix.pdb
-ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(SPLINE R_0=0.08 NN=8 MM=12) LABEL=a
+ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(RATIONAL R_0=0.08 NN=8 MM=12) LABEL=a
 \endverbatim
 (see also \ref MOLINFO)
 

@@ -43,7 +43,7 @@ The following example calculates switching functions based on the distances betw
 to a file named colvar.
 
 \verbatim
-CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH=(SPLINE R_0=1.5) LABEL=f1
+CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH=(RATIONAL R_0=1.5) LABEL=f1
 PRINT ARG=f1.* FILE=colvar
 \endverbatim
 (See also \ref PRINT)
