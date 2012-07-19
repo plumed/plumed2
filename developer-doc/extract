@@ -8,6 +8,7 @@ cat ../src/*cpp | grep PLUMED_REGISTER_ACTION |
 ' |
 awk '{
   printf("%s","/// \\class PLMD::"$1"\n");
+  printf("%s","/// \\ingroup INPUTDIRECTIVES\n");
   action=tolower($2);
   firstchar=substr($2,1,1);
   n=split(action,actionarray,"");
