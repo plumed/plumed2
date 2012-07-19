@@ -30,7 +30,7 @@
 
 namespace PLMD {
 
-class MolInfo : 
+class SetupMolInfo : 
 public ActionSetup,  
 public ActionAtomistic {
 private:
@@ -38,7 +38,7 @@ private:
   std::vector< std::vector<AtomNumber> > read_backbone;
 public:
   static void registerKeywords( Keywords& keys );
-  MolInfo(const ActionOptions&ao);
+  SetupMolInfo(const ActionOptions&ao);
   void getBackbone( std::vector<std::string>& resstrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone );
 };
 

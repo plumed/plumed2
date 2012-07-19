@@ -41,26 +41,26 @@ set of collective variables.
 */
 //+ENDPLUMEDOC
 
-class TargetFrame : public Function {
+class FunctionTarget : public Function {
 private:
   TargetDist target;
   std::vector<double> derivs;
 public:
-  TargetFrame(const ActionOptions&);
+  FunctionTarget(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(TargetFrame,"TARGET")
+PLUMED_REGISTER_ACTION(FunctionTarget,"TARGET")
 
-void TargetFrame::registerKeywords(Keywords& keys){
+void FunctionTarget::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure. " + PDB::documentation() );
   keys.add("optional","REFERENCE_VEC","the vector of values for the CVs at the reference point (if you use this you don't need REFERENCE)");
 }
 
-TargetFrame::TargetFrame(const ActionOptions&ao):
+FunctionTarget::FunctionTarget(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 target(log)
@@ -82,7 +82,7 @@ target(log)
   addValueWithDerivatives(); setNotPeriodic();
 }
 
-void TargetFrame::calculate(){
+void FunctionTarget::calculate(){
   double r=target.calculate( derivs );
   setValue(r);
   for(unsigned i=0;i<derivs.size();i++) setDerivative(i,derivs[i]);

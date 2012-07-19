@@ -23,7 +23,7 @@
 #include "PlumedMain.h"
 #include "DistributionFunctions.h"
 #include "ActionSet.h"
-#include "MolInfo.h"
+#include "SetupMolInfo.h"
 #include <vector>
 #include <string>
 
@@ -237,7 +237,7 @@ void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, 
   plumed_massert( keywords.exists("RESIDUES"), "To read in the backbone atoms the keyword RESIDUES must be registered");
   readatoms=true;
 
-  std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
+  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
 
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );

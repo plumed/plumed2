@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with PLUMED.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MolInfo.h"
+#include "SetupMolInfo.h"
 #include "Atoms.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
@@ -59,21 +59,21 @@ ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(RATIONAL R_0=0.08 NN=8 MM=12) LABEL
 //+ENDPLUMEDOC
 
 
-PLUMED_REGISTER_ACTION(MolInfo,"MOLINFO")
+PLUMED_REGISTER_ACTION(SetupMolInfo,"MOLINFO")
 
-void MolInfo::registerKeywords( Keywords& keys ){
+void SetupMolInfo::registerKeywords( Keywords& keys ){
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","STRUCTURE","a file in pdb format containing a reference structure. "
                                     "This is used to defines the atoms in the various residues, chains, etc . " + PDB::documentation() );
   keys.add("atoms","CHAIN","(for masochists ( a.k.a. Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
 }
 
-MolInfo::MolInfo( const ActionOptions&ao ):
+SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
 Action(ao),
 ActionSetup(ao),
 ActionAtomistic(ao)
 {
-  std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
+  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()!=0 ) error("cannot use more than one MOLINFO action in input");
 
   std::vector<AtomNumber> backbone;
@@ -106,7 +106,7 @@ ActionAtomistic(ao)
   pdb.renameAtoms("HA1","CB");  // This is a hack to make this work with GLY residues 
 }
 
-void MolInfo::getBackbone( std::vector<std::string>& restrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone ){
+void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone ){
   if( read_backbone.size()!=0 ){
       if( restrings.size()!=1 ) error("cannot interpret anything other than all for residues when using CHAIN keywords");
       if( restrings[0]!="all" ) error("cannot interpret anything other than all for residues when using CHAIN keywords");  

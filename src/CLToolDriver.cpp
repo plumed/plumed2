@@ -315,10 +315,9 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
   return 0;
 }
 
-typedef CLToolDriver<double> Driver;
-typedef CLToolDriver<float>  DriverSp;
+typedef CLToolDriver<double> CLToolDriverDouble;
 
-PLUMED_REGISTER_CLTOOL(Driver,"driver")
+PLUMED_REGISTER_CLTOOL(CLToolDriverDouble,"driver")
 
 
 

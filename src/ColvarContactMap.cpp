@@ -51,7 +51,7 @@ PRINT ARG=f1.* FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class ContactMap : public Colvar {   
+class ColvarContactMap : public Colvar {   
 private:
   bool pbc, dosum;
   NeighborList *nl;
@@ -59,16 +59,16 @@ private:
   bool reduceListAtNextStep;
 public:
   static void registerKeywords( Keywords& keys );
-  ContactMap(const ActionOptions&);
-  ~ContactMap();
+  ColvarContactMap(const ActionOptions&);
+  ~ColvarContactMap();
 // active methods:
   virtual void calculate();
   void checkFieldsAllowed(){};
 };
 
-PLUMED_REGISTER_ACTION(ContactMap,"CONTACTMAP")
+PLUMED_REGISTER_ACTION(ColvarContactMap,"CONTACTMAP")
 
-void ContactMap::registerKeywords( Keywords& keys ){
+void ColvarContactMap::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("numbered","ATOMS","the atoms involved in each of the contacts you wish to calculate. "
                    "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one contact will be "
@@ -78,7 +78,7 @@ void ContactMap::registerKeywords( Keywords& keys ){
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
 }
 
-ContactMap::ContactMap(const ActionOptions&ao):
+ColvarContactMap::ColvarContactMap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true),
 dosum(false),
@@ -143,11 +143,11 @@ reduceListAtNextStep(false)
   checkRead();
 }
 
-ContactMap::~ContactMap(){
+ColvarContactMap::~ColvarContactMap(){
   delete nl;
 }
 
-void ContactMap::calculate(){ 
+void ColvarContactMap::calculate(){ 
      
  double ncoord=0., coord;
  Tensor virial;

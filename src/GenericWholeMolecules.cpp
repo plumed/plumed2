@@ -28,7 +28,7 @@
 #include "Atoms.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "MolInfo.h"
+#include "SetupMolInfo.h"
 
 #include <vector>
 #include <string>
@@ -131,7 +131,7 @@ ActionAtomistic(ao)
   if( resstrings.size()>0 ){
       vector<string> backnames; parseVector("RES_ATOMS",backnames);
       if(backnames.size()==0) error("Found RESIDUES keyword without any specification of the atoms that should be in a residue - use RES_ATOMS");
-      std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
+      std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
       if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
       std::vector< std::vector<AtomNumber> > backatoms;
       moldat[0]->getBackbone( resstrings, backnames, backatoms );
