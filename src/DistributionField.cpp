@@ -53,7 +53,7 @@ FieldVessel(da)
 void DistributionField::calculateEnergy( const unsigned& jcv, const std::vector<double>& at, const Value& value_in, Value& stress, std::vector<Value>& der ){
   plumed_assert( at.size()==1 && stress.getNumberOfDerivatives()==1 );
 
-  double dd, ss, du; dd=at[0]-value_in.get(); 
+  double dd, ss, du; dd=value_in.difference( at[0] ); 
   ss=fnorm*exp( -(dd*dd)/(2*fsigma2) ); du=dd/fsigma2;
   stress.set( ss ); 
   stress.clearDerivatives();

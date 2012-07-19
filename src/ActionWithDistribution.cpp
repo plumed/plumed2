@@ -241,6 +241,6 @@ void ActionWithDistribution::calculate(){
   for(unsigned j=0;j<functions.size();++j) functions[j]->finish( tolerance ); 
 }
 
-//   void ActionWithDistribution::retrieveDomain( const unsigned nn, double& min, double& max ){
-//   plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithDistribution can retrieve the domain");
-// }
+void ActionWithDistribution::retrieveDomain( double& min, double& max ){
+  plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithDistribution can retrieve the domain");
+}

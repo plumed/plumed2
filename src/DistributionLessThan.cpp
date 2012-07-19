@@ -46,6 +46,8 @@ void less_than::reserveKeyword( Keywords& keys ){
 less_than::less_than( const VesselOptions& da ) :
 SumVessel(da)
 {
+  if( getAction()->isPeriodic() ) error("less than is not a meaningful option for periodic variables");
+ 
   std::string errormsg; sf.set( da.parameters, errormsg ); 
   if( errormsg.size()!=0 ) error( errormsg ); 
   std::string vv; Tools::convert( sf.get_r0(), vv );

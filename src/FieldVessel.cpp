@@ -49,6 +49,15 @@ VesselStoreAllValues(da)
      error("found " + ww + " values for MAX when expecting only " + ll);
   }
 
+  // Make sure we deal with periodicity
+  if( getAction()->isPeriodic() ){
+      double min, max;
+      getAction()->retrieveDomain( min, max );
+      tmpvalue.setDomain( min, max );
+  } else {
+      tmpvalue.setNotPeriodic();
+  }
+
   // Setup the interpolators
   if( ndx==1 ) f_interpolator=new InterpolateCubic( nspline, min, max );
   else if( ndx==2 ) f_interpolator=new InterpolateBicubic( nspline, min, max );
@@ -123,7 +132,7 @@ void FieldVessel::finish( const double& tolerance ){
 
    unsigned kk,ik=0; bool keep; 
    std::vector<double> thisp(ndx);
-   Value tmpvalue, tmpstress; std::vector<Value> tmpder(ndX);
+   Value tmpstress; std::vector<Value> tmpder(ndX);
    tmpvalue.resizeDerivatives(ndx); tmpstress.resizeDerivatives(ndx);    
    for(unsigned nhigh=0;nhigh<ndX;++nhigh) tmpder[nhigh].resizeDerivatives(ndx);
 

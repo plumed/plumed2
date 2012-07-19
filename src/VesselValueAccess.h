@@ -35,6 +35,7 @@ public:
 
 inline
 void VesselValueAccess::getValue( const unsigned& icv, Value& val ) const {
+   plumed_assert( icv<value_starts.size()-1 );
    unsigned nder=(value_starts[icv+1]-value_starts[icv]-1);
    if( val.getNumberOfDerivatives()!=nder ) val.resizeDerivatives( nder );
    val.clearDerivatives();
@@ -44,11 +45,13 @@ void VesselValueAccess::getValue( const unsigned& icv, Value& val ) const {
 
 inline
 double VesselValueAccess::getValue( const unsigned& icv ) const {
+   plumed_assert( icv<value_starts.size()-1 );
    return getBufferElement( value_starts[icv] );
 }
 
 inline
 void VesselValueAccess::addValue( const unsigned& icv, const Value& val ){
+   plumed_assert( icv<value_starts.size()-1 );
    plumed_assert( val.getNumberOfDerivatives()==(value_starts[icv+1]-value_starts[icv]-1) );
    unsigned ider=value_starts[icv]; addToBufferElement( ider, val.get() ); ider++;
    for(unsigned i=0;i<val.getNumberOfDerivatives();++i){ addToBufferElement( ider, val.getDerivative(i) ); ider++; }  
@@ -56,6 +59,7 @@ void VesselValueAccess::addValue( const unsigned& icv, const Value& val ){
 
 inline
 void VesselValueAccess::setValue( const unsigned& icv, const Value& val ){
+   plumed_assert( icv<value_starts.size()-1 );
    plumed_assert( val.getNumberOfDerivatives()==(value_starts[icv+1]-value_starts[icv]-1) );
    unsigned ider=value_starts[icv]; setBufferElement( ider, val.get() ); ider++;
    for(unsigned i=0;i<val.getNumberOfDerivatives();++i){ setBufferElement( ider, val.getDerivative(i) ); ider++; }

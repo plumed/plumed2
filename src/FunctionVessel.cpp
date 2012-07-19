@@ -6,6 +6,15 @@ namespace PLMD {
 SumVessel::SumVessel( const VesselOptions& da ):
 VesselAccumulator(da)
 {
+  if( getAction()->isPeriodic() ){
+      double min, max;
+      getAction()->retrieveDomain( min, max );
+      myvalue.setDomain( min, max );
+      myvalue2.setDomain( min, max );
+  } else {
+      myvalue.setNotPeriodic();
+      myvalue2.setNotPeriodic();
+  }
 }
 
 bool SumVessel::calculate( const unsigned& icv, const double& tolerance ){
@@ -40,6 +49,15 @@ NormedSumVessel::NormedSumVessel( const VesselOptions& da ):
 VesselAccumulator(da),
 donorm(false)
 {
+  if( getAction()->isPeriodic() ){
+      double min, max;
+      getAction()->retrieveDomain( min, max );
+      myvalue.setDomain( min, max );
+      myvalue2.setDomain( min, max );
+  } else {
+      myvalue.setNotPeriodic();
+      myvalue2.setNotPeriodic();
+  }
 }
 
 void NormedSumVessel::useNorm(){
@@ -82,7 +100,7 @@ void NormedSumVessel::finish( const double& tolerance ){
   if( donorm ){
      getValue(0, myweight2 ); 
      for(unsigned i=0;i<getNumberOfValues();++i){
-         getValue( i+1, myvalue2 );
+         getValue( i+1, myvalue2 );       /// ARSE periodicity
          quotient( myvalue2, myweight2, getPntrToOutput(i) );
      }
   } else {

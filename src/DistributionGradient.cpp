@@ -81,6 +81,7 @@ catom_pos(3)
        bounds.push_back( beads.size() );
        for(unsigned i=0;i<xbins;++i){
            tmpbead.set( (1.0/xbins)*i, (1.0/xbins)*(i+1), smear );
+           tmpbead.isPeriodic( 0., 1.0 );
            beads.push_back( tmpbead );
            addBufferedValue(); addBufferedValue();
        }
@@ -91,6 +92,7 @@ catom_pos(3)
        bounds.push_back( beads.size() ); 
        for(unsigned i=0;i<ybins;++i){
            tmpbead.set( (1.0/ybins)*i, (1.0/ybins)*(i+1), smear ); 
+           tmpbead.isPeriodic( 0., 1.0 );
            beads.push_back( tmpbead );
            addBufferedValue(); addBufferedValue();
        } 
@@ -101,6 +103,7 @@ catom_pos(3)
        bounds.push_back( beads.size() );
        for(unsigned i=0;i<zbins;++i){
            tmpbead.set( (1.0/zbins)*i, (1.0/zbins)*(i+1), smear ); 
+           tmpbead.isPeriodic( 0., 1.0 );
            beads.push_back( tmpbead );
            addBufferedValue(); addBufferedValue();
        } 
@@ -184,8 +187,8 @@ bool gradient::calculate( const unsigned& icv, const double& tolerance ){
                mycolv->mergeDerivatives( icv, tmpval, 1.0, tmpval2 );
                addValue( nn, tmpval2 ); 
              }
-             nn+=2;
          }
+         nn+=2;
      }
   }
   return keep;

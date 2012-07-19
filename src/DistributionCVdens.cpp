@@ -67,11 +67,11 @@ catom_pos(3)
   if(!isDensity) useNorm(); 
 
   std::string errors;
-  HistogramBead xbin; xbin.set(da.parameters, "X", errors); 
+  HistogramBead xbin; xbin.set(da.parameters, "X", errors); xbin.isPeriodic( 0, 1.0 ); 
   if ( xbin.hasBeenSet() ){ beads.push_back(xbin); dir.push_back(0); }
-  HistogramBead ybin; ybin.set(da.parameters, "Y", errors);
+  HistogramBead ybin; ybin.set(da.parameters, "Y", errors); ybin.isPeriodic( 0., 1.0 );
   if ( ybin.hasBeenSet() ){ beads.push_back(ybin); dir.push_back(1); }
-  HistogramBead zbin; zbin.set(da.parameters, "Z", errors);
+  HistogramBead zbin; zbin.set(da.parameters, "Z", errors); zbin.isPeriodic( 0, 1.0 );
   if ( zbin.hasBeenSet() ){ beads.push_back(zbin); dir.push_back(2); }  
   if( beads.size()==0 ) error("no subcell has been specified");
 

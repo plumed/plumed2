@@ -43,6 +43,8 @@ void mean::reserveKeyword( Keywords& keys ){
 mean::mean( const VesselOptions& da ) :
 NormedSumVessel(da)
 {
+  if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
+
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_massert( mycolv, "average is used to take the average values of multi colvars");
 

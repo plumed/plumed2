@@ -70,7 +70,7 @@ public:
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
 /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives();
-  bool isPeriodic(const unsigned nn){ return false; }
+  bool isPeriodic(){ return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarCoordination,"COORDINATIONNUMBER")

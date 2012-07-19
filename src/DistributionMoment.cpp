@@ -27,6 +27,7 @@ namespace PLMD {
 
 class moment : public VesselStoreAllValues {
 private:
+  Value myvalue, myvalue2;
   std::vector<unsigned> powers;
   std::vector<Value*> value_out;
 public:
@@ -63,6 +64,16 @@ VesselStoreAllValues(da)
        powers.push_back( nn ); std::string num; Tools::convert(powers[i],num);
        log.printf("  value %s.moment_%s contains the %d th moment of the distribution\n",(getAction()->getLabel()).c_str(),moments[i].c_str(),powers[i]);
    }
+
+   if( getAction()->isPeriodic() ){
+      double min, max;
+      getAction()->retrieveDomain( min, max );
+      myvalue.setDomain( min, max );
+      myvalue2.setDomain( min, max );
+   } else {
+       myvalue.setNotPeriodic();
+       myvalue2.setNotPeriodic();
+   }
 }
 
 void moment::local_resizing(){
@@ -71,21 +82,31 @@ void moment::local_resizing(){
 }
 
 void moment::finish( const double& tolerance ){
+  const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
   unsigned nvals=getAction()->getNumberOfFunctionsInAction();
 
-  double mean=0, dev1; 
-  for(unsigned i=0;i<nvals;++i) mean+=getValue(i);
-  mean/=static_cast<double>( nvals );
+  double mean=0;
+  if( getAction()->isPeriodic() ){
+     double min, max, pfactor; getAction()->retrieveDomain( min, max );
+     pfactor = 2*pi / ( max-min );
+     double sinsum=0, cossum=0, val;
+     for(unsigned i=0;i<nvals;++i){ val=pfactor*( getValue(i) - min ); sinsum+=sin(val); cossum+=cos(val); }
+     mean = 0.5 + atan2( sinsum / static_cast<double>( nvals ) , cossum / static_cast<double>( nvals ) ) / (2*pi);
+     mean = min + (max-min)*mean;
+  } else {
+     for(unsigned i=0;i<nvals;++i) mean+=getValue(i);    
+     mean/=static_cast<double>( nvals );
+  }
 
   for(unsigned npow=0;npow<powers.size();++npow){
-     dev1=0; 
-     for(unsigned i=0;i<nvals;++i) dev1+=pow( getValue(i) - mean, powers[npow] - 1 ); 
+     double dev1=0; 
+     for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, getValue(i) ), powers[npow] - 1 ); 
      dev1/=static_cast<double>( nvals );
 
-     double pref, tmp, moment=0; Value myvalue, myvalue2;
+     double pref, tmp, moment=0; 
      for(unsigned i=0;i<nvals;++i){
          getValue( i, myvalue );
-         tmp=myvalue.get() - mean;
+         tmp=myvalue.difference( mean, myvalue.get() );
          pref=pow( tmp, powers[npow] - 1 ) - dev1;
          moment+=pow( tmp, powers[npow] );
          getAction()->mergeDerivatives( i, myvalue, pref, myvalue2 );

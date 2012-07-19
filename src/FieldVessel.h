@@ -29,6 +29,8 @@ private:
   bool wasForced;
 /// The forces on each of the derivatives
   std::vector<double> forces;
+//// A value used in calculations
+  Value tmpvalue;
 protected:
 /// Return a bool that tells us when to interpolate
   bool mergeBeforeInterpolation() const ;

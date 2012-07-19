@@ -105,12 +105,10 @@ public:
   virtual void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value& value_out )=0;
 /// Can we skip the calculations of quantities
   virtual bool isPossibleToSkip(); 
-
 /// Are the base quantities periodic
-//   virtual bool isPeriodic(const unsigned nn)=0;
+  virtual bool isPeriodic()=0;
 /// What are the domains of the base quantities
-//  virtual void retrieveDomain( const unsigned nn, double& min, double& max);
-
+  virtual void retrieveDomain( double& min, double& max);
 /// Retrieve the previously calculated value and derivatives
   virtual void retreiveLastCalculatedValue( Value& myvalue )=0;
 /// Get the number of functions from which we are calculating the distribtuion

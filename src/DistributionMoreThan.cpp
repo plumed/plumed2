@@ -47,6 +47,8 @@ void more_than::reserveKeyword( Keywords& keys ){
 more_than::more_than( const VesselOptions& da ) :
 SumVessel(da)
 {
+  if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
+
   std::string errormsg;
   sf.set( da.parameters, errormsg );
   if( errormsg.size()!=0 ) error( errormsg );

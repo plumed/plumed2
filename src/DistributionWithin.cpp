@@ -59,7 +59,14 @@ NormedSumVessel(da)
   bool usenorm=false; Tools::parseFlag(data,"NORM",usenorm);
   if(usenorm) useNorm();
 
+  bool isPeriodic=getAction()->isPeriodic();
+  double min, max;
+  if( isPeriodic ) getAction()->retrieveDomain( min, max );
+
   hist.set( da.parameters, "", errormsg );
+  if( !isPeriodic ) hist.isNotPeriodic();
+  else hist.isPeriodic( min, max );
+
   if( errormsg.size()!=0 ) error( errormsg );
 
   std::string lb, ub;

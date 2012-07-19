@@ -48,6 +48,8 @@ void min::reserveKeyword( Keywords& keys ){
 min::min( const VesselOptions& da ) :
 SumVessel(da)
 {
+  if( getAction()->isPeriodic() ) error("min is not a meaningful option for periodic variables");
+
   std::vector<std::string> data=Tools::getWords(da.parameters);
   if( data.size()!=1 ){ error("There should only be a value for beta in the input to MIN"); return; }
   bool found_beta=Tools::parse(data,"BETA",beta);

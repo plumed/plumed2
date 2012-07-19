@@ -34,10 +34,16 @@ NormedSumVessel(da)
   bool usenorm=false; Tools::parseFlag(data,"NORM",usenorm);
   if(usenorm) useNorm();
 
+  bool isPeriodic=getAction()->isPeriodic();
+  double min, max;
+  if( isPeriodic ) getAction()->retrieveDomain( min, max );
+
   std::vector<std::string> bins; HistogramBead::generateBins( da.parameters, "", bins );
   hist.resize( bins.size() ); 
   for(unsigned i=0;i<hist.size();++i){
       hist[i].set( bins[i], "", errormsg );
+      if( !isPeriodic ) hist[i].isNotPeriodic();
+      else hist[i].isPeriodic( min, max );
       if( errormsg.size()!=0 ) error( errormsg );
 
       std::string lb, ub;
