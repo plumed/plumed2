@@ -4,7 +4,6 @@
 #include "PDB.h"
 #include "DRMSD.h"
 #include "Atoms.h"
-#include <iostream>
 
 using namespace std;
 
@@ -90,8 +89,8 @@ PLUMED_COLVAR_INIT(ao), pbc_(true)
 // calculator
 void ColvarDRMSD::calculate(){
 
-// clear stuff
- for(unsigned i=0;i<derivs_.size();++i) {derivs_[i]=Vector(0.,0.,0.);}
+// set derivative and virial to zero
+ for(unsigned i=0;i<derivs_.size();++i) {derivs_[i].zero();}
  virial_.zero();
 
  double drmsd;
