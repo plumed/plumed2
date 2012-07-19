@@ -56,7 +56,6 @@ DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
 class ColvarDRMSD : public Colvar {
 	
   vector<Vector> derivs_;
-  Tensor virial_;
   DRMSD drmsd_;
   bool pbc_;
 
@@ -110,20 +109,20 @@ PLUMED_COLVAR_INIT(ao), pbc_(true)
 // calculator
 void ColvarDRMSD::calculate(){
 
-// set derivative and virial to zero
+// set derivatives to zero
  for(unsigned i=0;i<derivs_.size();++i) {derivs_[i].zero();}
- virial_.zero();
 
  double drmsd;
+ Tensor virial;
 
- if(pbc_){drmsd=drmsd_.calculate(getPositions(),getPbc(),derivs_,virial_);}
- else{    drmsd=drmsd_.calculate(getPositions(),         derivs_,virial_);}
+ if(pbc_){drmsd=drmsd_.calculate(getPositions(),getPbc(),derivs_,virial);}
+ else{    drmsd=drmsd_.calculate(getPositions(),         derivs_,virial);}
 
  setValue(drmsd);
 
  for(unsigned i=0;i<derivs_.size();++i) {setAtomsDerivatives(i,derivs_[i]);}
  
- setBoxDerivatives(virial_);
+ setBoxDerivatives(virial);
 
  }
 

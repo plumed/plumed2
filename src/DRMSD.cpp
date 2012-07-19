@@ -73,7 +73,7 @@ double DRMSD::calculate(const std::vector<Vector> & positions, const Pbc& pbc,
     drmsd += diff * diff;
     derivatives[i] += -( diff / len ) * distance;
     derivatives[j] +=  ( diff / len ) * distance;
-    virial -= ( diff / len ) * Tensor(distance,distance); 
+    virial -=  ( diff / len ) * Tensor(distance,distance); 
   }
 
   double npairs = static_cast<double>(targets.size());
@@ -81,7 +81,9 @@ double DRMSD::calculate(const std::vector<Vector> & positions, const Pbc& pbc,
   drmsd=sqrt( drmsd / npairs );
     
   double idrmsd=1.0/( drmsd * npairs );
-  virial*=idrmsd;
+
+  virial *= idrmsd;
+
   for(unsigned i=0;i<natoms;++i){derivatives[i] *= idrmsd;}
 
   return drmsd;
