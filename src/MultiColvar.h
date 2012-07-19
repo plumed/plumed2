@@ -223,6 +223,10 @@ public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){};
   static void registerKeywords( Keywords& keys );
+/// Calculate the multicolvar
+  void calculate();
+/// Prepare for the calculation
+  void prepare();
 /// Apply the forces on the values
   void apply();
 /// Get the number of derivatives for this action
@@ -239,15 +243,12 @@ public:
   void useCentralAtom();
 /// Get the weight of the colvar
   virtual void retrieveColvarWeight( const unsigned& i, Value& ww );
-/// Expand the lists of atoms so we get them all when it is time to update the neighbor lists
-  void prepareForNeighborListUpdate();
-/// Contract the lists of atoms once we have finished updating the neighbor lists so we only get
-/// the required subset of atoms 
-  void completeNeighborListUpdate();
 /// Merge the derivatives 
   void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value& value_out );
 /// Turn of atom requests when this colvar is deactivated cos its small
   void deactivateValue( const unsigned j );
+/// Turn on atom requests when the colvar is activated
+  void activateValue( const unsigned j );
 /// Calcualte the colvar
   bool calculateThisFunction( const unsigned& j );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
@@ -273,6 +274,12 @@ unsigned MultiColvar::getNumberOfFunctionsInAction(){
 inline
 void MultiColvar::deactivateValue( const unsigned j ){
   colvar_atoms[j].deactivateAll();
+}
+
+inline
+void MultiColvar::activateValue( const unsigned j ){
+  colvar_atoms[j].activateAll(); 
+  colvar_atoms[j].updateActiveMembers();
 }
 
 inline

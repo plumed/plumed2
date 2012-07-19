@@ -25,7 +25,6 @@
 using namespace std;
 using namespace PLMD;
 
-// Broken things
 void ActionWithDistribution::registerKeywords(Keywords& keys){
   keys.add("optional","TOL","when accumulating sums quantities that contribute less than this will be ignored.");
   keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities that contributed less than TOL at the previous neighbor list update step are ignored.");
@@ -56,7 +55,7 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
     log.printf("  Updating contributors every %d steps. Ignoring contributions less than %lf\n",updateFreq,tolerance);
   } else {
     log.printf("  Updating contributors every step.");
-    if( tolerance>0) log.printf(" Ignoring contributions less than %lf\n",tolerance);
+    if( tolerance>epsilon) log.printf(" Ignoring contributions less than %lf\n",tolerance);
     else log.printf("\n");
   }
 }
@@ -64,36 +63,6 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
 ActionWithDistribution::~ActionWithDistribution(){
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
 }
-
-//void ActionWithDistribution::addField( std::string key, Field* ff ){
-//  plumed_assert( key.length()!=0 );
-//  std::string fieldin; parse(key,fieldin);
-//  if( fieldin.length()==0 ) return ;
-//  all_values=false;  std::string freport;
-//  myfield=ff; myfield->read( fieldin, getNumberOfFunctionsInDistribution(), freport );
-//  if( !myfield->check() ){
-//     log.printf("ERROR for keyword FIELD in action %s with label %s : %s \n \n", getName().c_str(), getLabel().c_str(), ( myfield->errorMessage() ).c_str() );
-//     myfield->printKeywords( log );
-//     plumed_merror("ERROR for keyword FIELD in action "  + getName() + " with label " + getLabel() + " : " + myfield->errorMessage() );
-//     exit(1);
-//  }
-//  log.printf("  %s\n", freport.c_str() );
-//  derivedFieldSetup( myfield->get_sigma() );
-//}
-
-//   void ActionWithDistribution::addDistributionFunction( std::string name, DistributionFunction* fun ){
-//     if(all_values) all_values=false;  // Possibly will add functionality to delete all values here
-//   
-//     // Some sanity checks
-//   //  gradient* gfun=dynamic_cast<gradient*>(fun);
-//   //  cvdens* cvfun=dynamic_cast<cvdens*>(fun);
-//   //  if( gfun || cvfun ){
-//   //      MultiColvar* mcheck=dynamic_cast<MultiColvar*>(this);
-//   //      if(!mcheck) plumed_massert(mcheck,"cannot do gradient or cvdens if this is not a MultiColvar");
-//   //  } 
-//     // Add the function   
-//     functions.push_back( fun );
-//   }
 
 void ActionWithDistribution::requestDistribution(){
   read=true; 
@@ -137,10 +106,7 @@ void ActionWithDistribution::requestDistribution(){
   if(all_values) error("No function has been specified");  
   // This sets up the dynamic list that holds what we are calculating
   for(unsigned i=0;i<getNumberOfFunctionsInAction();++i){ members.addIndexToList(i); }
-  members.activateAll(); members.updateActiveMembers();
-  // We prepare the first step as if we are doing a neighbor list update
-  prepareForNeighborListUpdate(); reduceAtNextStep=true;
-  resizeFunctions();
+  activateAll(); resizeFunctions(); 
 }
 
 void ActionWithDistribution::resizeFunctions(){
@@ -150,6 +116,11 @@ void ActionWithDistribution::resizeFunctions(){
      bufsize+=(functions[i]->data_buffer).size();
   }
   buffer.resize( bufsize );
+}
+
+void ActionWithDistribution::activateAll(){
+  members.activateAll(); members.updateActiveMembers();
+  for(unsigned i=0;i<members.getNumberActive();++i) activateValue(i);
 }
 
 Vessel* ActionWithDistribution::getVessel( const std::string& name ){
@@ -162,23 +133,7 @@ Vessel* ActionWithDistribution::getVessel( const std::string& name ){
   error("there is no vessel with name " + name);
 }
 
-void ActionWithDistribution::prepare(){
- if(reduceAtNextStep){
-    completeNeighborListUpdate();
-    resizeFunctions();
-    reduceAtNextStep=false;
- }
- if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-    members.activateAll();
-    members.updateActiveMembers();
-    prepareForNeighborListUpdate();
-    resizeFunctions();
-    reduceAtNextStep=true;
-    lastUpdate=getStep();
- }
-}
-
-void ActionWithDistribution::calculate(){
+void ActionWithDistribution::calculateAllVessels( const int& stepn ){
   plumed_massert( read, "you must have a call to requestDistribution somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
@@ -239,6 +194,13 @@ void ActionWithDistribution::calculate(){
 
   // Set the final value of the function
   for(unsigned j=0;j<functions.size();++j) functions[j]->finish( tolerance ); 
+
+  // Activate everything on neighbor list time and deactivate after
+  if( reduceAtNextStep ){ reduceAtNextStep=false; }
+  if( updateFreq>0 && (stepn-lastUpdate)>=updateFreq ){
+      activateAll(); resizeFunctions(); 
+      reduceAtNextStep=true; lastUpdate=stepn;
+  } 
 }
 
 void ActionWithDistribution::retrieveDomain( double& min, double& max ){

@@ -61,6 +61,10 @@ private:
   std::vector<Vessel*> functions;
 /// The list of quantities that should be calculated
   DynamicList<unsigned> members;
+/// Deactivave the jth object in the list
+  void deactivate( const unsigned& );
+/// Activate all the values in the list
+  void activateAll();
 protected:
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void requestDistribution();
@@ -72,14 +76,16 @@ protected:
   unsigned getNumberOfActiveMembers() const ;
 /// Get the jth active member
   unsigned getActiveMember(const unsigned& ) const ;
-/// Deactivave the jth object in the list
-  void deactivate( const unsigned& );
 /// Update the list of active members
   void updateActiveMembers();
 /// Get the number of vessels
   unsigned getNumberOfVessels() const;
 /// Get a pointer to the ith vessel
    Vessel* getPntrToVessel( const unsigned& i );
+/// Calculate the values of all the vessels
+  void calculateAllVessels( const int& stepn );
+/// Resize all the functions when the number of derivatives change
+  void resizeFunctions();
 public:
   static void registerKeywords(Keywords& keys);
 /// By calling this function during register keywords you tell plumed to use a
@@ -87,18 +93,8 @@ public:
   static void autoParallelize(Keywords& keys);
   ActionWithDistribution(const ActionOptions&ao);
   ~ActionWithDistribution();
-/// Resize all the functions when the number of derivatives change
-  void resizeFunctions();
-/// Prepare everything for neighbour list update
-  virtual void prepare();
-/// Calculate the values of the object
-  void calculate();
-/// Overwrite this in your inherited actions if neighbor list update is more complicated
-/// than just calculating everything and seeing whats big.
-  virtual void prepareForNeighborListUpdate(){};
-/// Overwrite this in your inherited actions if neighbor list update is more complicated
-/// than just calculating everything and seeing whats big.
-  virtual void completeNeighborListUpdate(){};
+/// Activate the jth colvar
+  virtual void activateValue( const unsigned j )=0;
 /// Ensure that nothing gets done for your deactivated colvars
   virtual void deactivateValue( const unsigned j )=0;
 /// Merge the derivatives

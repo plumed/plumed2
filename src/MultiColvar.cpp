@@ -95,7 +95,11 @@ void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms );
 
   if( !readatoms ) error("No atoms have been read in");
-  requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes
+  for(unsigned i=0;i<colvar_atoms.size();++i){
+     colvar_atoms[i].activateAll(); colvar_atoms[i].updateActiveMembers();
+  }
+  all_atoms.activateAll(); all_atoms.updateActiveMembers();
+  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
 }
 
 void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
@@ -241,25 +245,20 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   } 
 }
 
-void MultiColvar::prepareForNeighborListUpdate(){
-   for(unsigned i=0;i<colvar_atoms.size();++i){
-      colvar_atoms[i].activateAll(); colvar_atoms[i].updateActiveMembers();
-   }
-   all_atoms.activateAll(); 
-   all_atoms.updateActiveMembers();
-   requestAtoms(); 
+void MultiColvar::prepare(){
+  if( isTimeForNeighborListUpdate() ){
+      for(unsigned i=0;i<colvar_atoms.size();++i){
+         colvar_atoms[i].mpi_gatherActiveMembers( comm );
+         activateLinks( colvar_atoms[i], all_atoms );
+      }
+      all_atoms.updateActiveMembers(); 
+      ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+      resizeFunctions();
+  }
 }
 
-void MultiColvar::completeNeighborListUpdate(){
-   for(unsigned i=0;i<colvar_atoms.size();++i){
-      colvar_atoms[i].mpi_gatherActiveMembers( comm );
-      activateLinks( colvar_atoms[i], all_atoms );
-   }
-   all_atoms.updateActiveMembers(); requestAtoms();
-}
-
-void MultiColvar::requestAtoms(){
-   ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+void MultiColvar::calculate(){
+  calculateAllVessels( getStep() );
 }
 
 void MultiColvar::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
