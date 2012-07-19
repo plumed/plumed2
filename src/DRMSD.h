@@ -6,6 +6,8 @@
 #include "Matrix.h"
 #include "Pbc.h"
 #include <vector>
+#include <limits>
+#include <map>
 
 namespace PLMD{
 
@@ -13,19 +15,21 @@ class PDB;
 
 /// A class that implements DRMSD calculations
 class DRMSD {
-  unsigned natoms, npairs;
-  Matrix<double> targets;
-public:
+  std::map< std::pair <unsigned,unsigned> , double> targets;
+  unsigned natoms;
+  public:
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure
-  void setFromPDB( const double& bondc, const PDB& );
+  void setFromPDB(const PDB&, double lbound=0.0, double ubound=std::numeric_limits<double>::max( ));
 /// set reference coordinates
-  void setReference( const double& bondc, const std::vector<Vector> & reference );
+  void setReference(const std::vector<Vector> & reference, double lbound=0.0, double ubound=std::numeric_limits<double>::max( ));
 /// Compute drmsd ( no pbc )
-  double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, Tensor& virial) const ;
+  double calculate(const std::vector<Vector> & positions,
+                   std::vector<Vector> &derivatives, Tensor& virial) const ;
 /// Compute drmsd ( with pbc )
-  double calculate(const std::vector<Vector>& positions, const Pbc& pbc, std::vector<Vector> &derivatives, Tensor& virial) const ;
+  double calculate(const std::vector<Vector>& positions, const Pbc& pbc,
+                   std::vector<Vector> &derivatives, Tensor& virial, bool do_pbc=true) const ;
 };
 
 }

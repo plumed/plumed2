@@ -52,7 +52,7 @@ void MultiColvarSecondaryStructureRMSD::setSecondaryStructure( std::vector<Vecto
   new_deriv.resize( structure.size() );
   if( alignType=="DRMSD" ){
     secondary_drmsd.push_back( new DRMSD() ); 
-    secondary_drmsd[secondary_drmsd.size()-1]->setReference( bondlength, structure );
+    secondary_drmsd[secondary_drmsd.size()-1]->setReference( structure, bondlength );
   } else {
     std::vector<double> align( structure.size(), 1.0 );
     secondary_rmsd.push_back( new RMSD(log) );
