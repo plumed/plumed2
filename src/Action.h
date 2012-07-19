@@ -28,10 +28,10 @@
 #include "Value.h"
 #include "Tools.h"
 #include "Log.h"
-#include "PDB.h"
 
 namespace PLMD{
 
+class PDB;
 class PlumedMain;
 class PlumedCommunicator;
 

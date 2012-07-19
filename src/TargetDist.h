@@ -22,9 +22,6 @@
 #ifndef __PLUMED_TargetDist_h
 #define __PLUMED_TargetDist_h
 
-#include "Value.h"
-#include "ActionWithValue.h"
-#include "PDB.h"
 #include <vector>
 #include <string>
 
@@ -32,6 +29,7 @@ namespace PLMD{
 
 class Log;
 class PDB;
+class Value;
 
 class TargetDist {
 private:

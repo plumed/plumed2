@@ -24,8 +24,6 @@
 
 #include "Tensor.h"
 #include "Vector.h"
-#include "Matrix.h"
-#include "Pbc.h"
 #include <vector>
 #include <limits>
 #include <map>
@@ -33,6 +31,7 @@
 namespace PLMD{
 
 class PDB;
+class Pbc;
 
 /// A class that implements DRMSD calculations
 class DRMSD {

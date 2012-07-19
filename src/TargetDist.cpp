@@ -20,6 +20,10 @@
    along with PLUMED.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "TargetDist.h"
+#include "PDB.h"
+#include "ActionWithValue.h"
+#include "Value.h"
+
 
 namespace PLMD {
 
@@ -36,7 +40,6 @@ void TargetDist::read( const PDB& pdb, std::vector<Value*> ar ){
       if( ar[i]->valueHasBeenSet() ){ 
          targ[i]=ar[i]->get();
       } else {
-         ActionWithValue* vv=ar[i]->getPntrToAction();
          (ar[i]->getPntrToAction())->calculateFromPDB( pdb );
          targ[i]=ar[i]->get();
       }

@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DRMSD.h"
 #include "PDB.h"
+#include "Pbc.h"
 #include <cassert>
 #include <cmath>
 
