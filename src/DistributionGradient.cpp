@@ -182,7 +182,7 @@ bool gradient::calculate( const unsigned& icv, const double& tolerance ){
              addValue( nn+1, tmpweight2 );
             
              product( myval, tmpweight, tmpval );
-             if( tmpval.get()>tolerance ){ 
+             if( fabs( tmpval.get() )>tolerance ){ 
                tmpval2.set( tmpval.get() );
                mycolv->mergeDerivatives( icv, tmpval, 1.0, tmpval2 );
                addValue( nn, tmpval2 ); 

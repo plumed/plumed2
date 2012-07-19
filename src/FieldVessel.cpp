@@ -147,7 +147,7 @@ void FieldVessel::finish( const double& tolerance ){
 
            // Calculate the field at point i that arises because of the jth component of the field
            calculateEnergy( kk, thisp, tmpvalue, tmpstress, tmpder );
-           if( tmpstress.get()>tolerance ){
+           if( fabs( tmpstress.get() )>tolerance ){
                keep=true; unsigned nn=i*nper; 
                grid_buffer[nn]+=tmpstress.get(); nn++;
                for(unsigned nlow=0;nlow<ndx;++nlow){ grid_buffer[nn]+=tmpstress.getDerivative(nlow); nn++; } 

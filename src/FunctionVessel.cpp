@@ -22,7 +22,7 @@ bool SumVessel::calculate( const unsigned& icv, const double& tolerance ){
   getAction()->retreiveLastCalculatedValue( myvalue );
   for(unsigned j=0;j<getNumberOfValues();++j){
       f=compute( j, myvalue.get(), df );
-      if( f>tolerance ){
+      if( fabs(f)>tolerance ){
           keep=true; myvalue2.set( f );
           getAction()->mergeDerivatives( icv, myvalue, df, myvalue2 );
           addValue( j, myvalue2 );
@@ -77,7 +77,7 @@ bool NormedSumVessel::calculate( const unsigned& icv, const double& tolerance ){
 
      for(unsigned j=1;j<getNumberOfValues()+1;++j){
         compute( icv, j-1, myvalue );
-        if( myvalue.get()>tolerance ){
+        if( fabs( myvalue.get() )>tolerance ){
             keep=true; myvalue2.set( myvalue.get() );
             getAction()->mergeDerivatives( icv, myvalue, 1.0, myvalue2 );
             addValue( j, myvalue2 );
