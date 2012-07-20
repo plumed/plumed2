@@ -131,9 +131,10 @@ void BiasLWalls::calculate(){
     const double lscale = (cv-off)/epsilon;
     double f = 0.0;
     if( lscale < 0.) {
-      f = -( k / epsilon ) * exponent * pow( lscale, exponent-1.0 );
-      ene += k * pow( lscale, exponent );
-      totf2 += f*f;
+      double power = pow( lscale, exponent );
+      f = -( k / epsilon ) * exponent * power / lscale;
+      ene += k * power; 
+      totf2 += f * f;
     }
     setOutputForce(i,f);
   }

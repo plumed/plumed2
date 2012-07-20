@@ -131,9 +131,10 @@ void BiasUWalls::calculate(){
     const double uscale = (cv+off)/epsilon;
     double f = 0.0;
     if( uscale > 0.) {
-      f = -( k / epsilon ) * exponent * pow( uscale, exponent-1.0 );
-      ene += k * pow( uscale, exponent );
-      totf2 += f*f;
+      double power = pow( uscale, exponent );
+      f = -( k / epsilon ) * exponent * power / uscale;
+      ene += k * power;
+      totf2 += f * f;
     }
     setOutputForce(i,f);
   }
