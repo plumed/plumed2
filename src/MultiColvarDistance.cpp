@@ -74,7 +74,7 @@ public:
   virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
 /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives();
-  bool isPeriodic(const unsigned nn){ return false; }
+  bool isPeriodic(){ return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarDistance,"DISTANCES")
@@ -83,6 +83,8 @@ void MultiColvarDistance::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
+  keys.use("AVERAGE"); keys.use("MIN"); keys.use("LESS_THAN"); 
+  keys.use("MORE_THAN"); keys.use("WITHIN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.use("DISTRIBUTION");
 }
 

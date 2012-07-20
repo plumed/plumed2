@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithDistribution.h"
-#include "MultiColvar.h"
+#include "Vessel.h"
 
 using namespace std;
 using namespace PLMD;
@@ -28,6 +28,7 @@ using namespace PLMD;
 void ActionWithDistribution::registerKeywords(Keywords& keys){
   keys.add("optional","TOL","when accumulating sums quantities that contribute less than this will be ignored.");
   keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities that contributed less than TOL at the previous neighbor list update step are ignored.");
+  keys.add( vesselRegister().getKeywords() );
 }
 
 void ActionWithDistribution::autoParallelize(Keywords& keys){
@@ -42,8 +43,7 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   updateFreq(0),
   lastUpdate(0),
   reduceAtNextStep(false),
-  tolerance(0),
-  myfield(NULL)
+  tolerance(0)
 {
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   else serial=true;
@@ -55,125 +55,85 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
     log.printf("  Updating contributors every %d steps. Ignoring contributions less than %lf\n",updateFreq,tolerance);
   } else {
     log.printf("  Updating contributors every step.");
-    if( tolerance>0) log.printf(" Ignoring contributions less than %lf\n",tolerance);
+    if( tolerance>epsilon) log.printf(" Ignoring contributions less than %lf\n",tolerance);
     else log.printf("\n");
   }
 }
 
 ActionWithDistribution::~ActionWithDistribution(){
-  delete myfield;
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
-}
-
-void ActionWithDistribution::addField( std::string key, Field* ff ){
-  plumed_assert( key.length()!=0 );
-  std::string fieldin; parse(key,fieldin);
-  if( fieldin.length()==0 ) return ;
-  all_values=false;  std::string freport;
-  myfield=ff; myfield->read( fieldin, getNumberOfFunctionsInDistribution(), freport );
-  if( !myfield->check() ){
-     log.printf("ERROR for keyword FIELD in action %s with label %s : %s \n \n", getName().c_str(), getLabel().c_str(), ( myfield->errorMessage() ).c_str() );
-     myfield->printKeywords( log );
-     plumed_merror("ERROR for keyword FIELD in action "  + getName() + " with label " + getLabel() + " : " + myfield->errorMessage() );
-     exit(1);
-  }
-  log.printf("  %s\n", freport.c_str() );
-  derivedFieldSetup( myfield->get_sigma() );
-}
-
-void ActionWithDistribution::addDistributionFunction( std::string name, DistributionFunction* fun ){
-  if(all_values) all_values=false;  // Possibly will add functionality to delete all values here
-
-  // Some sanity checks
-  gradient* gfun=dynamic_cast<gradient*>(fun);
-  cvdens* cvfun=dynamic_cast<cvdens*>(fun);
-  if( gfun || cvfun ){
-      MultiColvar* mcheck=dynamic_cast<MultiColvar*>(this);
-      if(!mcheck) plumed_massert(mcheck,"cannot do gradient or cvdens if this is not a MultiColvar");
-  } 
-
-  // Check function is good 
-  if( !fun->check() ){
-     log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",name.c_str(), getName().c_str(), getLabel().c_str(), ( fun->errorMessage() ).c_str() );
-     fun->printKeywords( log ); 
-     plumed_merror("ERROR for keyword " + name + " in action "  + getName() + " with label " + getLabel() + " : " + fun->errorMessage() );
-     exit(1);
-  }
-
-  // Add a value
-  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  a->addComponentWithDerivatives( fun->getLabel() );
-  a->componentIsNotPeriodic( fun->getLabel() );
-  unsigned fno=a->getNumberOfComponents()-1;
-  final_values.push_back( a->copyOutput( fno ) );
-
-  // Add the function   
-  plumed_massert( fno==functions.size(), "Number of functions does not match number of values" );
-  functions.push_back( fun );
-  log.printf("  value %s contains %s\n",( (a->copyOutput( fno ))->getName() ).c_str(),( functions[fno]->message() ).c_str() );
 }
 
 void ActionWithDistribution::requestDistribution(){
   read=true; 
-  ActionWithValue*a=dynamic_cast<ActionWithValue*>(this);
-  plumed_massert(a,"can only do distribution on ActionsWithValue");
 
-  if(all_values){
-      error("No function has been specified");
-  } 
-  plumed_massert( functions.size()==final_values.size(), "number of functions does not match number of values" );
+  // Loop over all keywords find the vessels and create appropriate functions
+  for(unsigned i=0;i<keywords.size();++i){
+      std::string thiskey,input; thiskey=keywords.getKeyword(i);
+      // Check if this is a key for a vessel
+      if( vesselRegister().check(thiskey) ){
+          // If the keyword is a flag read it in as a flag
+          if( keywords.style(thiskey,"flag") ){
+              bool dothis; parseFlag(thiskey,dothis);
+              VesselOptions da(thiskey,input,this);
+              if(dothis) functions.push_back( vesselRegister().create(thiskey,da) );
+          // If it is numbered read it in as a numbered thing
+          } else if( keywords.numbered(thiskey) ) {
+              parse(thiskey,input);
+              if(input.size()!=0){ 
+                    VesselOptions da(thiskey,input,this);
+                    functions.push_back(vesselRegister().create(thiskey,da) );
+              } else {
+                 for(unsigned i=1;;++i){
+                    if( !parseNumbered(thiskey,i,input) ) break;
+                    std::string ss; Tools::convert(i,ss);
+                    VesselOptions da(thiskey,input,this); 
+                    functions.push_back(vesselRegister().create(thiskey,da) ); 
+                    input.clear();
+                 } 
+              }
+          // Otherwise read in the keyword the normal way
+          } else {
+              parse(thiskey, input);
+              VesselOptions da(thiskey,input,this); 
+              if(input.size()!=0) functions.push_back( vesselRegister().create(thiskey,da) );
+          }
+          input.clear();
+      }
+  }
+  if( functions.size()>0 ) all_values=false;
+
+  if(all_values) error("No function has been specified");  
   // This sets up the dynamic list that holds what we are calculating
-  for(unsigned i=0;i<getNumberOfFunctionsInDistribution();++i){ members.addIndexToList(i); }
+  for(unsigned i=0;i<getNumberOfFunctionsInAction();++i){ members.addIndexToList(i); }
+  activateAll(); resizeFunctions(); 
+}
+
+void ActionWithDistribution::resizeFunctions(){
+  unsigned bufsize=0;
+  for(unsigned i=0;i<functions.size();++i){
+     functions[i]->resize();
+     bufsize+=(functions[i]->data_buffer).size();
+  }
+  buffer.resize( bufsize );
+}
+
+void ActionWithDistribution::activateAll(){
   members.activateAll(); members.updateActiveMembers();
-  // We prepare the first step as if we are doing a neighbor list update
-  prepareForNeighborListUpdate(); reduceAtNextStep=true;
+  for(unsigned i=0;i<members.getNumberActive();++i) activateValue(i);
 }
 
-void ActionWithDistribution::prepare(){
- if(reduceAtNextStep){
-    completeNeighborListUpdate();
-    // Setup the functions by declaring enough space to hold the derivatives
-    ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
-    for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( (av->getPntrToComponent(i))->getNumberOfDerivatives() );
-    // Setup the buffers for mpi gather
-    if( myfield ){
-      std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() ); 
-      for(unsigned i=0;i<cv_sizes.size();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
-      myfield->resizeBaseQuantityBuffers( cv_sizes ); 
-      myfield->resizeDerivatives( getNumberOfFieldDerivatives() );
-    } 
-    if( functions.size()!=0 ){
-      unsigned bufsize=0;
-      for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
-      buffer.resize( bufsize ); 
-    }
-    reduceAtNextStep=false;
- }
- if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-    members.activateAll();
-    members.updateActiveMembers();
-    prepareForNeighborListUpdate();
-    // Setup the functions by declaring enough space to hold the derivatives
-    ActionWithValue* av=dynamic_cast<ActionWithValue*>(this);
-    for(unsigned i=0;i<functions.size();++i) functions[i]->setNumberOfDerivatives( (av->getPntrToComponent(i))->getNumberOfDerivatives() );
-    // Setup the buffers for mpi gather
-    if( myfield ){
-      std::vector<unsigned> cv_sizes( getNumberOfFunctionsInDistribution() ); unsigned kk;
-      for(unsigned i=0;i<cv_sizes.size();++i){ cv_sizes[i]=getThisFunctionsNumberOfDerivatives(i); }
-      myfield->resizeBaseQuantityBuffers( cv_sizes ); 
-      myfield->resizeDerivatives( getNumberOfFieldDerivatives() );
-    } 
-    if( functions.size()!=0 ){
-      unsigned bufsize=0;
-      for(unsigned i=0;i<functions.size();++i) bufsize+=functions[i]->requiredBufferSpace();
-      buffer.resize( bufsize ); 
-    }
-    reduceAtNextStep=true;
-    lastUpdate=getStep();
- }
+Vessel* ActionWithDistribution::getVessel( const std::string& name ){
+  std::string myname;
+  for(unsigned i=0;i<functions.size();++i){
+     if( functions[i]->getLabel(myname) ){
+         if( myname==name ) return functions[i];
+     }
+  }
+  error("there is no vessel with name " + name);
 }
 
-void ActionWithDistribution::calculate(){
+void ActionWithDistribution::calculateAllVessels( const int& stepn ){
   plumed_massert( read, "you must have a call to requestDistribution somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
@@ -181,117 +141,68 @@ void ActionWithDistribution::calculate(){
 
   std::vector<Value> aux;
   // Reset everything
-  for(unsigned j=0;j<functions.size();++j) functions[j]->reset();
-  if( myfield ) myfield->clear();
-  // Create a value to store stuff in 
-  Value* tmpvalue=new Value();
+  for(unsigned j=0;j<functions.size();++j) functions[j]->zero();
 
   unsigned kk; bool keep;
   for(unsigned i=rank;i<members.getNumberActive();i+=stride){
       // Retrieve the function we are calculating from the dynamic list
       kk=members[i]; 
-      // Make sure we have enough derivatives in this value
-      unsigned nder=getThisFunctionsNumberOfDerivatives(kk);
-      if( tmpvalue->getNumberOfDerivatives()!=nder ) tmpvalue->resizeDerivatives( nder );
-      // Retrieve the periodicity of this value
-      if( isPeriodic(kk) ){ 
-         double min, max; retrieveDomain( kk, min, max );
-         tmpvalue->setDomain( min, max ); 
-      } else { tmpvalue->setNotPeriodic(); }
- 
-      // Calculate the value of this particular function 
-      calculateThisFunction( kk, tmpvalue, aux );
+      // Calculate the stuff in the loop for this action
+      bool skipme=calculateThisFunction( kk );
 
-      // Skip if we are not calculating this particular value
-      if( reduceAtNextStep && !tmpvalue->valueHasBeenSet() ){ 
-         members.deactivate(kk); deactivateValue(kk); continue; 
-      } else if( !tmpvalue->valueHasBeenSet() ){
+      // Check for conditions that allow us to just to skip the calculation
+      if( reduceAtNextStep && skipme ){ 
+         plumed_massert( isPossibleToSkip(), "To make your action work you must write a routine to get weights");
+         deactivate(kk); 
+         continue; 
+      } else if( skipme ){
+         plumed_massert( isPossibleToSkip(), "To make your action work you must write a routine to get weights");
          continue;
       }
 
-      // Now incorporate the derivative of the function into the derivatives for the min etc
+      // Now calculate all the functions
       keep=false;
       for(unsigned j=0;j<functions.size();++j){
-         functions[j]->clear(); functions[j]->calculate( tmpvalue, aux );
-         if( functions[j]->sizableContribution( tolerance ) ){ 
-             keep=true; functions[j]->mergeDerivatives( kk, *this );
-         }
-      }  
-      // Transfer the value to the field buffers
-      if( myfield ){ keep=true; myfield->setBaseQuantity( kk, tmpvalue ); }
-
-      tmpvalue->clearDerivatives();
-      for(unsigned i=0;i<aux.size();++i) aux[i].clearDerivatives();
+          // Calculate returns a bool that tells us if this particular
+          // quantity is contributing more than the tolerance
+          if( functions[j]->calculate(kk,tolerance) ) keep=true;
+      }
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
-      if( reduceAtNextStep && !keep ){ members.deactivate(kk); deactivateValue(kk); } 
+      if( reduceAtNextStep && !keep ) deactivate(kk);  
   }
   // Update the dynamic list 
   if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
   // MPI Gather everything
   if(!serial){ 
-     for(unsigned i=0;i<buffer.size();++i) buffer[i]=0.0;
+     buffer.assign(buffer.size(),0.0);
      unsigned bufsize=0;
-     for(unsigned i=0;i<functions.size();++i) functions[i]->copyDataToBuffers( bufsize, buffer ); 
+     // Copy data to local buffers
+     for(unsigned i=0;i<functions.size();++i){
+         for(unsigned j=0;j<(functions[i]->data_buffer).size();++j){ buffer[bufsize]=functions[i]->data_buffer[j]; bufsize++; }
+     } 
      plumed_assert( bufsize==buffer.size() ); 
+     // MPI all gather
      if(buffer.size()>0) comm.Sum( &buffer[0],buffer.size() ); 
+     // Copy gathered data back to function buffers
      bufsize=0;
-     for(unsigned i=0;i<functions.size();++i) functions[i]->retrieveDataFromBuffers( bufsize, buffer ); 
+     for(unsigned i=0;i<functions.size();++i){
+         for(unsigned j=0;j<(functions[i]->data_buffer).size();++j){ functions[i]->data_buffer[j]=buffer[bufsize]; bufsize++; }
+     }
      plumed_assert( bufsize==buffer.size() );
-
-     if( myfield ) myfield->gatherBaseQuantities( comm ); 
   }
 
   // Set the final value of the function
-  for(unsigned j=0;j<final_values.size();++j) functions[j]->finish( final_values[j] ); 
+  for(unsigned j=0;j<functions.size();++j) functions[j]->finish( tolerance ); 
 
-  if( myfield ){
-     std::vector<double> thisp( myfield->get_Ndx() ); bool keep;
-     Value tmpstress; tmpstress.resizeDerivatives( myfield->get_Ndx() );
-     std::vector<Value> tmpder; tmpder.resize( myfield->get_NdX() );
-     for(unsigned i=0;i<myfield->get_NdX();++i){
-        tmpder[i].set(0);   // This is really important don't delete it
-        tmpder[i].resizeDerivatives( myfield->get_Ndx() );
-     }
-     // Now loop over the spline points
-     unsigned ik=0;
-     for(unsigned i=0;i<myfield->getNumberOfSplinePoints();++i){
-         myfield->getSplinePoint(i,thisp);
-         // Calculate the contributions of all the active colvars
-         if( updateFreq>0 ){ keep=false; } else { keep=true; }
-         for(unsigned j=0;j<members.getNumberActive();++j){
-             if( (ik++)%stride!=rank ) continue;  // Ensures we parallelize the double loop over nodes
-
-             kk=members[j];
-             //if( myfield->calculateContributionAtPoint( i, kk, this ) ){ keep=true; } 
-             unsigned nder=getThisFunctionsNumberOfDerivatives(j);
-             if( tmpvalue->getNumberOfDerivatives()!=nder ){ tmpvalue->resizeDerivatives(nder); }
-             myfield->extractBaseQuantity( kk, tmpvalue );
-             // Calculate the field at point i that arises because of the jth component of the field
-             calculateFieldContribution( kk, thisp, tmpvalue, tmpstress, tmpder );
-             if( tmpstress.get()>tolerance ){
-                 myfield->addStress( i, tmpstress ); keep=true;
-                 for(unsigned k=0;k<myfield->get_NdX();++k) myfield->addDerivative( i, k, tmpder[k] );
-             }
-             // Reset all the tempory values we have used to do this calculation
-             tmpvalue->clearDerivatives(); tmpstress.clearDerivatives();
-             for(unsigned k=0;k<myfield->get_NdX();++k){ tmpder[k].set(0); tmpder[k].clearDerivatives(); }
-         }
-         // If the contribution of this quantity is very small at neighbour list time ignore it
-         // untill next neighbour list time
-         if( reduceAtNextStep && !keep ){ members.deactivate(kk); deactivateValue(kk); }
-     }
-     // Update the dynamic list 
-     if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
-     // Accumulate the field
-     if(!serial) myfield->gatherField( comm );
-     // setup the interpolation tables
-     myfield->set_tables();
-  }
-  // Delete the tmpvalues
-  delete tmpvalue; 
+  // Activate everything on neighbor list time and deactivate after
+  if( reduceAtNextStep ){ reduceAtNextStep=false; }
+  if( updateFreq>0 && (stepn-lastUpdate)>=updateFreq ){
+      activateAll(); resizeFunctions(); 
+      reduceAtNextStep=true; lastUpdate=stepn;
+  } 
 }
 
-void ActionWithDistribution::retrieveDomain( const unsigned nn, double& min, double& max ){
+void ActionWithDistribution::retrieveDomain( double& min, double& max ){
   plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithDistribution can retrieve the domain");
 }

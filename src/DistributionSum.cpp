@@ -19,40 +19,35 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DistributionFunctions.h"
+
+#include "FunctionVessel.h"
+#include "ActionWithDistribution.h"
 
 namespace PLMD {
 
-sum::sum( const std::string& parameters ) :
-DistributionFunction(parameters)
+class sum : public SumVessel {
+public:
+  static void reserveKeyword( Keywords& keys );
+  sum( const VesselOptions& da );
+  double compute( const unsigned& i, const double& val, double& df );
+};
+
+PLUMED_REGISTER_VESSEL(sum,"SUM")
+
+void sum::reserveKeyword( Keywords& keys ){
+  keys.reserveFlag("SUM",false,"calculate the sum of all the quantities and store it in a value called keyword.sum.");
+}
+
+sum::sum( const VesselOptions& da ) :
+SumVessel(da)
 {
-  Tools::convert(parameters,nval); 
-  addAccumulator( true );
-  addAccumulator( false );
+  addOutput("sum");
+  log.printf("  value %s.sum contains the sum of all the values\n",(getAction()->getLabel()).c_str());
 }
 
-std::string sum::message(){
-  std::ostringstream ostr;
-  ostr<<"the sum of all the values"; 
-  return ostr.str();
-}
-
-void sum::printKeywords( Log& log ){
-  plumed_massert( 0, "it should be impossible to get here");
-}
-
-std::string sum::getLabel(){
-  return "sum";
-}
-
-void sum::calculate( Value* value_in, std::vector<Value>& aux ){
-  copyValue( 0, value_in ); 
-  setValue( 1, 1.0 );
-}
-
-void sum::finish( Value* value_out ){
-  if ( getPntrToAccumulator(1)->get()!=nval ) printf("WARNING: A neighbor list is causing discontinuities in a sum");
-  extractDerivatives( 0, value_out ); value_out->set( getPntrToAccumulator(0)->get() );
+double sum::compute( const unsigned& i, const double& val, double& df ){
+  plumed_assert( i==0 );
+  df=1.0; return val;
 }
 
 }

@@ -46,11 +46,15 @@ class ActionWithValue;
 class Value{
 friend class ActionWithValue;
 /// This copies the contents of a value into a second value (just the derivatives and value)
-friend void copy( Value* val1, Value* val2 );
+friend void copy( const Value& val1, Value& val2 );
+/// This copies the contents of a value into a second value (but second value is a pointer)
+friend void copy( const Value& val, Value* val2 );
+/// This adds some derivatives onto the value
+friend void add( const Value& val1, Value* valout );
 /// This calculates val1*val2 and sorts out the derivatives
-friend void product( Value* val1, Value* val2, Value* valout );
+friend void product( const Value& val1, const Value& val2, Value& valout );
 /// This calculates va1/val2 and sorts out the derivatives
-friend void quotient( Value* val1, Value* val2, Value* valout );
+friend void quotient( const Value& val1, const Value& val2, Value* valout );
 private:
 /// The action in which this quantity is calculated
   ActionWithValue* action;
@@ -135,35 +139,30 @@ public:
   static double projection(const Value&,const Value&);
 };
 
-inline
-void copy( Value* val1, Value* val2 ){
-  unsigned nder=val1->derivatives.size();
-  if( nder!=val2->derivatives.size() ){ val2->derivatives.resize( nder ); }
-  val2->clearDerivatives();
-  for(unsigned i=0;i<val1->derivatives.size();++i) val2->addDerivative( i, val1->getDerivative(i) );
-  val2->set( val1->get() ); 
-}
+void copy( const Value& val1, Value& val2 );
+void copy( const Value& val1, Value* val2 );
+void add( const Value& val1, Value* valout );
 
 inline
-void product( Value* val1, Value* val2, Value* valout ){
-  plumed_assert( val1->derivatives.size()==val2->derivatives.size() );
-  plumed_assert( valout->derivatives.size()==val1->derivatives.size() );
-  valout->value_set=false; valout->derivatives.assign(valout->derivatives.size(),0.0);
-  double u, v; u=val1->value; v=val2->value;
-  for(unsigned i=0;i<val1->derivatives.size();++i){
-     valout->addDerivative(i, u*val2->derivatives[i] + v*val1->derivatives[i] );
+void product( const Value& val1, const Value& val2, Value& valout ){
+  plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
+  if( valout.derivatives.size()!=val1.derivatives.size() ) valout.derivatives.resize( val1.derivatives.size() );
+  valout.value_set=false; valout.derivatives.assign(valout.derivatives.size(),0.0);
+  double u, v; u=val1.value; v=val2.value;
+  for(unsigned i=0;i<val1.derivatives.size();++i){
+     valout.addDerivative(i, u*val2.derivatives[i] + v*val1.derivatives[i] );
   }
-  valout->set( u*v );
+  valout.set( u*v );
 }
 
 inline
-void quotient( Value* val1, Value* val2, Value* valout ){
-  plumed_assert( val1->derivatives.size()==val2->derivatives.size() );
-  plumed_assert( valout->derivatives.size()==val1->derivatives.size() );
+void quotient( const Value& val1, const Value& val2, Value* valout ){
+  plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
+  if( valout->derivatives.size()!=val1.derivatives.size() ) valout->derivatives.resize( val1.derivatives.size() );
   valout->value_set=false; valout->derivatives.assign(valout->derivatives.size(),0.0);
-  double u, v; u=val1->value; v=val2->value;
-  for(unsigned i=0;i<val1->derivatives.size();++i){
-     valout->addDerivative(i, v*val1->derivatives[i] - u*val2->derivatives[i] );
+  double u, v; u=val1.get(); v=val2.get();
+  for(unsigned i=0;i<val1.getNumberOfDerivatives();++i){
+     valout->addDerivative(i, v*val1.getDerivative(i) - u*val2.getDerivative(i) );
   }
   valout->chainRule( 1/(v*v) ); valout->set( u / v );
 }

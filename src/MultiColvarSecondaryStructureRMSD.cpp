@@ -36,7 +36,7 @@ void MultiColvarSecondaryStructureRMSD::registerKeywords( Keywords& keys ){
                               "must contain at least N residues, where N is dependent on the particular secondary structure you are interested in. "
                               "As such if you define portions of the chain with fewer than N residues the code will crash."); 
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD.");
-  keys.remove("MORE_THAN"); keys.remove("HISTOGRAM"); keys.remove("WITHIN"); keys.remove("MOMENT");
+  keys.use("LESS_THAN"); keys.use("MIN"); keys.use("AVERAGE");
 }
 
 MultiColvarSecondaryStructureRMSD::MultiColvarSecondaryStructureRMSD(const ActionOptions&ao):

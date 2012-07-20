@@ -26,6 +26,8 @@
 #include <cmath>
 #include <string>
 #include <vector>
+#include "PlumedException.h"
+#include "Tools.h"
 
 namespace PLMD {
 
@@ -42,6 +44,9 @@ private:
 	double lowb;
 	double highb;
 	double width;
+        enum {unset,periodic,notperiodic} periodicity;
+        double min, max, max_minus_min, inv_max_minus_min;
+        double difference( const double& d1, const double& d2 ) const ;
 public:
         static std::string documentation( bool dir );
         static std::string histodocs();
@@ -49,6 +54,8 @@ public:
 	HistogramBead();
         std::string description() const ;
         bool hasBeenSet() const;
+        void isNotPeriodic();
+        void isPeriodic( const double& mlow, const double& mhigh );
         void set(const std::string& params, const std::string& dd, std::string& errormsg);
 	void set(double l, double h, double w);
 	double calculate(double x, double&df) const;
@@ -69,17 +76,42 @@ bool HistogramBead::hasBeenSet() const {
 }
 
 inline
+void HistogramBead::isNotPeriodic(){
+  periodicity=notperiodic;
+}
+
+inline
+void HistogramBead::isPeriodic( const double& mlow, const double& mhigh ){
+  periodicity=periodic; min=mlow; max=mhigh;
+  max_minus_min=max-min;
+  plumed_massert(max_minus_min>0, "your function has a very strange domain?");
+  inv_max_minus_min=1.0/max_minus_min;
+}
+
+inline
 double HistogramBead::getlowb() const { return lowb; }
 	
 inline
 double HistogramBead::getbigb() const { return highb; }
+
+inline
+double HistogramBead::difference( const double& d1, const double& d2 ) const {
+  if(periodicity==notperiodic){
+    return d2-d1;
+  } else if(periodicity==periodic){
+    double s=(d2-d1)*inv_max_minus_min;
+    s=Tools::pbc(s);
+    return s*max_minus_min;
+  } else plumed_assert(0);
+  return 0;
+}
 	
 inline
 double HistogramBead::calculate( double x, double& df ) const {
 	const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
-	assert(init); double lowB, upperB;
-	lowB = ( lowb - x ) / ( sqrt(2.0) * width );
-	upperB = ( highb - x ) / ( sqrt(2.0) * width ) ;
+	assert(init && periodicity!=unset ); double lowB, upperB;
+	lowB = difference( x, lowb ) / ( sqrt(2.0) * width );
+	upperB = difference( x, highb ) / ( sqrt(2.0) * width ) ;
 	df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( sqrt(2*pi)*width );
 	return 0.5*( erf( upperB ) - erf( lowB ) );
 }

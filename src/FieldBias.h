@@ -28,7 +28,7 @@
 #include "PlumedException.h"
 #include "ActionWithDistribution.h"
 #include "Grid.h"
-#include "Field.h"
+#include "FieldVessel.h"
 
 namespace PLMD{
 
@@ -39,7 +39,7 @@ class FieldBias :
 private:
   bool serial, debug;
   ActionWithValue* apply_action;
-  Field* myfield;
+  FieldVessel* myfield;
   Grid* bias;
   double norm;
   std::vector<Value*> f_arg;

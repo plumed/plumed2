@@ -77,6 +77,7 @@ public:
   static void registerKeywords( Keywords& keys );
   ColvarParabetaRMSD(const ActionOptions&);
   bool contributionIsSmall( std::vector<Vector>& pos );
+  bool isPossibleToSkip();
 }; 
 
 PLUMED_REGISTER_ACTION(ColvarParabetaRMSD,"PARABETARMSD")
@@ -227,6 +228,11 @@ s_cutoff(0)
   reference[29]=Vector( 0.486,  4.430, -0.415); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().length, 0.1/atoms.getUnits().length );
+}
+
+bool ColvarParabetaRMSD::isPossibleToSkip(){
+  if(s_cutoff!=0) return true;
+  return false;
 }
 
 bool ColvarParabetaRMSD::contributionIsSmall( std::vector<Vector>& pos ){

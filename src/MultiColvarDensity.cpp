@@ -58,7 +58,8 @@ public:
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
   /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives(){ plumed_assert(0); };
-  bool isPeriodic(const unsigned nn){ return false; }
+  bool isPeriodic(){ return false; }
+  bool isDensity(){ return true; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarDensity,"DENSITY")
@@ -66,10 +67,7 @@ PLUMED_REGISTER_ACTION(MultiColvarDensity,"DENSITY")
 void MultiColvarDensity::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
-  // Note we don't parallelize this as it would be stupid
-  keys.use("SPECIES"); keys.remove("AVERAGE"); keys.remove("LESS_THAN"); 
-  keys.remove("MIN"); keys.remove("MORE_THAN"); keys.remove("HISTOGRAM");
-  keys.remove("WITHIN"); keys.remove("MOMENT");
+  keys.use("SPECIES"); 
   // Use density keywords
   keys.use("SUBCELL"); keys.use("GRADIENT");
 }

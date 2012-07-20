@@ -46,7 +46,7 @@ public:
   virtual ~MultiColvarSecondaryStructureRMSD();
   virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
   unsigned getNumberOfFieldDerivatives();
-  bool isPeriodic(const unsigned nn){ return false; }
+  bool isPeriodic(){ return false; }
 };
 
 }

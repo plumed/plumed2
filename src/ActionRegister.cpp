@@ -56,11 +56,10 @@ void ActionRegister::add(string key,creator_pointer f,keywords_pointer k){
     disabled.insert(key);
   }else{
     m.insert(pair<string,creator_pointer>(key,f));
-    // Create keywords using a function pointer
-    Keywords kk; k(kk);
-    // Store array of keywords inside an associative array 
-    // we can then find them using the keyword
-    mk.insert(pair<string,Keywords>(key,kk));
+    // Store a pointer to the function that creates keywords
+    // A pointer is stored and not the keywords because all
+    // Vessels must be dynamically loaded before the actions.
+    mk.insert(pair<string,keywords_pointer>(key,k));
   };
 }
 
@@ -71,15 +70,24 @@ bool ActionRegister::check(string key){
 
 Action* ActionRegister::create(const ActionOptions&ao){
   if(ao.line.size()<1)return NULL;
-  Action* action; ActionOptions nao( ao,mk[ao.line[0]] );
+  // Create a copy of the manual locally. The manual is 
+  // then added to the ActionOptions. This allows us to 
+  // ensure during construction that all the keywords for
+  // the action have been documented. In addition, we can
+  // generate the documentation when the user makes an error
+  // in the input.
+  Keywords keys; mk[ao.line[0]](keys);
+  Action* action; ActionOptions nao( ao,keys );
   if(check(ao.line[0])) action=m[ao.line[0]](nao);
   else action=NULL;
+  keys.destroyData();  // Empty the keywords object
   return action;
 }
 
 bool ActionRegister::printManual( const std::string& action ){
   if ( check(action) ){
-     mk[action].print_html();
+     Keywords keys; mk[action](keys); 
+     keys.print_html(); keys.destroyData();
      return true;
   } else {
      return false;

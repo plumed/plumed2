@@ -26,6 +26,8 @@
 #include <set>
 #include <map>
 
+#include "PlumedException.h"
+
 namespace PLMD{
 
 class Log;
@@ -34,60 +36,63 @@ class Log;
 class KeyType{
 friend class Keyword;
 private:
-  enum {compulsory,flag,optional,atoms,nohtml,hidden} style;
+  enum {hidden,compulsory,flag,optional,atoms} style;
 public:
   KeyType( const std::string& type );
+  void setStyle( const std::string& type );
   bool isCompulsory() const { return (style==compulsory); }
   bool isFlag() const { return (style==flag); }
   bool isOptional() const { return (style==optional); }
   bool isAtomList() const { return (style==atoms); }
-  bool isNoHTML() const { return (style==nohtml); }
-  bool isHidden() const { return (style==hidden); }
+  std::string toString() const {
+    if(style==compulsory) return "compulsory";
+    else if(style==optional) return "optional";
+    else if(style==atoms) return "atoms";
+    else if(style==flag) return "flag";
+    else if(style==hidden) return "hidden";
+    else plumed_assert(0);
+  }
 };
 
 /// This class holds the keywords and their documentation
 class Keywords{
 friend class Action;
 private:
-/// Whether the keyword is compulsory, optional...
-  std::vector<KeyType> reserved_types;
-/// The names of the keyword
-  std::vector<std::string> reserved_keys;
-/// The allowance of stuff like key1, key2 etc
-  std::vector<bool> reserved_allowmultiple;
-/// The documentation for the keywords
-  std::vector<std::string> reserved_documentation;
-/// Whether the keyword is compulsory, optional...
-  std::vector<KeyType> types;
-/// The names of the keyword
+/// The names of the allowed keywords
   std::vector<std::string> keys;
+/// The names of the reserved keywords
+  std::vector<std::string> reserved_keys;
+/// Whether the keyword is compulsory, optional...
+  std::map<std::string,KeyType> types;
 /// Do we allow stuff like key1, key2 etc
-  std::vector<bool> allowmultiple;
+  std::map<std::string,bool> allowmultiple;
 /// The documentation for the keywords
-  std::vector<std::string> documentation;
+  std::map<std::string,std::string> documentation;
 /// The default values for the flags (are they on or of)
   std::map<std::string,bool> booldefs; 
 /// The default values (if there are default values) for compulsory keywords
   std::map<std::string,std::string> numdefs;
 /// Print the documentation for the jth keyword in html
-  void print_html_item( const unsigned& j ) const;
+  void print_html_item( const std::string& ) const;
 /// Print a particular keyword
-  void printKeyword( const unsigned& j, Log& log ) const ;
+  void printKeyword( const std::string& j, Log& log ) const ;
 /// find out whether flag key is on or off by default.
   bool getLogicalDefault( std::string key, bool& def ) const ;
 /// Get the value of the default for the keyword named key
   bool getDefaultValue( std::string key, std::string& def ) const ;
-/// Clear all the keywords
-  void clear();
+public:
 /// Return the number of defined keywords 
   unsigned size() const;
 /// Check if numbered keywords are allowed for this action
   bool numbered( const std::string & k ) const ;
-public:
+/// Return the ith keyword
+  std::string getKeyword( const unsigned i ) const ;
 /// Print the documentation to the log file (used by PLMD::Action::error)
   void print( Log& log ) const ;
 /// Reserve a keyword 
   void reserve( const std::string & t, const std::string & k, const std::string & d );
+/// Reserve a flag
+  void reserveFlag( const std::string & k, const bool def, const std::string & d );
 /// Use one of the reserved keywords
   void use( const std::string  k );
 /// Add a new keyword of type t with name k and description d
@@ -108,6 +113,13 @@ public:
   void print_html() const ;
 /// Change the style of a keyword
   void reset_style( const std::string & k, const std::string & style );
+/// Add keywords from one keyword object to another
+  void add( const Keywords& keys );
+/// Copy the keywords data
+  void copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am,
+                         std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums ) const ;
+/// Clear everything from the keywords object
+  void destroyData();
 };
 
 }
