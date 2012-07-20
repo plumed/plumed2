@@ -357,3 +357,9 @@ bool Keywords::getDefaultValue( std::string key, std::string& def ) const {
    }
 }
 
+void Keywords::destroyData(){
+   keys.clear(); reserved_keys.clear(); types.clear();
+   allowmultiple.clear(); documentation.clear(); 
+   booldefs.clear(); numdefs.clear();
+}
+

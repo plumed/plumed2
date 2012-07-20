@@ -118,6 +118,8 @@ public:
 /// Copy the keywords data
   void copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am,
                          std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums ) const ;
+/// Clear everything from the keywords object
+  void destroyData();
 };
 
 }
