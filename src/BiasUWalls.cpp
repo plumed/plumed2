@@ -129,13 +129,14 @@ void BiasUWalls::calculate(){
     const double epsilon=eps[i];
     const double off=offset[i];
     const double uscale = (cv+off)/epsilon;
-    if(uscale>0.) {
-      const double f=-(k/epsilon)*exponent*pow(uscale, exponent-1);
-      ene+=k*pow(uscale, exponent);
-      setOutputForce(i,f);
-      totf2+=f*f;
+    double f = 0.0;
+    if( uscale > 0.) {
+      f = -( k / epsilon ) * exponent * pow( uscale, exponent-1.0 );
+      ene += k * pow( uscale, exponent );
+      totf2 += f*f;
     }
-  };
+    setOutputForce(i,f);
+  }
   getPntrToComponent("bias")->set(ene);
   getPntrToComponent("force2")->set(totf2);
 }

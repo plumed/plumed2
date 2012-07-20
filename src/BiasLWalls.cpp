@@ -120,8 +120,8 @@ offset(getNumberOfArguments(),0.0)
 }
 
 void BiasLWalls::calculate(){
-  double ene=0.0;
-  double totf2=0.0;
+  double ene = 0.0;
+  double totf2 = 0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
     const double cv=difference(i,at[i],getArgument(i));
     const double k=kappa[i];
@@ -129,13 +129,14 @@ void BiasLWalls::calculate(){
     const double epsilon=eps[i];
     const double off=offset[i];
     const double lscale = (cv-off)/epsilon;
-    if(lscale<0.) {
-      const double f=-(k/epsilon)*exponent*pow(lscale, exponent-1);
-      ene+=k*pow(lscale, exponent);
-      setOutputForce(i,f);
-      totf2+=f*f;
+    double f = 0.0;
+    if( lscale < 0.) {
+      f = -( k / epsilon ) * exponent * pow( lscale, exponent-1.0 );
+      ene += k * pow( lscale, exponent );
+      totf2 += f*f;
     }
-  };
+    setOutputForce(i,f);
+  }
   getPntrToComponent("bias")->set(ene); 
   getPntrToComponent("force2")->set(totf2);  
 }
