@@ -9,7 +9,7 @@ double (*cmathLog)(double) = log;
 #include <string>
 #include <cstring>
 #include <cassert>
-#include "ColvarRMSD.h"
+//#include "ColvarRMSD.h"
 #include <iostream>
 
 using namespace std;
@@ -121,38 +121,15 @@ neigh_stride(-1.)
        // for each value get the name and the label of the corresponding action
        std::string mylabel=getPntrToArgument(i)->getPntrToAction()->getLabel(); 
        std::string myname=getPntrToArgument(i)->getPntrToAction()->getName(); 
-       // check of the SQUARED flag is set in all the dependent variables
-       ColvarRMSD* ptr=dynamic_cast<ColvarRMSD*>(getPntrToArgument(i)->getPntrToAction());
-       if(ptr){
-            log.printf("  The cv type for %s is ColvarRMSD: good! \n",mylabel.c_str());
-            if((*ptr).squared){
-               log.printf("  You enabled the SQUARED option in RMSD! it is the original flavour ! \n");
-            }else{
-               log.printf("  BEWARE: In ARG %s  You did not enable the SQUARED option in RMSD! it is not the original flavour!\n",mylabel.c_str());
-               plumed_merror("There are problems in the pathcv setup. Check the log!!!");
-            }
-       }else{
-            log.printf("  Hey, the CV %s used for the path has wrong type. Must be RMSD with added SQUARED flag!  \n",mylabel.c_str());
-            plumed_merror("  There are problems in the pathcv setup. Check the log!!!");
-       }
-       // check structural consistency: indexing must be the same 
-       if(i!=0){
-       		ColvarRMSD* ptr0=dynamic_cast<ColvarRMSD*>(getPntrToArgument(i)->getPntrToAction());
-                if( ptr->getNumberOfAtoms() != ptr0->getNumberOfAtoms()  ){
-	            log.printf("  Hey, the CV %s used for the path has wrong number of atoms compared to the other frames involved in the path cv!! Check it out!  \n",mylabel.c_str());
-       		 	    plumed_merror("There are problems in the pathcv setup. Check the log!!!");
-		}
-                for( unsigned ii=0; ii< ptr->getNumberOfAtoms();ii++ ){
-                     if(  ptr->getAbsoluteIndex(ii)!=ptr0->getAbsoluteIndex(ii) ){
-		            log.printf("  Hey, the CV %s used for the path has wrong number of atoms compared to the other frames involved in the path cv!! Check it out!  \n",mylabel.c_str());
-       		 	    plumed_merror("There are problems in the pathcv setup. Check the log!!!");
-                     }
-                } 
-       }
+       if(myname!="RMSD")plumed_merror("This argument is not of RMSD type!!!");
   }   
   log.printf("  Consistency check completed! Your path cvs look good!\n"); 
   // do some neighbor printout
   if(neigh_stride>0. || neigh_size>0){
+           if(neigh_size>getNumberOfArguments()){
+           	log.printf(" List size required ( %d ) is too large: resizing to the maximum number of arg required: %d  \n",neigh_size,getNumberOfArguments());
+ 		neigh_size=getNumberOfArguments();
+           }
            log.printf("  Neighbor list enabled: \n");
            log.printf("                size   :  %d elements\n",neigh_size);
            log.printf("                stride :  %f time \n",neigh_stride);
@@ -200,9 +177,14 @@ void FunctionPathMSD::calculate(){
   //                if the size is full -> sort the vector and decide the dependencies for next step 
   //                if the size is not full -> check if next step will need the full dependency otherwise keep this dependencies 
 
+  vector<int> actions_to_be_suspended; 
   if (neigh_size>0){
      if(neighpair.size()==getNumberOfArguments()){ // I just did the complete round: need to sort, shorten and give it a go
+                // sort the values  
 		sort(neighpair.begin(),neighpair.end(),pairordering());
+                // create a list of the actions to be suspended
+                for(unsigned i=neigh_size;i<getNumberOfArguments();i++)actions_to_be_suspended.push_back(neighpair[i].first);
+                // resize the effective list
                 neighpair.resize(neigh_size);
      }else{
         if( int(getStep())%int(neigh_stride/getTimeStep())==0 ){
@@ -213,7 +195,8 @@ void FunctionPathMSD::calculate(){
      } 
   }
   // TODO prepare dependencies for next step n 
-    
+  // make a backup of the pointers to the actions (remove instantaneously the dependency) 
+  //for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->activate(); 
 
 }
 

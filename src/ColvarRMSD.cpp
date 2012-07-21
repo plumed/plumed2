@@ -1,9 +1,30 @@
-#include "ColvarRMSD.h"
+#include "Colvar.h"
 #include "PlumedMain.h"
 #include "ActionRegister.h"
 #include "PDB.h"
 #include "RMSD.h"
 #include "Atoms.h"
+
+
+using namespace std;
+
+namespace PLMD{
+   
+class ColvarRMSD : public Colvar {
+	
+  RMSD rmsd;
+	
+  bool squared; 
+
+  vector<Vector> derivs;
+
+public:
+  ColvarRMSD(const ActionOptions&);
+  virtual void calculate();
+  static void registerKeywords(Keywords& keys);
+};
+
+}
 
 
 using namespace std;
