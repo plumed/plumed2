@@ -109,6 +109,9 @@ public:
 /// You should NEVER use this routine to refer to the components of your PLMD::Action.  Use 
 /// getPntrToComponent instead.
   Value* copyOutput( const unsigned& n ) const;
+/// get a string that contains all the available components 
+  std::string getComponentsList( ) const ;
+
 
 // -- Routines for everything else -- //
 

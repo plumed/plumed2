@@ -17,3 +17,13 @@ void ActionSet::clearDelete(){
   clear();
 }
 
+
+std::string ActionSet::getLabelList() const{
+  std::string outlist;
+  for(const_iterator p=begin();p!=end();++p){
+    outlist+=dynamic_cast<Action*>(*p)->getLabel()+" ";
+  };
+  return  outlist;
+}
+
+

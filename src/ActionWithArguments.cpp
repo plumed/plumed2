@@ -28,7 +28,11 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         } else if ( name=="*"){
            // Take all the values from an action with a specific name
            ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-           if(!action) error("cannot find action named " + a);
+           if(!action){
+	         std::string str=" (hint! the actions in this ActionSet are: "; 
+                 str+=plumed.getActionSet().getLabelList()+")";
+		 error("cannot find action named " + a + str);
+	   }
            for(int k=0;k<action->getNumberOfComponents();++k) arg.push_back(action->copyOutput(k));
         } else if ( a=="*" ){
            // Take components from all actions with a specific name
@@ -43,8 +47,16 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
         } else {
            // Take values with a specific name
            ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(a);
-           if(!action) error("cannot find action named " + a);
-           if( !(action->exists(c[i])) ) error("action " + a + " has no component named " + name );
+           if(!action){
+	         std::string str=" (hint! the actions in this ActionSet are: "; 
+                 str+=plumed.getActionSet().getLabelList()+")";
+                 error("cannot find action named " + a +str);
+           } 
+           if( !(action->exists(c[i])) ){
+                 std::string str=" (hint! the components in this actions are: "; 
+                 str+=action->getComponentsList()+")";
+		 error("action " + a + " has no component named " + name );
+	   } ;
            arg.push_back(action->copyOutput(c[i]));
         }
       } else {    // if it doesn't contain a dot
@@ -57,8 +69,16 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
            }
         } else {
            ActionWithValue* action=plumed.getActionSet().selectWithLabel<ActionWithValue*>(c[i]);
-           if(!action) error("cannot find action named " + c[i]);
-           if( !(action->exists(c[i])) ) error("action " + c[i] + " has no component named " + c[i] );
+           if(!action){
+                 std::string str=" (hint! the actions in this ActionSet are: "; 
+                 str+=plumed.getActionSet().getLabelList()+")";
+		 error("cannot find action named " + c[i] + str );
+	   }
+           if( !(action->exists(c[i])) ){
+                 std::string str=" (hint! the components in this actions are: "; 
+                 str+=action->getComponentsList()+")";
+		 error("action " + c[i] + " has no component named " + c[i] +str);
+	   };
            arg.push_back(action->copyOutput(c[i]));
         }
       }

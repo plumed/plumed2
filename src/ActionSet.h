@@ -39,9 +39,11 @@ public:
 /// not found, it returns NULL
   template <class T>
   T selectWithLabel(const std::string&s)const;
+/// get the labels in the list of actions in form of a string (useful to debug)
+  std::string getLabelList() const;
 };
 
-///////
+/////
 // INLINE IMPLEMENTATIONS:
 
 template <class T>

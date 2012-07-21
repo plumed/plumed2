@@ -117,6 +117,15 @@ int ActionWithValue::getComponent( const std::string& name ) const {
   return -1;
 }
 
+std::string ActionWithValue::getComponentsList( ) const {
+  std::string complist;
+  plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
+  for(unsigned i=0;i<values.size();++i){
+     complist+=values[i]->name+" ";
+  }
+  return complist;
+}
+
 void ActionWithValue::componentIsNotPeriodic( const std::string& name ){
   int kk=getComponent(name);
   values[kk]->min=0; values[kk]->max=0;
