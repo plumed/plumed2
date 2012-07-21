@@ -94,7 +94,7 @@ PLUMED_COLVAR_INIT(ao),rmsd(log),squared(false)
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  method for alignment : %s \n",rmsd.getMethod().c_str() );
-  if(squared)log.printf("  chosen to use SQARED option for MSD instead of RMSD\n");
+  if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
 
 }
 
