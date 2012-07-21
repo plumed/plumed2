@@ -197,7 +197,9 @@ adaptive_(FlexibleBin::none)
  	 plumed_assert(sigma0_.size()==getNumberOfArguments());
   }else{
   // if you use flexible hills you need one sigma  
- 	 plumed_assert(sigma0_.size()==1);
+         if(sigma0_.size()!=1){
+	         plumed_merror("If you choose ADAPTIVE you need only one sigma according to your choice of the type");
+         } 
   	 flexbin=new FlexibleBin(adaptive_,this,sigma0_[0]); 
   }
   parse("HEIGHT",height0_);
