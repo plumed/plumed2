@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedMain.h"
 #include "Tools.h"
 #include <cstring>
@@ -21,7 +42,6 @@
 #include "CLToolMain.h"
 #include "Stopwatch.h"
 #include "Citations.h"
-#include "ExchangePatterns.h"
 
 using namespace PLMD;
 using namespace std;
@@ -40,8 +60,7 @@ PlumedMain::PlumedMain():
   atoms(*new Atoms(*this)),
   actionSet(*new ActionSet(*this)),
   bias(0.0),
-  novirial(false),
-  random_exchanges(false)
+  novirial(false)
 {
   stopwatch.start();
   stopwatch.pause();
@@ -246,18 +265,18 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
        log.setFile(static_cast<char*>(val));
-  } else if(word=="getRandomExchanges"){
+  } else if(word=="getExchangesFlag"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       getRandomEx((*static_cast<bool*>(val)));
+       exchangepatterns.getFlag((*static_cast<int*>(val)));
   } else if(word=="setExchangesSeed"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       setExchangesSeed((*static_cast<int*>(val)));
+       exchangepatterns.setSeed((*static_cast<int*>(val)));
   } else if(word=="getExchangesList"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       getExchangesList((static_cast<int*>(val)));
+       exchangepatterns.getList((static_cast<int*>(val)),comm.Get_size());
   } else {
 // multi word commands
 
@@ -339,7 +358,7 @@ void PlumedMain::readInputFile(std::string str){
       setSuffix(words[1]);
     }
     else if(words[0]=="RANDOM_EXCHANGES"){
-      setRandomEx(true);
+      exchangepatterns.setFlag(exchangepatterns.RANDOM);
     }
     else if(words[0]=="INCLUDE"){
       plumed_assert(words.size()==2);

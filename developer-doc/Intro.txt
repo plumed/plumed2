@@ -41,7 +41,7 @@ To add a class to this group, just put a
 statement somwhere inside the header.
 @}
 
-\defgroup INHERIT Step by step guides
+\defgroup INHERIT Base classes for CVs, functions, biases, etc.
 @{
 Classes which can be used to create CVs, functions, biases and so on.
 
@@ -50,6 +50,14 @@ To add a class to this group, just put a
 \ingroup INHERIT
 \endverbatim
 statement somewhere inside the header.
+@}
+
+\defgroup INPUTDIRECTIVES Classes providing input directives
+@{
+Classes which implement directive that we used in the plumed input file.
+
+Each of these classes provides one directive for the plumed input file.
+This list is built automatically based on the PLUMED_REGISTER_ACTION macro.
 @}
 
 

@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionAtomistic.h"
 #include "ActionPilot.h"
 #include "ActionRegister.h"
@@ -7,7 +28,7 @@
 #include "Atoms.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "MolInfo.h"
+#include "SetupMolInfo.h"
 
 #include <vector>
 #include <string>
@@ -110,7 +131,7 @@ ActionAtomistic(ao)
   if( resstrings.size()>0 ){
       vector<string> backnames; parseVector("RES_ATOMS",backnames);
       if(backnames.size()==0) error("Found RESIDUES keyword without any specification of the atoms that should be in a residue - use RES_ATOMS");
-      std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
+      std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
       if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
       std::vector< std::vector<AtomNumber> > backatoms;
       moldat[0]->getBackbone( resstrings, backnames, backatoms );

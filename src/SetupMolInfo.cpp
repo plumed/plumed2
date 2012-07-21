@@ -1,4 +1,25 @@
-#include "MolInfo.h"
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "SetupMolInfo.h"
 #include "Atoms.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
@@ -30,7 +51,7 @@ are in the backbone of a protein to the ALPHARMSD CV.
 
 \verbatim
 MOLINFO STRUCTURE=reference.pdb
-ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(SPLINE R_0=0.08 NN=8 MM=12) LABEL=a 
+ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(RATIONAL R_0=0.08 NN=8 MM=12) LABEL=a 
 \endverbatim
 (see also \ref ALPHARMSD)
 
@@ -38,27 +59,29 @@ ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(SPLINE R_0=0.08 NN=8 MM=12) LABEL=a
 //+ENDPLUMEDOC
 
 
-PLUMED_REGISTER_ACTION(MolInfo,"MOLINFO")
+PLUMED_REGISTER_ACTION(SetupMolInfo,"MOLINFO")
 
-void MolInfo::registerKeywords( Keywords& keys ){
+void SetupMolInfo::registerKeywords( Keywords& keys ){
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","STRUCTURE","a file in pdb format containing a reference structure. "
                                     "This is used to defines the atoms in the various residues, chains, etc . " + PDB::documentation() );
-  keys.add("numbered","CHAIN","(for masochists without pdb files) The atoms involved in each of the chains of interest in the structure.");
+  keys.add("atoms","CHAIN","(for masochists ( a.k.a. Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
 }
 
-MolInfo::MolInfo( const ActionOptions&ao ):
+SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
 Action(ao),
-ActionSetup(ao)
+ActionSetup(ao),
+ActionAtomistic(ao)
 {
-  std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
+  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()!=0 ) error("cannot use more than one MOLINFO action in input");
 
   std::vector<AtomNumber> backbone;
-  parseVector("CHAIN",backbone);
+  parseAtomList("CHAIN",backbone);
   if( read_backbone.size()==0 ){
       for(unsigned i=1;;++i){
-          if( !parseNumberedVector("CHAIN",i,backbone) ) break;
+          parseAtomList("CHAIN",i,backbone);
+          if( backbone.size()==0 ) break;
           read_backbone.push_back(backbone);
           backbone.resize(0);
       }
@@ -83,7 +106,7 @@ ActionSetup(ao)
   pdb.renameAtoms("HA1","CB");  // This is a hack to make this work with GLY residues 
 }
 
-void MolInfo::getBackbone( std::vector<std::string>& restrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone ){
+void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone ){
   if( read_backbone.size()!=0 ){
       if( restrings.size()!=1 ) error("cannot interpret anything other than all for residues when using CHAIN keywords");
       if( restrings[0]!="all" ) error("cannot interpret anything other than all for residues when using CHAIN keywords");  

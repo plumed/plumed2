@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "FieldBias.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
@@ -30,13 +51,16 @@ FieldBias::FieldBias(const ActionOptions&ao):
   parseFlag("SERIAL",serial);
   if(serial) log.printf("  doing calculation in serial\n");
   parseFlag("DEBUG_DERIVATIVES",debug);
-  if(debug) log.printf("  storing derivatives in a value so they can be output with dump derivatives");
+  if(debug) log.printf("  storing derivatives in a value so they can be output with dump derivatives\n");
 
   // Find the field we are using
   std::string ll; parse("FIELD",ll);
-  ActionWithDistribution* field=plumed.getActionSet().selectWithLabel<ActionWithDistribution*>(ll);
+  std::size_t dot=ll.find_first_of('.');
+  std::string actionname=ll.substr(0,dot), vesselname=ll.substr(dot+1); 
+  ActionWithDistribution* field=plumed.getActionSet().selectWithLabel<ActionWithDistribution*>(actionname);
   if(field){
-     myfield=field->getField();
+     Vessel* myves=field->getVessel( vesselname );
+     myfield=dynamic_cast<FieldVessel*>( myves );
      if(!myfield) error("input action " + ll + " does not calcualte a field");
      apply_action=dynamic_cast<ActionWithValue*>( field );
   } else {
@@ -60,9 +84,12 @@ FieldBias::FieldBias(const ActionOptions&ao):
 
   // Create the grid where we store the bias
   std::vector<double> min, max;
-  if( myfield ) myfield->retrieveBoundaries( min, max );
-  else{ min.resize(1); max.resize(1); min[0]=0; max[0]=static_cast<double>( f_arg.size()-1 ); }
-  plumed_assert( min.size()==ngrid.size() && max.size()==ngrid.size() );
+  if( myfield ){
+    min.resize( ngrid.size() ); max.resize( ngrid.size() );
+    for(unsigned i=0;i<ngrid.size();++i){ min[i]=myfield->get_min()[i]; max[i]=myfield->get_max()[i]; } 
+  } else{ 
+    min.resize(1); max.resize(1); min[0]=0; max[0]=static_cast<double>( f_arg.size()-1 ); 
+  }
 
   std::string sbias; parse("START_BIAS",sbias);
   if( sbias.length()==0 ){
@@ -117,9 +144,12 @@ void FieldBias::clearBias(){
   std::vector<unsigned> ngrid; ngrid=bias->getNbin();
   delete bias;
   std::vector<double> min, max; 
-  if( myfield ) myfield->retrieveBoundaries( min, max );
-  else{ min.resize(1); max.resize(1); min[0]=0; max[0]=static_cast<double>( f_arg.size()-1 ); }
-  plumed_assert( min.size()==ngrid.size() && max.size()==ngrid.size() );
+  if( myfield ){
+    min.resize( ngrid.size() ); max.resize( ngrid.size() );
+    for(unsigned i=0;i<ngrid.size();++i){ min[i]=myfield->get_min()[i]; max[i]=myfield->get_max()[i]; }
+  } else{ 
+    min.resize(1); max.resize(1); min[0]=0; max[0]=static_cast<double>( f_arg.size()-1 ); 
+  }
   std::vector<bool> pbc(min.size(), false );
   bias=new Grid( min, max, ngrid, pbc, false, false );
 }
@@ -174,7 +204,8 @@ void FieldBias::calculate(){
   }
   for(unsigned j=0;j<derivatives.size();++j) derivatives[j]*=bias->getBinVolume();
   if(!serial) comm.Sum( &derivatives[0], derivatives.size() );
-  if( debug ) apply_action->mergeFieldDerivatives( derivatives, getPntrToComponent("bias") );
+  if( debug && myfield ) myfield->mergeFieldDerivatives( derivatives, getPntrToComponent("bias") ); 
+  else if( debug ) apply_action->mergeFieldDerivatives( derivatives, getPntrToComponent("bias") );
 }
 
 void FieldBias::calculateNumericalDerivatives( ActionWithValue* a ){

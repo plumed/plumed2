@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
 #include "ActionRegister.h"
 
@@ -37,7 +58,8 @@ public:
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
   /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives(){ plumed_assert(0); };
-  bool isPeriodic(const unsigned nn){ return false; }
+  bool isPeriodic(){ return false; }
+  bool isDensity(){ return true; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarDensity,"DENSITY")
@@ -45,10 +67,7 @@ PLUMED_REGISTER_ACTION(MultiColvarDensity,"DENSITY")
 void MultiColvarDensity::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
-  // Note we don't parallelize this as it would be stupid
-  keys.use("SPECIES"); keys.remove("AVERAGE"); keys.remove("LESS_THAN"); 
-  keys.remove("MIN"); keys.remove("MORE_THAN"); keys.remove("HISTOGRAM");
-  keys.remove("WITHIN"); keys.remove("MOMENT");
+  keys.use("SPECIES"); 
   // Use density keywords
   keys.use("SUBCELL"); keys.use("GRADIENT");
 }

@@ -1,6 +1,28 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
 #include "NeighborList.h"
 #include "ActionRegister.h"
+#include "SwitchingFunction.h"
 
 #include <string>
 #include <cmath>
@@ -48,7 +70,7 @@ public:
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
 /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives();
-  bool isPeriodic(const unsigned nn){ return false; }
+  bool isPeriodic(){ return false; }
 };
 
 PLUMED_REGISTER_ACTION(MultiColvarCoordination,"COORDINATIONNUMBER")
@@ -62,8 +84,9 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   keys.add("optional","MM","The m parameter of the switching function ");
   keys.add("optional","D_0","The d_0 parameter of the switching function");
   keys.add("optional","R_0","The r_0 parameter of the switching function");
-  keys.remove("AVERAGE");
-  // Use density keywords
+  // Use actionWithDistributionKeywords
+  keys.use("AVERAGE"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
+  keys.use("MIN"); keys.use("WITHIN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.use("SUBCELL"); keys.use("GRADIENT"); keys.use("DISTRIBUTION");
 }
 
@@ -97,7 +120,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 unsigned MultiColvarCoordination::getNumberOfFieldDerivatives(){
-  return getNumberOfFunctionsInDistribution();
+  return getNumberOfFunctionsInAction();
 } 
 
 double MultiColvarCoordination::compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){

@@ -1,55 +1,92 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DRMSD.h"
 #include "PDB.h"
+#include "Pbc.h"
 #include <cassert>
 #include <cmath>
 
 using namespace std;
 using namespace PLMD;
 
-void DRMSD::setFromPDB( const double& bondc, const PDB&pdb ){
-  setReference(bondc, pdb.getPositions());
+void DRMSD::setFromPDB(const PDB&pdb, double lbound, double ubound){
+  setReference(pdb.getPositions(), lbound, ubound);
 }
 
 void DRMSD::clear(){
-  targets.resize(0,0);
+  targets.clear();
 }
 
-void DRMSD::setReference( const double& bondc, const vector<Vector> & reference ){
-  natoms=reference.size(); npairs=0;
-  targets.resize( natoms, natoms );
-  for(unsigned i=1;i<natoms;++i){
-     for(unsigned j=0;j<i;++j){
-         targets(i,j)=delta(reference[i],reference[j]).modulo();
-         if( targets(i,j)<bondc ){
-             targets(i,j)=-4.0;
-         } else {
-             npairs++;
-         }
-     }
+void DRMSD::setReference(const vector<Vector> & reference, double lbound, double ubound)
+{
+ natoms = reference.size();
+ for(unsigned i=0;i<natoms-1;++i){
+  for(unsigned j=i+1;j<natoms;++j){
+   double distance = delta(reference[i],reference[j]).modulo();
+   if(distance > lbound && distance < ubound){ 
+     targets[make_pair(i,j)] = distance; 
+   }
   }
+ }
 }
 
-double DRMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, Tensor& virial) const {
+double DRMSD::calculate(const std::vector<Vector> & positions,
+                        std::vector<Vector> &derivatives, Tensor& virial) const {
+
+ Pbc fake_pbc;
+ return DRMSD::calculate(positions,fake_pbc,derivatives,virial,false);
+}
+
+double DRMSD::calculate(const std::vector<Vector> & positions, const Pbc& pbc,
+                        std::vector<Vector> &derivatives, Tensor& virial, bool do_pbc) const {
+
   assert(positions.size()==natoms && derivatives.size()==natoms );
 
-  Vector distance; double len,diff,drmsd=0; 
-  for(unsigned i=1;i<natoms;++i){
-     for(unsigned j=0;j<i;++j){
-        if( targets(i,j)>0 ){
-            distance=delta( positions[i] , positions[j] ); len=distance.modulo();  
-            diff=len-targets(i,j); drmsd+=diff*diff; 
-            derivatives[i]+=-( diff / len ) * distance;
-            derivatives[j]+= ( diff / len ) * distance;
-        }
-     }
+  Vector distance;
+  double drmsd=0.;
+  for(map< pair <unsigned,unsigned> , double>::const_iterator it=targets.begin();it!=targets.end();++it){
+    unsigned i=it->first.first;
+    unsigned j=it->first.second;
+    if(do_pbc){distance=pbc.distance( positions[i] , positions[j] );}
+    else{distance=delta( positions[i] , positions[j] );}
+    double len = distance.modulo();  
+    double diff = len - it->second;
+    drmsd += diff * diff;
+    derivatives[i] += -( diff / len ) * distance;
+    derivatives[j] +=  ( diff / len ) * distance;
+    virial -=  ( diff / len ) * Tensor(distance,distance); 
   }
-  drmsd=sqrt( drmsd / npairs ); 
-     
+
+  double npairs = static_cast<double>(targets.size());
+
+  drmsd=sqrt( drmsd / npairs );
+    
   double idrmsd=1.0/( drmsd * npairs );
-  for(unsigned i=0;i<natoms;++i){
-      derivatives[i]=idrmsd*derivatives[i]; virial+=( -1.0*Tensor(positions[i],derivatives[i]) );
-  }
+
+  virial *= idrmsd;
+
+  for(unsigned i=0;i<natoms;++i){derivatives[i] *= idrmsd;}
 
   return drmsd;
 }
+
 

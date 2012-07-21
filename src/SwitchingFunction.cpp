@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "SwitchingFunction.h"
 #include "Tools.h"
 #include "Keywords.h"
@@ -12,7 +33,7 @@ std::string SwitchingFunction::documentation(){
   ostr<<"Within plumed you can use the following switching functions ";
   ostr<<"\\f$s(r)=\\frac{ 1 - \\left(\\frac{ r - d_0 }{ r_0 }\\right)^{n} }{ 1 - \\left(\\frac{ r - d_0 }{ r_0 }\\right)^{m} } \\f$, ";
   ostr<<"\\f$s(r)=\\exp\\left(-\\frac{ r - d_0 }{ r_0 }\\right)\\f$ or using \\f$s(r)=\\exp\\left(-\\frac{ (r - d_0)^2 }{ 2r_0^2 }\\right)\\f$. ";
-  ostr<<"The first of these options is specified using the syntax (SPLINE R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$ NN=\\f$n\\f$ MM=\\f$m\\f$) and if ";
+  ostr<<"The first of these options is specified using the syntax (RATIONAL R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$ NN=\\f$n\\f$ MM=\\f$m\\f$) and if ";
   ostr<<"the D_0, NN and MM keywords are missing they are assumed equal to 0, 6 and 12 respectively.  The second form is specified using ";
   ostr<<"(EXP R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$) and if the D_0 is missing it is assumed equal to 0.  The third form is specified using ";
   ostr<<"(GAUSSIAN R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$) and if the D_0 is missing it is assumed equal to 0. You can add the D_MAX flag to ";
@@ -39,7 +60,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   Tools::parse(data,"D_0",d0);
   Tools::parse(data,"D_MAX",dmax);
 
-  if(name=="SPLINE"){
+  if(name=="RATIONAL"){
     type=spline;
     nn=6;
     mm=12;

@@ -1,8 +1,28 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
 #include "PlumedMain.h"
-#include "DistributionFunctions.h"
 #include "ActionSet.h"
-#include "MolInfo.h"
+#include "SetupMolInfo.h"
 #include <vector>
 #include <string>
 
@@ -13,6 +33,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
+  ActionWithDistribution::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.reserve("numbered","ATOMS","the atoms involved in each of the collective variables you wish to calculate. "
                                "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one CV will be "
@@ -34,24 +55,6 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                   "of the atoms specifies using SPECIESB is within the specified cutoff");
   keys.reserve("atoms","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
-  keys.reserve("optional","DISTRIBUTION","create a field cv from the distribution of thest  collective variables.  From a distribution of collective variables "
-                                  "we calculate a 1D-field using " 
-                                  " \\f$\\psi(z)=\\frac{\\sum_i G(z-s_i,\\sigma)}{\\int \\textrm{d}z \\sum_i G(z-s_i,\\sigma)}\\f$ where \\f$ G(z-s_i,\\sigma)\\f$ "
-                                  " is a normalized Gaussian function with standard deviation \\f$\\sigma\\f$ centered at the value of the \\f$i\\f$th collective variable"
-                                  " \\f$s_i\\f$.  In other words we use a histogram calculated from the values of all the constituent collective variables. " 
-                                  + Field::documentation() );
-  keys.add("optional","MIN","calculate the minimum value and store it in a value called min. " + min::documentation() );
-//  keys.add("optional","MAX", "take the maximum value from these variables");
-  keys.addFlag("AVERAGE",false,"take the average value of these variables and store it in value called average.");
-  keys.add("optional","LESS_THAN", "take the number of variables less than the specified target and store it in a value called lt<target>. " + less_than::documentation() );
-  keys.add("optional","MORE_THAN", "take the number of variables more than the specified target and store it in a value called gt<target>. " + more_than::documentation() ); 
-  keys.add("optional","HISTOGRAM", "create a discretized histogram of the distribution of collective variables.  " + HistogramBead::histodocs() );
-  keys.add("numbered", "WITHIN", "calculate the number variabels that are within a certain range and store it in a value called between<lowerbound>&<upperbound>. " + within::documentation() );
-  keys.add("numbered","MOMENT","calculate the mth moment of the distribution of collective variables.  " + moment::documentation() + 
-                               "  To calculate multiple moments use repeated instances of the moment keyword MOMENT1, MOMENT2, MOMENT3...  ");
-  keys.reserve("numbered", "SUBCELL", "calculate the average value of the CV within a portion of the box and store it in a value called subcell. " + cvdens::documentation() );
-  keys.reserve("numbered", "GRADIENT", "calcualte the gradient of a CV across the box and store it in value called gradient. " + gradient::documentation() );
-  ActionWithDistribution::registerKeywords( keys );
 } 
 
 MultiColvar::MultiColvar(const ActionOptions&ao):
@@ -61,12 +64,17 @@ ActionWithValue(ao),
 ActionWithDistribution(ao),
 usepbc(true),
 readatoms(false),
-needsCentralAtomPosition(false)
+needsCentralAtomPosition(false),
+catom_pos(3)
 {
   if( keywords.exists("NOPBC") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
     usepbc=!nopbc;
   }
+}
+
+void MultiColvar::useCentralAtom(){
+  needsCentralAtomPosition=true;
 }
 
 void MultiColvar::addColvar( const std::vector<unsigned>& newatoms ){
@@ -87,128 +95,11 @@ void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms );
 
   if( !readatoms ) error("No atoms have been read in");
-
-  // -- Now read in distribution keywords -- //
-  bool dothis; std::string params;
-
-  // Read AVERAGE keyword
-  if( keywords.exists("AVERAGE") ) parseFlag("AVERAGE",dothis);
-  else dothis=false;
-  if( dothis ){
-     Tools::convert(getNumberOfFunctionsInDistribution(),params);
-     addDistributionFunction("AVERAGE", new mean(params) );
-     params.clear();
+  for(unsigned i=0;i<colvar_atoms.size();++i){
+     colvar_atoms[i].activateAll(); colvar_atoms[i].updateActiveMembers();
   }
-  // Read MIN keyword
-  if( keywords.exists("MIN") ) parse("MIN",params);
-  if( params.size()!=0 ){
-     addDistributionFunction("MIN", new min(params) );
-     params.clear();
-  }
-  // Read Less_THAN keyword
-  if( keywords.exists("LESS_THAN") ) parse("LESS_THAN",params);
-  if( params.size()!=0 ){
-     addDistributionFunction("LESS_THAN", new less_than(params) );
-     params.clear();
-  }
-  // Read MORE_THAN keyword
-  if( keywords.exists("MORE_THAN") ) parse("MORE_THAN",params);
-  if( params.size()!=0 ){
-     addDistributionFunction("MORE_THAN", new more_than(params) );
-     params.clear();
-  }
-  // Read HISTOGRAM keyword
-  if( keywords.exists("HISTOGRAM") ) parse("HISTOGRAM",params);
-  if( params.size()!=0 ){
-       std::vector<std::string> bins;
-       HistogramBead::generateBins( params, "", bins );
-       for(unsigned i=0;i<bins.size();++i){
-           addDistributionFunction( "HISTOGRAM", new within( bins[i] ) );
-       }
-       params.clear();
-  }
-  // Read within keywords
-  if( keywords.exists("WITHIN") ){
-     parse("WITHIN",params);
-     if( params.size()!=0 ){
-         addDistributionFunction( "WITHIN", new within(params) );
-         params.clear();
-     } else if( keywords.exists("WITHIN") ){
-         for(unsigned i=1;;++i){
-            if( !parseNumbered("WITHIN",i,params) ) break;
-            std::string ss; Tools::convert(i,ss);
-            addDistributionFunction( "WITHIN" + ss, new within(params) );
-            params.clear();
-         }
-     }
-  }
-
-  // Read moment keywords
-  if( keywords.exists("MOMENT") ){
-     unsigned number=0;
-     parse("MOMENT",number);
-     if( number>0 ){
-        moment::generateParameters(number, getNumberOfFunctionsInDistribution(), params );
-        addDistributionFunction( "MOMENT", new moment(params) );
-        params.clear();
-     } else {
-         unsigned number=0;
-         for(unsigned i=1;;++i){
-            if( !parseNumbered("MOMENT",i,number) ) break;
-            std::string ss; Tools::convert(i,ss);
-            moment::generateParameters(number, getNumberOfFunctionsInDistribution(), params ); 
-            addDistributionFunction( "MOMENT" + ss, new moment(params) );
-            params.clear();
-         }
-     }
-  }
-
-  // Establish whether or not this is a density ( requires special method )
-  std::string dens; 
-  if( keywords.exists("SPECIES") && !keywords.exists("SPECIESA") && !keywords.exists("SPECIESB") ){ dens=" density"; }
-
-  // Read CV_DENSITY keywords
-  if( keywords.exists("SUBCELL") ){
-      parse("SUBCELL",params); 
-      if( params.size()!=0 ){
-          params=params + dens;
-          needsCentralAtomPosition=true; 
-          addDistributionFunction( "SUBCELL", new cvdens(params) );
-          params.clear();
-      } else {
-         for(unsigned i=1;;++i){
-            if( !parseNumbered("SUBCELL",i,params) ) break;
-            params=params+dens;
-            needsCentralAtomPosition=true;
-            std::string num; Tools::convert(i, num);
-            addDistributionFunction( "SUBCELL"+num, new cvdens(params) );
-            params.clear();
-         }
-      }
-  } 
-
-  // Read GRADIENT keywords
-  if( keywords.exists("GRADIENT") ){
-      parse("GRADIENT",params); 
-      if( params.size()!=0 ){
-          params=params + dens;
-          needsCentralAtomPosition=true;
-          addDistributionFunction( "GRADIENT", new gradient(params) );
-          params.clear();
-      } else {
-         for(unsigned i=1;;++i){
-            if( !parseNumbered("GRADIENT",i,params) ) break;
-            params=params+dens;
-            needsCentralAtomPosition=true;
-            std::string num; Tools::convert(i, num);
-            addDistributionFunction( "GRADIENT"+num, new gradient(params) );
-            params.clear();
-         }
-      }
-  } 
-
-  if( keywords.exists("DISTRIBUTION") ) addField("DISTRIBUTION", new Field( "identity",1 ) );
-  requestAtoms();         // Request the atoms in ActionAtomistic and set up the value sizes
+  all_atoms.activateAll(); all_atoms.updateActiveMembers();
+  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
 }
 
 void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
@@ -216,7 +107,7 @@ void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, 
   plumed_massert( keywords.exists("RESIDUES"), "To read in the backbone atoms the keyword RESIDUES must be registered");
   readatoms=true;
 
-  std::vector<MolInfo*> moldat=plumed.getActionSet().select<MolInfo*>();
+  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
 
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
@@ -303,9 +194,6 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
 void MultiColvar::readSpeciesKeyword( int& natoms ){
   if( readatoms ) return ;
 
-//  if( !keywords.exists("SPECIESA") ) error("use SPECIESA and SPECIESB keywords as well as SPECIES");
-//  if( !keywords.exists("SPECIESB") ) error("use SPECIESA and SPECIESB keywords as well as SPECIES");
-
   std::vector<AtomNumber> t;
   parseAtomList("SPECIES",t);
   if( !t.empty() ){
@@ -357,200 +245,133 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   } 
 }
 
-void MultiColvar::prepareForNeighborListUpdate(){
-   for(unsigned i=0;i<colvar_atoms.size();++i){
-      colvar_atoms[i].activateAll(); colvar_atoms[i].updateActiveMembers();
-   }
-   all_atoms.activateAll(); 
-   all_atoms.updateActiveMembers();
-   requestAtoms(); 
+void MultiColvar::prepare(){
+  if( isTimeForNeighborListUpdate() ){
+      for(unsigned i=0;i<colvar_atoms.size();++i){
+         colvar_atoms[i].mpi_gatherActiveMembers( comm );
+         activateLinks( colvar_atoms[i], all_atoms );
+      }
+      all_atoms.updateActiveMembers(); 
+      ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+      resizeFunctions();
+  }
 }
 
-void MultiColvar::completeNeighborListUpdate(){
-   for(unsigned i=0;i<colvar_atoms.size();++i){
-      colvar_atoms[i].mpi_gatherActiveMembers( comm );
-      activateLinks( colvar_atoms[i], all_atoms );
-   }
-   all_atoms.updateActiveMembers(); requestAtoms();
-}
-
-void MultiColvar::requestAtoms(){
-   ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-   for(unsigned i=0;i<getNumberOfComponents();++i) getPntrToComponent(i)->resizeDerivatives(3*getNumberOfAtoms()+9);
+void MultiColvar::calculate(){
+  calculateAllVessels( getStep() );
 }
 
 void MultiColvar::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
    plumed_massert(0,"gradient and related cv distribution functions are not available in this colvar");
 }
 
-void MultiColvar::calculateThisFunction( const unsigned& j, Value* value_in, std::vector<Value>& aux ){
+bool MultiColvar::calculateThisFunction( const unsigned& j ){
   unsigned natoms=colvar_atoms[j].getNumberActive();
 
-  if ( natoms==0 ) return;   // Do nothing if there are no active atoms in the colvar
-  // Retrieve the atoms
-  Tensor vir; std::vector<Vector> pos(natoms), der(natoms); vir.zero();
-  for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); der[i].zero(); }
-  
-  // Do a quick check on the size of this contribution
-  if( contributionIsSmall( pos ) ) return;
+  if ( natoms==0 ) return true;   // Do nothing if there are no active atoms in the colvar
+  std::vector<Vector> pos(natoms); 
 
-  // Compute the derivatives
-  current=j; double value=compute( j, pos, der, vir );
+  // Resize everything
+  if( der.size()!=pos.size() ) der.resize( pos.size() );
+  if( thisval.getNumberOfDerivatives()!=(3*pos.size()+9) ) thisval.resizeDerivatives( 3*pos.size()+9);
+
+  // Clear everything
+  vir.zero(); for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); der[i].zero(); }
+  thisval.clearDerivatives();
+
+  // Do a quick check on the size of this contribution
+  if( contributionIsSmall( pos ) ) return true;
+
+  // Compute everything
+  current=j; double vv=compute( j, pos, der, vir );
+
+  // Store the value
+  thisval.set( vv );
+  for(unsigned i=0;i<natoms;++i){
+      thisval.addDerivative( 3*i+0,der[i][0] );
+      thisval.addDerivative( 3*i+1,der[i][1] );
+      thisval.addDerivative( 3*i+2,der[i][2] );
+  }
+  thisval.addDerivative( 3*natoms+0, vir(0,0) );
+  thisval.addDerivative( 3*natoms+1, vir(0,1) );
+  thisval.addDerivative( 3*natoms+2, vir(0,2) );
+  thisval.addDerivative( 3*natoms+3, vir(1,0) );
+  thisval.addDerivative( 3*natoms+4, vir(1,1) );
+  thisval.addDerivative( 3*natoms+5, vir(1,2) );
+  thisval.addDerivative( 3*natoms+6, vir(2,0) );
+  thisval.addDerivative( 3*natoms+7, vir(2,1) );
+  thisval.addDerivative( 3*natoms+8, vir(2,2) );
 
   if(needsCentralAtomPosition){
-     if( aux.size()!=3 ){
-        aux.resize(3);
-        for(unsigned i=0;i<3;++i) aux[i].resizeDerivatives( value_in->getNumberOfDerivatives() );
+     if( central_derivs.size()!=pos.size() ) central_derivs.resize( pos.size() );
+     Vector central_pos, fpos;
+     getCentralAtom( pos, central_pos, central_derivs );
+     fpos=getPbc().realToScaled( central_pos );
+
+     unsigned nder=3*pos.size()+9;
+     for(unsigned i=0;i<3;++i){
+         if( catom_pos[i].getNumberOfDerivatives()!=nder ) catom_pos[i].resizeDerivatives( nder );
+         catom_pos[i].clearDerivatives();
      }
-     std::vector<Tensor> deriv(natoms); Vector cpos, fpos;
-     getCentralAtom( pos, cpos, deriv );
-     fpos=getPbc().realToScaled( cpos );
-     aux[0].set(fpos[0]);
-     aux[1].set(fpos[1]);
-     aux[2].set(fpos[2]);
+
+     catom_pos[0].set(fpos[0]);
+     catom_pos[1].set(fpos[1]);
+     catom_pos[2].set(fpos[2]);
      Tensor dbox, ibox( getPbc().getInvBox().transpose() );
      for(unsigned i=0;i<natoms;++i){
-         dbox=matmul( ibox, deriv[i] );
-         for(unsigned j=0;j<3;++j){
-             aux[0].addDerivative( 3*i+j, dbox(0,j) );
-             aux[1].addDerivative( 3*i+j, dbox(1,j) );
-             aux[2].addDerivative( 3*i+j, dbox(2,j) );
-         }
+        dbox=matmul( ibox, central_derivs[i] );
+        for(unsigned j=0;j<3;++j){
+           catom_pos[0].addDerivative( 3*i+j, dbox(0,j) );
+           catom_pos[1].addDerivative( 3*i+j, dbox(1,j) );
+           catom_pos[2].addDerivative( 3*i+j, dbox(2,j) );
+        }
      }
   }
-
-  // Put all this in the value we are passing back
-  for(unsigned i=0;i<natoms;++i){
-      value_in->addDerivative( 3*i+0,der[i][0] );
-      value_in->addDerivative( 3*i+1,der[i][1] );
-      value_in->addDerivative( 3*i+2,der[i][2] );
-  }
-  value_in->addDerivative( 3*natoms+0, vir(0,0) );
-  value_in->addDerivative( 3*natoms+1, vir(0,1) );
-  value_in->addDerivative( 3*natoms+2, vir(0,2) );
-  value_in->addDerivative( 3*natoms+3, vir(1,0) );
-  value_in->addDerivative( 3*natoms+4, vir(1,1) );
-  value_in->addDerivative( 3*natoms+5, vir(1,2) );
-  value_in->addDerivative( 3*natoms+6, vir(2,0) );
-  value_in->addDerivative( 3*natoms+7, vir(2,1) );
-  value_in->addDerivative( 3*natoms+8, vir(2,2) );
-
-  // And store the value
-  value_in->set(value);
+  return false;
 }
 
-void MultiColvar::calculateFieldContribution( const unsigned& j, const std::vector<double>& at, Value* value_in, Value& stress, std::vector<Value>& der ){
-  plumed_assert( at.size()==1 && j<colvar_atoms.size() );
-  plumed_assert( stress.getNumberOfDerivatives()==1 );
-  
-  double dd, ss, du; dd=at[0]-value_in->get(); 
-  ss=fnorm*exp( -(dd*dd)/(2*fsigma2) ); du=dd/fsigma2;
-  stress.set( ss ); stress.addDerivative( 0, -du*ss );
-  unsigned nfder=getNumberOfFieldDerivatives();
-
-  // If we are differentiating with respect to cvs and then applying to atoms later
-  if( nfder==getNumberOfFunctionsInDistribution() ){
-      der[j].add(du*ss); der[j].addDerivative( 0, du*ss*(1./(fsigma2*du) - du) );
-  // If we are differentiating with respect to atomic posisitions
-  } else if( nfder==(3*getNumberOfAtoms()+9) ){
-      int thisatom; unsigned innat=colvar_atoms[j].getNumberActive();
-      value_in->chainRule( du*ss );
-      for(unsigned i=0;i<innat;++i){
-         thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
-         plumed_assert( thisatom>=0 );
-         der[3*thisatom+0].add( value_in->getDerivative(3*i+0) );
-         der[3*thisatom+1].add( value_in->getDerivative(3*i+1) );
-         der[3*thisatom+2].add( value_in->getDerivative(3*i+2) );
-      }
-      // Easy to merge the virial
-      unsigned outnat=getNumberOfAtoms(); 
-      der[3*outnat+0].add( value_in->getDerivative(3*innat+0) );
-      der[3*outnat+1].add( value_in->getDerivative(3*innat+1) );
-      der[3*outnat+2].add( value_in->getDerivative(3*innat+2) );
-      der[3*outnat+3].add( value_in->getDerivative(3*innat+3) );
-      der[3*outnat+4].add( value_in->getDerivative(3*innat+4) );
-      der[3*outnat+5].add( value_in->getDerivative(3*innat+5) );
-      der[3*outnat+6].add( value_in->getDerivative(3*innat+6) );
-      der[3*outnat+7].add( value_in->getDerivative(3*innat+7) );
-      der[3*outnat+8].add( value_in->getDerivative(3*innat+8) );
-
-      value_in->chainRule( 1./(fsigma2*du) - du );
-      for(unsigned i=0;i<innat;++i){
-         thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
-         plumed_assert( thisatom>=0 );
-         der[3*thisatom+0].addDerivative( 0, value_in->getDerivative(3*i+0) );
-         der[3*thisatom+1].addDerivative( 0, value_in->getDerivative(3*i+1) );
-         der[3*thisatom+2].addDerivative( 0, value_in->getDerivative(3*i+2) );
-      }
-      // Easy to merge the virial
-      der[3*outnat+0].addDerivative( 0, value_in->getDerivative(3*innat+0) );
-      der[3*outnat+1].addDerivative( 0, value_in->getDerivative(3*innat+1) );
-      der[3*outnat+2].addDerivative( 0, value_in->getDerivative(3*innat+2) );
-      der[3*outnat+3].addDerivative( 0, value_in->getDerivative(3*innat+3) );
-      der[3*outnat+4].addDerivative( 0, value_in->getDerivative(3*innat+4) );
-      der[3*outnat+5].addDerivative( 0, value_in->getDerivative(3*innat+5) );
-      der[3*outnat+6].addDerivative( 0, value_in->getDerivative(3*innat+6) );
-      der[3*outnat+7].addDerivative( 0, value_in->getDerivative(3*innat+7) );
-      der[3*outnat+8].addDerivative( 0, value_in->getDerivative(3*innat+8) );
-  } else {
-      plumed_assert(0);
-  }
+void MultiColvar::retrieveCentralAtomPos( std::vector<Value>& cpos ) const {
+  plumed_assert(needsCentralAtomPosition);
+  for(unsigned i=0;i<3;++i) copy( catom_pos[i], cpos[i] );
 }
 
-void MultiColvar::mergeFieldDerivatives( const std::vector<double>& der, Value* value_out ){
-  unsigned nfder=getNumberOfFieldDerivatives(); 
-  plumed_assert( der.size()==nfder && value_out->getNumberOfDerivatives()==(3*getNumberOfAtoms()+9) );
+void MultiColvar::retrieveColvarWeight( const unsigned& j, Value& ww ){
+  if( isPossibleToSkip() ) error("cannot calculate this quantity for this setup. You have something that causes "
+                                 "colvars to be skipped without being calculated.  This can cause discontinuities "
+                                 "in the final value of the quantity"); 
 
-  if( nfder==(3*getNumberOfAtoms()+9) &&
-      nfder==getNumberOfFunctionsInDistribution() ){
-       error("Major problems for field - can't decide how to do derivatives");
-  }
-  if( nfder==getNumberOfFunctionsInDistribution() ){
-     Value* tmpvalue=new Value();
-     for(unsigned j=0;j<der.size();++j){
-         unsigned kk=getActiveMember(j);
-         unsigned nder=getThisFunctionsNumberOfDerivatives(kk);
-         if( tmpvalue->getNumberOfDerivatives()!=nder ){ tmpvalue->resizeDerivatives(nder); }
-         getField()->extractBaseQuantity( j, tmpvalue );
-         tmpvalue->chainRule( der[j] ); mergeDerivatives(kk, tmpvalue, value_out );
-     }
-     delete tmpvalue;
-  } else if( nfder==(3*getNumberOfAtoms()+9) ){
-     for(unsigned j=0;j<der.size();++j) value_out->addDerivative( j, der[j] );
-  } else {
-     plumed_assert(0);
-  }
+  unsigned nder=3*colvar_atoms[j].getNumberActive()+9;
+  if( ww.getNumberOfDerivatives()!=nder ) ww.resizeDerivatives( nder );
+  ww.clearDerivatives(); ww.set(1.0);
 }
 
-void MultiColvar::mergeDerivatives( const unsigned j, Value* value_in, Value* value_out ){    
+void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, Value& value_out ){    
+  plumed_assert( value_in.getNumberOfDerivatives()==3*colvar_atoms[jcv].getNumberActive()+9);
 
-  int thisatom; unsigned innat=colvar_atoms[j].getNumberActive();
+  unsigned nder=3*getNumberOfAtoms()+9;
+  if( value_out.getNumberOfDerivatives()!=nder ) value_out.resizeDerivatives( nder );
+  value_out.clearDerivatives();
+
+  int thisatom; unsigned innat=colvar_atoms[jcv].getNumberActive();
   for(unsigned i=0;i<innat;++i){
-     thisatom=linkIndex( i, colvar_atoms[j], all_atoms );
+     thisatom=linkIndex( i, colvar_atoms[jcv], all_atoms );
      plumed_assert( thisatom>=0 ); 
-     value_out->addDerivative( 3*thisatom+0, value_in->getDerivative(3*i+0) );
-     value_out->addDerivative( 3*thisatom+1, value_in->getDerivative(3*i+1) );
-     value_out->addDerivative( 3*thisatom+2, value_in->getDerivative(3*i+2) ); 
+     value_out.addDerivative( 3*thisatom+0, df*value_in.getDerivative(3*i+0) );
+     value_out.addDerivative( 3*thisatom+1, df*value_in.getDerivative(3*i+1) );
+     value_out.addDerivative( 3*thisatom+2, df*value_in.getDerivative(3*i+2) ); 
   }
 
   // Easy to merge the virial
   unsigned outnat=getNumberOfAtoms(); 
-  value_out->addDerivative( 3*outnat+0, value_in->getDerivative(3*innat+0) );
-  value_out->addDerivative( 3*outnat+1, value_in->getDerivative(3*innat+1) );
-  value_out->addDerivative( 3*outnat+2, value_in->getDerivative(3*innat+2) );
-  value_out->addDerivative( 3*outnat+3, value_in->getDerivative(3*innat+3) );
-  value_out->addDerivative( 3*outnat+4, value_in->getDerivative(3*innat+4) );
-  value_out->addDerivative( 3*outnat+5, value_in->getDerivative(3*innat+5) );
-  value_out->addDerivative( 3*outnat+6, value_in->getDerivative(3*innat+6) );
-  value_out->addDerivative( 3*outnat+7, value_in->getDerivative(3*innat+7) );
-  value_out->addDerivative( 3*outnat+8, value_in->getDerivative(3*innat+8) );
-}
-
-void MultiColvar::derivedFieldSetup( const double sigma ){
-  const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
-  log.printf("  generating field cv from histogram in which each component CV is represented by a Gaussian of width %f\n",sigma);
-  fsigma2=sigma*sigma;
-  fnorm = 1.0 / ( sqrt(2*pi)*sigma ); 
+  value_out.addDerivative( 3*outnat+0, df*value_in.getDerivative(3*innat+0) );
+  value_out.addDerivative( 3*outnat+1, df*value_in.getDerivative(3*innat+1) );
+  value_out.addDerivative( 3*outnat+2, df*value_in.getDerivative(3*innat+2) );
+  value_out.addDerivative( 3*outnat+3, df*value_in.getDerivative(3*innat+3) );
+  value_out.addDerivative( 3*outnat+4, df*value_in.getDerivative(3*innat+4) );
+  value_out.addDerivative( 3*outnat+5, df*value_in.getDerivative(3*innat+5) );
+  value_out.addDerivative( 3*outnat+6, df*value_in.getDerivative(3*innat+6) );
+  value_out.addDerivative( 3*outnat+7, df*value_in.getDerivative(3*innat+7) );
+  value_out.addDerivative( 3*outnat+8, df*value_in.getDerivative(3*innat+8) );
 }
 
 Vector MultiColvar::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
@@ -570,11 +391,11 @@ void MultiColvar::apply(){
   v.zero();
 
   unsigned nat=getNumberOfAtoms(); 
-  std::vector<double> forces(3*getNumberOfAtoms()+9); 
+  std::vector<double> forces(3*getNumberOfAtoms()+9);
 
   unsigned vstart=3*getNumberOfAtoms(); 
-  for(int i=0;i<getNumberOfComponents();++i){
-    if( getPntrToComponent(i)->applyForce( forces ) ){
+  for(int i=0;i<getNumberOfVessels();++i){
+    if( (getPntrToVessel(i)->applyForce( forces )) ){
      for(unsigned j=0;j<nat;++j){
         f[j][0]+=forces[3*j+0];
         f[j][1]+=forces[3*j+1];
@@ -591,32 +412,4 @@ void MultiColvar::apply(){
      v(2,2)+=forces[vstart+8];
     }
   }
- 
-  if( getField() ){
-     forces.resize( getField()->get_NdX() );
-     if( getField()->applyForces( forces ) ){
-       Value* tmpval=new Value(); tmpval->resizeDerivatives( 3*getNumberOfAtoms()+9 );
-       mergeFieldDerivatives( forces, tmpval );
-       for(unsigned j=0;j<nat;++j){
-          f[j][0]+=tmpval->getDerivative(3*j+0);
-          f[j][1]+=tmpval->getDerivative(3*j+1);
-          f[j][2]+=tmpval->getDerivative(3*j+2);
-       }
-       v(0,0)+=tmpval->getDerivative(vstart+0);
-       v(0,1)+=tmpval->getDerivative(vstart+1);
-       v(0,2)+=tmpval->getDerivative(vstart+2);
-       v(1,0)+=tmpval->getDerivative(vstart+3);
-       v(1,1)+=tmpval->getDerivative(vstart+4);
-       v(1,2)+=tmpval->getDerivative(vstart+5);
-       v(2,0)+=tmpval->getDerivative(vstart+6);
-       v(2,1)+=tmpval->getDerivative(vstart+7);
-       v(2,2)+=tmpval->getDerivative(vstart+8);
-       delete tmpval;
-     }
-  }
 }
-
-
-
-
-

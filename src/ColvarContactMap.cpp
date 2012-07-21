@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "NeighborList.h"
 #include "ActionRegister.h"
@@ -22,7 +43,7 @@ The following example calculates switching functions based on the distances betw
 to a file named colvar.
 
 \verbatim
-CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH=(SPLINE R_0=1.5) LABEL=f1
+CONTACTMAP ATOMS1=1,2 ATOMS2=3,4 ATOMS3=4,5 ATOMS4=5,6 SWITCH=(RATIONAL R_0=1.5) LABEL=f1
 PRINT ARG=f1.* FILE=colvar
 \endverbatim
 (See also \ref PRINT)
@@ -30,7 +51,7 @@ PRINT ARG=f1.* FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class ContactMap : public Colvar {   
+class ColvarContactMap : public Colvar {   
 private:
   bool pbc, dosum;
   NeighborList *nl;
@@ -38,16 +59,16 @@ private:
   bool reduceListAtNextStep;
 public:
   static void registerKeywords( Keywords& keys );
-  ContactMap(const ActionOptions&);
-  ~ContactMap();
+  ColvarContactMap(const ActionOptions&);
+  ~ColvarContactMap();
 // active methods:
   virtual void calculate();
   void checkFieldsAllowed(){};
 };
 
-PLUMED_REGISTER_ACTION(ContactMap,"CONTACTMAP")
+PLUMED_REGISTER_ACTION(ColvarContactMap,"CONTACTMAP")
 
-void ContactMap::registerKeywords( Keywords& keys ){
+void ColvarContactMap::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("numbered","ATOMS","the atoms involved in each of the contacts you wish to calculate. "
                    "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one contact will be "
@@ -57,7 +78,7 @@ void ContactMap::registerKeywords( Keywords& keys ){
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
 }
 
-ContactMap::ContactMap(const ActionOptions&ao):
+ColvarContactMap::ColvarContactMap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true),
 dosum(false),
@@ -122,11 +143,11 @@ reduceListAtNextStep(false)
   checkRead();
 }
 
-ContactMap::~ContactMap(){
+ColvarContactMap::~ColvarContactMap(){
   delete nl;
 }
 
-void ContactMap::calculate(){ 
+void ColvarContactMap::calculate(){ 
      
  double ncoord=0., coord;
  Tensor virial;

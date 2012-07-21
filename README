@@ -1,15 +1,3 @@
-LICENSE
-
-All the source code included in this package is meant to be covered
-under the GNU LESSER GENERAL PUBLIC LICENSE (see ./COPYING.LESSER).
-Authors of these software are:
-
-Massimiliano Bonomi
-Davide Branduardi
-Giovanni Bussi
-Carlo Camilloni
-Gareth Tribello
-
 DOCUMENTATION
 
 To build the documentation, type

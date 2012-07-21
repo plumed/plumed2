@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 #include "PlumedMain.h"
 #include "ActionRegister.h"
@@ -20,26 +41,26 @@ set of collective variables.
 */
 //+ENDPLUMEDOC
 
-class TargetFrame : public Function {
+class FunctionTarget : public Function {
 private:
   TargetDist target;
   std::vector<double> derivs;
 public:
-  TargetFrame(const ActionOptions&);
+  FunctionTarget(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(TargetFrame,"TARGET")
+PLUMED_REGISTER_ACTION(FunctionTarget,"TARGET")
 
-void TargetFrame::registerKeywords(Keywords& keys){
+void FunctionTarget::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure. " + PDB::documentation() );
   keys.add("optional","REFERENCE_VEC","the vector of values for the CVs at the reference point (if you use this you don't need REFERENCE)");
 }
 
-TargetFrame::TargetFrame(const ActionOptions&ao):
+FunctionTarget::FunctionTarget(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 target(log)
@@ -61,7 +82,7 @@ target(log)
   addValueWithDerivatives(); setNotPeriodic();
 }
 
-void TargetFrame::calculate(){
+void FunctionTarget::calculate(){
   double r=target.calculate( derivs );
   setValue(r);
   for(unsigned i=0;i<derivs.size();i++) setDerivative(i,derivs[i]);

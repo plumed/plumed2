@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "ActionRegister.h"
 
@@ -99,8 +120,8 @@ offset(getNumberOfArguments(),0.0)
 }
 
 void BiasLWalls::calculate(){
-  double ene=0.0;
-  double totf2=0.0;
+  double ene = 0.0;
+  double totf2 = 0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
     const double cv=difference(i,at[i],getArgument(i));
     const double k=kappa[i];
@@ -108,13 +129,15 @@ void BiasLWalls::calculate(){
     const double epsilon=eps[i];
     const double off=offset[i];
     const double lscale = (cv-off)/epsilon;
-    if(lscale<0.) {
-      const double f=-(k/epsilon)*exponent*pow(lscale, exponent-1);
-      ene+=k*pow(lscale, exponent);
-      setOutputForce(i,f);
-      totf2+=f*f;
+    double f = 0.0;
+    if( lscale < 0.) {
+      double power = pow( lscale, exponent );
+      f = -( k / epsilon ) * exponent * power / lscale;
+      ene += k * power; 
+      totf2 += f * f;
     }
-  };
+    setOutputForce(i,f);
+  }
   getPntrToComponent("bias")->set(ene); 
   getPntrToComponent("force2")->set(totf2);  
 }

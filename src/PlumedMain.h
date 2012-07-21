@@ -1,7 +1,29 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_PlumedMain_h
 #define __PLUMED_PlumedMain_h
 
 #include "WithCmd.h"
+#include "ExchangePatterns.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -36,6 +58,7 @@ class DLLoader;
 class PlumedCommunicator;
 class Stopwatch;
 class Citations;
+class ExchangePatterns;
 
 /**
 Main plumed object.
@@ -94,15 +117,14 @@ private:
 /// The total bias (=total energy of the restraints)
   double bias;
 
+/// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
+  ExchangePatterns exchangepatterns;
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);
-
-/// Flag to switch on the random exchages pattern usefull for BIAS-EXCHANGE metadynamics
-  bool random_exchanges;
 
 public:
   PlumedMain();
@@ -197,10 +219,6 @@ public:
   FILE* fopen(const char *path, const char *mode);
 /// Closes a file opened with PlumedMain::fopen()
   int fclose(FILE*fp);
-/// Set or Get the flag for random exchanges
-  void setRandomEx(const bool);
-  void getRandomEx(bool&);
-//  void getExchangeList(int*);
 };
 
 /////
@@ -224,16 +242,6 @@ const std::string & PlumedMain::getSuffix()const{
 inline
 void PlumedMain::setSuffix(const std::string&s){
   suffix=s;
-}
-
-inline
-void PlumedMain::setRandomEx(const bool flag){
-  random_exchanges=flag;
-}
-
-inline
-void PlumedMain::getRandomEx(bool &flag){
-  flag=random_exchanges;
 }
 
 }

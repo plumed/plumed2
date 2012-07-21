@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarSecondaryStructureRMSD.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
@@ -24,12 +45,12 @@ this paper use the set of distances from the antiparallel beta sheet configurati
 the number of segments that have an antiparallel beta sheetconfiguration. To do something 
 similar using this implementation you must use the LESS_THAN keyword. Furthermore, 
 based on reference \cite pietrucci09jctc we would recommend using the following
-switching function definition (SPLINE R_0=0.08 NN=8 MM=12) when your input file
+switching function definition (RATIONAL R_0=0.08 NN=8 MM=12) when your input file
 is in units of nm. 
 
 Please be aware that for codes like gromacs you must ensure that plumed 
-reconstructs the chains involved in your CV when you calculate this CV. 
-For more details as to how to do this see \ref WHOLEMOLECULES.
+reconstructs the chains involved in your CV when you calculate this CV using
+anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 
@@ -38,7 +59,7 @@ protein that are in an antiparallel beta sheet configuration.
 
 \verbatim
 MOLINFO STRUCTURE=helix.pdb
-ANTIBETARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(SPLINE R_0=0.08 NN=8 MM=12) LABEL=a
+ANTIBETARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(RATIONAL R_0=0.08 NN=8 MM=12) LABEL=a
 \endverbatim
 (see also \ref MOLINFO)
 
@@ -51,18 +72,18 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   ColvarAntibetaRMSD(const ActionOptions&);
-  bool contributionIsSmall( const std::vector<Vector>& pos );
+  bool contributionIsSmall( std::vector<Vector>& pos );
+  bool isPossibleToSkip();
 }; 
 
 PLUMED_REGISTER_ACTION(ColvarAntibetaRMSD,"ANTIBETARMSD")
 
 void ColvarAntibetaRMSD::registerKeywords( Keywords& keys ){
   MultiColvarSecondaryStructureRMSD::registerKeywords( keys );
-// If someone knows how to do this properly please add it  -- GAT
-//  keys.add("compulsory","STYLE","all","Antiparallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
-//                                      "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
-//                                      "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
-//                                      "only sheet-like configurations involving a single chain are counted");
+  keys.add("compulsory","STYLE","all","Antiparallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
+                                      "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
+                                      "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
+                                      "only sheet-like configurations involving a single chain are counted");
   keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart then the calculation "
                                        "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
                                        "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
@@ -79,17 +100,17 @@ s_cutoff(0)
   backnames[0]="N"; backnames[1]="CA"; backnames[2]="CB"; backnames[3]="C"; backnames[4]="O";
   readBackboneAtoms( backnames, chains );
 
-  bool intra_chain=true, inter_chain=false; 
-//  std::string style; parse("STYLE",style);
-//  if( style=="all" ){ 
-//      intra_chain=true; inter_chain=true;
-//  } else if( style=="inter"){
-//      intra_chain=false; inter_chain=true;
-//  } else if( style=="intra"){
-//      intra_chain=true; inter_chain=false;
-//  } else {
-//      error( style + " is not a valid directive for the STYLE keyword");
-//  }
+  bool intra_chain, inter_chain; 
+  std::string style; parse("STYLE",style);
+  if( style=="all" ){ 
+      intra_chain=true; inter_chain=true;
+  } else if( style=="inter"){
+      intra_chain=false; inter_chain=true;
+  } else if( style=="intra"){
+      intra_chain=true; inter_chain=false;
+  } else {
+      error( style + " is not a valid directive for the STYLE keyword");
+  }
 
   parse("STRANDS_CUTOFF",s_cutoff);
   if( s_cutoff>0) log.printf("  ignoring contributions from strands that are more than %f apart\n",s_cutoff);
@@ -113,28 +134,27 @@ s_cutoff(0)
        nprevious+=chains[i];
     }
   }
-  // This constructs all conceivable sections of antibeta sheet that form between chains (again not sure how to do this properly)
-//  if( inter_chain ){
-//      if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
-//      unsigned iprev,jprev,inres,jnres; std::vector<unsigned> nlist(30);
-//      for(unsigned ichain=1;ichain<chains.size();++ichain){
-//         iprev=0; for(unsigned i=0;i<ichain;++i) iprev+=chains[i];
-//         inres=chains[ichain]/5; plumed_assert( chains[ichain]%5==0 ); 
-//         for(unsigned ires=0;ires<inres-2;++ires){
-//            for(unsigned jchain=0;jchain<ichain;++jchain){
-//                jprev=0; for(unsigned i=0;i<jchain;++i) jprev+=chains[i];
-//                jnres=chains[jchain]/5; plumed_assert( chains[jchain]%5==0 );
-//                for(unsigned jres=0;jres<jnres-2;++jres){
-//                    for(unsigned k=0;k<15;++k){
-//                       nlist[k]=iprev+ ires*5+k;
-//                       nlist[k+15]=jprev+ jres*5+k;
-//                    } 
-//                    addColvar( nlist );
-//                }
-//            }
-//         }
-//      } 
-//  }
+  if( inter_chain ){
+      if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
+      unsigned iprev,jprev,inres,jnres; std::vector<unsigned> nlist(30);
+      for(unsigned ichain=1;ichain<chains.size();++ichain){
+         iprev=0; for(unsigned i=0;i<ichain;++i) iprev+=chains[i];
+         inres=chains[ichain]/5; plumed_assert( chains[ichain]%5==0 ); 
+         for(unsigned ires=0;ires<inres-2;++ires){
+            for(unsigned jchain=0;jchain<ichain;++jchain){
+                jprev=0; for(unsigned i=0;i<jchain;++i) jprev+=chains[i];
+                jnres=chains[jchain]/5; plumed_assert( chains[jchain]%5==0 );
+                for(unsigned jres=0;jres<jnres-2;++jres){
+                    for(unsigned k=0;k<15;++k){
+                       nlist[k]=iprev+ ires*5+k;
+                       nlist[k+15]=jprev+ jres*5+k;
+                    } 
+                    addColvar( nlist );
+                }
+            }
+         }
+      } 
+  }
 
   // Build the reference structure ( in angstroms )
   std::vector<Vector> reference(30);
@@ -173,11 +193,26 @@ s_cutoff(0)
   setSecondaryStructure( reference, 0.17/atoms.getUnits().length, 0.1/atoms.getUnits().length ); 
 }
 
-bool ColvarAntibetaRMSD::contributionIsSmall( const std::vector<Vector>& pos ){
+bool ColvarAntibetaRMSD::isPossibleToSkip(){
+  if(s_cutoff!=0) return true;
+  return false;
+}
+
+bool ColvarAntibetaRMSD::contributionIsSmall( std::vector<Vector>& pos ){
   if(s_cutoff==0) return false;
 
   Vector distance; distance=getSeparation( pos[6],pos[21] );  // This is the CA of the two residues at the centers of the two chains
   if( distance.modulo()>s_cutoff ) return true;
+ 
+  // Align the two strands
+  if( usingRMSD() ){
+      Vector origin_old, origin_new; origin_old=pos[21];
+      origin_new=pos[6]+distance;
+      for(unsigned i=15;i<30;++i){
+          pos[i]+=( origin_new - origin_old ); 
+      }
+  }
+
   return false;
 }
 

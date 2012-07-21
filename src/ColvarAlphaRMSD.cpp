@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarSecondaryStructureRMSD.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
@@ -22,12 +43,12 @@ this paper use the set of distances from the alpha helix configurations to measu
 the number of segments that have an alpha helical configuration. To do something 
 similar using this implementation you must use the LESS_THAN keyword. Furthermore, 
 based on reference \cite pietrucci09jctc we would recommend using the following
-switching function definition (SPLINE R_0=0.08 NN=8 MM=12) when your input file
+switching function definition (RATIONAL R_0=0.08 NN=8 MM=12) when your input file
 is in units of nm. 
 
 Please be aware that for codes like gromacs you must ensure that plumed 
-reconstructs the chains involved in your CV when you calculate this CV. 
-For more details as to how to do this see \ref WHOLEMOLECULES.
+reconstructs the chains involved in your CV when you calculate this CV using
+anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref WHOLEMOLECULES.
 
 \par Examples
 
@@ -36,7 +57,7 @@ protein that are in an alpha helical configuration.
 
 \verbatim
 MOLINFO STRUCTURE=helix.pdb
-ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(SPLINE R_0=0.08 NN=8 MM=12) LABEL=a
+ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(RATIONAL R_0=0.08 NN=8 MM=12) LABEL=a
 \endverbatim
 (see also \ref MOLINFO)
 
