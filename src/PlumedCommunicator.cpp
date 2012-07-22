@@ -155,6 +155,7 @@ template<> MPI_Datatype PlumedCommunicator::getMPIType<double>(){ return MPI_DOU
 template<> MPI_Datatype PlumedCommunicator::getMPIType<int>()   { return MPI_INT;}
 template<> MPI_Datatype PlumedCommunicator::getMPIType<char>()   { return MPI_CHAR;}
 template<> MPI_Datatype PlumedCommunicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
+template<> MPI_Datatype PlumedCommunicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
 #endif
 
 }
