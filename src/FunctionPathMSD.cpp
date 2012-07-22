@@ -47,11 +47,14 @@ class FunctionPathMSD : public Function {
   bool pbc;
   int neigh_size;
   double neigh_stride;
-  vector< pair<unsigned,double> > neighpair;
+  vector< pair<Value *,double> > neighpair;
+  map<Value *,double > indexmap; // use double to allow isomaps
+  vector <Value*> allArguments; 
 public:
   FunctionPathMSD(const ActionOptions&);
 // active methods:
   virtual void calculate();
+  virtual void prepare();
   static void registerKeywords(Keywords& keys);
 };
 
@@ -95,7 +98,7 @@ vector<int> increasingOrder( vector<double> &v){
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 struct pairordering {
-       bool operator ()(pair<unsigned , double> const& a, pair<unsigned , double> const& b) {
+       bool operator ()(pair<Value * , double> const& a, pair<Value* , double> const& b) {
            return (a).second > (b).second;
        };
 };
@@ -139,35 +142,47 @@ neigh_stride(-1.)
 
   addComponentWithDerivatives("s"); componentIsNotPeriodic("s");
   addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+
+  // now backup the arguments 
+  for(unsigned i=0;i<getNumberOfArguments();i++)allArguments.push_back(getPntrToArgument(i)); 
+  double i=1.;
+  for(std::vector<Value*>:: const_iterator it=allArguments.begin();it!=allArguments.end()  ;++it){
+		indexmap[(*it)]=i;i+=1.;
+  }
+  
 }
 // calculator
 void FunctionPathMSD::calculate(){
+ // log.printf("NOW CALCULATE! \n");
   double s_path=0.;
   double partition=0.;
   double tmp;
-  if(neighpair.empty()){
-       neighpair.resize(getNumberOfArguments());  
-       for(unsigned i=0;i<getNumberOfArguments();i++)neighpair[i].first=i; 
+  if(neighpair.empty()){ // at first step, resize it
+       neighpair.resize(allArguments.size());  
+       for(unsigned i=0;i<allArguments.size();i++)neighpair[i].first=allArguments[i]; 
   }
 
   Value* val_s_path=getPntrToComponent("s");
   Value* val_z_path=getPntrToComponent("z");
-  typedef  vector< pair<unsigned,double> >::iterator pairiter;
+//  val_s_path->clearDerivatives();val_s_path->resizeDerivatives(neighpair.size());
+//  val_z_path->clearDerivatives();val_z_path->resizeDerivatives(neighpair.size());
+
+  typedef  vector< pair< Value *,double> >::iterator pairiter;
   for(pairiter it=neighpair.begin();it!=neighpair.end();++it){ 
-    unsigned n=(*it).first;
-    (*it).second=exp(-lambda*getArgument(n));
-    s_path+=(n+1)*(*it).second;
+    (*it).second=exp(-lambda*((*it).first->get()));
+    s_path+=(indexmap[(*it).first])*(*it).second;
     partition+=(*it).second;
   }
   s_path/=partition;
   val_s_path->set(s_path);
   val_z_path->set(-(1./lambda)*cmathLog(partition));
+  int n=0;
   for(pairiter it=neighpair.begin();it!=neighpair.end();++it){ 
-    unsigned n=(*it).first;
     double expval=(*it).second;
-    tmp=lambda*expval*(s_path-(n+1))/partition;
+    tmp=lambda*expval*(s_path-(indexmap[(*it).first]))/partition;
     setDerivative(val_s_path,n,tmp);
     setDerivative(val_z_path,n,expval/partition);
+    n++;
   }
 
   // neighbor list: rank and activate the chain for the next step 
@@ -177,30 +192,60 @@ void FunctionPathMSD::calculate(){
   //                if the size is full -> sort the vector and decide the dependencies for next step 
   //                if the size is not full -> check if next step will need the full dependency otherwise keep this dependencies 
 
-  vector<int> actions_to_be_suspended; 
+  // here just resize the neighpair. The real resizing of reinit will be done by the prepare stage that will modify the  list of arguments
   if (neigh_size>0){
-     if(neighpair.size()==getNumberOfArguments()){ // I just did the complete round: need to sort, shorten and give it a go
+     if(neighpair.size()==allArguments.size()){ // I just did the complete round: need to sort, shorten and give it a go
                 // sort the values  
 		sort(neighpair.begin(),neighpair.end(),pairordering());
-                // create a list of the actions to be suspended
-                for(unsigned i=neigh_size;i<getNumberOfArguments();i++)actions_to_be_suspended.push_back(neighpair[i].first);
                 // resize the effective list
                 neighpair.resize(neigh_size);
+		log.printf("  NEIGH LIST NOW IS: ");
+		for(unsigned i=0;i<neigh_size;++i)log.printf(" %f ",indexmap[neighpair[i].first]);log.printf(" \n");
      }else{
         if( int(getStep())%int(neigh_stride/getTimeStep())==0 ){
                  log.printf(" Time %f : recalculating full neighlist \n",getStep()*getTimeStep());
-     		 neighpair.resize(getNumberOfArguments());  
-     		 for(unsigned i=0;i<getNumberOfArguments();i++)neighpair[i].first=i; 
+     		 neighpair.resize(allArguments.size());  
+     		 for(unsigned i=0;i<allArguments.size();i++)neighpair[i].first=allArguments[i]; 
         }
      } 
+  }else{
+            if( int(getStep())==0){
+    		 neighpair.resize(allArguments.size());  
+     		 for(unsigned i=0;i<allArguments.size();i++)neighpair[i].first=allArguments[i]; 
+            }
   }
-  // TODO prepare dependencies for next step n 
-  // make a backup of the pointers to the actions (remove instantaneously the dependency) 
-  //for(Dependencies::iterator p=after.begin();p!=after.end();++p) (*p)->activate(); 
-
+//  log.printf("CALCULATION DONE! \n");
+}
+///
+/// this function updates the needed argument list
+///
+void FunctionPathMSD::prepare(){
+ typedef  vector< pair<Value*,double> >::iterator pairiter;
+ vector<Value*> argstocall; 
+ //log.printf("PREPARING \n");
+ argstocall.clear(); 
+ if(!neighpair.empty()){
+    for(pairiter it=neighpair.begin();it!=neighpair.end();++it){
+       argstocall.push_back( (*it).first );
+  //     log.printf("CALLING %p %f ",(*it).first ,indexmap[(*it).first] ); 
+    }
+ }else{
+    for(unsigned i=0;i<allArguments.size();i++){
+	argstocall.push_back(allArguments[i]);  
+    }
+ }	  
+ // now the list of argument changes
+ requestArguments(argstocall);
+ // now resize the derivatives as well
+ //for each value in this action
+ for(unsigned i=0;i< getNumberOfComponents();i++){
+ 	//resize the derivative to the number   the 
+	getPntrToComponent(i)->clearDerivatives();
+	getPntrToComponent(i)->resizeDerivatives(getNumberOfArguments());
+ }
+ //log.printf("PREPARING DONE! \n");
 }
 
 }
-
 
 
