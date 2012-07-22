@@ -164,8 +164,6 @@ void FunctionPathMSD::calculate(){
 
   Value* val_s_path=getPntrToComponent("s");
   Value* val_z_path=getPntrToComponent("z");
-//  val_s_path->clearDerivatives();val_s_path->resizeDerivatives(neighpair.size());
-//  val_z_path->clearDerivatives();val_z_path->resizeDerivatives(neighpair.size());
 
   typedef  vector< pair< Value *,double> >::iterator pairiter;
   for(pairiter it=neighpair.begin();it!=neighpair.end();++it){ 
@@ -185,6 +183,13 @@ void FunctionPathMSD::calculate(){
     n++;
   }
 
+//  log.printf("CALCULATION DONE! \n");
+}
+///
+/// this function updates the needed argument list
+///
+void FunctionPathMSD::prepare(){
+
   // neighbor list: rank and activate the chain for the next step 
 
   // neighbor list: if neigh_size<0 never sort and keep the full vector
@@ -199,7 +204,7 @@ void FunctionPathMSD::calculate(){
 		sort(neighpair.begin(),neighpair.end(),pairordering());
                 // resize the effective list
                 neighpair.resize(neigh_size);
-		log.printf("  NEIGH LIST NOW IS: ");
+		log.printf("  NEIGH LIST NOW INCLUDE INDEXES: ");
 		for(unsigned i=0;i<neigh_size;++i)log.printf(" %f ",indexmap[neighpair[i].first]);log.printf(" \n");
      }else{
         if( int(getStep())%int(neigh_stride/getTimeStep())==0 ){
@@ -214,12 +219,6 @@ void FunctionPathMSD::calculate(){
      		 for(unsigned i=0;i<allArguments.size();i++)neighpair[i].first=allArguments[i]; 
             }
   }
-//  log.printf("CALCULATION DONE! \n");
-}
-///
-/// this function updates the needed argument list
-///
-void FunctionPathMSD::prepare(){
  typedef  vector< pair<Value*,double> >::iterator pairiter;
  vector<Value*> argstocall; 
  //log.printf("PREPARING \n");
@@ -236,7 +235,7 @@ void FunctionPathMSD::prepare(){
  }	  
  // now the list of argument changes
  requestArguments(argstocall);
- // now resize the derivatives as well
+ //now resize the derivatives as well
  //for each value in this action
  for(unsigned i=0;i< getNumberOfComponents();i++){
  	//resize the derivative to the number   the 
