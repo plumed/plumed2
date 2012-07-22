@@ -53,7 +53,7 @@ PlumedMain::PlumedMain():
   stopwatch(*new Stopwatch),
   grex(NULL),
   initialized(false),
-  log(*new Log(comm)),
+  log(*new Log),
   citations(*new Citations),
   step(0),
   active(false),
@@ -62,6 +62,9 @@ PlumedMain::PlumedMain():
   bias(0.0),
   novirial(false)
 {
+  log.link(comm);
+  log.setLinePrefix("PLUMED: ");
+  log.link(stdout);
   stopwatch.start();
   stopwatch.pause();
 }
@@ -260,11 +263,11 @@ void PlumedMain::cmd(const std::string & word,void*val){
        MDEngine=static_cast<char*>(val);
   } else if(word=="setLog"){
        CHECK_NOTINIT(initialized,word);
-       log.set(static_cast<FILE*>(val));
+       log.link(static_cast<FILE*>(val));
   } else if(word=="setLogFile"){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
-       log.setFile(static_cast<char*>(val));
+       log.open(static_cast<char*>(val),"w");
   } else if(word=="getExchangesFlag"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);

@@ -56,8 +56,10 @@ public ActionPilot,
 public ActionWithArguments
 {
   string file;
-  FILE* fp;
+  PlumedOFile ofile;
   string fmt;
+// small internal utility
+  void updateFields();
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -94,27 +96,22 @@ GenericPrint::GenericPrint(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
-fp(NULL),
 fmt("%f"),
 rotate(0)
 {
   parse("FILE",file);
   if(file.length()>0){
-    if(comm.Get_rank()==0){
-      fp=fopen(file.c_str(),"a");
-      log.printf("  on file %s\n",file.c_str());
-      fprintf(fp,"#! FIELDS time");
-      for(unsigned i=0;i<getNumberOfArguments();i++){
-        fprintf(fp," %s",getPntrToArgument(i)->getName().c_str());
-      };
-      fprintf(fp,"\n");
-    }
+    ofile.open(file.c_str(),"wa");
+    log.printf("  on file %s\n",file.c_str());
   } else {
     log.printf("  on plumed log file\n");
+    ofile.link(log);
   }
+  updateFields();
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
+  ofile.fmtFields(fmt);
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -126,6 +123,7 @@ rotate(0)
     vector<Value*> a(1,rotateArguments[0]);
     requestArguments(vector<Value*>(1,rotateArguments[0]));
     rotateLast=0;
+    updateFields();
   }
 /////////////////////////////////////////
   checkRead();
@@ -143,30 +141,30 @@ void GenericPrint::prepare(){
       rotateLast++;
       rotateLast%=rotateArguments.size();
       requestArguments(vector<Value*>(1,rotateArguments[rotateLast]));
+      updateFields();
     }
   }
 /////////////////////////////////////////
 }
 
 void GenericPrint::update(){
-    if(comm.Get_rank()!=0)return;
-    if(!fp){
-      log.printf("PRINT:");
+      ofile.printField("time",getTime());
       for(unsigned i=0;i<getNumberOfArguments();i++){
-        log.printf(fmt.c_str(),getArgument(i));
+        ofile.printField(getPntrToArgument(i)->getName(),getArgument(i));
       };
-      log.printf("\n");
-    } else {
-      fprintf(fp," %f",getTime());
-      for(unsigned i=0;i<getNumberOfArguments();i++){
-        fprintf(fp,fmt.c_str(),getArgument(i));
-      };
-      fprintf(fp,"\n");
-    }
+      ofile.printField();
 }
 
 GenericPrint::~GenericPrint(){
-  if(fp) fclose(fp);
+}
+
+void GenericPrint::updateFields(){
+  ofile.clearFields();
+  ofile.addField("time");
+  ofile.fmtField("time"," %f");
+  for(unsigned i=0;i<getNumberOfArguments();i++){
+    ofile.addField(getPntrToArgument(i)->getName());
+  }
 }
 
 }

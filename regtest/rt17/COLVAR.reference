@@ -1,6 +1,8 @@
-#! FIELDS time d1.x d2 d3
+#! FIELDS time d1.x
  0.000000  8.126
+#! FIELDS time d2
  0.500000 27.263
  1.000000 27.786
+#! FIELDS time d3
  1.500000 21.565
  2.000000 21.329
