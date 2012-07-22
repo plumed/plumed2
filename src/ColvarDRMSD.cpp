@@ -89,7 +89,7 @@ PLUMED_COLVAR_INIT(ao), pbc_(true)
 
   checkRead();
 
-  addValueWithDerivatives();
+  addValueWithDerivatives(); setNotPeriodic(); 
 
   // read everything in ang and transform to nm if we are not in natural units
   PDB pdb;
