@@ -68,7 +68,7 @@ class ColvarRGYR : public Colvar {
 private:
   bool pbc;
   std::string Type;
-  enum CV_TYPE {RGYR, TRACE, GTPC_1, GTPC_2, GTPC_3, ASPHERICITY, ACYLINDRICITY, KAPPA2, RGYR_3, RGYR_2, RGYR_1, TOT};
+  enum CV_TYPE {RADIUS, TRACE, GTPC_1, GTPC_2, GTPC_3, ASPHERICITY, ACYLINDRICITY, KAPPA2, RGYR_3, RGYR_2, RGYR_1, TOT};
   int  rg_type;
   bool use_masses;
 public:
@@ -84,6 +84,7 @@ void ColvarRGYR::registerKeywords( Keywords& keys ){
   keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
   keys.addFlag("NOT_MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
+  keys.addFlag("PBC",false,"do use the PBC for distances");
 }
 
 ColvarRGYR::ColvarRGYR(const ActionOptions&ao):
@@ -97,13 +98,11 @@ pbc(false)
   bool not_use_masses=!use_masses;
   parseFlag("NOT_MASS_WEIGHTED",not_use_masses);
   use_masses=!not_use_masses;
-  bool nopbc=!pbc;
-  parseFlag("NOPBC",nopbc);
-  pbc=!nopbc;
+  parseFlag("PBC",pbc);
   parse("TYPE",Type);
   checkRead();
 
-  if(Type=="RADIUS") rg_type=RGYR;
+  if(Type=="RADIUS") rg_type=RADIUS;
   else if(Type=="TRACE") rg_type=TRACE;
   else if(Type=="GTPC_1") rg_type=GTPC_1;
   else if(Type=="GTPC_2") rg_type=GTPC_2;
@@ -118,7 +117,7 @@ pbc(false)
 
   switch(rg_type)
   {
-    case RGYR:   log.printf("  GYRATION RADIUS (Rg);"); break;
+    case RADIUS:   log.printf("  GYRATION RADIUS (Rg);"); break;
     case TRACE:  log.printf("  TRACE OF THE GYRATION TENSOR;"); break;
     case GTPC_1: log.printf("  THE LARGEST PRINCIPAL MOMENT OF THE GYRATION TENSOR (S'_1);"); break;
     case GTPC_2: log.printf("  THE MIDDLE PRINCIPAL MOMENT OF THE GYRATION TENSOR (S'_2);");  break;
@@ -174,7 +173,7 @@ void ColvarRGYR::calculate(){
     else diff=delta( com, getPosition(i) );
     d=diff.modulo();
     switch(rg_type) {
-      case RGYR:
+      case RADIUS:
       case TRACE:
         if( use_masses ){
           rgyr += getMass(i)*d*d;
@@ -207,7 +206,7 @@ void ColvarRGYR::calculate(){
   }
 
   switch(rg_type) {
-    case RGYR:
+    case RADIUS:
     {
       rgyr=sqrt(rgyr/totmass);
       for(unsigned i=0;i<getNumberOfAtoms();i++){
