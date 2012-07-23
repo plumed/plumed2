@@ -76,11 +76,13 @@ Action* ActionRegister::create(const ActionOptions&ao){
   // the action have been documented. In addition, we can
   // generate the documentation when the user makes an error
   // in the input.
-  Keywords keys; mk[ao.line[0]](keys);
-  Action* action; ActionOptions nao( ao,keys );
-  if(check(ao.line[0])) action=m[ao.line[0]](nao);
-  else action=NULL;
-  keys.destroyData();  // Empty the keywords object
+  Action* action;
+  if( check(ao.line[0]) ){
+      Keywords keys; mk[ao.line[0]](keys);
+      ActionOptions nao( ao,keys );
+      action=m[ao.line[0]](nao);
+      keys.destroyData();
+  } else action=NULL;
   return action;
 }
 
