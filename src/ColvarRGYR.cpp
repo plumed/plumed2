@@ -66,7 +66,6 @@ PRINT ARG=rg STRIDE=1 FILE=colvar
 
 class ColvarRGYR : public Colvar {
 private:
-  bool pbc;
   std::string Type;
   enum CV_TYPE {RADIUS, TRACE, GTPC_1, GTPC_2, GTPC_3, ASPHERICITY, ACYLINDRICITY, KAPPA2, RGYR_3, RGYR_2, RGYR_1, TOT};
   int  rg_type;
@@ -84,13 +83,11 @@ void ColvarRGYR::registerKeywords( Keywords& keys ){
   keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
   keys.addFlag("NOT_MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
-  keys.addFlag("PBC",false,"do use the PBC for distances");
 }
 
 ColvarRGYR::ColvarRGYR(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-use_masses(true),
-pbc(false)
+use_masses(true)
 {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -98,7 +95,6 @@ pbc(false)
   bool not_use_masses=!use_masses;
   parseFlag("NOT_MASS_WEIGHTED",not_use_masses);
   use_masses=!not_use_masses;
-  parseFlag("PBC",pbc);
   parse("TYPE",Type);
   checkRead();
 
@@ -155,8 +151,7 @@ void ColvarRGYR::calculate(){
   pos0=getPosition(0); 
   com.zero();
   for(unsigned i=1;i<getNumberOfAtoms();i++){
-     if(pbc) diff=pbcDistance( pos0, getPosition(i));
-     else diff=delta( pos0, getPosition(i) );
+     diff=delta( pos0, getPosition(i) );
      if( use_masses ){
          totmass += getMass(i);
          com += getMass(i)*diff;
@@ -169,8 +164,7 @@ void ColvarRGYR::calculate(){
 
   // Now compute radius of gyration
   for(unsigned i=0;i<getNumberOfAtoms();i++){
-    if(pbc) diff=pbcDistance( com, getPosition(i) );
-    else diff=delta( com, getPosition(i) );
+    diff=delta( com, getPosition(i) );
     d=diff.modulo();
     switch(rg_type) {
       case RADIUS:
@@ -334,8 +328,7 @@ void ColvarRGYR::calculate(){
       }      
       for(unsigned i=0;i<getNumberOfAtoms();i++){
         Vector tX;
-        if(pbc) diff=pbcDistance( com,getPosition(i) );
-        else diff=delta( com,getPosition(i) );
+        diff=delta( com,getPosition(i) );
         //project atomic postional vectors to diagonalized frame
         for (unsigned j=0;j<3;j++) tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];  
         if( use_masses ) { 
