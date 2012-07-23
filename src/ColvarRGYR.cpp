@@ -234,12 +234,13 @@ void ColvarRGYR::calculate(){
       gyr_tens[2][0] = gyr_tens[0][2];
       gyr_tens[2][1] = gyr_tens[1][2];
 
-      Matrix<double> transf(3,3);
+      Matrix<double> ttransf(3,3), transf(3,3);
       std::vector<double> princ_comp(3), prefactor(3);
       prefactor[0]=prefactor[1]=prefactor[2]=0.;
 
       //diagonalize gyration tensor
-      diagMat(gyr_tens, princ_comp, transf);
+      diagMat(gyr_tens, princ_comp, ttransf);
+      transpose(ttransf, transf);
       //sort eigenvalues and eigenvectors
       if (princ_comp[0]<princ_comp[1]){
         double tmp=princ_comp[0]; princ_comp[0]=princ_comp[1]; princ_comp[1]=tmp;
