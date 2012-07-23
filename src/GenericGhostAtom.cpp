@@ -127,24 +127,24 @@ void GenericGhostAtom::calculate(){
   Vector aux0, aux1, aux2; 
 
   for(unsigned j=0;j<3;++j){
-// derivative of n0 x n02 with respect to point 0
-   Vector tmp00  = Vector( dn0d0(0,j),  dn0d0(1,j),  dn0d0(2,j));
-   Vector tmp020 = Vector(dn02d0(0,j), dn02d0(1,j), dn02d0(2,j));
+// derivative of n0 x n02 with respect to point 0, coordinate j
+   Vector tmp00  = Vector( dn0d0(j,0),  dn0d0(j,1),  dn0d0(j,2));
+   Vector tmp020 = Vector(dn02d0(j,0), dn02d0(j,1), dn02d0(j,2));
    Vector tmp0   = crossProduct(tmp00,n02) + crossProduct(n[0],tmp020);
    aux0[j]       = dotProduct(tmp0,n[1]);
-// derivative of n0 x n02 with respect to point 1
-   Vector tmp01  = Vector( dn0d1(0,j),  dn0d1(1,j),  dn0d1(2,j));
+// derivative of n0 x n02 with respect to point 1, coordinate j
+   Vector tmp01  = Vector( dn0d1(j,0),  dn0d1(j,1),  dn0d1(j,2));
    Vector tmp1   = crossProduct(tmp01,n02);
    aux1[j]       = dotProduct(tmp1,n[1]);
-// derivative of n0 x n02 with respect to point 2
-   Vector tmp022 = Vector(dn02d2(0,j), dn02d2(1,j), dn02d2(2,j));
+// derivative of n0 x n02 with respect to point 2, coordinate j
+   Vector tmp022 = Vector(dn02d2(j,0), dn02d2(j,1), dn02d2(j,2));
    Vector tmp2   = crossProduct(n[0],tmp022);
    aux2[j]       = dotProduct(tmp2,n[1]);
 // derivative of n1 = (n0 x n02) / || (n0 x n02) ||
    for(unsigned i=0;i<3;++i) {
-    dn1d0(i,j) = ( tmp0[i] - aux0[j] * n[1][i] ) / n03_norm;
-    dn1d1(i,j) = ( tmp1[i] - aux1[j] * n[1][i] ) / n03_norm; 
-    dn1d2(i,j) = ( tmp2[i] - aux2[j] * n[1][i] ) / n03_norm;
+    dn1d0(j,i) = ( tmp0[i] - aux0[j] * n[1][i] ) / n03_norm;
+    dn1d1(j,i) = ( tmp1[i] - aux1[j] * n[1][i] ) / n03_norm; 
+    dn1d2(j,i) = ( tmp2[i] - aux2[j] * n[1][i] ) / n03_norm;
    }
   }
 
@@ -153,20 +153,20 @@ void GenericGhostAtom::calculate(){
   double n0_n02 = dotProduct(n[0],n02); 
   Vector dn0_n02d0, dn0_n02d1, dn0_n02d2;
 
-  for(unsigned i=0;i<3;++i){
-   for(unsigned j=0;j<3;++j){
-    dn0_n02d0[i] += dn0d0(j,i)*n02[j] + n[0][j]*dn02d0(j,i);
-    dn0_n02d1[i] += dn0d1(j,i)*n02[j];
-    dn0_n02d2[i] +=                     n[0][j]*dn02d2(j,i);
+  for(unsigned j=0;j<3;++j){
+   for(unsigned i=0;i<3;++i){
+    dn0_n02d0[j] += dn0d0(j,i)*n02[i] + n[0][i]*dn02d0(j,i);
+    dn0_n02d1[j] += dn0d1(j,i)*n02[i];
+    dn0_n02d2[j] +=                     n[0][i]*dn02d2(j,i);
    }
   }
 
   Tensor dn2d0, dn2d1, dn2d2;
-  for(unsigned i=0;i<3;++i){
-   for(unsigned j=0;j<3;++j){
-    dn2d0(i,j) = ( dn0d0(i,j) * n0_n02 + n[0][i] * dn0_n02d0[j] - dn02d0(i,j) - ( n[0][i] * n0_n02 - n02[i] ) * aux0[j] / n03_norm ) / n03_norm;
-    dn2d1(i,j) = ( dn0d1(i,j) * n0_n02 + n[0][i] * dn0_n02d1[j]               - ( n[0][i] * n0_n02 - n02[i] ) * aux1[j] / n03_norm ) / n03_norm;
-    dn2d2(i,j) = (                       n[0][i] * dn0_n02d2[j] - dn02d2(i,j) - ( n[0][i] * n0_n02 - n02[i] ) * aux2[j] / n03_norm ) / n03_norm;
+  for(unsigned j=0;j<3;++j){
+   for(unsigned i=0;i<3;++i){
+    dn2d0(j,i) = ( dn0d0(j,i) * n0_n02 + n[0][i] * dn0_n02d0[j] - dn02d0(j,i) - ( n[0][i] * n0_n02 - n02[i] ) * aux0[j] / n03_norm ) / n03_norm;
+    dn2d1(j,i) = ( dn0d1(j,i) * n0_n02 + n[0][i] * dn0_n02d1[j]               - ( n[0][i] * n0_n02 - n02[i] ) * aux1[j] / n03_norm ) / n03_norm;
+    dn2d2(j,i) = (                       n[0][i] * dn0_n02d2[j] - dn02d2(j,i) - ( n[0][i] * n0_n02 - n02[i] ) * aux2[j] / n03_norm ) / n03_norm;
    }
   }
 
