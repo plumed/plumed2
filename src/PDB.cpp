@@ -57,9 +57,10 @@ unsigned PDB::size()const{
   return positions.size();
 }
 
-void PDB::read(const std::string&file,bool naturalUnits,double scale){
+bool PDB::read(const std::string&file,bool naturalUnits,double scale){
   if(naturalUnits) scale=1.0;
   FILE* fp=fopen(file.c_str(),"r");
+  if(!fp) return false;
   //cerr<<file<<endl;
   string line;
   while(Tools::getline(fp,line)){
@@ -102,6 +103,7 @@ void PDB::read(const std::string&file,bool naturalUnits,double scale){
     }
   }
   fclose(fp);
+  return true;
 }
 
 void PDB::getChainNames( std::vector<std::string>& chains ) const {

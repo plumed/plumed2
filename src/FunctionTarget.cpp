@@ -73,7 +73,8 @@ target(log)
     string reference;
     parse("REFERENCE",reference);
     PDB pdb; 
-    pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().length);
+    if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().length) )
+          error("missing input file " + reference);
     printf("Read pdb file with %d atoms inside\n",pdb.size());
     target.read( pdb, getArguments() );
   }

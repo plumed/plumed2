@@ -43,7 +43,7 @@ public:
 /// The documentation for PDB file parser
   static std::string documentation();
 /// Read the pdb from a file, scaling positions by a factor scale
-  void read(const std::string&file,bool naturalUnits,double scale);
+  bool read(const std::string&file,bool naturalUnits,double scale);
 /// Access to the position array
   const std::vector<Vector>     & getPositions()const;
 /// Access to the occupancy array

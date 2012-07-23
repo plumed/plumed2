@@ -105,7 +105,8 @@ PLUMED_COLVAR_INIT(ao),rmsd(log),squared(false)
   PDB pdb;
 
   // read everything in ang and transform to nm if we are not in natural units
-  pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().length);
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().length) )
+      error("missing input file " + reference );
 
   rmsd.set(pdb,type);
 
