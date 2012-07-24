@@ -1,10 +1,10 @@
 RMSD LABEL=rmsd REFERENCE=reference.pdb TYPE=SIMPLE
 
-ABMD ARG=rmsd KAPPA=20 MIN=1.0 TO=2.0 LABEL=abmd
+ABMD ARG=rmsd KAPPA=20 TO=0.0 SEED=12 NOISE=0.2 LABEL=abmd
 
 PRINT ...
   STRIDE=1
-  ARG=rmsd,abmd.bias 
+  ARG=rmsd,abmd.bias,abmd.min_1 
   FILE=COLVAR FMT=%6.3f
 ... PRINT
 
