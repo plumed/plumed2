@@ -37,6 +37,7 @@ Random::Random(const std::string & name):
   saveGaussian(0.0),
   name(name)
 {
+	iy=0;
 	iv[0]=0;
 	setSeed(0);
 }

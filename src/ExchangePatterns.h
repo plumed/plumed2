@@ -27,12 +27,14 @@
 namespace PLMD {
   class ExchangePatterns {
     int    PatternFlag;
+    int    NumberOfReplicas;
     Random random;
 public:
   enum PatternFlags { NONE, RANDOM, NEIGHBOR, TOTAL };
-  void setSeed(int seed);
-  void getList(int *ind, int nrepl);
+  void setNofR(const int);
+  void setSeed(const int);
   void setFlag(const int);
+  void getList(int *ind);
   void getFlag(int&);
 };
 }

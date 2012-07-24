@@ -25,6 +25,10 @@ using namespace std;
 
 namespace PLMD{
 
+void ExchangePatterns::setNofR(const int nrepl){
+  NumberOfReplicas=nrepl;
+}
+
 void ExchangePatterns::setFlag(const int flag){
   PatternFlag=flag;
 }
@@ -33,28 +37,27 @@ void ExchangePatterns::getFlag(int &flag){
   flag=PatternFlag;
 }
 
-void ExchangePatterns::setSeed(int seed)
+void ExchangePatterns::setSeed(const int seed)
 {
   random.setSeed(seed);
 }
 
-void ExchangePatterns::getList(int *ind, int nrepl)
+void ExchangePatterns::getList(int *ind)
 {
-  /* in principle here we can add a switch(patter) case in order to get a list of exchanges dependent on a specific pattern */
   switch(PatternFlag)
   {
     case RANDOM:
-      for(int i=0;i<nrepl;i++) {
+      for(int i=0;i<NumberOfReplicas;i++) {
         int stat=1;
         while(stat) {
           stat=0;
-          ind[i] = random.RandU01()*nrepl;
+          ind[i] = (int) (random.U01()*NumberOfReplicas);
           for(int j=0;j<i;j++) if(ind[i]==ind[j]) stat=1;
         }
       }
       break;
     case NEIGHBOR:
-      for(int i=0;i<nrepl;i++) ind[i]=i; 
+      for(int i=0;i<NumberOfReplicas;i++) ind[i]=i; 
       break; 
   }
 }

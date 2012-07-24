@@ -273,10 +273,14 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
        exchangepatterns.setSeed((*static_cast<int*>(val)));
+  } else if(word=="setNumberOfReplicas"){
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
+       exchangepatterns.setNofR((*static_cast<int*>(val)));
   } else if(word=="getExchangesList"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       exchangepatterns.getList((static_cast<int*>(val)),comm.Get_size());
+       exchangepatterns.getList((static_cast<int*>(val)));
   } else {
 // multi word commands
 
@@ -349,6 +353,7 @@ void PlumedMain::readInputFile(std::string str){
   log.printf("FILE: %s\n",str.c_str());
   FILE*fp=fopen(str.c_str(),"r");
   std::vector<std::string> words;
+  exchangepatterns.setFlag(exchangepatterns.NONE);
   while(Tools::getParsedLine(fp,words)){
     if(words.empty())continue;
     else if(words[0]=="ENDPLUMED") break;
@@ -359,6 +364,8 @@ void PlumedMain::readInputFile(std::string str){
     }
     else if(words[0]=="RANDOM_EXCHANGES"){
       exchangepatterns.setFlag(exchangepatterns.RANDOM);
+      // I convert the seed to -seed because I think it is more general to use a positive seed in input
+      if(words.size()>2&&words[1]=="SEED") {int seed; Tools::convert(words[2],seed); exchangepatterns.setSeed(-seed); }
     }
     else if(words[0]=="INCLUDE"){
       plumed_assert(words.size()==2);
