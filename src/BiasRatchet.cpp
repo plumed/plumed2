@@ -99,7 +99,7 @@ void BiasRatchet::registerKeywords(Keywords& keys){
 
 BiasRatchet::BiasRatchet(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
-to(getNumberOfArguments(),0),
+to(getNumberOfArguments(),0.0),
 min(getNumberOfArguments(),-1.0),
 kappa(getNumberOfArguments(),0.0),
 temp(getNumberOfArguments(),0.0),
@@ -126,7 +126,7 @@ random(getNumberOfArguments())
   log.printf("\n");
 
   for(unsigned i=0;i<getNumberOfArguments();i++) {char str_min[6]; sprintf(str_min,"min_%u",i+1); addComponent(str_min);}
-  for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(seed[i]);}
+  for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(-seed[i]);}
   addComponent("bias");
   addComponent("force2");
 }
