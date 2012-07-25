@@ -29,7 +29,8 @@ Utility class to add [][] access
 
 \tparam T The type of the matrix class.
 \tparam C The type of the returned value.
-\tparam I The type of the index (default unsigned).
+\tparam I The type of the first index (default unsigned).
+\tparam J The type of the second index (default unsigned).
 
 It implements the trick described in C++ FAQ 13.12 to allow [][] access
 to matrix-like classes, based on the (,) syntax, thus translating
@@ -37,7 +38,7 @@ to matrix-like classes, based on the (,) syntax, thus translating
 MatrixSquareBracketsAccess.
 The first template parameter (T) should be the
 class itself, the second (C) is the type of the returned value,
-and the third (I) is the type of the index (unsigned by default).
+and the third (I) and fourth (J) are the types of the two indexes (unsigned by default).
 As everything is inlined, no overhead is expected.
 
 \verbatim
@@ -64,7 +65,7 @@ int main(){
 
 */
 
-template<class T,class C,class I=unsigned>
+template<class T,class C,class I=unsigned,class J=unsigned>
 class MatrixSquareBracketsAccess{
 /// Small utility class which just contains a pointer to the T and the row number
   class Const_row{
@@ -75,7 +76,7 @@ class MatrixSquareBracketsAccess{
     Const_row(const MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
   public:
   /// access element
-    const C & operator[] (I j)const;
+    const C & operator[] (J j)const;
   };
 /// Small utility class which just contains a pointer to the T and the row number
   class Row{
@@ -86,7 +87,7 @@ class MatrixSquareBracketsAccess{
     Row(MatrixSquareBracketsAccess&t,I i); // constructor is private and cannot be manipulated by the user
   public:
   /// access element
-    C & operator[] (I j);
+    C & operator[] (J j);
   };
 public:
 /// access element (with [][] syntax)
@@ -95,31 +96,31 @@ public:
   Const_row operator[] (I i)const;
 };
 
-template<class T,class C,class I>
-MatrixSquareBracketsAccess<T,C,I>::Const_row::Const_row(const MatrixSquareBracketsAccess&t,I i):
+template<class T,class C,class I,class J>
+MatrixSquareBracketsAccess<T,C,I,J>::Const_row::Const_row(const MatrixSquareBracketsAccess&t,I i):
   t(t),i(i){}
 
-template<class T,class C,class I>
-MatrixSquareBracketsAccess<T,C,I>::Row::Row(MatrixSquareBracketsAccess&t,I i):
+template<class T,class C,class I,class J>
+MatrixSquareBracketsAccess<T,C,I,J>::Row::Row(MatrixSquareBracketsAccess&t,I i):
   t(t),i(i){}
 
-template<class T,class C,class I>
-const C & MatrixSquareBracketsAccess<T,C,I>::Const_row::operator[] (I j)const{
+template<class T,class C,class I,class J>
+const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const{
   return (*static_cast<T*>(&t))(i,j);
 }
 
-template<class T,class C,class I>
-C & MatrixSquareBracketsAccess<T,C,I>::Row::operator[] (I j){
+template<class T,class C,class I,class J>
+C & MatrixSquareBracketsAccess<T,C,I,J>::Row::operator[] (J j){
   return (*static_cast<T*>(&t))(i,j);
 }
 
-template<class T,class C,class I>
-typename MatrixSquareBracketsAccess<T,C,I>::Row MatrixSquareBracketsAccess<T,C,I>::operator[] (I i){
+template<class T,class C,class I,class J>
+typename MatrixSquareBracketsAccess<T,C,I,J>::Row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i){
   return Row(*this,i);
 }
 
-template<class T,class C,class I>
-typename MatrixSquareBracketsAccess<T,C,I>::Const_row MatrixSquareBracketsAccess<T,C,I>::operator[] (I i)const{
+template<class T,class C,class I,class J>
+typename MatrixSquareBracketsAccess<T,C,I,J>::Const_row MatrixSquareBracketsAccess<T,C,I,J>::operator[] (I i)const{
   return Const_row(*this,i);
 }
 
