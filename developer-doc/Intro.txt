@@ -21,10 +21,14 @@ http://www.parashift.com/c++-faq-lite/
 
 \defgroup TOOLBOX Tool Box
 @{
-The following classes can be incorporate all sorts of functionality in PLMD::Action objects.
+Classes providing basic tools in plumed.
+
+Classes of this group are designed to be reusable and to incorporate all sorts of functionality in plumed.
+We try to keep their documentation as complete and clear as possible so as to increase the
+chance that they will be reused.
 
 If you implement a new class that you think might be useful to others please add it to the 
-list below by including the following inside the header file.
+list by including the following inside the header file.
 \verbatim
 \ingroup TOOLBOX
 \endverbatim
@@ -32,7 +36,18 @@ list below by including the following inside the header file.
 
 \defgroup MULTIINHERIT Classes for multiple inheritance
 @{
-Classes for multiple inheritance
+Classes for multiple inheritance.
+
+Each of these classes implements some special feature which can
+be then used to compose complex Actions.
+All of them are "public virtual" derivatives of PLMD::Action,
+so that it is possible to build ad Action which is based on multiple
+classes from this group. This is the only place in the Action hierarchy
+where multiple inheritance should be used.
+
+Multiple inheritance allows for immediate combination of these features,
+but add some C++ subtleties. If you do not fully understand them don't worry
+and directly inherits from classes in the \ref INHERIT group.
 
 To add a class to this group, just put a
 \verbatim
@@ -45,6 +60,11 @@ statement somwhere inside the header.
 @{
 Classes which can be used to create CVs, functions, biases and so on.
 
+The typical way to add a new feature to plumed is to create a new class
+which just inherits from one of the classes of this group. For example,
+a new collective variable can be created by inheriting from PLMD::Colvar.
+Most of the \ref INPUTDIRECTIVES are based on classes from this group.
+
 To add a class to this group, just put a
 \verbatim
 \ingroup INHERIT
@@ -55,6 +75,16 @@ statement somewhere inside the header.
 \defgroup INPUTDIRECTIVES Classes providing input directives
 @{
 Classes which implement directive that we used in the plumed input file.
+
+Most of these classes are only used to provide a new feature which will be
+available from the plumed input file. As such, they are typically not reused in
+other places of the code. For this reason, almost all of them are directly
+provided into an implementation file (.cpp), and have no accociated header file (.h).
+A notable exceptions is PLMD::SetupMolInfo, which needs to be accessed directly
+from other classes.
+
+
+
 
 Each of these classes provides one directive for the plumed input file.
 This list is built automatically based on the PLUMED_REGISTER_ACTION macro.

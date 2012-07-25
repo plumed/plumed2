@@ -31,13 +31,13 @@
 
 namespace PLMD{
 
+class Vessel;
+
 /**
 \ingroup MULTIINHERIT
 This is used to create PLMD::Action objects that are computed by calculating the same function multiple
 times.  This is used in PLMD::MultiColvar.
 */
-
-class Vessel;
 
 class ActionWithDistribution : public virtual Action {
 friend class Vessel;
