@@ -26,9 +26,10 @@
 #include <cstring>
 #include <vector>
 #include "VesselValueAccess.h"
-#include "CubicInterpolation.h"
 
 namespace PLMD {
+
+class CInterpolation;
 
 class FieldVessel : public VesselStoreAllValues {
 private:

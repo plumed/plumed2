@@ -23,6 +23,7 @@
 #include "Vessel.h"
 #include "PlumedException.h"
 #include "Value.h"
+#include "Log.h"
 
 namespace PLMD {
 

@@ -24,7 +24,6 @@
 
 #include "ActionWithValue.h"
 #include "ActionAtomistic.h"
-#include "Value.h"
 #include "PlumedException.h"
 #include "DynamicList.h"
 #include <vector>
@@ -32,6 +31,7 @@
 namespace PLMD{
 
 class Vessel;
+class Value;
 
 /**
 \ingroup MULTIINHERIT

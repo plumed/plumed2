@@ -27,7 +27,6 @@
 #include <vector>
 #include "PlumedException.h"
 #include "Keywords.h"
-#include "Log.h"
 
 namespace PLMD{
 
@@ -41,6 +40,8 @@ on.  This class is used in PLMD::ActionWithDistribution.
 
 class ActionWithDistribution;
 class Vessel;
+class Log;
+class PlumedCommunicator;
 
 /// This class is used to pass the input to Vessels 
 class VesselOptions {

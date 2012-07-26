@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "FieldVessel.h"
 #include "ActionWithDistribution.h"
+#include "CubicInterpolation.h"
 
 namespace PLMD {
 
