@@ -24,6 +24,7 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <cmath>
 #include "PlumedException.h"
 #include "MatrixSquareBracketsAccess.h"
 #include "Log.h"

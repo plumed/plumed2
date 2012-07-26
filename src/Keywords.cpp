@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Keywords.h"
 #include "Log.h"
+#include "Tools.h"
 #include <iostream>
 
 using namespace PLMD;

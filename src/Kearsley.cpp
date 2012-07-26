@@ -22,6 +22,7 @@
 #include "Kearsley.h"
 #include <cmath>
 #include <iostream>
+#include <cstdlib>
 #include "Matrix.h"
 #include "Tensor.h"
 #include "Log.h"
