@@ -32,7 +32,7 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC COLVAR RGYR
+//+PLUMEDOC COLVAR GYRATION
 /*
 Calculate the radius of gyration for a chain of atoms.
 
@@ -49,7 +49,7 @@ with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
 {r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ m_i }{\sum_i^{n} m_i}
 \f]
 
-\bug This was a very quick implementation of RGYR for a project that I am working on. It has very little of the functionality that is available in plumed 1.0. 
+\bug This was a very quick implementation of GYRATION for a project that I am working on. It has very little of the functionality that is available in plumed 1.0. 
 
 \par Examples
 
@@ -64,28 +64,28 @@ PRINT ARG=rg STRIDE=1 FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class ColvarRGYR : public Colvar {
+class ColvarGyration : public Colvar {
 private:
   std::string Type;
-  enum CV_TYPE {RADIUS, TRACE, GTPC_1, GTPC_2, GTPC_3, ASPHERICITY, ACYLINDRICITY, KAPPA2, RGYR_3, RGYR_2, RGYR_1, TOT};
+  enum CV_TYPE {RADIUS, TRACE, GTPC_1, GTPC_2, GTPC_3, ASPHERICITY, ACYLINDRICITY, KAPPA2, GYRATION_3, GYRATION_2, GYRATION_1, TOT};
   int  rg_type;
   bool use_masses;
 public:
   static void registerKeywords( Keywords& keys );
-  ColvarRGYR(const ActionOptions&);
+  ColvarGyration(const ActionOptions&);
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(ColvarRGYR,"GYRATION")
+PLUMED_REGISTER_ACTION(ColvarGyration,"GYRATION")
 
-void ColvarRGYR::registerKeywords( Keywords& keys ){
+void ColvarGyration::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
   keys.addFlag("NOT_MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
 }
 
-ColvarRGYR::ColvarRGYR(const ActionOptions&ao):
+ColvarGyration::ColvarGyration(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 use_masses(true)
 {
@@ -106,9 +106,9 @@ use_masses(true)
   else if(Type=="ASPHERICITY") rg_type=ASPHERICITY;
   else if(Type=="ACYLINDRICITY") rg_type=ACYLINDRICITY;
   else if(Type=="KAPPA2") rg_type=KAPPA2;
-  else if(Type=="RGYR_3") rg_type=RGYR_3;
-  else if(Type=="RGYR_2") rg_type=RGYR_2;
-  else if(Type=="RGYR_1") rg_type=RGYR_1;
+  else if(Type=="GYRATION_3") rg_type=GYRATION_3;
+  else if(Type=="GYRATION_2") rg_type=GYRATION_2;
+  else if(Type=="GYRATION_1") rg_type=GYRATION_1;
   else error("Unknown GYRATION type");
 
   switch(rg_type)
@@ -121,9 +121,9 @@ use_masses(true)
     case ASPHERICITY: log.printf("  THE ASPHERICITY (b');"); break;
     case ACYLINDRICITY: log.printf("  THE ACYLINDRICITY (c');"); break; 
     case KAPPA2: log.printf("  THE RELATIVE SHAPE ANISOTROPY (kappa^2);"); break;
-    case RGYR_3: log.printf("  THE SMALLEST PRINCIPAL RADIUS OF GYRATION (r_g3);"); break;
-    case RGYR_2: log.printf("  THE MIDDLE PRINCIPAL RADIUS OF GYRATION (r_g2);"); break;
-    case RGYR_1: log.printf("  THE LARGEST PRINCIPAL RADIUS OF GYRATION (r_g1);"); break;
+    case GYRATION_3: log.printf("  THE SMALLEST PRINCIPAL RADIUS OF GYRATION (r_g3);"); break;
+    case GYRATION_2: log.printf("  THE MIDDLE PRINCIPAL RADIUS OF GYRATION (r_g2);"); break;
+    case GYRATION_1: log.printf("  THE LARGEST PRINCIPAL RADIUS OF GYRATION (r_g1);"); break;
   }
   if(rg_type>TRACE) log<<"  Bibliography "<<plumed.cite("Jirí Vymetal and Jirí Vondrasek, J. Phys. Chem. A 115, 11455 (2011)"); log<<"\n";
 
@@ -135,7 +135,7 @@ use_masses(true)
   requestAtoms(atoms);
 }
 
-void ColvarRGYR::calculate(){
+void ColvarGyration::calculate(){
 
   std::vector<Vector> derivatives( getNumberOfAtoms() );
   Tensor virial; virial.zero();
@@ -267,7 +267,7 @@ void ColvarRGYR::calculate(){
           if(rgyr*totmass>1e-6) prefactor[pc_index]=1.0/(totmass*rgyr); //some parts of derivate
           break;
         }
-	case RGYR_3:        //the smallest principal radius of gyration
+	case GYRATION_3:        //the smallest principal radius of gyration
         {
           rgyr=sqrt((princ_comp[1]+princ_comp[2])/totmass);
 	  if (rgyr*totmass>1e-6){
@@ -276,7 +276,7 @@ void ColvarRGYR::calculate(){
 	  }
           break;
         }
-	case RGYR_2:       //the midle principal radius of gyration
+	case GYRATION_2:       //the midle principal radius of gyration
         {
           rgyr=sqrt((princ_comp[0]+princ_comp[2])/totmass);
 	  if (rgyr*totmass>1e-6){
@@ -285,7 +285,7 @@ void ColvarRGYR::calculate(){
 	  }
           break;
         }
-	case RGYR_1:      //the largest principal radius of gyration
+	case GYRATION_1:      //the largest principal radius of gyration
         {
           rgyr=sqrt((princ_comp[0]+princ_comp[1])/totmass);
 	  if (rgyr*totmass>1e-6){
