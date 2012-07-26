@@ -45,8 +45,6 @@ friend class FieldVessel;
 private:
 /// This is used to ensure that we have properly read the action
   bool read;
-/// This tells us we are calculating all values (not doing anything to the distribution)
-  bool all_values;
 /// Do all calculations in serial
   bool serial;
 /// Everything for controlling the updating of neighbor lists
@@ -66,6 +64,8 @@ private:
 /// Activate all the values in the list
   void activateAll();
 protected:
+/// Add a vessel to the list of vessels
+  void addVessel( const std::string& name, const std::string& input );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void requestDistribution();
 /// Return the value of the tolerance

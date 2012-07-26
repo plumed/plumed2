@@ -38,7 +38,6 @@ void ActionWithDistribution::autoParallelize(Keywords& keys){
 ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   Action(ao),
   read(false),
-  all_values(true),
   serial(false),
   updateFreq(0),
   lastUpdate(0),
@@ -64,9 +63,12 @@ ActionWithDistribution::~ActionWithDistribution(){
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
 }
 
-void ActionWithDistribution::requestDistribution(){
-  read=true; 
+void ActionWithDistribution::addVessel( const std::string& name, const std::string& input ){
+  read=true; VesselOptions da(name,input,this);
+  functions.push_back( vesselRegister().create(name,da) );
+}
 
+void ActionWithDistribution::requestDistribution(){
   // Loop over all keywords find the vessels and create appropriate functions
   for(unsigned i=0;i<keywords.size();++i){
       std::string thiskey,input; thiskey=keywords.getKeyword(i);
@@ -75,35 +77,29 @@ void ActionWithDistribution::requestDistribution(){
           // If the keyword is a flag read it in as a flag
           if( keywords.style(thiskey,"flag") ){
               bool dothis; parseFlag(thiskey,dothis);
-              VesselOptions da(thiskey,input,this);
-              if(dothis) functions.push_back( vesselRegister().create(thiskey,da) );
+              if(dothis) addVessel( thiskey, input );
           // If it is numbered read it in as a numbered thing
           } else if( keywords.numbered(thiskey) ) {
               parse(thiskey,input);
               if(input.size()!=0){ 
-                    VesselOptions da(thiskey,input,this);
-                    functions.push_back(vesselRegister().create(thiskey,da) );
+                    addVessel( thiskey, input );
               } else {
                  for(unsigned i=1;;++i){
                     if( !parseNumbered(thiskey,i,input) ) break;
                     std::string ss; Tools::convert(i,ss);
-                    VesselOptions da(thiskey,input,this); 
-                    functions.push_back(vesselRegister().create(thiskey,da) ); 
+                    addVessel( thiskey, input ); 
                     input.clear();
                  } 
               }
           // Otherwise read in the keyword the normal way
           } else {
               parse(thiskey, input);
-              VesselOptions da(thiskey,input,this); 
-              if(input.size()!=0) functions.push_back( vesselRegister().create(thiskey,da) );
+              if(input.size()!=0) addVessel(thiskey,input);
           }
           input.clear();
       }
   }
-  if( functions.size()>0 ) all_values=false;
 
-  if(all_values) error("No function has been specified");  
   // This sets up the dynamic list that holds what we are calculating
   for(unsigned i=0;i<getNumberOfFunctionsInAction();++i){ members.addIndexToList(i); }
   activateAll(); resizeFunctions(); 
