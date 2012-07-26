@@ -106,9 +106,9 @@ use_masses(true)
   else if(Type=="ASPHERICITY") rg_type=ASPHERICITY;
   else if(Type=="ACYLINDRICITY") rg_type=ACYLINDRICITY;
   else if(Type=="KAPPA2") rg_type=KAPPA2;
-  else if(Type=="GYRATION_3") rg_type=GYRATION_3;
-  else if(Type=="GYRATION_2") rg_type=GYRATION_2;
-  else if(Type=="GYRATION_1") rg_type=GYRATION_1;
+  else if(Type=="RGYR_3") rg_type=GYRATION_3;
+  else if(Type=="RGYR_2") rg_type=GYRATION_2;
+  else if(Type=="RGYR_1") rg_type=GYRATION_1;
   else error("Unknown GYRATION type");
 
   switch(rg_type)
