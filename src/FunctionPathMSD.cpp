@@ -20,9 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include <cmath>
-// this is an hack for cmath disambiguation
-
-double (*cmathLog)(double) = log; 
 
 #include "Function.h"
 #include "ActionRegister.h"
@@ -194,7 +191,7 @@ void FunctionPathMSD::calculate(){
   }
   s_path/=partition;
   val_s_path->set(s_path);
-  val_z_path->set(-(1./lambda)*cmathLog(partition));
+  val_z_path->set(-(1./lambda)*std::log(partition));
   int n=0;
   for(pairiter it=neighpair.begin();it!=neighpair.end();++it){ 
     double expval=(*it).second;
