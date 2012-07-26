@@ -23,11 +23,12 @@
 #define __PLUMED_MultiColvarSecondaryStructureRMSD_h
 
 #include "MultiColvar.h"
-#include "DRMSD.h"
-#include "RMSD.h"
 #include <vector>
 
 namespace PLMD {
+
+class RMSD;
+class DRMSD;
 
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 

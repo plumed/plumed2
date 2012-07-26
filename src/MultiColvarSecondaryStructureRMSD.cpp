@@ -22,6 +22,8 @@
 #include "MultiColvarSecondaryStructureRMSD.h"
 #include "PlumedMain.h"
 #include "Atoms.h"
+#include "RMSD.h"
+#include "DRMSD.h"
 
 namespace PLMD {
 
