@@ -51,7 +51,7 @@ are in the backbone of a protein to the ALPHARMSD CV.
 
 \verbatim
 MOLINFO STRUCTURE=reference.pdb
-ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN=(RATIONAL R_0=0.08 NN=8 MM=12) LABEL=a 
+ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a 
 \endverbatim
 (see also \ref ALPHARMSD)
 
