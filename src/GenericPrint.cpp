@@ -99,6 +99,7 @@ ActionWithArguments(ao),
 fmt("%f"),
 rotate(0)
 {
+  ofile.link(*this);
   parse("FILE",file);
   if(file.length()>0){
     ofile.open(file.c_str(),"wa");
