@@ -112,7 +112,6 @@ rotate(0)
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
-  ofile.fmtFields(fmt);
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -149,8 +148,10 @@ void GenericPrint::prepare(){
 }
 
 void GenericPrint::update(){
+      ofile.fmtField(" %f");
       ofile.printField("time",getTime());
       for(unsigned i=0;i<getNumberOfArguments();i++){
+        ofile.fmtField(fmt);
         ofile.printField(getPntrToArgument(i)->getName(),getArgument(i));
       };
       ofile.printField();
@@ -162,7 +163,6 @@ GenericPrint::~GenericPrint(){
 void GenericPrint::updateFields(){
   ofile.clearFields();
   ofile.addField("time");
-  ofile.fmtField("time"," %f");
   for(unsigned i=0;i<getNumberOfArguments();i++){
     ofile.addField(getPntrToArgument(i)->getName());
   }

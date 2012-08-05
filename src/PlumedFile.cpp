@@ -1,8 +1,30 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2012 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedFile.h"
 #include "PlumedException.h"
 #include "Action.h"
 #include "PlumedMain.h"
 #include "PlumedCommunicator.h"
+#include "Tools.h"
 #include <cstdarg>
 #include <cstring>
 
@@ -14,12 +36,13 @@ void PlumedFileBase::test(){
   pof.printf("%s\n","test1");
   pof.setLinePrefix("plumed: ");
   pof.printf("%s\n","test2");
+  pof.setLinePrefix("");
   pof.addField("x1");
-  pof.addField("x2",67.0);
+  pof.addConstantField("x2").printField("x2",67.0);
   pof.addField("x3");
   pof.printField("x1",10.0).printField("x3",20.12345678901234567890).printField();
   pof.printField("x1",10.0).printField("x3",-1e70*20.12345678901234567890).printField();
-  pof.printField("x3",10.0).printField("x2",777).printField("x1",-1e70*20.12345678901234567890).printField();
+  pof.printField("x3",10.0).printField("x2",777.0).printField("x1",-1e70*20.12345678901234567890).printField();
   pof.printField("x3",67.0).printField("x1",18.0).printField();
   pof.close();
 
@@ -28,6 +51,11 @@ void PlumedFileBase::test(){
   pif.open("ciao","r");
   pif.getline(s); std::printf("%s\n",s.c_str());
   pif.getline(s); std::printf("%s\n",s.c_str());
+  
+  int x1,x2,x3;
+  while(pif.scanField("x1",x1).scanField("x3",x2).scanField("x2",x3).scanField()){
+    std::cout<<"CHECK "<<x1<<" "<<x2<<" "<<x3<<"\n";
+  }
   pif.close();
 }
 
@@ -48,11 +76,15 @@ size_t PlumedOFile::llwrite(const char*ptr,size_t s){
 size_t PlumedIFile::llread(char*ptr,size_t s){
   plumed_assert(fp);
   size_t r;
+  int leof=0;
   if(! (comm && comm->Get_rank()>0)){
     r=fread(ptr,1,s,fp);
+    if(feof(fp)) leof=1;
   }
   if(comm) comm->Bcast(&r,1,0);
   if(comm) comm->Bcast(ptr,r,0);
+  if(comm) comm->Bcast(&leof,r,0);
+  if(leof) eof=true;
   return r;
 }
 
@@ -86,6 +118,8 @@ PlumedFileBase& PlumedFileBase::link(Action&action){
 
 PlumedFileBase& PlumedFileBase::open(const std::string& path,const std::string& mode){
   plumed_assert(!cloned);
+  eof=false;
+  err=false;
   fp=NULL;
   if(plumed){
     const std::string pathsuf=path+plumed->getSuffix();
@@ -98,6 +132,8 @@ PlumedFileBase& PlumedFileBase::open(const std::string& path,const std::string& 
 
 void        PlumedFileBase::close(){
   plumed_assert(!cloned);
+  eof=false;
+  err=false;
   std::fclose(fp);
   fp=NULL;
 }
@@ -107,7 +143,9 @@ PlumedFileBase::PlumedFileBase():
   comm(NULL),
   plumed(NULL),
   action(NULL),
-  cloned(false)
+  cloned(false),
+  eof(false),
+  err(false)
 {
 }
 
@@ -116,15 +154,22 @@ PlumedFileBase::~PlumedFileBase()
   if(!cloned) fclose(fp);
 }
 
+PlumedFileBase::operator bool()const{
+  return !eof;
+}
+
+
 PlumedOFile::PlumedOFile():
   linked(NULL),
-  fieldChanged(false),
-  fieldFmt("%22.16lg")
+  fieldChanged(false)
 {
+  fmtField();
   buffer=new char[buflen];
+  buffer_string=new char [1000];
 }
 
 PlumedOFile::~PlumedOFile(){
+  delete [] buffer_string;
   delete [] buffer;
 }
 
@@ -169,16 +214,15 @@ PlumedOFile& PlumedOFile::addField(const std::string&name){
   return *this;
 }
 
-PlumedOFile& PlumedOFile::addField(const std::string&name,double v){
+PlumedOFile& PlumedOFile::addConstantField(const std::string&name){
   Field f;
   f.name=name;
-  f.value=v;
   f.constant=true;
-  f.set=true;
   fields.push_back(f);
   fieldChanged=true;
   return *this;
 }
+
 
 PlumedOFile& PlumedOFile::clearFields(){
   fields.clear();
@@ -186,23 +230,37 @@ PlumedOFile& PlumedOFile::clearFields(){
   return *this;
 }
 
-PlumedOFile& PlumedOFile::fmtFields(const std::string&fmt){
-  fieldFmt=fmt;
+PlumedOFile& PlumedOFile::fmtField(const std::string&fmt){
+  this->fieldFmt=fmt;
   return *this;
 }
 
-PlumedOFile& PlumedOFile::fmtField(const std::string&name,const std::string&fmt){
+PlumedOFile& PlumedOFile::fmtField(){
+  this->fieldFmt="%23.16lg";
+  return *this;
+}
+
+unsigned PlumedOFile::findField(const std::string&name)const{
   unsigned i;
   for(i=0;i<fields.size();i++) if(fields[i].name==name) break;
-  plumed_assert(i<fields.size());
-  fields[i].fmt=fmt;
-  return *this;
+  if(i>=fields.size()) plumed_merror(name);
+  return i;
 }
 
 PlumedOFile& PlumedOFile::printField(const std::string&name,double v){
-  unsigned i;
-  for(i=0;i<fields.size();i++) if(fields[i].name==name) break;
-  plumed_assert(i<fields.size());
+  sprintf(buffer_string,fieldFmt.c_str(),v);
+  printField(name,buffer_string);
+  return *this;
+}
+
+PlumedOFile& PlumedOFile::printField(const std::string&name,int v){
+  sprintf(buffer_string," %d",v);
+  printField(name,buffer_string);
+  return *this;
+}
+
+PlumedOFile& PlumedOFile::printField(const std::string&name,const std::string & v){
+  unsigned i=findField(name);
   if(fields[i].constant) fieldChanged=true;
   fields[i].value=v;
   fields[i].set=true;
@@ -213,16 +271,13 @@ PlumedOFile& PlumedOFile::printField(){
   if(fieldChanged){
     printf("#! FIELDS");
     for(unsigned i=0;i<fields.size();i++){
-      printf(" %s",fields[i].name.c_str());
+      if(!fields[i].constant)
+        printf(" %s",fields[i].name.c_str());
     }
     printf("\n");
     for(unsigned i=0;i<fields.size();i++)
       if(fields[i].constant){
-        std::string fmt;
-        if(fields[i].fmt.length()>0) fmt=fields[i].fmt;
-        else fmt=fieldFmt;
-        printf("#! SET %s ",fields[i].name.c_str());
-        printf(fmt.c_str(),fields[i].value);
+        printf("#! SET %s %s",fields[i].name.c_str(),fields[i].value.c_str());
         printf("\n");
     }
   }
@@ -230,11 +285,7 @@ PlumedOFile& PlumedOFile::printField(){
   for(unsigned i=0;i<fields.size();i++){
     plumed_assert(fields[i].set);
     if(!fields[i].constant){
-      std::string fmt;
-      if(fields[i].fmt.length()>0) fmt=fields[i].fmt;
-      else fmt=fieldFmt;
-//      printf(" ");
-      printf(fmt.c_str(),fields[i].value);
+      printf("%s",fields[i].value.c_str());
       fields[i].set=false;
     }
   }
@@ -242,34 +293,111 @@ PlumedOFile& PlumedOFile::printField(){
   return *this;
 }
 
-PlumedIFile& PlumedIFile::scanFieldList(std::vector<std::string>&s){
-  s=fields;
+PlumedIFile& PlumedIFile::advanceField(){
+  plumed_assert(!inMiddleOfField);
+  std::string line;
+  bool done=false;
+  while(!done){
+    getline(line);
+    if(!*this) return *this;
+    std::vector<std::string> words=Tools::getWords(line);
+    if(words.size()>=2 && words[0]=="#!" && words[1]=="FIELDS"){
+      fields.clear();
+      for(unsigned i=2;i<words.size();i++){
+        Field field;
+        field.name=words[i];
+        fields.push_back(field);
+      }
+    } else if(words.size()==4 && words[0]=="#!" && words[1]=="SET"){
+      Field field;
+      field.name=words[2];
+      field.value=words[3];
+      field.constant=true;
+      fields.push_back(field);
+    } else {
+      unsigned nf=0;
+      for(unsigned i=0;i<fields.size();i++) if(!fields[i].constant) nf++;
+      Tools::trimComments(line);
+      words=Tools::getWords(line);
+      plumed_assert(nf==words.size());
+      unsigned j=0;
+      for(unsigned i=0;i<fields.size();i++){
+        if(fields[i].constant) continue;
+        fields[i].value=words[j];
+        fields[i].read=false;
+        j++;
+      }
+      done=true;
+    }
+  }
+  inMiddleOfField=true;
   return *this;
 }
 
-PlumedIFile& PlumedIFile::scanField(const std::string&,double&){
-  plumed_error();
+PlumedIFile& PlumedIFile::scanFieldList(std::vector<std::string>&s){
+  if(!inMiddleOfField) advanceField();
+  if(!*this) return *this;
+  s.clear();
+  for(unsigned i=0;i<fields.size();i++)
+    s.push_back(fields[i].name);
   return *this;
 }
+
+PlumedIFile& PlumedIFile::scanField(const std::string&name,std::string&str){
+  if(!inMiddleOfField) advanceField();
+  if(!*this) return *this;
+  unsigned i=findField(name);
+  str=fields[i].value;
+  fields[i].read=true;
+  return *this;
+}
+
+PlumedIFile& PlumedIFile::scanField(const std::string&name,double &x){
+  std::string str;
+  scanField(name,str);
+  if(*this) Tools::convert(str,x);
+  return *this;
+}
+
+PlumedIFile& PlumedIFile::scanField(const std::string&name,int &x){
+  std::string str;
+  scanField(name,str);
+  if(*this) Tools::convert(str,x);
+  return *this;
+}
+
 
 PlumedIFile& PlumedIFile::scanField(){
-  plumed_error();
+  for(unsigned i=0;i<fields.size();i++){
+    plumed_assert(fields[i].read);
+  }
+  inMiddleOfField=false;
   return *this;
 }
 
-PlumedIFile::PlumedIFile(){
+PlumedIFile::PlumedIFile():
+  inMiddleOfField(false)
+{
 }
 
 PlumedIFile::~PlumedIFile(){
+  plumed_assert(!inMiddleOfField);
 }
 
 PlumedIFile& PlumedIFile::getline(std::string &str){
   char tmp;
   str="";
-  while(llread(&tmp,1)==1 && tmp && tmp!='\n'){
+  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && !eof){
     str+=tmp;
   }
   return *this;
+}
+
+unsigned PlumedIFile::findField(const std::string&name)const{
+  unsigned i;
+  for(i=0;i<fields.size();i++) if(fields[i].name==name) break;
+  if(i>=fields.size()) plumed_merror(name);
+  return i;
 }
 
 
