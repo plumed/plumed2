@@ -354,10 +354,11 @@ void PlumedMain::init(){
 void PlumedMain::readInputFile(std::string str){
   plumed_assert(initialized);
   log.printf("FILE: %s\n",str.c_str());
-  FILE*fp=fopen(str.c_str(),"r");
+  PlumedIFile ifile;
+  ifile.open(str,"r");
   std::vector<std::string> words;
   exchangepatterns.setFlag(exchangepatterns.NONE);
-  while(Tools::getParsedLine(fp,words)){
+  while(Tools::getParsedLine(ifile,words)){
     if(words.empty())continue;
     else if(words[0]=="ENDPLUMED") break;
     else if(words[0]=="LOAD") load(words);
@@ -388,7 +389,6 @@ void PlumedMain::readInputFile(std::string str){
       actionSet.push_back(action);
     };
   };
-  fclose(fp);
   log.printf("END FILE: %s\n",str.c_str());
 
   pilots=actionSet.select<ActionPilot*>();

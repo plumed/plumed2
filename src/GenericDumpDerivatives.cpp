@@ -23,6 +23,7 @@
 #include "ActionWithArguments.h"
 #include "ActionRegister.h"
 #include "PlumedCommunicator.h"
+#include "PlumedFile.h"
 #include <cassert>
 
 using namespace std;
@@ -58,7 +59,7 @@ public ActionWithArguments
 {
   string file;
   string fmt;
-  FILE* fp;
+  PlumedOFile of;
 public:
   void calculate(){};
   GenericDumpDerivatives(const ActionOptions&);
@@ -84,49 +85,47 @@ GenericDumpDerivatives::GenericDumpDerivatives(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
-fmt("%15.10f"),
-fp(NULL)
+fmt("%15.10f")
 {
   parse("FILE",file);
   assert(file.length()>0);
   parse("FMT",fmt);
   fmt=" "+fmt;
-  if(comm.Get_rank()==0){
-    fp=fopen(file.c_str(),"wa");
-    log.printf("  on file %s\n",file.c_str());
-    log.printf("  with format %s\n",fmt.c_str());
-    unsigned nargs=getNumberOfArguments();
-    if( nargs==0 ) error("no arguments specified");
-    unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
-    if( npar==0 ) error("one or more arguments has no derivatives");
-    for(unsigned i=1;i<nargs;i++){
-        if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
-    }
-    fprintf(fp,"%s","#! FIELDS time parameter");
-    for(unsigned i=0;i<nargs;i++){
-      fprintf(fp," %s",getPntrToArgument(i)->getName().c_str());
-    };
-    fprintf(fp,"%s","\n");
+  of.open(file,"wa");
+  of.link(*this);
+  log.printf("  on file %s\n",file.c_str());
+  log.printf("  with format %s\n",fmt.c_str());
+  unsigned nargs=getNumberOfArguments();
+  if( nargs==0 ) error("no arguments specified");
+  unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
+  if( npar==0 ) error("one or more arguments has no derivatives");
+  for(unsigned i=1;i<nargs;i++){
+      if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
   }
+  of.addField("time");
+  of.addField("parameter");
+  for(unsigned i=0;i<nargs;i++){
+    of.addField(getPntrToArgument(i)->getName());
+  };
   checkRead();
 }
 
 
 void GenericDumpDerivatives::update(){
-  if(comm.Get_rank()!=0)return;
   unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
   for(unsigned ipar=0;ipar<npar;ipar++){
-    fprintf(fp," %f",getTime());
-    fprintf(fp," %u",ipar);
+    of.fmtField(" %f");
+    of.printField("time",getTime());
+    of.printField("parameter",(int)ipar);
     for(unsigned i=0;i<getNumberOfArguments();i++){
-      fprintf( fp, fmt.c_str(),getPntrToArgument(i)->getDerivative(ipar) );
+      of.fmtField(fmt);
+      of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getDerivative(ipar) );
     };
-    fprintf(fp,"\n");
+    of.printField();
   }
 }
 
 GenericDumpDerivatives::~GenericDumpDerivatives(){
-  if(fp) fclose(fp);
 }
 
 }

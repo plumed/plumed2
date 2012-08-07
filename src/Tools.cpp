@@ -1,3 +1,4 @@
+#include <iostream>
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    Copyright (c) 2012 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
@@ -22,6 +23,7 @@
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "PlumedException.h"
+#include "PlumedFile.h"
 #include <cstring>
 #include <dirent.h>
 
@@ -118,14 +120,14 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
   return words;
 }
 
-bool Tools::getParsedLine(FILE* fp,vector<string> & words){
+bool Tools::getParsedLine(PlumedIFile& ifile,vector<string> & words){
   string line("");
   words.clear();
   bool stat;
   bool inside=false;
   int parlevel=0;
   bool mergenext=false;
-  while((stat=getline(fp,line))){
+  while(stat=ifile.getline(line)){
     trimComments(line);
     trim(line);
     if(line.length()==0) continue;

@@ -23,6 +23,7 @@
 #include "ActionWithArguments.h"
 #include "ActionRegister.h"
 #include "PlumedCommunicator.h"
+#include "PlumedFile.h"
 #include <cassert>
 
 using namespace std;
@@ -58,7 +59,7 @@ public ActionPilot,
 public ActionWithArguments
 {
   string file;
-  FILE* fp;
+  PlumedOFile of;
 public:
   void calculate(){};
   GenericDumpForces(const ActionOptions&);
@@ -82,36 +83,32 @@ void GenericDumpForces::registerKeywords(Keywords& keys){
 GenericDumpForces::GenericDumpForces(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
-ActionWithArguments(ao),
-fp(NULL)
+ActionWithArguments(ao)
 {
   parse("FILE",file);
   assert(file.length()>0);
-  if(comm.Get_rank()==0){
-    fp=fopen(file.c_str(),"wa");
-    log.printf("  on file %s\n",file.c_str());
-    if( getNumberOfArguments()==0 ) error("no arguments have been specified");
-    fprintf(fp,"%s","#! FIELDS time parameter");
-    for(unsigned i=0;i<getNumberOfArguments();i++){
-      fprintf(fp," %s",getPntrToArgument(i)->getName().c_str());
-    };
-    fprintf(fp,"%s","\n");
-  }
+  of.open(file,"wa");
+  of.link(*this);
+  log.printf("  on file %s\n",file.c_str());
+  if( getNumberOfArguments()==0 ) error("no arguments have been specified");
+  of.addField("time");
+  for(unsigned i=0;i<getNumberOfArguments();i++){
+    of.addField(getPntrToArgument(i)->getName());
+  };
   checkRead();
 }
 
 
 void GenericDumpForces::update(){
-  if(comm.Get_rank()!=0)return;
-  fprintf(fp," %f",getTime());
+  of.fmtField(" %f");
+  of.printField("time",getTime());
   for(unsigned i=0;i<getNumberOfArguments();i++){
-    fprintf(fp," %15.10f",getPntrToArgument(i)->getForce());
+    of.fmtField(" %15.10f").printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce());
   };
-  fprintf(fp,"\n");
+  of.printField();
 }
 
 GenericDumpForces::~GenericDumpForces(){
-  if(fp) fclose(fp);
 }
 
 }
