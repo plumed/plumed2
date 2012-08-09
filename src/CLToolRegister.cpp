@@ -50,12 +50,14 @@ void CLToolRegister::remove(creator_pointer f){
   }
 }
 
-void CLToolRegister::add(string key,creator_pointer f){
+void CLToolRegister::add(string key,creator_pointer f,keywords_pointer kf){
   if(m.count(key)){
     m.erase(key);
     disabled.insert(key);
   }else{
     m.insert(pair<string,creator_pointer>(key,f));
+    Keywords keys; kf(keys);
+    mk.insert(pair<string,Keywords>(key,keys));
   };
 }
 
@@ -67,8 +69,10 @@ bool CLToolRegister::check(string key){
 CLTool* CLToolRegister::create(const CLToolOptions&ao){
   if(ao.line.size()<1)return NULL;
   CLTool* cltool;
-  if(check(ao.line[0])) cltool=m[ao.line[0]](ao);
-  else cltool=NULL;
+  if(check(ao.line[0])){
+     CLToolOptions nao( ao,mk[ao.line[0]] );
+     cltool=m[ao.line[0]](nao);
+  } else cltool=NULL;
   return cltool;
 }
 
@@ -86,6 +90,15 @@ std::ostream & PLMD::operator<<(std::ostream &log,const CLToolRegister&ar){
     log<<"+++++++ END WARNING +++++++\n";
   };
   return log;
+}
+
+bool CLToolRegister::printManual( const std::string& cltool ){
+  if ( check(cltool) ){
+     mk[cltool].print_html(false);
+     return true;
+  } else {
+     return false;
+  }
 }
 
 vector<string> CLToolRegister::list()const{

@@ -203,8 +203,10 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()){
     CLTool *cl=cltoolRegister().create(command);
-    plumed_assert(cl);
-    int ret=cl->main(argc-i,&argv[i],in,out,pc);
+    plumed_assert(cl); 
+    // Read the command line options (returns false if we are just printing help)
+    if( !cl->readInput( argc-i,&argv[i],in,out ) ){ delete cl; return 0; } 
+    int ret=cl->main(out,pc);
     delete cl;
     return ret;
   }
@@ -218,7 +220,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
     return 0;
   }
 
-  string msg="ERROR: unknown command " + command;
+  string msg="ERROR: unknown command " + command + ". Use 'plumed help' for help";
   fprintf(stderr,"%s\n",msg.c_str());
   return 1;
 

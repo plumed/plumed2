@@ -104,6 +104,8 @@ public:
   static void interpretLabel(std::vector<std::string>&s);
 /// list files in a directory
   static std::vector<std::string> ls(const std::string&);
+/// removes leading and trailing blanks from a string
+  static void stripLeadingAndTrailingBlanks( std::string& str );
 };
 
 template <class T>

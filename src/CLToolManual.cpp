@@ -34,9 +34,22 @@ using namespace std;
 namespace PLMD {
 
 //+PLUMEDOC TOOLS manual
-/**
+/*
 manual is a tool that you can use to construct the manual page for 
 a particular action
+
+The manual constructed by this action is in html. In all probability you will never need to use this
+tool. However, it is used within the scripts that generate plumed's html manual.  If you need to use this
+tool outside those scripts the input is specified using the following command line arguments.
+
+\par Examples
+
+The following generates the html manual for the action DISTANCE.
+\verbatim
+plumed manual --action DISTANCE
+\endverbatim
+ 
+
 */
 //+ENDPLUMEDOC
 
@@ -44,7 +57,9 @@ class CLToolManual:
 public CLTool
 {
 public:
-  int main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc);
+  static void registerKeywords( Keywords& keys );
+  CLToolManual(const CLToolOptions& co );
+  int main(FILE*out,PlumedCommunicator& pc);
   string description()const{
     return "print out a description of the keywords for an action in html";
   }
@@ -52,56 +67,28 @@ public:
 
 PLUMED_REGISTER_CLTOOL(CLToolManual,"manual")
 
-int CLToolManual::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc){
+void CLToolManual::registerKeywords( Keywords& keys ){
+  CLTool::registerKeywords( keys );
+  keys.add("compulsory","--action","print the manual for this particular action");
+}
 
-// to avoid warnings:
- (void) in;
+CLToolManual::CLToolManual(const CLToolOptions& co ):
+CLTool(co)
+{
+  inputdata=commandline;
+}
 
- std::string action="none";
- bool printhelp(false);
+int CLToolManual::main(FILE*out,PlumedCommunicator& pc){
 
-// Start parsing options
- string prefix("");
- std::string a("");
- for(int i=1;i<argc;i++){
-    a=prefix+argv[i];
-    if(a.length()==0) continue;
-    if(a=="-h" || a=="--help"){
-      printhelp=true;
-      break;
-    }
-    if(a.find("--action=")==0){
-      a.erase(0,a.find("=")+1);
-      action=a; 
-      prefix="";
-    } else if(a=="--action"){
-      prefix="--action=";
-    } else {
-      string msg="ERROR: unknown option"+a;
-      fprintf(stderr,"%s\n",msg.c_str());
-      return 1;
-    }
- } 
-
- if(printhelp){
-   fprintf(out,"%s",
-   "Usage: info [options]\n"
-   "Options:\n"
-   "  [--help|-h]           : prints this help\n"
-   "  [--action]            : print the manual for this action\n"
-);
-   return 0; 
- }
-
- if(action=="none"){
-    fprintf(stderr,"missing --action flag\n");
-    return 1;
- }
-
- std::cerr<<actionRegister(); 
- if( !actionRegister().printManual(action) ){
-    fprintf(stderr,"specified action is not registered\n");
-    return 1; 
+ std::string action; 
+ if( !parse("--action",action) ) return 1;
+ std::cerr<<"LIST OF DOCUMENTED ACTIONS:\n";
+ std::cerr<<actionRegister()<<"\n"; 
+ std::cerr<<"LIST OF DOCUMENTED COMMAND LINE TOOLS:\n";
+ std::cerr<<cltoolRegister()<<"\n\n";
+ if( !actionRegister().printManual(action) && !cltoolRegister().printManual(action) ){
+       fprintf(stderr,"specified action is not registered\n");
+       return 1; 
  }
 
  return 0;

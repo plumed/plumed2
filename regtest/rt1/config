@@ -3,4 +3,4 @@
 # to avoid problems with the numerical derivatives (it is exactly at the border between
 # two images)
 type=driver
-arg="--plumed plumed.dat --stride 10 --timestep 0.005 trajectory.xyz --dump-forces forces --dump-forces-fmt=%8.4f"
+arg="--plumed plumed.dat --stride 10 --timestep 0.005 --ixyz trajectory.xyz --dump-forces forces --dump-forces-fmt=%8.4f"

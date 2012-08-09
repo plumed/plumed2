@@ -235,3 +235,9 @@ vector<string> Tools::ls(const string&d){
   }
   return result;
 }
+
+void Tools::stripLeadingAndTrailingBlanks( std::string& str ){
+  std::size_t first=str.find_first_not_of(' ');
+  std::size_t last=str.find_last_not_of(' ');
+  if( first<last ) str=str.substr(first,last+1);
+}

@@ -89,7 +89,7 @@ Action* ActionRegister::create(const ActionOptions&ao){
 bool ActionRegister::printManual( const std::string& action ){
   if ( check(action) ){
      Keywords keys; mk[action](keys); 
-     keys.print_html(); keys.destroyData();
+     keys.print_html(true); keys.destroyData();
      return true;
   } else {
      return false;

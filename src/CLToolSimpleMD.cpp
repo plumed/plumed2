@@ -34,6 +34,45 @@ using namespace PLMD;
 
 namespace PLMD{
 
+//+PLUMEDOC TOOLS simplemd
+/*
+simplemd allows one to do molecular dynamics on systems of Lennard-Jones atoms.
+
+The input to simplemd is spcified in an input file. Configurations are input and
+output in xyz format. The input file should contain one directive per line. 
+The directives available are as follows:
+
+\par Examples
+
+You run an MD simulation using simplemd with the following command:
+\verbatim
+plumed simplemd < in
+\endverbatim
+
+The following is an example of an input file for a simplemd calculation. This file
+instructs simplemd to do 50 steps of MD at a temperature of 0.722
+\verbatim
+nputfile input.xyz
+outputfile output.xyz
+temperature 0.722
+tstep 0.005
+friction 1
+forcecutoff 2.5
+listcutoff  3.0
+nstep 50
+nconfig 10 trajectory.xyz
+nstat   10 energies.dat
+\endverbatim
+
+If you run the following a description of all the directives that can be used in the
+input file will be output.
+\verbatim
+plumed simplemd --help
+\endverbatim
+
+*/
+//+ENDPLUMEDOC
+
 class CLToolSimpleMD:
 public PLMD::CLTool
 {
@@ -52,7 +91,26 @@ FILE* write_statistics_fp;
 
 
 public:
-CLToolSimpleMD(){
+static void registerKeywords( Keywords& keys ){ 
+  keys.add("compulsory","nstep","The number of steps of dynamics you want to run");
+  keys.add("compulsory","temperature","NVE","the temperature at which you wish to run the simulation in LJ units");
+  keys.add("compulsory","friction","off","The friction (in LJ units) for the langevin thermostat that is used to keep the temperature constant");
+  keys.add("compulsory","tstep","0.005","the integration timestep in LJ units");
+  keys.add("compulsory","inputfile","An xyz file containing the initial configuration of the system");  
+  keys.add("compulsory","forcecutoff","2.5","");
+  keys.add("compulsory","listcutoff","3.0","");
+  keys.add("compulsory","outputfile","An output xyz file containing the final configuration of the system");
+  keys.add("compulsory","nconfig","10","The frequency with which to write configurations to the trajectory file followed by the name of the trajectory file");
+  keys.add("compulsory","nstat","1","The frequency with which to write the statistics to the statistics file followed by the name of the statistics file");
+  keys.add("compulsory","maxneighbours","10000","The maximum number of neighbours an atom can have");
+  keys.add("compulsory","idum","0","The random number seed");
+  keys.add("compulsory","ndim","3","The dimensionality of the system (some interesting LJ clusters are two dimensional)");
+}
+
+CLToolSimpleMD( const CLToolOptions& co ) :
+CLTool(co)
+{
+  inputdata=ifile;
   for(int i=0;i<32;i++) iv[i]=0.0;
   iy=0;
   iset=0;
@@ -66,8 +124,7 @@ CLToolSimpleMD(){
 private:
 
 void 
-read_input(FILE*   fp,
-           double& temperature,
+read_input(double& temperature,
            double& tstep,
            double& friction,
            double& forcecutoff,
@@ -84,99 +141,49 @@ read_input(FILE*   fp,
            int&    ndim,
            int&    idum)
 {
-  temperature=1.0;
-  tstep=0.005;
-  friction=0.0;
-  forcecutoff=2.5;
-  listcutoff=3.0;
-  nstep=1;
-  nconfig=10;
-  nstat=1;
-  maxneighbours=1000;
-  idum=0;
-  ndim=3;
-  wrapatoms=false;
-  statfile="";
-  trajfile="";
-  outputfile="";
-  inputfile="";
 
-  string line;
-
-  line.resize(256);
-  char buffer[256];
+  // Read everything from input file
   char buffer1[256];
+  std::string tempstr; parse("temperature",tempstr);
+  if( tempstr!="NVE" ) Tools::convert(tempstr,temperature);
+  parse("tstep",tstep);
+  std::string frictionstr; parse("friction",frictionstr);
+  if( tempstr!="NVE" ){
+      if(frictionstr=="off"){ fprintf(stderr,"Specify friction for thermostat\n"); exit(1); }
+      Tools::convert(frictionstr,friction); 
+  } 
+  parse("forcecutoff",forcecutoff);
+  parse("listcutoff",listcutoff);
+  parse("nstep",nstep);
+  parse("maxneighbours",maxneighbours);
+  parse("idum",idum);
 
-  while(fgets(buffer,256,fp)){
-    line=buffer;
-    for(int i=0;i<line.length();++i) if(line[i]=='#' || line[i]=='\n') line.erase(i);
-    for(int i=line.length()-1;i>=0;--i){
-      if(line[i]!=' ')break;
-      line.erase(i);
-    }
-    if(line.length()==0) continue;
-    sscanf(line.c_str(),"%s",buffer);
-    string keyword=buffer;
-    if(keyword=="temperature")
-      sscanf(line.c_str(),"%s %lf",buffer,&temperature);
-    else if(keyword=="tstep")
-      sscanf(line.c_str(),"%s %lf",buffer,&tstep);
-    else if(keyword=="friction")
-      sscanf(line.c_str(),"%s %lf",buffer,&friction);
-    else if(keyword=="forcecutoff")
-      sscanf(line.c_str(),"%s %lf",buffer,&forcecutoff);
-    else if(keyword=="listcutoff")
-      sscanf(line.c_str(),"%s %lf",buffer,&listcutoff);
-    else if(keyword=="nstep")
-      sscanf(line.c_str(),"%s %d",buffer,&nstep);
-    else if(keyword=="nconfig")
-    {
-      sscanf(line.c_str(),"%s %d %s",buffer,&nconfig,buffer1);
-      trajfile=buffer1;
-    }
-    else if(keyword=="nstat")
-    {
-      sscanf(line.c_str(),"%s %d %s",buffer,&nstat,buffer1);
-      statfile=buffer1;
-    }
-    else if(keyword=="maxneighbours")
-      sscanf(line.c_str(),"%s %d",buffer,&maxneighbours);
-    else if(keyword=="inputfile")
-    {
-      sscanf(line.c_str(),"%s %s",buffer,buffer1);
-      inputfile=buffer1;
-    }
-    else if(keyword=="outputfile")
-    {
-      sscanf(line.c_str(),"%s %s",buffer,buffer1);
-      outputfile=buffer1;
-    }
-    else if(keyword=="idum")
-      sscanf(line.c_str(),"%s %d",buffer,&idum);
-    else if(keyword=="ndim")
-      sscanf(line.c_str(),"%s %d",buffer,&ndim);
-    else{
-      fprintf(stderr,"Unknown keywords :%s\n",keyword.c_str());
-      exit(1);
-    }
-  }
-
+  // Read in stuff with sanity checks
+  parse("inputfile",inputfile);
   if(inputfile.length()==0){
       fprintf(stderr,"Specify input file\n");
       exit(1);
   }
+  parse("outputfile",outputfile);
   if(outputfile.length()==0){
       fprintf(stderr,"Specify output file\n");
       exit(1);
   }
+  std::string nconfstr; parse("nconfig",nconfstr);
+  sscanf(nconfstr.c_str(),"%d %s",&nconfig,buffer1);
+  trajfile=buffer1;
   if(trajfile.length()==0){
       fprintf(stderr,"Specify traj file\n");
       exit(1);
   }
+  std::string nstatstr; parse("nstat",nstatstr);
+  sscanf(nstatstr.c_str(),"%d %s",&nconfig,buffer1);
+  statfile=buffer1;
   if(statfile.length()==0){
       fprintf(stderr,"Specify stat file\n");
       exit(1);
   }
+  parse("ndim",ndim);
   if(ndim<1 || ndim>3){
       fprintf(stderr,"ndim should be 1,2 or 3\n");
       exit(1);
@@ -369,7 +376,7 @@ void write_statistics(const string & statfile,const int istep,const double tstep
 
 
 
-int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
+int main(FILE*out,PLMD::PlumedCommunicator& pc){
   int            natoms;       // number of atoms
   vector<Vector> positions;    // atomic positions
   vector<Vector> velocities;   // velocities
@@ -423,17 +430,10 @@ int main(int argc,char**argv,FILE*in,FILE*out,PLMD::PlumedCommunicator& pc){
     plumed->cmd("setRealPrecision",&s);
   }
 
-  FILE* mystdin=in;
-
-  if(argc==2) mystdin=fopen(argv[1],"r");
-
-  read_input(mystdin,temperature,tstep,friction,forcecutoff,
+  read_input(temperature,tstep,friction,forcecutoff,
              listcutoff,nstep,nconfig,nstat,
              wrapatoms,inputfile,outputfile,trajfile,statfile,
              maxneighbour,ndim,idum);
-
-  if(argc==2) fclose(mystdin);
-
 
 // number of atoms is read from file inputfile
   read_natoms(inputfile,natoms);

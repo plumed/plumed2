@@ -25,17 +25,25 @@
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <cstdio>
+#include "Tools.h"
+#include "Keywords.h"
 
 namespace PLMD{
 
 class PlumedCommunicator;
 
 class CLToolOptions{
+  friend class CLTool;
   friend class CLToolRegister;
+private:
   std::vector<std::string> line;
+/// The documentation for this command line tool
+  const Keywords& keys;
+  static Keywords emptyKeys;
 public:
-  CLToolOptions(const std::string &name):
-    line(1,name) { }
+  CLToolOptions(const std::string &name);
+  CLToolOptions(const CLToolOptions& co, const Keywords& k);
 };
 
 /**
@@ -44,18 +52,62 @@ Interface to all the command-line tools.
 This class just define an interface, and does not implement anything.
 Inherits from this class to create a new command-line tool.
 */
-class CLTool
-{
+class CLTool {
+// This is a fried so we can create input data quickly
+// when you do debug-float. 
+template <typename real>
+friend class CLToolDriver;
+private:
+/// The name of this command line tool
+  const std::string name;
+/// The list of keywords for this CLTool
+  const Keywords& keywords;
+/// The data read in from the command line stored in a map with the keywords
+  std::map<std::string,std::string> inputData;
+/// Read the arguments from the command line
+  bool readCommandLineArgs( int argc, char**argv, FILE*out );
+/// Read the arguments from an input file specified on the command line
+  bool readInputFile( int argc, char**argv, FILE* in, FILE*out );
+/// Set arguments from the default options provided to Keywords
+  void setRemainingToDefault(FILE* out);
+protected:
+/// Get the value of one of the command line arguments 
+  template<class T>
+  bool parse(const std::string&key,T&t);
+/// Find out whether one of the command line flags is present or not
+  void parseFlag(const std::string&key,bool&t);  
 public:
+/// How is the input specified on the command line or in an input file
+  enum {unset,commandline,ifile,userspec} inputdata;
+/// Create the help keywords 
+  static void registerKeywords( Keywords& keys );
+  CLTool(const CLToolOptions& co ); 
+/// Read the arguments from the command line
+  bool readInput( int argc, char**argv, FILE* in, FILE*out );
+/// Read the input in the derived class (overwrite this if you are not using 
+/// command line arguments or an input file in the style of simplemd's)
+  virtual void readInputData( int argc, char**argv, FILE* in, FILE*out );
 /// virtual function mapping to the specific main for each tool
-  virtual int main(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator&pc)=0;
+  virtual int main( FILE*out, PlumedCommunicator&pc )=0;
 /// virtual function returning a one-line descriptor for the tool
   virtual std::string description()const{return "(no description available)";};
 /// virtual destructor to allow inheritance
   virtual ~CLTool(){};
 };
 
+template<class T>
+bool CLTool::parse(const std::string&key,T&t){
+  plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
+  if(keywords.style(key,"compulsory") ){
+     plumed_assert(inputData.count(key)>0);
+     plumed_assert( Tools::convert(inputData[key],t) );
+     return true;
+  }
+  if( inputData.count(key)==0 ) return false; 
+  Tools::convert(inputData[key],t);
+  return true;
 }
 
+}
 
 #endif

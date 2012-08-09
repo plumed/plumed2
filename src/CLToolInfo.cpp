@@ -32,8 +32,19 @@ using namespace std;
 namespace PLMD {
 
 //+PLUMEDOC TOOLS info
-/**
-This is a tool that allows you to obtain information about your plumed version
+/*
+This tool allows you to obtain information about your plumed version
+
+You can specify the information you require using the following command line
+arguments
+
+\par Examples
+
+The following command returns the root directory for your plumed distribution.
+\verbatim
+plumed info --root
+\endverbatim
+
 */
 //+ENDPLUMEDOC
 
@@ -41,56 +52,35 @@ class CLToolInfo:
 public CLTool
 {
 public:
-  int main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc);
+  static void registerKeywords( Keywords& keys );
+  CLToolInfo(const CLToolOptions& co );
+  int main(FILE*out,PlumedCommunicator& pc);
   string description()const{
     return "provide informations about plumed";
   }
 };
 
-
 PLUMED_REGISTER_CLTOOL(CLToolInfo,"info")
 
-int CLToolInfo::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc){
+void CLToolInfo::registerKeywords( Keywords& keys ){
+  CLTool::registerKeywords( keys );
+  keys.addFlag("--configuration",false,"prints the configuration file");
+  keys.addFlag("--root",false,"print the location of the root directory for the plumed source");
+}
 
-// to avoid warnings:
- (void) in;
+CLToolInfo::CLToolInfo(const CLToolOptions& co ):
+CLTool(co)
+{
+  inputdata=commandline;
+}
 
- bool printconfiguration(false);
- bool printhelp(false);
+int CLToolInfo::main(FILE*out,PlumedCommunicator& pc){
 
-// Start parsing options
-  string prefix("");
-  string a("");
-  for(int i=1;i<argc;i++){
-    a=prefix+argv[i];
-    if(a.length()==0) continue;
-    if(a=="-h" || a=="--help"){
-      printhelp=true;
-      break;
-    }
-    if(a=="--configuration"){
-      printconfiguration=true;
-      break;
-    } else if(a=="--root"){
-      fprintf(out,"%s\n",plumedRoot.c_str());
-    } else {
-      string msg="ERROR: maximum one file at a time";
-      fprintf(stderr,"%s\n",msg.c_str());
-      return 1;
-    }
-  }
+ bool printconfiguration; parseFlag("--configuration",printconfiguration);
+ bool printroot; parseFlag("--root",printroot);
+ if(printroot) fprintf(out,"%s\n",plumedRoot.c_str());
 
-  if(printhelp){
-    fprintf(out,"%s",
- "Usage: info [options]\n"
- "Options:\n"
- "  [--help|-h]             : prints this help\n"
- "  [--configuration]       : prints the configuration file\n"
-);
-    return 0;
-  }
-
-  if(printconfiguration){
+ if(printconfiguration){
     static const unsigned char conf [] ={
 #include "Makefile.conf.xxd"
     , 0x00 };

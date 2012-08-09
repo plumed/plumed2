@@ -218,13 +218,14 @@ bool Keywords::reserved( const std::string & k ) const {
   return false;
 }
 
-void Keywords::print_html() const {
+void Keywords::print_html( const bool isaction ) const {
   unsigned nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
      if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
   }
   if( nkeys>0 ){
-    std::cout<<"\\par Specifying the atoms involved\n\n";
+    if(isaction) std::cout<<"\\par Specifying the atoms involved\n\n";
+    else std::cout<<"\\par The input trajectory is specified using one of the following\n\n";
     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
     for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isAtomList() ) print_html_item( keys[i] );
@@ -236,7 +237,8 @@ void Keywords::print_html() const {
      if ( (types.find(keys[i])->second).isCompulsory() ) nkeys++;
   }
   if( nkeys>0 ){
-     std::cout<< "\\par Compulsory keywords\n\n";
+     if(isaction) std::cout<< "\\par Compulsory keywords\n\n";
+     else std::cout<<"\\par The following must be present\n\n";
      std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isCompulsory() ) print_html_item( keys[i] );
@@ -248,7 +250,8 @@ void Keywords::print_html() const {
      if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
   }
   if( nkeys>0 ){
-     std::cout<<"\\par Options\n\n";
+     if(isaction) std::cout<<"\\par Options\n\n";
+     else std::cout<<"\\par The following options are available\n\n";
      std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isFlag() ) print_html_item( keys[i] );
@@ -268,6 +271,66 @@ void Keywords::print_html() const {
      std::cout<<"\n";
   }
   std::cout<<"</table>\n\n";
+}
+
+void Keywords::print( FILE* out ) const {
+  unsigned nkeys=0;
+  for(unsigned i=0;i<keys.size();++i){
+     if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
+  }
+  if( nkeys>0 ){
+      fprintf(out,"The input trajectory can be in any of the following formats: \n\n");
+      for(unsigned i=0;i<keys.size();++i){
+          if ( (types.find(keys[i])->second).isAtomList() ) printKeyword( keys[i], out );
+      }
+  }
+  nkeys=0;
+  for(unsigned i=0;i<keys.size();++i){
+     if ( (types.find(keys[i])->second).isCompulsory() ) nkeys++;
+  }
+  if( nkeys>0 ){
+     fprintf(out,"\nThe following arguments are compulsory: \n\n");
+     for(unsigned i=0;i<keys.size();++i){
+        if ( (types.find(keys[i])->second).isCompulsory() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
+     }
+  }
+  nkeys=0;
+  for(unsigned i=0;i<keys.size();++i){
+     if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
+  }
+  if( nkeys>0 ){
+     fprintf( out,"\nIn addition you may use the following options: \n\n");
+     for(unsigned i=0;i<keys.size();++i){
+        if ( (types.find(keys[i])->second).isFlag() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
+     }
+  }
+  nkeys=0;
+  for(unsigned i=0;i<keys.size();++i){
+     if ( (types.find(keys[i])->second).isOptional() ) nkeys++;
+  }
+  if( nkeys>0 ){
+     for(unsigned i=0;i<keys.size();++i){
+        if ( (types.find(keys[i])->second).isOptional() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
+     }
+     fprintf(out,"\n");
+  }
+}
+
+void Keywords::printKeyword( const std::string& key, FILE* out ) const {
+  bool killdot=( (documentation.find(key)->second).find("\\f$")!=std::string::npos ); // Check for latex
+  std::vector<std::string> w=Tools::getWords( documentation.find(key)->second );
+  fprintf(out,"%23s - ", key.c_str() );
+  unsigned nl=0; std::string blank=" ";
+  for(unsigned i=0;i<w.size();++i){
+      nl+=w[i].length() + 1;
+      if( nl>60 ){
+         fprintf(out,"\n%23s   %s ", blank.c_str(), w[i].c_str() ); nl=0;
+      } else {
+         fprintf(out,"%s ", w[i].c_str() );
+      }
+      if( killdot && w[i].find(".")!=std::string::npos ) break; // If there is latex only write up to first dot
+  }
+  fprintf(out,"\n");
 }
 
 void Keywords::print( Log& log ) const {
@@ -336,6 +399,11 @@ void Keywords::print_html_item( const std::string& key ) const {
   printf("<td width=15%%> <b> %s </b></td>\n",key.c_str() );
   printf("<td> %s </td>\n",(documentation.find(key)->second).c_str() );
   printf("</tr>\n");
+}
+
+std::string Keywords::get( const unsigned k ) const {
+  plumed_assert( k<size() );
+  return keys[k];
 }
 
 bool Keywords::getLogicalDefault( std::string key, bool& def ) const {

@@ -76,11 +76,13 @@ private:
   void print_html_item( const std::string& ) const;
 /// Print a particular keyword
   void printKeyword( const std::string& j, Log& log ) const ;
+/// Print a particular keyword (copy of the above that works with files)
+  void printKeyword( const std::string& j, FILE* out ) const ;
 /// find out whether flag key is on or off by default.
   bool getLogicalDefault( std::string key, bool& def ) const ;
+public:
 /// Get the value of the default for the keyword named key
   bool getDefaultValue( std::string key, std::string& def ) const ;
-public:
 /// Return the number of defined keywords 
   unsigned size() const;
 /// Check if numbered keywords are allowed for this action
@@ -89,12 +91,16 @@ public:
   std::string getKeyword( const unsigned i ) const ;
 /// Print the documentation to the log file (used by PLMD::Action::error)
   void print( Log& log ) const ;
+/// Print the documentation to a file (use by PLUMED::CLTool::readCommandLineArgs)
+  void print( FILE* out ) const ;
 /// Reserve a keyword 
   void reserve( const std::string & t, const std::string & k, const std::string & d );
 /// Reserve a flag
   void reserveFlag( const std::string & k, const bool def, const std::string & d );
 /// Use one of the reserved keywords
   void use( const std::string  k );
+/// Get the ith keyword
+  std::string get( const unsigned k ) const ;
 /// Add a new keyword of type t with name k and description d
   void add( const std::string & t, const std::string & k, const std::string & d );
 /// Add a new compulsory keyword (t must equal compulsory) with name k, default value def and description d
@@ -110,7 +116,7 @@ public:
 /// Check if the keyword with name k has style t
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation
-  void print_html() const ;
+  void print_html( const bool isaction ) const ;
 /// Change the style of a keyword
   void reset_style( const std::string & k, const std::string & style );
 /// Add keywords from one keyword object to another

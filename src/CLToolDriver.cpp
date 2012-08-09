@@ -34,20 +34,52 @@ using namespace std;
 namespace PLMD {
 
 //+PLUMEDOC TOOLS driver
-/**
-driver is a tool that allows one to to use plumed to post-process
-an existing trajectory.
+/*
+driver is a tool that allows one to to use plumed to post-process an existing trajectory.
+
+The input to driver is specified using the command line arguments described below.
+
+\par Examples
+
+The following command tells plumed to postprocess the trajectory contained in trajectory.xyz
+ by calcualting the actions described in the input file plumed.dat.
+\verbatim
+plumed driver --plumed plumed.dat --ixyz trajectory.xyz
+\endverbatim
+
 */
 //+ENDPLUMEDOC
 
 template<typename real>
-class CLToolDriver:
-public CLTool
-{
+class CLToolDriver : public CLTool {
 public:
-  int main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc);
+  static void registerKeywords( Keywords& keys );
+  CLToolDriver(const CLToolOptions& co );
+  int main(FILE*out,PlumedCommunicator& pc);
   string description()const;
 };
+
+template<typename real>
+void CLToolDriver<real>::registerKeywords( Keywords& keys ){
+  CLTool::registerKeywords( keys );
+  keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
+  keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
+  keys.add("compulsory","--timestep","0.001","the timestep for the trajectory in picoseconds");
+  keys.add("compulsory","--stride","1","stride between frames on which to do the calculation");
+  keys.add("atoms","--ixyz","the trajectory in xyz format");
+  keys.add("optional","--dump-forces","dump the forces on a file");
+  keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
+  keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
+  keys.add("hidden","--debug-dd","use a fake domain decomposition");
+  keys.add("hidden","--debug-pd","use a fake particle decomposition");
+}
+
+template<typename real>
+CLToolDriver<real>::CLToolDriver(const CLToolOptions& co ):
+CLTool(co)
+{
+ inputdata=commandline;
+}
 
 template<typename real>
 string CLToolDriver<real>::description()const{ return "analyze trajectories with plumed"; }
@@ -57,110 +89,49 @@ string CLToolDriver<float>::description()const{ return "analyze trajectories wit
 
 
 template<typename real>
-int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunicator& pc){
+int CLToolDriver<real>::main(FILE*out,PlumedCommunicator& pc){
 
-// to avoid warnings:
- (void) in;
-
- string plumedFile("plumed.dat");
- string dumpforces("");
- string dumpforcesFmt("%f");
- string trajectoryFile("");
- real timestep(real(0.001));
- unsigned stride(1);
- bool printhelp=false;
- bool printhelpdebug=false;
- bool debug_dd=false;
- bool debug_pd=false;
-
-// Start parsing options
-  string prefix("");
-  string a("");
-  for(int i=1;i<argc;i++){
-    a=prefix+argv[i];
-    if(a.length()==0) continue;
-    if(a=="-h" || a=="--help"){
-      printhelp=true;
-      break;
-    } else if(a=="--help-debug"){
-      printhelp=true;
-      printhelpdebug=true;
-      break;
-    } else if(a=="--debug-float"){
-      if(sizeof(real)!=sizeof(float)){
-        CLTool* cl=new CLToolDriver<float>;
-        int ret=cl->main(argc,argv,in,out,pc);
-        delete cl;
-        return ret;
-      }
-    } else if(a=="--debug-pd"){
-      debug_pd=true;
-    } else if(a=="--debug-dd"){
-      debug_dd=true;
-    } else if(a.find("--plumed=")==0){
-      a.erase(0,a.find("=")+1);
-      plumedFile=a;
-      prefix="";
-    } else if(a=="--plumed"){
-      prefix="--plumed=";
-    } else if(a.find("--timestep=")==0){
-      a.erase(0,a.find("=")+1);
-      double t;
-      Tools::convert(a,t);
-      timestep=real(t);
-      prefix="";
-    } else if(a=="--timestep"){
-      prefix="--timestep=";
-    } else if(a.find("--stride=")==0){
-      a.erase(0,a.find("=")+1);
-      Tools::convert(a,stride);
-      prefix="";
-    } else if(a=="--stride"){
-      prefix="--stride=";
-    } else if(a.find("--dump-forces=")==0){
-      a.erase(0,a.find("=")+1);
-      dumpforces=a;
-      prefix="";
-    } else if(a=="--dump-forces"){
-      prefix="--dump-forces=";
-    } else if(a.find("--dump-forces-fmt=")==0){
-      a.erase(0,a.find("=")+1);
-      dumpforcesFmt=a;
-      prefix="";
-    } else if(a=="--dump-forces-fmt"){
-      prefix="--dump-forces-fmt=";
-    } else if(a[0]=='-') {
-      string msg="ERROR: Unknown option " +a;
-      fprintf(stderr,"%s\n",msg.c_str());
-      return 1;
-    } else if(trajectoryFile.length()==0){
-      trajectoryFile=a;
-    } else {
-      string msg="ERROR: maximum one file at a time";
-      fprintf(stderr,"%s\n",msg.c_str());
-      return 1;
-    }
+// Parse everything
+  bool printhelpdebug; parseFlag("--help-debug",printhelpdebug);
+  if( printhelpdebug ){
+      fprintf(out,"%s",
+         "Additional options for debug (only to be used in regtest):\n"
+         "  [--debug-float]         : turns on the single precision version (to check float interface)\n"
+         "  [--debug-dd]            : use a fake domain decomposition\n"
+         "  [--debug-pd]            : use a fake particle decomposition\n"
+      );
+      return 0;
+  }
+  std::string fakein; 
+  bool debugfloat=parse("--debug-float",fakein);
+  if(debugfloat && sizeof(real)!=sizeof(float)){
+      CLTool* cl=cltoolRegister().create(CLToolOptions("driver-float"));    //new CLToolDriver<float>(*this);
+      cl->inputData=this->inputData; 
+      int ret=cl->main(out,pc);
+      delete cl;
+      return ret;
   }
 
-  if(printhelp){
-    fprintf(out,"%s",
- "Usage: driver [options] trajectory.xyz\n"
- "Options:\n"
- "  [--help|-h]             : prints this help\n"
- "  [--help-debug]          : prints this help plus special options for debug\n"
- "  [--plumed FILE]         : plumed script file (default: plumed.dat)\n"
- "  [--timestep TS]         : timestep (default: 0.001) in picoseconds\n"
- "  [--stride ST]           : stride between frames (default: 1)\n"
- "  [--dump-forces FILE]    : dump forces on file FILE (default: do not dump)\n"
- "  [--dump-forces-fmt FMT] : dump forces on file FILE (default: %f)\n"
-);
-  if(printhelpdebug)
-    fprintf(out,"%s",
- "Additional options for debug (only to be used in regtest):\n"
- "  [--debug-float]         : turns on the single precision version (to check float interface)\n"
- "  [--debug-dd]            : use a fake domain decomposition\n"
- "  [--debug-pd]            : use a fake particle decomposition\n"
-);
+  bool debug_pd=parse("--debug-pd",fakein);
+  bool debug_dd=parse("--debug-dd",fakein);
+// Read the plumed input file name  
+  string plumedFile; parse("--plumed",plumedFile);
+// the timestep
+  double t; parse("--timestep",t);
+  real timestep=real(t);
+// the stride
+  unsigned stride; parse("--stride",stride);
+// are we writing forces
+  string dumpforces(""), dumpforcesFmt("%f");; 
+  parse("--dump-forces",dumpforces);
+  if(dumpforces!="") parse("--dump-forces-fmt",dumpforcesFmt);
+
+// Read in an xyz file
+  string trajectoryFile("");
+  std::string traj_xyz; parse("--ixyz",traj_xyz);
+  if(traj_xyz.length()>0 && trajectoryFile.length()==0) trajectoryFile=traj_xyz;
+  if(trajectoryFile.length()==0){
+    fprintf(out,"ERROR: missing trajectory data\n"); 
     return 0;
   }
 
@@ -179,7 +150,6 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
   p.cmd("setRealPrecision",&rr);
   int checknatoms=0;
   int step=0;
-  
 
   FILE* fp=fopen(trajectoryFile.c_str(),"r");
 
@@ -316,8 +286,9 @@ int CLToolDriver<real>::main(int argc,char**argv,FILE*in,FILE*out,PlumedCommunic
 }
 
 typedef CLToolDriver<double> CLToolDriverDouble;
-
+typedef CLToolDriver<float> CLToolDriverFloat;
 PLUMED_REGISTER_CLTOOL(CLToolDriverDouble,"driver")
+PLUMED_REGISTER_CLTOOL(CLToolDriverFloat,"driver-float")
 
 
 
