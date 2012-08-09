@@ -27,8 +27,8 @@
 #include "PlumedException.h"
 #include "FlexibleBin.h"
 #include "Matrix.h"
-#include <iostream> 
 #include "Random.h"
+#include "PlumedFile.h"
 
 #define DP2CUTOFF 6.25
 
@@ -116,6 +116,7 @@ private:
   vector<double> sigma0_;
   vector<Gaussian> hills_;
   FILE* hillsfile_;
+  PlumedOFile hillsOfile_;
   Grid* BiasGrid_;
   FILE* gridfile_;
   double height0_;
@@ -131,8 +132,8 @@ private:
   FlexibleBin *flexbin;
   
   
-  void   readGaussians(FILE*);
-  void   writeGaussian(const Gaussian&,FILE*);
+  void   readGaussians(PlumedIFile&);
+  void   writeGaussian(const Gaussian&,PlumedOFile&);
   void   addGaussian(const Gaussian&);
   double getHeight(const vector<double>&);
   double getBiasAndDerivatives(const vector<double>&,double* der=NULL);
@@ -175,6 +176,7 @@ void BiasMetaD::registerKeywords(Keywords& keys){
 BiasMetaD::~BiasMetaD(){
   if(BiasGrid_) delete BiasGrid_;
   if(hillsfile_) fclose(hillsfile_);
+  hillsOfile_.close();
   if(gridfile_) fclose(gridfile_);
   delete [] dp_;
 }
@@ -314,10 +316,18 @@ adaptive_(FlexibleBin::none)
   if(restart_){
    hillsfile_=fopen(hillsfname.c_str(),"a+");
    log.printf("  Restarting from %s:",hillsfname.c_str());
-   readGaussians(hillsfile_);
+   PlumedIFile ifile;
+   ifile.link(*this);
+   ifile.open(hillsfname,"r");
+   readGaussians(ifile);
+   ifile.close();
+   hillsOfile_.link(*this);
+   hillsOfile_.open(hillsfname,"aw");
   }else{
-   hillsfile_=fopen(hillsfname.c_str(),"w");
+   hillsOfile_.link(*this);
+   hillsOfile_.open(hillsfname,"w");
   } 
+  hillsOfile_.addConstantField("multivariate");
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
@@ -326,7 +336,7 @@ adaptive_(FlexibleBin::none)
 
 }
 
-void BiasMetaD::readGaussians(FILE* file)
+void BiasMetaD::readGaussians(PlumedIFile&ifile)
 {
  unsigned ncv=getNumberOfArguments();
  double dummy;
@@ -335,26 +345,25 @@ void BiasMetaD::readGaussians(FILE* file)
  vector<double> sigma(ncv);
  double height;
  int nhills=0;
- rewind(file);
- while(1){
-  if(fscanf(file, "%1000lf", &dummy)!=1){break;}
-  for(unsigned i=0;i<ncv;++i){fscanf(file, "%1000lf", &(center[i]));}
+ while(ifile.scanField("time",dummy)){
+  for(unsigned i=0;i<ncv;++i)
+    ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
   // scan for multivariate label: record the actual file position so to eventually rewind 
-  fpos_t position;
-  fgetpos(file,&position); 
-  char word[10];
-  fscanf(file, "%s", word);
-  if(!strcmp(word,"MV")){
-	multivariate=true;
+    std::string sss;
+    ifile.scanField("multivariate",sss);
+    if(sss=="true") multivariate=true;
+    else if(sss=="false") multivariate=false;
+    else plumed_merror("cannot parse multivariate = "+ sss);
+  if(multivariate){
         sigma.resize(ncv*(ncv+1)/2);
         Matrix<double> upper(ncv,ncv);
         Matrix<double> lower(ncv,ncv);
-       	for(unsigned i=0;i<ncv;i++){
-		for(unsigned j=i;j<ncv;j++){
-			fscanf(file, "%1000lf", &upper(i,j));
-		        lower(j,i)=upper(i,j);		
-                }
-	}
+	for (unsigned i=0;i<ncv;i++){
+              for (unsigned j=0;j<ncv-i;j++){
+                      ifile.scanField("sigma_"+getPntrToArgument(j+i)->getName()+"_"+getPntrToArgument(j)->getName(),lower(j+i,j));
+                      upper(j,j+i)=lower(j+i,j);
+              }
+         }
         Matrix<double> mymult(ncv,ncv);       
         Matrix<double> invmatrix(ncv,ncv);       
         mult(lower,upper,mymult);          
@@ -369,12 +378,12 @@ void BiasMetaD::readGaussians(FILE* file)
 		}
 	}
   }else{
-  	fsetpos(file,&position); 
-  	for(unsigned i=0;i<ncv;++i){fscanf(file, "%1000lf", &(sigma[i]));}
+  	for(unsigned i=0;i<ncv;++i)ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
   }
 
-  fscanf(file, "%1000lf", &height);
-  fscanf(file, "%1000lf", &dummy);
+  ifile.scanField("height",height);
+  ifile.scanField("biasf",dummy);
+  ifile.scanField();
   nhills++;
   if(welltemp_){height*=(biasf_-1.0)/biasf_;}
   addGaussian(Gaussian(center,sigma,height,multivariate));
@@ -382,49 +391,50 @@ void BiasMetaD::readGaussians(FILE* file)
  log.printf("  %d Gaussians read\n",nhills);
 }
 
-void BiasMetaD::writeGaussian(const Gaussian& hill, FILE* file)
-{
- unsigned ncv=getNumberOfArguments();
- fprintf(hillsfile_, "%10.3f   ", getTimeStep()*getStep());
- for(unsigned i=0;i<ncv;++i){fprintf(file, "%14.9f   ", hill.center[i]);}
- if(hill.multivariate){  
-	 fprintf(file, " MV ");
-         // build the full matrix, invert it and do the cholesky decomp
-	 Matrix<double> mymatrix(ncv,ncv);
+void BiasMetaD::writeGaussian(const Gaussian& hill, PlumedOFile&file){
+  unsigned ncv=getNumberOfArguments();
+  file.printField("time",getTimeStep()*getStep());
+  for(unsigned i=0;i<ncv;++i){
+    file.printField(getPntrToArgument(i)->getName(),hill.center[i]);
+  }
+  if(hill.multivariate){
+    hillsOfile_.printField("multivariate","true");
+         Matrix<double> mymatrix(ncv,ncv);
          unsigned k=0;
-	 for(unsigned i=0;i<ncv;i++){
-		for(unsigned j=i;j<ncv;j++){
-			mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k]; // recompose the full inverse matrix
-			k++;
-		}
-	 }
+         for(unsigned i=0;i<ncv;i++){
+                for(unsigned j=i;j<ncv;j++){
+                        mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k]; // recompose the full inverse matrix
+                        k++;
+                }
+         }
          // invert it 
          Matrix<double> invmatrix(ncv,ncv);
          Invert(mymatrix,invmatrix);
          // enforce symmetry
-	 for(unsigned i=0;i<ncv;i++){
-		for(unsigned j=i;j<ncv;j++){
-			invmatrix(i,j)=invmatrix(j,i);
-		}
-	 }
-        
+         for(unsigned i=0;i<ncv;i++){
+                for(unsigned j=i;j<ncv;j++){
+                        invmatrix(i,j)=invmatrix(j,i);
+                }
+         }
+
          // do cholesky so to have a "sigma like" number
-         Matrix<double> lower(ncv,ncv);	
-    	 cholesky(invmatrix,lower); // now this , in band form , is similar to the sigmas
+         Matrix<double> lower(ncv,ncv);
+         cholesky(invmatrix,lower); // now this , in band form , is similar to the sigmas
          // loop in band form 
-         k=0;
          for (unsigned i=0;i<ncv;i++){
               for (unsigned j=0;j<ncv-i;j++){
-	              fprintf(file, "%14.9f   ", lower(j+i,j));
-                      k++;
+                      file.printField("sigma_"+getPntrToArgument(j+i)->getName()+"_"+getPntrToArgument(j)->getName(),lower(j+i,j));
               }
          }
- }else{
-	 for(unsigned i=0;i<ncv;++i){fprintf(file, "%14.9f   ", hill.sigma[i]);}
- }
- double height=hill.height;
- if(welltemp_){height*=biasf_/(biasf_-1.0);}
- fprintf(file, "%14.9f   %4.3f \n",height,biasf_);
+  } else {
+    hillsOfile_.printField("multivariate","false");
+    for(unsigned i=0;i<ncv;++i)
+      file.printField("sigma_"+getPntrToArgument(i)->getName(),hill.sigma[i]);
+  }
+  double height=hill.height;
+  if(welltemp_){height*=biasf_/(biasf_-1.0);}
+  file.printField("height",height).printField("biasf",biasf_);
+  file.printField();
 }
 
 void BiasMetaD::addGaussian(const Gaussian& hill)
@@ -628,7 +638,7 @@ void BiasMetaD::update(){
    Gaussian newhill=Gaussian(cv,thissigma,height,multivariate);
    addGaussian(newhill);
 // print on HILLS file
-   writeGaussian(newhill,hillsfile_);
+   writeGaussian(newhill,hillsOfile_);
   }
 // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
