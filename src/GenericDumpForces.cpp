@@ -91,10 +91,6 @@ ActionWithArguments(ao)
   of.link(*this);
   log.printf("  on file %s\n",file.c_str());
   if( getNumberOfArguments()==0 ) error("no arguments have been specified");
-  of.addField("time");
-  for(unsigned i=0;i<getNumberOfArguments();i++){
-    of.addField(getPntrToArgument(i)->getName());
-  };
   checkRead();
 }
 

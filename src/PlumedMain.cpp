@@ -355,6 +355,7 @@ void PlumedMain::readInputFile(std::string str){
   plumed_assert(initialized);
   log.printf("FILE: %s\n",str.c_str());
   PlumedIFile ifile;
+  ifile.link(*this);
   ifile.open(str,"r");
   std::vector<std::string> words;
   exchangepatterns.setFlag(exchangepatterns.NONE);

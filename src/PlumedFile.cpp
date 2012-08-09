@@ -28,6 +28,8 @@
 #include <cstdarg>
 #include <cstring>
 
+#include <iostream>
+
 using namespace PLMD;
 
 void PlumedFileBase::test(){
@@ -37,9 +39,7 @@ void PlumedFileBase::test(){
   pof.setLinePrefix("plumed: ");
   pof.printf("%s\n","test2");
   pof.setLinePrefix("");
-  pof.addField("x1");
   pof.addConstantField("x2").printField("x2",67.0);
-  pof.addField("x3");
   pof.printField("x1",10.0).printField("x3",20.12345678901234567890).printField();
   pof.printField("x1",10.0).printField("x3",-1e70*20.12345678901234567890).printField();
   pof.printField("x3",10.0).printField("x2",777.0).printField("x1",-1e70*20.12345678901234567890).printField();
@@ -82,8 +82,10 @@ size_t PlumedIFile::llread(char*ptr,size_t s){
     if(feof(fp)) leof=1;
   }
   if(comm) comm->Bcast(&r,1,0);
-  if(comm) comm->Bcast(ptr,r,0);
-  if(comm) comm->Bcast(&leof,r,0);
+// I explicitly cast sizes to int, as BCast is getting an int as second argument
+  if(comm) comm->Bcast(ptr,int(r),0);
+// I explicitly cast sizes to int, as BCast is getting an int as second argument
+  if(comm) comm->Bcast(&leof,int(r),0);
   if(leof) eof=true;
   return r;
 }
@@ -165,7 +167,11 @@ PlumedOFile::PlumedOFile():
 {
   fmtField();
   buffer=new char[buflen];
+// these are set to zero to avoid valgrind errors
+  for(unsigned i=0;i<buflen;++i) buffer[i]=0;
   buffer_string=new char [1000];
+// these are set to zero to avoid valgrind errors
+  for(unsigned i=0;i<1000;++i) buffer_string[i]=0;
 }
 
 PlumedOFile::~PlumedOFile(){
@@ -185,7 +191,7 @@ PlumedOFile& PlumedOFile::setLinePrefix(const std::string&l){
 }
 
 int PlumedOFile::printf(const char*fmt,...){
-  int pointer=strlen(buffer);
+  size_t pointer=strlen(buffer);
   va_list arg;
   va_start(arg, fmt);
   int r=std::vsnprintf(&buffer[pointer],buflen-pointer,fmt,arg);
@@ -206,27 +212,18 @@ int PlumedOFile::printf(const char*fmt,...){
   return r;
 }
 
-PlumedOFile& PlumedOFile::addField(const std::string&name){
-  Field f;
-  f.name=name;
-  fields.push_back(f);
-  fieldChanged=true;
-  return *this;
-}
-
 PlumedOFile& PlumedOFile::addConstantField(const std::string&name){
   Field f;
   f.name=name;
-  f.constant=true;
-  fields.push_back(f);
-  fieldChanged=true;
+  const_fields.push_back(f);
   return *this;
 }
 
 
 PlumedOFile& PlumedOFile::clearFields(){
   fields.clear();
-  fieldChanged=true;
+  const_fields.clear();
+  previous_fields.clear();
   return *this;
 }
 
@@ -238,13 +235,6 @@ PlumedOFile& PlumedOFile::fmtField(const std::string&fmt){
 PlumedOFile& PlumedOFile::fmtField(){
   this->fieldFmt="%23.16lg";
   return *this;
-}
-
-unsigned PlumedOFile::findField(const std::string&name)const{
-  unsigned i;
-  for(i=0;i<fields.size();i++) if(fields[i].name==name) break;
-  if(i>=fields.size()) plumed_merror(name);
-  return i;
 }
 
 PlumedOFile& PlumedOFile::printField(const std::string&name,double v){
@@ -260,36 +250,45 @@ PlumedOFile& PlumedOFile::printField(const std::string&name,int v){
 }
 
 PlumedOFile& PlumedOFile::printField(const std::string&name,const std::string & v){
-  unsigned i=findField(name);
-  if(fields[i].constant) fieldChanged=true;
-  fields[i].value=v;
-  fields[i].set=true;
+  unsigned i;
+  for(i=0;i<const_fields.size();i++) if(const_fields[i].name==name) break;
+  if(i>=const_fields.size()){
+    Field field;
+    field.name=name;
+    field.value=v;
+    fields.push_back(field);
+  } else {
+    if(const_fields[i].value!=v) fieldChanged=true;
+    const_fields[i].value=v;
+  }
   return *this;
 }
 
 PlumedOFile& PlumedOFile::printField(){
-  if(fieldChanged){
-    printf("#! FIELDS");
-    for(unsigned i=0;i<fields.size();i++){
-      if(!fields[i].constant)
-        printf(" %s",fields[i].name.c_str());
+  bool reprint=false;
+  if(fieldChanged || fields.size()!=previous_fields.size()){
+    reprint=true;
+  } else for(unsigned i=0;i<fields.size();i++){
+    if( previous_fields[i].name!=fields[i].name ||
+        (fields[i].constant && fields[i].value!=previous_fields[i].value) ){
+      reprint=true;
+      break;
     }
+  }
+  if(reprint){
+    printf("#! FIELDS");
+    for(unsigned i=0;i<fields.size();i++) printf(" %s",fields[i].name.c_str());
     printf("\n");
-    for(unsigned i=0;i<fields.size();i++)
-      if(fields[i].constant){
-        printf("#! SET %s %s",fields[i].name.c_str(),fields[i].value.c_str());
+    for(unsigned i=0;i<const_fields.size();i++){
+        printf("#! SET %s %s",const_fields[i].name.c_str(),const_fields[i].value.c_str());
         printf("\n");
     }
   }
-  fieldChanged=false;
-  for(unsigned i=0;i<fields.size();i++){
-    plumed_assert(fields[i].set);
-    if(!fields[i].constant){
-      printf("%s",fields[i].value.c_str());
-      fields[i].set=false;
-    }
-  }
+  for(unsigned i=0;i<fields.size();i++) printf("%s",fields[i].value.c_str());
   printf("\n");
+  previous_fields=fields;
+  fields.clear();
+  fieldChanged=false;
   return *this;
 }
 

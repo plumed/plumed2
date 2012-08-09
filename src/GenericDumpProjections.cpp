@@ -79,12 +79,6 @@ fmt("%15.10f")
   of.open(file.c_str(),"wa");
   log.printf("  on file %s\n",file.c_str());
   log.printf("  with format %s\n",fmt.c_str());
-  of.addField("time");
-  for(unsigned i=0;i<getNumberOfArguments();i++){
-    for(unsigned j=0;j<getNumberOfArguments();j++){
-       of.addField(getPntrToArgument(i)->getName()+"-"+getPntrToArgument(j)->getName());
-    }
-  };
   checkRead();
 }
 

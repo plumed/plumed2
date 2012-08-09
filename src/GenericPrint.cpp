@@ -59,7 +59,6 @@ public ActionWithArguments
   PlumedOFile ofile;
   string fmt;
 // small internal utility
-  void updateFields();
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -108,7 +107,6 @@ rotate(0)
     log.printf("  on plumed log file\n");
     ofile.link(log);
   }
-  updateFields();
   parse("FMT",fmt);
   fmt=" "+fmt;
   log.printf("  with format %s\n",fmt.c_str());
@@ -123,7 +121,6 @@ rotate(0)
     vector<Value*> a(1,rotateArguments[0]);
     requestArguments(vector<Value*>(1,rotateArguments[0]));
     rotateLast=0;
-    updateFields();
   }
 /////////////////////////////////////////
   checkRead();
@@ -141,7 +138,6 @@ void GenericPrint::prepare(){
       rotateLast++;
       rotateLast%=rotateArguments.size();
       requestArguments(vector<Value*>(1,rotateArguments[rotateLast]));
-      updateFields();
     }
   }
 /////////////////////////////////////////
@@ -158,14 +154,6 @@ void GenericPrint::update(){
 }
 
 GenericPrint::~GenericPrint(){
-}
-
-void GenericPrint::updateFields(){
-  ofile.clearFields();
-  ofile.addField("time");
-  for(unsigned i=0;i<getNumberOfArguments();i++){
-    ofile.addField(getPntrToArgument(i)->getName());
-  }
 }
 
 }

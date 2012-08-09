@@ -163,9 +163,6 @@ public virtual PlumedFileBase{
 /// Class identifying a single field for fielded output
   class Field:
   public FieldBase{
-  public:
-    bool set;
-    Field(): set(false) {}
   };
 /// Low-level write
   size_t llwrite(const char*,size_t);
@@ -175,8 +172,12 @@ public virtual PlumedFileBase{
   bool fieldChanged;
 /// Format for fields writing
   std::string fieldFmt;
-/// All the defined fields
+/// All the previously defined variable fields
+  std::vector<Field> previous_fields;
+/// All the defined variable fields
   std::vector<Field> fields;
+/// All the defined constant fields
+  std::vector<Field> const_fields;
 /// Prefix for line (e.g. "PLUMED: ")
   std::string linePrefix;
 /// Temporary ostringstream for << output
@@ -199,15 +200,6 @@ public:
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
 /// be parsed using fields in a PlumedIFile.
   PlumedOFile& setLinePrefix(const std::string&);
-/// Add a field.
-/// Fields are written as one per column, and a commented header
-/// with the list of fields is written whenever the list of fields
-/// changes.
-  PlumedOFile& addField(const std::string&);
-/// Add a constant field.
-/// Constant fields are typically written on separate lines
-/// in the output
-  PlumedOFile& addConstantField(const std::string&);
 /// Set the format for writing double precision fields
   PlumedOFile& fmtField(const std::string&);
 /// Reset the format for writing double precision fields to its default
@@ -218,6 +210,8 @@ public:
   PlumedOFile& printField(const std::string&,int);
 /// Set the value of a string field
   PlumedOFile& printField(const std::string&,const std::string&);
+///
+  PlumedOFile& addConstantField(const std::string&);
 /** Close a line.
 Typically used as
 \verbatim
