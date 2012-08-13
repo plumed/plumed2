@@ -37,7 +37,7 @@ how these shortcuts can be used can be found in the documentation for the variou
 
 Lastly, if you have a list of colvar that is particularly laborious to write out that you need to use multiple times in the 
 input you can create a static group of atoms and then use the label of the group to specify the correpsonding list of 
-atoms in your various colvars.  For more details see \ref GROUP.
+atoms in your various colvars.  For more details see \subpage GROUP.
 
 \section vatoms Virtual Atoms
 

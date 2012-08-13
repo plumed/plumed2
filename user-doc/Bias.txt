@@ -8,5 +8,8 @@ The list of available enhanced sampling algorithms contains:
 
 @BIAS@
 
+You can also use plumed in conjunction with VMD's interactive MD module by taking
+advantage of the \subpage IMD action.
+
 */
 

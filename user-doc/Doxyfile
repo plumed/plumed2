@@ -463,11 +463,11 @@ INPUT                  = IntroPP.txt \
                          BiasPP.txt \
                          AnalysisPP.txt \
                          ColvarPP.txt \ 
-                         GenericPP.txt \
                          FunctionsPP.txt \
                          ToolsPP.txt \ 
                          InstallationPP.txt \
                          WhatsNew.txt \
+                         GlossaryPP.txt \
                          automatic
 
 # If the value of the INPUT tag contains directories, you can use the 

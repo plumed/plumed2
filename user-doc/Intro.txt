@@ -6,7 +6,7 @@ to analyse features of the dynamics on-the-fly or to perform a wide variety of f
 The original plumed 1.0 was highly successful and had over 1000 users.  Plumed 2.0 constitues an 
 extensive rewrite of the original in a way that makes it more modular and thus easier to implement 
 new methods, more straightforward to add it to MD codes and hopefully simpler to use.  
-This is the user manual -  i f you want to modify PLUMED or to understand how it works internally, have a look at the 
+This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
 <a href="../../developer-doc/html/index.html"> developer manual </a>.  Alternatively, to look at a list of the new 
 features available in plumed 2.0 and to work out how to install plumed 2.0 in your MD code check out:
 
@@ -26,7 +26,6 @@ analsyis tools that come with plumed are given in:
 - \subpage Function
 - \subpage Analysis
 - \subpage Bias
-- \subpage Generic
 
 Plumed can be used in one of two ways.  It can be incorporated into any one of the MD codes listed on the
 \ref Installation page and used to analyse or bias a molecular dynamics run on the fly.  Alternatively, one
@@ -49,7 +48,8 @@ which provide plumed with more details as to how the action is to be performed. 
 (in which they tell plumed to do the calculation in a particular way - for example NOPBC tells plumed to not use the periodic
 bounadry conditions when calculating a particular colvar) or they can be words followed by an equals sign and a comma separated 
 list - WITH NO SPACES - of numbers or characters (so for example ATOMS=1,2,3,4 tells plumed to use atom numbers 1,2,3 and 4 in 
-the calculation of a particular colvar).  
+the calculation of a particular colvar). Details on all the actions that are available in plumed can be found in the \ref
+Glossary. 
 
 The most important of these keywords is the label keyword as it is only by using these labels that we can pass data 
 from one action to another.  As an example if you do:
@@ -168,6 +168,11 @@ LOAD library.so
  
 N.B.  If your system uses a different suffix for dynamic libraries (e.g. macs use .dylib) then PLUMED will try to 
 automatically adjust the suffix accordingly.
+
+\section degub Debugging the code
+
+The \subpage DEBUG action provides some functionality for debugging the code that may be useful if you are doing 
+very intensive development of the code of if you are running on a computer with a strange architecture.
 
 */
 

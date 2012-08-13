@@ -32,25 +32,29 @@ done
 
 # Generate all the documentation pages from comments
 cat ../*/*cpp |
-awk '{
+awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
   if($1=="//+ENDPLUMEDOC"){
      inside=0;
      print "*/" >output
   }
   if(inside==2 && NF==0){
      print "</td> </tr>" > lfile
+     printf "</td> </tr>\n" > gfile
      inside=1
   }
   if(inside==1 && $1!="/*" && $1!="*/") print $0 >output
   if(inside==2 && $1!="/*" && $1!="*/" ){
      print $0 > output
      print $0 > lfile
+     printf "%s", $0 > gfile
   }
   if($1=="//+PLUMEDOC"){
-    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="VATOM" || $2=="GENERIC" || $2=="TOOLS" ){
+    if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
       lfile="automatic/"$2".list"
       
       print "<tr> <td width=5%> \\subpage ", $3,"</td> <td>" > lfile
+      printf "<tr> <td width=5%> \\ref %s </td><td> %s </td><td>",$3, $2 > gfile
+
       if(output!="")close(output);
       output="automatic/"$3".tmp";
       print "/**" > output
@@ -60,6 +64,9 @@ awk '{
     }
   }
 }'
+
+# Now put the glossary in alphabetical order
+sort automatic/GLOSSARY1.list > automatic/GLOSSARY.list 
 
 # Generate all the documentation from keywords
 source ../sourceme.sh
@@ -91,7 +98,7 @@ do
     } > automatic/$flag.txt
 done
 
-for file in Bias Colvar Functions Installation Intro Analysis Generic
+for file in Bias Colvar Functions Installation Intro Analysis Glossary
 do
 
 cat $file.txt |
@@ -113,15 +120,15 @@ cat $file.txt |
     echo "<table align=center frame=void width=95%% cellpadding=5%%>"
     cat automatic/ANALYSIS.list
     echo "</table>"
-  elif [ "$LINE" = "@GENERIC@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/GENERIC.list
-    echo "</table>"
   elif [ "$LINE" = "@BIAS@" ]
   then
     echo "<table align=center frame=void width=95%% cellpadding=5%%>"
     cat automatic/BIAS.list
+    echo "</table>"
+  elif [ "$LINE" = "@GLOSSARY@" ]
+  then
+    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+    cat automatic/GLOSSARY.list
     echo "</table>"
   elif [ "$LINE" = "@FUNCTION@" ]
   then

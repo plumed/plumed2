@@ -15,10 +15,11 @@ extern "C" {
 namespace PLMD {
 
 //+PLUMEDOC GENERIC IMD
-/**
+/*
 Use interactive molecular dynamics with VMD
 
 \par Examples
+
 \verbatim
 # listen to port 1112 of localhost
 IMD PORT=1112

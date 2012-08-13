@@ -34,7 +34,7 @@ Print quantities to a file.
 
 This directive can be used multiple times
 in the input so you can print files with different strides or print different quantities 
-to different files.  You can control the buffering of output using the \ref FLUSH keyword.
+to different files.  You can control the buffering of output using the \subpage FLUSH keyword.
 
 \par Examples
 The following input instructs plumed to print the distance between atoms 3 and 5 on a file 
