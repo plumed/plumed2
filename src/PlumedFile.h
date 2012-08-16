@@ -116,9 +116,7 @@ int main(){
   pof.setLinePrefix("plumed: ");
   pof.printf("%s\n","test2");
   pof.setLinePrefix("");
-  pof.addField("x1");
   pof.addConstantField("x2").printField("x2",67.0);
-  pof.addField("x3");
   pof.printField("x1",10.0).printField("x3",20.12345678901234567890).printField();
   pof.printField("x1",10.0).printField("x3",-1e70*20.12345678901234567890).printField();
   pof.printField("x3",10.0).printField("x2",777.0).printField("x1",-1e70*20.12345678901234567890).printField();
@@ -221,7 +219,7 @@ Typically used as
   PlumedOFile& printField();
 /**
 Resets the list of fields.
-As it is only possible to add new fields (with addField() and addConstantField()),
+As it is only possible to add new constant fields (addConstantField()),
 this method can be used to clean the field list.
 */
   PlumedOFile& clearFields();
