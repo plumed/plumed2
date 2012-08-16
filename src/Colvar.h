@@ -49,8 +49,8 @@ using namespace std;
 
 namespace PLMD{
 
-/+PLUMEDOC COLVAR NAME
-/**
+//+PLUMEDOC COLVAR NAME
+/*
 \endverbatim
 
 At this point you provide the description of your CV that will appear in the manual along with an description of the input file syntax and an example.  Merging new features of the code into the plumed main branch without proper documentation is punishable by death!  Some instructions as to how to format this information is provided here: \ref usingDoxygen

@@ -55,7 +55,7 @@ class CLToolDriver : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   CLToolDriver(const CLToolOptions& co );
-  int main(FILE*out,PlumedCommunicator& pc);
+  int main(FILE* in,FILE*out,PlumedCommunicator& pc);
   string description()const;
 };
 
@@ -89,7 +89,7 @@ string CLToolDriver<float>::description()const{ return "analyze trajectories wit
 
 
 template<typename real>
-int CLToolDriver<real>::main(FILE*out,PlumedCommunicator& pc){
+int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 
 // Parse everything
   bool printhelpdebug; parseFlag("--help-debug",printhelpdebug);
@@ -107,7 +107,7 @@ int CLToolDriver<real>::main(FILE*out,PlumedCommunicator& pc){
   if(debugfloat && sizeof(real)!=sizeof(float)){
       CLTool* cl=cltoolRegister().create(CLToolOptions("driver-float"));    //new CLToolDriver<float>(*this);
       cl->inputData=this->inputData; 
-      int ret=cl->main(out,pc);
+      int ret=cl->main(in,out,pc);
       delete cl;
       return ret;
   }

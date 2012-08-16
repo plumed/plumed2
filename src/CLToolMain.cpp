@@ -206,7 +206,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
     plumed_assert(cl); 
     // Read the command line options (returns false if we are just printing help)
     if( !cl->readInput( argc-i,&argv[i],in,out ) ){ delete cl; return 0; } 
-    int ret=cl->main(out,pc);
+    int ret=cl->main(in,out,pc);
     delete cl;
     return ret;
   }

@@ -54,7 +54,7 @@ public CLTool
 public:
   static void registerKeywords( Keywords& keys );
   CLToolInfo(const CLToolOptions& co );
-  int main(FILE*out,PlumedCommunicator& pc);
+  int main(FILE* in, FILE*out,PlumedCommunicator& pc);
   string description()const{
     return "provide informations about plumed";
   }
@@ -74,7 +74,7 @@ CLTool(co)
   inputdata=commandline;
 }
 
-int CLToolInfo::main(FILE*out,PlumedCommunicator& pc){
+int CLToolInfo::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 
  bool printconfiguration; parseFlag("--configuration",printconfiguration);
  bool printroot; parseFlag("--root",printroot);

@@ -64,7 +64,6 @@ bool CLTool::readInput( int argc, char**argv, FILE* in, FILE*out ){
                                    "add inputdata=ifile to the tools constructor");
   if(inputdata==commandline) return readCommandLineArgs( argc, argv, out );
   if(inputdata==ifile) return readInputFile( argc, argv, in, out );
-  readInput( argc, argv, in, out );   // This allows the user to specify the particular form for input
   return true;
 }
 
@@ -185,9 +184,4 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
   if(argc==2) fclose(mystdin);
   setRemainingToDefault(out);
   return true;
-}
-
-void CLTool::readInputData( int argc, char**argv, FILE* in, FILE*out ){
-  plumed_assert( inputdata!=commandline && inputdata!=ifile );
-  if( inputdata==userspec ) plumed_massert(0, "You have to actually write the routine in the base class!");
 }

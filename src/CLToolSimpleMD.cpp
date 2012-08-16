@@ -376,7 +376,7 @@ void write_statistics(const string & statfile,const int istep,const double tstep
 
 
 
-int main(FILE*out,PLMD::PlumedCommunicator& pc){
+int main(FILE* in,FILE*out,PLMD::PlumedCommunicator& pc){
   int            natoms;       // number of atoms
   vector<Vector> positions;    // atomic positions
   vector<Vector> velocities;   // velocities

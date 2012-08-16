@@ -59,7 +59,7 @@ public CLTool
 public:
   static void registerKeywords( Keywords& keys );
   CLToolManual(const CLToolOptions& co );
-  int main(FILE*out,PlumedCommunicator& pc);
+  int main(FILE* in, FILE*out,PlumedCommunicator& pc);
   string description()const{
     return "print out a description of the keywords for an action in html";
   }
@@ -78,7 +78,7 @@ CLTool(co)
   inputdata=commandline;
 }
 
-int CLToolManual::main(FILE*out,PlumedCommunicator& pc){
+int CLToolManual::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 
  std::string action; 
  if( !parse("--action",action) ) return 1;
