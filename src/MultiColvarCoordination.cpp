@@ -84,7 +84,7 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   keys.add("optional","R_0","The r_0 parameter of the switching function");
   // Use actionWithDistributionKeywords
   keys.use("AVERAGE"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
-  keys.use("MIN"); keys.use("WITHIN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("MIN"); keys.use("WITHIN"); keys.use("MOMENTS");
   keys.use("SUBCELL"); 
 }
 

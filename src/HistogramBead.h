@@ -49,7 +49,6 @@ private:
         double difference( const double& d1, const double& d2 ) const ;
 public:
         static std::string documentation( bool dir );
-        static std::string histodocs();
         static void generateBins( const std::string& params, const std::string& dd, std::vector<std::string>& bins );  
 	HistogramBead();
         std::string description() const ;

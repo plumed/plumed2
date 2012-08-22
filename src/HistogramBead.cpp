@@ -32,11 +32,12 @@ std::string HistogramBead::documentation( bool dir ) {
   if(dir){
      ostr<<"\\f$ w(x)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma_d} \\exp\\left( -\\frac{(x'-x)^2}{2\\sigma_x^2} \\right) \\textrm{d}x' \\f$";
      ostr<<"where \\f$ \\sigma_x=(b_x-a_x)k_x \\f$.  The parameters of the functions are specifed in fractional coordinates using ";
-     ostr<<"(XLOWER=\\f$a_x\\f$ XUPPER=\\f$b_x\\f$ XSMEAR=\\f$k_x\\f$ YLOWER=\\f$a_y\\f$ YUPPER=\\f$b_y\\f$ YSMEAR=\\f$k_y\\f$ ZLOWER=\\f$a_z\\f$ ZUPPER=\\f$b_z\\f$ ZSMEAR=\\f$k_z\\f$).";
+     ostr<<"{XLOWER=\\f$a_x\\f$ XUPPER=\\f$b_x\\f$ XSMEAR=\\f$k_x\\f$ YLOWER=\\f$a_y\\f$ YUPPER=\\f$b_y\\f$ YSMEAR=\\f$k_y\\f$ ZLOWER=\\f$a_z\\f$ ZUPPER=\\f$b_z\\f$ ZSMEAR=\\f$k_z\\f$}.";
      ostr<<"If any of the SMEAR keywords are not present then the default \\f$k_x=0.5\\f$ is used in that direction. ";
   } else {
      ostr<<"\\f$ w(r)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left( -\\frac{(r - r')^2}{2\\sigma^2} \\right) \\textrm{d}r' \\f$";
-     ostr<<"where \\f$ \\sigma=(b-a)k \\f$.  The parameters of the function are specified using (LOWER=\\f$a\\f$ UPPER=\\f$b\\f$ SMEAR=\\f$k\\f$). ";
+     ostr<<"where \\f$ \\sigma=k\\frac{b-a}{n} \\f$ and \\f$n\\f$ is the number of bins you are dividing the range into.  ";
+     ostr<<"The parameters of the function are specified using {LOWER=\\f$a\\f$ UPPER=\\f$b\\f$ SMEAR=\\f$k\\f$}. ";
      ostr<<"If the SMEAR keyword is not present then by default \\f$k=0.5\\f$.";
   }
   return ostr.str();
@@ -45,16 +46,6 @@ std::string HistogramBead::documentation( bool dir ) {
 std::string HistogramBead::description() const {
   std::ostringstream ostr;
   ostr<<"betweeen "<<lowb<<" and "<<highb<<" width of gaussian window equals "<<width;
-  return ostr.str();
-}
-
-std::string HistogramBead::histodocs() {
-  std::ostringstream ostr;
-  ostr<<"The range is divided into a discete number of bins and the number of values that fall within each bin is calculated using ";
-  ostr<<"\\f$ w(r)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left( -\\frac{(r'-r)^2}{2\\sigma^2} \\right) \\textrm{d}r' \\f$";
-  ostr<<"where \\f$ \\sigma=(b-a)k \\f$.  The particular range of interest and number of bins are specified using ";
-  ostr<<"(NBINS=\\f$n\\f$ LOWER=\\f$a\\f$ UPPER=\\f$b\\f$ SMEAR=\\f$x\\f$). If the SMEAR keyword is not present then by default \\f$k=0.5\\f$. ";
-  ostr<<"You can calculate a normalized histogram using the NORM flag (N.B. Don't use this if you are using derivatives of the histogram and neighbor lists)";
   return ostr.str();
 }
 
