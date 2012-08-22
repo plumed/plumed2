@@ -85,7 +85,6 @@ void MultiColvarDistance::registerKeywords( Keywords& keys ){
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
   keys.use("AVERAGE"); keys.use("MIN"); keys.use("LESS_THAN"); 
   keys.use("MORE_THAN"); keys.use("WITHIN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("DISTRIBUTION");
 }
 
 MultiColvarDistance::MultiColvarDistance(const ActionOptions&ao):

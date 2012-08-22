@@ -52,8 +52,6 @@ number of coordination numbers more than 6 is then computed.
 COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN=6.0
 \endverbatim
 
-\bug Analytical derivatives for off diagonal elements of virial are incorrect when you use GRADIENT/SUBCELL
-
 */
 //+ENDPLUMEDOC
 
@@ -87,7 +85,7 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   // Use actionWithDistributionKeywords
   keys.use("AVERAGE"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
   keys.use("MIN"); keys.use("WITHIN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("SUBCELL"); keys.use("GRADIENT"); keys.use("DISTRIBUTION");
+  keys.use("SUBCELL"); 
 }
 
 MultiColvarCoordination::MultiColvarCoordination(const ActionOptions&ao):

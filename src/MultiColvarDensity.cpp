@@ -69,7 +69,7 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   ActionWithDistribution::autoParallelize( keys );
   keys.use("SPECIES"); 
   // Use density keywords
-  keys.use("SUBCELL"); keys.use("GRADIENT");
+  keys.use("SUBCELL"); 
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
