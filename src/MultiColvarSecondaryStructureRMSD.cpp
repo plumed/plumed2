@@ -90,10 +90,11 @@ double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std:
   double r,nr; Tensor new_virial;
 
   if( secondary_drmsd.size()>0 ){
-    r=secondary_drmsd[0]->calculate( pos, getPbc(), deriv, virial ); 
+    if( usesPbc() ) r=secondary_drmsd[0]->calculate( pos, getPbc(), deriv, virial ); 
+    else r=secondary_drmsd[0]->calculate( pos, deriv, virial );
     for(unsigned i=1;i<secondary_drmsd.size();++i){
         if( usesPbc() ) nr=secondary_drmsd[i]->calculate( pos, getPbc(), new_deriv, new_virial );
-        else nr=secondary_drmsd[i]->calculate( pos, getPbc(), new_deriv, new_virial );
+        else nr=secondary_drmsd[i]->calculate( pos, new_deriv, new_virial );
         if(nr<r){
            r=nr;
            for(unsigned i=0;i<new_deriv.size();++i) deriv[i]=new_deriv[i];
