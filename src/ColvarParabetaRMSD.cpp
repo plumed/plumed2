@@ -63,10 +63,6 @@ PARABETARMSD BACKBONE=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LA
 \endverbatim
 (see also \ref MOLINFO)
 
-\par Examples
-
-(see also \ref MOLINFO)
-
 */
 //+ENDPLUMEDOC
 

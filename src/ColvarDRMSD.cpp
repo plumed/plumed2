@@ -33,6 +33,8 @@ namespace PLMD{
 //+PLUMEDOC COLVAR DRMSD
 /*
 Calculate the distance RMSD with respect to a reference structure. 
+
+
 Only pairs of atoms whose distance in the reference structure is within 
 LOWER_CUTOFF and UPPER_CUTOFF are considered.
 

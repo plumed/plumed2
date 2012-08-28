@@ -54,8 +54,9 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR RMSD
 /*
-Calculate the RMSD with respect to a reference structure.  To perform
-an ??optimal?? (what does this mean algorithmical speed wise?) alignment
+Calculate the RMSD with respect to a reference structure.  
+
+To perform an ??optimal?? (what does this mean algorithmical speed wise?) alignment
 using the Kearsley algorithm then use TYPE=OPTIMAL.  Otherwise
 use TYPE=SIMPLE, which will not perform optimal alignment and will only 
 remove the translation of the center of mass.

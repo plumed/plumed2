@@ -36,6 +36,7 @@ namespace PLMD{
 
 //+PLUMEDOC FUNCTION PATHMSD
 /*
+This function calculates path collective variables. 
 
 This is the Path Collective Variables implementation 
 ( see \cite brand07 ).
