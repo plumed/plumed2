@@ -74,7 +74,11 @@ void ColvarContactMap::registerKeywords( Keywords& keys ){
                    "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one contact will be "
                    "calculated for each ATOM keyword you specify.");
   keys.reset_style("ATOMS","atoms");
-  keys.add("numbered","SWITCH","The switching functions to use for each of the contacts in your map.  You can either specify a global switching function using SWITCH or one switching function for each contact"); keys.reset_style("SWITCH","compulsory"); 
+  keys.add("numbered","SWITCH","The switching functions to use for each of the contacts in your map. "
+                               "You can either specify a global switching function using SWITCH or one "
+                               "switching function for each contact. Details of the various switching "
+                               "functions you can use are provided on \\ref switchingfunction."); 
+  keys.reset_style("SWITCH","compulsory"); 
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
 }
 

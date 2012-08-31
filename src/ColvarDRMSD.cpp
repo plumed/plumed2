@@ -34,9 +34,27 @@ namespace PLMD{
 /*
 Calculate the distance RMSD with respect to a reference structure. 
 
+To calculate the root-mean-square deviation between the atoms in two configurations
+you must first superimpose the two structures in some ways.  Obviously, it is the internal vibrational 
+motions of the structure - i.e. not the translations and rotations - that are interesting. However, 
+aligning two structures by removing the translational and rotational motions is not easy.  Furthermore,
+in some cases there can be alignment issues caused by so-called frame-fitting problems. It is thus
+often cheaper and easier to calculate the distances between all the pairs of atoms.  The distance 
+between the two structures, \f$\mathbf{X}^a\f$ and \f$\mathbf{X}^b\f$ can then be measured as:
 
-Only pairs of atoms whose distance in the reference structure is within 
-LOWER_CUTOFF and UPPER_CUTOFF are considered.
+\f[
+d(\mathbf{X}^A, \mathbf{X}^B) = \frac{1}{N(N-1)} \sum_{i \ne j} [ d(\mathbf{x}_i^a,\mathbf{x}_j^a) - d(\mathbf{x}_i^b,\mathbf{x}_j^b) ]^2 
+\f] 
+
+where \f$N\f$ is the number of atoms and \f$d(\mathbf{x}_i,\mathbf{x}_j)\f$ represents the distance between
+atoms \f$i\f$ and \f$j\f$.  Clearly, this representation of the configuration is invariant to translation and rotation.  
+However, it can become expensive to calculate when the number of atoms is large.  This can be resolved
+within the DRMSD colvar by setting LOWER_CUTOFF and UPPER_CUTOFF.  These keywords ensure that only
+pairs of atoms that are within a certain range are incorporated into the above sum. 
+
+In PDB files the atomic coordinates and box lengths should be in Angstroms unless 
+you are working with natural units.  If you are working with natural units then the coordinates 
+should be in your natural length unit.  For more details on the PDB file format visit http://www.wwpdb.org/docs.html
 
 \par Examples
 
@@ -71,7 +89,7 @@ PLUMED_REGISTER_ACTION(ColvarDRMSD,"DRMSD")
 
 void ColvarDRMSD::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
-  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV. " + PDB::documentation() );
+  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
   keys.add("compulsory","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
 }

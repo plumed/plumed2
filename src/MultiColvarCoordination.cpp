@@ -34,22 +34,28 @@ namespace PLMD{
 
 //+PLUMEDOC MCOLVAR COORDINATIONNUMBER
 /*
-Calculate the coordination numbers of atoms so that  you can then calculate functions of the distribution of
+Calculate the coordination numbers of atoms so that you can then calculate functions of the distribution of
 coordination numbers such as the minimum, the number less than a certain quantity and so on.   
+
+To make the calculation of coordination numbers differentiable the following function is used:
+
+\f[
+s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\right)^m }
+\f]
 
 \par Examples
 
 The following input tells plumed to calculate the coordination numbers of atoms 1-100 with themselves.
 The minimum coordination number is then calculated.
 \verbatim
-COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 MIN=0.1
+COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 MIN={BETA=0.1}
 \endverbatim
 
 The following input tells plumed to calculate how many atoms from 1-100 are within 3.0 of each of the atoms
 from 101-110.  In the first 101 is the central atom, in the second 102 is the central atom and so on.  The 
 number of coordination numbers more than 6 is then computed.
 \verbatim
-COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN=6.0
+COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R_0=6.0 NN=6 MM=12 D_0=0}
 \endverbatim
 
 */
@@ -77,11 +83,13 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
-  keys.add("optional","SWITCH","A switching function that defines which atoms are in the first coordination sphere. " + SwitchingFunction::documentation() );
-  keys.add("optional","NN","The n parameter of the switching function ");
-  keys.add("optional","MM","The m parameter of the switching function ");
-  keys.add("optional","D_0","The d_0 parameter of the switching function");
-  keys.add("optional","R_0","The r_0 parameter of the switching function");
+  keys.add("compulsory","NN","6","The n parameter of the switching function ");
+  keys.add("compulsory","MM","12","The m parameter of the switching function ");
+  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+                               "The following provides information on the \\ref switchingfunction that are available. "
+                               "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
   keys.use("AVERAGE"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
   keys.use("MIN"); keys.use("WITHIN"); keys.use("MOMENTS");

@@ -33,16 +33,15 @@ namespace PLMD{
 //+PLUMEDOC MCOLVAR DENSITY
 /*
 Calculate functions of the density of atoms as a function of the box.  This allows one to calculate
-density gradients, number of atoms in half the box and so on.
+the number of atoms in half the box.
 
 \par Examples 
 
 The following example calculates the number of atoms in one half of the simulation box. 
 
 \verbatim
-DENSITY SPECIES=1-100 SUBCELL=(XLOWER=0.0 XUPPER=0.5) LABEL=d1
+DENSITY SPECIES=1-100 SUBCELL={XLOWER=0.0 XUPPER=0.5} LABEL=d1
 PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
-
 \endverbatim
 
 */

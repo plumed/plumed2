@@ -37,16 +37,16 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
      inside=0;
      print "*/" >output
   }
-  if(inside==2 && NF==0){
+  if(inside>=2 && NF==0){
      print "</td> </tr>" > lfile
-     printf "</td> </tr>\n" > gfile
+     if(inside==2){ printf "</td> </tr>\n" > gfile; }
      inside=1
   }
   if(inside==1 && $1!="/*" && $1!="*/") print $0 >output
-  if(inside==2 && $1!="/*" && $1!="*/" ){
+  if(inside>=2 && $1!="/*" && $1!="*/" ){
      print $0 > output
      print $0 > lfile
-     printf "%s", $0 > gfile
+     if(inside==2){ printf "%s", $0 > gfile; }
   }
   if($1=="//+PLUMEDOC"){
     if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
@@ -61,6 +61,13 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
       print "\\page "$3 > output
       print "\\section "$3 >output
       inside=2;
+    } else if ( $2=="INTERNAL" ){
+      if(output!="")close(output);
+      output="automatic/"$3".txt";
+      print "/**" > output
+      print "\\page "$3 > output
+      print "\\section "$3 > output
+      inside=3;
     }
   }
 }'

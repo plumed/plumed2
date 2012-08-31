@@ -49,7 +49,7 @@ relevant subset of the pairwise distance are calculated at every step.
 
 The following example instructs plumed to the average coordination number of the atoms in group 1-10 with the atoms in group 20-100.  These coordination numbers count the number of atoms within the group that are within 0.3 nm of the central atom.  A neighbour list is used to make this calculation faster, this neighbour list is updated every 100 steps.
 \verbatim
-COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NL_CUTOFF=0.5 UPDATE=100 
+COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLIST NL_CUTOFF=0.5 NL_STRIDE=100 
 \endverbatim
 
 */
@@ -81,11 +81,13 @@ void ColvarCoordination::registerKeywords( Keywords& keys ){
   keys.addFlag("NLIST",false,"Use a neighbour list to speed up the calculation");
   keys.add("atoms","GROUPA","The list of central atoms for which we are calculating our coordination numbers");
   keys.add("atoms","GROUPB","The list of neighbourhood atoms for which we are using to calculate coordination numbers");
-  keys.add("optional","NN","The n parameter of the switching function ");
-  keys.add("optional","MM","The m parameter of the switching function ");
-  keys.add("optional","D_0","The d_0 parameter of the switching function");
-  keys.add("optional","R_0","The r_0 parameter of the switching function");
-  keys.add("optional","SWITCH","A generic switching function");
+  keys.add("compulsory","NN","6","The n parameter of the switching function ");
+  keys.add("compulsory","MM","12","The m parameter of the switching function ");
+  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+  keys.add("compulsory","R_0","The r_0 parameter of the switching function");
+  keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
+                               "The following provides information on the \\ref switchingfunction that are available. " 
+                               "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords."); 
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbour list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbour list");
 }

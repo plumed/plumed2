@@ -56,7 +56,11 @@ PLUMED_REGISTER_ACTION(FunctionTarget,"TARGET")
 void FunctionTarget::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure. " + PDB::documentation() );
+  keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure. In the PDB file the atomic "
+                                    "coordinates and box lengths should be in Angstroms unless you are working with natural units. "
+                                    "If you are working with natural units then the coordinates should be in your natural length unit. "
+                                    "The charges and masses of the atoms (if required) should be inserted in the beta and occupancy "
+                                    "columns respectively. For more details on the PDB file format visit http://www.wwpdb.org/docs.html"); 
   keys.add("optional","REFERENCE_VEC","the vector of values for the CVs at the reference point (if you use this you don't need REFERENCE)");
 }
 

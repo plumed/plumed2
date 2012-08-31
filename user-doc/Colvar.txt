@@ -69,18 +69,7 @@ periodic boundaries, a fact which plumed could only deal with were the topology 
 work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
 in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
 in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In plumed 1.0 this was done
-using the ALIGN_ATOMS keyword.  In plumed 2.0 the same effect can be acchieved using any one from the following list of commands
-
-<table align=center frame=void width=95%% cellpadding=5%%>
-<tr>
-<td width=5%> \subpage WHOLEMOLECULES </td> <td> With this command you can specify the atoms in each of your molecules </td> 
-</tr> 
-</table>
-@TOPOLOGY@
-
-The most general of these is the \ref WHOLEMOLECULES keywords.  However, there are advantages in using the others as oftentimes
-by defining a topology using a pdb file you can take advantage of shortcuts when specifying other colvars.  For example, if you
-use the \ref PROTEIN_TOPOLOGY keyword you can then later refer to the atoms in a specific residue by the residue number.
+using the ALIGN_ATOMS keyword.  In plumed 2.0 the same effect can be acchieved using the \subpage WHOLEMOLECULES command.
 
 \section cvavail CV Documentation
 

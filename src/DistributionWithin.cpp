@@ -19,11 +19,10 @@ public:
 PLUMED_REGISTER_VESSEL(within,"WITHIN")
 
 void within::reserveKeyword( Keywords& keys ){
-  keys.reserve("numbered","WITHIN", "calculate the number of variables that are within a certain range and store it in a value called between<lowerbound>&<upperbound> "
-                                    "or create a discretized histogram of the distribution for a particular range. To make these quantities continuous they are "
-                                    "calculated using " + HistogramBead::documentation(false) + " If you add the NBINS keyword the range between your upper and "
-                                    "lower bounds is divided into a discrete number of bins.  Adding the NORM flag will calculate the fraction of colvars in "
-                                    "range of interest rather than the total number");
+  keys.reserve("numbered","WITHIN", "calculate the number of values that are within a certain range or create a discretized "
+                                    "histogram of the distribution of cvs within a particular rage by adding the NBINS "
+                                    "to the function specifier. These quantities are described using kernel density estimation as described on "
+                                    "\\ref histogrambead. The final values can be referenced using \\e label.between\\f$a\\f$&\\f$b\\f$."); 
 }
 
 within::within( const VesselOptions& da ) :

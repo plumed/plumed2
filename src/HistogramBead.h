@@ -44,11 +44,11 @@ private:
 	double lowb;
 	double highb;
 	double width;
+        enum {gaussian,triangular} type;
         enum {unset,periodic,notperiodic} periodicity;
         double min, max, max_minus_min, inv_max_minus_min;
         double difference( const double& d1, const double& d2 ) const ;
 public:
-        static std::string documentation( bool dir );
         static void generateBins( const std::string& params, const std::string& dd, std::vector<std::string>& bins );  
 	HistogramBead();
         std::string description() const ;
@@ -103,16 +103,6 @@ double HistogramBead::difference( const double& d1, const double& d2 ) const {
     return s*max_minus_min;
   } else plumed_assert(0);
   return 0;
-}
-	
-inline
-double HistogramBead::calculate( double x, double& df ) const {
-	const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
-	assert(init && periodicity!=unset ); double lowB, upperB;
-	lowB = difference( x, lowb ) / ( sqrt(2.0) * width );
-	upperB = difference( x, highb ) / ( sqrt(2.0) * width ) ;
-	df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( sqrt(2*pi)*width );
-	return 0.5*( erf( upperB ) - erf( lowB ) );
 }
 
 }

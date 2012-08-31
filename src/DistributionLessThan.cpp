@@ -39,8 +39,10 @@ public:
 PLUMED_REGISTER_VESSEL(less_than,"LESS_THAN")
 
 void less_than::reserveKeyword( Keywords& keys ){
-  keys.reserve("optional","LESS_THAN", "take the number of variables less than the specified target and "
-                                       "store it in a value called lt<target>. " + SwitchingFunction::documentation() );
+  keys.reserve("optional","LESS_THAN","calculate the number of variables less than a certain target value. "
+                                      "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
+                                      "is a \\ref switchingfunction. The final value can be referenced using "
+                                      "\\e label.lt\\f$r_0\\f$.");  
 }
 
 less_than::less_than( const VesselOptions& da ) :

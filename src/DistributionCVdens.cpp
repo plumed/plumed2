@@ -26,6 +26,37 @@
 
 namespace PLMD {
 
+//+PLUMEDOC INTERNAL subcell
+/*
+Imagine we have a collection of collective variables that can all be assigned to a particular point in three 
+dimensional space. For example, we could have the values of the coordination numbers for all the atoms in the
+system. Because each CV value can be assigned to a particular point in space we can calculate the average
+value of the cv in a particular part of the box using:
+
+\f[
+\overline{s}_{\tau} = \frac{ \sum_i s_i w(x_i)w(y_i)w(z_i) }{ \sum_i w(x_i)w(y_i)w(z_i) }  
+\f]  
+
+where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (x_i,y_i,z_i)\f$.
+Because we want to calculate the average cv in the subregion \f$\tau\f$ we introduce the three \f$w()\f$ to tell us
+whether or not \f$i\f$ is inside \f$\tau\f$. These functions are given by:
+
+\f[
+w(x_i) = \int_{a_x}^{b_x} \textrm{d}x K\left( \frac{x - x_i}{w_x} \right)
+\f]
+
+where \f$K\f$ is one of the kernel functions described on \ref histogrambead.
+
+All the input to calculate these quantities is provided through a single keyword that will have the following form
+
+KEYWORD={TYPE XLOWER=\f$a_x\f$ XUPPER=\f$b_x\f$ XSMEAR=\f$\frac{w_x}{b_x-a_x}\f$ YLOWER=\f$a_y\f$ YUPPER=\f$b_y\f$ YSMEAR=\f$\frac{w_y}{b_y-a_y}\f$ ZLOWER=\f$a_z\f$ ZUPPER=\f$b_z\f$ ZSMEAR=\f$\frac{w_z}{b_z-a_z}\f$}
+
+The \f$a_x\f$, \f$b_x\f$, \f$a_y\f$ ... parameters are specified as a fraction of the box length.  In directions for which upper and lower bounds are not
+specified the \f$a\f$ and \f$b\f$ values are assumed equal to 0 and 1. If SMEAR values are not specified \f$\frac{w_x}{b_x-a_x}=0.5\f$.    
+*/
+//+ENDPLUMEDOC
+
+
 class cvdens : public NormedSumVessel {
 private:
   bool isDensity;
@@ -47,12 +78,8 @@ public:
 PLUMED_REGISTER_VESSEL(cvdens,"SUBCELL")
 
 void cvdens::reserveKeyword( Keywords& keys ){
-  keys.reserve("numbered","SUBCELL","calculate the average value of the CV within a portion of the box and store it in a value called subcell. "
-  "To make this quantity continuous it is calculated using \\f$ a = \\frac{\\sum_{i=1}^N s_i w(x_i)w(y_i)w(z_i)}{\\sum_{i=1}^N w(x_i)w(y_i)w(z_i)}\\f$ "
-  "where the sum is over the collective variables \\f$ s_i \\f$ which can be thought to be at \\f$ (x_i,y_i,z_i)\\f$. The three \\f$w(x)\\f$ functions "
-  "specify the extent of the subregion in which we are calculating the average CV in each direction. To make these assignment functions continuous they "
-  "are calculated using " + HistogramBead::documentation(true) + ".  If no parameters for the \\f$ w(d) \\f$ function in a particular direction is specified "
-  "then the subcell is assumed to incorporate the entirity of the box in that direction."); 
+  keys.reserve("numbered","SUBCELL","calculate the average value of the CV within a portion of the box and store it in a value called subcell. " 
+                                    "For more details on how this quantity is calculated see \\ref subcell.");
 }
 
 cvdens::cvdens( const VesselOptions& da ) :

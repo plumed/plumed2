@@ -39,9 +39,10 @@ public:
 PLUMED_REGISTER_VESSEL(more_than,"MORE_THAN")
 
 void more_than::reserveKeyword( Keywords& keys ){
-  keys.reserve("numbered","MORE_THAN","take the number of variables more than the specified target and store it in a value called gt<target>. "
-                          "This is calculated using \\f$1.0 - s(r)\\f$, where \\f$s(r)\\f$ is a switching function. " +
-                           SwitchingFunction::documentation() );
+  keys.reserve("optional","MORE_THAN","calculate the number of variables more than a certain target value. "
+                                      "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
+                                      "is a \\ref switchingfunction. The final value can be referenced using "
+                                      "\\e label.gt\\f$r_0\\f$.");
 }
 
 more_than::more_than( const VesselOptions& da ) :

@@ -63,8 +63,9 @@ PLUMED_REGISTER_ACTION(SetupMolInfo,"MOLINFO")
 void SetupMolInfo::registerKeywords( Keywords& keys ){
   ActionSetup::registerKeywords(keys);
   keys.add("compulsory","STRUCTURE","a file in pdb format containing a reference structure. "
-                                    "This is used to defines the atoms in the various residues, chains, etc . " + PDB::documentation() );
-  keys.add("atoms","CHAIN","(for masochists ( a.k.a. Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
+                                    "This is used to defines the atoms in the various residues, chains, etc . " 
+                                    "For more details on the PDB file format visit http://www.wwpdb.org/docs.html");
+  keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
 }
 
 SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):

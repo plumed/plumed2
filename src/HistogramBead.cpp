@@ -27,21 +27,59 @@
 
 using namespace PLMD;
 
-std::string HistogramBead::documentation( bool dir ) {
-  std::ostringstream ostr;
-  if(dir){
-     ostr<<"\\f$ w(x)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma_d} \\exp\\left( -\\frac{(x'-x)^2}{2\\sigma_x^2} \\right) \\textrm{d}x' \\f$";
-     ostr<<"where \\f$ \\sigma_x=(b_x-a_x)k_x \\f$.  The parameters of the functions are specifed in fractional coordinates using ";
-     ostr<<"{XLOWER=\\f$a_x\\f$ XUPPER=\\f$b_x\\f$ XSMEAR=\\f$k_x\\f$ YLOWER=\\f$a_y\\f$ YUPPER=\\f$b_y\\f$ YSMEAR=\\f$k_y\\f$ ZLOWER=\\f$a_z\\f$ ZUPPER=\\f$b_z\\f$ ZSMEAR=\\f$k_z\\f$}.";
-     ostr<<"If any of the SMEAR keywords are not present then the default \\f$k_x=0.5\\f$ is used in that direction. ";
-  } else {
-     ostr<<"\\f$ w(r)=\\int_a^b \\frac{1}{\\sqrt{2\\pi}\\sigma} \\exp\\left( -\\frac{(r - r')^2}{2\\sigma^2} \\right) \\textrm{d}r' \\f$";
-     ostr<<"where \\f$ \\sigma=k\\frac{b-a}{n} \\f$ and \\f$n\\f$ is the number of bins you are dividing the range into.  ";
-     ostr<<"The parameters of the function are specified using {LOWER=\\f$a\\f$ UPPER=\\f$b\\f$ SMEAR=\\f$k\\f$}. ";
-     ostr<<"If the SMEAR keyword is not present then by default \\f$k=0.5\\f$.";
-  }
-  return ostr.str();
-}
+//+PLUMEDOC INTERNAL histogrambead 
+/*
+If we have multiple instances of a variable we can estimate the probability distribution (pdf)
+for that variable using a process called kernel density estimation:
+
+\f[
+P(s) = \sum_i K\left( \frac{s - s_i}{w} \right)
+\f] 
+
+In this equation \f$K\f$ is a symmetric funciton that must integrate to one that is often
+called a kernel function and \f$w\f$ is a smearing parameter.  From a pdf calculated using 
+kernel density estimation we can calculate the number/fraction of values between an upper and lower
+bound using:
+
+\f[
+w(s) = \int_a^b \sum_i K\left( \frac{s - s_i}{w} \right)
+\f]     
+
+All the input to calculate a quantity like \f$w(s)\f$ is generally provided through a single 
+keyword that will have the following form:
+
+KEYWORD={TYPE UPPER=\f$a\f$ LOWER=\f$b\f$ SMEAR=\f$\frac{w}{b-a}\f$}
+
+This will calculate the number of values between \f$a\f$ and \f$b\f$.  To calculate
+the fraction of values you add the word NORM to the input specification.  If the 
+function keyword SMEAR is not present \f$w\f$ is set equal to \f$0.5(b-a)\f$. Finally,
+type should specify one of the kernel types that is present in plumed. These are listed
+in the table below:
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr> 
+<td> TYPE </td> <td> FUNCTION </td> 
+</tr> <tr> 
+<td> GAUSSIAN </td> <td> \f$\frac{1}{\sqrt{2\pi}w} \exp\left( -\frac{(s-s_i)^2}{2w^2} \right)\f$ </td>
+<td> TRIANGULAR </td> <td> \f$ \frac{1}{2w} \left( 1. - \left| \frac{s-s_i}{w} \right| \right) \quad \frac{s-s_i}{w}<1 \f$ </td>
+</tr>
+</table>
+
+Some keywords can also be used to calculate a descretized version of the histogram.  That
+is to say the number of values between \f$a\f$ and \f$b\f$, the number of values between
+\f$b\f$ and \f$c\f$ and so on.  A keyword that specifies this sort of calculation would look
+something like
+
+KEYWORD={TYPE UPPER=\f$a\f$ LOWER=\f$b\f$ NBINS=\f$n\f$ SMEAR=\f$\frac{w}{n(b-a)}\f$}
+ 
+This specification would calculate the following vector of quantities: 
+
+\f[
+w_j(s) \int_{a + \frac{j-1}{n}(b-a)}^{a + \frac{j}{n}(b-a)} \sum_i K\left( \frac{s - s_i}{w} \right) 
+\f]
+
+*/
+//+ENDPLUMEDOC
 
 std::string HistogramBead::description() const {
   std::ostringstream ostr;
@@ -53,6 +91,8 @@ void HistogramBead::generateBins( const std::string& params, const std::string& 
   if( dd.size()!=0 && params.find(dd)==std::string::npos) return;
   std::vector<std::string> data=Tools::getWords(params);
   plumed_assert(data.size()>=1);
+
+  std::string name=data[0];
 
   unsigned nbins; std::vector<double> range(2); std::string smear;
   bool found_nb=Tools::parse(data,dd+"NBINS",nbins);
@@ -72,16 +112,20 @@ void HistogramBead::generateBins( const std::string& params, const std::string& 
   for(unsigned i=0;i<nbins;++i){
      Tools::convert( range[0]+i*delr, lb );
      Tools::convert( range[0]+(i+1)*delr, ub );
-     bins.push_back( dd + "LOWER=" + lb + " " + dd + "UPPER=" + ub + " " + dd + "SMEAR=" + smear + " " + normstr );
+     bins.push_back( name + " " +  dd + "LOWER=" + lb + " " + dd + "UPPER=" + ub + " " + dd + "SMEAR=" + smear + " " + normstr );
   }
   plumed_assert(bins.size()==nbins);
-  if( dd.empty() ) plumed_massert(data.empty(),"Error reading histogram"); 
 }
 
 void HistogramBead::set( const std::string& params, const std::string& dd, std::string& errormsg ){
   if( dd.size()!=0 && params.find(dd)==std::string::npos) return;
   std::vector<std::string> data=Tools::getWords(params);
   plumed_assert(data.size()>=1);
+
+  std::string name=data[0];
+  if(name=="GAUSSIAN") type=gaussian;
+  else if(name=="TRIANGULAR") type=triangular;
+  else plumed_merror("cannot understand kernel type " + name ); 
 
   double smear;
   bool found_r=Tools::parse(data,dd+"LOWER",lowb);
@@ -93,7 +137,6 @@ void HistogramBead::set( const std::string& params, const std::string& dd, std::
   smear=0.5; bool found_b=Tools::parse(data,dd+"SMEAR",smear);
   width=smear*(highb-lowb); init=true;
   bool usenorm; bool found_n=Tools::parseFlag(data,dd+"NORM",usenorm);
-  if( dd.empty() ){ if( !data.empty()) errormsg="Error reading within"; }
 }
 
 void HistogramBead::set( double l, double h, double w){
@@ -108,3 +151,33 @@ void HistogramBead::printKeywords( Log& log ) const {
   hkeys.addFlag("NORM",false,"normalize the histogram according to the number of values we are histograming");
   hkeys.print( log );
 }
+
+double HistogramBead::calculate( double x, double& df ) const {
+  const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
+  assert(init && periodicity!=unset ); 
+  double lowB, upperB, f;
+  if( type==gaussian ){
+     lowB = difference( x, lowb ) / ( sqrt(2.0) * width );
+     upperB = difference( x, highb ) / ( sqrt(2.0) * width ) ;
+     df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( sqrt(2*pi)*width );
+     f = 0.5*( erf( upperB ) - erf( lowB ) );
+  } else if( type==triangular ){
+     lowB = ( difference( x, lowb ) / width );
+     upperB = ( difference( x, highb ) / width );
+     df=0;
+     if( fabs(lowB)<1. ) df = 1 - fabs(lowB) / width;
+     if( fabs(upperB)<1. ) df -= fabs(upperB) / width;
+     double ia, ib;
+     if (upperB<=-1. || lowB >=1.){
+        f=0.;
+     } else { 
+       if( lowB>-1.0 ){ ia=lowB; }else{ ia=-1.0; } 
+       if( upperB<1.0 ){ ib=upperB; } else{ ib=1.0; }
+       f = (ib*(2.-fabs(ib))-ia*(2.-fabs(ia)))*0.5;
+     }
+  } else {
+     plumed_merror("function type does not exist");
+  } 
+  return f;
+}     
+

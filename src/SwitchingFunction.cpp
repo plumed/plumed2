@@ -28,19 +28,58 @@
 using namespace std;
 using namespace PLMD;
 
-std::string SwitchingFunction::documentation(){
-  std::ostringstream ostr;
-  ostr<<"Within plumed you can use the following switching functions ";
-  ostr<<"\\f$s(r)=\\frac{ 1 - \\left(\\frac{ r - d_0 }{ r_0 }\\right)^{n} }{ 1 - \\left(\\frac{ r - d_0 }{ r_0 }\\right)^{m} } \\f$, ";
-  ostr<<"\\f$s(r)=\\exp\\left(-\\frac{ r - d_0 }{ r_0 }\\right)\\f$ or using \\f$s(r)=\\exp\\left(-\\frac{ (r - d_0)^2 }{ 2r_0^2 }\\right)\\f$. ";
-  ostr<<"The first of these options is specified using the syntax {RATIONAL R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$ NN=\\f$n\\f$ MM=\\f$m\\f$} and if ";
-  ostr<<"the D_0, NN and MM keywords are missing they are assumed equal to 0, 6 and 12 respectively.  The second form is specified using ";
-  ostr<<"{EXP R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$} and if the D_0 is missing it is assumed equal to 0.  The third form is specified using ";
-  ostr<<"{GAUSSIAN R_0=\\f$r_0\\f$ D_0=\\f$d_0\\f$} and if the D_0 is missing it is assumed equal to 0. You can add the D_MAX flag to ";
-  ostr<<"all switching function definitions to specify that if the input \\f$r\\f$ is greater than this value the value of the switching ";
-  ostr<<"function is very small and can thus be assumed to equal zero.";
-  return ostr.str();
-}
+//+PLUMEDOC INTERNAL switchingfunction 
+/*
+
+Switching functions \f$s(r)\f$ take a minimum of one input parameter \f$d_0\f$.
+For \f$r \le d_0 \quad s(r)=1.0\f$ while for \f$r > d_0\f$ the function decays smoothly to 0.
+The various switching functions available in plumed differ in terms of how this decay is performed.
+
+Where there is an accepted convention in the literature (e.g. \ref COORDINATION) on the form of the 
+switching function we use the convention as the default.  However, the flexibility to use different
+switching functions is always present generally through a single keyword. This keyword generally 
+takes an input with the following form:
+
+\verbatim
+KEYWORD={TYPE <list of parameters>}
+\endverbatim  
+
+The following table contains a list of the various switching functions that are available in plumed 2
+together with an example input.
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr> 
+<td> TYPE </td> <td> FUNCTION </td> <td> EXAMPLE INPUT </td> <td> DEFAULT PARAMETERS </td>
+</tr> <tr> <td>RATIONAL </td> <td>
+\f$
+s(r)=\frac{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{n} }{ 1 - \left(\frac{ r - d_0 }{ r_0 }\right)^{m} } 
+\f$
+</td> <td>
+{RATIONAL R_0=\f$r_0\f$ D_0=\f$d_0\f$ NN=\f$n\f$ MM=\f$m\f$}
+</td> <td> \f$d_0=0.0\f$, \f$n=6\f$, \f$m=12\f$ </td>
+</tr> <tr>
+<td> EXP </td> <td>
+\f$
+s(r)=\exp\left(-\frac{ r - d_0 }{ r_0 }\right)
+\f$
+</td> <td> 
+{EXP  R_0=\f$r_0\f$ D_0=\f$d_0\f$}
+</td> <td> \f$d_0=0.0\f$ </td>
+</tr> <tr>
+<td> GAUSSIAN </td> <td>
+\f$
+s(r)=\exp\left(-\frac{ (r - d_0)^2 }{ 2r_0^2 }\right)
+\f$
+</td> <td>
+{GAUSSIAN R_0=\f$r_0\f$ D_0=\f$d_0\f$} 
+</td> <td> \f$d_0=0.0\f$ </td>
+</tr> 
+</table>
+
+For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
+keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function can be assumed equal to zero. 
+*/
+//+ENDPLUMEDOC
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg){
   vector<string> data=Tools::getWords(definition);
