@@ -40,8 +40,8 @@ PLUMED_KERNEL=libplumedKernel.$(SOEXT)
 PLUMED_SHARED_OBJ=libplumed.$(SOEXT)
 
 # plumed main exec
-PLUMED_MAIN_STATIC=plumed-static
-PLUMED_MAIN_SHARED=plumed
+PLUMED_MAIN_STATIC=plumed
+PLUMED_MAIN_SHARED=plumed-shared
 PLUMED_MAIN_RUNTIME=plumed-runtime
 
 # default target
