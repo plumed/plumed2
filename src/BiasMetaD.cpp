@@ -463,7 +463,7 @@ vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
  if(hill.multivariate){
 	unsigned ncv=getNumberOfArguments();
 	unsigned k=0;
-	log<<"------- GET GAUSSIAN SUPPORT --------\n"; 
+	//log<<"------- GET GAUSSIAN SUPPORT --------\n"; 
 	Matrix<double> mymatrix(ncv,ncv);
 	for(unsigned i=0;i<ncv;i++){
 		for(unsigned j=i;j<ncv;j++){
@@ -476,7 +476,7 @@ vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
         //
 	Matrix<double> myinv(ncv,ncv);
 	Invert(mymatrix,myinv);
-	log<<"INVERSE \n"; 
+	//log<<"INVERSE \n"; 
         matrixOut(log,myinv);	
         // diagonalizes it
 	Matrix<double> myautovec(ncv,ncv);
@@ -493,7 +493,7 @@ vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
 	  nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
  	}
  }
-	log<<"------- END GET GAUSSIAN SUPPORT --------\n"; 
+	//log<<"------- END GET GAUSSIAN SUPPORT --------\n"; 
  return nneigh;
 }
 
