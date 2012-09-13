@@ -177,7 +177,7 @@ read_input(double& temperature,
       exit(1);
   }
   std::string nstatstr; parse("nstat",nstatstr);
-  sscanf(nstatstr.c_str(),"%d %s",&nconfig,buffer1);
+  sscanf(nstatstr.c_str(),"%d %s",&nstat,buffer1);
   statfile=buffer1;
   if(statfile.length()==0){
       fprintf(stderr,"Specify stat file\n");
