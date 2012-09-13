@@ -61,14 +61,12 @@ void PlumedFileBase::test(){
 
 size_t PlumedOFile::llwrite(const char*ptr,size_t s){
   size_t r;
+  if(linked) return linked->llwrite(ptr,s);
   if(fp){
     if(! (comm && comm->Get_rank()>0)){
       r=fwrite(ptr,1,s,fp);
     }
     if(comm) comm->Bcast(&r,1,0);
-  } else if(linked){
-    (*linked)<<ptr;
-    r=strlen(ptr);
   } else plumed_merror("writing on uninitilized PlumedFile");
   return r;
 }
@@ -76,17 +74,8 @@ size_t PlumedOFile::llwrite(const char*ptr,size_t s){
 size_t PlumedIFile::llread(char*ptr,size_t s){
   plumed_assert(fp);
   size_t r;
-  int leof=0;
-  if(! (comm && comm->Get_rank()>0)){
-    r=fread(ptr,1,s,fp);
-    if(feof(fp)) leof=1;
-  }
-  if(comm) comm->Bcast(&r,1,0);
-// I explicitly cast sizes to int, as BCast is getting an int as second argument
-  if(comm) comm->Bcast(ptr,int(r),0);
-// I explicitly cast sizes to int, as BCast is getting an int as second argument
-  if(comm) comm->Bcast(&leof,int(r),0);
-  if(leof) eof=true;
+  r=fread(ptr,1,s,fp);
+  if(feof(fp)) eof=true;
   return r;
 }
 

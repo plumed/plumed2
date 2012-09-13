@@ -249,7 +249,7 @@ public virtual PlumedFileBase{
     Field(): read(false) {}
   };
 /// Low-level read.
-/// This is taking case of broadcasting data for multiple processorts etc.
+/// Note: in parallel, all processes read
   size_t llread(char*,size_t);
 /// All the defined fields
   std::vector<Field> fields;
