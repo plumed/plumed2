@@ -58,7 +58,7 @@ in a vector of arguments.
 dist1: DISTANCE ATOMS=1,10
 dist2: DISTANCE ATOMS=2,11
 
-pw: PIECEWISE POINT1=1,10 POINT2=2,pi POINT3=3,10 ARG=dist1,
+pw: PIECEWISE POINT1=1,10 POINT2=2,pi POINT3=3,10 ARG=dist1
 ppww: PIECEWISE POINT1=1,10 POINT2=2,pi POINT3=3,10 ARG=dist1,dist2
 PRINT ARG=pw,ppww.1,ppww.2
 \endverbatim
