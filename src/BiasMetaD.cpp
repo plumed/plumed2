@@ -188,6 +188,12 @@ BiasMetaD::~BiasMetaD(){
   hillsOfile_.close();
   if(gridfile_) fclose(gridfile_);
   delete [] dp_;
+  if(mw_n_>0){
+  // close files
+   for(unsigned i=0;i<ifiles.size();++i){
+     ifiles[i]->close();
+   }
+  }
 }
 
 BiasMetaD::BiasMetaD(const ActionOptions& ao):
@@ -331,7 +337,7 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   }
 
 // creating vector of ifiles just for mw hills reading
-// open them all at the beginning
+// open  all of them at the beginning
   if(mw_n_>0){
    for(int i=0;i<mw_n_;++i){
     stringstream out; out << i;
@@ -687,6 +693,15 @@ void BiasMetaD::update(){
   if(wgridstride_>0&&getStep()%wgridstride_==0){
    BiasGrid_->writeToFile(gridfile_); 
   }
+
+// if multiple walkers and time to read Gaussians
+ if(mw_n_>0 && getStep()%mw_rstride_==0){
+   for(unsigned i=0;i<ifilesnames.size();++i){
+    if(i==mw_id_) continue;
+    log.printf("  Reading hills from %s:",ifilesnames[i].c_str());
+    readGaussians(ifiles[i]);
+   }
+ } 
 }
 
 void BiasMetaD::finiteDifferenceGaussian
