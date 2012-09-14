@@ -131,7 +131,7 @@ private:
   FlexibleBin *flexbin;
   
   
-  void   readGaussians(FILE*);
+  void   readGaussians(string hillsfname);
   void   writeGaussian(const Gaussian&,FILE*);
   void   addGaussian(const Gaussian&);
   double getHeight(const vector<double>&);
@@ -312,12 +312,12 @@ adaptive_(FlexibleBin::none)
 
 // restarting from HILLS file
   if(restart_){
-   hillsfile_=fopen(hillsfname.c_str(),"a+");
    log.printf("  Restarting from %s:",hillsfname.c_str());
-   readGaussians(hillsfile_);
-  }else{
-   hillsfile_=fopen(hillsfname.c_str(),"w");
-  } 
+   readGaussians(hillsfname);
+  }
+
+// open hills file
+  hillsfile_=fopen(hillsfname.c_str(),"a");
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
@@ -326,7 +326,7 @@ adaptive_(FlexibleBin::none)
 
 }
 
-void BiasMetaD::readGaussians(FILE* file)
+void BiasMetaD::readGaussians(string hillsfname)
 {
  unsigned ncv=getNumberOfArguments();
  double dummy;
@@ -335,7 +335,9 @@ void BiasMetaD::readGaussians(FILE* file)
  vector<double> sigma(ncv);
  double height;
  int nhills=0;
- rewind(file);
+// open file
+ FILE* file=fopen(hillsfname.c_str(),"r");
+
  while(1){
   if(fscanf(file, "%1000lf", &dummy)!=1){break;}
   for(unsigned i=0;i<ncv;++i){fscanf(file, "%1000lf", &(center[i]));}
@@ -380,6 +382,7 @@ void BiasMetaD::readGaussians(FILE* file)
   addGaussian(Gaussian(center,sigma,height,multivariate));
  }     
  log.printf("  %d Gaussians read\n",nhills);
+ fclose(file);
 }
 
 void BiasMetaD::writeGaussian(const Gaussian& hill, FILE* file)
@@ -453,7 +456,7 @@ vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
  if(hill.multivariate){
 	unsigned ncv=getNumberOfArguments();
 	unsigned k=0;
-	log<<"------- GET GAUSSIAN SUPPORT --------\n"; 
+	//log<<"------- GET GAUSSIAN SUPPORT --------\n"; 
 	Matrix<double> mymatrix(ncv,ncv);
 	for(unsigned i=0;i<ncv;i++){
 		for(unsigned j=i;j<ncv;j++){
@@ -466,7 +469,7 @@ vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
         //
 	Matrix<double> myinv(ncv,ncv);
 	Invert(mymatrix,myinv);
-	log<<"INVERSE \n"; 
+	//log<<"INVERSE \n"; 
         matrixOut(log,myinv);	
         // diagonalizes it
 	Matrix<double> myautovec(ncv,ncv);
@@ -483,7 +486,7 @@ vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
 	  nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
  	}
  }
-	log<<"------- END GET GAUSSIAN SUPPORT --------\n"; 
+	//log<<"------- END GET GAUSSIAN SUPPORT --------\n"; 
  return nneigh;
 }
 
