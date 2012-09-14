@@ -135,10 +135,10 @@ private:
   string mw_dir_;
   int mw_id_;
   int mw_rstride_;
-  vector<PlumedIFile> ifiles;
+  vector<PlumedIFile*> ifiles;
   vector<string> ifilesnames;
   
-  void   readGaussians(PlumedIFile&);
+  void   readGaussians(PlumedIFile*);
   void   writeGaussian(const Gaussian&,PlumedOFile&);
   void   addGaussian(const Gaussian&);
   double getHeight(const vector<double>&);
@@ -337,16 +337,16 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
     stringstream out; out << i;
     string fname = mw_dir_+"/"+hillsfname+"."+out.str();
     ifilesnames.push_back(fname);
-    PlumedIFile ifile;
-    ifile.link(*this);
-    ifile.open(fname,"r");
+    PlumedIFile *ifile = new PlumedIFile();
+    ifile->link(*this);
+    ifile->open(fname,"r");
     ifiles.push_back(ifile);
    }
   }else{
     ifilesnames.push_back(hillsfname);
-    PlumedIFile ifile;
-    ifile.link(*this);
-    ifile.open(hillsfname,"r");
+    PlumedIFile *ifile = new PlumedIFile();
+    ifile->link(*this);
+    ifile->open(hillsfname,"r");
     ifiles.push_back(ifile);
   }
  
@@ -357,12 +357,12 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
     readGaussians(ifiles[i]);
    }
    // close only the walker own hills file (need for writing)
-   ifiles[mw_id_].close();
+   ifiles[mw_id_]->close();
    hillsOfile_.link(*this);
    hillsOfile_.open(ifilesnames[mw_id_],"aw");
   }else{
    // close only the walker own hills file (need for writing)
-   ifiles[mw_id_].close();
+   ifiles[mw_id_]->close();
    hillsOfile_.link(*this);
    hillsOfile_.open(ifilesnames[mw_id_],"w");
   } 
@@ -376,7 +376,7 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
 
 }
 
-void BiasMetaD::readGaussians(PlumedIFile&ifile)
+void BiasMetaD::readGaussians(PlumedIFile *ifile)
 {
  unsigned ncv=getNumberOfArguments();
  double dummy;
@@ -385,12 +385,12 @@ void BiasMetaD::readGaussians(PlumedIFile&ifile)
  vector<double> sigma(ncv);
  double height;
  int nhills=0;
- while(ifile.scanField("time",dummy)){
+ while(ifile->scanField("time",dummy)){
   for(unsigned i=0;i<ncv;++i)
-    ifile.scanField(getPntrToArgument(i)->getName(),center[i]);
+    ifile->scanField(getPntrToArgument(i)->getName(),center[i]);
   // scan for multivariate label: record the actual file position so to eventually rewind 
     std::string sss;
-    ifile.scanField("multivariate",sss);
+    ifile->scanField("multivariate",sss);
     if(sss=="true") multivariate=true;
     else if(sss=="false") multivariate=false;
     else plumed_merror("cannot parse multivariate = "+ sss);
@@ -400,7 +400,7 @@ void BiasMetaD::readGaussians(PlumedIFile&ifile)
         Matrix<double> lower(ncv,ncv);
 	for (unsigned i=0;i<ncv;i++){
               for (unsigned j=0;j<ncv-i;j++){
-                      ifile.scanField("sigma_"+getPntrToArgument(j+i)->getName()+"_"+getPntrToArgument(j)->getName(),lower(j+i,j));
+                      ifile->scanField("sigma_"+getPntrToArgument(j+i)->getName()+"_"+getPntrToArgument(j)->getName(),lower(j+i,j));
                       upper(j,j+i)=lower(j+i,j);
               }
          }
@@ -418,13 +418,13 @@ void BiasMetaD::readGaussians(PlumedIFile&ifile)
 		}
 	}
   }else{
-  	for(unsigned i=0;i<ncv;++i)ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+  	for(unsigned i=0;i<ncv;++i)ifile->scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
   }
   
-  ifile.scanField("height",height);
-  ifile.scanField("biasf",dummy);
-  ifile.scanField("clock",dummy);
-  ifile.scanField();
+  ifile->scanField("height",height);
+  ifile->scanField("biasf",dummy);
+  ifile->scanField("clock",dummy);
+  ifile->scanField();
   nhills++;
   
   if(welltemp_){height*=(biasf_-1.0)/biasf_;}
