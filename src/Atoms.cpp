@@ -165,6 +165,10 @@ void Atoms::share(const std::set<AtomNumber>& unique){
 
 void Atoms::wait(){
 
+  if(dd){
+    dd.Bcast(&box[0][0],9,0);
+  }
+
   if(dd && int(gatindex.size())<natoms){
 // receive toBeReceived
     int count=0;
