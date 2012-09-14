@@ -142,7 +142,7 @@ PlumedFileBase::PlumedFileBase():
 
 PlumedFileBase::~PlumedFileBase()
 {
-  if(!cloned) fclose(fp);
+  if(!cloned && fp) fclose(fp);
 }
 
 PlumedFileBase::operator bool()const{
