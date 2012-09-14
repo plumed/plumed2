@@ -29,6 +29,8 @@
 #include "Matrix.h"
 #include "Random.h"
 #include "PlumedFile.h"
+#include "time.h"
+#include <iostream>
 
 #define DP2CUTOFF 6.25
 
@@ -115,7 +117,6 @@ private:
   };
   vector<double> sigma0_;
   vector<Gaussian> hills_;
-  FILE* hillsfile_;
   PlumedOFile hillsOfile_;
   Grid* BiasGrid_;
   FILE* gridfile_;
@@ -130,7 +131,12 @@ private:
   bool grid_;
   int adaptive_;
   FlexibleBin *flexbin;
-  
+  int mw_n_;
+  string mw_dir_;
+  int mw_id_;
+  int mw_rstride_;
+  vector<PlumedIFile> ifiles;
+  vector<string> ifilesnames;
   
   void   readGaussians(PlumedIFile&);
   void   writeGaussian(const Gaussian&,PlumedOFile&);
@@ -171,11 +177,14 @@ void BiasMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
   keys.add("optional","GRID_WFILE","the file on which to write the grid");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance or time dimensions");
+  keys.add("optional","WALKERS_ID", "walker id");
+  keys.add("optional","WALKERS_N", "number of walkers");
+  keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
+  keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
 }
 
 BiasMetaD::~BiasMetaD(){
   if(BiasGrid_) delete BiasGrid_;
-  if(hillsfile_) fclose(hillsfile_);
   hillsOfile_.close();
   if(gridfile_) fclose(gridfile_);
   delete [] dp_;
@@ -183,29 +192,25 @@ BiasMetaD::~BiasMetaD(){
 
 BiasMetaD::BiasMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
-hillsfile_(NULL),
-BiasGrid_(NULL),
-gridfile_(NULL),
-height0_(0.0),
-biasf_(1.0),
-temp_(0.0),
-dp_(NULL),
-stride_(0),
-wgridstride_(0),
-welltemp_(false),
-restart_(false),
-grid_(false),
-adaptive_(FlexibleBin::none)
+// Grid stuff initialization
+BiasGrid_(NULL), gridfile_(NULL), wgridstride_(0), grid_(false),
+// Metadynamics basic parameters
+height0_(0.0), biasf_(1.0), temp_(0.0),
+stride_(0), welltemp_(false), restart_(false),
+// Other stuff
+dp_(NULL), adaptive_(FlexibleBin::none),
+// Multiple walkers initialization
+mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
 {
   // parse the flexible hills
   string adaptiveoption;
   adaptiveoption="NONE";
   parse("ADAPTIVE",adaptiveoption);
   if (adaptiveoption=="GEOM"){
-		  log.printf("  Uses Geometry-based hills width: sigma must be in distance units and need only one sigma\n");
+		  log.printf("  Uses Geometry-based hills width: sigma must be in distance units and only one sigma is needed\n");
 		  adaptive_=FlexibleBin::geometry;	
   }else if (adaptiveoption=="DIFF"){
-		  log.printf("  Uses Diffusion-based hills width: sigma must be in time units and need only one sigma\n");
+		  log.printf("  Uses Diffusion-based hills width: sigma must be in time units and only one sigma is needed\n");
 		  adaptive_=FlexibleBin::diffusion;	
   }else if (adaptiveoption=="NONE"){
 		  adaptive_=FlexibleBin::none;	
@@ -221,7 +226,7 @@ adaptive_(FlexibleBin::none)
   }else{
   // if you use flexible hills you need one sigma  
          if(sigma0_.size()!=1){
-	         plumed_merror("If you choose ADAPTIVE you need only one sigma according to your choice of the type");
+	         plumed_merror("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
          } 
   	 flexbin=new FlexibleBin(adaptive_,this,sigma0_[0]); 
   }
@@ -240,6 +245,7 @@ adaptive_(FlexibleBin::none)
    welltemp_=true;
   }
 
+  // Grid Stuff
   vector<double> gmin(getNumberOfArguments());
   parseVector("GRID_MIN",gmin);
   plumed_assert(gmin.size()==getNumberOfArguments() || gmin.size()==0);
@@ -259,9 +265,15 @@ adaptive_(FlexibleBin::none)
   parse("GRID_WSTRIDE",wgridstride_);
   string gridfname;
   parse("GRID_WFILE",gridfname); 
-
   if(grid_&&gridfname.length()>0){plumed_assert(wgridstride_>0);}
   if(grid_&&wgridstride_>0){plumed_assert(gridfname.length()>0);}
+
+  // Multiple walkers
+  parse("WALKERS_N",mw_n_);
+  parse("WALKERS_ID",mw_id_);
+  if(mw_n_>0){plumed_assert(mw_n_>mw_id_);}
+  parse("WALKERS_DIR",mw_dir_);
+  parse("WALKERS_RSTRIDE",mw_rstride_);
 
   checkRead();
 
@@ -286,12 +298,18 @@ adaptive_(FlexibleBin::none)
    if(spline){log.printf("  Grid uses spline interpolation\n");}
    if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
    if(wgridstride_>0){log.printf("  Grid is written on file %s with stride %d\n",gridfname.c_str(),wgridstride_);} 
- }
-  
+  }
+  if(mw_n_>0){
+   log.printf("  %d multiple walkers active\n",mw_n_);
+   log.printf("  walker id %d\n",mw_id_);
+   log.printf("  reading stride %d\n",mw_rstride_);
+   log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+  }
+
   addComponent("bias");
 
 // for performance
-   dp_ = new double[getNumberOfArguments()];
+  dp_ = new double[getNumberOfArguments()];
 
 // initializing grid
   if(grid_){
@@ -312,22 +330,44 @@ adaptive_(FlexibleBin::none)
    if(wgridstride_>0){gridfile_=fopen(gridfname.c_str(),"w");}
   }
 
-// restarting from HILLS file
-  if(restart_){
-   hillsfile_=fopen(hillsfname.c_str(),"a+");
-   log.printf("  Restarting from %s:",hillsfname.c_str());
-   PlumedIFile ifile;
-   ifile.link(*this);
-   ifile.open(hillsfname,"r");
-   readGaussians(ifile);
-   ifile.close();
-   hillsOfile_.link(*this);
-   hillsOfile_.open(hillsfname,"aw");
+// creating vector of ifiles just for mw hills reading
+// open them all at the beginning
+  if(mw_n_>0){
+   for(int i=0;i<mw_n_;++i){
+    stringstream out; out << i;
+    string fname = mw_dir_+"/"+hillsfname+"."+out.str();
+    ifilesnames.push_back(fname);
+    PlumedIFile ifile;
+    ifile.link(*this);
+    ifile.open(fname,"r");
+    ifiles.push_back(ifile);
+   }
   }else{
+    ifilesnames.push_back(hillsfname);
+    PlumedIFile ifile;
+    ifile.link(*this);
+    ifile.open(hillsfname,"r");
+    ifiles.push_back(ifile);
+  }
+ 
+ // restarting from HILLS file
+  if(restart_){
+   for(unsigned i=0;i<ifilesnames.size();++i){
+    log.printf("  Restarting from %s:",ifilesnames[i].c_str());
+    readGaussians(ifiles[i]);
+   }
+   // close only the walker own hills file (need for writing)
+   ifiles[mw_id_].close();
    hillsOfile_.link(*this);
-   hillsOfile_.open(hillsfname,"w");
+   hillsOfile_.open(ifilesnames[mw_id_],"aw");
+  }else{
+   // close only the walker own hills file (need for writing)
+   ifiles[mw_id_].close();
+   hillsOfile_.link(*this);
+   hillsOfile_.open(ifilesnames[mw_id_],"w");
   } 
   hillsOfile_.addConstantField("multivariate");
+
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
@@ -380,11 +420,13 @@ void BiasMetaD::readGaussians(PlumedIFile&ifile)
   }else{
   	for(unsigned i=0;i<ncv;++i)ifile.scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
   }
-
+  
   ifile.scanField("height",height);
   ifile.scanField("biasf",dummy);
+  ifile.scanField("clock",dummy);
   ifile.scanField();
   nhills++;
+  
   if(welltemp_){height*=(biasf_-1.0)/biasf_;}
   addGaussian(Gaussian(center,sigma,height,multivariate));
  }     
@@ -434,6 +476,7 @@ void BiasMetaD::writeGaussian(const Gaussian& hill, PlumedOFile&file){
   double height=hill.height;
   if(welltemp_){height*=biasf_/(biasf_-1.0);}
   file.printField("height",height).printField("biasf",biasf_);
+  file.printField("clock",int(time(0)));
   file.printField();
 }
 
