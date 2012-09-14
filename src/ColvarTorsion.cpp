@@ -56,6 +56,7 @@ TORSION VECTOR1=2,1 AXIS=2,3 VECTOR2=3,4
    
 class ColvarTorsion : public Colvar {
   bool pbc;
+  bool do_cosine;
 
 public:
   ColvarTorsion(const ActionOptions&);
@@ -72,17 +73,21 @@ void ColvarTorsion::registerKeywords(Keywords& keys){
    keys.add("atoms","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTOR1 and VECTOR2 keywords."); 
    keys.add("atoms","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
    keys.add("atoms","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
+   keys.addFlag("COSINE",false,"calculate cosine instead of dihedral");
 }
 
 ColvarTorsion::ColvarTorsion(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-pbc(true)
+pbc(true),
+do_cosine(false)
 {
   vector<AtomNumber> atoms,v1,v2,axis;
   parseAtomList("ATOMS",atoms);
   parseAtomList("VECTOR1",v1);
   parseAtomList("VECTOR2",v2);
   parseAtomList("AXIS",axis);
+
+  parseFlag("COSINE",do_cosine);
 
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
@@ -113,7 +118,11 @@ pbc(true)
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 
-  addValueWithDerivatives(); setPeriodic(-pi,pi);
+  if(do_cosine) log.printf("  calculating cosine instead of torsion\n");
+
+  addValueWithDerivatives();
+  if(!do_cosine) setPeriodic(-pi,pi);
+  else setNotPeriodic();
   requestAtoms(atoms);
 }
 
@@ -133,6 +142,12 @@ void ColvarTorsion::calculate(){
   Vector dd0,dd1,dd2;
   Torsion t;
   double torsion=t.compute(d0,d1,d2,dd0,dd1,dd2);
+  if(do_cosine){
+   dd0 *= -sin(torsion);
+   dd1 *= -sin(torsion);
+   dd2 *= -sin(torsion);
+   torsion = cos(torsion);
+  }
   setAtomsDerivatives(0,dd0);
   setAtomsDerivatives(1,-dd0);
   setAtomsDerivatives(2,dd1);
