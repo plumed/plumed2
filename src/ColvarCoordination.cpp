@@ -115,7 +115,7 @@ reduceListAtNextStep(false)
     double r0=0.0;
     parse("R_0",r0);
     plumed_massert(r0>0.0,"R_0 is compulsory");
-    parse("D_0",r0);
+    parse("D_0",d0);
     parse("NN",nn);
     parse("MM",mm);
     switchingFunction.set(nn,mm,r0,d0);
