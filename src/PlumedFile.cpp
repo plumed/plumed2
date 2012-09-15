@@ -285,9 +285,20 @@ PlumedIFile& PlumedIFile::advanceField(){
   plumed_assert(!inMiddleOfField);
   std::string line;
   bool done=false;
+  fpos_t pos;
   while(!done){
+    //std::cout << "I am here before " << ftell(fp) << std::endl;
+    // save current position
+    fgetpos(fp,&pos);
+    //std::cout << "check eof before " << feof(fp) << std::endl;
     getline(line);
-    if(!*this) return *this;
+    //std::cout << "check eof after " << feof(fp) << std::endl;
+    //std::cout << "I am here after " << ftell(fp) << std::endl;                   
+    // if end of file go back to previous saved position
+    if(!*this){
+      fsetpos(fp,&pos);
+      return *this;
+    }
     std::vector<std::string> words=Tools::getWords(line);
     if(words.size()>=2 && words[0]=="#!" && words[1]=="FIELDS"){
       fields.clear();
@@ -307,7 +318,17 @@ PlumedIFile& PlumedIFile::advanceField(){
       for(unsigned i=0;i<fields.size();i++) if(!fields[i].constant) nf++;
       Tools::trimComments(line);
       words=Tools::getWords(line);
-      plumed_assert(nf==words.size());
+      // if line is not complete
+      if(nf!=words.size()){
+      //   std::cout << nf << " " << words.size() << std::endl;
+      // reset to previous point
+         fsetpos(fp,&pos);
+      // set end of file to true (for returning in getField)
+         set_eof(true);
+      //   if(!*this) std::cout << "set eof to " << eof << std::endl;
+      // and exit
+         return *this;
+      }
       unsigned j=0;
       for(unsigned i=0;i<fields.size();i++){
         if(fields[i].constant) continue;
@@ -354,7 +375,6 @@ PlumedIFile& PlumedIFile::scanField(const std::string&name,int &x){
   return *this;
 }
 
-
 PlumedIFile& PlumedIFile::scanField(){
   for(unsigned i=0;i<fields.size();i++){
     plumed_assert(fields[i].read);
@@ -388,9 +408,7 @@ unsigned PlumedIFile::findField(const std::string&name)const{
   return i;
 }
 
-void PlumedIFile::reset_eof(){
- eof = false; 
- clearerr(fp);
+void PlumedIFile::set_eof(bool reset){
+ eof = reset;
  return;
 } 
-

@@ -361,6 +361,7 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
    for(unsigned i=0;i<ifilesnames.size();++i){
     log.printf("  Restarting from %s:",ifilesnames[i].c_str());
     readGaussians(ifiles[i]);
+    ifiles[i]->set_eof(false);
    }
    // close only the walker own hills file (need for writing)
    ifiles[mw_id_]->close();
@@ -699,8 +700,8 @@ void BiasMetaD::update(){
    for(unsigned i=0;i<ifilesnames.size();++i){
     if(i==mw_id_) continue;
     log.printf("  Reading hills from %s:",ifilesnames[i].c_str());
-    ifiles[i]->reset_eof();
     readGaussians(ifiles[i]);
+    ifiles[i]->set_eof(false);
    }
  } 
 }

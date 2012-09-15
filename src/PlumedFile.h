@@ -284,7 +284,7 @@ Typically used as
 /// Get a full line as a string
   PlumedIFile& getline(std::string&);
 /// Reset end of file                                                              
-  void reset_eof();
+  void set_eof(bool);
 };
 
 /// Write using << syntax
