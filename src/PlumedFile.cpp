@@ -388,5 +388,9 @@ unsigned PlumedIFile::findField(const std::string&name)const{
   return i;
 }
 
-
+void PlumedIFile::reset_eof(){
+ eof = false; 
+ clearerr(fp);
+ return;
+} 
 

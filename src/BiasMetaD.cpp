@@ -699,6 +699,7 @@ void BiasMetaD::update(){
    for(unsigned i=0;i<ifilesnames.size();++i){
     if(i==mw_id_) continue;
     log.printf("  Reading hills from %s:",ifilesnames[i].c_str());
+    ifiles[i]->reset_eof();
     readGaussians(ifiles[i]);
    }
  } 
