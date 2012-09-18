@@ -191,6 +191,7 @@ BiasMetaD::~BiasMetaD(){
   if(mw_n_>0){
   // close files
    for(unsigned i=0;i<ifiles.size();++i){
+     if(i==mw_id_)continue;
      ifiles[i]->close();
    }
   }
