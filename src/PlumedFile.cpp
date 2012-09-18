@@ -87,6 +87,10 @@ PlumedFileBase& PlumedFileBase::link(FILE*fp){
 
 PlumedFileBase& PlumedFileBase::flush(){
   fflush(fp);
+  if(heavyFlush){
+    fclose(fp);
+    fp=std::fopen(const_cast<char*>(path.c_str()),"a");
+  }
   return *this;
 }
 
@@ -113,11 +117,14 @@ PlumedFileBase& PlumedFileBase::open(const std::string& path,const std::string& 
   err=false;
   fp=NULL;
   if(plumed){
-    const std::string pathsuf=path+plumed->getSuffix();
-    fp=std::fopen(const_cast<char*>(pathsuf.c_str()),const_cast<char*>(mode.c_str()));
+    this->path=path+plumed->getSuffix();
+    fp=std::fopen(const_cast<char*>(this->path.c_str()),const_cast<char*>(mode.c_str()));
+  }
+  if(!fp){
+    this->path=path;
+    fp=std::fopen(const_cast<char*>(this->path.c_str()),const_cast<char*>(mode.c_str()));
   }
   if(plumed) plumed->insertFile(*this);
-  if(!fp) fp=std::fopen(const_cast<char*>(path.c_str()),const_cast<char*>(mode.c_str()));
   plumed_massert(fp,"file " + path + "cannot be found");
   return *this;
 }
@@ -137,12 +144,14 @@ PlumedFileBase::PlumedFileBase():
   action(NULL),
   cloned(false),
   eof(false),
-  err(false)
+  err(false),
+  heavyFlush(false)
 {
 }
 
 PlumedFileBase::~PlumedFileBase()
 {
+  if(plumed) plumed->eraseFile(*this);
   if(!cloned && fp) fclose(fp);
 }
 

@@ -374,7 +374,7 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
    hillsOfile_.open(ifilesnames[mw_id_],"w");
   } 
   hillsOfile_.addConstantField("multivariate");
-
+  hillsOfile_.setHeavyFlush();
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(

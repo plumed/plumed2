@@ -72,6 +72,10 @@ protected:
   bool eof;
 /// Set to true when error is encountered
   bool err;
+/// path of the opened file
+  std::string path;
+/// Set to true if you want flush to be heavy (close/reopen)
+  bool heavyFlush;
 public:
 /// Link to an already open filed
   PlumedFileBase& link(FILE*);
@@ -96,6 +100,8 @@ public:
   static void test();
 /// Check for error/eof.
   operator bool () const;
+/// Set heavyFlush flag
+  void setHeavyFlush(){ heavyFlush=true;};
 };
 
 /**
