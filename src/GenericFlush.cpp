@@ -55,6 +55,7 @@ public:
   static void registerKeywords( Keywords& keys );
   void calculate(){};
   void apply(){
+    plumed.fflush();
     log.flush();
     const ActionSet & actionSet(plumed.getActionSet());
     for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p)

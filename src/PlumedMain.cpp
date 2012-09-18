@@ -595,6 +595,22 @@ std::string PlumedMain::cite(const std::string&item){
   return citations.cite(item);
 }
 
+void PlumedMain::fflush(){
+  for(files_iterator p=files.begin();p!=files.end();++p){
+    (*p)->flush();
+  }
+}
+
+void PlumedMain::insertFile(PlumedFileBase&f){
+  files.insert(&f);
+}
+
+void PlumedMain::eraseFile(PlumedFileBase&f){
+  files.erase(&f);
+}
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

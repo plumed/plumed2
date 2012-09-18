@@ -116,6 +116,7 @@ PlumedFileBase& PlumedFileBase::open(const std::string& path,const std::string& 
     const std::string pathsuf=path+plumed->getSuffix();
     fp=std::fopen(const_cast<char*>(pathsuf.c_str()),const_cast<char*>(mode.c_str()));
   }
+  if(plumed) plumed->insertFile(*this);
   if(!fp) fp=std::fopen(const_cast<char*>(path.c_str()),const_cast<char*>(mode.c_str()));
   plumed_massert(fp,"file " + path + "cannot be found");
   return *this;

@@ -27,6 +27,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <set>
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -59,6 +60,7 @@ class PlumedCommunicator;
 class Stopwatch;
 class Citations;
 class ExchangePatterns;
+class PlumedFileBase;
 
 /**
 Main plumed object.
@@ -119,6 +121,10 @@ private:
 
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
   ExchangePatterns exchangepatterns;
+
+  std::set<PlumedFileBase*> files;
+  typedef std::set<PlumedFileBase*>::iterator files_iterator;
+
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
@@ -219,6 +225,12 @@ public:
   FILE* fopen(const char *path, const char *mode);
 /// Closes a file opened with PlumedMain::fopen()
   int fclose(FILE*fp);
+/// Insert a file
+  void insertFile(PlumedFileBase&);
+/// Erase a file
+  void eraseFile(PlumedFileBase&);
+/// Flush all files
+  void fflush();
 };
 
 /////
