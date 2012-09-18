@@ -87,6 +87,7 @@ PlumedFileBase& PlumedFileBase::link(FILE*fp){
 
 PlumedFileBase& PlumedFileBase::flush(){
   fflush(fp);
+std::cerr<<"FLUSHING "<<path<<"\n";
   if(heavyFlush){
     fclose(fp);
     fp=std::fopen(const_cast<char*>(path.c_str()),"a");
@@ -328,17 +329,17 @@ PlumedIFile& PlumedIFile::advanceField(){
       for(unsigned i=0;i<fields.size();i++) if(!fields[i].constant) nf++;
       Tools::trimComments(line);
       words=Tools::getWords(line);
-      // if line is not complete
-      if(nf!=words.size()){
-      //   std::cout << nf << " " << words.size() << std::endl;
-      // reset to previous point
-         fsetpos(fp,&pos);
-      // set end of file to true (for returning in getField)
-         set_eof(true);
-      //   if(!*this) std::cout << "set eof to " << eof << std::endl;
-      // and exit
-         return *this;
-      }
+//      // if line is not complete
+//      if(nf!=words.size()){
+//      //   std::cout << nf << " " << words.size() << std::endl;
+//      // reset to previous point
+//         fsetpos(fp,&pos);
+//      // set end of file to true (for returning in getField)
+//         set_eof(true);
+//      //   if(!*this) std::cout << "set eof to " << eof << std::endl;
+//      // and exit
+//         return *this;
+//      }
       unsigned j=0;
       for(unsigned i=0;i<fields.size();i++){
         if(fields[i].constant) continue;
@@ -405,8 +406,14 @@ PlumedIFile::~PlumedIFile(){
 PlumedIFile& PlumedIFile::getline(std::string &str){
   char tmp;
   str="";
+  fpos_t pos;
+  fgetpos(fp,&pos);
   while(llread(&tmp,1)==1 && tmp && tmp!='\n' && !eof){
     str+=tmp;
+  }
+  if(eof){
+    str="";
+    fsetpos(fp,&pos);
   }
   return *this;
 }
