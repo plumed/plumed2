@@ -1,16 +1,35 @@
-DOCUMENTATION
+INSTALL
 
-To build the documentation, type
-$ make doc
-You need doxygen (www.doxygen.org)
-installed to see the html documentation,
-and graphviz (www.graphviz.org/)
-if you want to see the graphs
-of class hierarichy.
+Needed software:
+* GNU make
+* c/c++/fortran compiler
+* xxd (present in most unix distributions)
+* doxygen (www.doxygen.org) to build user manual
+* graphviz (www.graphviz.org) to show class hierarchy in developer manual
+* a modern version of the "patch" command
 
-The starting point for user documentation is then
+Quick instructions:
+* configure for your system:
+> ./configure.sh
+* if necessary, edit Makefile.conf
+* configure your environment
+> source ./sourceme.sh
+* compile plumed
+> make
+* compile the manuals
+> make doc
+
+The starting point for user documentation is
 user-doc/html/index.html
 
 The starting point for developer documentation is
 developer-doc/html/index.html
+
+GIT VERSION
+
+The branch meant to be the most stable (= less unstable) one is "master"
+To report problems with the git version:
+* subscribe to google group plumed2-git (still limited access)
+* when reporting provide the git hash (get it with "git rev-parse HEAD")
+* be patient...
 
