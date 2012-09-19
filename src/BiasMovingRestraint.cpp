@@ -52,7 +52,7 @@ In the following 500 steps the restraint is progressively switched off.
 \verbatim
 DISTANCE ATOMS=2,4 LABEL=d
 MOVINGRESTRAINT ...
-  ARG=d1
+  ARG=d
   STEP0=0    AT0=1.0 KAPPA0=100.0
   STEP1=1000 AT1=2.0
   STEP2=2000 AT2=1.0
@@ -83,6 +83,9 @@ MOVINGRESTRAINT ...
 ... MOVINGRESTRAINT
 \endverbatim
 
+By default the Action is issuing some values which are 
+the work on each degree of freedom, the center of the harmoni potential,
+the total bias deposited  
 
 (See also \ref DISTANCE).
 
@@ -94,7 +97,10 @@ class BiasMovingRestraint : public Bias{
   std::vector<std::vector<double> > at;
   std::vector<std::vector<double> > kappa;
   std::vector<int> step;
-  vector<string> verse;
+  std::vector<double> oldaa;
+  std::vector<double> oldf;
+  std::vector<string> verse;
+  std::vector<double> work;
 public:
   BiasMovingRestraint(const ActionOptions&);
   void calculate();
@@ -150,7 +156,18 @@ verse(getNumberOfArguments())
 
   addComponent("bias");
   addComponent("force2");
-  addComponent("work");
+
+  // add the centers of the restraint as additional components that can be retrieved (useful for debug)
+
+  std::string comp;
+  for(int i=0;i< getNumberOfArguments() ;i++){
+	comp=getPntrToArgument(i)->getName()+"_cntr"; // each spring has its own center 
+        addComponent(comp);
+	comp=getPntrToArgument(i)->getName()+"_work"; // each spring has its own work
+        addComponent(comp);
+        work.push_back(0.); // initialize the work value 
+  }
+
 }
 
 
@@ -159,10 +176,12 @@ void BiasMovingRestraint::calculate(){
   double totf2=0.0;
   unsigned narg=getNumberOfArguments();
   int now=getStep();
-  std::vector<double> kk(narg),aa(narg);
+  std::vector<double> kk(narg),aa(narg),f(narg);
   if(now<=step[0]){
     kk=kappa[0];
     aa=at[0];
+    oldaa=at[0];
+    oldf.resize(narg);
   } else if(now>=step[step.size()-1]){
     kk=kappa[step.size()-1];
     aa=at[step.size()-1];
@@ -175,16 +194,23 @@ void BiasMovingRestraint::calculate(){
     for(unsigned j=0;j<narg;j++) aa[j]=(c1*at[i-1][j]+c2*at[i][j]);
   }
   for(unsigned i=0;i<narg;++i){
-    const double cv=difference(i,aa[i],getArgument(i));
+    const double cv=difference(i,aa[i],getArgument(i)); // this gives: getArgument(i) - aa[i]
+    getPntrToComponent(getPntrToArgument(i)->getName()+"_cntr")->set(aa[i]); 
     const double k=kk[i];
-    const double f=-k*cv;
+    f[i]=-k*cv;
     if(verse[i]=="U" && cv<0) continue;
     if(verse[i]=="L" && cv>0) continue;
     assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
+    work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]);
+    getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]); 
     ene+=0.5*k*cv*cv;
-    setOutputForce(i,f);
-    totf2+=f*f;
+    setOutputForce(i,f[i]);
+    totf2+=f[i]*f[i];
   };
+  for(unsigned i=0;i<narg;++i){
+    oldf[i]=f[i];
+    oldaa[i]=aa[i];
+  }
   getPntrToComponent("bias")->set(ene);
   getPntrToComponent("force2")->set(totf2);
 }

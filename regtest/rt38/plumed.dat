@@ -1,0 +1,8 @@
+t1: RMSD REFERENCE=../../trajectories/path_msd/frame_1.dat TYPE=OPTIMAL SQUARED
+MOVINGRESTRAINT ...
+ ARG=t1
+ STEP0=0      AT0=1.  KAPPA0=100.0
+ STEP1=5000   AT1=5.
+ LABEL=steer 
+... MOVINGRESTRAINT
+PRINT ARG=t1,steer.t1_cntr,steer.t1_work STRIDE=1 FILE=colvar FMT=%8.4f
