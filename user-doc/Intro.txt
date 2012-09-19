@@ -48,7 +48,10 @@ which provide plumed with more details as to how the action is to be performed. 
 (in which they tell plumed to do the calculation in a particular way - for example NOPBC tells plumed to not use the periodic
 bounadry conditions when calculating a particular colvar) or they can be words followed by an equals sign and a comma separated 
 list - WITH NO SPACES - of numbers or characters (so for example ATOMS=1,2,3,4 tells plumed to use atom numbers 1,2,3 and 4 in 
-the calculation of a particular colvar). Details on all the actions that are available in plumed can be found in the \ref
+the calculation of a particular colvar). Instead of commma separated list, it is possible to use space separated lists
+provided they are limited by braces (ATOMS={1 2 3 4}).
+
+Details on all the actions that are available in plumed can be found in the \ref
 Glossary. 
 
 The most important of these keywords is the label keyword as it is only by using these labels that we can pass data 
@@ -67,6 +70,15 @@ PRINT ARG=d1 FILE=colvar STRIDE=10
 
 then plumed will print out the value of the distance between atoms 1 and 2 every 10 steps to the file colvar as you have told
 plumed to take the value calculated by the action d1 and to print it.  
+Notice that if a word followed by a column is added at the beginning of the line (e.g. pippo:), Plumed automatically
+removes it and add an equivalent label (LABEL=pippo).
+Thus, a completely equivalent result can be obtained with the following shortcut:
+\verbatim
+d1: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=colvar STRIDE=10
+\endverbatim
+Also notice that all the actions can be labeled, and that many actions besides normal collective variables can define
+one or more value, which can be then referred using the corresponding label.
 
 By default the plumed inputs and outputs quantities in the following units:
 

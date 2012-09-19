@@ -160,9 +160,9 @@ cat $file.txt |
     echo "</table>" 
   elif [ "$LINE" = "@CODES@" ]
   then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+#    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
     cat automatic/codes.list
-    echo "</table>"
+#    echo "</table>"
   else
     echo -E "$LINE"
   fi

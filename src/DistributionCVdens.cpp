@@ -28,6 +28,7 @@ namespace PLMD {
 
 //+PLUMEDOC INTERNAL subcell
 /*
+
 Imagine we have a collection of collective variables that can all be assigned to a particular point in three 
 dimensional space. For example, we could have the values of the coordination numbers for all the atoms in the
 system. Because each CV value can be assigned to a particular point in space we can calculate the average

@@ -35,6 +35,8 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR COORDINATION
 /*
+Calculate coordination numbers.
+
 This keyword can be used to calculate the coordination numbers for atoms in your system. 
 We use the following switching function to make the coordination number differentiable:
 
