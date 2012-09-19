@@ -5,7 +5,8 @@ Needed software:
 * c/c++/fortran compiler
 * xxd (present in most unix distributions)
 * doxygen (www.doxygen.org) to build user manual
-* graphviz (www.graphviz.org) to show class hierarchy in developer manual
+* latex to build the user manual - used by doxygen
+* graphviz (www.graphviz.org) to show class hierarchy in developer manual - used by doxygen
 * a modern version of the "patch" command
 
 Quick instructions:
