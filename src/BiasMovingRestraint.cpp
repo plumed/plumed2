@@ -52,7 +52,7 @@ In the following 500 steps the restraint is progressively switched off.
 \verbatim
 DISTANCE ATOMS=2,4 LABEL=d
 MOVINGRESTRAINT ...
-  ARG=d1,d2
+  ARG=d1
   STEP0=0    AT0=1.0 KAPPA0=100.0
   STEP1=1000 AT1=2.0
   STEP2=2000 AT2=1.0

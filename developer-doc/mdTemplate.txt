@@ -129,9 +129,9 @@ plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);            // Pass a pointer
 plumed_cmd(plumedmain,"setPlumedDat",&plumedInput);            // Pass the name of the plumed input file from the md code to plumed
 plumed_cmd(plumedmain,"setMPIComm",&MPI_COMM_WORLD);           // Pass a pointer to the MPI communicator to plumed?
 plumed_cmd(plumedmain,"setNatoms",&natoms);                    // Pass a pointer to the number of atoms in the system to plumed
-plumed_cmd(plumedmain,"setMDEngine","gromacs");                // Pass the name of your md engine to plumed
-plumed_cmd(plumedmain,"setLog",fplog);                         // Pass the file on which to write out the plumed log 
-plumed_cmd(plumedmain,"setLogFile",fplog);
+plumed_cmd(plumedmain,"setMDEngine","gromacs");                // Pass the name of your md engine to plumed (now it is just a label) 
+plumed_cmd(plumedmain,"setLog",fplog);                         // Pass the file on which to write out the plumed log (if the file is already open)
+plumed_cmd(plumedmain,"setLogFile",fplog);		       // Pass the file  on which to write out the plumed log (to be created)
 plumed_cmd(plumedmain,"setTimestep",&delta_t);                 // Pass a pointer to the molecular dynamics timestep to plumed
 
 // Calls to do the actual initialization (all the above commands must appear before this call)
