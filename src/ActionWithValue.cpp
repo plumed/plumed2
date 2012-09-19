@@ -116,6 +116,8 @@ void ActionWithValue::addComponent( const std::string& name ){
      plumed_massert(values[i]->name!=thename,"there is already a value with this name");
   }
   values.push_back(new Value(this,thename, false ) );
+  std::string msg="  added component to this variable:  "+thename+" \n";
+  log.printf(msg.c_str());
 }
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name ){
