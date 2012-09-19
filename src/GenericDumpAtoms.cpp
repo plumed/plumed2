@@ -34,6 +34,7 @@ namespace PLMD
 
 //+PLUMEDOC ANALYSIS DUMPATOMS
 /*
+Dump selected atoms on a file.
 
 This command can be used to output the positions of a particular set of atoms.
 The atoms required are ouput in a xyz formatted file.  Importantly, if your
