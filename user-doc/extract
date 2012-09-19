@@ -53,7 +53,8 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
       lfile="automatic/"$2".list"
       
       print "<tr> <td width=5%> \\subpage ", $3,"</td> <td>" > lfile
-      printf "<tr> <td width=5%> \\ref %s </td><td> %s </td><td>",$3, $2 > gfile
+#       printf "<tr> <td width=5%> \\ref %s </td><td> %s </td><td>",$3, $2 > gfile
+      printf "<tr> <td width=%s> \\ref %s </td><td> %s </td><td>","5%",$3, $2 > gfile
 
       if(output!="")close(output);
       output="automatic/"$3".tmp";
