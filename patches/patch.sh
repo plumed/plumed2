@@ -203,10 +203,18 @@ case "$action" in
       echo "Compile plumed before patching"
       exit
     fi
+    if type -t plumed_before_patch 1>/dev/null ; then
+      echo "Executing plumed_before_patch function"
+      plumed_before_patch
+    fi
     echo "Linking Plumed.h and Plumed.inc ($mode mode)"
     ln -s "$PLUMED_ROOT/src/Plumed.h"
     ln -s "$PLUMED_ROOT/src/Plumed.inc.$mode" Plumed.inc
     bash "$diff"
+    if type -t plumed_after_patch 1>/dev/null ; then
+      echo "Executing plumed_after_patch function"
+      plumed_after_patch
+    fi
   ;;
   (save)
     if [ ! -L Plumed.h -o ! -L Plumed.inc ]
@@ -243,11 +251,22 @@ case "$action" in
         echo "ERROR: File $file is missing"
       fi
     done
+cat <<EOF
+* If you want your patch to perform some arbitrary action before/after
+* patching the diff files, just add a function named
+* plumed_before_patch/plumed_after_patch to the ${diff%diff}config file.
+* Do not forget to also add an equivalent plumed_before_revert/plumed_after_revert
+* function
+EOF
   ;;
   (revert)
     if [ ! -f "$diff" ] ; then
       echo "ERROR: MD engine not supported (or mispelled)"
       exit
+    fi
+    if type -t plumed_before_revert 1>/dev/null ; then
+      echo "Executing plumed_before_revert function"
+      plumed_before_revert
     fi
     if [ ! -L Plumed.h -o ! -L Plumed.inc ]
     then
@@ -266,6 +285,10 @@ case "$action" in
         mv "$bckfile" "$file"
         touch "$file"
       done
+    fi
+    if type -t plumed_after_revert 1>/dev/null ; then
+      echo "Executing plumed_after_revert function"
+      plumed_after_revert
     fi
 esac
 
