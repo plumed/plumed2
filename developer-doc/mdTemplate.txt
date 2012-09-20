@@ -74,13 +74,20 @@ Note that after you have this done, PLUMED creates a file in
 $PLUMED_ROOT/patches/ that is generally named 
 name-of-the-code.diff ( if your code is named name-of-the-code in the "save"
 phase). You can also manually create, in the same directory,  a file  
-called name-of-the-code.config so that you can use to perform three actions (totally optional):
-verify that the patching happens after some other configurations are done
-(typically after having run the config script), do some modifications to some
+called name-of-the-code.config so that you can use to perform five actions (totally optional).
+The first one can be used to do some heuristic check to verify that the patch
+is for the correct MD engine and that the MD source tree is in the correct state
+(this typically means that it hass been already configured).
+Then there are two functions that can
+do some modifications to some
 files that might vary considerable (as the Makefiles produced by the config
-procedure that change with the machine), do some actions after the
+procedure that change with the machine) and do some actions after the
 patching procedure is performed (a sanity check or a makedependence script to
-be rerun). This file is in bash and typically looks like this 
+be rerun).
+The last two ones should revert the effect of the previous ones in such
+a way that it is possible to smoothly revert the patch. Try to keep
+them consistent so as the revert feature works correctly.
+This file is in bash and typically looks like this 
 \verbatim
 function plumed_preliminary_test(){
 # Just check of the code is the right one: no error means it is ok 
@@ -88,14 +95,29 @@ function plumed_preliminary_test(){
 }
 
 function plumed_before_patch(){
-# do something on the Makefile
+# typically do something on the Makefile
 }
 
 function plumed_after_patch(){
-# call some makedepends 
+# typically call some makedepends if necessary
+}
+
+function plumed_after_revert(){
+# revert exacty the effect of plumed_before_patch
+# typically undoes what was done on the Makefile
+# additionally, one could add a makedepends
+}
+
+function plumed_before_revert(){
+# revert exactly the effect of plumed_after_patch
+# however, a makedepends script should always go in plumed_after_revert
 }
 
 \endverbatim
+
+\attention Be careful with these scripts. You have access to a lot of flexibility
+(adding files, modifying existing ones arbitrarily etc) but you should always 
+take care of the revertibility with "patch -r".
 
 
 
