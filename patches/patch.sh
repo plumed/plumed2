@@ -12,7 +12,7 @@ Actions (choose one):
   -l, --list-engines
                     print a list of available MD engines
   -s, --save
-                    save (*)
+                    save, this needs *.preplumed files (*)
   -n NEWENGINE, --new NEWENGINE
                     create a new patch named NEWENGINE (*)
 Options:

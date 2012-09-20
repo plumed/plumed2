@@ -69,6 +69,11 @@ command
 
 Now you can patch/unpatch your MD code, automatically linking PLUMED, as if it
 was an officially released interface.
+Note that the created diff file is executed as a bash script. This is
+particularly useful whenever your code, as a result of a configure, creates a
+makefile which can be remarkably different according to the architecture.
+In this case you can fiddle with some awk and sed to add the needed paths to
+PLUMED libraries.  
 
 \section language Language dependence
 
@@ -152,6 +157,11 @@ The various calls that can be used pass data and calculate the forces due to the
 plumed_cmd(plumedmain,"setStep",&step);                      // Pass a pointer to the current timestep to plumed
 / *** The way that you pass positions will depend on how they are stored in your code.  If the x, y and z position are all stored in a single array you may use:
 plumed_cmd(plumedmain,"setPositions",&pos[0][0]);            // Pass a pointer to the first element in the atomic positions array to plumed  
+                                                             // assuming they
+                                                             // are stored in
+                                                             // a
+                                                             // x1,y1,z1,x2,y2,z2 ...
+                                                             // kind of ordering
 / *** Othersize if you pass the three separate vectors of x, y and z positions using:
 plumed_cmd(plumedmain,"setPositionX",&x[0]);                 // Pass a pointer to the first element in the array of x component of the atomic positions to plumed
 plumed_cmd(plumedmain,"setPositionY",&y[0]);                 // Pass a pointer to the first element in the array of y component of the atomic positions to plumed
