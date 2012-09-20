@@ -60,7 +60,8 @@ PlumedMain::PlumedMain():
   atoms(*new Atoms(*this)),
   actionSet(*new ActionSet(*this)),
   bias(0.0),
-  novirial(false)
+  novirial(false),
+  restart(false)
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
@@ -356,7 +357,7 @@ void PlumedMain::readInputFile(std::string str){
   log.printf("FILE: %s\n",str.c_str());
   PlumedIFile ifile;
   ifile.link(*this);
-  ifile.open(str,"r");
+  ifile.open(str);
   std::vector<std::string> words;
   exchangepatterns.setFlag(exchangepatterns.NONE);
   while(Tools::getParsedLine(ifile,words)){
@@ -371,6 +372,10 @@ void PlumedMain::readInputFile(std::string str){
       exchangepatterns.setFlag(exchangepatterns.RANDOM);
       // I convert the seed to -seed because I think it is more general to use a positive seed in input
       if(words.size()>2&&words[1]=="SEED") {int seed; Tools::convert(words[2],seed); exchangepatterns.setSeed(-seed); }
+    }
+    else if(words[0]=="RESTART"){
+      restart=true;
+      log<<"Restarting simulation: files will be appended\n";
     }
     else if(words[0]=="INCLUDE"){
       plumed_assert(words.size()==2);

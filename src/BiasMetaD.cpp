@@ -127,7 +127,6 @@ private:
   int stride_;
   int wgridstride_; 
   bool welltemp_;
-  bool restart_;
   bool grid_;
   int adaptive_;
   FlexibleBin *flexbin;
@@ -166,7 +165,6 @@ void BiasMetaD::registerKeywords(Keywords& keys){
   keys.add("compulsory","HEIGHT","the heights of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");
-  keys.addFlag("RESTART",false,"restart the calculation from a previous metadynamics calculation.");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
@@ -203,7 +201,7 @@ PLUMED_BIAS_INIT(ao),
 BiasGrid_(NULL), gridfile_(NULL), wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
 height0_(0.0), biasf_(1.0), temp_(0.0),
-stride_(0), welltemp_(false), restart_(false),
+stride_(0), welltemp_(false),
 // Other stuff
 dp_(NULL), adaptive_(FlexibleBin::none),
 // Multiple walkers initialization
@@ -243,7 +241,6 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   plumed_assert(stride_>0);
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
-  parseFlag("RESTART",restart_);
   parse("BIASFACTOR",biasf_);
   plumed_assert(biasf_>=1.0);
   parse("TEMP",temp_);
@@ -346,19 +343,19 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
     ifilesnames.push_back(fname);
     PlumedIFile *ifile = new PlumedIFile();
     ifile->link(*this);
-    ifile->open(fname,"r");
+    ifile->open(fname);
     ifiles.push_back(ifile);
    }
   }else{
     ifilesnames.push_back(hillsfname);
     PlumedIFile *ifile = new PlumedIFile();
     ifile->link(*this);
-    ifile->open(hillsfname,"r");
+    ifile->open(hillsfname);
     ifiles.push_back(ifile);
   }
  
  // restarting from HILLS file
-  if(restart_){
+  if(plumed.getRestart()){
    for(unsigned i=0;i<ifilesnames.size();++i){
     log.printf("  Restarting from %s:",ifilesnames[i].c_str());
     readGaussians(ifiles[i]);

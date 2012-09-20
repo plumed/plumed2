@@ -122,6 +122,9 @@ private:
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
   ExchangePatterns exchangepatterns;
 
+/// Flag for restart
+  bool restart;
+
   std::set<PlumedFileBase*> files;
   typedef std::set<PlumedFileBase*>::iterator files_iterator;
 
@@ -231,6 +234,8 @@ public:
   void eraseFile(PlumedFileBase&);
 /// Flush all files
   void fflush();
+/// Check if restarting
+  bool getRestart()const;
 };
 
 /////
@@ -254,6 +259,11 @@ const std::string & PlumedMain::getSuffix()const{
 inline
 void PlumedMain::setSuffix(const std::string&s){
   suffix=s;
+}
+
+inline
+bool PlumedMain::getRestart()const{
+  return restart;
 }
 
 }

@@ -101,7 +101,7 @@ rotate(0)
   ofile.link(*this);
   parse("FILE",file);
   if(file.length()>0){
-    ofile.open(file.c_str(),"wa");
+    ofile.open(file.c_str());
     log.printf("  on file %s\n",file.c_str());
   } else {
     log.printf("  on plumed log file\n");

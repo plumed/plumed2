@@ -89,8 +89,6 @@ public:
   PlumedFileBase& link(Action&);
 /// Flushes the file to disk
   PlumedFileBase& flush();
-/// Opens the file
-  PlumedFileBase& open(const std::string&name,const std::string& mode);
 /// Closes the file
 /// Should be used only for explicitely opened files.
   void        close();
@@ -102,6 +100,8 @@ public:
   operator bool () const;
 /// Set heavyFlush flag
   void setHeavyFlush(){ heavyFlush=true;};
+/// Opens the file (without auto-backup)
+  PlumedFileBase& open(const std::string&name,const std::string& mode);
 };
 
 /**
@@ -195,11 +195,15 @@ public:
   ~PlumedOFile();
 /// Allows overloading of link
   using PlumedFileBase::link;
+/// Allows overloading of open
+  using PlumedFileBase::open;
 /// Allows linking this PlumedOFile to another one.
 /// In this way, everything written to this PlumedOFile will be immediately
 /// written on the linked PlumedOFile. Notice that a PlumedOFile should
 /// be either opened explicitly, linked to a FILE or linked to a PlumedOFile
   PlumedOFile& link(PlumedOFile&);
+/// Opens the file using automatic append/backup
+  PlumedOFile& open(const std::string&name);
 /// Set the prefix for output.
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
 /// be parsed using fields in a PlumedIFile.
@@ -270,6 +274,8 @@ public:
   PlumedIFile();
 /// Destructor
   ~PlumedIFile();
+/// Opens the file 
+  PlumedIFile& open(const std::string&name);
 /// Gets the list of all fields
   PlumedIFile& scanFieldList(std::vector<std::string>&);
 /// Read a double field

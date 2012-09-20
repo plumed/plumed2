@@ -34,7 +34,7 @@ using namespace PLMD;
 
 void PlumedFileBase::test(){
   PLMD::PlumedOFile pof;
-  pof.open("ciao","w");
+  pof.open("ciao");
   pof.printf("%s\n","test1");
   pof.setLinePrefix("plumed: ");
   pof.printf("%s\n","test2");
@@ -48,7 +48,7 @@ void PlumedFileBase::test(){
 
   PLMD::PlumedIFile pif;
   std::string s;
-  pif.open("ciao","r");
+  pif.open("ciao");
   pif.getline(s); std::printf("%s\n",s.c_str());
   pif.getline(s); std::printf("%s\n",s.c_str());
   
@@ -87,7 +87,6 @@ PlumedFileBase& PlumedFileBase::link(FILE*fp){
 
 PlumedFileBase& PlumedFileBase::flush(){
   fflush(fp);
-std::cerr<<"FLUSHING "<<path<<"\n";
   if(heavyFlush){
     fclose(fp);
     fp=std::fopen(const_cast<char*>(path.c_str()),"a");
@@ -292,6 +291,41 @@ PlumedOFile& PlumedOFile::printField(){
   return *this;
 }
 
+PlumedOFile& PlumedOFile::open(const std::string&path){
+  plumed_assert(!cloned);
+  eof=false;
+  err=false;
+  fp=NULL;
+  this->path=path;
+  if(plumed && plumed->getRestart()){
+     fp=std::fopen(const_cast<char*>(this->path.c_str()),"a");
+  } else {
+     if(!comm || comm->Get_rank()==0){
+       FILE* ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+       FILE* fff=NULL;
+       if(ff){
+         std::string backup;
+         for(int i=0;;i++){
+           std::string num;
+           Tools::convert(i,num);
+           backup="bck."+num+"."+path;
+           fff=std::fopen(backup.c_str(),"r");
+           if(!fff) break;
+         }
+         int check=rename(path.c_str(),backup.c_str());
+         plumed_massert(check==0,"renaming "+path+" into "+backup+" failed for some reason");
+       }
+       if(ff) std::fclose(ff);
+       if(fff) std::fclose(fff);
+     }
+     comm->Barrier();
+     fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
+  }
+  if(plumed) plumed->insertFile(*this);
+  return *this;
+}
+
+
 PlumedIFile& PlumedIFile::advanceField(){
   plumed_assert(!inMiddleOfField);
   std::string line;
@@ -351,6 +385,11 @@ PlumedIFile& PlumedIFile::advanceField(){
     }
   }
   inMiddleOfField=true;
+  return *this;
+}
+
+PlumedIFile& PlumedIFile::open(const std::string&name){
+  PlumedFileBase::open(name,"r");
   return *this;
 }
 
