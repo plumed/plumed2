@@ -69,11 +69,36 @@ command
 
 Now you can patch/unpatch your MD code, automatically linking PLUMED, as if it
 was an officially released interface.
-Note that the created diff file is executed as a bash script. This is
-particularly useful whenever your code, as a result of a configure, creates a
-makefile which can be remarkably different according to the architecture.
-In this case you can fiddle with some awk and sed to add the needed paths to
-PLUMED libraries.  
+
+Note that after you have this done, PLUMED creates a file in
+$PLUMED_ROOT/patches/ that is generally named 
+name-of-the-code.diff ( if your code is named name-of-the-code in the "save"
+phase). You can also manually create, in the same directory,  a file  
+called name-of-the-code.config so that you can use to perform three actions (totally optional):
+verify that the patching happens after some other configurations are done
+(typically after having run the config script), do some modifications to some
+files that might vary considerable (as the Makefiles produced by the config
+procedure that change with the machine), do some actions after the
+patching procedure is performed (a sanity check or a makedependence script to
+be rerun). This file is in bash and typically looks like this 
+\verbatim
+function plumed_preliminary_test(){
+# Just check of the code is the right one: no error means it is ok 
+  grep -q  name-of-the-code Somefile 
+}
+
+function plumed_before_patch(){
+# do something on the Makefile
+}
+
+function plumed_after_patch(){
+# call some makedepends 
+}
+
+\endverbatim
+
+
+
 
 \section language Language dependence
 
