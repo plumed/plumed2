@@ -25,6 +25,7 @@
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
+#include "Random.h"
 
 using namespace std;
 using namespace PLMD;
@@ -305,6 +306,8 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 
 double OptimalAlignment::weightedFindiffTest( bool rmsd){
 
+        Random rnd;
+
 	log.printf("Entering rmsd finite difference test system\n ");
 	log.printf("RMSD OR MSD: %s\n",(rmsd)?"rmsd":"msd");
 	log.printf("-------------------------------------------\n");
@@ -341,7 +344,7 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	for(unsigned j=0;j<3;j++){
 	   for(unsigned i=0;i<derrdp0.size();i++){
 	       // random displacement
-	       delta=(drand48()-0.5)*2*step;
+	       delta=(rnd.RandU01()-0.5)*2*step;
 	       p0[i][j]+=delta;
 	       assignP0( p0 );
 	       err=calculate(rmsd, fakederivatives);
@@ -363,7 +366,7 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	for(unsigned j=0;j<3;j++){
 	   for(unsigned i=0;i<derrdp1.size();i++){
 	       // random displacement
-	       delta=(drand48()-0.5)*2*step;
+	       delta=(rnd.RandU01()-0.5)*2*step;
 	       p1[i][j]+=delta;
 	       assignP1( p1 );
 	       err=calculate(rmsd, fakederivatives);

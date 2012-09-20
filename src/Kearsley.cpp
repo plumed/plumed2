@@ -27,6 +27,7 @@
 #include "Tensor.h"
 #include "Log.h"
 #include "Matrix.h"
+#include "Random.h"
 
 using namespace std;
 using namespace PLMD;
@@ -744,10 +745,11 @@ double step=1.e-6,olderr,delta;
 double delta1;
 vector<double> align1;
 align1.resize(p0.size());
+Random rnd;
 for (i=0;i<p0.size();i++){
 		// draw a random number
-	    delta=drand48();
-	    delta1=drand48();
+	    delta=rnd.RandU01();
+	    delta1=rnd.RandU01();
 	    if(delta>delta1){
 	    //if(delta>0.3){
 	    	align1[i]=delta;
@@ -770,7 +772,7 @@ log.printf("TESTING: derrdp1 \n");
 for(unsigned j=0;j<3;j++){
    for(unsigned i=0;i<derrdp1.size();i++){
        // random displacement
-       delta=(drand48()-0.5)*2*step;
+       delta=(rnd.RandU01()-0.5)*2*step;
        p1[i][j]+=delta;
 	   com1_is_removed=false; // this is required whenever the assignment is not done with the methods
        com0_is_removed=false; // this is required whenever the assignment is not done with the methods
@@ -793,7 +795,7 @@ log.printf("TESTING: derrdp0 \n");
 for(unsigned j=0;j<3;j++){
    for(unsigned i=0;i<derrdp0.size();i++){
        // random displacement
-       delta=(drand48()-0.5)*2*step;
+       delta=(rnd.RandU01()-0.5)*2*step;
        p0[i][j]+=delta;
        com0_is_removed=false; // this is required whenever the assignment is not done with the methods
        com1_is_removed=false; // this is required whenever the assignment is not done with the methods
@@ -818,7 +820,7 @@ for(l=0;l<3;l++){
     for(j=0;j<3;j++){
        for(i=0;i<p0.size();i++){
            // random displacement
-           delta=(drand48()-0.5)*2*step;
+           delta=(rnd.RandU01()-0.5)*2*step;
            p0[i][j]+=delta;
            com0_is_removed=false;
            com1_is_removed=false;
@@ -846,7 +848,7 @@ for(l=0;l<3;l++){
     for(j=0;j<3;j++){
        for(i=0;i<p1.size();i++){
            // random displacement
-           delta=(drand48()-0.5)*2*step;
+           delta=(rnd.RandU01()-0.5)*2*step;
            p1[i][j]+=delta;
            com0_is_removed=false;
            com1_is_removed=false;
