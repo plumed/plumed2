@@ -296,6 +296,9 @@ PlumedOFile& PlumedOFile::open(const std::string&path){
   err=false;
   fp=NULL;
   this->path=path;
+  if(plumed){
+    this->path+=plumed->getSuffix();
+  }
   if(plumed && plumed->getRestart()){
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"a");
   } else {
@@ -307,19 +310,19 @@ PlumedOFile& PlumedOFile::open(const std::string&path){
          for(int i=0;;i++){
            std::string num;
            Tools::convert(i,num);
-           backup="bck."+num+"."+path;
+           backup="bck."+num+"."+this->path;
            fff=std::fopen(backup.c_str(),"r");
            if(!fff) break;
          }
-         int check=rename(path.c_str(),backup.c_str());
-         plumed_massert(check==0,"renaming "+path+" into "+backup+" failed for some reason");
+         int check=rename(this->path.c_str(),backup.c_str());
+         plumed_massert(check==0,"renaming "+this->path+" into "+backup+" failed for some reason");
        }
        if(ff) std::fclose(ff);
        if(fff) std::fclose(fff);
      }
      comm->Barrier();
-     fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
   }
+  fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
   if(plumed) plumed->insertFile(*this);
   return *this;
 }
