@@ -32,8 +32,29 @@ namespace PLMD{
 //+PLUMEDOC GENERIC RESTART
 /*
 Activate restart.
-This directive MUST appear at the BEGINNING of the 
-plumed.dat file.
+
+This is a Setup directive and, as such, should appear
+at the beginning of the input file.
+
+\par Examples
+
+Using the following input:
+\verbatim
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=out
+\endverbatim
+a new 'out' file will be created. If an old one is on the way, it will be automatically backed up.
+On the other hand, using the following input:
+\verbatim
+RESTART
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=out
+\endverbatim
+the file 'out' will be appended.
+(See also \ref DISTANCE and \ref PRINT).
+
+\attention
+This directive can have also other side effects, e.g. on \ref METAD
 
 */
 //+ENDPLUMEDOC
