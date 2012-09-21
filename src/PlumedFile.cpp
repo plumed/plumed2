@@ -62,12 +62,11 @@ void PlumedFileBase::test(){
 size_t PlumedOFile::llwrite(const char*ptr,size_t s){
   size_t r;
   if(linked) return linked->llwrite(ptr,s);
-  if(fp){
-    if(! (comm && comm->Get_rank()>0)){
-      r=fwrite(ptr,1,s,fp);
-    }
-    if(comm) comm->Bcast(&r,1,0);
-  } else plumed_merror("writing on uninitilized PlumedFile");
+  if(! (comm && comm->Get_rank()>0)){
+    if(!fp) plumed_merror("writing on uninitilized PlumedFile");
+    r=fwrite(ptr,1,s,fp);
+  }
+  if(comm) comm->Bcast(&r,1,0);
   return r;
 }
 
