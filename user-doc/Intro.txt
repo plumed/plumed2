@@ -141,10 +141,10 @@ DISTANCE ...
 
 \section includes Including other files in the plumed input
 
-If, for some reason, you want to spread your plumed input over a number of files you can use INCLUDE as shown below:
+If, for some reason, you want to spread your plumed input over a number of files you can use \ref INCLUDE as shown below:
 
 \verbatim
-INCLUDE filename
+INCLUDE FILE=filename
 \endverbatim
 
 So, for example, a single "plumed.dat" file:
@@ -159,20 +159,20 @@ could be split up into two files as shown below:
  
 \verbatim
 DISTANCE ATOMS=0,1 LABEL=dist
-INCLUDE toBeIncluded.dat
+INCLUDE FILE=toBeIncluded.dat
 \endverbatim
 plus a "toBeIncluded.dat" file
 \verbatim
 RESTRAINT ARG=dist
 \endverbatim
 
-However, when you do this it is important to recognise that INCLUDE is a real directive that is only resolved
+However, when you do this it is important to recognise that \ref INCLUDE is a real directive that is only resolved
 after all the \ref comments have been stripped and the \ref ContinuationLines have been unrolled.  This means it
 is not possible to do things like:
 
 \verbatim
 # this is wrong:
-DISTANCE INCLUDE options.dat
+DISTANCE INCLUDE FILE=options.dat
 RESTRAINT ARG=dist
 \endverbatim
 
@@ -181,10 +181,10 @@ RESTRAINT ARG=dist
 You can introduce new functionality into plumed by placing it directly into the src directory and recompiling the 
 plumed libraries.  Alternatively, if you want to keep your code independent from the rest of plumed (perhaps
 so you can release it independely - we won't be offended), then you can create your own dynamic library.  To use this 
-in conjuction with plumed you can then load it at runtime by using the LOAD keyword as shown below:
+in conjuction with plumed you can then load it at runtime by using the \ref LOAD keyword as shown below:
 
 \verbatim
-LOAD library.so
+LOAD FILE=library.so
 \endverbatim
  
 N.B.  If your system uses a different suffix for dynamic libraries (e.g. macs use .dylib) then PLUMED will try to 
