@@ -1,0 +1,51 @@
+#########
+# KINDLY CONTRIBUTED BY TONI GIORGINO
+#########
+# Toni Giorgino - Experimental -*- Makefile -*- configuration for
+# cross-compiling Plumed using Mingw under Linux
+
+# To compile (we can't change make rules in this file):
+#   make -k all
+#   for i in plumed plumed-shared plumed-runtime ; do ln -s $i $i.exe ; done
+#   i686-w64-mingw32-strip plumed.exe
+
+# Notes
+#  - "plumed" here is a fully-static version; empty LIBS below 
+#    if you want linux-like shared versions.
+#  - Shared libraries are disabled. This means that the "runtime" plumed can
+#    not be built, nor can libPlumedKernel.dll
+#  - You need the cross-compiled versions of laplack and blas
+#  - Tested on FC17. 
+
+
+#CHECK_BOUNDARIES=-D_GLIBCXX_DEBUG
+
+LIBS=-static
+
+# TG Add the path to your cross-compiled lapack
+DYNAMIC_LIBS=-L../lapack-3.4.0/build/lib -lstdc++ -llapack -lblas -lgfortran  
+DOUBLEPRECISION=-fdefault-real-8
+
+# TG - disabling DLOPEN (but can be implemented)
+CPPFLAGS= $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE)
+CXXFLAGS=-pedantic -Wall -O -fPIC -ansi 
+CFLAGS=-pedantic -Wall -O -fPIC -ansi
+
+LDFLAGS=
+SOEXT=dll
+
+MINGW32_PREFIX=i686-w64-mingw32
+
+LDSO=$(MINGW32_PREFIX)-gcc -shared $(CFLAGS)
+LD=$(MINGW32_PREFIX)-g++
+LDF90=$(MINGW32_PREFIX)-gfortran
+CXX=$(MINGW32_PREFIX)-g++
+CC=$(MINGW32_PREFIX)-gcc
+FC=$(MINGW32_PREFIX)-gfortran
+
+GCCDEP=$(MINGW32_PREFIX)-g++
+
+
+
+
+
