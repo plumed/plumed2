@@ -20,10 +20,15 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ExchangePatterns.h"
+#include "Random.h"
 
 using namespace std;
 
 namespace PLMD{
+
+ExchangePatterns::ExchangePatterns():
+  random(*new Random)
+{}
 
 void ExchangePatterns::setNofR(const int nrepl){
   NumberOfReplicas=nrepl;

@@ -22,14 +22,15 @@
 #ifndef __PLUMED_ExchangePatterns_h
 #define __PLUMED_ExchangePatterns_h
 
-#include "Random.h"
-
 namespace PLMD {
+class Random;
+
   class ExchangePatterns {
     int    PatternFlag;
     int    NumberOfReplicas;
-    Random random;
+    Random& random;
 public:
+  ExchangePatterns();
   enum PatternFlags { NONE, RANDOM, NEIGHBOR, TOTAL };
   void setNofR(const int);
   void setSeed(const int);

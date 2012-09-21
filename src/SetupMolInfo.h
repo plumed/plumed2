@@ -24,7 +24,6 @@
 
 #include "ActionSetup.h"
 #include "ActionAtomistic.h"
-#include "PlumedMain.h"
 #include "PlumedException.h"
 #include "PDB.h"
 

@@ -42,6 +42,7 @@
 #include "CLToolMain.h"
 #include "Stopwatch.h"
 #include "Citations.h"
+#include "ExchangePatterns.h"
 
 using namespace PLMD;
 using namespace std;
@@ -60,6 +61,7 @@ PlumedMain::PlumedMain():
   atoms(*new Atoms(*this)),
   actionSet(*new ActionSet(*this)),
   bias(0.0),
+  exchangePatterns(*new(ExchangePatterns)),
   novirial(false)
 {
   stopwatch.start();
@@ -70,6 +72,7 @@ PlumedMain::~PlumedMain(){
   stopwatch.start();
   stopwatch.stop();
   if(initialized) log<<stopwatch;
+  delete &exchangePatterns;
   delete &actionSet;
   delete &citations;
   delete &atoms;
@@ -268,19 +271,19 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else if(word=="getExchangesFlag"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       exchangepatterns.getFlag((*static_cast<int*>(val)));
+       exchangePatterns.getFlag((*static_cast<int*>(val)));
   } else if(word=="setExchangesSeed"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       exchangepatterns.setSeed((*static_cast<int*>(val)));
+       exchangePatterns.setSeed((*static_cast<int*>(val)));
   } else if(word=="setNumberOfReplicas"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       exchangepatterns.setNofR((*static_cast<int*>(val)));
+       exchangePatterns.setNofR((*static_cast<int*>(val)));
   } else if(word=="getExchangesList"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       exchangepatterns.getList((static_cast<int*>(val)));
+       exchangePatterns.getList((static_cast<int*>(val)));
   } else {
 // multi word commands
 
@@ -353,7 +356,7 @@ void PlumedMain::readInputFile(std::string str){
   log.printf("FILE: %s\n",str.c_str());
   FILE*fp=fopen(str.c_str(),"r");
   std::vector<std::string> words;
-  exchangepatterns.setFlag(exchangepatterns.NONE);
+  exchangePatterns.setFlag(exchangePatterns.NONE);
   while(Tools::getParsedLine(fp,words)){
     if(words.empty())continue;
     else if(words[0]=="ENDPLUMED") break;
@@ -363,9 +366,9 @@ void PlumedMain::readInputFile(std::string str){
       setSuffix(words[1]);
     }
     else if(words[0]=="RANDOM_EXCHANGES"){
-      exchangepatterns.setFlag(exchangepatterns.RANDOM);
+      exchangePatterns.setFlag(exchangePatterns.RANDOM);
       // I convert the seed to -seed because I think it is more general to use a positive seed in input
-      if(words.size()>2&&words[1]=="SEED") {int seed; Tools::convert(words[2],seed); exchangepatterns.setSeed(-seed); }
+      if(words.size()>2&&words[1]=="SEED") {int seed; Tools::convert(words[2],seed); exchangePatterns.setSeed(-seed); }
     }
     else if(words[0]=="INCLUDE"){
       plumed_assert(words.size()==2);

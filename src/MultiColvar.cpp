@@ -23,6 +23,7 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include "SetupMolInfo.h"
+#include "Vessel.h"
 #include <vector>
 #include <string>
 

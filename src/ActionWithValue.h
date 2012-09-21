@@ -25,7 +25,6 @@
 #include "Action.h"
 #include "Value.h"
 #include "PlumedException.h"
-#include "VesselValueAccess.h"
 #include <vector>
 
 namespace PLMD{

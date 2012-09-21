@@ -23,6 +23,8 @@
 #include "Atoms.h"
 #include "ActionRegister.h"
 #include "ActionSet.h"
+#include "PlumedMain.h"
+
 
 namespace PLMD {
 

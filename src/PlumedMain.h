@@ -23,7 +23,6 @@
 #define __PLUMED_PlumedMain_h
 
 #include "WithCmd.h"
-#include "ExchangePatterns.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -118,7 +117,7 @@ private:
   double bias;
 
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
-  ExchangePatterns exchangepatterns;
+  ExchangePatterns& exchangePatterns;
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
