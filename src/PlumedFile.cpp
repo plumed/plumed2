@@ -321,8 +321,8 @@ PlumedOFile& PlumedOFile::open(const std::string&path){
        if(fff) std::fclose(fff);
      }
      comm->Barrier();
+     fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
   }
-  fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
   if(plumed) plumed->insertFile(*this);
   return *this;
 }
