@@ -30,6 +30,11 @@ ExchangePatterns::ExchangePatterns():
   random(*new Random)
 {}
 
+ExchangePatterns::~ExchangePatterns()
+{
+  delete &random;
+}
+
 void ExchangePatterns::setNofR(const int nrepl){
   NumberOfReplicas=nrepl;
 }

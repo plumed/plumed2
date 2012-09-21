@@ -31,6 +31,7 @@ class Random;
     Random& random;
 public:
   ExchangePatterns();
+  ~ExchangePatterns();
   enum PatternFlags { NONE, RANDOM, NEIGHBOR, TOTAL };
   void setNofR(const int);
   void setSeed(const int);
