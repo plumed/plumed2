@@ -72,6 +72,8 @@ It does not contain any static data.
 class PlumedMain:
   public WithCmd
 {
+/// I restrict access to this class so that other classes cannot mistakely change the restart flag.
+  friend class SetupRestart;
 public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.

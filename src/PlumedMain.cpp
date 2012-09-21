@@ -373,10 +373,6 @@ void PlumedMain::readInputFile(std::string str){
       // I convert the seed to -seed because I think it is more general to use a positive seed in input
       if(words.size()>2&&words[1]=="SEED") {int seed; Tools::convert(words[2],seed); exchangepatterns.setSeed(-seed); }
     }
-    else if(words[0]=="RESTART"){
-      restart=true;
-      log<<"Restarting simulation: files will be appended\n";
-    }
     else if(words[0]=="INCLUDE"){
       plumed_assert(words.size()==2);
       readInputFile(words[1]);
