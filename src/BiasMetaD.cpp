@@ -687,12 +687,14 @@ void BiasMetaD::update(){
    for(int i=0;i<mw_n_;++i){
     // don't read your own Gaussians
     if(i==mw_id_) continue;
-    // if the file exists and was not open previously, open it now!
+    // if the file is not open yet 
     if(!ifiles[i]->isOpen()){
+     // check if it exists now and open it!
      if(ifiles[i]->doExist(ifilesnames[i])) {
        ifiles[i]->open(ifilesnames[i]);
        ifiles[i]->set_eof(false);
      }
+    // otherwise read the new Gaussians 
     } else {
      log.printf("  Reading hills from %s:",ifilesnames[i].c_str());
      readGaussians(ifiles[i]);

@@ -356,18 +356,8 @@ PlumedIFile& PlumedIFile::advanceField(){
   bool done=false;
   fpos_t pos;
   while(!done){
-    //std::cout << "I am here before " << ftell(fp) << std::endl;
-    // save current position
-    //fgetpos(fp,&pos);
-    //std::cout << "check eof before " << feof(fp) << std::endl;
     getline(line);
-    //std::cout << "check eof after " << feof(fp) << std::endl;
-    //std::cout << "I am here after " << ftell(fp) << std::endl;                   
-    // if end of file go back to previous saved position
-    if(!*this){
-      //fsetpos(fp,&pos);
-      return *this;
-    }
+    if(!*this){return *this;}
     std::vector<std::string> words=Tools::getWords(line);
     if(words.size()>=2 && words[0]=="#!" && words[1]=="FIELDS"){
       fields.clear();
