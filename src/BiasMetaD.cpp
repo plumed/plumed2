@@ -350,8 +350,8 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
     if(plumed.getRestart()){
      log.printf("  Restarting from %s:",ifilesnames[i].c_str());                  
      readGaussians(ifiles[i]);                                                    
-     ifiles[i]->set_eof(false);
     }
+    ifiles[i]->set_eof(false);
     // close only the walker own hills file for later writing
     if(i==mw_id_) ifiles[i]->close();
    }
@@ -689,7 +689,10 @@ void BiasMetaD::update(){
     if(i==mw_id_) continue;
     // if the file exists and was not open previously, open it now!
     if(!ifiles[i]->isOpen()){
-     if(ifiles[i]->doExist(ifilesnames[i])) ifiles[i]->open(ifilesnames[i]);
+     if(ifiles[i]->doExist(ifilesnames[i])) {
+       ifiles[i]->open(ifilesnames[i]);
+       ifiles[i]->set_eof(false);
+     }
     } else {
      log.printf("  Reading hills from %s:",ifilesnames[i].c_str());
      readGaussians(ifiles[i]);
