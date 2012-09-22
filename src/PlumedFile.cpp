@@ -128,6 +128,28 @@ PlumedFileBase& PlumedFileBase::open(const std::string& path,const std::string& 
   return *this;
 }
 
+
+bool PlumedFileBase::doExist(const std::string& path){
+  fp=NULL;
+  bool do_exist=false;
+  if(plumed){
+    this->path=path+plumed->getSuffix();
+    fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+  }
+  if(!fp){
+    this->path=path;
+    fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+  }
+  if(fp) {do_exist=true; fclose(fp);}
+  return do_exist; 
+}
+
+bool PlumedFileBase::isOpen(){
+  bool isopen=false;
+  if(fp) isopen=true;
+  return isopen; 
+}
+
 void        PlumedFileBase::close(){
   plumed_assert(!cloned);
   eof=false;

@@ -102,6 +102,10 @@ public:
   void setHeavyFlush(){ heavyFlush=true;};
 /// Opens the file (without auto-backup)
   PlumedFileBase& open(const std::string&name,const std::string& mode);
+/// Check if the file exists
+  bool doExist(const std::string& path);
+/// Check if a file is open
+  bool isOpen();
 };
 
 /**
