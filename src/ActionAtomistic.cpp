@@ -29,6 +29,8 @@
 #include "ActionWithVirtualAtom.h"
 #include "PlumedException.h"
 #include "Atoms.h"
+#include "Pbc.h"
+#include "PDB.h"
 
 using namespace std;
 using namespace PLMD;
@@ -36,10 +38,12 @@ using namespace PLMD;
 ActionAtomistic::~ActionAtomistic(){
 // forget the pending request
   atoms.remove(this);
+  delete(&pbc);
 }
 
 ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 Action(ao),
+pbc(*new(Pbc)),
 lockRequestAtoms(false),
 atoms(plumed.getAtoms())
 {

@@ -24,6 +24,7 @@
 #include "ActionRegister.h"
 #include "ActionSet.h"
 #include "PlumedMain.h"
+#include "PDB.h"
 
 
 namespace PLMD {
@@ -70,10 +71,15 @@ void SetupMolInfo::registerKeywords( Keywords& keys ){
   keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
 }
 
+SetupMolInfo::~SetupMolInfo(){
+  delete &pdb;
+}
+
 SetupMolInfo::SetupMolInfo( const ActionOptions&ao ):
 Action(ao),
 ActionSetup(ao),
-ActionAtomistic(ao)
+ActionAtomistic(ao),
+pdb(*new(PDB))
 {
   std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()!=0 ) error("cannot use more than one MOLINFO action in input");

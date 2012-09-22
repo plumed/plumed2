@@ -24,6 +24,7 @@
 #include "ActionSet.h"
 #include "SetupMolInfo.h"
 #include "Vessel.h"
+#include "Pbc.h"
 #include <vector>
 #include <string>
 

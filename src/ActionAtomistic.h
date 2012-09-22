@@ -23,14 +23,15 @@
 #define __PLUMED_ActionAtomistic_h
 
 #include "Action.h"
+#include "Tensor.h"
 #include <vector>
 #include <set>
-#include "Pbc.h"
-#include "PDB.h"
 
 namespace PLMD {
 
 class Atoms;
+class Pbc;
+class PDB;
 
 /// \ingroup MULTIINHERIT
 /// Action used to create objects that access the positions of the atoms from the MD code
@@ -43,7 +44,7 @@ class ActionAtomistic :
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
   Tensor                box;
-  Pbc                   pbc;
+  Pbc&                  pbc;
   Tensor                virial;
   std::vector<double>   masses;
   std::vector<double>   charges;

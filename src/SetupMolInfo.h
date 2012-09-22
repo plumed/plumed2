@@ -25,17 +25,19 @@
 #include "ActionSetup.h"
 #include "ActionAtomistic.h"
 #include "PlumedException.h"
-#include "PDB.h"
 
 namespace PLMD {
+
+class PDB;
 
 class SetupMolInfo : 
 public ActionSetup,  
 public ActionAtomistic {
 private:
-  PDB pdb;
+  PDB& pdb;
   std::vector< std::vector<AtomNumber> > read_backbone;
 public:
+  ~SetupMolInfo();
   static void registerKeywords( Keywords& keys );
   SetupMolInfo(const ActionOptions&ao);
   void getBackbone( std::vector<std::string>& resstrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone );
