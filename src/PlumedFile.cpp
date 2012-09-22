@@ -358,14 +358,14 @@ PlumedIFile& PlumedIFile::advanceField(){
   while(!done){
     //std::cout << "I am here before " << ftell(fp) << std::endl;
     // save current position
-    fgetpos(fp,&pos);
+    //fgetpos(fp,&pos);
     //std::cout << "check eof before " << feof(fp) << std::endl;
     getline(line);
     //std::cout << "check eof after " << feof(fp) << std::endl;
     //std::cout << "I am here after " << ftell(fp) << std::endl;                   
     // if end of file go back to previous saved position
     if(!*this){
-      fsetpos(fp,&pos);
+      //fsetpos(fp,&pos);
       return *this;
     }
     std::vector<std::string> words=Tools::getWords(line);
@@ -387,17 +387,7 @@ PlumedIFile& PlumedIFile::advanceField(){
       for(unsigned i=0;i<fields.size();i++) if(!fields[i].constant) nf++;
       Tools::trimComments(line);
       words=Tools::getWords(line);
-//      // if line is not complete
-//      if(nf!=words.size()){
-//      //   std::cout << nf << " " << words.size() << std::endl;
-//      // reset to previous point
-//         fsetpos(fp,&pos);
-//      // set end of file to true (for returning in getField)
-//         set_eof(true);
-//      //   if(!*this) std::cout << "set eof to " << eof << std::endl;
-//      // and exit
-//         return *this;
-//      }
+      plumed_assert(nf==words.size());
       unsigned j=0;
       for(unsigned i=0;i<fields.size();i++){
         if(fields[i].constant) continue;
@@ -474,7 +464,8 @@ PlumedIFile& PlumedIFile::getline(std::string &str){
   while(llread(&tmp,1)==1 && tmp && tmp!='\n' && !eof){
     str+=tmp;
   }
-  if(eof){
+  if(tmp!='\n'){
+    eof = true;
     str="";
     fsetpos(fp,&pos);
   }
