@@ -186,12 +186,9 @@ BiasMetaD::~BiasMetaD(){
   hillsOfile_.close();
   if(gridfile_) fclose(gridfile_);
   delete [] dp_;
-  if(mw_n_>0){
   // close files
-   for(unsigned i=0;i<ifiles.size();++i){
-     if(i==mw_id_)continue;
-     ifiles[i]->close();
-   }
+  for(int i=0;i<mw_n_;++i){
+   if(ifiles[i]->isOpen()) ifiles[i]->close();
   }
 }
 
@@ -205,7 +202,7 @@ stride_(0), welltemp_(false),
 // Other stuff
 dp_(NULL), adaptive_(FlexibleBin::none),
 // Multiple walkers initialization
-mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
+mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
 {
   // parse the flexible hills
   string adaptiveoption;
@@ -275,7 +272,7 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   // Multiple walkers
   parse("WALKERS_N",mw_n_);
   parse("WALKERS_ID",mw_id_);
-  if(mw_n_>0){plumed_assert(mw_n_>mw_id_);}
+  if(mw_n_>1){plumed_assert(mw_n_>mw_id_);}
   parse("WALKERS_DIR",mw_dir_);
   parse("WALKERS_RSTRIDE",mw_rstride_);
 
@@ -303,7 +300,7 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
    if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
    if(wgridstride_>0){log.printf("  Grid is written on file %s with stride %d\n",gridfname.c_str(),wgridstride_);} 
   }
-  if(mw_n_>0){
+  if(mw_n_>1){
    log.printf("  %d multiple walkers active\n",mw_n_);
    log.printf("  walker id %d\n",mw_id_);
    log.printf("  reading stride %d\n",mw_rstride_);
@@ -334,43 +331,35 @@ mw_n_(-1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
    if(wgridstride_>0){gridfile_=fopen(gridfname.c_str(),"w");}
   }
 
-// creating vector of ifiles just for mw hills reading
-// open  all of them at the beginning
-  if(mw_n_>0){
-   for(int i=0;i<mw_n_;++i){
+// creating vector of ifile* for hills reading 
+// open all files at the beginning and read Gaussians if restarting
+  for(int i=0;i<mw_n_;++i){
+   string fname;
+   if(mw_n_>1) {
     stringstream out; out << i;
-    string fname = mw_dir_+"/"+hillsfname+"."+out.str();
-    ifilesnames.push_back(fname);
-    PlumedIFile *ifile = new PlumedIFile();
-    ifile->link(*this);
+    fname = mw_dir_+"/"+hillsfname+"."+out.str();
+   } else {
+    fname = hillsfname;
+   }
+   PlumedIFile *ifile = new PlumedIFile();
+   ifile->link(*this);
+   ifiles.push_back(ifile);                                                             
+   ifilesnames.push_back(fname);
+   if(ifile->doExist(fname)){
     ifile->open(fname);
-    ifiles.push_back(ifile);
+    if(plumed.getRestart()){
+     log.printf("  Restarting from %s:",ifilesnames[i].c_str());                  
+     readGaussians(ifiles[i]);                                                    
+     ifiles[i]->set_eof(false);
+    }
+    // close only the walker own hills file for later writing
+    if(i==mw_id_) ifiles[i]->close();
    }
-  }else{
-    ifilesnames.push_back(hillsfname);
-    PlumedIFile *ifile = new PlumedIFile();
-    ifile->link(*this);
-    ifile->open(hillsfname);
-    ifiles.push_back(ifile);
   }
- 
- // restarting from HILLS file
-  if(plumed.getRestart()){
-   for(unsigned i=0;i<ifilesnames.size();++i){
-    log.printf("  Restarting from %s:",ifilesnames[i].c_str());
-    readGaussians(ifiles[i]);
-    ifiles[i]->set_eof(false);
-   }
-   // close only the walker own hills file (need for writing)
-   ifiles[mw_id_]->close();
-   hillsOfile_.link(*this);
-   hillsOfile_.open(ifilesnames[mw_id_],"aw");
-  }else{
-   // close only the walker own hills file (need for writing)
-   ifiles[mw_id_]->close();
-   hillsOfile_.link(*this);
-   hillsOfile_.open(ifilesnames[mw_id_],"w");
-  } 
+
+// open hills file for writing
+  hillsOfile_.link(*this);
+  hillsOfile_.open(ifilesnames[mw_id_],"aw");
   hillsOfile_.addConstantField("multivariate");
   hillsOfile_.setHeavyFlush();
 
@@ -694,12 +683,18 @@ void BiasMetaD::update(){
   }
 
 // if multiple walkers and time to read Gaussians
- if(mw_n_>0 && getStep()%mw_rstride_==0){
-   for(unsigned i=0;i<ifilesnames.size();++i){
+ if(mw_n_>1 && getStep()%mw_rstride_==0){
+   for(int i=0;i<mw_n_;++i){
+    // don't read your own Gaussians
     if(i==mw_id_) continue;
-    log.printf("  Reading hills from %s:",ifilesnames[i].c_str());
-    readGaussians(ifiles[i]);
-    ifiles[i]->set_eof(false);
+    // if the file exists and was not open previously, open it now!
+    if(!ifiles[i]->isOpen()){
+     if(ifiles[i]->doExist(ifilesnames[i])) ifiles[i]->open(ifilesnames[i]);
+    } else {
+     log.printf("  Reading hills from %s:",ifilesnames[i].c_str());
+     readGaussians(ifiles[i]);
+     ifiles[i]->set_eof(false);
+    }
    }
  } 
 }
