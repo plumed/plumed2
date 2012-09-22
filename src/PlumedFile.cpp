@@ -130,17 +130,17 @@ PlumedFileBase& PlumedFileBase::open(const std::string& path,const std::string& 
 
 
 bool PlumedFileBase::doExist(const std::string& path){
-  fp=NULL;
+  FILE *ff=NULL;
   bool do_exist=false;
   if(plumed){
     this->path=path+plumed->getSuffix();
-    fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+    ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
   }
-  if(!fp){
+  if(!ff){
     this->path=path;
-    fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+    ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
   }
-  if(fp) {do_exist=true; fclose(fp);}
+  if(ff) {do_exist=true; fclose(ff);}
   return do_exist; 
 }
 
