@@ -300,7 +300,7 @@ Typically used as
 /// Get a full line as a string
   PlumedIFile& getline(std::string&);
 /// Reset end of file                                                              
-  void set_eof(bool);
+  void reset(bool);
 };
 
 /// Write using << syntax

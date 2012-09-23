@@ -74,7 +74,8 @@ size_t PlumedIFile::llread(char*ptr,size_t s){
   plumed_assert(fp);
   size_t r;
   r=fread(ptr,1,s,fp);
-  if(feof(fp)) eof=true;
+  if(feof(fp))   eof=true;
+  if(ferror(fp)) err=true;
   return r;
 }
 
@@ -354,7 +355,6 @@ PlumedIFile& PlumedIFile::advanceField(){
   plumed_assert(!inMiddleOfField);
   std::string line;
   bool done=false;
-  fpos_t pos;
   while(!done){
     getline(line);
     if(!*this){return *this;}
@@ -451,10 +451,10 @@ PlumedIFile& PlumedIFile::getline(std::string &str){
   str="";
   fpos_t pos;
   fgetpos(fp,&pos);
-  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && !eof){
+  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && !eof && !err){
     str+=tmp;
   }
-  if(tmp!='\n'){
+  if(tmp!='\n' || err){
     eof = true;
     str="";
     fsetpos(fp,&pos);
@@ -469,7 +469,9 @@ unsigned PlumedIFile::findField(const std::string&name)const{
   return i;
 }
 
-void PlumedIFile::set_eof(bool reset){
+void PlumedIFile::reset(bool reset){
  eof = reset;
+ err = reset;
+ if(!reset) clearerr(fp);
  return;
 } 
