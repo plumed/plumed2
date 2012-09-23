@@ -354,7 +354,6 @@ PlumedIFile& PlumedIFile::advanceField(){
   plumed_assert(!inMiddleOfField);
   std::string line;
   bool done=false;
-  fpos_t pos;
   while(!done){
     getline(line);
     if(!*this){return *this;}
