@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include "Units.h"
 
 using namespace std;
 
@@ -67,6 +68,7 @@ void CLToolDriver<real>::registerKeywords( Keywords& keys ){
   keys.add("compulsory","--timestep","0.001","the timestep for the trajectory in picoseconds");
   keys.add("compulsory","--stride","1","stride between frames on which to do the calculation");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
+  keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
@@ -90,6 +92,8 @@ string CLToolDriver<float>::description()const{ return "analyze trajectories wit
 
 template<typename real>
 int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
+
+  Units units;
 
 // Parse everything
   bool printhelpdebug; parseFlag("--help-debug",printhelpdebug);
@@ -134,6 +138,8 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
     fprintf(out,"ERROR: missing trajectory data\n"); 
     return 0;
   }
+  string lengthUnits(""); parse("--length-units",lengthUnits);
+  if(lengthUnits.length()>0) units.setLength(lengthUnits);
 
   if(debug_dd) plumed_merror("debug_dd not yet implemented");
   plumed_massert(!(debug_dd&debug_pd),"cannot use debug-dd and debug-pd at the same time");
@@ -185,6 +191,7 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
     if(checknatoms==0){
       checknatoms=natoms;
       if(PlumedCommunicator::initialized()) p.cmd("setMPIComm",&pc.Get_comm());
+      p.cmd("setMDLengthUnits",&units.getLength());
       p.cmd("setNatoms",&natoms);
       p.cmd("setMDEngine","driver");
       p.cmd("setTimestep",&timestep);
