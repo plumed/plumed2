@@ -15,7 +15,10 @@ awk '{
   lowercase=0;
   if(firstchar==actionarray[1]) lowercase=1;
   printf("%s","/// Provides the keyword <a href=\"../../user-doc/html/");
-  for(i=1;i<=n;i++){printf("_%s", actionarray[i])};
+  for(i=1;i<=n;i++){
+    if(actionarray[i]!="_") printf("_");
+    printf("%s",actionarray[i]);
+  };
   printf("%s",".html\"> "$2" </a>\n");
 }' >  links-to-user-manual.txt
 
