@@ -157,7 +157,18 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   int checknatoms=0;
   int step=0;
 
-  FILE* fp=fopen(trajectoryFile.c_str(),"r");
+  FILE* fp;
+  if (trajectoryFile=="-") 
+    fp=in;
+  else {
+    fp=fopen(trajectoryFile.c_str(),"r");
+    if(!fp){
+      string msg="ERROR: Error opening XYZ file "+trajectoryFile;
+      fprintf(stderr,"%s\n",msg.c_str());
+      return 1;
+    }
+  }
+    
 
   FILE* fp_forces=NULL;
   if(dumpforces.length()>0){
