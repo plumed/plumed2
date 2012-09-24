@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include "Units.h"
+#include "PDB.h"
 
 using namespace std;
 
@@ -71,6 +72,7 @@ void CLToolDriver<real>::registerKeywords( Keywords& keys ){
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
+  keys.add("optional","--pdb","provides a pdb with masses and charges");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
   keys.add("hidden","--debug-dd","use a fake domain decomposition");
   keys.add("hidden","--debug-pd","use a fake particle decomposition");
@@ -94,6 +96,7 @@ template<typename real>
 int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 
   Units units;
+  PDB pdb;
 
 // Parse everything
   bool printhelpdebug; parseFlag("--help-debug",printhelpdebug);
@@ -141,6 +144,12 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   string lengthUnits(""); parse("--length-units",lengthUnits);
   if(lengthUnits.length()>0) units.setLength(lengthUnits);
 
+  string pdbfile; parse("--pdb",pdbfile);
+  if(pdbfile.length()>0){
+    bool check=pdb.read(pdbfile,false,1.0);
+    plumed_massert(check,"error reading pdb file");
+  }
+
   if(debug_dd) plumed_merror("debug_dd not yet implemented");
   plumed_massert(!(debug_dd&debug_pd),"cannot use debug-dd and debug-pd at the same time");
   if(debug_pd) plumed_massert(PlumedCommunicator::initialized(),"needs mpi for debug-pd");
@@ -184,6 +193,7 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   std::vector<real> coordinates;
   std::vector<real> forces;
   std::vector<real> masses;
+  std::vector<real> charges;
   std::vector<real> cell;
   std::vector<real> virial;
 
@@ -218,6 +228,16 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
     coordinates.assign(3*natoms,real(0.0));
     forces.assign(3*natoms,real(0.0));
     masses.assign(natoms,real(1.0));
+    charges.assign(natoms,real(0.0));
+    if(pdbfile.length()>0){
+      for(unsigned i=0;i<pdb.size();++i){
+        AtomNumber an=pdb.getAtomNumbers()[i];
+        unsigned index=an.index();
+        plumed_massert(index<unsigned(natoms),"atom index in pdb exceeds the number of atoms in trajectory");
+        masses[index]=pdb.getOccupancy()[i];
+        charges[index]=pdb.getBeta()[i];
+      }
+    }
     cell.assign(9,real(0.0));
     virial.assign(9,real(0.0));
 
@@ -276,6 +296,7 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
    p.cmd("setForces",&forces[3*pd_start]);
    p.cmd("setPositions",&coordinates[3*pd_start]);
    p.cmd("setMasses",&masses[3*pd_start]);
+   p.cmd("setCharges",&charges[3*pd_start]);
    p.cmd("setBox",&cell[0]);
    p.cmd("setVirial",&virial[0]);
    p.cmd("setStep",&step);
