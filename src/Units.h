@@ -22,6 +22,8 @@
 #ifndef __PLUMED_Units_h
 #define __PLUMED_Units_h
 
+#include <string>
+
 namespace PLMD{
 
 /// Small utility class.
@@ -29,24 +31,62 @@ namespace PLMD{
 /// It just simplify the syntax of functions which should pass the
 /// value of all the units.
 class Units{
-public:
 /// Units for energy, expressed in kj/mol (e.g. 4.184 means kcal/mol)
   double energy;
+  std::string energyString;
 /// Units for length, expressed in nm (e.g. 0.1 means A)
   double length;
+  std::string lengthString;
 /// Units for time, expressed in ps (e.g. 0.001 means fs)
   double time;
+  std::string timeString;
+public:
 // Constructor, setting default values (1.0)
   Units();
+  void setEnergy(const std::string &);
+  void setTime(const std::string &);
+  void setLength(const std::string &);
+  void setEnergy(const double);
+  void setTime(const double);
+  void setLength(const double);
+  const double & getEnergy()const;
+  const double & getLength()const;
+  const double & getTime()const;
+  const std::string & getEnergyString()const;
+  const std::string & getLengthString()const;
+  const std::string & getTimeString()const;
 };
 
 inline
-Units::Units():
-  energy(1.0),
-  length(1.0),
-  time(1.0)
-{ 
+const double & Units::getEnergy()const{
+  return energy;
 }
+
+inline
+const double & Units::getLength()const{
+  return length;
+}
+
+inline
+const double & Units::getTime()const{
+  return time;
+}
+
+inline
+const std::string & Units::getEnergyString()const{
+  return energyString;
+}
+
+inline
+const std::string & Units::getLengthString()const{
+  return lengthString;
+}
+
+inline
+const std::string & Units::getTimeString()const{
+  return timeString;
+}
+
 
 }
 

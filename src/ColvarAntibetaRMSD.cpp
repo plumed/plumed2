@@ -190,7 +190,7 @@ s_cutoff(0)
   reference[29]=Vector( 1.899, -4.545, -1.102); // O
 
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
-  setSecondaryStructure( reference, 0.17/atoms.getUnits().length, 0.1/atoms.getUnits().length ); 
+  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() ); 
 }
 
 bool ColvarAntibetaRMSD::isPossibleToSkip(){

@@ -73,7 +73,7 @@ void Atoms::setVirial(void*p){
 
 void Atoms::setEnergy(void*p){
   MD2double(p,energy);
-  energy*=MDUnits.energy/units.energy;
+  energy*=MDUnits.getEnergy()/units.getEnergy();
 }
 
 void Atoms::setForces(void*p){
@@ -277,7 +277,7 @@ void Atoms::setTimeStep(void*p){
 }
 
 double Atoms::getTimeStep()const{
-  return timestep/units.time*MDUnits.time;
+  return timestep/units.getTime()*MDUnits.getTime();
 }
 
 void Atoms::createFullList(int*n){
@@ -362,12 +362,12 @@ void Atoms::readBinary(std::istream&i){
 
 double Atoms::getKBoltzmann()const{
   if(naturalUnits) return 1.0;
-  else return kBoltzmann/units.energy;
+  else return kBoltzmann/units.getEnergy();
 }
 
 double Atoms::getMDKBoltzmann()const{
   if(naturalUnits) return 1.0;
-  else return kBoltzmann/MDUnits.energy;
+  else return kBoltzmann/MDUnits.getEnergy();
 }
 
 }

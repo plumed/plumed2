@@ -75,8 +75,8 @@ public:
 
 template <class T>
 void MDAtomsTyped<T>::setUnits(const Units& units,const Units& MDUnits){
-  double lscale=units.length/MDUnits.length;
-  double escale=units.energy/MDUnits.energy;
+  double lscale=units.getLength()/MDUnits.getLength();
+  double escale=units.getEnergy()/MDUnits.getEnergy();
 // scalep and scaleb are used to convert MD to plumed
   scalep=1.0/lscale;
   scaleb=1.0/lscale;

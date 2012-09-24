@@ -89,12 +89,12 @@ void GREX::cmd(const string&key,void*val){
   }else if(key=="getLocalDeltaBias"){
     CHECK_INIT(initialized,key);
     CHECK_NULL(val,key);
-    double x=localDeltaBias/(atoms.getMDUnits().energy/atoms.getUnits().energy);
+    double x=localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
     atoms.double2MD(x,val);
   }else if(key=="getForeignDeltaBias"){
     CHECK_INIT(initialized,key);
     CHECK_NULL(val,key);
-    double x=foreignDeltaBias/(atoms.getMDUnits().energy/atoms.getUnits().energy);
+    double x=foreignDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
     atoms.double2MD(x,val);
   }else if(key=="shareAllDeltaBias"){
     CHECK_INIT(initialized,key);
@@ -115,7 +115,7 @@ void GREX::cmd(const string&key,void*val){
        unsigned rep;
        Tools::convert(words[1],rep);
        plumed_massert(rep<allDeltaBias.size(),"replica index passed to cmd(\"GREX getDeltaBias\") is out of range");
-       double d=allDeltaBias[rep]/(atoms.getMDUnits().energy/atoms.getUnits().energy);
+       double d=allDeltaBias[rep]/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
        atoms.double2MD(d,val);
      } else{
        plumed_merror("cannot interpret cmd(\"GREX " + key + "\"). check plumed developers manual to see the available commands.");

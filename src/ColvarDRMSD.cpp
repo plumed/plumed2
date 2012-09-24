@@ -113,7 +113,7 @@ PLUMED_COLVAR_INIT(ao), pbc_(true)
 
   // read everything in ang and transform to nm if we are not in natural units
   PDB pdb;
-  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().length) )
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
       error("missing input file " + reference );
 
   // store target_ distance

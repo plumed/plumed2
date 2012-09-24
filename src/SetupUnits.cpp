@@ -76,66 +76,28 @@ ActionSetup(ao)
   Units u;
 
   std::string s;
-  bool numeric;
 
-  s="nm";
-  numeric=false;
+  s="";
   parse("LENGTH",s);
-  if(s=="nm"){
-    u.length=1.0;
-  } else if(s=="A"){
-    u.length=0.1;
-  } else if(s=="um"){
-    u.length=1000.0;
-  } else {
-    u.length=-1.0;
-    Tools::convert(s,u.length);
-    numeric=true;
-    plumed_massert(u.length>0.0,"length units should be positive");
-  }
-  if(!numeric) log.printf("  length: %s\n",s.c_str());
-  else         log.printf("  length: %f nm\n",u.length);
+  if(s.length()>0) u.setLength(s);
+  if(u.getLengthString().length()>0) log.printf("  length: %s\n",u.getLengthString().c_str());
+  else                               log.printf("  length: %f nm\n",u.getLength());
 
-  s="kj/mol";
-  numeric=false;
+  s="";
   parse("ENERGY",s);
-  if(s=="kj/mol"){
-    u.energy=1.0;
-  } else if(s=="kcal/mol"){
-    u.energy=4.184;
-  } else if(s=="j/mol"){
-    u.energy=0.001;
-  } else {
-    u.energy=-1.0;
-    Tools::convert(s,u.energy);
-    numeric=true;
-    plumed_massert(u.energy>0.0,"energy units should be positive");
-  }
-  if(!numeric) log.printf("  energy: %s\n",s.c_str());
-  else         log.printf("  energy: %f kj/mol\n",u.energy);
+  if(s.length()>0) u.setEnergy(s);
+  if(u.getEnergyString().length()>0) log.printf("  energy: %s\n",u.getEnergyString().c_str());
+  else                               log.printf("  energy: %f kj/mol\n",u.getEnergy());
 
-  s="ps";
-  numeric=false;
+  s="";
   parse("TIME",s);
-  if(s=="ps"){
-    u.time=1.0;
-  } else if(s=="ns"){
-    u.time=1000.0;
-  } else if(s=="fs"){
-    u.time=0.001;
-  } else {
-    u.time=-1.0;
-    Tools::convert(s,u.time);
-    numeric=true;
-    plumed_massert(u.time>0.0,"time units should be positive");
-  }
-  if(!numeric) log.printf("  time: %s\n",s.c_str());
-  else         log.printf("  time: %f ns\n",u.time);
+  if(s.length()>0) u.setTime(s);
+  if(u.getTimeString().length()>0) log.printf("  time: %s\n",u.getTimeString().c_str());
+  else                             log.printf("  time: %f ps\n",u.getTime());
 
   bool natural=false;
   parseFlag("NATURAL",natural);
   plumed.getAtoms().setNaturalUnits(natural);
-
 
   checkRead();
 

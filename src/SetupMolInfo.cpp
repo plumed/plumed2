@@ -98,7 +98,7 @@ pdb(*new(PDB))
   }
   if( read_backbone.size()==0 ){
     std::string reference; parse("STRUCTURE",reference);
-    pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().length);
+    pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
     std::vector<std::string> chains; pdb.getChainNames( chains );
     log.printf("  pdb file named %s contains %d chains \n",reference.c_str(), chains.size() );
     for(unsigned i=0;i<chains.size();++i){

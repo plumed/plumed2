@@ -155,9 +155,9 @@ public:
 
   double getEnergy()const{plumed_assert(collectEnergy);return energy;};
 
-  void setMDEnergyUnits(double d){MDUnits.energy=d;};
-  void setMDLengthUnits(double d){MDUnits.length=d;};
-  void setMDTimeUnits(double d){MDUnits.time=d;};
+  void setMDEnergyUnits(double d){MDUnits.setEnergy(d);};
+  void setMDLengthUnits(double d){MDUnits.setLength(d);};
+  void setMDTimeUnits(double d){MDUnits.setTime(d);};
   const Units& getMDUnits(){return MDUnits;};
   void setUnits(const Units&u){units=u;};
   const Units& getUnits(){return units;};
