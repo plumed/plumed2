@@ -104,16 +104,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
 
   string root=plumedRoot;
 
-// Check if plumedRoot/patches/ directory exists (as a further check)
-  {
-    vector<string> files=Tools::ls(root);
-    if(find(files.begin(),files.end(),"patches")==files.end()) {
-      string msg=
-         "ERROR: I cannot find "+root+"+/patches/ directory\n";
-      fprintf(stderr,"%s",msg.c_str());
-      return 1;
-    }
-  }
+  bool standalone_executable=false;
 
 // Start parsing options
   string prefix("");
@@ -133,6 +124,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
         fprintf(stderr,"--no-mpi option should can only be used as the first option");
         return 1;
       }
+    } else if(a=="--standalone-executable"){
+      standalone_executable=true;
     } else if(a.find("--load=")==0){
       a.erase(0,a.find("=")+1);
       prefix="";
@@ -150,11 +143,23 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
       return 1;
     } else break;
   }
+
+// Check if plumedRoot/patches/ directory exists (as a further check)
+  if(!standalone_executable){
+    vector<string> files=Tools::ls(root);
+    if(find(files.begin(),files.end(),"patches")==files.end()) {
+      string msg=
+         "ERROR: I cannot find "+root+"/patches/ directory\n";
+      fprintf(stderr,"%s",msg.c_str());
+      return 1;
+    }
+  }
+
 // Build list of available C++ tools:
   vector<string> availableCxx=cltoolRegister().list();
 // Build list of available shell tools:
   vector<string> availableShell;
-  {
+  if(!standalone_executable) {
     vector<string> tmp;
     tmp=Tools::ls(string(root+"/scripts"));
     for(unsigned j=0;j<tmp.size();++j){
@@ -168,11 +173,12 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
  if(printhelp){
     string msg=
         "Usage: plumed [options] [command] [command options]\n"
-        "  plumed [command] -h : to print help for a specific command\n"
+        "  plumed [command] -h       : to print help for a specific command\n"
         "Options:\n"
-        "  [help|-h|--help]    : to print this help\n"
-        "  [--has-mpi]         : fails if plumed is running with MPI\n"
-        "  [--load LIB]        : loads a shared object (typically a plugin library)\n"
+        "  [help|-h|--help]          : to print this help\n"
+        "  [--has-mpi]               : fails if plumed is running with MPI\n"
+        "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
+        "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n";
         "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0;j<availableCxx.size();++j){
