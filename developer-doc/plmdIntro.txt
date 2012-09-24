@@ -273,6 +273,123 @@ The great advantage of declaring calculate() inside PLMD::Action in this way is 
 routine that we declare in the derived class is a member of PLMD::Action.  We thus can thus write
 a class for doing all the bussiness of plumed in the manner described previously.
 
+\section ForwardDeclaration Forward declaration
+
+One problem of including classes inside other classes in C++ is that this enforces one
+to include one .h file into another one, thus leading to a large set of objects
+needing to be recompiled just because a single .h file was touched. In some cases
+this is not avoidable, e.g. when classes inherits from other classes. However,
+when only a pointer (or a reference) to another class is used, it might be better
+to just use a forward declaration as in this example:
+\verbatim
+/////////////////////////////////////////////
+// This is file A.h
+namespace PLMD{
+
+class A{
+  int pippo;
+};
+
+}
+
+/////////////////////////////////////////////
+// This is file B-bad.h
+// it has to include A.h
+#include "A.h"
+namespace PLMD{
+
+class B{
+public:
+// notice that here we only use a reference to class A
+  int do_something(A&a);
+};
+
+}
+
+/////////////////////////////////////////////
+// This is file B-good.h
+namespace PLMD{
+
+// this command just instructs the compiler that A is a class:
+class A;
+// no inclusion of A.h is required!
+
+class B{
+public:
+// notice that here we only use a reference to class A
+  int do_something(A&a);
+};
+
+}
+
+\endverbatim
+
+This trick however does not work is a class is including an instance of another class.
+E.g., if B _contains_ an instance of A one should know exactly the A declaration
+to build a B object.
+In this case, a similar effect can be obtained at the price of adding some
+more lines of code in constructor and destructor of B as in the following example
+
+\verbatim
+
+/////////////////////////////////////////////
+// This is file B-bad.h
+// it has to include A.h
+#include "A.h"
+namespace PLMD{
+
+class B{
+  A content;
+};
+
+}
+
+/////////////////////////////////////////////
+// This is file B-good.h
+namespace PLMD{
+
+// this command just instructs the compiler that A is a class:
+class A;
+// no inclusion of A.h is required!
+
+class B{
+// As "content" is a reference, it can be used exactly as if it was a normal object
+// However, it is represents by the compiler as a pointer.
+  A& content;
+public:
+  B();
+  ~();
+};
+
+}
+
+/////////////////////////////////////////////
+// Using B-good.h enforces to add something in B-good.cpp
+
+#include "A.h"
+#include "B-good.h"
+
+using namespace PLMD;
+
+B::B():
+// now "content" needs to be explicitly allocated ...
+  content(*new A){
+}
+
+B::~B(){
+// ... and deallocated
+  delete &content;
+}
+
+\endverbatim
+
+Notice that this trick cannot be always be applied, e.g., if the constructor to be A needs parameter,
+or if object "content" is to be accessed by inline methods of B for efficiency. Another example where
+this does not work is when inline methods are used because of template expressions.
+
+This trick is extensively used in plumed so as to avoid too many indirect dependencies
+among .h files.
+
 \section conc Conclusion
 
 The above is meant to give you some feel as to how plumed works.  If there is stuff you do not
