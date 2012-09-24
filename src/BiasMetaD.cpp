@@ -29,6 +29,7 @@
 #include "Matrix.h"
 #include <iostream> 
 #include "Random.h"
+#include <string>
 
 #define DP2CUTOFF 6.25
 
