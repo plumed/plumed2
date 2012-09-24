@@ -60,6 +60,7 @@ from one action to another.  As an example if you do:
 \verbatim
 DISTANCE ATOMS=1,2
 \endverbatim
+(see \ref DISTANCE)
 
 Then plumed will do nothing other than read in your input file.  In contrast if you do:
 
@@ -67,6 +68,7 @@ Then plumed will do nothing other than read in your input file.  In contrast if 
 DISTANCE ATOMS=1,2 LABEL=d1
 PRINT ARG=d1 FILE=colvar STRIDE=10
 \endverbatim
+(see \ref PRINT)
 
 then plumed will print out the value of the distance between atoms 1 and 2 every 10 steps to the file colvar as you have told
 plumed to take the value calculated by the action d1 and to print it.  
@@ -77,6 +79,7 @@ Thus, a completely equivalent result can be obtained with the following shortcut
 d1: DISTANCE ATOMS=1,2
 PRINT ARG=d1 FILE=colvar STRIDE=10
 \endverbatim
+
 Also notice that all the actions can be labeled, and that many actions besides normal collective variables can define
 one or more value, which can be then referred using the corresponding label.
 
@@ -101,8 +104,9 @@ erm... yes add lines of comments or trailing comments to your hearts content as 
 \verbatim
 # This is the distance between two atoms:
 DISTANCE ATOM=1,2 LABEL=d1
-UPPER_WALL ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall. That I, one Snout by name, present a wall.
+UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall. That I, one Snout by name, present a wall.
 \endverbatim
+(see \ref DISTANCE and \ref UPPER_WALLS)
 
 An alternative to including comments in this way is to use line starting ENDPLUMED.  Everything in the plumed input after this
 keyword will be ignored.
@@ -117,6 +121,7 @@ as this makes this:
 \verbatim
 DISTANCE ATOMS1=1,300 ATOMS2=1,400 ATOMS3=1,500
 \endverbatim
+(see \ref DISTANCE)
 
 equivalent to this:
 
@@ -143,8 +148,9 @@ So, for example, a single "plumed.dat" file:
 
 \verbatim
 DISTANCE ATOMS=0,1 LABEL=dist
-RESTRAINTG ARG=dist
+RESTRAINT ARG=dist
 \endverbatim
+(see \ref DISTANCE and \ref RESTRAINT)
 
 could be split up into two files as shown below:
  
@@ -154,7 +160,7 @@ INCLUDE toBeIncluded.dat
 \endverbatim
 plus a "toBeIncluded.dat" file
 \verbatim
-RESTRAINTG ARG=dist
+RESTRAINT ARG=dist
 \endverbatim
 
 However, when you do this it is important to recognise that INCLUDE is a real directive that is only resolved
@@ -164,7 +170,7 @@ is not possible to do things like:
 \verbatim
 # this is wrong:
 DISTANCE INCLUDE options.dat
-RESTRAINTG ARG=dist
+RESTRAINT ARG=dist
 \endverbatim
 
 \section load Loading shared libraries
