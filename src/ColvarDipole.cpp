@@ -35,10 +35,18 @@ Calcualte the dipole moment for a group of atoms.
 
 \par Examples
 The following tells plumed to calculate the dipole of the group of atoms containing
-the atoms from 1-10.
+the atoms from 1-10 and print it every 5 steps
 \verbatim
-DIPOLE GROUP=1-10
+d: DIPOLE GROUP=1-10
+PRINT FILE=output STRIDE=5 ARG=5
 \endverbatim
+(see also \ref PRINT)
+
+\attention 
+If the total charge Q of the group in non zero, then a charge Q/N will be subtracted to every atom,
+where N is the number of atoms. This implies that the dipole (which for a charged system depends
+on the position) is computed on the geometric center of the group.
+
 
 */
 //+ENDPLUMEDOC
@@ -81,16 +89,27 @@ void ColvarDipole::calculate()
  Tensor virial;
  vector<Vector> deriv(getNumberOfAtoms());
  Vector dipje;
+ vector<double> charges(getNumberOfAtoms());
+
+ double ctot(0.0);
+ for(unsigned i=0;i<charges.size();++i){
+   charges[i]=getCharge(i);
+   ctot+=charges[i];
+ }
+
+ ctot/=charges.size();
+
+ for(unsigned i=0;i<charges.size();++i) charges[i]-=ctot;
 
 // deriv.resize(getPositions().size());
 // deriv.resize(getNumberOfAtoms());
  for(unsigned int i=0;i<ga_lista.size();i++) {
-   dipje += (getCharge(i))*getPosition(i);
+   dipje += charges[i]*getPosition(i);
  }
  dipole = dipje.modulo();
 
  for(unsigned int i=0;i<ga_lista.size();i++) {
-   double dfunc=getCharge(i)/dipole;
+   double dfunc=charges[i]/dipole;
    deriv[i] = deriv[i] + (dfunc)*dipje;
    virial=virial-Tensor(getPosition(i),deriv[i]);
  }
