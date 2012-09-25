@@ -169,10 +169,8 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 
   }
   
-
-  if(debug_dd) plumed_merror("debug_dd not yet implemented");
   plumed_massert(!(debug_dd&debug_pd),"cannot use debug-dd and debug-pd at the same time");
-  if(debug_pd) plumed_massert(PlumedCommunicator::initialized(),"needs mpi for debug-pd");
+  if(debug_pd || debug_dd) plumed_massert(PlumedCommunicator::initialized(),"needs mpi for debug-pd");
 
   if(trajectoryFile.length()==0){
     string msg="ERROR: please specify a trajectory";
@@ -220,6 +218,14 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 // variables to test particle decomposition
   int pd_nlocal;
   int pd_start;
+// variables to test random decomposition (=domain decomposition)
+  std::vector<int>  dd_gatindex;
+  std::vector<int>  dd_g2l;
+  std::vector<real> dd_masses;
+  std::vector<real> dd_charges;
+  std::vector<real> dd_forces;
+  std::vector<real> dd_coordinates;
+  int dd_nlocal;
 // random stream to choose decompositions
   Random rnd;
 
@@ -262,28 +268,57 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
     cell.assign(9,real(0.0));
     virial.assign(9,real(0.0));
 
-    if(debug_pd && ( first_step || rnd.U01()>0.5)){
-      int npe=pc.Get_size();
-      vector<int> loc(npe,0);
-      vector<int> start(npe,0);
-      for(int i=0;i<npe-1;i++){
-        int cc=(natoms*2*rnd.U01())/npe;
-        if(start[i]+cc>natoms) cc=natoms-start[i];
-        loc[i]=cc;
-        start[i+1]=start[i]+loc[i];
+    if( first_step || rnd.U01()>0.5){
+      if(debug_pd){
+        int npe=pc.Get_size();
+        vector<int> loc(npe,0);
+        vector<int> start(npe,0);
+        for(int i=0;i<npe-1;i++){
+          int cc=(natoms*2*rnd.U01())/npe;
+          if(start[i]+cc>natoms) cc=natoms-start[i];
+          loc[i]=cc;
+          start[i+1]=start[i]+loc[i];
+        }
+        loc[npe-1]=natoms-start[npe-1];
+        pc.Bcast(&loc[0],npe,0);
+        pc.Bcast(&start[0],npe,0);
+        pd_nlocal=loc[pc.Get_rank()];
+        pd_start=start[pc.Get_rank()];
+        if(pc.Get_rank()==0){
+          fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
+          fprintf(out,"DRIVER: "); for(int i=0;i<npe;i++) fprintf(out,"%d ",loc[i]); printf("\n");
+          fprintf(out,"DRIVER: "); for(int i=0;i<npe;i++) fprintf(out,"%d ",start[i]); printf("\n");
+        }
+        p.cmd("setAtomsNlocal",&pd_nlocal);
+        p.cmd("setAtomsContiguous",&pd_start);
+      } else if(debug_dd){
+        int npe=pc.Get_size();
+        int rank=pc.Get_rank();
+        dd_charges.assign(natoms,0.0);
+        dd_masses.assign(natoms,0.0);
+        dd_gatindex.assign(natoms,-1);
+        dd_g2l.assign(natoms,-1);
+        dd_coordinates.assign(3*natoms,0.0);
+        dd_forces.assign(3*natoms,0.0);
+        dd_nlocal=0;
+        for(int i=0;i<natoms;++i){
+          double r=rnd.U01()*npe;
+          int n; for(n=0;n<npe;n++) if(n+1>r)break;
+          plumed_assert(n<npe);
+          if(n==rank){
+            dd_gatindex[dd_nlocal]=i;
+            dd_g2l[i]=dd_nlocal;
+            dd_charges[dd_nlocal]=charges[i];
+            dd_masses[dd_nlocal]=masses[i];
+            dd_nlocal++;
+          }
+        }
+        if(pc.Get_rank()==0){
+          fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
+        }
+        p.cmd("setAtomsNlocal",&dd_nlocal);
+        p.cmd("setAtomsGatindex",&dd_gatindex[0]);
       }
-      loc[npe-1]=natoms-start[npe-1];
-      pc.Bcast(&loc[0],npe,0);
-      pc.Bcast(&start[0],npe,0);
-      pd_nlocal=loc[pc.Get_rank()];
-      pd_start=start[pc.Get_rank()];
-      if(pc.Get_rank()==0){
-        fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
-        fprintf(out,"DRIVER: "); for(int i=0;i<npe;i++) fprintf(out,"%d ",loc[i]); printf("\n");
-        fprintf(out,"DRIVER: "); for(int i=0;i<npe;i++) fprintf(out,"%d ",start[i]); printf("\n");
-      }
-      p.cmd("setAtomsNlocal",&pd_nlocal);
-      p.cmd("setAtomsContiguous",&pd_start);
     }
 
     ok=Tools::getline(fp,line);
@@ -318,12 +353,27 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
         coordinates[3*i+1]=real(cc[1]);
         coordinates[3*i+2]=real(cc[2]);
       }
+      if(debug_dd){
+        for(int i=0;i<dd_nlocal;++i){
+          int kk=dd_gatindex[i];
+          dd_coordinates[3*i+0]=coordinates[3*kk+0];
+          dd_coordinates[3*i+1]=coordinates[3*kk+1];
+          dd_coordinates[3*i+2]=coordinates[3*kk+2];
+        }
+      }
     }
 
-   p.cmd("setForces",&forces[3*pd_start]);
-   p.cmd("setPositions",&coordinates[3*pd_start]);
-   p.cmd("setMasses",&masses[3*pd_start]);
-   p.cmd("setCharges",&charges[3*pd_start]);
+   if(debug_dd){
+     p.cmd("setForces",&dd_forces[0]);
+     p.cmd("setPositions",&dd_coordinates[0]);
+     p.cmd("setMasses",&dd_masses[0]);
+     p.cmd("setCharges",&dd_charges[0]);
+   } else {
+     p.cmd("setForces",&forces[3*pd_start]);
+     p.cmd("setPositions",&coordinates[3*pd_start]);
+     p.cmd("setMasses",&masses[pd_start]);
+     p.cmd("setCharges",&charges[pd_start]);
+   }
    p.cmd("setBox",&cell[0]);
    p.cmd("setVirial",&virial[0]);
    p.cmd("setStep",&step);
@@ -332,6 +382,16 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 // this is necessary as only processor zero is adding to the virial:
    pc.Bcast(&virial[0],9,0);
    if(debug_pd) pc.Sum(&forces[0],natoms*3);
+   if(debug_dd){
+     for(int i=0;i<dd_nlocal;i++){
+       forces[3*dd_gatindex[i]+0]=dd_forces[3*i+0];
+       forces[3*dd_gatindex[i]+1]=dd_forces[3*i+1];
+       forces[3*dd_gatindex[i]+2]=dd_forces[3*i+2];
+     }
+     dd_forces.assign(3*natoms,0.0);
+     pc.Sum(&forces[0],natoms*3);
+   }
+
 
    if(fp_forces){
      fprintf(fp_forces,"%d\n",natoms);
