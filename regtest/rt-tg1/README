@@ -1,0 +1,50 @@
+#######
+THIS REGTEST HAS BEEN KINDLY PROVIDED BY TONI GIORGINO
+#######
+
+Regression test for --pdb  and --length-units  in driver
+
+Tests these in driver:
+ * Masses are read from --pdb
+ * Charges are read from --pdb
+ * Lengths are converted from A to internal units 
+
+Definitions:
+   dist:   distance between the  center of mass of the 
+   	   TIP3 molecule and the O atom
+   dipole: modulus of the electrical dipole
+
+Correct results: distance 0.06627448231416874  A
+		 dipole   0.49395651003566554  A e 
+
+Wrong results:	 if masses/charges are not being taken into account,
+      		 distance 0.3948493409113077  A
+		 dipole   0  A e
+
+Note that COLVAR files are in nm.
+
+
+Files:
+  tip3.plumed.pdb  PDB files with mass/charge columns
+  tip3.xyz	   Same coordinates as PDB, but in XYZ format
+  tip3.psf	   Corresponding PSF (unused)
+
+
+> vmd
+	mol new		tip3.psf
+	mol addfile 	tip3.plumed.pdb
+	set oxyz 	[[atomselect top "index 0"] get {x y z}]
+	set oxyz 	[lindex $oxyz 0]
+	set w		[atomselect top all]
+	set comgeo 	[measure center $w]
+	set com     	[measure center $w weight mass]
+	puts 		"Correct distance: [veclength [vecsub $oxyz $com]] A"
+	puts 		"Correct dipole:   [veclength [measure dipole $w]] A e"
+	puts 		"Wrong distance:   [veclength [vecsub $oxyz $comgeo]] A"
+	puts 		"Wrong dipole:     0 A e"
+  
+
+
+(Toni Giorgino)
+
+mar 25 set 2012, 09.47.29, CEST

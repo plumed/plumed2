@@ -1,0 +1,9 @@
+
+com:    COM	ATOMS=1-3
+dipole: DIPOLE 	GROUP=1-3
+
+# Atom 1 is oxygen
+dist:		DISTANCE ATOMS=1,com
+distxyz:	DISTANCE ATOMS=1,com COMPONENTS
+
+PRINT ARG=* FILE=COLVAR

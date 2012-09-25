@@ -1,0 +1,35 @@
+PSF
+
+       1 !NTITLE
+ REMARKS VMD-generated NAMD/X-Plor PSF structure file
+
+       3 !NATOM
+       1 WT3  4023 TIP3 OH2  OH2   -0.834000       15.9994           0
+       2 WT3  4023 TIP3 H1   H1     0.417000        1.0080           0
+       3 WT3  4023 TIP3 H2   H2     0.417000        1.0080           0
+
+       2 !NBOND: bonds
+       1       2       1       3
+
+       1 !NTHETA: angles
+       2       1       3
+
+       0 !NPHI: dihedrals
+
+
+       0 !NIMPHI: impropers
+
+
+       0 !NDON: donors
+
+
+       0 !NACC: acceptors
+
+
+       0 !NNB
+
+       0       0       0
+
+       1       0 !NGRP
+       0       0       0
+
