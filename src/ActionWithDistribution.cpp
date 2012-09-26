@@ -101,8 +101,10 @@ void ActionWithDistribution::requestDistribution(){
   }
 
   // This sets up the dynamic list that holds what we are calculating
-  for(unsigned i=0;i<getNumberOfFunctionsInAction();++i){ members.addIndexToList(i); }
-  activateAll(); resizeFunctions(); 
+  if( functions.size()>0 ){
+     for(unsigned i=0;i<getNumberOfFunctionsInAction();++i){ members.addIndexToList(i); }
+     activateAll(); resizeFunctions(); 
+  }
 }
 
 void ActionWithDistribution::resizeFunctions(){

@@ -30,10 +30,7 @@ namespace PLMD{
 /**
 \ingroup INHERIT
 This is the abstract base class to use for implementing new CV function, within it there is 
-information as to how to go about implementing a new function.
-
-For a tutorial on how to add a new function, see \ref AddingAFunction
-
+\ref AddingAFunction "information" as to how to go about implementing a new function.
 */
 
 class Function:

@@ -468,7 +468,8 @@ INPUT                  = ./Intro.txt \
                          ./links-to-user-manual.txt \
                          ./AddingAColvar.txt \
                          ./AddingAFunction.txt \
-                         ./AddingACLTool.txt
+                         ./AddingACLTool.txt \
+                         ./AddingAMultColvar.txt
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

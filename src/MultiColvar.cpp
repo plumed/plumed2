@@ -43,19 +43,19 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                "define the same number of atoms).  The eventual number of quantities calculated by this "
                                "action will depend on what functions of the distribution you choose to calculate."); 
   keys.reset_style("ATOMS","atoms");
-  keys.reserve("atoms","GROUP","this keyword is used for colvars that are calculated from a pair of atoms. "
+  keys.reserve("atoms-1","GROUP","this keyword is used for colvars that are calculated from a pair of atoms. "
                                "One colvar is calculated for each distinct pair of atoms in the group.");
-  keys.reserve("atoms","GROUPA","this keyword is used for colvars that are calculated from a pair of atoms and must appaer with the keyword GROUPB. "
+  keys.reserve("atoms-2","GROUPA","this keyword is used for colvars that are calculated from a pair of atoms and must appaer with the keyword GROUPB. "
                                 "Every pair of atoms which involves one atom from GROUPA and one atom from GROUPB defines one colvar");
-  keys.reserve("atoms","GROUPB","this keyword is used for colvars that are calculate from a pair of atoms and must appaer with the keyword GROUPA. "
+  keys.reserve("atoms-2","GROUPB","this keyword is used for colvars that are calculate from a pair of atoms and must appaer with the keyword GROUPA. "
                                 "Every pair of atoms which involves one atom from GROUPA and one atom from GROUPB defines one colvar");
-  keys.reserve("atoms","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
+  keys.reserve("atoms-3","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
                                  "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
                                  "other specified atoms are within a certain cutoff of the central atom.");
-  keys.reserve("atoms","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
+  keys.reserve("atoms-4","SPECIESA","this keyword is used for colvars such as the coordination number.  In that context it species that plumed should calculate "
                                   "one coordination number for each of the atoms specified in SPECIESA.  Each of these cooordination numbers specifies how many "
                                   "of the atoms specifies using SPECIESB is within the specified cutoff");
-  keys.reserve("atoms","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
+  keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
 } 
 

@@ -33,9 +33,7 @@ namespace PLMD {
 /**
 \ingroup INHERIT
 This is the abstract base class to use for implementing new collective variables, within it there is 
-information as to how to go about implementing a new CV. 
-
-For a tutorial on how to add a new collective variable, see \ref AddingAColvar
+\ref AddingAColvar "information" as to how to go about implementing a new CV. 
 */
 
 class Colvar :

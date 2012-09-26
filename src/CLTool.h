@@ -49,10 +49,7 @@ public:
 /**
 \ingroup INHERIT
 This is the abstract base class to use for implementing new command line tool, within it there
-is information as to how to go about implemneting a new tool.
-
-For a tutorial on how to add a new command-line tool, see \ref AddingACLTool
-
+is \ref AddingACLTool "information" as to how to go about implemneting a new tool.
 */
 
 class CLTool {

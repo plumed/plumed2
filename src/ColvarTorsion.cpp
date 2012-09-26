@@ -71,10 +71,10 @@ PLUMED_REGISTER_ACTION(ColvarTorsion,"TORSION")
 
 void ColvarTorsion::registerKeywords(Keywords& keys){
    Colvar::registerKeywords( keys );
-   keys.add("atoms","ATOMS","the four atoms involved in the torsional angle");
-   keys.add("atoms","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTOR1 and VECTOR2 keywords."); 
-   keys.add("atoms","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
-   keys.add("atoms","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
+   keys.add("atoms-1","ATOMS","the four atoms involved in the torsional angle");
+   keys.add("atoms-2","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTOR1 and VECTOR2 keywords."); 
+   keys.add("atoms-2","VECTOR1","two atoms that define a vector.  You can use this in combination with VECTOR2 and AXIS");
+   keys.add("atoms-2","VECTOR2","two atoms that define a vector.  You can use this in combination with VECTOR1 and AXIS");
    keys.addFlag("COSINE",false,"calculate cosine instead of dihedral");
 }
 

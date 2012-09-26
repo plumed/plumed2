@@ -75,6 +75,8 @@ public:
   Action* create(const ActionOptions&ao);
 /// Print out the keywords for an action in html ready for input into the manual
   bool printManual(const std::string& action); 
+/// Print out a template command for an action 
+  bool printTemplate(const std::string& action);
   void remove(creator_pointer);
   ~ActionRegister();
 };

@@ -72,6 +72,8 @@ private:
   std::map<std::string,bool> booldefs; 
 /// The default values (if there are default values) for compulsory keywords
   std::map<std::string,std::string> numdefs;
+/// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
+  std::map<std::string,std::string> atomtags;
 /// Print the documentation for the jth keyword in html
   void print_html_item( const std::string& ) const;
 /// Print a particular keyword
@@ -117,13 +119,16 @@ public:
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation
   void print_html( const bool isaction ) const ;
+/// Print the template version for the documenation
+  void print_template( const std::string& actionname) const ;
 /// Change the style of a keyword
   void reset_style( const std::string & k, const std::string & style );
 /// Add keywords from one keyword object to another
   void add( const Keywords& keys );
 /// Copy the keywords data
   void copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am,
-                         std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums ) const ;
+                         std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
+                         std::map<std::string,std::string>& atags ) const ;
 /// Clear everything from the keywords object
   void destroyData();
 };

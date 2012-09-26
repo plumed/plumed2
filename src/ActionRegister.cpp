@@ -96,6 +96,16 @@ bool ActionRegister::printManual( const std::string& action ){
   } 
 }
 
+bool ActionRegister::printTemplate( const std::string& action ){
+  if( check(action) ){
+     Keywords keys; mk[action](keys);
+     keys.print_template(action); keys.destroyData(); 
+     return true;
+  } else {
+     return false;
+  }
+}
+
 std::ostream & PLMD::operator<<(std::ostream &log,const ActionRegister&ar){
   vector<string> s;
   for(ActionRegister::const_mIterator it=ar.m.begin();it!=ar.m.end();++it)

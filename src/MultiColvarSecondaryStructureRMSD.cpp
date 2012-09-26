@@ -40,6 +40,10 @@ void MultiColvarSecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   keys.add("compulsory","TYPE","DRMSD","the manner in which RMSD alignment is performed. Should be OPTIMAL, SIMPLE or DRMSD. "
                                        "For more details on the OPTIMAL and SIMPLE methods see \\ref RMSD. For more details on the "
                                        "DRMSD method see \\ref DRMSD.");
+  keys.add("compulsory","R_0","The r_0 parameter of the switching function.");
+  keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
+  keys.add("compulsory","NN","8","The n parameter of the switching function");
+  keys.add("compulsory","MM","12","The m parameter of the switching function");
   keys.use("LESS_THAN"); keys.use("MIN"); keys.use("AVERAGE");
 }
 
@@ -65,7 +69,16 @@ void MultiColvarSecondaryStructureRMSD::setSecondaryStructure( std::vector<Vecto
   }
 
   if( secondary_drmsd.size()==0 && secondary_rmsd.size()==0 ){ 
-     int natoms; readAtoms(natoms); requestDistribution();
+     int natoms; readAtoms(natoms); 
+     requestDistribution();
+     if( getNumberOfVessels()==0 ){
+         double r0; parse("R_0",r0); double d0; parse("D_0",d0);
+         int nn; parse("NN",nn); int mm; parse("MM",mm);
+         std::ostringstream ostr;
+         ostr<<"RATIONAL R_0="<<r0<<" D_0="<<d0<<" NN="<<nn<<" MM="<<mm;
+         std::string input=ostr.str(); addVessel( "LESS_THAN", input );
+         requestDistribution();  // This makes sure resizing is done
+     } 
   }
 
   // If we are in natural units get conversion factor from nm into natural length units

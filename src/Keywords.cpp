@@ -33,7 +33,7 @@ KeyType::KeyType( const std::string& type ){
       style=flag;
   } else if( type=="optional" ){
       style=optional;
-  } else if( type=="atoms" ){
+  } else if( type.find("atoms")!=std::string::npos ){
       style=atoms;
   } else if( type=="hidden" ){
       style=hidden;
@@ -59,11 +59,12 @@ void KeyType::setStyle( const std::string& type ){
 }
 
 void Keywords::add( const Keywords& newkeys ){
-  newkeys.copyData( keys, reserved_keys, types, allowmultiple, documentation, booldefs, numdefs  ); 
+  newkeys.copyData( keys, reserved_keys, types, allowmultiple, documentation, booldefs, numdefs, atomtags  ); 
 }
 
 void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am, 
-                         std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums ) const {
+                         std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
+                         std::map<std::string,std::string>& atags ) const {
   for(unsigned i=0;i<keys.size();++i){
      std::string thiskey=keys[i];
      for(unsigned j=0;j<kk.size();++j) plumed_massert( thiskey!=kk[j], "keyword " + thiskey + " is in twice" );
@@ -71,6 +72,7 @@ void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>&
      kk.push_back( thiskey ); 
      plumed_massert( types.count( thiskey ), "no type data on keyword " + thiskey + " to copy" );
      tt.insert( std::pair<std::string,KeyType>( thiskey,types.find(thiskey)->second) );
+     if( (types.find(thiskey)->second).isAtomList() ) atags.insert( std::pair<std::string,std::string>( thiskey,atomtags.find(thiskey)->second) );
      plumed_massert( allowmultiple.count( thiskey ), "no numbered data on keyword " + thiskey + " to copy" ); 
      am.insert( std::pair<std::string,bool>(thiskey,allowmultiple.find(thiskey)->second) );
      plumed_massert( documentation.count( thiskey ), "no documentation for keyword " + thiskey + " to copy" ); 
@@ -85,6 +87,7 @@ void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>&
      rk.push_back( thiskey ); 
      plumed_massert( types.count( thiskey ), "no type data on keyword " + thiskey + " to copy" );
      tt.insert( std::pair<std::string,KeyType>( thiskey,types.find(thiskey)->second) );
+     if( (types.find(thiskey)->second).isAtomList() ) atags.insert( std::pair<std::string,std::string>( thiskey,atomtags.find(thiskey)->second) );
      plumed_massert( allowmultiple.count( thiskey ), "no numbered data on keyword " + thiskey + " to copy" ); 
      am.insert( std::pair<std::string,bool>(thiskey,allowmultiple.find(thiskey)->second) );
      plumed_massert( documentation.count( thiskey ), "no documentation for keyword " + thiskey + " to copy" ); 
@@ -103,6 +106,7 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
      types.insert( std::pair<std::string,KeyType>(k,KeyType("optional")) );
   } else {
      fd=d;
+     if( t.find("atoms")!=std::string::npos ) atomtags.insert( std::pair<std::string,std::string>(k,t) );
      allowmultiple.insert( std::pair<std::string,bool>(k,false) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
   }
@@ -142,6 +146,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
      types.insert( std::pair<std::string,KeyType>(k, KeyType("optional")) );
   } else { 
      fd=d;
+     if( t.find("atoms")!=std::string::npos ) atomtags.insert( std::pair<std::string,std::string>(k,t) ); 
      allowmultiple.insert( std::pair<std::string,bool>(k,false) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
   }
@@ -218,17 +223,61 @@ bool Keywords::reserved( const std::string & k ) const {
   return false;
 }
 
+void Keywords::print_template(const std::string& actionname) const {
+  unsigned nkeys=0;
+  printf("%s",actionname.c_str());
+  for(unsigned i=0;i<keys.size();++i){
+     if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
+  }
+  if( nkeys>0 ){
+    std::string prevtag="start";
+    for(unsigned i=0;i<keys.size();++i){
+        if( (types.find(keys[i])->second).isAtomList() ){
+             if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second ) break;
+             printf(" %s=[atom selection]", keys[i].c_str() ); 
+             prevtag=atomtags.find(keys[i])->second;
+        }
+    }
+  }
+  nkeys=0;
+  for(unsigned i=0;i<keys.size();++i){
+     if ( (types.find(keys[i])->second).isCompulsory() ) nkeys++;
+  }
+  if( nkeys>0 ){
+     for(unsigned i=0;i<keys.size();++i){
+        if ( (types.find(keys[i])->second).isCompulsory() ){
+          std::string def;
+          if( getDefaultValue( keys[i], def) ){
+              printf(" %s=%s ", keys[i].c_str(), def.c_str() ); 
+          } else {
+              printf(" %s=    ", keys[i].c_str() );
+          }
+        }
+     }
+  }
+  printf("\n");
+}
+
 void Keywords::print_html( const bool isaction ) const {
   unsigned nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
      if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
   }
   if( nkeys>0 ){
-    if(isaction) std::cout<<"\\par Specifying the atoms involved\n\n";
+    if(isaction) std::cout<<"\\par The atoms involved can be specified using\n\n";
     else std::cout<<"\\par The input trajectory is specified using one of the following\n\n";
     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
+    std::string prevtag="start";
     for(unsigned i=0;i<keys.size();++i){
-        if ( (types.find(keys[i])->second).isAtomList() ) print_html_item( keys[i] );
+        if ( (types.find(keys[i])->second).isAtomList() ){
+           if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second && isaction ){
+               std::cout<<"</table>\n\n";
+               std::cout<<"\\par Or alternatively by using\n\n";
+               std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
+           }
+           print_html_item( keys[i] );
+           prevtag=atomtags.find(keys[i])->second;
+        }
     }
     std::cout<<"</table>\n\n";
   }
@@ -429,6 +478,6 @@ bool Keywords::getDefaultValue( std::string key, std::string& def ) const {
 void Keywords::destroyData(){
    keys.clear(); reserved_keys.clear(); types.clear();
    allowmultiple.clear(); documentation.clear(); 
-   booldefs.clear(); numdefs.clear();
+   booldefs.clear(); numdefs.clear(); atomtags.clear();
 }
 
