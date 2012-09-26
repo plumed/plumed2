@@ -222,22 +222,23 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
       pd_nlocal=natoms;
       pd_start=0;
       first_step=true;
+      masses.assign(natoms,real(1.0));
+      charges.assign(natoms,real(0.0));
+      if(pdbfile.length()>0){
+        for(unsigned i=0;i<pdb.size();++i){
+          AtomNumber an=pdb.getAtomNumbers()[i];
+          unsigned index=an.index();
+          plumed_massert(index<unsigned(natoms),"atom index in pdb exceeds the number of atoms in trajectory");
+          masses[index]=pdb.getOccupancy()[i];
+          charges[index]=pdb.getBeta()[i];
+        }
+      }
+
     }
     plumed_massert(checknatoms==natoms,"number of atom changed");
 
     coordinates.assign(3*natoms,real(0.0));
     forces.assign(3*natoms,real(0.0));
-    masses.assign(natoms,real(1.0));
-    charges.assign(natoms,real(0.0));
-    if(pdbfile.length()>0){
-      for(unsigned i=0;i<pdb.size();++i){
-        AtomNumber an=pdb.getAtomNumbers()[i];
-        unsigned index=an.index();
-        plumed_massert(index<unsigned(natoms),"atom index in pdb exceeds the number of atoms in trajectory");
-        masses[index]=pdb.getOccupancy()[i];
-        charges[index]=pdb.getBeta()[i];
-      }
-    }
     cell.assign(9,real(0.0));
     virial.assign(9,real(0.0));
 
