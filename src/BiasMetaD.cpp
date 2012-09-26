@@ -30,6 +30,7 @@
 #include <iostream> 
 #include "Random.h"
 #include <string>
+#include <cstring>
 
 #define DP2CUTOFF 6.25
 
