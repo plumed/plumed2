@@ -77,6 +77,8 @@ void CLToolDriver<real>::registerKeywords( Keywords& keys ){
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
   keys.add("hidden","--debug-dd","use a fake domain decomposition");
   keys.add("hidden","--debug-pd","use a fake particle decomposition");
+  keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange");
+  keys.add("hidden","--debug-grex-log","log file for debug=grex");
 }
 
 template<typename real>
@@ -122,6 +124,29 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 
   bool debug_pd=parse("--debug-pd",fakein);
   bool debug_dd=parse("--debug-dd",fakein);
+  int multi=1;
+  FILE*multi_log=NULL;
+  bool debug_grex=parse("--debug-grex",fakein);
+  PlumedCommunicator intracomm;
+  PlumedCommunicator intercomm;
+  if(debug_grex){
+    Tools::convert(fakein,multi);
+    int ntot=pc.Get_size();
+    int nintra=ntot/multi;
+    plumed_massert(multi*nintra==ntot,"xxx");
+    pc.Split(pc.Get_rank()/nintra,pc.Get_rank(),intracomm);
+    pc.Split(pc.Get_rank()%nintra,pc.Get_rank(),intercomm);
+    string n; Tools::convert(intercomm.Get_rank(),n);
+    string file;
+    parse("--debug-grex-log",file);
+    if(file.length()>0){
+      file+="."+n;
+      multi_log=fopen(file.c_str(),"w");
+    }
+  } else {
+    intracomm.Set_comm(pc.Get_comm());
+  }
+
 // Read the plumed input file name  
   string plumedFile; parse("--plumed",plumedFile);
 // the timestep
@@ -184,6 +209,12 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   int checknatoms=0;
   int step=0;
 
+  if(debug_grex){
+    string n;
+    Tools::convert(intercomm.Get_rank(),n);
+    trajectoryFile+="."+n;
+  }
+
   FILE* fp;
   if (trajectoryFile=="-") 
     fp=in;
@@ -237,7 +268,14 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
     sscanf(line.c_str(),"%d",&natoms);
     if(checknatoms==0){
       checknatoms=natoms;
-      if(PlumedCommunicator::initialized()) p.cmd("setMPIComm",&pc.Get_comm());
+      if(PlumedCommunicator::initialized()){
+        if(multi>1){
+          if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
+          p.cmd("GREX setMPIIntracomm",&intracomm.Get_comm());
+          p.cmd("GREX init");
+        }
+        p.cmd("setMPIComm",&intracomm.Get_comm());
+      }
       p.cmd("setMDLengthUnits",&units.getLength());
       p.cmd("setNatoms",&natoms);
       p.cmd("setMDEngine","driver");
@@ -270,7 +308,7 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 
     if( first_step || rnd.U01()>0.5){
       if(debug_pd){
-        int npe=pc.Get_size();
+        int npe=intracomm.Get_size();
         vector<int> loc(npe,0);
         vector<int> start(npe,0);
         for(int i=0;i<npe-1;i++){
@@ -280,11 +318,11 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
           start[i+1]=start[i]+loc[i];
         }
         loc[npe-1]=natoms-start[npe-1];
-        pc.Bcast(&loc[0],npe,0);
-        pc.Bcast(&start[0],npe,0);
-        pd_nlocal=loc[pc.Get_rank()];
-        pd_start=start[pc.Get_rank()];
-        if(pc.Get_rank()==0){
+        intracomm.Bcast(&loc[0],npe,0);
+        intracomm.Bcast(&start[0],npe,0);
+        pd_nlocal=loc[intracomm.Get_rank()];
+        pd_start=start[intracomm.Get_rank()];
+        if(intracomm.Get_rank()==0){
           fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
           fprintf(out,"DRIVER: "); for(int i=0;i<npe;i++) fprintf(out,"%d ",loc[i]); printf("\n");
           fprintf(out,"DRIVER: "); for(int i=0;i<npe;i++) fprintf(out,"%d ",start[i]); printf("\n");
@@ -292,8 +330,8 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
         p.cmd("setAtomsNlocal",&pd_nlocal);
         p.cmd("setAtomsContiguous",&pd_start);
       } else if(debug_dd){
-        int npe=pc.Get_size();
-        int rank=pc.Get_rank();
+        int npe=intracomm.Get_size();
+        int rank=intracomm.Get_rank();
         dd_charges.assign(natoms,0.0);
         dd_masses.assign(natoms,0.0);
         dd_gatindex.assign(natoms,-1);
@@ -313,7 +351,7 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
             dd_nlocal++;
           }
         }
-        if(pc.Get_rank()==0){
+        if(intracomm.Get_rank()==0){
           fprintf(out,"\nDRIVER: Reassigning particle decomposition\n");
         }
         p.cmd("setAtomsNlocal",&dd_nlocal);
@@ -380,8 +418,8 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
    p.cmd("calc");
 
 // this is necessary as only processor zero is adding to the virial:
-   pc.Bcast(&virial[0],9,0);
-   if(debug_pd) pc.Sum(&forces[0],natoms*3);
+   intracomm.Bcast(&virial[0],9,0);
+   if(debug_pd) intracomm.Sum(&forces[0],natoms*3);
    if(debug_dd){
      for(int i=0;i<dd_nlocal;i++){
        forces[3*dd_gatindex[i]+0]=dd_forces[3*i+0];
@@ -389,7 +427,29 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
        forces[3*dd_gatindex[i]+2]=dd_forces[3*i+2];
      }
      dd_forces.assign(3*natoms,0.0);
-     pc.Sum(&forces[0],natoms*3);
+     intracomm.Sum(&forces[0],natoms*3);
+   }
+   int multi_stride=2;
+   if(multi>1 &&step%multi_stride==0){
+     p.cmd("GREX savePositions");
+     if(intracomm.Get_rank()>0){
+       p.cmd("GREX prepare");
+     } else {
+       int r=intercomm.Get_rank();
+       int n=intercomm.Get_size();
+       int partner=r+(2*((r+step/multi_stride)%2))-1;
+       if(partner<0)partner=0;
+       if(partner>=n) partner=n-1;
+       p.cmd("GREX setPartner",&partner);
+       p.cmd("GREX calculate");
+       p.cmd("GREX shareAllDeltaBias");
+       for(int i=0;i<n;i++){
+         string s; Tools::convert(i,s);
+         real a; s="GREX getDeltaBias "+s; p.cmd(s.c_str(),&a);
+         if(multi_log) fprintf(multi_log," %f",a);
+       }
+       if(multi_log) fprintf(multi_log,"\n");
+     }
    }
 
 
@@ -407,6 +467,7 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 
   if(fp_forces) fclose(fp_forces);
   fclose(fp);
+  if(multi_log) fclose(multi_log);
   
   return 0;
 }
