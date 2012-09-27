@@ -105,6 +105,9 @@ public:
   void Recv(T*,int,int,int);
   template <class T>
   void Bcast(T*,int,int);
+
+/// Wrapper to MPI_Comm_split
+  void Split(int,int,PlumedCommunicator&)const;
 };
 
 template<class T>

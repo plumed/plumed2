@@ -158,5 +158,14 @@ template<> MPI_Datatype PlumedCommunicator::getMPIType<unsigned>()   { return MP
 template<> MPI_Datatype PlumedCommunicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
 #endif
 
+
+void PlumedCommunicator::Split(int color,int key,PlumedCommunicator&pc)const{
+#ifdef __PLUMED_MPI
+  MPI_Comm_split(communicator,color,key,&pc.communicator);
+#else
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
+#endif
+}
+
 }
 
