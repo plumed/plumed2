@@ -73,6 +73,7 @@ void CLToolDriver<real>::registerKeywords( Keywords& keys ){
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
   keys.add("optional","--pdb","provides a pdb with masses and charges");
+  keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
   keys.add("hidden","--debug-dd","use a fake domain decomposition");
   keys.add("hidden","--debug-pd","use a fake particle decomposition");
@@ -149,6 +150,25 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
     bool check=pdb.read(pdbfile,false,1.0);
     plumed_massert(check,"error reading pdb file");
   }
+
+  string pbc_cli_list; parse("--box",pbc_cli_list);
+  bool pbc_cli_given=false;
+  vector<double> pbc_cli_box(9,0.0);
+  if(pbc_cli_list.length()>0) {
+    pbc_cli_given=true;
+    vector<string> words=Tools::getWords(pbc_cli_list,",");
+    if(words.size()==3){
+      for(int i=0;i<3;i++) sscanf(words[i].c_str(),"%lf",&(pbc_cli_box[4*i]));
+    } else if(words.size()==9) {
+      for(int i=0;i<9;i++) sscanf(words[i].c_str(),"%lf",&(pbc_cli_box[i]));
+    } else {
+      string msg="ERROR: cannot parse command-line box "+pbc_cli_list;
+      fprintf(stderr,"%s\n",msg.c_str());
+      return 1;
+    }
+
+  }
+  
 
   if(debug_dd) plumed_merror("debug_dd not yet implemented");
   plumed_massert(!(debug_dd&debug_pd),"cannot use debug-dd and debug-pd at the same time");
@@ -269,18 +289,24 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
     ok=Tools::getline(fp,line);
     plumed_massert(ok,"premature end of file");
 
-    std::vector<std::string> words;
-    words=Tools::getWords(line);
     std::vector<double> celld(9,0.0);
-    if(words.size()==3){
-      sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[4],&celld[8]);
-    } else if(words.size()==9){
-      sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-             &celld[0], &celld[1], &celld[2],
-             &celld[3], &celld[4], &celld[5],
-             &celld[6], &celld[7], &celld[8]);
-    } else plumed_merror("needed box in second line");
+    if(pbc_cli_given==false) {
+      std::vector<std::string> words;
+      words=Tools::getWords(line);
+      if(words.size()==3){
+	sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[4],&celld[8]);
+      } else if(words.size()==9){
+	sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+	       &celld[0], &celld[1], &celld[2],
+	       &celld[3], &celld[4], &celld[5],
+	       &celld[6], &celld[7], &celld[8]);
+      } else plumed_merror("needed box in second line");
+    } else {			// from command line
+      celld=pbc_cli_box;
+    }
     for(unsigned i=0;i<9;i++)cell[i]=real(celld[i]);
+
+    // Read coordinates
     for(int i=0;i<natoms;i++){
       ok=Tools::getline(fp,line);
       plumed_massert(ok,"premature end of file");
