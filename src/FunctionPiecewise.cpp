@@ -41,13 +41,13 @@ For variables less than the first
 \frac{y_{i+1}-y_i}{x_{i+1}-x_i}(s-x_i)+y_i ;  if x_i<s<x_{i+1}
 \f]
 \f[
-y_N ; if x>x_N 
+y_N ; if x>x_{N-1} 
 \f]
 \f[
-y_1 ; if x<x_1 
+y_1 ; if x<x_0 
 \f]
 
-Control points are passed using the POINT1=... POINT2=... syntax as in the example below
+Control points are passed using the POINT0=... POINT1=... syntax as in the example below
 
 If one argument is supplied, it results in a scalar quantity.
 If multiple arguments are supplied, it results
@@ -58,8 +58,8 @@ in a vector of arguments.
 dist1: DISTANCE ATOMS=1,10
 dist2: DISTANCE ATOMS=2,11
 
-pw: PIECEWISE POINT1=1,10 POINT2=2,pi POINT3=3,10 ARG=dist1
-ppww: PIECEWISE POINT1=1,10 POINT2=2,pi POINT3=3,10 ARG=dist1,dist2
+pw: PIECEWISE POINT0=1,10 POINT1=1,PI POINT2=3,10 ARG=dist1
+ppww: PIECEWISE POINT0=1,10 POINT1=1,PI POINT2=3,10 ARG=dist1,dist2
 PRINT ARG=pw,ppww.1,ppww.2
 \endverbatim
 (See also \ref PRINT and \ref DISTANCE).
