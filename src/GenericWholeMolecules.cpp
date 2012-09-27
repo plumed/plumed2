@@ -97,7 +97,7 @@ void GenericWholeMolecules::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY1, ENTITY2,...");
   keys.reset_style("ENTITY","atoms");
-  keys.add("atoms","RESIDUES","this command specifies a set of residues which all must be aligned. It must be used in tandem with the \\ref MOLINFO "
+  keys.add("residues","RESIDUES","this command specifies a set of residues which all must be aligned. It must be used in tandem with the \\ref MOLINFO "
                               "action and the RES_ATOMS keyword. If you wish to use all the residues from all the chains in your system you can do so by "
                               "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
                               "you are interested in as a list of numbers"); 

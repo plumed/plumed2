@@ -30,7 +30,7 @@ namespace PLMD {
 void MultiColvarSecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithDistribution::autoParallelize( keys );
-  keys.add("atoms","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
+  keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
                               "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
                               "\\ref MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
                               "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "

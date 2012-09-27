@@ -33,7 +33,7 @@ KeyType::KeyType( const std::string& type ){
       style=flag;
   } else if( type=="optional" ){
       style=optional;
-  } else if( type.find("atoms")!=std::string::npos ){
+  } else if( type.find("atoms")!=std::string::npos || type.find("residues")!=std::string::npos ){
       style=atoms;
   } else if( type=="hidden" ){
       style=hidden;
@@ -49,7 +49,7 @@ void KeyType::setStyle( const std::string& type ){
       style=flag;
   } else if( type=="optional" ){
       style=optional;
-  } else if( type=="atoms" ){
+  } else if( type.find("atoms")!=std::string::npos || type.find("residues")!=std::string::npos ){
       style=atoms;
   } else if( type=="hidden" ){
       style=hidden;
@@ -106,9 +106,9 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
      types.insert( std::pair<std::string,KeyType>(k,KeyType("optional")) );
   } else {
      fd=d;
-     if( t.find("atoms")!=std::string::npos ) atomtags.insert( std::pair<std::string,std::string>(k,t) );
      allowmultiple.insert( std::pair<std::string,bool>(k,false) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
+     if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,t) );
   }
   documentation.insert( std::pair<std::string,std::string>(k,fd) ); 
   reserved_keys.push_back(k); 
@@ -146,9 +146,9 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
      types.insert( std::pair<std::string,KeyType>(k, KeyType("optional")) );
   } else { 
      fd=d;
-     if( t.find("atoms")!=std::string::npos ) atomtags.insert( std::pair<std::string,std::string>(k,t) ); 
      allowmultiple.insert( std::pair<std::string,bool>(k,false) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
+     if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,t) );
   }
   documentation.insert( std::pair<std::string,std::string>(k,fd) );
   keys.push_back(k);  
@@ -234,7 +234,8 @@ void Keywords::print_template(const std::string& actionname) const {
     for(unsigned i=0;i<keys.size();++i){
         if( (types.find(keys[i])->second).isAtomList() ){
              if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second ) break;
-             printf(" %s=[atom selection]", keys[i].c_str() ); 
+             if( (atomtags.find(keys[i])->second).find("residues")!=std::string::npos) printf(" %s=<residue selection>", keys[i].c_str() );
+             else printf(" %s=<atom selection>", keys[i].c_str() ); 
              prevtag=atomtags.find(keys[i])->second;
         }
     }
