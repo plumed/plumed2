@@ -103,7 +103,7 @@ public:
 /// Opens the file (without auto-backup)
   PlumedFileBase& open(const std::string&name,const std::string& mode);
 /// Check if the file exists
-  bool doExist(const std::string& path);
+  bool FileExist(const std::string& path);
 /// Check if a file is open
   bool isOpen();
 };
@@ -301,6 +301,8 @@ Typically used as
   PlumedIFile& getline(std::string&);
 /// Reset end of file                                                              
   void reset(bool);
+/// Check if a field exist                                                       
+  bool FieldExist(const std::string& s);
 };
 
 /// Write using << syntax

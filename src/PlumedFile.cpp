@@ -130,7 +130,7 @@ PlumedFileBase& PlumedFileBase::open(const std::string& path,const std::string& 
 }
 
 
-bool PlumedFileBase::doExist(const std::string& path){
+bool PlumedFileBase::FileExist(const std::string& path){
   FILE *ff=NULL;
   bool do_exist=false;
   if(plumed){
@@ -404,6 +404,14 @@ PlumedIFile& PlumedIFile::scanFieldList(std::vector<std::string>&s){
   for(unsigned i=0;i<fields.size();i++)
     s.push_back(fields[i].name);
   return *this;
+}
+
+bool PlumedIFile::FieldExist(const std::string& s){
+     std::vector<std::string> slist;
+     scanFieldList(slist);
+     int mycount = (int) std::count(slist.begin(), slist.end(), s);
+     if(mycount>0) return true;
+     else return false;
 }
 
 PlumedIFile& PlumedIFile::scanField(const std::string&name,std::string&str){
