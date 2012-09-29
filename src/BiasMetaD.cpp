@@ -345,7 +345,7 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
    ifile->link(*this);
    ifiles.push_back(ifile);                                                             
    ifilesnames.push_back(fname);
-   if(ifile->doExist(fname)){
+   if(ifile->FileExist(fname)){
     ifile->open(fname);
     if(plumed.getRestart()){
      log.printf("  Restarting from %s:",ifilesnames[i].c_str());                  
@@ -417,7 +417,7 @@ void BiasMetaD::readGaussians(PlumedIFile *ifile)
   
   ifile->scanField("height",height);
   ifile->scanField("biasf",dummy);
-  ifile->scanField("clock",dummy);
+  if(ifile->FieldExist("clock")) ifile->scanField("clock",dummy);
   ifile->scanField();
   nhills++;
   
@@ -470,7 +470,7 @@ void BiasMetaD::writeGaussian(const Gaussian& hill, PlumedOFile&file){
   double height=hill.height;
   if(welltemp_){height*=biasf_/(biasf_-1.0);}
   file.printField("height",height).printField("biasf",biasf_);
-  file.printField("clock",int(time(0)));
+  if(mw_n_>1) file.printField("clock",int(time(0)));
   file.printField();
 }
 
@@ -690,7 +690,7 @@ void BiasMetaD::update(){
     // if the file is not open yet 
     if(!(ifiles[i]->isOpen())){
      // check if it exists now and open it!
-     if(ifiles[i]->doExist(ifilesnames[i])) {
+     if(ifiles[i]->FileExist(ifilesnames[i])) {
        ifiles[i]->open(ifilesnames[i]);
        ifiles[i]->reset(false);
      }
