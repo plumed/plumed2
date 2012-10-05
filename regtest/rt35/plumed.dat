@@ -3,4 +3,4 @@ t2: RMSD REFERENCE=../../trajectories/path_msd/frame_21.dat TYPE=OPTIMAL SQUARED
 t3: RMSD REFERENCE=../../trajectories/path_msd/frame_42.dat TYPE=OPTIMAL SQUARED
 p2: PATHMSD ARG=t1,t2,t3 LAMBDA=500.0 
 PRINT ARG=t1,t2,t3,p2.s,p2.z STRIDE=1 FILE=colvar FMT=%8.4f
-DUMPDERIVATIVES ARG=p2.s,p2.z STRIDE=1 FILE=deriv
+DUMPDERIVATIVES ARG=p2.s,p2.z STRIDE=1 FILE=deriv FMT=%8.4f
