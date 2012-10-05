@@ -144,6 +144,8 @@ ActionAtomistic(ao)
       }
   }
 
+  if(groups.size()==0) error("no atom found for WHOLEMOLECULES!");
+
   checkRead();
   Tools::removeDuplicates(merge);
   requestAtoms(merge);
