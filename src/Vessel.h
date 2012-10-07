@@ -123,8 +123,6 @@ protected:
   void resizeBuffer( const unsigned& n );
 /// Set the value of the ith element in the buffer
   void setBufferElement( const unsigned& i, const double& val);
-/// Add something to the ith element in the buffer
-  void addToBufferElement( const unsigned& i, const double& val); 
 /// Get the value in the ith element of the buffer
   double getBufferElement( const unsigned& i ) const ;
 public:
@@ -136,6 +134,8 @@ public:
   bool serial;
 /// The constructor
   Vessel( const VesselOptions& da );
+/// Add something to the ith element in the buffer
+  void addToBufferElement( const unsigned& i, const double& val);
 /// Calculate the part of the vessel that is done in the loop
   virtual bool calculate( const unsigned& i, const double& tolerance )=0;
 /// Complete the calculation once the loop is finished

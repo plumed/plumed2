@@ -34,9 +34,9 @@ class VesselValueAccess : public Vessel {
 private:
 /// The value we take from the action
   Value myvalue;
+protected:
 /// The start for each of the values in the system
   std::vector<unsigned> value_starts;
-protected:
 /// Set the number of values
   void setNumberOfValues( const unsigned& );
 /// Set the sizes of all the values
@@ -45,10 +45,6 @@ protected:
   void getValue( const unsigned& , Value& ) const ;
 /// Get the value of the ith value in the buffer
   double getValue( const unsigned& ) const ;
-/// Add to the ith value in the buffer
-  void addValue( const unsigned& , const Value& );
-/// Set the ith value in the buffer
-  void setValue( const unsigned& , const Value& );
 public:
 /// Constructor
   VesselValueAccess( const VesselOptions& );
@@ -70,25 +66,7 @@ double VesselValueAccess::getValue( const unsigned& icv ) const {
    return getBufferElement( value_starts[icv] );
 }
 
-inline
-void VesselValueAccess::addValue( const unsigned& icv, const Value& val ){
-   plumed_assert( icv<value_starts.size()-1 );
-   plumed_assert( val.getNumberOfDerivatives()==(value_starts[icv+1]-value_starts[icv]-1) );
-   unsigned ider=value_starts[icv]; addToBufferElement( ider, val.get() ); ider++;
-   for(unsigned i=0;i<val.getNumberOfDerivatives();++i){ addToBufferElement( ider, val.getDerivative(i) ); ider++; }  
-} 
-
-inline
-void VesselValueAccess::setValue( const unsigned& icv, const Value& val ){
-   plumed_assert( icv<value_starts.size()-1 );
-   plumed_assert( val.getNumberOfDerivatives()==(value_starts[icv+1]-value_starts[icv]-1) );
-   unsigned ider=value_starts[icv]; setBufferElement( ider, val.get() ); ider++;
-   for(unsigned i=0;i<val.getNumberOfDerivatives();++i){ setBufferElement( ider, val.getDerivative(i) ); ider++; }
-}
-
 class VesselStoreAllValues : public VesselValueAccess {
-private:
-  Value myvalue;
 public:
 /// Constructor
   VesselStoreAllValues( const VesselOptions& );

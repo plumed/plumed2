@@ -99,7 +99,7 @@ void within::printKeywords(){
 
 void within::compute( const unsigned& icv, const unsigned& jfunc, Value& theval ){
   plumed_assert( jfunc<hist.size() );
-  mycolv->retreiveLastCalculatedValue( theval );
+  theval=mycolv->retreiveLastCalculatedValue();
   double df, f; f=hist[jfunc].calculate( theval.get() , df );
   theval.chainRule(df); theval.set(f);
 }

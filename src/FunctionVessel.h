@@ -32,7 +32,7 @@ namespace PLMD {
 class NormedSumVessel : public VesselAccumulator {
 private:
   bool donorm;
-  Value myvalue, myvalue2;
+  Value myvalue,myvalue2;
   Value myweight, myweight2;
 protected:
 /// We are normalizing the values

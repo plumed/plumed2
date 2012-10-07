@@ -100,7 +100,7 @@ public:
 /// Return the number of derivatives for a given colvar
   unsigned getNumberOfDerivatives( const unsigned& j );
 /// Retrieve the value that was calculated last
-  void retreiveLastCalculatedValue( Value& myvalue );
+  const Value & retreiveLastCalculatedValue();
 /// Retrieve the position of the central atom
   void retrieveCentralAtomPos( std::vector<Value>& cpos ) const ;
 /// Make sure we calculate the position of the central atom
@@ -108,7 +108,8 @@ public:
 /// Get the weight of the colvar
   virtual void retrieveColvarWeight( const unsigned& i, Value& ww );
 /// Merge the derivatives 
-  void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value& value_out );
+  void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, const unsigned& vstart, Vessel* valout );
+  void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout );
 /// Turn of atom requests when this colvar is deactivated cos its small
   void deactivateValue( const unsigned j );
 /// Turn on atom requests when the colvar is activated
@@ -147,8 +148,9 @@ void MultiColvar::activateValue( const unsigned j ){
 }
 
 inline
-void MultiColvar::retreiveLastCalculatedValue( Value& myvalue ){
-  copy( thisval, myvalue );  
+const Value & MultiColvar::retreiveLastCalculatedValue(){
+  return thisval;
+  // copy( thisval, myvalue );  
 }
 
 inline

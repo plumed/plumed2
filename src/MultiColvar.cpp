@@ -347,33 +347,58 @@ void MultiColvar::retrieveColvarWeight( const unsigned& j, Value& ww ){
   ww.clearDerivatives(); ww.set(1.0);
 }
 
-void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, Value& value_out ){    
+void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, const unsigned& vstart, Vessel* valout ){    //Value& value_out ){    
   plumed_assert( value_in.getNumberOfDerivatives()==3*colvar_atoms[jcv].getNumberActive()+9);
 
-  unsigned nder=3*getNumberOfAtoms()+9;
-  if( value_out.getNumberOfDerivatives()!=nder ) value_out.resizeDerivatives( nder );
-  value_out.clearDerivatives();
+//  unsigned nder=3*getNumberOfAtoms()+9;
+//  if( value_out.getNumberOfDerivatives()!=nder ) value_out.resizeDerivatives( nder );
+//  value_out.clearDerivatives();
 
   int thisatom; unsigned innat=colvar_atoms[jcv].getNumberActive();
   for(unsigned i=0;i<innat;++i){
      thisatom=linkIndex( i, colvar_atoms[jcv], all_atoms );
      plumed_assert( thisatom>=0 ); 
-     value_out.addDerivative( 3*thisatom+0, df*value_in.getDerivative(3*i+0) );
-     value_out.addDerivative( 3*thisatom+1, df*value_in.getDerivative(3*i+1) );
-     value_out.addDerivative( 3*thisatom+2, df*value_in.getDerivative(3*i+2) ); 
+     valout->addToBufferElement( vstart + 3*thisatom+0, df*value_in.getDerivative(3*i+0) );
+     valout->addToBufferElement( vstart + 3*thisatom+1, df*value_in.getDerivative(3*i+1) );
+     valout->addToBufferElement( vstart + 3*thisatom+2, df*value_in.getDerivative(3*i+2) ); 
   }
 
   // Easy to merge the virial
   unsigned outnat=getNumberOfAtoms(); 
-  value_out.addDerivative( 3*outnat+0, df*value_in.getDerivative(3*innat+0) );
-  value_out.addDerivative( 3*outnat+1, df*value_in.getDerivative(3*innat+1) );
-  value_out.addDerivative( 3*outnat+2, df*value_in.getDerivative(3*innat+2) );
-  value_out.addDerivative( 3*outnat+3, df*value_in.getDerivative(3*innat+3) );
-  value_out.addDerivative( 3*outnat+4, df*value_in.getDerivative(3*innat+4) );
-  value_out.addDerivative( 3*outnat+5, df*value_in.getDerivative(3*innat+5) );
-  value_out.addDerivative( 3*outnat+6, df*value_in.getDerivative(3*innat+6) );
-  value_out.addDerivative( 3*outnat+7, df*value_in.getDerivative(3*innat+7) );
-  value_out.addDerivative( 3*outnat+8, df*value_in.getDerivative(3*innat+8) );
+  valout->addToBufferElement( vstart + 3*outnat+0, df*value_in.getDerivative(3*innat+0) );
+  valout->addToBufferElement( vstart + 3*outnat+1, df*value_in.getDerivative(3*innat+1) );
+  valout->addToBufferElement( vstart + 3*outnat+2, df*value_in.getDerivative(3*innat+2) );
+  valout->addToBufferElement( vstart + 3*outnat+3, df*value_in.getDerivative(3*innat+3) );
+  valout->addToBufferElement( vstart + 3*outnat+4, df*value_in.getDerivative(3*innat+4) );
+  valout->addToBufferElement( vstart + 3*outnat+5, df*value_in.getDerivative(3*innat+5) );
+  valout->addToBufferElement( vstart + 3*outnat+6, df*value_in.getDerivative(3*innat+6) );
+  valout->addToBufferElement( vstart + 3*outnat+7, df*value_in.getDerivative(3*innat+7) );
+  valout->addToBufferElement( vstart + 3*outnat+8, df*value_in.getDerivative(3*innat+8) );
+}
+
+void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, Value* valout ){    
+  plumed_assert( value_in.getNumberOfDerivatives()==3*colvar_atoms[jcv].getNumberActive()+9);
+
+  int thisatom; unsigned innat=colvar_atoms[jcv].getNumberActive();
+  for(unsigned i=0;i<innat;++i){
+     thisatom=linkIndex( i, colvar_atoms[jcv], all_atoms );
+     plumed_assert( thisatom>=0 );
+     valout->addDerivative( 3*thisatom+0, df*value_in.getDerivative(3*i+0) );
+     valout->addDerivative( 3*thisatom+1, df*value_in.getDerivative(3*i+1) );
+     valout->addDerivative( 3*thisatom+2, df*value_in.getDerivative(3*i+2) );
+  }
+
+  // Easy to merge the virial
+  unsigned outnat=getNumberOfAtoms();
+  valout->addDerivative( 3*outnat+0, df*value_in.getDerivative(3*innat+0) );
+  valout->addDerivative( 3*outnat+1, df*value_in.getDerivative(3*innat+1) );
+  valout->addDerivative( 3*outnat+2, df*value_in.getDerivative(3*innat+2) );
+  valout->addDerivative( 3*outnat+3, df*value_in.getDerivative(3*innat+3) );
+  valout->addDerivative( 3*outnat+4, df*value_in.getDerivative(3*innat+4) );
+  valout->addDerivative( 3*outnat+5, df*value_in.getDerivative(3*innat+5) );
+  valout->addDerivative( 3*outnat+6, df*value_in.getDerivative(3*innat+6) );
+  valout->addDerivative( 3*outnat+7, df*value_in.getDerivative(3*innat+7) );
+  valout->addDerivative( 3*outnat+8, df*value_in.getDerivative(3*innat+8) );
 }
 
 Vector MultiColvar::getSeparation( const Vector& vec1, const Vector& vec2 ) const {

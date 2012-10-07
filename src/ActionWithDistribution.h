@@ -98,7 +98,8 @@ public:
 /// Ensure that nothing gets done for your deactivated colvars
   virtual void deactivateValue( const unsigned j )=0;
 /// Merge the derivatives
-  virtual void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value& value_out )=0;
+  virtual void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, const unsigned& vstart, Vessel* valout )=0;
+  virtual void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout )=0;
 /// Can we skip the calculations of quantities
   virtual bool isPossibleToSkip(); 
 /// Are the base quantities periodic
@@ -106,7 +107,7 @@ public:
 /// What are the domains of the base quantities
   virtual void retrieveDomain( double& min, double& max);
 /// Retrieve the previously calculated value and derivatives
-  virtual void retreiveLastCalculatedValue( Value& myvalue )=0;
+  virtual const Value & retreiveLastCalculatedValue()=0;
 /// Get the number of functions from which we are calculating the distribtuion
   virtual unsigned getNumberOfFunctionsInAction()=0;
 /// Get the number of derivatives for final calculated quantity 

@@ -27,26 +27,18 @@ namespace PLMD {
 SumVessel::SumVessel( const VesselOptions& da ):
 VesselAccumulator(da)
 {
-  if( getAction()->isPeriodic() ){
-      double min, max;
-      getAction()->retrieveDomain( min, max );
-      myvalue.setDomain( min, max );
-      myvalue2.setDomain( min, max );
-  } else {
-      myvalue.setNotPeriodic();
-      myvalue2.setNotPeriodic();
-  }
 }
 
 bool SumVessel::calculate( const unsigned& icv, const double& tolerance ){
-  bool keep=false; double f, df;
-  getAction()->retreiveLastCalculatedValue( myvalue );
+  bool keep=false; double f, df; unsigned jout;
+  Value myval=getAction()->retreiveLastCalculatedValue();
   for(unsigned j=0;j<getNumberOfValues();++j){
-      f=compute( j, myvalue.get(), df );
+      f=compute( j, myval.get(), df );
       if( fabs(f)>tolerance ){
-          keep=true; myvalue2.set( f );
-          getAction()->mergeDerivatives( icv, myvalue, df, myvalue2 );
-          addValue( j, myvalue2 );
+          keep=true; 
+          jout=value_starts[j]; 
+          addToBufferElement( jout, f ); jout++;
+          getAction()->mergeDerivatives( icv, myval, df, jout, this );        
       }  
   }
   return keep;
@@ -73,10 +65,8 @@ donorm(false)
   if( getAction()->isPeriodic() ){
       double min, max;
       getAction()->retrieveDomain( min, max );
-      myvalue.setDomain( min, max );
       myvalue2.setDomain( min, max );
   } else {
-      myvalue.setNotPeriodic();
       myvalue2.setNotPeriodic();
   }
 }
@@ -90,27 +80,31 @@ bool NormedSumVessel::calculate( const unsigned& icv, const double& tolerance ){
   if(donorm){
      getWeight( icv, myweight );
      if( myweight.get()>tolerance ){
-         keep=true; myweight2.set( myweight.get() ); 
-         getAction()->mergeDerivatives( icv, myweight, 1.0, myweight2 );
-         addValue( 0, myweight2 );
+         keep=true; 
+         addToBufferElement( 0, myweight.get() ); 
+         getAction()->mergeDerivatives( icv, myweight, 1.0, 1, this );
      }
      if(!keep) return false;
 
+     unsigned jout;
      for(unsigned j=1;j<getNumberOfValues()+1;++j){
         compute( icv, j-1, myvalue );
         if( fabs( myvalue.get() )>tolerance ){
-            keep=true; myvalue2.set( myvalue.get() );
-            getAction()->mergeDerivatives( icv, myvalue, 1.0, myvalue2 );
-            addValue( j, myvalue2 );
+            keep=true; 
+            jout=value_starts[j]; 
+            addToBufferElement( jout, myvalue.get() ); jout++;
+            getAction()->mergeDerivatives( icv, myvalue, 1.0, jout, this );
         }  
      }
   } else {
+     unsigned jout;
      for(unsigned j=0;j<getNumberOfValues();++j){
         compute( icv, j, myvalue );
         if( myvalue.get()>tolerance ){
-            keep=true; myvalue2.set( myvalue.get() );
-            getAction()->mergeDerivatives( icv, myvalue, 1.0, myvalue2 );
-            addValue( j, myvalue2 );
+            keep=true; 
+            jout=value_starts[j]; 
+            addToBufferElement( jout, myvalue.get() ); jout++;
+            getAction()->mergeDerivatives( icv, myvalue, 1.0, jout, this );
         }
      }   
   }

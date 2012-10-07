@@ -55,7 +55,7 @@ NormedSumVessel(da)
 
 void mean::compute( const unsigned& i, const unsigned& j, Value& theval ){
   plumed_assert( j==0 );
-  mycolv->retreiveLastCalculatedValue( theval ); 
+  theval=mycolv->retreiveLastCalculatedValue(); 
 }
 
 void mean::getWeight( const unsigned& i, Value& weight ){

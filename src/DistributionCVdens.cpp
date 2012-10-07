@@ -167,7 +167,7 @@ void cvdens::compute( const unsigned& i, const unsigned& j, Value& theval ){
   if(isDensity){
      calculateDensity( theval );
   } else {
-     mycolv->retreiveLastCalculatedValue( tmpval );
+     tmpval=mycolv->retreiveLastCalculatedValue();
      product( tmpval, tmpweight, theval ); 
   }
 }
