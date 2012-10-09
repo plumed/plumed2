@@ -62,7 +62,8 @@ double DRMSD::calculate(const std::vector<Vector> & positions, const Pbc& pbc,
   assert(positions.size()==natoms && derivatives.size()==natoms );
 
   Vector distance;
-  double drmsd=0.;
+  double drmsd=0.; virial.zero();
+  for(unsigned i=0;i<derivatives.size();++i) derivatives[i].zero();
   for(map< pair <unsigned,unsigned> , double>::const_iterator it=targets.begin();it!=targets.end();++it){
     unsigned i=it->first.first;
     unsigned j=it->first.second;
