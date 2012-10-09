@@ -47,6 +47,7 @@ class MultiColvar :
 private:
   bool usepbc;
   bool readatoms;
+  bool verbose_output;
   bool needsCentralAtomPosition;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;

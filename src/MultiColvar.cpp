@@ -57,6 +57,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                   "of the atoms specifies using SPECIESB is within the specified cutoff");
   keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
+  keys.addFlag("VERBOSE",false,"write a more detailed output");
 } 
 
 MultiColvar::MultiColvar(const ActionOptions&ao):
@@ -66,6 +67,7 @@ ActionWithValue(ao),
 ActionWithDistribution(ao),
 usepbc(true),
 readatoms(false),
+verbose_output(false),
 needsCentralAtomPosition(false),
 catom_pos(3)
 {
@@ -73,6 +75,7 @@ catom_pos(3)
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
     usepbc=!nopbc;
   }
+  parseFlag("VERBOSE",verbose_output);
 }
 
 void MultiColvar::useCentralAtom(){
@@ -82,12 +85,12 @@ void MultiColvar::useCentralAtom(){
 void MultiColvar::addColvar( const std::vector<unsigned>& newatoms ){
   if( colvar_atoms.size()>0 ) plumed_assert( colvar_atoms[0].fullSize()==newatoms.size() );
   DynamicList<unsigned> newlist;
-  log.printf("  Colvar %d is calculated from atoms : ", colvar_atoms.size()+1);
+  if( verbose_output ) log.printf("  Colvar %d is calculated from atoms : ", colvar_atoms.size()+1);
   for(unsigned i=0;i<newatoms.size();++i){
-     log.printf("%d ",all_atoms(newatoms[i]).serial() );
+     if( verbose_output ) log.printf("%d ",all_atoms(newatoms[i]).serial() );
      newlist.addIndexToList( newatoms[i] );
   }
-  log.printf("\n");
+  if( verbose_output ) log.printf("\n");
   colvar_atoms.push_back( newlist );
 } 
 
@@ -113,6 +116,15 @@ void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, 
   if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
 
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
+  if( !verbose_output ){
+      if(resstrings[0]=="all"){
+         log.printf("  examining all possible secondary structure combinations");
+      } else {
+         log.printf("  examining secondary struture in residue poritions : %s ",resstrings[0].c_str() );
+         for(unsigned i=1;i<resstrings.size();++i) log.printf(", %s",resstrings[1].c_str() );
+         log.printf("\n");
+      }
+  }
   std::vector< std::vector<AtomNumber> > backatoms; 
   moldat[0]->getBackbone( resstrings, backnames, backatoms );
 
@@ -169,8 +181,13 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
           for(unsigned j=0;j<i;++j){ 
              newlist.addIndexToList(i); newlist.addIndexToList(j);
              colvar_atoms.push_back( newlist ); newlist.clear();
-             log.printf("  Colvar %d is calculated from atoms : %d %d \n", colvar_atoms.size(), t[i].serial(), t[j].serial() ); 
+             if( verbose_output ) log.printf("  Colvar %d is calculated from atoms : %d %d \n", colvar_atoms.size(), t[i].serial(), t[j].serial() ); 
           }
+      }
+      if( !verbose_output ){
+          log.printf("  constructing colvars from %d atoms : ", t.size() );
+          for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
+          log.printf("\n");
       }
   } else {
       std::vector<AtomNumber> t1,t2; 
@@ -186,9 +203,18 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
              for(unsigned j=0;j<t2.size();++j){
                  newlist.addIndexToList(i); newlist.addIndexToList( t1.size() + j );
                  colvar_atoms.push_back( newlist ); newlist.clear();
-                 log.printf("  Colvar %d is calculated from atoms : %d %d \n", colvar_atoms.size(), t1[i].serial(), t2[j].serial() );
+                 if( verbose_output ) log.printf("  Colvar %d is calculated from atoms : %d %d \n", colvar_atoms.size(), t1[i].serial(), t2[j].serial() );
              }
          }
+      }
+      if( !verbose_output ){
+          log.printf("  constructing colvars from two groups containing %d and %d atoms respectively\n",t1.size(),t2.size() );
+          log.printf("  group A contains atoms : ");
+          for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() );
+          log.printf("\n"); 
+          log.printf("  group B contains atoms : ");
+          for(unsigned i=0;i<t2.size();++i) log.printf("%d ",t2[i].serial() );
+          log.printf("\n");
       }
   }
 }
@@ -205,23 +231,33 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
       if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ){
           for(unsigned i=0;i<t.size();++i){
               newlist.addIndexToList(i);
-              log.printf("  Colvar %d involves central atom %d and atoms : ", colvar_atoms.size()+1,t[i].serial() );
+              if( verbose_output ) log.printf("  Colvar %d involves central atom %d and atoms : ", colvar_atoms.size()+1,t[i].serial() );
               for(unsigned j=0;j<t.size();++j){
-                  if(i!=j){ newlist.addIndexToList(j); log.printf("%d ",t[j].serial() ); }
+                  if(i!=j){ 
+                     newlist.addIndexToList(j); 
+                     if( verbose_output ) log.printf("%d ",t[j].serial() ); 
+                  }
               }
-              log.printf("\n");
+              if( verbose_output ) log.printf("\n");
               colvar_atoms.push_back( newlist ); newlist.clear();
+          }
+          if( !verbose_output ){
+              log.printf("  generating colvars from %d atoms of a particular type\n",t.size() );
+              log.printf("  atoms involved : "); 
+              for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
+              log.printf("\n");
           }
       } else if( !( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) ){
           DynamicList<unsigned> newlist;
           log.printf("  involving atoms : ");
           for(unsigned i=0;i<t.size();++i){ 
-             newlist.addIndexToList(i); log.printf(" %d",t[i].serial() ); 
+             newlist.addIndexToList(i); 
+             if( verbose_output ) log.printf(" %d",t[i].serial() ); 
              colvar_atoms.push_back( newlist ); newlist.clear();
           }
           log.printf("\n");  
       } else {
-          plumed_massert(0,"SPECIES keyword is not for density or coordination like CV");
+          plumed_merror("SPECIES keyword is not for density or coordination like CV");
       }
   } else if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) {
       std::vector<AtomNumber> t1,t2;
@@ -236,12 +272,22 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
          DynamicList<unsigned> newlist;
          for(unsigned i=0;i<t1.size();++i){
             newlist.addIndexToList(i);
-            log.printf("  Colvar %d involves central atom %d and atoms : ", colvar_atoms.size()+1,t1[i].serial() );
+            if( verbose_output ) log.printf("  Colvar %d involves central atom %d and atoms : ", colvar_atoms.size()+1,t1[i].serial() );
             for(unsigned j=0;j<t2.size();++j){
-                newlist.addIndexToList( t1.size() + j ); log.printf("%d ",t2[j].serial() ); 
+                newlist.addIndexToList( t1.size() + j ); 
+                if( verbose_output ) log.printf("%d ",t2[j].serial() ); 
             }
-            log.printf("\n");
+            if( verbose_output ) log.printf("\n");
             colvar_atoms.push_back( newlist ); newlist.clear(); 
+         }
+         if( !verbose_output ){
+             log.printf("  generating colvars from a group of %d central atoms and %d other atoms\n",t1.size(), t2.size() );
+             log.printf("  central atoms are : ");
+             for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() );
+             log.printf("\n");
+             log.printf("  other atoms are : ");
+             for(unsigned i=0;i<t2.size();++i) log.printf("%d ",t2[i].serial() );
+             log.printf("\n");
          }
       }
   } 
