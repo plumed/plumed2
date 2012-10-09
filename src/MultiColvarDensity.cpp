@@ -53,7 +53,7 @@ public:
   static void registerKeywords( Keywords& keys );
   MultiColvarDensity(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos );
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
   /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives(){ plumed_assert(0); };
@@ -80,7 +80,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead(); 
 }
 
-double MultiColvarDensity::compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
+double MultiColvarDensity::compute( const unsigned& j, const std::vector<Vector>& pos ){
   return 1.0;
 }
 

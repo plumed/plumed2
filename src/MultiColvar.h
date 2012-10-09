@@ -55,8 +55,7 @@ private:
   std::vector< DynamicList<unsigned> > colvar_atoms;
 /// These are used to store the values of CVs etc so they can be retrieved by distribution
 /// functions
-  Tensor vir;
-  std::vector<Vector> der;
+  std::vector<Vector> pos;
   std::vector<Tensor> central_derivs;
   Value thisval;
   std::vector<Value> catom_pos;
@@ -83,6 +82,10 @@ protected:
   void removeAtomRequest( const unsigned& aa );
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
+/// Add some derivatives for an atom 
+  void addAtomsDerivatives(const int&,const Vector&);
+/// Add some derivatives to the virial
+  void addBoxDerivatives(const Tensor&);
 public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){};
@@ -119,7 +122,7 @@ public:
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual bool contributionIsSmall( std::vector<Vector>& pos ){ plumed_assert( !isPossibleToSkip() ); return false; }
 /// And a virtual function which actually computes the colvar
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial )=0; 
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos )=0;  
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
   virtual void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ); 
 /// Is this a density?
@@ -167,6 +170,28 @@ void MultiColvar::removeAtomRequest( const unsigned& i ){
 inline
 bool MultiColvar::usesPbc() const {
   return usepbc;
+}
+
+inline
+void MultiColvar::addAtomsDerivatives(const int& iatom, const Vector& der){
+  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  thisval.addDerivative( 3*iatom+0, der[0] );
+  thisval.addDerivative( 3*iatom+1, der[1] );
+  thisval.addDerivative( 3*iatom+2, der[2] );
+}
+
+inline
+void MultiColvar::addBoxDerivatives(const Tensor& vir){
+  int natoms=colvar_atoms[current].getNumberActive();
+  thisval.addDerivative( 3*natoms+0, vir(0,0) );
+  thisval.addDerivative( 3*natoms+1, vir(0,1) );
+  thisval.addDerivative( 3*natoms+2, vir(0,2) );
+  thisval.addDerivative( 3*natoms+3, vir(1,0) );
+  thisval.addDerivative( 3*natoms+4, vir(1,1) );
+  thisval.addDerivative( 3*natoms+5, vir(1,2) );
+  thisval.addDerivative( 3*natoms+6, vir(2,0) );
+  thisval.addDerivative( 3*natoms+7, vir(2,1) );
+  thisval.addDerivative( 3*natoms+8, vir(2,2) );
 }
 
 }

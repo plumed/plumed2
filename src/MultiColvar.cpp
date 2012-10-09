@@ -271,38 +271,21 @@ bool MultiColvar::calculateThisFunction( const unsigned& j ){
   unsigned natoms=colvar_atoms[j].getNumberActive();
 
   if ( natoms==0 ) return true;   // Do nothing if there are no active atoms in the colvar
-  std::vector<Vector> pos(natoms); 
 
   // Resize everything
-  if( der.size()!=pos.size() ) der.resize( pos.size() );
-  if( thisval.getNumberOfDerivatives()!=(3*pos.size()+9) ) thisval.resizeDerivatives( 3*pos.size()+9);
+  if( pos.size()!=natoms ){
+      pos.resize(natoms); thisval.resizeDerivatives( 3*pos.size()+9 );
+  }
 
   // Clear everything
-  vir.zero(); for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); der[i].zero(); }
+  for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); } 
   thisval.clearDerivatives();
 
   // Do a quick check on the size of this contribution
   if( contributionIsSmall( pos ) ) return true;
 
   // Compute everything
-  current=j; double vv=compute( j, pos, der, vir );
-
-  // Store the value
-  thisval.set( vv );
-  for(unsigned i=0;i<natoms;++i){
-      thisval.addDerivative( 3*i+0,der[i][0] );
-      thisval.addDerivative( 3*i+1,der[i][1] );
-      thisval.addDerivative( 3*i+2,der[i][2] );
-  }
-  thisval.addDerivative( 3*natoms+0, vir(0,0) );
-  thisval.addDerivative( 3*natoms+1, vir(0,1) );
-  thisval.addDerivative( 3*natoms+2, vir(0,2) );
-  thisval.addDerivative( 3*natoms+3, vir(1,0) );
-  thisval.addDerivative( 3*natoms+4, vir(1,1) );
-  thisval.addDerivative( 3*natoms+5, vir(1,2) );
-  thisval.addDerivative( 3*natoms+6, vir(2,0) );
-  thisval.addDerivative( 3*natoms+7, vir(2,1) );
-  thisval.addDerivative( 3*natoms+8, vir(2,2) );
+  current=j; double vv=compute( j, pos ); thisval.set(vv);   
 
   if(needsCentralAtomPosition){
      if( central_derivs.size()!=pos.size() ) central_derivs.resize( pos.size() );
@@ -347,12 +330,8 @@ void MultiColvar::retrieveColvarWeight( const unsigned& j, Value& ww ){
   ww.clearDerivatives(); ww.set(1.0);
 }
 
-void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, const unsigned& vstart, Vessel* valout ){    //Value& value_out ){    
+void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, const unsigned& vstart, Vessel* valout ){    
   plumed_assert( value_in.getNumberOfDerivatives()==3*colvar_atoms[jcv].getNumberActive()+9);
-
-//  unsigned nder=3*getNumberOfAtoms()+9;
-//  if( value_out.getNumberOfDerivatives()!=nder ) value_out.resizeDerivatives( nder );
-//  value_out.clearDerivatives();
 
   int thisatom; unsigned innat=colvar_atoms[jcv].getNumberActive();
   for(unsigned i=0;i<innat;++i){

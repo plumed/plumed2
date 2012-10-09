@@ -70,7 +70,7 @@ public:
   static void registerKeywords( Keywords& keys );
   MultiColvarCoordination(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos ); 
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
 /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives();
@@ -129,7 +129,7 @@ unsigned MultiColvarCoordination::getNumberOfFieldDerivatives(){
   return getNumberOfFunctionsInAction();
 } 
 
-double MultiColvarCoordination::compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
+double MultiColvarCoordination::compute( const unsigned& j, const std::vector<Vector>& pos ){
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number
@@ -139,9 +139,9 @@ double MultiColvarCoordination::compute( const unsigned& j, const std::vector<Ve
       sw = switchingFunction.calculate( distance.modulo(), dfunc );
       if( sw>=getTolerance() ){    //  nl_cut<0 ){
          value += sw;             // switchingFunction.calculate( distance.modulo(), dfunc );
-         deriv[0] = deriv[0] + (-dfunc)*distance;
-         deriv[i] = deriv[i] + (dfunc)*distance;
-         virial = virial + (-dfunc)*Tensor(distance,distance);
+         addAtomsDerivatives( 0, (-dfunc)*distance );
+         addAtomsDerivatives( i,  (dfunc)*distance );
+         addBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
       } else if( isTimeForNeighborListUpdate() ){
          removeAtomRequest( i );   
       }

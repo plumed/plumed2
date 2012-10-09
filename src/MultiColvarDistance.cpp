@@ -81,7 +81,7 @@ public:
   static void registerKeywords( Keywords& keys );
   MultiColvarDistance(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos );
 /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
@@ -113,16 +113,16 @@ unsigned MultiColvarDistance::getNumberOfFieldDerivatives(){
   return 3*getNumberOfAtoms() + 9;
 } 
 
-double MultiColvarDistance::compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
+double MultiColvarDistance::compute( const unsigned& j, const std::vector<Vector>& pos ){
    Vector distance; 
    distance=getSeparation( pos[0], pos[1] );
    const double value=distance.modulo();
    const double invvalue=1.0/value;
 
    // And finish the calculation
-   deriv[0]=-invvalue*distance;
-   deriv[1]=invvalue*distance;
-   virial=-invvalue*Tensor(distance,distance);
+   addAtomsDerivatives( 0,-invvalue*distance );
+   addAtomsDerivatives( 1, invvalue*distance );
+   addBoxDerivatives( -invvalue*Tensor(distance,distance) );
    return value;
 }
 

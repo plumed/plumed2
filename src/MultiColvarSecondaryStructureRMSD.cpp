@@ -87,6 +87,7 @@ void MultiColvarSecondaryStructureRMSD::setSecondaryStructure( std::vector<Vecto
   }
 
   // Set the reference structure
+  deriv.resize( structure.size() );
   new_deriv.resize( structure.size() );
   if( alignType=="DRMSD" ){
     secondary_drmsd.push_back( new DRMSD() ); 
@@ -101,8 +102,8 @@ void MultiColvarSecondaryStructureRMSD::setSecondaryStructure( std::vector<Vecto
   }
 }
 
-double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial ){
-  double r,nr; Tensor new_virial;
+double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std::vector<Vector>& pos ){
+  double r,nr; Tensor virial, new_virial;
 
   if( secondary_drmsd.size()>0 ){
     if( usesPbc() ) r=secondary_drmsd[0]->calculate( pos, getPbc(), deriv, virial ); 
@@ -116,6 +117,8 @@ double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std:
            virial=new_virial; 
         }
     }
+    for(unsigned i=0;i<deriv.size();++i) addAtomsDerivatives( i, deriv[i] );
+    addBoxDerivatives( virial );
   } else {
     r=secondary_rmsd[0]->calculate( pos, deriv );
     for(unsigned i=1;i<secondary_rmsd.size();++i){
@@ -125,7 +128,8 @@ double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std:
            for(unsigned i=0;i<new_deriv.size();++i) deriv[i]=new_deriv[i];
         }
     } 
-    for(unsigned i=0;i<deriv.size();i++) virial=virial+(-1.0*Tensor(pos[i],deriv[i]));
+    for(unsigned i=0;i<deriv.size();++i) addAtomsDerivatives( i, deriv[i] );
+    for(unsigned i=0;i<deriv.size();i++) addBoxDerivatives( (-1.0*Tensor(pos[i],deriv[i])) );
   }
   return r;
 }

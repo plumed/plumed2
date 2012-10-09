@@ -35,7 +35,7 @@ class DRMSD;
 class MultiColvarSecondaryStructureRMSD : public MultiColvar {
 private:
   std::string alignType;
-  std::vector<Vector> new_deriv;
+  std::vector<Vector> deriv, new_deriv;
   std::vector<RMSD*> secondary_rmsd;
   std::vector<DRMSD*> secondary_drmsd;
 protected:
@@ -45,7 +45,7 @@ public:
   static void registerKeywords( Keywords& keys );
   MultiColvarSecondaryStructureRMSD(const ActionOptions&);
   virtual ~MultiColvarSecondaryStructureRMSD();
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos, std::vector<Vector>& deriv, Tensor& virial );
+  virtual double compute( const unsigned& j, const std::vector<Vector>& pos );
   unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
 };
