@@ -96,10 +96,10 @@ bool ActionRegister::printManual( const std::string& action ){
   } 
 }
 
-bool ActionRegister::printTemplate( const std::string& action ){
+bool ActionRegister::printTemplate( const std::string& action, bool include_optional ){
   if( check(action) ){
      Keywords keys; mk[action](keys);
-     keys.print_template(action); keys.destroyData(); 
+     keys.print_template(action, include_optional); keys.destroyData(); 
      return true;
   } else {
      return false;

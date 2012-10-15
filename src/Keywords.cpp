@@ -223,7 +223,7 @@ bool Keywords::reserved( const std::string & k ) const {
   return false;
 }
 
-void Keywords::print_template(const std::string& actionname) const {
+void Keywords::print_template(const std::string& actionname, bool include_optional) const {
   unsigned nkeys=0;
   printf("%s",actionname.c_str());
   for(unsigned i=0;i<keys.size();++i){
@@ -242,7 +242,8 @@ void Keywords::print_template(const std::string& actionname) const {
   }
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
-     if ( (types.find(keys[i])->second).isCompulsory() ) nkeys++;
+     if ( include_optional || \
+	  (types.find(keys[i])->second).isCompulsory() ) nkeys++;
   }
   if( nkeys>0 ){
      for(unsigned i=0;i<keys.size();++i){
@@ -253,7 +254,10 @@ void Keywords::print_template(const std::string& actionname) const {
           } else {
               printf(" %s=    ", keys[i].c_str() );
           }
-        }
+        } else if (include_optional) {
+	  // TG no defaults for optional keywords?
+              printf(" [%s]", keys[i].c_str() );
+	}
      }
   }
   printf("\n");

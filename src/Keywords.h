@@ -120,7 +120,7 @@ public:
 /// Print an html version of the documentation
   void print_html( const bool isaction ) const ;
 /// Print the template version for the documenation
-  void print_template( const std::string& actionname) const ;
+  void print_template( const std::string& actionname, bool include_optional) const ;
 /// Change the style of a keyword
   void reset_style( const std::string & k, const std::string & style );
 /// Add keywords from one keyword object to another
