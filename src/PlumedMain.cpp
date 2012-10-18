@@ -488,7 +488,7 @@ void PlumedMain::waitData(){
 
 
 void PlumedMain::justCalculate(){
-
+  if(!active)return;
   stopwatch.start("4 Calculating (forward loop)");
   bias=0.0;
 
@@ -519,6 +519,7 @@ void PlumedMain::justCalculate(){
 
 void PlumedMain::justApply(){
   
+  if(!active)return;
   stopwatch.start("5 Applying (backward loop)");
 // apply them in reverse order
   for(ActionSet::reverse_iterator p=actionSet.rbegin();p!=actionSet.rend();++p){
