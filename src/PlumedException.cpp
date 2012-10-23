@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedException.h"
+#include <execinfo.h>
 #include <cstdio>
 #include <cstdlib>
 
@@ -62,6 +63,15 @@ void PlumedException::abortIfExceptionsAreDisabled(){
 #if ! defined(__PLUMED_EXCEPTIONS)
   fprintf(stderr,"%s",what());
   fprintf(stderr,"\n");
+
+  void* callstack[128];
+  int i, frames = backtrace(callstack, 128);
+  char** strs = backtrace_symbols(callstack, frames);
+  for (i = 0; i < frames; ++i) {
+     fprintf(stderr,"%s\n", strs[i]);
+  }
+  free(strs);
+
   std::abort();
 #endif
 }

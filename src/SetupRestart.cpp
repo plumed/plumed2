@@ -19,59 +19,66 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "ActionSetup.h"
 #include "ActionRegister.h"
-#include "ActionPilot.h"
 #include "PlumedMain.h"
-#include "ActionSet.h"
-
-namespace PLMD{
+#include "Atoms.h"
+#include "PlumedException.h"
 
 using namespace std;
 
-//+PLUMEDOC GENERIC FLUSH
+namespace PLMD{
+
+//+PLUMEDOC GENERIC RESTART
 /*
-This command instructs plumed to flush all the open files with a user specified frequency.  This
-is useful for preventing data loss that would otherwise arrise as a consequence of the code
-storing data for printing in the buffers
+Activate restart.
+
+This is a Setup directive and, as such, should appear
+at the beginning of the input file.
 
 \par Examples
-A command like this in the input will instruct plumed to flush all the output files every 100 steps
+
+Using the following input:
 \verbatim
-FLUSH STRIDE=100
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=out
 \endverbatim
+a new 'out' file will be created. If an old one is on the way, it will be automatically backed up.
+On the other hand, using the following input:
+\verbatim
+RESTART
+d: DISTANCE ATOMS=1,2
+PRINT ARG=d FILE=out
+\endverbatim
+the file 'out' will be appended.
+(See also \ref DISTANCE and \ref PRINT).
+
+\attention
+This directive can have also other side effects, e.g. on \ref METAD
+
 */
 //+ENDPLUMEDOC
 
-class GenericFlush:
-  public ActionPilot
+class SetupRestart :
+  public virtual ActionSetup
 {
 public:
-  GenericFlush(const ActionOptions&ao):
-    Action(ao),
-    ActionPilot(ao)
-  {
-    checkRead();
-  }
   static void registerKeywords( Keywords& keys );
-  void calculate(){};
-  void apply(){
-    plumed.fflush();
-    log.flush();
-    const ActionSet & actionSet(plumed.getActionSet());
-    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p)
-    (*p)->fflush();
-  }
+  SetupRestart(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(GenericFlush,"FLUSH")
+PLUMED_REGISTER_ACTION(SetupRestart,"RESTART")
 
-void GenericFlush::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  keys.add("compulsory","STRIDE","the frequency with which all the open files should be flushed");
-  keys.remove("LABEL");
+void SetupRestart::registerKeywords( Keywords& keys ){
+  ActionSetup::registerKeywords(keys);
+}
+
+SetupRestart::SetupRestart(const ActionOptions&ao):
+Action(ao),
+ActionSetup(ao)
+{
+  plumed.restart=true;
+  log<<"Restarting simulation: files will be appended\n";
 }
 
 }
-
-
