@@ -29,6 +29,7 @@
 #include <cstring>
 
 #include <iostream>
+#include <string>
 
 using namespace PLMD;
 
@@ -333,10 +334,13 @@ PlumedOFile& PlumedOFile::open(const std::string&path){
        FILE* fff=NULL;
        if(ff){
          std::string backup;
+         size_t found=this->path.find_last_of("/\\");
+         std::string directory=this->path.substr(0,found+1);
+         std::string file=this->path.substr(found+1);
          for(int i=0;;i++){
            std::string num;
            Tools::convert(i,num);
-           backup="bck."+num+"."+this->path;
+           backup=directory+"bck."+num+"."+file;
            fff=std::fopen(backup.c_str(),"r");
            if(!fff) break;
          }
