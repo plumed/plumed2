@@ -61,6 +61,7 @@ in the table below:
 <td> TYPE </td> <td> FUNCTION </td> 
 </tr> <tr> 
 <td> GAUSSIAN </td> <td> \f$\frac{1}{\sqrt{2\pi}w} \exp\left( -\frac{(s-s_i)^2}{2w^2} \right)\f$ </td>
+</tr> <tr>
 <td> TRIANGULAR </td> <td> \f$ \frac{1}{2w} \left( 1. - \left| \frac{s-s_i}{w} \right| \right) \quad \frac{s-s_i}{w}<1 \f$ </td>
 </tr>
 </table>
@@ -75,7 +76,7 @@ KEYWORD={TYPE UPPER=\f$a\f$ LOWER=\f$b\f$ NBINS=\f$n\f$ SMEAR=\f$\frac{w}{n(b-a)
 This specification would calculate the following vector of quantities: 
 
 \f[
-w_j(s) \int_{a + \frac{j-1}{n}(b-a)}^{a + \frac{j}{n}(b-a)} \sum_i K\left( \frac{s - s_i}{w} \right) 
+w_j(s) = \int_{a + \frac{j-1}{n}(b-a)}^{a + \frac{j}{n}(b-a)} \sum_i K\left( \frac{s - s_i}{w} \right) 
 \f]
 
 */
@@ -140,8 +141,14 @@ void HistogramBead::set( const std::string& params, const std::string& dd, std::
 }
 
 void HistogramBead::set( double l, double h, double w){
-        init=true; lowb=l; highb=h; width=w*(h-l);  
-}      
+  init=true; lowb=l; highb=h; width=w;  
+} 
+
+void HistogramBead::setKernelType( const std::string& ktype ){
+  if(ktype=="gaussian") type=gaussian;
+  else if(ktype=="triangular") type=triangular;
+  else plumed_merror("cannot understand kernel type " + ktype ); 
+}     
 
 void HistogramBead::printKeywords( Log& log ) const {
   Keywords hkeys;
@@ -158,7 +165,7 @@ double HistogramBead::calculate( double x, double& df ) const {
   double lowB, upperB, f;
   if( type==gaussian ){
      lowB = difference( x, lowb ) / ( sqrt(2.0) * width );
-     upperB = difference( x, highb ) / ( sqrt(2.0) * width ) ;
+     upperB = difference( x, highb ) / ( sqrt(2.0) * width );
      df = ( exp( -lowB*lowB ) - exp( -upperB*upperB ) ) / ( sqrt(2*pi)*width );
      f = 0.5*( erf( upperB ) - erf( lowB ) );
   } else if( type==triangular ){

@@ -252,7 +252,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
           log.printf("  involving atoms : ");
           for(unsigned i=0;i<t.size();++i){ 
              newlist.addIndexToList(i); 
-             if( verbose_output ) log.printf(" %d",t[i].serial() ); 
+             log.printf(" %d",t[i].serial() ); 
              colvar_atoms.push_back( newlist ); newlist.clear();
           }
           log.printf("\n");  
