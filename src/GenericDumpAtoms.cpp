@@ -23,6 +23,9 @@
 #include "ActionPilot.h"
 #include "ActionRegister.h"
 #include "Pbc.h"
+#include "PlumedMain.h"
+#include "Atoms.h"
+#include "Units.h"
 #include <cstdio>
 #include <cassert>
 
@@ -59,7 +62,8 @@ class GenericDumpAtoms:
   public ActionAtomistic,
   public ActionPilot
 {
-  FILE*fp;
+  FILE* fp;
+  double lenunit;
 public:
   GenericDumpAtoms(const ActionOptions&);
   ~GenericDumpAtoms();
@@ -78,6 +82,7 @@ void GenericDumpAtoms::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
   keys.add("atoms", "ATOMS", "the atom indices whose positions you would like to print out");
   keys.add("compulsory", "FILE", "file on which to output coordinates");
+  keys.add("compulsory", "UNITS","nm","the units in which to print out the coordinates");
 }
 
 GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
@@ -89,10 +94,15 @@ GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   string file;
   parse("FILE",file);
   parseAtomList("ATOMS",atoms);
+
+  std::string unitname; parse("UNITS",unitname);
+  Units myunit; myunit.setLength(unitname);
+  lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+
   checkRead();
   assert(file.length()>0);
   fp=fopen(file.c_str(),"w");
-  log.printf("  printing the following atoms :");
+  log.printf("  printing the positions of the following atoms in %s :", unitname.c_str() );
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
@@ -102,16 +112,16 @@ void GenericDumpAtoms::update(){
   fprintf(fp,"%d\n",getNumberOfAtoms());
   const Tensor & t(getPbc().getBox());
   if(getPbc().isOrthorombic()){
-    fprintf(fp," %f %f %f\n",t(0,0),t(1,1),t(2,2));
+    fprintf(fp," %f %f %f\n",lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
   }else{
     fprintf(fp," %f %f %f %f %f %f %f %f %f\n",
-                 t(0,0),t(0,1),t(0,2),
-                 t(1,0),t(1,1),t(1,2),
-                 t(2,0),t(2,1),t(2,2)
+                 lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
+                 lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
+                 lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
            );
   }
   for(unsigned i=0;i<getNumberOfAtoms();++i){
-    fprintf(fp,"X %f %f %f\n",getPosition(i)(0),getPosition(i)(1),getPosition(i)(2));
+    fprintf(fp,"X %f %f %f\n",lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
   }
 }
 
