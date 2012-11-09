@@ -42,7 +42,7 @@ Dump selected atoms on a file.
 This command can be used to output the positions of a particular set of atoms.
 The atoms required are ouput in a xyz formatted file.  Importantly, if your
 input file contains actions that edit the atoms position (e.g. \ref WHOLEMOLECULES)
-and the DUMPDERIVATIVES command appears after this instruction, then the eddited
+and the DUMPATOMS command appears after this instruction, then the edited
 atom positions are output.  You can control the buffering of output using the \ref FLUSH keyword.
 
 \par Examples
@@ -54,6 +54,7 @@ The following input instructs plumed to print out the positions of atoms
 COM ATOMS=11-20 LABEL=c1
 DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1
 \endverbatim
+(see also \ref COM)
 
 */
 //+ENDPLUMEDOC

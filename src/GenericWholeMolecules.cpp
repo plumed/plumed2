@@ -61,7 +61,13 @@ This command instructs plumed to reconstruct the molecule containing atoms 1-20
 at every step of the calculation.
 
 \verbatim
-WHOLEMOLECULES STRIDE=1 MOLECULE=1-20
+WHOLEMOLECULES STRIDE=1 ENTITY0=1-20
+\endverbatim
+
+This command instructs plumed to reconstruct two molecules containing atoms 1-20 and 30-40
+
+\verbatim
+WHOLEMOLECULES STRIDE=1 ENTITY0=1-20 ENTITY1=30-40
 \endverbatim
 
 This command instructs plumed to reconstruct the chain of backbone atoms in a 
