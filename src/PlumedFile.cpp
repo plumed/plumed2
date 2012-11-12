@@ -191,6 +191,7 @@ PlumedOFile::PlumedOFile():
   fieldChanged(false)
 {
   fmtField();
+  buflen=1;
   buffer=new char[buflen];
 // these are set to zero to avoid valgrind errors
   for(unsigned i=0;i<buflen;++i) buffer[i]=0;
@@ -221,6 +222,20 @@ int PlumedOFile::printf(const char*fmt,...){
   va_start(arg, fmt);
   int r=std::vsnprintf(&buffer[pointer],buflen-pointer,fmt,arg);
   va_end(arg);
+  if(r>=buflen-pointer){
+    int newlen=buflen;
+    while(newlen<=r+pointer) newlen*=2;
+    char* newbuf=new char [newlen];
+    memmove(newbuf,buffer,buflen);
+    for(int k=buflen;k<newlen;k++) newbuf[k]=0;
+    delete [] buffer;
+    buffer=newbuf;
+    buflen=newlen;
+    va_list arg;
+    va_start(arg, fmt);
+    r=std::vsnprintf(&buffer[pointer],buflen-pointer,fmt,arg);
+    va_end(arg);
+  }
   plumed_massert(r>-1 && r<buflen-pointer,"error using fmt string " + std::string(fmt));
 
 // Line is buffered until newline, then written with a PLUMED: prefix

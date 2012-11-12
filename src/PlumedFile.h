@@ -52,8 +52,6 @@ protected:
     FieldBase(): constant(false){}
   };
 
-/// length of an internal buffer
-  static const int buflen=10000;
 /// file pointer
   FILE* fp;
 /// communicator. NULL if not set
@@ -168,6 +166,8 @@ public virtual PlumedFileBase{
   char* buffer_string;
 /// Internal buffer (generic use)
   char* buffer;
+/// Internal buffer length
+  int buflen;
 /// Class identifying a single field for fielded output
   class Field:
   public FieldBase{
