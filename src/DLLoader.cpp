@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DLLoader.h"
+#include "PlumedException.h"
 
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>
@@ -63,6 +64,20 @@ DLLoader::~DLLoader(){
   }
 #endif
 }
+
+DLLoader::DLLoader(const DLLoader&dl){
+  plumed_merror("this should never be called");
+}
+
+DLLoader::DLLoader(){
+  // do nothing
+}
+
+DLLoader&DLLoader::operator=(const DLLoader&dl){
+  plumed_merror("this should never be called");
+  return *this;
+}
+
 
 
 
