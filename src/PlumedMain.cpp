@@ -583,7 +583,7 @@ FILE* PlumedMain::fopen(const char *path, const char *mode){
   std::string ppathsuf=ppath+suffix;
   FILE*fp=std::fopen(const_cast<char*>(ppathsuf.c_str()),const_cast<char*>(mmode.c_str()));
   if(!fp) fp=std::fopen(const_cast<char*>(ppath.c_str()),const_cast<char*>(mmode.c_str()));
-  plumed_massert(fp,"file " + ppath + "cannot be found");
+  plumed_massert(fp,"file " + ppath + " cannot be found");
   return fp;
 }
 
