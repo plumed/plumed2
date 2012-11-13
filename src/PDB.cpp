@@ -40,6 +40,10 @@ const std::vector<double> & PDB::getBeta()const{
   return beta;
 }
 
+const std::vector<std::string> & PDB::getRemark()const{
+  return remark;
+}
+
 const std::vector<AtomNumber> & PDB::getAtomNumbers()const{
   return numbers;
 }
@@ -48,13 +52,15 @@ unsigned PDB::size()const{
   return positions.size();
 }
 
-bool PDB::read(const std::string&file,bool naturalUnits,double scale){
-  if(naturalUnits) scale=1.0;
-  FILE* fp=fopen(file.c_str(),"r");
-  if(!fp) return false;
+bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
   //cerr<<file<<endl;
+  bool file_is_alive=false;
+  if(naturalUnits) scale=1.0;
   string line;
+  fpos_t pos;
   while(Tools::getline(fp,line)){
+    //cerr<<line<<"\n";
+    fgetpos (fp,&pos);
     while(line.length()<80) line.push_back(' ');
     string record=line.substr(0,6);
     string serial=line.substr(6,5);
@@ -67,8 +73,13 @@ bool PDB::read(const std::string&file,bool naturalUnits,double scale){
     string occ=line.substr(54,6);
     string bet=line.substr(60,6);
     Tools::trim(record);
-    if(record=="TER") break;
-    if(record=="END") break;
+    if(record=="TER"){file_is_alive=true; break;}
+    if(record=="END"){file_is_alive=true;  break;}
+    if(record=="ENDMDL"){file_is_alive=true;  break;}
+    if(record=="REMARK"){
+         vector<string> v1;  v1=Tools::getWords(line.substr(6));  
+         remark.insert(remark.begin(),v1.begin(),v1.end()); 
+    }
     if(record=="ATOM" || record=="HETATM"){
       AtomNumber a; unsigned resno;
       double o,b;
@@ -93,6 +104,13 @@ bool PDB::read(const std::string&file,bool naturalUnits,double scale){
       positions.push_back(p);
     }
   }
+  return file_is_alive;
+}
+
+bool PDB::read(const std::string&file,bool naturalUnits,double scale){
+  FILE* fp=fopen(file.c_str(),"r");
+  if(!fp) return false;
+  readFromFilepointer(fp,naturalUnits,scale);
   fclose(fp);
   return true;
 }
@@ -168,7 +186,16 @@ void PDB::renameAtoms( const std::string& old_name, const std::string& new_name 
   for(unsigned i=0;i<size();++i){
       if( atomsymb[i]==old_name ) atomsymb[i]=new_name;
   } 
-}
+};
+
+Log& operator<<(Log& ostr, const PDB&  pdb){
+   char *buffer;
+   for(unsigned i=0;i<pdb.positions.size();i++){ 
+      sprintf(buffer,"ATOM %3d %8.3f %8.3f %8.3f\n",pdb.numbers[i].serial(),pdb.positions[i][0],pdb.positions[i][1],pdb.positions[i][2]);
+      ostr<<buffer;
+   }
+   return ostr;
+};
 
 }
 

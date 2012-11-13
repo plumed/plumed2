@@ -26,6 +26,9 @@
 #include "Vector.h"
 #include <vector>
 #include <string>
+#include <iostream>
+#include "Log.h"
+
 
 namespace PLMD{
 
@@ -38,16 +41,21 @@ class PDB{
   std::vector<Vector> positions;
   std::vector<double> occupancy;
   std::vector<double> beta;
+  std::vector<std::string> remark;
   std::vector<AtomNumber> numbers;
 public:
 /// Read the pdb from a file, scaling positions by a factor scale
   bool read(const std::string&file,bool naturalUnits,double scale);
+/// Read from a file pointer
+  bool readFromFilepointer(FILE *fp,bool naturalUnits,double scale);
 /// Access to the position array
   const std::vector<Vector>     & getPositions()const;
 /// Access to the occupancy array
   const std::vector<double>     & getOccupancy()const;
 /// Access to the beta array
   const std::vector<double>     & getBeta()const;
+/// Access to the lines of REMARK 
+  const std::vector<std::string>     & getRemark()const;
 /// Access to the indexes
   const std::vector<AtomNumber> & getAtomNumbers()const;
 /// Returns the number of atoms
@@ -64,6 +72,8 @@ public:
   std::string getChainID(const unsigned& resnumber) const;
 /// This allows you to give atoms a new name - this is used to rename the HB1 atoms in GLY residues CB so that alpharmsd works
   void renameAtoms( const std::string& old_name, const std::string& new_name );
+///use the log to dump information  
+  friend Log& operator<<(Log& ostr, const PDB& pdb);
 };
 
 }
