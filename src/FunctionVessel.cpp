@@ -78,6 +78,7 @@ void NormedSumVessel::useNorm(){
 bool NormedSumVessel::calculate( const unsigned& icv, const double& tolerance ){
   bool keep=false;
   if(donorm){
+     myweight.clearDerivatives(); 
      getWeight( icv, myweight );
      if( myweight.get()>tolerance ){
          keep=true; 
@@ -88,6 +89,7 @@ bool NormedSumVessel::calculate( const unsigned& icv, const double& tolerance ){
 
      unsigned jout;
      for(unsigned j=1;j<getNumberOfValues()+1;++j){
+        myvalue.clearDerivatives(); 
         compute( icv, j-1, myvalue );
         if( fabs( myvalue.get() )>tolerance ){
             keep=true; 
@@ -99,6 +101,7 @@ bool NormedSumVessel::calculate( const unsigned& icv, const double& tolerance ){
   } else {
      unsigned jout;
      for(unsigned j=0;j<getNumberOfValues();++j){
+        myvalue.clearDerivatives(); 
         compute( icv, j, myvalue );
         if( myvalue.get()>tolerance ){
             keep=true; 

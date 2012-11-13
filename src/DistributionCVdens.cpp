@@ -21,12 +21,15 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "FunctionVessel.h"
+#include "PlumedMain.h"
+#include "ActionSet.h"
+#include "Volume.h"
 #include "MultiColvar.h"
 #include "HistogramBead.h"
 
 namespace PLMD {
 
-//+PLUMEDOC INTERNAL subcell
+//+PLUMEDOC INTERNAL region 
 /*
 
 Imagine we have a collection of collective variables that can all be assigned to a particular point in three 
@@ -35,25 +38,50 @@ system. Because each CV value can be assigned to a particular point in space we 
 value of the cv in a particular part of the box using:
 
 \f[
-\overline{s}_{\tau} = \frac{ \sum_i s_i w(x_i)w(y_i)w(z_i) }{ \sum_i w(x_i)w(y_i)w(z_i) }  
+\overline{s}_{\tau} = \frac{ \sum_i s_i w(x_i,y_i,z_i) }{ \sum_i w(x_i,y_i,z_i) }  
 \f]  
 
 where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (x_i,y_i,z_i)\f$.
-Because we want to calculate the average cv in the subregion \f$\tau\f$ we introduce the three \f$w()\f$ to tell us
-whether or not \f$i\f$ is inside \f$\tau\f$. These functions are given by:
+The function \f$ w(x_i,y_i,z_i) \f$ measures whether or not the system is in the subregion of interest. It
+is equal to:
 
 \f[
-w(x_i) = \int_{a_x}^{b_x} \textrm{d}x K\left( \frac{x - x_i}{w_x} \right)
+w(x_i,y_i,z_i) = \int_\tau \textrm{d}x\textrm{d}y\textrm{d}z K\left( \frac{x - x_i}{\sigma} \right)K\left( \frac{y - y_i}{\sigma} \right)K\left( \frac{z - z_i}{\sigma} \right) 
 \f]
 
-where \f$K\f$ is one of the kernel functions described on \ref histogrambead.
+where \f$K\f$ is one of the kernel functions described on \ref histogrambead and \f$\sigma\f$ is a bandwidth parameter.
+By default a Gaussian kernel is used by you can change the kernel using the KERNEL keyword.  
+The value of \f$\sigma\f$ is then specified using the keyword SIGMA.
+To define the region to integrate over, \f$\tau\f$, you use a separate action and reference it here
+using its label and the VOLUME keyword.  The following actions can be used:  
 
-All the input to calculate these quantities is provided through a single keyword that will have the following form
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr> <td width=5%> \subpage  SUBCELL </td> <td>
+Calculate the average value of the cv in a user-specified fraction of the box 
+</td> </tr>
+</table>
 
-KEYWORD={TYPE XLOWER=\f$a_x\f$ XUPPER=\f$b_x\f$ XSMEAR=\f$\frac{w_x}{b_x-a_x}\f$ YLOWER=\f$a_y\f$ YUPPER=\f$b_y\f$ YSMEAR=\f$\frac{w_y}{b_y-a_y}\f$ ZLOWER=\f$a_z\f$ ZUPPER=\f$b_z\f$ ZSMEAR=\f$\frac{w_z}{b_z-a_z}\f$}
+If you use the name of the action alone the quantity is calculated for the atoms inside the region.
+When the name of the action is preceded by an ! then the quantity is calculated for all the atoms that are
+not inside the region of specified by the using volume.
+When REGION is used with the \ref DENSITY action the number of atoms in the specified region is calculated  
 
-The \f$a_x\f$, \f$b_x\f$, \f$a_y\f$ ... parameters are specified as a fraction of the box length.  In directions for which upper and lower bounds are not
-specified the \f$a\f$ and \f$b\f$ values are assumed equal to 0 and 1. If SMEAR values are not specified \f$\frac{w_x}{b_x-a_x}=0.5\f$.    
+\par Examples
+
+The following commands tell plumed to calculate the average coordination number for the atoms
+that have x (in fractional coordinates) less than 0.5. The final value will be labeled r1_av.
+\verbatim
+SUBCELL XLOWER=0.0 XUPPER=0.5 LABEL=r1
+COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 REGION={SIGMA=0.1 VOLUME=r1}
+\endverbatim
+
+The following commands tell plumed to calculate the number of atoms in an ion chanel in a protein.
+The extent of the chanel is calculated from the positions of atoms 1 4 5 10. The final value will be labeled r2_num.
+\verbatim
+CAVITY ATOMS=1,4,5,10 LABEL=r2
+DENSITY SPECIES=20-500 REGION={SIGMA=0.1 VOLUME=r2}
+\endverbatim
+
 */
 //+ENDPLUMEDOC
 
@@ -62,30 +90,29 @@ class cvdens : public NormedSumVessel {
 private:
   bool isDensity;
   Value tmpval, tmpweight;
+  Volume* myvol;
   MultiColvar* mycolv;
   std::vector<Value> catom_pos;
-  std::vector<unsigned> dir;
-  std::vector<HistogramBead> beads;
-  std::string getLabel();
-  void calculateDensity( Value& weight );
+  bool not_in;
+  HistogramBead bead;
 public:
   static void reserveKeyword( Keywords& keys );
   cvdens( const VesselOptions& da );
   void getWeight( const unsigned& i, Value& weight );
   void compute( const unsigned& i, const unsigned& j, Value& theval );
-  void printKeywords();
 };
 
-PLUMED_REGISTER_VESSEL(cvdens,"SUBCELL")
+PLUMED_REGISTER_VESSEL(cvdens,"REGION")
 
 void cvdens::reserveKeyword( Keywords& keys ){
-  keys.reserve("numbered","SUBCELL","calculate the average value of the CV within a portion of the box and store it in a value called subcell. " 
-                                    "For more details on how this quantity is calculated see \\ref subcell.");
+  keys.reserve("numbered","REGION","calculate the average value of the CV within a portion of the box and store it in a value called label_av. " 
+                                    "For more details on how this quantity is calculated see \\ref region.");
 }
 
 cvdens::cvdens( const VesselOptions& da ) :
 NormedSumVessel(da),
-catom_pos(3)
+catom_pos(3),
+not_in(false)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_massert( mycolv, "cvdens can only be used with MultiColvars");
@@ -94,78 +121,51 @@ catom_pos(3)
   isDensity=mycolv->isDensity();
   if(!isDensity) useNorm(); 
 
-  std::string errors;
-  HistogramBead xbin; xbin.set(da.parameters, "X", errors); xbin.isPeriodic( 0, 1.0 ); 
-  if ( xbin.hasBeenSet() ){ beads.push_back(xbin); dir.push_back(0); }
-  HistogramBead ybin; ybin.set(da.parameters, "Y", errors); ybin.isPeriodic( 0., 1.0 );
-  if ( ybin.hasBeenSet() ){ beads.push_back(ybin); dir.push_back(1); }
-  HistogramBead zbin; zbin.set(da.parameters, "Z", errors); zbin.isPeriodic( 0, 1.0 );
-  if ( zbin.hasBeenSet() ){ beads.push_back(zbin); dir.push_back(2); }  
-  if( beads.size()==0 ) error("no subcell has been specified");
+  std::vector<std::string> data=Tools::getWords(da.parameters);
+  std::string name; bool found_element=Tools::parse(data,"VOLUME",name);
+  if(!found_element){ error("No volume element specified in ccall to REGION"); return; }
+  if( name.substr(0,1)=="!" ){ name=name.substr(1); not_in=true; }
+  myvol = (mycolv->plumed).getActionSet().selectWithLabel<Volume*>(name);
+  if(!myvol){ error( "in REGION " + name + " is not a valid volume element"); return; }
+  mycolv->addDependency( myvol ); 
 
-  addOutput( getLabel() );
-  if(isDensity) log.printf("  value %s.%s contains density of atoms in box with ",(getAction()->getLabel()).c_str(),getLabel().c_str());
-  else log.printf("  value %s.%s contains average value of cv for ",(getAction()->getLabel()).c_str(),getLabel().c_str());
-  for(unsigned i=0;i<dir.size();++i){
-     if( dir[i]==0 ) log.printf("x %s",(beads[i].description()).c_str());
-     if( dir[i]==1 ) log.printf("y %s",(beads[i].description()).c_str());
-     if( dir[i]==2 ) log.printf("z %s",(beads[i].description()).c_str());
-     if( dir.size()>1 && i!=(dir.size()-1) ) log.printf(", "); 
+  double sigma; bool found_sigma=Tools::parse(data,"SIGMA",sigma);
+  if(!found_sigma){ error("No value for SIGMA specified in call to REGION"); return; }
+  myvol->setSigma( sigma );
+
+  std::string kerneltype; bool found_kernel=Tools::parse(data,"KERNEL",kerneltype);
+  if(!found_kernel) kerneltype="gaussian";
+  bead.isPeriodic( 0, 1.0 ); bead.setKernelType( kerneltype );
+
+  if( isDensity ){
+      addOutput( name + "_num" );
+      log.printf("  value %s.%s_num contains number of ions in %s \n",(getAction()->getLabel()).c_str(),name.c_str(),name.c_str());
+  } else {
+      addOutput( name + "_av");
+      log.printf("  value %s.%s_av contains average value of cv in %s \n",(getAction()->getLabel()).c_str(),name.c_str(),name.c_str());
   }
-  log.printf("\n");
-}
-
-void cvdens::printKeywords(){
-  Keywords dkeys;
-  dkeys.add("optional","XLOWER","the lower boundary in x of the subcell in fractional coordinates.  If this keyword is absent then the lower boundary is placed at 0.0"); 
-  dkeys.add("optional","XUPPER","the upper boundary in x of the subcell in fractional coordinates.  If this keyword is absent then the upper boundary is placed at 1.0");
-  dkeys.add("optional","XSMEAR","(default=0.5) the width of the Gaussian that is used to smear the density in the x direction");
-  dkeys.add("optional","YLOWER","the lower boundary in y of the subcell in fractional coordinates.  If this keyword is absent then the lower boundary is placed at 0.0");
-  dkeys.add("optional","YUPPER","the upper boundary in y of the subcell in fractional coordinates.  If this keyword is absent then the upper boundary is placed at 1.0");
-  dkeys.add("optional","YSMEAR","(default=0.5) the width of the Gaussian that is used to smear the density in the y direction");
-  dkeys.add("optional","ZLOWER","the lower boundary in z of the subcell in fractional coordinates.  If this keyword is absent then the lower boundary is placed at 0.0");
-  dkeys.add("optional","ZUPPER","the upper boundary in z of the subcell in fractional coordinates.  If this keyword is absent then the upper boundary is placed at 1.0");
-  dkeys.add("optional","ZSMEAR","(default=0.5) the width of the Gaussian that is used to smear the density in the z direction"); 
-  dkeys.print(log);
-}
-
-std::string cvdens::getLabel(){
-  std::string lb,ub,lab;
-  if(isDensity) lab = "densityFor";
-  else lab = "averageFor";
-  for(unsigned i=0;i<dir.size();++i){
-     Tools::convert( beads[i].getlowb(),  lb ); 
-     Tools::convert( beads[i].getbigb(), ub );
-     if(dir[i]==0) lab=lab + "Xin" + lb +"&" + ub; 
-     if(dir[i]==1) lab=lab + "Yin" + lb +"&" + ub;
-     if(dir[i]==2) lab=lab + "Zin" + lb +"&" + ub;
-  }
-  return lab;
-}
-
-void cvdens::calculateDensity( Value& weight ){
-  mycolv->retrieveCentralAtomPos( catom_pos ); double f, df;
-  for(unsigned i=0;i<dir.size();++i){
-     f=beads[i].calculate( catom_pos[ dir[i] ].get(), df );
-     catom_pos[ dir[i] ].chainRule(df); catom_pos[ dir[i] ].set(f);
-     if(i==0){ 
-       copy( catom_pos[ dir[i] ], tmpweight ); 
-     } else{ 
-       product( tmpweight, catom_pos[ dir[i] ], weight );
-       copy( weight, tmpweight );
-     }
-  }
-  copy( tmpweight, weight );
 }
 
 void cvdens::getWeight( const unsigned& i, Value& weight ){
-  calculateDensity( weight );
+  mycolv->retrieveCentralAtomPos( catom_pos );
+  plumed_assert( catom_pos.size()==3 ); unsigned nder=catom_pos[0].getNumberOfDerivatives();
+  plumed_assert( nder==catom_pos[1].getNumberOfDerivatives() && nder==catom_pos[2].getNumberOfDerivatives() );
+  if( tmpweight.getNumberOfDerivatives()!=nder ) tmpweight.resizeDerivatives( nder );
+  tmpweight.clearDerivatives();
+  myvol->calculateNumberInside( catom_pos, bead, tmpweight );
+  copy( tmpweight, weight );
+  if( not_in ){ weight.set( 1.0 - weight.get() ); weight.chainRule(-1.); }
 }
 
 void cvdens::compute( const unsigned& i, const unsigned& j, Value& theval ){
   plumed_assert( j==0 );
   if(isDensity){
-     calculateDensity( theval );
+     mycolv->retrieveCentralAtomPos( catom_pos );
+     plumed_assert( catom_pos.size()==3 ); unsigned nder=catom_pos[0].getNumberOfDerivatives();
+     plumed_assert( nder==catom_pos[1].getNumberOfDerivatives() && nder==catom_pos[2].getNumberOfDerivatives() );
+     if( theval.getNumberOfDerivatives()!=nder ) theval.resizeDerivatives( nder );
+     myvol->calculateNumberInside( catom_pos, bead, theval );
+     if( not_in ){ theval.set( 1.0 - theval.get() ); theval.chainRule(-1.); }
   } else {
      tmpval=mycolv->retreiveLastCalculatedValue();
      product( tmpval, tmpweight, theval ); 

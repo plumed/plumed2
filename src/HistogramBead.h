@@ -55,6 +55,7 @@ public:
         bool hasBeenSet() const;
         void isNotPeriodic();
         void isPeriodic( const double& mlow, const double& mhigh );
+        void setKernelType( const std::string& ktype );
         void set(const std::string& params, const std::string& dd, std::string& errormsg);
 	void set(double l, double h, double w);
 	double calculate(double x, double&df) const;
@@ -98,9 +99,11 @@ double HistogramBead::difference( const double& d1, const double& d2 ) const {
   if(periodicity==notperiodic){
     return d2-d1;
   } else if(periodicity==periodic){
-    double s=(d2-d1)*inv_max_minus_min;
-    s=Tools::pbc(s);
-    return s*max_minus_min;
+    // Make sure the point is in the target range
+    double newx=d1*inv_max_minus_min;
+    newx=Tools::pbc(newx);
+    newx*=max_minus_min;
+    return d2-newx;
   } else plumed_assert(0);
   return 0;
 }

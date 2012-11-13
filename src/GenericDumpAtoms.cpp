@@ -24,6 +24,9 @@
 #include "ActionRegister.h"
 #include "Pbc.h"
 #include "PlumedFile.h"
+#include "PlumedMain.h"
+#include "Atoms.h"
+#include "Units.h"
 #include <cstdio>
 #include <cassert>
 
@@ -40,7 +43,7 @@ Dump selected atoms on a file.
 This command can be used to output the positions of a particular set of atoms.
 The atoms required are ouput in a xyz formatted file.  Importantly, if your
 input file contains actions that edit the atoms position (e.g. \ref WHOLEMOLECULES)
-and the DUMPDERIVATIVES command appears after this instruction, then the eddited
+and the DUMPATOMS command appears after this instruction, then the edited
 atom positions are output.  You can control the buffering of output using the \ref FLUSH keyword.
 
 \par Examples
@@ -52,6 +55,7 @@ The following input instructs plumed to print out the positions of atoms
 COM ATOMS=11-20 LABEL=c1
 DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1
 \endverbatim
+(see also \ref COM)
 
 */
 //+ENDPLUMEDOC
@@ -61,6 +65,7 @@ class GenericDumpAtoms:
   public ActionPilot
 {
   PlumedOFile of;
+  double lenunit;
 public:
   GenericDumpAtoms(const ActionOptions&);
   ~GenericDumpAtoms();
@@ -79,6 +84,7 @@ void GenericDumpAtoms::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
   keys.add("atoms", "ATOMS", "the atom indices whose positions you would like to print out");
   keys.add("compulsory", "FILE", "file on which to output coordinates");
+  keys.add("compulsory", "UNITS","nm","the units in which to print out the coordinates");
 }
 
 GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
@@ -90,11 +96,16 @@ GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   string file;
   parse("FILE",file);
   parseAtomList("ATOMS",atoms);
+
+  std::string unitname; parse("UNITS",unitname);
+  Units myunit; myunit.setLength(unitname);
+  lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
+
   checkRead();
   assert(file.length()>0);
   of.link(*this);
   of.open(file.c_str(),"w");
-  log.printf("  printing the following atoms :");
+  log.printf("  printing the following atoms in %s :", unitname.c_str() );
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
@@ -104,16 +115,16 @@ void GenericDumpAtoms::update(){
   of.printf("%d\n",getNumberOfAtoms());
   const Tensor & t(getPbc().getBox());
   if(getPbc().isOrthorombic()){
-    of.printf(" %f %f %f\n",t(0,0),t(1,1),t(2,2));
+    of.printf(" %f %f %f\n",lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
   }else{
     of.printf(" %f %f %f %f %f %f %f %f %f\n",
-                 t(0,0),t(0,1),t(0,2),
-                 t(1,0),t(1,1),t(1,2),
-                 t(2,0),t(2,1),t(2,2)
+                 lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
+                 lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
+                 lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
            );
   }
   for(unsigned i=0;i<getNumberOfAtoms();++i){
-    of.printf("X %f %f %f\n",getPosition(i)(0),getPosition(i)(1),getPosition(i)(2));
+    of.printf("X %f %f %f\n",lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
   }
 }
 

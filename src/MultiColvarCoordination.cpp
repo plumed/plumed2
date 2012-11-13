@@ -93,7 +93,7 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   // Use actionWithDistributionKeywords
   keys.use("AVERAGE"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
   keys.use("MIN"); keys.use("WITHIN"); keys.use("MOMENTS");
-  keys.use("SUBCELL"); 
+  keys.use("REGION"); 
 }
 
 MultiColvarCoordination::MultiColvarCoordination(const ActionOptions&ao):

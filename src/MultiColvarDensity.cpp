@@ -40,7 +40,7 @@ the number of atoms in half the box.
 The following example calculates the number of atoms in one half of the simulation box. 
 
 \verbatim
-DENSITY SPECIES=1-100 SUBCELL={XLOWER=0.0 XUPPER=0.5} LABEL=d1
+DENSITY SPECIES=1-100 REGION={XLOWER=0.0 XUPPER=0.5} LABEL=d1
 PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
 \endverbatim
 
@@ -68,7 +68,7 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   ActionWithDistribution::autoParallelize( keys );
   keys.use("SPECIES"); 
   // Use density keywords
-  keys.use("SUBCELL"); 
+  keys.use("REGION"); 
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
