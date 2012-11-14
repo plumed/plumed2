@@ -32,30 +32,27 @@ namespace PLMD{
 
 class Log;
 
-/// This class lets me pass keyword types easily
-class KeyType{
-friend class Keyword;
-private:
-  enum {hidden,compulsory,flag,optional,atoms} style;
-public:
-  KeyType( const std::string& type );
-  void setStyle( const std::string& type );
-  bool isCompulsory() const { return (style==compulsory); }
-  bool isFlag() const { return (style==flag); }
-  bool isOptional() const { return (style==optional); }
-  bool isAtomList() const { return (style==atoms); }
-  std::string toString() const {
-    if(style==compulsory) return "compulsory";
-    else if(style==optional) return "optional";
-    else if(style==atoms) return "atoms";
-    else if(style==flag) return "flag";
-    else if(style==hidden) return "hidden";
-    else plumed_assert(0);
-  }
-};
-
 /// This class holds the keywords and their documentation
 class Keywords{
+/// This class lets me pass keyword types easily
+  class KeyType{
+  public:
+    enum {hidden,compulsory,flag,optional,atoms} style;
+    KeyType( const std::string& type );
+    void setStyle( const std::string& type );
+    bool isCompulsory() const { return (style==compulsory); }
+    bool isFlag() const { return (style==flag); }
+    bool isOptional() const { return (style==optional); }
+    bool isAtomList() const { return (style==atoms); }
+    std::string toString() const {
+      if(style==compulsory) return "compulsory";
+      else if(style==optional) return "optional";
+      else if(style==atoms) return "atoms";
+      else if(style==flag) return "flag";
+      else if(style==hidden) return "hidden";
+      else plumed_assert(0);
+    }
+  };
 friend class Action;
 private:
 /// The names of the allowed keywords

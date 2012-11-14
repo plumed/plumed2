@@ -76,23 +76,33 @@ END
 */
 //+ENDPLUMEDOC
    
-/// this class is a general container for path stuff 
-class ImagePath {
-     public:
-	// cardinal indexing: needed to map over msd 
-	unsigned index;
-        // spiwok indexing
-	vector<double> property;  
-	// distance
-	double distance;
-	// similarity (exp - lambda distance) or other
-	double similarity;
-	// derivatives of the distance
-        vector<Vector> distder;	
-	// here one can add a pointer to a value (hypothetically providing a distance from a point) 
-};
-
 class ColvarPathMSD : public Colvar {
+/// this class is a general container for path stuff 
+  class ImagePath {
+     public:
+        // cardinal indexing: needed to map over msd 
+        unsigned index;
+        // spiwok indexing
+        vector<double> property;
+        // distance
+        double distance;
+        // similarity (exp - lambda distance) or other
+        double similarity;
+        // derivatives of the distance
+        vector<Vector> distder;
+        // here one can add a pointer to a value (hypothetically providing a distance from a point) 
+  };
+  struct imgOrderByDist {
+       bool operator ()(ImagePath const& a, ImagePath const& b) {
+           return (a).distance < (b).distance;
+       };
+  };
+  struct imgOrderBySimilarity {
+       bool operator ()(ImagePath const& a, ImagePath const& b) {
+           return (a).similarity > (b).similarity;
+       };
+  };
+
   double lambda;
   bool pbc;
   int neigh_size,nframes;
@@ -220,17 +230,6 @@ propertypos(0)
            log.printf("  Neighbor list NOT enabled \n");
   }
 
-};
-
-struct imgOrderByDist {
-       bool operator ()(ImagePath const& a, ImagePath const& b) {
-           return (a).distance < (b).distance;
-       };
-};
-struct imgOrderBySimilarity {
-       bool operator ()(ImagePath const& a, ImagePath const& b) {
-           return (a).similarity > (b).similarity;
-       };
 };
 
 void ColvarPathMSD::calculate(){
