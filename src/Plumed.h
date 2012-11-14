@@ -374,14 +374,14 @@ public:
             will not finalize the corresponding plumed structure.
             It is expected that the C code calls plumed_finalize for it
 */
-private:
   Plumed(plumed p);
-/** Copy constructor is disabled (private)
+private:
+/** Copy constructor is disabled (private and unimplemented)
   The problem here is that after copying it will not be clear who is
   going to finalize the corresponding plumed structure.
 */
   Plumed(const Plumed&);
-/** Assignment operator is disabled (private)
+/** Assignment operator is disabled (private and unimplemented)
   The problem here is that after copying it will not be clear who is
   going to finalize the corresponding plumed structure.
 */
@@ -441,21 +441,6 @@ Plumed::Plumed(plumed p):
   cloned(true)
 {
   main=p;
-}
-
-inline
-Plumed::Plumed(const Plumed&p){
-  (void) p; /* avoid warning on unused parameter */
-/* this function should never be called.
-   there is no error here to avoid linking external libraries */
-}
-
-inline
-Plumed&Plumed::operator=(const Plumed&p){
-  (void) p; /* avoid warning on unused parameter */
-/* this function should never be called.
-   there is no error here to avoid linking external libraries */
-  return *this;
 }
 
 inline
