@@ -35,6 +35,17 @@ PlumedCommunicator::PlumedCommunicator()
 {
 }
 
+PlumedCommunicator::PlumedCommunicator(const PlumedCommunicator&pc){
+  Set_comm(pc.communicator);
+}
+
+PlumedCommunicator& PlumedCommunicator::operator=(const PlumedCommunicator&pc){
+  if (this != &pc){
+      Set_comm(pc.communicator);
+  }
+  return *this;
+}
+
 int PlumedCommunicator::Get_rank()const{
   int r=0;
 #ifdef __PLUMED_MPI

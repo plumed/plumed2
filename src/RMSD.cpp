@@ -30,6 +30,9 @@
 using namespace std;
 using namespace PLMD;
 
+RMSD::RMSD(const RMSD & oldrmsd): log(oldrmsd.log),alignmentMethod(oldrmsd.alignmentMethod),reference(oldrmsd.reference),align(oldrmsd.align),displace(oldrmsd.align),myoptimalalignment(oldrmsd.myoptimalalignment){
+}
+
 void RMSD::set(const PDB&pdb, string mytype ){
 
 	setReference(pdb.getPositions());
