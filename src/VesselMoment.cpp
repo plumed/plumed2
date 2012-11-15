@@ -25,29 +25,29 @@
 
 namespace PLMD {
 
-class moment : public VesselStoreAllValues {
+class VesselMoment : public VesselStoreAllValues {
 private:
   Value myvalue, myvalue2;
   std::vector<unsigned> powers;
   std::vector<Value*> value_out;
 public:
   static void reserveKeyword( Keywords& keys );
-  moment( const VesselOptions& da );
+  VesselMoment( const VesselOptions& da );
   void finish( const double& tolerance );
   void local_resizing();
   bool applyForce( std::vector<double>& forces );
 };
 
-PLUMED_REGISTER_VESSEL(moment,"MOMENTS")
+PLUMED_REGISTER_VESSEL(VesselMoment,"MOMENTS")
 
-void moment::reserveKeyword( Keywords& keys ){
+void VesselMoment::reserveKeyword( Keywords& keys ){
   std::ostringstream ostr;
   keys.reserve("optional","MOMENTS","calculate the moments of the distribution of collective variables. " 
   "The \\f$m\\f$th moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
-  "the average for the distribution.  The moment keyword takes a lists of integers as input or a range.  Each integer is a value of \\f$m\\f$.");  
+  "the average for the distribution.  The moments keyword takes a lists of integers as input or a range.  Each integer is a value of \\f$m\\f$.");  
 }
 
-moment::moment( const VesselOptions& da) :
+VesselMoment::VesselMoment( const VesselOptions& da) :
 VesselStoreAllValues(da)
 {
    ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
@@ -76,12 +76,12 @@ VesselStoreAllValues(da)
    }
 }
 
-void moment::local_resizing(){
+void VesselMoment::local_resizing(){
    unsigned nder=getAction()->getNumberOfDerivatives();
    for(unsigned i=0;i<value_out.size();++i) value_out[i]->resizeDerivatives( nder );
 }
 
-void moment::finish( const double& tolerance ){
+void VesselMoment::finish( const double& tolerance ){
   const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
   unsigned nvals=getAction()->getNumberOfFunctionsInAction();
 
@@ -116,7 +116,7 @@ void moment::finish( const double& tolerance ){
   }
 }
 
-bool moment::applyForce( std::vector<double>& forces ){
+bool VesselMoment::applyForce( std::vector<double>& forces ){
   std::vector<double> tmpforce( forces.size() );
   forces.assign(forces.size(),0.0); bool wasforced=false;
   for(unsigned i=0;i<value_out.size();++i){

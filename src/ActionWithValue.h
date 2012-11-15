@@ -66,7 +66,7 @@ class ActionWithValue :
   public virtual Action
 {
 friend class VesselAccumulator;
-friend class moment;
+friend class VesselMoment;
 private:
 /// An array containing the values for this action
   std::vector<Value*> values;

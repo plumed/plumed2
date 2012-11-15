@@ -69,23 +69,6 @@ class FunctionPathMSD : public Function {
   vector< pair<Value *,double> > neighpair;
   map<Value *,double > indexmap; // use double to allow isomaps
   vector <Value*> allArguments; 
-public:
-  FunctionPathMSD(const ActionOptions&);
-// active methods:
-  virtual void calculate();
-  virtual void prepare();
-  static void registerKeywords(Keywords& keys);
-};
-
-PLUMED_REGISTER_ACTION(FunctionPathMSD,"PATHMSD")
-
-void FunctionPathMSD::registerKeywords(Keywords& keys){
-  Function::registerKeywords(keys);
-  keys.use("ARG");
-  keys.add("compulsory","LAMBDA","all compulsory keywords should be added like this with a description here");
-  keys.add("optional","NEIGH_SIZE","all optional keywords that have input should be added like a description here");
-  keys.add("optional","NEIGH_STRIDE","all optional keywords that have input should be added like a description here");
-}
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // this below is useful when one wants to sort a vector of double and have back the order 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -122,6 +105,23 @@ struct pairordering {
        };
 };
 
+public:
+  FunctionPathMSD(const ActionOptions&);
+// active methods:
+  virtual void calculate();
+  virtual void prepare();
+  static void registerKeywords(Keywords& keys);
+};
+
+PLUMED_REGISTER_ACTION(FunctionPathMSD,"PATHMSD")
+
+void FunctionPathMSD::registerKeywords(Keywords& keys){
+  Function::registerKeywords(keys);
+  keys.use("ARG");
+  keys.add("compulsory","LAMBDA","all compulsory keywords should be added like this with a description here");
+  keys.add("optional","NEIGH_SIZE","all optional keywords that have input should be added like a description here");
+  keys.add("optional","NEIGH_STRIDE","all optional keywords that have input should be added like a description here");
+}
 FunctionPathMSD::FunctionPathMSD(const ActionOptions&ao):
 Action(ao),
 Function(ao),

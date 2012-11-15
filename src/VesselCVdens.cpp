@@ -86,7 +86,7 @@ DENSITY SPECIES=20-500 REGION={SIGMA=0.1 VOLUME=r2}
 //+ENDPLUMEDOC
 
 
-class cvdens : public NormedSumVessel {
+class VesselCVDens : public NormedSumVessel {
 private:
   bool isDensity;
   Value tmpval, tmpweight;
@@ -97,25 +97,25 @@ private:
   HistogramBead bead;
 public:
   static void reserveKeyword( Keywords& keys );
-  cvdens( const VesselOptions& da );
+  VesselCVDens( const VesselOptions& da );
   void getWeight( const unsigned& i, Value& weight );
   void compute( const unsigned& i, const unsigned& j, Value& theval );
 };
 
-PLUMED_REGISTER_VESSEL(cvdens,"REGION")
+PLUMED_REGISTER_VESSEL(VesselCVDens,"REGION")
 
-void cvdens::reserveKeyword( Keywords& keys ){
+void VesselCVDens::reserveKeyword( Keywords& keys ){
   keys.reserve("numbered","REGION","calculate the average value of the CV within a portion of the box and store it in a value called label_av. " 
                                     "For more details on how this quantity is calculated see \\ref region.");
 }
 
-cvdens::cvdens( const VesselOptions& da ) :
+VesselCVDens::VesselCVDens( const VesselOptions& da ) :
 NormedSumVessel(da),
 catom_pos(3),
 not_in(false)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
-  plumed_massert( mycolv, "cvdens can only be used with MultiColvars");
+  plumed_massert( mycolv, "REGION can only be used with MultiColvars");
 
   mycolv->useCentralAtom();
   isDensity=mycolv->isDensity();
@@ -146,7 +146,7 @@ not_in(false)
   }
 }
 
-void cvdens::getWeight( const unsigned& i, Value& weight ){
+void VesselCVDens::getWeight( const unsigned& i, Value& weight ){
   mycolv->retrieveCentralAtomPos( catom_pos );
   plumed_assert( catom_pos.size()==3 ); unsigned nder=catom_pos[0].getNumberOfDerivatives();
   plumed_assert( nder==catom_pos[1].getNumberOfDerivatives() && nder==catom_pos[2].getNumberOfDerivatives() );
@@ -157,7 +157,7 @@ void cvdens::getWeight( const unsigned& i, Value& weight ){
   if( not_in ){ weight.set( 1.0 - weight.get() ); weight.chainRule(-1.); }
 }
 
-void cvdens::compute( const unsigned& i, const unsigned& j, Value& theval ){
+void VesselCVDens::compute( const unsigned& i, const unsigned& j, Value& theval ){
   plumed_assert( j==0 );
   if(isDensity){
      mycolv->retrieveCentralAtomPos( catom_pos );

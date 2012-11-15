@@ -26,7 +26,7 @@
 
 using namespace PLMD;
 
-KeyType::KeyType( const std::string& type ){
+Keywords::KeyType::KeyType( const std::string& type ){
   if( type=="compulsory" ){
       style=compulsory;
   } else if( type=="flag" ){
@@ -42,7 +42,7 @@ KeyType::KeyType( const std::string& type ){
   }
 }
 
-void KeyType::setStyle( const std::string& type ){
+void Keywords::KeyType::setStyle( const std::string& type ){
   if( type=="compulsory" ){
       style=compulsory;
   } else if( type=="flag" ){

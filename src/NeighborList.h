@@ -56,6 +56,10 @@ public:
   NeighborList(const std::vector<PLMD::AtomNumber>& list0, const bool& do_pbc,
                const PLMD::Pbc& pbc, const double& distance=1.0e+30,
                const unsigned& stride=0);
+/// Copy constructor
+  NeighborList(const NeighborList&);
+/// Assign operator
+  NeighborList& operator=(const NeighborList&);
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.                         
   std::vector<PLMD::AtomNumber>& getFullAtomList();
 /// Update the indexes in the neighbor list to match the

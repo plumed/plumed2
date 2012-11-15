@@ -63,7 +63,15 @@ public:
     void wait();
     void wait(Status&);
   };
+/// Default constructor
   PlumedCommunicator();
+/// Copy constructor.
+/// It effectively "clones" the communicator, providing a new one acting on the same group
+  PlumedCommunicator(const PlumedCommunicator&);
+/// Assignment operator.
+/// It effectively "clones" the communicator, providing a new one acting on the same group
+  PlumedCommunicator& operator=(const PlumedCommunicator&);
+/// Destructor
   virtual ~PlumedCommunicator();
 /// Obtain the rank of the present process
   int Get_rank()const;

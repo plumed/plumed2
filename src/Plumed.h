@@ -375,6 +375,18 @@ public:
             It is expected that the C code calls plumed_finalize for it
 */
   Plumed(plumed p);
+private:
+/** Copy constructor is disabled (private and unimplemented)
+  The problem here is that after copying it will not be clear who is
+  going to finalize the corresponding plumed structure.
+*/
+  Plumed(const Plumed&);
+/** Assignment operator is disabled (private and unimplemented)
+  The problem here is that after copying it will not be clear who is
+  going to finalize the corresponding plumed structure.
+*/
+  Plumed&operator=(const Plumed&);
+public:
 /**
    Retrieve the C plumed structure for this object
     \param p The C plumed structure.

@@ -65,6 +65,34 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
  lastupdate_=0;
 }
 
+NeighborList::NeighborList(const NeighborList&nl) :
+  do_pair_(nl.do_pair_),
+  do_pbc_(nl.do_pbc_),
+  twolists_(nl.twolists_),
+  pbc_(nl.pbc_),
+  fullatomlist_(nl.fullatomlist_),
+  requestlist_(nl.requestlist_),
+  neighbors_(nl.neighbors_),
+  distance_(nl.distance_),
+  stride_(nl.stride_),
+  nlist0_(nl.nlist0_),
+  nlist1_(nl.nlist1_),
+  nallpairs_(nl.nallpairs_),
+  lastupdate_(nl.lastupdate_)
+{
+}
+
+// since this class contain references members, the only way to
+// implement an assignment operator is via placement new.
+// See http://cplusplus.co.il/2009/09/04/implementing-assignment-operator-using-copy-constructor/
+NeighborList& NeighborList::operator=(const NeighborList&nl){
+  if (this != &nl) {
+      this->NeighborList::~NeighborList(); // explicit non-virtual destructor
+      new (this) NeighborList(nl); // placement new
+  }
+  return *this;
+}
+
 void NeighborList::initialize() {
  neighbors_.clear();
  for(unsigned int i=0;i<nallpairs_;++i){

@@ -25,27 +25,27 @@
 
 namespace PLMD {
 
-class sum : public SumVessel {
+class VesselSum : public SumVessel {
 public:
   static void reserveKeyword( Keywords& keys );
-  sum( const VesselOptions& da );
+  VesselSum( const VesselOptions& da );
   double compute( const unsigned& i, const double& val, double& df );
 };
 
-PLUMED_REGISTER_VESSEL(sum,"SUM")
+PLUMED_REGISTER_VESSEL(VesselSum,"SUM")
 
-void sum::reserveKeyword( Keywords& keys ){
+void VesselSum::reserveKeyword( Keywords& keys ){
   keys.reserveFlag("SUM",false,"calculate the sum of all the quantities and store it in a value called keyword.sum.");
 }
 
-sum::sum( const VesselOptions& da ) :
+VesselSum::VesselSum( const VesselOptions& da ) :
 SumVessel(da)
 {
   addOutput("sum");
   log.printf("  value %s.sum contains the sum of all the values\n",(getAction()->getLabel()).c_str());
 }
 
-double sum::compute( const unsigned& i, const double& val, double& df ){
+double VesselSum::compute( const unsigned& i, const double& val, double& df ){
   plumed_assert( i==0 );
   df=1.0; return val;
 }

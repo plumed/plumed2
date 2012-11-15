@@ -25,27 +25,27 @@
 
 namespace PLMD {
 
-class min : public SumVessel {
+class VesselMin : public SumVessel {
 private:
   double beta;
 public:
   static void reserveKeyword( Keywords& keys );
-  min( const VesselOptions& da );
+  VesselMin( const VesselOptions& da );
   double compute( const unsigned& i, const double& val, double& df );
   double final_computations( const unsigned& i, const double& valin, double& df );
   void printKeywords();
 };
 
-PLUMED_REGISTER_VESSEL(min,"MIN")
+PLUMED_REGISTER_VESSEL(VesselMin,"MIN")
 
-void min::reserveKeyword( Keywords& keys ){
+void VesselMin::reserveKeyword( Keywords& keys ){
   keys.reserve("optional","MIN","calculate the minimum value and store it in a value called min. "
                                 "To make this quantity continuous the minimum is calculated using "
                                 "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
                                 "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
 }
 
-min::min( const VesselOptions& da ) :
+VesselMin::VesselMin( const VesselOptions& da ) :
 SumVessel(da)
 {
   if( getAction()->isPeriodic() ) error("min is not a meaningful option for periodic variables");
@@ -59,18 +59,18 @@ SumVessel(da)
   log.printf("  value %s.min contains the minimum value. beta is equal to %f\n",(getAction()->getLabel()).c_str(),beta);
 }
 
-void min::printKeywords(){
+void VesselMin::printKeywords(){
   Keywords mkeys; 
   mkeys.add("compulsory","BETA","the value of beta for the equation in the manual");
   mkeys.print(log);
 }
 
-double min::compute( const unsigned& i, const double& val, double& df ){
+double VesselMin::compute( const unsigned& i, const double& val, double& df ){
   double f; f=exp( beta/val ); df=f/(val*val);
   return f;
 }
 
-double min::final_computations( const unsigned& i, const double& valin, double& df ){
+double VesselMin::final_computations( const unsigned& i, const double& valin, double& df ){
   double dist; dist=beta/std::log( valin ); df=dist*dist/valin;
   return dist;
 }
