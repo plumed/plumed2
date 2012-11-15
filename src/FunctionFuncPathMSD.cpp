@@ -34,7 +34,7 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC FUNCTION PATHMSD
+//+PLUMEDOC FUNCTION FUNCPATHMSD
 /*
 This function calculates path collective variables. 
 
@@ -54,14 +54,14 @@ calculate the progress alng the path and the distance from it in p1
 t1: RMSD REFERENCE=frame_1.dat TYPE=OPTIMAL SQUARED
 t2: RMSD REFERENCE=frame_21.dat TYPE=OPTIMAL SQUARED
 t3: RMSD REFERENCE=frame_42.dat TYPE=OPTIMAL SQUARED
-p1: PATHMSD ARG=t1,t2,t3 LAMBDA=500.0 
+p1: FUNCPATHMSD ARG=t1,t2,t3 LAMBDA=500.0 
 PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
 \endverbatim
 
 */
 //+ENDPLUMEDOC
    
-class FunctionPathMSD : public Function {
+class FunctionFuncPathMSD : public Function {
   double lambda;
   bool pbc;
   int neigh_size;
@@ -106,23 +106,23 @@ struct pairordering {
 };
 
 public:
-  FunctionPathMSD(const ActionOptions&);
+  FunctionFuncPathMSD(const ActionOptions&);
 // active methods:
   virtual void calculate();
   virtual void prepare();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(FunctionPathMSD,"PATHMSD")
+PLUMED_REGISTER_ACTION(FunctionFuncPathMSD,"FUNCPATHMSD")
 
-void FunctionPathMSD::registerKeywords(Keywords& keys){
+void FunctionFuncPathMSD::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","LAMBDA","all compulsory keywords should be added like this with a description here");
   keys.add("optional","NEIGH_SIZE","all optional keywords that have input should be added like a description here");
   keys.add("optional","NEIGH_STRIDE","all optional keywords that have input should be added like a description here");
 }
-FunctionPathMSD::FunctionPathMSD(const ActionOptions&ao):
+FunctionFuncPathMSD::FunctionFuncPathMSD(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 pbc(true),
@@ -171,7 +171,7 @@ neigh_stride(-1.)
   
 }
 // calculator
-void FunctionPathMSD::calculate(){
+void FunctionFuncPathMSD::calculate(){
  // log.printf("NOW CALCULATE! \n");
   double s_path=0.;
   double partition=0.;
@@ -207,7 +207,7 @@ void FunctionPathMSD::calculate(){
 ///
 /// this function updates the needed argument list
 ///
-void FunctionPathMSD::prepare(){
+void FunctionFuncPathMSD::prepare(){
 
   // neighbor list: rank and activate the chain for the next step 
 
