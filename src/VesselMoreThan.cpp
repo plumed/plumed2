@@ -26,26 +26,26 @@
 
 namespace PLMD {
 
-class more_than : public SumVessel {
+class VesselMoreThan : public SumVessel {
 private:
   SwitchingFunction sf;
 public:
   static void reserveKeyword( Keywords& keys );
-  more_than( const VesselOptions& da );
+  VesselMoreThan( const VesselOptions& da );
   double compute( const unsigned& i, const double& val, double& df ); 
   void printKeywords( Log& log );
 };
 
-PLUMED_REGISTER_VESSEL(more_than,"MORE_THAN")
+PLUMED_REGISTER_VESSEL(VesselMoreThan,"MORE_THAN")
 
-void more_than::reserveKeyword( Keywords& keys ){
+void VesselMoreThan::reserveKeyword( Keywords& keys ){
   keys.reserve("optional","MORE_THAN","calculate the number of variables more than a certain target value. "
                                       "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                       "is a \\ref switchingfunction. The final value can be referenced using "
                                       "\\e label.gt\\f$r_0\\f$.");
 }
 
-more_than::more_than( const VesselOptions& da ) :
+VesselMoreThan::VesselMoreThan( const VesselOptions& da ) :
 SumVessel(da)
 {
   if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
@@ -58,11 +58,11 @@ SumVessel(da)
   log.printf("  value %s.gt%s contains the number of values more than %s\n",(getAction()->getLabel()).c_str(),vv.c_str(),(sf.description()).c_str());
 }
 
-void more_than::printKeywords( Log& log ){
+void VesselMoreThan::printKeywords( Log& log ){
   sf.printKeywords( log );
 }
 
-double more_than::compute( const unsigned& i, const double& val, double& df ){
+double VesselMoreThan::compute( const unsigned& i, const double& val, double& df ){
   plumed_assert( i==0 );
   double f; f=1.0 - sf.calculate(val, df); df*=-val;
   return f;

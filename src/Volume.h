@@ -37,7 +37,7 @@ coordination number inside that part of the cell.
 class Volume :
   public ActionAtomistic
   {
-friend class cvdens;
+friend class VesselCVDens;
 private:
   double sigma;
 protected:

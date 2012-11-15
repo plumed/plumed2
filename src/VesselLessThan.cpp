@@ -26,26 +26,26 @@
 
 namespace PLMD {
 
-class less_than : public SumVessel {
+class VesselLessThan : public SumVessel {
 private:
   SwitchingFunction sf;
 public:
   static void reserveKeyword( Keywords& keys ); 
-  less_than( const VesselOptions& da );
+  VesselLessThan( const VesselOptions& da );
   double compute( const unsigned& i, const double& val, double& df ); 
   void printKeywords( Log& log );
 };
 
-PLUMED_REGISTER_VESSEL(less_than,"LESS_THAN")
+PLUMED_REGISTER_VESSEL(VesselLessThan,"LESS_THAN")
 
-void less_than::reserveKeyword( Keywords& keys ){
+void VesselLessThan::reserveKeyword( Keywords& keys ){
   keys.reserve("optional","LESS_THAN","calculate the number of variables less than a certain target value. "
                                       "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                       "is a \\ref switchingfunction. The final value can be referenced using "
                                       "\\e label.lt\\f$r_0\\f$.");  
 }
 
-less_than::less_than( const VesselOptions& da ) :
+VesselLessThan::VesselLessThan( const VesselOptions& da ) :
 SumVessel(da)
 {
   if( getAction()->isPeriodic() ) error("less than is not a meaningful option for periodic variables");
@@ -57,11 +57,11 @@ SumVessel(da)
   log.printf("  value %s.lt%s contains number of values less than %s\n",(getAction()->getLabel()).c_str(),vv.c_str(),(sf.description()).c_str() );
 }
 
-void less_than::printKeywords( Log& log ){
+void VesselLessThan::printKeywords( Log& log ){
   sf.printKeywords( log );
 }
 
-double less_than::compute( const unsigned& i, const double& val, double& df ){
+double VesselLessThan::compute( const unsigned& i, const double& val, double& df ){
   plumed_assert( i==0 );
   double f; f = sf.calculate(val, df); df*=val;
   return f;

@@ -24,23 +24,23 @@
 
 namespace PLMD {
 
-class mean : public NormedSumVessel {
+class VesselMean : public NormedSumVessel {
 private:
   MultiColvar* mycolv;
 public:
   static void reserveKeyword( Keywords& keys );
-  mean( const VesselOptions& da );
+  VesselMean( const VesselOptions& da );
   void getWeight( const unsigned& i, Value& weight );
   void compute( const unsigned& i, const unsigned& j, Value& theval );
 };
 
-PLUMED_REGISTER_VESSEL(mean,"AVERAGE")
+PLUMED_REGISTER_VESSEL(VesselMean,"AVERAGE")
 
-void mean::reserveKeyword( Keywords& keys ){
+void VesselMean::reserveKeyword( Keywords& keys ){
   keys.reserveFlag("AVERAGE",false,"take the average value of these variables and store it in value called average.");
 }
 
-mean::mean( const VesselOptions& da ) :
+VesselMean::VesselMean( const VesselOptions& da ) :
 NormedSumVessel(da)
 {
   if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
@@ -53,12 +53,12 @@ NormedSumVessel(da)
   log.printf("  value %s.average contains the average value\n",(getAction()->getLabel()).c_str());
 }
 
-void mean::compute( const unsigned& i, const unsigned& j, Value& theval ){
+void VesselMean::compute( const unsigned& i, const unsigned& j, Value& theval ){
   plumed_assert( j==0 );
   theval=mycolv->retreiveLastCalculatedValue(); 
 }
 
-void mean::getWeight( const unsigned& i, Value& weight ){
+void VesselMean::getWeight( const unsigned& i, Value& weight ){
   mycolv->retrieveColvarWeight( i, weight );
 }
 

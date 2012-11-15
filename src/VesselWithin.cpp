@@ -25,28 +25,28 @@
 
 namespace PLMD {
 
-class within : public NormedSumVessel {
+class VesselWithin : public NormedSumVessel {
 private:
   MultiColvar* mycolv;
   std::vector<HistogramBead> hist;
 public:
   static void reserveKeyword( Keywords& keys );
-  within( const VesselOptions& da );
+  VesselWithin( const VesselOptions& da );
   void getWeight( const unsigned& i, Value& weight );
   void compute( const unsigned& i, const unsigned& j, Value& theval );
   void printKeywords();
 };
 
-PLUMED_REGISTER_VESSEL(within,"WITHIN")
+PLUMED_REGISTER_VESSEL(VesselWithin,"WITHIN")
 
-void within::reserveKeyword( Keywords& keys ){
+void VesselWithin::reserveKeyword( Keywords& keys ){
   keys.reserve("numbered","WITHIN", "calculate the number of values that are within a certain range or create a discretized "
                                     "histogram of the distribution of cvs within a particular rage by adding the NBINS "
                                     "to the function specifier. These quantities are described using kernel density estimation as described on "
                                     "\\ref histogrambead. The final values can be referenced using \\e label.between\\f$a\\f$&\\f$b\\f$."); 
 }
 
-within::within( const VesselOptions& da ) :
+VesselWithin::VesselWithin( const VesselOptions& da ) :
 NormedSumVessel(da)
 { 
 
@@ -87,7 +87,7 @@ NormedSumVessel(da)
   }
 }
 
-void within::printKeywords(){
+void VesselWithin::printKeywords(){
   Keywords keys;
   keys.add("compulsory","NBINS","1","the number of bins you wish to divide the range into");
   keys.add("compulsory","LOWER","the lower bound");
@@ -97,14 +97,14 @@ void within::printKeywords(){
   keys.print(log);
 }
 
-void within::compute( const unsigned& icv, const unsigned& jfunc, Value& theval ){
+void VesselWithin::compute( const unsigned& icv, const unsigned& jfunc, Value& theval ){
   plumed_assert( jfunc<hist.size() );
   theval=mycolv->retreiveLastCalculatedValue();
   double df, f; f=hist[jfunc].calculate( theval.get() , df );
   theval.chainRule(df); theval.set(f);
 }
 
-void within::getWeight( const unsigned& i, Value& weight ){
+void VesselWithin::getWeight( const unsigned& i, Value& weight ){
   mycolv->retrieveColvarWeight( i, weight );
 }
 
