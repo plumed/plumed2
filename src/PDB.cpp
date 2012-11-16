@@ -186,7 +186,7 @@ void PDB::renameAtoms( const std::string& old_name, const std::string& new_name 
   for(unsigned i=0;i<size();++i){
       if( atomsymb[i]==old_name ) atomsymb[i]=new_name;
   } 
-};
+}
 
 Log& operator<<(Log& ostr, const PDB&  pdb){
    char *buffer;
@@ -195,7 +195,7 @@ Log& operator<<(Log& ostr, const PDB&  pdb){
       ostr<<buffer;
    }
    return ostr;
-};
+}
 
 }
 

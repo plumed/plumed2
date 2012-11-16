@@ -96,7 +96,7 @@ propertypos(0)
            log.printf("  Neighbor list NOT enabled \n");
   }
 
-};
+}
 
 void ColvarPathMSDBase::calculate(){
 
@@ -182,7 +182,7 @@ void ColvarPathMSDBase::calculate(){
         } 
   }
   //log.printf("CALCULATION DONE! \n");
-};
+}
 
 }
 

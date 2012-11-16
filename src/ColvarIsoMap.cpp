@@ -85,7 +85,7 @@ ColvarPathMSDBase(ao)
   }
   requestAtoms(pdbv[0].getAtomNumbers());  
  
-};
+}
 
 }
 

@@ -95,7 +95,7 @@ Action(ao),ColvarPathMSDBase(ao)
                 vector<double> v; v.push_back(i);
 		indexvec.push_back(v);i+=1.; 
   }
-};
+}
 
 }
 
