@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_Volume_h
-#define __PLUMED_Volume_h
+#ifndef __PLUMED_ActionVolume_h
+#define __PLUMED_ActionVolume_h
 
 #include "ActionAtomistic.h"
 #include "HistogramBead.h"
@@ -34,7 +34,7 @@ box. You can use this to calculate the number of atoms inside that part or the a
 coordination number inside that part of the cell. 
 */
 
-class Volume :
+class ActionVolume :
   public ActionAtomistic
   {
 friend class VesselCVDens;
@@ -45,18 +45,18 @@ protected:
   double getSigma() const ;
 public:
   static void registerKeywords( Keywords& keys );
-  Volume(const ActionOptions&);
+  ActionVolume(const ActionOptions&);
   virtual void calculateNumberInside( const std::vector<Value>& cpos, HistogramBead& bead, Value& weight )=0;
   void apply(){};
 };
 
 inline
-void Volume::setSigma( const double& sig ){
+void ActionVolume::setSigma( const double& sig ){
   sigma=sig;
 }
 
 inline
-double Volume::getSigma() const {
+double ActionVolume::getSigma() const {
   return sigma;
 }
 

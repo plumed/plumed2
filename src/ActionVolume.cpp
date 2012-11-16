@@ -19,16 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Volume.h"
+#include "ActionVolume.h"
 
 namespace PLMD {
 
-void Volume::registerKeywords( Keywords& keys ){
+void ActionVolume::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
 }
 
-Volume::Volume(const ActionOptions&ao):
+ActionVolume::ActionVolume(const ActionOptions&ao):
 Action(ao),
 ActionAtomistic(ao)
 {
