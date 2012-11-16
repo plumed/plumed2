@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionRegister.h"
-#include "Volume.h"
+#include "ActionVolume.h"
 
 //+PLUMEDOC GENERIC SUBCELL
 /*
@@ -41,7 +41,7 @@ COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 REGION={SIGMA=0.1 VOLUME=r1}
 
 namespace PLMD {
 
-class VolumeSubcell : public Volume {
+class VolumeSubcell : public ActionVolume {
 private:
   Tensor cellbox;
   bool dox, doy, doz;
@@ -58,7 +58,7 @@ public:
 PLUMED_REGISTER_ACTION(VolumeSubcell,"SUBCELL")
 
 void VolumeSubcell::registerKeywords( Keywords& keys ){
-  Volume::registerKeywords( keys );
+  ActionVolume::registerKeywords( keys );
   keys.add("compulsory","XLOWER","0.0","the lower boundary in x of the subcell in fractional coordinates.");
   keys.add("compulsory","XUPPER","1.0","the upper boundary in x of the subcell in fractional coordinates.");
   keys.add("compulsory","YLOWER","0.0","the lower boundary in y of the subcell in fractional coordinates.");
@@ -69,7 +69,7 @@ void VolumeSubcell::registerKeywords( Keywords& keys ){
 
 VolumeSubcell::VolumeSubcell(const ActionOptions& ao):
 Action(ao),
-Volume(ao)
+ActionVolume(ao)
 {
 
   dox=true; parse("XLOWER",xlow); parse("XUPPER",xhigh);

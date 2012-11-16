@@ -23,7 +23,7 @@
 #include "FunctionVessel.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
-#include "Volume.h"
+#include "ActionVolume.h"
 #include "MultiColvar.h"
 #include "HistogramBead.h"
 
@@ -90,7 +90,7 @@ class VesselCVDens : public NormedSumVessel {
 private:
   bool isDensity;
   Value tmpval, tmpweight;
-  Volume* myvol;
+  ActionVolume* myvol;
   MultiColvar* mycolv;
   std::vector<Value> catom_pos;
   bool not_in;
@@ -125,7 +125,7 @@ not_in(false)
   std::string name; bool found_element=Tools::parse(data,"VOLUME",name);
   if(!found_element){ error("No volume element specified in ccall to REGION"); return; }
   if( name.substr(0,1)=="!" ){ name=name.substr(1); not_in=true; }
-  myvol = (mycolv->plumed).getActionSet().selectWithLabel<Volume*>(name);
+  myvol = (mycolv->plumed).getActionSet().selectWithLabel<ActionVolume*>(name);
   if(!myvol){ error( "in REGION " + name + " is not a valid volume element"); return; }
   mycolv->addDependency( myvol ); 
 
