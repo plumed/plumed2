@@ -94,6 +94,16 @@ ColvarPathMSD::ColvarPathMSD(const ActionOptions&ao):
 Action(ao),ColvarPathMSDBase(ao)
 {
   checkRead();
+  // no need to read anything
+  addComponentWithDerivatives("sss"); componentIsNotPeriodic("sss");
+  addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");
+  requestAtoms(pdbv[0].getAtomNumbers());  
+
+  double i=1.;
+  for(unsigned it=0 ;it<nframes ;++it){
+                vector<double> v; v.push_back(i);
+		indexvec.push_back(v);i+=1.; 
+  }
 };
 
 }

@@ -22,6 +22,7 @@
 #include <cmath>
 
 #include "Colvar.h"
+#include "ColvarPathMSDBase.h"
 #include "ActionRegister.h"
 
 #include <string>
@@ -37,62 +38,12 @@ using namespace std;
 
 namespace PLMD{
 
-class ColvarPathMSDBase : public Colvar {
-/// this class is a general container for path stuff 
-  class ImagePath {
-     public:
-        // cardinal indexing: needed to map over msd 
-        unsigned index;
-        // spiwok indexing
-        vector<double> property;
-        // distance
-        double distance;
-        // similarity (exp - lambda distance) or other
-        double similarity;
-        // derivatives of the distance
-        vector<Vector> distder;
-        // here one can add a pointer to a value (hypothetically providing a distance from a point) 
-  };
-  struct imgOrderByDist {
-       bool operator ()(ImagePath const& a, ImagePath const& b) {
-           return (a).distance < (b).distance;
-       };
-  };
-  struct imgOrderBySimilarity {
-       bool operator ()(ImagePath const& a, ImagePath const& b) {
-           return (a).similarity > (b).similarity;
-       };
-  };
-
-  double lambda;
-  bool pbc;
-  int neigh_size,nframes;
-  unsigned propertypos; 
-  double neigh_stride;
-  vector<PDB> pdbv;
-  vector<RMSD> msdv;
-  vector<string> labels;
-  string reference;
-  vector< vector<double> > indexvec; // use double to allow isomaps
-  vector<Vector> derivs_s;
-  vector<Vector> derivs_z;
-  vector< vector <Vector> > derivs_v;
-  vector <ImagePath> imgVec; // this can be used for doing neighlist   
-public:
-  ColvarPathMSDBase(const ActionOptions&);
-// active methods:
-  virtual void calculate();
-//  virtual void prepare();
-  static void registerKeywords(Keywords& keys);
-};
-
 void ColvarPathMSDBase::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing ");
   keys.add("compulsory","REFERENCE","the pdb is needed to provide the various milestones");
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");
   keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated");
-  keys.add("optional","PROPERTY","the property to be used in the indexing: this goes in the REMARK field of the reference");
 }
 
 ColvarPathMSDBase::ColvarPathMSDBase(const ActionOptions&ao):
@@ -107,26 +58,7 @@ propertypos(0)
   parse("NEIGH_SIZE",neigh_size);
   parse("NEIGH_STRIDE",neigh_stride);
   parse("REFERENCE",reference);
-  parseVector("PROPERTY",labels);
-  //parse("PROPERTY",propertypos);
-  checkRead();
 
-  // note: first add the derivative and then request the atoms 
-
-  if(labels.size()==0){
-     addComponentWithDerivatives("sss"); componentIsNotPeriodic("sss");
-     addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");
-     //labels.push_back("s");labels.push_back("z")
-  }else{
-      for(unsigned i=0;i<labels.size();i++){
-	log<<" found custom propety to be found in the REMARK line: "<<labels[i].c_str()<<"\n";
-        addComponentWithDerivatives(labels[i].c_str()); componentIsNotPeriodic(labels[i].c_str());
-      }
-      // add distance anyhow
-      addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");
-  }
-
-  // parse all the pdb
   // open the file
   FILE* fp=fopen(reference.c_str(),"r");
   if (fp!=NULL)
@@ -141,7 +73,7 @@ propertypos(0)
             nframes++;
             log<<"Found PDB: "<<nframes<<" atoms: "<<mypdb.getAtomNumbers().size()<<"\n"; 
 	    pdbv.push_back(mypdb); 
-            requestAtoms(mypdb.getAtomNumbers()); 
+//            requestAtoms(mypdb.getAtomNumbers()); 
             derivs_s.resize(getNumberOfAtoms());
             derivs_z.resize(getNumberOfAtoms());
             mymsd.set(mypdb,"OPTIMAL");
@@ -152,31 +84,6 @@ propertypos(0)
     fclose (fp);
     log<<"Found TOTAL "<<nframes<< " PDB in the file "<<reference.c_str()<<" \n"; 
   } 
-  // do some neighbor printout
-  if(labels.size()!=0){
-        //reparse the REMARK field and pick the index 
-	for(unsigned i=0;i<pdbv.size();i++){
-		vector<std::string> myv(pdbv[i].getRemark());	
-                // now look for X=1.34555 Y=5.6677
-                vector<double> labelvals; 
-                for(unsigned j=0;j<labels.size();j++){
-		      double val;
-                       if(Tools::parse(myv,labels[j],val)){labelvals.push_back(val);}
-                       else{
-			   char buf[500];
-			   sprintf(buf,"PROPERTY LABEL \" %s \" NOT FOUND IN REMARK FOR FRAME %u \n",labels[j].c_str(),i);
-			   plumed_merror(buf);  
-                       };
-                }
-                indexvec.push_back(labelvals);
-        }
-  }else{ // normal case: only one label
-	  double i=1.;
-	  for(unsigned it=0 ;it<nframes ;++it){
-                        vector<double> v; v.push_back(i);
-			indexvec.push_back(v);i+=1.; 
-	  }
-  }
   if(neigh_stride>0. || neigh_size>0){
            if(neigh_size>nframes){
            	log.printf(" List size required ( %d ) is too large: resizing to the maximum number of frames required: %d  \n",neigh_size,nframes);

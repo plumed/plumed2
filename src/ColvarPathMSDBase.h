@@ -70,18 +70,20 @@ class ColvarPathMSDBase : public Colvar {
 
   double lambda;
   bool pbc;
-  int neigh_size,nframes;
+  int neigh_size;
   unsigned propertypos; 
   double neigh_stride;
-  vector<PDB> pdbv;
   vector<RMSD> msdv;
-  vector<string> labels;
   string reference;
-  vector< vector<double> > indexvec; // use double to allow isomaps
   vector<Vector> derivs_s;
   vector<Vector> derivs_z;
   vector< vector <Vector> > derivs_v;
   vector <ImagePath> imgVec; // this can be used for doing neighlist   
+protected:
+  vector<PDB> pdbv;
+  vector<string> labels;
+  vector< vector<double> > indexvec; // use double to allow isomaps
+  unsigned nframes;
 public:
   ColvarPathMSDBase(const ActionOptions&);
 // active methods:
