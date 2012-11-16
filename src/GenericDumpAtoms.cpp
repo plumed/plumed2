@@ -23,6 +23,7 @@
 #include "ActionPilot.h"
 #include "ActionRegister.h"
 #include "Pbc.h"
+#include "PlumedFile.h"
 #include "PlumedMain.h"
 #include "Atoms.h"
 #include "Units.h"
@@ -63,7 +64,7 @@ class GenericDumpAtoms:
   public ActionAtomistic,
   public ActionPilot
 {
-  FILE* fp;
+  PlumedOFile of;
   double lenunit;
 public:
   GenericDumpAtoms(const ActionOptions&);
@@ -102,32 +103,32 @@ GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
 
   checkRead();
   assert(file.length()>0);
-  fp=fopen(file.c_str(),"w");
-  log.printf("  printing the positions of the following atoms in %s :", unitname.c_str() );
+  of.link(*this);
+  of.open(file.c_str(),"w");
+  log.printf("  printing the following atoms in %s :", unitname.c_str() );
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");
   requestAtoms(atoms);
 }
 
 void GenericDumpAtoms::update(){
-  fprintf(fp,"%d\n",getNumberOfAtoms());
+  of.printf("%d\n",getNumberOfAtoms());
   const Tensor & t(getPbc().getBox());
   if(getPbc().isOrthorombic()){
-    fprintf(fp," %f %f %f\n",lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
+    of.printf(" %f %f %f\n",lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
   }else{
-    fprintf(fp," %f %f %f %f %f %f %f %f %f\n",
+    of.printf(" %f %f %f %f %f %f %f %f %f\n",
                  lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
                  lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
                  lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
            );
   }
   for(unsigned i=0;i<getNumberOfAtoms();++i){
-    fprintf(fp,"X %f %f %f\n",lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
+    of.printf("X %f %f %f\n",lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
   }
 }
 
 GenericDumpAtoms::~GenericDumpAtoms(){
-  fclose(fp);
 }
   
 

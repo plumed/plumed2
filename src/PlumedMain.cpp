@@ -54,7 +54,7 @@ PlumedMain::PlumedMain():
   stopwatch(*new Stopwatch),
   grex(NULL),
   initialized(false),
-  log(*new Log(comm)),
+  log(*new Log),
   citations(*new Citations),
   step(0),
   active(false),
@@ -62,8 +62,12 @@ PlumedMain::PlumedMain():
   actionSet(*new ActionSet(*this)),
   bias(0.0),
   exchangePatterns(*new(ExchangePatterns)),
-  novirial(false)
+  novirial(false),
+  restart(false)
 {
+  log.link(comm);
+  log.setLinePrefix("PLUMED: ");
+  log.link(stdout);
   stopwatch.start();
   stopwatch.pause();
 }
@@ -263,11 +267,11 @@ void PlumedMain::cmd(const std::string & word,void*val){
        MDEngine=static_cast<char*>(val);
   } else if(word=="setLog"){
        CHECK_NOTINIT(initialized,word);
-       log.set(static_cast<FILE*>(val));
+       log.link(static_cast<FILE*>(val));
   } else if(word=="setLogFile"){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
-       log.setFile(static_cast<char*>(val));
+       log.open(static_cast<char*>(val),"w");
   } else if(word=="getExchangesFlag"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
@@ -354,10 +358,12 @@ void PlumedMain::init(){
 void PlumedMain::readInputFile(std::string str){
   plumed_assert(initialized);
   log.printf("FILE: %s\n",str.c_str());
-  FILE*fp=fopen(str.c_str(),"r");
+  PlumedIFile ifile;
+  ifile.link(*this);
+  ifile.open(str);
   std::vector<std::string> words;
   exchangePatterns.setFlag(exchangePatterns.NONE);
-  while(Tools::getParsedLine(fp,words)){
+  while(Tools::getParsedLine(ifile,words)){
     if(words.empty())continue;
     else if(words[0]=="ENDPLUMED") break;
     else if(words[0]=="LOAD") load(words);
@@ -388,7 +394,6 @@ void PlumedMain::readInputFile(std::string str){
       actionSet.push_back(action);
     };
   };
-  fclose(fp);
   log.printf("END FILE: %s\n",str.c_str());
 
   pilots=actionSet.select<ActionPilot*>();
@@ -594,6 +599,22 @@ int PlumedMain::fclose(FILE*fp){
 std::string PlumedMain::cite(const std::string&item){
   return citations.cite(item);
 }
+
+void PlumedMain::fflush(){
+  for(files_iterator p=files.begin();p!=files.end();++p){
+    (*p)->flush();
+  }
+}
+
+void PlumedMain::insertFile(PlumedFileBase&f){
+  files.insert(&f);
+}
+
+void PlumedMain::eraseFile(PlumedFileBase&f){
+  files.erase(&f);
+}
+
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

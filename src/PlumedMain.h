@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <set>
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -58,6 +59,7 @@ class PlumedCommunicator;
 class Stopwatch;
 class Citations;
 class ExchangePatterns;
+class PlumedFileBase;
 
 /**
 Main plumed object.
@@ -69,6 +71,8 @@ It does not contain any static data.
 class PlumedMain:
   public WithCmd
 {
+/// I restrict access to this class so that other classes cannot mistakely change the restart flag.
+  friend class SetupRestart;
 public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.
@@ -118,6 +122,13 @@ private:
 
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
   ExchangePatterns& exchangePatterns;
+
+/// Flag for restart
+  bool restart;
+
+  std::set<PlumedFileBase*> files;
+  typedef std::set<PlumedFileBase*>::iterator files_iterator;
+
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
@@ -218,6 +229,14 @@ public:
   FILE* fopen(const char *path, const char *mode);
 /// Closes a file opened with PlumedMain::fopen()
   int fclose(FILE*fp);
+/// Insert a file
+  void insertFile(PlumedFileBase&);
+/// Erase a file
+  void eraseFile(PlumedFileBase&);
+/// Flush all files
+  void fflush();
+/// Check if restarting
+  bool getRestart()const;
 };
 
 /////
@@ -241,6 +260,11 @@ const std::string & PlumedMain::getSuffix()const{
 inline
 void PlumedMain::setSuffix(const std::string&s){
   suffix=s;
+}
+
+inline
+bool PlumedMain::getRestart()const{
+  return restart;
 }
 
 }

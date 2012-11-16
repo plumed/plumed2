@@ -33,6 +33,8 @@
 
 namespace PLMD{
 
+class PlumedIFile;
+
 /// \ingroup TOOLBOX
 /// Very small non-zero number
 const double epsilon(std::numeric_limits<double>::epsilon());
@@ -55,12 +57,12 @@ public:
 /// outer parenthesis are processed, to allow nesting them.
 /// parlevel, if not NULL, is increased or decreased according to the number of opened/closed parenthesis
   static std::vector<std::string> getWords(const std::string & line,const char* sep=NULL,int* parlevel=NULL,const char* parenthesis="{");
-/// Get a line from the file pointer fp
-  static bool getline(std::FILE* fp,std::string & line);
-/// Get a parsed line from the file pointer fp.
+/// Get a line from the file pointer ifile
+  static bool getline(FILE*,std::string & line);
+/// Get a parsed line from the file pointer ifile
 /// This function already takes care of joining continued lines and splitting the
 /// resulting line into an array of words
-  static bool getParsedLine(std::FILE* fp,std::vector<std::string> & line);
+  static bool getParsedLine(PlumedIFile&ifile,std::vector<std::string> & line);
 /// Convert a string to a double, reading it
   static bool convert(const std::string & str,double & t);
 /// Convert a string to a int, reading it

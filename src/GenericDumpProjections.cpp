@@ -23,6 +23,7 @@
 #include "ActionWithArguments.h"
 #include "ActionRegister.h"
 #include "PlumedCommunicator.h"
+#include "PlumedFile.h"
 #include <cassert>
 
 using namespace std;
@@ -42,7 +43,7 @@ public ActionWithArguments
 {
   string file;
   string fmt;
-  FILE* fp;
+  PlumedOFile of;
 public:
   void calculate(){};
   GenericDumpProjections(const ActionOptions&);
@@ -69,42 +70,31 @@ GenericDumpProjections::GenericDumpProjections(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
-fmt("%15.10f"),
-fp(NULL)
+fmt("%15.10f")
 {
   parse("FILE",file);
   assert(file.length()>0);
   parse("FMT",fmt);
   fmt=" "+fmt;
-  if(comm.Get_rank()==0){
-    fp=fopen(file.c_str(),"wa");
-    log.printf("  on file %s\n",file.c_str());
-    log.printf("  with format %s\n",fmt.c_str());
-    fprintf(fp,"%s","#! FIELDS time ");
-    for(unsigned i=0;i<getNumberOfArguments();i++){
-      for(unsigned j=0;j<getNumberOfArguments();j++){
-         fprintf(fp," %s-%s",getPntrToArgument(i)->getName().c_str(),getPntrToArgument(j)->getName().c_str());
-      }
-    };
-    fprintf(fp,"%s","\n");
-  }
+  of.open(file.c_str(),"wa");
+  log.printf("  on file %s\n",file.c_str());
+  log.printf("  with format %s\n",fmt.c_str());
   checkRead();
 }
 
 
 void GenericDumpProjections::update(){
-  if(comm.Get_rank()!=0)return;
-  fprintf(fp," %f",getTime());
+  of.fmtField(" %f").printField("time",getTime());
   for(unsigned i=0;i<getNumberOfArguments();i++){
     for(unsigned j=0;j<getNumberOfArguments();j++){
-      fprintf(fp,fmt.c_str(),getProjection(i,j));
+      of.fmtField(fmt);
+      of.printField(getPntrToArgument(i)->getName()+"-"+getPntrToArgument(j)->getName(),getProjection(i,j));
     }
   };
-  fprintf(fp,"\n");
+  of.printField();
 }
 
 GenericDumpProjections::~GenericDumpProjections(){
-  if(fp) fclose(fp);
 }
 
 }
