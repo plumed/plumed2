@@ -19,21 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <cmath>
-
 #include "ColvarPathMSDBase.h"
-
-#include "Colvar.h"
-#include "ActionRegister.h"
-
-#include <string>
-#include <cstring>
-#include <cassert>
-#include <iostream>
-#include "PDB.h"
-#include "RMSD.h"
-#include "Atoms.h"
-#include "Tools.h"
+#include "PlumedMain.h"
 
 using namespace std;
 
@@ -94,6 +81,10 @@ ColvarPathMSD::ColvarPathMSD(const ActionOptions&ao):
 Action(ao),ColvarPathMSDBase(ao)
 {
   checkRead();
+
+  log<<"  Bibliography "
+     <<plumed.cite("Branduardi, Gervasio, Parrinello J. Chem. Phys. 126, 054103 (2007)")
+     <<"\n";
   // no need to read anything
   addComponentWithDerivatives("sss"); componentIsNotPeriodic("sss");
   addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");

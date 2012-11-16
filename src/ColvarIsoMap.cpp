@@ -19,21 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include <cmath>
-
 #include "ColvarPathMSDBase.h"
-
-#include "Colvar.h"
-#include "ActionRegister.h"
-
-#include <string>
-#include <cstring>
-#include <cassert>
-#include <iostream>
-#include "PDB.h"
-#include "RMSD.h"
-#include "Atoms.h"
-#include "Tools.h"
 
 using namespace std;
 
