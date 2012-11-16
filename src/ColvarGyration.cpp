@@ -34,7 +34,13 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR GYRATION
 /*
-Calculate the radius of gyration for a chain of atoms.
+Calculate the radius of gyration, or other properties related to it.
+The different properties can be calculated and selected by the TYPE keyword:
+the Radius of Gyration (RADIUS); the Trace of the Gyration Tensor (TRACE); 
+the Largest Principal Moment of the Gyration Tensor (GTPC_1); the middle Principal Moment of the Gyration Tensor (GTPC_2);
+the Smallest Principal Moment of the Gyration Tensor (GTPC_3); the Asphericiry (ASPHERICITY); the Acylindricity (ACYLINDRICITY);
+the Relative Shape Anisotropy (KAPPA2); the Smallest Principal Radius Of Gyration (GYRATION_3); 
+the Middle Principal Radius of Gyration (GYRATION_2); the Largest Principal Radius of Gyration (GYRATION_1).
 
 The radius of gyration is calculated using:
 
@@ -49,7 +55,6 @@ with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
 {r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ m_i }{\sum_i^{n} m_i}
 \f]
 
-\bug This was a very quick implementation of GYRATION for a project that I am working on. It has very little of the functionality that is available in plumed 1.0. 
 
 \par Examples
 
