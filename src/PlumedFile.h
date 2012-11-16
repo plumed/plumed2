@@ -40,6 +40,10 @@ This class just provides things which are common among PlumedOFile and PlumedIFi
 */
 
 class PlumedFileBase{
+/// Copy constructor is disabled (private and unimplemented)
+  PlumedFileBase(const PlumedFileBase&);
+/// Assignment operator is disabled (private and unimplemented)
+  PlumedFileBase& operator=(const PlumedFileBase&);
 protected:
 /// Internal tool.
 /// Base for PlumedIFile::Field and PlumedOFile::Field
