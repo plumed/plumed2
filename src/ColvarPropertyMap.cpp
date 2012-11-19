@@ -46,12 +46,14 @@ Y=\frac{\sum_i Y_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
 zzz=-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
 \f}
 
-where the parameters \f$ X_i \f$ and \f$ Y_i \f$ are provided in the input pdb (allv.pdb in this case) and  
-\$f D_i(x) \f$ is the MSD after optimal alignment calculated on the pdb frames you input (see Kearsley).
+where the parameters \f$X_i\f$  and  \f$Y_i\f$ are provided in the input pdb (allv.pdb in this case) and  
+ \f$D_i(x)\f$  is the MSD after optimal alignment calculated on the pdb frames you input (see Kearsley).
 
 In this case the input line instructs plumed to look for two properties X and Y with attached values in the REMARK 
 line of the reference pdb (Note: No spaces from X and = and 1 !!!!).
 e.g.
+
+\verbatim
 REMARK X=1 Y=2 
 ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
 ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
@@ -62,7 +64,7 @@ ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
 ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
 ....
 END
-
+\endverbatim
 */
 //+ENDPLUMEDOC
    
