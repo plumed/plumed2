@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ColvarPathMSDBase.h"
-#include "PlumedMain.h"
 
 using namespace std;
 
@@ -51,6 +50,8 @@ recommended for perfomance)
 while PROPERTY=X,Y allows to do an "isomap" style kind of path (a-la Spiwok) 
 where property is in the form of a REMARK line (note no spaces!!!) in the REFERENCE
 e.g.
+
+\verbatim
 REMARK X=1 Y=2 
 ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
 ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
@@ -61,6 +62,7 @@ ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
 ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
 ....
 END
+\endverbatim
 
 */
 //+ENDPLUMEDOC

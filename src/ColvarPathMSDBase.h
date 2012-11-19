@@ -25,6 +25,7 @@
 
 #include <cmath>
 
+#include "PlumedMain.h"
 #include "Colvar.h"
 #include "ActionRegister.h"
 
@@ -71,7 +72,6 @@ class ColvarPathMSDBase : public Colvar {
   double lambda;
   bool pbc;
   int neigh_size;
-  unsigned propertypos; 
   double neigh_stride;
   vector<RMSD> msdv;
   string reference;

@@ -40,10 +40,10 @@ namespace PLMD{
 
 void ColvarPathMSDBase::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
-  keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing ");
+  keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
   keys.add("compulsory","REFERENCE","the pdb is needed to provide the various milestones");
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");
-  keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated");
+  keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
 }
 
 ColvarPathMSDBase::ColvarPathMSDBase(const ActionOptions&ao):
@@ -51,8 +51,7 @@ PLUMED_COLVAR_INIT(ao),
 pbc(true),
 neigh_size(-1),
 neigh_stride(-1.),
-nframes(0),
-propertypos(0)
+nframes(0)
 {
   parse("LAMBDA",lambda);
   parse("NEIGH_SIZE",neigh_size);
@@ -68,14 +67,14 @@ propertypos(0)
     while (do_read){
          PDB mypdb; 
          RMSD mymsd(log); 
-         do_read=mypdb.readFromFilepointer(fp,1.,1.);
+         do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
          if(do_read){
             nframes++;
-            log<<"Found PDB: "<<nframes<<" atoms: "<<mypdb.getAtomNumbers().size()<<"\n"; 
+            log<<"Found PDB: "<<nframes<<" containing  "<<mypdb.getAtomNumbers().size()<<" atoms\n"; 
 	    pdbv.push_back(mypdb); 
-//            requestAtoms(mypdb.getAtomNumbers()); 
-            derivs_s.resize(getNumberOfAtoms());
-            derivs_z.resize(getNumberOfAtoms());
+//            requestAtoms(mypdb.getAtomNumbers()); // is done in non base classes 
+            derivs_s.resize(mypdb.getAtomNumbers().size());
+            derivs_z.resize(mypdb.getAtomNumbers().size());
             mymsd.set(mypdb,"OPTIMAL");
             msdv.push_back(mymsd); // the vector that stores the frames
             //log<<mypdb; 
@@ -136,6 +135,7 @@ void ColvarPathMSDBase::calculate(){
   typedef  vector< class ImagePath  >::iterator imgiter;
   for(imgiter it=imgVec.begin();it!=imgVec.end();++it){ 
     (*it).similarity=exp(-lambda*((*it).distance));
+    log<<"DISTANCE "<<(*it).distance<<"\n";
     for(unsigned i=0;i<s_path.size();i++){
    	 s_path[i]+=((*it).property[i])*(*it).similarity;
     }
@@ -153,31 +153,28 @@ void ColvarPathMSDBase::calculate(){
        for(unsigned i=0;i< derivs_s.size();i++){ derivs_s[i]+=tmp*(*it).distder[i] ;} 
        if(j==0){for(unsigned i=0;i< derivs_z.size();i++){ derivs_z[i]+=(*it).distder[i]*expval/partition;}} 
     }
+    Tensor virial,virialz;
     for(unsigned i=0;i< derivs_s.size();i++){
           setAtomsDerivatives (val_s_path[j],i,derivs_s[i]); 
-          if(j==0)setAtomsDerivatives (val_z_path,i,derivs_z[i]); 
+          virial=virial+(-1.0*Tensor(getPosition(i),derivs_s[i]));
+          if(j==0){setAtomsDerivatives (val_z_path,i,derivs_z[i]);virialz=virialz+(-1.0*Tensor(getPosition(i),derivs_z[i]));} 
     }
+    setBoxDerivatives(val_s_path[j],virial);
+    if(j==0)setBoxDerivatives(val_z_path,virialz);
   }
   //
   //  here set next round neighbors
   //
   if (neigh_size>0){
 	if( int(getStep())%int(neigh_stride/getTimeStep())==0 ){
-		//log<<"CLEARING: NEXT STEP IS FULL\n ";
 		// next round do it all:empty the vector	
 		imgVec.clear();
         }
         // time to analyze the results: 
         if(imgVec.size()==nframes){
-            //for(unsigned i=0;i<nframes;i++){
-	    //    log<<"OLDERR "<<imgVec[i].distance<<"\n";
-            //}
             //sort by msd
             sort(imgVec.begin(), imgVec.end(), imgOrderByDist()); 
             //resize
-            //for(unsigned i=0;i<nframes;i++){
-	    //    log<<"NEWERR "<<imgVec[i].distance<<"\n";
-            //}
             imgVec.resize(neigh_size);
         } 
   }

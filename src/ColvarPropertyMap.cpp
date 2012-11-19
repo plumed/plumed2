@@ -25,35 +25,70 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC COLVAR ISOMAP
+//+PLUMEDOC COLVAR PROPERTYMAP 
 /*
 The implementation of this collective variable is based on the \ref PATHMSD.
 
-PUT HERE DOCUMENTATION SPECIFIC FOR THIS VARIABLE
+A typical input is
+
+\par Examples
+\verbatim
+p3: PROPERTYMAP REFERENCE=../../trajectories/path_msd/allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=0.2
+PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
+\endverbatim
+
+where it calculates the property maps according to the work of Spiwok \cite Spiwok:2011ce 
+Basically it calculates
+\f{eqnarray}
+X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
+Y=\frac{\sum_i Y_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
+\cdots\\
+zzz=-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
+\f}
+
+where the parameters \f$ X_i \f$ and \f$ Y_i \f$ are provided in the input pdb (allv.pdb in this case) and  
+\$f D_i(x) \f$ is the MSD after optimal alignment calculated on the pdb frames you input (see Kearsley).
+
+In this case the input line instructs plumed to look for two properties X and Y with attached values in the REMARK 
+line of the reference pdb (Note: No spaces from X and = and 1 !!!!).
+e.g.
+REMARK X=1 Y=2 
+ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
+ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
+.......
+END
+REMARK X=2 Y=3 
+ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
+ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
+....
+END
 
 */
 //+ENDPLUMEDOC
    
-class ColvarIsoMap : public ColvarPathMSDBase {
+class ColvarPropertyMap : public ColvarPathMSDBase {
 public:
-  ColvarIsoMap(const ActionOptions&);
+  ColvarPropertyMap(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ColvarIsoMap,"ISOMAP")
+PLUMED_REGISTER_ACTION(ColvarPropertyMap,"PROPERTYMAP")
 
-void ColvarIsoMap::registerKeywords(Keywords& keys){
+void ColvarPropertyMap::registerKeywords(Keywords& keys){
   ColvarPathMSDBase::registerKeywords(keys);
   keys.add("compulsory","PROPERTY","the property to be used in the indexing: this goes in the REMARK field of the reference");
 }
 
-ColvarIsoMap::ColvarIsoMap(const ActionOptions&ao):
+ColvarPropertyMap::ColvarPropertyMap(const ActionOptions&ao):
 Action(ao),
 ColvarPathMSDBase(ao)
 {
   // this is the only additional keyword needed 
   parseVector("PROPERTY",labels);
   checkRead();
+  log<<"  Bibliography "
+   <<plumed.cite("Spiwok V, Kralova B  J. Chem. Phys. 135,  224504 (2011)")
+   <<"\n";
   if(labels.size()==0){
 	char buf[500];
         sprintf(buf,"Need to specify PROPERTY with this action\n");

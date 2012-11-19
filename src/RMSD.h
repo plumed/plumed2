@@ -49,7 +49,7 @@ public:
 /// a copy constructor
   RMSD(const RMSD &);
 /// convenience operator
-  RMSD& operator=(const RMSD& rhs){ return *this ;};
+  RMSD& operator=(const RMSD& ){ return *this ;};
 /// the destructor needs to delete the myalignment object eventually
   ~RMSD();
 /// clear the structure

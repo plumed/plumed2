@@ -231,11 +231,11 @@ public:
 
 /// Calculate the action given a pdb file as input.  This is used to initialize
 /// things like distance from a point in CV map space given a pdb as an input file
-  void calculateFromPDB( const PDB& pdb );
+  void calculateFromPDB( const PDB&  );
 /// This is overwritten in ActionAtomistic so that we can read 
 /// the atoms from the pdb input file rather than taking them from the 
 /// MD code
-  virtual void readAtomsFromPDB( const PDB& pdb ){}
+  virtual void readAtomsFromPDB( const PDB&  ){}
 };
 
 /////////////////////
