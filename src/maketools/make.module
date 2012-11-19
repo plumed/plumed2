@@ -1,0 +1,58 @@
+#
+# This is a generic makefile which will work for any
+# subpackage which just depends on config/
+# It just compiles objects locally
+# 
+
+# include the machine dependent configuration
+-include ../../Makefile.conf
+
+# if machine dependent configuration has been found:
+ifdef GCCDEP
+
+# source for plumed kernel
+SRC=$(wildcard *.cpp)
+
+# corresponding objects:
+OBJ=$(SRC:.cpp=.o)
+
+# dependency files for all c++ sources
+DEP=$(addprefix deps/,$(SRC:.cpp=.d))
+
+# default target
+.PHONY: all
+
+all:
+	@echo Creating links to other here to simplify .h inclusion:
+	@for dir in $(USE) ; do test -L $$dir || ln -s ../$$dir . && echo "   " $$dir ;  done
+	@echo Building dependencies
+	@for dir in $(BUILDAFTER) ; do echo "   " $$dir ; cd ../$$dir ; $(MAKE) ; cd - ; done
+	$(MAKE) obj
+
+.PHONY: obj
+obj: $(OBJ)
+
+$(DEP): ../config/PlumedConfig.h ../config/Makefile.conf.xxd
+
+-include $(DEP)
+
+# if machine dependent configuration has not been found:
+else
+
+.PHONY: error
+error:
+	@echo No configuration available
+	@echo First run ./configure.sh in the root directory
+endif
+
+# this target is available anyway
+
+.PHONY: clean
+clean:
+	for file in * ; do test -L $$file && rm $$file ; done
+	rm -fr deps
+	rm -f $(CLEANLIST)
+
+# generic makefile rules
+include ../maketools/make.rules
+

@@ -1,6 +1,6 @@
 
 -include ../../Makefile.conf
--include ../../src/Plumed.inc
+-include ../../src/lib/Plumed.inc
 
 EXE=plumed plumedf plumedc \
     plumed-static plumedf-static plumedc-static \

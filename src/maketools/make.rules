@@ -1,0 +1,26 @@
+# this compiler is used for dependencies generation
+# if unset, use normal CXX
+ifndef CXXDEP
+CXXDEP=$(CXX)
+endif
+
+# rule for c++
+%.o: %.cpp
+	$(CXXDEP) -c -MM -MF$*.d $(CPPFLAGS) $(CXXFLAGS) $*.cpp
+	@cp -f $*.d $*.d.tmp
+	@-test -d deps || mkdir deps
+	@sed -e 's/.*://' -e 's/\\$$//' < $*.d.tmp | fmt -1 | \
+	 sed -e 's/^ *//' -e 's/$$/:/' >> $*.d
+	@mv $*.d deps/$*.d
+	@rm -f $*.d.tmp
+ifndef XLF
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $*.cpp -o $*.o
+endif
+
+# rule for c
+%.o: %.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $*.c -o $*.o
+
+#
+CLEANLIST=*~ *.tmp *.xxd *.o *.so *.dylib
+

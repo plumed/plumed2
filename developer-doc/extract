@@ -1,6 +1,8 @@
 #!/bin/bash
 
-cat ../src/*cpp | grep PLUMED_REGISTER_ACTION |
+sed s:@SRCDIR@:"$(echo ../src/*)": Doxyfile.in > Doxyfile
+
+cat ../src/*/*cpp | grep PLUMED_REGISTER_ACTION |
   sed '
    s/PLUMED_REGISTER_ACTION(/ /
    s/,"/ /

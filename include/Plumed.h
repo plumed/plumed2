@@ -1,1 +1,1 @@
-#include "../src/Plumed.h"
+#include "../src/wrapper/Plumed.h"

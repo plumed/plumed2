@@ -1,0 +1,18 @@
+This directory contains many subdirectories
+
+lib/ after compilation contains all plumed files which should be in the path
+maketools/ contains some tool necessary for compilation
+
+Then these directories are built and linked using special rules:
+config/  contains some files generated based on system configuration
+main/    contains the main() program for plumed executable
+wrapper/ contains the wrappers for MD codes
+
+All the other directories are "modules". Modules are of three type:
+* always compiled (necessary for plumed to properly link)
+* default on, can be switched off touching a file modulename.off in the src/ directory
+* default off, can be switched on touching a file modulename.on in the src/ directory
+Notice that these .on and .off files are not to be distributed/included in git,
+as they reflect local wishes!
+
+The type of the module can be set by adding a file module.type (see e.g. basic/module.type)

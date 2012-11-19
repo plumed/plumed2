@@ -1,7 +1,7 @@
 # This script adds a LGPL header to all the source files
 # If the header is already present, it does not touch the file
 # Please run it whenever you add a new file so as to keep copyright info there!
-for file in *.c *.cpp *.h PlumedConfig.h.in
+for file in */*.c */*.cpp */*.h */PlumedConfig.h.in
 do
 
 if [ $file == "PlumedConfig.h" ] ; then
