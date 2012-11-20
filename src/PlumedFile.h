@@ -32,6 +32,7 @@ namespace PLMD{
 class PlumedCommunicator;
 class PlumedMain;
 class Action;
+class Value;
 
 /**
 Base class for dealing with files.
@@ -228,6 +229,10 @@ public:
   PlumedOFile& printField(const std::string&,const std::string&);
 ///
   PlumedOFile& addConstantField(const std::string&);
+/// Used to setup printing of values
+  PlumedOFile& setupPrintValue( Value *val );
+/// Print a value
+  PlumedOFile& printField( Value* val, const double& v );
 /** Close a line.
 Typically used as
 \verbatim
@@ -307,6 +312,8 @@ Typically used as
   void reset(bool);
 /// Check if a field exist                                                       
   bool FieldExist(const std::string& s);
+/// Read in a value
+  PlumedIFile& scanField(Value* val);
 };
 
 /// Write using << syntax

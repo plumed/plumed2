@@ -66,7 +66,7 @@ VesselStoreAllValues(da)
    }
 
    if( getAction()->isPeriodic() ){
-      double min, max;
+      std::string min, max;
       getAction()->retrieveDomain( min, max );
       myvalue.setDomain( min, max );
       myvalue2.setDomain( min, max );
@@ -87,7 +87,8 @@ void VesselMoment::finish( const double& tolerance ){
 
   double mean=0;
   if( getAction()->isPeriodic() ){
-     double min, max, pfactor; getAction()->retrieveDomain( min, max );
+     std::string str_min, str_max; getAction()->retrieveDomain( str_min, str_max );
+     double pfactor, min, max; Tools::convert(str_min,min); Tools::convert(str_max,max);
      pfactor = 2*pi / ( max-min );
      double sinsum=0, cossum=0, val;
      for(unsigned i=0;i<nvals;++i){ val=pfactor*( getValue(i) - min ); sinsum+=sin(val); cossum+=cos(val); }

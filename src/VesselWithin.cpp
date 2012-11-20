@@ -54,8 +54,11 @@ NormedSumVessel(da)
   plumed_massert( mycolv, "within is used to calculate functions of multi colvars");
 
   bool isPeriodic=getAction()->isPeriodic();
-  double min, max;
-  if( isPeriodic ) getAction()->retrieveDomain( min, max );
+  double min, max; std::string str_min, str_max;
+  if( isPeriodic ){
+      getAction()->retrieveDomain( str_min, str_max );
+      Tools::convert(str_min,min); Tools::convert(str_max,max);
+  }
 
   std::string errormsg;
   std::vector<std::string> data=Tools::getWords(da.parameters);

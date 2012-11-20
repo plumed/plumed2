@@ -24,6 +24,7 @@
 #include "Action.h"
 #include "PlumedMain.h"
 #include "PlumedCommunicator.h"
+#include "Value.h"
 #include "Tools.h"
 #include <cstdarg>
 #include <cstring>
@@ -304,6 +305,24 @@ PlumedOFile& PlumedOFile::printField(const std::string&name,const std::string & 
   return *this;
 }
 
+PlumedOFile& PlumedOFile::setupPrintValue( Value *val ){
+  if( val->isPeriodic() ){
+      addConstantField("min_" + val->getName() );
+      addConstantField("max_" + val->getName() );
+  }
+  return *this;
+}
+
+PlumedOFile& PlumedOFile::printField( Value* val, const double& v ){
+  printField( val->getName(), v );
+  if( val->isPeriodic() ){
+      std::string min, max; val->getDomain( min, max );
+      printField( "min_" + val->getName(), min );
+      printField("max_" + val->getName(), max ); 
+  }  
+  return *this;
+}
+
 PlumedOFile& PlumedOFile::printField(){
   bool reprint=false;
   if(fieldChanged || fields.size()!=previous_fields.size()){
@@ -457,6 +476,19 @@ PlumedIFile& PlumedIFile::scanField(const std::string&name,int &x){
   scanField(name,str);
   if(*this) Tools::convert(str,x);
   return *this;
+}
+
+PlumedIFile& PlumedIFile::scanField(Value* val){
+  double ff; scanField(  val->getName(), ff );
+  val->set( ff );
+  if( FieldExist("min_" + val->getName() ) ){ 
+      std::string min, max;
+      scanField("min_" + val->getName(), min );
+      scanField("max_" + val->getName(), max );
+      val->setDomain( min, max ); 
+  } else {
+      val->setNotPeriodic();
+  }
 }
 
 PlumedIFile& PlumedIFile::scanField(){

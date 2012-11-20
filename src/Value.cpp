@@ -84,14 +84,18 @@ void Value::setNotPeriodic(){
   min=0; max=0; periodicity=notperiodic;
 }
 
-void Value::setDomain(const double& pmin,const double& pmax){
-  min=pmin; max=pmax; setupPeriodicity();
+void Value::setDomain(const std::string& pmin,const std::string& pmax){
+  str_min=pmin; 
+  if( !Tools::convert(str_min,min) ) action->error("could not convert period string " + str_min + " to real"); 
+  str_max=pmax; 
+  if( !Tools::convert(str_max,max) ) action->error("could not convert period string " + str_max + " to read");
+  setupPeriodicity();
 }
 
-void Value::getDomain(double&min,double&max) const {
+void Value::getDomain(std::string&minout,std::string&maxout) const {
   plumed_massert(periodicity==periodic,"function should be periodic");
-  min=this->min;
-  max=this->max;
+  minout=str_min;
+  maxout=str_max;
 }
 
 void Value::setGradients(){

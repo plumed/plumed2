@@ -85,7 +85,7 @@ protected:
 /// Set your default value to have no periodicity
   void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
-  void setPeriodic( const double min, const double max );
+  void setPeriodic( const std::string& min, const std::string& max );
 /// Get a pointer to the default value
   Value* getPntrToValue();
 /// Set the default value (the one without name)
@@ -100,7 +100,7 @@ protected:
 /// Set your value component to have no periodicity
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
-  void componentIsPeriodic( const std::string& name, const double min, const double max );
+  void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);
 /// Return a pointer to the value by name

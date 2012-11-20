@@ -105,7 +105,7 @@ public:
 /// Are the base quantities periodic
   virtual bool isPeriodic()=0;
 /// What are the domains of the base quantities
-  virtual void retrieveDomain( double& min, double& max);
+  virtual void retrieveDomain( std::string& min, std::string& max);
 /// Retrieve the previously calculated value and derivatives
   virtual const Value & retreiveLastCalculatedValue()=0;
 /// Get the number of functions from which we are calculating the distribtuion

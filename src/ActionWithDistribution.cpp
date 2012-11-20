@@ -201,6 +201,6 @@ void ActionWithDistribution::calculateAllVessels( const int& stepn ){
   } 
 }
 
-void ActionWithDistribution::retrieveDomain( double& min, double& max ){
+void ActionWithDistribution::retrieveDomain( std::string& min, std::string& max ){
   plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithDistribution can retrieve the domain");
 }

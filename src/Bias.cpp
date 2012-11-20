@@ -42,7 +42,6 @@ void Bias::registerKeywords( Keywords& keys ){
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
 }
 
-
 void Bias::apply(){
   if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){
     getPntrToArgument(i)->addForce(getStride()*outputForces[i]);

@@ -154,17 +154,17 @@ verse(getNumberOfArguments())
     log.printf("\n");
   };
 
-  addComponent("bias");
-  addComponent("force2");
+  addComponent("bias"); componentIsNotPeriodic("bias");
+  addComponent("force2"); componentIsNotPeriodic("force2");
 
   // add the centers of the restraint as additional components that can be retrieved (useful for debug)
 
   std::string comp;
   for(int i=0;i< getNumberOfArguments() ;i++){
 	comp=getPntrToArgument(i)->getName()+"_cntr"; // each spring has its own center 
-        addComponent(comp);
+        addComponent(comp); componentIsNotPeriodic(comp);
 	comp=getPntrToArgument(i)->getName()+"_work"; // each spring has its own work
-        addComponent(comp);
+        addComponent(comp); componentIsNotPeriodic(comp);
         work.push_back(0.); // initialize the work value 
   }
 

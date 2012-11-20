@@ -76,6 +76,7 @@ private:
 /// Is this quantity periodic
   enum {unset,periodic,notperiodic} periodicity;
 /// Various quantities that describe the domain of this value
+  std::string str_min, str_max;
   double min,max;
   double max_minus_min;
   double inv_max_minus_min;
@@ -99,9 +100,9 @@ public:
 /// Set the function not periodic
   void setNotPeriodic();
 /// Set the domain of the function
-  void setDomain(const double&, const double&); 
+  void setDomain(const std::string&, const std::string&); 
 /// Get the domain of the quantity
-  void getDomain(double&,double&) const;
+  void getDomain(std::string&,std::string&) const;
 /// Get the name of the quantity
   const std::string& getName() const;
 /// Check whether or not this particular quantity has derivatives

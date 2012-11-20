@@ -94,11 +94,10 @@ void ActionWithValue::setNotPeriodic(){
   values[0]->setupPeriodicity();
 }
 
-void ActionWithValue::setPeriodic( const double min, const double max ){
+void ActionWithValue::setPeriodic( const std::string& min, const std::string& max ){
   plumed_massert(values.size()==1,"The number of components is not equal to one");
   plumed_massert(values[0]->name==getLabel(), "The value you are trying to set is not the default");
-  values[0]->min=min; values[0]->max=max;
-  values[0]->setupPeriodicity();
+  values[0]->setDomain( min, max );
 }
 
 Value* ActionWithValue::getPntrToValue(){
@@ -163,10 +162,9 @@ void ActionWithValue::setGradientsIfNeeded(){
   }
 }
 
-void ActionWithValue::componentIsPeriodic( const std::string& name, const double min, const double max ){
+void ActionWithValue::componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max ){
   int kk=getComponent(name);
-  values[kk]->min=min; values[kk]->max=max;
-  values[kk]->setupPeriodicity();
+  values[kk]->setDomain(min,max);
 }
 
 Value* ActionWithValue::getPntrToComponent( const std::string& name ){

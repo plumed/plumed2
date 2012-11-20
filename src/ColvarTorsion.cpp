@@ -123,7 +123,7 @@ do_cosine(false)
   if(do_cosine) log.printf("  calculating cosine instead of torsion\n");
 
   addValueWithDerivatives();
-  if(!do_cosine) setPeriodic(-pi,pi);
+  if(!do_cosine) setPeriodic("-pi","pi");
   else setNotPeriodic();
   requestAtoms(atoms);
 }

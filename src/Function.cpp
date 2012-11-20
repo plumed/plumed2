@@ -44,12 +44,12 @@ void Function::addValueWithDerivatives(){
   getPntrToValue()->resizeDerivatives(getNumberOfArguments());
 
   if( keywords.exists("PERIODIC") ){
-     double min(0),max(0); std::vector<std::string> period;  
+     std::vector<std::string> period;  
      parseVector("PERIODIC",period);  
      if(period.size()==1 && period[0]=="NO"){
         setNotPeriodic();
-     } else if(period.size()==2 && Tools::convert(period[0],min) && Tools::convert(period[1],max)){
-        setPeriodic(min,max);
+     } else if(period.size()==2){
+        setPeriodic(period[0],period[1]);
      } else error("missing PERIODIC keyword");
   }
 } 

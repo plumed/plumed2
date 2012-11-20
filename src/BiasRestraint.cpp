@@ -102,8 +102,8 @@ slope(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<slope.size();i++) log.printf(" %f",slope[i]);
   log.printf("\n");
 
-  addComponent("bias");
-  addComponent("force2");
+  addComponent("bias"); componentIsNotPeriodic("bias");
+  addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
 

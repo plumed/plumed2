@@ -309,7 +309,7 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
    log.printf("  directory with hills files %s\n",mw_dir_.c_str());
   }
 
-  addComponent("bias");
+  addComponent("bias"); componentIsNotPeriodic("bias");
 
 // for performance
   dp_ = new double[getNumberOfArguments()];
@@ -321,10 +321,10 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
     pbc.push_back(getPntrToArgument(i)->isPeriodic());
 // if periodic, use CV domain for grid boundaries
     if(pbc[i]){
-     double dmin,dmax;
+     std::string dmin,dmax;
      getPntrToArgument(i)->getDomain(dmin,dmax);
-     gmin[i]=dmin;
-     gmax[i]=dmax;
+     Tools::convert(dmin,gmin[i]);
+     Tools::convert(dmax,gmax[i]);
     }
    }
    if(!sparsegrid){BiasGrid_=new Grid(gmin,gmax,gbin,pbc,spline,true);}
@@ -364,6 +364,8 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   hillsOfile_.open(ifilesnames[mw_id_],"aw");
   hillsOfile_.addConstantField("multivariate");
   hillsOfile_.setHeavyFlush();
+// output periodicities of variables
+  for(unsigned i=0;i<getNumberOfArguments();++i) hillsOfile_.setupPrintValue( getPntrToArgument(i) );
 
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
@@ -380,10 +382,26 @@ void BiasMetaD::readGaussians(PlumedIFile *ifile)
  vector<double> center(ncv);
  vector<double> sigma(ncv);
  double height;
- int nhills=0;
+ int nhills=0; 
+
+ std::vector<Value> tmpvalues;
+ for(unsigned j=0;j<getNumberOfArguments();++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) ); 
+
  while(ifile->scanField("time",dummy)){
-  for(unsigned i=0;i<ncv;++i)
-    ifile->scanField(getPntrToArgument(i)->getName(),center[i]);
+  for(unsigned i=0;i<ncv;++i){
+//    ifile->scanField(getPntrToArgument(i)->getName(),center[i]);
+    ifile->scanField( &tmpvalues[i] );
+    if( tmpvalues[i].isPeriodic() && !getPntrToArgument(i)->isPeriodic() ){
+       error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
+    } else if( tmpvalues[i].isPeriodic() ){
+       std::string imin, imax; tmpvalues[i].getDomain( imin, imax );
+       std::string rmin, rmax; getPntrToArgument(i)->getDomain( rmin, rmax );
+       if( imin!=rmin || imax!=rmax ){
+         error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
+       }
+    }
+    center[i]=tmpvalues[i].get();
+  }
   // scan for multivariate label: record the actual file position so to eventually rewind 
     std::string sss;
     ifile->scanField("multivariate",sss);
@@ -433,7 +451,7 @@ void BiasMetaD::writeGaussian(const Gaussian& hill, PlumedOFile&file){
   unsigned ncv=getNumberOfArguments();
   file.printField("time",getTimeStep()*getStep());
   for(unsigned i=0;i<ncv;++i){
-    file.printField(getPntrToArgument(i)->getName(),hill.center[i]);
+    file.printField(getPntrToArgument(i),hill.center[i]);
   }
   if(hill.multivariate){
     hillsOfile_.printField("multivariate","true");

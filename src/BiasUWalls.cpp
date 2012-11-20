@@ -115,8 +115,8 @@ offset(getNumberOfArguments(),0.0)
   for(unsigned i=0;i<eps.size();i++) log.printf(" %f",eps[i]);
   log.printf("\n");
 
-  addComponent("bias");
-  addComponent("force2");
+  addComponent("bias"); componentIsNotPeriodic("bias");
+  addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
 void BiasUWalls::calculate(){

@@ -56,14 +56,28 @@ bool Tools::convert(const string & str,AtomNumber &a){
 }
 
 bool Tools::convert(const string & str,double & t){
-        if(str=="PI" || str=="+PI"){
+        if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi"){
           t=pi; return true;
-        }else if(str=="2PI" || str=="+2PI"){
-          t=2*pi; return true;
-        }else if(str=="-PI"){
-          t=-pi; return true;
-        }else if(str=="-2PI"){
-          t=-2*pi; return true;
+        } else if(str=="-PI" || str=="-pi"){
+           t=-pi; return true;
+        } else if( str.find("PI")!=std::string::npos ){
+           std::size_t pi_start=str.find_first_of("PI");
+           if(str.substr(pi_start)!="PI") return false;
+           istringstream nstr(str.substr(0,pi_start)); 
+           double ff; bool ok=nstr>>ff;
+           if(!ok) return false; 
+           t=ff*pi;
+           std::string remains; nstr>>remains;
+           return remains.length()==0;
+        } else if( str.find("pi")!=std::string::npos ){
+           std::size_t pi_start=str.find_first_of("pi");
+           if(str.substr(pi_start)!="pi") return false;
+           istringstream nstr(str.substr(0,pi_start));
+           double ff; bool ok=nstr>>ff;
+           if(!ok) return false;
+           t=ff*pi;
+           std::string remains; nstr>>remains;
+           return remains.length()==0;
         }
         istringstream istr(str.c_str());
         bool ok=istr>>t;

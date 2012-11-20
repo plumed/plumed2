@@ -125,10 +125,10 @@ random(getNumberOfArguments())
   for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
 
-  for(unsigned i=0;i<getNumberOfArguments();i++) {char str_min[6]; sprintf(str_min,"min_%u",i+1); addComponent(str_min);}
+  for(unsigned i=0;i<getNumberOfArguments();i++) {char str_min[6]; sprintf(str_min,"min_%u",i+1); addComponent(str_min); componentIsNotPeriodic(str_min);}
   for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(-seed[i]);}
-  addComponent("bias");
-  addComponent("force2");
+  addComponent("bias"); componentIsNotPeriodic("bias");
+  addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
 

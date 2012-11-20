@@ -73,7 +73,7 @@ PLUMED_BIAS_INIT(ao)
 	//log<<getPntrToArgument(i)->getName()<<"\n";
         string ss;
         ss="bias."+getPntrToArgument(i)->getName();
-	addComponent(ss);
+	addComponent(ss); componentIsNotPeriodic(ss);
   }
 }
 

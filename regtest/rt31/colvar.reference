@@ -1,4 +1,8 @@
 #! FIELDS time t1 t2
+#! SET min_t1 -pi
+#! SET max_t1 pi
+#! SET min_t2 -pi
+#! SET max_t2 pi
  0.000000  -3.0750  -3.1082
  0.050000  -3.0833  -3.0250
  0.100000  -3.0682  -2.8407

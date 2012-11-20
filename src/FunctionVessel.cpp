@@ -63,7 +63,7 @@ VesselAccumulator(da),
 donorm(false)
 {
   if( getAction()->isPeriodic() ){
-      double min, max;
+      std::string min, max;
       getAction()->retrieveDomain( min, max );
       myvalue2.setDomain( min, max );
   } else {

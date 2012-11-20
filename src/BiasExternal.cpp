@@ -91,7 +91,7 @@ BiasGrid_(NULL)
   if(spline){log.printf("  External potential uses spline interpolation\n");}
   if(sparsegrid){log.printf("  External potential uses sparse grid\n");}
   
-  addComponent("bias");
+  addComponent("bias"); componentIsNotPeriodic("bias");
 
 // read grid
   FILE* gridfile=fopen(filename.c_str(),"r");  
