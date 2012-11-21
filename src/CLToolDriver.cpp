@@ -44,9 +44,21 @@ The input to driver is specified using the command line arguments described belo
 \par Examples
 
 The following command tells plumed to postprocess the trajectory contained in trajectory.xyz
- by calcualting the actions described in the input file plumed.dat.
+ by performing the actions described in the input file plumed.dat.  Actions that take the
+stride keyword will be run for every frame in the trajectory.  The specific values of the 
+STRIDE parameters in the input for PRINT,METAD,HISTOGRAM,etc will be ignored.
 \verbatim
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz
+\endverbatim
+
+The following command tells plumed to postprocess the trajectory contained in trajectory.xyz.
+ by performing the actions described in the input file plumed.dat. Here though
+--trajectory-stride is set equal to the frequency with which frames were output during the trajectory
+and the --timestep is equal to the simulation timestep.  As such the STRIDE parameters in the plumed.dat
+files are no longer ignored and any files output resemble those that would have been generated
+had we run the calculation we are running with driver when the MD simulation was running.
+\verbatim
+plumed driver --plumed plumed.dat --ixyz trajectory.xyz --trajectory-stride 100 --timestep 0.001
 \endverbatim
 
 */
@@ -66,8 +78,8 @@ void CLToolDriver<real>::registerKeywords( Keywords& keys ){
   CLTool::registerKeywords( keys );
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
-  keys.add("compulsory","--timestep","0.001","the timestep for the trajectory in picoseconds");
-  keys.add("compulsory","--stride","1","stride between frames on which to do the calculation");
+  keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
+  keys.add("compulsory","--stride","1","the frequency with which frames were output to this trajectory during the simulation");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
