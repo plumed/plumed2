@@ -163,15 +163,18 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +    if(!redo) for(int i=0;i<n;i++) if(index[i]!=p[i]) { redo=true; break;};
 +    if(redo){
 +      index.resize(n);
++      masses.resize(n);
 +      modifyRequestedAtoms().resize(0);
 +      for(int i=0;i<n;i++){
 +        requestAtom(p[i]);
++        masses[i]=getMass(p[i]);  
 +        index[i]=p[i];
 +      };
 +      positions.resize(3*n);
 +      forces.resize(3*n);
 +      charges.resize(n);
-+      masses.resize(n);
++      
++      cmd("setMasses",&masses[0]);
 +      cmd("setAtomsNlocal",&n);
 +      cmd("setAtomsGatindex",&index[0]);
 +    }
