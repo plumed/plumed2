@@ -1,4 +1,3 @@
-#include <iostream>
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    Copyright (c) 2012 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
@@ -20,6 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include <iostream>
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "PlumedException.h"
