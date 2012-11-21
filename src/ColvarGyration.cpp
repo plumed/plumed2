@@ -41,6 +41,7 @@ the Largest Principal Moment of the Gyration Tensor (GTPC_1); the middle Princip
 the Smallest Principal Moment of the Gyration Tensor (GTPC_3); the Asphericiry (ASPHERICITY); the Acylindricity (ACYLINDRICITY);
 the Relative Shape Anisotropy (KAPPA2); the Smallest Principal Radius Of Gyration (GYRATION_3); 
 the Middle Principal Radius of Gyration (GYRATION_2); the Largest Principal Radius of Gyration (GYRATION_1).
+A derivation of all these different variants can be found in \cite Vymetal:2011gv
 
 The radius of gyration is calculated using:
 
