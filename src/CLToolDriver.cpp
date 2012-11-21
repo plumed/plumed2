@@ -79,7 +79,7 @@ void CLToolDriver<real>::registerKeywords( Keywords& keys ){
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
-  keys.add("compulsory","--stride","1","the frequency with which frames were output to this trajectory during the simulation");
+  keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
@@ -165,7 +165,7 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   double t; parse("--timestep",t);
   real timestep=real(t);
 // the stride
-  unsigned stride; parse("--stride",stride);
+  unsigned stride; parse("--trajectory-stride",stride);
 // are we writing forces
   string dumpforces(""), dumpforcesFmt("%f");; 
   parse("--dump-forces",dumpforces);
