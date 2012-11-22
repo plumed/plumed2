@@ -44,9 +44,9 @@ The input to driver is specified using the command line arguments described belo
 \par Examples
 
 The following command tells plumed to postprocess the trajectory contained in trajectory.xyz
- by performing the actions described in the input file plumed.dat.  Actions that take the
-stride keyword will be run for every frame in the trajectory.  The specific values of the 
-STRIDE parameters in the input for PRINT,METAD,HISTOGRAM,etc will be ignored.
+ by performing the actions described in the input file plumed.dat.  If an action that takes the
+stride keyword is given a stride equal to \f$n\f$ then it will be performed only on every \f$n\f$th
+frame in the trajectory file.
 \verbatim
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz
 \endverbatim
