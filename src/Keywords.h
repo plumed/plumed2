@@ -51,6 +51,7 @@ class Keywords{
       else if(style==flag) return "flag";
       else if(style==hidden) return "hidden";
       else plumed_assert(0);
+      return "";
     }
   };
 friend class Action;

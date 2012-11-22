@@ -39,7 +39,7 @@ bold(0)
   for(unsigned i=0;i<totalp;++i){
      ii=i;
      for(unsigned j=0;j<np.size();++j){
-        kk=std::floor( ii / stride[j] );
+        kk=std::floor( double(ii) / double(stride[j]) );
         ii-=kk*stride[j];
         splinepoints(i,j)=fmin[j] + kk*delr[j];
      }
@@ -62,13 +62,13 @@ unsigned CInterpolation::findBox( const std::vector<double>& pos ){
 
   unsigned jold, ccf_box, bnew=0;
   for(unsigned i=0;i<np.size();++i){
-     jold=static_cast<int>( std::floor( bold/stride[i] ) );
+     jold=static_cast<int>( std::floor( double(bold)/double(stride[i]) ) );
      bold-=jold*stride[i];
      ccf_box=search1( i, pos[i], jold );
      bnew+=ccf_box; 
   }
   plumed_assert( bold==0 ); bold=bnew;
-  unsigned mm=std::floor(bnew/stride[0]);
+  unsigned mm=std::floor(double(bnew)/double(stride[0]));
   for(unsigned i=0;i<np.size();++i){ lb[i]=splinepoints(bold,i); ub[i]=splinepoints(bold+stride[i],i); }
   return bold;
 }

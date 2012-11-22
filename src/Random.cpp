@@ -31,6 +31,7 @@ const double Random::fact=5.9604644775390625e-8;     /* 1 / 2^24  */
 const double Random::EPS=3.0e-16;
 const double Random::AM=1.0/IM;
 const double Random::RNMX=(1.0-EPS); // 1.0-EPS;
+const std::string Random::noname="noname";
 
 Random::Random(const std::string & name):
   switchGaussian(false),

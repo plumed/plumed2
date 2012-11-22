@@ -108,7 +108,7 @@ public:
 };
 
 // With GNU compiler, we can use __PRETTY_FUNCTION__ to get the function name
-#if !defined(__GNUG__)
+#if !defined(__PRETTY_FUNCTION__)
 #define __PRETTY_FUNCTION__ ""
 #endif
 

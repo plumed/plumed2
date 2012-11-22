@@ -35,6 +35,7 @@ class Random{
 	static const double AM;
 	static const double RNMX;
 	static const double fact;
+        static const std::string noname;
 	bool incPrec;
         bool switchGaussian;
         double saveGaussian;
@@ -43,7 +44,7 @@ class Random{
 	int idum;
 	std::string name;
 public:
-	Random(const std::string & name="");
+	Random(const std::string & name=noname);
 	void setSeed(int idum);
 	double RandU01();
 	double U01();
