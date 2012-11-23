@@ -129,6 +129,10 @@ private:
   std::set<PlumedFileBase*> files;
   typedef std::set<PlumedFileBase*>::iterator files_iterator;
 
+/// Stuff to make plumed stop the MD code cleanly
+  int* stopFlag;
+  bool stopNow;
+
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
@@ -237,6 +241,8 @@ public:
   void fflush();
 /// Check if restarting
   bool getRestart()const;
+/// Stop the calculation cleanly (both the MD code and plumed)
+  void stop();
 };
 
 /////

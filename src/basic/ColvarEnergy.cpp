@@ -22,6 +22,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "PlumedMain.h"
+#include "Atoms.h"
 
 #include <string>
 #include <cmath>
@@ -53,6 +54,7 @@ class ColvarEnergy : public Colvar {
 public:
   ColvarEnergy(const ActionOptions&);
 // active methods:
+  void prepare();
   virtual void calculate();
   static void registerKeywords( Keywords& keys );
 };
@@ -80,6 +82,9 @@ void ColvarEnergy::registerKeywords( Keywords& keys ){
   keys.remove("NUMERICAL_DERIVATIVES"); 
 }
 
+void ColvarEnergy::prepare(){
+  plumed.getAtoms().setCollectEnergy(true);
+}
 
 // calculator
 void ColvarEnergy::calculate(){
