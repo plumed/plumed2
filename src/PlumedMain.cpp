@@ -29,7 +29,6 @@
 #include "Atoms.h"
 #include <set>
 #include "PlumedConfig.h"
-#include "Colvar.h"
 #include <cstdlib>
 #include "ActionRegister.h"
 #include "GREX.h"
@@ -455,16 +454,11 @@ void PlumedMain::prepareDependencies(){
   };
 
 // also, if one of them is the total energy, tell to atoms that energy should be collected
-  bool collectEnergy=false;
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
     if((*p)->isActive()){
-      if(Colvar *c=dynamic_cast<Colvar*>(*p)) {
-        if(c->checkIsEnergy()) collectEnergy=true;
-      }
       if((*p)->checkNeedsGradients()) (*p)->setOption("GRADIENTS");
     }
   }
-  atoms.setCollectEnergy(collectEnergy);
 
   stopwatch.stop("1 Prepare dependencies");
 
