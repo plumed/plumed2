@@ -80,6 +80,7 @@ void CLToolDriver<real>::registerKeywords( Keywords& keys ){
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
   keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation");
+  keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
@@ -124,6 +125,9 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
       );
       return 0;
   }
+  // Are we reading trajectory data
+  bool noatoms; parseFlag("--noatoms",noatoms);
+
   std::string fakein; 
   bool debugfloat=parse("--debug-float",fakein);
   if(debugfloat && sizeof(real)!=sizeof(float)){
@@ -136,12 +140,14 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 
   bool debug_pd=parse("--debug-pd",fakein);
   bool debug_dd=parse("--debug-dd",fakein);
+  if( debug_pd || debug_dd ) plumed_massert(!noatoms,"cannot debug without atoms");
   int multi=1;
   FILE*multi_log=NULL;
   bool debug_grex=parse("--debug-grex",fakein);
   PlumedCommunicator intracomm;
   PlumedCommunicator intercomm;
   if(debug_grex){
+    plumed_massert( !noatoms, "must have atoms to debug_grex");
     Tools::convert(fakein,multi);
     int ntot=pc.Get_size();
     int nintra=ntot/multi;
@@ -168,58 +174,68 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   unsigned stride; parse("--trajectory-stride",stride);
 // are we writing forces
   string dumpforces(""), dumpforcesFmt("%f");; 
-  parse("--dump-forces",dumpforces);
+  if(!noatoms) parse("--dump-forces",dumpforces);
   if(dumpforces!="") parse("--dump-forces-fmt",dumpforcesFmt);
 
 // Read in an xyz file
-  string trajectoryFile("");
-  std::string traj_xyz; parse("--ixyz",traj_xyz);
-  if(traj_xyz.length()>0 && trajectoryFile.length()==0) trajectoryFile=traj_xyz;
-  if(trajectoryFile.length()==0){
-    fprintf(out,"ERROR: missing trajectory data\n"); 
-    return 0;
-  }
-  string lengthUnits(""); parse("--length-units",lengthUnits);
-  if(lengthUnits.length()>0) units.setLength(lengthUnits);
-
-  string pdbfile; parse("--pdb",pdbfile);
-  if(pdbfile.length()>0){
-    bool check=pdb.read(pdbfile,false,1.0);
-    plumed_massert(check,"error reading pdb file");
-  }
-
-  string pbc_cli_list; parse("--box",pbc_cli_list);
-  bool pbc_cli_given=false;
-  vector<double> pbc_cli_box(9,0.0);
-  if(pbc_cli_list.length()>0) {
-    pbc_cli_given=true;
-    vector<string> words=Tools::getWords(pbc_cli_list,",");
-    if(words.size()==3){
-      for(int i=0;i<3;i++) sscanf(words[i].c_str(),"%lf",&(pbc_cli_box[4*i]));
-    } else if(words.size()==9) {
-      for(int i=0;i<9;i++) sscanf(words[i].c_str(),"%lf",&(pbc_cli_box[i]));
-    } else {
-      string msg="ERROR: cannot parse command-line box "+pbc_cli_list;
-      fprintf(stderr,"%s\n",msg.c_str());
-      return 1;
-    }
-
-  }
+  string trajectoryFile(""), pdbfile("");
+  bool pbc_cli_given=false; vector<double> pbc_cli_box(9,0.0);
+  if(!noatoms){
+     std::string traj_xyz; parse("--ixyz",traj_xyz);
+     if(traj_xyz.length()>0 && trajectoryFile.length()==0) trajectoryFile=traj_xyz;
+     if(trajectoryFile.length()==0){
+       fprintf(stderr,"ERROR: missing trajectory data\n"); 
+       return 1;
+     }
+     string lengthUnits(""); parse("--length-units",lengthUnits);
+     if(lengthUnits.length()>0) units.setLength(lengthUnits);
   
+     parse("--pdb",pdbfile);
+     if(pdbfile.length()>0){
+       bool check=pdb.read(pdbfile,false,1.0);
+       plumed_massert(check,"error reading pdb file");
+     }
+
+     string pbc_cli_list; parse("--box",pbc_cli_list);
+     if(pbc_cli_list.length()>0) {
+       pbc_cli_given=true;
+       vector<string> words=Tools::getWords(pbc_cli_list,",");
+       if(words.size()==3){
+         for(int i=0;i<3;i++) sscanf(words[i].c_str(),"%lf",&(pbc_cli_box[4*i]));
+       } else if(words.size()==9) {
+         for(int i=0;i<9;i++) sscanf(words[i].c_str(),"%lf",&(pbc_cli_box[i]));
+       } else {
+         string msg="ERROR: cannot parse command-line box "+pbc_cli_list;
+         fprintf(stderr,"%s\n",msg.c_str());
+         return 1;
+       }
+
+     }
+  }
+
   plumed_massert(!(debug_dd&debug_pd),"cannot use debug-dd and debug-pd at the same time");
   if(debug_pd || debug_dd) plumed_massert(PlumedCommunicator::initialized(),"needs mpi for debug-pd");
-
-  if(trajectoryFile.length()==0){
-    string msg="ERROR: please specify a trajectory";
-    fprintf(stderr,"%s\n",msg.c_str());
-    return 1;
-  }
 
   Plumed p;
   int rr=sizeof(real);
   p.cmd("setRealPrecision",&rr);
-  int checknatoms=0;
+  int checknatoms=-1;
+  int plumedStopCondition=0;
+  p.cmd("setStopFlag",&plumedStopCondition);
   int step=0;
+  if(PlumedCommunicator::initialized()){
+    if(multi>1){
+      if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
+      p.cmd("GREX setMPIIntracomm",&intracomm.Get_comm());
+      p.cmd("GREX init");
+    } 
+    p.cmd("setMPIComm",&intracomm.Get_comm());
+  } 
+  p.cmd("setMDLengthUnits",&units.getLength());
+  p.cmd("setMDEngine","driver");
+  p.cmd("setTimestep",&timestep);
+  p.cmd("setPlumedDat",plumedFile.c_str());
+  p.cmd("setLog",out);
 
   if(debug_grex){
     string n;
@@ -227,29 +243,29 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
     trajectoryFile+="."+n;
   }
 
-  FILE* fp;
-  if (trajectoryFile=="-") 
-    fp=in;
-  else {
-    fp=fopen(trajectoryFile.c_str(),"r");
-    if(!fp){
-      string msg="ERROR: Error opening XYZ file "+trajectoryFile;
-      fprintf(stderr,"%s\n",msg.c_str());
-      return 1;
-    }
-  }
-    
+  FILE* fp=NULL; FILE* fp_forces=NULL;
+  if(!noatoms){
+     if (trajectoryFile=="-") 
+       fp=in;
+     else {
+       fp=fopen(trajectoryFile.c_str(),"r");
+       if(!fp){
+         string msg="ERROR: Error opening XYZ file "+trajectoryFile;
+         fprintf(stderr,"%s\n",msg.c_str());
+         return 1;
+       }
+     }
 
-  FILE* fp_forces=NULL;
-  if(dumpforces.length()>0){
-    if(PlumedCommunicator::initialized() && pc.Get_size()>1){
-      string n;
-      Tools::convert(pc.Get_rank(),n);
-      dumpforces+="."+n;
-    }
-    fp_forces=fopen(dumpforces.c_str(),"w");
+     if(dumpforces.length()>0){
+       if(PlumedCommunicator::initialized() && pc.Get_size()>1){
+         string n;
+         Tools::convert(pc.Get_rank(),n);
+         dumpforces+="."+n;
+       }
+       fp_forces=fopen(dumpforces.c_str(),"w");
+     }
   }
-  
+
   std::string line;
   std::vector<real> coordinates;
   std::vector<real> forces;
@@ -272,29 +288,16 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 // random stream to choose decompositions
   Random rnd;
 
-  while(Tools::getline(fp,line)){
+  while(true){
+    if(!noatoms){
+       if(!Tools::getline(fp,line)) break;
+    } else if ( plumedStopCondition ) break;
 
     int natoms;
     bool ok;
     bool first_step=false;
-    sscanf(line.c_str(),"%d",&natoms);
-    if(checknatoms==0){
-      checknatoms=natoms;
-      if(PlumedCommunicator::initialized()){
-        if(multi>1){
-          if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
-          p.cmd("GREX setMPIIntracomm",&intracomm.Get_comm());
-          p.cmd("GREX init");
-        }
-        p.cmd("setMPIComm",&intracomm.Get_comm());
-      }
-      p.cmd("setMDLengthUnits",&units.getLength());
-      p.cmd("setNatoms",&natoms);
-      p.cmd("setMDEngine","driver");
-      p.cmd("setTimestep",&timestep);
-      p.cmd("setPlumedDat",plumedFile.c_str());
-      p.cmd("setLog",out);
-      p.cmd("init");
+    if(!noatoms) sscanf(line.c_str(),"%d",&natoms);
+    if(checknatoms<0 && !noatoms){
       pd_nlocal=natoms;
       pd_start=0;
       first_step=true;
@@ -309,7 +312,13 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
           charges[index]=pdb.getBeta()[i];
         }
       }
-
+    } else if( checknatoms<0 && noatoms ){ 
+      natoms=0; 
+    }
+    if( checknatoms<0 ){
+      checknatoms=natoms;
+      p.cmd("setNatoms",&natoms);
+      p.cmd("init");
     }
     plumed_massert(checknatoms==natoms,"number of atom changed");
 
@@ -371,61 +380,63 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
       }
     }
 
-    ok=Tools::getline(fp,line);
-    plumed_massert(ok,"premature end of file");
+    if(!noatoms){
+       ok=Tools::getline(fp,line);
+       plumed_massert(ok,"premature end of file");
 
-    std::vector<double> celld(9,0.0);
-    if(pbc_cli_given==false) {
-      std::vector<std::string> words;
-      words=Tools::getWords(line);
-      if(words.size()==3){
-	sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[4],&celld[8]);
-      } else if(words.size()==9){
-	sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
-	       &celld[0], &celld[1], &celld[2],
-	       &celld[3], &celld[4], &celld[5],
-	       &celld[6], &celld[7], &celld[8]);
-      } else plumed_merror("needed box in second line");
-    } else {			// from command line
-      celld=pbc_cli_box;
-    }
-    for(unsigned i=0;i<9;i++)cell[i]=real(celld[i]);
+       std::vector<double> celld(9,0.0);
+       if(pbc_cli_given==false) {
+         std::vector<std::string> words;
+         words=Tools::getWords(line);
+         if(words.size()==3){
+           sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[4],&celld[8]);
+         } else if(words.size()==9){
+           sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+                  &celld[0], &celld[1], &celld[2],
+                  &celld[3], &celld[4], &celld[5],
+                  &celld[6], &celld[7], &celld[8]);
+         } else plumed_merror("needed box in second line");
+       } else {			// from command line
+         celld=pbc_cli_box;
+       }
+       for(unsigned i=0;i<9;i++)cell[i]=real(celld[i]);
 
-    // Read coordinates
-    for(int i=0;i<natoms;i++){
-      ok=Tools::getline(fp,line);
-      plumed_massert(ok,"premature end of file");
-      char dummy[1000];
-      double cc[3];
-      std::sscanf(line.c_str(),"%s %lf %lf %lf",dummy,&cc[0],&cc[1],&cc[2]);
-      if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ){
-        coordinates[3*i]=real(cc[0]);
-        coordinates[3*i+1]=real(cc[1]);
-        coordinates[3*i+2]=real(cc[2]);
-      }
-      if(debug_dd){
-        for(int i=0;i<dd_nlocal;++i){
-          int kk=dd_gatindex[i];
-          dd_coordinates[3*i+0]=coordinates[3*kk+0];
-          dd_coordinates[3*i+1]=coordinates[3*kk+1];
-          dd_coordinates[3*i+2]=coordinates[3*kk+2];
-        }
-      }
-    }
+       // Read coordinates
+       for(int i=0;i<natoms;i++){
+         ok=Tools::getline(fp,line);
+         plumed_massert(ok,"premature end of file");
+         char dummy[1000];
+         double cc[3];
+         std::sscanf(line.c_str(),"%s %lf %lf %lf",dummy,&cc[0],&cc[1],&cc[2]);
+         if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ){
+           coordinates[3*i]=real(cc[0]);
+           coordinates[3*i+1]=real(cc[1]);
+           coordinates[3*i+2]=real(cc[2]);
+         }
+         if(debug_dd){
+           for(int i=0;i<dd_nlocal;++i){
+             int kk=dd_gatindex[i];
+             dd_coordinates[3*i+0]=coordinates[3*kk+0];
+             dd_coordinates[3*i+1]=coordinates[3*kk+1];
+             dd_coordinates[3*i+2]=coordinates[3*kk+2];
+           }
+         }
+       }
 
-   if(debug_dd){
-     p.cmd("setForces",&dd_forces[0]);
-     p.cmd("setPositions",&dd_coordinates[0]);
-     p.cmd("setMasses",&dd_masses[0]);
-     p.cmd("setCharges",&dd_charges[0]);
-   } else {
-     p.cmd("setForces",&forces[3*pd_start]);
-     p.cmd("setPositions",&coordinates[3*pd_start]);
-     p.cmd("setMasses",&masses[pd_start]);
-     p.cmd("setCharges",&charges[pd_start]);
+       if(debug_dd){
+         p.cmd("setForces",&dd_forces[0]);
+         p.cmd("setPositions",&dd_coordinates[0]);
+         p.cmd("setMasses",&dd_masses[0]);
+         p.cmd("setCharges",&dd_charges[0]);
+       } else {
+         p.cmd("setForces",&forces[3*pd_start]);
+         p.cmd("setPositions",&coordinates[3*pd_start]);
+         p.cmd("setMasses",&masses[pd_start]);
+         p.cmd("setCharges",&charges[pd_start]);
+       }
+       p.cmd("setBox",&cell[0]);
+       p.cmd("setVirial",&virial[0]);
    }
-   p.cmd("setBox",&cell[0]);
-   p.cmd("setVirial",&virial[0]);
    p.cmd("setStep",&step);
    p.cmd("calc");
 

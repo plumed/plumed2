@@ -48,6 +48,7 @@ lockRequestAtoms(false),
 atoms(plumed.getAtoms())
 {
   atoms.add(this);
+  if(atoms.getNatoms()==0) error("Cannot perform calculations involving atoms without atoms");
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ){
