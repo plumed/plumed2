@@ -26,7 +26,7 @@
 #include "tools/PlumedFile.h"
 #include "PlumedMain.h"
 #include "Atoms.h"
-#include "Units.h"
+#include "tools/Units.h"
 #include <cstdio>
 #include <cassert>
 

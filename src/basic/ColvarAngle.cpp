@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "ActionRegister.h"
-#include "Angle.h"
+#include "tools/Angle.h"
 
 #include <string>
 #include <cmath>

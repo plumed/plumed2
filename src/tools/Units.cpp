@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Units.h"
-#include "tools/Tools.h"
+#include "Tools.h"
 
 using namespace std;
 

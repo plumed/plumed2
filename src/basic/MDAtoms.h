@@ -25,7 +25,7 @@
 #include "tools/Tensor.h"
 #include "tools/Vector.h"
 #include <vector>
-#include "Units.h"
+#include "tools/Units.h"
 
 namespace PLMD {
 

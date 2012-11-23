@@ -22,7 +22,7 @@
 #ifndef __PLUMED_Angle_h
 #define __PLUMED_Angle_h
 
-#include "tools/Vector.h"
+#include "Vector.h"
 
 namespace PLMD{
 
