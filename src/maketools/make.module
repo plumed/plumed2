@@ -49,7 +49,7 @@ endif
 
 .PHONY: clean
 clean:
-	for file in * ; do test -L $$file && rm $$file ; done
+	-for file in * ; do test -L $$file && rm -f $$file ; done
 	rm -fr deps
 	rm -f $(CLEANLIST)
 
