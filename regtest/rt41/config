@@ -1,0 +1,2 @@
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 50 --timestep 0.005 --noatoms"

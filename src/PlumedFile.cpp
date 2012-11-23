@@ -492,15 +492,18 @@ PlumedIFile& PlumedIFile::scanField(Value* val){
 }
 
 PlumedIFile& PlumedIFile::scanField(){
-  for(unsigned i=0;i<fields.size();i++){
-    plumed_assert(fields[i].read);
+  if(!ignoreFields){
+     for(unsigned i=0;i<fields.size();i++){
+       plumed_assert(fields[i].read);
+     }
   }
   inMiddleOfField=false;
   return *this;
 }
 
 PlumedIFile::PlumedIFile():
-  inMiddleOfField(false)
+  inMiddleOfField(false),
+  ignoreFields(false)
 {
 }
 
@@ -537,3 +540,7 @@ void PlumedIFile::reset(bool reset){
  if(!reset) clearerr(fp);
  return;
 } 
+
+void PlumedIFile::allowIgnoredFields(){
+  ignoreFields=true;
+}

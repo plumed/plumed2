@@ -278,6 +278,8 @@ public virtual PlumedFileBase{
   std::vector<Field> fields;
 /// Flag set in the middle of a field reading
   bool inMiddleOfField;
+/// Set to true if you want to allow fields to be ignored in the read in file
+  bool ignoreFields;
 /// Advance to next field (= read one line)
   PlumedIFile& advanceField();
 /// Find field index by name
@@ -314,6 +316,8 @@ Typically used as
   bool FieldExist(const std::string& s);
 /// Read in a value
   PlumedIFile& scanField(Value* val);
+/// Allow some of the fields in the input to be ignored
+  void allowIgnoredFields();
 };
 
 /// Write using << syntax
