@@ -62,7 +62,9 @@ PlumedMain::PlumedMain():
   bias(0.0),
   exchangePatterns(*new(ExchangePatterns)),
   novirial(false),
-  restart(false)
+  restart(false),
+  stopFlag(NULL),
+  stopNow(false)
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
@@ -271,6 +273,10 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
        log.open(static_cast<char*>(val),"w");
+  } else if(word=="setStopFlag"){
+       CHECK_NOTINIT(initialized,word);
+       CHECK_NULL(val,word);
+       stopFlag=static_cast<int*>(val);
   } else if(word=="getExchangesFlag"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
@@ -535,6 +541,11 @@ void PlumedMain::justApply(){
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
     if((*p)->isActive()) (*p)->update();
   }
+// Check that no action has told the calculation to stop
+  if(stopNow){
+     if(stopFlag) (*stopFlag)=1;
+     else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
+  }  
   stopwatch.stop("5 Applying (backward loop)");
 }
 
@@ -608,6 +619,9 @@ void PlumedMain::eraseFile(PlumedFileBase&f){
   files.erase(&f);
 }
 
+void PlumedMain::stop(){ 
+  stopNow=true;
+} 
 
 
 
