@@ -60,7 +60,15 @@ $(DIRS):
 .PHONY: lib
 lib: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(OBJ_WRAPPER) \
      $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
-     Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static 
+     Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static \
+     plumed-patch
+
+plumed-patch:
+	@echo "#! /bin/bash" > plumed-patch
+	@echo "echo 'NOTE: shell only version of path, useful for cross compiling'" >> plumed-patch
+	@echo "export PLUMED_ROOT=\"$(realpath ../../)\"" >> plumed-patch
+	@echo "source \"$(realpath ../../scripts/patch.sh)\"" >> plumed-patch
+	chmod a+x plumed-patch
 
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
@@ -127,7 +135,7 @@ endif
 clean:
 	rm -f $(CLEANLIST)
 	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
-	rm -f Plumed.inc*
+	rm -f Plumed.inc* plumed-*
 
 # generic makefile rules
 include ../maketools/make.rules
