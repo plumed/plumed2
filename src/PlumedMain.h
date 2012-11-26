@@ -209,6 +209,11 @@ public:
   Needed to apply the forces back.
 */
   void justApply();
+/**
+  If there are calculations that need to be done at the very end of the calculations this
+  makes sures they are done
+*/
+  void runJobsAtEndOfCalculation();
 /// Reference to atoms object
   Atoms& getAtoms();
 /// Reference to the list of Action's

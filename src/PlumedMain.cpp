@@ -293,6 +293,9 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
        exchangePatterns.getList((static_cast<int*>(val)));
+  } else if(word=="runFinalJobs"){  
+       CHECK_INIT(initialized,word);
+       runJobsAtEndOfCalculation();
   } else {
 // multi word commands
 
@@ -614,6 +617,12 @@ void PlumedMain::eraseFile(PlumedFileBase&f){
 
 void PlumedMain::stop(){ 
   stopNow=true;
+}
+
+void PlumedMain::runJobsAtEndOfCalculation(){
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
+      (*p)->runFinalJobs();
+  }
 } 
 
 
