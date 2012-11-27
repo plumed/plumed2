@@ -468,6 +468,7 @@ INPUT                  = IntroPP.txt \
                          InstallationPP.txt \
                          WhatsNew.txt \
                          GlossaryPP.txt \
+                         Transition.txt \
                          automatic
 
 # If the value of the INPUT tag contains directories, you can use the 

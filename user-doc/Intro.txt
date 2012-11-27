@@ -13,6 +13,9 @@ features available in plumed 2.0 and to work out how to install plumed 2.0 in yo
 - \subpage WhatsNew
 - \subpage Installation 
 
+If you are experienced with Plumed 1, you migh find this useful:
+- \subpage Transition
+
 \section qintro A quick introduction
 
 To run plumed 2.0 you need to provide one input file.  In this file you specify what it
