@@ -456,7 +456,7 @@ Grid* Grid::create(FILE* file, bool dosparse, bool dospline, bool doder)
  vector<double> dx=grid->getDx();
  double f,x;
  while(1){
-  int nread;
+  int nread=0;
   for(unsigned i=0;i<nvar;++i){nread=fscanf(file,"%1000lf",&x);xx[i]=x+dx[i]/2.0;}
   if(nread<1){break;}
   fscanf(file,"%1000lf",&f);

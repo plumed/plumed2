@@ -128,7 +128,6 @@ vector<double> FlexibleBin::getMatrix() const{
 ///
 vector<double> FlexibleBin::getInverseMatrix() const{
 	unsigned ncv=paction->getNumberOfArguments();
-	unsigned dimension=ncv*(ncv+1)/2;	
 	Matrix<double> matrix(ncv,ncv); 
 	unsigned i,j,k;	
 	k=0;

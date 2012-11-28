@@ -112,7 +112,7 @@ s_cutoff(0)
   backnames[0]="N"; backnames[1]="CA"; backnames[2]="CB"; backnames[3]="C"; backnames[4]="O";
   readBackboneAtoms( backnames, chains );
 
-  bool intra_chain, inter_chain; 
+  bool intra_chain(false), inter_chain(false); 
   std::string style; parse("STYLE",style);
   if( style=="all" ){ 
       intra_chain=true; inter_chain=true;

@@ -178,7 +178,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
         "  [help|-h|--help]          : to print this help\n"
         "  [--has-mpi]               : fails if plumed is running with MPI\n"
         "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
-        "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n";
+        "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
         "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0;j<availableCxx.size();++j){

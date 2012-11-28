@@ -129,6 +129,7 @@ Vessel* ActionWithDistribution::getVessel( const std::string& name ){
      }
   }
   error("there is no vessel with name " + name);
+  return NULL;
 }
 
 void ActionWithDistribution::calculateAllVessels( const int& stepn ){
