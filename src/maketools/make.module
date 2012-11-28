@@ -32,6 +32,10 @@ all:
 .PHONY: obj
 obj: $(OBJ)
 
+.PHONY: lib
+lib:
+	cd ../lib ; make
+
 $(DEP): ../config/PlumedConfig.h ../config/Makefile.conf.xxd
 
 -include $(DEP)
