@@ -220,7 +220,7 @@ public:
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library
-  void load(std::vector<std::string> & words);
+  void load(const std::string&);
 /// Get the suffix string
   const std::string & getSuffix()const;
 /// Set the suffix string

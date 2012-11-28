@@ -201,16 +201,14 @@ void BiasMovingRestraint::calculate(){
     if(verse[i]=="U" && cv<0) continue;
     if(verse[i]=="L" && cv>0) continue;
     assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
-    work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]);
+    if(oldaa.size()==aa.size() && oldf.size()==f.size()) work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]);
     getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]); 
     ene+=0.5*k*cv*cv;
     setOutputForce(i,f[i]);
     totf2+=f[i]*f[i];
   };
-  for(unsigned i=0;i<narg;++i){
-    oldf[i]=f[i];
-    oldaa[i]=aa[i];
-  }
+  oldf=f;
+  oldaa=aa;
   getPntrToComponent("bias")->set(ene);
   getPntrToComponent("force2")->set(totf2);
 }

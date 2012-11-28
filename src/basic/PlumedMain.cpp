@@ -371,7 +371,6 @@ void PlumedMain::readInputFile(std::string str){
   while(Tools::getParsedLine(ifile,words)){
     if(words.empty())continue;
     else if(words[0]=="ENDPLUMED") break;
-    else if(words[0]=="LOAD") load(words);
     else if(words[0]=="_SET_SUFFIX"){
       plumed_assert(words.size()==2);
       setSuffix(words[1]);
@@ -380,11 +379,6 @@ void PlumedMain::readInputFile(std::string str){
       exchangePatterns.setFlag(exchangePatterns.RANDOM);
       // I convert the seed to -seed because I think it is more general to use a positive seed in input
       if(words.size()>2&&words[1]=="SEED") {int seed; Tools::convert(words[2],seed); exchangePatterns.setSeed(-seed); }
-    }
-    else if(words[0]=="INCLUDE"){
-      plumed_assert(words.size()==2);
-      readInputFile(words[1]);
-      continue;
     } else {
       Tools::interpretLabel(words);
       Action* action=actionRegister().create(ActionOptions(*this,words));
@@ -549,10 +543,9 @@ void PlumedMain::justApply(){
   stopwatch.stop("5 Applying (backward loop)");
 }
 
-void PlumedMain::load(std::vector<std::string> & words){
+void PlumedMain::load(const std::string& ss){
   if(DLLoader::installed()){
-     string s=words[1];
-     plumed_assert(words.size()==2);
+     string s=ss;
      size_t n=s.find_last_of(".");
      string extension="";
      string base=s;
@@ -571,7 +564,7 @@ void PlumedMain::load(std::vector<std::string> & words){
      void *p=dlloader.load(s);
      if(!p){
        log<<"ERROR\n";
-       log<<"I cannot load library "<<words[1].c_str()<<"\n";
+       log<<"I cannot load library "<<ss<<"\n";
        log<<dlloader.error();
        log<<"\n";
        this->exit(1);

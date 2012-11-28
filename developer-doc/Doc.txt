@@ -145,11 +145,11 @@ RESTRAINT ARG=dist AT=1.2 KAPPA=1.0 STRIDE=2
 \endverbatim
   - It is possible to include other files:
 \verbatim
-INCLUDE anotherplumed.dat
+INCLUDE FILE=anotherplumed.dat
 \endverbatim
   - It is possible to load shared libraries implementing new CVs and methods:
 \verbatim
-LOAD share-object.so
+LOAD FILE=share-object.so
 \endverbatim
 
 \section Install Install
