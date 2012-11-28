@@ -22,6 +22,7 @@
 #include "Pbc.h"
 #include "Tools.h"
 #include "PlumedException.h"
+#include "LatticeReduction.h"
 
 using namespace PLMD;
 
@@ -32,6 +33,26 @@ Pbc::Pbc():
   invBox.zero();
 }
 
+void Pbc::fullSearch(Vector&d)const{
+   Vector s=matmul(invReduced.transpose(),d);
+   for(int i=0;i<3;i++) s[i]=Tools::pbc(s[i]);
+   d=matmul(reduced.transpose(),s);
+   const int smax=1;
+   Vector a0(reduced.getRow(0));
+   Vector a1(reduced.getRow(1));
+   Vector a2(reduced.getRow(2));
+   Vector best(d);
+   double lbest=d.modulo2();
+   for(int i=-smax;i<=smax;i++) for(int j=-smax;j<=smax;j++) for(int k=-smax;k<=smax;k++){
+     Vector trial=d+i*a0+j*a1+k*a2;
+     double ltrial=trial.modulo2();
+     if(ltrial<lbest){
+       best=trial;
+       lbest=ltrial;
+     }
+   }
+   d=best;
+}
 
 void Pbc::setBox(const Tensor&b){
   box=b;
@@ -58,6 +79,18 @@ void Pbc::setBox(const Tensor&b){
 //  else if(cxy && cyz)   type=xz;
 //  else if(cxz && cyz)   type=xy;
   else type=generic;
+  
+ if(type==orthorombic){
+    for(unsigned i=0;i<3;i++){
+      diag[i]=box[i][i];
+      hdiag[i]=0.5*box[i][i];
+      mdiag[i]=-0.5*box[i][i];
+    }
+ } else {
+   reduced=box;
+   LatticeReduction::reduce(reduced);
+   invReduced=inverse(reduced);
+ } 
 }
 
 double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const {
@@ -69,29 +102,14 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2)const{
   Vector d=delta(v1,v2);
   if(type==unset){
   } else if(type==orthorombic) {
-    for(int i=0;i<3;i++) d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
+   for(int i=0;i<3;i++) d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
+// this is another possibility:
+//   for(unsigned i=0;i<3;i++){
+//     while(d[i]>hdiag[i]) d[i]-=diag[i];
+//     while(d[i]<=mdiag[i]) d[i]+=diag[i];
+//   }
   } else if(type==generic) {
-// first reduce:
-   Vector s=matmul(invBox.transpose(),d);
-   for(int i=0;i<3;i++) s[i]=Tools::pbc(s[i]);
-   d=matmul(box.transpose(),s);
-// then check all the neighbors:
-    Vector a1(box(0,0),box(0,1),box(0,2));
-    Vector a2(box(1,0),box(1,1),box(1,2));
-    Vector a3(box(2,0),box(2,1),box(2,2));
-    Vector best(d);
-    double lbest=best.modulo2();
-    Vector trial;
-    double ltrial;
-    for(int i=-1;i<=1;i++) for(int j=-1;j<=1;j++) for(int k=-1;k<=1;k++) {
-      trial=d+i*a1+j*a2+k*a3;
-      ltrial=trial.modulo2();
-      if(ltrial<lbest){
-        best=trial;
-        lbest=ltrial;
-      }
-    }
-    d=best;
+   fullSearch(d);
   } else plumed_merror("unknown pbc type");
   return d;
 }

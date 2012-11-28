@@ -31,6 +31,10 @@ class Pbc{
   enum {unset,orthorombic,xy,xz,yz,generic} type;
   Tensor box;
   Tensor invBox;
+  Tensor reduced;
+  Tensor invReduced;
+  Vector diag,hdiag,mdiag;
+  void fullSearch(Vector&)const;
 public:
   Pbc();
   double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
