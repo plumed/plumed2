@@ -141,7 +141,7 @@ bool Tools::getParsedLine(PlumedIFile& ifile,vector<string> & words){
   bool inside=false;
   int parlevel=0;
   bool mergenext=false;
-  while(stat=ifile.getline(line)){
+  while((stat=ifile.getline(line))){
     trimComments(line);
     trim(line);
     if(line.length()==0) continue;

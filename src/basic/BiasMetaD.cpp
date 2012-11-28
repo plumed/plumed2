@@ -122,14 +122,14 @@ private:
   PlumedOFile hillsOfile_;
   Grid* BiasGrid_;
   FILE* gridfile_;
+  int wgridstride_; 
+  bool grid_;
   double height0_;
   double biasf_;
   double temp_;
-  double* dp_;
   int stride_;
-  int wgridstride_; 
   bool welltemp_;
-  bool grid_;
+  double* dp_;
   int adaptive_;
   FlexibleBin *flexbin;
   int mw_n_;

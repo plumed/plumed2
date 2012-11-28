@@ -1,0 +1,227 @@
+/**
+\page Transition Plumed 1 to Plumed 2: quick transition guide
+
+We here provide a sort of quick reference for Plumed 1 users so as to
+translate their plumed.dat files into the new Plumed 2 syntax.
+
+\section Groups
+
+In Plumed 1 groups were used, depending on the specific collective variable, for two tasks:
+- To provide centers of masses to collective variables such as distances, angles, etc. This can
+  be done now defining virtual atoms with \ref CENTER or \ref COM
+- To provide lists of atoms to collective variables such as coordination, gyration radius, etc.
+  This can be done now directly in the line which defines the collective variable. To increase
+  readability of the plumed.dat file, it is possible to define \ref GROUP.
+
+\section Directives
+
+For all the documented directives of Plumed 1 you find hiere the corresponding
+action in Plumed 2. Please take into consideration that syntax is not totally equivalent,
+so taht you have to read the documentation of the Plumed 2 Action.
+
+<TABLE>
+<TR> 
+  <TD> HILLS </TD>
+  <TD> \ref METAD </TD>
+</TR>
+<TR> 
+  <TD> WELLTEMPERED </TD>
+  <TD> \ref METAD with BIASFACTOR </TD>
+</TR>
+<TR> 
+  <TD> GRID </TD>
+  <TD> \ref METAD with GRID_MIN, GRID_MAX, and GRID_BIN </TD>
+</TR>
+<TR>
+  <TD> WRITE_GRID </TD>
+  <TD> \ref METAD with GRID_WFILE, GRID_WSTRIDE </TD>
+</TR>
+<TR>
+  <TD> READ_GRID </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> MULTIPLE_WALKERS </TD>
+  <TD> \ref METAD with options WALKERS_ID, WALKERS_N, WALKERS_DIR, and WALKERS_RSTRIDE </TD>
+</TR>
+<TR>
+  <TD> NOHILLS </TD>
+  <TD> not needed (collective variables are not biased by default) </TD>
+</TR>
+<TR>
+  <TD> INTERVAL </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> INVERT </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> PTMETAD </TD>
+  <TD> not needed (replica exchange detected from MD engine) </TD>
+</TR>
+<TR>
+  <TD> BIASXMD </TD>
+  <TD> not needed (replica exchange detected from MD engine);
+       one should anyway use \ref RANDOM_EXCHANGES to get the normal behavior </TD>
+</TR>
+<TR>
+  <TD> UMBRELLA </TD>
+  <TD> \ref RESTRAINT </TD>
+</TR>
+<TR>
+  <TD> STEER </TD>
+  <TD> \ref MOVINGRESTRAINT </TD>
+</TR>
+<TR>
+  <TD> STEERPLAN </TD>
+  <TD> \ref MOVINGRESTRAINT </TD>
+</TR>
+<TR>
+  <TD> ABMD </TD>
+  <TD> \ref ABMD </TD>
+</TR>
+<TR>
+  <TD> UWALL </TD>
+  <TD> \ref UPPER_WALLS </TD>
+</TR>
+<TR>
+  <TD> LWALL </TD>
+  <TD> \ref LOWER_WALLS </TD>
+</TR>
+<TR>
+  <TD> EXTERNAL </TD>
+  <TD> \ref EXTERNAL </TD>
+</TR>
+<TR>
+  <TD> COMMITMENT </TD>
+  <TD> <b> currently missing</b> </TD>
+</TR>
+<TR>
+  <TD> PROJ_GRAD </TD>
+  <TD> \ref DUMPPROJECTIONS </TD>
+</TR>
+<TR>
+  <TD> DAFED </TD>
+  <TD> <b> currently missing</b> </TD>
+</TR>
+<TR>
+  <TD> DISTANCE </TD>
+  <TD> \ref DISTANCE </TD>
+</TR>
+<TR>
+  <TD> POSITION </TD>
+  <TD> <b> currently missing</b> </TD>
+</TR>
+<TR>
+  <TD> MINDIST </TD>
+  <TD> \ref DISTANCES with keyword MIN </TD>
+</TR>
+<TR>
+  <TD> ANGLE </TD>
+  <TD> \ref ANGLE </TD>
+</TR>
+<TR>
+  <TD> TORSION </TD>
+  <TD> \ref TORSION </TD>
+</TR>
+<TR>
+  <TD> COORD </TD>
+  <TD> \ref COORDINATION </TD>
+</TR>
+<TR>
+  <TD> HBOND </TD>
+  <TD> <b> currently missing </b>, can be emulated with \ref COORDINATION </TD>
+</TR>
+<TR>
+  <TD> WATERBRIDGE </TD>
+  <TD> <b> currently missing </b>, can be emulated with multiple \ref COORDINATION combined with \ref MATHEVAL </TD>
+</TR>
+<TR>
+  <TD> RGYR </TD>
+  <TD> \ref GYRATION </TD>
+</TR>
+<TR>
+  <TD> DIPOLE </TD>
+  <TD> \ref DIPOLE </TD>
+</TR>
+<TR>
+  <TD> DIHCOR </TD>
+  <TD> <b> currently missing </b>, can be emulated with multiple \ref TORSION combined with \ref MATHEVAL</TD>
+</TR>
+<TR>
+  <TD> ALPHABETA </TD>
+  <TD> <b> currently missing </b>, can be emulated with multiple \ref TORSION combined with \ref MATHEVAL</TD>
+</TR>
+<TR>
+  <TD> ALPHARMSD </TD>
+  <TD> \ref ALPHARMSD </TD>
+</TR>
+<TR>
+  <TD> ANTIBETARMSD </TD>
+  <TD> \ref ANTIBETARMSD </TD>
+</TR>
+<TR>
+  <TD> PARABETARMSD </TD>
+  <TD> \ref PARABETARMSD </TD>
+</TR>
+<TR>
+  <TD> ELSTPOT </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> PUCKERING </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> S_PATH </TD>
+  <TD> \ref PATHMSD, s component </TD>
+</TR>
+<TR>
+  <TD> S_PATH </TD>
+  <TD> \ref PATHMSD, z component </TD>
+</TR>
+<TR>
+  <TD> TARGETED </TD>
+  <TD> \ref RMSD </TD>
+</TR>
+<TR>
+  <TD> ENERGY </TD>
+  <TD> \ref ENERGY </TD>
+</TR>
+<TR>
+  <TD> HELIX </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> PCA </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> SPRINT </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> RDF </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> ADF </TD>
+  <TD> <b> currently missing </b> </TD>
+</TR>
+<TR>
+  <TD> POLY </TD>
+  <TD> \ref COMBINE </TD>
+</TR>
+<TR>
+  <TD> FUNCTION </TD>
+  <TD> \ref MATHEVAL </TD>
+</TR>
+<TR>
+  <TD> ALIGN_ATOMS </TD>
+  <TD> \ref WHOLEMOLECULES </TD>
+</TR>
+</TABLE>
+
+*/
+

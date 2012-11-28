@@ -31,10 +31,10 @@ class ActionWithArguments;
 
 class FlexibleBin{
 	private:
-		double sigma;	
 		const int type;
 		// this contains all the infos about the CVs including periodicity
 		ActionWithArguments *paction;
+		double sigma;	
 		// variance is the matrix that really matters
 		vector<double> variance;	
 		// this is only there

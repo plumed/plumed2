@@ -151,7 +151,7 @@ void NeighborList::setRequestList() {
 vector<AtomNumber>& NeighborList::getReducedAtomList() {
  std::vector< pair<unsigned,unsigned> > newneighbors;
  for(unsigned int i=0;i<size();++i){
-  unsigned newindex0,newindex1;
+  unsigned newindex0=0,newindex1=0;
   AtomNumber index0=fullatomlist_[neighbors_[i].first];
   AtomNumber index1=fullatomlist_[neighbors_[i].second];
   for(unsigned j=0;j<requestlist_.size();++j){
