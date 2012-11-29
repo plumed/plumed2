@@ -40,7 +40,8 @@ void Pbc::setBox(const Tensor&b){
   const double epsilon=1e-28;
 
   type=unset;
-  if(box.determinant()<epsilon)return;
+  double det=box.determinant();
+  if(det*det<epsilon)return;
 
   bool cxy=false;
   bool cxz=false;
