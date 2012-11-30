@@ -30,6 +30,8 @@
 #include "Value.h"
 #include "PlumedFile.h"
 #include "PlumedException.h"
+#include "Value.h"
+#include "KernelFunctions.h"
 
 using namespace std;
 using namespace PLMD;
@@ -264,6 +266,36 @@ vector<unsigned> Grid::getSplineNeighbors(const vector<unsigned> & indices)const
  return neighbors;
 }
 
+void Grid::addKernel( const KernelFunctions& kernel ){
+  plumed_assert( kernel.ndim()==dimension_ );
+  std::vector<unsigned> nneighb=kernel.getSupport( dx_ );
+  std::vector<unsigned> neighbors=getNeighbors( kernel.getCenter(), nneighb );
+  std::vector<double> xx( dimension_ ); std::vector<Value*> vv( dimension_ );
+  std::string str_min, str_max;
+  for(unsigned i=0;i<dimension_;++i){
+      vv[i]=new Value();
+      if( pbc_[i] ){
+          Tools::convert(min_[i],str_min);
+          Tools::convert(max_[i],str_max);
+          vv[i]->setDomain( str_min, str_max );
+      } else {
+          vv[i]->setNotPeriodic();
+      }
+  }
+
+  double newval; std::vector<double> der( dimension_ );
+  for(unsigned i=0;i<neighbors.size();++i){
+      unsigned ineigh=neighbors[i];
+      getPoint( ineigh, xx );
+      for(unsigned j=0;j<dimension_;++j) vv[j]->set(xx[j]);
+      newval = kernel.evaluate( vv, der, usederiv_ );
+      if( usederiv_ ) addValueAndDerivatives( ineigh, newval, der );
+      else addValue( ineigh, newval );
+  }
+
+  for(unsigned i=0;i<dimension_;++i) delete vv[i];
+}
+
 double Grid::getValue(unsigned index) const {
  plumed_assert(index<maxsize_);
  return grid_[index];
@@ -388,6 +420,17 @@ void Grid::addValueAndDerivatives
  addValueAndDerivatives(getIndex(indices),value,der);
 }
 
+void Grid::scaleAllValuesAndDerivatives( const double& scalef ){
+  if(usederiv_){
+     for(unsigned i=0;i<grid_.size();++i){
+         grid_[i]*=scalef;
+         for(unsigned j=0;j<dimension_;++j) der_[i][j]*=scalef;
+     }
+  } else {
+     for(unsigned i=0;i<grid_.size();++i) grid_[i]*=scalef;
+  }
+}
+
 void Grid::writeHeader(PlumedOFile& ofile){
  for(unsigned i=0;i<dimension_;++i){
      ofile.addConstantField("min_" + argnames[i]);
@@ -406,7 +449,7 @@ void Grid::writeToFile(PlumedOFile& ofile){
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}
-   if(dimension_>1 && getIndices(i)[dimension_-2]==0) ofile.printf("\n"); 
+   if(i>0 && dimension_>1 && getIndices(i)[dimension_-2]==0) ofile.printf("\n"); 
    for(unsigned j=0;j<dimension_;++j){
        ofile.printField("min_" + argnames[j], str_min_[j] );
        ofile.printField("max_" + argnames[j], str_max_[j] );
@@ -430,7 +473,8 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, PlumedIFi
   for(unsigned i=0;i<args.size();++i){
       plumed_massert( cmin[i]==gmin[i], "mismatched grid min" );
       plumed_massert( cmax[i]==gmax[i], "mismatched grid max" );
-      plumed_massert( cbin[i]==nbin[i], "mismatched grid nbins" );
+      if( args[i]->isPeriodic() ) plumed_massert( cbin[i]==nbin[i], "mismatched grid nbins" );
+      else plumed_massert( (cbin[i]-1)==nbin[i], "mismatched grid nbins");
   }
   return grid;
 }
@@ -491,7 +535,6 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, PlumedIFi
  }
  return grid;
 }
-
 
 // Sparse version of grid with map
 void SparseGrid::clear(){
@@ -562,7 +605,7 @@ void SparseGrid::writeToFile(PlumedOFile& ofile){
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}
-   if(dimension_>1 && getIndices(i)[dimension_-2]==0) ofile.printf("\n");
+   if(i>0 && dimension_>1 && getIndices(i)[dimension_-2]==0) ofile.printf("\n");
    for(unsigned j=0;j<dimension_;++j){
        ofile.printField("min_" + argnames[j], str_min_[j] );
        ofile.printField("max_" + argnames[j], str_max_[j] );

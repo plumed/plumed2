@@ -31,6 +31,7 @@ namespace PLMD{
 class Value;
 class PlumedIFile;
 class PlumedOFile;
+class KernelFunctions;
 
 /// \ingroup TOOLBOX
 class Grid  
@@ -101,7 +102,6 @@ public:
  static Grid* create(const std::string&, std::vector<Value*>, PlumedIFile&,
                      const std::vector<std::string>&,const std::vector<std::string>&,
                      const std::vector<unsigned>&,bool,bool,bool); 
-
 /// get grid size
  virtual unsigned getSize() const;
 /// get grid value
@@ -125,6 +125,11 @@ public:
 /// add to grid value and derivatives
  virtual void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
  virtual void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
+/// Scale all grid values and derivatives by a constant factor
+ virtual void scaleAllValuesAndDerivatives( const double& scalef );
+
+/// add a kernel function to the grid
+ void addKernel( const KernelFunctions& kernel );
 
 /// dump grid on file
  virtual void writeToFile(PlumedOFile&);
