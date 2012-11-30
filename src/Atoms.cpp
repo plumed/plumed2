@@ -37,6 +37,7 @@ Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
   energy(0.0),
   collectEnergy(0.0),
+  energyHasBeenSet(false),
   plumed(plumed),
   naturalUnits(false),
   timestep(0.0),
@@ -74,6 +75,7 @@ void Atoms::setVirial(void*p){
 void Atoms::setEnergy(void*p){
   MD2double(p,energy);
   energy*=MDUnits.getEnergy()/units.getEnergy();
+  energyHasBeenSet=true;
 }
 
 void Atoms::setForces(void*p){
@@ -197,8 +199,10 @@ void Atoms::updateForces(){
      double alpha=1.0-forceOnEnergy;
      mdatoms->rescaleForces(gatindex,alpha);
   }
+  energyHasBeenSet=false;
   mdatoms->updateForces(gatindex,forces);
   if(!plumed.novirial && dd.Get_rank()==0) mdatoms->updateVirial(virial);
+
 }
 
 void Atoms::setNatoms(int n){

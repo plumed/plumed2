@@ -56,6 +56,7 @@ class Atoms
   Tensor virial;
   double energy;
   bool   collectEnergy;
+  bool   energyHasBeenSet;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
@@ -126,7 +127,7 @@ public:
   void setNatoms(int);
   const int & getNatoms()const;
 
-  void setCollectEnergy(bool b){collectEnergy=b;};
+  void setCollectEnergy(bool b){ collectEnergy=b; };
 
   void setDomainDecomposition(PlumedCommunicator&);
   void setAtomsGatindex(int*);
@@ -153,7 +154,7 @@ public:
   void add(const ActionAtomistic*);
   void remove(const ActionAtomistic*);
 
-  double getEnergy()const{plumed_assert(collectEnergy);return energy;};
+  double getEnergy()const{plumed_assert(collectEnergy && energyHasBeenSet); return energy;};
 
   void setMDEnergyUnits(double d){MDUnits.setEnergy(d);};
   void setMDLengthUnits(double d){MDUnits.setLength(d);};
