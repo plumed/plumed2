@@ -106,7 +106,7 @@ MatrixSquareBracketsAccess<T,C,I,J>::Row::Row(MatrixSquareBracketsAccess&t,I i):
 
 template<class T,class C,class I,class J>
 const C & MatrixSquareBracketsAccess<T,C,I,J>::Const_row::operator[] (J j)const{
-  return (*static_cast<T*>(&t))(i,j);
+  return (*static_cast<const T*>(&t))(i,j);
 }
 
 template<class T,class C,class I,class J>
