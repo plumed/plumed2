@@ -140,9 +140,16 @@ public:
   typedef std::set<FILE*>::iterator files_iterator;
 
 public:
+/// Standard constructor from ActionOptions
   Action(const ActionOptions&);
+/// Destructor
   virtual ~Action();
-
+private:
+/// Copy constructor is disabled (private and unimplemented)
+  Action(const Action&a);
+/// Assignment operator is disabled (private and unimplemented)
+  Action& operator=(const Action&a);
+public:
 /// Check if Action was properly read.
 /// This checks if Action::line is empty. It must be called after
 /// a final Action has been initialized

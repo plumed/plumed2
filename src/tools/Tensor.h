@@ -102,6 +102,10 @@ public:
   TensorGeneric& setCol(unsigned j,const VectorGeneric<n> & c);
 /// set i-th row
   TensorGeneric& setRow(unsigned i,const VectorGeneric<m> & r);
+/// get j-th column
+  VectorGeneric<n> getCol(unsigned j)const;
+/// get i-th row
+  VectorGeneric<m> getRow(unsigned i)const;
 /// return t1+t2
   template<unsigned n_,unsigned m_>
   friend TensorGeneric<n_,m_> operator+(const TensorGeneric<n_,m_>&,const TensorGeneric<n_,m_>&);
@@ -241,6 +245,20 @@ template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::setRow(unsigned i,const VectorGeneric<m> & r){
   for(unsigned j=0;j<m;++j) (*this)(i,j)=r(j);
   return *this;
+}
+
+template<unsigned n,unsigned m>
+VectorGeneric<n> TensorGeneric<n,m>::getCol(unsigned j)const{
+  VectorGeneric<n> v;
+  for(unsigned i=0;i<n;++i) v(i)=(*this)(i,j);
+  return v;
+}
+
+template<unsigned n,unsigned m>
+VectorGeneric<m> TensorGeneric<n,m>::getRow(unsigned i)const{
+  VectorGeneric<m> v;
+  for(unsigned j=0;j<m;++j) v(j)=(*this)(i,j);
+  return v;
 }
 
 template<unsigned n,unsigned m>
