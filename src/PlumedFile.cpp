@@ -418,15 +418,18 @@ PlumedIFile& PlumedIFile::advanceField(){
       for(unsigned i=0;i<fields.size();i++) if(!fields[i].constant) nf++;
       Tools::trimComments(line);
       words=Tools::getWords(line);
-      plumed_assert(nf==words.size());
-      unsigned j=0;
-      for(unsigned i=0;i<fields.size();i++){
-        if(fields[i].constant) continue;
-        fields[i].value=words[j];
-        fields[i].read=false;
-        j++;
+      if( words.size()==nf ){
+          unsigned j=0;
+          for(unsigned i=0;i<fields.size();i++){
+            if(fields[i].constant) continue;
+            fields[i].value=words[j];
+            fields[i].read=false;
+            j++;
+          }
+          done=true;
+      } else if( words.size()!=0 ) {
+          plumed_merror("mismatch between number of fields in file and expected number");
       }
-      done=true;
     }
   }
   inMiddleOfField=true;
