@@ -208,7 +208,7 @@ case "$action" in
       plumed_before_patch
     fi
     echo "Linking Plumed.h and Plumed.inc ($mode mode)"
-    ln -s "$PLUMED_ROOT/src/lib/Plumed.h"
+    ln -s "$PLUMED_ROOT/src/wrapper/Plumed.h"
     ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
     bash "$diff"
     if type -t plumed_after_patch 1>/dev/null ; then
