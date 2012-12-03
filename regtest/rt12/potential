@@ -1,9 +1,12 @@
-#! DERIVATIVE 1
-#! NVAR       2
-#! BIN            100            100
-#! MIN    0.000000000  120.000000000
-#! MAX    1.000000000  130.000000000
-#! PBC              0              0
+#! FIELDS mu1 vol ext.bias der_mu1 der_vol
+#! SET min_mu1 0.0
+#! SET max_mu1 1.0
+#! SET nbins_mu1 100
+#! SET periodic_mu1 false
+#! SET min_vol 120.0
+#! SET max_vol 130.0
+#! SET nbins_vol 100
+#! SET periodic_vol false
 
    0.000000000  120.000000000      0.000000000     0.000000000    0.000000000 
    0.010000000  120.000000000      0.000000000     0.000000000    0.000000000 

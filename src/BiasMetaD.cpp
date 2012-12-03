@@ -121,7 +121,8 @@ private:
   vector<Gaussian> hills_;
   PlumedOFile hillsOfile_;
   Grid* BiasGrid_;
-  FILE* gridfile_;
+  bool storeOldGrids_;
+  std::string gridfilename_;
   int wgridstride_; 
   bool grid_;
   double height0_;
@@ -176,6 +177,7 @@ void BiasMetaD::registerKeywords(Keywords& keys){
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
   keys.add("optional","GRID_WFILE","the file on which to write the grid");
+  keys.addFlag("STORE_GRIDS",false,"store all the grid files the calculation generates. They will be deleted if this keyword is not present");
   keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance or time dimensions");
   keys.add("optional","WALKERS_ID", "walker id");
   keys.add("optional","WALKERS_N", "number of walkers");
@@ -186,7 +188,6 @@ void BiasMetaD::registerKeywords(Keywords& keys){
 BiasMetaD::~BiasMetaD(){
   if(BiasGrid_) delete BiasGrid_;
   hillsOfile_.close();
-  if(gridfile_) fclose(gridfile_);
   delete [] dp_;
   // close files
   for(int i=0;i<mw_n_;++i){
@@ -197,7 +198,7 @@ BiasMetaD::~BiasMetaD(){
 BiasMetaD::BiasMetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
-BiasGrid_(NULL), gridfile_(NULL), wgridstride_(0), grid_(false),
+BiasGrid_(NULL), wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
 height0_(0.0), biasf_(1.0), temp_(0.0),
 stride_(0), welltemp_(false),
@@ -219,45 +220,45 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   }else if (adaptiveoption=="NONE"){
 		  adaptive_=FlexibleBin::none;	
   }else{
-		  plumed_merror("I do not know this type of adaptive scheme");	
+		  error("I do not know this type of adaptive scheme");	
   }
   // parse the sigma
   parseVector("SIGMA",sigma0_);
 
   // if you use normal sigma you need one sigma per argument 
   if (adaptive_==FlexibleBin::none){
- 	 plumed_assert(sigma0_.size()==getNumberOfArguments());
+         if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
   }else{
   // if you use flexible hills you need one sigma  
          if(sigma0_.size()!=1){
-	         plumed_merror("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
+	     error("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
          } 
   	 flexbin=new FlexibleBin(adaptive_,this,sigma0_[0]); 
   }
   parse("HEIGHT",height0_);
-  plumed_assert(height0_>0.0);
+  if( height0_<=0.0 ) error("error cannot add zero height or negative height hills");
   parse("PACE",stride_);
-  plumed_assert(stride_>0);
+  if(stride_<=0 ) error("frequency for hill addition is nonsensical");
   string hillsfname="HILLS";
   parse("FILE",hillsfname);
   parse("BIASFACTOR",biasf_);
-  plumed_assert(biasf_>=1.0);
+  if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
   parse("TEMP",temp_);
   if(biasf_>1.0){
-   plumed_assert(temp_>0.0);
+   if(temp_==0.0) error("if you are doing well tempered metadynamics you must specify the temperature using TEMP");
    welltemp_=true;
   }
 
   // Grid Stuff
-  vector<double> gmin(getNumberOfArguments());
+  vector<std::string> gmin(getNumberOfArguments());
   parseVector("GRID_MIN",gmin);
-  plumed_assert(gmin.size()==getNumberOfArguments() || gmin.size()==0);
-  vector<double> gmax(getNumberOfArguments());
+  if(gmin.size()!=getNumberOfArguments() && gmin.size()!=0) error("not enough values for GRID_MIN");
+  vector<std::string> gmax(getNumberOfArguments());
   parseVector("GRID_MAX",gmax);
-  plumed_assert(gmax.size()==getNumberOfArguments() || gmax.size()==0);
+  if(gmax.size()!=getNumberOfArguments() && gmax.size()!=0) error("not enough values for GRID_MAX");
   vector<unsigned> gbin(getNumberOfArguments());
   parseVector("GRID_BIN",gbin);
-  plumed_assert(gbin.size()==getNumberOfArguments() || gbin.size()==0);
+  if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("not enough values for GRID_BIN");
   plumed_assert(gmin.size()==gmax.size() && gmin.size()==gbin.size());
   bool sparsegrid=false;
   parseFlag("GRID_SPARSE",sparsegrid);
@@ -266,10 +267,14 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   bool spline=!nospline;
   if(gbin.size()>0){grid_=true;}
   parse("GRID_WSTRIDE",wgridstride_);
-  string gridfname;
-  parse("GRID_WFILE",gridfname); 
-  if(grid_&&gridfname.length()>0){plumed_assert(wgridstride_>0);}
-  if(grid_&&wgridstride_>0){plumed_assert(gridfname.length()>0);}
+  parse("GRID_WFILE",gridfilename_); 
+  parseFlag("STORE_GRIDS",storeOldGrids_);
+  if(grid_ && gridfilename_.length()>0){
+    if(wgridstride_==0) error("frequency with which to output grid not specified use GRID_WSTRIDE");
+  }
+  if(grid_ && wgridstride_>0){
+    if(gridfilename_.length()==0) error("grid filename not specified use GRID_WFILE"); 
+  }
 
   // Multiple walkers
   parse("WALKERS_N",mw_n_);
@@ -290,17 +295,17 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   if(welltemp_){log.printf("  Well-Tempered Bias Factor %f\n",biasf_);}
   if(grid_){
    log.printf("  Grid min");
-   for(unsigned i=0;i<gmin.size();++i) log.printf(" %f",gmin[i]);
+   for(unsigned i=0;i<gmin.size();++i) log.printf(" %s",gmin[i].c_str() );
    log.printf("\n");
    log.printf("  Grid max");
-   for(unsigned i=0;i<gmax.size();++i) log.printf(" %f",gmax[i]);
+   for(unsigned i=0;i<gmax.size();++i) log.printf(" %s",gmax[i].c_str() );
    log.printf("\n");
    log.printf("  Grid bin");
    for(unsigned i=0;i<gbin.size();++i) log.printf(" %d",gbin[i]);
    log.printf("\n");
    if(spline){log.printf("  Grid uses spline interpolation\n");}
    if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
-   if(wgridstride_>0){log.printf("  Grid is written on file %s with stride %d\n",gridfname.c_str(),wgridstride_);} 
+   if(wgridstride_>0){log.printf("  Grid is written on file %s with stride %d\n",gridfilename_.c_str(),wgridstride_);} 
   }
   if(mw_n_>1){
    log.printf("  %d multiple walkers active\n",mw_n_);
@@ -316,21 +321,9 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
 
 // initializing grid
   if(grid_){
-   vector<bool> pbc;
-   for(unsigned i=0;i<getNumberOfArguments();++i){
-    pbc.push_back(getPntrToArgument(i)->isPeriodic());
-// if periodic, use CV domain for grid boundaries
-    if(pbc[i]){
-     std::string dmin,dmax;
-     getPntrToArgument(i)->getDomain(dmin,dmax);
-     Tools::convert(dmin,gmin[i]);
-     Tools::convert(dmax,gmax[i]);
-    }
-   }
-   if(!sparsegrid){BiasGrid_=new Grid(gmin,gmax,gbin,pbc,spline,true);}
-   else{BiasGrid_=new SparseGrid(gmin,gmax,gbin,pbc,spline,true);}
-// open file for grid writing 
-   if(wgridstride_>0){gridfile_=fopen(gridfname.c_str(),"w");}
+   std::string funcl=getLabel() + ".bias";
+   if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
   }
 
 // creating vector of ifile* for hills reading 
@@ -722,7 +715,11 @@ void BiasMetaD::update(){
   }
 // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
-   BiasGrid_->writeToFile(gridfile_); 
+    PlumedOFile gridfile; gridfile.link(*this);
+    if(!storeOldGrids_) remove( gridfilename_.c_str() );
+    gridfile.open(gridfilename_);
+    BiasGrid_->writeToFile(gridfile); 
+    gridfile.close();
   }
 
 // if multiple walkers and time to read Gaussians

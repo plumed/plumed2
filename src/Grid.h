@@ -28,13 +28,19 @@
 
 namespace PLMD{ 
 
+class Value;
+class PlumedIFile;
+class PlumedOFile;
+
 /// \ingroup TOOLBOX
 class Grid  
 {
  std::vector<double> grid_;
  std::vector< std::vector<double> > der_;
-
 protected:
+ std::string funcname;
+ std::vector<std::string> argnames;
+ std::vector<std::string> str_min_, str_max_;
  std::vector<double> min_,max_,dx_;  
  std::vector<unsigned> nbin_;
  std::vector<bool> pbc_;
@@ -48,14 +54,15 @@ protected:
  virtual void clear();
  
 public:
- Grid(const std::vector<double> & gmin, const std::vector<double> & gmax, const std::vector<unsigned> & nbin, 
-      const std::vector<bool> & pbc, bool dospline, bool usederiv, bool doclear=true);
+ Grid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
+      const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, 
+      bool usederiv, bool doclear=true);
 
 
 /// get lower boundary
- std::vector<double> getMin() const;
+ std::vector<std::string> getMin() const;
 /// get upper boundary
- std::vector<double> getMax() const;
+ std::vector<std::string> getMax() const;
 /// get bin size
  std::vector<double> getDx() const;
 /// get bin volume
@@ -86,10 +93,14 @@ public:
  std::vector<unsigned> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
 
 /// write header for grid file
- void writeHeader(FILE* file);
+ void writeHeader(PlumedOFile& file);
 
 /// read grid from file
- static Grid* create(FILE*,bool,bool,bool);
+ static Grid* create(const std::string&,std::vector<Value*>,PlumedIFile&,bool,bool,bool);
+/// read grid from file and check boundaries are what is expected from input
+ static Grid* create(const std::string&, std::vector<Value*>, PlumedIFile&,
+                     const std::vector<std::string>&,const std::vector<std::string>&,
+                     const std::vector<unsigned>&,bool,bool,bool); 
 
 /// get grid size
  virtual unsigned getSize() const;
@@ -115,10 +126,8 @@ public:
  virtual void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
  virtual void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
 
-/// Write a description of the format the the grid file
- static std::string formatDocs();
 /// dump grid on file
- virtual void writeToFile(FILE*);
+ virtual void writeToFile(PlumedOFile&);
 
  virtual ~Grid(){};
 };
@@ -136,9 +145,10 @@ class SparseGrid : public Grid
  void clear(); 
  
  public:
- SparseGrid(const std::vector<double> & gmin, const std::vector<double> & gmax, const std::vector<unsigned> & nbin,
-            const std::vector<bool> & pbc, bool dospline, bool usederiv):
-            Grid(gmin,gmax,nbin,pbc,dospline,usederiv,false){};
+ SparseGrid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
+            const std::vector<std::string> & gmax, 
+            const std::vector<unsigned> & nbin, bool dospline, bool usederiv):
+            Grid(funcl,args,gmin,gmax,nbin,dospline,usederiv,false){};
  
  unsigned getSize() const;
  unsigned getMaxSize() const;
@@ -166,7 +176,7 @@ class SparseGrid : public Grid
  void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
 
 /// dump grid on file
- void writeToFile(FILE*);
+ void writeToFile(PlumedOFile&);
 
  virtual ~SparseGrid(){};
 };

@@ -26,40 +26,41 @@
 #include <cstdio>
 
 #include "Grid.h"
+#include "Tools.h"
+#include "Value.h"
+#include "PlumedFile.h"
 #include "PlumedException.h"
 
 using namespace std;
 using namespace PLMD;
 
-std::string Grid::formatDocs(){
-  std::ostringstream ostr;
-  ostr<<"The grid in this file should be specified as follows. There should first be a header in which the ";
-  ostr<<"fact of whether or not derivatives the file also contains derivatives  (DERIVATIVES), the number of variables (NVAR), the ";
-  ostr<<"number of bins (BIN) in each dimension, the minimum value (MIN) for each direction, the maximum value ";
-  ostr<<"for each direction (MAX) and whether or not each of the directions is periodic (PBC). In the header ";
-  ostr<<"each of these pieces of information are specified on a single line which is started with the characters ";
-  ostr<<"#!. The values of the function (and the derivatives) at each point in the grid then follow. This data ";
-  ostr<<"should be formatted so that it can be plotted with gnuplot so the left-most column should contain the ";
-  ostr<<"slowest changing variable and in an xy surface for example there should be a blank space whenver the value ";
-  ostr<<"of x changes. An example grid file can be found in regtest/rt12/potential.";  
-  return ostr.str();
-}
-
-Grid::Grid(const vector<double> & gmin, const vector<double> & gmax, const vector<unsigned> & nbin,
-           const vector<bool> & pbc, bool dospline, bool usederiv, bool doclear){
+Grid::Grid(const std::string& funcl, std::vector<Value*> args, const vector<std::string> & gmin, 
+           const vector<std::string> & gmax, const vector<unsigned> & nbin, bool dospline, bool usederiv, bool doclear){
 // various checks
- plumed_assert(gmax.size()==gmin.size());
- plumed_assert(gmax.size()==nbin.size());
- plumed_assert(gmax.size()==pbc.size());
- for(unsigned int i=0;i<gmax.size();++i){
-  plumed_assert(gmax[i]>gmin[i]);
-  plumed_assert(nbin[i]>0);
+ plumed_massert(args.size()==gmin.size(),"grid dimensions in input do not match number of arguments");
+ plumed_massert(args.size()==nbin.size(),"grid dimensions in input do not match number of arguments");
+ plumed_massert(args.size()==gmax.size(),"grid dimensions in input do not match number of arguments");
+ dimension_=gmax.size(); 
+ str_min_=gmin; str_max_=gmax; 
+ argnames.resize( dimension_ );
+ min_.resize( dimension_ ); 
+ max_.resize( dimension_ );
+ pbc_.resize( dimension_ );
+ for(unsigned int i=0;i<dimension_;++i){
+  argnames[i]=args[i]->getName();
+  if( args[i]->isPeriodic() ){
+      pbc_[i]=true; 
+      args[i]->getDomain( str_min_[i], str_max_[i] );
+  } else {
+      pbc_[i]=false;
+  }
+  funcname=funcl;
+  Tools::convert( str_min_[i], min_[i] );
+  Tools::convert( str_max_[i], max_[i] );
+  plumed_massert(max_[i]>min_[i],"maximum in grid must be larger than minimum");
+  plumed_massert(nbin[i]>0,"number of grid points must be greater than zero");
  }
- dimension_=gmax.size();
- min_=gmin;
- max_=gmax;
  nbin_=nbin;
- pbc_=pbc;
  dospline_=dospline;
  usederiv_=usederiv;
  if(dospline_) plumed_assert(dospline_==usederiv_);
@@ -84,12 +85,12 @@ void Grid::clear(){
  }
 }
 
-vector<double> Grid::getMin() const {
- return min_;
+vector<std::string> Grid::getMin() const {
+ return str_min_;
 }
 
-vector<double> Grid::getMax() const {
- return max_;
+vector<std::string> Grid::getMax() const {
+ return str_max_;
 }
 
 vector<double> Grid::getDx() const {
@@ -387,83 +388,106 @@ void Grid::addValueAndDerivatives
  addValueAndDerivatives(getIndex(indices),value,der);
 }
 
-void Grid::writeHeader(FILE* file){
- fprintf(file,"#! DERIVATIVE %d\n",int(usederiv_));
- fprintf(file,"#! NVAR      %2u\n",dimension_);
- fprintf(file,"#! BIN"); 
+void Grid::writeHeader(PlumedOFile& ofile){
  for(unsigned i=0;i<dimension_;++i){
-    if( !pbc_[i] ) fprintf(file," %14u",nbin_[i]-1);
-    else fprintf(file," %14u",nbin_[i]);
+     ofile.addConstantField("min_" + argnames[i]);
+     ofile.addConstantField("max_" + argnames[i]);
+     ofile.addConstantField("nbins_" + argnames[i]);
+     ofile.addConstantField("periodic_" + argnames[i]);
  }
- fprintf(file,"\n");
- fprintf(file,"#! MIN");
- for(unsigned i=0;i<dimension_;++i){fprintf(file," %14.9f",min_[i]);}                        
- fprintf(file,"\n");
- fprintf(file,"#! MAX");
- for(unsigned i=0;i<dimension_;++i){
-   if( !pbc_[i] ) fprintf(file," %14.9f",max_[i]-dx_[i]);
-   else fprintf(file," %14.9f",max_[i]);
- } 
- fprintf(file,"\n");
- fprintf(file,"#! PBC");
- for(unsigned i=0;i<dimension_;++i){fprintf(file," %14d",int(pbc_[i]));}
- fprintf(file,"\n");
 }
 
-void Grid::writeToFile(FILE* file){
+void Grid::writeToFile(PlumedOFile& ofile){
  vector<double> xx(dimension_);
  vector<double> der(dimension_);
  double f;
- writeHeader(file);
+ writeHeader(ofile); 
  for(unsigned i=0;i<getSize();++i){
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}
-   if(dimension_>1 && getIndices(i)[dimension_-2]==0){fprintf(file,"\n");} 
-   for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",xx[j]);}
-   fprintf(file,"  %14.9f  ",f);
-   if(usederiv_){for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",der[j]);}}
-   fprintf(file,"\n");
+   if(dimension_>1 && getIndices(i)[dimension_-2]==0) ofile.printf("\n"); 
+   for(unsigned j=0;j<dimension_;++j){
+       ofile.printField("min_" + argnames[j], str_min_[j] );
+       ofile.printField("max_" + argnames[j], str_max_[j] );
+       ofile.printField("nbins_" + argnames[j], static_cast<int>(nbin_[j]) );
+       if( pbc_[j] ) ofile.printField("periodic_" + argnames[j], "true" ); 
+       else          ofile.printField("periodic_" + argnames[j], "false" );
+   }
+   for(unsigned j=0;j<dimension_;++j){ ofile.fmtField(" %14.9f"); ofile.printField(argnames[j],xx[j]); }
+   ofile.fmtField(" %14.9f"); ofile.printField(funcname,f);
+   if(usederiv_) for(unsigned j=0;j<dimension_;++j){ ofile.fmtField(" %14.9f"); ofile.printField("der_" + argnames[j] ,der[j]); } 
+   ofile.printField();
  }
 }
 
-Grid* Grid::create(FILE* file, bool dosparse, bool dospline, bool doder)
+Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, PlumedIFile& ifile, 
+                   const vector<std::string> & gmin,const vector<std::string> & gmax, 
+                   const vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder){
+  Grid* grid=Grid::create(funcl,args,ifile,dosparse,dospline,doder);
+  std::vector<unsigned> cbin( grid->getNbin() );
+  std::vector<std::string> cmin( grid->getMin() ), cmax( grid->getMax() );
+  for(unsigned i=0;i<args.size();++i){
+      plumed_massert( cmin[i]==gmin[i], "mismatched grid min" );
+      plumed_massert( cmax[i]==gmax[i], "mismatched grid max" );
+      plumed_massert( cbin[i]==nbin[i], "mismatched grid nbins" );
+  }
+  return grid;
+}
+
+Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, PlumedIFile& ifile, bool dosparse, bool dospline, bool doder)
 {
  Grid* grid=NULL;
- unsigned nvar,ibool;
- char str1[50],str2[50];
- fscanf(file,"%49s %49s %1000u",str1,str2,&ibool);
- bool hasder=bool(ibool);
- if(doder){plumed_assert(doder==hasder);}
- fscanf(file,"%49s %49s %1000u",str1,str2,&nvar);
+ unsigned nvar=args.size(); bool hasder=false; std::string pstring;
+ std::vector<int> gbin1(nvar); std::vector<unsigned> gbin(nvar); 
+ std::vector<std::string> labels(nvar),gmin(nvar),gmax(nvar);
+ std::vector<std::string> fieldnames; ifile.scanFieldList( fieldnames );
+ // Retrieve names for fields
+ for(unsigned i=0;i<args.size();++i) labels[i]=args[i]->getName();
+ // And read the stuff from the header
+ for(unsigned i=0;i<args.size();++i){
+     ifile.scanField( "min_" + labels[i], gmin[i]);
+     ifile.scanField( "max_" + labels[i], gmax[i]);
+     ifile.scanField( "periodic_" + labels[i], pstring );
+     if( args[i]->isPeriodic() ){
+         plumed_massert( pstring=="true", "input value is periodic but grid is not");
+         std::string pmin, pmax;
+         args[i]->getDomain( pmin, pmax );
+         if( pmin!=gmin[i] || pmax!=gmax[i] ) plumed_merror("mismatch between grid boundaries and periods of values");
+     } else {
+         plumed_massert( pstring=="false", "input value is not periodic but grid is");
+     }
+     ifile.scanField( "nbins_" + labels[i], gbin1[i]);
+     plumed_assert( gbin1[i]>0 ); gbin[i]=gbin1[i];
+     hasder=ifile.FieldExist( "der_" + args[i]->getName() );
+     if( doder && !hasder ) plumed_merror("missing derivatives from grid file"); 
+     for(unsigned j=0;j<fieldnames.size();++j){
+         for(unsigned k=i+1;k<args.size();++k){
+             if( fieldnames[j]==labels[k] ) plumed_merror("arguments in input are not in same order as in grid file");
+         }
+         if( fieldnames[j]==labels[i] ) break;
+     }
+ }
 
- vector<unsigned> gbin(nvar);
- vector<double>   gmin(nvar),gmax(nvar);
- vector<bool>     gpbc(nvar);
- fscanf(file,"%49s %49s",str1,str2);
- for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000u",&gbin[i]);}
- fscanf(file,"%49s %49s",str1,str2);
- for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000lf",&gmin[i]);}
- fscanf(file,"%49s %49s",str1,str2);
- for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000lf",&gmax[i]);}
- fscanf(file,"%49s %49s",str1,str2);
- for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000u",&ibool);gpbc[i]=bool(ibool);}
-
- if(!dosparse){grid=new Grid(gmin,gmax,gbin,gpbc,dospline,doder);}
- else{grid=new SparseGrid(gmin,gmax,gbin,gpbc,dospline,doder);}
+ if(!dosparse){grid=new Grid(funcl,args,gmin,gmax,gbin,dospline,doder);}
+ else{grid=new SparseGrid(funcl,args,gmin,gmax,gbin,dospline,doder);}
 
  vector<double> xx(nvar),dder(nvar);
  vector<double> dx=grid->getDx();
  double f,x;
- while(1){
-  int nread=0;
-  for(unsigned i=0;i<nvar;++i){nread=fscanf(file,"%1000lf",&x);xx[i]=x+dx[i]/2.0;}
-  if(nread<1){break;}
-  fscanf(file,"%1000lf",&f);
-  if(hasder){for(unsigned i=0;i<nvar;++i){fscanf(file,"%1000lf",&dder[i]);}}
+ while( ifile.scanField(funcl,f) ){
+  for(unsigned i=0;i<nvar;++i){ 
+     ifile.scanField(labels[i],x); xx[i]=x+dx[i]/2.0; 
+     ifile.scanField( "min_" + labels[i], gmin[i]);
+     ifile.scanField( "max_" + labels[i], gmax[i]);
+     ifile.scanField( "nbins_" + labels[i], gbin1[i]);
+     ifile.scanField( "periodic_" + labels[i], pstring );
+  }
+  if(hasder){ for(unsigned i=0;i<nvar;++i){ ifile.scanField( "der_" + args[i]->getName(), dder[i] ); } }
   unsigned index=grid->getIndex(xx);
   if(doder){grid->setValueAndDerivatives(index,f,dder);}
   else{grid->setValue(index,f);}
+  ifile.scanField();
  }
  return grid;
 }
@@ -527,20 +551,28 @@ void SparseGrid::addValueAndDerivatives
  for(unsigned int i=0;i<dimension_;++i) der_[index][i]+=der[i]; 
 }
 
-void SparseGrid::writeToFile(FILE* file){
+void SparseGrid::writeToFile(PlumedOFile& ofile){
  vector<double> xx(dimension_);
  vector<double> der(dimension_);
  double f;
- writeHeader(file);
+ writeHeader(ofile);
+ ofile.fmtField(" %14.9f");
  for(iterator it=map_.begin();it!=map_.end();++it){
    unsigned i=(*it).first;
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}
-   if(dimension_>1 && getIndices(i)[dimension_-2]==0){fprintf(file,"\n");}
-   for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",xx[j]);}
-   fprintf(file,"  %14.9f  ",f);
-   if(usederiv_){for(unsigned j=0;j<dimension_;++j){fprintf(file,"%14.9f ",der[j]);}}
-   fprintf(file,"\n");
+   if(dimension_>1 && getIndices(i)[dimension_-2]==0) ofile.printf("\n");
+   for(unsigned j=0;j<dimension_;++j){
+       ofile.printField("min_" + argnames[j], str_min_[j] );
+       ofile.printField("max_" + argnames[j], str_max_[j] );
+       ofile.printField("nbins_" + argnames[j], static_cast<int>(nbin_[j]) );
+       if( pbc_[j] ) ofile.printField("periodic_" + argnames[j], "true" );
+       else          ofile.printField("periodic_" + argnames[j], "false" );
+   }
+   for(unsigned j=0;j<dimension_;++j) ofile.printField(argnames[j],xx[j]);
+   ofile.printField(funcname, f);
+   if(usederiv_){ for(unsigned j=0;j<dimension_;++j) ofile.printField("der_" + argnames[j],der[j]); }
+   ofile.printField();
  }
 }
