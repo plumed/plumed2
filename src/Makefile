@@ -1,8 +1,10 @@
 
-.PHONY: all clean
+.PHONY: all clean lib
 
 # by default we compile the lib directory, which in turn requests all the needeed modules
-all: 
+all: lib
+
+lib: 
 	$(MAKE) -C lib
      
 # list of all the contained directories which can be cleaned
