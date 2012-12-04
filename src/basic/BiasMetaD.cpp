@@ -503,12 +503,31 @@ void BiasMetaD::addGaussian(const Gaussian& hill)
   vector<unsigned> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
   vector<double> der(ncv);
   vector<double> xx(ncv);
-  for(unsigned i=0;i<neighbors.size();++i){
-   unsigned ineigh=neighbors[i];
-   for(unsigned j=0;j<ncv;++j){der[j]=0.0;}
-   BiasGrid_->getPoint(ineigh,xx);   
-   double bias=evaluateGaussian(xx,hill,&der[0]);
-   BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
+  if(comm.Get_size()==1){
+    for(unsigned i=0;i<neighbors.size();++i){
+     unsigned ineigh=neighbors[i];
+     for(unsigned j=0;j<ncv;++j){der[j]=0.0;}
+     BiasGrid_->getPoint(ineigh,xx);   
+     double bias=evaluateGaussian(xx,hill,&der[0]);
+     BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
+    } 
+  } else {
+    unsigned stride=comm.Get_size();
+    unsigned rank=comm.Get_rank();
+    vector<double> allder(ncv*neighbors.size(),0.0);
+    vector<double> allbias(neighbors.size(),0.0);
+    for(unsigned i=rank;i<neighbors.size();i+=stride){
+     unsigned ineigh=neighbors[i];
+     BiasGrid_->getPoint(ineigh,xx);
+     allbias[i]=evaluateGaussian(xx,hill,&allder[ncv*i]);
+    }
+    comm.Sum(&allbias[0],allbias.size());
+    comm.Sum(&allder[0],allder.size());
+    for(unsigned i=0;i<neighbors.size();++i){
+     unsigned ineigh=neighbors[i];
+     for(unsigned j=0;j<ncv;++j){der[j]=allder[ncv*i+j];}
+     BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
+    }
   }
  }
 }
@@ -558,11 +577,15 @@ double BiasMetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 {
  double bias=0.0;
  if(!grid_){
-  for(unsigned i=0;i<hills_.size();++i){
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  for(unsigned i=rank;i<hills_.size();i+=stride){
    bias+=evaluateGaussian(cv,hills_[i],der);
    //finite difference test 
    //finiteDifferenceGaussian(cv,hills_[i]);
   }
+  comm.Sum(&bias,1);
+  if(der) comm.Sum(&der[0],getNumberOfArguments());
  }else{
   if(der){
    vector<double> vder(getNumberOfArguments());
