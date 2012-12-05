@@ -19,35 +19,33 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-#include "FunctionVessel.h"
-#include "ActionWithDistribution.h"
+#include "ActionWithVessel.h"
+#include "VesselStoreAllValues.h"
 
 namespace PLMD {
 
-class VesselSum : public SumVessel {
-public:
-  static void reserveKeyword( Keywords& keys );
-  VesselSum( const VesselOptions& da );
-  double compute( const unsigned& i, const double& val, double& df );
-};
-
-PLUMED_REGISTER_VESSEL(VesselSum,"SUM")
-
-void VesselSum::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("SUM",false,"calculate the sum of all the quantities and store it in a value called keyword.sum.");
-}
-
-VesselSum::VesselSum( const VesselOptions& da ) :
-SumVessel(da)
+VesselStoreAllValues::VesselStoreAllValues( const VesselOptions& da ):
+VesselValueAccess(da)
 {
-  addOutput("sum");
-  log.printf("  value %s.sum contains the sum of all the values\n",(getAction()->getLabel()).c_str());
+  setNumberOfValues( getAction()->getNumberOfFunctionsInAction() );
 }
 
-double VesselSum::compute( const unsigned& i, const double& val, double& df ){
-  plumed_assert( i==0 );
-  df=1.0; return val;
+void VesselStoreAllValues::resize(){
+  ActionWithVessel* aa=getAction();
+  unsigned nfunc=aa->getNumberOfFunctionsInAction();
+  std::vector<unsigned> sizes( nfunc );
+  for(unsigned i=0;i<nfunc;++i) sizes[i]=aa->getNumberOfDerivatives(i);
+  setValueSizes( sizes ); local_resizing();
+}
+
+bool VesselStoreAllValues::calculate( const unsigned& i, const double& tolerance ){
+  Value myvalue=getAction()->retreiveLastCalculatedValue();
+  unsigned ider=value_starts[i]; setBufferElement( ider, myvalue.get() ); ider++;
+  for(unsigned j=0;j<myvalue.getNumberOfDerivatives();++j){ setBufferElement( ider, myvalue.getDerivative(j) ); ider++; }
+  //setValue( i, myvalue );
+  return true;
 }
 
 }
+
+

@@ -20,10 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "FunctionVessel.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "core/ActionVolume.h"
+#include "vessel-base/VesselRegister.h"
+#include "vessel-base/NormedSumVessel.h"
+#include "ActionVolume.h"
 #include "MultiColvar.h"
 #include "tools/HistogramBead.h"
 

@@ -23,7 +23,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/SetupMolInfo.h"
-#include "Vessel.h"
+#include "vessel-base/Vessel.h"
 #include "tools/Pbc.h"
 #include <vector>
 #include <string>
@@ -35,7 +35,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  ActionWithDistribution::registerKeywords( keys );
+  ActionWithVessel::registerKeywords( keys );
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.reserve("numbered","ATOMS","the atoms involved in each of the collective variables you wish to calculate. "
                                "Keywords like ATOMS1, ATOMS2, ATOMS3,... should be listed and one CV will be "
@@ -64,7 +64,7 @@ MultiColvar::MultiColvar(const ActionOptions&ao):
 Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
-ActionWithDistribution(ao),
+ActionWithVessel(ao),
 usepbc(true),
 readatoms(false),
 verbose_output(false),

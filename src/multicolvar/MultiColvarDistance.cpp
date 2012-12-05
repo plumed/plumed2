@@ -91,7 +91,7 @@ PLUMED_REGISTER_ACTION(MultiColvarDistance,"DISTANCES")
 
 void MultiColvarDistance::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  ActionWithDistribution::autoParallelize( keys );
+  ActionWithVessel::autoParallelize( keys );
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
   keys.use("AVERAGE"); keys.use("MIN"); keys.use("LESS_THAN"); 
   keys.use("MORE_THAN"); keys.use("WITHIN"); keys.use("MOMENTS");
@@ -103,7 +103,7 @@ rcut(-1)
 {
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
-  // And setup the ActionWithDistribution
+  // And setup the ActionWithVessel
   requestDistribution();          
   // And check everything has been read in correctly
   checkRead();

@@ -66,52 +66,5 @@ double VesselValueAccess::getValue( const unsigned& icv ) const {
    return getBufferElement( value_starts[icv] );
 }
 
-class VesselStoreAllValues : public VesselValueAccess {
-public:
-/// Constructor
-  VesselStoreAllValues( const VesselOptions& );
-/// This does the resizing of the buffer
-  void resize();
-/// This makes sure all values are stored
-  bool calculate( const unsigned& , const double& );
-/// This makes sure things further down the chain are resized
-  virtual void local_resizing()=0;
-};
-
-class VesselAccumulator : public VesselValueAccess {
-private:
-/// The number of buffered values
-  unsigned nbuffers;
-/// These are pointers to the values in ActionWithValue
-  std::vector<Value*> final_values;
-protected:
-/// Create a value that can be passed between actions
-  void addOutput(const std::string& label);
-/// Add a value to the buffer
-  void addBufferedValue();
-/// Get the number of values we are calculating
-  unsigned getNumberOfValues() const ;
-/// Get pointer to final value
-  Value* getPntrToOutput( const unsigned& i );
-public:
-  VesselAccumulator( const VesselOptions& da );
-/// This does the resizing of the buffer
-  void resize();
-/// This applies all the forces
-  bool applyForce( std::vector<double>& forces );
-};
-
-inline
-Value* VesselAccumulator::getPntrToOutput( const unsigned& iout ){
-  plumed_assert( iout<final_values.size() );
-  return final_values[iout];
-}
-
-inline
-unsigned VesselAccumulator::getNumberOfValues() const {
-  return final_values.size();
-}
-
 }  
-
 #endif

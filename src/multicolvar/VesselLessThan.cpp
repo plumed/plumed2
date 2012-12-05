@@ -20,9 +20,10 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "FunctionVessel.h"
+#include "vessel-base/VesselRegister.h"
+#include "vessel-base/SumVessel.h"
 #include "tools/SwitchingFunction.h"
-#include "ActionWithDistribution.h"
+#include "vessel-base/ActionWithVessel.h"
 
 namespace PLMD {
 

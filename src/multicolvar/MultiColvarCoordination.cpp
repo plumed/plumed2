@@ -81,7 +81,7 @@ PLUMED_REGISTER_ACTION(MultiColvarCoordination,"COORDINATIONNUMBER")
 
 void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  ActionWithDistribution::autoParallelize( keys );
+  ActionWithVessel::autoParallelize( keys );
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","12","The m parameter of the switching function ");
@@ -114,7 +114,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
 
   // Read in the atoms
   int natoms; readAtoms( natoms );
-  // And setup the ActionWithDistribution
+  // And setup the ActionWithVessel
   requestDistribution();
 
   // Create the groups for the neighbor list

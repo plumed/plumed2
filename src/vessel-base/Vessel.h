@@ -35,10 +35,10 @@ namespace PLMD{
 Vessel is an abstract base class.  The classes that inherit
 from it can be used to calculate functions of a distribution of values such
 as the number of values less than a target, the minimum, the average and so 
-on.  This class is used in PLMD::ActionWithDistribution.  
+on.  This class is used in PLMD::ActionWithVessel.  
 */
 
-class ActionWithDistribution;
+class ActionWithVessel;
 class Vessel;
 class Log;
 class PlumedCommunicator;
@@ -49,59 +49,24 @@ class VesselOptions {
 private:
 /// The name of the particular vessel
   std::string myname;
-/// Pointer to ActionWithDistribution that this if from
-  ActionWithDistribution* action;
+/// Pointer to ActionWithVessel that this if from
+  ActionWithVessel* action;
 public:
 /// The parameters that are read into the function
   std::string parameters;
 /// The constructor 
-  VesselOptions( const std::string& thisname, const std::string& params, ActionWithDistribution* aa );
+  VesselOptions( const std::string& thisname, const std::string& params, ActionWithVessel* aa );
 };
-
-class VesselRegister {
-private:
-/// Pointer to a function which, given the keyword for a distribution function, creates it
-  typedef Vessel*(*creator_pointer)(const VesselOptions&);
-/// Pointer to the function that reserves the keyword for the distribution
-  typedef void(*keyword_pointer)(Keywords&);
-/// The set of possible distribution functions we can work with
-  std::map<std::string,creator_pointer> m;
-/// A vector of function pointers - this is used to create the documentation
-  Keywords keywords;
-public:
-/// The destructor
-  ~VesselRegister();
-/// Add a new distribution function option to the register of distribution functions
-  void add(std::string keyword,creator_pointer,keyword_pointer k);
-/// Remove a distribution function from the register of distribution functions
-  void remove(creator_pointer f);
-/// Verify if a distribution keyword is present in the register
-  bool check(std::string keyname);
-/// Create a distribution function of the specified type
-  Vessel* create(std::string keyword, const VesselOptions&da);
-/// Return the keywords
-  Keywords getKeywords();
-};
-
-VesselRegister& vesselRegister();
-
-#define PLUMED_REGISTER_VESSEL(classname,keyword) \
-  static class classname##RegisterMe{ \
-    static PLMD::Vessel * create(const PLMD::VesselOptions&da){return new classname(da);} \
-  public: \
-    classname##RegisterMe(){PLMD::vesselRegister().add(keyword,create,classname::reserveKeyword);}; \
-    ~classname##RegisterMe(){PLMD::vesselRegister().remove(create);}; \
-  } classname##RegisterMeObject;
 
 class Vessel {
-friend class ActionWithDistribution;
+friend class ActionWithVessel;
 private:
 /// The keyword for the vessel in the input file
   std::string myname;
 /// The label for this object in the input file
   std::string label;
 /// The action that this vessel is created within
-  ActionWithDistribution* action;
+  ActionWithVessel* action;
 /// The data we are storing in this action
   std::vector<double> data_buffer;
 /// Set everything in the vessel to zero
@@ -118,7 +83,7 @@ protected:
 /// Report an error in the input for a distribution function
   void error(const std::string& errmsg);
 /// Return a pointer to the action we are working in
-  ActionWithDistribution* getAction();
+  ActionWithVessel* getAction();
 /// Set the size of the data buffer
   void resizeBuffer( const unsigned& n );
 /// Set the value of the ith element in the buffer
@@ -159,7 +124,7 @@ void Vessel::resizeBuffer( const unsigned& n ){
 }
 
 inline
-ActionWithDistribution* Vessel::getAction(){
+ActionWithVessel* Vessel::getAction(){
   return action;
 }
 

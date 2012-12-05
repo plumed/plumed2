@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_ActionWithDistribution_h
-#define __PLUMED_ActionWithDistribution_h
+#ifndef __PLUMED_ActionWithVessel_h
+#define __PLUMED_ActionWithVessel_h
 
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
@@ -39,7 +39,7 @@ This is used to create PLMD::Action objects that are computed by calculating the
 times.  This is used in PLMD::MultiColvar.
 */
 
-class ActionWithDistribution : public virtual Action {
+class ActionWithVessel : public virtual Action {
 friend class Vessel;
 friend class FieldVessel;
 private:
@@ -91,8 +91,8 @@ public:
 /// By calling this function during register keywords you tell plumed to use a
 /// a default method to parallelize the calculation.
   static void autoParallelize(Keywords& keys);
-  ActionWithDistribution(const ActionOptions&ao);
-  ~ActionWithDistribution();
+  ActionWithVessel(const ActionOptions&ao);
+  ~ActionWithVessel();
 /// Activate the jth colvar
   virtual void activateValue( const unsigned j )=0;
 /// Ensure that nothing gets done for your deactivated colvars
@@ -121,49 +121,49 @@ public:
 };
 
 inline
-double ActionWithDistribution::getTolerance() const {
+double ActionWithVessel::getTolerance() const {
   return tolerance;
 }
 
 inline
-bool ActionWithDistribution::isTimeForNeighborListUpdate() const {
+bool ActionWithVessel::isTimeForNeighborListUpdate() const {
   return reduceAtNextStep;
 }
 
 inline
-bool ActionWithDistribution::isPossibleToSkip(){
+bool ActionWithVessel::isPossibleToSkip(){
   return false;
 }
 
 inline
-unsigned ActionWithDistribution::getNumberOfActiveMembers() const {
+unsigned ActionWithVessel::getNumberOfActiveMembers() const {
   return members.getNumberActive();
 }
 
 inline
-unsigned ActionWithDistribution::getActiveMember(const unsigned& m ) const {
+unsigned ActionWithVessel::getActiveMember(const unsigned& m ) const {
   plumed_assert( m<members.getNumberActive() );
   return members[m];
 }
 
 inline
-void ActionWithDistribution::deactivate( const unsigned& m ){
+void ActionWithVessel::deactivate( const unsigned& m ){
   members.deactivate(m); 
   deactivateValue(m);
 }
 
 inline
-void ActionWithDistribution::updateActiveMembers(){
+void ActionWithVessel::updateActiveMembers(){
   members.mpi_gatherActiveMembers( comm );
 }
 
 inline
-unsigned ActionWithDistribution::getNumberOfVessels() const {
+unsigned ActionWithVessel::getNumberOfVessels() const {
   return functions.size();
 }
 
 inline
-Vessel* ActionWithDistribution::getPntrToVessel( const unsigned& i ){
+Vessel* ActionWithVessel::getPntrToVessel( const unsigned& i ){
   plumed_assert( i<functions.size() );
   return functions[i];
 }

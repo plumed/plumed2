@@ -19,46 +19,35 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_ActionVolume_h
-#define __PLUMED_ActionVolume_h
-
-#include "ActionAtomistic.h"
-#include "tools/HistogramBead.h"
+#include "SumVessel.h"
+#include "VesselRegister.h"
+#include "ActionWithVessel.h"
 
 namespace PLMD {
 
-/**
-\ingroup INHERIT
-This is the abstract base class to use for implementing a new way of definining a particular region of the simulation
-box. You can use this to calculate the number of atoms inside that part or the average value of a quantity like the 
-coordination number inside that part of the cell. 
-*/
-
-class ActionVolume :
-  public ActionAtomistic
-  {
-friend class VesselCVDens;
-private:
-  double sigma;
-protected:
-  void setSigma( const double& sig );
-  double getSigma() const ;
+class VesselSum : public SumVessel {
 public:
-  static void registerKeywords( Keywords& keys );
-  ActionVolume(const ActionOptions&);
-  virtual void calculateNumberInside( const std::vector<Value>& cpos, HistogramBead& bead, Value& weight )=0;
-  void apply(){};
+  static void reserveKeyword( Keywords& keys );
+  VesselSum( const VesselOptions& da );
+  double compute( const unsigned& i, const double& val, double& df );
 };
 
-inline
-void ActionVolume::setSigma( const double& sig ){
-  sigma=sig;
+PLUMED_REGISTER_VESSEL(VesselSum,"SUM")
+
+void VesselSum::reserveKeyword( Keywords& keys ){
+  keys.reserveFlag("SUM",false,"calculate the sum of all the quantities and store it in a value called keyword.sum.");
 }
 
-inline
-double ActionVolume::getSigma() const {
-  return sigma;
+VesselSum::VesselSum( const VesselOptions& da ) :
+SumVessel(da)
+{
+  addOutput("sum");
+  log.printf("  value %s.sum contains the sum of all the values\n",(getAction()->getLabel()).c_str());
+}
+
+double VesselSum::compute( const unsigned& i, const double& val, double& df ){
+  plumed_assert( i==0 );
+  df=1.0; return val;
 }
 
 }
-#endif

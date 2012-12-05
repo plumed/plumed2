@@ -19,49 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "VesselValueAccess.h"
-#include "ActionWithDistribution.h"
+#include "VesselAccumulator.h"
+#include "ActionWithVessel.h"
 
 namespace PLMD {
-
-VesselValueAccess::VesselValueAccess( const VesselOptions& da ) :
-Vessel(da)
-{
-}
-
-void VesselValueAccess::setNumberOfValues( const unsigned& n ){
-   value_starts.resize( n + 1 );
-}
-
-void VesselValueAccess::setValueSizes( const std::vector<unsigned>& val_sizes ){
-  plumed_assert( (val_sizes.size()+1)==value_starts.size() );
-  unsigned vstart=0;
-  for(unsigned i=0;i<val_sizes.size();++i){ value_starts[i]=vstart; vstart+=val_sizes[i]+1; }
-  value_starts[val_sizes.size()]=vstart;
-  resizeBuffer( vstart ); 
-}
-
-VesselStoreAllValues::VesselStoreAllValues( const VesselOptions& da ):
-VesselValueAccess(da)
-{
-  setNumberOfValues( getAction()->getNumberOfFunctionsInAction() );
-}
-
-void VesselStoreAllValues::resize(){
-  ActionWithDistribution* aa=getAction();
-  unsigned nfunc=aa->getNumberOfFunctionsInAction();
-  std::vector<unsigned> sizes( nfunc );
-  for(unsigned i=0;i<nfunc;++i) sizes[i]=aa->getNumberOfDerivatives(i);
-  setValueSizes( sizes ); local_resizing();
-}
-
-bool VesselStoreAllValues::calculate( const unsigned& i, const double& tolerance ){
-  Value myvalue=getAction()->retreiveLastCalculatedValue();
-  unsigned ider=value_starts[i]; setBufferElement( ider, myvalue.get() ); ider++;
-  for(unsigned j=0;j<myvalue.getNumberOfDerivatives();++j){ setBufferElement( ider, myvalue.getDerivative(j) ); ider++; }
-  //setValue( i, myvalue );
-  return true;
-}
 
 VesselAccumulator::VesselAccumulator( const VesselOptions& da ):
 VesselValueAccess(da),
@@ -77,12 +38,11 @@ void VesselAccumulator::addOutput( const std::string& label ){
    ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
    plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
 
-   a->addComponentWithDerivatives( label ); 
+   a->addComponentWithDerivatives( label );
    a->componentIsNotPeriodic( label );
    final_values.push_back( a->copyOutput( a->getNumberOfComponents()-1 ) );
    setNumberOfValues( nbuffers + final_values.size() );
 }
-
 
 void VesselAccumulator::resize(){
   unsigned nder=getAction()->getNumberOfDerivatives();
@@ -105,3 +65,4 @@ bool VesselAccumulator::applyForce( std::vector<double>& forces ){
 }
 
 }
+

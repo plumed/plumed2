@@ -19,44 +19,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "FunctionVessel.h"
-#include "ActionWithDistribution.h"
+#include "NormedSumVessel.h"
+#include "ActionWithVessel.h"
 
 namespace PLMD {
-
-SumVessel::SumVessel( const VesselOptions& da ):
-VesselAccumulator(da)
-{
-}
-
-bool SumVessel::calculate( const unsigned& icv, const double& tolerance ){
-  bool keep=false; double f, df; unsigned jout;
-  Value myval=getAction()->retreiveLastCalculatedValue();
-  for(unsigned j=0;j<getNumberOfValues();++j){
-      f=compute( j, myval.get(), df );
-      if( fabs(f)>tolerance ){
-          keep=true; 
-          jout=value_starts[j]; 
-          addToBufferElement( jout, f ); jout++;
-          getAction()->mergeDerivatives( icv, myval, df, jout, this );        
-      }  
-  }
-  return keep;
-}
-
-double SumVessel::final_computations( const unsigned& ival, const double& valin, double& df ){
-  df=1; return valin; 
-}
-
-void SumVessel::finish( const double& tolerance ){
-  double f, df;
-  for(unsigned i=0;i<getNumberOfValues();++i){
-      getValue( i, myvalue2 ); 
-      f=final_computations( i, myvalue2.get(), df );
-      myvalue2.chainRule(df); myvalue2.set(f);
-      copy( myvalue2, getPntrToOutput(i) );
-  }
-}
 
 NormedSumVessel::NormedSumVessel( const VesselOptions& da ):
 VesselAccumulator(da),
@@ -118,7 +84,7 @@ void NormedSumVessel::finish( const double& tolerance ){
   if( donorm ){
      getValue(0, myweight2 ); 
      for(unsigned i=0;i<getNumberOfValues();++i){
-         getValue( i+1, myvalue2 );       /// ARSE periodicity
+         getValue( i+1, myvalue2 );       /// periodicity is missing from here
          quotient( myvalue2, myweight2, getPntrToOutput(i) );
      }
   } else {

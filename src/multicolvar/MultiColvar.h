@@ -24,7 +24,7 @@
 
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
-#include "ActionWithDistribution.h"
+#include "vessel-base/ActionWithVessel.h"
 #include <vector>
 
 #define PLUMED_MULTICOLVAR_INIT(ao) Action(ao),MultiColvar(ao)
@@ -42,7 +42,7 @@ thereof, whtin it there is \ref AddingAMultiColvar "information" as to how to go
 class MultiColvar :
   public ActionAtomistic,
   public ActionWithValue,
-  public ActionWithDistribution
+  public ActionWithVessel
   {
 private:
   bool usepbc;

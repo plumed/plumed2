@@ -19,23 +19,24 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionWithDistribution.h"
+#include "ActionWithVessel.h"
 #include "Vessel.h"
+#include "VesselRegister.h"
 
 using namespace std;
 using namespace PLMD;
 
-void ActionWithDistribution::registerKeywords(Keywords& keys){
+void ActionWithVessel::registerKeywords(Keywords& keys){
   keys.add("optional","TOL","when accumulating sums quantities that contribute less than this will be ignored.");
   keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities that contributed less than TOL at the previous neighbor list update step are ignored.");
   keys.add( vesselRegister().getKeywords() );
 }
 
-void ActionWithDistribution::autoParallelize(Keywords& keys){
+void ActionWithVessel::autoParallelize(Keywords& keys){
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize over collective variables");
 }
 
-ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
+ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   Action(ao),
   read(false),
   serial(false),
@@ -59,16 +60,16 @@ ActionWithDistribution::ActionWithDistribution(const ActionOptions&ao):
   }
 }
 
-ActionWithDistribution::~ActionWithDistribution(){
+ActionWithVessel::~ActionWithVessel(){
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
 }
 
-void ActionWithDistribution::addVessel( const std::string& name, const std::string& input ){
+void ActionWithVessel::addVessel( const std::string& name, const std::string& input ){
   read=true; VesselOptions da(name,input,this);
   functions.push_back( vesselRegister().create(name,da) );
 }
 
-void ActionWithDistribution::requestDistribution(){
+void ActionWithVessel::requestDistribution(){
   // Loop over all keywords find the vessels and create appropriate functions
   for(unsigned i=0;i<keywords.size();++i){
       std::string thiskey,input; thiskey=keywords.getKeyword(i);
@@ -107,7 +108,7 @@ void ActionWithDistribution::requestDistribution(){
   }
 }
 
-void ActionWithDistribution::resizeFunctions(){
+void ActionWithVessel::resizeFunctions(){
   unsigned bufsize=0;
   for(unsigned i=0;i<functions.size();++i){
      functions[i]->resize();
@@ -116,12 +117,12 @@ void ActionWithDistribution::resizeFunctions(){
   buffer.resize( bufsize );
 }
 
-void ActionWithDistribution::activateAll(){
+void ActionWithVessel::activateAll(){
   members.activateAll(); members.updateActiveMembers();
   for(unsigned i=0;i<members.getNumberActive();++i) activateValue(i);
 }
 
-Vessel* ActionWithDistribution::getVessel( const std::string& name ){
+Vessel* ActionWithVessel::getVessel( const std::string& name ){
   std::string myname;
   for(unsigned i=0;i<functions.size();++i){
      if( functions[i]->getLabel(myname) ){
@@ -132,7 +133,7 @@ Vessel* ActionWithDistribution::getVessel( const std::string& name ){
   return NULL;
 }
 
-void ActionWithDistribution::calculateAllVessels( const int& stepn ){
+void ActionWithVessel::calculateAllVessels( const int& stepn ){
   plumed_massert( read, "you must have a call to requestDistribution somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
@@ -202,6 +203,6 @@ void ActionWithDistribution::calculateAllVessels( const int& stepn ){
   } 
 }
 
-void ActionWithDistribution::retrieveDomain( std::string& min, std::string& max ){
-  plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithDistribution can retrieve the domain");
+void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){
+  plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithVessel can retrieve the domain");
 }

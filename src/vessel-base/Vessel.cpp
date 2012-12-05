@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionWithDistribution.h"
+#include "ActionWithVessel.h"
 #include "Vessel.h"
 #include "tools/PlumedException.h"
 #include "core/Value.h"
@@ -27,50 +27,7 @@
 
 namespace PLMD {
 
-VesselRegister::~VesselRegister(){
-  if(m.size()>0){
-    std::string names="";
-    for(std::map<std::string,creator_pointer>::iterator p=m.begin();p!=m.end();++p) names+=p->first+" ";
-    plumed_merror("Directive "+ names +" has not been properly unregistered");
-  }
-}
-
-VesselRegister& vesselRegister(){
-  static VesselRegister ans;
-  return ans;
-}
-
-void VesselRegister::remove(creator_pointer f){
-  for(std::map<std::string,creator_pointer>::iterator p=m.begin();p!=m.end();++p){
-    if((*p).second==f){
-      m.erase(p); break;
-    }
-  }
-}
-
-void VesselRegister::add(std::string keyword,creator_pointer f,keyword_pointer k){
-  plumed_massert(m.count(keyword)==0,"keyword has already been registered");
-  m.insert(std::pair<std::string,creator_pointer>(keyword,f));
-  k( keywords );   // Store the keywords for all the things
-}
-
-bool VesselRegister::check(std::string key){
-  if( m.count(key)>0 ) return true;
-  return false;
-}
-
-Vessel* VesselRegister::create(std::string keyword, const VesselOptions&da){
-  Vessel* df;
-  if(check(keyword)) df=m[keyword](da);
-  else df=NULL;
-  return df;
-}
-
-Keywords VesselRegister::getKeywords(){
-  return keywords;
-}
-
-VesselOptions::VesselOptions(const std::string& thisname, const std::string& params, ActionWithDistribution* aa ):
+VesselOptions::VesselOptions(const std::string& thisname, const std::string& params, ActionWithVessel* aa ):
 myname(thisname),
 action(aa),
 parameters(params)
