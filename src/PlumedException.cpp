@@ -20,7 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedException.h"
+
+#if ! defined(__PLUMED_EXCEPTIONS)
 #include <execinfo.h>
+#endif
+
 #include <cstdio>
 #include <cstdlib>
 
