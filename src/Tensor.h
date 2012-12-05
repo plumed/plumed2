@@ -138,6 +138,15 @@ public:
 /// vector-matrix multiplication
   template<unsigned n_,unsigned m_>
   friend VectorGeneric<n_> matmul(const VectorGeneric<m_>&,const TensorGeneric<m_,n_>&);
+/// matrix-matrix-matrix multiplication
+  template<unsigned n_,unsigned m_,unsigned l_,unsigned i_>
+  friend TensorGeneric<n_,i_> matmul(const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&,const TensorGeneric<l_,i_>&);
+/// matrix-matrix-vector multiplication
+  template<unsigned n_,unsigned m_,unsigned l_>
+  friend VectorGeneric<n_> matmul(const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&,const VectorGeneric<l_>&);
+/// vector-matrix-matrix multiplication
+  template<unsigned n_,unsigned m_,unsigned l_>
+  friend VectorGeneric<l_> matmul(const VectorGeneric<n_>,const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&);
 /// returns the determinant of a tensor
   friend double determinant(const TensorGeneric<3,3>&);
 /// returns the inverse of a tensor (same as inverse())
@@ -351,6 +360,21 @@ VectorGeneric<n> matmul(const VectorGeneric<m>&a,const TensorGeneric<m,n>&b){
   VectorGeneric<n> t;
   for(unsigned i=0;i<n;i++) for(unsigned j=0;j<m;j++) t(i)+=a(j)*b(j,i);
   return t;
+}
+
+template<unsigned n,unsigned m,unsigned l,unsigned i>
+TensorGeneric<n,i> matmul(const TensorGeneric<n,m>&a,const TensorGeneric<m,l>&b,const TensorGeneric<l,i>&c){
+  return matmul(matmul(a,b),c);
+}
+
+template<unsigned n,unsigned m,unsigned l>
+VectorGeneric<n> matmul(const TensorGeneric<n,m>&a,const TensorGeneric<m,l>&b,const VectorGeneric<l>&c){
+  return matmul(matmul(a,b),c);
+}
+
+template<unsigned n,unsigned m,unsigned l> 
+VectorGeneric<l> matmul(const VectorGeneric<n>a,const TensorGeneric<n,m>&b,const TensorGeneric<m,l>&c){
+  return matmul(matmul(a,b),c);
 }
 
 inline
