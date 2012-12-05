@@ -1,1 +1,1 @@
-../scripts/test.make
+include ../scripts/test.make
