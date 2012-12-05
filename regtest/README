@@ -12,8 +12,8 @@ HOW TO ADD A NEW TEST
 Add a new directory rtXXX, let's say rt105, and go there:
 > cd rt105
 
-Link the common makefile
-> ln -s ../scripts/test.make ./Makefile
+Put a standard makefile there:
+> echo "include ../scripts/test.make" > rt105/Makefile
 
 Put in the rt105 directory a "config" files containing the
 options which define your test.
