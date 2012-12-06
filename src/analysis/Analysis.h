@@ -22,8 +22,8 @@
 #ifndef __PLUMED_Analysis_h
 #define __PLUMED_Colvar_h
 
-#include "ActionPilot.h"
-#include "ActionWithArguments.h"
+#include "core/ActionPilot.h"
+#include "core/ActionWithArguments.h"
 
 #define PLUMED_ANALYSIS_INIT(ao) Action(ao),Analysis(ao)
 

@@ -21,10 +21,10 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "Analysis.h"
-#include "ActionSet.h"
-#include "ActionWithValue.h"
-#include "PlumedMain.h"
-#include "Atoms.h"
+#include "core/ActionSet.h"
+#include "core/ActionWithValue.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 namespace PLMD {
 

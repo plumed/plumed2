@@ -20,9 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Analysis.h"
-#include "ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/Grid.h"
-#include "KernelFunctions.h"
+#include "tools/KernelFunctions.h"
 
 namespace PLMD{
 

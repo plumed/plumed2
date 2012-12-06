@@ -30,7 +30,7 @@
 #include "core/Value.h"
 #include "PlumedFile.h"
 #include "PlumedException.h"
-#include "core/KernelFunctions.h"
+#include "KernelFunctions.h"
 
 using namespace std;
 using namespace PLMD;

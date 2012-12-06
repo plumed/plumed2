@@ -22,9 +22,9 @@
 #ifndef __PLUMED_KernelFunctions_h
 #define __PLUMED_KernelFunctions_h
 
-#include "tools/Tools.h"
-#include "tools/Matrix.h"
-#include "Value.h"
+#include "Tools.h"
+#include "Matrix.h"
+#include "core/Value.h"
 #include <vector>
 #include <math.h>
 
