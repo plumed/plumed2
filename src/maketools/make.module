@@ -25,6 +25,7 @@ DEP=$(addprefix deps/,$(SRC:.cpp=.d))
 all:
 	@echo Creating links to other here to simplify .h inclusion:
 	@for dir in $(USE) ; do test -L $$dir || ln -s ../$$dir . && echo "   " $$dir ;  done
+	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ;  done
 	@echo Building dependencies
 	@for dir in $(BUILDAFTER) ; do echo "   " $$dir ; cd ../$$dir ; $(MAKE) ; cd - ; done
 	$(MAKE) obj
