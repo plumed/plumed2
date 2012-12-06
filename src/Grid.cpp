@@ -496,16 +496,17 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, PlumedIFi
      ifile.scanField( "min_" + labels[i], gmin[i]);
      ifile.scanField( "max_" + labels[i], gmax[i]);
      ifile.scanField( "periodic_" + labels[i], pstring );
+     ifile.scanField( "nbins_" + labels[i], gbin1[i]);
+     plumed_assert( gbin1[i]>0 ); 
      if( args[i]->isPeriodic() ){
          plumed_massert( pstring=="true", "input value is periodic but grid is not");
          std::string pmin, pmax;
-         args[i]->getDomain( pmin, pmax );
+         args[i]->getDomain( pmin, pmax ); gbin[i]=gbin1[i];
          if( pmin!=gmin[i] || pmax!=gmax[i] ) plumed_merror("mismatch between grid boundaries and periods of values");
      } else {
+         gbin[i]=gbin1[i]-1;  // Note header in grid file indicates one more bin that there should be when data is not periodic
          plumed_massert( pstring=="false", "input value is not periodic but grid is");
      }
-     ifile.scanField( "nbins_" + labels[i], gbin1[i]);
-     plumed_assert( gbin1[i]>0 ); gbin[i]=gbin1[i];
      hasder=ifile.FieldExist( "der_" + args[i]->getName() );
      if( doder && !hasder ) plumed_merror("missing derivatives from grid file"); 
      for(unsigned j=0;j<fieldnames.size();++j){
