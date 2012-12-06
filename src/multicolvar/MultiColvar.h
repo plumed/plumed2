@@ -22,8 +22,8 @@
 #ifndef __PLUMED_MultiColvar_h
 #define __PLUMED_MultiColvar_h
 
-#include "basic/ActionAtomistic.h"
-#include "basic/ActionWithValue.h"
+#include "core/ActionAtomistic.h"
+#include "core/ActionWithValue.h"
 #include "ActionWithDistribution.h"
 #include <vector>
 

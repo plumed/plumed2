@@ -1,8 +1,8 @@
-#include "../basic/ActionRegister.h"
-#include "../basic/ActionAtomistic.h"
-#include "../basic/ActionPilot.h"
-#include "../basic/PlumedMain.h"
-#include "../basic/Atoms.h"
+#include "../core/ActionRegister.h"
+#include "../core/ActionAtomistic.h"
+#include "../core/ActionPilot.h"
+#include "../core/PlumedMain.h"
+#include "../core/Atoms.h"
 #include "../tools/PlumedException.h"
 #include <unistd.h>
 

@@ -21,9 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedFile.h"
 #include "PlumedException.h"
-#include "basic/Action.h"
-#include "basic/PlumedMain.h"
-#include "basic/Value.h"
+#include "core/Action.h"
+#include "core/PlumedMain.h"
+#include "core/Value.h"
 #include "PlumedCommunicator.h"
 #include "Tools.h"
 #include <cstdarg>

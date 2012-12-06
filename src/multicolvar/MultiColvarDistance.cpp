@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
-#include "basic/ActionRegister.h"
+#include "core/ActionRegister.h"
 
 #include <string>
 #include <cmath>

@@ -1,4 +1,4 @@
-USE=basic wrapper config tools
+USE=core wrapper config tools
 BUILDAFTER=config
 
 # generic makefile

@@ -21,9 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "FunctionVessel.h"
-#include "basic/PlumedMain.h"
-#include "basic/ActionSet.h"
-#include "basic/ActionVolume.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/ActionVolume.h"
 #include "MultiColvar.h"
 #include "tools/HistogramBead.h"
 

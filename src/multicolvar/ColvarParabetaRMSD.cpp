@@ -20,9 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarSecondaryStructureRMSD.h"
-#include "basic/ActionRegister.h"
-#include "basic/PlumedMain.h"
-#include "basic/Atoms.h"
+#include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 namespace PLMD {
 

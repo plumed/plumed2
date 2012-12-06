@@ -27,7 +27,7 @@
 
 #include "Grid.h"
 #include "Tools.h"
-#include "basic/Value.h"
+#include "core/Value.h"
 #include "PlumedFile.h"
 #include "PlumedException.h"
 

@@ -22,8 +22,8 @@
 #ifndef __PLUMED_ActionWithDistribution_h
 #define __PLUMED_ActionWithDistribution_h
 
-#include "basic/ActionWithValue.h"
-#include "basic/ActionAtomistic.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionAtomistic.h"
 #include "tools/PlumedException.h"
 #include "tools/DynamicList.h"
 #include <vector>

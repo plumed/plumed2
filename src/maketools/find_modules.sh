@@ -1,5 +1,4 @@
 #!/bin/bash
-# sort ../basic ../tools $(shell for d in $(MODULES) ; do test -f ../$$d.off || echo ../$$d ; done ; for dir in ../* ; do test -d $$dir && test -e $$dir.on && echo $$dir ; done
 
 cd ../
 for dir in *

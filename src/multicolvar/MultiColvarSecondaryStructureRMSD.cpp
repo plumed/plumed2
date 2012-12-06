@@ -20,8 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarSecondaryStructureRMSD.h"
-#include "basic/PlumedMain.h"
-#include "basic/Atoms.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "tools/RMSD.h"
 #include "tools/DRMSD.h"
 

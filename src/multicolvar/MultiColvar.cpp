@@ -20,9 +20,9 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
-#include "basic/PlumedMain.h"
-#include "basic/ActionSet.h"
-#include "basic/SetupMolInfo.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/SetupMolInfo.h"
 #include "Vessel.h"
 #include "tools/Pbc.h"
 #include <vector>

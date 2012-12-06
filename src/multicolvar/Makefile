@@ -1,4 +1,4 @@
-USE=basic tools
+USE=core tools
 BUILDAFTER=config
 
 # generic makefile

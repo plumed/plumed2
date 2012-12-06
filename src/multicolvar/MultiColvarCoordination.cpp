@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
 #include "tools/NeighborList.h"
-#include "basic/ActionRegister.h"
+#include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 
 #include <string>

@@ -22,7 +22,7 @@
 #include "ActionWithDistribution.h"
 #include "Vessel.h"
 #include "tools/PlumedException.h"
-#include "basic/Value.h"
+#include "core/Value.h"
 #include "tools/Log.h"
 
 namespace PLMD {
