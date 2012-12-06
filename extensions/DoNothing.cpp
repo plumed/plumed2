@@ -1,5 +1,5 @@
-#include "../src/basic/ActionRegister.h"
-#include "../src/basic/ActionSetup.h"
+#include "../src/core/ActionRegister.h"
+#include "../src/core/ActionSetup.h"
 
 using namespace std;
 
