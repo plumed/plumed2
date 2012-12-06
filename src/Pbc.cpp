@@ -44,6 +44,8 @@ void Pbc::fullSearch(Vector&d)const{
    Vector best(d);
    double lbest=d.modulo2();
    for(int i=-smax;i<=smax;i++) for(int j=-smax;j<=smax;j++) for(int k=-smax;k<=smax;k++){
+     int x=i*i+j*j+k*k;
+     if(x==0 || x==3) continue;
      Vector trial=d+i*a0+j*a1+k*a2;
      double ltrial=trial.modulo2();
      if(ltrial<lbest){
