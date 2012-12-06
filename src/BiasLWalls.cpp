@@ -87,11 +87,11 @@ exp(getNumberOfArguments(),2.0),
 eps(getNumberOfArguments(),1.0),
 offset(getNumberOfArguments(),0.0)
 {
-  parseVector("OFFSET",kappa);
+  parseVector("OFFSET",offset);
   plumed_assert(offset.size()==getNumberOfArguments());
-  parseVector("EPS",kappa);
+  parseVector("EPS",eps);
   plumed_assert(eps.size()==getNumberOfArguments());
-  parseVector("EXP",kappa);
+  parseVector("EXP",exp);
   plumed_assert(exp.size()==getNumberOfArguments());
   parseVector("KAPPA",kappa);
   plumed_assert(kappa.size()==getNumberOfArguments());
