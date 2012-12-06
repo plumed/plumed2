@@ -487,6 +487,7 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 
     step+=stride;
   }
+  p.cmd("runFinalJobs");
 
   if(fp_forces) fclose(fp_forces);
   fclose(fp);

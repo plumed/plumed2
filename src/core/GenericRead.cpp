@@ -41,7 +41,6 @@ class GenericRead :
 public ActionPilot,
 public ActionWithValue
 {
-friend class ActionPilot;
 private:
   bool cloned_file;
   unsigned nlinesPerStep;
@@ -153,7 +152,7 @@ void GenericRead::prepare(){
       double du_time; 
       if( !ifile->scanField("time",du_time) ){
            error("Reached end of file " + filename + " before end of trajectory");
-      } else if( fabs( du_time-getTime() )>epsilon ){
+      } else if( fabs( du_time-getTime() )>plumed.getAtoms().getTimeStep() ){
           std::string str_dutime,str_ptime; Tools::convert(du_time,str_dutime); Tools::convert(getTime(),str_ptime);
           error("mismatched times in colvar files : colvar time=" + str_dutime + " plumed time=" + str_ptime );
       }
@@ -161,9 +160,14 @@ void GenericRead::prepare(){
 }
 
 void GenericRead::calculate(){
+  std::string smin, smax;
   for(unsigned i=0;i<readvals.size();++i){
       ifile->scanField( readvals[i] );
       getPntrToComponent(i)->set( readvals[i]->get() ); 
+      if( readvals[i]->isPeriodic() ){
+          readvals[i]->getDomain( smin, smax );
+          getPntrToComponent(i)->setDomain( smin, smax );
+      } 
   }
 }
 

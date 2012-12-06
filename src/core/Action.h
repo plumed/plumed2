@@ -186,6 +186,11 @@ public:
 /// The set of all Actions is updated in forward order.
   virtual void update(){};
 
+/// RunFinalJobs
+/// This method is called once at the very end of the calculation.
+/// The set of all Actions in run for the final time in forward order.
+  virtual void runFinalJobs(){};
+
 /// Tell to the Action to flush open files
   void fflush();
 
