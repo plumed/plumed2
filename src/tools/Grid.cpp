@@ -472,8 +472,11 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, PlumedIFi
   for(unsigned i=0;i<args.size();++i){
       plumed_massert( cmin[i]==gmin[i], "mismatched grid min" );
       plumed_massert( cmax[i]==gmax[i], "mismatched grid max" );
-      if( args[i]->isPeriodic() ) plumed_massert( cbin[i]==nbin[i], "mismatched grid nbins" );
-      else plumed_massert( (cbin[i]-1)==nbin[i], "mismatched grid nbins");
+      if( args[i]->isPeriodic() ){
+        plumed_massert( cbin[i]==nbin[i], "mismatched grid nbins" );
+      } else {
+        plumed_massert( (cbin[i]-1)==nbin[i], "mismatched grid nbins");
+      }
   }
   return grid;
 }
