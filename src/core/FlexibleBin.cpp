@@ -55,7 +55,6 @@ void FlexibleBin::update(bool nowAddAHill){
 	switch (type){
 		// This should be called every time
 		case diffusion: 
-			cerr<< "Doing diffusion "<<endl; 
                         //
                         // THE AVERAGE VALUE
                         //
