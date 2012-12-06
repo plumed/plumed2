@@ -135,7 +135,7 @@ void ColvarPathMSDBase::calculate(){
   typedef  vector< class ImagePath  >::iterator imgiter;
   for(imgiter it=imgVec.begin();it!=imgVec.end();++it){ 
     (*it).similarity=exp(-lambda*((*it).distance));
-    log<<"DISTANCE "<<(*it).distance<<"\n";
+    //log<<"DISTANCE "<<(*it).distance<<"\n";
     for(unsigned i=0;i<s_path.size();i++){
    	 s_path[i]+=((*it).property[i])*(*it).similarity;
     }
