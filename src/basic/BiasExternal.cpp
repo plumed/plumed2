@@ -23,6 +23,7 @@
 #include "ActionRegister.h"
 #include "tools/Grid.h"
 #include "tools/PlumedException.h"
+#include "tools/PlumedFile.h"
 
 
 using namespace std;
@@ -43,6 +44,51 @@ EXTERNAL ARG=d1 FILENAME=bias.dat LABEL=external
 \endverbatim
 (See also \ref DISTANCE \ref PRINT).
 
+The header in the file bias.dat should read:
+\verbatim
+#! FIELDS d1 external.bias der_d1
+#! SET min_d1 0.0
+#! SET max_d1 1.0
+#! SET nbins_d1 100
+#! SET periodic_d1 false
+\endverbatim
+
+This should then be followed by the value of the potential and its derivative
+at 100 equally spaced points along the distance between 0 and 1. If you run
+with NOSPLINE you do not need to provide derivative information.    
+
+You can also include grids that are a function of more than one collective 
+variable.  For instance the following would be the input for an external
+potential acting on two torsional angles:
+\verbatim
+TORSION ATOMS=4,5,6,7 LABEL=t1
+TORSION ATOMS=6,7,8,9 LABEL=t2
+EXTERNAL ARG=t1,t2 FILENAME=bias.dat LABEL=ext
+\endverbatim
+
+The header in the file bias.dat for this calculation would read:
+\verbatim
+#! FIELDS t1 t2 ext.bias der_t1 der_t2
+#! SET min_t1 -pi
+#! SET max_t1 +pi
+#! SET nbins_t1 100
+#! SET peirodic_t1 true
+#! SET min_t2 -pi
+#! SET max_t2 +pi
+#! SET nbins_t2 100
+#! SET peirodic_t2 true
+\endverbatim
+
+This would be then followed by 100 blocks of data.  In the first block of data the
+value of t1 (the value in the first column) is kept fixed and the value of 
+the function is given at 100 equally spaced values for t2 between \f$-pi\f$ and \f$+pi\f$.  In the
+second block of data t1 is fixed at \f$-pi + \frac{2pi}{100}\f$ and the value of the function is
+given at 100 equally spaced values for t2 between \f$-pi\f$ and \f$+pi\f$. In the third block of
+data the same is done but t1 is fixed at \f$-pi + \frac{4pi}{100}\f$ and so on untill you get to 
+the 100th block of data where t1 is fixed at \f$+pi\f$. 
+
+Please note the order that the order of arguments in the plumed.dat file must be the same as
+the order of arguments in the header of the grid file.
 */
 //+ENDPLUMEDOC
 
@@ -63,7 +109,7 @@ PLUMED_REGISTER_ACTION(BiasExternal,"EXTERNAL")
 void BiasExternal::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","FILE","the name of the file containing the external potential. " + Grid::formatDocs() );
+  keys.add("compulsory","FILE","the name of the file containing the external potential.");
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
 }
@@ -94,9 +140,10 @@ BiasGrid_(NULL)
   addComponent("bias"); componentIsNotPeriodic("bias");
 
 // read grid
-  FILE* gridfile=fopen(filename.c_str(),"r");  
-  BiasGrid_=Grid::create(gridfile,sparsegrid,spline,true);
-  fclose(gridfile);
+  PlumedIFile gridfile; gridfile.open(filename);
+  std::string funcl=getLabel() + ".bias";  
+  BiasGrid_=Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
+  gridfile.close();
   if(BiasGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
   for(unsigned i=0;i<getNumberOfArguments();++i){
     if( getPntrToArgument(i)->isPeriodic()!=BiasGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias"); 
