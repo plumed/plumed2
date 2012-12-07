@@ -143,6 +143,7 @@ private:
   bool isFirstStep;
   
   void   readGaussians(IFile*);
+  bool   readChunkOfGaussians(IFile *ifile, unsigned n);
   void   writeGaussian(const Gaussian&,OFile&);
   void   addGaussian(const Gaussian&);
   double getHeight(const vector<double>&);
@@ -150,7 +151,7 @@ private:
   double evaluateGaussian(const vector<double>&, const Gaussian&,double* der=NULL);
   void   finiteDifferenceGaussian(const vector<double>&, const Gaussian&);
   vector<unsigned> getGaussianSupport(const Gaussian&);
-
+  bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate  );
 
 public:
   MetaD(const ActionOptions&);
@@ -376,74 +377,45 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
 void MetaD::readGaussians(IFile *ifile)
 {
  unsigned ncv=getNumberOfArguments();
- double dummy;
- bool multivariate=false;
  vector<double> center(ncv);
  vector<double> sigma(ncv);
  double height;
  int nhills=0; 
+ bool multivariate=false;
 
  std::vector<Value> tmpvalues;
  for(unsigned j=0;j<getNumberOfArguments();++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) ); 
 
- while(ifile->scanField("time",dummy)){
-  for(unsigned i=0;i<ncv;++i){
-//    ifile->scanField(getPntrToArgument(i)->getName(),center[i]);
-    ifile->scanField( &tmpvalues[i] );
-    if( tmpvalues[i].isPeriodic() && !getPntrToArgument(i)->isPeriodic() ){
-       error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
-    } else if( tmpvalues[i].isPeriodic() ){
-       std::string imin, imax; tmpvalues[i].getDomain( imin, imax );
-       std::string rmin, rmax; getPntrToArgument(i)->getDomain( rmin, rmax );
-       if( imin!=rmin || imax!=rmax ){
-         error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
-       }
-    }
-    center[i]=tmpvalues[i].get();
-  }
-  // scan for multivariate label: record the actual file position so to eventually rewind 
-    std::string sss;
-    ifile->scanField("multivariate",sss);
-    if(sss=="true") multivariate=true;
-    else if(sss=="false") multivariate=false;
-    else plumed_merror("cannot parse multivariate = "+ sss);
-  if(multivariate){
-        sigma.resize(ncv*(ncv+1)/2);
-        Matrix<double> upper(ncv,ncv);
-        Matrix<double> lower(ncv,ncv);
-	for (unsigned i=0;i<ncv;i++){
-              for (unsigned j=0;j<ncv-i;j++){
-                      ifile->scanField("sigma_"+getPntrToArgument(j+i)->getName()+"_"+getPntrToArgument(j)->getName(),lower(j+i,j));
-                      upper(j,j+i)=lower(j+i,j);
-              }
-         }
-        Matrix<double> mymult(ncv,ncv);       
-        Matrix<double> invmatrix(ncv,ncv);       
-        mult(lower,upper,mymult);          
-        // now invert and get the sigmas
-        Invert(mymult,invmatrix);
-        // put the sigmas in the usual order 
-        unsigned k=0;
-	for (unsigned i=0;i<ncv;i++){
-		for (unsigned j=i;j<ncv;j++){
-			sigma[k]=invmatrix(i,j);
-			k++;
-		}
-	}
-  }else{
-  	for(unsigned i=0;i<ncv;++i)ifile->scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
-  }
-  
-  ifile->scanField("height",height);
-  ifile->scanField("biasf",dummy);
-  if(ifile->FieldExist("clock")) ifile->scanField("clock",dummy);
-  ifile->scanField();
+ while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)){;
   nhills++;
-  
   if(welltemp_){height*=(biasf_-1.0)/biasf_;}
   addGaussian(Gaussian(center,sigma,height,multivariate));
  }     
- log.printf("  %d Gaussians read\n",nhills);
+ log.printf("      %d Gaussians read\n",nhills);
+}
+
+bool MetaD::readChunkOfGaussians(IFile *ifile, unsigned n)
+{
+ unsigned ncv=getNumberOfArguments();
+ vector<double> center(ncv);
+ vector<double> sigma(ncv);
+ double height;
+ int nhills=0; 
+ bool multivariate=false;
+ std::vector<Value> tmpvalues;
+ for(unsigned j=0;j<getNumberOfArguments();++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) ); 
+
+ while(scanOneHill(ifile,tmpvalues,center,sigma,height,multivariate)){;
+  if(welltemp_){height*=(biasf_-1.0)/biasf_;}
+  addGaussian(Gaussian(center,sigma,height,multivariate));
+  if(nhills==n){
+      log.printf("      %d Gaussians read\n",nhills);
+      return true;
+  }
+  nhills++;
+ }     
+ log.printf("      %d Gaussians read\n",nhills);
+ return false;
 }
 
 void MetaD::writeGaussian(const Gaussian& hill, OFile&file){
@@ -552,13 +524,18 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 	Matrix<double> myinv(ncv,ncv);
 	Invert(mymatrix,myinv);
 	//log<<"INVERSE \n"; 
-        matrixOut(log,myinv);	
+        //matrixOut(log,myinv);	
         // diagonalizes it
 	Matrix<double> myautovec(ncv,ncv);
 	vector<double> myautoval(ncv); //should I take this or their square root? 
 	diagMat(myinv,myautoval,myautovec);
+	double maxautoval;maxautoval=0.;
+        unsigned ind_maxautoval;ind_maxautoval=ncv; 
 	for (unsigned i=0;i<ncv;i++){
-		double cutoff=sqrt(2.0*DP2CUTOFF)*abs(sqrt(myautoval[0])*myautovec(i,0));
+		if(myautoval[i]>maxautoval){maxautoval=myautoval[i];ind_maxautoval=i;}
+        }  
+	for (unsigned i=0;i<ncv;i++){
+		double cutoff=sqrt(2.0*DP2CUTOFF)*abs(sqrt(maxautoval)*myautovec(i,ind_maxautoval));
 		//log<<"AUTOVAL "<<myautoval[0]<<" COMP "<<abs(myautoval[0]*myautovec(i,0)) <<" CUTOFF "<<cutoff<<"\n";
 	  	nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[i])) );
         }
@@ -779,6 +756,77 @@ void MetaD::finiteDifferenceGaussian
  log<<"--------- END finiteDifferenceGaussian ------------\n";
 }
 
+/// takes a pointer to the file and a template string with values v and gives back the next center, sigma and height 
+bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> &center, vector<double>  &sigma, double &height , bool &multivariate  ){
+  double dummy;
+  multivariate=false;
+  if(ifile->scanField("time",dummy)){
+     unsigned ncv; ncv=tmpvalues.size();
+     for(unsigned i=0;i<ncv;++i){
+       ifile->scanField( &tmpvalues[i] );
+       if( tmpvalues[i].isPeriodic() && ! getPntrToArgument(i)->isPeriodic() ){
+          error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
+       } else if( tmpvalues[i].isPeriodic() ){
+          std::string imin, imax; tmpvalues[i].getDomain( imin, imax );
+          std::string rmin, rmax; getPntrToArgument(i)->getDomain( rmin, rmax );
+          if( imin!=rmin || imax!=rmax ){
+            error("in hills file periodicity for variable " + tmpvalues[i].getName() + " does not match periodicity in input");
+          }
+       }
+       center[i]=tmpvalues[i].get();
+     }
+     // scan for multivariate label: record the actual file position so to eventually rewind 
+     std::string sss;
+     ifile->scanField("multivariate",sss);
+     if(sss=="true") multivariate=true;
+     else if(sss=="false") multivariate=false;
+     else plumed_merror("cannot parse multivariate = "+ sss);
+     if(multivariate){
+        sigma.resize(ncv*(ncv+1)/2);
+        Matrix<double> upper(ncv,ncv);
+        Matrix<double> lower(ncv,ncv);
+   	for (unsigned i=0;i<ncv;i++){
+                 for (unsigned j=0;j<ncv-i;j++){
+                         ifile->scanField("sigma_"+getPntrToArgument(j+i)->getName()+"_"+getPntrToArgument(j)->getName(),lower(j+i,j));
+                         upper(j,j+i)=lower(j+i,j);
+                 }
+        }
+        Matrix<double> mymult(ncv,ncv);       
+        Matrix<double> invmatrix(ncv,ncv);       
+	//log<<"Lower \n";
+        //matrixOut(log,lower); 
+	//log<<"Upper \n";
+        //matrixOut(log,upper); 
+        mult(lower,upper,mymult);          
+	//log<<"Mult \n";
+        //matrixOut(log,mymult); 
+        // now invert and get the sigmas
+        Invert(mymult,invmatrix);
+	//log<<"Invert \n";
+        //matrixOut(log,invmatrix); 
+        // put the sigmas in the usual order: upper diagonal (this time in normal form and not in band form) 
+        unsigned k=0;
+   	for (unsigned i=0;i<ncv;i++){
+   	       for (unsigned j=i;j<ncv;j++){
+   	       	sigma[k]=invmatrix(i,j);
+   	       	k++;
+   	       }
+   	}
+     }else{
+     	for(unsigned i=0;i<ncv;++i){
+            ifile->scanField("sigma_"+getPntrToArgument(i)->getName(),sigma[i]);
+        }
+     }
+     
+     ifile->scanField("height",height);
+     ifile->scanField("biasf",dummy);
+     if(ifile->FieldExist("clock")) ifile->scanField("clock",dummy);
+     ifile->scanField();
+     return true;
+  }else{ 
+    return false; 
+  }; 
+};
 
 }
 }
