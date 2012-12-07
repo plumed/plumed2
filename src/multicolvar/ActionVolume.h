@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_ActionVolume_h
-#define __PLUMED_ActionVolume_h
+#ifndef __PLUMED_multicolvar_ActionVolume_h
+#define __PLUMED_multicolvar_ActionVolume_h
 
 #include "core/ActionAtomistic.h"
 #include "tools/HistogramBead.h"

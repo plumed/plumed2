@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __RANDOM_H
-#define __RANDOM_H
+#ifndef __PLUMED_tools_Random_h
+#define __PLUMED_tools_Random_h
 
 #include <string>
 #include <iosfwd>

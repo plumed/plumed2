@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_DynamicList_h
-#define __PLUMED_DynamicList_h
+#ifndef __PLUMED_tools_DynamicList_h
+#define __PLUMED_tools_DynamicList_h
 
 #include "PlumedCommunicator.h"
 

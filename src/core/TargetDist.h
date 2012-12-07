@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_TargetDist_h
-#define __PLUMED_TargetDist_h
+#ifndef __PLUMED_core_TargetDist_h
+#define __PLUMED_core_TargetDist_h
 
 #include <vector>
 #include <string>

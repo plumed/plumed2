@@ -50,6 +50,38 @@ awk -v plus=$plus 'BEGIN{
 
 } > $file.tmp
 
+case "$file" in
+(*h)
+guard="${file//\//_}"
+guard="${guard//./_}"
+guard="__PLUMED_${guard//-/_}"
+
+awk -v plus=$plus -v guard=$guard '
+{
+  if(past==1){
+    if($1=="#ifndef"){
+      line=-10;
+    } else if($1=="#define" && line==-9){
+      found=1;
+    }
+    else if(found!=1 && NF==0);
+    else past=2;
+  }
+  if(past==0 || past==2) print $0;
+  if(past==0 && $1==plus && $2=="*/") {
+    past=1;
+    print "#ifndef "guard
+    print "#define "guard
+  }
+  if(NF>0)line++;
+}END{
+if(!found) print "#endif"
+}' $file.tmp > $file.tmp2
+mv $file.tmp2 $file.tmp
+
+esac
+
+
 cmp -s $file $file.tmp || cp $file.tmp $file
 
 rm $file.tmp

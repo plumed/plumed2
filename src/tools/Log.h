@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_Log_h
-#define __PLUMED_Log_h
+#ifndef __PLUMED_tools_Log_h
+#define __PLUMED_tools_Log_h
 
 #include <cstdio>
 #include <string>
