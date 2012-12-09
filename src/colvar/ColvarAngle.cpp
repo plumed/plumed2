@@ -30,6 +30,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR ANGLE
 /*
@@ -57,24 +58,24 @@ ANGLE ATOMS=1,2,3,4
 */
 //+ENDPLUMEDOC
    
-class ColvarAngle : public Colvar {
+class Angle : public Colvar {
   bool pbc;
 
 public:
-  ColvarAngle(const ActionOptions&);
+  Angle(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(ColvarAngle,"ANGLE")
+PLUMED_REGISTER_ACTION(Angle,"ANGLE")
 
-void ColvarAngle::registerKeywords( Keywords& keys ){
+void Angle::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords(keys);
   keys.add("atoms","ATOMS","the list of atoms involved in this collective variable");
 }
 
-ColvarAngle::ColvarAngle(const ActionOptions&ao):
+Angle::Angle(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true)
 {
@@ -102,7 +103,7 @@ pbc(true)
 }
 
 // calculator
-void ColvarAngle::calculate(){
+void Angle::calculate(){
 
   Vector dij,dik;
   if(pbc){
@@ -113,7 +114,7 @@ void ColvarAngle::calculate(){
     dik=delta(getPosition(1),getPosition(0));
   }
   Vector ddij,ddik;
-  Angle a;
+  PLMD::Angle a;
   double angle=a.compute(dij,dik,ddij,ddik);
   setAtomsDerivatives(0,ddik);
   setAtomsDerivatives(1,-ddik);
@@ -123,6 +124,7 @@ void ColvarAngle::calculate(){
   setBoxDerivatives  (-(Tensor(dij,ddij)+Tensor(dik,ddik)));
 }
 
+}
 }
 
 

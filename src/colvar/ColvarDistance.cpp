@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR DISTANCE
 /*
@@ -48,26 +49,26 @@ PRINT ARG=d1,d2,d2.x
 */
 //+ENDPLUMEDOC
    
-class ColvarDistance : public Colvar {
+class Distance : public Colvar {
   bool components;
   bool pbc;
 
 public:
   static void registerKeywords( Keywords& keys );
-  ColvarDistance(const ActionOptions&);
+  Distance(const ActionOptions&);
 // active methods:
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(ColvarDistance,"DISTANCE")
+PLUMED_REGISTER_ACTION(Distance,"DISTANCE")
 
-void ColvarDistance::registerKeywords( Keywords& keys ){
+void Distance::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");  
 }
 
-ColvarDistance::ColvarDistance(const ActionOptions&ao):
+Distance::Distance(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 components(false),
 pbc(true)
@@ -101,7 +102,7 @@ pbc(true)
 
 
 // calculator
-void ColvarDistance::calculate(){
+void Distance::calculate(){
 
   Vector distance;
   if(pbc){
@@ -142,6 +143,7 @@ void ColvarDistance::calculate(){
   };
 }
 
+}
 }
 
 

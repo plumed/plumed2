@@ -32,6 +32,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR COORDINATION
 /*
@@ -57,7 +58,7 @@ COORDINATION GROUPA=1-10 GROUPB=20-100 R_0=0.3 NLIST NL_CUTOFF=0.5 NL_STRIDE=100
 */
 //+ENDPLUMEDOC
    
-class ColvarCoordination : public Colvar {
+class Coordination : public Colvar {
   bool pbc;
   bool serial;
   NeighborList *nl;
@@ -66,17 +67,17 @@ class ColvarCoordination : public Colvar {
   bool reduceListAtNextStep;
   
 public:
-  ColvarCoordination(const ActionOptions&);
-  ~ColvarCoordination();
+  Coordination(const ActionOptions&);
+  ~Coordination();
 // active methods:
   virtual void calculate();
   virtual void prepare();
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(ColvarCoordination,"COORDINATION")
+PLUMED_REGISTER_ACTION(Coordination,"COORDINATION")
 
-void ColvarCoordination::registerKeywords( Keywords& keys ){
+void Coordination::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords(keys);
   keys.addFlag("SERIAL",false,"perform the calcualtion of the coordination number in serial");
   keys.addFlag("PAIR",false,"Evaulate the switching functions for only the 1st element of the 1st group with the first element in the second group etc only");
@@ -94,7 +95,7 @@ void ColvarCoordination::registerKeywords( Keywords& keys ){
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbour list");
 }
 
-ColvarCoordination::ColvarCoordination(const ActionOptions&ao):
+Coordination::Coordination(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true),
 serial(false),
@@ -170,11 +171,11 @@ reduceListAtNextStep(false)
   }
 }
 
-ColvarCoordination::~ColvarCoordination(){
+Coordination::~Coordination(){
   delete nl;
 }
 
-void ColvarCoordination::prepare(){
+void Coordination::prepare(){
  if(reduceListAtNextStep){
    requestAtoms(nl->getReducedAtomList());
    reduceListAtNextStep=false;
@@ -185,7 +186,7 @@ void ColvarCoordination::prepare(){
 }
 
 // calculator
-void ColvarCoordination::calculate()
+void Coordination::calculate()
 {
 
  double ncoord=0.;
@@ -241,5 +242,6 @@ void ColvarCoordination::calculate()
   nl->setLastUpdate(getStep());
  }
 
+}
 }
 }

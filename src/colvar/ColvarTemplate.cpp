@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR TEMPLATE
 /*
@@ -43,19 +44,19 @@ This file provides a template for if you want to introduce a new CV.
 */
 //+ENDPLUMEDOC
    
-class ColvarTemplate : public Colvar {
+class Template : public Colvar {
   bool pbc;
 
 public:
-  ColvarTemplate(const ActionOptions&);
+  Template(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ColvarTemplate,"TEMPLATE")
+PLUMED_REGISTER_ACTION(Template,"TEMPLATE")
 
-void ColvarTemplate::registerKeywords(Keywords& keys){
+void Template::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
   keys.addFlag("TEMPLATE_DEFAULT_OFF_FLAG",false,"flags that are by default not performed should be specified like this");
   keys.addFlag("TEMPLATE_DEFAULT_ON_FLAG",true,"flags that are by default performed should be specified like this");
@@ -64,7 +65,7 @@ void ColvarTemplate::registerKeywords(Keywords& keys){
   keys.add("atoms","TEMPLATE_INPUT","the keyword with which you specify what atoms to use should be added like this");
 }
 
-ColvarTemplate::ColvarTemplate(const ActionOptions&ao):
+Template::Template(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true)
 {
@@ -87,7 +88,7 @@ pbc(true)
 
 
 // calculator
-void ColvarTemplate::calculate(){
+void Template::calculate(){
 
   Vector distance;
   if(pbc){
@@ -104,6 +105,7 @@ void ColvarTemplate::calculate(){
   setValue           (value);
 }
 
+}
 }
 
 

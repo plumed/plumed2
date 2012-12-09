@@ -30,6 +30,7 @@ using namespace std;
 
 
 namespace PLMD{
+namespace bias{
 
 //+PLUMEDOC BIAS EXTERNAL 
 /*
@@ -92,21 +93,21 @@ the order of arguments in the header of the grid file.
 */
 //+ENDPLUMEDOC
 
-class BiasExternal : public Bias{
+class External : public Bias{
 
 private:
   Grid* BiasGrid_;
   
 public:
-  BiasExternal(const ActionOptions&);
-  ~BiasExternal();
+  External(const ActionOptions&);
+  ~External();
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(BiasExternal,"EXTERNAL")
+PLUMED_REGISTER_ACTION(External,"EXTERNAL")
 
-void BiasExternal::registerKeywords(Keywords& keys){
+void External::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","FILE","the name of the file containing the external potential.");
@@ -114,11 +115,11 @@ void BiasExternal::registerKeywords(Keywords& keys){
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
 }
 
-BiasExternal::~BiasExternal(){
+External::~External(){
   delete BiasGrid_;
 }
 
-BiasExternal::BiasExternal(const ActionOptions& ao):
+External::External(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 BiasGrid_(NULL)
 {
@@ -150,7 +151,7 @@ BiasGrid_(NULL)
   } 
 }
 
-void BiasExternal::calculate()
+void External::calculate()
 {
   unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv), der(ncv);
@@ -168,4 +169,5 @@ void BiasExternal::calculate()
   }
 }
 
+}
 }

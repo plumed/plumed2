@@ -30,6 +30,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace function{
 
 
 //+PLUMEDOC FUNCTION MATHEVAL
@@ -62,7 +63,7 @@ PLUMED has been linked to it
 //+ENDPLUMEDOC
 
 
-class FunctionMatheval :
+class Matheval :
   public Function
 {
   void* evaluator;
@@ -72,23 +73,23 @@ class FunctionMatheval :
   vector<double> values;
   vector<char*> names;
 public:
-  FunctionMatheval(const ActionOptions&);
-  ~FunctionMatheval();
+  Matheval(const ActionOptions&);
+  ~Matheval();
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
 #ifdef __PLUMED_HAS_MATHEVAL
-PLUMED_REGISTER_ACTION(FunctionMatheval,"MATHEVAL")
+PLUMED_REGISTER_ACTION(Matheval,"MATHEVAL")
 
-void FunctionMatheval::registerKeywords(Keywords& keys){
+void Matheval::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","FUNC","the function you wish to evaluate");
   keys.add("optional","VAR","the names to give each of the arguments in the function.  If you have up to three arguments in your function you can use x, y and z to refer to them.  Otherwise you must use this flag to give your variables names.");
 }
 
-FunctionMatheval::FunctionMatheval(const ActionOptions&ao):
+Matheval::Matheval(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 evaluator_deriv(getNumberOfArguments()),
@@ -132,7 +133,7 @@ names(getNumberOfArguments())
   log.printf("\n");
 }
 
-void FunctionMatheval::calculate(){
+void Matheval::calculate(){
   for(unsigned i=0;i<getNumberOfArguments();i++) values[i]=getArgument(i);
   for(unsigned i=0;i<getNumberOfArguments();i++) names[i]=const_cast<char*>(var[i].c_str());
   setValue(evaluator_evaluate(evaluator,names.size(),&names[0],&values[0]));
@@ -142,13 +143,14 @@ void FunctionMatheval::calculate(){
   }
 }
 
-FunctionMatheval::~FunctionMatheval(){
+Matheval::~Matheval(){
   evaluator_destroy(evaluator);
   for(unsigned i=0;i<evaluator_deriv.size();i++)evaluator_destroy(evaluator_deriv[i]);
 }
 
 #endif
 
+}
 }
 
 

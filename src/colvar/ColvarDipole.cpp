@@ -28,6 +28,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR DIPOLE 
 /*
@@ -51,23 +52,23 @@ on the position) is computed on the geometric center of the group.
 */
 //+ENDPLUMEDOC
    
-class ColvarDipole : public Colvar {
+class Dipole : public Colvar {
   vector<AtomNumber> ga_lista;
 public:
-  ColvarDipole(const ActionOptions&);
+  Dipole(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ColvarDipole,"DIPOLE")
+PLUMED_REGISTER_ACTION(Dipole,"DIPOLE")
 
-void ColvarDipole::registerKeywords(Keywords& keys){
+void Dipole::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
   keys.add("atoms","GROUP","the group of atoms we are calculating the dipole moment for");
   keys.remove("NOPBC");
 }
 
-ColvarDipole::ColvarDipole(const ActionOptions&ao):
+Dipole::Dipole(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao)
 {
   parseAtomList("GROUP",ga_lista);
@@ -83,7 +84,7 @@ PLUMED_COLVAR_INIT(ao)
 }
 
 // calculator
-void ColvarDipole::calculate()
+void Dipole::calculate()
 {
  double dipole=0.;
  Tensor virial;
@@ -120,4 +121,5 @@ void ColvarDipole::calculate()
  setBoxDerivatives  (virial);
 }
 
+}
 }

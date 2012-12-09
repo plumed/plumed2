@@ -28,6 +28,7 @@ using namespace std;
 
 
 namespace PLMD{
+namespace bias{
 
 //+PLUMEDOC BIAS MOVINGRESTRAINT
 /*
@@ -93,7 +94,7 @@ the total bias deposited
 //+ENDPLUMEDOC
 
 
-class BiasMovingRestraint : public Bias{
+class MovingRestraint : public Bias{
   std::vector<std::vector<double> > at;
   std::vector<std::vector<double> > kappa;
   std::vector<int> step;
@@ -102,14 +103,14 @@ class BiasMovingRestraint : public Bias{
   std::vector<string> verse;
   std::vector<double> work;
 public:
-  BiasMovingRestraint(const ActionOptions&);
+  MovingRestraint(const ActionOptions&);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(BiasMovingRestraint,"MOVINGRESTRAINT")
+PLUMED_REGISTER_ACTION(MovingRestraint,"MOVINGRESTRAINT")
 
-void BiasMovingRestraint::registerKeywords( Keywords& keys ){
+void MovingRestraint::registerKeywords( Keywords& keys ){
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","VERSE","B","Tells plumed whether the restraint is only acting for CV larger (U) or smaller (L) than the restraint or whether it is acting on both sides (B)");
@@ -121,7 +122,7 @@ void BiasMovingRestraint::registerKeywords( Keywords& keys ){
   keys.reset_style("KAPPA","compulsory");
 }
 
-BiasMovingRestraint::BiasMovingRestraint(const ActionOptions&ao):
+MovingRestraint::MovingRestraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
 verse(getNumberOfArguments())
 {
@@ -171,7 +172,7 @@ verse(getNumberOfArguments())
 }
 
 
-void BiasMovingRestraint::calculate(){
+void MovingRestraint::calculate(){
   double ene=0.0;
   double totf2=0.0;
   unsigned narg=getNumberOfArguments();
@@ -213,6 +214,7 @@ void BiasMovingRestraint::calculate(){
   getPntrToComponent("force2")->set(totf2);
 }
 
+}
 }
 
 

@@ -32,6 +32,7 @@
 using namespace std;
 
 namespace PLMD {
+namespace cltools{
 
 //+PLUMEDOC TOOLS gentemplate
 /*
@@ -52,34 +53,34 @@ plumed gentemplate --action DISTANCE
 */
 //+ENDPLUMEDOC
 
-class CLToolGenTemplate:
+class GenTemplate:
 public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
-  CLToolGenTemplate(const CLToolOptions& co );
+  GenTemplate(const CLToolOptions& co );
   int main(FILE* in, FILE*out,PlumedCommunicator& pc);
   string description()const{
     return "print out a template input for a particular action";
   }
 };
 
-PLUMED_REGISTER_CLTOOL(CLToolGenTemplate,"gentemplate")
+PLUMED_REGISTER_CLTOOL(GenTemplate,"gentemplate")
 
-void CLToolGenTemplate::registerKeywords( Keywords& keys ){
+void GenTemplate::registerKeywords( Keywords& keys ){
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--action","print the template for this particular action");
   keys.addFlag("--list",false,"print a list of the available actions");
   keys.addFlag("--include-optional",false,"also print optional modifiers");
 }
 
-CLToolGenTemplate::CLToolGenTemplate(const CLToolOptions& co ):
+GenTemplate::GenTemplate(const CLToolOptions& co ):
 CLTool(co)
 {
   inputdata=commandline;
 }
 
-int CLToolGenTemplate::main(FILE* in, FILE*out,PlumedCommunicator& pc){
+int GenTemplate::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 
  std::string action; 
  bool list_templates=false;
@@ -100,6 +101,7 @@ int CLToolGenTemplate::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 
 
  return 0;
+}
 }
 
 } // End of namespace

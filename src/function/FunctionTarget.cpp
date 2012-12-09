@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD {
+namespace function{
 
 //+PLUMEDOC FUNCTION TARGET
 /*
@@ -41,19 +42,19 @@ set of collective variables.
 */
 //+ENDPLUMEDOC
 
-class FunctionTarget : public Function {
+class Target : public Function {
 private:
   TargetDist target;
   std::vector<double> derivs;
 public:
-  FunctionTarget(const ActionOptions&);
+  Target(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(FunctionTarget,"TARGET")
+PLUMED_REGISTER_ACTION(Target,"TARGET")
 
-void FunctionTarget::registerKeywords(Keywords& keys){
+void Target::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure. In the PDB file the atomic "
@@ -64,7 +65,7 @@ void FunctionTarget::registerKeywords(Keywords& keys){
   keys.add("optional","REFERENCE_VEC","the vector of values for the CVs at the reference point (if you use this you don't need REFERENCE)");
 }
 
-FunctionTarget::FunctionTarget(const ActionOptions&ao):
+Target::Target(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 target(log)
@@ -87,10 +88,11 @@ target(log)
   addValueWithDerivatives(); setNotPeriodic();
 }
 
-void FunctionTarget::calculate(){
+void Target::calculate(){
   double r=target.calculate( derivs );
   setValue(r);
   for(unsigned i=0;i<derivs.size();i++) setDerivative(i,derivs[i]);
 }
 
+}
 }

@@ -22,6 +22,7 @@
 #include "Function.h"
 
 using namespace PLMD;
+using namespace PLMD::function;
 using namespace std;
 
 void Function::registerKeywords(Keywords& keys){

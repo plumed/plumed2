@@ -28,6 +28,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace function{
 
 //+PLUMEDOC FUNCTION PIECEWISE
 /*
@@ -69,28 +70,28 @@ PRINT ARG=pw,ppww.1,ppww.2
 //+ENDPLUMEDOC
 
 
-class FunctionPiecewise :
+class Piecewise :
   public Function
 {
   bool normalize;
   std::vector<std::pair<double,double> > points;
 public:
-  FunctionPiecewise(const ActionOptions&);
+  Piecewise(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
 
-PLUMED_REGISTER_ACTION(FunctionPiecewise,"PIECEWISE")
+PLUMED_REGISTER_ACTION(Piecewise,"PIECEWISE")
 
-void FunctionPiecewise::registerKeywords(Keywords& keys){
+void Piecewise::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
   keys.reset_style("POINT","compulsory");
 }
 
-FunctionPiecewise::FunctionPiecewise(const ActionOptions&ao):
+Piecewise::Piecewise(const ActionOptions&ao):
 Action(ao),
 Function(ao)
 {
@@ -123,7 +124,7 @@ Function(ao)
   log.printf("\n");
 }
 
-void FunctionPiecewise::calculate(){
+void Piecewise::calculate(){
   for(int i=0;i<getNumberOfArguments();i++){
     double val=getArgument(i);
     int p=0;
@@ -153,6 +154,7 @@ void FunctionPiecewise::calculate(){
   }
 }
 
+}
 }
 
 

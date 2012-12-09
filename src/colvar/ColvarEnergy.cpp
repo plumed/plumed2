@@ -29,6 +29,7 @@
 #include <cassert>
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR ENERGY
 /*
@@ -48,11 +49,11 @@ PRINT ARG=ene
 //+ENDPLUMEDOC
 
 
-class ColvarEnergy : public Colvar {
+class Energy : public Colvar {
   bool components;
 
 public:
-  ColvarEnergy(const ActionOptions&);
+  Energy(const ActionOptions&);
 // active methods:
   void prepare();
   virtual void calculate();
@@ -63,9 +64,9 @@ public:
 using namespace std;
 
 
-PLUMED_REGISTER_ACTION(ColvarEnergy,"ENERGY")
+PLUMED_REGISTER_ACTION(Energy,"ENERGY")
 
-ColvarEnergy::ColvarEnergy(const ActionOptions&ao):
+Energy::Energy(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 components(false)
 {
@@ -75,23 +76,24 @@ components(false)
   getPntrToValue()->resizeDerivatives(1);
 }
 
-void ColvarEnergy::registerKeywords( Keywords& keys ){
+void Energy::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   keys.remove("NUMERICAL_DERIVATIVES"); 
 }
 
-void ColvarEnergy::prepare(){
+void Energy::prepare(){
   plumed.getAtoms().setCollectEnergy(true);
 }
 
 // calculator
-void ColvarEnergy::calculate(){
+void Energy::calculate(){
   setValue( getEnergy() );
   getPntrToComponent(0)->addDerivative(0,1.0);
 }
 
+}
 }
 
 

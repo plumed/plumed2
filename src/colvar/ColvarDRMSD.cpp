@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR DRMSD
 /*
@@ -73,28 +74,28 @@ DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
 //+ENDPLUMEDOC
 
    
-class ColvarDRMSD : public Colvar {
+class DRMSD : public Colvar {
 	
   vector<Vector> derivs_;
-  DRMSD drmsd_;
+  PLMD::DRMSD drmsd_;
   bool pbc_;
 
 public:
-  ColvarDRMSD(const ActionOptions&);
+  DRMSD(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ColvarDRMSD,"DRMSD")
+PLUMED_REGISTER_ACTION(DRMSD,"DRMSD")
 
-void ColvarDRMSD::registerKeywords(Keywords& keys){
+void DRMSD::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","LOWER_CUTOFF","only pairs of atoms further than LOWER_CUTOFF are considered in the calculation.");
   keys.add("compulsory","UPPER_CUTOFF","only pairs of atoms closer than UPPER_CUTOFF are considered in the calculation.");
 }
 
-ColvarDRMSD::ColvarDRMSD(const ActionOptions&ao):
+DRMSD::DRMSD(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao), pbc_(true)
 {
   string reference;
@@ -128,7 +129,7 @@ PLUMED_COLVAR_INIT(ao), pbc_(true)
 }
 
 // calculator
-void ColvarDRMSD::calculate(){
+void DRMSD::calculate(){
 
 // set derivatives to zero
  for(unsigned i=0;i<derivs_.size();++i) {derivs_[i].zero();}
@@ -147,4 +148,5 @@ void ColvarDRMSD::calculate(){
 
  }
 
+}
 }

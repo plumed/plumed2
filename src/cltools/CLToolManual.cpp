@@ -32,6 +32,7 @@
 using namespace std;
 
 namespace PLMD {
+namespace cltools{
 
 //+PLUMEDOC TOOLS manual
 /*
@@ -53,32 +54,32 @@ plumed manual --action DISTANCE
 */
 //+ENDPLUMEDOC
 
-class CLToolManual:
+class Manual:
 public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
-  CLToolManual(const CLToolOptions& co );
+  Manual(const CLToolOptions& co );
   int main(FILE* in, FILE*out,PlumedCommunicator& pc);
   string description()const{
     return "print out a description of the keywords for an action in html";
   }
 };
 
-PLUMED_REGISTER_CLTOOL(CLToolManual,"manual")
+PLUMED_REGISTER_CLTOOL(Manual,"manual")
 
-void CLToolManual::registerKeywords( Keywords& keys ){
+void Manual::registerKeywords( Keywords& keys ){
   CLTool::registerKeywords( keys );
   keys.add("compulsory","--action","print the manual for this particular action");
 }
 
-CLToolManual::CLToolManual(const CLToolOptions& co ):
+Manual::Manual(const CLToolOptions& co ):
 CLTool(co)
 {
   inputdata=commandline;
 }
 
-int CLToolManual::main(FILE* in, FILE*out,PlumedCommunicator& pc){
+int Manual::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 
  std::string action; 
  if( !parse("--action",action) ) return 1;
@@ -95,3 +96,4 @@ int CLToolManual::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 }
 
 } // End of namespace
+}

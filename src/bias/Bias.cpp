@@ -22,6 +22,7 @@
 #include "Bias.h"
 
 using namespace PLMD;
+using namespace PLMD::bias;
 using namespace std;
 
 Bias::Bias(const ActionOptions&ao):

@@ -28,6 +28,7 @@ using namespace std;
 
 
 namespace PLMD{
+namespace bias{
 
 //+PLUMEDOC BIAS LOWER_WALLS
 /*
@@ -55,21 +56,21 @@ PRINT ARG=uwall.bias,lwall.bias
 */
 //+ENDPLUMEDOC
 
-class BiasLWalls : public Bias{
+class LWalls : public Bias{
   std::vector<double> at;
   std::vector<double> kappa;
   std::vector<double> exp;
   std::vector<double> eps;
   std::vector<double> offset;
 public:
-  BiasLWalls(const ActionOptions&);
+  LWalls(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(BiasLWalls,"LOWER_WALLS")
+PLUMED_REGISTER_ACTION(LWalls,"LOWER_WALLS")
 
-void BiasLWalls::registerKeywords(Keywords& keys){
+void LWalls::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","AT","the positions of the wall. The a_i in the expression for a wall.");
@@ -79,7 +80,7 @@ void BiasLWalls::registerKeywords(Keywords& keys){
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
 }
 
-BiasLWalls::BiasLWalls(const ActionOptions&ao):
+LWalls::LWalls(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
 at(getNumberOfArguments(),0),
 kappa(getNumberOfArguments(),0.0),
@@ -119,7 +120,7 @@ offset(getNumberOfArguments(),0.0)
   addComponent("force2"); componentIsNotPeriodic("force2");
 }
 
-void BiasLWalls::calculate(){
+void LWalls::calculate(){
   double ene = 0.0;
   double totf2 = 0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -142,4 +143,5 @@ void BiasLWalls::calculate(){
   getPntrToComponent("force2")->set(totf2);  
 }
 
+}
 }

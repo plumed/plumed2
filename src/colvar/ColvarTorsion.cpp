@@ -30,6 +30,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR TORSION
 /*
@@ -56,20 +57,20 @@ TORSION VECTOR1=2,1 AXIS=2,3 VECTOR2=3,4
 */
 //+ENDPLUMEDOC
    
-class ColvarTorsion : public Colvar {
+class Torsion : public Colvar {
   bool pbc;
   bool do_cosine;
 
 public:
-  ColvarTorsion(const ActionOptions&);
+  Torsion(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ColvarTorsion,"TORSION")
+PLUMED_REGISTER_ACTION(Torsion,"TORSION")
 
-void ColvarTorsion::registerKeywords(Keywords& keys){
+void Torsion::registerKeywords(Keywords& keys){
    Colvar::registerKeywords( keys );
    keys.add("atoms-1","ATOMS","the four atoms involved in the torsional angle");
    keys.add("atoms-2","AXIS","two atoms that define an axis.  You can use this to find the angle in the plane perpendicular to the axis between the vectors specified using the VECTOR1 and VECTOR2 keywords."); 
@@ -78,7 +79,7 @@ void ColvarTorsion::registerKeywords(Keywords& keys){
    keys.addFlag("COSINE",false,"calculate cosine instead of dihedral");
 }
 
-ColvarTorsion::ColvarTorsion(const ActionOptions&ao):
+Torsion::Torsion(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true),
 do_cosine(false)
@@ -129,7 +130,7 @@ do_cosine(false)
 }
 
 // calculator
-void ColvarTorsion::calculate(){
+void Torsion::calculate(){
 
   Vector d0,d1,d2;
   if(pbc){
@@ -142,7 +143,7 @@ void ColvarTorsion::calculate(){
     d2=delta(getPosition(5),getPosition(4));
   }
   Vector dd0,dd1,dd2;
-  Torsion t;
+  PLMD::Torsion t;
   double torsion=t.compute(d0,d1,d2,dd0,dd1,dd2);
   if(do_cosine){
    dd0 *= -sin(torsion);
@@ -161,6 +162,7 @@ void ColvarTorsion::calculate(){
   setBoxDerivatives  (-(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
 }
 
+}
 }
 
 

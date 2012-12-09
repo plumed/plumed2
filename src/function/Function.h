@@ -26,6 +26,7 @@
 #include "core/ActionWithArguments.h"
 
 namespace PLMD{
+namespace function{
 
 /**
 \ingroup INHERIT
@@ -59,6 +60,7 @@ void Function::setDerivative(int i,double d){
   setDerivative(getPntrToValue(),i,d);
 }
 
+}
 }
 
 #endif

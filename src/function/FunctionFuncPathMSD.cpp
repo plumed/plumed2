@@ -33,6 +33,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace function{
 
 //+PLUMEDOC FUNCTION FUNCPATHMSD
 /*
@@ -61,7 +62,7 @@ PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
 */
 //+ENDPLUMEDOC
    
-class FunctionFuncPathMSD : public Function {
+class FuncPathMSD : public Function {
   double lambda;
   bool pbc;
   int neigh_size;
@@ -106,23 +107,23 @@ struct pairordering {
 };
 
 public:
-  FunctionFuncPathMSD(const ActionOptions&);
+  FuncPathMSD(const ActionOptions&);
 // active methods:
   virtual void calculate();
   virtual void prepare();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(FunctionFuncPathMSD,"FUNCPATHMSD")
+PLUMED_REGISTER_ACTION(FuncPathMSD,"FUNCPATHMSD")
 
-void FunctionFuncPathMSD::registerKeywords(Keywords& keys){
+void FuncPathMSD::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","LAMBDA","all compulsory keywords should be added like this with a description here");
   keys.add("optional","NEIGH_SIZE","all optional keywords that have input should be added like a description here");
   keys.add("optional","NEIGH_STRIDE","all optional keywords that have input should be added like a description here");
 }
-FunctionFuncPathMSD::FunctionFuncPathMSD(const ActionOptions&ao):
+FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 pbc(true),
@@ -171,7 +172,7 @@ neigh_stride(-1.)
   
 }
 // calculator
-void FunctionFuncPathMSD::calculate(){
+void FuncPathMSD::calculate(){
  // log.printf("NOW CALCULATE! \n");
   double s_path=0.;
   double partition=0.;
@@ -207,7 +208,7 @@ void FunctionFuncPathMSD::calculate(){
 ///
 /// this function updates the needed argument list
 ///
-void FunctionFuncPathMSD::prepare(){
+void FuncPathMSD::prepare(){
 
   // neighbor list: rank and activate the chain for the next step 
 
@@ -264,6 +265,7 @@ void FunctionFuncPathMSD::prepare(){
  //log.printf("PREPARING DONE! \n");
 }
 
+}
 }
 
 

@@ -28,6 +28,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace function{
 
 //+PLUMEDOC FUNCTION COMBINE
 /*
@@ -50,22 +51,22 @@ PRINT ARG=distance,distance2
 //+ENDPLUMEDOC
 
 
-class FunctionCombine :
+class Combine :
   public Function
 {
   bool normalize;
   std::vector<double> coefficients;
   std::vector<double> powers;
 public:
-  FunctionCombine(const ActionOptions&);
+  Combine(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
 
-PLUMED_REGISTER_ACTION(FunctionCombine,"COMBINE")
+PLUMED_REGISTER_ACTION(Combine,"COMBINE")
 
-void FunctionCombine::registerKeywords(Keywords& keys){
+void Combine::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG"); keys.use("PERIODIC");
   keys.add("compulsory","COEFFICIENTS","1.0","the coefficients of the arguments in your function");
@@ -73,7 +74,7 @@ void FunctionCombine::registerKeywords(Keywords& keys){
   keys.addFlag("NORMALIZE",false,"normalize all the coefficents so that in total they are equal to one");
 }
 
-FunctionCombine::FunctionCombine(const ActionOptions&ao):
+Combine::Combine(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 normalize(false),
@@ -104,7 +105,7 @@ powers(getNumberOfArguments(),1.0)
   log.printf("\n");
 }
 
-void FunctionCombine::calculate(){
+void Combine::calculate(){
   double combine=0.0;
   for(unsigned i=0;i<coefficients.size();++i){
     combine+=coefficients[i]*pow(getArgument(i),powers[i]);
@@ -113,6 +114,7 @@ void FunctionCombine::calculate(){
   setValue(combine);
 }
 
+}
 }
 
 

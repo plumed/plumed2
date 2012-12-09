@@ -30,27 +30,24 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
    
-class ColvarRMSD : public Colvar {
+class RMSD : public Colvar {
 	
-  RMSD rmsd;
+  PLMD::RMSD rmsd;
 	
   bool squared; 
 
   vector<Vector> derivs;
 
 public:
-  ColvarRMSD(const ActionOptions&);
+  RMSD(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-}
-
 
 using namespace std;
-
-namespace PLMD{
 
 //+PLUMEDOC COLVAR RMSD
 /*
@@ -110,16 +107,16 @@ RMSD REFERENCE=file.pdb TYPE=OPTIMAL
 */
 //+ENDPLUMEDOC
 
-PLUMED_REGISTER_ACTION(ColvarRMSD,"RMSD")
+PLUMED_REGISTER_ACTION(RMSD,"RMSD")
 
-void ColvarRMSD::registerKeywords(Keywords& keys){
+void RMSD::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
   keys.add("compulsory","TYPE","SIMPLE","the manner in which RMSD alignment is performed.  Should be OPTIMAL or SIMPLE.");
   keys.addFlag("SQUARED",false," This should be setted if you want MSD instead of RMSD ");
 }
 
-ColvarRMSD::ColvarRMSD(const ActionOptions&ao):
+RMSD::RMSD(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),rmsd(log),squared(false)
 {
   string reference;
@@ -153,7 +150,7 @@ PLUMED_COLVAR_INIT(ao),rmsd(log),squared(false)
 
 
 // calculator
-void ColvarRMSD::calculate(){
+void RMSD::calculate(){
   double r=rmsd.calculate(getPositions(),derivs,squared);
   setValue(r);
   for(unsigned i=0;i<derivs.size();i++) setAtomsDerivatives(i,derivs[i]);
@@ -162,6 +159,7 @@ void ColvarRMSD::calculate(){
   setBoxDerivatives(virial);
 }
 
+}
 }
 
 

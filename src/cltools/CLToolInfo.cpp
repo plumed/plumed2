@@ -30,6 +30,7 @@
 using namespace std;
 
 namespace PLMD {
+namespace cltools{
 
 //+PLUMEDOC TOOLS info
 /*
@@ -48,33 +49,33 @@ plumed info --root
 */
 //+ENDPLUMEDOC
 
-class CLToolInfo:
+class Info:
 public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
-  CLToolInfo(const CLToolOptions& co );
+  Info(const CLToolOptions& co );
   int main(FILE* in, FILE*out,PlumedCommunicator& pc);
   string description()const{
     return "provide informations about plumed";
   }
 };
 
-PLUMED_REGISTER_CLTOOL(CLToolInfo,"info")
+PLUMED_REGISTER_CLTOOL(Info,"info")
 
-void CLToolInfo::registerKeywords( Keywords& keys ){
+void Info::registerKeywords( Keywords& keys ){
   CLTool::registerKeywords( keys );
   keys.addFlag("--configuration",false,"prints the configuration file");
   keys.addFlag("--root",false,"print the location of the root directory for the plumed source");
 }
 
-CLToolInfo::CLToolInfo(const CLToolOptions& co ):
+Info::Info(const CLToolOptions& co ):
 CLTool(co)
 {
   inputdata=commandline;
 }
 
-int CLToolInfo::main(FILE* in, FILE*out,PlumedCommunicator& pc){
+int Info::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 
  bool printconfiguration; parseFlag("--configuration",printconfiguration);
  bool printroot; parseFlag("--root",printroot);
@@ -93,4 +94,5 @@ int CLToolInfo::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 
 
 
+}
 }

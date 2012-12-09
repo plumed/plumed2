@@ -28,6 +28,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace bias{
 
 //+PLUMEDOC BIAS ABMD 
 /*
@@ -72,7 +73,7 @@ PRINT ARG=abmd.bias
 */
 //+ENDPLUMEDOC
 
-class BiasRatchet : public Bias{
+class Ratchet : public Bias{
   std::vector<double> to;
   std::vector<double> min;
   std::vector<double> kappa;
@@ -80,14 +81,14 @@ class BiasRatchet : public Bias{
   std::vector<double> seed;
   vector<Random> random;
 public:
-  BiasRatchet(const ActionOptions&);
+  Ratchet(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(BiasRatchet,"ABMD")
+PLUMED_REGISTER_ACTION(Ratchet,"ABMD")
 
-void BiasRatchet::registerKeywords(Keywords& keys){
+void Ratchet::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TO","The array of target values");
@@ -97,7 +98,7 @@ void BiasRatchet::registerKeywords(Keywords& keys){
   keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the Ratchet)");
 }
 
-BiasRatchet::BiasRatchet(const ActionOptions&ao):
+Ratchet::Ratchet(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
 to(getNumberOfArguments(),0.0),
 min(getNumberOfArguments(),-1.0),
@@ -132,7 +133,7 @@ random(getNumberOfArguments())
 }
 
 
-void BiasRatchet::calculate(){
+void Ratchet::calculate(){
   double ene=0.0;
   double totf2=0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -159,6 +160,7 @@ void BiasRatchet::calculate(){
   getPntrToComponent("force2")->set(totf2);
 }
 
+}
 }
 
 

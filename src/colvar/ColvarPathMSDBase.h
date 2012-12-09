@@ -38,8 +38,9 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
-class ColvarPathMSDBase : public Colvar {
+class PathMSDBase : public Colvar {
 /// this class is a general container for path stuff 
   class ImagePath {
      public:
@@ -82,13 +83,14 @@ protected:
   vector< vector<double> > indexvec; // use double to allow isomaps
   unsigned nframes;
 public:
-  ColvarPathMSDBase(const ActionOptions&);
+  PathMSDBase(const ActionOptions&);
 // active methods:
   virtual void calculate();
 //  virtual void prepare();
   static void registerKeywords(Keywords& keys);
 };
 
+}
 }
 
 #endif

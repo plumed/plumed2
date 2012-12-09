@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR VOLUME
 /*
@@ -46,20 +47,20 @@ PRINT ARG=vol
 //+ENDPLUMEDOC
 
 
-class ColvarVolume : public Colvar {
+class Volume : public Colvar {
   bool components;
 
 public:
-  ColvarVolume(const ActionOptions&);
+  Volume(const ActionOptions&);
 // active methods:
   virtual void calculate();
 /// Register all the keywords for this action
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(ColvarVolume,"VOLUME")
+PLUMED_REGISTER_ACTION(Volume,"VOLUME")
 
-ColvarVolume::ColvarVolume(const ActionOptions&ao):
+Volume::Volume(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 components(false)
 {
@@ -74,7 +75,7 @@ components(false)
   requestAtoms(atoms);
 }
 
-void ColvarVolume::registerKeywords( Keywords& keys ){
+void Volume::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -84,7 +85,7 @@ void ColvarVolume::registerKeywords( Keywords& keys ){
 
 
 // calculator
-void ColvarVolume::calculate(){
+void Volume::calculate(){
   if(components){
 // todo
   };
@@ -93,6 +94,7 @@ void ColvarVolume::calculate(){
   setValue         (getBox().determinant());
 }
 
+}
 }
 
 

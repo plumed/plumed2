@@ -25,6 +25,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR PATHMSD
 /*
@@ -68,20 +69,20 @@ END
 */
 //+ENDPLUMEDOC
    
-class ColvarPathMSD : public ColvarPathMSDBase {
+class PathMSD : public PathMSDBase {
 public:
-  ColvarPathMSD(const ActionOptions&);
+  PathMSD(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ColvarPathMSD,"PATHMSD")
+PLUMED_REGISTER_ACTION(PathMSD,"PATHMSD")
 
-void ColvarPathMSD::registerKeywords(Keywords& keys){
-  ColvarPathMSDBase::registerKeywords(keys);
+void PathMSD::registerKeywords(Keywords& keys){
+  PathMSDBase::registerKeywords(keys);
 }
 
-ColvarPathMSD::ColvarPathMSD(const ActionOptions&ao):
-Action(ao),ColvarPathMSDBase(ao)
+PathMSD::PathMSD(const ActionOptions&ao):
+Action(ao),PathMSDBase(ao)
 {
   checkRead();
 
@@ -102,3 +103,4 @@ Action(ao),ColvarPathMSDBase(ao)
 
 }
 
+}

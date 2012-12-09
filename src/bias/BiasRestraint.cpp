@@ -28,6 +28,7 @@ using namespace std;
 
 
 namespace PLMD{
+namespace bias{
 
 //+PLUMEDOC BIAS RESTRAINT
 /*
@@ -58,19 +59,19 @@ PRINT ARG=restraint.bias
 */
 //+ENDPLUMEDOC
 
-class BiasRestraint : public Bias{
+class Restraint : public Bias{
   std::vector<double> at;
   std::vector<double> kappa;
   std::vector<double> slope;
 public:
-  BiasRestraint(const ActionOptions&);
+  Restraint(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(BiasRestraint,"RESTRAINT")
+PLUMED_REGISTER_ACTION(Restraint,"RESTRAINT")
 
-void BiasRestraint::registerKeywords(Keywords& keys){
+void Restraint::registerKeywords(Keywords& keys){
    Bias::registerKeywords(keys);
    keys.use("ARG");
    keys.add("compulsory","SLOPE","0.0","specifies that the restraint is linear and what the values of the force constants on each of the variables are");
@@ -78,7 +79,7 @@ void BiasRestraint::registerKeywords(Keywords& keys){
    keys.add("compulsory","AT","the position of the restraint");
 }
 
-BiasRestraint::BiasRestraint(const ActionOptions&ao):
+Restraint::Restraint(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
 at(getNumberOfArguments()),
 kappa(getNumberOfArguments(),0.0),
@@ -107,7 +108,7 @@ slope(getNumberOfArguments(),0.0)
 }
 
 
-void BiasRestraint::calculate(){
+void Restraint::calculate(){
   double ene=0.0;
   double totf2=0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -126,3 +127,4 @@ void BiasRestraint::calculate(){
 }
 
 
+}

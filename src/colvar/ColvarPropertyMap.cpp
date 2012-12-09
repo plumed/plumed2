@@ -25,6 +25,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR PROPERTYMAP 
 /*
@@ -69,22 +70,22 @@ END
 */
 //+ENDPLUMEDOC
    
-class ColvarPropertyMap : public ColvarPathMSDBase {
+class PropertyMap : public PathMSDBase {
 public:
-  ColvarPropertyMap(const ActionOptions&);
+  PropertyMap(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(ColvarPropertyMap,"PROPERTYMAP")
+PLUMED_REGISTER_ACTION(PropertyMap,"PROPERTYMAP")
 
-void ColvarPropertyMap::registerKeywords(Keywords& keys){
-  ColvarPathMSDBase::registerKeywords(keys);
+void PropertyMap::registerKeywords(Keywords& keys){
+  PathMSDBase::registerKeywords(keys);
   keys.add("compulsory","PROPERTY","the property to be used in the indexing: this goes in the REMARK field of the reference");
 }
 
-ColvarPropertyMap::ColvarPropertyMap(const ActionOptions&ao):
+PropertyMap::PropertyMap(const ActionOptions&ao):
 Action(ao),
-ColvarPathMSDBase(ao)
+PathMSDBase(ao)
 {
   // this is the only additional keyword needed 
   parseVector("PROPERTY",labels);
@@ -125,6 +126,7 @@ ColvarPathMSDBase(ao)
  
 }
 
+}
 }
 
 

@@ -2,14 +2,28 @@
 
 sed s:@SRCDIR@:"$(echo ../src/*)": Doxyfile.in > Doxyfile
 
-cat ../src/*/*cpp | grep PLUMED_REGISTER_ACTION |
+cat ../src/*/*cpp |
+awk '
+  /PLUMED_REGISTER_ACTION/{print}
+  /namespace/{print}
+' |
   sed '
    s/PLUMED_REGISTER_ACTION(/ /
    s/,"/ /
    s/")//
 ' |
-awk '{
-  printf("%s","/// \\class PLMD::"$1"\n");
+awk '
+/namespace/{
+ if($1=="namespace"){
+   namespace=$2;
+   gsub("{","",namespace);
+   namespace=namespace"::";
+ }
+ if(namespace=="PLMD::") namespace="";
+ next;
+ }
+{
+  printf("%s","/// \\class PLMD::"namespace""$1"\n");
   printf("%s","/// \\ingroup INPUTDIRECTIVES\n");
   action=tolower($2);
   firstchar=substr($2,1,1);

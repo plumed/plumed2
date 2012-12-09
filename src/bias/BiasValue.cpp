@@ -28,6 +28,7 @@ using namespace std;
 
 
 namespace PLMD{
+namespace bias{
 
 //+PLUMEDOC BIAS VALUE 
 /*
@@ -49,21 +50,21 @@ PRINT ARG=d1,d2,b.d1,b.d2
 */
 //+ENDPLUMEDOC
 
-class BiasValue : public Bias{
+class Value : public Bias{
 public:
-  BiasValue(const ActionOptions&);
+  Value(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
+PLUMED_REGISTER_ACTION(Value,"BIASVALUE")
 
-void BiasValue::registerKeywords(Keywords& keys){
+void Value::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
 }
 
-BiasValue::BiasValue(const ActionOptions&ao):
+Value::Value(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao)
 {
   checkRead();
@@ -77,7 +78,7 @@ PLUMED_BIAS_INIT(ao)
   }
 }
 
-void BiasValue::calculate(){
+void Value::calculate(){
 for(unsigned i=0;i< getNumberOfArguments() ;++i){
   double val; val=getArgument(i); 
 //  log<<"BIAS "<<val<<"\n";
@@ -86,4 +87,5 @@ for(unsigned i=0;i< getNumberOfArguments() ;++i){
 }
 }
 
+}
 }

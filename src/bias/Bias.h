@@ -29,6 +29,7 @@
 #define PLUMED_BIAS_INIT(ao) Action(ao),Bias(ao)
 
 namespace PLMD{
+namespace bias{
 
 /**
 \ingroup INHERIT
@@ -61,6 +62,7 @@ void Bias::resetOutputForces(){
   for(unsigned i=0;i<outputForces.size();++i) outputForces[i]=0.0;
 }
 
+}
 }
 
 #endif

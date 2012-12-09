@@ -52,10 +52,6 @@ is \ref AddingACLTool "information" as to how to go about implemneting a new too
 */
 
 class CLTool {
-// This is a fried so we can create input data quickly
-// when you do debug-float. 
-template <typename real>
-friend class CLToolDriver;
 private:
 /// The name of this command line tool
   const std::string name;
@@ -69,6 +65,14 @@ private:
   bool readInputFile( int argc, char**argv, FILE* in, FILE*out );
 /// Set arguments from the default options provided to Keywords
   void setRemainingToDefault(FILE* out);
+public:
+/// Set the input data:
+  void setInputData(const std::map<std::string,std::string>&inputData){
+    this->inputData=inputData;
+  }
+  const std::map<std::string,std::string>&getInputData(){
+    return this->inputData;
+  }
 protected:
 /// Get the value of one of the command line arguments 
   template<class T>

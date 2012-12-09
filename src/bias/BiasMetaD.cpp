@@ -40,6 +40,7 @@ using namespace std;
 
 
 namespace PLMD{
+namespace bias{
 
 //+PLUMEDOC BIAS METAD 
 /*
@@ -103,7 +104,7 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 */
 //+ENDPLUMEDOC
 
-class BiasMetaD : public Bias{
+class MetaD : public Bias{
 
 private:
   struct Gaussian {
@@ -151,17 +152,17 @@ private:
 
 
 public:
-  BiasMetaD(const ActionOptions&);
-  ~BiasMetaD();
+  MetaD(const ActionOptions&);
+  ~MetaD();
   void calculate();
   void update();
   static void registerKeywords(Keywords& keys);
   bool checkNeedsGradients()const{if(adaptive_==FlexibleBin::geometry){return true;}else{return false;}};
 };
 
-PLUMED_REGISTER_ACTION(BiasMetaD,"METAD")
+PLUMED_REGISTER_ACTION(MetaD,"METAD")
 
-void BiasMetaD::registerKeywords(Keywords& keys){
+void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
@@ -185,7 +186,7 @@ void BiasMetaD::registerKeywords(Keywords& keys){
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
 }
 
-BiasMetaD::~BiasMetaD(){
+MetaD::~MetaD(){
   if(BiasGrid_) delete BiasGrid_;
   hillsOfile_.close();
   delete [] dp_;
@@ -195,7 +196,7 @@ BiasMetaD::~BiasMetaD(){
   }
 }
 
-BiasMetaD::BiasMetaD(const ActionOptions& ao):
+MetaD::MetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
 BiasGrid_(NULL), wgridstride_(0), grid_(false),
@@ -367,7 +368,7 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
 
 }
 
-void BiasMetaD::readGaussians(PlumedIFile *ifile)
+void MetaD::readGaussians(PlumedIFile *ifile)
 {
  unsigned ncv=getNumberOfArguments();
  double dummy;
@@ -440,7 +441,7 @@ void BiasMetaD::readGaussians(PlumedIFile *ifile)
  log.printf("  %d Gaussians read\n",nhills);
 }
 
-void BiasMetaD::writeGaussian(const Gaussian& hill, PlumedOFile&file){
+void MetaD::writeGaussian(const Gaussian& hill, PlumedOFile&file){
   unsigned ncv=getNumberOfArguments();
   file.printField("time",getTimeStep()*getStep());
   for(unsigned i=0;i<ncv;++i){
@@ -487,7 +488,7 @@ void BiasMetaD::writeGaussian(const Gaussian& hill, PlumedOFile&file){
   file.printField();
 }
 
-void BiasMetaD::addGaussian(const Gaussian& hill)
+void MetaD::addGaussian(const Gaussian& hill)
 {
  if(!grid_){hills_.push_back(hill);} 
  else{
@@ -525,7 +526,7 @@ void BiasMetaD::addGaussian(const Gaussian& hill)
  }
 }
 
-vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
+vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
  vector<unsigned> nneigh;
  // traditional or flexible hill? 
@@ -566,7 +567,7 @@ vector<unsigned> BiasMetaD::getGaussianSupport(const Gaussian& hill)
  return nneigh;
 }
 
-double BiasMetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
+double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 {
  double bias=0.0;
  if(!grid_){
@@ -591,7 +592,7 @@ double BiasMetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
  return bias;
 }
 
-double BiasMetaD::evaluateGaussian
+double MetaD::evaluateGaussian
  (const vector<double>& cv, const Gaussian& hill, double* der)
 {
  double dp2=0.0;
@@ -650,7 +651,7 @@ double BiasMetaD::evaluateGaussian
  return bias;
 }
 
-double BiasMetaD::getHeight(const vector<double>& cv)
+double MetaD::getHeight(const vector<double>& cv)
 {
  double height=height0_;
  if(welltemp_){
@@ -660,7 +661,7 @@ double BiasMetaD::getHeight(const vector<double>& cv)
  return height;
 }
 
-void BiasMetaD::calculate()
+void MetaD::calculate()
 {
   unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
@@ -680,7 +681,7 @@ void BiasMetaD::calculate()
   delete [] der;
 }
 
-void BiasMetaD::update(){
+void MetaD::update(){
   vector<double> cv(getNumberOfArguments());
   vector<double> thissigma;
   bool multivariate;
@@ -744,7 +745,7 @@ void BiasMetaD::update(){
  } 
 }
 
-void BiasMetaD::finiteDifferenceGaussian
+void MetaD::finiteDifferenceGaussian
  (const vector<double>& cv, const Gaussian& hill)
 {
  log<<"--------- finiteDifferenceGaussian: size "<<cv.size() <<"------------\n";
@@ -773,4 +774,5 @@ void BiasMetaD::finiteDifferenceGaussian
 }
 
 
+}
 }

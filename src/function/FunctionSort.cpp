@@ -30,6 +30,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace function{
 
 //+PLUMEDOC FUNCTION SORT
 /*
@@ -52,24 +53,24 @@ PRINT ARG=sort.1,sort.4
 //+ENDPLUMEDOC
 
 
-class FunctionSort :
+class Sort :
   public Function
 {
 public:
-  FunctionSort(const ActionOptions&);
+  Sort(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
 
-PLUMED_REGISTER_ACTION(FunctionSort,"SORT")
+PLUMED_REGISTER_ACTION(Sort,"SORT")
 
-void FunctionSort::registerKeywords(Keywords& keys){
+void Sort::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
 }
 
-FunctionSort::FunctionSort(const ActionOptions&ao):
+Sort::Sort(const ActionOptions&ao):
 Action(ao),
 Function(ao)
 {
@@ -85,7 +86,7 @@ Function(ao)
 
 }
 
-void FunctionSort::calculate(){
+void Sort::calculate(){
   vector<pair<double,int> > vals(getNumberOfArguments());
   for(unsigned i=0;i<getNumberOfArguments();++i){
     vals[i].first=getArgument(i);
@@ -101,6 +102,7 @@ void FunctionSort::calculate(){
   }
 }
 
+}
 }
 
 

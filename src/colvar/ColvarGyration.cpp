@@ -70,7 +70,7 @@ PRINT ARG=rg STRIDE=1 FILE=colvar
 */
 //+ENDPLUMEDOC
 
-class ColvarGyration : public Colvar {
+class Gyration : public Colvar {
 private:
   std::string Type;
   enum CV_TYPE {RADIUS, TRACE, GTPC_1, GTPC_2, GTPC_3, ASPHERICITY, ACYLINDRICITY, KAPPA2, GYRATION_3, GYRATION_2, GYRATION_1, TOT};
@@ -78,20 +78,20 @@ private:
   bool use_masses;
 public:
   static void registerKeywords( Keywords& keys );
-  ColvarGyration(const ActionOptions&);
+  Gyration(const ActionOptions&);
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(ColvarGyration,"GYRATION")
+PLUMED_REGISTER_ACTION(Gyration,"GYRATION")
 
-void ColvarGyration::registerKeywords( Keywords& keys ){
+void Gyration::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
   keys.addFlag("NOT_MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
 }
 
-ColvarGyration::ColvarGyration(const ActionOptions&ao):
+Gyration::Gyration(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 use_masses(true)
 {
@@ -141,7 +141,7 @@ use_masses(true)
   requestAtoms(atoms);
 }
 
-void ColvarGyration::calculate(){
+void Gyration::calculate(){
 
   std::vector<Vector> derivatives( getNumberOfAtoms() );
   Tensor virial; virial.zero();

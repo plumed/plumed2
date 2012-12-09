@@ -39,8 +39,9 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
-void ColvarPathMSDBase::registerKeywords(Keywords& keys){
+void PathMSDBase::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
   keys.add("compulsory","REFERENCE","the pdb is needed to provide the various milestones");
@@ -48,7 +49,7 @@ void ColvarPathMSDBase::registerKeywords(Keywords& keys){
   keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
 }
 
-ColvarPathMSDBase::ColvarPathMSDBase(const ActionOptions&ao):
+PathMSDBase::PathMSDBase(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true),
 neigh_size(-1),
@@ -99,7 +100,7 @@ nframes(0)
 
 }
 
-void ColvarPathMSDBase::calculate(){
+void PathMSDBase::calculate(){
 
   //log.printf("NOW CALCULATE! \n");
 
@@ -185,3 +186,4 @@ void ColvarPathMSDBase::calculate(){
 
 }
 
+}

@@ -33,6 +33,7 @@ using namespace std;
 using namespace PLMD;
 
 namespace PLMD{
+namespace cltools{
 
 //+PLUMEDOC TOOLS simplemd
 /*
@@ -73,7 +74,7 @@ plumed simplemd --help
 */
 //+ENDPLUMEDOC
 
-class CLToolSimpleMD:
+class SimpleMD:
 public PLMD::CLTool
 {
   string description()const{
@@ -107,7 +108,7 @@ static void registerKeywords( Keywords& keys ){
   keys.add("compulsory","ndim","3","The dimensionality of the system (some interesting LJ clusters are two dimensional)");
 }
 
-CLToolSimpleMD( const CLToolOptions& co ) :
+SimpleMD( const CLToolOptions& co ) :
 CLTool(co)
 {
   inputdata=ifile;
@@ -579,9 +580,11 @@ int main(FILE* in,FILE*out,PLMD::PlumedCommunicator& pc){
 
 };
 
+PLUMED_REGISTER_CLTOOL(SimpleMD,"simplemd")
+
+}
 }
 
 
-PLUMED_REGISTER_CLTOOL(CLToolSimpleMD,"simplemd")
 
 

@@ -34,6 +34,7 @@
 using namespace std;
 
 namespace PLMD {
+namespace cltools{
 
 //+PLUMEDOC TOOLS driver
 /*
@@ -65,16 +66,16 @@ plumed driver --plumed plumed.dat --ixyz trajectory.xyz --trajectory-stride 100 
 //+ENDPLUMEDOC
 
 template<typename real>
-class CLToolDriver : public CLTool {
+class Driver : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
-  CLToolDriver(const CLToolOptions& co );
+  Driver(const CLToolOptions& co );
   int main(FILE* in,FILE*out,PlumedCommunicator& pc);
   string description()const;
 };
 
 template<typename real>
-void CLToolDriver<real>::registerKeywords( Keywords& keys ){
+void Driver<real>::registerKeywords( Keywords& keys ){
   CLTool::registerKeywords( keys );
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
@@ -95,21 +96,21 @@ void CLToolDriver<real>::registerKeywords( Keywords& keys ){
 }
 
 template<typename real>
-CLToolDriver<real>::CLToolDriver(const CLToolOptions& co ):
+Driver<real>::Driver(const CLToolOptions& co ):
 CLTool(co)
 {
  inputdata=commandline;
 }
 
 template<typename real>
-string CLToolDriver<real>::description()const{ return "analyze trajectories with plumed"; }
+string Driver<real>::description()const{ return "analyze trajectories with plumed"; }
 
 template<>
-string CLToolDriver<float>::description()const{ return "analyze trajectories with plumed (single precision version)"; }
+string Driver<float>::description()const{ return "analyze trajectories with plumed (single precision version)"; }
 
 
 template<typename real>
-int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
+int Driver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
 
   Units units;
   PDB pdb;
@@ -131,8 +132,8 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   std::string fakein; 
   bool debugfloat=parse("--debug-float",fakein);
   if(debugfloat && sizeof(real)!=sizeof(float)){
-      CLTool* cl=cltoolRegister().create(CLToolOptions("driver-float"));    //new CLToolDriver<float>(*this);
-      cl->inputData=this->inputData; 
+      CLTool* cl=cltoolRegister().create(CLToolOptions("driver-float"));    //new Driver<float>(*this);
+      cl->setInputData(this->getInputData());
       int ret=cl->main(in,out,pc);
       delete cl;
       return ret;
@@ -496,12 +497,13 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   return 0;
 }
 
-typedef CLToolDriver<double> CLToolDriverDouble;
-typedef CLToolDriver<float> CLToolDriverFloat;
-PLUMED_REGISTER_CLTOOL(CLToolDriverDouble,"driver")
-PLUMED_REGISTER_CLTOOL(CLToolDriverFloat,"driver-float")
+typedef Driver<double> DriverDouble;
+typedef Driver<float> DriverFloat;
+PLUMED_REGISTER_CLTOOL(DriverDouble,"driver")
+PLUMED_REGISTER_CLTOOL(DriverFloat,"driver-float")
 
 
 
 
+}
 }
