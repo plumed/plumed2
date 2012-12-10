@@ -20,11 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
-#include "PlumedMain.h"
+#include "core/PlumedMain.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
 #include "tools/DRMSD.h"
-#include "Atoms.h"
+#include "core/Atoms.h"
 
 using namespace std;
 

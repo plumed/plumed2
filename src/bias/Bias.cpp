@@ -19,49 +19,32 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_Bias_h
-#define __PLUMED_Bias_h
+#include "Bias.h"
 
-#include "ActionPilot.h"
-#include "ActionWithValue.h"
-#include "ActionWithArguments.h"
+using namespace PLMD;
+using namespace std;
 
-#define PLUMED_BIAS_INIT(ao) Action(ao),Bias(ao)
-
-namespace PLMD{
-
-/**
-\ingroup INHERIT
-This is the abstract base class to use for implementing new simulation biases, within it there is 
-information as to how to go about implementing a new bias.
-*/
-
-class Bias :
-  public ActionPilot,
-  public ActionWithValue,
-  public ActionWithArguments
+Bias::Bias(const ActionOptions&ao):
+Action(ao),
+ActionPilot(ao),
+ActionWithValue(ao),
+ActionWithArguments(ao),
+outputForces(getNumberOfArguments(),0.0)
 {
-  std::vector<double> outputForces;
-protected:
-  void resetOutputForces();
-  void setOutputForce(int i,double g);
-public:
-  static void registerKeywords(Keywords&);
-  Bias(const ActionOptions&ao);
-  void apply();
-};
-
-inline
-void Bias::setOutputForce(int i,double f){
-  outputForces[i]=f;
 }
 
-inline
-void Bias::resetOutputForces(){
-  for(unsigned i=0;i<outputForces.size();++i) outputForces[i]=0.0;
+void Bias::registerKeywords( Keywords& keys ){
+  Action::registerKeywords(keys);
+  ActionPilot::registerKeywords(keys);
+  ActionWithValue::registerKeywords(keys);
+  ActionWithArguments::registerKeywords(keys);
+  keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
 }
 
+void Bias::apply(){
+  if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){
+    getPntrToArgument(i)->addForce(getStride()*outputForces[i]);
+  }
 }
 
-#endif
 

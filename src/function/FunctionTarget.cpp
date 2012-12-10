@@ -20,11 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
-#include "PlumedMain.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
-#include "TargetDist.h"
-#include "Atoms.h"
+#include "core/TargetDist.h"
+#include "core/Atoms.h"
+#include "core/PlumedMain.h"
 
 using namespace std;
 

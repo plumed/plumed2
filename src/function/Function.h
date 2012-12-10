@@ -19,33 +19,47 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Bias.h"
-#include "Colvar.h"
+#ifndef __PLUMED_Function_h
+#define __PLUMED_Function_h
 
-using namespace PLMD;
-using namespace std;
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
 
-Bias::Bias(const ActionOptions&ao):
-Action(ao),
-ActionPilot(ao),
-ActionWithValue(ao),
-ActionWithArguments(ao),
-outputForces(getNumberOfArguments(),0.0)
+namespace PLMD{
+
+/**
+\ingroup INHERIT
+This is the abstract base class to use for implementing new CV function, within it there is 
+\ref AddingAFunction "information" as to how to go about implementing a new function.
+*/
+
+class Function:
+  public ActionWithValue,
+  public ActionWithArguments
 {
+protected:
+  void setDerivative(int,double);
+  void setDerivative(Value*,int,double);
+  void addValueWithDerivatives();
+  void addComponentWithDerivatives( const std::string& name ); 
+public:
+  Function(const ActionOptions&);
+  virtual ~Function(){};
+  void apply();
+  static void registerKeywords(Keywords&);
+};
+
+inline
+void Function::setDerivative(Value*v,int i,double d){
+  v->addDerivative(i,d);
 }
 
-void Bias::registerKeywords( Keywords& keys ){
-  Action::registerKeywords(keys);
-  ActionPilot::registerKeywords(keys);
-  ActionWithValue::registerKeywords(keys);
-  ActionWithArguments::registerKeywords(keys);
-  keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
+inline
+void Function::setDerivative(int i,double d){
+  setDerivative(getPntrToValue(),i,d);
 }
 
-void Bias::apply(){
-  if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){
-    getPntrToArgument(i)->addForce(getStride()*outputForces[i]);
-  }
 }
 
+#endif
 

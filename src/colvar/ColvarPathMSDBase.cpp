@@ -25,13 +25,15 @@
 #include "ColvarPathMSDBase.h"
 #include "ActionRegister.h"
 
+#include "core/PlumedMain.h"
+
 #include <string>
 #include <cstring>
 #include <cassert>
 #include <iostream>
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
-#include "Atoms.h"
+#include "core/Atoms.h"
 #include "tools/Tools.h"
 
 using namespace std;

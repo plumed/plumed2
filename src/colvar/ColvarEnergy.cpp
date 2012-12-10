@@ -21,8 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "ActionRegister.h"
-#include "PlumedMain.h"
-#include "Atoms.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 #include <string>
 #include <cmath>

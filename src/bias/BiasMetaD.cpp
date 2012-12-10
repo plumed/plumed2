@@ -22,10 +22,10 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 #include "tools/Grid.h"
-#include "PlumedMain.h"
-#include "Atoms.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "tools/PlumedException.h"
-#include "FlexibleBin.h"
+#include "core/FlexibleBin.h"
 #include "tools/Matrix.h"
 #include "tools/Random.h"
 #include <string>

@@ -19,44 +19,46 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_Function_h
-#define __PLUMED_Function_h
+#ifndef __PLUMED_Bias_h
+#define __PLUMED_Bias_h
 
-#include "ActionWithValue.h"
-#include "ActionWithArguments.h"
+#include "core/ActionPilot.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionWithArguments.h"
+
+#define PLUMED_BIAS_INIT(ao) Action(ao),Bias(ao)
 
 namespace PLMD{
 
 /**
 \ingroup INHERIT
-This is the abstract base class to use for implementing new CV function, within it there is 
-\ref AddingAFunction "information" as to how to go about implementing a new function.
+This is the abstract base class to use for implementing new simulation biases, within it there is 
+information as to how to go about implementing a new bias.
 */
 
-class Function:
+class Bias :
+  public ActionPilot,
   public ActionWithValue,
   public ActionWithArguments
 {
+  std::vector<double> outputForces;
 protected:
-  void setDerivative(int,double);
-  void setDerivative(Value*,int,double);
-  void addValueWithDerivatives();
-  void addComponentWithDerivatives( const std::string& name ); 
+  void resetOutputForces();
+  void setOutputForce(int i,double g);
 public:
-  Function(const ActionOptions&);
-  virtual ~Function(){};
-  void apply();
   static void registerKeywords(Keywords&);
+  Bias(const ActionOptions&ao);
+  void apply();
 };
 
 inline
-void Function::setDerivative(Value*v,int i,double d){
-  v->addDerivative(i,d);
+void Bias::setOutputForce(int i,double f){
+  outputForces[i]=f;
 }
 
 inline
-void Function::setDerivative(int i,double d){
-  setDerivative(getPntrToValue(),i,d);
+void Bias::resetOutputForces(){
+  for(unsigned i=0;i<outputForces.size();++i) outputForces[i]=0.0;
 }
 
 }

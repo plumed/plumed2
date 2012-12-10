@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Colvar.h"
 #include "ActionRegister.h"
-#include "PlumedMain.h"
+#include "core/PlumedMain.h"
 #include "tools/Matrix.h"
 
 #include <string>

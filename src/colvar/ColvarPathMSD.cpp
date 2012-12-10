@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ColvarPathMSDBase.h"
+#include "core/PlumedMain.h"
 
 using namespace std;
 

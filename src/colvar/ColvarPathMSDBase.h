@@ -25,7 +25,6 @@
 
 #include <cmath>
 
-#include "PlumedMain.h"
 #include "Colvar.h"
 #include "ActionRegister.h"
 
@@ -35,7 +34,6 @@
 #include <iostream>
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
-#include "Atoms.h"
 #include "tools/Tools.h"
 
 using namespace std;
