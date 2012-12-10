@@ -30,9 +30,11 @@ namespace PLMD {
 class RMSD;
 class DRMSD;
 
+namespace multicolvar {
+
 /// Base action for calculating things like AlphRMSD, AntibetaRMSD, etc
 
-class MultiColvarSecondaryStructureRMSD : public MultiColvar {
+class SecondaryStructureRMSD : public MultiColvar {
 private:
   std::string alignType;
   std::vector<Vector> deriv, new_deriv;
@@ -43,13 +45,14 @@ protected:
   bool usingRMSD() const ;
 public:
   static void registerKeywords( Keywords& keys );
-  MultiColvarSecondaryStructureRMSD(const ActionOptions&);
-  virtual ~MultiColvarSecondaryStructureRMSD();
+  SecondaryStructureRMSD(const ActionOptions&);
+  virtual ~SecondaryStructureRMSD();
   virtual double compute( const unsigned& j, const std::vector<Vector>& pos );
   unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
 };
 
+}
 }
 
 #endif

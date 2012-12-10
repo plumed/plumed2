@@ -30,6 +30,7 @@
 
 using namespace std;
 using namespace PLMD;
+using namespace PLMD::multicolvar;
 
 void MultiColvar::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );

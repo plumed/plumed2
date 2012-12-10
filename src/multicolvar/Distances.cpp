@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace multicolvar{
 
 //+PLUMEDOC MCOLVAR DISTANCES
 /*
@@ -74,12 +75,12 @@ PRINT ARG=d1.gt0.1
 //+ENDPLUMEDOC
 
 
-class MultiColvarDistance : public MultiColvar {
+class Distances : public MultiColvar {
 private:
   double rcut;
 public:
   static void registerKeywords( Keywords& keys );
-  MultiColvarDistance(const ActionOptions&);
+  Distances(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& j, const std::vector<Vector>& pos );
 /// Returns the number of coordinates of the field
@@ -87,9 +88,9 @@ public:
   bool isPeriodic(){ return false; }
 };
 
-PLUMED_REGISTER_ACTION(MultiColvarDistance,"DISTANCES")
+PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 
-void MultiColvarDistance::registerKeywords( Keywords& keys ){
+void Distances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithVessel::autoParallelize( keys );
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
@@ -97,7 +98,7 @@ void MultiColvarDistance::registerKeywords( Keywords& keys ){
   keys.use("MORE_THAN"); keys.use("WITHIN"); keys.use("MOMENTS");
 }
 
-MultiColvarDistance::MultiColvarDistance(const ActionOptions&ao):
+Distances::Distances(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao),
 rcut(-1)
 {
@@ -109,11 +110,11 @@ rcut(-1)
   checkRead();
 }
 
-unsigned MultiColvarDistance::getNumberOfFieldDerivatives(){
+unsigned Distances::getNumberOfFieldDerivatives(){
   return 3*getNumberOfAtoms() + 9;
 } 
 
-double MultiColvarDistance::compute( const unsigned& j, const std::vector<Vector>& pos ){
+double Distances::compute( const unsigned& j, const std::vector<Vector>& pos ){
    Vector distance; 
    distance=getSeparation( pos[0], pos[1] );
    const double value=distance.modulo();
@@ -126,5 +127,6 @@ double MultiColvarDistance::compute( const unsigned& j, const std::vector<Vector
    return value;
 }
 
+}
 }
 

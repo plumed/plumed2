@@ -25,6 +25,7 @@
 #include "tools/KernelFunctions.h"
 
 namespace PLMD{
+namespace analysis{
 
 //+PLUMEDOC ANALYSIS HISTOGRAM
 /* 
@@ -83,7 +84,7 @@ HISTOGRAM ...
 */
 //+ENDPLUMEDOC
 
-class AnalysisHistogram : public Analysis {
+class Histogram : public Analysis {
 private:
   std::vector<std::string> gmin, gmax; 
   std::vector<double> point, bw;
@@ -94,13 +95,13 @@ private:
   std::string kerneltype; 
 public:
   static void registerKeywords( Keywords& keys );
-  AnalysisHistogram(const ActionOptions&ao);
+  Histogram(const ActionOptions&ao);
   void performAnalysis();
 };
 
-PLUMED_REGISTER_ACTION(AnalysisHistogram,"HISTOGRAM")
+PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 
-void AnalysisHistogram::registerKeywords( Keywords& keys ){
+void Histogram::registerKeywords( Keywords& keys ){
   Analysis::registerKeywords( keys );
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
@@ -111,7 +112,7 @@ void AnalysisHistogram::registerKeywords( Keywords& keys ){
   keys.use("NOMEMORY");
 }
 
-AnalysisHistogram::AnalysisHistogram(const ActionOptions&ao):
+Histogram::Histogram(const ActionOptions&ao):
 PLUMED_ANALYSIS_INIT(ao),
 point(getNumberOfArguments()),
 bw(getNumberOfArguments()),
@@ -143,7 +144,7 @@ nfiles(0)
   log.printf("\n");
 }
 
-void AnalysisHistogram::performAnalysis(){
+void Histogram::performAnalysis(){
   // Back up old histogram files
   std::string oldfname=saveResultsFromPreviousAnalyses( gridfname );
 
@@ -180,4 +181,5 @@ void AnalysisHistogram::performAnalysis(){
   gridfile.close(); delete gg;
 }
 
+}
 }

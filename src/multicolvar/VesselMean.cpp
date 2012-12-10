@@ -24,6 +24,7 @@
 #include "MultiColvar.h"
 
 namespace PLMD {
+namespace multicolvar {
 
 class VesselMean : public NormedSumVessel {
 private:
@@ -63,4 +64,5 @@ void VesselMean::getWeight( const unsigned& i, Value& weight ){
   mycolv->retrieveColvarWeight( i, weight );
 }
 
+}
 }

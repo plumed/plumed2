@@ -22,6 +22,7 @@
 #include "ActionVolume.h"
 
 namespace PLMD {
+namespace multicolvar {
 
 void ActionVolume::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
@@ -34,5 +35,5 @@ ActionAtomistic(ao)
 {
 }
 
-
+}
 }

@@ -40,6 +40,7 @@ COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 REGION={SIGMA=0.1 VOLUME=r1}
 //+ENDPLUMEDOC
 
 namespace PLMD {
+namespace multicolvar {
 
 class VolumeSubcell : public ActionVolume {
 private:
@@ -121,4 +122,5 @@ void VolumeSubcell::calculateNumberInside( const std::vector<Value>& cpos, Histo
   }
 }
 
+}
 }

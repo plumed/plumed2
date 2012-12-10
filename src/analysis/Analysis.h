@@ -28,6 +28,7 @@
 #define PLUMED_ANALYSIS_INIT(ao) Action(ao),Analysis(ao)
 
 namespace PLMD {
+namespace analysis {
 
 /**
 \ingroup INHERIT
@@ -157,6 +158,7 @@ double Analysis::retrieveNorm() const {
   return norm;
 }
 
+}
 }
 
 #endif

@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace multicolvar{
 
 //+PLUMEDOC MCOLVAR DENSITY
 /*
@@ -48,10 +49,10 @@ PRINT ARG=d1.* FILE=colvar1 FMT=%8.4f
 //+ENDPLUMEDOC
 
 
-class MultiColvarDensity : public MultiColvar {
+class Density : public MultiColvar {
 public:
   static void registerKeywords( Keywords& keys );
-  MultiColvarDensity(const ActionOptions&);
+  Density(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& j, const std::vector<Vector>& pos );
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
@@ -61,9 +62,9 @@ public:
   bool isDensity(){ return true; }
 };
 
-PLUMED_REGISTER_ACTION(MultiColvarDensity,"DENSITY")
+PLUMED_REGISTER_ACTION(Density,"DENSITY")
 
-void MultiColvarDensity::registerKeywords( Keywords& keys ){
+void Density::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithVessel::autoParallelize( keys );
   keys.use("SPECIES"); 
@@ -71,7 +72,7 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   keys.use("REGION"); 
 }
 
-MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
+Density::Density(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   int nat; readAtoms( nat ); 
@@ -80,13 +81,14 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead(); 
 }
 
-double MultiColvarDensity::compute( const unsigned& j, const std::vector<Vector>& pos ){
+double Density::compute( const unsigned& j, const std::vector<Vector>& pos ){
   return 1.0;
 }
 
-void MultiColvarDensity::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
+void Density::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
    cpos=pos[0]; deriv[0]=Tensor::identity();
 }
 
+}
 }
 

@@ -19,15 +19,17 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarSecondaryStructureRMSD.h"
+#include "SecondaryStructureRMSD.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/RMSD.h"
 #include "tools/DRMSD.h"
 
+using namespace PLMD::multicolvar;
+
 namespace PLMD {
 
-void MultiColvarSecondaryStructureRMSD::registerKeywords( Keywords& keys ){
+void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithVessel::autoParallelize( keys );
   keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
@@ -47,7 +49,7 @@ void MultiColvarSecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   keys.use("LESS_THAN"); keys.use("MIN"); keys.use("AVERAGE");
 }
 
-MultiColvarSecondaryStructureRMSD::MultiColvarSecondaryStructureRMSD(const ActionOptions&ao):
+SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
 Action(ao),
 MultiColvar(ao)
 {
@@ -56,12 +58,12 @@ MultiColvar(ao)
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 }
 
-MultiColvarSecondaryStructureRMSD::~MultiColvarSecondaryStructureRMSD(){
+SecondaryStructureRMSD::~SecondaryStructureRMSD(){
   for(unsigned i=0;i<secondary_rmsd.size();++i) delete secondary_rmsd[i]; 
   for(unsigned i=0;i<secondary_drmsd.size();++i) delete secondary_drmsd[i];
 }
 
-void MultiColvarSecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structure, double bondlength, double units ){
+void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structure, double bondlength, double units ){
 
   // Convert into correct units
   for(unsigned i=0;i<structure.size();++i){
@@ -102,7 +104,7 @@ void MultiColvarSecondaryStructureRMSD::setSecondaryStructure( std::vector<Vecto
   }
 }
 
-double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std::vector<Vector>& pos ){
+double SecondaryStructureRMSD::compute( const unsigned& j, const std::vector<Vector>& pos ){
   double r,nr; Tensor virial, new_virial;
 
   if( secondary_drmsd.size()>0 ){
@@ -134,11 +136,11 @@ double MultiColvarSecondaryStructureRMSD::compute( const unsigned& j, const std:
   return r;
 }
 
-unsigned MultiColvarSecondaryStructureRMSD::getNumberOfFieldDerivatives(){
+unsigned SecondaryStructureRMSD::getNumberOfFieldDerivatives(){
   plumed_massert(0,"Fields are not allowed for secondary structure variables");
 }
 
-bool MultiColvarSecondaryStructureRMSD::usingRMSD() const {
+bool SecondaryStructureRMSD::usingRMSD() const {
   if( secondary_rmsd.size()>0 ) return true;
   else return false;
 }

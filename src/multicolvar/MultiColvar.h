@@ -30,6 +30,7 @@
 #define PLUMED_MULTICOLVAR_INIT(ao) Action(ao),MultiColvar(ao)
 
 namespace PLMD {
+namespace multicolvar {
 
 class MultiColvar;
 
@@ -195,6 +196,7 @@ void MultiColvar::addBoxDerivatives(const Tensor& vir){
   thisval.addDerivative( 3*natoms+8, vir(2,2) );
 }
 
+}
 }
 
 #endif

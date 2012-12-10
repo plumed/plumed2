@@ -27,6 +27,7 @@
 #include "core/Atoms.h"
 
 namespace PLMD {
+namespace analysis {
 
 //+PLUMEDOC INTERNAL reweighting
 /*
@@ -348,4 +349,5 @@ std::string Analysis::saveResultsFromPreviousAnalyses( const std::string filenam
   return backup; 
 } 
 
+}
 }

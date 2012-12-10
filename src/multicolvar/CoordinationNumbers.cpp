@@ -31,6 +31,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace multicolvar{
 
 //+PLUMEDOC MCOLVAR COORDINATIONNUMBER
 /*
@@ -62,13 +63,13 @@ COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R
 //+ENDPLUMEDOC
 
 
-class MultiColvarCoordination : public MultiColvar {
+class CoordinationNumbers : public MultiColvar {
 private:
 //  double nl_cut;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  MultiColvarCoordination(const ActionOptions&);
+  CoordinationNumbers(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& j, const std::vector<Vector>& pos ); 
   void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
@@ -77,9 +78,9 @@ public:
   bool isPeriodic(){ return false; }
 };
 
-PLUMED_REGISTER_ACTION(MultiColvarCoordination,"COORDINATIONNUMBER")
+PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
 
-void MultiColvarCoordination::registerKeywords( Keywords& keys ){
+void CoordinationNumbers::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithVessel::autoParallelize( keys );
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
@@ -96,7 +97,7 @@ void MultiColvarCoordination::registerKeywords( Keywords& keys ){
   keys.use("REGION"); 
 }
 
-MultiColvarCoordination::MultiColvarCoordination(const ActionOptions&ao):
+CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the switching function
@@ -125,11 +126,11 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-unsigned MultiColvarCoordination::getNumberOfFieldDerivatives(){
+unsigned CoordinationNumbers::getNumberOfFieldDerivatives(){
   return getNumberOfFunctionsInAction();
 } 
 
-double MultiColvarCoordination::compute( const unsigned& j, const std::vector<Vector>& pos ){
+double CoordinationNumbers::compute( const unsigned& j, const std::vector<Vector>& pos ){
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number
@@ -150,9 +151,10 @@ double MultiColvarCoordination::compute( const unsigned& j, const std::vector<Ve
    return value;
 }
 
-void MultiColvarCoordination::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
+void CoordinationNumbers::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
    cpos=pos[0]; deriv[0]=Tensor::identity();
 }
 
+}
 }
 

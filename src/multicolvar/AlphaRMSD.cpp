@@ -19,12 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "MultiColvarSecondaryStructureRMSD.h"
+#include "SecondaryStructureRMSD.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
 namespace PLMD {
+namespace multicolvar {
 
 //+PLUMEDOC COLVAR ALPHARMSD
 /*
@@ -76,21 +77,21 @@ ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL
 */
 //+ENDPLUMEDOC
 
-class ColvarAlphaRMSD : public MultiColvarSecondaryStructureRMSD {
+class AlphaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
-  ColvarAlphaRMSD(const ActionOptions&);
+  AlphaRMSD(const ActionOptions&);
 }; 
 
-PLUMED_REGISTER_ACTION(ColvarAlphaRMSD,"ALPHARMSD")
+PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")
 
-void ColvarAlphaRMSD::registerKeywords( Keywords& keys ){
-  MultiColvarSecondaryStructureRMSD::registerKeywords( keys );
+void AlphaRMSD::registerKeywords( Keywords& keys ){
+  SecondaryStructureRMSD::registerKeywords( keys );
 }
 
-ColvarAlphaRMSD::ColvarAlphaRMSD(const ActionOptions&ao):
+AlphaRMSD::AlphaRMSD(const ActionOptions&ao):
 Action(ao),
-MultiColvarSecondaryStructureRMSD(ao)
+SecondaryStructureRMSD(ao)
 {
   // read in the backbone atoms
   std::vector<std::string> backnames(5); std::vector<unsigned> chains;
@@ -146,4 +147,5 @@ MultiColvarSecondaryStructureRMSD(ao)
   setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() ); 
 }
 
+}
 }

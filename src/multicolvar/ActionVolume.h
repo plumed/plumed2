@@ -26,6 +26,7 @@
 #include "tools/HistogramBead.h"
 
 namespace PLMD {
+namespace multicolvar {
 
 /**
 \ingroup INHERIT
@@ -60,5 +61,6 @@ double ActionVolume::getSigma() const {
   return sigma;
 }
 
+}
 }
 #endif

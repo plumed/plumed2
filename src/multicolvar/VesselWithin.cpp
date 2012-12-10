@@ -26,6 +26,7 @@
 #include "tools/HistogramBead.h"
 
 namespace PLMD {
+namespace multicolvar {
 
 class VesselWithin : public NormedSumVessel {
 private:
@@ -113,4 +114,5 @@ void VesselWithin::getWeight( const unsigned& i, Value& weight ){
   mycolv->retrieveColvarWeight( i, weight );
 }
 
+}
 }

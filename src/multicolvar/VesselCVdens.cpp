@@ -29,6 +29,7 @@
 #include "tools/HistogramBead.h"
 
 namespace PLMD {
+namespace multicolvar {
 
 //+PLUMEDOC INTERNAL region 
 /*
@@ -173,4 +174,5 @@ void VesselCVDens::compute( const unsigned& i, const unsigned& j, Value& theval 
   }
 }
 
+}
 }
