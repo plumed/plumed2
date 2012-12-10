@@ -25,6 +25,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace vatom{
 
 //+PLUMEDOC VATOM COM
 /*
@@ -47,22 +48,22 @@ PRINT ARG=d1
 //+ENDPLUMEDOC
 
 
-class GenericCOM:
+class COM:
   public ActionWithVirtualAtom
 {
 public:
-  GenericCOM(const ActionOptions&ao);
+  COM(const ActionOptions&ao);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(GenericCOM,"COM")
+PLUMED_REGISTER_ACTION(COM,"COM")
 
-void GenericCOM::registerKeywords(Keywords& keys){
+void COM::registerKeywords(Keywords& keys){
   ActionWithVirtualAtom::registerKeywords(keys);
 }
 
-GenericCOM::GenericCOM(const ActionOptions&ao):
+COM::COM(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao)
 {
@@ -75,7 +76,7 @@ GenericCOM::GenericCOM(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void GenericCOM::calculate(){
+void COM::calculate(){
   Vector pos;
   double mass(0.0),charge(0.0);
   vector<Tensor> deriv(getNumberOfAtoms());
@@ -91,4 +92,5 @@ void GenericCOM::calculate(){
   setAtomsDerivatives(deriv);
 }
 
+}
 }

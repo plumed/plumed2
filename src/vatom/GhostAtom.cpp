@@ -27,6 +27,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace vatom{
 
 //+PLUMEDOC VATOM GHOST 
 /*
@@ -50,24 +51,24 @@ PRINT ARG=d1
 //+ENDPLUMEDOC
 
 
-class GenericGhostAtom:
+class GhostAtom:
   public ActionWithVirtualAtom
 {
   vector<double> coord;
 public:
-  GenericGhostAtom(const ActionOptions&ao);
+  GhostAtom(const ActionOptions&ao);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(GenericGhostAtom,"GHOST")
+PLUMED_REGISTER_ACTION(GhostAtom,"GHOST")
 
-void GenericGhostAtom::registerKeywords(Keywords& keys){
+void GhostAtom::registerKeywords(Keywords& keys){
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.add("atoms","COORDINATES","coordinates of the ghost atom in the local reference frame");
 }
 
-GenericGhostAtom::GenericGhostAtom(const ActionOptions&ao):
+GhostAtom::GhostAtom(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao)
 {
@@ -85,7 +86,7 @@ GenericGhostAtom::GenericGhostAtom(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void GenericGhostAtom::calculate(){
+void GhostAtom::calculate(){
   Vector pos;
   vector<Tensor> deriv(getNumberOfAtoms());
   vector<Vector> n;
@@ -178,4 +179,5 @@ void GenericGhostAtom::calculate(){
   setAtomsDerivatives(deriv);
 }
 
+}
 }

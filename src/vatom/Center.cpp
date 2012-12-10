@@ -25,6 +25,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace vatom{
 
 //+PLUMEDOC VATOM CENTER
 /*
@@ -54,26 +55,26 @@ PRINT ARG=d1
 //+ENDPLUMEDOC
 
 
-class GenericCenter:
+class Center:
   public ActionWithVirtualAtom
 {
   std::vector<double> weights;
   bool weight_mass;
 public:
-  GenericCenter(const ActionOptions&ao);
+  Center(const ActionOptions&ao);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(GenericCenter,"CENTER")
+PLUMED_REGISTER_ACTION(Center,"CENTER")
 
-void GenericCenter::registerKeywords(Keywords& keys){
+void Center::registerKeywords(Keywords& keys){
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.add("optional","WEIGHTS","Center is computed as a weighted average.");
   keys.addFlag("MASS",false,"If set center is mass weighted");
 }
 
-GenericCenter::GenericCenter(const ActionOptions&ao):
+Center::Center(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao),
   weight_mass(false)
@@ -97,7 +98,7 @@ GenericCenter::GenericCenter(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void GenericCenter::calculate(){
+void Center::calculate(){
   Vector pos;
   double mass(0.0),charge(0.0);
   vector<Tensor> deriv(getNumberOfAtoms());
@@ -118,4 +119,5 @@ void GenericCenter::calculate(){
   setAtomsDerivatives(deriv);
 }
 
+}
 }
