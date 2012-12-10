@@ -25,12 +25,14 @@
 #include <string>
 
 namespace PLMD{
+namespace config{
 
 // nothing yet
 
 const std::string soext("@SOEXT@");
 const std::string plumedRoot("@PLUMED_ROOT@");
 
+}
 }
 
 #endif

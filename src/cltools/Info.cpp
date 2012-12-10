@@ -79,7 +79,7 @@ int Info::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 
  bool printconfiguration; parseFlag("--configuration",printconfiguration);
  bool printroot; parseFlag("--root",printroot);
- if(printroot) fprintf(out,"%s\n",plumedRoot.c_str());
+ if(printroot) fprintf(out,"%s\n",config::plumedRoot.c_str());
 
  if(printconfiguration){
     static const unsigned char conf [] ={

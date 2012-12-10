@@ -563,7 +563,7 @@ void PlumedMain::load(const std::string& ss){
        comm.Barrier();
        base="./"+base;
      }
-     s=base+"."+soext;
+     s=base+"."+config::soext;
      void *p=dlloader.load(s);
      if(!p){
        log<<"ERROR\n";

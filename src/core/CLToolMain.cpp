@@ -102,7 +102,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
 
   DLLoader dlloader;
 
-  string root=plumedRoot;
+  string root=config::plumedRoot;
 
   bool standalone_executable=false;
 
