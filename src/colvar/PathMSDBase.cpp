@@ -22,7 +22,7 @@
 #include <cmath>
 
 #include "Colvar.h"
-#include "ColvarPathMSDBase.h"
+#include "PathMSDBase.h"
 #include "ActionRegister.h"
 
 #include "core/PlumedMain.h"
