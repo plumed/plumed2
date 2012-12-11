@@ -490,7 +490,7 @@ int CLToolDriver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   p.cmd("runFinalJobs");
 
   if(fp_forces) fclose(fp_forces);
-  fclose(fp);
+  if(fp && fp!=in)fclose(fp);
   if(multi_log) fclose(multi_log);
   
   return 0;
