@@ -28,6 +28,7 @@
 #include "VesselValueAccess.h"
 
 namespace PLMD {
+namespace vesselbase {
 
 class VesselAccumulator : public VesselValueAccess {
 private:
@@ -64,6 +65,7 @@ unsigned VesselAccumulator::getNumberOfValues() const {
 }
 
 
+}
 }
 #endif
 

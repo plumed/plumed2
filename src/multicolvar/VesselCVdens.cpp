@@ -88,7 +88,7 @@ DENSITY SPECIES=20-500 REGION={SIGMA=0.1 VOLUME=r2}
 //+ENDPLUMEDOC
 
 
-class VesselCVDens : public NormedSumVessel {
+class VesselCVDens : public vesselbase::NormedSumVessel {
 private:
   bool isDensity;
   Value tmpval, tmpweight;
@@ -99,7 +99,7 @@ private:
   HistogramBead bead;
 public:
   static void reserveKeyword( Keywords& keys );
-  VesselCVDens( const VesselOptions& da );
+  VesselCVDens( const vesselbase::VesselOptions& da );
   void getWeight( const unsigned& i, Value& weight );
   void compute( const unsigned& i, const unsigned& j, Value& theval );
 };
@@ -111,7 +111,7 @@ void VesselCVDens::reserveKeyword( Keywords& keys ){
                                     "For more details on how this quantity is calculated see \\ref region.");
 }
 
-VesselCVDens::VesselCVDens( const VesselOptions& da ) :
+VesselCVDens::VesselCVDens( const vesselbase::VesselOptions& da ) :
 NormedSumVessel(da),
 catom_pos(3),
 not_in(false)

@@ -65,8 +65,6 @@ PLMD::Action you should use <b> the routines with the word component in the name
 class ActionWithValue : 
   public virtual Action
 {
-friend class VesselAccumulator;
-friend class VesselMoment;
 private:
 /// An array containing the values for this action
   std::vector<Value*> values;
@@ -93,6 +91,7 @@ protected:
 
 // -------- The action has multiple components ---------- //
 
+public:
 /// Add a value with a name like label.name
   void addComponent( const std::string& name );
 /// Add a value with a name like label.name that has derivatives
@@ -101,6 +100,7 @@ protected:
   void componentIsNotPeriodic( const std::string& name );
 /// Set the value to be periodic with a particular domain
   void componentIsPeriodic( const std::string& name, const std::string& min, const std::string& max );
+protected:
 /// Return a pointer to the component by index
   Value* getPntrToComponent(int i);
 /// Return a pointer to the value by name

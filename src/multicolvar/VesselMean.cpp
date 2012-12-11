@@ -26,12 +26,12 @@
 namespace PLMD {
 namespace multicolvar {
 
-class VesselMean : public NormedSumVessel {
+class VesselMean : public vesselbase::NormedSumVessel {
 private:
   MultiColvar* mycolv;
 public:
   static void reserveKeyword( Keywords& keys );
-  VesselMean( const VesselOptions& da );
+  VesselMean( const vesselbase::VesselOptions& da );
   void getWeight( const unsigned& i, Value& weight );
   void compute( const unsigned& i, const unsigned& j, Value& theval );
 };
@@ -42,7 +42,7 @@ void VesselMean::reserveKeyword( Keywords& keys ){
   keys.reserveFlag("AVERAGE",false,"take the average value of these variables and store it in value called average.");
 }
 
-VesselMean::VesselMean( const VesselOptions& da ) :
+VesselMean::VesselMean( const vesselbase::VesselOptions& da ) :
 NormedSumVessel(da)
 {
   if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");

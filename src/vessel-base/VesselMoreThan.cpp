@@ -26,6 +26,7 @@
 #include "ActionWithVessel.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 class VesselMoreThan : public SumVessel {
 private:
@@ -69,4 +70,5 @@ double VesselMoreThan::compute( const unsigned& i, const double& val, double& df
   return f;
 }
 
+}
 }

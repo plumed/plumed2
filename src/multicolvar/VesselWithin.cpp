@@ -28,13 +28,13 @@
 namespace PLMD {
 namespace multicolvar {
 
-class VesselWithin : public NormedSumVessel {
+class VesselWithin : public vesselbase::NormedSumVessel {
 private:
   MultiColvar* mycolv;
   std::vector<HistogramBead> hist;
 public:
   static void reserveKeyword( Keywords& keys );
-  VesselWithin( const VesselOptions& da );
+  VesselWithin( const vesselbase::VesselOptions& da );
   void getWeight( const unsigned& i, Value& weight );
   void compute( const unsigned& i, const unsigned& j, Value& theval );
   void printKeywords();
@@ -49,7 +49,7 @@ void VesselWithin::reserveKeyword( Keywords& keys ){
                                     "\\ref histogrambead. The final values can be referenced using \\e label.between\\f$a\\f$&\\f$b\\f$."); 
 }
 
-VesselWithin::VesselWithin( const VesselOptions& da ) :
+VesselWithin::VesselWithin( const vesselbase::VesselOptions& da ) :
 NormedSumVessel(da)
 { 
 

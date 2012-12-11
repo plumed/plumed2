@@ -23,6 +23,7 @@
 #include "VesselRegister.h"
 
 namespace PLMD{
+namespace vesselbase{
 
 VesselRegister::~VesselRegister(){
   if(m.size()>0){
@@ -67,4 +68,5 @@ Keywords VesselRegister::getKeywords(){
   return keywords;
 }
 
+}
 }

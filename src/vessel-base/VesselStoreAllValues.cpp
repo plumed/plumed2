@@ -23,6 +23,7 @@
 #include "VesselStoreAllValues.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 VesselStoreAllValues::VesselStoreAllValues( const VesselOptions& da ):
 VesselValueAccess(da)
@@ -48,4 +49,5 @@ bool VesselStoreAllValues::calculate( const unsigned& i, const double& tolerance
 
 }
 
+}
 

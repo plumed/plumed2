@@ -23,6 +23,7 @@
 #include "ActionWithVessel.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 NormedSumVessel::NormedSumVessel( const VesselOptions& da ):
 VesselAccumulator(da),
@@ -94,4 +95,5 @@ void NormedSumVessel::finish( const double& tolerance ){
   }
 }
 
+}
 }

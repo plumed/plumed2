@@ -23,6 +23,7 @@
 #include "ActionWithVessel.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 VesselAccumulator::VesselAccumulator( const VesselOptions& da ):
 VesselValueAccess(da),
@@ -64,5 +65,6 @@ bool VesselAccumulator::applyForce( std::vector<double>& forces ){
   return wasforced;
 }
 
+}
 }
 

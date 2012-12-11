@@ -30,6 +30,11 @@
 
 namespace PLMD{
 
+class PlumedCommunicator;
+class Log;
+
+namespace vesselbase{
+
 /**
 \ingroup TOOLBOX
 Vessel is an abstract base class.  The classes that inherit
@@ -40,8 +45,6 @@ on.  This class is used in PLMD::ActionWithVessel.
 
 class ActionWithVessel;
 class Vessel;
-class Log;
-class PlumedCommunicator;
 
 /// This class is used to pass the input to Vessels 
 class VesselOptions {
@@ -146,5 +149,6 @@ double Vessel::getBufferElement( const unsigned& i ) const {
   return data_buffer[i];
 } 
 
+}
 }
 #endif

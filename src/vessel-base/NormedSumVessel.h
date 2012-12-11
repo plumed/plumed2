@@ -28,6 +28,7 @@
 #include "VesselAccumulator.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 class NormedSumVessel : public VesselAccumulator {
 private:
@@ -49,5 +50,6 @@ public:
   virtual void compute( const unsigned& , const unsigned& , Value& )=0;
 };
 
+}
 }
 #endif

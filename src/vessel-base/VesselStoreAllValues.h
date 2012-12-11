@@ -28,6 +28,7 @@
 #include "VesselValueAccess.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 class VesselStoreAllValues : public VesselValueAccess {
 public:
@@ -41,5 +42,6 @@ public:
   virtual void local_resizing()=0;
 };
 
+}
 }
 #endif

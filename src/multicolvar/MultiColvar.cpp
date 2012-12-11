@@ -377,7 +377,7 @@ void MultiColvar::retrieveColvarWeight( const unsigned& j, Value& ww ){
   ww.clearDerivatives(); ww.set(1.0);
 }
 
-void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, const unsigned& vstart, Vessel* valout ){    
+void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, const unsigned& vstart, vesselbase::Vessel* valout ){    
   plumed_assert( value_in.getNumberOfDerivatives()==3*colvar_atoms[jcv].getNumberActive()+9);
 
   int thisatom, thispos, in=0; unsigned innat=colvar_atoms[jcv].getNumberActive();

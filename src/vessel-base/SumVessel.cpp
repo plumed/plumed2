@@ -23,6 +23,7 @@
 #include "ActionWithVessel.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 SumVessel::SumVessel( const VesselOptions& da ):
 VesselAccumulator(da)
@@ -56,6 +57,7 @@ void SumVessel::finish( const double& tolerance ){
       myvalue2.chainRule(df); myvalue2.set(f);
       copy( myvalue2, getPntrToOutput(i) );
   }
+}
 }
 
 }

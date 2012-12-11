@@ -30,6 +30,7 @@
 #include "Tools/Keywords.h"
 
 namespace PLMD{
+namespace vesselbase{
 
 class Vessel;
 class VesselOptions;
@@ -63,11 +64,12 @@ VesselRegister& vesselRegister();
 
 #define PLUMED_REGISTER_VESSEL(classname,keyword) \
   static class classname##RegisterMe{ \
-    static PLMD::Vessel * create(const PLMD::VesselOptions&da){return new classname(da);} \
+    static PLMD::vesselbase::Vessel * create(const PLMD::vesselbase::VesselOptions&da){return new classname(da);} \
   public: \
-    classname##RegisterMe(){PLMD::vesselRegister().add(keyword,create,classname::reserveKeyword);}; \
-    ~classname##RegisterMe(){PLMD::vesselRegister().remove(create);}; \
+    classname##RegisterMe(){PLMD::vesselbase::vesselRegister().add(keyword,create,classname::reserveKeyword);}; \
+    ~classname##RegisterMe(){PLMD::vesselbase::vesselRegister().remove(create);}; \
   } classname##RegisterMeObject;
 
+}
 }
 #endif

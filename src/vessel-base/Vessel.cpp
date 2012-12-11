@@ -26,6 +26,7 @@
 #include "tools/Log.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 VesselOptions::VesselOptions(const std::string& thisname, const std::string& params, ActionWithVessel* aa ):
 myname(thisname),
@@ -62,4 +63,5 @@ void Vessel::error( const std::string& msg ){
   action->exit(1);
 }
 
+}
 }

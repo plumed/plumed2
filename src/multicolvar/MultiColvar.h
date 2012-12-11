@@ -43,7 +43,7 @@ thereof, whtin it there is \ref AddingAMultiColvar "information" as to how to go
 class MultiColvar :
   public ActionAtomistic,
   public ActionWithValue,
-  public ActionWithVessel
+  public vesselbase::ActionWithVessel
   {
 private:
   bool usepbc;
@@ -113,7 +113,7 @@ public:
 /// Get the weight of the colvar
   virtual void retrieveColvarWeight( const unsigned& i, Value& ww );
 /// Merge the derivatives 
-  void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, const unsigned& vstart, Vessel* valout );
+  void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, const unsigned& vstart, vesselbase::Vessel* valout );
   void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout );
 /// Turn of atom requests when this colvar is deactivated cos its small
   void deactivateValue( const unsigned j );

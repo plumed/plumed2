@@ -25,6 +25,7 @@
 #include "ActionWithVessel.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 class VesselMoment : public VesselStoreAllValues {
 private:
@@ -130,4 +131,5 @@ bool VesselMoment::applyForce( std::vector<double>& forces ){
   return wasforced;
 }
 
+}
 }

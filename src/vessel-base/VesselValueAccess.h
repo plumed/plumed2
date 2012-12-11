@@ -29,6 +29,7 @@
 #include "core/Value.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 class VesselValueAccess : public Vessel {
 private:
@@ -66,5 +67,6 @@ double VesselValueAccess::getValue( const unsigned& icv ) const {
    return getBufferElement( value_starts[icv] );
 }
 
+}
 }  
 #endif

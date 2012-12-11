@@ -24,7 +24,8 @@
 #include "VesselRegister.h"
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
+namespace vesselbase{
 
 void ActionWithVessel::registerKeywords(Keywords& keys){
   keys.add("optional","TOL","when accumulating sums quantities that contribute less than this will be ignored.");
@@ -205,4 +206,7 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
 
 void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){
   plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithVessel can retrieve the domain");
+}
+
+}
 }

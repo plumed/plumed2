@@ -23,6 +23,7 @@
 #include "ActionWithVessel.h"
 
 namespace PLMD {
+namespace vesselbase{
 
 VesselValueAccess::VesselValueAccess( const VesselOptions& da ) :
 Vessel(da)
@@ -41,4 +42,5 @@ void VesselValueAccess::setValueSizes( const std::vector<unsigned>& val_sizes ){
   resizeBuffer( vstart ); 
 }
 
+}
 }

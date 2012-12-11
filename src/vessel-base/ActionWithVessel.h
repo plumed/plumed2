@@ -29,9 +29,11 @@
 #include <vector>
 
 namespace PLMD{
+class Value;
+
+namespace vesselbase{
 
 class Vessel;
-class Value;
 
 /**
 \ingroup MULTIINHERIT
@@ -169,4 +171,5 @@ Vessel* ActionWithVessel::getPntrToVessel( const unsigned& i ){
 }
 
 } 
+}
 #endif
