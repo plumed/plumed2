@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_vessel_base_NormedSumVessel_h
-#define __PLUMED_vessel_base_NormedSumVessel_h
+#ifndef __PLUMED_vesselbase_NormedSumVessel_h
+#define __PLUMED_vesselbase_NormedSumVessel_h
 
 #include <string>
 #include <cstring>
