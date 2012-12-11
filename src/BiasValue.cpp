@@ -29,7 +29,7 @@ using namespace std;
 
 namespace PLMD{
 
-//+PLUMEDOC BIAS VALUE 
+//+PLUMEDOC BIAS BIASVALUE 
 /*
 Takes the value of one variable and use it as a bias
 
