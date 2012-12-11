@@ -19,59 +19,64 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionRegister.h"
-#include "ActionPilot.h"
-#include "PlumedMain.h"
-#include "ActionSet.h"
-
-namespace PLMD{
+#include "core/ActionWithValue.h"
+#include "core/ActionRegister.h"
+#include <string>
+#include <cmath>
+#include <cassert>
 
 using namespace std;
 
-//+PLUMEDOC GENERIC FLUSH
+namespace PLMD{
+namespace generic{
+
+//+PLUMEDOC GENERIC TIME
 /*
-This command instructs plumed to flush all the open files with a user specified frequency.  This
-is useful for preventing data loss that would otherwise arrise as a consequence of the code
-storing data for printing in the buffers
+retrieve the time of the simulation to be used elsewere
 
 \par Examples
-A command like this in the input will instruct plumed to flush all the output files every 100 steps
+
 \verbatim
-FLUSH STRIDE=100
+TIME            LABEL=t1
+PRINT ARG=t1
 \endverbatim
+(See also \ref PRINT).
+
 */
 //+ENDPLUMEDOC
-
-class GenericFlush:
-  public ActionPilot
-{
+    
+class Time : public ActionWithValue {
 public:
-  GenericFlush(const ActionOptions&ao):
-    Action(ao),
-    ActionPilot(ao)
-  {
-    checkRead();
-  }
   static void registerKeywords( Keywords& keys );
-  void calculate(){};
-  void apply(){
-    plumed.fflush();
-    log.flush();
-    const ActionSet & actionSet(plumed.getActionSet());
-    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p)
-    (*p)->fflush();
-  }
+  Time(const ActionOptions&);
+// active methods:
+  virtual void calculate();
+  virtual void apply(){};
 };
 
-PLUMED_REGISTER_ACTION(GenericFlush,"FLUSH")
+PLUMED_REGISTER_ACTION(Time,"TIME")
 
-void GenericFlush::registerKeywords( Keywords& keys ){
+void Time::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  keys.add("compulsory","STRIDE","the frequency with which all the open files should be flushed");
-  keys.remove("LABEL");
+  ActionWithValue::registerKeywords( keys );
+}
+
+Time::Time(const ActionOptions&ao):
+Action(ao),ActionWithValue(ao)
+{
+  addValueWithDerivatives(); setNotPeriodic();
+  // resize derivative by hand to a nonzero value
+  getPntrToValue()->resizeDerivatives(1);
+}
+
+void Time::calculate(){
+    setValue           (getTime());
 }
 
 }
 
 
+
+
+
+}

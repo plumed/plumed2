@@ -19,9 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionPilot.h"
-#include "ActionWithArguments.h"
-#include "ActionRegister.h"
+#include "core/ActionPilot.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionRegister.h"
 #include "tools/PlumedCommunicator.h"
 #include "tools/PlumedFile.h"
 #include <cassert>
@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace generic{
 
 //+PLUMEDOC ANALYSIS DUMPDERIVATIVES
 /*
@@ -53,7 +54,7 @@ DUMPDERIVATIVES ARG=distance,distanceN STRIDE=1 FILE=deriv
 */
 //+ENDPLUMEDOC
 
-class GenericDumpDerivatives :
+class DumpDerivatives :
 public ActionPilot,
 public ActionWithArguments
 {
@@ -62,16 +63,16 @@ public ActionWithArguments
   PlumedOFile of;
 public:
   void calculate(){};
-  GenericDumpDerivatives(const ActionOptions&);
+  DumpDerivatives(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply(){};
   void update();
-  ~GenericDumpDerivatives();
+  ~DumpDerivatives();
 };
 
-PLUMED_REGISTER_ACTION(GenericDumpDerivatives,"DUMPDERIVATIVES")
+PLUMED_REGISTER_ACTION(DumpDerivatives,"DUMPDERIVATIVES")
 
-void GenericDumpDerivatives::registerKeywords(Keywords& keys){
+void DumpDerivatives::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -81,7 +82,7 @@ void GenericDumpDerivatives::registerKeywords(Keywords& keys){
   keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
 }
 
-GenericDumpDerivatives::GenericDumpDerivatives(const ActionOptions&ao):
+DumpDerivatives::DumpDerivatives(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
@@ -106,7 +107,7 @@ fmt("%15.10f")
 }
 
 
-void GenericDumpDerivatives::update(){
+void DumpDerivatives::update(){
   unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
   for(unsigned ipar=0;ipar<npar;ipar++){
     of.fmtField(" %f");
@@ -120,9 +121,10 @@ void GenericDumpDerivatives::update(){
   }
 }
 
-GenericDumpDerivatives::~GenericDumpDerivatives(){
+DumpDerivatives::~DumpDerivatives(){
 }
 
 }
 
 
+}

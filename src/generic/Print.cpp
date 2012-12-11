@@ -19,14 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionPilot.h"
-#include "ActionWithArguments.h"
-#include "ActionRegister.h"
+#include "core/ActionPilot.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionRegister.h"
 #include "tools/PlumedCommunicator.h"
 
 using namespace std;
 
 namespace PLMD{
+namespace generic{
 
 //+PLUMEDOC ANALYSIS PRINT
 /*
@@ -51,7 +52,7 @@ PRINT ARG=distance,energy   STRIDE=1000 FILE=COLVAR_ALL
 */
 //+ENDPLUMEDOC
 
-class GenericPrint :
+class Print :
 public ActionPilot,
 public ActionWithArguments
 {
@@ -71,16 +72,16 @@ public ActionWithArguments
 public:
   void calculate(){};
   void prepare();
-  GenericPrint(const ActionOptions&);
+  Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply(){};
   void update();
-  ~GenericPrint();
+  ~Print();
 };
 
-PLUMED_REGISTER_ACTION(GenericPrint,"PRINT")
+PLUMED_REGISTER_ACTION(Print,"PRINT")
 
-void GenericPrint::registerKeywords(Keywords& keys){
+void Print::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -91,7 +92,7 @@ void GenericPrint::registerKeywords(Keywords& keys){
   keys.add("hidden","_ROTATE","some funky thing implemented by GBussi");
 }
 
-GenericPrint::GenericPrint(const ActionOptions&ao):
+Print::Print(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
@@ -127,7 +128,7 @@ rotate(0)
   checkRead();
 }
 
-void GenericPrint::prepare(){
+void Print::prepare(){
 /////////////////////////////////////////
 // these are crazy things just for debug:
 // they allow to change regularly the
@@ -144,7 +145,7 @@ void GenericPrint::prepare(){
 /////////////////////////////////////////
 }
 
-void GenericPrint::update(){
+void Print::update(){
       ofile.fmtField(" %f");
       ofile.printField("time",getTime());
       for(unsigned i=0;i<getNumberOfArguments();i++){
@@ -155,9 +156,10 @@ void GenericPrint::update(){
       ofile.printField();
 }
 
-GenericPrint::~GenericPrint(){
+Print::~Print(){
 }
 
 }
 
 
+}

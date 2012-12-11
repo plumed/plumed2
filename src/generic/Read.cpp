@@ -19,14 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionPilot.h"
-#include "ActionWithValue.h"
-#include "ActionRegister.h"
-#include "PlumedMain.h"
-#include "ActionSet.h"
-#include "Atoms.h"
+#include "core/ActionPilot.h"
+#include "core/ActionWithValue.h"
+#include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/Atoms.h"
 
 namespace PLMD{
+namespace generic{
 
 //+PLUMEDOC GENERIC READ
 /* 
@@ -37,7 +38,7 @@ Read quantities from a colvar file.
 */
 //+ENDPLUMEDOC
 
-class GenericRead :
+class Read :
 public ActionPilot,
 public ActionWithValue
 {
@@ -49,8 +50,8 @@ private:
   std::vector<Value*> readvals;
 public:
   static void registerKeywords( Keywords& keys );
-  GenericRead(const ActionOptions&);
-  ~GenericRead();
+  Read(const ActionOptions&);
+  ~Read();
   void prepare();
   void apply(){};
   void calculate();
@@ -59,9 +60,9 @@ public:
   PlumedIFile* getFile();
 };
 
-PLUMED_REGISTER_ACTION(GenericRead,"READ")
+PLUMED_REGISTER_ACTION(Read,"READ")
 
-void GenericRead::registerKeywords(Keywords& keys){
+void Read::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithValue::registerKeywords(keys);
@@ -72,7 +73,7 @@ void GenericRead::registerKeywords(Keywords& keys){
   keys.remove("NUMERICAL_DERIVATIVES");
 }
 
-GenericRead::GenericRead(const ActionOptions&ao):
+Read::Read(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithValue(ao),
@@ -82,7 +83,7 @@ nlinesPerStep(1)
   parse("FILE",filename);
   // Open the file if it is not already opened
   cloned_file=false;
-  std::vector<GenericRead*> other_reads=plumed.getActionSet().select<GenericRead*>();
+  std::vector<Read*> other_reads=plumed.getActionSet().select<Read*>();
   for(unsigned i=0;i<other_reads.size();++i){
       if( other_reads[i]->getFilename()==filename ){
           ifile=other_reads[i]->getFile();
@@ -134,20 +135,20 @@ nlinesPerStep(1)
   checkRead();
 }
 
-GenericRead::~GenericRead(){
+Read::~Read(){
   if( !cloned_file ){ ifile->close(); delete ifile; }
   for(unsigned i=0;i<readvals.size();++i) delete readvals[i];
 }
 
-std::string GenericRead::getFilename() const {
+std::string Read::getFilename() const {
   return filename;
 }
 
-PlumedIFile* GenericRead::getFile(){
+PlumedIFile* Read::getFile(){
   return ifile;
 }
 
-void GenericRead::prepare(){
+void Read::prepare(){
   if( !cloned_file ){
       double du_time; 
       if( !ifile->scanField("time",du_time) ){
@@ -159,7 +160,7 @@ void GenericRead::prepare(){
   }  
 }
 
-void GenericRead::calculate(){
+void Read::calculate(){
   std::string smin, smax;
   for(unsigned i=0;i<readvals.size();++i){
       ifile->scanField( readvals[i] );
@@ -171,7 +172,7 @@ void GenericRead::calculate(){
   }
 }
 
-void GenericRead::update(){
+void Read::update(){
   if( !cloned_file ){
       for(unsigned i=0;i<nlinesPerStep;++i){
          ifile->scanField(); double du_time;
@@ -180,4 +181,5 @@ void GenericRead::update(){
   }
 }
 
+}
 }

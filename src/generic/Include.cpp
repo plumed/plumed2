@@ -19,14 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Action.h"
-#include "ActionRegister.h"
-#include "PlumedMain.h"
+#include "core/Action.h"
+#include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
 #include "tools/PlumedException.h"
 
 using namespace std;
 
 namespace PLMD{
+namespace generic{
 
 //+PLUMEDOC GENERIC INCLUDE
 /*
@@ -61,24 +62,24 @@ c2: COM ATOMS=101-202
 */
 //+ENDPLUMEDOC
 
-class GenericInclude :
+class Include :
   public Action
 {
 public:
   static void registerKeywords( Keywords& keys );
-  GenericInclude(const ActionOptions&ao);
+  Include(const ActionOptions&ao);
   void calculate(){};
   void apply(){};
 };
 
-PLUMED_REGISTER_ACTION(GenericInclude,"INCLUDE")
+PLUMED_REGISTER_ACTION(Include,"INCLUDE")
 
-void GenericInclude::registerKeywords( Keywords& keys ){
+void Include::registerKeywords( Keywords& keys ){
   Action::registerKeywords(keys);
   keys.add("compulsory","FILE","-","file to be included");
 }
 
-GenericInclude::GenericInclude(const ActionOptions&ao):
+Include::Include(const ActionOptions&ao):
 Action(ao)
 {
   std::string f;
@@ -88,5 +89,6 @@ Action(ao)
   plumed.readInputFile(f);
 }
 
+}
 }
 

@@ -19,62 +19,61 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionWithValue.h"
-#include "ActionRegister.h"
-#include <string>
-#include <cmath>
-#include <cassert>
+#include "core/ActionRegister.h"
+#include "core/ActionPilot.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+
+namespace PLMD{
+namespace generic{
 
 using namespace std;
 
-namespace PLMD{
-
-//+PLUMEDOC GENERIC TIME
+//+PLUMEDOC GENERIC FLUSH
 /*
-retrieve the time of the simulation to be used elsewere
+This command instructs plumed to flush all the open files with a user specified frequency.  This
+is useful for preventing data loss that would otherwise arrise as a consequence of the code
+storing data for printing in the buffers
 
 \par Examples
-
+A command like this in the input will instruct plumed to flush all the output files every 100 steps
 \verbatim
-TIME            LABEL=t1
-PRINT ARG=t1
+FLUSH STRIDE=100
 \endverbatim
-(See also \ref PRINT).
-
 */
 //+ENDPLUMEDOC
-    
-class GenericTime : public ActionWithValue {
+
+class Flush:
+  public ActionPilot
+{
 public:
+  Flush(const ActionOptions&ao):
+    Action(ao),
+    ActionPilot(ao)
+  {
+    checkRead();
+  }
   static void registerKeywords( Keywords& keys );
-  GenericTime(const ActionOptions&);
-// active methods:
-  virtual void calculate();
-  virtual void apply(){};
+  void calculate(){};
+  void apply(){
+    plumed.fflush();
+    log.flush();
+    const ActionSet & actionSet(plumed.getActionSet());
+    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p)
+    (*p)->fflush();
+  }
 };
 
-PLUMED_REGISTER_ACTION(GenericTime,"TIME")
+PLUMED_REGISTER_ACTION(Flush,"FLUSH")
 
-void GenericTime::registerKeywords( Keywords& keys ){
+void Flush::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-}
-
-GenericTime::GenericTime(const ActionOptions&ao):
-Action(ao),ActionWithValue(ao)
-{
-  addValueWithDerivatives(); setNotPeriodic();
-  // resize derivative by hand to a nonzero value
-  getPntrToValue()->resizeDerivatives(1);
-}
-
-void GenericTime::calculate(){
-    setValue           (getTime());
+  ActionPilot::registerKeywords( keys );
+  keys.add("compulsory","STRIDE","the frequency with which all the open files should be flushed");
+  keys.remove("LABEL");
 }
 
 }
-
-
-
+}
 
 

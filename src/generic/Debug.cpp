@@ -19,14 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionRegister.h"
-#include "ActionPilot.h"
-#include "ActionSet.h"
-#include "PlumedMain.h"
+#include "core/ActionRegister.h"
+#include "core/ActionPilot.h"
+#include "core/ActionSet.h"
+#include "core/PlumedMain.h"
 
 using namespace std;
 
 namespace PLMD{
+namespace generic {
 
 //+PLUMEDOC GENERIC DEBUG
 /*
@@ -42,23 +43,23 @@ the list of which objects are active and which are inactive
 as a sequence of + (active) and - (inactive). Logging is done with stride s.
 */
 //+ENDPLUMEDOC
-class GenericDebug:
+class Debug:
   public ActionPilot
 {
   bool logActivity;
   bool logRequestedAtoms;
   bool novirial;
 public:
-  GenericDebug(const ActionOptions&ao);
+  Debug(const ActionOptions&ao);
 /// Register all the relevant keywords for the action  
   static void registerKeywords( Keywords& keys );
   void calculate(){};
   void apply();
 };
 
-PLUMED_REGISTER_ACTION(GenericDebug,"DEBUG")
+PLUMED_REGISTER_ACTION(Debug,"DEBUG")
 
-void GenericDebug::registerKeywords( Keywords& keys ){
+void Debug::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords(keys);
   keys.add("compulsory","STRIDE","1","the frequency with which this action is to be performed");
@@ -67,7 +68,7 @@ void GenericDebug::registerKeywords( Keywords& keys ){
   keys.addFlag("NOVIRIAL",false,"switch off the virial contribution for the entirity of the simulation");
 }
 
-GenericDebug::GenericDebug(const ActionOptions&ao):
+Debug::Debug(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 logActivity(false),
@@ -83,18 +84,18 @@ novirial(false){
   checkRead();
 }
 
-void GenericDebug::apply(){
+void Debug::apply(){
   if(logActivity){
     const ActionSet&actionSet(plumed.getActionSet());
     int a=0;
     for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p){
-      if(dynamic_cast<GenericDebug*>(*p))continue;
+      if(dynamic_cast<Debug*>(*p))continue;
       if((*p)->isActive()) a++;
     };
     if(a>0){
       log.printf("activity at step %i: ",getStep());
       for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p){
-        if(dynamic_cast<GenericDebug*>(*p))continue;
+        if(dynamic_cast<Debug*>(*p))continue;
         if((*p)->isActive()) log.printf("+");
         else                 log.printf("-");
       };
@@ -114,5 +115,6 @@ void GenericDebug::apply(){
 
 }
 
+}
 }
 

@@ -19,9 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionPilot.h"
-#include "ActionWithArguments.h"
-#include "ActionRegister.h"
+#include "core/ActionPilot.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionRegister.h"
 #include "tools/PlumedCommunicator.h"
 #include "tools/PlumedFile.h"
 #include <cassert>
@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace generic{
 
 //+PLUMEDOC ANALYSIS DUMPFORCES
 /*
@@ -54,7 +55,7 @@ DUMPFORCES ARG=distance STRIDE=1 FILE=forces
 */
 //+ENDPLUMEDOC
 
-class GenericDumpForces :
+class DumpForces :
 public ActionPilot,
 public ActionWithArguments
 {
@@ -62,16 +63,16 @@ public ActionWithArguments
   PlumedOFile of;
 public:
   void calculate(){};
-  GenericDumpForces(const ActionOptions&);
+  DumpForces(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply(){};
   void update();
-  ~GenericDumpForces();
+  ~DumpForces();
 };
 
-PLUMED_REGISTER_ACTION(GenericDumpForces,"DUMPFORCES")
+PLUMED_REGISTER_ACTION(DumpForces,"DUMPFORCES")
 
-void GenericDumpForces::registerKeywords(Keywords& keys){
+void DumpForces::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -80,7 +81,7 @@ void GenericDumpForces::registerKeywords(Keywords& keys){
   keys.add("compulsory","FILE","the name of the file on which to output the forces");
 }
 
-GenericDumpForces::GenericDumpForces(const ActionOptions&ao):
+DumpForces::DumpForces(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao)
@@ -95,7 +96,7 @@ ActionWithArguments(ao)
 }
 
 
-void GenericDumpForces::update(){
+void DumpForces::update(){
   of.fmtField(" %f");
   of.printField("time",getTime());
   for(unsigned i=0;i<getNumberOfArguments();i++){
@@ -104,9 +105,10 @@ void GenericDumpForces::update(){
   of.printField();
 }
 
-GenericDumpForces::~GenericDumpForces(){
+DumpForces::~DumpForces(){
 }
 
 }
 
 
+}

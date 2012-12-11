@@ -44,7 +44,6 @@ class ActionWithVirtualAtom;
 class Atoms
 {
   friend class ActionAtomistic;
-  friend class GenericWholeMolecules;
   friend class ActionWithVirtualAtom;
   int natoms;
   std::vector<Vector> positions;
@@ -177,6 +176,7 @@ public:
   bool usingNaturalUnits()const;
   void setNaturalUnits(bool n){naturalUnits=n;};
   void setMDNaturalUnits(bool n){MDnaturalUnits=n;};
+  Vector & modifyPosition(AtomNumber i){ return positions[i.index()];};
 };
 
 inline

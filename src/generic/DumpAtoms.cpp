@@ -19,13 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionAtomistic.h"
-#include "ActionPilot.h"
-#include "ActionRegister.h"
+#include "core/ActionAtomistic.h"
+#include "core/ActionPilot.h"
+#include "core/ActionRegister.h"
 #include "tools/Pbc.h"
 #include "tools/PlumedFile.h"
-#include "PlumedMain.h"
-#include "Atoms.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "tools/Units.h"
 #include <cstdio>
 #include <cassert>
@@ -35,6 +35,7 @@ using namespace std;
 
 namespace PLMD
 {
+namespace generic{
 
 //+PLUMEDOC ANALYSIS DUMPATOMS
 /*
@@ -60,24 +61,24 @@ DUMPATOMS STRIDE=10 FILE=file.xyz ATOMS=1-10,c1
 */
 //+ENDPLUMEDOC
 
-class GenericDumpAtoms:
+class DumpAtoms:
   public ActionAtomistic,
   public ActionPilot
 {
   PlumedOFile of;
   double lenunit;
 public:
-  GenericDumpAtoms(const ActionOptions&);
-  ~GenericDumpAtoms();
+  DumpAtoms(const ActionOptions&);
+  ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
   void calculate(){};
   void apply(){};
   void update();
 };
 
-PLUMED_REGISTER_ACTION(GenericDumpAtoms,"DUMPATOMS")
+PLUMED_REGISTER_ACTION(DumpAtoms,"DUMPATOMS")
 
-void GenericDumpAtoms::registerKeywords( Keywords& keys ){
+void DumpAtoms::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
@@ -87,7 +88,7 @@ void GenericDumpAtoms::registerKeywords( Keywords& keys ){
   keys.add("compulsory", "UNITS","nm","the units in which to print out the coordinates");
 }
 
-GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
+DumpAtoms::DumpAtoms(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao),
   ActionPilot(ao)
@@ -111,7 +112,7 @@ GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void GenericDumpAtoms::update(){
+void DumpAtoms::update(){
   of.printf("%d\n",getNumberOfAtoms());
   const Tensor & t(getPbc().getBox());
   if(getPbc().isOrthorombic()){
@@ -128,8 +129,9 @@ void GenericDumpAtoms::update(){
   }
 }
 
-GenericDumpAtoms::~GenericDumpAtoms(){
+DumpAtoms::~DumpAtoms(){
 }
   
 
+}
 }

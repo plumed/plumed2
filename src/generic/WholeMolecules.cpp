@@ -19,16 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionAtomistic.h"
-#include "ActionPilot.h"
-#include "ActionRegister.h"
+#include "core/ActionAtomistic.h"
+#include "core/ActionPilot.h"
+#include "core/ActionRegister.h"
 #include "tools/Vector.h"
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
-#include "Atoms.h"
-#include "PlumedMain.h"
-#include "ActionSet.h"
-#include "SetupMolInfo.h"
+#include "core/Atoms.h"
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
+#include "core/SetupMolInfo.h"
 
 #include <vector>
 #include <string>
@@ -37,6 +37,7 @@ using namespace std;
 using namespace PLMD;
 
 namespace PLMD {
+namespace generic{
 
 //+PLUMEDOC GENERIC WHOLEMOLECULES
 /*
@@ -83,22 +84,21 @@ WHOLEMOLECULES STRIDE=1 RESIDUES=ALL RES_ATOMS=N,CA,CB,C,O
 //+ENDPLUMEDOC
 
 
-class GenericWholeMolecules:
+class WholeMolecules:
   public ActionPilot,
   public ActionAtomistic
 {
   vector<vector<AtomNumber> > groups;
-  Vector & modifyPosition(AtomNumber);
 public:
-  GenericWholeMolecules(const ActionOptions&ao);
+  WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply(){};
 };
 
-PLUMED_REGISTER_ACTION(GenericWholeMolecules,"WHOLEMOLECULES")
+PLUMED_REGISTER_ACTION(WholeMolecules,"WHOLEMOLECULES")
 
-void GenericWholeMolecules::registerKeywords( Keywords& keys ){
+void WholeMolecules::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY1, ENTITY2,...");
@@ -110,12 +110,7 @@ void GenericWholeMolecules::registerKeywords( Keywords& keys ){
   keys.add("optional","RES_ATOMS","this command tells plumed what atoms should be aligned in each of the residues that are being aligned");
 }
 
-inline
-Vector & GenericWholeMolecules::modifyPosition(AtomNumber i){
-  return atoms.positions[i.index()];
-}
-
-GenericWholeMolecules::GenericWholeMolecules(const ActionOptions&ao):
+WholeMolecules::WholeMolecules(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionAtomistic(ao)
@@ -157,11 +152,11 @@ ActionAtomistic(ao)
   requestAtoms(merge);
 }
 
-void GenericWholeMolecules::calculate(){
+void WholeMolecules::calculate(){
   for(unsigned i=0;i<groups.size();++i){
     for(unsigned j=0;j<groups[i].size()-1;++j){
-      Vector & first (modifyPosition(groups[i][j]));
-      Vector & second (modifyPosition(groups[i][j+1]));
+      Vector & first (atoms.modifyPosition(groups[i][j]));
+      Vector & second (atoms.modifyPosition(groups[i][j+1]));
       second=first+pbcDistance(first,second);
     }
   }
@@ -171,3 +166,4 @@ void GenericWholeMolecules::calculate(){
 
 }
 
+}

@@ -19,16 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_GenericGroup_h
-#define __PLUMED_GenericGroup_h
 
-#include "ActionRegister.h"
-#include "ActionAtomistic.h"
-#include "Atoms.h"
+#include "core/ActionRegister.h"
+#include "core/ActionAtomistic.h"
+#include "core/Atoms.h"
 
 using namespace std;
 
 namespace PLMD{
+namespace generic{
 
 //+PLUMEDOC GENERIC GROUP
 /*
@@ -46,21 +45,21 @@ GROUP ATOMS=1,2,3 LABEL=g1
 */
 //+ENDPLUMEDOC
 
-class GenericGroup:
+class Group:
   public ActionAtomistic
 {
 
 public:
-  GenericGroup(const ActionOptions&ao);
-  ~GenericGroup();
+  Group(const ActionOptions&ao);
+  ~Group();
   static void registerKeywords( Keywords& keys );
   void calculate(){};
   void apply(){};
 };
 
-PLUMED_REGISTER_ACTION(GenericGroup,"GROUP")
+PLUMED_REGISTER_ACTION(Group,"GROUP")
 
-GenericGroup::GenericGroup(const ActionOptions&ao):
+Group::Group(const ActionOptions&ao):
   Action(ao),
   ActionAtomistic(ao)
 {
@@ -72,16 +71,16 @@ GenericGroup::GenericGroup(const ActionOptions&ao):
   log.printf("\n");
 }
 
-void GenericGroup::registerKeywords( Keywords& keys ){
+void Group::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("atoms", "ATOMS", "the numerical indexes for the set of atoms in the group");
 }
 
-GenericGroup::~GenericGroup(){
+Group::~Group(){
   atoms.removeGroup(getLabel());
 }
 
 }
+}
 
-#endif

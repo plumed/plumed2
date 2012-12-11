@@ -19,9 +19,9 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionPilot.h"
-#include "ActionWithArguments.h"
-#include "ActionRegister.h"
+#include "core/ActionPilot.h"
+#include "core/ActionWithArguments.h"
+#include "core/ActionRegister.h"
 #include "tools/PlumedCommunicator.h"
 #include "tools/PlumedFile.h"
 #include <cassert>
@@ -29,6 +29,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace generic{
 
 //+PLUMEDOC ANALYSIS DUMPPROJECTIONS
 /*
@@ -37,7 +38,7 @@ Dump the derivatives with respect to the input parameters for one or more object
 */
 //+ENDPLUMEDOC
 
-class GenericDumpProjections :
+class DumpProjections :
 public ActionPilot,
 public ActionWithArguments
 {
@@ -46,17 +47,17 @@ public ActionWithArguments
   PlumedOFile of;
 public:
   void calculate(){};
-  GenericDumpProjections(const ActionOptions&);
+  DumpProjections(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply(){};
   void update();
   bool checkNeedsGradients()const{return true;}
-  ~GenericDumpProjections();
+  ~DumpProjections();
 };
 
-PLUMED_REGISTER_ACTION(GenericDumpProjections,"DUMPPROJECTIONS")
+PLUMED_REGISTER_ACTION(DumpProjections,"DUMPPROJECTIONS")
 
-void GenericDumpProjections::registerKeywords(Keywords& keys){
+void DumpProjections::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionPilot::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
@@ -66,7 +67,7 @@ void GenericDumpProjections::registerKeywords(Keywords& keys){
   keys.add("compulsory","FMT","%15.10f","the format with which the derivatives should be output");
 }
 
-GenericDumpProjections::GenericDumpProjections(const ActionOptions&ao):
+DumpProjections::DumpProjections(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
@@ -83,7 +84,7 @@ fmt("%15.10f")
 }
 
 
-void GenericDumpProjections::update(){
+void DumpProjections::update(){
   of.fmtField(" %f").printField("time",getTime());
   for(unsigned i=0;i<getNumberOfArguments();i++){
     for(unsigned j=0;j<getNumberOfArguments();j++){
@@ -94,9 +95,10 @@ void GenericDumpProjections::update(){
   of.printField();
 }
 
-GenericDumpProjections::~GenericDumpProjections(){
+DumpProjections::~DumpProjections(){
 }
 
 }
 
 
+}
