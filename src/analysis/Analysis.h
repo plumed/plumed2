@@ -64,7 +64,7 @@ private:
   double rtemp;
 /// Do we need the energy (are we reweighting at a different temperature)
   bool needeng;
-/// The biases we are using in reweighting
+/// The biases we are using in reweighting and the args we store them separately
   std::vector<Value*> biases;
 /// The piece of data we are inserting
   unsigned idata;
@@ -104,6 +104,9 @@ protected:
   std::string saveResultsFromPreviousAnalyses( const std::string filename );
 /// Convert the stored log weights to proper weights
   void finalizeWeights( const bool& ignore_weights );
+/// Overwrite ActionWithArguments getArguments() so that we don't return
+/// the bias
+  std::vector<Value*> getArguments();
 public:
   static void registerKeywords( Keywords& keys );
   Analysis(const ActionOptions&);
@@ -156,6 +159,13 @@ unsigned Analysis::getNumberOfArguments() const {
 inline
 double Analysis::retrieveNorm() const {
   return norm;
+}
+
+inline
+std::vector<Value*> Analysis::getArguments(){
+  std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
+  for(unsigned i=0;i<biases.size();++i) arg_vals.erase(arg_vals.end()-1);
+  return arg_vals;
 }
 
 }
