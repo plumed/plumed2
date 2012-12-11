@@ -135,6 +135,7 @@ void Keywords::use( const std::string k ){
 void Keywords::reset_style( const std::string & k, const std::string & style ){
   plumed_assert( exists(k) || reserved(k) );
   (types.find(k)->second).setStyle(style); 
+  if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,style) );
 }
 
 void Keywords::add( const std::string & t, const std::string & k, const std::string & d ){
@@ -233,6 +234,7 @@ void Keywords::print_template(const std::string& actionname, bool include_option
     std::string prevtag="start";
     for(unsigned i=0;i<keys.size();++i){
         if( (types.find(keys[i])->second).isAtomList() ){
+             plumed_massert( atomtags.count(keys[i]), "keyword " + keys[i] + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
              if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second ) break;
              if( (atomtags.find(keys[i])->second).find("residues")!=std::string::npos) printf(" %s=<residue selection>", keys[i].c_str() );
              else printf(" %s=<atom selection>", keys[i].c_str() ); 
@@ -275,6 +277,7 @@ void Keywords::print_html( const bool isaction ) const {
     std::string prevtag="start";
     for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isAtomList() ){
+           plumed_massert( atomtags.count(keys[i]), "keyword " + keys[i] + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
            if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second && isaction ){
                std::cout<<"</table>\n\n";
                std::cout<<"\\par Or alternatively by using\n\n";
