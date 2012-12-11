@@ -78,7 +78,7 @@ class Ratchet : public Bias{
   std::vector<double> min;
   std::vector<double> kappa;
   std::vector<double> temp;
-  std::vector<double> seed;
+  std::vector<int> seed;
   vector<Random> random;
 public:
   Ratchet(const ActionOptions&);
@@ -110,6 +110,7 @@ random(getNumberOfArguments())
   parseVector("KAPPA",kappa);
   plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("MIN",min);
+  if(min.size()==0) min.assign(getNumberOfArguments(),-1.0);
   parseVector("NOISE",temp);
   parseVector("SEED",seed);
   parseVector("TO",to);
