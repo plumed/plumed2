@@ -1,4 +1,4 @@
-USE=core tools vessel-base
+USE=core tools vesselbase
 BUILDAFTER=config
 
 # generic makefile

@@ -24,7 +24,7 @@
 
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
-#include "vessel-base/ActionWithVessel.h"
+#include "vesselbase/ActionWithVessel.h"
 #include <vector>
 
 #define PLUMED_MULTICOLVAR_INIT(ao) Action(ao),MultiColvar(ao)

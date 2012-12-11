@@ -22,8 +22,8 @@
 
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "vessel-base/VesselRegister.h"
-#include "vessel-base/NormedSumVessel.h"
+#include "vesselbase/VesselRegister.h"
+#include "vesselbase/NormedSumVessel.h"
 #include "ActionVolume.h"
 #include "MultiColvar.h"
 #include "tools/HistogramBead.h"
