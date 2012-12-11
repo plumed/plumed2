@@ -27,7 +27,7 @@
 #include <vector>
 #include <map>
 #include "tools/PlumedException.h"
-#include "Tools/Keywords.h"
+#include "tools/Keywords.h"
 
 namespace PLMD{
 namespace vesselbase{
