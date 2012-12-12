@@ -4,13 +4,15 @@
 
 # default target
 .PHONY: all
-all: PlumedConfig.h Makefile.conf.xxd compile_options.sh
+all: Config.o compile_options.sh
 
 # file to import compilation options inside c++
-PlumedConfig.h: PlumedConfig.h.in ../../Makefile.conf
-	@echo Building PlumedConfig.h, an includable c++ header with some compilation options
+Config.cpp: Config.cpp.in Config.h
+	@echo Building Config.cpp, a object containing configuration infos
 	@sed "s/@SOEXT@/$(SOEXT)/g" $< | \
          sed "s|@PLUMED_ROOT@|$(CURDIR:src/config=)|g" > $@
+
+Config.o: Config.cpp Makefile.conf.xxd
 
 Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | xxd -i > Makefile.conf.xxd
@@ -24,7 +26,8 @@ compile_options.sh:
 
 .PHONY: clean
 clean:
-	rm -f PlumedConfig.h compile_options.sh
+	rm -f Config.cpp compile_options.sh Makefile_conf
+	rm -fr deps
 	rm -f $(CLEANLIST)
 
 # generic makefile rules

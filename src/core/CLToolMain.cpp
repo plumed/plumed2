@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "config/PlumedConfig.h"
+#include "config/Config.h"
 #include "tools/PlumedException.h"
 #include "tools/PlumedCommunicator.h"
 #include "CLTool.h"
@@ -102,7 +102,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
 
   DLLoader dlloader;
 
-  string root=config::plumedRoot;
+  string root=config::getPlumedRoot();
 
   bool standalone_executable=false;
 

@@ -19,18 +19,19 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_PlumedConfig_h
-#define __PLUMED_PlumedConfig_h
+#ifndef __PLUMED_config_Config_h
+#define __PLUMED_config_Config_h
 
 #include <string>
 
 namespace PLMD{
 namespace config{
 
-// nothing yet
+std::string getSoExt();
 
-const std::string soext("@SOEXT@");
-const std::string plumedRoot("@PLUMED_ROOT@");
+std::string getPlumedRoot();
+
+std::string getMakefile();
 
 }
 }

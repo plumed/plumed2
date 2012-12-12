@@ -28,7 +28,7 @@
 #include "ActionWithVirtualAtom.h"
 #include "Atoms.h"
 #include <set>
-#include "config/PlumedConfig.h"
+#include "config/Config.h"
 #include <cstdlib>
 #include "ActionRegister.h"
 #include "GREX.h"
@@ -563,7 +563,7 @@ void PlumedMain::load(const std::string& ss){
        comm.Barrier();
        base="./"+base;
      }
-     s=base+"."+config::soext;
+     s=base+"."+config::getSoExt();
      void *p=dlloader.load(s);
      if(!p){
        log<<"ERROR\n";

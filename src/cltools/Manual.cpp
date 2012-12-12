@@ -22,7 +22,7 @@
 #include "CLTool.h"
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
-#include "config/PlumedConfig.h"
+#include "config/Config.h"
 #include "core/ActionRegister.h"
 #include <cstdio>
 #include <string>

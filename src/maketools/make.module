@@ -23,11 +23,11 @@ DEP=$(addprefix deps/,$(SRC:.cpp=.d))
 .PHONY: all
 
 all:
-	@echo Creating links to other here to simplify .h inclusion:
-	@for dir in $(USE) ; do test -L $$dir || ln -s ../$$dir . && echo "   " $$dir ;  done
+	@echo Verify that modules on which this one depends are active
 	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ;  done
-	@echo Building dependencies
-	@for dir in $(BUILDAFTER) ; do echo "   " $$dir ; cd ../$$dir ; $(MAKE) ; cd - ; done
+	@echo Create links to other here to simplify .h inclusion:
+	@for dir in $(USE) ; do test -L $$dir || ln -s ../$$dir . && echo "   " $$dir ;  done
+	@echo Compile local objects
 	$(MAKE) obj
 
 .PHONY: obj
@@ -36,8 +36,6 @@ obj: $(OBJ)
 .PHONY: lib
 lib:
 	cd ../lib ; make
-
-$(DEP): ../config/PlumedConfig.h ../config/Makefile.conf.xxd
 
 -include $(DEP)
 

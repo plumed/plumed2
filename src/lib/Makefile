@@ -23,7 +23,7 @@ SRC_MAIN=../main/main.cpp
 
 # source for plumed kernel
 # everything else
-SRC_KERNEL=$(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.{c,cpp} 2>/dev/null ; done)
+SRC_KERNEL=$(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.{c,cpp} 2>/dev/null ; done) ../config/Config.o
 
 # corresponding objects:
 OBJ_WRAPPER=../wrapper/PlumedStatic.o

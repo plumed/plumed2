@@ -22,7 +22,7 @@
 #include "CLTool.h"
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
-#include "config/PlumedConfig.h"
+#include "config/Config.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -79,13 +79,10 @@ int Info::main(FILE* in, FILE*out,PlumedCommunicator& pc){
 
  bool printconfiguration; parseFlag("--configuration",printconfiguration);
  bool printroot; parseFlag("--root",printroot);
- if(printroot) fprintf(out,"%s\n",config::plumedRoot.c_str());
+ if(printroot) fprintf(out,"%s\n",config::getPlumedRoot().c_str());
 
  if(printconfiguration){
-    static const unsigned char conf [] ={
-#include "config/Makefile.conf.xxd"
-    , 0x00 };
-    fprintf(out,"%s",conf);
+    fprintf(out,"%s",config::getMakefile().c_str());
     return 0;
   }
 
