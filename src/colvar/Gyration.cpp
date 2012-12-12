@@ -31,6 +31,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR GYRATION
 /*
@@ -354,4 +355,5 @@ void Gyration::calculate(){
   setBoxDerivatives(virial);
 }
 
+}
 }
