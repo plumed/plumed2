@@ -19,15 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionSetup.h"
-#include "ActionRegister.h"
-#include "PlumedMain.h"
-#include "Atoms.h"
+#include "core/ActionSetup.h"
+#include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "tools/PlumedException.h"
 
 using namespace std;
 
 namespace PLMD{
+namespace setup{
 
 //+PLUMEDOC GENERIC RESTART
 /*
@@ -59,26 +60,27 @@ This directive can have also other side effects, e.g. on \ref METAD
 */
 //+ENDPLUMEDOC
 
-class SetupRestart :
+class Restart :
   public virtual ActionSetup
 {
 public:
   static void registerKeywords( Keywords& keys );
-  SetupRestart(const ActionOptions&ao);
+  Restart(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(SetupRestart,"RESTART")
+PLUMED_REGISTER_ACTION(Restart,"RESTART")
 
-void SetupRestart::registerKeywords( Keywords& keys ){
+void Restart::registerKeywords( Keywords& keys ){
   ActionSetup::registerKeywords(keys);
 }
 
-SetupRestart::SetupRestart(const ActionOptions&ao):
+Restart::Restart(const ActionOptions&ao):
 Action(ao),
 ActionSetup(ao)
 {
-  plumed.restart=true;
+  plumed.setRestart(true);
   log<<"Restarting simulation: files will be appended\n";
 }
 
+}
 }

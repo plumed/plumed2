@@ -71,8 +71,6 @@ It does not contain any static data.
 class PlumedMain:
   public WithCmd
 {
-/// I restrict access to this class so that other classes cannot mistakely change the restart flag.
-  friend class SetupRestart;
 public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.
@@ -136,6 +134,7 @@ private:
 public:
 /// Flag to switch off virial calculation (for debug)
   bool novirial;
+
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);
@@ -246,6 +245,8 @@ public:
   void fflush();
 /// Check if restarting
   bool getRestart()const;
+/// Set restart flag
+  void setRestart(bool f){restart=f;}
 /// Stop the calculation cleanly (both the MD code and plumed)
   void stop();
 };

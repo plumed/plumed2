@@ -61,7 +61,12 @@ ALPHARMSD BACKBONE=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL
 //+ENDPLUMEDOC
 
 
-PLUMED_REGISTER_ACTION(SetupMolInfo,"MOLINFO")
+/*
+This action is defined in core/ as it is used by other actions.
+Anyway, it is registered in setup/, so that excluding that module from
+compilation will exclude it from plumed.
+*/
+
 
 void SetupMolInfo::registerKeywords( Keywords& keys ){
   ActionSetup::registerKeywords(keys);

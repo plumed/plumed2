@@ -19,15 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ActionSetup.h"
-#include "ActionRegister.h"
-#include "PlumedMain.h"
-#include "Atoms.h"
+#include "core/ActionSetup.h"
+#include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "tools/PlumedException.h"
 
 using namespace std;
 
 namespace PLMD{
+namespace setup{
 
 //+PLUMEDOC GENERIC UNITS
 /*
@@ -51,17 +52,17 @@ UNITS LENGTH=nm TIME=0.001
 */
 //+ENDPLUMEDOC
 
-class SetupUnits :
+class Units :
   public virtual ActionSetup
 {
 public:
   static void registerKeywords( Keywords& keys );
-  SetupUnits(const ActionOptions&ao);
+  Units(const ActionOptions&ao);
 };
 
-PLUMED_REGISTER_ACTION(SetupUnits,"UNITS")
+PLUMED_REGISTER_ACTION(Units,"UNITS")
 
-void SetupUnits::registerKeywords( Keywords& keys ){
+void Units::registerKeywords( Keywords& keys ){
   ActionSetup::registerKeywords(keys);
   keys.add("optional","LENGTH","the units of lengths.  Either specify a conversion factor from the default, nm, or A (for angstroms) or um");
   keys.add("optional","ENERGY","the units of energy.  Either specify a conversion factor from the default, kj/mol, or use j/mol or kcal/mol");
@@ -69,11 +70,11 @@ void SetupUnits::registerKeywords( Keywords& keys ){
   keys.addFlag("NATURAL",false,"use natural units");
 }
 
-SetupUnits::SetupUnits(const ActionOptions&ao):
+Units::Units(const ActionOptions&ao):
 Action(ao),
 ActionSetup(ao)
 {
-  Units u;
+  PLMD::Units u;
 
   std::string s;
 
@@ -110,5 +111,6 @@ ActionSetup(ao)
   log.printf("  inside PLUMED, Boltzmann constant is %f\n",plumed.getAtoms().getKBoltzmann());
 }
 
+}
 }
 
