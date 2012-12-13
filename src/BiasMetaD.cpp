@@ -354,7 +354,8 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
 
 // open hills file for writing
   hillsOfile_.link(*this);
-  hillsOfile_.open(ifilesnames[mw_id_],"aw");
+  if(plumed.getRestart()) hillsOfile_.open(ifilesnames[mw_id_],"aw");
+  else hillsOfile_.open(ifilesnames[mw_id_]);
   hillsOfile_.addConstantField("multivariate");
   hillsOfile_.setHeavyFlush();
 // output periodicities of variables
