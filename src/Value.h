@@ -103,6 +103,8 @@ public:
   void setDomain(const std::string&, const std::string&); 
 /// Get the domain of the quantity
   void getDomain(std::string&,std::string&) const;
+/// Get the domain of the quantity
+  void getDomain(double&,double&) const;
 /// Get the name of the quantity
   const std::string& getName() const;
 /// Check whether or not this particular quantity has derivatives

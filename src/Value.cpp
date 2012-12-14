@@ -98,6 +98,12 @@ void Value::getDomain(std::string&minout,std::string&maxout) const {
   maxout=str_max;
 }
 
+void Value::getDomain(double&minout,double&maxout) const {
+  plumed_massert(periodicity==periodic,"function should be periodic");
+  minout=min;
+  maxout=max;
+}
+
 void Value::setGradients(){
   gradients.clear();
   ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(action);
