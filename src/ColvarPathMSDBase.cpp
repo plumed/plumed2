@@ -153,15 +153,13 @@ void ColvarPathMSDBase::calculate(){
        for(unsigned i=0;i< derivs_s.size();i++){ derivs_s[i]+=tmp*(*it).distder[i] ;} 
        if(j==0){for(unsigned i=0;i< derivs_z.size();i++){ derivs_z[i]+=(*it).distder[i]*expval/partition;}} 
     }
-    Tensor virial,virialz;
     for(unsigned i=0;i< derivs_s.size();i++){
           setAtomsDerivatives (val_s_path[j],i,derivs_s[i]); 
-          virial=virial+(-1.0*Tensor(getPosition(i),derivs_s[i]));
-          if(j==0){setAtomsDerivatives (val_z_path,i,derivs_z[i]);virialz=virialz+(-1.0*Tensor(getPosition(i),derivs_z[i]));} 
+          if(j==0){setAtomsDerivatives (val_z_path,i,derivs_z[i]);} 
     }
-    setBoxDerivatives(val_s_path[j],virial);
-    if(j==0)setBoxDerivatives(val_z_path,virialz);
   }
+  for(unsigned i=0;i<val_s_path.size();++i) setBoxDerivativesNoPbc(val_s_path[i]);
+  setBoxDerivativesNoPbc(val_z_path);
   //
   //  here set next round neighbors
   //

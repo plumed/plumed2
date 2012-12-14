@@ -144,7 +144,6 @@ use_masses(true)
 void ColvarGyration::calculate(){
 
   std::vector<Vector> derivatives( getNumberOfAtoms() );
-  Tensor virial; virial.zero();
   double totmass = 0.; 
   double d=0., rgyr=0.;
   Vector pos0, com, diff;
@@ -212,7 +211,6 @@ void ColvarGyration::calculate(){
       for(unsigned i=0;i<getNumberOfAtoms();i++){
         derivatives[i] /= rgyr*totmass;
         setAtomsDerivatives(i,derivatives[i]);
-        virial=virial+(-1.0*Tensor(getPosition(i),derivatives[i]));
       }
       break;
     }
@@ -222,7 +220,6 @@ void ColvarGyration::calculate(){
       for(unsigned i=0;i<getNumberOfAtoms();i++) {
         derivatives[i] *= 4.;  
         setAtomsDerivatives(i,derivatives[i]);
-        virial=virial+(-1.0*Tensor(getPosition(i),derivatives[i]));
       }
       break;
     }
@@ -345,13 +342,12 @@ void ColvarGyration::calculate(){
             derivatives[i][j]=(prefactor[0]*transf[j][0]*tX[0]+prefactor[1]*transf[j][1]*tX[1]+prefactor[2]*transf[j][2]*tX[2]);
         }
         setAtomsDerivatives(i,derivatives[i]);
-        virial=virial+(-1.0*Tensor(getPosition(i),derivatives[i]));
       }
       break;
     }
   }
   setValue(rgyr);
-  setBoxDerivatives(virial);
+  setBoxDerivativesNoPbc();
 }
 
 }
