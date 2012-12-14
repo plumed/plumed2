@@ -23,6 +23,8 @@ DEP=$(addprefix deps/,$(SRC:.cpp=.d))
 .PHONY: all
 
 all:
+	@echo preparing for make
+	$(PREMAKE)
 	@echo Verify that modules on which this one depends are active
 	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ;  done
 	@echo Create links to other here to simplify .h inclusion:
