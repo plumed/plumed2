@@ -155,8 +155,7 @@ void RMSD::calculate(){
   setValue(r);
   for(unsigned i=0;i<derivs.size();i++) setAtomsDerivatives(i,derivs[i]);
   Tensor virial;
-  for(unsigned i=0;i<derivs.size();i++) virial=virial+(-1.0*Tensor(getPosition(i),derivs[i]));
-  setBoxDerivatives(virial);
+  setBoxDerivativesNoPbc();
 }
 
 }

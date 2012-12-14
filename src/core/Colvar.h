@@ -58,6 +58,12 @@ protected:
   const Tensor & getBoxDerivatives()const;
   const double & getForce()const;
   void apply();
+/// Set box derivatives automatically.
+/// It should be called after the setAtomsDerivatives has been used for all
+/// single atoms.
+/// \warning It only works for collective variable NOT using PBCs!
+  void           setBoxDerivativesNoPbc();
+  void           setBoxDerivativesNoPbc(Value*);
 public:
   bool checkIsEnergy(){return isEnergy;};
   Colvar(const ActionOptions&);
@@ -96,6 +102,12 @@ inline
 void Colvar::setBoxDerivatives(const Tensor&d){
   setBoxDerivatives(getPntrToValue(),d);
 }
+
+inline
+void Colvar::setBoxDerivativesNoPbc(){
+  setBoxDerivativesNoPbc(getPntrToValue());
+}
+
 
 }
 

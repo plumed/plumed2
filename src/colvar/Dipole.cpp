@@ -87,7 +87,6 @@ PLUMED_COLVAR_INIT(ao)
 void Dipole::calculate()
 {
  double dipole=0.;
- Tensor virial;
  vector<Vector> deriv(getNumberOfAtoms());
  Vector dipje;
  vector<double> charges(getNumberOfAtoms());
@@ -112,13 +111,12 @@ void Dipole::calculate()
  for(unsigned int i=0;i<ga_lista.size();i++) {
    double dfunc=charges[i]/dipole;
    deriv[i] = deriv[i] + (dfunc)*dipje;
-   virial=virial-Tensor(getPosition(i),deriv[i]);
  }
 
 // for(unsigned i=0;i<getPositions().size();++i) setAtomsDerivatives(i,deriv[i]);
  for(unsigned i=0;i<getNumberOfAtoms();++i) setAtomsDerivatives(i,deriv[i]);
  setValue           (dipole);
- setBoxDerivatives  (virial);
+ setBoxDerivativesNoPbc();
 }
 
 }

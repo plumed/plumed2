@@ -87,3 +87,13 @@ void Colvar::apply(){
      if( getPntrToComponent(0)->applyForce( forces ) ) modifyForceOnEnergy()+=forces[0];
   }
 }
+
+void Colvar::setBoxDerivativesNoPbc(Value* v){
+  Tensor virial;
+  unsigned nat=getNumberOfAtoms();
+  for(unsigned i=0;i<nat;i++) virial-=Tensor(getPosition(i),
+    Vector(v->getDerivative(3*i+0),
+           v->getDerivative(3*i+1),
+           v->getDerivative(3*i+2)));
+  setBoxDerivatives(v,virial);
+}
