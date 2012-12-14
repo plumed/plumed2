@@ -1,17 +1,13 @@
 # This script adds a LGPL header to all the source files
 # If the header is already present, it does not touch the file
 # Please run it whenever you add a new file so as to keep copyright info there!
-for file in */*.c */*.cpp */*.h config/Config.cpp.in
+
+for dir in *
 do
+test -d "$dir" || continue
+cd $dir
 
-echo "Applying LGPL header to file $file"
-
-{
-
-plus="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-
-cat << EOF 
-/* $plus
+COPYRIGHT="\
    Copyright (c) 2012 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
@@ -30,7 +26,24 @@ cat << EOF
    GNU Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public License
-   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>."
+
+test -f COPYRIGHT && COPYRIGHT="$(<COPYRIGHT)"
+
+for file in *.c *.cpp *.h *.cpp.in
+do
+
+test -f "$file" || continue
+
+echo "Applying LGPL header to file $file"
+
+{
+
+plus="+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+
+cat << EOF 
+/* $plus
+$COPYRIGHT
 $plus */
 EOF
 
@@ -46,9 +59,8 @@ awk -v plus=$plus 'BEGIN{
 
 case "$file" in
 (*h)
-guard="${file//\//_}"
-guard="${guard//./_}"
-guard="__PLUMED_${guard//-/_}"
+ff="${file//./_}"
+guard="__PLUMED_${dir}_${ff}"
 
 awk -v plus=$plus -v guard=$guard '
 {
@@ -79,6 +91,10 @@ esac
 cmp -s $file $file.tmp || cp $file.tmp $file
 
 rm $file.tmp
+
+done
+
+cd -
 
 done
 
