@@ -492,6 +492,7 @@ PlumedIFile& PlumedIFile::scanField(Value* val){
   } else {
       val->setNotPeriodic();
   }
+  return *this;
 }
 
 PlumedIFile& PlumedIFile::scanField(){
