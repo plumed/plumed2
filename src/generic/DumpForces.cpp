@@ -24,7 +24,6 @@
 #include "core/ActionRegister.h"
 #include "tools/PlumedCommunicator.h"
 #include "tools/PlumedFile.h"
-#include <cassert>
 
 using namespace std;
 
@@ -87,7 +86,7 @@ ActionPilot(ao),
 ActionWithArguments(ao)
 {
   parse("FILE",file);
-  assert(file.length()>0);
+  plumed_assert(file.length()>0);
   of.link(*this);
   of.open(file,"wa");
   log.printf("  on file %s\n",file.c_str());

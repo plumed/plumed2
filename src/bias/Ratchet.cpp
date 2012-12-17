@@ -22,7 +22,6 @@
 #include "Bias.h"
 #include "tools/Random.h"
 #include "ActionRegister.h"
-#include <cassert>
 #include <ctime>
 
 using namespace std;

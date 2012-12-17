@@ -22,7 +22,6 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 
-#include <cassert>
 
 using namespace std;
 
@@ -201,7 +200,7 @@ void MovingRestraint::calculate(){
     f[i]=-k*cv;
     if(verse[i]=="U" && cv<0) continue;
     if(verse[i]=="L" && cv>0) continue;
-    assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
+    plumed_assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
     if(oldaa.size()==aa.size() && oldf.size()==f.size()) work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]);
     getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]); 
     ene+=0.5*k*cv*cv;

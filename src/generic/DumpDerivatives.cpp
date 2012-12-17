@@ -24,7 +24,6 @@
 #include "core/ActionRegister.h"
 #include "tools/PlumedCommunicator.h"
 #include "tools/PlumedFile.h"
-#include <cassert>
 
 using namespace std;
 
@@ -89,7 +88,7 @@ ActionWithArguments(ao),
 fmt("%15.10f")
 {
   parse("FILE",file);
-  assert(file.length()>0);
+  plumed_assert(file.length()>0);
   parse("FMT",fmt);
   fmt=" "+fmt;
   of.link(*this);

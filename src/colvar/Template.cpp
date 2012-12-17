@@ -24,7 +24,6 @@
 
 #include <string>
 #include <cmath>
-#include <cassert>
 
 using namespace std;
 
@@ -71,7 +70,8 @@ pbc(true)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  assert(atoms.size()==2);
+  if(atoms.size()!=2)
+    error("Number of specified atoms should be 2");
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;

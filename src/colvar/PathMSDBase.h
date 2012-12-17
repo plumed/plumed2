@@ -29,7 +29,6 @@
 
 #include <string>
 #include <cstring>
-#include <cassert>
 #include <iostream>
 #include "tools/PDB.h"
 #include "tools/RMSD.h"

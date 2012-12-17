@@ -22,7 +22,6 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 
-#include <cassert>
 
 using namespace std;
 

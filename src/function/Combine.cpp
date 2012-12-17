@@ -23,7 +23,6 @@
 #include "ActionRegister.h"
 
 #include <cmath>
-#include <cassert>
 
 using namespace std;
 
@@ -82,9 +81,12 @@ coefficients(getNumberOfArguments(),1.0),
 powers(getNumberOfArguments(),1.0)
 {
   parseVector("COEFFICIENTS",coefficients);
-  assert(coefficients.size()==static_cast<unsigned>(getNumberOfArguments()));
+  if(coefficients.size()!=static_cast<unsigned>(getNumberOfArguments()))
+    error("Size of COEFFICIENTS array should be the same as number for arguments");
+
   parseVector("POWERS",powers);
-  assert(powers.size()==static_cast<unsigned>(getNumberOfArguments()));
+  if(powers.size()!=static_cast<unsigned>(getNumberOfArguments()))
+    error("Size of POWERS array should be the same as number for arguments");
 
   parseFlag("NORMALIZE",normalize);
 

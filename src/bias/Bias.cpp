@@ -32,6 +32,7 @@ ActionWithValue(ao),
 ActionWithArguments(ao),
 outputForces(getNumberOfArguments(),0.0)
 {
+  if(getStride()>1) error("Using bias with stride!=1 is not currently supported");
 }
 
 void Bias::registerKeywords( Keywords& keys ){

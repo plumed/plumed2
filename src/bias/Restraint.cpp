@@ -22,7 +22,6 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 
-#include <cassert>
 
 using namespace std;
 
@@ -86,11 +85,11 @@ kappa(getNumberOfArguments(),0.0),
 slope(getNumberOfArguments(),0.0)
 {
   parseVector("SLOPE",slope);
-//  assert(slope.size()==getNumberOfArguments());
+//  plumed_assert(slope.size()==getNumberOfArguments());
   parseVector("KAPPA",kappa);
-//  assert(kappa.size()==getNumberOfArguments());
+//  plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("AT",at);
-//  assert(at.size()==getNumberOfArguments());
+//  plumed_assert(at.size()==getNumberOfArguments());
   checkRead();
 
   log.printf("  at");

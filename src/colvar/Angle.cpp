@@ -25,7 +25,6 @@
 
 #include <string>
 #include <cmath>
-#include <cassert>
 
 using namespace std;
 
@@ -92,7 +91,7 @@ pbc(true)
     atoms[2]=atoms[1];
   }else if(atoms.size()==4){
     log.printf("  between lines %d-%d and %d-%d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
-  }else assert(0);
+  }else error("Number of specified atoms should be either 3 or 4");
 
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
