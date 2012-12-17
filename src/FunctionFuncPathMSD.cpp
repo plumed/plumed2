@@ -26,8 +26,6 @@
 
 #include <string>
 #include <cstring>
-#include <cassert>
-//#include "ColvarRMSD.h"
 #include <iostream>
 
 using namespace std;

@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionRegister.h"
 #include "Function.h"
-#include <cassert>
 
 #ifdef __PLUMED_HAS_MATHEVAL
 #include <matheval.h>
@@ -98,12 +97,12 @@ names(getNumberOfArguments())
   parseVector("VAR",var);
   if(var.size()==0){
     var.resize(getNumberOfArguments());
-    assert(getNumberOfArguments()<=3);
+    plumed_assert(getNumberOfArguments()<=3);
     if(var.size()>0) var[0]="x";
     if(var.size()>1) var[1]="y";
     if(var.size()>2) var[2]="z";
   }
-  assert(var.size()==getNumberOfArguments());
+  plumed_assert(var.size()==getNumberOfArguments());
   parse("FUNC",func);
   addValueWithDerivatives(); 
   checkRead();
@@ -113,13 +112,13 @@ names(getNumberOfArguments())
   char **check_names;
   int    check_count;
   evaluator_get_variables(evaluator,&check_names,&check_count);
-  assert(check_count==int(getNumberOfArguments()));
+  plumed_assert(check_count==int(getNumberOfArguments()));
   for(unsigned i=0;i<getNumberOfArguments();i++){
     bool found=false;
     for(unsigned j=0;j<getNumberOfArguments();j++){
       if(var[i]==check_names[j])found=true;
     }
-    assert(found);
+    plumed_assert(found);
   }
 
   for(unsigned i=0;i<getNumberOfArguments();i++)

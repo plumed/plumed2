@@ -28,7 +28,6 @@
 #include "Atoms.h"
 #include "Units.h"
 #include <cstdio>
-#include <cassert>
 
 using namespace PLMD;
 using namespace std;
@@ -102,7 +101,7 @@ GenericDumpAtoms::GenericDumpAtoms(const ActionOptions&ao):
   lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
 
   checkRead();
-  assert(file.length()>0);
+  plumed_assert(file.length()>0);
   of.link(*this);
   of.open(file.c_str(),"w");
   log.printf("  printing the following atoms in %s :", unitname.c_str() );

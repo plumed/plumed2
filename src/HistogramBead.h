@@ -22,7 +22,6 @@
 #ifndef __PLUMED_HistogramBead_h
 #define __PLUMED_HistogramBead_h
 
-#include <cassert>
 #include <cmath>
 #include <string>
 #include <vector>

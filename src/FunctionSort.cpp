@@ -23,7 +23,6 @@
 #include "Function.h"
 
 #include <cmath>
-#include <cassert>
 #include <algorithm>
 #include <utility>
 

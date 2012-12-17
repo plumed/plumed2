@@ -26,7 +26,6 @@
 
 #include <string>
 #include <cmath>
-#include <cassert>
 
 namespace PLMD{
 
@@ -69,7 +68,7 @@ ColvarEnergy::ColvarEnergy(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 components(false)
 {
-  assert(!checkNumericalDerivatives());
+  plumed_assert(!checkNumericalDerivatives());
   isEnergy=true;
   addValueWithDerivatives(); setNotPeriodic();
   getPntrToValue()->resizeDerivatives(1);

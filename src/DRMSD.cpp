@@ -22,7 +22,6 @@
 #include "DRMSD.h"
 #include "PDB.h"
 #include "Pbc.h"
-#include <cassert>
 #include <cmath>
 
 using namespace std;
@@ -59,7 +58,7 @@ double DRMSD::calculate(const std::vector<Vector> & positions,
 double DRMSD::calculate(const std::vector<Vector> & positions, const Pbc& pbc,
                         std::vector<Vector> &derivatives, Tensor& virial, bool do_pbc) const {
 
-  assert(positions.size()==natoms && derivatives.size()==natoms );
+  plumed_assert(positions.size()==natoms && derivatives.size()==natoms );
 
   Vector distance;
   double drmsd=0.; virial.zero();

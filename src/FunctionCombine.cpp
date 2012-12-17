@@ -23,7 +23,6 @@
 #include "Function.h"
 
 #include <cmath>
-#include <cassert>
 
 using namespace std;
 
@@ -81,9 +80,9 @@ coefficients(getNumberOfArguments(),1.0),
 powers(getNumberOfArguments(),1.0)
 {
   parseVector("COEFFICIENTS",coefficients);
-  assert(coefficients.size()==static_cast<unsigned>(getNumberOfArguments()));
+  plumed_assert(coefficients.size()==static_cast<unsigned>(getNumberOfArguments()));
   parseVector("POWERS",powers);
-  assert(powers.size()==static_cast<unsigned>(getNumberOfArguments()));
+  plumed_assert(powers.size()==static_cast<unsigned>(getNumberOfArguments()));
 
   parseFlag("NORMALIZE",normalize);
 

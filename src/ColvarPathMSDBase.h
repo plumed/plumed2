@@ -31,7 +31,6 @@
 
 #include <string>
 #include <cstring>
-#include <cassert>
 #include <iostream>
 #include "PDB.h"
 #include "RMSD.h"

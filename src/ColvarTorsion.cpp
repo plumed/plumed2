@@ -25,7 +25,6 @@
 
 #include <string>
 #include <cmath>
-#include <cassert>
 
 using namespace std;
 
@@ -97,7 +96,7 @@ do_cosine(false)
   checkRead();
 
   if(atoms.size()==4){
-    assert((v1.empty()) && (v2.empty()) && (axis.empty()));
+    plumed_assert((v1.empty()) && (v2.empty()) && (axis.empty()));
     log.printf("  between atoms %d %d %d %d\n",atoms[0].serial(),atoms[1].serial(),atoms[2].serial(),atoms[3].serial());
     atoms.resize(6);
     atoms[5]=atoms[3];
@@ -105,7 +104,7 @@ do_cosine(false)
     atoms[3]=atoms[2];
     atoms[2]=atoms[1];
   }else if(atoms.empty()){
-    assert(v1.size()==2 && v2.size()==2 && axis.size()==2);
+    plumed_assert(v1.size()==2 && v2.size()==2 && axis.size()==2);
     log.printf("  between lines %d-%d and %d-%d, projected on the plane orthogonal to line %d-%d\n",
                 v1[0].serial(),v1[1].serial(),v2[0].serial(),v2[1].serial(),axis[0].serial(),axis[1].serial());
     atoms.resize(6);
@@ -115,7 +114,7 @@ do_cosine(false)
     atoms[3]=axis[1];
     atoms[4]=v2[0];
     atoms[5]=v2[1];
-  }else assert(0);
+  }else plumed_assert(0);
 
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
