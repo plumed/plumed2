@@ -12,6 +12,10 @@ Config.cpp: Config.cpp.in Config.h
 	@sed "s/@SOEXT@/$(SOEXT)/g" $< | \
          sed "s|@PLUMED_ROOT@|$(CURDIR:src/config=)|g" > $@
 
+links: 
+	@echo Nothing to do in $(CURDIR)
+	
+
 Config.o: Config.cpp Makefile.conf.xxd
 
 Makefile.conf.xxd: ../../Makefile.conf
@@ -27,7 +31,7 @@ compile_options.sh:
 .PHONY: clean
 clean:
 	rm -f Config.cpp compile_options.sh Makefile_conf
-	rm -fr deps
+	rm -fr deps 
 	rm -f $(CLEANLIST)
 
 # generic makefile rules

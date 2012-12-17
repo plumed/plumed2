@@ -26,6 +26,9 @@ ALL_DEP=$(addprefix deps/,$(CPP_SRC:.cpp=.d))
 .PHONY: all
 all: $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER)
 
+links:
+	@echo Nothing to do in $(CURDIR)
+
 # there is a single C file here, and this is its dependency:
 Plumed.o: Plumed.c Plumed.h
 PlumedStatic.o: PlumedStatic.cpp Plumed.c Plumed.h
@@ -45,7 +48,7 @@ endif
 
 .PHONY: clean
 clean:
-	rm -fr deps
+	rm -fr deps 
 	rm -fr $(CLEANLIST)
 
 # generic makefile rules
