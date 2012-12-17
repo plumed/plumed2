@@ -37,8 +37,6 @@
 #include "Atoms.h"
 #include "Tools.h"
 
-using namespace std;
-
 namespace PLMD{
 
 class ColvarPathMSDBase : public Colvar {
@@ -48,13 +46,13 @@ class ColvarPathMSDBase : public Colvar {
         // cardinal indexing: needed to map over msd 
         unsigned index;
         // spiwok indexing
-        vector<double> property;
+        std::vector<double> property;
         // distance
         double distance;
         // similarity (exp - lambda distance) or other
         double similarity;
         // derivatives of the distance
-        vector<Vector> distder;
+        std::vector<Vector> distder;
         // here one can add a pointer to a value (hypothetically providing a distance from a point) 
   };
   struct imgOrderByDist {
@@ -72,16 +70,16 @@ class ColvarPathMSDBase : public Colvar {
   bool pbc;
   int neigh_size;
   double neigh_stride;
-  vector<RMSD> msdv;
-  string reference;
-  vector<Vector> derivs_s;
-  vector<Vector> derivs_z;
-  vector< vector <Vector> > derivs_v;
-  vector <ImagePath> imgVec; // this can be used for doing neighlist   
+  std::vector<RMSD> msdv;
+  std::string reference;
+  std::vector<Vector> derivs_s;
+  std::vector<Vector> derivs_z;
+  std::vector< std::vector <Vector> > derivs_v;
+  std::vector <ImagePath> imgVec; // this can be used for doing neighlist   
 protected:
-  vector<PDB> pdbv;
-  vector<string> labels;
-  vector< vector<double> > indexvec; // use double to allow isomaps
+  std::vector<PDB> pdbv;
+  std::vector<std::string> labels;
+  std::vector< std::vector<double> > indexvec; // use double to allow isomaps
   unsigned nframes;
 public:
   ColvarPathMSDBase(const ActionOptions&);
