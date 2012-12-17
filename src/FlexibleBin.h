@@ -41,7 +41,6 @@ class FlexibleBin{
 	public:
 		/// a constructor that takes the pointer of the action that contains it
 		FlexibleBin(int type,ActionWithArguments *paction, double const &d);
-		~FlexibleBin();
 		/// update the average (always for diffusion) or calculate the geom covariance (  only when do_when_zero is zero)
 		void update(bool nowAddAHill );
 		std::vector<double> getMatrix() const;
