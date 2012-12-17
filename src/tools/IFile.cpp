@@ -174,7 +174,7 @@ IFile& IFile::getline(std::string &str){
   while(llread(&tmp,1)==1 && tmp && tmp!='\n' && !eof && !err){
     str+=tmp;
   }
-  if(tmp!='\n' || err){
+  if(err || eof || tmp!='\n'){
     eof = true;
     str="";
     fsetpos(fp,&pos);

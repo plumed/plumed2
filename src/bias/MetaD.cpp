@@ -187,12 +187,14 @@ void MetaD::registerKeywords(Keywords& keys){
 }
 
 MetaD::~MetaD(){
+  if(flexbin) delete flexbin;
   if(BiasGrid_) delete BiasGrid_;
   hillsOfile_.close();
   delete [] dp_;
   // close files
   for(int i=0;i<mw_n_;++i){
    if(ifiles[i]->isOpen()) ifiles[i]->close();
+   delete ifiles[i];
   }
 }
 
@@ -205,6 +207,7 @@ height0_(0.0), biasf_(1.0), temp_(0.0),
 stride_(0), welltemp_(false),
 // Other stuff
 dp_(NULL), adaptive_(FlexibleBin::none),
+flexbin(NULL),
 // Multiple walkers initialization
 mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
 {
