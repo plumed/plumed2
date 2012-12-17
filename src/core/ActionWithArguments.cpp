@@ -25,7 +25,7 @@
 #include "ActionSet.h"
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 void ActionWithArguments::registerKeywords(Keywords& keys){
   keys.reserve("compulsory","ARG","the input for this action is the output from one or more other actions. The particular output that you used is referenced using that action of interests label. If the label appears on its own then the value of the relevant Action is taken.  If * or *.* appears the information from all arguments is taken.  Some actions have multi-component outputs, each component of the output has a specific label so for instance an action labelled dist may have three componets x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*");
@@ -183,3 +183,4 @@ double ActionWithArguments::getProjection(unsigned i,unsigned j)const{
 
 
 
+}

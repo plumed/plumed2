@@ -29,7 +29,6 @@
 #include "tools/Units.h"
 #include <cstdio>
 
-using namespace PLMD;
 using namespace std;
 
 namespace PLMD

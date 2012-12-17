@@ -28,7 +28,7 @@
 #include <iostream>
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 RMSD::RMSD(const RMSD & oldrmsd):
   alignmentMethod(oldrmsd.alignmentMethod),
@@ -157,4 +157,5 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
         ret=dist/norm;
       }
       return ret;
+}
 }

@@ -27,7 +27,7 @@
 
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 ActionRegister::~ActionRegister(){
   if(m.size()>0){
@@ -37,7 +37,7 @@ ActionRegister::~ActionRegister(){
   }
 }
 
-ActionRegister& PLMD::actionRegister(){
+ActionRegister& actionRegister(){
   static ActionRegister ans;
   return ans;
 }
@@ -106,7 +106,7 @@ bool ActionRegister::printTemplate( const std::string& action, bool include_opti
   }
 }
 
-std::ostream & PLMD::operator<<(std::ostream &log,const ActionRegister&ar){
+std::ostream & operator<<(std::ostream &log,const ActionRegister&ar){
   vector<string> s;
   for(ActionRegister::const_mIterator it=ar.m.begin();it!=ar.m.end();++it)
     s.push_back((*it).first);
@@ -125,3 +125,4 @@ std::ostream & PLMD::operator<<(std::ostream &log,const ActionRegister&ar){
 }
 
 
+}

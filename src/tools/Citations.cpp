@@ -25,7 +25,7 @@
 #include <iostream>
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 std::string Citations::cite(const std::string & item){
   unsigned i;
@@ -38,10 +38,11 @@ std::string Citations::cite(const std::string & item){
   return ret;
 }
 
-std::ostream & PLMD::operator<<(std::ostream &log,const Citations&cit){
+std::ostream & operator<<(std::ostream &log,const Citations&cit){
   for(unsigned i=0;i<cit.items.size();++i)
     log<<"  ["<<i+1<<"] "<<cit.items[i]<<"\n";
   return log;
+}
 }
 
 

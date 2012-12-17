@@ -25,7 +25,7 @@
 #include <cmath>
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 void DRMSD::setFromPDB(const PDB&pdb, double lbound, double ubound){
   setReference(pdb.getPositions(), lbound, ubound);
@@ -90,3 +90,4 @@ double DRMSD::calculate(const std::vector<Vector> & positions, const Pbc& pbc,
 }
 
 
+}

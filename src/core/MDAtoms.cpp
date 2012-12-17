@@ -25,7 +25,6 @@
 #include "tools/Tools.h"
 #include "tools/PlumedException.h"
 
-using namespace PLMD;
 using namespace std;
 
 namespace PLMD {

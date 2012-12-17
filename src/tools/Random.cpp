@@ -25,7 +25,7 @@
 #include <sstream>
 #include <iostream>
 
-using namespace PLMD;
+namespace PLMD{
 
 const double Random::fact=5.9604644775390625e-8;     /* 1 / 2^24  */
 const double Random::EPS=3.0e-16;
@@ -145,3 +145,4 @@ double Random::Gaussian(){
 	return v2*fac;
 }
 
+}

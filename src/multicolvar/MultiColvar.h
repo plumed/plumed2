@@ -32,8 +32,6 @@
 namespace PLMD {
 namespace multicolvar {
 
-class MultiColvar;
-
 /**
 \ingroup INHERIT
 This is the abstract base class to use for creating distributions of colvars and functions

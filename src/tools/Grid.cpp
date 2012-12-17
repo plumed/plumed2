@@ -33,7 +33,7 @@
 #include "KernelFunctions.h"
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 Grid::Grid(const std::string& funcl, std::vector<Value*> args, const vector<std::string> & gmin, 
            const vector<std::string> & gmax, const vector<unsigned> & nbin, bool dospline, bool usederiv, bool doclear){
@@ -621,4 +621,5 @@ void SparseGrid::writeToFile(PlumedOFile& ofile){
    if(usederiv_){ for(unsigned j=0;j<dimension_;++j) ofile.printField("der_" + argnames[j],der[j]); }
    ofile.printField();
  }
+}
 }

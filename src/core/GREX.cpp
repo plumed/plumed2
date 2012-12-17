@@ -27,7 +27,7 @@
 #include <sstream>
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 GREX::GREX(PlumedMain&p):
   initialized(false),
@@ -155,4 +155,6 @@ void GREX::calculate(){
 //fprintf(stderr,">>> %d %d %20.12f %20.12f\n",intercomm.Get_rank(),partner,localDeltaBias,foreignDeltaBias);
   }
   intracomm.Bcast(&foreignDeltaBias,1,0);
+}
+
 }

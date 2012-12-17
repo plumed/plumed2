@@ -43,8 +43,9 @@
 #include "tools/Citations.h"
 #include "ExchangePatterns.h"
 
-using namespace PLMD;
 using namespace std;
+
+namespace PLMD{
 
 PlumedMain::PlumedMain():
   comm(*new PlumedCommunicator),
@@ -625,6 +626,7 @@ void PlumedMain::runJobsAtEndOfCalculation(){
   }
 } 
 
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

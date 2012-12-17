@@ -23,8 +23,8 @@
 #include "tools/PlumedException.h"
 #include <cstdlib>
 
-using namespace PLMD;
 using namespace std;
+namespace PLMD{
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE UTILITIES WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -78,3 +78,4 @@ static class PlumedMainInitializer{
 }
 
 
+}

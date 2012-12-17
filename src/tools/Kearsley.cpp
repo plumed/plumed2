@@ -30,7 +30,7 @@
 #include "Random.h"
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 // put some notes
 
@@ -873,4 +873,5 @@ for(l=0;l<3;l++){
 }
 
 	exit(0);
+}
 }

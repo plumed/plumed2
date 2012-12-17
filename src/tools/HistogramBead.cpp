@@ -25,7 +25,7 @@
 #include "Tools.h"
 #include "Keywords.h"
 
-using namespace PLMD;
+namespace PLMD{
 
 //+PLUMEDOC INTERNAL histogrambead 
 /*
@@ -188,3 +188,4 @@ double HistogramBead::calculate( double x, double& df ) const {
   return f;
 }     
 
+}

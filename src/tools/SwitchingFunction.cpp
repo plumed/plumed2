@@ -26,7 +26,7 @@
 #include <limits>
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 //+PLUMEDOC INTERNAL switchingfunction 
 /*
@@ -211,6 +211,8 @@ void SwitchingFunction::printKeywords( Log& log ) const {
      return;
   } 
   skeys.print(log);
+}
+
 }
 
 

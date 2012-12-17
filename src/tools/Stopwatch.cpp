@@ -42,16 +42,13 @@ clock_gettime (#define __CLOCK_GETTIME):
 #include <sys/time.h>
 #endif
 
-using namespace PLMD;
 using namespace std;
 
-// this is needed for friend operators
 namespace PLMD{
 
+// this is needed for friend operators
 std::ostream& operator<<(std::ostream&os,const Stopwatch&sw){
   return sw.log(os);
-}
-
 }
 
 Stopwatch::Time::operator double()const{
@@ -156,6 +153,8 @@ std::ostream& Stopwatch::log(std::ostream&os)const{
     os<<buffer;
   }
   return os;
+}
+
 }
 
 

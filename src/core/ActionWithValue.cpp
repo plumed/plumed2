@@ -23,7 +23,7 @@
 #include "tools/PlumedException.h"
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 void ActionWithValue::registerKeywords(Keywords& keys){
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
@@ -184,4 +184,5 @@ void ActionWithValue::mergeFieldDerivatives( const std::vector<double>& derivati
           val_out->addDerivative( j, derivatives[i]*getPntrToComponent(i)->getDerivative(j) );
       }
   }    
+}
 }

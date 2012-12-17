@@ -28,7 +28,7 @@
 #include "ActionSet.h"
 #include <iostream>
 
-using namespace PLMD;
+namespace PLMD{
 
 Keywords ActionOptions::emptyKeys;
 
@@ -214,4 +214,5 @@ void Action::calculateFromPDB( const PDB& pdb ){
 }
 
 
+}
 

@@ -27,7 +27,7 @@
 
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 CLToolRegister::~CLToolRegister(){
   if(m.size()>0){
@@ -37,7 +37,7 @@ CLToolRegister::~CLToolRegister(){
   }
 }
 
-CLToolRegister& PLMD::cltoolRegister(){
+CLToolRegister& cltoolRegister(){
   static CLToolRegister ans;
   return ans;
 }
@@ -77,7 +77,7 @@ CLTool* CLToolRegister::create(const CLToolOptions&ao){
 }
 
 
-std::ostream & PLMD::operator<<(std::ostream &log,const CLToolRegister&ar){
+std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar){
   vector<string> s(ar.list());
   for(unsigned i=0;i<s.size();i++) log<<"  "<<s[i]<<"\n";
   if(ar.disabled.size()>0){
@@ -111,3 +111,4 @@ vector<string> CLToolRegister::list()const{
 
 
 
+}

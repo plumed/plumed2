@@ -27,8 +27,8 @@
 #include <cstring>
 #include <dirent.h>
 
-using namespace PLMD;
 using namespace std;
+namespace PLMD{
 
 bool Tools::convert(const string & str,int & t){
         istringstream istr(str.c_str());
@@ -256,4 +256,6 @@ void Tools::stripLeadingAndTrailingBlanks( std::string& str ){
   std::size_t first=str.find_first_not_of(' ');
   std::size_t last=str.find_last_not_of(' ');
   if( first<last ) str=str.substr(first,last+1);
+}
+
 }

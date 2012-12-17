@@ -26,7 +26,7 @@
 #include <dlfcn.h>
 #endif
 
-using namespace PLMD;
+namespace PLMD{
 
 bool DLLoader::installed(){
 #ifdef __PLUMED_HAS_DLOPEN
@@ -81,3 +81,4 @@ DLLoader&DLLoader::operator=(const DLLoader&dl){
 
 
 
+}

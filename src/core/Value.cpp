@@ -28,7 +28,7 @@
 #include "Atoms.h"
 #include "PlumedMain.h"
 
-using namespace PLMD;
+namespace PLMD{
 
 Value::Value():
   action(NULL), 
@@ -152,7 +152,7 @@ ActionWithValue* Value::getPntrToAction(){
   return action;
 }
 
-void PLMD::copy( const Value& val1, Value& val2 ){
+void copy( const Value& val1, Value& val2 ){
   unsigned nder=val1.getNumberOfDerivatives();
   if( nder!=val2.getNumberOfDerivatives() ){ val2.resizeDerivatives( nder ); }
   val2.clearDerivatives();
@@ -160,7 +160,7 @@ void PLMD::copy( const Value& val1, Value& val2 ){
   val2.set( val1.get() );
 }
 
-void PLMD::copy( const Value& val1, Value* val2 ){
+void copy( const Value& val1, Value* val2 ){
   unsigned nder=val1.getNumberOfDerivatives();
   if( nder!=val2->getNumberOfDerivatives() ){ val2->resizeDerivatives( nder ); }
   val2->clearDerivatives();
@@ -168,10 +168,12 @@ void PLMD::copy( const Value& val1, Value* val2 ){
   val2->set( val1.get() );
 }
 
-void PLMD::add( const Value& val1, Value* val2 ){
+void add( const Value& val1, Value* val2 ){
   plumed_assert( val1.getNumberOfDerivatives()==val2->getNumberOfDerivatives() );
   for(unsigned i=0;i<val1.getNumberOfDerivatives();++i) val2->addDerivative( i, val1.getDerivative(i) );
   val2->set( val1.get() + val2->get() );
+}
+
 }
 
 

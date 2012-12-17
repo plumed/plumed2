@@ -24,7 +24,7 @@
 #include "Tools.h"
 #include <iostream>
 
-using namespace PLMD;
+namespace PLMD{
 
 Keywords::KeyType::KeyType( const std::string& type ){
   if( type=="compulsory" ){
@@ -489,3 +489,4 @@ void Keywords::destroyData(){
    booldefs.clear(); numdefs.clear(); atomtags.clear();
 }
 
+}

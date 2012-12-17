@@ -29,8 +29,8 @@
 #include <string>
 
 using namespace std;
-using namespace PLMD;
-using namespace PLMD::multicolvar;
+namespace PLMD{
+namespace multicolvar{
 
 void MultiColvar::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
@@ -466,4 +466,6 @@ void MultiColvar::apply(){
      v(2,2)+=forces[vstart+8];
     }
   }
+}
+}
 }

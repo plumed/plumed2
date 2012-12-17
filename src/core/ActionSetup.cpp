@@ -24,7 +24,7 @@
 #include "ActionSet.h"
 #include "tools/PlumedException.h"
 
-using namespace PLMD;
+namespace PLMD{
 
 ActionSetup::ActionSetup(const ActionOptions&ao):
   Action(ao)
@@ -42,3 +42,4 @@ void ActionSetup::registerKeywords( Keywords& keys ){
   keys.remove("LABEL");
 }
 
+}

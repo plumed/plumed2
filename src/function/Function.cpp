@@ -21,9 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Function.h"
 
-using namespace PLMD;
-using namespace PLMD::function;
 using namespace std;
+namespace PLMD{
+namespace function{
 
 void Function::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
@@ -77,4 +77,6 @@ void Function::apply(){
   if(at_least_one_forced) for(unsigned i=0;i<getNumberOfArguments();++i){
     getPntrToArgument(i)->addForce(f[i]);
   }
+}
+}
 }

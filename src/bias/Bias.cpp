@@ -21,9 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 
-using namespace PLMD;
-using namespace PLMD::bias;
-using namespace std;
+
+namespace PLMD{
+namespace bias{
 
 Bias::Bias(const ActionOptions&ao):
 Action(ao),
@@ -47,6 +47,9 @@ void Bias::apply(){
   if(onStep()) for(unsigned i=0;i<getNumberOfArguments();++i){
     getPntrToArgument(i)->addForce(getStride()*outputForces[i]);
   }
+}
+
+}
 }
 
 

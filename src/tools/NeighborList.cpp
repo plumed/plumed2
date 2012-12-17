@@ -27,7 +27,7 @@
 #include "Tools.h"
 #include "NeighborList.h"
 
-using namespace PLMD;
+namespace PLMD{
 using namespace std;
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
@@ -194,3 +194,4 @@ vector<unsigned> NeighborList::getNeighbors(unsigned index) {
  return neighbors;
 }
 
+}

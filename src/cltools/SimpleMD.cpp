@@ -30,7 +30,6 @@
 #include <vector>
 
 using namespace std;
-using namespace PLMD;
 
 namespace PLMD{
 namespace cltools{

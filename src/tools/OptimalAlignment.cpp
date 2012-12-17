@@ -28,7 +28,7 @@
 #include "Random.h"
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  std::vector<double>  & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log &log )
 :log(log){
@@ -392,3 +392,4 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 
 
 
+}

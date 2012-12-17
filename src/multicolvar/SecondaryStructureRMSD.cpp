@@ -25,9 +25,9 @@
 #include "tools/RMSD.h"
 #include "tools/DRMSD.h"
 
-using namespace PLMD::multicolvar;
 
 namespace PLMD {
+namespace multicolvar{
 
 void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
@@ -145,4 +145,5 @@ bool SecondaryStructureRMSD::usingRMSD() const {
   else return false;
 }
 
+}
 }

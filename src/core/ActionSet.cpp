@@ -22,7 +22,7 @@
 #include "ActionSet.h"
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 ActionSet::ActionSet(PlumedMain&p):
 plumed(p){
@@ -48,3 +48,4 @@ std::string ActionSet::getLabelList() const{
 }
 
 
+}

@@ -22,7 +22,7 @@
 #include "PlumedException.h"
 #include "LatticeReduction.h"
 
-using namespace PLMD;
+namespace PLMD{
 
 void LatticeReduction::sort(Vector v[3]){
   for(int i=0;i<3;i++) for(int j=i+1;j<3;j++) if(modulo2(v[i])>modulo2(v[j])){
@@ -189,3 +189,4 @@ bool LatticeReduction::isReduced(const Tensor&t){
   return true;
 }
 
+}

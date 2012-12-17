@@ -21,8 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionPilot.h"
 
-using namespace PLMD;
 using namespace std;
+namespace PLMD{
 
 void ActionPilot::registerKeywords(Keywords& keys){
 }
@@ -41,6 +41,7 @@ bool ActionPilot::onStep()const{
 
 int ActionPilot::getStride()const{
   return stride;
+}
 }
 
 

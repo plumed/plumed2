@@ -26,7 +26,6 @@
 #include <algorithm>
 #include <string>
 
-using namespace PLMD;
 using namespace std;
 
 namespace PLMD {

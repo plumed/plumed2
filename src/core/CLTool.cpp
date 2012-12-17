@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "CLTool.h"
 
-using namespace PLMD;
+namespace PLMD{
 
 Keywords CLToolOptions::emptyKeys;
 
@@ -184,4 +184,5 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
   if(argc==2) fclose(mystdin);
   setRemainingToDefault(out);
   return true;
+}
 }

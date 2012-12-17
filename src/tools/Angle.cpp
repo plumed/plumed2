@@ -23,7 +23,7 @@
 #include "Tools.h"
 #include <cmath>
 
-using namespace PLMD;
+namespace PLMD{
 
 double Angle::compute(const Vector& v1,const Vector& v2)const{
     return std::acos(dotProduct(v1,v2)/(v1.modulo()*v2.modulo()));
@@ -65,3 +65,4 @@ double Angle::compute(const Vector& v1,const Vector& v2,Vector& d1,Vector& d2)co
     return std::acos(dpnn);
 }
 
+}

@@ -34,7 +34,7 @@
 #include <algorithm>
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 CLToolMain::CLToolMain():
 argc(0),
@@ -230,4 +230,5 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
   fprintf(stderr,"%s\n",msg.c_str());
   return 1;
 
+}
 }

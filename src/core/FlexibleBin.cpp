@@ -27,7 +27,7 @@
 #include "tools/Matrix.h"
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 
 FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction,  double const &d ):type(type),paction(paction),sigma(d){
@@ -156,4 +156,6 @@ vector<double> FlexibleBin::getInverseMatrix() const{
 	//paction->log<<"------------ END GET INVERSE MATRIX ---------------\n";
 
 	return uppervec;  
+}
+
 }

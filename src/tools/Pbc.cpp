@@ -24,7 +24,7 @@
 #include "PlumedException.h"
 #include "LatticeReduction.h"
 
-using namespace PLMD;
+namespace PLMD{
 
 Pbc::Pbc():
   type(unset)
@@ -138,3 +138,4 @@ const Tensor& Pbc::getInvBox()const{
 
 
 
+}

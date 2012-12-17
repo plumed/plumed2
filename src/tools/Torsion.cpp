@@ -25,7 +25,7 @@
 #include <cmath>
 #include <iostream>
 
-using namespace PLMD;
+namespace PLMD{
 
 double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3)const{
     const Vector nv2(v2*(1.0/v2.modulo()));
@@ -79,6 +79,8 @@ double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3,Vecto
   d3=1.0/(1.0+x*x) * dx_dv3;
   
   return torsion;
+}
+
 }
 
 

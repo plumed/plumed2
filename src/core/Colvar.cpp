@@ -24,7 +24,7 @@
 #include <string>
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
 Colvar::Colvar(const ActionOptions&ao):
 Action(ao),
@@ -96,4 +96,5 @@ void Colvar::setBoxDerivativesNoPbc(Value* v){
            v->getDerivative(3*i+1),
            v->getDerivative(3*i+2)));
   setBoxDerivatives(v,virial);
+}
 }
