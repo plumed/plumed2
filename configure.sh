@@ -35,11 +35,11 @@ case "$conf" in
   SOEXT=so
 esac
 
-echo 'export PATH="$PATH:'"$PWD"'/src/"' >> sourceme.sh
+echo 'export PATH="$PATH:'"$PWD"'/src/lib/"' >> sourceme.sh
 # this is just for mac:
-echo 'export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:'"$PWD"'/src/"' >> sourceme.sh
+echo 'export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:'"$PWD"'/src/lib/"' >> sourceme.sh
 
 cat << EOF >> sourceme.sh
-export PLUMED_KERNEL="$PWD/src/libplumedKernel.$SOEXT"
+export PLUMED_KERNEL="$PWD/src/lib/libplumedKernel.$SOEXT"
 EOF
 

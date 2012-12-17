@@ -2,7 +2,7 @@
 
 
 SRCDIRS = src extensions test
-SUBDIRS = $(SRCDIRS) user-doc developer-doc imd regtest
+SUBDIRS = $(SRCDIRS) user-doc developer-doc regtest
 
 SUBDIRSCLEAN=$(addsuffix .clean,$(SUBDIRS))
 

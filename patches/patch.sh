@@ -197,9 +197,9 @@ case "$action" in
       echo "ERROR: you have likely already patched. Revert first (-r)"
       exit
     fi
-    if [ ! -f "$PLUMED_ROOT/src/Plumed.inc" ]
+    if [ ! -f "$PLUMED_ROOT/src/lib/Plumed.inc" ]
     then
-      echo "ERROR: cannot find $PLUMED_ROOT/src/Plumed.inc file"
+      echo "ERROR: cannot find $PLUMED_ROOT/src/lib/Plumed.inc file"
       echo "Compile plumed before patching"
       exit
     fi
@@ -208,8 +208,8 @@ case "$action" in
       plumed_before_patch
     fi
     echo "Linking Plumed.h and Plumed.inc ($mode mode)"
-    ln -s "$PLUMED_ROOT/src/Plumed.h"
-    ln -s "$PLUMED_ROOT/src/Plumed.inc.$mode" Plumed.inc
+    ln -s "$PLUMED_ROOT/src/wrapper/Plumed.h"
+    ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
     bash "$diff"
     if type -t plumed_after_patch 1>/dev/null ; then
       echo "Executing plumed_after_patch function"

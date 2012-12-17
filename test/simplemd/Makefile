@@ -1,6 +1,6 @@
 
 -include ../../Makefile.conf
--include ../../src/Plumed.inc
+-include ../../src/lib/Plumed.inc
 
 SRC=routines.f90 simplemd.f90 ran1.f gasdev.f
 OBJ=routines.o simplemd.o ran1.o gasdev.o

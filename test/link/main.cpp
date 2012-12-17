@@ -1,4 +1,4 @@
-#include "Plumed.h"
+#include "../../src/wrapper/Plumed.h"
 #include <cstdio>
 
 

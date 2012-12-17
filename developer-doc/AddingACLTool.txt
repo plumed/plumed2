@@ -45,7 +45,7 @@ public CLTool
 public:
   static void registerKeywords( Keywords& keys );
   CLToolNAME(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,PlumedCommunicator& pc);
+  int main(FILE* in, FILE*out,Communicator& pc);
   string description()const{
     return "a description of the particular kind of task CLToolNAME performs";
   }

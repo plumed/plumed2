@@ -4,7 +4,7 @@ mkdir automatic
 
 # Check for files that register actions with no documentation
 rm errors
-for file in ../src/*.cpp
+for file in ../src/*/*.cpp
 do
   nreg=`grep "PLUMED_REGISTER_ACTION" $file | wc -l | awk '{print $1}'`
   if [ $nreg -gt 0 ] ; then
@@ -31,7 +31,7 @@ done
 #done
 
 # Generate all the documentation pages from comments
-cat ../*/*cpp |
+cat ../*/*/*cpp |
 awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
   if($1=="//+ENDPLUMEDOC"){
      inside=0;
@@ -83,7 +83,7 @@ for file in automatic/*.tmp
 do
   foundexample=`grep "\par Examples" $file | wc -l | awk '{print $1}'`
   flag=`echo $file | sed -e 's/.tmp//g' | sed -e 's/automatic\///g'`
-  ../src/plumed manual --action=$flag > automatic/$flag.man 2> shit
+  ../src/lib/plumed manual --action=$flag > automatic/$flag.man 2> shit
   rm shit 
   check=`wc -l automatic/$flag.man | awk '{print $1}'`
   if [ $check -eq 0 ] ; then 
