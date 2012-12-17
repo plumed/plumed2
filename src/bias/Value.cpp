@@ -49,21 +49,21 @@ PRINT ARG=d1,d2,b.d1,b.d2
 */
 //+ENDPLUMEDOC
 
-class Value : public Bias{
+class BiasValue : public Bias{
 public:
-  Value(const ActionOptions&);
+  BiasValue(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Value,"BIASVALUE")
+PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
 
-void Value::registerKeywords(Keywords& keys){
+void BiasValue::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
 }
 
-Value::Value(const ActionOptions&ao):
+BiasValue::BiasValue(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao)
 {
   checkRead();
@@ -77,7 +77,7 @@ PLUMED_BIAS_INIT(ao)
   }
 }
 
-void Value::calculate(){
+void BiasValue::calculate(){
 for(unsigned i=0;i< getNumberOfArguments() ;++i){
   double val; val=getArgument(i); 
 //  log<<"BIAS "<<val<<"\n";

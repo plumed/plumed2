@@ -51,24 +51,24 @@ PRINT ARG=d1
 //+ENDPLUMEDOC
 
 
-class GhostAtom:
+class Ghost:
   public ActionWithVirtualAtom
 {
   vector<double> coord;
 public:
-  GhostAtom(const ActionOptions&ao);
+  Ghost(const ActionOptions&ao);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };
 
-PLUMED_REGISTER_ACTION(GhostAtom,"GHOST")
+PLUMED_REGISTER_ACTION(Ghost,"GHOST")
 
-void GhostAtom::registerKeywords(Keywords& keys){
+void Ghost::registerKeywords(Keywords& keys){
   ActionWithVirtualAtom::registerKeywords(keys);
   keys.add("atoms","COORDINATES","coordinates of the ghost atom in the local reference frame");
 }
 
-GhostAtom::GhostAtom(const ActionOptions&ao):
+Ghost::Ghost(const ActionOptions&ao):
   Action(ao),
   ActionWithVirtualAtom(ao)
 {
@@ -86,7 +86,7 @@ GhostAtom::GhostAtom(const ActionOptions&ao):
   requestAtoms(atoms);
 }
 
-void GhostAtom::calculate(){
+void Ghost::calculate(){
   Vector pos;
   vector<Tensor> deriv(getNumberOfAtoms());
   vector<Vector> n;

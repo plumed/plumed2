@@ -31,7 +31,9 @@ Anyway, it is registered here, so that excluding this module from
 compilation will exclude it from plumed.
 */
 
-PLUMED_REGISTER_ACTION(SetupMolInfo,"MOLINFO")
+typedef PLMD::SetupMolInfo MolInfo;
+
+PLUMED_REGISTER_ACTION(MolInfo,"MOLINFO")
 
 }
 }
