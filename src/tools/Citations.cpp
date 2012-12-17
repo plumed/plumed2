@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Citations.h"
-#include "PlumedException.h"
+#include "Exception.h"
 #include "Tools.h"
 #include <iostream>
 

@@ -24,7 +24,7 @@
 #include "tools/Grid.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "core/FlexibleBin.h"
 #include "tools/Matrix.h"
 #include "tools/Random.h"

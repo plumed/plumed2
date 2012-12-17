@@ -23,7 +23,7 @@
 #include "PDB.h"
 #include "Log.h"
 #include "OptimalAlignment.h"
-#include "PlumedException.h"
+#include "Exception.h"
 #include <cmath>
 #include <iostream>
 

@@ -24,7 +24,7 @@
 
 #include "ActionSetup.h"
 #include "ActionAtomistic.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 
 namespace PLMD {
 

@@ -26,7 +26,7 @@
 #include <cstring>
 #include <vector>
 #include <map>
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "tools/Keywords.h"
 
 namespace PLMD{

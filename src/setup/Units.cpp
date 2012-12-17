@@ -23,7 +23,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 
 using namespace std;
 

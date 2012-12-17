@@ -27,7 +27,7 @@
 #include "ActionWithValue.h"
 #include "Colvar.h"
 #include "ActionWithVirtualAtom.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "Atoms.h"
 #include "tools/Pbc.h"
 #include "tools/PDB.h"

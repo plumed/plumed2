@@ -23,7 +23,7 @@
 #include "ActionWithValue.h"
 #include "PlumedMain.h"
 #include "tools/Log.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "Atoms.h"
 #include "ActionSet.h"
 #include <iostream>

@@ -25,7 +25,7 @@
 #include <string>
 #include <set>
 #include <cmath>
-#include "PlumedException.h"
+#include "Exception.h"
 #include "MatrixSquareBracketsAccess.h"
 #include "Log.h"
 

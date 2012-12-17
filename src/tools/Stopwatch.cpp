@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "Stopwatch.h"
-#include "PlumedException.h"
+#include "Exception.h"
 
 #include <cstdio>
 #include <iostream>

@@ -22,7 +22,7 @@
 #ifndef __PLUMED_tools_AtomNumber_h
 #define __PLUMED_tools_AtomNumber_h
 
-#include "PlumedException.h"
+#include "Exception.h"
 #include <limits>
 
 namespace PLMD{

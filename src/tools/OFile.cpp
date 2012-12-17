@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "File.h"
-#include "PlumedException.h"
+#include "Exception.h"
 #include "core/Action.h"
 #include "core/PlumedMain.h"
 #include "core/Value.h"

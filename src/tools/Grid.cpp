@@ -29,7 +29,7 @@
 #include "Tools.h"
 #include "core/Value.h"
 #include "File.h"
-#include "PlumedException.h"
+#include "Exception.h"
 #include "KernelFunctions.h"
 
 using namespace std;

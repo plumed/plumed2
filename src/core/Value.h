@@ -25,7 +25,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "tools/Tools.h"
 #include "tools/AtomNumber.h"
 #include "tools/Vector.h"

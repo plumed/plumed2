@@ -24,7 +24,7 @@
 #include "../core/ActionPilot.h"
 #include "../core/PlumedMain.h"
 #include "../core/Atoms.h"
-#include "../tools/PlumedException.h"
+#include "../tools/Exception.h"
 #include <unistd.h>
 
 extern "C" {

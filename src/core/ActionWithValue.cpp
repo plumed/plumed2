@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithValue.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 
 using namespace std;
 namespace PLMD{

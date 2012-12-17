@@ -23,7 +23,7 @@
 #include <string>
 #include "MDAtoms.h"
 #include "tools/Tools.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 
 using namespace std;
 

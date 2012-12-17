@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVessel.h"
 #include "Vessel.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "core/Value.h"
 #include "tools/Log.h"
 

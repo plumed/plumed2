@@ -25,7 +25,7 @@
 #include "tools/Communicator.h"
 #include "tools/Tensor.h"
 #include "tools/Units.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "tools/AtomNumber.h"
 #include <vector>
 #include <set>

@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Pbc.h"
 #include "Tools.h"
-#include "PlumedException.h"
+#include "Exception.h"
 #include "LatticeReduction.h"
 
 namespace PLMD{

@@ -26,7 +26,7 @@
 #include <set>
 #include <map>
 
-#include "PlumedException.h"
+#include "Exception.h"
 
 namespace PLMD{
 

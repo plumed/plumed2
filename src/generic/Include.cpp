@@ -22,7 +22,7 @@
 #include "core/Action.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 
 using namespace std;
 

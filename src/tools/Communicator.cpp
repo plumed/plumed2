@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include <cstdlib>
 #include "Communicator.h"
-#include "PlumedException.h"
+#include "Exception.h"
 
 using namespace std;
 

@@ -22,7 +22,7 @@
 #include "Bias.h"
 #include "ActionRegister.h"
 #include "tools/Grid.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "tools/File.h"
 
 

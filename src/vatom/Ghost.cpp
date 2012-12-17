@@ -22,7 +22,7 @@
 #include "ActionWithVirtualAtom.h"
 #include "ActionRegister.h"
 #include "tools/Vector.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 
 using namespace std;
 

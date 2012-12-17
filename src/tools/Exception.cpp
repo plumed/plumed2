@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "PlumedException.h"
+#include "Exception.h"
 
 #if ! defined(__PLUMED_EXCEPTIONS)
 #include <execinfo.h>
@@ -29,9 +29,9 @@
 #include <cstdlib>
 
 using namespace std;
-using namespace PLMD;
+namespace PLMD{
 
-std::string PlumedException::format(const std::string&msg,const std::string&file,unsigned line,const std::string&function){
+std::string Exception::format(const std::string&msg,const std::string&file,unsigned line,const std::string&function){
   std::string message;
   message="\n+++ Internal PLUMED error";
   if(file.length()>0){
@@ -45,25 +45,25 @@ std::string PlumedException::format(const std::string&msg,const std::string&file
 }
 
 
-PlumedException::PlumedException()
+Exception::Exception()
 {
   this->msg=format("","",0,"");
   abortIfExceptionsAreDisabled();
 }
 
-PlumedException::PlumedException(const std::string&msg)
+Exception::Exception(const std::string&msg)
 {
   this->msg=format(msg,"",0,"");
   abortIfExceptionsAreDisabled();
 }
 
-PlumedException::PlumedException(const std::string&msg,const std::string&file,unsigned line,const std::string&function)
+Exception::Exception(const std::string&msg,const std::string&file,unsigned line,const std::string&function)
 {
   this->msg=format(msg,file,line,function);
   abortIfExceptionsAreDisabled();
 }
 
-void PlumedException::abortIfExceptionsAreDisabled(){
+void Exception::abortIfExceptionsAreDisabled(){
 #if ! defined(__PLUMED_EXCEPTIONS)
   fprintf(stderr,"%s",what());
   fprintf(stderr,"\n");
@@ -78,6 +78,8 @@ void PlumedException::abortIfExceptionsAreDisabled(){
 
   std::abort();
 #endif
+}
+
 }
 
 

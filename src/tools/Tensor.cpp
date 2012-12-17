@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Tensor.h"
-#include "PlumedException.h"
+#include "Exception.h"
 
 namespace PLMD{
 

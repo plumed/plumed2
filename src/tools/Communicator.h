@@ -25,7 +25,7 @@
 #include <mpi.h>
 #endif
 #include <cstdlib>
-#include "PlumedException.h"
+#include "Exception.h"
 
 namespace PLMD{
 

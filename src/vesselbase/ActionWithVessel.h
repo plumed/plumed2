@@ -24,7 +24,7 @@
 
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "tools/DynamicList.h"
 #include <vector>
 

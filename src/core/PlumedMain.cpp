@@ -32,7 +32,7 @@
 #include <cstdlib>
 #include "ActionRegister.h"
 #include "GREX.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "Atoms.h"
 #include "ActionSet.h"
 #include "tools/Log.h"

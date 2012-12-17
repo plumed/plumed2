@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DLLoader.h"
-#include "PlumedException.h"
+#include "Exception.h"
 
 #ifdef __PLUMED_HAS_DLOPEN
 #include <dlfcn.h>

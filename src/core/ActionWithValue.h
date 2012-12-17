@@ -24,7 +24,7 @@
 
 #include "Action.h"
 #include "Value.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include <vector>
 
 namespace PLMD{

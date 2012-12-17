@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_tools_PlumedException_h
-#define __PLUMED_tools_PlumedException_h
+#ifndef __PLUMED_tools_Exception_h
+#define __PLUMED_tools_Exception_h
 
 #include <string>
 #include <stdexcept>
@@ -38,11 +38,11 @@ should be documented in some better way (e.g. printing parts of the manual in th
 
 To throw an error, just throw a c++ exception
 \verbatim
-  if(something_bad) throw PlumedException();
+  if(something_bad) throw Exception();
 \endverbatim
 or better add an error message to that
 \verbatim
-  if(something_bad) throw PlumedException("describe the error here);
+  if(something_bad) throw Exception("describe the error here);
 \endverbatim
 
 Even better, you can use the predefined macros 
@@ -87,7 +87,7 @@ even if I am not fully convinced that this is a good idea.
 Notice that sometime people claim that code compiled with exception enabled
 is slower (GB)
 */
-class PlumedException : public std::exception
+class Exception : public std::exception
 {
   std::string msg;
 /// Common tool, invoked by all the constructor to build the message string
@@ -96,15 +96,15 @@ class PlumedException : public std::exception
   void abortIfExceptionsAreDisabled();
 public:
 /// Without message
-  PlumedException();
+  Exception();
 /// With message
-  PlumedException(const std::string&);
+  Exception(const std::string&);
 /// With message plus file, line and function (meant to be used through a preprocessor macro)
-  PlumedException(const std::string&,const std::string&,unsigned,const std::string&);
+  Exception(const std::string&,const std::string&,unsigned,const std::string&);
 /// Returns the error message
   virtual const char* what() const throw(){return msg.c_str();}
 /// Destructor should be defined and should not throw other exceptions
-  virtual ~PlumedException() throw(){};
+  virtual ~Exception() throw(){};
 };
 
 // With GNU compiler, we can use __PRETTY_FUNCTION__ to get the function name
@@ -112,18 +112,18 @@ public:
 #define __PRETTY_FUNCTION__ ""
 #endif
 
-/// \relates PLMD::PlumedException
+/// \relates PLMD::Exception
 /// Just print file/line/function information and exit
-#define plumed_error() throw PLMD::PlumedException("",__FILE__,__LINE__,__PRETTY_FUNCTION__)
-/// \relates PLMD::PlumedException
+#define plumed_error() throw PLMD::Exception("",__FILE__,__LINE__,__PRETTY_FUNCTION__)
+/// \relates PLMD::Exception
 /// Print file/line/function information plus msg and exit
-#define plumed_merror(msg) throw PLMD::PlumedException(msg,__FILE__,__LINE__,__PRETTY_FUNCTION__)
-/// \relates PLMD::PlumedException
+#define plumed_merror(msg) throw PLMD::Exception(msg,__FILE__,__LINE__,__PRETTY_FUNCTION__)
+/// \relates PLMD::Exception
 /// Conditionally print file/line/function information and exit
-#define plumed_assert(test) if(!(test)) throw PLMD::PlumedException("assertion failed " #test,__FILE__,__LINE__,__PRETTY_FUNCTION__)
-/// \relates PLMD::PlumedException
+#define plumed_assert(test) if(!(test)) throw PLMD::Exception("assertion failed " #test,__FILE__,__LINE__,__PRETTY_FUNCTION__)
+/// \relates PLMD::Exception
 /// Conditionally print file/line/function information plus msg and exit
-#define plumed_massert(test,msg) if(!(test)) throw PLMD::PlumedException("assertion failed " #test ", " msg,__FILE__,__LINE__,__PRETTY_FUNCTION__)
+#define plumed_massert(test,msg) if(!(test)) throw PLMD::Exception("assertion failed " #test ", " msg,__FILE__,__LINE__,__PRETTY_FUNCTION__)
 
 }
 #endif

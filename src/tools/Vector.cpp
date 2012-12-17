@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Vector.h"
-#include "PlumedException.h"
+#include "Exception.h"
 #include <cmath>
 
 namespace PLMD{

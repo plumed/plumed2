@@ -22,7 +22,7 @@
 #include <iostream>
 #include "Tools.h"
 #include "AtomNumber.h"
-#include "PlumedException.h"
+#include "Exception.h"
 #include "File.h"
 #include <cstring>
 #include <dirent.h>

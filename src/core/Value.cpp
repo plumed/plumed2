@@ -24,7 +24,7 @@
 #include "ActionAtomistic.h"
 #include "ActionWithArguments.h"
 #include "ActionWithVirtualAtom.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "Atoms.h"
 #include "PlumedMain.h"
 

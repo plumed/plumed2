@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "config/Config.h"
-#include "tools/PlumedException.h"
+#include "tools/Exception.h"
 #include "tools/Communicator.h"
 #include "CLTool.h"
 #include "CLToolMain.h"
