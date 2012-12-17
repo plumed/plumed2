@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "config/Config.h"
 #include "tools/PlumedException.h"
-#include "tools/PlumedCommunicator.h"
+#include "tools/Communicator.h"
 #include "CLTool.h"
 #include "CLToolMain.h"
 #include "CLToolRegister.h"
@@ -40,7 +40,7 @@ CLToolMain::CLToolMain():
 argc(0),
 in(stdin),
 out(stdout),
-comm(*new PlumedCommunicator)
+comm(*new Communicator)
 {
 }
 
@@ -96,7 +96,7 @@ This is the entry point to the command line tools
 included in the plumed library.
 */
 
-int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& pc){
+int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
   int i;
   bool printhelp=false;
 
@@ -116,7 +116,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator& p
       printhelp=true;
       break;
     } else if(a=="--has-mpi"){
-      if(PlumedCommunicator::initialized()) return 0;
+      if(Communicator::initialized()) return 0;
       else return 1;
     } else if(a=="--no-mpi"){
 // this is ignored, as it is parsed in main

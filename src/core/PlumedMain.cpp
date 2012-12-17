@@ -37,7 +37,7 @@
 #include "ActionSet.h"
 #include "tools/Log.h"
 #include "tools/DLLoader.h"
-#include "tools/PlumedCommunicator.h"
+#include "tools/Communicator.h"
 #include "CLToolMain.h"
 #include "tools/Stopwatch.h"
 #include "tools/Citations.h"
@@ -48,7 +48,7 @@ using namespace std;
 namespace PLMD{
 
 PlumedMain::PlumedMain():
-  comm(*new PlumedCommunicator),
+  comm(*new Communicator),
   dlloader(*new DLLoader),
   cltool(NULL),
   stopwatch(*new Stopwatch),

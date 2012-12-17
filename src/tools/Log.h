@@ -30,7 +30,7 @@
 
 namespace PLMD{
 
-class PlumedCommunicator;
+class Communicator;
 
 /// Class containing the log stream.
 ///

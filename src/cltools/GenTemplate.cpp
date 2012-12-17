@@ -59,7 +59,7 @@ public CLTool
 public:
   static void registerKeywords( Keywords& keys );
   GenTemplate(const CLToolOptions& co );
-  int main(FILE* in, FILE*out,PlumedCommunicator& pc);
+  int main(FILE* in, FILE*out,Communicator& pc);
   string description()const{
     return "print out a template input for a particular action";
   }
@@ -80,7 +80,7 @@ CLTool(co)
   inputdata=commandline;
 }
 
-int GenTemplate::main(FILE* in, FILE*out,PlumedCommunicator& pc){
+int GenTemplate::main(FILE* in, FILE*out,Communicator& pc){
 
  std::string action; 
  bool list_templates=false;

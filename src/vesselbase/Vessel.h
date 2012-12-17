@@ -30,7 +30,7 @@
 
 namespace PLMD{
 
-class PlumedCommunicator;
+class Communicator;
 class Log;
 
 namespace vesselbase{
@@ -97,7 +97,7 @@ public:
 /// Reference to the log on which to output details
   Log& log;
 /// Reference to the plumed communicator
-  PlumedCommunicator& comm;
+  Communicator& comm;
 /// Are the calculations being done in serial
   bool serial;
 /// The constructor

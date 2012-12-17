@@ -22,7 +22,7 @@
 #ifndef __PLUMED_core_Atoms_h
 #define __PLUMED_core_Atoms_h
 
-#include "tools/PlumedCommunicator.h"
+#include "tools/Communicator.h"
 #include "tools/Tensor.h"
 #include "tools/Units.h"
 #include "tools/PlumedException.h"
@@ -80,15 +80,15 @@ class Atoms
   std::vector<int>    gatindex;
 
   class DomainDecomposition:
-    public PlumedCommunicator
+    public Communicator
   {
   public:
     bool on;
     bool async;
     std::vector<int>    g2l;
 
-    std::vector<PlumedCommunicator::Request> mpi_request_positions;
-    std::vector<PlumedCommunicator::Request> mpi_request_index;
+    std::vector<Communicator::Request> mpi_request_positions;
+    std::vector<Communicator::Request> mpi_request_index;
     
     std::vector<double> positionsToBeSent;
     std::vector<double> positionsToBeReceived;
@@ -98,7 +98,7 @@ class Atoms
     DomainDecomposition():
       on(false), async(false)
       {};
-    void enable(PlumedCommunicator& c);
+    void enable(Communicator& c);
   };
 
   DomainDecomposition dd;
@@ -128,7 +128,7 @@ public:
 
   void setCollectEnergy(bool b){ collectEnergy=b; };
 
-  void setDomainDecomposition(PlumedCommunicator&);
+  void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*);
   void setAtomsContiguous(int);
   void setAtomsNlocal(int);

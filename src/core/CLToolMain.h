@@ -29,7 +29,7 @@
 
 namespace PLMD{
 
-class PlumedCommunicator;
+class Communicator;
 
 /**
 Class providing cmd() access to command line tools.
@@ -83,8 +83,8 @@ public WithCmd
   std::vector<std::string> argv;
   FILE*in;
   FILE*out;
-  PlumedCommunicator&comm;
-  static int run(int argc, char **argv,FILE*in,FILE*out,PlumedCommunicator&pc);
+  Communicator&comm;
+  static int run(int argc, char **argv,FILE*in,FILE*out,Communicator&pc);
 public:
   CLToolMain();
   ~CLToolMain();

@@ -30,7 +30,7 @@
 
 namespace PLMD{
 
-class PlumedCommunicator;
+class Communicator;
 
 class CLToolOptions{
   friend class CLTool;
@@ -88,7 +88,7 @@ public:
 /// Read the arguments from the command line
   bool readInput( int argc, char**argv, FILE* in, FILE*out );
 /// virtual function mapping to the specific main for each tool
-  virtual int main( FILE* in, FILE*out, PlumedCommunicator&pc )=0;
+  virtual int main( FILE* in, FILE*out, Communicator&pc )=0;
 /// virtual function returning a one-line descriptor for the tool
   virtual std::string description()const{return "(no description available)";};
 /// virtual destructor to allow inheritance

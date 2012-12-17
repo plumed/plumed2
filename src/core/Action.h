@@ -33,7 +33,7 @@ namespace PLMD{
 
 class PDB;
 class PlumedMain;
-class PlumedCommunicator;
+class Communicator;
 
 /// This class is used to bring the relevant information to the Action constructor.
 /// Only Action and ActionRegister class can access to its content, which is 
@@ -155,7 +155,7 @@ public:
 /// a final Action has been initialized
   void checkRead();
 
-  PlumedCommunicator& comm;
+  Communicator& comm;
 
   const Keywords& keywords;
 /// Prepare an Action for calculation

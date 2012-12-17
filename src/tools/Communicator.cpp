@@ -20,32 +20,32 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include <cstdlib>
-#include "PlumedCommunicator.h"
+#include "Communicator.h"
 #include "PlumedException.h"
 
 using namespace std;
 
 namespace PLMD{
 
-PlumedCommunicator::PlumedCommunicator()
+Communicator::Communicator()
 #ifdef __PLUMED_MPI
 : communicator(MPI_COMM_SELF)
 #endif
 {
 }
 
-PlumedCommunicator::PlumedCommunicator(const PlumedCommunicator&pc){
+Communicator::Communicator(const Communicator&pc){
   Set_comm(pc.communicator);
 }
 
-PlumedCommunicator& PlumedCommunicator::operator=(const PlumedCommunicator&pc){
+Communicator& Communicator::operator=(const Communicator&pc){
   if (this != &pc){
       Set_comm(pc.communicator);
   }
   return *this;
 }
 
-int PlumedCommunicator::Get_rank()const{
+int Communicator::Get_rank()const{
   int r=0;
 #ifdef __PLUMED_MPI
   if(initialized()) MPI_Comm_rank(communicator,&r);
@@ -53,8 +53,8 @@ int PlumedCommunicator::Get_rank()const{
   return r;
 }
 
-PlumedCommunicator& PlumedCommunicator::Get_world(){
-  static PlumedCommunicator c;
+Communicator& Communicator::Get_world(){
+  static Communicator c;
 #ifdef __PLUMED_MPI
   if(initialized()) c.communicator=MPI_COMM_WORLD;
 #endif
@@ -62,7 +62,7 @@ PlumedCommunicator& PlumedCommunicator::Get_world(){
 }
 
 
-int PlumedCommunicator::Get_size()const{
+int Communicator::Get_size()const{
   int s=1;
 #ifdef __PLUMED_MPI
   if(initialized()) MPI_Comm_size(communicator,&s);
@@ -70,7 +70,7 @@ int PlumedCommunicator::Get_size()const{
   return s;
 }
 
-void PlumedCommunicator::Set_comm(MPI_Comm c){
+void Communicator::Set_comm(MPI_Comm c){
 #ifdef __PLUMED_MPI
   if(initialized()){
     if(communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD) MPI_Comm_free(&communicator);
@@ -81,13 +81,13 @@ void PlumedCommunicator::Set_comm(MPI_Comm c){
 #endif
 }
 
-PlumedCommunicator::~PlumedCommunicator(){
+Communicator::~Communicator(){
 #ifdef __PLUMED_MPI
   if(initialized() && communicator!=MPI_COMM_SELF && communicator!=MPI_COMM_WORLD) MPI_Comm_free(&communicator);
 #endif
 }
 
-void PlumedCommunicator::Set_comm(void*val){
+void Communicator::Set_comm(void*val){
 #ifdef __PLUMED_MPI
  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
  if(val) Set_comm(*(MPI_Comm*)val);
@@ -97,7 +97,7 @@ void PlumedCommunicator::Set_comm(void*val){
 #endif
 }
 
-void PlumedCommunicator::Set_fcomm(void*val){
+void Communicator::Set_fcomm(void*val){
 #ifdef __PLUMED_MPI
  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   if(val){
@@ -110,7 +110,7 @@ void PlumedCommunicator::Set_fcomm(void*val){
 #endif
 }
 
-void PlumedCommunicator::Abort(int errorcode){
+void Communicator::Abort(int errorcode){
 #ifdef __PLUMED_MPI
   if(initialized()){
     MPI_Abort(communicator,errorcode);
@@ -121,17 +121,17 @@ void PlumedCommunicator::Abort(int errorcode){
 #endif
 }
 
-void PlumedCommunicator::Barrier()const{
+void Communicator::Barrier()const{
 #ifdef __PLUMED_MPI
   if(initialized()) MPI_Barrier(communicator);
 #endif
 }
 
-MPI_Comm & PlumedCommunicator::Get_comm(){
+MPI_Comm & Communicator::Get_comm(){
     return communicator;
 }
 
-bool PlumedCommunicator::initialized(){
+bool Communicator::initialized(){
   int flag=false;
 #if defined(__PLUMED_MPI)
   MPI_Initialized(&flag);
@@ -140,7 +140,7 @@ bool PlumedCommunicator::initialized(){
   else return false;
 }
 
-void PlumedCommunicator::Request::wait(){
+void Communicator::Request::wait(){
 #ifdef __PLUMED_MPI
  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Wait(&r,MPI_STATUS_IGNORE);
@@ -149,7 +149,7 @@ void PlumedCommunicator::Request::wait(){
 #endif
 }
 
-void PlumedCommunicator::Request::wait(Status&s){
+void Communicator::Request::wait(Status&s){
 #ifdef __PLUMED_MPI
  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Wait(&r,&s.s);
@@ -160,16 +160,16 @@ void PlumedCommunicator::Request::wait(Status&s){
 }
 
 #ifdef __PLUMED_MPI
-template<> MPI_Datatype PlumedCommunicator::getMPIType<float>(){ return MPI_FLOAT;}
-template<> MPI_Datatype PlumedCommunicator::getMPIType<double>(){ return MPI_DOUBLE;}
-template<> MPI_Datatype PlumedCommunicator::getMPIType<int>()   { return MPI_INT;}
-template<> MPI_Datatype PlumedCommunicator::getMPIType<char>()   { return MPI_CHAR;}
-template<> MPI_Datatype PlumedCommunicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
-template<> MPI_Datatype PlumedCommunicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
+template<> MPI_Datatype Communicator::getMPIType<float>(){ return MPI_FLOAT;}
+template<> MPI_Datatype Communicator::getMPIType<double>(){ return MPI_DOUBLE;}
+template<> MPI_Datatype Communicator::getMPIType<int>()   { return MPI_INT;}
+template<> MPI_Datatype Communicator::getMPIType<char>()   { return MPI_CHAR;}
+template<> MPI_Datatype Communicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
+template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
 #endif
 
 
-void PlumedCommunicator::Split(int color,int key,PlumedCommunicator&pc)const{
+void Communicator::Split(int color,int key,Communicator&pc)const{
 #ifdef __PLUMED_MPI
   MPI_Comm_split(communicator,color,key,&pc.communicator);
 #else

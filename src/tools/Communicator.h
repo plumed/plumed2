@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_tools_PlumedCommunicator_h
-#define __PLUMED_tools_PlumedCommunicator_h
+#ifndef __PLUMED_tools_Communicator_h
+#define __PLUMED_tools_Communicator_h
 #ifdef __PLUMED_MPI
 #include <mpi.h>
 #endif
@@ -39,7 +39,7 @@ namespace PLMD{
 /// \ingroup TOOLBOX
 /// Class containing wrappers to MPI.
 /// All the MPI related stuff is relegated here.
-class PlumedCommunicator{
+class Communicator{
 /// Communicator
   MPI_Comm communicator;
 #ifdef __PLUMED_MPI
@@ -64,15 +64,15 @@ public:
     void wait(Status&);
   };
 /// Default constructor
-  PlumedCommunicator();
+  Communicator();
 /// Copy constructor.
 /// It effectively "clones" the communicator, providing a new one acting on the same group
-  PlumedCommunicator(const PlumedCommunicator&);
+  Communicator(const Communicator&);
 /// Assignment operator.
 /// It effectively "clones" the communicator, providing a new one acting on the same group
-  PlumedCommunicator& operator=(const PlumedCommunicator&);
+  Communicator& operator=(const Communicator&);
 /// Destructor
-  virtual ~PlumedCommunicator();
+  virtual ~Communicator();
 /// Obtain the rank of the present process
   int Get_rank()const;
 /// Obtain the number of processes
@@ -95,7 +95,7 @@ public:
   static bool initialized();
 
 /// Returns MPI_COMM_WORLD if MPI is initialized, otherwise the default communicator
-  static PlumedCommunicator & Get_world();
+  static Communicator & Get_world();
 
 /// Wrapper for MPI_Allreduce with MPI_SUM
   template <class T>
@@ -115,11 +115,11 @@ public:
   void Bcast(T*,int,int);
 
 /// Wrapper to MPI_Comm_split
-  void Split(int,int,PlumedCommunicator&)const;
+  void Split(int,int,Communicator&)const;
 };
 
 template<class T>
-void PlumedCommunicator::Sum(T*b,int count){
+void Communicator::Sum(T*b,int count){
 #if defined(__PLUMED_MPI)
   if(initialized()) MPI_Allreduce(MPI_IN_PLACE,b,count,getMPIType<T>(),MPI_SUM,communicator);
 #else
@@ -129,7 +129,7 @@ void PlumedCommunicator::Sum(T*b,int count){
 }
 
 template<class T>
-void PlumedCommunicator::Bcast(T*b,int count,int root){
+void Communicator::Bcast(T*b,int count,int root){
 #if defined(__PLUMED_MPI)
   if(initialized()) MPI_Bcast(b,count,getMPIType<T>(),root,communicator);
 #else
@@ -141,7 +141,7 @@ void PlumedCommunicator::Bcast(T*b,int count,int root){
 
 
 template<class T>
-void PlumedCommunicator::Allgatherv(const T*sendbuf,int sendcount,T*recvbuf,const int*recvcounts,const int*displs){
+void Communicator::Allgatherv(const T*sendbuf,int sendcount,T*recvbuf,const int*recvcounts,const int*displs){
 #if defined(__PLUMED_MPI)
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   void*s=const_cast<void*>((const void*)sendbuf);
@@ -161,7 +161,7 @@ void PlumedCommunicator::Allgatherv(const T*sendbuf,int sendcount,T*recvbuf,cons
 }
 
 template<class T>
-void PlumedCommunicator::Allgather(const T*sendbuf,int sendcount,T*recvbuf,int recvcount){
+void Communicator::Allgather(const T*sendbuf,int sendcount,T*recvbuf,int recvcount){
 #if defined(__PLUMED_MPI)
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   void*s=const_cast<void*>((const void*)sendbuf);
@@ -178,7 +178,7 @@ void PlumedCommunicator::Allgather(const T*sendbuf,int sendcount,T*recvbuf,int r
 }
 
 template <class T>
-PlumedCommunicator::Request PlumedCommunicator::Isend(const T*buf,int count,int source,int tag){
+Communicator::Request Communicator::Isend(const T*buf,int count,int source,int tag){
   Request req;
 #ifdef __PLUMED_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
@@ -195,7 +195,7 @@ PlumedCommunicator::Request PlumedCommunicator::Isend(const T*buf,int count,int 
 }
 
 template <class T>
-void PlumedCommunicator::Recv(T*buf,int count,int source,int tag,Status&status){
+void Communicator::Recv(T*buf,int count,int source,int tag,Status&status){
 #ifdef __PLUMED_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Recv(buf,count,getMPIType<T>(),source,tag,communicator,&status.s);
@@ -210,7 +210,7 @@ void PlumedCommunicator::Recv(T*buf,int count,int source,int tag,Status&status){
 }
 
 template <class T>
-void PlumedCommunicator::Recv(T*buf,int count,int source,int tag){
+void Communicator::Recv(T*buf,int count,int source,int tag){
 #ifdef __PLUMED_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Recv(buf,count,getMPIType<T>(),source,tag,communicator,MPI_STATUS_IGNORE);
@@ -224,7 +224,7 @@ void PlumedCommunicator::Recv(T*buf,int count,int source,int tag){
 }
 
 template<class T>
-int PlumedCommunicator::Status::Get_count()const{
+int Communicator::Status::Get_count()const{
   int i;
 #ifdef __PLUMED_MPI
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");

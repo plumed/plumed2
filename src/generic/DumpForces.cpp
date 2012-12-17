@@ -22,7 +22,6 @@
 #include "core/ActionPilot.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
-#include "tools/PlumedCommunicator.h"
 #include "tools/PlumedFile.h"
 
 using namespace std;

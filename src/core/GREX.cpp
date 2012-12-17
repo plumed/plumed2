@@ -23,7 +23,7 @@
 #include "PlumedMain.h"
 #include "Atoms.h"
 #include "tools/Tools.h"
-#include "tools/PlumedCommunicator.h"
+#include "tools/Communicator.h"
 #include <sstream>
 
 using namespace std;
@@ -31,8 +31,8 @@ namespace PLMD{
 
 GREX::GREX(PlumedMain&p):
   initialized(false),
-  intracomm(*new PlumedCommunicator),
-  intercomm(*new PlumedCommunicator),
+  intracomm(*new Communicator),
+  intercomm(*new Communicator),
   plumedMain(p),
   atoms(p.getAtoms()),
   partner(-1), // = unset
@@ -138,7 +138,7 @@ void GREX::calculate(){
   vector<char> rbuf(nn);
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0){
-    PlumedCommunicator::Request req=intercomm.Isend(&buffer.c_str()[0],nn,partner,1066);
+    Communicator::Request req=intercomm.Isend(&buffer.c_str()[0],nn,partner,1066);
     intercomm.Recv(&rbuf[0],rbuf.size(),partner,1066);
     req.wait();
   }
@@ -149,7 +149,7 @@ void GREX::calculate(){
   plumedMain.justCalculate();
   localDeltaBias+=plumedMain.getBias();
   if(intracomm.Get_rank()==0){
-    PlumedCommunicator::Request req=intercomm.Isend(&localDeltaBias,1,partner,1067);
+    Communicator::Request req=intercomm.Isend(&localDeltaBias,1,partner,1067);
     intercomm.Recv(&foreignDeltaBias,1,partner,1067);
     req.wait();
 //fprintf(stderr,">>> %d %d %20.12f %20.12f\n",intercomm.Get_rank(),partner,localDeltaBias,foreignDeltaBias);

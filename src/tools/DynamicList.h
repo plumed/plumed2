@@ -22,7 +22,7 @@
 #ifndef __PLUMED_tools_DynamicList_h
 #define __PLUMED_tools_DynamicList_h
 
-#include "PlumedCommunicator.h"
+#include "Communicator.h"
 
 namespace PLMD {
 
@@ -169,7 +169,7 @@ public:
 /// Make everything in the list active
   void activateAll();
 /// Do updateActiveMembers for a loop that has been distributed over multiple nodes
-  void mpi_gatherActiveMembers(PlumedCommunicator& comm);
+  void mpi_gatherActiveMembers(Communicator& comm);
 /// Get the list of active members
   void updateActiveMembers();
 /// Retriee the list of active objects
@@ -230,7 +230,7 @@ void DynamicList<T>::activateAll(){
 }
 
 template <typename T>
-void DynamicList<T>::mpi_gatherActiveMembers(PlumedCommunicator& comm){
+void DynamicList<T>::mpi_gatherActiveMembers(Communicator& comm){
   comm.Sum(&onoff[0],onoff.size());
   unsigned size=comm.Get_size();
   // When we mpi gather onoff to be on it should be active on ALL nodes

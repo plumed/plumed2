@@ -55,7 +55,7 @@ class Log;
 class Atoms;
 class ActionSet;
 class DLLoader;
-class PlumedCommunicator;
+class Communicator;
 class Stopwatch;
 class Citations;
 class ExchangePatterns;
@@ -74,7 +74,7 @@ class PlumedMain:
 public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.
-  PlumedCommunicator&comm;
+  Communicator&comm;
 
 private:
   DLLoader& dlloader;

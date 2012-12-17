@@ -30,14 +30,14 @@ namespace PLMD{
 
 class PlumedMain;
 class Atoms;
-class PlumedCommunicator;
+class Communicator;
 
 class GREX:
   public WithCmd
 {
   bool initialized;
-  PlumedCommunicator& intracomm;
-  PlumedCommunicator& intercomm;
+  Communicator& intracomm;
+  Communicator& intercomm;
   PlumedMain& plumedMain;
   Atoms&      atoms;
   int partner;

@@ -29,7 +29,7 @@
 
 namespace PLMD{
 
-class PlumedCommunicator;
+class Communicator;
 class PlumedMain;
 class Action;
 class Value;
@@ -60,7 +60,7 @@ protected:
 /// file pointer
   FILE* fp;
 /// communicator. NULL if not set
-  PlumedCommunicator* comm;
+  Communicator* comm;
 /// pointer to main plumed object. NULL if not linked
   PlumedMain* plumed;
 /// pointer to corresponding action. NULL if not linked
@@ -83,12 +83,12 @@ public:
 /// Link to an already open filed
   PlumedFileBase& link(FILE*);
 /// Link to a PlumedMain object
-/// Automatically links also the corresponding PlumedCommunicator.
+/// Automatically links also the corresponding Communicator.
   PlumedFileBase& link(PlumedMain&);
-/// Link to a PlumedCommunicator object
-  PlumedFileBase& link(PlumedCommunicator&);
+/// Link to a Communicator object
+  PlumedFileBase& link(Communicator&);
 /// Link to an Action object.
-/// Automatically links also the corresponding PlumedMain and PlumedCommunicator.
+/// Automatically links also the corresponding PlumedMain and Communicator.
   PlumedFileBase& link(Action&);
 /// Flushes the file to disk
   PlumedFileBase& flush();

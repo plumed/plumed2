@@ -23,7 +23,7 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 #include "tools/NeighborList.h"
-#include "tools/PlumedCommunicator.h"
+#include "tools/Communicator.h"
 
 #include <string>
 #include <cmath>

@@ -23,7 +23,7 @@
 #include "CLToolRegister.h"
 #include "tools/Tools.h"
 #include "wrapper/Plumed.h"
-#include "tools/PlumedCommunicator.h"
+#include "tools/Communicator.h"
 #include "tools/Random.h"
 #include <cstdio>
 #include <string>
@@ -70,7 +70,7 @@ class Driver : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
   Driver(const CLToolOptions& co );
-  int main(FILE* in,FILE*out,PlumedCommunicator& pc);
+  int main(FILE* in,FILE*out,Communicator& pc);
   string description()const;
 };
 
@@ -110,7 +110,7 @@ string Driver<float>::description()const{ return "analyze trajectories with plum
 
 
 template<typename real>
-int Driver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
+int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   Units units;
   PDB pdb;
@@ -145,8 +145,8 @@ int Driver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   int multi=1;
   FILE*multi_log=NULL;
   bool debug_grex=parse("--debug-grex",fakein);
-  PlumedCommunicator intracomm;
-  PlumedCommunicator intercomm;
+  Communicator intracomm;
+  Communicator intercomm;
   if(debug_grex){
     plumed_massert( !noatoms, "must have atoms to debug_grex");
     Tools::convert(fakein,multi);
@@ -215,7 +215,7 @@ int Driver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   }
 
   plumed_massert(!(debug_dd&debug_pd),"cannot use debug-dd and debug-pd at the same time");
-  if(debug_pd || debug_dd) plumed_massert(PlumedCommunicator::initialized(),"needs mpi for debug-pd");
+  if(debug_pd || debug_dd) plumed_massert(Communicator::initialized(),"needs mpi for debug-pd");
 
   Plumed p;
   int rr=sizeof(real);
@@ -224,7 +224,7 @@ int Driver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
   int plumedStopCondition=0;
   p.cmd("setStopFlag",&plumedStopCondition);
   int step=0;
-  if(PlumedCommunicator::initialized()){
+  if(Communicator::initialized()){
     if(multi>1){
       if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
       p.cmd("GREX setMPIIntracomm",&intracomm.Get_comm());
@@ -258,7 +258,7 @@ int Driver<real>::main(FILE* in,FILE*out,PlumedCommunicator& pc){
      }
 
      if(dumpforces.length()>0){
-       if(PlumedCommunicator::initialized() && pc.Get_size()>1){
+       if(Communicator::initialized() && pc.Get_size()>1){
          string n;
          Tools::convert(pc.Get_rank(),n);
          dumpforces+="."+n;

@@ -24,7 +24,7 @@
 #include "core/Action.h"
 #include "core/PlumedMain.h"
 #include "core/Value.h"
-#include "PlumedCommunicator.h"
+#include "Communicator.h"
 #include "Tools.h"
 #include <cstdarg>
 #include <cstring>
@@ -96,7 +96,7 @@ PlumedFileBase& PlumedFileBase::flush(){
   return *this;
 }
 
-PlumedFileBase& PlumedFileBase::link(PlumedCommunicator&comm){
+PlumedFileBase& PlumedFileBase::link(Communicator&comm){
   plumed_massert(!fp,"cannot link an already open file");
   this->comm=&comm;
   return *this;

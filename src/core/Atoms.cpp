@@ -173,7 +173,7 @@ void Atoms::wait(){
   if(dd && int(gatindex.size())<natoms){
 // receive toBeReceived
     int count=0;
-    PlumedCommunicator::Status status;
+    Communicator::Status status;
     if(dd.async){
       for(int i=0;i<dd.Get_size();i++){
         dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
@@ -226,7 +226,7 @@ void Atoms::remove(const ActionAtomistic*a){
 }
 
 
-void Atoms::DomainDecomposition::enable(PlumedCommunicator& c){
+void Atoms::DomainDecomposition::enable(Communicator& c){
   on=true;
   Set_comm(c.Get_comm());
   async=Get_size()<10;
@@ -312,7 +312,7 @@ void Atoms::init(){
   }
 }
 
-void Atoms::setDomainDecomposition(PlumedCommunicator& comm){
+void Atoms::setDomainDecomposition(Communicator& comm){
   dd.enable(comm);
 }
 
