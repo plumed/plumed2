@@ -370,7 +370,7 @@ void PlumedMain::init(){
 void PlumedMain::readInputFile(std::string str){
   plumed_assert(initialized);
   log.printf("FILE: %s\n",str.c_str());
-  PlumedIFile ifile;
+  IFile ifile;
   ifile.link(*this);
   ifile.open(str);
   std::vector<std::string> words;
@@ -611,11 +611,11 @@ void PlumedMain::fflush(){
   }
 }
 
-void PlumedMain::insertFile(PlumedFileBase&f){
+void PlumedMain::insertFile(FileBase&f){
   files.insert(&f);
 }
 
-void PlumedMain::eraseFile(PlumedFileBase&f){
+void PlumedMain::eraseFile(FileBase&f){
   files.erase(&f);
 }
 

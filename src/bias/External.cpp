@@ -23,7 +23,7 @@
 #include "ActionRegister.h"
 #include "tools/Grid.h"
 #include "tools/PlumedException.h"
-#include "tools/PlumedFile.h"
+#include "tools/File.h"
 
 
 using namespace std;
@@ -141,7 +141,7 @@ BiasGrid_(NULL)
   addComponent("bias"); componentIsNotPeriodic("bias");
 
 // read grid
-  PlumedIFile gridfile; gridfile.open(filename);
+  IFile gridfile; gridfile.open(filename);
   std::string funcl=getLabel() + ".bias";  
   BiasGrid_=Grid::create(funcl,getArguments(),gridfile,sparsegrid,spline,true);
   gridfile.close();

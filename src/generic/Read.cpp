@@ -46,7 +46,7 @@ private:
   bool cloned_file;
   unsigned nlinesPerStep;
   std::string filename;
-  PlumedIFile* ifile;
+  IFile* ifile;
   std::vector<Value*> readvals;
 public:
   static void registerKeywords( Keywords& keys );
@@ -57,7 +57,7 @@ public:
   void calculate();
   void update();
   std::string getFilename() const;
-  PlumedIFile* getFile();
+  IFile* getFile();
 };
 
 PLUMED_REGISTER_ACTION(Read,"READ")
@@ -91,7 +91,7 @@ nlinesPerStep(1)
       }
   }
   if( !cloned_file ){
-      ifile=new PlumedIFile();
+      ifile=new IFile();
       if( !ifile->FileExist(filename) ) error("could not find file named " + filename);
       ifile->link(*this);
       ifile->open(filename);
@@ -144,7 +144,7 @@ std::string Read::getFilename() const {
   return filename;
 }
 
-PlumedIFile* Read::getFile(){
+IFile* Read::getFile(){
   return ifile;
 }
 

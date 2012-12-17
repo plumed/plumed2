@@ -170,7 +170,7 @@ old_norm(0.0)
 }
 
 void Analysis::readDataFromFile( const std::string& filename ){
-  double tstep, oldtstep; PlumedIFile ifile;
+  double tstep, oldtstep; IFile ifile;
   if( !ifile.FileExist(filename) ) error("failed to find required restart file " + filename );
   ifile.open(filename);
 

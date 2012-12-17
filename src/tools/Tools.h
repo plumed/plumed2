@@ -33,7 +33,7 @@
 
 namespace PLMD{
 
-class PlumedIFile;
+class IFile;
 
 /// \ingroup TOOLBOX
 /// Very small non-zero number
@@ -62,7 +62,7 @@ public:
 /// Get a parsed line from the file pointer ifile
 /// This function already takes care of joining continued lines and splitting the
 /// resulting line into an array of words
-  static bool getParsedLine(PlumedIFile&ifile,std::vector<std::string> & line);
+  static bool getParsedLine(IFile&ifile,std::vector<std::string> & line);
 /// Convert a string to a double, reading it
   static bool convert(const std::string & str,double & t);
 /// Convert a string to a int, reading it

@@ -28,7 +28,7 @@
 #include "Grid.h"
 #include "Tools.h"
 #include "core/Value.h"
-#include "PlumedFile.h"
+#include "File.h"
 #include "PlumedException.h"
 #include "KernelFunctions.h"
 
@@ -430,7 +430,7 @@ void Grid::scaleAllValuesAndDerivatives( const double& scalef ){
   }
 }
 
-void Grid::writeHeader(PlumedOFile& ofile){
+void Grid::writeHeader(OFile& ofile){
  for(unsigned i=0;i<dimension_;++i){
      ofile.addConstantField("min_" + argnames[i]);
      ofile.addConstantField("max_" + argnames[i]);
@@ -439,7 +439,7 @@ void Grid::writeHeader(PlumedOFile& ofile){
  }
 }
 
-void Grid::writeToFile(PlumedOFile& ofile){
+void Grid::writeToFile(OFile& ofile){
  vector<double> xx(dimension_);
  vector<double> der(dimension_);
  double f;
@@ -463,7 +463,7 @@ void Grid::writeToFile(PlumedOFile& ofile){
  }
 }
 
-Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, PlumedIFile& ifile, 
+Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& ifile, 
                    const vector<std::string> & gmin,const vector<std::string> & gmax, 
                    const vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder){
   Grid* grid=Grid::create(funcl,args,ifile,dosparse,dospline,doder);
@@ -481,7 +481,7 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, PlumedIFi
   return grid;
 }
 
-Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, PlumedIFile& ifile, bool dosparse, bool dospline, bool doder)
+Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& ifile, bool dosparse, bool dospline, bool doder)
 {
  Grid* grid=NULL;
  unsigned nvar=args.size(); bool hasder=false; std::string pstring;
@@ -597,7 +597,7 @@ void SparseGrid::addValueAndDerivatives
  for(unsigned int i=0;i<dimension_;++i) der_[index][i]+=der[i]; 
 }
 
-void SparseGrid::writeToFile(PlumedOFile& ofile){
+void SparseGrid::writeToFile(OFile& ofile){
  vector<double> xx(dimension_);
  vector<double> der(dimension_);
  double f;

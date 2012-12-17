@@ -156,7 +156,7 @@ void Histogram::performAnalysis(){
   }
   Grid* gg; 
   if( oldfname.length()>0 && usingMemory() ){
-      PlumedIFile oldf; oldf.link(*this); oldf.open(oldfname);
+      IFile oldf; oldf.link(*this); oldf.open(oldfname);
       gg = Grid::create( "probs", getArguments(), oldf, gmin, gmax, gbin, false, false, false );
       oldf.close();
   } else {
@@ -175,7 +175,7 @@ void Histogram::performAnalysis(){
   gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
 
   // Write the grid to a file
-  PlumedOFile gridfile; gridfile.link(*this); 
+  OFile gridfile; gridfile.link(*this); 
   gridfile.open( gridfname ); gg->writeToFile( gridfile );
   // Close the file 
   gridfile.close(); delete gg;

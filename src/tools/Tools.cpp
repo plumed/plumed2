@@ -23,7 +23,7 @@
 #include "Tools.h"
 #include "AtomNumber.h"
 #include "PlumedException.h"
-#include "PlumedFile.h"
+#include "File.h"
 #include <cstring>
 #include <dirent.h>
 
@@ -134,7 +134,7 @@ vector<string> Tools::getWords(const string & line,const char* separators,int * 
   return words;
 }
 
-bool Tools::getParsedLine(PlumedIFile& ifile,vector<string> & words){
+bool Tools::getParsedLine(IFile& ifile,vector<string> & words){
   string line("");
   words.clear();
   bool stat;

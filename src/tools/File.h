@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_tools_PlumedFile_h
-#define __PLUMED_tools_PlumedFile_h
+#ifndef __PLUMED_tools_File_h
+#define __PLUMED_tools_File_h
 
 #include <cstdio>
 #include <vector>
@@ -37,17 +37,17 @@ class Value;
 /**
 Base class for dealing with files.
 
-This class just provides things which are common among PlumedOFile and PlumedIFile
+This class just provides things which are common among OFile and IFile
 */
 
-class PlumedFileBase{
+class FileBase{
 /// Copy constructor is disabled (private and unimplemented)
-  PlumedFileBase(const PlumedFileBase&);
+  FileBase(const FileBase&);
 /// Assignment operator is disabled (private and unimplemented)
-  PlumedFileBase& operator=(const PlumedFileBase&);
+  FileBase& operator=(const FileBase&);
 protected:
 /// Internal tool.
-/// Base for PlumedIFile::Field and PlumedOFile::Field
+/// Base for IFile::Field and OFile::Field
   class FieldBase{
 // everything is public to simplify usage
   public:
@@ -69,8 +69,8 @@ protected:
 /// If true, file will not be closed in destructor
   bool cloned;
 /// Private constructor.
-/// In this manner one cannot instantiate a PlumedFileBase object
-  PlumedFileBase();
+/// In this manner one cannot instantiate a FileBase object
+  FileBase();
 /// Set to true when end of file is encountered
   bool eof;
 /// Set to true when error is encountered
@@ -81,22 +81,22 @@ protected:
   bool heavyFlush;
 public:
 /// Link to an already open filed
-  PlumedFileBase& link(FILE*);
+  FileBase& link(FILE*);
 /// Link to a PlumedMain object
 /// Automatically links also the corresponding Communicator.
-  PlumedFileBase& link(PlumedMain&);
+  FileBase& link(PlumedMain&);
 /// Link to a Communicator object
-  PlumedFileBase& link(Communicator&);
+  FileBase& link(Communicator&);
 /// Link to an Action object.
 /// Automatically links also the corresponding PlumedMain and Communicator.
-  PlumedFileBase& link(Action&);
+  FileBase& link(Action&);
 /// Flushes the file to disk
-  PlumedFileBase& flush();
+  FileBase& flush();
 /// Closes the file
 /// Should be used only for explicitely opened files.
   void        close();
 /// Virtual destructor (allows inheritance)
-  virtual ~PlumedFileBase();
+  virtual ~FileBase();
 /// Runs a small testcase
   static void test();
 /// Check for error/eof.
@@ -104,7 +104,7 @@ public:
 /// Set heavyFlush flag
   void setHeavyFlush(){ heavyFlush=true;};
 /// Opens the file (without auto-backup)
-  PlumedFileBase& open(const std::string&name,const std::string& mode);
+  FileBase& open(const std::string&name,const std::string& mode);
 /// Check if the file exists
   bool FileExist(const std::string& path);
 /// Check if a file is open
@@ -116,14 +116,14 @@ public:
 Class for output files
 
 This class provides features similar to those in the standard C "FILE*" type,
-but only for sequential output. See PlumedIFile for sequential input.
+but only for sequential output. See IFile for sequential input.
 
 See the example here for a possible use:
 \verbatim
-#include "PlumedFile.h"
+#include "File.h"
 
 int main(){
-  PLMD::PlumedOFile pof;
+  PLMD::OFile pof;
   pof.open("ciao","w");
   pof.printf("%s\n","test1");
   pof.setLinePrefix("plumed: ");
@@ -157,16 +157,16 @@ Notes
 - "x2" is declared as "constant", which means that it is written using the "SET"
 keyword. Thus, everytime it is modified, all the headers are repeated in the output file.
 - printField() without arguments is used as a "newline".
-- most methods return a reference to the PlumedOFile itself, to allow chaining many calls on the same line
+- most methods return a reference to the OFile itself, to allow chaining many calls on the same line
 (this is similar to << operator in std::ostream)
 
 */
 
-class PlumedOFile:
-public virtual PlumedFileBase{
+class OFile:
+public virtual FileBase{
 /// Pointer to a linked OFile.
-/// see link(PlumedOFile&)
-  PlumedOFile* linked;
+/// see link(OFile&)
+  OFile* linked;
 /// Internal buffer for printf
   char* buffer_string;
 /// Internal buffer (generic use)
@@ -199,58 +199,58 @@ public virtual PlumedFileBase{
   unsigned findField(const std::string&name)const;
 public:
 /// Constructor
-  PlumedOFile();
+  OFile();
 /// Destructor
-  ~PlumedOFile();
+  ~OFile();
 /// Allows overloading of link
-  using PlumedFileBase::link;
+  using FileBase::link;
 /// Allows overloading of open
-  using PlumedFileBase::open;
-/// Allows linking this PlumedOFile to another one.
-/// In this way, everything written to this PlumedOFile will be immediately
-/// written on the linked PlumedOFile. Notice that a PlumedOFile should
-/// be either opened explicitly, linked to a FILE or linked to a PlumedOFile
-  PlumedOFile& link(PlumedOFile&);
+  using FileBase::open;
+/// Allows linking this OFile to another one.
+/// In this way, everything written to this OFile will be immediately
+/// written on the linked OFile. Notice that a OFile should
+/// be either opened explicitly, linked to a FILE or linked to a OFile
+  OFile& link(OFile&);
 /// Opens the file using automatic append/backup
-  PlumedOFile& open(const std::string&name);
+  OFile& open(const std::string&name);
 /// Set the prefix for output.
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
-/// be parsed using fields in a PlumedIFile.
-  PlumedOFile& setLinePrefix(const std::string&);
+/// be parsed using fields in a IFile.
+  OFile& setLinePrefix(const std::string&);
 /// Set the format for writing double precision fields
-  PlumedOFile& fmtField(const std::string&);
+  OFile& fmtField(const std::string&);
 /// Reset the format for writing double precision fields to its default
-  PlumedOFile& fmtField();
+  OFile& fmtField();
 /// Set the value of a double precision field
-  PlumedOFile& printField(const std::string&,double);
+  OFile& printField(const std::string&,double);
 /// Set the value of a int field
-  PlumedOFile& printField(const std::string&,int);
+  OFile& printField(const std::string&,int);
 /// Set the value of a string field
-  PlumedOFile& printField(const std::string&,const std::string&);
+  OFile& printField(const std::string&,const std::string&);
 ///
-  PlumedOFile& addConstantField(const std::string&);
+  OFile& addConstantField(const std::string&);
 /// Used to setup printing of values
-  PlumedOFile& setupPrintValue( Value *val );
+  OFile& setupPrintValue( Value *val );
 /// Print a value
-  PlumedOFile& printField( Value* val, const double& v );
+  OFile& printField( Value* val, const double& v );
 /** Close a line.
 Typically used as
 \verbatim
   of.printField("a",a).printField("b",b).printField();
 \endverbatim
 */
-  PlumedOFile& printField();
+  OFile& printField();
 /**
 Resets the list of fields.
 As it is only possible to add new constant fields (addConstantField()),
 this method can be used to clean the field list.
 */
-  PlumedOFile& clearFields();
+  OFile& clearFields();
 /// Formatted output with explicit format - a la printf
   int printf(const char*fmt,...);
 /// Formatted output with << operator
   template <class T>
-  friend PlumedOFile& operator<<(PlumedOFile&,const T &);
+  friend OFile& operator<<(OFile&,const T &);
 };
 
 
@@ -259,12 +259,12 @@ this method can be used to clean the field list.
 Class for input files
 
 This class provides features similar to those in the standard C "FILE*" type,
-but only for sequential input. See PlumedOFile for sequential output.
+but only for sequential input. See OFile for sequential output.
 
 */
-class PlumedIFile:
+class IFile:
 /// Class identifying a single field for fielded output
-public virtual PlumedFileBase{
+public virtual FileBase{
   class Field:
   public FieldBase{
   public:
@@ -281,24 +281,24 @@ public virtual PlumedFileBase{
 /// Set to true if you want to allow fields to be ignored in the read in file
   bool ignoreFields;
 /// Advance to next field (= read one line)
-  PlumedIFile& advanceField();
+  IFile& advanceField();
 /// Find field index by name
   unsigned findField(const std::string&name)const;
 public:
 /// Constructor
-  PlumedIFile();
+  IFile();
 /// Destructor
-  ~PlumedIFile();
+  ~IFile();
 /// Opens the file 
-  PlumedIFile& open(const std::string&name);
+  IFile& open(const std::string&name);
 /// Gets the list of all fields
-  PlumedIFile& scanFieldList(std::vector<std::string>&);
+  IFile& scanFieldList(std::vector<std::string>&);
 /// Read a double field
-  PlumedIFile& scanField(const std::string&,double&);
+  IFile& scanField(const std::string&,double&);
 /// Read a int field
-  PlumedIFile& scanField(const std::string&,int&);
+  IFile& scanField(const std::string&,int&);
 /// Read a string field
-  PlumedIFile& scanField(const std::string&,std::string&);
+  IFile& scanField(const std::string&,std::string&);
 /**
  Ends a field-formatted line.
 
@@ -307,22 +307,22 @@ Typically used as
   if.scanField("a",a).scanField("b",b).scanField();
 \endverbatim
 */
-  PlumedIFile& scanField();
+  IFile& scanField();
 /// Get a full line as a string
-  PlumedIFile& getline(std::string&);
+  IFile& getline(std::string&);
 /// Reset end of file                                                              
   void reset(bool);
 /// Check if a field exist                                                       
   bool FieldExist(const std::string& s);
 /// Read in a value
-  PlumedIFile& scanField(Value* val);
+  IFile& scanField(Value* val);
 /// Allow some of the fields in the input to be ignored
   void allowIgnoredFields();
 };
 
 /// Write using << syntax
 template <class T>
-PlumedOFile& operator<<(PlumedOFile&of,const T &t){
+OFile& operator<<(OFile&of,const T &t){
   of.oss<<t;
   of.printf("%s",of.oss.str().c_str());
   of.oss.str("");

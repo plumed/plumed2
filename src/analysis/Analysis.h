@@ -79,7 +79,7 @@ private:
 /// The value of the old normalization constant
   double norm, old_norm;
 /// The checkpoint file
-  PlumedOFile rfile;
+  OFile rfile;
 /// Read in data from a file
   void readDataFromFile( const std::string& filename );
 /// This retrieves the value of norm from the analysis action.

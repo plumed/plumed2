@@ -22,7 +22,7 @@
 #include "core/ActionPilot.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
-#include "tools/PlumedFile.h"
+#include "tools/File.h"
 
 using namespace std;
 
@@ -42,7 +42,7 @@ public ActionWithArguments
 {
   string file;
   string fmt;
-  PlumedOFile of;
+  OFile of;
 public:
   void calculate(){};
   DumpProjections(const ActionOptions&);

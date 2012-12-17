@@ -23,7 +23,7 @@
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
 #include "tools/Pbc.h"
-#include "tools/PlumedFile.h"
+#include "tools/File.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include "tools/Units.h"
@@ -63,7 +63,7 @@ class DumpAtoms:
   public ActionAtomistic,
   public ActionPilot
 {
-  PlumedOFile of;
+  OFile of;
   double lenunit;
 public:
   DumpAtoms(const ActionOptions&);

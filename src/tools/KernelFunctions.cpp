@@ -212,7 +212,7 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   return kval;
 }
 
-KernelFunctions* KernelFunctions::read( PlumedIFile* ifile, const std::vector<std::string>& valnames ){
+KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::string>& valnames ){
   std::string sss; ifile->scanField("multivariate",sss);
   std::vector<double> cc( valnames.size() ), sig;
   if( sss=="true" ){

@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "PlumedFile.h"
+#include "File.h"
 #include "PlumedException.h"
 #include "core/Action.h"
 #include "core/PlumedMain.h"
@@ -34,8 +34,8 @@
 
 using namespace PLMD;
 
-void PlumedFileBase::test(){
-  PLMD::PlumedOFile pof;
+void FileBase::test(){
+  PLMD::OFile pof;
   pof.open("ciao");
   pof.printf("%s\n","test1");
   pof.setLinePrefix("plumed: ");
@@ -48,7 +48,7 @@ void PlumedFileBase::test(){
   pof.printField("x3",67.0).printField("x1",18.0).printField();
   pof.close();
 
-  PLMD::PlumedIFile pif;
+  PLMD::IFile pif;
   std::string s;
   pif.open("ciao");
   pif.getline(s); std::printf("%s\n",s.c_str());
@@ -61,18 +61,18 @@ void PlumedFileBase::test(){
   pif.close();
 }
 
-size_t PlumedOFile::llwrite(const char*ptr,size_t s){
+size_t OFile::llwrite(const char*ptr,size_t s){
   size_t r;
   if(linked) return linked->llwrite(ptr,s);
   if(! (comm && comm->Get_rank()>0)){
-    if(!fp) plumed_merror("writing on uninitilized PlumedFile");
+    if(!fp) plumed_merror("writing on uninitilized File");
     r=fwrite(ptr,1,s,fp);
   }
   if(comm) comm->Bcast(&r,1,0);
   return r;
 }
 
-size_t PlumedIFile::llread(char*ptr,size_t s){
+size_t IFile::llread(char*ptr,size_t s){
   plumed_assert(fp);
   size_t r;
   r=fread(ptr,1,s,fp);
@@ -81,13 +81,13 @@ size_t PlumedIFile::llread(char*ptr,size_t s){
   return r;
 }
 
-PlumedFileBase& PlumedFileBase::link(FILE*fp){
+FileBase& FileBase::link(FILE*fp){
   this->fp=fp;
   cloned=true;
   return *this;
 }
 
-PlumedFileBase& PlumedFileBase::flush(){
+FileBase& FileBase::flush(){
   fflush(fp);
   if(heavyFlush){
     fclose(fp);
@@ -96,27 +96,27 @@ PlumedFileBase& PlumedFileBase::flush(){
   return *this;
 }
 
-PlumedFileBase& PlumedFileBase::link(Communicator&comm){
+FileBase& FileBase::link(Communicator&comm){
   plumed_massert(!fp,"cannot link an already open file");
   this->comm=&comm;
   return *this;
 }
 
-PlumedFileBase& PlumedFileBase::link(PlumedMain&plumed){
+FileBase& FileBase::link(PlumedMain&plumed){
   plumed_massert(!fp,"cannot link an already open file");
   this->plumed=&plumed;
   link(plumed.comm);
   return *this;
 }
 
-PlumedFileBase& PlumedFileBase::link(Action&action){
+FileBase& FileBase::link(Action&action){
   plumed_massert(!fp,"cannot link an already open file");
   this->action=&action;
   link(action.plumed);
   return *this;
 }
 
-PlumedFileBase& PlumedFileBase::open(const std::string& path,const std::string& mode){
+FileBase& FileBase::open(const std::string& path,const std::string& mode){
   plumed_assert(!cloned);
   eof=false;
   err=false;
@@ -135,7 +135,7 @@ PlumedFileBase& PlumedFileBase::open(const std::string& path,const std::string& 
 }
 
 
-bool PlumedFileBase::FileExist(const std::string& path){
+bool FileBase::FileExist(const std::string& path){
   FILE *ff=NULL;
   bool do_exist=false;
   if(plumed){
@@ -150,13 +150,13 @@ bool PlumedFileBase::FileExist(const std::string& path){
   return do_exist; 
 }
 
-bool PlumedFileBase::isOpen(){
+bool FileBase::isOpen(){
   bool isopen=false;
   if(fp) isopen=true;
   return isopen; 
 }
 
-void        PlumedFileBase::close(){
+void        FileBase::close(){
   plumed_assert(!cloned);
   eof=false;
   err=false;
@@ -164,7 +164,7 @@ void        PlumedFileBase::close(){
   fp=NULL;
 }
 
-PlumedFileBase::PlumedFileBase():
+FileBase::FileBase():
   fp(NULL),
   comm(NULL),
   plumed(NULL),
@@ -176,18 +176,18 @@ PlumedFileBase::PlumedFileBase():
 {
 }
 
-PlumedFileBase::~PlumedFileBase()
+FileBase::~FileBase()
 {
   if(plumed) plumed->eraseFile(*this);
   if(!cloned && fp) fclose(fp);
 }
 
-PlumedFileBase::operator bool()const{
+FileBase::operator bool()const{
   return !eof;
 }
 
 
-PlumedOFile::PlumedOFile():
+OFile::OFile():
   linked(NULL),
   fieldChanged(false)
 {
@@ -201,23 +201,23 @@ PlumedOFile::PlumedOFile():
   for(unsigned i=0;i<1000;++i) buffer_string[i]=0;
 }
 
-PlumedOFile::~PlumedOFile(){
+OFile::~OFile(){
   delete [] buffer_string;
   delete [] buffer;
 }
 
-PlumedOFile& PlumedOFile::link(PlumedOFile&l){
+OFile& OFile::link(OFile&l){
   fp=NULL;
   linked=&l;
   return *this;
 }
 
-PlumedOFile& PlumedOFile::setLinePrefix(const std::string&l){
+OFile& OFile::setLinePrefix(const std::string&l){
   linePrefix=l;
   return *this;
 }
 
-int PlumedOFile::printf(const char*fmt,...){
+int OFile::printf(const char*fmt,...){
   size_t pointer=strlen(buffer);
   va_list arg;
   va_start(arg, fmt);
@@ -253,7 +253,7 @@ int PlumedOFile::printf(const char*fmt,...){
   return r;
 }
 
-PlumedOFile& PlumedOFile::addConstantField(const std::string&name){
+OFile& OFile::addConstantField(const std::string&name){
   Field f;
   f.name=name;
   const_fields.push_back(f);
@@ -261,36 +261,36 @@ PlumedOFile& PlumedOFile::addConstantField(const std::string&name){
 }
 
 
-PlumedOFile& PlumedOFile::clearFields(){
+OFile& OFile::clearFields(){
   fields.clear();
   const_fields.clear();
   previous_fields.clear();
   return *this;
 }
 
-PlumedOFile& PlumedOFile::fmtField(const std::string&fmt){
+OFile& OFile::fmtField(const std::string&fmt){
   this->fieldFmt=fmt;
   return *this;
 }
 
-PlumedOFile& PlumedOFile::fmtField(){
+OFile& OFile::fmtField(){
   this->fieldFmt="%23.16lg";
   return *this;
 }
 
-PlumedOFile& PlumedOFile::printField(const std::string&name,double v){
+OFile& OFile::printField(const std::string&name,double v){
   sprintf(buffer_string,fieldFmt.c_str(),v);
   printField(name,buffer_string);
   return *this;
 }
 
-PlumedOFile& PlumedOFile::printField(const std::string&name,int v){
+OFile& OFile::printField(const std::string&name,int v){
   sprintf(buffer_string," %d",v);
   printField(name,buffer_string);
   return *this;
 }
 
-PlumedOFile& PlumedOFile::printField(const std::string&name,const std::string & v){
+OFile& OFile::printField(const std::string&name,const std::string & v){
   unsigned i;
   for(i=0;i<const_fields.size();i++) if(const_fields[i].name==name) break;
   if(i>=const_fields.size()){
@@ -305,7 +305,7 @@ PlumedOFile& PlumedOFile::printField(const std::string&name,const std::string & 
   return *this;
 }
 
-PlumedOFile& PlumedOFile::setupPrintValue( Value *val ){
+OFile& OFile::setupPrintValue( Value *val ){
   if( val->isPeriodic() ){
       addConstantField("min_" + val->getName() );
       addConstantField("max_" + val->getName() );
@@ -313,7 +313,7 @@ PlumedOFile& PlumedOFile::setupPrintValue( Value *val ){
   return *this;
 }
 
-PlumedOFile& PlumedOFile::printField( Value* val, const double& v ){
+OFile& OFile::printField( Value* val, const double& v ){
   printField( val->getName(), v );
   if( val->isPeriodic() ){
       std::string min, max; val->getDomain( min, max );
@@ -323,7 +323,7 @@ PlumedOFile& PlumedOFile::printField( Value* val, const double& v ){
   return *this;
 }
 
-PlumedOFile& PlumedOFile::printField(){
+OFile& OFile::printField(){
   bool reprint=false;
   if(fieldChanged || fields.size()!=previous_fields.size()){
     reprint=true;
@@ -351,7 +351,7 @@ PlumedOFile& PlumedOFile::printField(){
   return *this;
 }
 
-PlumedOFile& PlumedOFile::open(const std::string&path){
+OFile& OFile::open(const std::string&path){
   plumed_assert(!cloned);
   eof=false;
   err=false;
@@ -392,7 +392,7 @@ PlumedOFile& PlumedOFile::open(const std::string&path){
 }
 
 
-PlumedIFile& PlumedIFile::advanceField(){
+IFile& IFile::advanceField(){
   plumed_assert(!inMiddleOfField);
   std::string line;
   bool done=false;
@@ -436,12 +436,12 @@ PlumedIFile& PlumedIFile::advanceField(){
   return *this;
 }
 
-PlumedIFile& PlumedIFile::open(const std::string&name){
-  PlumedFileBase::open(name,"r");
+IFile& IFile::open(const std::string&name){
+  FileBase::open(name,"r");
   return *this;
 }
 
-PlumedIFile& PlumedIFile::scanFieldList(std::vector<std::string>&s){
+IFile& IFile::scanFieldList(std::vector<std::string>&s){
   if(!inMiddleOfField) advanceField();
   if(!*this) return *this;
   s.clear();
@@ -450,7 +450,7 @@ PlumedIFile& PlumedIFile::scanFieldList(std::vector<std::string>&s){
   return *this;
 }
 
-bool PlumedIFile::FieldExist(const std::string& s){
+bool IFile::FieldExist(const std::string& s){
      std::vector<std::string> slist;
      scanFieldList(slist);
      int mycount = (int) std::count(slist.begin(), slist.end(), s);
@@ -458,7 +458,7 @@ bool PlumedIFile::FieldExist(const std::string& s){
      else return false;
 }
 
-PlumedIFile& PlumedIFile::scanField(const std::string&name,std::string&str){
+IFile& IFile::scanField(const std::string&name,std::string&str){
   if(!inMiddleOfField) advanceField();
   if(!*this) return *this;
   unsigned i=findField(name);
@@ -467,21 +467,21 @@ PlumedIFile& PlumedIFile::scanField(const std::string&name,std::string&str){
   return *this;
 }
 
-PlumedIFile& PlumedIFile::scanField(const std::string&name,double &x){
+IFile& IFile::scanField(const std::string&name,double &x){
   std::string str;
   scanField(name,str);
   if(*this) Tools::convert(str,x);
   return *this;
 }
 
-PlumedIFile& PlumedIFile::scanField(const std::string&name,int &x){
+IFile& IFile::scanField(const std::string&name,int &x){
   std::string str;
   scanField(name,str);
   if(*this) Tools::convert(str,x);
   return *this;
 }
 
-PlumedIFile& PlumedIFile::scanField(Value* val){
+IFile& IFile::scanField(Value* val){
   double ff; scanField(  val->getName(), ff );
   val->set( ff );
   if( FieldExist("min_" + val->getName() ) ){ 
@@ -495,7 +495,7 @@ PlumedIFile& PlumedIFile::scanField(Value* val){
   return *this;
 }
 
-PlumedIFile& PlumedIFile::scanField(){
+IFile& IFile::scanField(){
   if(!ignoreFields){
      for(unsigned i=0;i<fields.size();i++){
        plumed_assert(fields[i].read);
@@ -505,17 +505,17 @@ PlumedIFile& PlumedIFile::scanField(){
   return *this;
 }
 
-PlumedIFile::PlumedIFile():
+IFile::IFile():
   inMiddleOfField(false),
   ignoreFields(false)
 {
 }
 
-PlumedIFile::~PlumedIFile(){
+IFile::~IFile(){
   plumed_assert(!inMiddleOfField);
 }
 
-PlumedIFile& PlumedIFile::getline(std::string &str){
+IFile& IFile::getline(std::string &str){
   char tmp;
   str="";
   fpos_t pos;
@@ -531,20 +531,20 @@ PlumedIFile& PlumedIFile::getline(std::string &str){
   return *this;
 }
 
-unsigned PlumedIFile::findField(const std::string&name)const{
+unsigned IFile::findField(const std::string&name)const{
   unsigned i;
   for(i=0;i<fields.size();i++) if(fields[i].name==name) break;
   if(i>=fields.size()) plumed_merror(name);
   return i;
 }
 
-void PlumedIFile::reset(bool reset){
+void IFile::reset(bool reset){
  eof = reset;
  err = reset;
  if(!reset) clearerr(fp);
  return;
 } 
 
-void PlumedIFile::allowIgnoredFields(){
+void IFile::allowIgnoredFields(){
   ignoreFields=true;
 }

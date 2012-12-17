@@ -59,7 +59,7 @@ class Communicator;
 class Stopwatch;
 class Citations;
 class ExchangePatterns;
-class PlumedFileBase;
+class FileBase;
 
 /**
 Main plumed object.
@@ -124,8 +124,8 @@ private:
 /// Flag for restart
   bool restart;
 
-  std::set<PlumedFileBase*> files;
-  typedef std::set<PlumedFileBase*>::iterator files_iterator;
+  std::set<FileBase*> files;
+  typedef std::set<FileBase*>::iterator files_iterator;
 
 /// Stuff to make plumed stop the MD code cleanly
   int* stopFlag;
@@ -238,9 +238,9 @@ public:
 /// Closes a file opened with PlumedMain::fopen()
   int fclose(FILE*fp);
 /// Insert a file
-  void insertFile(PlumedFileBase&);
+  void insertFile(FileBase&);
 /// Erase a file
-  void eraseFile(PlumedFileBase&);
+  void eraseFile(FileBase&);
 /// Flush all files
   void fflush();
 /// Check if restarting

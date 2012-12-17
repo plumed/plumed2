@@ -56,7 +56,7 @@ public ActionPilot,
 public ActionWithArguments
 {
   string file;
-  PlumedOFile ofile;
+  OFile ofile;
   string fmt;
 // small internal utility
 /////////////////////////////////////////

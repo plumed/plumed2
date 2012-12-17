@@ -26,7 +26,7 @@
 #include <string>
 #include <sstream>
 
-#include "PlumedFile.h"
+#include "File.h"
 
 namespace PLMD{
 
@@ -39,7 +39,7 @@ class Communicator;
 /// lines with the "PLUMED:" prefix, useful to grep out plumed
 /// log from output
 class Log :
-  public PlumedOFile
+  public OFile
 {
 };
 

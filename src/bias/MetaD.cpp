@@ -30,7 +30,7 @@
 #include "tools/Random.h"
 #include <string>
 #include <cstring>
-#include "tools/PlumedFile.h"
+#include "tools/File.h"
 #include "time.h"
 #include <iostream>
 
@@ -120,7 +120,7 @@ private:
   };
   vector<double> sigma0_;
   vector<Gaussian> hills_;
-  PlumedOFile hillsOfile_;
+  OFile hillsOfile_;
   Grid* BiasGrid_;
   bool storeOldGrids_;
   std::string gridfilename_;
@@ -138,11 +138,11 @@ private:
   string mw_dir_;
   int mw_id_;
   int mw_rstride_;
-  vector<PlumedIFile*> ifiles;
+  vector<IFile*> ifiles;
   vector<string> ifilesnames;
   
-  void   readGaussians(PlumedIFile*);
-  void   writeGaussian(const Gaussian&,PlumedOFile&);
+  void   readGaussians(IFile*);
+  void   writeGaussian(const Gaussian&,OFile&);
   void   addGaussian(const Gaussian&);
   double getHeight(const vector<double>&);
   double getBiasAndDerivatives(const vector<double>&,double* der=NULL);
@@ -337,7 +337,7 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
    } else {
     fname = hillsfname;
    }
-   PlumedIFile *ifile = new PlumedIFile();
+   IFile *ifile = new IFile();
    ifile->link(*this);
    ifiles.push_back(ifile);                                                             
    ifilesnames.push_back(fname);
@@ -369,7 +369,7 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
 
 }
 
-void MetaD::readGaussians(PlumedIFile *ifile)
+void MetaD::readGaussians(IFile *ifile)
 {
  unsigned ncv=getNumberOfArguments();
  double dummy;
@@ -442,7 +442,7 @@ void MetaD::readGaussians(PlumedIFile *ifile)
  log.printf("  %d Gaussians read\n",nhills);
 }
 
-void MetaD::writeGaussian(const Gaussian& hill, PlumedOFile&file){
+void MetaD::writeGaussian(const Gaussian& hill, OFile&file){
   unsigned ncv=getNumberOfArguments();
   file.printField("time",getTimeStep()*getStep());
   for(unsigned i=0;i<ncv;++i){
@@ -717,7 +717,7 @@ void MetaD::update(){
   }
 // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
-    PlumedOFile gridfile; gridfile.link(*this);
+    OFile gridfile; gridfile.link(*this);
     if(!storeOldGrids_) remove( gridfilename_.c_str() );
     gridfile.open(gridfilename_);
     BiasGrid_->writeToFile(gridfile); 

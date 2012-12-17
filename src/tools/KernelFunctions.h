@@ -59,7 +59,7 @@ public:
 /// Evaluate the kernel function  
   double evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv=true ) const;
 /// Read a kernel function from a file
-  static KernelFunctions* read( PlumedIFile* ifile, const std::vector<std::string>& valnames );
+  static KernelFunctions* read( IFile* ifile, const std::vector<std::string>& valnames );
 };
 
 inline

@@ -29,8 +29,8 @@
 namespace PLMD{ 
 
 class Value;
-class PlumedIFile;
-class PlumedOFile;
+class IFile;
+class OFile;
 class KernelFunctions;
 
 /// \ingroup TOOLBOX
@@ -94,12 +94,12 @@ public:
  std::vector<unsigned> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
 
 /// write header for grid file
- void writeHeader(PlumedOFile& file);
+ void writeHeader(OFile& file);
 
 /// read grid from file
- static Grid* create(const std::string&,std::vector<Value*>,PlumedIFile&,bool,bool,bool);
+ static Grid* create(const std::string&,std::vector<Value*>,IFile&,bool,bool,bool);
 /// read grid from file and check boundaries are what is expected from input
- static Grid* create(const std::string&, std::vector<Value*>, PlumedIFile&,
+ static Grid* create(const std::string&, std::vector<Value*>, IFile&,
                      const std::vector<std::string>&,const std::vector<std::string>&,
                      const std::vector<unsigned>&,bool,bool,bool); 
 /// get grid size
@@ -132,7 +132,7 @@ public:
  void addKernel( const KernelFunctions& kernel );
 
 /// dump grid on file
- virtual void writeToFile(PlumedOFile&);
+ virtual void writeToFile(OFile&);
 
  virtual ~Grid(){};
 };
@@ -181,7 +181,7 @@ class SparseGrid : public Grid
  void addValueAndDerivatives(unsigned index, double value, std::vector<double>& der); 
 
 /// dump grid on file
- void writeToFile(PlumedOFile&);
+ void writeToFile(OFile&);
 
  virtual ~SparseGrid(){};
 };
