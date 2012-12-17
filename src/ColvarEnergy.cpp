@@ -68,7 +68,8 @@ ColvarEnergy::ColvarEnergy(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 components(false)
 {
-  plumed_assert(!checkNumericalDerivatives());
+//  if(checkNumericalDerivatives())
+//    error("Cannot use NUMERICAL_DERIVATIVES with ENERGY");
   isEnergy=true;
   addValueWithDerivatives(); setNotPeriodic();
   getPntrToValue()->resizeDerivatives(1);

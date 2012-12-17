@@ -115,7 +115,7 @@ reduceListAtNextStep(false)
     double d0=0.0;
     double r0=0.0;
     parse("R_0",r0);
-    plumed_massert(r0>0.0,"R_0 is compulsory");
+    if(r0<=0.0) error("R_0 should be explicitly specified and positive");
     parse("D_0",d0);
     parse("NN",nn);
     parse("MM",mm);
@@ -137,9 +137,9 @@ reduceListAtNextStep(false)
   parseFlag("NLIST",doneigh);
   if(doneigh){
    parse("NL_CUTOFF",nl_cut);
-   plumed_assert(nl_cut>0.);
+   if(nl_cut<=0.0) error("NL_CUTOFF should be explicitly specified and positive");
    parse("NL_STRIDE",nl_st);
-   plumed_assert(nl_st>0);
+   if(nl_st<=0) error("NL_STRIDE should be explicitly specified and positive");
   }
   
   checkRead();
