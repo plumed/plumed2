@@ -23,6 +23,8 @@
 #include "core/ActionRegister.h"
 #include "tools/Grid.h"
 #include "tools/KernelFunctions.h"
+#include "tools/IFile.h"
+#include "tools/OFile.h"
 
 namespace PLMD{
 namespace analysis{

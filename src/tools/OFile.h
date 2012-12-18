@@ -28,6 +28,8 @@
 
 namespace PLMD{
 
+class Value;
+
 /**
 \ingroup TOOLBOX
 Class for output files

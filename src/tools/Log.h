@@ -22,7 +22,7 @@
 #ifndef __PLUMED_tools_Log_h
 #define __PLUMED_tools_Log_h
 
-#include "File.h"
+#include "OFile.h"
 
 namespace PLMD{
 

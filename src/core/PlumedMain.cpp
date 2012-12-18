@@ -42,6 +42,7 @@
 #include "tools/Stopwatch.h"
 #include "tools/Citations.h"
 #include "ExchangePatterns.h"
+#include "tools/IFile.h"
 
 using namespace std;
 

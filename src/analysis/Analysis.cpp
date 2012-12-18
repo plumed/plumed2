@@ -25,6 +25,7 @@
 #include "core/ActionWithValue.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
+#include "tools/IFile.h"
 
 namespace PLMD {
 namespace analysis {
