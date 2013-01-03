@@ -114,6 +114,8 @@ public:
   virtual void printKeywords(){}
 /// Retrieve the forces on the quantities in the vessel
   virtual bool applyForce( std::vector<double>& forces )=0;
+/// Virtual destructor needed for proper inheritance
+  virtual ~Vessel(){}
 };
 
 inline
