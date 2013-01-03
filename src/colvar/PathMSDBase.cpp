@@ -108,10 +108,34 @@ void PathMSDBase::calculate(){
   }
 
 // THIS IS THE HEAVY PART (RMSD STUFF)
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  unsigned nat=pdbv[0].size();
+  plumed_assert(nat>0);
+  plumed_assert(nframes>0);
+  plumed_assert(imgVec.size()>0);
+
+  std::vector<double> tmp_distances(imgVec.size(),0.0);
+  std::vector<Vector> tmp_derivs;
+// this array is a merge of all tmp_derivs, so as to allow a single comm.Sum below
+  std::vector<Vector> tmp_derivs2(imgVec.size()*nat);
+
 // if imgVec.size() is less than nframes, it means that only some msd will be calculated
-  for(unsigned i=0;i<imgVec.size();i++){
-    imgVec[i].distance=msdv[imgVec[i].index].calculate(getPositions(),imgVec[i].distder,true);
+  for(unsigned i=rank;i<imgVec.size();i+=stride){
+// store temporary local results
+    tmp_distances[i]=msdv[imgVec[i].index].calculate(getPositions(),tmp_derivs,true);
+    plumed_assert(tmp_derivs.size()==nat);
+    for(unsigned j=0;j<nat;j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
   }
+// reduce over all processors
+  comm.Sum(&tmp_distances[0],imgVec.size());
+  comm.Sum(&tmp_derivs2[0][0],3*imgVec.size()*nat);
+// assign imgVec[i].distance and imgVec[i].distder
+  for(unsigned i=0;i<imgVec.size();i++){
+    imgVec[i].distance=tmp_distances[i];
+    imgVec[i].distder.assign(&tmp_derivs2[i*nat],nat+&tmp_derivs2[i*nat]);
+  }
+
 // END OF THE HEAVY PART
 
   vector<Value*> val_s_path;
