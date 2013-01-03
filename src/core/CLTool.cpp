@@ -177,6 +177,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
      }
      if(!found){
         fprintf(stderr,"Unknown keyword found in input file :%s\n",keyword.c_str());
+        if(mystdin) fclose(mystdin);
         return false;
      }
   }

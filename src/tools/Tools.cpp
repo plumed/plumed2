@@ -64,7 +64,7 @@ bool Tools::convert(const string & str,double & t){
            std::size_t pi_start=str.find_first_of("PI");
            if(str.substr(pi_start)!="PI") return false;
            istringstream nstr(str.substr(0,pi_start)); 
-           double ff; bool ok=nstr>>ff;
+           double ff=0.0; bool ok=nstr>>ff;
            if(!ok) return false; 
            t=ff*pi;
            std::string remains; nstr>>remains;
@@ -73,7 +73,7 @@ bool Tools::convert(const string & str,double & t){
            std::size_t pi_start=str.find_first_of("pi");
            if(str.substr(pi_start)!="pi") return false;
            istringstream nstr(str.substr(0,pi_start));
-           double ff; bool ok=nstr>>ff;
+           double ff=0.0; bool ok=nstr>>ff;
            if(!ok) return false;
            t=ff*pi;
            std::string remains; nstr>>remains;
