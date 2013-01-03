@@ -97,24 +97,22 @@ void PathMSDBase::calculate(){
 
   //log.printf("NOW CALCULATE! \n");
 
-  // clean vectors
-  for(unsigned i=0;i< derivs_z.size();i++){derivs_z[i].zero();}
 
-  // full list: resize and calculate the msd 
+  // resize the list to full
   if(imgVec.empty()){ // this is the signal that means: recalculate all 
       imgVec.resize(nframes);  
-      derivs_v.clear();for(unsigned i=0;i<nframes;i++){derivs_v.push_back(derivs_z);}
       for(unsigned i=0;i<nframes;i++){
-          imgVec[i].distder=derivs_z;
           imgVec[i].property=indexvec[i];
           imgVec[i].index=i;
-          imgVec[i].distance=msdv[imgVec[i].index].calculate(getPositions(),imgVec[i].distder,true);
       }
-  }else{// just recalculate rmsd for the things you have in the list and assume that property and msdv are ok 
-	for(unsigned i=0;i<imgVec.size();i++){
-		imgVec[i].distance=msdv[imgVec[i].index].calculate(getPositions(),imgVec[i].distder,true);
-        }  
   }
+
+// THIS IS THE HEAVY PART (RMSD STUFF)
+// if imgVec.size() is less than nframes, it means that only some msd will be calculated
+  for(unsigned i=0;i<imgVec.size();i++){
+    imgVec[i].distance=msdv[imgVec[i].index].calculate(getPositions(),imgVec[i].distder,true);
+  }
+// END OF THE HEAVY PART
 
   vector<Value*> val_s_path;
   if(labels.size()>0){
@@ -127,6 +125,9 @@ void PathMSDBase::calculate(){
   vector<double> s_path(val_s_path.size());for(unsigned i=0;i<s_path.size();i++)s_path[i]=0.;
   double partition=0.;
   double tmp;
+
+  // clean vector
+  for(unsigned i=0;i< derivs_z.size();i++){derivs_z[i].zero();}
 
   typedef  vector< class ImagePath  >::iterator imgiter;
   for(imgiter it=imgVec.begin();it!=imgVec.end();++it){ 
