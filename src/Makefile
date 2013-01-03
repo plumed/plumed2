@@ -18,9 +18,15 @@ clean: $(SUBDIRSCLEAN)
 $(SUBDIRSCLEAN): %.clean:
 	$(MAKE) -C $* clean
 
+.PHONY: cppcheck
+cppcheck:
+	cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 -q --enable=portability,performance */*.{h,cpp}
+
 .PHONY: help
 help:
 	@echo "Available targets are"
 	@echo "  all: compile everything (default)"
 	@echo "  clean: clean everything"
+	@echo "  cppcheck: check source (requires cppcheck installed)"
+
 
