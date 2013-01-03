@@ -27,9 +27,6 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 
-#include <string>
-#include <cstring>
-#include <iostream>
 #include "tools/PDB.h"
 #include "tools/RMSD.h"
 #include "tools/Tools.h"

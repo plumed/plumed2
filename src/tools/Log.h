@@ -22,10 +22,6 @@
 #ifndef __PLUMED_tools_Log_h
 #define __PLUMED_tools_Log_h
 
-#include <cstdio>
-#include <string>
-#include <sstream>
-
 #include "File.h"
 
 namespace PLMD{
