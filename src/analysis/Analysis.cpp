@@ -326,7 +326,7 @@ void Analysis::runFinalJobs() {
   runAnalysis(); 
 }
 
-std::string Analysis::saveResultsFromPreviousAnalyses( const std::string filename ){
+std::string Analysis::saveResultsFromPreviousAnalyses( const std::string & filename ){
   FILE* ff=std::fopen( filename.c_str() ,"r");
   // Perhaps replace this with an warning and a backup at some stage
   if(ff && !firstAnalysisDone) error("found file named " + filename + " from previous calculation");

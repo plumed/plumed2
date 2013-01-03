@@ -125,7 +125,7 @@ void Keywords::reserveFlag( const std::string & k, const bool def, const std::st
   reserved_keys.push_back(k); 
 }
 
-void Keywords::use( const std::string k ){
+void Keywords::use( const std::string & k ){
   plumed_massert( reserved(k), "the " + k + " keyword is not reserved");
   for(unsigned i=0;i<reserved_keys.size();++i){
      if(reserved_keys[i]==k) keys.push_back( reserved_keys[i] ); 

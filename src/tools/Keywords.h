@@ -98,7 +98,7 @@ public:
 /// Reserve a flag
   void reserveFlag( const std::string & k, const bool def, const std::string & d );
 /// Use one of the reserved keywords
-  void use( const std::string  k );
+  void use( const std::string  & k );
 /// Get the ith keyword
   std::string get( const unsigned k ) const ;
 /// Add a new keyword of type t with name k and description d

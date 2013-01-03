@@ -146,7 +146,7 @@ public:
   friend VectorGeneric<n_> matmul(const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&,const VectorGeneric<l_>&);
 /// vector-matrix-matrix multiplication
   template<unsigned n_,unsigned m_,unsigned l_>
-  friend VectorGeneric<l_> matmul(const VectorGeneric<n_>,const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&);
+  friend VectorGeneric<l_> matmul(const VectorGeneric<n_>&,const TensorGeneric<n_,m_>&,const TensorGeneric<m_,l_>&);
 /// returns the determinant of a tensor
   friend double determinant(const TensorGeneric<3,3>&);
 /// returns the inverse of a tensor (same as inverse())
@@ -373,7 +373,7 @@ VectorGeneric<n> matmul(const TensorGeneric<n,m>&a,const TensorGeneric<m,l>&b,co
 }
 
 template<unsigned n,unsigned m,unsigned l> 
-VectorGeneric<l> matmul(const VectorGeneric<n>a,const TensorGeneric<n,m>&b,const TensorGeneric<m,l>&c){
+VectorGeneric<l> matmul(const VectorGeneric<n>&a,const TensorGeneric<n,m>&b,const TensorGeneric<m,l>&c){
   return matmul(matmul(a,b),c);
 }
 

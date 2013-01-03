@@ -101,7 +101,7 @@ PathMSDBase(ao)
   }else{
       for(unsigned i=0;i<labels.size();i++){
 	log<<" found custom propety to be found in the REMARK line: "<<labels[i].c_str()<<"\n";
-        addComponentWithDerivatives(labels[i].c_str()); componentIsNotPeriodic(labels[i].c_str());
+        addComponentWithDerivatives(labels[i]); componentIsNotPeriodic(labels[i]);
       }
       // add distance anyhow
       addComponentWithDerivatives("zzz"); componentIsNotPeriodic("zzz");

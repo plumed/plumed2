@@ -426,22 +426,21 @@ bool Plumed::installed(){
 
 inline
 Plumed::Plumed():
-  cloned(false){
-  main=plumed_create();
-}
+  main(plumed_create()),
+  cloned(false)
+{}
 
 inline
 Plumed::Plumed(const char*c):
-  cloned(true){
-  main=plumed_f2c(c);
-}
+  main(plumed_f2c(c)),
+  cloned(true)
+{}
 
 inline
 Plumed::Plumed(plumed p):
+  main(p),
   cloned(true)
-{
-  main=p;
-}
+{}
 
 inline
 Plumed::operator plumed()const{
