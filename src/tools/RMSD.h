@@ -48,8 +48,8 @@ public:
   RMSD(Log & log ): myoptimalalignment(NULL),log(log){};
 /// a copy constructor
   RMSD(const RMSD &);
-/// convenience operator
-  RMSD& operator=(const RMSD& ){ return *this ;};
+/// assignment
+  RMSD& operator=(const RMSD& );
 /// the destructor needs to delete the myalignment object eventually
   ~RMSD();
 /// clear the structure

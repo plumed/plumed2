@@ -30,6 +30,18 @@
 using namespace std;
 namespace PLMD{
 
+RMSD& RMSD::operator=(const RMSD& ){
+// The problem here is that with our implementation of RMSD the
+// assignment operator cannot be implemented (problems with Log&).
+// Typically, STL containers only use copy constructor, which is
+// correclty working. But with a version of STL using assignment operator
+// stuff such as std::vector<RMSD> will not work properly and trigger
+// this error.
+  plumed_merror("This is a bug! Contact plumed developers");
+  return *this ;
+}
+
+
 RMSD::RMSD(const RMSD & oldrmsd):
   alignmentMethod(oldrmsd.alignmentMethod),
   reference(oldrmsd.reference),
