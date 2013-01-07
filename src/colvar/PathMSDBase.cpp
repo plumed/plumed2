@@ -97,24 +97,46 @@ void PathMSDBase::calculate(){
 
   //log.printf("NOW CALCULATE! \n");
 
-  // clean vectors
-  for(unsigned i=0;i< derivs_z.size();i++){derivs_z[i].zero();}
 
-  // full list: resize and calculate the msd 
+  // resize the list to full
   if(imgVec.empty()){ // this is the signal that means: recalculate all 
       imgVec.resize(nframes);  
-      derivs_v.clear();for(unsigned i=0;i<nframes;i++){derivs_v.push_back(derivs_z);}
       for(unsigned i=0;i<nframes;i++){
-          imgVec[i].distder=derivs_z;
           imgVec[i].property=indexvec[i];
           imgVec[i].index=i;
-          imgVec[i].distance=msdv[imgVec[i].index].calculate(getPositions(),imgVec[i].distder,true);
       }
-  }else{// just recalculate rmsd for the things you have in the list and assume that property and msdv are ok 
-	for(unsigned i=0;i<imgVec.size();i++){
-		imgVec[i].distance=msdv[imgVec[i].index].calculate(getPositions(),imgVec[i].distder,true);
-        }  
   }
+
+// THIS IS THE HEAVY PART (RMSD STUFF)
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank();
+  unsigned nat=pdbv[0].size();
+  plumed_assert(nat>0);
+  plumed_assert(nframes>0);
+  plumed_assert(imgVec.size()>0);
+
+  std::vector<double> tmp_distances(imgVec.size(),0.0);
+  std::vector<Vector> tmp_derivs;
+// this array is a merge of all tmp_derivs, so as to allow a single comm.Sum below
+  std::vector<Vector> tmp_derivs2(imgVec.size()*nat);
+
+// if imgVec.size() is less than nframes, it means that only some msd will be calculated
+  for(unsigned i=rank;i<imgVec.size();i+=stride){
+// store temporary local results
+    tmp_distances[i]=msdv[imgVec[i].index].calculate(getPositions(),tmp_derivs,true);
+    plumed_assert(tmp_derivs.size()==nat);
+    for(unsigned j=0;j<nat;j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
+  }
+// reduce over all processors
+  comm.Sum(&tmp_distances[0],imgVec.size());
+  comm.Sum(&tmp_derivs2[0][0],3*imgVec.size()*nat);
+// assign imgVec[i].distance and imgVec[i].distder
+  for(unsigned i=0;i<imgVec.size();i++){
+    imgVec[i].distance=tmp_distances[i];
+    imgVec[i].distder.assign(&tmp_derivs2[i*nat],nat+&tmp_derivs2[i*nat]);
+  }
+
+// END OF THE HEAVY PART
 
   vector<Value*> val_s_path;
   if(labels.size()>0){
@@ -127,6 +149,9 @@ void PathMSDBase::calculate(){
   vector<double> s_path(val_s_path.size());for(unsigned i=0;i<s_path.size();i++)s_path[i]=0.;
   double partition=0.;
   double tmp;
+
+  // clean vector
+  for(unsigned i=0;i< derivs_z.size();i++){derivs_z[i].zero();}
 
   typedef  vector< class ImagePath  >::iterator imgiter;
   for(imgiter it=imgVec.begin();it!=imgVec.end();++it){ 

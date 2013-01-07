@@ -69,7 +69,6 @@ class PathMSDBase : public Colvar {
   std::string reference;
   std::vector<Vector> derivs_s;
   std::vector<Vector> derivs_z;
-  std::vector< std::vector <Vector> > derivs_v;
   std::vector <ImagePath> imgVec; // this can be used for doing neighlist   
 protected:
   std::vector<PDB> pdbv;
