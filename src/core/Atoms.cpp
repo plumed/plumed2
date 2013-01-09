@@ -24,6 +24,7 @@
 #include "MDAtoms.h"
 #include "PlumedMain.h"
 #include <algorithm>
+#include <iostream>
 #include <string>
 
 using namespace std;
@@ -46,7 +47,9 @@ Atoms::Atoms(PlumedMain&plumed):
 }
 
 Atoms::~Atoms(){
-  plumed_massert(actions.size()==0,"there is some inconsistency in action added to atoms. some of them were not properly destroyed");
+  if(actions.size()>0){
+    std::cerr<<"WARNING: there is some inconsistency in action added to atoms, as some of them were not properly destroyed. This might indicate an internal bug!!\n";
+  }
   delete mdatoms;
 }
 

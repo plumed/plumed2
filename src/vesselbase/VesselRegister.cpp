@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Vessel.h"
 #include "VesselRegister.h"
+#include <iostream>
 
 namespace PLMD{
 namespace vesselbase{
@@ -29,7 +30,7 @@ VesselRegister::~VesselRegister(){
   if(m.size()>0){
     std::string names="";
     for(std::map<std::string,creator_pointer>::iterator p=m.begin();p!=m.end();++p) names+=p->first+" ";
-    plumed_merror("Directive "+ names +" has not been properly unregistered");
+    std::cerr<<"WARNING: Vessel "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
 

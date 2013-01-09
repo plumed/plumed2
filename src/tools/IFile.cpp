@@ -163,7 +163,7 @@ IFile::IFile():
 }
 
 IFile::~IFile(){
-  plumed_assert(!inMiddleOfField);
+  if(inMiddleOfField) std::cerr<<"WARNING: IFile closed in the middle of reading. seems strange!\n";
 }
 
 IFile& IFile::getline(std::string &str){

@@ -33,7 +33,7 @@ CLToolRegister::~CLToolRegister(){
   if(m.size()>0){
     string names="";
     for(mIterator p=m.begin();p!=m.end();++p)names+=p->first+" ";
-    plumed_merror("Directive "+ names +" has not been properly unregistered");
+    std::cerr<<"WARNING: CLTools "+ names +" has not been properly unregistered. This might lead to memory leak!!\n";
   }
 }
 
