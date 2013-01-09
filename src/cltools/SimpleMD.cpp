@@ -80,10 +80,6 @@ public PLMD::CLTool
     return "run lj code";
   }
 
-int iv[32];
-int iy;
-int iset;
-double gset;
 bool write_positions_first;
 bool write_statistics_first;
 int write_statistics_last_time_reopened;
@@ -108,17 +104,13 @@ static void registerKeywords( Keywords& keys ){
 }
 
 SimpleMD( const CLToolOptions& co ) :
-CLTool(co)
+  CLTool(co),
+  write_positions_first(true),
+  write_statistics_first(true),
+  write_statistics_last_time_reopened(0),
+  write_statistics_fp(NULL)
 {
   inputdata=ifile;
-  for(int i=0;i<32;i++) iv[i]=0.0;
-  iy=0;
-  iset=0;
-  gset=0.0;
-  write_positions_first=true;
-  write_statistics_first=true;
-  write_statistics_last_time_reopened=0;
-  write_statistics_fp=NULL;
 }
 
 private:
