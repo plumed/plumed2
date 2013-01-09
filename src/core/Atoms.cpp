@@ -23,6 +23,7 @@
 #include "ActionAtomistic.h"
 #include "MDAtoms.h"
 #include "PlumedMain.h"
+#include "tools/Pbc.h"
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -35,6 +36,7 @@ class PlumedMain;
 
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
+  pbc(*new Pbc),
   energy(0.0),
   dataCanBeSet(false),
   collectEnergy(0.0),
@@ -58,6 +60,7 @@ Atoms::~Atoms(){
     std::cerr<<"WARNING: there is some inconsistency in action added to atoms, as some of them were not properly destroyed. This might indicate an internal bug!!\n";
   }
   delete mdatoms;
+  delete &pbc;
 }
 
 void Atoms::startStep(){
@@ -198,6 +201,7 @@ void Atoms::wait(){
   if(dd){
     dd.Bcast(&box[0][0],9,0);
   }
+  pbc.setBox(box);
 
   if(dd && int(gatindex.size())<natoms){
 // receive toBeReceived
@@ -392,6 +396,7 @@ void Atoms::readBinary(std::istream&i){
   i.read(reinterpret_cast<char*>(&charges[0]),natoms*sizeof(double));
   i.read(reinterpret_cast<char*>(&box(0,0)),9*sizeof(double));
   i.read(reinterpret_cast<char*>(&energy),sizeof(double));
+  pbc.setBox(box);
 }
 
 double Atoms::getKBoltzmann()const{
