@@ -40,7 +40,10 @@ RMSD& RMSD::operator=(const RMSD& v){
   reference=v.reference;
   align=v.align;
   displace=v.displace;
-  myoptimalalignment=v.myoptimalalignment;
+// in this manner the new RMSD is built empty and will just allocate its own
+// myoptimalalignment when used (in calculate())
+  myoptimalalignment=NULL;
+
   log=v.log;
   return *this ;
 }
@@ -51,7 +54,9 @@ RMSD::RMSD(const RMSD & oldrmsd):
   reference(oldrmsd.reference),
   align(oldrmsd.align),
   displace(oldrmsd.align),
-  myoptimalalignment(oldrmsd.myoptimalalignment),
+// in this manner the new RMSD is built empty and will just allocate its own
+// myoptimalalignment when used (in calculate())
+  myoptimalalignment(NULL),
   log( oldrmsd.log )
   {  }; 
 
