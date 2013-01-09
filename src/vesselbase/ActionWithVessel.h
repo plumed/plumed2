@@ -65,6 +65,8 @@ private:
   void deactivate( const unsigned& );
 /// Activate all the values in the list
   void activateAll();
+/// Avoid hiding of base class virtual function
+  using Action::deactivate;
 protected:
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input );

@@ -115,10 +115,10 @@ void Histogram::registerKeywords( Keywords& keys ){
 
 Histogram::Histogram(const ActionOptions&ao):
 PLUMED_ANALYSIS_INIT(ao),
-point(getNumberOfArguments()),
-bw(getNumberOfArguments()),
 gmin(getNumberOfArguments()),
 gmax(getNumberOfArguments()),
+point(getNumberOfArguments()),
+bw(getNumberOfArguments()),
 gbin(getNumberOfArguments()),
 nfiles(0)
 {

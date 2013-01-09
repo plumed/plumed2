@@ -44,7 +44,6 @@ double Torsion::compute(const Vector& v1,const Vector& v2,const Vector& v3,Vecto
 
   const double modv2(v2.modulo());
   const Vector nv2(v2/modv2);
-  const Vector dmodv2_dv2(nv2);
   const Tensor dnv2_v2((Tensor::identity()-extProduct(nv2,nv2))/modv2);
 
   const Vector a(crossProduct(v2,v1));
