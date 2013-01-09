@@ -380,6 +380,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
       }
     }
 
+    p.cmd("setStep",&step);
     if(!noatoms){
        bool ok=Tools::getline(fp,line);
        plumed_massert(ok,"premature end of file");
@@ -437,7 +438,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        p.cmd("setBox",&cell[0]);
        p.cmd("setVirial",&virial[0]);
    }
-   p.cmd("setStep",&step);
    p.cmd("calc");
 
 // this is necessary as only processor zero is adding to the virial:

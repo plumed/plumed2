@@ -54,8 +54,16 @@ class Atoms
   Tensor box;
   Tensor virial;
   double energy;
+
+  bool   dataCanBeSet;
   bool   collectEnergy;
   bool   energyHasBeenSet;
+  unsigned positionsHaveBeenSet;
+  bool massesHaveBeenSet;
+  bool chargesHaveBeenSet;
+  bool boxHasBeenSet;
+  unsigned forcesHaveBeenSet;
+  bool virialHasBeenSet;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
@@ -133,6 +141,7 @@ public:
   void setAtomsContiguous(int);
   void setAtomsNlocal(int);
 
+  void startStep();
   void setEnergy(void*);
   void setBox(void*);
   void setVirial(void*);
@@ -142,6 +151,8 @@ public:
   void setForces(void*,int);
   void setMasses(void*);
   void setCharges(void*);
+  bool chargesWereSet() const ;
+  bool boxWasSet() const ;
 
   void MD2double(const void*m,double&d)const;
   void double2MD(const double&d,void*m)const;
@@ -199,6 +210,15 @@ bool Atoms::usingNaturalUnits() const {
   return naturalUnits;
 }
 
+inline
+bool Atoms::chargesWereSet() const {
+  return chargesHaveBeenSet;
+}
+
+inline
+bool Atoms::boxWasSet() const {
+  return boxHasBeenSet;
+}
 
 
 }

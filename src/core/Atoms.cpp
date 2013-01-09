@@ -36,8 +36,15 @@ class PlumedMain;
 Atoms::Atoms(PlumedMain&plumed):
   natoms(0),
   energy(0.0),
+  dataCanBeSet(false),
   collectEnergy(0.0),
   energyHasBeenSet(false),
+  positionsHaveBeenSet(0),
+  massesHaveBeenSet(false),
+  chargesHaveBeenSet(false),
+  boxHasBeenSet(false),
+  forcesHaveBeenSet(0),
+  virialHasBeenSet(false),
   plumed(plumed),
   naturalUnits(false),
   timestep(0.0),
@@ -53,43 +60,60 @@ Atoms::~Atoms(){
   delete mdatoms;
 }
 
+void Atoms::startStep(){
+  collectEnergy=false; energyHasBeenSet=false; positionsHaveBeenSet=0;
+  massesHaveBeenSet=false; chargesHaveBeenSet=false; boxHasBeenSet=false;
+  forcesHaveBeenSet=0; virialHasBeenSet=false; dataCanBeSet=true;
+}
+
 void Atoms::setBox(void*p){
   mdatoms->setBox(p);
-  Tensor b; mdatoms->getBox(b);
+  Tensor b; mdatoms->getBox(b); boxHasBeenSet=true;
 }
 
 void Atoms::setPositions(void*p){
-  mdatoms->setp(p);
+  plumed_massert( dataCanBeSet ,"setPositions must be called after setStep in MD code interface");
+  mdatoms->setp(p); positionsHaveBeenSet=2;
 }
 
 void Atoms::setMasses(void*p){
-  mdatoms->setm(p);
+  plumed_massert( dataCanBeSet ,"setMasses must be called after setStep in MD code interface");
+  mdatoms->setm(p); massesHaveBeenSet=true;
+
 }
 
 void Atoms::setCharges(void*p){
-  mdatoms->setc(p);
+  plumed_massert( dataCanBeSet, "setCharges must be called after setStep in MD code interface");
+  mdatoms->setc(p); chargesHaveBeenSet=true;
 }
 
 void Atoms::setVirial(void*p){
-  mdatoms->setVirial(p);
+  plumed_massert( dataCanBeSet ,"setVirial must be called after setStep in MD code interface");
+  mdatoms->setVirial(p); virialHasBeenSet=true;
+  
 }
 
 void Atoms::setEnergy(void*p){
+  plumed_massert( dataCanBeSet ,"setEnergy must be called after setStep in MD code interface");
   MD2double(p,energy);
   energy*=MDUnits.getEnergy()/units.getEnergy();
   energyHasBeenSet=true;
 }
 
 void Atoms::setForces(void*p){
+  plumed_massert( dataCanBeSet ,"setForces must be called after setStep in MD code interface");
+  forcesHaveBeenSet=2;
   mdatoms->setf(p);
 }
 
 void Atoms::setPositions(void*p,int i){
-  mdatoms->setp(p,i);
+  plumed_massert( dataCanBeSet ,"setPositions must be called after setStep in MD code interface");
+  mdatoms->setp(p,i); positionsHaveBeenSet++;
 }
 
 void Atoms::setForces(void*p,int i){
-  mdatoms->setf(p,i);
+  plumed_massert( dataCanBeSet ,"setForces must be called after setStep in MD code interface");
+  mdatoms->setf(p,i); forcesHaveBeenSet++;
 }
 
 void Atoms::share(){
@@ -110,6 +134,7 @@ void Atoms::shareAll(){
 }
 
 void Atoms::share(const std::set<AtomNumber>& unique){
+  plumed_assert( positionsHaveBeenSet==2 && massesHaveBeenSet );
   mdatoms->getBox(box);
   mdatoms->getMasses(gatindex,masses);
   mdatoms->getCharges(gatindex,charges);
@@ -168,6 +193,7 @@ void Atoms::share(const std::set<AtomNumber>& unique){
 }
 
 void Atoms::wait(){
+  dataCanBeSet=false; // Everything should be set by this stage
 
   if(dd){
     dd.Bcast(&box[0][0],9,0);
@@ -197,14 +223,16 @@ void Atoms::wait(){
 }
 
 void Atoms::updateForces(){
+  plumed_assert( forcesHaveBeenSet==2 );
   if(forceOnEnergy*forceOnEnergy>epsilon){
      double alpha=1.0-forceOnEnergy;
      mdatoms->rescaleForces(gatindex,alpha);
   }
-  energyHasBeenSet=false;
   mdatoms->updateForces(gatindex,forces);
-  if(!plumed.novirial && dd.Get_rank()==0) mdatoms->updateVirial(virial);
-
+  if( !plumed.novirial && dd.Get_rank()==0 ){
+      plumed_assert( virialHasBeenSet );
+      mdatoms->updateVirial(virial);
+  }
 }
 
 void Atoms::setNatoms(int n){

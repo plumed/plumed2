@@ -466,7 +466,7 @@ int main(FILE* in,FILE*out,PLMD::Communicator& pc){
   list.resize(listsize);
 
 // masses are hard-coded to 1
-  for(unsigned i=0;i<natoms;++i) masses[i]=1.0;
+  for(unsigned i=0;i<natoms;++i) masses[i]=1.0; 
 
 // energy integral initialized to 0
   engint=0.0;
@@ -478,6 +478,7 @@ int main(FILE* in,FILE*out,PLMD::Communicator& pc){
   randomize_velocities(natoms,ndim,temperature,masses,velocities,random);
 
   if(plumed){
+    plumed->cmd("setNoVirial");
     plumed->cmd("setNatoms",&natoms);
     plumed->cmd("setMDEngine","simpleMD");
     plumed->cmd("setTimestep",&tstep);
@@ -533,9 +534,9 @@ int main(FILE* in,FILE*out,PLMD::Communicator& pc){
       int istepplusone=istep+1;
       for(int i=0;i<3;i++)for(int k=0;k<3;k++) cell9[i][k]=0.0;
       for(int i=0;i<3;i++) cell9[i][i]=cell[i];
+      plumed->cmd("setStep",&istepplusone);
       plumed->cmd("setMasses",&masses[0]);
       plumed->cmd("setForces",&forces[0]);
-      plumed->cmd("setStep",&istepplusone);
       plumed->cmd("setEnergy",&engconf);
       plumed->cmd("setPositions",&positions[0]);
       plumed->cmd("setBox",cell9);

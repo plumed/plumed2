@@ -132,7 +132,7 @@ private:
   bool stopNow;
 
 public:
-/// Flag to switch off virial calculation (for debug)
+/// Flag to switch off virial calculation (for debug and MD codes with no barostat)
   bool novirial;
 
 

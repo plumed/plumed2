@@ -47,6 +47,7 @@ class ActionAtomistic :
   Pbc&                  pbc;
   Tensor                virial;
   std::vector<double>   masses;
+  bool                  chargesWereSet;
   std::vector<double>   charges;
 
   std::vector<Vector>   forces;          // forces on the needed atoms
@@ -132,6 +133,7 @@ double ActionAtomistic::getMass(int i)const{
 
 inline
 double ActionAtomistic::getCharge(int i)const{
+  plumed_assert( chargesWereSet );
   return charges[i];
 }
 

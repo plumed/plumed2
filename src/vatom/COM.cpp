@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVirtualAtom.h"
 #include "ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 using namespace std;
 
@@ -78,17 +80,22 @@ COM::COM(const ActionOptions&ao):
 
 void COM::calculate(){
   Vector pos;
-  double mass(0.0),charge(0.0);
+  double mass(0.0);
   vector<Tensor> deriv(getNumberOfAtoms());
   for(unsigned i=0;i<getNumberOfAtoms();i++) mass+=getMass(i);
-  for(unsigned i=0;i<getNumberOfAtoms();i++) charge+=getCharge(i);
+  if( plumed.getAtoms().chargesWereSet() ){
+     double charge(0.0);
+     for(unsigned i=0;i<getNumberOfAtoms();i++) charge+=getCharge(i);
+     setCharge(charge);
+  } else {
+     setCharge(0.0);
+  }
   for(unsigned i=0;i<getNumberOfAtoms();i++){
     pos+=(getMass(i)/mass)*getPosition(i);
     deriv[i]=(getMass(i)/mass)*Tensor::identity();
   }
   setPosition(pos);
   setMass(mass);
-  setCharge(charge);
   setAtomsDerivatives(deriv);
 }
 

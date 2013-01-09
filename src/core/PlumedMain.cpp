@@ -177,6 +177,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
        step=(*static_cast<int*>(val));
+       atoms.startStep();
 // words used less frequently:
   } else if(word=="setAtomsNlocal"){
        CHECK_INIT(initialized,word);
@@ -244,6 +245,9 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
        atoms.setMDNaturalUnits(true);
+  } else if(word=="setNoVirial"){
+       CHECK_NOTINIT(initialized,word);
+       novirial=true;
   } else if(word=="setPlumedDat"){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
@@ -476,7 +480,7 @@ void PlumedMain::shareData(){
 // atom positions are shared (but only if there is something to do)
   if(!active)return;
   stopwatch.start("2 Sharing data");
-  atoms.share();
+  if(atoms.getNatoms()>0) atoms.share();
   stopwatch.stop("2 Sharing data");
 }
 
@@ -489,7 +493,7 @@ void PlumedMain::performCalc(){
 void PlumedMain::waitData(){
   if(!active)return;
   stopwatch.start("3 Waiting for data");
-  atoms.wait();
+  if(atoms.getNatoms()>0) atoms.wait();
   stopwatch.stop("3 Waiting for data");
 }
 
@@ -537,7 +541,7 @@ void PlumedMain::justApply(){
   }
 
 // this is updating the MD copy of the forces
-  atoms.updateForces();
+  if(atoms.getNatoms()>0) atoms.updateForces();
 
 // update step (for statistics, etc)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
