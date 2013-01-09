@@ -36,7 +36,7 @@ class Pbc;
 class NeighborList  
 {
   bool do_pair_,do_pbc_,twolists_;
-  const PLMD::Pbc& pbc_;
+  const PLMD::Pbc* pbc_;
   std::vector<PLMD::AtomNumber> fullatomlist_,requestlist_;
   std::vector<std::pair<unsigned,unsigned> > neighbors_;
   double distance_;
@@ -56,10 +56,6 @@ public:
   NeighborList(const std::vector<PLMD::AtomNumber>& list0, const bool& do_pbc,
                const PLMD::Pbc& pbc, const double& distance=1.0e+30,
                const unsigned& stride=0);
-/// Copy constructor
-  NeighborList(const NeighborList&);
-/// Assign operator
-  NeighborList& operator=(const NeighborList&);
 /// Return the list of all atoms. These are needed to rebuild the neighbor list.                         
   std::vector<PLMD::AtomNumber>& getFullAtomList();
 /// Update the indexes in the neighbor list to match the

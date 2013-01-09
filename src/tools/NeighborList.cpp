@@ -33,7 +33,7 @@ using namespace std;
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
                            const bool& do_pair, const bool& do_pbc, const Pbc& pbc,
                            const double& distance, const unsigned& stride):
-                           do_pair_(do_pair), do_pbc_(do_pbc), pbc_(pbc),
+                           do_pair_(do_pair), do_pbc_(do_pbc), pbc_(&pbc),
                            distance_(distance), stride_(stride)
 {
 // store full list of atoms needed
@@ -55,7 +55,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
                            const Pbc& pbc, const double& distance,
                            const unsigned& stride):
-                           do_pbc_(do_pbc), pbc_(pbc),
+                           do_pbc_(do_pbc), pbc_(&pbc),
                            distance_(distance), stride_(stride){
  fullatomlist_=list0;
  nlist0_=list0.size();
@@ -63,34 +63,6 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
  nallpairs_=nlist0_*(nlist0_-1)/2;
  initialize();
  lastupdate_=0;
-}
-
-NeighborList::NeighborList(const NeighborList&nl) :
-  do_pair_(nl.do_pair_),
-  do_pbc_(nl.do_pbc_),
-  twolists_(nl.twolists_),
-  pbc_(nl.pbc_),
-  fullatomlist_(nl.fullatomlist_),
-  requestlist_(nl.requestlist_),
-  neighbors_(nl.neighbors_),
-  distance_(nl.distance_),
-  stride_(nl.stride_),
-  nlist0_(nl.nlist0_),
-  nlist1_(nl.nlist1_),
-  nallpairs_(nl.nallpairs_),
-  lastupdate_(nl.lastupdate_)
-{
-}
-
-// since this class contain references members, the only way to
-// implement an assignment operator is via placement new.
-// See http://cplusplus.co.il/2009/09/04/implementing-assignment-operator-using-copy-constructor/
-NeighborList& NeighborList::operator=(const NeighborList&nl){
-  if (this != &nl) {
-      this->NeighborList::~NeighborList(); // explicit non-virtual destructor
-      new (this) NeighborList(nl); // placement new
-  }
-  return *this;
 }
 
 void NeighborList::initialize() {
@@ -129,7 +101,7 @@ void NeighborList::update(const vector<Vector>& positions) {
    unsigned index1=index.second;
    Vector distance;
    if(do_pbc_){
-    distance=pbc_.distance(positions[index0],positions[index1]);
+    distance=pbc_->distance(positions[index0],positions[index1]);
    } else {
     distance=delta(positions[index0],positions[index1]);
    }
