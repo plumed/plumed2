@@ -30,7 +30,7 @@
 using namespace std;
 namespace PLMD{
 
-OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  std::vector<double>  & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log &log )
+OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  std::vector<double>  & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log* &log )
 :log(log){
 
 	// kearsley init to null
@@ -46,7 +46,7 @@ OptimalAlignment::OptimalAlignment( const  std::vector<double>  & align, const  
 
 	// basic check
 	if(p0.size() != p1.size()){
-		log.printf("THE SIZE OF THE TWO FRAMES TO BE ALIGNED ARE DIFFERENT\n");
+		(this->log)->printf("THE SIZE OF THE TWO FRAMES TO BE ALIGNED ARE DIFFERENT\n");
     }
 	// fast behaviour: if all the alignment and displacement are 1.0 then go for fast 
 	fast=true;
@@ -96,14 +96,14 @@ double OptimalAlignment::calculate(bool squared, std::vector<Vector> & derivativ
 	 //mykearsley->finiteDifferenceInterface(rmsd);
 
 	if(fast){
-		//log.printf("Doing fast: ERR %12.6f \n",err);
+		//log->printf("Doing fast: ERR %12.6f \n",err);
 		derrdp0=mykearsley->derrdp0;
 		derrdp1=mykearsley->derrdp1;
 		derivatives=derrdp0;
 	}else{
 		/// TODO this interface really sucks since is strongly asymmetric should be re-engineered.
 		err=weightedAlignment(rmsd);
-		//log.printf("Doing slow: ERR %12.6f \n",err);
+		//log->printf("Doing slow: ERR %12.6f \n",err);
 		derivatives=derrdp0;
 	}
 	// destroy the kearsley object?
@@ -183,7 +183,7 @@ double OptimalAlignment::weightedAlignment( bool rmsd){
 
 	tmp0=tmp0/wdisplace;
 
-  // log.printf(" ERRR NEW %f \n",tmp0);
+  // log->printf(" ERRR NEW %f \n",tmp0);
 
 	ret=tmp0;
 
@@ -308,10 +308,10 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 
         Random rnd;
 
-	log.printf("Entering rmsd finite difference test system\n ");
-	log.printf("RMSD OR MSD: %s\n",(rmsd)?"rmsd":"msd");
-	log.printf("-------------------------------------------\n");
-	log.printf("TEST1: derivative of the value (derr_dr0/derr_dr1)\n");
+	log->printf("Entering rmsd finite difference test system\n ");
+	log->printf("RMSD OR MSD: %s\n",(rmsd)?"rmsd":"msd");
+	log->printf("-------------------------------------------\n");
+	log->printf("TEST1: derivative of the value (derr_dr0/derr_dr1)\n");
 	//// test 1
 	double step=1.e-8,olderr,delta,err;
 	vector<Vector> fakederivatives;
@@ -336,10 +336,10 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	assignDisplace(displace);
 	olderr=calculate(rmsd, fakederivatives);
 
-	log.printf("INITIAL ERROR VALUE: %e\n",olderr);
+	log->printf("INITIAL ERROR VALUE: %e\n",olderr);
 
 	// randomizing alignments and  displacements
-	log.printf("TESTING: derrdp0 \n");
+	log->printf("TESTING: derrdp0 \n");
 
 	for(unsigned j=0;j<3;j++){
 	   for(unsigned i=0;i<derrdp0.size();i++){
@@ -352,17 +352,17 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	       assignP0( p0 );
 	       switch(j){
 	         case 0:
-	             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 1:
-	             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 2:
-	             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 
 	       }
 	   }
 	}
 
-	log.printf("TESTING: derrdp1 \n");
+	log->printf("TESTING: derrdp1 \n");
 	for(unsigned j=0;j<3;j++){
 	   for(unsigned i=0;i<derrdp1.size();i++){
 	       // random displacement
@@ -374,11 +374,11 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	       assignP1( p1 );
 	       switch(j){
 	         case 0:
-	             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 1:
-	             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 2:
-	             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 
 	       }
 	   }

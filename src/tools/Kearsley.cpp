@@ -34,7 +34,7 @@ namespace PLMD{
 
 // put some notes
 
-Kearsley::Kearsley(const vector<Vector> &p0, const vector<Vector> &p1, const vector<double> &align, Log &log):log(log) {
+Kearsley::Kearsley(const vector<Vector> &p0, const vector<Vector> &p1, const vector<double> &align, Log* &log):log(log){
 	// copy the structure
 	this->p0=p0;
 	this->p1=p1;
@@ -44,7 +44,7 @@ Kearsley::Kearsley(const vector<Vector> &p0, const vector<Vector> &p1, const vec
 	// now make an initial allocation
 //	int n=p0.size();
 	// eventually here one should make a "hard" resize of all the structures
-//	log.printf("Reallocating a size of %d atoms to kearsley structure\n",n);
+//	log->printf("Reallocating a size of %d atoms to kearsley structure\n",n);
 
 //	try{
 //		diff.resize(n);
@@ -134,11 +134,11 @@ double Kearsley::calculate(bool rmsd) {
 		com0_is_removed=true;
 
 		if (verbose){
-			log.printf("P0 RESET\n");
+			log->printf("P0 RESET\n");
 			for(i=0;i<natoms;i++){
-				log.printf("ATOM %6d  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0reset[i][0]/myscale,p0reset[i][1]/myscale,p0reset[i][2]/myscale);
+				log->printf("ATOM %6d  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0reset[i][0]/myscale,p0reset[i][1]/myscale,p0reset[i][2]/myscale);
 			}
-			log.printf("END\n");
+			log->printf("END\n");
 		}
 
 	}
@@ -164,11 +164,11 @@ double Kearsley::calculate(bool rmsd) {
 		com1_is_removed=true;
 
 		if(verbose){
-			log.printf("P1 RESET\n");
+			log->printf("P1 RESET\n");
 			for(i=0;i<natoms;i++){
-				log.printf("ATOM %6d  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1reset[i][0]/myscale,p1reset[i][1]/myscale,p1reset[i][2]/myscale);
+				log->printf("ATOM %6d  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1reset[i][0]/myscale,p1reset[i][1]/myscale,p1reset[i][2]/myscale);
 			}
-			log.printf("END\n");
+			log->printf("END\n");
 		}
 
 	}
@@ -250,12 +250,12 @@ double Kearsley::calculate(bool rmsd) {
 	q[3]=s*eigenvecs(0,3);
 	err=eigenvals[0]/totalign;
 
-	//log.printf(" ERR: %20.10f \n",err);
+	//log->printf(" ERR: %20.10f \n",err);
 
 	if(verbose){
-		log.printf(" ERR: %f \n",err);
+		log->printf(" ERR: %f \n",err);
 		for (i=0;i<4;i++){
-			log.printf(" EIGENVALS: %f \n",eigenvals[i]);
+			log->printf(" EIGENVALS: %f \n",eigenvals[i]);
 		}
 	}
 
@@ -331,20 +331,20 @@ double Kearsley::calculate(bool rmsd) {
 				gamma[i][j][k]=0.0;
 				for(l=0;l<4;l++){   //components of each eigenvector in pert. series
 					if(abs(eigenvals[0]-eigenvals[k+1])<1.e-8){
-						log.printf(" FOUND DEGENERACY IN RMSD_ESS ROUTINE \n");
-						log.printf(" I'm DYING....\n");
-						log.printf(" COPYING STACK HERE \n");
-						log.printf(" P0\n");
-						for(ll=0;ll<natoms;ll++)log.printf(" %f %f %f \n",p0reset[ll][0],p0reset[ll][1],p0reset[ll][2]);
-						log.printf(" P1\n");
-						for(ll=0;ll<natoms;ll++)log.printf(" %f %f %f \n",p1reset[ll][0],p1reset[ll][1],p1reset[ll][2]);
+						log->printf(" FOUND DEGENERACY IN RMSD_ESS ROUTINE \n");
+						log->printf(" I'm DYING....\n");
+						log->printf(" COPYING STACK HERE \n");
+						log->printf(" P0\n");
+						for(ll=0;ll<natoms;ll++)log->printf(" %f %f %f \n",p0reset[ll][0],p0reset[ll][1],p0reset[ll][2]);
+						log->printf(" P1\n");
+						for(ll=0;ll<natoms;ll++)log->printf(" %f %f %f \n",p1reset[ll][0],p1reset[ll][1],p1reset[ll][2]);
 						exit(0);
 					}
 					else{
 						gamma[i][j][k]  +=  dddq[i][j][l]*eigenvecs(k+1,l)/(eigenvals[0]-eigenvals[k+1]);
 					}
 				}
-                //log.printf("GAMMA %2d %2d %2d V %12.6f\n",i,j,k,gamma[i][j][k]);
+                //log->printf("GAMMA %2d %2d %2d V %12.6f\n",i,j,k,gamma[i][j][k]);
 			}
 		}
 	}
@@ -485,7 +485,7 @@ double Kearsley::calculate(bool rmsd) {
 		dm_r0[3][2]=dm_r0[2][3];
 
 
-		//log.printf("DMDR0 ALIGN %f AT %d VAL %f\n",align[i],i,dm_r0[0][0][j]);
+		//log->printf("DMDR0 ALIGN %f AT %d VAL %f\n",align[i],i,dm_r0[0][0][j]);
 
 
 		/*
@@ -661,16 +661,16 @@ double Kearsley::calculate(bool rmsd) {
 		}
 
 		if(verbose){
-			log.printf("P1-RESET-AND-ROTATED\n");
+			log->printf("P1-RESET-AND-ROTATED\n");
 			for(i=0;i<natoms;i++){
-				log.printf("ATOM %6d  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1rotated[i][0]/myscale,p1rotated[i][1]/myscale,p1rotated[i][2]/myscale);
+				log->printf("ATOM %6d  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1rotated[i][0]/myscale,p1rotated[i][1]/myscale,p1rotated[i][2]/myscale);
 			}
-			log.printf("END\n");
-			log.printf("P0-RESET\n");
+			log->printf("END\n");
+			log->printf("P0-RESET\n");
 			for(i=0;i<natoms;i++){
-				log.printf("ATOM %6d  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0reset[i][0]/myscale,p0reset[i][1]/myscale,p0reset[i][2]/myscale);
+				log->printf("ATOM %6d  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0reset[i][0]/myscale,p0reset[i][1]/myscale,p0reset[i][2]/myscale);
 			}
-			log.printf("END\n");
+			log->printf("END\n");
 		}
 
 	}
@@ -686,16 +686,16 @@ double Kearsley::calculate(bool rmsd) {
 		if(p1.size()!=diff0on1.size())diff0on1.resize(p1.size());
 		for(i=0;i<natoms;i++) diff0on1[i]=p0rotated[i]-p1reset[i];
 		if(verbose){
-			log.printf("P0-RESET AND INVERSE ROTATED\n");
+			log->printf("P0-RESET AND INVERSE ROTATED\n");
 			for(i=0;i<natoms;i++){
-				log.printf("ATOM %6d  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0rotated[i][0]/myscale,p0rotated[i][1]/myscale,p0rotated[i][2]/myscale);
+				log->printf("ATOM %6d  C   ALA     1    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p0rotated[i][0]/myscale,p0rotated[i][1]/myscale,p0rotated[i][2]/myscale);
 			}
-			log.printf("END\n");
-			log.printf("P1-RESET\n");
+			log->printf("END\n");
+			log->printf("P1-RESET\n");
 			for(i=0;i<natoms;i++){
-				log.printf("ATOM %6d  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1reset[i][0]/myscale,p1reset[i][1]/myscale,p1reset[i][2]/myscale);
+				log->printf("ATOM %6d  C   ALA     2    %8.3f%8.3f%8.3f  1.00  1.00\n",i+1,p1reset[i][0]/myscale,p1reset[i][1]/myscale,p1reset[i][2]/myscale);
 			}
-			log.printf("END\n");
+			log->printf("END\n");
 		}
 	}
 	// copy on the official vectors:
@@ -735,9 +735,9 @@ void Kearsley::assignAlign(const std::vector<double> & align) {
 }
 
 void Kearsley::finiteDifferenceInterface(bool rmsd){
-log.printf("Entering rmsd finite difference test system for kearsley\n");
-log.printf("-------------------------------------------\n");
-log.printf("TEST1: derivative of the value (derr_dr0/derr_dr1)\n");
+log->printf("Entering rmsd finite difference test system for kearsley\n");
+log->printf("-------------------------------------------\n");
+log->printf("TEST1: derivative of the value (derr_dr0/derr_dr1)\n");
 //// test 1
 unsigned i,j,l,m;
 double step=1.e-6,olderr,delta;
@@ -754,12 +754,12 @@ for (i=0;i<p0.size();i++){
 	    //if(delta>0.3){
 	    	align1[i]=delta;
 	    }else{align1[i]=0.;};
-	   // log.printf("ALIGN %d IS %8.3f\n",i,align1[i]);
+	   // log->printf("ALIGN %d IS %8.3f\n",i,align1[i]);
 }
 assignAlign(align1);
 //// get initial value of the error and derivative of it
 olderr=calculate(rmsd);
-log.printf("INITIAL ERROR VALUE: %e\n",olderr);
+log->printf("INITIAL ERROR VALUE: %e\n",olderr);
 //// store the derivative
 vector<Vector> old_derrdp0=derrdp0 ;
 vector<Vector> old_derrdp1=derrdp1 ;
@@ -768,7 +768,7 @@ Tensor old_rotmat0on1=rotmat0on1,old_rotmat1on0=rotmat1on0;
 
 //// get initial value of the error and derivative of it
 
-log.printf("TESTING: derrdp1 \n");
+log->printf("TESTING: derrdp1 \n");
 for(unsigned j=0;j<3;j++){
    for(unsigned i=0;i<derrdp1.size();i++){
        // random displacement
@@ -777,21 +777,21 @@ for(unsigned j=0;j<3;j++){
 	   com1_is_removed=false; // this is required whenever the assignment is not done with the methods
        com0_is_removed=false; // this is required whenever the assignment is not done with the methods
        err=calculate(rmsd);
-       //log.printf("INITIAL ERROR VALUE: %e NEW ERROR %e DELTA %e ELEM %d %d \n",olderr,err,delta,i,j );
+       //log->printf("INITIAL ERROR VALUE: %e NEW ERROR %e DELTA %e ELEM %d %d \n",olderr,err,delta,i,j );
        p1[i][j]-=delta;
        switch(j){
          case 0:
-             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,align[i]);break;
+             log->printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,align[i]);break;
          case 1:
-             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,align[i]);break;
+             log->printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,align[i]);break;
          case 2:
-             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,align[i]);break;
+             log->printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,align[i]);break;
 
        }
    }
 }
 //exit(0);
-log.printf("TESTING: derrdp0 \n");
+log->printf("TESTING: derrdp0 \n");
 for(unsigned j=0;j<3;j++){
    for(unsigned i=0;i<derrdp0.size();i++){
        // random displacement
@@ -804,17 +804,17 @@ for(unsigned j=0;j<3;j++){
        p0[i][j]-=delta;
        switch(j){
          case 0:
-             log.printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,align[i]);break;
+             log->printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,align[i]);break;
          case 1:
-             log.printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,align[i]);break;
+             log->printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,align[i]);break;
          case 2:
-             log.printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,align[i]);break;
+             log->printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,align[i]);break;
 
        }
    }
 }
 
-log.printf("TESTING: dmatdp0 \n");
+log->printf("TESTING: dmatdp0 \n");
 for(l=0;l<3;l++){
   for(m=0;m<3;m++){
     for(j=0;j<3;j++){
@@ -829,20 +829,20 @@ for(l=0;l<3;l++){
        	   int ind=l*3*3*p0.size()+m*3*p0.size()+j*p0.size()+i;
            switch(j){
            	 case 0:
-                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
+                log->printf("TESTING: DMATDP0 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
            	 case 1:
-                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
+                log->printf("TESTING: DMATDP0 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
            	 case 2:
-                log.printf("TESTING: DMATDP0 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
+                log->printf("TESTING: DMATDP0 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp0[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp0[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
            }
        }
     }
   }
 }
-log.printf("TESTING: dmatdp1 \n");
+log->printf("TESTING: dmatdp1 \n");
 for(l=0;l<3;l++){
   for(m=0;m<3;m++){
     for(j=0;j<3;j++){
@@ -858,13 +858,13 @@ for(l=0;l<3;l++){
            switch(j){
 
              case 0:
-                log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
+                log->printf("TESTING: DMATDP1 [ %d ][ %d ]:  X %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
              case 1:
-                log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
+                log->printf("TESTING: DMATDP1 [ %d ][ %d ]:  Y %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
              case 2:
-                log.printf("TESTING: DMATDP1 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
+                log->printf("TESTING: DMATDP1 [ %d ][ %d ]:  Z %d ANAL %18.9f NUMER %18.9f DELTA %18.9f ALIGN %6.2f\n",l,m,i,dmatdp1[ind],(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,dmatdp1[ind]-(rotmat0on1[l][m]- old_rotmat0on1[l][m])/delta,align[i]);break;
 
            }
        }

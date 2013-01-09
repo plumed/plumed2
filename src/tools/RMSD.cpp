@@ -30,14 +30,13 @@
 using namespace std;
 namespace PLMD{
 
-RMSD& RMSD::operator=(const RMSD& ){
-// The problem here is that with our implementation of RMSD the
-// assignment operator cannot be implemented (problems with Log&).
-// Typically, STL containers only use copy constructor, which is
-// correclty working. But with a version of STL using assignment operator
-// stuff such as std::vector<RMSD> will not work properly and trigger
-// this error.
-  plumed_merror("This is a bug! Contact plumed developers");
+RMSD& RMSD::operator=(const RMSD& v){
+  alignmentMethod=v.alignmentMethod;
+  reference=v.reference;
+  align=v.align;
+  displace=v.displace;
+  myoptimalalignment=v.myoptimalalignment;
+  log=v.log;
   return *this ;
 }
 
@@ -48,8 +47,8 @@ RMSD::RMSD(const RMSD & oldrmsd):
   align(oldrmsd.align),
   displace(oldrmsd.align),
   myoptimalalignment(oldrmsd.myoptimalalignment),
-  log(oldrmsd.log)
-  {}
+  log( oldrmsd.log )
+  {  }; 
 
 void RMSD::set(const PDB&pdb, string mytype ){
 
@@ -65,11 +64,11 @@ void RMSD::setType(string mytype){
 	alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
 	if (mytype=="SIMPLE"){
 		alignmentMethod=SIMPLE;
-		log.printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
+		log->printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
 	;}
 	else if (mytype=="OPTIMAL"){
 		alignmentMethod=OPTIMAL;
-		log.printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n");
+		log->printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n");
 	}
 	else plumed_merror("unknown RMSD type" + mytype);
 
@@ -147,7 +146,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 		                     const  std::vector<double>  & displace,
 		                     const std::vector<Vector> & positions,
 		                     const std::vector<Vector> & reference ,
-		                     Log &log,
+		                     Log* &log,
 		                     std::vector<Vector>  & derivatives, bool squared) {
 	  double dist(0);
 	  double norm(0);

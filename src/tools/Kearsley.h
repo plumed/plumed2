@@ -177,7 +177,7 @@ where \f$ M_{l}^{\alpha} \f$ corresponds to \f$ x_m^{l},y_m^{l},z_m^{l} \f$   an
 class Kearsley
 {
   /// general log reference that needs to be initialized when constructed
-  Log &log;
+  Log* log;
   /// position of atoms (first frame. In md is the running frame)
   std::vector<Vector> p0;
   /// position of atoms (second frame. In md is the  reference frame)
@@ -220,7 +220,7 @@ public:
   std::vector<double> dmatdp1;
 
   /// constructor: need the two structure, the alignment vector and  the log reference
-  Kearsley(  const std::vector<Vector> &p0, const std::vector<Vector> &p1,  const std::vector<double> &align , Log &log);
+  Kearsley(  const std::vector<Vector> &p0, const std::vector<Vector> &p1,  const std::vector<double> &align , Log* &log);
   /// switch the assignment of the structure p0 (e.g. at each md step)
   void assignP0(const std::vector<Vector> & p0);
   /// derivatives: derivative of the error respect p1

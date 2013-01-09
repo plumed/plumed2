@@ -50,14 +50,14 @@ private:
 	std::vector<Vector> derrdp0;
 	/// derivatives of the error respect to the p1 (static frame, do not remove: useful for SM)
 	std::vector<Vector> derrdp1;
-	/// the reference to the logfile
-	Log &log;
+	/// the pointer to the logfile
+	Log* log;
 	/// a bool that decides to make the fast version (alignment vec= displacement vec) or the slower case
 	bool fast;
 
 public:
 	/// the contructor
-	OptimalAlignment( const  std::vector<double>  & align,  const std::vector<double>   & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log &log );
+	OptimalAlignment( const  std::vector<double>  & align,  const std::vector<double>   & displace, const std::vector<Vector> & p0, const std::vector<Vector> & p1 , Log* &log );
 	/// the destructor: delete kearsley
 	~OptimalAlignment();
 	/// assignment of the running frame p0
