@@ -92,7 +92,6 @@ private:
   std::vector<double> point, bw;
   std::vector<unsigned> gbin;
   unsigned nfiles;
-  bool nomemory;
   std::string gridfname;
   std::string kerneltype; 
 public:

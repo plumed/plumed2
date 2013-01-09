@@ -59,7 +59,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
            // Take components from all actions with a specific name
            std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
            if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-           std::string lab; unsigned nval=0;
+           unsigned nval=0;
            for(unsigned j=0;j<all.size();j++){
               std::string flab; flab=all[j]->getLabel() + "." + name;
               if( all[j]->exists(flab) ){ arg.push_back(all[j]->copyOutput(flab)); nval++; }
@@ -76,7 +76,7 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
            if( !(action->exists(c[i])) ){
                  std::string str=" (hint! the components in this actions are: "; 
                  str+=action->getComponentsList()+")";
-		 error("action " + a + " has no component named " + name );
+		 error("action " + a + " has no component named " + name + str);
 	   } ;
            arg.push_back(action->copyOutput(c[i]));
         }
@@ -162,7 +162,6 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ){
   }
   a->calculate();
   a->clearDerivatives();
-  std::vector<double> value0(nval);
   for(unsigned j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
     if( v->hasDerivatives() ) for(int i=0;i<npar;i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/sqrt(epsilon));

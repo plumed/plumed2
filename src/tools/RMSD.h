@@ -44,8 +44,8 @@ class RMSD
   OptimalAlignment *myoptimalalignment;
   Log *log;
 public:
-/// initialize the log in the constructor
-  RMSD(Log & log ): myoptimalalignment(NULL),log(&log){};
+/// Constructor
+  RMSD(Log & log );
 /// a copy constructor
   RMSD(const RMSD &);
 /// assignment

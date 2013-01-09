@@ -116,7 +116,7 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
 
 void Keywords::reserveFlag( const std::string & k, const bool def, const std::string & d ){
   plumed_assert( !exists(k) && !reserved(k) ); 
-  std::string defstr, flag="flag";
+  std::string defstr;
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
   types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
   documentation.insert( std::pair<std::string,std::string>(k,defstr + d) ); 
@@ -165,7 +165,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
 } 
 
 void Keywords::addFlag( const std::string & k, const bool def, const std::string & d ){
-  plumed_assert( !exists(k) && !reserved(k) ); std::string defstr, flag="flag";
+  plumed_assert( !exists(k) && !reserved(k) ); std::string defstr;
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
   types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
   documentation.insert( std::pair<std::string,std::string>(k,defstr + d) );
@@ -188,7 +188,6 @@ void Keywords::remove( const std::string & k ){
 }
 
 bool Keywords::numbered( const std::string & k ) const {
-  unsigned j=0; 
   if( style( k,"atoms") ) return true;
   plumed_massert( allowmultiple.count(k), "Did not find keyword " + k );
   return allowmultiple.find(k)->second;

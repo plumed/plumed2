@@ -36,6 +36,8 @@ GREX::GREX(PlumedMain&p):
   plumedMain(p),
   atoms(p.getAtoms()),
   partner(-1), // = unset
+  localDeltaBias(0),
+  foreignDeltaBias(0),
   myreplica(-1) // = unset
 {
   p.setSuffix(".NA");

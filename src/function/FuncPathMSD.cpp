@@ -140,7 +140,6 @@ neigh_stride(-1.)
   // list the action involved and check the type 
   for(unsigned i=0;i<getNumberOfArguments();i++){
        // for each value get the name and the label of the corresponding action
-       std::string mylabel=getPntrToArgument(i)->getPntrToAction()->getLabel(); 
        std::string myname=getPntrToArgument(i)->getPntrToAction()->getName(); 
        if(myname!="RMSD")plumed_merror("This argument is not of RMSD type!!!");
   }   

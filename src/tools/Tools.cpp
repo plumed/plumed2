@@ -243,9 +243,9 @@ void Tools::interpretLabel(vector<string>&s){
 
 vector<string> Tools::ls(const string&d){
   DIR*dir;
-  struct dirent *ent;
   vector<string> result;
   if ((dir=opendir(d.c_str()))){
+    struct dirent *ent;
     while ((ent = readdir (dir))) if(string(ent->d_name)!="." && string(ent->d_name)!="..") result.push_back(ent->d_name);
     closedir (dir);
   }

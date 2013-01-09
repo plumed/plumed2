@@ -97,7 +97,6 @@ PathMSDBase(ao)
 	char buf[500];
         sprintf(buf,"Need to specify PROPERTY with this action\n");
         plumed_merror(buf);
-        exit(0);
   }else{
       for(unsigned i=0;i<labels.size();i++){
 	log<<" found custom propety to be found in the REMARK line: "<<labels[i].c_str()<<"\n";

@@ -352,11 +352,11 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	       assignP0( p0 );
 	       switch(j){
 	         case 0:
-	             log->printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: X  %4u ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 1:
-	             log->printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: Y  %4u ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 2:
-	             log->printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: Z  %4u ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp0[i][j],(err-olderr)/delta,derrdp0[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 
 	       }
 	   }
@@ -374,11 +374,11 @@ double OptimalAlignment::weightedFindiffTest( bool rmsd){
 	       assignP1( p1 );
 	       switch(j){
 	         case 0:
-	             log->printf("TESTING: X  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: X  %4u ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 1:
-	             log->printf("TESTING: Y  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: Y  %4u ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 	         case 2:
-	             log->printf("TESTING: Z  %4d ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
+	             log->printf("TESTING: Z  %4u ANAL %18.9f NUMER %18.9f DELTA %18.9f DISP %6.2f ALIGN %6.2f \n",i,derrdp1[i][j],(err-olderr)/delta,derrdp1[i][j]-(err-olderr)/delta,displace[i],align[i]);break;
 
 	       }
 	   }

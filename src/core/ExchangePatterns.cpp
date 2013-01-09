@@ -27,6 +27,8 @@ using namespace std;
 namespace PLMD{
 
 ExchangePatterns::ExchangePatterns():
+  PatternFlag(NONE),
+  NumberOfReplicas(1),
   random(*new Random)
 {}
 

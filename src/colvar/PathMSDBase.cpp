@@ -81,7 +81,7 @@ nframes(0)
   } 
   if(neigh_stride>0. || neigh_size>0){
            if(neigh_size>nframes){
-           	log.printf(" List size required ( %d ) is too large: resizing to the maximum number of frames required: %d  \n",neigh_size,nframes);
+           	log.printf(" List size required ( %d ) is too large: resizing to the maximum number of frames required: %u  \n",neigh_size,nframes);
  		neigh_size=nframes;
            }
            log.printf("  Neighbor list enabled: \n");

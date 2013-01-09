@@ -70,7 +70,10 @@ void VolumeSubcell::registerKeywords( Keywords& keys ){
 
 VolumeSubcell::VolumeSubcell(const ActionOptions& ao):
 Action(ao),
-ActionVolume(ao)
+ActionVolume(ao),
+xsmearp(0.0),
+ysmearp(0.0),
+zsmearp(0.0)
 {
 
   dox=true; parse("XLOWER",xlow); parse("XUPPER",xhigh);

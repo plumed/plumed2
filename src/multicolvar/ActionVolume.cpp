@@ -31,7 +31,8 @@ void ActionVolume::registerKeywords( Keywords& keys ){
 
 ActionVolume::ActionVolume(const ActionOptions&ao):
 Action(ao),
-ActionAtomistic(ao)
+ActionAtomistic(ao),
+sigma(0.0)
 {
 }
 

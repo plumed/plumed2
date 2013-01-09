@@ -137,7 +137,7 @@ width(sig)
 }
 
 double KernelFunctions::getCutoff( const double& width ) const {
-  double DP2CUTOFF=6.25;
+  const double DP2CUTOFF=6.25;
   if( ktype==gaussian ) return sqrt(2.0*DP2CUTOFF)*width;
   else if(ktype==triangular ) return width;
   else if(ktype==uniform) return width;

@@ -145,7 +145,7 @@ verse(getNumberOfArguments())
   checkRead();
 
   for(unsigned i=0;i<step.size();i++){
-    log.printf("  step%d %d\n",i,step[i]);
+    log.printf("  step%u %d\n",i,step[i]);
     log.printf("  at");
     for(unsigned j=0;j<at[i].size();j++) log.printf(" %f",at[i][j]);
     log.printf("\n");

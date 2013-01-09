@@ -30,6 +30,11 @@
 using namespace std;
 namespace PLMD{
 
+RMSD::RMSD(Log & log ):
+  alignmentMethod(SIMPLE),
+  myoptimalalignment(NULL),
+  log(&log){};
+
 RMSD& RMSD::operator=(const RMSD& v){
   alignmentMethod=v.alignmentMethod;
   reference=v.reference;

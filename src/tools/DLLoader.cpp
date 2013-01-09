@@ -65,20 +65,9 @@ DLLoader::~DLLoader(){
 #endif
 }
 
-DLLoader::DLLoader(const DLLoader&dl){
-  plumed_merror("this should never be called");
-}
-
 DLLoader::DLLoader(){
   // do nothing
 }
-
-DLLoader&DLLoader::operator=(const DLLoader&dl){
-  plumed_merror("this should never be called");
-  return *this;
-}
-
-
 
 
 }

@@ -180,7 +180,14 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
 }
 
 SwitchingFunction::SwitchingFunction():
-  init(false){
+  init(false),
+  type(spline),
+  nn(6),
+  mm(12),
+  invr0(0.0),
+  d0(0.0),
+  dmax(0.0)
+{
 }
 
 void SwitchingFunction::set(int nn,int mm,double r0,double d0){

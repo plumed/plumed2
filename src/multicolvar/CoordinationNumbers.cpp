@@ -133,9 +133,9 @@ double CoordinationNumbers::compute( const unsigned& j, const std::vector<Vector
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number
-   double dd, sw;
+   double sw;
    for(unsigned i=1;i<pos.size();++i){
-      distance=getSeparation( pos[0], pos[i] ); dd=distance.modulo();
+      distance=getSeparation( pos[0], pos[i] );
       sw = switchingFunction.calculate( distance.modulo(), dfunc );
       if( sw>=getTolerance() ){    //  nl_cut<0 ){
          value += sw;             // switchingFunction.calculate( distance.modulo(), dfunc );

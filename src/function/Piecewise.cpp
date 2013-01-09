@@ -92,7 +92,8 @@ void Piecewise::registerKeywords(Keywords& keys){
 
 Piecewise::Piecewise(const ActionOptions&ao):
 Action(ao),
-Function(ao)
+Function(ao),
+normalize(false)
 {
   for(int i=0;;i++){
     std::vector<double> pp;

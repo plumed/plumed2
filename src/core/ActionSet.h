@@ -79,7 +79,6 @@ std::vector<T> ActionSet::select()const{
 
 template <class T>
 T ActionSet::selectWithLabel(const std::string&s)const{
-  std::vector<T> ret;
   for(const_iterator p=begin();p!=end();++p){
     T t=dynamic_cast<T>(*p);
     if(t && dynamic_cast<Action*>(t)->getLabel()==s) return t;

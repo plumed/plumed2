@@ -164,7 +164,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
      for(int i=0;i<line.length();++i) if(line[i]=='#' || line[i]=='\n') line.erase(i);
      Tools::stripLeadingAndTrailingBlanks( line );
      if(line.length()==0) continue;
-     sscanf(line.c_str(),"%s",buffer);
+     sscanf(line.c_str(),"%255s",buffer);
      std::string keyword=buffer; bool found=false;
      for(unsigned i=0;i<keywords.size();++i){
          std::string thiskey=keywords.get(i);

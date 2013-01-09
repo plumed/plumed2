@@ -99,7 +99,7 @@ nlinesPerStep(1)
       ifile->allowIgnoredFields();
   }
   parse("EVERY",nlinesPerStep);
-  if(nlinesPerStep>1) log.printf("  only reading every %dth line of file %s\n",nlinesPerStep,filename.c_str() );
+  if(nlinesPerStep>1) log.printf("  only reading every %uth line of file %s\n",nlinesPerStep,filename.c_str() );
   else log.printf("  reading data from file %s\n",filename.c_str() );
   // Find out what we are reading
   std::vector<std::string> valread; parseVector("VALUES",valread);

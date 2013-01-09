@@ -36,9 +36,9 @@ using namespace std;
   to avoid linker error.
 */
 int main(int argc,char**argv){
+#ifdef __PLUMED_MPI
   bool nompi=false;
   if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
-#ifdef __PLUMED_MPI
   if(!nompi) MPI_Init(&argc,&argv);
 #endif
   int ret;

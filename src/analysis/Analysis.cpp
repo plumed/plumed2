@@ -125,8 +125,8 @@ old_norm(0.0)
 
       parseFlag("USE_ALL_DATA",single_run); 
       if( !single_run ){
-          std::string fstr; parse("RUN",freq );
-          log.printf("  running analysis every %d steps\n",freq);
+          parse("RUN",freq );
+          log.printf("  running analysis every %u steps\n",freq);
           if( freq%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
           ndata=std::floor(freq/getStride() );
           data.resize( ndata );
@@ -157,7 +157,7 @@ old_norm(0.0)
           if( write_chq ) rfile.open( filename.c_str(), "aw" );
           // Run the analysis if we stoped in the middle of it last time
           if( idata==ndata ) runAnalysis();
-          log.printf("  restarting analysis with %d points read from restart file\n",idata);
+          log.printf("  restarting analysis with %u points read from restart file\n",idata);
       } else if( write_chq ){
           // Setup the restart file (delete any old one)
           remove( filename.c_str() ); 

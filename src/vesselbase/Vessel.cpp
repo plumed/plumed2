@@ -60,7 +60,6 @@ void Vessel::error( const std::string& msg ){
   action->log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",myname.c_str(), (action->getName()).c_str(), (action->getLabel()).c_str(), msg.c_str() );
   printKeywords();
   plumed_merror("ERROR for keyword " + myname + " in action "  + action->getName() + " with label " + action->getLabel() + " : " + msg );
-  action->exit(1);
 }
 
 }

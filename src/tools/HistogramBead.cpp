@@ -82,6 +82,20 @@ w_j(s) = \int_{a + \frac{j-1}{n}(b-a)}^{a + \frac{j}{n}(b-a)} \sum_i K\left( \fr
 */
 //+ENDPLUMEDOC
 
+HistogramBead::HistogramBead():
+init(false),
+lowb(0.0),
+highb(0.0),
+width(0.0),
+type(gaussian),
+periodicity(unset),
+min(0.0),
+max(0.0),
+max_minus_min(0.0),
+inv_max_minus_min(0.0)
+{
+}
+
 std::string HistogramBead::description() const {
   std::ostringstream ostr;
   ostr<<"betweeen "<<lowb<<" and "<<highb<<" width of gaussian window equals "<<width;
@@ -106,7 +120,7 @@ void HistogramBead::generateBins( const std::string& params, const std::string& 
   bool found_b=Tools::parse(data,dd+"SMEAR",smear);
   if(!found_b){ Tools::convert(0.5,smear); }  
   bool usenorm=false; std::string normstr;
-  if(dd=="") bool found_n=Tools::parseFlag(data,dd+"NORM",usenorm);
+  if(dd=="") Tools::parseFlag(data,dd+"NORM",usenorm);
   if(usenorm && dd==""){ normstr="NORM"; } else { normstr=""; } 
 
   std::string lb,ub; double delr = ( range[1]-range[0] ) / static_cast<double>( nbins );
@@ -135,9 +149,9 @@ void HistogramBead::set( const std::string& params, const std::string& dd, std::
   if( !found_r ) errormsg="Upper bound has not been specified use UPPER"; 
   if( lowb>=highb ) errormsg="Lower bound is higher than upper bound"; 
   
-  smear=0.5; bool found_b=Tools::parse(data,dd+"SMEAR",smear);
+  smear=0.5; Tools::parse(data,dd+"SMEAR",smear);
   width=smear*(highb-lowb); init=true;
-  bool usenorm; bool found_n=Tools::parseFlag(data,dd+"NORM",usenorm);
+  bool usenorm; Tools::parseFlag(data,dd+"NORM",usenorm);
 }
 
 void HistogramBead::set( double l, double h, double w){
@@ -174,10 +188,10 @@ double HistogramBead::calculate( double x, double& df ) const {
      df=0;
      if( fabs(lowB)<1. ) df = 1 - fabs(lowB) / width;
      if( fabs(upperB)<1. ) df -= fabs(upperB) / width;
-     double ia, ib;
      if (upperB<=-1. || lowB >=1.){
         f=0.;
      } else { 
+       double ia, ib;
        if( lowB>-1.0 ){ ia=lowB; }else{ ia=-1.0; } 
        if( upperB<1.0 ){ ib=upperB; } else{ ib=1.0; }
        f = (ib*(2.-fabs(ib))-ia*(2.-fabs(ia)))*0.5;

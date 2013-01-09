@@ -43,7 +43,6 @@ public:
 PLUMED_REGISTER_VESSEL(VesselMoment,"MOMENTS")
 
 void VesselMoment::reserveKeyword( Keywords& keys ){
-  std::ostringstream ostr;
   keys.reserve("optional","MOMENTS","calculate the moments of the distribution of collective variables. " 
   "The \\f$m\\f$th moment of a distribution is calculated using \\f$\\frac{1}{N} \\sum_{i=1}^N ( s_i - \\overline{s} )^m \\f$, where \\f$\\overline{s}\\f$ is "
   "the average for the distribution.  The moments keyword takes a lists of integers as input or a range.  Each integer is a value of \\f$m\\f$.");  

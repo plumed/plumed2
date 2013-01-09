@@ -68,13 +68,12 @@ unsigned CInterpolation::findBox( const std::vector<double>& pos ){
      bnew+=ccf_box; 
   }
   plumed_assert( bold==0 ); bold=bnew;
-  unsigned mm=std::floor(double(bnew)/double(stride[0]));
   for(unsigned i=0;i<np.size();++i){ lb[i]=splinepoints(bold,i); ub[i]=splinepoints(bold+stride[i],i); }
   return bold;
 }
 
 unsigned CInterpolation::search1( const unsigned& kk, const double& x, const unsigned& jold ) const {
-    int inc=stride[kk], n=np[kk]*stride[kk], jl=jold*stride[kk], ju=(jold+1)*stride[kk], jm; 
+    int inc=stride[kk], jl=jold*stride[kk], ju=(jold+1)*stride[kk], jm; 
     if ( x>=splinepoints(jl,kk) && x<splinepoints( ju, kk ) ) return jl;
     else {
         if( x>=splinepoints(jl, kk ) ){

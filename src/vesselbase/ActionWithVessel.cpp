@@ -140,7 +140,6 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
   unsigned rank=comm.Get_rank();
   if(serial){ stride=1; rank=0; }
 
-  std::vector<Value> aux;
   // Reset everything
   for(unsigned j=0;j<functions.size();++j) functions[j]->zero();
 

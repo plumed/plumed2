@@ -64,12 +64,6 @@ public:
 };	
 
 inline
-HistogramBead::HistogramBead():
-init(false)
-{		
-}
-
-inline
 bool HistogramBead::hasBeenSet() const {
   return init;
 }

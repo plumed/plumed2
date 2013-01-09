@@ -82,7 +82,7 @@ pdb(*new(PDB))
        AtomNumber astart,aend; 
        pdb.getAtomRange( chains[i], astart, aend, errmsg );
        if( errmsg.length()!=0 ) error( errmsg );
-       log.printf("  chain named %s contains residues %d to %d and atoms %d to %d \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
+       log.printf("  chain named %s contains residues %u to %u and atoms %d to %d \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
     }
   }
   pdb.renameAtoms("HA1","CB");  // This is a hack to make this work with GLY residues 

@@ -38,6 +38,8 @@ class DRMSD {
   std::map< std::pair <unsigned,unsigned> , double> targets;
   unsigned natoms;
   public:
+/// Constructor
+  DRMSD(): natoms(0) {};
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure

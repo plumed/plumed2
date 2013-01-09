@@ -175,9 +175,9 @@ void Atoms::wait(){
 
   if(dd && int(gatindex.size())<natoms){
 // receive toBeReceived
-    int count=0;
     Communicator::Status status;
     if(dd.async){
+      int count=0;
       for(int i=0;i<dd.Get_size();i++){
         dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
         int c=status.Get_count<int>();

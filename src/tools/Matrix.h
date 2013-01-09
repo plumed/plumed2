@@ -100,8 +100,8 @@ private:
    /// The data in the matrix
    std::vector<T> data;
 public:
-   Matrix<T>(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {} 
-   Matrix<T>(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {} 
+   Matrix(const unsigned nr=0, const unsigned nc=0 )  : sz(nr*nc), rw(nr), cl(nc), data(nr*nc) {} 
+   Matrix(const Matrix<T>& t) : sz(t.sz), rw(t.rw), cl(t.cl), data(t.data) {} 
    /// Resize the matrix 
    void resize( const unsigned nr, const unsigned nc ){ rw=nr; cl=nc; sz=nr*nc; data.resize(sz); }
    /// Return the number of rows
@@ -119,8 +119,10 @@ public:
    }
    /// Set the Matrix equal to another Matrix
    Matrix<T>& operator=(const Matrix<T>& m){
-     plumed_assert( m.rw==rw && m.cl==cl );
-     data=m.data; 
+     sz=m.sz;
+     rw=m.rw;
+     cl=m.cl;
+     data=m.data;
      return *this;
    }
    /// Set the Matrix equal to the value of a standard vector - used for readin

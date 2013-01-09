@@ -47,8 +47,6 @@ private:
 /// Get the cutoff for a kernel
   double getCutoff( const double& width ) const ;
 public:
-/// Does the kernel have derivatives
-  bool hasderivatives;
   KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const double& w, const bool& norm );
 /// Get the dimensionality of the kernel
   unsigned ndim() const;

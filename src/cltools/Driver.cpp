@@ -202,9 +202,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        pbc_cli_given=true;
        vector<string> words=Tools::getWords(pbc_cli_list,",");
        if(words.size()==3){
-         for(int i=0;i<3;i++) sscanf(words[i].c_str(),"%lf",&(pbc_cli_box[4*i]));
+         for(int i=0;i<3;i++) sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[4*i]));
        } else if(words.size()==9) {
-         for(int i=0;i<9;i++) sscanf(words[i].c_str(),"%lf",&(pbc_cli_box[i]));
+         for(int i=0;i<9;i++) sscanf(words[i].c_str(),"%100lf",&(pbc_cli_box[i]));
        } else {
          string msg="ERROR: cannot parse command-line box "+pbc_cli_list;
          fprintf(stderr,"%s\n",msg.c_str());
@@ -295,9 +295,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     } else if ( plumedStopCondition ) break;
 
     int natoms;
-    bool ok;
     bool first_step=false;
-    if(!noatoms) sscanf(line.c_str(),"%d",&natoms);
+    if(!noatoms) sscanf(line.c_str(),"%100d",&natoms);
     if(checknatoms<0 && !noatoms){
       pd_nlocal=natoms;
       pd_start=0;
@@ -382,7 +381,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     }
 
     if(!noatoms){
-       ok=Tools::getline(fp,line);
+       bool ok=Tools::getline(fp,line);
        plumed_massert(ok,"premature end of file");
 
        std::vector<double> celld(9,0.0);
@@ -390,9 +389,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
          std::vector<std::string> words;
          words=Tools::getWords(line);
          if(words.size()==3){
-           sscanf(line.c_str(),"%lf %lf %lf",&celld[0],&celld[4],&celld[8]);
+           sscanf(line.c_str(),"%100lf %100lf %100lf",&celld[0],&celld[4],&celld[8]);
          } else if(words.size()==9){
-           sscanf(line.c_str(),"%lf %lf %lf %lf %lf %lf %lf %lf %lf",
+           sscanf(line.c_str(),"%100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf",
                   &celld[0], &celld[1], &celld[2],
                   &celld[3], &celld[4], &celld[5],
                   &celld[6], &celld[7], &celld[8]);
@@ -404,11 +403,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
        // Read coordinates
        for(int i=0;i<natoms;i++){
-         ok=Tools::getline(fp,line);
+         bool ok=Tools::getline(fp,line);
          plumed_massert(ok,"premature end of file");
          char dummy[1000];
          double cc[3];
-         std::sscanf(line.c_str(),"%s %lf %lf %lf",dummy,&cc[0],&cc[1],&cc[2]);
+         std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
          if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ){
            coordinates[3*i]=real(cc[0]);
            coordinates[3*i+1]=real(cc[1]);

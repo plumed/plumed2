@@ -20,7 +20,7 @@ $(SUBDIRSCLEAN): %.clean:
 
 .PHONY: cppcheck
 cppcheck:
-	cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 -q --enable=portability,performance */*.{h,cpp}
+	cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 -q --enable=all */*.{h,cpp}
 
 .PHONY: help
 help:

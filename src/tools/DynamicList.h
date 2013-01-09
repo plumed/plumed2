@@ -141,6 +141,8 @@ private:
 /// This is the list of active members
   std::vector<T> active;
 public:
+/// Constructor
+  DynamicList():inactive(true){}
 /// An operator that returns the element from the current active list
   inline T operator [] (const unsigned& i) const { 
      plumed_assert(!inactive); plumed_assert( i<active.size() );

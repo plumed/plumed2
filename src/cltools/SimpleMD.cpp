@@ -170,14 +170,14 @@ read_input(double& temperature,
       exit(1);
   }
   std::string nconfstr; parse("nconfig",nconfstr);
-  sscanf(nconfstr.c_str(),"%d %s",&nconfig,buffer1);
+  sscanf(nconfstr.c_str(),"%100d %255s",&nconfig,buffer1);
   trajfile=buffer1;
   if(trajfile.length()==0){
       fprintf(stderr,"Specify traj file\n");
       exit(1);
   }
   std::string nstatstr; parse("nstat",nstatstr);
-  sscanf(nstatstr.c_str(),"%d %s",&nstat,buffer1);
+  sscanf(nstatstr.c_str(),"%100d %255s",&nstat,buffer1);
   statfile=buffer1;
   if(statfile.length()==0){
       fprintf(stderr,"Specify stat file\n");

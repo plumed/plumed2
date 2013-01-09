@@ -142,7 +142,6 @@ void Tools::removeDuplicates(std::vector<T>& vec)
 
 inline
 bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&val){
-  std::string s;
   for(std::vector<std::string>::iterator p=line.begin();p!=line.end();++p){
     if(key==*p){
       val=true;

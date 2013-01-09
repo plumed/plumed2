@@ -33,6 +33,8 @@ namespace PLMD{
 /// Surrogate of MPI types when MPI library is not available
   class MPI_Comm {
     int dummy;
+  public:
+    MPI_Comm():dummy(0){};
   };
 #endif
 
@@ -230,8 +232,8 @@ int Communicator::Status::Get_count()const{
   plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
   MPI_Get_count(const_cast<MPI_Status*>(&s),getMPIType<T>(),&i);
 #else
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
   i=0;
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
   return i;
 }
