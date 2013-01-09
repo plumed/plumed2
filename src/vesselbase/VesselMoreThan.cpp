@@ -35,7 +35,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   VesselMoreThan( const VesselOptions& da );
   double compute( const unsigned& i, const double& val, double& df ); 
-  void printKeywords( Log& log );
+  void printKeywords();
 };
 
 PLUMED_REGISTER_VESSEL(VesselMoreThan,"MORE_THAN")
@@ -60,7 +60,7 @@ SumVessel(da)
   log.printf("  value %s.gt%s contains the number of values more than %s\n",(getAction()->getLabel()).c_str(),vv.c_str(),(sf.description()).c_str());
 }
 
-void VesselMoreThan::printKeywords( Log& log ){
+void VesselMoreThan::printKeywords(){
   sf.printKeywords( log );
 }
 

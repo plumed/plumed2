@@ -35,7 +35,7 @@ public:
   static void reserveKeyword( Keywords& keys ); 
   VesselLessThan( const VesselOptions& da );
   double compute( const unsigned& i, const double& val, double& df ); 
-  void printKeywords( Log& log );
+  void printKeywords();
 };
 
 PLUMED_REGISTER_VESSEL(VesselLessThan,"LESS_THAN")
@@ -59,7 +59,7 @@ SumVessel(da)
   log.printf("  value %s.lt%s contains number of values less than %s\n",(getAction()->getLabel()).c_str(),vv.c_str(),(sf.description()).c_str() );
 }
 
-void VesselLessThan::printKeywords( Log& log ){
+void VesselLessThan::printKeywords(){
   sf.printKeywords( log );
 }
 
