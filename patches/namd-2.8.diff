@@ -1,7 +1,7 @@
 patch -u -l -b -F 5 --suffix=.preplumed "./Makefile" << \EOF_EOF
 --- ./Makefile.preplumed
 +++ ./Makefile
-@@ -347,10 +347,12 @@
+@@ -358,10 +358,12 @@
  	cat $(BUILDINFO).C; \
  	$(CXX) $(CXXFLAGS) $(COPTO)$(BUILDINFO).o $(COPTC) $(BUILDINFO).C
  
@@ -14,7 +14,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./Makefile" << \EOF_EOF
  	$(CHARMC) -verbose -ld++-option \
  	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
  	-module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -language charm++ \
-@@ -360,10 +362,11 @@
+@@ -371,10 +373,11 @@
  	$(CUDALIB) \
  	$(DPMTALIB) \
  	$(DPMELIB) \
@@ -23,78 +23,17 @@ patch -u -l -b -F 5 --suffix=.preplumed "./Makefile" << \EOF_EOF
 +        $(PLUMED_LOAD) \
  	$(PLUGINLIB) \
  	$(CHARMOPTS) \
+ 	$(EXTRALINKLIBS) \
  	-lm -o namd2
  
- charmrun: $(CHARM)/bin/charmrun # XXX
-EOF_EOF
-patch -u -l -b -F 5 --suffix=.preplumed "./src/SimParameters.C" << \EOF_EOF
---- ./src/SimParameters.C.preplumed
-+++ ./src/SimParameters.C
-@@ -1231,10 +1231,17 @@
-       &colvarsOn, FALSE);
-     opts.require("colvars", "colvarsConfig",
-       "configuration for the collective variables", PARSE_STRING);
-     opts.optional("colvars", "colvarsInput",
-       "input restart file for the collective variables", PARSE_STRING);
-+
-+     // PLUMED
-+     //// plumed
-+     opts.optionalB("main", "plumed", "Is PLUMED active?",&plumedOn,FALSE);
-+     opts.require("plumed", "plumedfile","PLUMED script",PARSE_STRING);
-+     // END PLUMED
-+
- }
- 
- 
- /* BEGIN gf */
- void SimParameters::config_parser_mgridforce(ParseOptions &opts) {
-@@ -3511,11 +3518,11 @@
-    }
-    
-    // Global forces configuration
- 
-    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
--                       (IMDon) || SMDOn || TMDOn || colvarsOn || symmetryOn );
-+                       (IMDon) || SMDOn || TMDOn || colvarsOn || symmetryOn || plumedOn );
- 
- 
-    if (tclForcesOn)
-    {
-      iout << iINFO << "TCL GLOBAL FORCES ACTIVE\n";
-@@ -3596,10 +3603,25 @@
-      }
- 
-      iout << endi;
-    }
- 
-+   // PLUMED
-+   if (plumedOn)
-+   {
-+       iout << iINFO << "PLUMED ACTIVE\n";
-+
-+       current = config->find("plumedfile");
-+       iout << iINFO << "PLUMED CONFIG FILE   "<< current->data << "\n" << endi;
-+       strcpy(plumedFilename,current->data);
-+
-+       ifstream plumedFile(current->data);
-+       if ( ! plumedFile ) NAMD_die("Error reading PLUMED config file.\n");
-+
-+   }
-+   // END PLUMED
-+
-    if (IMDon)
-    {
-      iout << iINFO << "INTERACTIVE MD ACTIVE\n";
-      iout << iINFO << "INTERACTIVE MD PORT    " << IMDport << "\n";
-      iout << iINFO << "INTERACTIVE MD FREQ    " << IMDfreq << "\n";
 EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 --- ./src/ComputeMgr.C.preplumed
 +++ ./src/ComputeMgr.C
-@@ -73,13 +73,134 @@
- #include "GlobalMasterTcl.h"
+@@ -77,13 +77,137 @@
  #include "GlobalMasterSMD.h"
  #include "GlobalMasterTMD.h"
+ #include "GlobalMasterSymmetry.h"
  #include "GlobalMasterEasy.h"
  #include "GlobalMasterMisc.h"
 +// PLUMED
@@ -144,6 +83,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +
 +    double dt=spar->dt;
 +    cmd("setTimestep",&dt);
++    cmd("setNoVirial");
 +    cmd("init");
 +
 +    int s=step+1;
@@ -174,7 +114,6 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +      forces.resize(3*n);
 +      charges.resize(n);
 +      
-+      cmd("setMasses",&masses[0]);
 +      cmd("setAtomsNlocal",&n);
 +      cmd("setAtomsGatindex",&index[0]);
 +    }
@@ -198,10 +137,11 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +      for(int i=0;i<3;i++) box[1][i]=spar->lattice.b()[i];
 +      for(int i=0;i<3;i++) box[2][i]=spar->lattice.c()[i];
 +      cmd("setBox",&box[0][0]);
-+    }
++    } 
 +
 +    for(int i=0;i<forces.size();i++) forces[i]=0.0;
 +
++    cmd("setMasses",&masses[0]);
 +    cmd("setPositions",&positions[0]);
 +    cmd("setForces",&forces[0]);
 +
@@ -223,14 +163,13 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +  }
 +};
 +
-+
  ComputeMgr::ComputeMgr()
  {
      CkpvAccess(BOCclass_group).computeMgr = thisgroup;
      computeGlobalObject = 0;
      computeDPMEObject = 0;
-@@ -656,10 +777,16 @@
-             );
+@@ -743,10 +867,15 @@
+             masterServerObject->addClient(new GlobalMasterSymmetry());    
          if (simParams->TMDOn)
              masterServerObject->addClient(new GlobalMasterTMD());
          if (simParams->miscForcesOn)
@@ -240,17 +179,77 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/ComputeMgr.C" << \EOF_EOF
 +          masterServerObject->addClient(new GlobalMasterPlumed());
 +        }
 +     // END PLUMED
-+
          if ( simParams->freeEnergyOn )
              masterServerObject->addClient(new GlobalMasterFreeEnergy());
  		if ( simParams->colvarsOn )
  			masterServerObject->addClient(new GlobalMasterColvars());
  
 EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./src/SimParameters.C" << \EOF_EOF
+--- ./src/SimParameters.C.preplumed
++++ ./src/SimParameters.C
+@@ -1231,10 +1231,17 @@
+    opts.optionalB("main", "GBIS", "Use GB implicit solvent?",
+       &GBISOn, FALSE);
+    opts.optionalB("main", "GBISSer", "Use GB implicit solvent?",
+       &GBISserOn, FALSE);
+ 
++
++     // PLUMED
++     //// plumed
++     opts.optionalB("main", "plumed", "Is PLUMED active?",&plumedOn,FALSE);
++     opts.require("plumed", "plumedfile","PLUMED script",PARSE_STRING);
++     // END PLUMED
++
+    opts.optional("GBIS", "solventDielectric",
+       "Solvent Dielectric", &solvent_dielectric, 78.5);
+    opts.optional("GBIS", "intrinsicRadiusOffset",
+       "Coulomb Radius Offset", &coulomb_radius_offset, 0.09);
+    opts.optional("GBIS", "ionConcentration",
+@@ -4103,11 +4110,11 @@
+    }
+    
+    // Global forces configuration
+ 
+    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
+-                      (IMDon) || SMDOn || TMDOn || colvarsOn || symmetryOn );
++                       (IMDon) || SMDOn || TMDOn || colvarsOn || symmetryOn || plumedOn );
+ 
+ 
+    if (tclForcesOn)
+    {
+      iout << iINFO << "TCL GLOBAL FORCES ACTIVE\n";
+@@ -4188,10 +4195,25 @@
+      }
+ 
+      iout << endi;
+    }
+ 
++   // PLUMED
++   if (plumedOn)
++   {
++       iout << iINFO << "PLUMED ACTIVE\n";
++
++       current = config->find("plumedfile");
++       iout << iINFO << "PLUMED CONFIG FILE   "<< current->data << "\n" << endi;
++       strcpy(plumedFilename,current->data);
++
++       ifstream plumedFile(current->data);
++       if ( ! plumedFile ) NAMD_die("Error reading PLUMED config file.\n");
++
++   }
++   // END PLUMED
++
+    if (IMDon)
+    {
+      iout << iINFO << "INTERACTIVE MD ACTIVE\n";
+      iout << iINFO << "INTERACTIVE MD PORT    " << IMDport << "\n";
+      iout << iINFO << "INTERACTIVE MD FREQ    " << IMDfreq << "\n";
+EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/SimParameters.h" << \EOF_EOF
 --- ./src/SimParameters.h.preplumed
 +++ ./src/SimParameters.h
-@@ -351,10 +351,13 @@
+@@ -401,10 +401,13 @@
  	char tclBCArgs[128];		//  Extra args for calcforces command
  	Bool freeEnergyOn;		//  Doing free energy perturbation?
  	Bool miscForcesOn;		//  Using misc forces?
