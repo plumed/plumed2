@@ -33,7 +33,7 @@ namespace PLMD{
 RMSD::RMSD(Log & log ):
   alignmentMethod(SIMPLE),
   myoptimalalignment(NULL),
-  log(&log){};
+  log(&log){}
 
 RMSD& RMSD::operator=(const RMSD& v){
   alignmentMethod=v.alignmentMethod;
@@ -58,7 +58,7 @@ RMSD::RMSD(const RMSD & oldrmsd):
 // myoptimalalignment when used (in calculate())
   myoptimalalignment(NULL),
   log( oldrmsd.log )
-  {  }; 
+  {  }
 
 void RMSD::set(const PDB&pdb, string mytype ){
 
