@@ -81,7 +81,7 @@ public:
   static void registerKeywords( Keywords& keys );
   Distances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos );
+  virtual double compute( const unsigned& j );
 /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
@@ -113,9 +113,9 @@ unsigned Distances::getNumberOfFieldDerivatives(){
   return 3*getNumberOfAtoms() + 9;
 } 
 
-double Distances::compute( const unsigned& j, const std::vector<Vector>& pos ){
+double Distances::compute( const unsigned& j ){
    Vector distance; 
-   distance=getSeparation( pos[0], pos[1] );
+   distance=getSeparation( getPosition(0), getPosition(1) );
    const double value=distance.modulo();
    const double invvalue=1.0/value;
 

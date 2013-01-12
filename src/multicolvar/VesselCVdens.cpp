@@ -91,17 +91,18 @@ DENSITY SPECIES=20-500 REGION={SIGMA=0.1 VOLUME=r2}
 class VesselCVDens : public vesselbase::NormedSumVessel {
 private:
   bool isDensity;
-  Value tmpval, tmpweight;
+  double weight;
+  Vector wdf;
   ActionVolume* myvol;
   MultiColvar* mycolv;
-  std::vector<Value> catom_pos;
   bool not_in;
   HistogramBead bead;
 public:
   static void reserveKeyword( Keywords& keys );
   VesselCVDens( const vesselbase::VesselOptions& da );
-  void getWeight( const unsigned& i, Value& weight );
-  void compute( const unsigned& i, const unsigned& j, Value& theval );
+  double getWeight( const unsigned& i, bool& hasDerivatives );
+  double compute( const unsigned& i, const unsigned& j, const double& val, double& df );
+  void addDerivativesOfWeight( const unsigned& icv );
 };
 
 PLUMED_REGISTER_VESSEL(VesselCVDens,"REGION")
@@ -113,13 +114,11 @@ void VesselCVDens::reserveKeyword( Keywords& keys ){
 
 VesselCVDens::VesselCVDens( const vesselbase::VesselOptions& da ) :
 NormedSumVessel(da),
-catom_pos(3),
 not_in(false)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_massert( mycolv, "REGION can only be used with MultiColvars");
 
-  mycolv->useCentralAtom();
   isDensity=mycolv->isDensity();
   if(!isDensity) useNorm(); 
 
@@ -129,7 +128,8 @@ not_in(false)
   if( name.substr(0,1)=="!" ){ name=name.substr(1); not_in=true; }
   myvol = (mycolv->plumed).getActionSet().selectWithLabel<ActionVolume*>(name);
   if(!myvol){ error( "in REGION " + name + " is not a valid volume element"); return; }
-  mycolv->addDependency( myvol ); 
+  mycolv->centralAtomDerivativesAreInFractional=myvol->derivativesOfFractionalCoordinates();
+  mycolv->addDependency( myvol );
 
   double sigma; bool found_sigma=Tools::parse(data,"SIGMA",sigma);
   if(!found_sigma){ error("No value for SIGMA specified in call to REGION"); return; }
@@ -148,30 +148,57 @@ not_in(false)
   }
 }
 
-void VesselCVDens::getWeight( const unsigned& i, Value& weight ){
-  mycolv->retrieveCentralAtomPos( catom_pos );
-  plumed_assert( catom_pos.size()==3 ); unsigned nder=catom_pos[0].getNumberOfDerivatives();
-  plumed_assert( nder==catom_pos[1].getNumberOfDerivatives() && nder==catom_pos[2].getNumberOfDerivatives() );
-  if( tmpweight.getNumberOfDerivatives()!=nder ) tmpweight.resizeDerivatives( nder );
-  tmpweight.clearDerivatives();
-  myvol->calculateNumberInside( catom_pos, bead, tmpweight );
-  copy( tmpweight, weight );
-  if( not_in ){ weight.set( 1.0 - weight.get() ); weight.chainRule(-1.); }
+double VesselCVDens::getWeight( const unsigned& i, bool& hasDerivatives ){
+  hasDerivatives=true;
+  Vector catom_pos=mycolv->retrieveCentralAtomPos();
+  weight=myvol->calculateNumberInside( catom_pos, bead, wdf );
+  if( not_in ){ weight=1.0 - weight; wdf *= -1.; } //weight.chainRule(-1.); }
+  return weight;
 }
 
-void VesselCVDens::compute( const unsigned& i, const unsigned& j, Value& theval ){
-  plumed_assert( j==0 );
+void VesselCVDens::addDerivativesOfWeight( const unsigned& icv ){
+  int thisatom, thispos, in=0; unsigned innat=mycolv->colvar_atoms[icv].getNumberActive();
+  for(unsigned i=0;i<innat;++i){
+     thisatom=linkIndex( i, mycolv->colvar_atoms[icv], mycolv->all_atoms );
+     plumed_assert( thisatom>=0 ); thispos=3*thisatom;
+     addWeightDerivative( thispos , mycolv->getCentralAtomDerivative( i, 0, wdf ) ); in++;
+     addWeightDerivative( thispos+1,mycolv->getCentralAtomDerivative( i, 1, wdf ) ); in++;
+     addWeightDerivative( thispos+2,mycolv->getCentralAtomDerivative( i, 2, wdf ) ); in++;
+  } 
+}
+
+double VesselCVDens::compute( const unsigned& icv, const unsigned& j, const double& val, double& df ){
+  plumed_assert( j==0 ); 
   if(isDensity){
-     mycolv->retrieveCentralAtomPos( catom_pos );
-     plumed_assert( catom_pos.size()==3 ); unsigned nder=catom_pos[0].getNumberOfDerivatives();
-     plumed_assert( nder==catom_pos[1].getNumberOfDerivatives() && nder==catom_pos[2].getNumberOfDerivatives() );
-     if( theval.getNumberOfDerivatives()!=nder ) theval.resizeDerivatives( nder );
-     myvol->calculateNumberInside( catom_pos, bead, theval );
-     if( not_in ){ theval.set( 1.0 - theval.get() ); theval.chainRule(-1.); }
+     bool hasDerivatives; double ww;
+     ww=getWeight( icv, hasDerivatives );
+     addDerivativesOfWeight( icv );
+     return ww;
   } else {
-     tmpval=mycolv->retreiveLastCalculatedValue();
-     product( tmpval, tmpweight, theval ); 
+     int thisatom, thispos, in=0; 
+     unsigned innat=mycolv->colvar_atoms[icv].getNumberActive();
+     unsigned vstart=3*mycolv->getNumberOfAtoms() + 11;  // two Values and the virial
+     for(unsigned i=0;i<innat;++i){
+        thisatom=linkIndex( i, mycolv->colvar_atoms[icv], mycolv->all_atoms );
+        plumed_assert( thisatom>=0 ); thispos=vstart+3*thisatom;
+        addToBufferElement( thispos , weight*mycolv->getElementDerivative(in) + val*mycolv->getCentralAtomDerivative( i, 0, wdf ) ); in++;
+        addToBufferElement( thispos+1,weight*mycolv->getElementDerivative(in) + val*mycolv->getCentralAtomDerivative( i, 1, wdf ) ); in++;
+        addToBufferElement( thispos+2,weight*mycolv->getElementDerivative(in) + val*mycolv->getCentralAtomDerivative( i, 2, wdf ) ); in++;
+     } 
+     // Easy to merge the virial
+     unsigned outnat=vstart + 3*mycolv->getNumberOfAtoms();
+     addToBufferElement( outnat+0, weight*mycolv->getElementDerivative(in) ); in++;
+     addToBufferElement( outnat+1, weight*mycolv->getElementDerivative(in) ); in++;
+     addToBufferElement( outnat+2, weight*mycolv->getElementDerivative(in) ); in++;
+     addToBufferElement( outnat+3, weight*mycolv->getElementDerivative(in) ); in++;
+     addToBufferElement( outnat+4, weight*mycolv->getElementDerivative(in) ); in++;
+     addToBufferElement( outnat+5, weight*mycolv->getElementDerivative(in) ); in++;
+     addToBufferElement( outnat+6, weight*mycolv->getElementDerivative(in) ); in++;
+     addToBufferElement( outnat+7, weight*mycolv->getElementDerivative(in) ); in++;
+     addToBufferElement( outnat+8, weight*mycolv->getElementDerivative(in) ); in++;
+     df=1.0; return weight*val;
   }
+  return 0;
 }
 
 }

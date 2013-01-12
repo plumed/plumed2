@@ -32,14 +32,14 @@ VesselAccumulator(da)
 
 bool SumVessel::calculate( const unsigned& icv, const double& tolerance ){
   bool keep=false; double f, df; unsigned jout;
-  Value myval=getAction()->retreiveLastCalculatedValue();
+  double thisval=getAction()->getElementValue();
   for(unsigned j=0;j<getNumberOfValues();++j){
-      f=compute( j, myval.get(), df );
+      f=compute( j, thisval, df );
       if( fabs(f)>tolerance ){
           keep=true; 
           jout=value_starts[j]; 
           addToBufferElement( jout, f ); jout++;
-          getAction()->mergeDerivatives( icv, myval, df, jout, this );        
+          getAction()->chainRuleForElementDerivatives( icv, jout, df, this );        
       }  
   }
   return keep;

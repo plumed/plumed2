@@ -85,7 +85,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   ParabetaRMSD(const ActionOptions&);
-  bool contributionIsSmall( std::vector<Vector>& pos );
+  bool contributionIsSmall();
   bool isPossibleToSkip();
 }; 
 
@@ -244,19 +244,21 @@ bool ParabetaRMSD::isPossibleToSkip(){
   return false;
 }
 
-bool ParabetaRMSD::contributionIsSmall( std::vector<Vector>& pos ){
+bool ParabetaRMSD::contributionIsSmall(){
   if(s_cutoff==0) return false;
 
-  Vector distance; distance=getSeparation( pos[6],pos[21] );  // This is the CA of the two residues at the centers of the two chains
+  Vector distance; distance=getSeparation( getPosition(6),getPosition(21) );  // This is the CA of the two residues at the centers of the two chains
   if( distance.modulo()>s_cutoff ) return true;
 
   // Align the two strands
   if( usingRMSD() ){
+      std::vector<Vector> pos( getPositions() ); 
       Vector origin_old, origin_new; origin_old=pos[21];
       origin_new=pos[6]+distance;
       for(unsigned i=15;i<30;++i){
           pos[i]+=( origin_new - origin_old ); 
       }
+      setAlignedPositions( pos );
   }   
   return false;
 }

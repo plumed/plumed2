@@ -43,11 +43,12 @@ class MultiColvar :
   public ActionWithValue,
   public vesselbase::ActionWithVessel
   {
+friend class VesselCVDens;
 private:
   bool usepbc;
   bool readatoms;
   bool verbose_output;
-  bool needsCentralAtomPosition;
+  bool posHasBeenSet;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
 /// The lists of the atoms involved in each of the individual colvars
@@ -56,9 +57,9 @@ private:
 /// These are used to store the values of CVs etc so they can be retrieved by distribution
 /// functions
   std::vector<Vector> pos;
+  Tensor ibox;
+  bool centralAtomDerivativesAreInFractional;
   std::vector<Tensor> central_derivs;
-  Value thisval;
-  std::vector<Value> catom_pos;
 /// Used to make sure we update the correct atoms during neighbor list update
   unsigned current;
 /// Read in ATOMS keyword
@@ -86,6 +87,23 @@ protected:
   void addAtomsDerivatives(const int&,const Vector&);
 /// Add some derivatives to the virial
   void addBoxDerivatives(const Tensor&);
+/// Add derivative of central atom position wrt to position of iatom'th atom
+  void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
+/// Retrieve derivative of central atom position wrt jcomp'th component of position of iatom'th atom
+  double getCentralAtomDerivative( const unsigned& iatom, const unsigned jcomp, const Vector& df ) const ;
+/// Get the number of atoms in this particular colvar
+  unsigned getNAtoms() const;
+/// Get the position of atom iatom
+  const Vector & getPosition(unsigned) const;
+/// Get the mass of atom iatom
+  double getMass(unsigned) const ; 
+/// Get the charge of atom iatom
+  double getCharge(unsigned) const ;
+/// Get all the positions
+  const std::vector<Vector> & getPositions();
+/// This can be used to get rid of erroenous effects that might happen
+/// because molecules are split by the pbcs.
+  void setAlignedPositions( const std::vector<Vector>& );
 public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){};
@@ -102,17 +120,13 @@ public:
   unsigned getNumberOfFunctionsInAction();  
 /// Return the number of derivatives for a given colvar
   unsigned getNumberOfDerivatives( const unsigned& j );
-/// Retrieve the value that was calculated last
-  const Value & retreiveLastCalculatedValue();
 /// Retrieve the position of the central atom
-  void retrieveCentralAtomPos( std::vector<Value>& cpos ) const ;
+  Vector retrieveCentralAtomPos();
 /// Make sure we calculate the position of the central atom
   void useCentralAtom();
-/// Get the weight of the colvar
-  virtual void retrieveColvarWeight( const unsigned& i, Value& ww );
 /// Merge the derivatives 
-  void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, const unsigned& vstart, vesselbase::Vessel* valout );
-  void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout );
+  void chainRuleForElementDerivatives( const unsigned j, const unsigned& vstart, const double& df, vesselbase::Vessel* valout );
+  void transferDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout );
 /// Turn of atom requests when this colvar is deactivated cos its small
   void deactivateValue( const unsigned j );
 /// Turn on atom requests when the colvar is activated
@@ -120,11 +134,11 @@ public:
 /// Calcualte the colvar
   bool calculateThisFunction( const unsigned& j );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
-  virtual bool contributionIsSmall( std::vector<Vector>& pos ){ plumed_assert( !isPossibleToSkip() ); return false; }
+  virtual bool contributionIsSmall(){ plumed_assert( !isPossibleToSkip() ); return false; }
 /// And a virtual function which actually computes the colvar
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos )=0;  
+  virtual double compute( const unsigned& j )=0;  
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
-  virtual void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ); 
+  virtual Vector getCentralAtom(); 
 /// Is this a density?
   virtual bool isDensity(){ return false; }
 };
@@ -151,12 +165,6 @@ void MultiColvar::activateValue( const unsigned j ){
 }
 
 inline
-const Value & MultiColvar::retreiveLastCalculatedValue(){
-  return thisval;
-  // copy( thisval, myvalue );  
-}
-
-inline
 unsigned MultiColvar::getNumberOfDerivatives( const unsigned& j ){
   return 3*colvar_atoms[j].getNumberActive() + 9;
 }
@@ -173,25 +181,48 @@ bool MultiColvar::usesPbc() const {
 }
 
 inline
+unsigned MultiColvar::getNAtoms() const {
+  return colvar_atoms[current].getNumberActive();
+}
+
+inline
+const Vector & MultiColvar::getPosition( unsigned iatom ) const {
+  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  return ActionAtomistic::getPosition( colvar_atoms[current][iatom] );
+}
+
+inline
+double MultiColvar::getMass(unsigned iatom ) const {
+  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  return ActionAtomistic::getMass( colvar_atoms[current][iatom] );
+}
+
+inline
+double MultiColvar::getCharge(unsigned iatom ) const {
+  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  return ActionAtomistic::getCharge( colvar_atoms[current][iatom] );
+}
+
+inline
 void MultiColvar::addAtomsDerivatives(const int& iatom, const Vector& der){
   plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
-  thisval.addDerivative( 3*iatom+0, der[0] );
-  thisval.addDerivative( 3*iatom+1, der[1] );
-  thisval.addDerivative( 3*iatom+2, der[2] );
+  addElementDerivative( 3*iatom+0, der[0] );
+  addElementDerivative( 3*iatom+1, der[1] );
+  addElementDerivative( 3*iatom+2, der[2] );
 }
 
 inline
 void MultiColvar::addBoxDerivatives(const Tensor& vir){
   int natoms=colvar_atoms[current].getNumberActive();
-  thisval.addDerivative( 3*natoms+0, vir(0,0) );
-  thisval.addDerivative( 3*natoms+1, vir(0,1) );
-  thisval.addDerivative( 3*natoms+2, vir(0,2) );
-  thisval.addDerivative( 3*natoms+3, vir(1,0) );
-  thisval.addDerivative( 3*natoms+4, vir(1,1) );
-  thisval.addDerivative( 3*natoms+5, vir(1,2) );
-  thisval.addDerivative( 3*natoms+6, vir(2,0) );
-  thisval.addDerivative( 3*natoms+7, vir(2,1) );
-  thisval.addDerivative( 3*natoms+8, vir(2,2) );
+  addElementDerivative( 3*natoms+0, vir(0,0) );
+  addElementDerivative( 3*natoms+1, vir(0,1) );
+  addElementDerivative( 3*natoms+2, vir(0,2) );
+  addElementDerivative( 3*natoms+3, vir(1,0) );
+  addElementDerivative( 3*natoms+4, vir(1,1) );
+  addElementDerivative( 3*natoms+5, vir(1,2) );
+  addElementDerivative( 3*natoms+6, vir(2,0) );
+  addElementDerivative( 3*natoms+7, vir(2,1) );
+  addElementDerivative( 3*natoms+8, vir(2,2) );
 }
 
 }

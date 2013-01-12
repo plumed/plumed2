@@ -20,23 +20,22 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
-#include "vesselbase/VesselRegister.h"
-#include "vesselbase/NormedSumVessel.h"
-#include "MultiColvar.h"
+#include "VesselRegister.h"
+#include "NormedSumVessel.h"
 #include "tools/HistogramBead.h"
+#include "ActionWithVessel.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace vesselbase {
 
 class VesselWithin : public vesselbase::NormedSumVessel {
 private:
-  MultiColvar* mycolv;
   std::vector<HistogramBead> hist;
 public:
   static void reserveKeyword( Keywords& keys );
   VesselWithin( const vesselbase::VesselOptions& da );
-  void getWeight( const unsigned& i, Value& weight );
-  void compute( const unsigned& i, const unsigned& j, Value& theval );
+  double getWeight( const unsigned& i, bool& hasDerivatives );
+  double compute( const unsigned&, const unsigned&, const double&, double& );
   void printKeywords();
 };
 
@@ -52,9 +51,6 @@ void VesselWithin::reserveKeyword( Keywords& keys ){
 VesselWithin::VesselWithin( const vesselbase::VesselOptions& da ) :
 NormedSumVessel(da)
 { 
-
-  mycolv=dynamic_cast<MultiColvar*>( getAction() );
-  plumed_massert( mycolv, "within is used to calculate functions of multi colvars");
 
   bool isPeriodic=getAction()->isPeriodic();
   double min, max; std::string str_min, str_max;
@@ -103,15 +99,16 @@ void VesselWithin::printKeywords(){
   keys.print(log);
 }
 
-void VesselWithin::compute( const unsigned& icv, const unsigned& jfunc, Value& theval ){
+double VesselWithin::compute( const unsigned& icv, const unsigned& jfunc, const double& val, double& df ){
   plumed_assert( jfunc<hist.size() );
-  theval=mycolv->retreiveLastCalculatedValue();
-  double df, f; f=hist[jfunc].calculate( theval.get() , df );
-  theval.chainRule(df); theval.set(f);
+  double f; f=hist[jfunc].calculate( val , df );
+  return f;
 }
 
-void VesselWithin::getWeight( const unsigned& i, Value& weight ){
-  mycolv->retrieveColvarWeight( i, weight );
+double VesselWithin::getWeight( const unsigned& i, bool& hasDerivatives ){
+  plumed_assert( !getAction()->isPossibleToSkip() );   
+  hasDerivatives=false;
+  return 1.0;
 }
 
 }

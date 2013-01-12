@@ -70,8 +70,8 @@ public:
   static void registerKeywords( Keywords& keys );
   CoordinationNumbers(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos ); 
-  void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
+  virtual double compute( const unsigned& j ); 
+  Vector getCentralAtom();
 /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
@@ -129,13 +129,13 @@ unsigned CoordinationNumbers::getNumberOfFieldDerivatives(){
   return getNumberOfFunctionsInAction();
 } 
 
-double CoordinationNumbers::compute( const unsigned& j, const std::vector<Vector>& pos ){
+double CoordinationNumbers::compute( const unsigned& j ){
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number
    double sw;
-   for(unsigned i=1;i<pos.size();++i){
-      distance=getSeparation( pos[0], pos[i] );
+   for(unsigned i=1;i<getNAtoms();++i){
+      distance=getSeparation( getPosition(0), getPosition(i) );
       sw = switchingFunction.calculate( distance.modulo(), dfunc );
       if( sw>=getTolerance() ){    //  nl_cut<0 ){
          value += sw;             // switchingFunction.calculate( distance.modulo(), dfunc );
@@ -150,8 +150,9 @@ double CoordinationNumbers::compute( const unsigned& j, const std::vector<Vector
    return value;
 }
 
-void CoordinationNumbers::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
-   cpos=pos[0]; deriv[0]=Tensor::identity();
+Vector CoordinationNumbers::getCentralAtom(){
+   addCentralAtomDerivatives( 0, Tensor::identity() );
+   return getPosition(0);
 }
 
 }

@@ -66,22 +66,18 @@ Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
-usepbc(true),
+usepbc(false),
 readatoms(false),
 verbose_output(false),
-needsCentralAtomPosition(false),
-catom_pos(3),
+posHasBeenSet(false),
+centralAtomDerivativesAreInFractional(false),
 current(0)
 {
   if( keywords.exists("NOPBC") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
     usepbc=!nopbc;
-  }
+  } 
   parseFlag("VERBOSE",verbose_output);
-}
-
-void MultiColvar::useCentralAtom(){
-  needsCentralAtomPosition=true;
 }
 
 void MultiColvar::addColvar( const std::vector<unsigned>& newatoms ){
@@ -107,6 +103,7 @@ void MultiColvar::readAtoms( int& natoms ){
   }
   all_atoms.activateAll(); all_atoms.updateActiveMembers();
   ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+  central_derivs.resize( getNumberOfAtoms() );
 }
 
 void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
@@ -303,7 +300,7 @@ void MultiColvar::prepare(){
       }
       all_atoms.updateActiveMembers(); 
       ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-      resizeFunctions();
+      resizeFunctions(); central_derivs.resize( getNumberOfAtoms() );
   }
 }
 
@@ -311,100 +308,86 @@ void MultiColvar::calculate(){
   calculateAllVessels( getStep() );
 }
 
-void MultiColvar::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
+Vector MultiColvar::getCentralAtom(){
    plumed_massert(0,"gradient and related cv distribution functions are not available in this colvar");
+   Vector dummy; return dummy;
+}
+
+void MultiColvar::setAlignedPositions( const std::vector<Vector>& apos ){
+  plumed_assert( apos.size()==pos.size() );
+  for(unsigned i=0;i<pos.size();++i) pos[i]=apos[i];
+}
+
+const std::vector<Vector>& MultiColvar::getPositions(){
+  if( !posHasBeenSet ){ 
+     unsigned natoms=colvar_atoms[current].getNumberActive();
+     // Resize everything
+     if( pos.size()!=natoms ) pos.resize(natoms); 
+     // Get the position
+     for(unsigned i=0;i<natoms;++i) pos[i]=ActionAtomistic::getPosition( colvar_atoms[current][i] );  
+     posHasBeenSet=true; 
+  }
+  return pos;
 }
 
 bool MultiColvar::calculateThisFunction( const unsigned& j ){
-  unsigned natoms=colvar_atoms[j].getNumberActive();
-
+  unsigned natoms=colvar_atoms[j].getNumberActive(); 
   if ( natoms==0 ) return true;   // Do nothing if there are no active atoms in the colvar
+  current=j; // Store the number of the atom list we are currently working on
+  posHasBeenSet=false;  // This ensures we don't set the pos array more than once per step  
 
-  // Resize everything
-  if( pos.size()!=natoms ){
-      pos.resize(natoms); thisval.resizeDerivatives( 3*pos.size()+9 );
-  }
-
-  // Clear everything
-  for(unsigned i=0;i<natoms;++i){ pos[i]=getPosition( colvar_atoms[j][i] ); } 
-  thisval.clearDerivatives();
-
-  // Do a quick check on the size of this contribution
-  if( contributionIsSmall( pos ) ) return true;
+  // Do a quick check on the size of this contribution  
+  if( contributionIsSmall() ) return true;   
 
   // Compute everything
-  current=j; double vv=compute( j, pos ); thisval.set(vv);   
-
-  if(needsCentralAtomPosition){
-     if( central_derivs.size()!=pos.size() ) central_derivs.resize( pos.size() );
-     Vector central_pos, fpos;
-     getCentralAtom( pos, central_pos, central_derivs );
-     fpos=getPbc().realToScaled( central_pos );
-
-     unsigned nder=3*pos.size()+9;
-     for(unsigned i=0;i<3;++i){
-         if( catom_pos[i].getNumberOfDerivatives()!=nder ) catom_pos[i].resizeDerivatives( nder );
-         catom_pos[i].clearDerivatives();
-     }
-
-     catom_pos[0].set(fpos[0]);
-     catom_pos[1].set(fpos[1]);
-     catom_pos[2].set(fpos[2]);
-     Tensor dbox, ibox( getPbc().getInvBox().transpose() );
-     for(unsigned i=0;i<natoms;++i){
-        dbox=matmul( ibox, central_derivs[i] );
-        for(unsigned j=0;j<3;++j){
-           catom_pos[0].addDerivative( 3*i+j, dbox(0,j) );
-           catom_pos[1].addDerivative( 3*i+j, dbox(1,j) );
-           catom_pos[2].addDerivative( 3*i+j, dbox(2,j) );
-        }
-     }
-  }
+  double vv=compute( j ); 
+  // And set the value of this element in ActionWithVessel
+  setElementValue( vv );
   return false;
 }
 
-void MultiColvar::retrieveCentralAtomPos( std::vector<Value>& cpos ) const {
-  plumed_assert(needsCentralAtomPosition);
-  for(unsigned i=0;i<3;++i) copy( catom_pos[i], cpos[i] );
+Vector MultiColvar::retrieveCentralAtomPos(){
+  ibox=getPbc().getInvBox().transpose();
+  for(unsigned i=0;i<central_derivs.size();++i) central_derivs[i].zero();
+  return getPbc().realToScaled( getCentralAtom() );
 }
 
-void MultiColvar::retrieveColvarWeight( const unsigned& j, Value& ww ){
-  if( isPossibleToSkip() ) error("cannot calculate this quantity for this setup. You have something that causes "
-                                 "colvars to be skipped without being calculated.  This can cause discontinuities "
-                                 "in the final value of the quantity"); 
-
-  unsigned nder=3*colvar_atoms[j].getNumberActive()+9;
-  if( ww.getNumberOfDerivatives()!=nder ) ww.resizeDerivatives( nder );
-  ww.clearDerivatives(); ww.set(1.0);
+void MultiColvar::addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der ){
+  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  if( centralAtomDerivativesAreInFractional ) central_derivs[iatom] += matmul( ibox, der );
+  else central_derivs[iatom] += der;
 }
 
-void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, const unsigned& vstart, vesselbase::Vessel* valout ){    
-  plumed_assert( value_in.getNumberOfDerivatives()==3*colvar_atoms[jcv].getNumberActive()+9);
+double MultiColvar::getCentralAtomDerivative( const unsigned& iatom, const unsigned jcomp, const Vector& df ) const {
+  plumed_assert( iatom<colvar_atoms[current].getNumberActive() && jcomp<3 );
+  return df[0]*central_derivs[iatom](0,jcomp) + df[1]*central_derivs[iatom](1,jcomp) + df[2]*central_derivs[iatom](2,jcomp);
+}
+
+void MultiColvar::chainRuleForElementDerivatives( const unsigned jcv, const unsigned& vstart, const double& df, vesselbase::Vessel* valout ){    
 
   int thisatom, thispos, in=0; unsigned innat=colvar_atoms[jcv].getNumberActive();
   for(unsigned i=0;i<innat;++i){
      thisatom=linkIndex( i, colvar_atoms[jcv], all_atoms );
      plumed_assert( thisatom>=0 ); thispos=vstart+3*thisatom;
-     valout->addToBufferElement( thispos , df*value_in.getDerivative(in) ); in++;
-     valout->addToBufferElement( thispos+1, df*value_in.getDerivative(in) ); in++;
-     valout->addToBufferElement( thispos+2, df*value_in.getDerivative(in) ); in++; 
+     valout->addToBufferElement( thispos , df*getElementDerivative(in) ); in++;
+     valout->addToBufferElement( thispos+1, df*getElementDerivative(in) ); in++;
+     valout->addToBufferElement( thispos+2, df*getElementDerivative(in) ); in++; 
   }
 
   // Easy to merge the virial
   unsigned outnat=vstart+3*getNumberOfAtoms(); 
-  valout->addToBufferElement( outnat+0, df*value_in.getDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+1, df*value_in.getDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+2, df*value_in.getDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+3, df*value_in.getDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+4, df*value_in.getDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+5, df*value_in.getDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+6, df*value_in.getDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+7, df*value_in.getDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+8, df*value_in.getDerivative(in) ); in++;
-
+  valout->addToBufferElement( outnat+0, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+1, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+2, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+3, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+4, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+5, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+6, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+7, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+8, df*getElementDerivative(in) ); in++;
 }
 
-void MultiColvar::mergeDerivatives( const unsigned jcv, const Value& value_in, const double& df, Value* valout ){    
+void MultiColvar::transferDerivatives( const unsigned jcv, const Value& value_in, const double& df, Value* valout ){    
   plumed_assert( value_in.getNumberOfDerivatives()==3*colvar_atoms[jcv].getNumberActive()+9);
 
   int thisatom; unsigned innat=colvar_atoms[jcv].getNumberActive();

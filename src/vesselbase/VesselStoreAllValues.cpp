@@ -40,10 +40,8 @@ void VesselStoreAllValues::resize(){
 }
 
 bool VesselStoreAllValues::calculate( const unsigned& i, const double& tolerance ){
-  Value myvalue=getAction()->retreiveLastCalculatedValue();
-  unsigned ider=value_starts[i]; setBufferElement( ider, myvalue.get() ); ider++;
-  for(unsigned j=0;j<myvalue.getNumberOfDerivatives();++j){ setBufferElement( ider, myvalue.getDerivative(j) ); ider++; }
-  //setValue( i, myvalue );
+  unsigned ider=value_starts[i]; setBufferElement( ider, getAction()->getElementValue() ); ider++;
+  for(unsigned j=0;j<getAction()->getNumberOfDerivatives(i);++j){ setBufferElement( ider, getAction()->getElementDerivative(j) ); ider++; }
   return true;
 }
 

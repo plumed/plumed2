@@ -104,8 +104,8 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 }
 
-double SecondaryStructureRMSD::compute( const unsigned& j, const std::vector<Vector>& pos ){
-  double r,nr; Tensor virial, new_virial;
+double SecondaryStructureRMSD::compute( const unsigned& j ){
+  double r,nr; Tensor virial, new_virial; std::vector<Vector> pos( getPositions() );
 
   if( secondary_drmsd.size()>0 ){
     if( usesPbc() ) r=secondary_drmsd[0]->calculate( pos, getPbc(), deriv, virial ); 

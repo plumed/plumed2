@@ -47,7 +47,7 @@ public:
   static void registerKeywords( Keywords& keys );
   SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos );
+  virtual double compute( const unsigned& j );
   unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
 };

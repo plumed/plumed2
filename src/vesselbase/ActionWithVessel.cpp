@@ -115,6 +115,7 @@ void ActionWithVessel::resizeFunctions(){
      functions[i]->resize();
      bufsize+=(functions[i]->data_buffer).size();
   }
+  derivatives.resize( getNumberOfDerivatives() );
   buffer.resize( bufsize );
 }
 
@@ -147,6 +148,8 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
   for(unsigned i=rank;i<members.getNumberActive();i+=stride){
       // Retrieve the function we are calculating from the dynamic list
       kk=members[i]; 
+      // Clear the derivatives ready for new function
+      derivatives.assign(derivatives.size(),0.0);
       // Calculate the stuff in the loop for this action
       bool skipme=calculateThisFunction( kk );
 

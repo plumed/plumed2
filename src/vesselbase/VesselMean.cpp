@@ -19,21 +19,20 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "vesselbase/VesselRegister.h"
-#include "vesselbase/NormedSumVessel.h"
-#include "MultiColvar.h"
+#include "VesselRegister.h"
+#include "NormedSumVessel.h"
+#include "ActionWithVessel.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace vesselbase {
 
 class VesselMean : public vesselbase::NormedSumVessel {
 private:
-  MultiColvar* mycolv;
 public:
   static void reserveKeyword( Keywords& keys );
   VesselMean( const vesselbase::VesselOptions& da );
-  void getWeight( const unsigned& i, Value& weight );
-  void compute( const unsigned& i, const unsigned& j, Value& theval );
+  double getWeight( const unsigned& i, bool& hasDerivatives );
+  double compute( const unsigned& i, const unsigned& j, const double& val, double& df );
 };
 
 PLUMED_REGISTER_VESSEL(VesselMean,"AVERAGE")
@@ -47,21 +46,20 @@ NormedSumVessel(da)
 {
   if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
 
-  mycolv=dynamic_cast<MultiColvar*>( getAction() );
-  plumed_massert( mycolv, "average is used to take the average values of multi colvars");
-
   useNorm();
   addOutput("average");
   log.printf("  value %s.average contains the average value\n",(getAction()->getLabel()).c_str());
 }
 
-void VesselMean::compute( const unsigned& i, const unsigned& j, Value& theval ){
+double VesselMean::compute( const unsigned& i, const unsigned& j, const double& val, double& df ){
   plumed_assert( j==0 );
-  theval=mycolv->retreiveLastCalculatedValue(); 
+  df=1.0; return val;
 }
 
-void VesselMean::getWeight( const unsigned& i, Value& weight ){
-  mycolv->retrieveColvarWeight( i, weight );
+double VesselMean::getWeight( const unsigned& i, bool& hasDerivatives ){
+  plumed_assert( !getAction()->isPossibleToSkip() ); 
+  hasDerivatives=false;
+  return 1.0;
 }
 
 }

@@ -43,38 +43,38 @@ void NormedSumVessel::useNorm(){
 }
 
 bool NormedSumVessel::calculate( const unsigned& icv, const double& tolerance ){
-  bool keep=false;
+  bool keep=false; double val, fval, df;
   if(donorm){
-     myweight.clearDerivatives(); 
-     getWeight( icv, myweight );
-     if( myweight.get()>tolerance ){
+     bool hasNonZeroDerivatives;
+     double ww=getWeight( icv, hasNonZeroDerivatives );
+     if( ww>tolerance ){
          keep=true; 
-         addToBufferElement( 0, myweight.get() ); 
-         getAction()->mergeDerivatives( icv, myweight, 1.0, 1, this );
+         addToBufferElement( 0, ww ); 
+         if( hasNonZeroDerivatives ) addDerivativesOfWeight( icv ); 
      }
      if(!keep) return false;
 
-     unsigned jout;
+     unsigned jout; 
+     val=getAction()->getElementValue();
      for(unsigned j=1;j<getNumberOfValues()+1;++j){
-        myvalue.clearDerivatives(); 
-        compute( icv, j-1, myvalue );
-        if( fabs( myvalue.get() )>tolerance ){
+        fval=compute( icv, j-1, val, df  );
+        if( fabs( fval )>tolerance ){
             keep=true; 
             jout=value_starts[j]; 
-            addToBufferElement( jout, myvalue.get() ); jout++;
-            getAction()->mergeDerivatives( icv, myvalue, 1.0, jout, this );
+            addToBufferElement( jout, fval); jout++;
+            if( !hasNonZeroDerivatives ) getAction()->chainRuleForElementDerivatives( icv, jout, df, this );
         }  
      }
   } else {
      unsigned jout;
+     val=getAction()->getElementValue();
      for(unsigned j=0;j<getNumberOfValues();++j){
-        myvalue.clearDerivatives(); 
-        compute( icv, j, myvalue );
-        if( myvalue.get()>tolerance ){
+        fval=compute( icv, j, val, df );
+        if( fabs( fval )>tolerance ){
             keep=true; 
             jout=value_starts[j]; 
-            addToBufferElement( jout, myvalue.get() ); jout++;
-            getAction()->mergeDerivatives( icv, myvalue, 1.0, jout, this );
+            addToBufferElement( jout, fval ); jout++;
+            getAction()->chainRuleForElementDerivatives( icv, jout, df, this );
         }
      }   
   }

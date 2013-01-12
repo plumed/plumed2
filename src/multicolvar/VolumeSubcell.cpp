@@ -53,7 +53,8 @@ public:
   static void registerKeywords( Keywords& keys );
   VolumeSubcell(const ActionOptions& ao);
   void calculate();
-  void calculateNumberInside( const std::vector<Value>& cpos, HistogramBead& bead, Value& weight );
+  bool derivativesOfFractionalCoordinates(){ return true; }
+  double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives );
 }; 
 
 PLUMED_REGISTER_ACTION(VolumeSubcell,"SUBCELL")
@@ -94,35 +95,30 @@ void VolumeSubcell::calculate(){
   if( doz ) zsmearp = getSigma() / ( sqrt( cellbox(0,2)*cellbox(0,2) + cellbox(1,2)*cellbox(1,2) + cellbox(2,2)*cellbox(2,2) ) );
 }
 
-void VolumeSubcell::calculateNumberInside( const std::vector<Value>& cpos, HistogramBead& bead, Value& weight ){
-  plumed_assert( cpos[0].getNumberOfDerivatives()==weight.getNumberOfDerivatives() );
-  plumed_assert( cpos[1].getNumberOfDerivatives()==weight.getNumberOfDerivatives() );
-  plumed_assert( cpos[2].getNumberOfDerivatives()==weight.getNumberOfDerivatives() );
-
+double VolumeSubcell::calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives ){
   double xcontr, ycontr, zcontr, xder, yder, zder; 
   if( dox ){
      bead.set( xlow, xhigh, xsmearp );
-     xcontr=bead.calculate( cpos[0].get(), xder ); 
+     xcontr=bead.calculate( cpos[0], xder ); 
   } else {
      xcontr=1.; xder=0.;
   }
   if( doy ){
      bead.set( ylow, yhigh, ysmearp );
-     ycontr=bead.calculate( cpos[1].get(), yder );
+     ycontr=bead.calculate( cpos[1], yder );
   } else {
      ycontr=1.; yder=0.;
   }
   if( doz ){
      bead.set( zlow, zhigh, zsmearp );
-     zcontr=bead.calculate( cpos[2].get(), zder );
+     zcontr=bead.calculate( cpos[2], zder );
   } else {
      zcontr=1.; zder=0.;
   }
-  weight.set(xcontr*ycontr*zcontr);
-  double dfdx=xder*ycontr*zcontr, dfdy=xcontr*yder*zcontr, dfdz=xcontr*ycontr*zder;
-  for(unsigned i=0;i<weight.getNumberOfDerivatives();++i){
-      weight.addDerivative( i, dfdx*cpos[0].getDerivative(i) + dfdy*cpos[1].getDerivative(i) + dfdz*cpos[2].getDerivative(i) ); 
-  }
+  derivatives[0]=xder*ycontr*zcontr; 
+  derivatives[1]=xcontr*yder*zcontr; 
+  derivatives[2]=xcontr*ycontr*zder;
+  return xcontr*ycontr*zcontr;
 }
 
 }

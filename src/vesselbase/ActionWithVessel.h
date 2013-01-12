@@ -55,6 +55,10 @@ private:
   bool reduceAtNextStep;
 /// The tolerance on the accumulators for neighbour list
   double tolerance;
+/// The value of the current element in the sum
+  double thisval;
+/// Vector of derivatives for the object
+  std::vector<double> derivatives;
 /// The buffers we use for mpi summing DistributionFunction objects
   std::vector<double> buffer;
 /// Pointers to the functions we are using on each value
@@ -90,6 +94,10 @@ protected:
   void calculateAllVessels( const int& stepn );
 /// Resize all the functions when the number of derivatives change
   void resizeFunctions();
+/// Set the value of the element
+  void setElementValue( const double& );
+///  Add some derivative of the quantity in the sum wrt to a numbered element
+  void addElementDerivative( const unsigned&, const double& );
 public:
   static void registerKeywords(Keywords& keys);
 /// By calling this function during register keywords you tell plumed to use a
@@ -102,16 +110,14 @@ public:
 /// Ensure that nothing gets done for your deactivated colvars
   virtual void deactivateValue( const unsigned j )=0;
 /// Merge the derivatives
-  virtual void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, const unsigned& vstart, Vessel* valout )=0;
-  virtual void mergeDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout )=0;
+  virtual void chainRuleForElementDerivatives( const unsigned j, const unsigned& vstart, const double& df, Vessel* valout )=0;
+  virtual void transferDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout )=0;
 /// Can we skip the calculations of quantities
   virtual bool isPossibleToSkip(); 
 /// Are the base quantities periodic
   virtual bool isPeriodic()=0;
 /// What are the domains of the base quantities
   virtual void retrieveDomain( std::string& min, std::string& max);
-/// Retrieve the previously calculated value and derivatives
-  virtual const Value & retreiveLastCalculatedValue()=0;
 /// Get the number of functions from which we are calculating the distribtuion
   virtual unsigned getNumberOfFunctionsInAction()=0;
 /// Get the number of derivatives for final calculated quantity 
@@ -122,6 +128,10 @@ public:
   virtual bool calculateThisFunction( const unsigned& j )=0;
 /// Return a pointer to the field 
   Vessel* getVessel( const std::string& name );
+/// Get the value of this element
+  double getElementValue() const ;
+/// Retrieve the derivative of the quantity in the sum wrt to a numbered element
+  double getElementDerivative( const unsigned& ) const ;
 };
 
 inline
@@ -170,6 +180,28 @@ inline
 Vessel* ActionWithVessel::getPntrToVessel( const unsigned& i ){
   plumed_assert( i<functions.size() );
   return functions[i];
+}
+
+inline
+double ActionWithVessel::getElementValue() const {
+  return thisval;
+}
+
+inline
+void ActionWithVessel::setElementValue( const double& val ){
+  thisval=val;
+}
+
+inline
+double ActionWithVessel::getElementDerivative( const unsigned& ider ) const {
+  plumed_assert( ider<derivatives.size() );
+  return derivatives[ider];
+}
+
+inline
+void ActionWithVessel::addElementDerivative( const unsigned& ider, const double& der ){
+  plumed_assert( ider<derivatives.size() );
+  derivatives[ider] += der;
 }
 
 } 

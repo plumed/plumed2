@@ -46,10 +46,18 @@ protected:
   void getValue( const unsigned& , Value& ) const ;
 /// Get the value of the ith value in the buffer
   double getValue( const unsigned& ) const ;
+/// Get the number of derivatives in one of the values in the buffer
+  unsigned getNumberOfDerivatives( const unsigned& ) const;
 public:
 /// Constructor
   VesselValueAccess( const VesselOptions& );
 };
+
+inline
+unsigned VesselValueAccess::getNumberOfDerivatives( const unsigned& ival ) const {
+  plumed_assert( ival<value_starts.size() );
+  return value_starts[ival+1]-value_starts[ival]-1;
+}
 
 inline
 void VesselValueAccess::getValue( const unsigned& icv, Value& val ) const {

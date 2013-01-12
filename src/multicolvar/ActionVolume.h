@@ -47,7 +47,8 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   ActionVolume(const ActionOptions&);
-  virtual void calculateNumberInside( const std::vector<Value>& cpos, HistogramBead& bead, Value& weight )=0;
+  virtual bool derivativesOfFractionalCoordinates()=0;
+  virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
   void apply(){};
 };
 

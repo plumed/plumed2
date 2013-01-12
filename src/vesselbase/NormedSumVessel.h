@@ -33,11 +33,13 @@ namespace vesselbase{
 class NormedSumVessel : public VesselAccumulator {
 private:
   bool donorm;
-  Value myvalue,myvalue2;
-  Value myweight, myweight2;
+  Value myvalue2;
+  Value myweight2;
 protected:
 /// We are normalizing the values
   void useNorm();
+/// Add Some derivative to the weight 
+  void addWeightDerivative( const unsigned&, const double& ); 
 public:
   NormedSumVessel( const VesselOptions& );
 /// This retrieves data from action and calculates the average
@@ -45,10 +47,18 @@ public:
 /// This does the final step of the calculation
   void finish( const double& tolerance );
 /// This gets the weight
-  virtual void getWeight( const unsigned& , Value& )=0;  
+  virtual double getWeight( const unsigned&, bool& )=0;  
+/// This adds the derivatives of the weight
+  virtual void addDerivativesOfWeight( const unsigned& ){ plumed_assert(0); }
 /// This gets each value
-  virtual void compute( const unsigned& , const unsigned& , Value& )=0;
+  virtual double compute( const unsigned& , const unsigned& , const double& val, double& df )=0;
 };
+
+inline
+void NormedSumVessel::addWeightDerivative( const unsigned& ider, const double& der ){
+  plumed_assert( ider<getNumberOfDerivatives(0) );
+  addToBufferElement( ider+1, der );
+}
 
 }
 }

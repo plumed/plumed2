@@ -53,8 +53,8 @@ public:
   static void registerKeywords( Keywords& keys );
   Density(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j, const std::vector<Vector>& pos );
-  void getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv );
+  virtual double compute( const unsigned& j );
+  Vector getCentralAtom();
   /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives(){ plumed_assert(0); };
   bool isPeriodic(){ return false; }
@@ -80,12 +80,13 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead(); 
 }
 
-double Density::compute( const unsigned& j, const std::vector<Vector>& pos ){
+double Density::compute( const unsigned& j ){
   return 1.0;
 }
 
-void Density::getCentralAtom( const std::vector<Vector>& pos, Vector& cpos, std::vector<Tensor>& deriv ){
-   cpos=pos[0]; deriv[0]=Tensor::identity();
+Vector Density::getCentralAtom(){
+   addCentralAtomDerivatives( 0, Tensor::identity() );
+   return getPosition(0);
 }
 
 }

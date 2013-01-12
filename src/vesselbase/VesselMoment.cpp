@@ -111,7 +111,7 @@ void VesselMoment::finish( const double& tolerance ){
          tmp=myvalue.difference( mean, myvalue.get() );
          pref=pow( tmp, powers[npow] - 1 ) - dev1;
          moment+=pow( tmp, powers[npow] );
-         getAction()->mergeDerivatives( i, myvalue, pref, value_out[npow] ); 
+         getAction()->transferDerivatives( i, myvalue, pref, value_out[npow] ); 
      }
      value_out[npow]->chainRule( powers[npow] / static_cast<double>( nvals ) );
      value_out[npow]->set( moment / static_cast<double>( nvals ) ); 
