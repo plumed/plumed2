@@ -23,7 +23,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "vesselbase/VesselRegister.h"
-#include "vesselbase/NormedSumVessel.h"
+#include "vesselbase/WeightedSumVessel.h"
 #include "ActionVolume.h"
 #include "MultiColvar.h"
 #include "tools/HistogramBead.h"
@@ -88,7 +88,7 @@ DENSITY SPECIES=20-500 REGION={SIGMA=0.1 VOLUME=r2}
 //+ENDPLUMEDOC
 
 
-class VesselCVDens : public vesselbase::NormedSumVessel {
+class VesselCVDens : public vesselbase::WeightedSumVessel {
 private:
   bool isDensity;
   double weight;
@@ -113,7 +113,7 @@ void VesselCVDens::reserveKeyword( Keywords& keys ){
 }
 
 VesselCVDens::VesselCVDens( const vesselbase::VesselOptions& da ) :
-NormedSumVessel(da),
+WeightedSumVessel(da),
 not_in(false)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );

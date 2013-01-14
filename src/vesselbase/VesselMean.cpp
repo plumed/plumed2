@@ -20,13 +20,13 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VesselRegister.h"
-#include "NormedSumVessel.h"
+#include "WeightedSumVessel.h"
 #include "ActionWithVessel.h"
 
 namespace PLMD {
 namespace vesselbase {
 
-class VesselMean : public vesselbase::NormedSumVessel {
+class VesselMean : public vesselbase::WeightedSumVessel {
 private:
 public:
   static void reserveKeyword( Keywords& keys );
@@ -42,7 +42,7 @@ void VesselMean::reserveKeyword( Keywords& keys ){
 }
 
 VesselMean::VesselMean( const vesselbase::VesselOptions& da ) :
-NormedSumVessel(da)
+WeightedSumVessel(da)
 {
   if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
 

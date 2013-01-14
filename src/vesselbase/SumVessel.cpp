@@ -50,12 +50,13 @@ double SumVessel::final_computations( const unsigned& ival, const double& valin,
 }
 
 void SumVessel::finish( const double& tolerance ){
-  double f, df;
+  double f, df; unsigned ider=0;
   for(unsigned i=0;i<getNumberOfValues();++i){
-      getValue( i, myvalue2 ); 
-      f=final_computations( i, myvalue2.get(), df );
-      myvalue2.chainRule(df); myvalue2.set(f);
-      copy( myvalue2, getPntrToOutput(i) );
+      f=final_computations( i, getBufferElement( ider ), df ); ider++;
+      getPntrToOutput(i)->set(f);
+      for(unsigned j=0;j<getNumberOfDerivatives(i);++j){
+         getPntrToOutput(i)->addDerivative( j, df*getBufferElement( ider ) ); ider++;
+      }
   }
 }
 }

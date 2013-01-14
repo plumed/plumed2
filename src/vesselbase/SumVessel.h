@@ -31,8 +31,6 @@ namespace PLMD {
 namespace vesselbase{
 
 class SumVessel : public VesselAccumulator {
-private:
-  Value myvalue, myvalue2;
 public:
   SumVessel( const VesselOptions& );
 /// This retrieves data from action and calculates

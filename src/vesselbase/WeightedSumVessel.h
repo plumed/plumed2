@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_vesselbase_NormedSumVessel_h
-#define __PLUMED_vesselbase_NormedSumVessel_h
+#ifndef __PLUMED_vesselbase_WeightedSumVessel_h
+#define __PLUMED_vesselbase_WeightedSumVessel_h
 
 #include <string>
 #include <cstring>
@@ -30,18 +30,16 @@
 namespace PLMD {
 namespace vesselbase{
 
-class NormedSumVessel : public VesselAccumulator {
+class WeightedSumVessel : public VesselAccumulator {
 private:
   bool donorm;
-  Value myvalue2;
-  Value myweight2;
 protected:
 /// We are normalizing the values
   void useNorm();
 /// Add Some derivative to the weight 
   void addWeightDerivative( const unsigned&, const double& ); 
 public:
-  NormedSumVessel( const VesselOptions& );
+  WeightedSumVessel( const VesselOptions& );
 /// This retrieves data from action and calculates the average
   bool calculate( const unsigned& , const double& );
 /// This does the final step of the calculation
@@ -55,7 +53,7 @@ public:
 };
 
 inline
-void NormedSumVessel::addWeightDerivative( const unsigned& ider, const double& der ){
+void WeightedSumVessel::addWeightDerivative( const unsigned& ider, const double& der ){
   plumed_assert( ider<getNumberOfDerivatives(0) );
   addToBufferElement( ider+1, der );
 }

@@ -21,14 +21,14 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "VesselRegister.h"
-#include "NormedSumVessel.h"
+#include "WeightedSumVessel.h"
 #include "tools/HistogramBead.h"
 #include "ActionWithVessel.h"
 
 namespace PLMD {
 namespace vesselbase {
 
-class VesselWithin : public vesselbase::NormedSumVessel {
+class VesselWithin : public vesselbase::WeightedSumVessel {
 private:
   std::vector<HistogramBead> hist;
 public:
@@ -49,7 +49,7 @@ void VesselWithin::reserveKeyword( Keywords& keys ){
 }
 
 VesselWithin::VesselWithin( const vesselbase::VesselOptions& da ) :
-NormedSumVessel(da)
+WeightedSumVessel(da)
 { 
 
   bool isPeriodic=getAction()->isPeriodic();

@@ -19,30 +19,23 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "NormedSumVessel.h"
+#include "WeightedSumVessel.h"
 #include "ActionWithVessel.h"
 
 namespace PLMD {
 namespace vesselbase{
 
-NormedSumVessel::NormedSumVessel( const VesselOptions& da ):
+WeightedSumVessel::WeightedSumVessel( const VesselOptions& da ):
 VesselAccumulator(da),
 donorm(false)
 {
-  if( getAction()->isPeriodic() ){
-      std::string min, max;
-      getAction()->retrieveDomain( min, max );
-      myvalue2.setDomain( min, max );
-  } else {
-      myvalue2.setNotPeriodic();
-  }
 }
 
-void NormedSumVessel::useNorm(){
+void WeightedSumVessel::useNorm(){
   donorm=true; addBufferedValue();
 }
 
-bool NormedSumVessel::calculate( const unsigned& icv, const double& tolerance ){
+bool WeightedSumVessel::calculate( const unsigned& icv, const double& tolerance ){
   bool keep=false; double val, fval, df;
   if(donorm){
      bool hasNonZeroDerivatives;
@@ -81,16 +74,25 @@ bool NormedSumVessel::calculate( const unsigned& icv, const double& tolerance ){
   return keep;
 }
 
-void NormedSumVessel::finish( const double& tolerance ){
+void WeightedSumVessel::finish( const double& tolerance ){
   if( donorm ){
-     getValue(0, myweight2 ); 
+     unsigned ider=getNumberOfDerivatives(0)+1;
+     double vv, ww = getBufferElement(0); 
      for(unsigned i=0;i<getNumberOfValues();++i){
-         getValue( i+1, myvalue2 );       /// periodicity is missing from here
-         quotient( myvalue2, myweight2, getPntrToOutput(i) );
+         plumed_assert( getNumberOfDerivatives(i+1)==getNumberOfDerivatives(0) );
+         vv = getBufferElement(ider); ider++; getPntrToOutput(i)->set( vv /ww );
+         for(unsigned j=0;j<getNumberOfDerivatives(i+1);++j){
+             getPntrToOutput(i)->addDerivative( j, ( ww*getBufferElement(ider) - vv*getBufferElement(j+1) ) / ( ww*ww ) );
+             ider++;
+         }
      }
   } else {
+     unsigned ider=0;
      for(unsigned i=0;i<getNumberOfValues();++i){
-         getValue( i, myvalue2 ); copy( myvalue2, getPntrToOutput(i) );
+         getPntrToOutput(i)->set( getBufferElement(ider) ); ider++;
+         for(unsigned j=0;j<getNumberOfDerivatives(i);++j){
+            getPntrToOutput(i)->addDerivative( j, getBufferElement( ider ) ); ider++;
+         }
      }
   }
 }
