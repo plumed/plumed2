@@ -168,11 +168,11 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
           // quantity is contributing more than the tolerance
           if( functions[j]->calculate(kk,tolerance) ) keep=true;
       }
+      // Clear the derivatives from this step
+      for(unsigned j=0;j<getNumberOfDerivatives(kk);++j) derivatives[j]=0.0;
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
       if( reduceAtNextStep && !keep ) deactivate(kk);
-      // Clear the derivatives from this step
-      for(unsigned j=0;j<getNumberOfDerivatives(kk);++j) derivatives[j]=0.0;
   }
   // Update the dynamic list 
   if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
