@@ -100,7 +100,8 @@ bool CLTool::parse(const std::string&key,T&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   if(keywords.style(key,"compulsory") ){
      plumed_assert(inputData.count(key)>0);
-     plumed_assert( Tools::convert(inputData[key],t) );
+     bool check=Tools::convert(inputData[key],t);
+     plumed_assert(check);
      return true;
   }
   if( inputData.count(key)==0 ) return false; 
