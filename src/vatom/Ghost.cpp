@@ -74,10 +74,10 @@ Ghost::Ghost(const ActionOptions&ao):
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
-  plumed_massert(atoms.size()==3,"ATOMS should contain a list of three atoms");
+  if(atoms.size()!=3) error("ATOMS should contain a list of three atoms");
 
   parseVector("COORDINATES",coord);
-  plumed_massert(coord.size()==3,"COORDINATES should be a list of three real numbers");
+  if(coord.size()!=3) error("COORDINATES should be a list of three real numbers");
 
   checkRead();
   log.printf("  of atoms");

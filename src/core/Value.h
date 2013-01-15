@@ -222,7 +222,7 @@ void Value::resizeDerivatives(int n){
 
 inline
 void Value::addDerivative(unsigned i,double d){
-  plumed_massert(i<derivatives.size(),"derivative is out of bounds");
+  plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
   derivatives[i]+=d;
 }
 

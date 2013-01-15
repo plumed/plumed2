@@ -309,12 +309,12 @@ void MultiColvar::calculate(){
 }
 
 Vector MultiColvar::getCentralAtom(){
-   plumed_massert(0,"gradient and related cv distribution functions are not available in this colvar");
+   plumed_merror("gradient and related cv distribution functions are not available in this colvar");
    Vector dummy; return dummy;
 }
 
 void MultiColvar::setAlignedPositions( const std::vector<Vector>& apos ){
-  plumed_assert( apos.size()==pos.size() );
+  plumed_dbg_assert( apos.size()==pos.size() );
   for(unsigned i=0;i<pos.size();++i) pos[i]=apos[i];
 }
 
@@ -353,13 +353,13 @@ Vector MultiColvar::retrieveCentralAtomPos(){
 }
 
 void MultiColvar::addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der ){
-  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
   if( centralAtomDerivativesAreInFractional ) central_derivs[iatom] += matmul( ibox, der );
   else central_derivs[iatom] += der;
 }
 
 double MultiColvar::getCentralAtomDerivative( const unsigned& iatom, const unsigned jcomp, const Vector& df ) const {
-  plumed_assert( iatom<colvar_atoms[current].getNumberActive() && jcomp<3 );
+  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() && jcomp<3 );
   return df[0]*central_derivs[iatom](0,jcomp) + df[1]*central_derivs[iatom](1,jcomp) + df[2]*central_derivs[iatom](2,jcomp);
 }
 
@@ -368,7 +368,7 @@ void MultiColvar::chainRuleForElementDerivatives( const unsigned jcv, const unsi
   int thisatom, thispos, in=0; unsigned innat=colvar_atoms[jcv].getNumberActive();
   for(unsigned i=0;i<innat;++i){
      thisatom=linkIndex( i, colvar_atoms[jcv], all_atoms );
-     plumed_assert( thisatom>=0 ); thispos=vstart+3*thisatom;
+     plumed_dbg_assert( thisatom>=0 ); thispos=vstart+3*thisatom;
      valout->addToBufferElement( thispos , df*getElementDerivative(in) ); in++;
      valout->addToBufferElement( thispos+1, df*getElementDerivative(in) ); in++;
      valout->addToBufferElement( thispos+2, df*getElementDerivative(in) ); in++; 
@@ -388,12 +388,12 @@ void MultiColvar::chainRuleForElementDerivatives( const unsigned jcv, const unsi
 }
 
 void MultiColvar::transferDerivatives( const unsigned jcv, const Value& value_in, const double& df, Value* valout ){    
-  plumed_assert( value_in.getNumberOfDerivatives()==3*colvar_atoms[jcv].getNumberActive()+9);
+  plumed_dbg_assert( value_in.getNumberOfDerivatives()==3*colvar_atoms[jcv].getNumberActive()+9);
 
   int thisatom; unsigned innat=colvar_atoms[jcv].getNumberActive();
   for(unsigned i=0;i<innat;++i){
      thisatom=linkIndex( i, colvar_atoms[jcv], all_atoms );
-     plumed_assert( thisatom>=0 );
+     plumed_dbg_assert( thisatom>=0 );
      valout->addDerivative( 3*thisatom+0, df*value_in.getDerivative(3*i+0) );
      valout->addDerivative( 3*thisatom+1, df*value_in.getDerivative(3*i+1) );
      valout->addDerivative( 3*thisatom+2, df*value_in.getDerivative(3*i+2) );

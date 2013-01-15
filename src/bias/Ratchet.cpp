@@ -106,14 +106,12 @@ temp(getNumberOfArguments(),0.0),
 seed(getNumberOfArguments(),time(0)),
 random(getNumberOfArguments())
 {
+  // Note : parseVector will check that number of arguments is correct
   parseVector("KAPPA",kappa);
-  plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("MIN",min);
-  if(min.size()==0) min.assign(getNumberOfArguments(),-1.0);
   parseVector("NOISE",temp);
   parseVector("SEED",seed);
   parseVector("TO",to);
-  plumed_assert(to.size()==getNumberOfArguments());
   checkRead();
 
   log.printf("  min");

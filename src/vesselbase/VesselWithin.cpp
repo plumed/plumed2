@@ -100,13 +100,13 @@ void VesselWithin::printKeywords(){
 }
 
 double VesselWithin::compute( const unsigned& icv, const unsigned& jfunc, const double& val, double& df ){
-  plumed_assert( jfunc<hist.size() );
+  plumed_dbg_assert( jfunc<hist.size() );
   double f; f=hist[jfunc].calculate( val , df );
   return f;
 }
 
 double VesselWithin::getWeight( const unsigned& i, bool& hasDerivatives ){
-  plumed_assert( !getAction()->isPossibleToSkip() );   
+  plumed_dbg_assert( !getAction()->isPossibleToSkip() );   
   hasDerivatives=false;
   return 1.0;
 }

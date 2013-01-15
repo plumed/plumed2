@@ -76,7 +76,7 @@ PLUMED_REGISTER_ACTION(Include,"INCLUDE")
 
 void Include::registerKeywords( Keywords& keys ){
   Action::registerKeywords(keys);
-  keys.add("compulsory","FILE","-","file to be included");
+  keys.add("compulsory","FILE","file to be included");
 }
 
 Include::Include(const ActionOptions&ao):
@@ -85,7 +85,6 @@ Action(ao)
   std::string f;
   parse("FILE",f);
   checkRead();
-  plumed_assert(f!="-");
   plumed.readInputFile(f);
 }
 

@@ -85,7 +85,7 @@ ActionPilot(ao),
 ActionWithArguments(ao)
 {
   parse("FILE",file);
-  plumed_assert(file.length()>0);
+  if( file.length()==0 ) error("name of file was not specified");
   of.link(*this);
   of.open(file,"wa");
   log.printf("  on file %s\n",file.c_str());

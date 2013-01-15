@@ -125,5 +125,17 @@ public:
 /// Conditionally print file/line/function information plus msg and exit
 #define plumed_massert(test,msg) if(!(test)) throw PLMD::Exception("assertion failed " #test ", " msg,__FILE__,__LINE__,__PRETTY_FUNCTION__)
 
+#ifdef NDEBUG
+#define plumed_dbg_assert(test) 
+#define plumed_dbg_massert(test,msg)
+#else
+/// \relates PLMD::Exception
+/// Conditionally print file/line/function information and exit when NDEBUG flag is not present
+#define plumed_dbg_assert(test) if(!(test)) throw PLMD::Exception("assertion failed " #test,__FILE__,__LINE__,__PRETTY_FUNCTION__)
+/// \relates PLMD::Exception
+/// Conditionally print file/line/function information plus msg and exit when NDEBUG flast is not present
+#define plumed_dbg_massert(test,msg) if(!(test)) throw PLMD::Exception("assertion failed " #test ", " msg,__FILE__,__LINE__,__PRETTY_FUNCTION__)
+#endif
+
 }
 #endif

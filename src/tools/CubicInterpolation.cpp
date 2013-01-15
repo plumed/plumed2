@@ -58,7 +58,7 @@ void CInterpolation::getNumbersOfPoints( std::vector<unsigned>& nspline ) const 
 }
 
 unsigned CInterpolation::findBox( const std::vector<double>& pos ){
-  plumed_massert( pos.size()==np.size(), "position size does not match the size of the grid");
+  plumed_dbg_massert( pos.size()==np.size(), "position size does not match the size of the grid");
 
   unsigned jold, ccf_box, bnew=0;
   for(unsigned i=0;i<np.size();++i){
@@ -67,7 +67,7 @@ unsigned CInterpolation::findBox( const std::vector<double>& pos ){
      ccf_box=search1( i, pos[i], jold );
      bnew+=ccf_box; 
   }
-  plumed_assert( bold==0 ); bold=bnew;
+  plumed_dbg_assert( bold==0 ); bold=bnew;
   for(unsigned i=0;i<np.size();++i){ lb[i]=splinepoints(bold,i); ub[i]=splinepoints(bold+stride[i],i); }
   return bold;
 }
@@ -98,7 +98,7 @@ unsigned CInterpolation::search1( const unsigned& kk, const double& x, const uns
       jm = (ju+jl) / (2*inc) ;
       if ( x>splinepoints(jm*inc,kk) ) jl=jm*inc; else ju=jm*inc;
     }
-    plumed_assert( jl%stride[kk]==0 && ju==jl+stride[kk] );
+    plumed_dbg_assert( jl%stride[kk]==0 && ju==jl+stride[kk] );
     return jl;
 }
 
@@ -125,7 +125,7 @@ void InterpolateCubic::set_table( const std::vector<Value>& ff ){
 }
 
 double InterpolateCubic::get_fdf( const std::vector<double>& pos ){
-  plumed_assert( pos.size()==1 );
+  plumed_dbg_assert( pos.size()==1 );
   
   unsigned mybox=findBox( pos );
   double d1=ub[0] - lb[0]; 
@@ -210,7 +210,7 @@ void InterpolateBicubic::IBicCoeff( const std::vector<double>& y, const std::vec
 
 double InterpolateBicubic::get_fdf( const std::vector<double>& pos ){
 
-   plumed_assert( pos.size()==2 );
+   plumed_dbg_assert( pos.size()==2 );
    unsigned mybox=findBox( pos );
    double d1 = ub[0] - lb[0], d2 = ub[1] - lb[1];
    double t = (pos[0] - lb[0]) / d1, u = (pos[1] - lb[1]) / d2;

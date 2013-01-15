@@ -131,7 +131,9 @@ verse(getNumberOfArguments())
   for(int i=0;;i++){
     // Read in step 
     if( !parseNumberedVector("STEP",i,ss) ) break;
-    for(unsigned j=0;j<step.size();j++) plumed_massert(ss[0]>step[j],"in moving restraint step number must always increase");
+    for(unsigned j=0;j<step.size();j++){
+        if(ss[0]<step[j]) error("in moving restraint step number must always increase");
+    }
     step.push_back(ss[0]);
 
     // Try to read kappa

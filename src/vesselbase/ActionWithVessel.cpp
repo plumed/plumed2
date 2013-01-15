@@ -153,11 +153,11 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
 
       // Check for conditions that allow us to just to skip the calculation
       if( reduceAtNextStep && skipme ){ 
-         plumed_massert( isPossibleToSkip(), "To make your action work you must write a routine to get weights");
+         plumed_dbg_massert( isPossibleToSkip(), "To make your action work you must write a routine to get weights");
          deactivate(kk); 
          continue; 
       } else if( skipme ){
-         plumed_massert( isPossibleToSkip(), "To make your action work you must write a routine to get weights");
+         plumed_dbg_massert( isPossibleToSkip(), "To make your action work you must write a routine to get weights");
          continue;
       }
 
@@ -207,7 +207,7 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
 }
 
 void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){
-  plumed_massert(0, "If your function is periodic you need to add a retrieveDomain function so that ActionWithVessel can retrieve the domain");
+  plumed_merror("If your function is periodic you need to add a retrieveDomain function so that ActionWithVessel can retrieve the domain");
 }
 
 }

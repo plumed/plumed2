@@ -87,16 +87,12 @@ exp(getNumberOfArguments(),2.0),
 eps(getNumberOfArguments(),1.0),
 offset(getNumberOfArguments(),0.0)
 {
+  // Note : the sizes of these vectors are checked automatically by parseVector
   parseVector("OFFSET",offset);
-  plumed_assert(offset.size()==getNumberOfArguments());
   parseVector("EPS",eps);
-  plumed_assert(eps.size()==getNumberOfArguments());
   parseVector("EXP",exp);
-  plumed_assert(exp.size()==getNumberOfArguments());
   parseVector("KAPPA",kappa);
-  plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("AT",at);
-  plumed_assert(at.size()==getNumberOfArguments());
   checkRead();
 
   log.printf("  at");

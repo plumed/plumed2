@@ -56,7 +56,7 @@ public:
   virtual double compute( const unsigned& j );
   Vector getCentralAtom();
   /// Returns the number of coordinates of the field
-  unsigned getNumberOfFieldDerivatives(){ plumed_assert(0); };
+  unsigned getNumberOfFieldDerivatives(){ plumed_merror("fields are not possible for density"); };
   bool isPeriodic(){ return false; }
   bool isDensity(){ return true; }
 };

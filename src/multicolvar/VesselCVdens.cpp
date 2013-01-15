@@ -160,7 +160,7 @@ void VesselCVDens::addDerivativesOfWeight( const unsigned& icv ){
   int thisatom, thispos, in=0; unsigned innat=mycolv->colvar_atoms[icv].getNumberActive();
   for(unsigned i=0;i<innat;++i){
      thisatom=linkIndex( i, mycolv->colvar_atoms[icv], mycolv->all_atoms );
-     plumed_assert( thisatom>=0 ); thispos=3*thisatom;
+     plumed_dbg_assert( thisatom>=0 ); thispos=3*thisatom;
      addWeightDerivative( thispos , mycolv->getCentralAtomDerivative( i, 0, wdf ) ); in++;
      addWeightDerivative( thispos+1,mycolv->getCentralAtomDerivative( i, 1, wdf ) ); in++;
      addWeightDerivative( thispos+2,mycolv->getCentralAtomDerivative( i, 2, wdf ) ); in++;
@@ -168,7 +168,7 @@ void VesselCVDens::addDerivativesOfWeight( const unsigned& icv ){
 }
 
 double VesselCVDens::compute( const unsigned& icv, const unsigned& j, const double& val, double& df ){
-  plumed_assert( j==0 ); 
+  plumed_dbg_assert( j==0 ); 
   if(isDensity){
      bool hasDerivatives; double ww;
      ww=getWeight( icv, hasDerivatives );
@@ -180,7 +180,7 @@ double VesselCVDens::compute( const unsigned& icv, const unsigned& j, const doub
      unsigned vstart=3*mycolv->getNumberOfAtoms() + 11;  // two Values and the virial
      for(unsigned i=0;i<innat;++i){
         thisatom=linkIndex( i, mycolv->colvar_atoms[icv], mycolv->all_atoms );
-        plumed_assert( thisatom>=0 ); thispos=vstart+3*thisatom;
+        plumed_dbg_assert( thisatom>=0 ); thispos=vstart+3*thisatom;
         addToBufferElement( thispos , weight*mycolv->getElementDerivative(in) + val*mycolv->getCentralAtomDerivative( i, 0, wdf ) ); in++;
         addToBufferElement( thispos+1,weight*mycolv->getElementDerivative(in) + val*mycolv->getCentralAtomDerivative( i, 1, wdf ) ); in++;
         addToBufferElement( thispos+2,weight*mycolv->getElementDerivative(in) + val*mycolv->getCentralAtomDerivative( i, 2, wdf ) ); in++;

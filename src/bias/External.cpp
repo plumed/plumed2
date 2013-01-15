@@ -125,7 +125,7 @@ BiasGrid_(NULL)
 {
   string filename;
   parse("FILE",filename);
-  plumed_assert(filename.length()>0);
+  if( filename.length()==0 ) error("No external potential file was specified"); 
   bool sparsegrid=false;
   parseFlag("SPARSE",sparsegrid);
   bool nospline=false;

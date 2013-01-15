@@ -58,7 +58,7 @@ PLUMED_REGISTER_ACTION(Load,"LOAD")
 
 void Load::registerKeywords( Keywords& keys ){
   ActionSetup::registerKeywords(keys);
-  keys.add("compulsory","FILE","-","file to be loaded");
+  keys.add("compulsory","FILE","file to be loaded");
 }
 
 Load::Load(const ActionOptions&ao):
@@ -68,7 +68,6 @@ ActionSetup(ao)
   std::string f;
   parse("FILE",f);
   checkRead();
-  plumed_assert(f!="-");
   plumed.load(f);
 }
 

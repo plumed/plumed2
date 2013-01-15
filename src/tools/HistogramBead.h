@@ -97,7 +97,7 @@ double HistogramBead::difference( const double& d1, const double& d2 ) const {
     newx=Tools::pbc(newx);
     newx*=max_minus_min;
     return d2-newx;
-  } else plumed_assert(0);
+  } else plumed_merror("periodicty was not set");
   return 0;
 }
 

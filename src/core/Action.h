@@ -127,7 +127,7 @@ public:
   void parseFlag(const std::string&key,bool&t);
 
 /// Crash calculation and print documentation
-  void error( const std::string & msg ); 
+  void error( const std::string & msg ) const; 
   
 /// Issue a warning
   void warning( const std::string & msg );

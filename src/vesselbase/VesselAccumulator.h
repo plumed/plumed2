@@ -55,7 +55,7 @@ public:
 
 inline
 Value* VesselAccumulator::getPntrToOutput( const unsigned& iout ){
-  plumed_assert( iout<final_values.size() );
+  plumed_dbg_assert( iout<final_values.size() );
   return final_values[iout];
 }
 

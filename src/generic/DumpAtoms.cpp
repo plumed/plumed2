@@ -101,7 +101,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
   lenunit=plumed.getAtoms().getUnits().getLength()/myunit.getLength();
 
   checkRead();
-  plumed_assert(file.length()>0);
+  if(file.length()==0) error("name out output file was not specified");
   of.link(*this);
   of.open(file.c_str(),"w");
   log.printf("  printing the following atoms in %s :", unitname.c_str() );

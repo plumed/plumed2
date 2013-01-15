@@ -123,7 +123,7 @@ public:
 inline
 unsigned Analysis::getNumberOfDataPoints() const {
   if( !reusing_data ){
-     plumed_assert( data.size()==logweights.size() );
+     plumed_dbg_assert( data.size()==logweights.size() );
      return data.size();
   } else {
      return mydatastash->getNumberOfDataPoints();
@@ -133,7 +133,7 @@ unsigned Analysis::getNumberOfDataPoints() const {
 inline
 void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
   if( !reusing_data ){
-      plumed_assert( idata<weights.size() &&  point.size()==getNumberOfArguments() );
+      plumed_dbg_assert( idata<weights.size() &&  point.size()==getNumberOfArguments() );
       for(unsigned i=0;i<point.size();++i) point[i]=data[idata][i];
       weight=weights[idata];
   } else {

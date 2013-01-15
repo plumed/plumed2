@@ -52,12 +52,12 @@ WeightedSumVessel(da)
 }
 
 double VesselMean::compute( const unsigned& i, const unsigned& j, const double& val, double& df ){
-  plumed_assert( j==0 );
+  plumed_dbg_assert( j==0 );
   df=1.0; return val;
 }
 
 double VesselMean::getWeight( const unsigned& i, bool& hasDerivatives ){
-  plumed_assert( !getAction()->isPossibleToSkip() ); 
+  plumed_dbg_assert( !getAction()->isPossibleToSkip() ); 
   hasDerivatives=false;
   return 1.0;
 }

@@ -90,10 +90,10 @@ Center::Center(const ActionOptions&ao):
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());
   if(weight_mass){
     log<<"  mass weighted\n";
-    plumed_assert(weights.size()==0);
+    if(weights.size()!=0) error("WEIGHTS and MASS keywords should not be used simultaneously");
   } else {
     log<<" with weights";
-    plumed_assert(weights.size()==atoms.size());
+    if( weights.size()!=atoms.size() ) error("number of elements in weight vector does not match the number of atoms");
     for(unsigned i=0;i<weights.size();++i) log.printf(" %f",weights[i]);
     log.printf("\n");
   }

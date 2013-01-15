@@ -242,7 +242,7 @@ void IMD::receive(){
       }
       else if(itype==2) comm.Bcast(&transferRate,1,0);
       else if(itype==3) plumed.exit();
-      else plumed_assert(0);
+      else plumed_error();
     }
   }
 

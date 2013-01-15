@@ -156,7 +156,7 @@ unsigned ActionWithVessel::getNumberOfActiveMembers() const {
 
 inline
 unsigned ActionWithVessel::getActiveMember(const unsigned& m ) const {
-  plumed_assert( m<members.getNumberActive() );
+  plumed_dbg_assert( m<members.getNumberActive() );
   return members[m];
 }
 
@@ -178,7 +178,7 @@ unsigned ActionWithVessel::getNumberOfVessels() const {
 
 inline
 Vessel* ActionWithVessel::getPntrToVessel( const unsigned& i ){
-  plumed_assert( i<functions.size() );
+  plumed_dbg_assert( i<functions.size() );
   return functions[i];
 }
 
@@ -194,13 +194,13 @@ void ActionWithVessel::setElementValue( const double& val ){
 
 inline
 double ActionWithVessel::getElementDerivative( const unsigned& ider ) const {
-  plumed_assert( ider<derivatives.size() );
+  plumed_dbg_assert( ider<derivatives.size() );
   return derivatives[ider];
 }
 
 inline
 void ActionWithVessel::addElementDerivative( const unsigned& ider, const double& der ){
-  plumed_assert( ider<derivatives.size() );
+  plumed_dbg_assert( ider<derivatives.size() );
   derivatives[ider] += der;
 }
 

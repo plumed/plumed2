@@ -145,12 +145,12 @@ public:
   DynamicList():inactive(true){}
 /// An operator that returns the element from the current active list
   inline T operator [] (const unsigned& i) const { 
-     plumed_assert(!inactive); plumed_assert( i<active.size() );
+     plumed_dbg_assert(!inactive); plumed_dbg_assert( i<active.size() );
      return active[i]; 
   }
 /// An operator that returns the element from the full list (used in neighbour lists)
   inline T operator () (const unsigned& i) const {
-     plumed_assert( i<all.size() );
+     plumed_dbg_assert( i<all.size() );
      return all[i];
   }
   inline bool get_inactive() const { return inactive; }
@@ -195,7 +195,7 @@ unsigned DynamicList<T>::fullSize() const {
 
 template <typename T>
 unsigned DynamicList<T>::getNumberActive() const {
-  if( inactive && active.size()!=0 ) plumed_assert(0);
+  plumed_dbg_assert( !inactive || active.size()==0 );
   return active.size();
 }
 
@@ -252,10 +252,10 @@ void DynamicList<T>::updateActiveMembers(){
 
 template <typename U>
 unsigned linkIndex( const unsigned ii, const DynamicList<unsigned>& l1, const DynamicList<U>& l2 ){
-  plumed_massert(ii<l1.active.size(),"ii is out of bounds");
+  plumed_dbg_massert(ii<l1.active.size(),"ii is out of bounds");
   unsigned kk; kk=l1.active[ii];
-  plumed_massert(kk<l2.all.size(),"the lists are mismatched");
-  plumed_massert( l2.onoff[kk]==1, "This index is not currently in the second list" );
+  plumed_dbg_massert(kk<l2.all.size(),"the lists are mismatched");
+  plumed_dbg_massert( l2.onoff[kk]==1, "This index is not currently in the second list" );
   unsigned nn; nn=l2.translator[kk]; 
   return nn; 
 }

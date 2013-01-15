@@ -128,7 +128,7 @@ public:
 /// Calcualte the colvar
   bool calculateThisFunction( const unsigned& j );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
-  virtual bool contributionIsSmall(){ plumed_assert( !isPossibleToSkip() ); return false; }
+  virtual bool contributionIsSmall(){ plumed_dbg_assert( !isPossibleToSkip() ); return false; }
 /// And a virtual function which actually computes the colvar
   virtual double compute( const unsigned& j )=0;  
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
@@ -189,31 +189,31 @@ unsigned MultiColvar::getNAtoms() const {
 
 inline
 const Vector & MultiColvar::getPosition( unsigned iatom ) const {
-  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
   return ActionAtomistic::getPosition( colvar_atoms[current][iatom] );
 }
 
 inline
 double MultiColvar::getMass(unsigned iatom ) const {
-  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
   return ActionAtomistic::getMass( colvar_atoms[current][iatom] );
 }
 
 inline
 double MultiColvar::getCharge(unsigned iatom ) const {
-  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
   return ActionAtomistic::getCharge( colvar_atoms[current][iatom] );
 }
 
 inline
 AtomNumber MultiColvar::getAbsoluteIndex(unsigned iatom) const {
-  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
   return ActionAtomistic::getAbsoluteIndex( colvar_atoms[current][iatom] );
 }
 
 inline
 void MultiColvar::addAtomsDerivatives(const int& iatom, const Vector& der){
-  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
   addElementDerivative( 3*iatom+0, der[0] );
   addElementDerivative( 3*iatom+1, der[1] );
   addElementDerivative( 3*iatom+2, der[2] );

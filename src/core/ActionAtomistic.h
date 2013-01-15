@@ -132,8 +132,8 @@ double ActionAtomistic::getMass(int i)const{
 }
 
 inline
-double ActionAtomistic::getCharge(int i)const{
-  plumed_assert( chargesWereSet );
+double ActionAtomistic::getCharge(int i) const {
+  if( !chargesWereSet ) error("charges were not passed to plumed");
   return charges[i];
 }
 

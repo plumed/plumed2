@@ -65,7 +65,7 @@ void VesselMoreThan::printKeywords(){
 }
 
 double VesselMoreThan::compute( const unsigned& i, const double& val, double& df ){
-  plumed_assert( i==0 );
+  plumed_dbg_assert( i==0 );
   double f; f=1.0 - sf.calculate(val, df); df*=-val;
   return f;
 }

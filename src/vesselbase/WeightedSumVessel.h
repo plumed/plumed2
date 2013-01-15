@@ -47,14 +47,14 @@ public:
 /// This gets the weight
   virtual double getWeight( const unsigned&, bool& )=0;  
 /// This adds the derivatives of the weight
-  virtual void addDerivativesOfWeight( const unsigned& ){ plumed_assert(0); }
+  virtual void addDerivativesOfWeight( const unsigned& ){ plumed_merror("weights have no derivatives in this vessel"); }
 /// This gets each value
   virtual double compute( const unsigned& , const unsigned& , const double& val, double& df )=0;
 };
 
 inline
 void WeightedSumVessel::addWeightDerivative( const unsigned& ider, const double& der ){
-  plumed_assert( ider<getNumberOfDerivatives(0) );
+  plumed_dbg_assert( ider<getNumberOfDerivatives(0) );
   addToBufferElement( ider+1, der );
 }
 

@@ -87,7 +87,7 @@ ActionWithArguments(ao),
 fmt("%15.10f")
 {
   parse("FILE",file);
-  plumed_assert(file.length()>0);
+  if( file.length()==0 ) error("name of output file was not specified");
   parse("FMT",fmt);
   fmt=" "+fmt;
   of.link(*this);

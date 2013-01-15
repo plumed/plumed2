@@ -85,11 +85,8 @@ kappa(getNumberOfArguments(),0.0),
 slope(getNumberOfArguments(),0.0)
 {
   parseVector("SLOPE",slope);
-//  plumed_assert(slope.size()==getNumberOfArguments());
   parseVector("KAPPA",kappa);
-//  plumed_assert(kappa.size()==getNumberOfArguments());
   parseVector("AT",at);
-//  plumed_assert(at.size()==getNumberOfArguments());
   checkRead();
 
   log.printf("  at");

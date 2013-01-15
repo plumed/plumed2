@@ -23,8 +23,8 @@
 #define __PLUMED_core_CubicInterpolation_h
 
 #include <vector>
-#include "tools/Matrix.h"
-#include "Value.h"
+#include "Matrix.h"
+#include "core/Value.h"
 
 namespace PLMD {
 
@@ -58,7 +58,7 @@ unsigned CInterpolation::getNumberOfSplinePoints() const {
 
 inline
 void CInterpolation::getSplinePoint( const unsigned nn, std::vector<double>& pp ) const {
-  plumed_assert( nn<splinepoints.nrows() && pp.size()==np.size() );
+  plumed_dbg_assert( nn<splinepoints.nrows() && pp.size()==np.size() );
   for(unsigned i=0;i<np.size();++i) pp[i]=splinepoints(nn,i); 
 }
 
@@ -70,7 +70,7 @@ double CInterpolation::getPointSpacing( const unsigned dir, const unsigned k ) c
 
 inline
 double CInterpolation::getCrossTermDenominator( const unsigned i, const unsigned j ) const {
-  plumed_assert( splinepoints.ncols()==2 );
+  plumed_dbg_assert( splinepoints.ncols()==2 );
   unsigned iplus, iminus; iplus=(i+1)*stride[0]; iminus=(i-1)*stride[0];
   return ( splinepoints(iplus,0) - splinepoints(iminus,0) ) * ( splinepoints(iplus+j+1,1) - splinepoints(iplus+j-1,1) );
 }

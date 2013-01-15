@@ -141,18 +141,21 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   bool debug_pd=parse("--debug-pd",fakein);
   bool debug_dd=parse("--debug-dd",fakein);
-  if( debug_pd || debug_dd ) plumed_massert(!noatoms,"cannot debug without atoms");
+  if( debug_pd || debug_dd ){
+    if(noatoms) error("cannot debug without atoms");
+  }
   int multi=1;
   FILE*multi_log=NULL;
   bool debug_grex=parse("--debug-grex",fakein);
   Communicator intracomm;
   Communicator intercomm;
   if(debug_grex){
-    plumed_massert( !noatoms, "must have atoms to debug_grex");
+    if(noatoms) error("must have atoms to debug_grex");
     Tools::convert(fakein,multi);
     int ntot=pc.Get_size();
     int nintra=ntot/multi;
-    plumed_massert(multi*nintra==ntot,"xxx");
+    if(multi*nintra!=ntot) error("invalid number of processes for debug_grex");
+    //plumed_massert(multi*nintra==ntot,"xxx");
     pc.Split(pc.Get_rank()/nintra,pc.Get_rank(),intracomm);
     pc.Split(pc.Get_rank()%nintra,pc.Get_rank(),intercomm);
     string n; Tools::convert(intercomm.Get_rank(),n);
@@ -194,7 +197,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      parse("--pdb",pdbfile);
      if(pdbfile.length()>0){
        bool check=pdb.read(pdbfile,false,1.0);
-       plumed_massert(check,"error reading pdb file");
+       if(!check) error("error reading pdb file");
      }
 
      string pbc_cli_list; parse("--box",pbc_cli_list);
@@ -214,8 +217,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      }
   }
 
-  plumed_massert(!(debug_dd&debug_pd),"cannot use debug-dd and debug-pd at the same time");
-  if(debug_pd || debug_dd) plumed_massert(Communicator::initialized(),"needs mpi for debug-pd");
+  if( debug_dd && debug_pd ) error("cannot use debug-dd and debug-pd at the same time");
+  if(debug_pd || debug_dd){
+    if( !Communicator::initialized() ) error("needs mpi for debug-pd");
+  }
 
   Plumed p;
   int rr=sizeof(real);
@@ -307,7 +312,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
         for(unsigned i=0;i<pdb.size();++i){
           AtomNumber an=pdb.getAtomNumbers()[i];
           unsigned index=an.index();
-          plumed_massert(index<unsigned(natoms),"atom index in pdb exceeds the number of atoms in trajectory");
+          if( index>=unsigned(natoms) ) error("atom index in pdb exceeds the number of atoms in trajectory");
           masses[index]=pdb.getOccupancy()[i];
           charges[index]=pdb.getBeta()[i];
         }
@@ -320,7 +325,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
       p.cmd("setNatoms",&natoms);
       p.cmd("init");
     }
-    plumed_massert(checknatoms==natoms,"number of atom changed");
+    if(checknatoms!=natoms){
+       std::string stepstr; Tools::convert(step,stepstr);
+       error("number of atoms in frame " + stepstr + " does not match number of atoms in first frame");
+    }
 
     coordinates.assign(3*natoms,real(0.0));
     forces.assign(3*natoms,real(0.0));
@@ -383,7 +391,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     p.cmd("setStep",&step);
     if(!noatoms){
        bool ok=Tools::getline(fp,line);
-       plumed_massert(ok,"premature end of file");
+       if(!ok) error("premature end of trajectory file");
 
        std::vector<double> celld(9,0.0);
        if(pbc_cli_given==false) {
@@ -396,7 +404,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
                   &celld[0], &celld[1], &celld[2],
                   &celld[3], &celld[4], &celld[5],
                   &celld[6], &celld[7], &celld[8]);
-         } else plumed_merror("needed box in second line");
+         } else error("needed box in second line of xyz file");
        } else {			// from command line
          celld=pbc_cli_box;
        }
@@ -405,7 +413,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        // Read coordinates
        for(int i=0;i<natoms;i++){
          bool ok=Tools::getline(fp,line);
-         plumed_massert(ok,"premature end of file");
+         if(!ok) error("premature end of trajectory file");
          char dummy[1000];
          double cc[3];
          std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);

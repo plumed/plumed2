@@ -89,7 +89,7 @@ width(sig)
   unsigned ncv=center.size();
   if( width.size()==ncv ) diagonal=true;
   else if( width.size()==(ncv*(ncv+1))/2 ) diagonal=false;
-  else plumed_massert(0,"specified sigma is neither diagonal or full covariance matrix");
+  else plumed_merror("specified sigma is neither diagonal or full covariance matrix");
 
   // Setup the kernel type
   if(type=="GAUSSIAN" || type=="gaussian"){
@@ -146,7 +146,7 @@ double KernelFunctions::getCutoff( const double& width ) const {
 }
 
 std::vector<unsigned> KernelFunctions::getSupport( const std::vector<double>& dx ) const {
-  plumed_assert( ndim()==dx.size() );
+  plumed_dbg_assert( ndim()==dx.size() );
   std::vector<unsigned> support( dx.size() );
   if(diagonal){
      for(unsigned i=0;i<dx.size();++i) support[i]=static_cast<unsigned>(ceil( getCutoff(width[i])/dx[i] ));
@@ -165,8 +165,10 @@ std::vector<unsigned> KernelFunctions::getSupport( const std::vector<double>& dx
 }
 
 double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv ) const {
-  plumed_assert( pos.size()==ndim() && derivatives.size()==ndim() );
+  plumed_dbg_assert( pos.size()==ndim() && derivatives.size()==ndim() );
+#ifndef NDEBUG
   if( usederiv ) plumed_massert( ktype!=uniform, "step function can not be differentiated" ); 
+#endif
 
   double r2=0;
   if(diagonal){ 

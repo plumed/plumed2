@@ -158,7 +158,7 @@ void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomN
 } 
 
 bool PDB::getBackbone( const unsigned& resnumber, const std::vector<std::string>& backnames, std::vector<AtomNumber>& backnumbers ) const {
-  plumed_assert( backnames.size()==backnumbers.size() ); 
+  if( backnames.size()!=backnumbers.size() ) plumed_merror("mismatch between number of backbone names and number of backbone numbers"); 
   bool foundresidue=false; std::vector<bool> found( backnames.size(), false );
   for(unsigned i=0;i<size();++i){
      if( residue[i]==resnumber ){
@@ -179,7 +179,7 @@ std::string PDB::getChainID(const unsigned& resnumber) const {
   for(unsigned i=0;i<size();++i){
      if(resnumber==residue[i]) return chain[i];
   }
-  plumed_massert(0,"Not enough residues in pdb input file");
+  plumed_merror("Not enough residues in pdb input file");
 }
 
 void PDB::renameAtoms( const std::string& old_name, const std::string& new_name ){

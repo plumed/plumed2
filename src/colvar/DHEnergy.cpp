@@ -105,7 +105,7 @@ constant(0.0)
   parse("TEMP",T);
   parse("EPSILON",epsilon);
   checkRead();
-  plumed_assert(!plumed.getAtoms().usingNaturalUnits());
+  if( plumed.getAtoms().usingNaturalUnits() ) error("DHENERGY cannot be used for calculations performed with natural units");
   constant=138.935458111/atoms.getUnits().getEnergy()/atoms.getUnits().getLength();
   k=sqrt(I/(epsilon*T))*502.903741125*atoms.getUnits().getLength();
   checkRead();

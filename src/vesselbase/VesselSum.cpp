@@ -47,7 +47,7 @@ SumVessel(da)
 }
 
 double VesselSum::compute( const unsigned& i, const double& val, double& df ){
-  plumed_assert( i==0 );
+  plumed_dbg_assert( i==0 );
   df=1.0; return val;
 }
 

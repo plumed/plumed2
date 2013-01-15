@@ -105,7 +105,7 @@ std::string HistogramBead::description() const {
 void HistogramBead::generateBins( const std::string& params, const std::string& dd, std::vector<std::string>& bins ){
   if( dd.size()!=0 && params.find(dd)==std::string::npos) return;
   std::vector<std::string> data=Tools::getWords(params);
-  plumed_assert(data.size()>=1);
+  plumed_massert(data.size()>=1,"There is no input for this keyword");
 
   std::string name=data[0];
 
@@ -135,7 +135,7 @@ void HistogramBead::generateBins( const std::string& params, const std::string& 
 void HistogramBead::set( const std::string& params, const std::string& dd, std::string& errormsg ){
   if( dd.size()!=0 && params.find(dd)==std::string::npos) return;
   std::vector<std::string> data=Tools::getWords(params);
-  plumed_assert(data.size()>=1);
+  if(data.size()<1) errormsg="No input has been specified";
 
   std::string name=data[0];
   if(name=="GAUSSIAN") type=gaussian;
@@ -175,7 +175,7 @@ void HistogramBead::printKeywords( Log& log ) const {
 
 double HistogramBead::calculate( double x, double& df ) const {
   const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
-  plumed_assert(init && periodicity!=unset ); 
+  plumed_dbg_assert(init && periodicity!=unset ); 
   double lowB, upperB, f;
   if( type==gaussian ){
      lowB = difference( x, lowb ) / ( sqrt(2.0) * width );

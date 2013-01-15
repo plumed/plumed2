@@ -55,13 +55,13 @@ public:
 
 inline
 unsigned VesselValueAccess::getNumberOfDerivatives( const unsigned& ival ) const {
-  plumed_assert( ival<value_starts.size() );
+  plumed_dbg_assert( ival<value_starts.size() );
   return value_starts[ival+1]-value_starts[ival]-1;
 }
 
 inline
 void VesselValueAccess::getValue( const unsigned& icv, Value& val ) const {
-   plumed_assert( icv<value_starts.size()-1 );
+   plumed_dbg_assert( icv<value_starts.size()-1 );
    unsigned nder=(value_starts[icv+1]-value_starts[icv]-1);
    if( val.getNumberOfDerivatives()!=nder ) val.resizeDerivatives( nder );
    val.clearDerivatives();
@@ -71,7 +71,7 @@ void VesselValueAccess::getValue( const unsigned& icv, Value& val ) const {
 
 inline
 double VesselValueAccess::getValue( const unsigned& icv ) const {
-   plumed_assert( icv<value_starts.size()-1 );
+   plumed_dbg_assert( icv<value_starts.size()-1 );
    return getBufferElement( value_starts[icv] );
 }
 

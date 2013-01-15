@@ -137,7 +137,7 @@ int ActionWithValue::getComponent( const std::string& name ) const {
   for(unsigned i=0;i<values.size();++i){
      if (values[i]->name==thename) return i;
   }
-  plumed_massert(0,"there is no component with name" + name);
+  plumed_merror("there is no component with name" + name);
   return -1;
 }
 

@@ -69,8 +69,7 @@ Action::Action(const ActionOptions&ao):
     std::string s; Tools::convert(plumed.getActionSet().size(),s);
     label="@"+s;
   }
-  plumed_massert(!plumed.getActionSet().selectWithLabel<Action*>(label),
-                "label " + label + " has been already used");
+  if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
   log.printf("  with label %s\n",label.c_str());
 }
 
@@ -115,7 +114,7 @@ void Action::parseFlag(const std::string&key,bool & t){
         t=false; 
      } else if ( !keywords.getLogicalDefault(key,t) ){
         log.printf("ERROR in action %s with label %s : flag %s has no default",name.c_str(),label.c_str(),key.c_str() );
-        plumed_assert(0);
+        plumed_error();
      } 
   }
 }
@@ -192,7 +191,7 @@ void Action::prepare(){
   return;
 }
 
-void Action::error( const std::string & msg ){
+void Action::error( const std::string & msg ) const {
   log.printf("ERROR in input to action %s with label %s : %s \n \n", name.c_str(), label.c_str(), msg.c_str() );
   if( !line.empty() ) keywords.print( log );
   plumed_merror("ERROR in input to action " + name + " with label " + label + " : " + msg );

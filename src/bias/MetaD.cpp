@@ -263,7 +263,7 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   vector<unsigned> gbin(getNumberOfArguments());
   parseVector("GRID_BIN",gbin);
   if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("not enough values for GRID_BIN");
-  plumed_assert(gmin.size()==gmax.size() && gmin.size()==gbin.size());
+  if( gmin.size()!=gmax.size() || gmin.size()!=gbin.size() ) error("GRID MIN was specified without either GRID_MAX or GRID_BIN");
   bool sparsegrid=false;
   parseFlag("GRID_SPARSE",sparsegrid);
   bool nospline=false;
@@ -283,7 +283,7 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   // Multiple walkers
   parse("WALKERS_N",mw_n_);
   parse("WALKERS_ID",mw_id_);
-  if(mw_n_>1){plumed_assert(mw_n_>mw_id_);}
+  if(mw_n_>1) error("walker ID should be a numerical value less than the total number of walkers"); // plumed_assert(mw_n_>mw_id_);}
   parse("WALKERS_DIR",mw_dir_);
   parse("WALKERS_RSTRIDE",mw_rstride_);
 

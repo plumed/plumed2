@@ -135,19 +135,19 @@ ActionWithVessel* Vessel::getAction(){
 
 inline
 void Vessel::setBufferElement( const unsigned& i, const double& val){
-  plumed_assert( i<data_buffer.size() );
+  plumed_dbg_assert( i<data_buffer.size() );
   data_buffer[i]=val;
 }
 
 inline
 void Vessel::addToBufferElement( const unsigned& i, const double& val){
-  plumed_assert( i<data_buffer.size() );
+  plumed_dbg_assert( i<data_buffer.size() );
   data_buffer[i]+=val;
 }
 
 inline
 double Vessel::getBufferElement( const unsigned& i ) const {
-  plumed_assert( i<data_buffer.size() );
+  plumed_dbg_assert( i<data_buffer.size() );
   return data_buffer[i];
 } 
 

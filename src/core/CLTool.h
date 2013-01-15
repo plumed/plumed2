@@ -79,6 +79,8 @@ protected:
   bool parse(const std::string&key,T&t);
 /// Find out whether one of the command line flags is present or not
   void parseFlag(const std::string&key,bool&t);  
+/// Crash the command line tool with an error
+  void error(const std::string& msg);
 public:
 /// How is the input specified on the command line or in an input file
   enum {unset,commandline,ifile} inputdata;
@@ -99,9 +101,9 @@ template<class T>
 bool CLTool::parse(const std::string&key,T&t){
   plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
   if(keywords.style(key,"compulsory") ){
-     plumed_assert(inputData.count(key)>0);
+     if(inputData.count(key)==0) error("missing data for keyword " + key);
      bool check=Tools::convert(inputData[key],t);
-     plumed_assert(check);
+     if(!check) error("data input for keyword " + key + " has wrong type");
      return true;
   }
   if( inputData.count(key)==0 ) return false; 

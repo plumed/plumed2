@@ -54,7 +54,7 @@ void CLTool::parseFlag( const std::string&key, bool&t ){
   plumed_assert(inputData.count(key)>0); 
   if( inputData[key]=="true") t=true;
   else if( inputData[key]=="false") t=false;
-  else plumed_assert(0);
+  else plumed_error();
 }
 
 bool CLTool::readInput( int argc, char**argv, FILE* in, FILE*out ){
@@ -105,7 +105,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ){
            }
          }
          if(!found){
-            fprintf(out,"ERROR : unknown option %s\n\n", a.c_str() );
+            fprintf(stderr,"ERROR in input for command line tool %s : %s option is unknown \n\n", name.c_str(), a.c_str() );
             printhelp=true;
          }
       }
@@ -176,7 +176,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
          }
      }
      if(!found){
-        fprintf(stderr,"Unknown keyword found in input file :%s\n",keyword.c_str());
+        fprintf(stderr,"ERROR in input for command line tool %s : unknown keyword %s found in input file\n",name.c_str(),keyword.c_str());
         if(mystdin) fclose(mystdin);
         return false;
      }
@@ -186,4 +186,10 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
   setRemainingToDefault(out);
   return true;
 }
+
+void CLTool::error( const std::string& msg ){
+  fprintf(stderr,"ERROR : in input for command line tool %s : %s\n",name.c_str(),msg.c_str());
+  plumed_error();  
+}
+
 }

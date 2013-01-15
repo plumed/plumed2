@@ -127,7 +127,7 @@ public:
    }
    /// Set the Matrix equal to the value of a standard vector - used for readin
    Matrix<T>& operator=(const std::vector<T>& v){
-     plumed_assert( v.size()==sz );
+     plumed_dbg_assert( v.size()==sz );
      for(unsigned i=0;i<sz;++i){ data[i]=v[i]; }
      return *this;
    }
@@ -138,7 +138,7 @@ public:
    }
    /// Matrix addition
    Matrix<T>& operator+=(const Matrix<T>& m){ 
-    plumed_assert( m.rw==rw && m.cl==cl );
+    plumed_dbg_assert( m.rw==rw && m.cl==cl );
     data+=m.data;
     return *this;
   }
@@ -149,7 +149,7 @@ public:
   }
   /// Matrix subtraction
   Matrix<T>& operator-=(const Matrix<T>& m){
-    plumed_assert( m.rw==rw && m.cl==cl );
+    plumed_dbg_assert( m.rw==rw && m.cl==cl );
     data-=m.data; 
     return *this;
   }

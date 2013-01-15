@@ -83,7 +83,7 @@ keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg){
   vector<string> data=Tools::getWords(definition);
-  //plumed_assert(data.size()>=1);
+  if( data.size()<1 ) errormsg="missing all input for switching function"; 
   string name=data[0];
   data.erase(data.begin());
   invr0=0.0;
@@ -94,7 +94,6 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   double r0;
   bool found_r0=Tools::parse(data,"R_0",r0);
   if(!found_r0) errormsg="R_0 is required";
-//  plumed_massert(found_r0,"R_0 is needed");
   invr0=1.0/r0;
   Tools::parse(data,"D_0",d0);
   Tools::parse(data,"D_MAX",dmax);
