@@ -115,7 +115,7 @@ void ActionWithVessel::resizeFunctions(){
      functions[i]->resize();
      bufsize+=(functions[i]->data_buffer).size();
   }
-  derivatives.resize( getNumberOfDerivatives() );
+  derivatives.resize( getNumberOfDerivatives(), 0.0 );
   buffer.resize( bufsize );
 }
 
@@ -148,8 +148,6 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
   for(unsigned i=rank;i<members.getNumberActive();i+=stride){
       // Retrieve the function we are calculating from the dynamic list
       kk=members[i]; 
-      // Clear the derivatives ready for new function
-      derivatives.assign(derivatives.size(),0.0);
       // Calculate the stuff in the loop for this action
       bool skipme=calculateThisFunction( kk );
 
@@ -172,7 +170,9 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
       }
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
-      if( reduceAtNextStep && !keep ) deactivate(kk);  
+      if( reduceAtNextStep && !keep ) deactivate(kk);
+      // Clear the derivatives from this step
+      for(unsigned j=0;j<getNumberOfDerivatives(kk);++j) derivatives[j]=0.0;
   }
   // Update the dynamic list 
   if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }

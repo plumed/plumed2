@@ -93,12 +93,6 @@ protected:
   double getCentralAtomDerivative( const unsigned& iatom, const unsigned jcomp, const Vector& df ) const ;
 /// Get the number of atoms in this particular colvar
   unsigned getNAtoms() const;
-/// Get the position of atom iatom
-  const Vector & getPosition(unsigned) const;
-/// Get the mass of atom iatom
-  double getMass(unsigned) const ; 
-/// Get the charge of atom iatom
-  double getCharge(unsigned) const ;
 /// Get all the positions
   const std::vector<Vector> & getPositions();
 /// This can be used to get rid of erroenous effects that might happen
@@ -141,6 +135,14 @@ public:
   virtual Vector getCentralAtom(); 
 /// Is this a density?
   virtual bool isDensity(){ return false; }
+/// Get the position of atom iatom
+  const Vector & getPosition(unsigned) const;
+/// Get the mass of atom iatom
+  double getMass(unsigned) const ;
+/// Get the charge of atom iatom
+  double getCharge(unsigned) const ;
+/// Get the absolute index of atom iatom
+  AtomNumber getAbsoluteIndex(unsigned) const ;
 };
 
 inline
@@ -201,6 +203,12 @@ inline
 double MultiColvar::getCharge(unsigned iatom ) const {
   plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
   return ActionAtomistic::getCharge( colvar_atoms[current][iatom] );
+}
+
+inline
+AtomNumber MultiColvar::getAbsoluteIndex(unsigned iatom) const {
+  plumed_assert( iatom<colvar_atoms[current].getNumberActive() );
+  return ActionAtomistic::getAbsoluteIndex( colvar_atoms[current][iatom] );
 }
 
 inline
