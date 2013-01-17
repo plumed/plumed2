@@ -52,13 +52,15 @@ class VesselOptions {
 private:
 /// The name of the particular vessel
   std::string myname;
+/// The numerical label for this vessel
+  unsigned numlab;
 /// Pointer to ActionWithVessel that this if from
   ActionWithVessel* action;
 public:
 /// The parameters that are read into the function
   std::string parameters;
 /// The constructor 
-  VesselOptions( const std::string& thisname, const std::string& params, ActionWithVessel* aa );
+  VesselOptions( const std::string& thisname, const unsigned& nlab, const std::string& params, ActionWithVessel* aa );
 };
 
 class Vessel {
@@ -68,6 +70,8 @@ private:
   std::string myname;
 /// The label for this object in the input file
   std::string label;
+/// The numerical label for this object
+  const unsigned numlab;
 /// The action that this vessel is created within
   ActionWithVessel* action;
 /// The data we are storing in this action
@@ -83,6 +87,8 @@ protected:
   void setLabel( const std::string& mylab );
 /// Get the label for the stuff in this function 
   bool getLabel( std::string& mylab ) const ;
+/// Return the numerical label
+  unsigned getNumericalLabel() const ;
 /// Report an error in the input for a distribution function
   void error(const std::string& errmsg);
 /// Return a pointer to the action we are working in
@@ -121,6 +127,11 @@ public:
 inline
 void Vessel::zero(){
   data_buffer.assign( data_buffer.size(),0.0 );
+}
+
+inline
+unsigned Vessel::getNumericalLabel() const {
+  return numlab;
 }
 
 inline

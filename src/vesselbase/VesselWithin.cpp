@@ -74,6 +74,7 @@ WeightedSumVessel(da)
      hist.resize( bins.size() ); 
      for(unsigned i=0;i<hist.size();++i) hist[i].set( bins[i], "", errormsg ); 
   }
+  ActionWithValue* aval=dynamic_cast<ActionWithValue*>( getAction() ); plumed_assert( aval );
   for(unsigned i=0;i<hist.size();++i){
      if( !isPeriodic ) hist[i].isNotPeriodic();
      else hist[i].isPeriodic( min, max );
@@ -82,6 +83,9 @@ WeightedSumVessel(da)
      std::string lb, ub;
      Tools::convert( hist[i].getlowb(), lb );
      Tools::convert( hist[i].getbigb(), ub );
+     if( aval->exists("between" + lb + "&" + ub) ){
+         error("number/fraction of values between " + lb + " and " + ub + " cannot be calculated more than once per line"); 
+     }
      addOutput( "between" + lb + "&" + ub );
      log.printf("  value %s.between%s&%s contains the ",(getAction()->getLabel()).c_str(),lb.c_str(),ub.c_str());
      if(usenorm) log.printf("fraction of values %s\n",(hist[i].description()).c_str());

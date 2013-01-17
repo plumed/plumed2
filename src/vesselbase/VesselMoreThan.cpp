@@ -41,10 +41,10 @@ public:
 PLUMED_REGISTER_VESSEL(VesselMoreThan,"MORE_THAN")
 
 void VesselMoreThan::reserveKeyword( Keywords& keys ){
-  keys.reserve("optional","MORE_THAN","calculate the number of variables more than a certain target value. "
+  keys.reserve("numbered","MORE_THAN","calculate the number of variables more than a certain target value. "
                                       "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                       "is a \\ref switchingfunction. The final value can be referenced using "
-                                      "\\e label.gt\\f$r_0\\f$.");
+                                      "\\e label.gt\\f$(d_0 + r_0)\\f$.");
 }
 
 VesselMoreThan::VesselMoreThan( const VesselOptions& da ) :
@@ -55,7 +55,9 @@ SumVessel(da)
   std::string errormsg;
   sf.set( da.parameters, errormsg );
   if( errormsg.size()!=0 ) error( errormsg );
-  std::string vv; Tools::convert( sf.get_r0(), vv );
+  std::string vv; Tools::convert( sf.get_d0() + sf.get_r0(), vv );
+  ActionWithValue* aval=dynamic_cast<ActionWithValue*>( getAction() ); plumed_assert( aval );
+  if( aval->exists("gt"+vv) ) error("Either d_0 or r_0 must be different if there are multiple instances of the MORE_THAN keyword on one line");
   addOutput("gt" + vv);
   log.printf("  value %s.gt%s contains the number of values more than %s\n",(getAction()->getLabel()).c_str(),vv.c_str(),(sf.description()).c_str());
 }

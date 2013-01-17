@@ -73,7 +73,7 @@ private:
   using Action::deactivate;
 protected:
 /// Add a vessel to the list of vessels
-  void addVessel( const std::string& name, const std::string& input );
+  void addVessel( const std::string& name, const std::string& input, const unsigned numlab=0 );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void requestDistribution();
 /// Return the value of the tolerance

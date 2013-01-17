@@ -28,8 +28,9 @@
 namespace PLMD {
 namespace vesselbase{
 
-VesselOptions::VesselOptions(const std::string& thisname, const std::string& params, ActionWithVessel* aa ):
+VesselOptions::VesselOptions(const std::string& thisname, const unsigned& nlab, const std::string& params, ActionWithVessel* aa ):
 myname(thisname),
+numlab(nlab),
 action(aa),
 parameters(params)
 {
@@ -38,6 +39,7 @@ parameters(params)
 Vessel::Vessel( const VesselOptions& da ):
 myname(da.myname),
 label("unset"),
+numlab(da.numlab),
 action(da.action),
 log((da.action)->log),
 comm((da.action)->comm),

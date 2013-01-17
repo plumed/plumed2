@@ -203,6 +203,10 @@ double SwitchingFunction::get_r0() const {
   return 1./invr0;
 }
 
+double SwitchingFunction::get_d0() const {
+  return d0;
+}
+
 void SwitchingFunction::printKeywords( Log& log ) const {
   Keywords skeys;
   skeys.add("compulsory","R_0","the value of R_0 in the switching function");

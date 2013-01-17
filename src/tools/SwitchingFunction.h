@@ -46,6 +46,7 @@ public:
   void set(const std::string& definition, std::string& errormsg);
   std::string description() const ;
   double calculate(double x,double&df)const;
+  double get_d0() const;
   double get_r0() const;
   void printKeywords( Log& log ) const ;
 };

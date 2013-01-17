@@ -41,10 +41,10 @@ public:
 PLUMED_REGISTER_VESSEL(VesselLessThan,"LESS_THAN")
 
 void VesselLessThan::reserveKeyword( Keywords& keys ){
-  keys.reserve("optional","LESS_THAN","calculate the number of variables less than a certain target value. "
+  keys.reserve("numbered","LESS_THAN","calculate the number of variables less than a certain target value. "
                                       "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                       "is a \\ref switchingfunction. The final value can be referenced using "
-                                      "\\e label.lt\\f$r_0\\f$.");  
+                                      "\\e label.lt\\f$(d_0 + r_0)\\f$.");  
 }
 
 VesselLessThan::VesselLessThan( const VesselOptions& da ) :
@@ -54,7 +54,9 @@ SumVessel(da)
  
   std::string errormsg; sf.set( da.parameters, errormsg ); 
   if( errormsg.size()!=0 ) error( errormsg ); 
-  std::string vv; Tools::convert( sf.get_r0(), vv );
+  std::string vv; Tools::convert( sf.get_d0() + sf.get_r0(), vv );
+  ActionWithValue* aval=dynamic_cast<ActionWithValue*>( getAction() ); plumed_assert( aval );
+  if( aval->exists("lt"+vv) ) error("Either d_0 or r_0 must be different if there are multiple instances of the LESS_THAN keyword on one line");
   addOutput("lt" + vv);
   log.printf("  value %s.lt%s contains number of values less than %s\n",(getAction()->getLabel()).c_str(),vv.c_str(),(sf.description()).c_str() );
 }

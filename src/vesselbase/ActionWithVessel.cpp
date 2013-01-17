@@ -65,8 +65,8 @@ ActionWithVessel::~ActionWithVessel(){
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
 }
 
-void ActionWithVessel::addVessel( const std::string& name, const std::string& input ){
-  read=true; VesselOptions da(name,input,this);
+void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const unsigned numlab ){
+  read=true; VesselOptions da(name,numlab,input,this);
   functions.push_back( vesselRegister().create(name,da) );
 }
 
@@ -89,7 +89,7 @@ void ActionWithVessel::requestDistribution(){
                  for(unsigned i=1;;++i){
                     if( !parseNumbered(thiskey,i,input) ) break;
                     std::string ss; Tools::convert(i,ss);
-                    addVessel( thiskey, input ); 
+                    addVessel( thiskey, input, i ); 
                     input.clear();
                  } 
               }
