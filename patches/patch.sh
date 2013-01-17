@@ -210,6 +210,7 @@ case "$action" in
     echo "Linking Plumed.h and Plumed.inc ($mode mode)"
     ln -s "$PLUMED_ROOT/src/wrapper/Plumed.h"
     ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
+    ln -s "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
     bash "$diff"
     if type -t plumed_after_patch 1>/dev/null ; then
       echo "Executing plumed_after_patch function"
@@ -273,7 +274,7 @@ EOF
       echo "WARNING: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
     else
     echo "Removing Plumed.h and Plumed.inc"
-      rm Plumed.h Plumed.inc
+      rm Plumed.h Plumed.inc Plumed.cmake
     fi
     PREPLUMED=$(find . -name "*.preplumed")
     if ! test "$PREPLUMED" ; then

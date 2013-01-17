@@ -61,6 +61,7 @@ $(DIRS):
 lib: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(OBJ_WRAPPER) \
      $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
      Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static \
+     Plumed.cmake Plumed.cmake.runtime Plumed.cmake.shared Plumed.cmake.static \
      plumed-patch
 
 plumed-patch:
@@ -115,6 +116,38 @@ Plumed.inc.shared: Plumed.inc
 	@cat $< >> $@
 	@echo PLUMED_LOAD= '$$(PLUMED_SHARED_LOAD)' >> $@
 	@echo PLUMED_DEPENDENCIES= '$$(PLUMED_SHARED_DEPENDENCIES)' >> $@
+
+Plumed.cmake: $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_SHARED_OBJ) $(OBJ_DYNAMIC_WRAPPER)
+	@echo Building Plumed.cmake
+	@echo "set(PLUMED_INCLUDE "-I$(realpath ../../include)")" > $@
+	@echo "set(PLUMED_RUNTIME_LOAD " $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS)")" >> $@
+	@echo "set(PLUMED_STATIC_LOAD " $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)")" >> $@
+	@echo "set(PLUMED_SHARED_LOAD " $(realpath $(PLUMED_SHARED_OBJ)) $(LIBS) $(LDFLAGS)")" >> $@
+	@echo "set(PLUMED_RUNTIME_DEPENDENCIES) "   >> $@
+	@echo "set(PLUMED_STATIC_DEPENDENCIES " $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))")"  >> $@
+	@echo "set(PLUMED_SHARED_DEPENDENCIES " $(realpath $(PLUMED_SHARED_OBJ))")"  >> $@
+
+Plumed.cmake.runtime: Plumed.cmake
+	@echo Building Plumed.cmake, runtime-linking version
+	@echo "# PLUMED: runtime installation" > $@
+	@cat $< >> $@
+	@echo "set("PLUMED_LOAD '$${PLUMED_RUNTIME_LOAD}'")" >> $@
+	@echo "set("PLUMED_DEPENDENCIES '$${PLUMED_RUNTIME_DEPENDENCIES}'")" >> $@
+
+Plumed.cmake.static: Plumed.cmake
+	@echo Building Plumed.cmake, static version
+	@echo "# PLUMED: static installation" > $@
+	@cat $< >> $@
+	@echo "set("PLUMED_LOAD '$${PLUMED_STATIC_LOAD}'")" >> $@
+	@echo "set("PLUMED_DEPENDENCIES '$${PLUMED_STATIC_DEPENDENCIES}'")" >> $@
+
+Plumed.cmake.shared: Plumed.cmake
+	@echo Building Plumed.cmake, shared version
+	@echo "# PLUMED: shared installation" > $@
+	@cat $< >> $@
+	@echo "set("PLUMED_LOAD '$${PLUMED_SHARED_LOAD}'")" >> $@
+	@echo "set("PLUMED_DEPENDENCIES '$${PLUMED_SHARED_DEPENDENCIES}'")" >> $@
+
 
 # Individual dependencies
 
