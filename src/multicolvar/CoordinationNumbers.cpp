@@ -115,7 +115,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Read in the atoms
   int natoms; readAtoms( natoms );
   // And setup the ActionWithVessel
-  requestDistribution();
+  readVesselKeywords();
 
   // Create the groups for the neighbor list
   std::vector<AtomNumber> ga_lista, gb_lista; AtomNumber aa;

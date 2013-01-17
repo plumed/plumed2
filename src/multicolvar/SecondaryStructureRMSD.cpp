@@ -72,14 +72,14 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
 
   if( secondary_drmsd.size()==0 && secondary_rmsd.size()==0 ){ 
      int natoms; readAtoms(natoms); 
-     requestDistribution();
+     readVesselKeywords();
      if( getNumberOfVessels()==0 ){
          double r0; parse("R_0",r0); double d0; parse("D_0",d0);
          int nn; parse("NN",nn); int mm; parse("MM",mm);
          std::ostringstream ostr;
          ostr<<"RATIONAL R_0="<<r0<<" D_0="<<d0<<" NN="<<nn<<" MM="<<mm;
          std::string input=ostr.str(); addVessel( "LESS_THAN", input );
-         requestDistribution();  // This makes sure resizing is done
+         readVesselKeywords();  // This makes sure resizing is done
      } 
   }
 

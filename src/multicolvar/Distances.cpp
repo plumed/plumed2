@@ -104,7 +104,7 @@ rcut(-1)
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
   // And setup the ActionWithVessel
-  requestDistribution();          
+  readVesselKeywords();          
   // And check everything has been read in correctly
   checkRead();
 }

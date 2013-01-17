@@ -75,7 +75,7 @@ Density::Density(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   int nat; readAtoms( nat ); 
-  requestDistribution();
+  readVesselKeywords();
   // And check everything has been read in correctly
   checkRead(); 
 }

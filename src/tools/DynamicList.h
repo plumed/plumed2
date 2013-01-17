@@ -130,6 +130,9 @@ friend unsigned linkIndex( const unsigned, const DynamicList<unsigned>& , const 
 /// This routine activates everything from the second list that is required from the first
 template <typename U>
 friend void activateLinks( const DynamicList<unsigned>& , DynamicList<U>& );
+/// This gathers data split across nodes list of Dynamic lists
+template <typename U>
+friend void mpi_gatherActiveMembers(Communicator& , std::vector< DynamicList<U> >& ); 
 private:
   bool inactive;
 /// This is the list of all the relevent members
@@ -229,6 +232,7 @@ template <typename T>
 void DynamicList<T>::activateAll(){
   inactive=false;
   for(unsigned i=0;i<onoff.size();++i) onoff[i]=1;
+  updateActiveMembers();
 }
 
 template <typename T>
@@ -263,6 +267,30 @@ unsigned linkIndex( const unsigned ii, const DynamicList<unsigned>& l1, const Dy
 template <typename U>
 void activateLinks( const DynamicList<unsigned>& l1, DynamicList<U>& l2 ){
   for(unsigned i=0;i<l1.active.size();++i) l2.activate( l1.active[i] );
+}
+
+template <typename U>
+void mpi_gatherActiveMembers(Communicator& comm, std::vector< DynamicList<U> >& ll ){
+  // Setup an array to hold all data
+  unsigned bufsize=0;
+  for(unsigned i=0;i<ll.size();++i) bufsize+=ll[i].onoff.size();
+  std::vector<unsigned> buffer( bufsize );
+  // Gather all onoff data into a single array
+  bufsize=0;
+  for(unsigned i=0;i<ll.size();++i){
+     for(unsigned j=0;j<ll[i].onoff.size();++j){ buffer[bufsize]=ll[i].onoff[j]; bufsize++; }
+  }
+  // GATHER from all nodes
+  comm.Sum(&buffer[0],buffer.size());
+  // distribute back to original lists
+  bufsize=0; unsigned size=comm.Get_size();
+  for(unsigned i=0;i<ll.size();++i){
+     for(unsigned j=0;j<ll[i].onoff.size();++j){ 
+        if( buffer[bufsize]==size ) ll[i].onoff[j]=1; 
+        bufsize++; 
+     }
+  }
+  for(unsigned i=0;i<ll.size();++i) ll[i].updateActiveMembers();
 }
 
 }

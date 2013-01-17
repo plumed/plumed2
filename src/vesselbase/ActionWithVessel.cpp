@@ -19,6 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "tools/Communicator.h"
 #include "ActionWithVessel.h"
 #include "Vessel.h"
 #include "VesselRegister.h"
@@ -29,7 +30,6 @@ namespace vesselbase{
 
 void ActionWithVessel::registerKeywords(Keywords& keys){
   keys.add("optional","TOL","when accumulating sums quantities that contribute less than this will be ignored.");
-  keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities that contributed less than TOL at the previous neighbor list update step are ignored.");
   keys.add( vesselRegister().getKeywords() );
 }
 
@@ -41,9 +41,6 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   Action(ao),
   read(false),
   serial(false),
-  updateFreq(0),
-  lastUpdate(0),
-  reduceAtNextStep(false),
   tolerance(0)
 {
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
@@ -51,14 +48,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   if(serial)log.printf("  doing calculation in serial\n");
   tolerance=epsilon; 
   if( keywords.exists("TOL") ) parse("TOL",tolerance);
-  if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
-  if(updateFreq>0){
-    log.printf("  Updating contributors every %d steps. Ignoring contributions less than %lf\n",updateFreq,tolerance);
-  } else {
-    log.printf("  Updating contributors every step.");
-    if( tolerance>epsilon) log.printf(" Ignoring contributions less than %lf\n",tolerance);
-    else log.printf("\n");
-  }
+  if( tolerance>epsilon) log.printf(" Ignoring contributions less than %lf\n",tolerance);
 }
 
 ActionWithVessel::~ActionWithVessel(){
@@ -70,7 +60,7 @@ void ActionWithVessel::addVessel( const std::string& name, const std::string& in
   functions.push_back( vesselRegister().create(name,da) );
 }
 
-void ActionWithVessel::requestDistribution(){
+void ActionWithVessel::readVesselKeywords(){
   // Loop over all keywords find the vessels and create appropriate functions
   for(unsigned i=0;i<keywords.size();++i){
       std::string thiskey,input; thiskey=keywords.getKeyword(i);
@@ -102,11 +92,8 @@ void ActionWithVessel::requestDistribution(){
       }
   }
 
-  // This sets up the dynamic list that holds what we are calculating
-  if( functions.size()>0 ){
-     for(unsigned i=0;i<getNumberOfFunctionsInAction();++i){ members.addIndexToList(i); }
-     activateAll(); resizeFunctions(); 
-  }
+  // Make sure all vessels have had been resized at start
+  if( functions.size()>0 ) resizeFunctions();
 }
 
 void ActionWithVessel::resizeFunctions(){
@@ -120,11 +107,6 @@ void ActionWithVessel::resizeFunctions(){
   buffer.resize( bufsize );
 }
 
-void ActionWithVessel::activateAll(){
-  members.activateAll(); members.updateActiveMembers();
-  for(unsigned i=0;i<members.getNumberActive();++i) activateValue(i);
-}
-
 Vessel* ActionWithVessel::getVessel( const std::string& name ){
   std::string myname;
   for(unsigned i=0;i<functions.size();++i){
@@ -136,29 +118,24 @@ Vessel* ActionWithVessel::getVessel( const std::string& name ){
   return NULL;
 }
 
-void ActionWithVessel::calculateAllVessels( const int& stepn ){
-  plumed_massert( read, "you must have a call to requestDistribution somewhere" );
+void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
+  plumed_massert( read, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial){ stride=1; rank=0; }
 
   // Clear all data from previous calculations
-  buffer.assign(buffer.size(),0.0);
+//  buffer.assign(buffer.size(),0.0);
 
-  unsigned kk; bool keep;
-  for(unsigned i=rank;i<members.getNumberActive();i+=stride){
-      // Retrieve the function we are calculating from the dynamic list
-      kk=members[i]; 
+  bool keep;
+  for(unsigned i=rank;i<ntasks;i+=stride){
       // Calculate the stuff in the loop for this action
-      bool skipme=calculateThisFunction( kk );
+      bool skipme=performTask(i);
 
       // Check for conditions that allow us to just to skip the calculation
-      if( reduceAtNextStep && skipme ){ 
+      if( skipme ){
          plumed_dbg_massert( isPossibleToSkip(), "To make your action work you must write a routine to get weights");
-         deactivate(kk); 
-         continue; 
-      } else if( skipme ){
-         plumed_dbg_massert( isPossibleToSkip(), "To make your action work you must write a routine to get weights");
+         deactivate_task();
          continue;
       }
 
@@ -167,28 +144,29 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
       for(unsigned j=0;j<functions.size();++j){
           // Calculate returns a bool that tells us if this particular
           // quantity is contributing more than the tolerance
-          if( functions[j]->calculate(kk,tolerance) ) keep=true;
+          if( functions[j]->calculate(i,tolerance) ) keep=true;
       }
       // Clear the derivatives from this step
-      for(unsigned j=0;j<getNumberOfDerivatives(kk);++j) derivatives[j]=0.0;
+      for(unsigned j=0;j<getNumberOfDerivatives(i);++j) derivatives[j]=0.0;
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
-      if( reduceAtNextStep && !keep ) deactivate(kk);
+      if( !keep ) deactivate_task();
   }
-  // Update the dynamic list 
-  if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
   // MPI Gather everything
   if(!serial && buffer.size()>0) comm.Sum( &buffer[0],buffer.size() ); 
 
   // Set the final value of the function
   for(unsigned j=0;j<functions.size();++j) functions[j]->finish( tolerance ); 
+}
 
-  // Activate everything on neighbor list time and deactivate after
-  if( reduceAtNextStep ){ reduceAtNextStep=false; }
-  if( updateFreq>0 && (stepn-lastUpdate)>=updateFreq ){
-      activateAll(); resizeFunctions(); 
-      reduceAtNextStep=true; lastUpdate=stepn;
-  } 
+void ActionWithVessel::chainRuleForElementDerivatives( const unsigned j, const unsigned& vstart, const double& df, Vessel* valout ){
+  plumed_dbg_assert( derivatives.size()==getNumberOfDerivatives(j) );
+  for(unsigned i=0;i<derivatives.size();++i) valout->addToBufferElement( vstart+i, df*derivatives[i] );
+}
+
+void ActionWithVessel::transferDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout ){
+  plumed_dbg_assert( derivatives.size()==getNumberOfDerivatives(j) );
+  for(unsigned i=0;i<derivatives.size();++i) valout->addDerivative( i, df*derivatives[i] );
 }
 
 void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){

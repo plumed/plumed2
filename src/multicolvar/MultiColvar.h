@@ -24,6 +24,7 @@
 
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
+#include "tools/DynamicList.h"
 #include "vesselbase/ActionWithVessel.h"
 #include <vector>
 
@@ -48,9 +49,16 @@ private:
   bool usepbc;
   bool readatoms;
   bool verbose_output;
+/// Everything for controlling the updating of neighbor lists
+  int updateFreq;
+  unsigned lastUpdate;
+  bool reduceAtNextStep;
+/// A flag that tells us the position has been set already
   bool posHasBeenSet;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
+/// A DynamicList containing the numbers of 1 - ncolvars
+  DynamicList<unsigned> colvar_list; 
 /// The lists of the atoms involved in each of the individual colvars
 /// note these refer to the atoms in all_atoms
   std::vector< DynamicList<unsigned> > colvar_atoms;
@@ -79,6 +87,8 @@ protected:
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
+/// Find out if it is time to do neighbor list update
+  bool isTimeForNeighborListUpdate() const ;
 /// Update the list of atoms after the neighbor list step
   void removeAtomRequest( const unsigned& aa );
 /// Do we use pbc to calculate this quantity
@@ -122,11 +132,11 @@ public:
   void chainRuleForElementDerivatives( const unsigned j, const unsigned& vstart, const double& df, vesselbase::Vessel* valout );
   void transferDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout );
 /// Turn of atom requests when this colvar is deactivated cos its small
-  void deactivateValue( const unsigned j );
+  void deactivate_task();
 /// Turn on atom requests when the colvar is activated
   void activateValue( const unsigned j );
 /// Calcualte the colvar
-  bool calculateThisFunction( const unsigned& j );
+  bool performTask( const unsigned& j );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual bool contributionIsSmall(){ plumed_dbg_assert( !isPossibleToSkip() ); return false; }
 /// And a virtual function which actually computes the colvar
@@ -156,8 +166,10 @@ unsigned MultiColvar::getNumberOfFunctionsInAction(){
 }
 
 inline
-void MultiColvar::deactivateValue( const unsigned j ){
-  colvar_atoms[j].deactivateAll();
+void MultiColvar::deactivate_task(){
+  if( !reduceAtNextStep ) return;          // Deactivating tasks only possible during neighbor list update
+  colvar_list.deactivate(current);         // Deactivate the colvar from the list
+  colvar_atoms[current].deactivateAll();   // Deactivate all atom requests for this colvar
 }
 
 inline
@@ -168,12 +180,17 @@ void MultiColvar::activateValue( const unsigned j ){
 
 inline
 unsigned MultiColvar::getNumberOfDerivatives( const unsigned& j ){
-  return 3*colvar_atoms[j].getNumberActive() + 9;
+  return 3*colvar_atoms[current].getNumberActive() + 9;
+}
+
+inline
+bool MultiColvar::isTimeForNeighborListUpdate() const {
+  return reduceAtNextStep;
 }
 
 inline
 void MultiColvar::removeAtomRequest( const unsigned& i ){
-  plumed_massert(isTimeForNeighborListUpdate(),"found removeAtomRequest but not during neighbor list step");
+  plumed_massert(reduceAtNextStep,"found removeAtomRequest but not during neighbor list step");
   colvar_atoms[current].deactivate(i); 
 }
 
