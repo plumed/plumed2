@@ -27,6 +27,7 @@
 #include <vector>
 #include "tools/Exception.h"
 #include "tools/Keywords.h"
+#include "ActionWithVessel.h"
 
 namespace PLMD{
 
@@ -43,7 +44,7 @@ as the number of values less than a target, the minimum, the average and so
 on.  This class is used in PLMD::ActionWithVessel.  
 */
 
-class ActionWithVessel;
+//class ActionWithVessel;
 class Vessel;
 
 /// This class is used to pass the input to Vessels 
@@ -74,14 +75,10 @@ private:
   const unsigned numlab;
 /// The action that this vessel is created within
   ActionWithVessel* action;
-/// The data we are storing in this action
-  std::vector<double> data_buffer;
-/// Set everything in the vessel to zero
-  void zero();
-/// Retrieve the data (used before all gather)
-  void getData( unsigned& bufsize, std::vector<double>& data ) const ;
-/// Set the data in the buffers (used after all gather)
-  void setData( unsigned& datastart, const std::vector<double>& data ); 
+/// The start of this Vessel's buffer in buffer in the underlying ActionWithVessel
+  unsigned bufstart;
+/// The number of elements in this vessel's buffered data
+  unsigned bufsize;
 protected:
 /// Give a label to the vessel
   void setLabel( const std::string& mylab );
@@ -125,18 +122,13 @@ public:
 };
 
 inline
-void Vessel::zero(){
-  data_buffer.assign( data_buffer.size(),0.0 );
-}
-
-inline
 unsigned Vessel::getNumericalLabel() const {
   return numlab;
 }
 
 inline
 void Vessel::resizeBuffer( const unsigned& n ){
-  data_buffer.resize( n );
+  bufsize=n; 
 }
 
 inline
@@ -146,20 +138,20 @@ ActionWithVessel* Vessel::getAction(){
 
 inline
 void Vessel::setBufferElement( const unsigned& i, const double& val){
-  plumed_dbg_assert( i<data_buffer.size() );
-  data_buffer[i]=val;
+  plumed_dbg_assert( i<bufsize );
+  action->buffer[bufstart+i]=val;
 }
 
 inline
 void Vessel::addToBufferElement( const unsigned& i, const double& val){
-  plumed_dbg_assert( i<data_buffer.size() );
-  data_buffer[i]+=val;
+  plumed_dbg_assert( i<bufsize );
+  action->buffer[bufstart+i]+=val;
 }
 
 inline
 double Vessel::getBufferElement( const unsigned& i ) const {
-  plumed_dbg_assert( i<data_buffer.size() );
-  return data_buffer[i];
+  plumed_dbg_assert( i<bufsize );
+  return action->buffer[bufstart+i];
 } 
 
 }

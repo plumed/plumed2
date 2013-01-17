@@ -112,8 +112,9 @@ void ActionWithVessel::requestDistribution(){
 void ActionWithVessel::resizeFunctions(){
   unsigned bufsize=0;
   for(unsigned i=0;i<functions.size();++i){
+     functions[i]->bufstart=bufsize;
      functions[i]->resize();
-     bufsize+=(functions[i]->data_buffer).size();
+     bufsize+=functions[i]->bufsize;
   }
   derivatives.resize( getNumberOfDerivatives(), 0.0 );
   buffer.resize( bufsize );
@@ -141,8 +142,8 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
   unsigned rank=comm.Get_rank();
   if(serial){ stride=1; rank=0; }
 
-  // Reset everything
-  for(unsigned j=0;j<functions.size();++j) functions[j]->zero();
+  // Clear all data from previous calculations
+  buffer.assign(buffer.size(),0.0);
 
   unsigned kk; bool keep;
   for(unsigned i=rank;i<members.getNumberActive();i+=stride){
@@ -177,23 +178,7 @@ void ActionWithVessel::calculateAllVessels( const int& stepn ){
   // Update the dynamic list 
   if(reduceAtNextStep){ members.mpi_gatherActiveMembers( comm ); }
   // MPI Gather everything
-  if(!serial){ 
-     buffer.assign(buffer.size(),0.0);
-     unsigned bufsize=0;
-     // Copy data to local buffers
-     for(unsigned i=0;i<functions.size();++i){
-         for(unsigned j=0;j<(functions[i]->data_buffer).size();++j){ buffer[bufsize]=functions[i]->data_buffer[j]; bufsize++; }
-     } 
-     plumed_assert( bufsize==buffer.size() ); 
-     // MPI all gather
-     if(buffer.size()>0) comm.Sum( &buffer[0],buffer.size() ); 
-     // Copy gathered data back to function buffers
-     bufsize=0;
-     for(unsigned i=0;i<functions.size();++i){
-         for(unsigned j=0;j<(functions[i]->data_buffer).size();++j){ functions[i]->data_buffer[j]=buffer[bufsize]; bufsize++; }
-     }
-     plumed_assert( bufsize==buffer.size() );
-  }
+  if(!serial && buffer.size()>0) comm.Sum( &buffer[0],buffer.size() ); 
 
   // Set the final value of the function
   for(unsigned j=0;j<functions.size();++j) functions[j]->finish( tolerance ); 
