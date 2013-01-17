@@ -21,8 +21,8 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/Makefile" << \EOF_EOF
  mdrun_OBJECTS = $(am_mdrun_OBJECTS)
 -mdrun_LDADD = $(LDADD)
 +mdrun_LDADD = $(LDADD) $(PLUMED_LOAD)
- mdrun_DEPENDENCIES = $(lib_LTLIBRARIES) ../mdlib/libmd_mpi.la \
- 	../gmxlib/libgmx_mpi.la
+ mdrun_DEPENDENCIES = $(lib_LTLIBRARIES) ../mdlib/libmd_d.la \
+ 	../gmxlib/libgmx_d.la
  pdb2gmx_SOURCES = pdb2gmx.c
  pdb2gmx_OBJECTS = pdb2gmx.$(OBJEXT)
  pdb2gmx_LDADD = $(LDADD)
@@ -285,7 +285,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
      int  repl;
      int  nrepl;
      real temp;
-@@ -80,18 +86,18 @@
+@@ -80,18 +86,20 @@
  
      snew(qall,ms->nsim);
      qall[re->repl] = q;
@@ -296,23 +296,24 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 -    {
 -        if (qall[s] != qall[0])
 -        {
--            bDiff = TRUE;
--        }
--    }
-+    bDiff = TRUE;
++    /* PLUMED */
 +    //for(s=1; s<ms->nsim; s++)
 +    //{
 +    //    if (qall[s] != qall[0])
 +    //    {
-+    //        bDiff = TRUE;
+             bDiff = TRUE;
+-        }
+-    }
 +    //    }
 +    //}
++    /* END PLUMED */
++
      if (bDiff)
      {
          if (re->type >= 0 && re->type < ereNR)
          {
              gmx_fatal(FARGS,"For replica exchange both %s and %s differ",
-@@ -230,26 +236,29 @@
+@@ -230,26 +238,31 @@
      /* Make an index for increasing temperature order */
      for(i=0; i<re->nrepl; i++)
      {
@@ -334,6 +335,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 -            }
 -        }
 -    }
++    /* PLUMED */
 +    // plumed2: check if we want alternative patterns (i.e. for bias-exchange metaD)
 +    // in those cases replicas can share the same temperature.
 +    //for(i=0; i<re->nrepl; i++)
@@ -353,18 +355,19 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +    //    }
 +    //  }
 +    //}
++    /* END PLUMED */
      fprintf(fplog,"Repl   ");
      for(i=0; i<re->nrepl; i++)
      {
          fprintf(fplog," %3d  ",re->ind[i]);
      }
-@@ -603,10 +612,36 @@
+@@ -603,10 +616,37 @@
      snew(bEx,re->nrepl);
      snew(prob,re->nrepl);
  
      exchange = -1;
      m = (step / re->nst) % 2;
-+
++    /* PLUMED */
 +    if(plumedswitch){
 +      int partner=re->repl;
 +      int test=0;
@@ -389,18 +392,20 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +      plumed_cmd(plumedmain,"GREX calculate",NULL);
 +      plumed_cmd(plumedmain,"GREX shareAllDeltaBias",NULL);
 +    }
++    /* END PLUMED */
 +
      for(i=1; i<re->nrepl; i++)
      {
          a = re->ind[i-1];
          b = re->ind[i];
          bPrint = (re->repl==a || re->repl==b);
-@@ -644,10 +679,20 @@
-                 if (bPrint)
-                 {
-                     fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
-                 }
-                 delta += dpV;
+@@ -620,10 +660,22 @@
+                  */
+                 ediff = Epot[b] - Epot[a];
+                 betaA = 1.0/(re->q[a]*BOLTZ);
+                 betaB = 1.0/(re->q[b]*BOLTZ);
+                 delta = (betaA - betaB)*ediff;
++                /* PLUMED */
 +                if(plumedswitch){
 +                  real adb,bdb,dplumed;
 +                  char buf[300];
@@ -411,19 +416,22 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +                  if (bPrint)
 +                    fprintf(fplog,"  dplumed = %10.3e  d = %10.3e",dplumed,delta);
 +                }
-             }
-             if (bPrint)
-             {
-                 fprintf(fplog,"\n");
-             }
-@@ -724,10 +769,12 @@
++                /* END PLUMED */
+                 break;
+             case ereLAMBDA:
+                 /* Here we exchange based on a linear extrapolation of dV/dlambda.
+                  * We would like to have the real energies
+                  * from foreign lambda calculations.
+@@ -724,10 +776,14 @@
      gmx_multisim_t *ms;
      int  exchange=-1,shift;
      gmx_bool bExchanged=FALSE;
      
      ms = cr->ms;
 +
++    /* PLUMED */
 +    if(plumedswitch)plumed_cmd(plumedmain,"GREX prepare",NULL);
++    /* END PLUMED */
    
      if (MASTER(cr))
      {
