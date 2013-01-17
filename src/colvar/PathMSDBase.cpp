@@ -56,6 +56,8 @@ nframes(0)
 
   // open the file
   FILE* fp=fopen(reference.c_str(),"r");
+  unsigned nat=0;
+  std::vector<AtomNumber> aaa;
   if (fp!=NULL)
   {
     log<<"Opening reference file "<<reference.c_str()<<"\n";
@@ -66,6 +68,11 @@ nframes(0)
          do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
          if(do_read){
             nframes++;
+            if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
+            if(nat==0) nat=mypdb.getAtomNumbers().size();
+            if(nat!=mypdb.getAtomNumbers().size()) error("frames should have the same number of atoms");
+            if(aaa.empty()) aaa=mypdb.getAtomNumbers();
+            if(aaa!=mypdb.getAtomNumbers()) error("frames should contain same atoms in same order");
             log<<"Found PDB: "<<nframes<<" containing  "<<mypdb.getAtomNumbers().size()<<" atoms\n"; 
 	    pdbv.push_back(mypdb); 
 //            requestAtoms(mypdb.getAtomNumbers()); // is done in non base classes 
@@ -78,6 +85,7 @@ nframes(0)
     }
     fclose (fp);
     log<<"Found TOTAL "<<nframes<< " PDB in the file "<<reference.c_str()<<" \n"; 
+    if(nframes==0) error("at least one frame expected");
   } 
   if(neigh_stride>0. || neigh_size>0){
            if(neigh_size>nframes){
