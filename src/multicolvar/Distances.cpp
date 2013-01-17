@@ -93,7 +93,7 @@ void Distances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   ActionWithVessel::autoParallelize( keys );
   keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
-  keys.use("AVERAGE"); keys.use("MIN"); keys.use("LESS_THAN"); 
+  keys.use("AVERAGE"); keys.use("MIN"); keys.use("LESS_THAN"); keys.use("DHENERGY");
   keys.use("MORE_THAN"); keys.use("WITHIN"); keys.use("MOMENTS");
 }
 
