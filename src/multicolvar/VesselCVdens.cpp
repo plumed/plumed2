@@ -140,11 +140,9 @@ not_in(false)
   bead.isPeriodic( 0, 1.0 ); bead.setKernelType( kerneltype );
 
   if( isDensity ){
-      addOutput( name + "_num" );
-      log.printf("  value %s.%s_num contains number of ions in %s \n",(getAction()->getLabel()).c_str(),name.c_str(),name.c_str());
+      addOutput( name + "_num", "the number of atoms in " + name );
   } else {
-      addOutput( name + "_av");
-      log.printf("  value %s.%s_av contains average value of cv in %s \n",(getAction()->getLabel()).c_str(),name.c_str(),name.c_str());
+      addOutput( name + "_av", "the average value of the cv in " + name);
   }
 }
 

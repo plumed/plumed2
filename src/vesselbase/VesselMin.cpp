@@ -56,8 +56,8 @@ SumVessel(da)
   bool found_beta=Tools::parse(data,"BETA",beta);
   if (!found_beta){ error("No value for BETA specified in call to MIN"); return; } 
 
-  addOutput("min");
-  log.printf("  value %s.min contains the minimum value. beta is equal to %f\n",(getAction()->getLabel()).c_str(),beta);
+  std::string str_beta; Tools::convert( beta, str_beta );
+  addOutput("min","the minimum value. Beta is equal to " + str_beta);
 }
 
 void VesselMin::printKeywords(){

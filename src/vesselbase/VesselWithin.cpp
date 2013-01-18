@@ -83,13 +83,10 @@ WeightedSumVessel(da)
      std::string lb, ub;
      Tools::convert( hist[i].getlowb(), lb );
      Tools::convert( hist[i].getbigb(), ub );
-     if( aval->exists("between" + lb + "&" + ub) ){
-         error("number/fraction of values between " + lb + " and " + ub + " cannot be calculated more than once per line"); 
-     }
-     addOutput( "between" + lb + "&" + ub );
-     log.printf("  value %s.between%s&%s contains the ",(getAction()->getLabel()).c_str(),lb.c_str(),ub.c_str());
-     if(usenorm) log.printf("fraction of values %s\n",(hist[i].description()).c_str());
-     else log.printf("number of values %s\n",(hist[i].description()).c_str());
+     std::string description;
+     if(usenorm) description="fraction of values " + hist[i].description();
+     else description="number of values " + hist[i].description(); 
+     addOutput( "between" + lb + "&" + ub, description );
   }
 }
 

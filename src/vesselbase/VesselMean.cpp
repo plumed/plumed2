@@ -47,8 +47,7 @@ WeightedSumVessel(da)
   if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
 
   useNorm();
-  addOutput("average");
-  log.printf("  value %s.average contains the average value\n",(getAction()->getLabel()).c_str());
+  addOutput("average","the average value");
 }
 
 double VesselMean::compute( const unsigned& i, const unsigned& j, const double& val, double& df ){

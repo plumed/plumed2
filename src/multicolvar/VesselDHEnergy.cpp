@@ -82,8 +82,7 @@ SumVessel(da)
      Tools::convert(numlab,label);
      name="dhenergy-" + label;
   }
-  addOutput(name);
-  log.printf("  value %s.%s contains the Debye-Huckel interaction energy\n",(getAction()->getLabel()).c_str(), name.c_str());
+  addOutput(name,"the Debye-Huckel interaction energy");
   log.printf("  parameters temperature %f K ionic strength %f M solvent dielectric constant %f \n",T, I, epsilon); 
   log<<"  Bibliography "<<getAction()->plumed.cite("Do, Carloni, Varani and Bussi, submitted (2013)")<<" \n";
 }

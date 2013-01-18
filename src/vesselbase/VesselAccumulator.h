@@ -38,7 +38,7 @@ private:
   std::vector<Value*> final_values;
 protected:
 /// Create a value that can be passed between actions
-  void addOutput(const std::string& label);
+  void addOutput(const std::string& label, const std::string& description);
 /// Add a value to the buffer
   void addBufferedValue();
 /// Get the number of values we are calculating

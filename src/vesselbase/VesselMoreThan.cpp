@@ -55,11 +55,8 @@ SumVessel(da)
   std::string errormsg;
   sf.set( da.parameters, errormsg );
   if( errormsg.size()!=0 ) error( errormsg );
-  std::string vv; Tools::convert( sf.get_d0() + sf.get_r0(), vv );
-  ActionWithValue* aval=dynamic_cast<ActionWithValue*>( getAction() ); plumed_assert( aval );
-  if( aval->exists("gt"+vv) ) error("Either d_0 or r_0 must be different if there are multiple instances of the MORE_THAN keyword on one line");
-  addOutput("gt" + vv);
-  log.printf("  value %s.gt%s contains the number of values more than %s\n",(getAction()->getLabel()).c_str(),vv.c_str(),(sf.description()).c_str());
+  std::string vv; Tools::convert( sf.get_d0() + sf.get_r0(), vv ); 
+  addOutput("gt" + vv, "the number of values more than" + sf.description());
 }
 
 void VesselMoreThan::printKeywords(){

@@ -35,14 +35,24 @@ void VesselAccumulator::addBufferedValue(){
    nbuffers++;
 }
 
-void VesselAccumulator::addOutput( const std::string& label ){
+void VesselAccumulator::addOutput( const std::string& label, const std::string& description ){
    ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
    plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
-
-   a->addComponentWithDerivatives( label );
-   a->componentIsNotPeriodic( label );
+   std::string nn, vname;
+   if( a->exists( getAction()->getLabel() + "." + label ) ){
+       for(unsigned i=1;;++i){
+           Tools::convert(i,nn); 
+           if( !a->exists(getAction()->getLabel() + "." + label +"-"+nn) ) break;
+       }
+       vname=label + "-" + nn;
+   } else {
+       vname=label;
+   }
+   a->addComponentWithDerivatives( vname );
+   a->componentIsNotPeriodic( vname );
    final_values.push_back( a->copyOutput( a->getNumberOfComponents()-1 ) );
    setNumberOfValues( nbuffers + final_values.size() );
+   log.printf("  value %s.%s contains the %s\n",(getAction()->getLabel()).c_str(),vname.c_str(),description.c_str());
 }
 
 void VesselAccumulator::resize(){

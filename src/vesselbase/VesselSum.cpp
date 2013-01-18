@@ -42,8 +42,7 @@ void VesselSum::reserveKeyword( Keywords& keys ){
 VesselSum::VesselSum( const VesselOptions& da ) :
 SumVessel(da)
 {
-  addOutput("sum");
-  log.printf("  value %s.sum contains the sum of all the values\n",(getAction()->getLabel()).c_str());
+  addOutput("sum","the sum of all the values");
 }
 
 double VesselSum::compute( const unsigned& i, const double& val, double& df ){
