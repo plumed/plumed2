@@ -406,6 +406,7 @@ void PlumedMain::readInputFile(std::string str){
     };
   };
   log.printf("END FILE: %s\n",str.c_str());
+  log.flush();	
 
   pilots=actionSet.select<ActionPilot*>();
 }
