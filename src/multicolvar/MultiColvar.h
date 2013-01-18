@@ -131,6 +131,8 @@ public:
 /// Merge the derivatives 
   void chainRuleForElementDerivatives( const unsigned j, const unsigned& vstart, const double& df, vesselbase::Vessel* valout );
   void transferDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout );
+/// Can we skip the calculations of quantities
+  virtual bool isPossibleToSkip();
 /// Turn of atom requests when this colvar is deactivated cos its small
   void deactivate_task();
 /// Turn on atom requests when the colvar is activated
@@ -154,6 +156,11 @@ public:
 /// Get the absolute index of atom iatom
   AtomNumber getAbsoluteIndex(unsigned) const ;
 };
+
+inline
+bool MultiColvar::isPossibleToSkip(){
+  return (colvar_atoms[current].getNumberActive()==0); 
+}
 
 inline
 unsigned MultiColvar::getNumberOfDerivatives(){

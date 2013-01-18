@@ -332,9 +332,8 @@ const std::vector<Vector>& MultiColvar::getPositions(){
 }
 
 bool MultiColvar::performTask( const unsigned& j ){
-  unsigned natoms=colvar_atoms[j].getNumberActive(); 
-  if ( natoms==0 ) return true;   // Do nothing if there are no active atoms in the colvar
   current=colvar_list[j];         // Store the number of the atom list we are currently working on
+  if( colvar_atoms[current].getNumberActive()==0 ) return true;    // Do nothing if there are no active atoms in the colvar
   posHasBeenSet=false;            // This ensures we don't set the pos array more than once per step  
 
   // Do a quick check on the size of this contribution  
