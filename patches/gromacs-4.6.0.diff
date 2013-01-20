@@ -14,19 +14,19 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/CMakeLists.txt" << \EOF_EO
      calc_verletbuf.c
      compute_io.c    
      convparm.c      
-@@ -126,11 +128,11 @@
+@@ -120,11 +122,11 @@
      set_target_properties(${PROGRAM} PROPERTIES OUTPUT_NAME "${PROGRAM}${GMX_BINARY_SUFFIX}")
  endforeach()
  
  add_executable(mdrun ${MDRUN_SOURCES} main.c)
  gmx_add_man_page(mdrun)
--target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
-+target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES} ${PLUMED_LOAD})
+-target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES})
++target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${PLUMED_LOAD})
  set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}" COMPILE_FLAGS "${OpenMP_C_FLAGS}")
  
- # this is to circumvent the following MSVC error: 
- # warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs
- # fatal error LNK1169: one or more multiply defined symbols found
+ # Construct component groups for installation; note that a component may
+ # belong to only one group
+ foreach(PROGRAM ${GMX_KERNEL_PROGRAMS})
 EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 --- ./src/kernel/md.c.preplumed
@@ -48,10 +48,10 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  #endif
  #ifdef GMX_THREAD_MPI
  #include "tmpi.h"
-@@ -688,10 +694,50 @@
+@@ -711,10 +717,50 @@
              }
          }
-         fprintf(fplog,"\n");
+         fprintf(fplog, "\n");
      }
  
 +    /* PLUMED */
@@ -96,14 +96,14 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +
      /* Set and write start time */
      runtime_start(runtime);
-     print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
-     wallcycle_start(wcycle,ewcRUN);
+     print_date_and_time(fplog, cr->nodeid, "Started mdrun", runtime);
+     wallcycle_start(wcycle, ewcRUN);
      if (fplog)
-@@ -998,10 +1044,17 @@
-                                     vsite,shellfc,constr,
-                                     nrnb,wcycle,
+@@ -1027,10 +1073,17 @@
+                                     vsite, shellfc, constr,
+                                     nrnb, wcycle,
                                      do_verbose && !bPMETuneRunning);
-                 wallcycle_stop(wcycle,ewcDOMDEC);
+                 wallcycle_stop(wcycle, ewcDOMDEC);
                  /* If using an iterative integrator, reallocate space to match the decomposition */
 +
 +                /* PLUMED */
@@ -117,45 +117,43 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  
          if (MASTER(cr) && do_log && !bFFscan)
          {
-@@ -1137,16 +1190,39 @@
+@@ -1172,16 +1225,37 @@
              /* The coordinates (x) are shifted (to get whole molecules)
               * in do_force.
-              * This is parallellized as well, and does communication too. 
+              * This is parallellized as well, and does communication too.
               * Check comments in sim_util.c
               */
-+
-+             /* PLUMED */
-+             if(plumedswitch){
-+               plumed_cmd(plumedmain,"setStep",&step);
-+               plumed_cmd(plumedmain,"setPositions",&state->x[mdatoms->start][0]);
-+               plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[mdatoms->start]);
-+               plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
-+               plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
-+               plumed_cmd(plumedmain,"prepareCalc",NULL);
-+             }
-+             /* END PLUMED */
-              do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
-                      state->box,state->x,&state->hist,
-                      f,force_vir,mdatoms,enerd,fcd,
-                      state->lambda,graph,
-                      fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
++ 
++            /* PLUMED */
++            if(plumedswitch){
++              plumed_cmd(plumedmain,"setStep",&step);
++              plumed_cmd(plumedmain,"setPositions",&state->x[mdatoms->start][0]);
++              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[mdatoms->start]);
++              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
++              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
++              plumed_cmd(plumedmain,"prepareCalc",NULL);
++            }
++            /* END PLUMED */
+             do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
+                      state->box, state->x, &state->hist,
+                      f, force_vir, mdatoms, enerd, fcd,
+                      state->lambda, graph,
+                      fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
                       (bNS ? GMX_FORCE_NS : 0) | force_flags);
-+
-+             /* PLUMED */
-+             if(plumedswitch){
-+               plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-+               plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
-+               plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
-+               plumed_cmd(plumedmain,"performCalc",NULL);
-+               if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-+                  do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
-+             }
-+             /* END PLUMED */
-+
++            /* PLUMED */
++            if(plumedswitch){
++              plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
++              plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
++              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
++              plumed_cmd(plumedmain,"performCalc",NULL);
++              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
++                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
++            }
++            /* END PLUMED */
          }
-     
+ 
          GMX_BARRIER(cr->mpi_comm_mygroup);
-         
+ 
          if (bTCR)
 EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
@@ -173,74 +171,74 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
 +plumed plumedmain;
 +/* END PLUMED */
 +
- int cmain(int argc,char *argv[])
+ int cmain(int argc, char *argv[])
  {
-   const char *desc[] = {
-  #ifdef GMX_OPENMM
-     "This is an experimental release of GROMACS for accelerated",
+     const char   *desc[] = {
+         "The [TT]mdrun[tt] program is the main computational chemistry engine",
+         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
 @@ -463,10 +469,11 @@
-     { efLOG, "-ra",     "rotangles",ffOPTWR },
-     { efLOG, "-rs",     "rotslabs", ffOPTWR },
-     { efLOG, "-rt",     "rottorque",ffOPTWR },
-     { efMTX, "-mtx",    "nm",       ffOPTWR },
-     { efNDX, "-dn",     "dipole",   ffOPTWR },
+           "DD node order" },
+         { "-npme",    FALSE, etINT, {&npme},
+           "Number of separate nodes to be used for PME, -1 is guess" },
+         { "-nt",      FALSE, etINT, {&hw_opt.nthreads_tot},
+           "Total number of threads to start (0 is guess)" },
 +    { efDAT, "-plumed", "plumed",   ffOPTRD },   /* PLUMED */
-     { efRND, "-multidir",NULL,      ffOPTRDMULT},
-     { efDAT, "-membed", "membed",   ffOPTRD },
-     { efTOP, "-mp",     "membed",   ffOPTRD },
-     { efNDX, "-mn",     "membed",   ffOPTRD }
-   };
-@@ -782,18 +789,50 @@
+         { "-ntmpi",   FALSE, etINT, {&hw_opt.nthreads_tmpi},
+           "Number of thread-MPI threads to start (0 is guess)" },
+         { "-ntomp",   FALSE, etINT, {&hw_opt.nthreads_omp},
+           "Number of OpenMP threads per MPI process/thread to start (0 is guess)" },
+         { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
+@@ -731,19 +738,50 @@
+     }
  
-   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
-   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
-   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
- 
-+/* PLUMED */
-+  plumedswitch=0;
-+  if (opt2bSet("-plumed",NFILE,fnm)) plumedswitch=1;
-+  if(plumedswitch){
-+    int plumed_is_there=0;
-+    int real_precision=sizeof(real);
-+    real energyUnits=1.0;
-+    real lengthUnits=1.0;
-+    real timeUnits=1.0;
-+
-+
-+    if(!plumed_installed()){
-+      gmx_fatal(FARGS,"Plumed is not available. Check your PLUMED_KERNEL variable.");
+     ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
+     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
+     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
++    /* PLUMED */
++    plumedswitch=0;
++    if (opt2bSet("-plumed",NFILE,fnm)) plumedswitch=1;
++    if(plumedswitch){
++      int plumed_is_there=0;
++      int real_precision=sizeof(real);
++      real energyUnits=1.0;
++      real lengthUnits=1.0;
++      real timeUnits=1.0;
++  
++  
++      if(!plumed_installed()){
++        gmx_fatal(FARGS,"Plumed is not available. Check your PLUMED_KERNEL variable.");
++      }
++      plumedmain=plumed_create();
++      plumed_cmd(plumedmain,"setRealPrecision",&real_precision);
++      // this is not necessary for gromacs units:
++      plumed_cmd(plumedmain,"setMDEnergyUnits",&energyUnits);
++      plumed_cmd(plumedmain,"setMDLengthUnits",&lengthUnits);
++      plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);
++      //
++      plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,NFILE,fnm));
++      plumedswitch=1;
 +    }
-+    plumedmain=plumed_create();
-+    plumed_cmd(plumedmain,"setRealPrecision",&real_precision);
-+// this is not necessary for gromacs units:
-+    plumed_cmd(plumedmain,"setMDEnergyUnits",&energyUnits);
-+    plumed_cmd(plumedmain,"setMDLengthUnits",&lengthUnits);
-+    plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);
-+//
-+    plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,NFILE,fnm));
-+    plumedswitch=1;
-+  }
-+/* END PLUMED */
-+
-   rc = mdrunner(&hw_opt, fplog,cr,NFILE,fnm,oenv,bVerbose,bCompact,
-                 nstglobalcomm, ddxyz,dd_node_order,rdd,rconstr,
-                 dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
-                 nbpu_opt[0],
-                 nsteps,nstepout,resetstep,
-                 nmultisim,repl_ex_nst,repl_ex_nex,repl_ex_seed,
-                 pforce, cpt_period,max_hours,deviceOptions,Flags);
++    /* END PLUMED */
  
-+/* PLUMED */
-+  if(plumedswitch){
-+    plumed_finalize(plumedmain);
-+  }
-+/* END PLUMED */
-+
-   gmx_finalize_par();
+     rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
+                   nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
+                   dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
+                   nbpu_opt[0],
+                   nsteps, nstepout, resetstep,
+                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
+                   pforce, cpt_period, max_hours, deviceOptions, Flags);
  
-   if (MULTIMASTER(cr)) {
-       thanx(stderr);
-   }
++    /* PLUMED */
++    if(plumedswitch){
++      plumed_finalize(plumedmain);
++    }
++    /* END PLUMED */
++  
+     gmx_finalize_par();
+ 
+     if (MULTIMASTER(cr))
+     {
+         thanx(stderr);
 EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 --- ./src/kernel/repl_ex.c.preplumed
@@ -260,26 +258,26 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
  #define PROBABILITYCUTOFF 100
  /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
  
- enum { ereTEMP, ereLAMBDA, ereENDSINGLE ,ereTL, ereNR };
- const char *erename[ereNR] = { "temperature", "lambda", "end_single_marker", "temperature and lambda"};
-@@ -109,18 +115,20 @@
+ enum {
+     ereTEMP, ereLAMBDA, ereENDSINGLE, ereTL, ereNR
+@@ -111,18 +117,20 @@
  
-     snew(qall,ms->nsim);
+     snew(qall, ms->nsim);
      qall[re->repl] = q;
-     gmx_sum_sim(ms->nsim,qall,ms);
+     gmx_sum_sim(ms->nsim, qall, ms);
  
 -    bDiff = FALSE;
--    for (s=1; s<ms->nsim; s++)
+-    for (s = 1; s < ms->nsim; s++)
 -    {
 -        if (qall[s] != qall[0])
 -        {
 +    /* PLUMED */
 +    //bDiff = FALSE;
-+    //for (s=1; s<ms->nsim; s++)
++    //for (s = 1; s < ms->nsim; s++)
 +    //{
 +    //    if (qall[s] != qall[0])
 +    //    {
-             bDiff = TRUE;   
+             bDiff = TRUE;
 -        }
 -    }
 +    //    }
@@ -290,8 +288,8 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
      {
          /* Set the replica exchange type and quantities */
          re->type = ere;
-@@ -251,10 +259,14 @@
-     for(i=0; i<re->nrepl; i++)
+@@ -255,10 +263,14 @@
+     for (i = 0; i < re->nrepl; i++)
      {
          re->ind[i] = i;
      }
@@ -300,13 +298,13 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +    // plumed2: check if we want alternative patterns (i.e. for bias-exchange metaD)
 +    // in those cases replicas can share the same temperature.
 +    /*
-     if (re->type<ereENDSINGLE) {
+     if (re->type < ereENDSINGLE)
+     {
  
-         for(i=0; i<re->nrepl; i++)
+         for (i = 0; i < re->nrepl; i++)
          {
-             for(j=i+1; j<re->nrepl; j++)
-@@ -270,10 +282,12 @@
-                     gmx_fatal(FARGS,"Two replicas have identical %ss",erename[re->type]);
+@@ -275,10 +287,12 @@
+                     gmx_fatal(FARGS, "Two replicas have identical %ss", erename[re->type]);
                  }
              }
          }
@@ -315,16 +313,15 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +    /* END PLUMED */
  
      /* keep track of all the swaps, starting with the initial placement. */
-     snew(re->allswaps,re->nrepl);
-     for(i=0; i<re->nrepl; i++)
+     snew(re->allswaps, re->nrepl);
+     for (i = 0; i < re->nrepl; i++)
      {
-@@ -1008,19 +1022,59 @@
+@@ -1045,19 +1059,57 @@
      }
      else
      {
          /* standard nearest neighbor replica exchange */
          m = (step / re->nst) % 2;
-+
 +        /* PLUMED */
 +        if(plumedswitch){
 +          int partner=re->repl;
@@ -351,16 +348,15 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +          plumed_cmd(plumedmain,"GREX shareAllDeltaBias",NULL);
 +        }
 +        /* END PLUMED */
-+
-         for(i=1; i<re->nrepl; i++)
+         for (i = 1; i < re->nrepl; i++)
          {
              a = re->ind[i-1];
              b = re->ind[i];
-             
-             bPrint = (re->repl==a || re->repl==b);
+ 
+             bPrint = (re->repl == a || re->repl == b);
              if (i % 2 == m)
              {
-                 delta = calc_delta(fplog,bPrint,re,a,b,a,b);
+                 delta = calc_delta(fplog, bPrint, re, a, b, a, b);
 +                /* PLUMED */
 +                if(plumedswitch){
 +                  real adb,bdb,dplumed;
@@ -373,12 +369,12 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +                    fprintf(fplog,"  dplumed = %10.3e  d = %10.3e",dplumed,delta);
 +                }
 +                /* END PLUMED */
-                 if (delta <= 0) {
+                 if (delta <= 0)
+                 {
                      /* accepted */
                      prob[i] = 1;
-                     bEx[i] = TRUE;
-                 }
-@@ -1263,10 +1317,14 @@
+                     bEx[i]  = TRUE;
+@@ -1306,10 +1358,14 @@
       * exchanges. */
      /* Where each replica ends up after the exchange attempt(s). */
      /* The order in which multiple exchanges will occur. */
@@ -391,6 +387,6 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
      if (MASTER(cr))
      {
          replica_id  = re->repl;
-         test_for_replica_exchange(fplog,cr->ms,re,enerd,det(state_local->box),step,time);
-         prepare_to_do_exchange(fplog,re->destinations,replica_id,re->nrepl,&maxswap,
+         test_for_replica_exchange(fplog, cr->ms, re, enerd, det(state_local->box), step, time);
+         prepare_to_do_exchange(fplog, re->destinations, replica_id, re->nrepl, &maxswap,
 EOF_EOF
