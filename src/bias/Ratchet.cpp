@@ -39,28 +39,37 @@ CV space using an harmonic potential moving with the thermal fluctuations of the
 method is as follows:
 
 \f$
-V(\rho(t)) = \left \{ \begin{array}{ll} \frac{\alpha}{2}\left(\rho(t)-\rho_m(t)\right)^2, &\rho(t)>\rho_m(t)\\
+V(\rho(t)) = \left \{ \begin{array}{ll} \frac{K}{2}\left(\rho(t)-\rho_m(t)\right)^2, &\rho(t)>\rho_m(t)\\
               0, & \rho(t)\le\rho_m(t), \end{array} \right .
 \f$
+
+
 where
+
+
 \f$
 \rho(t)=\left(CV(t)-TO\right)^2
 \f$
+
+
 and
+
+
 \f$
-\rho_m(t)=\min_{0\le\tau\le t}\rho(\tau).
+\rho_m(t)=\min_{0\le\tau\le t}\rho(\tau)+\eta(t)
 \f$.
 
 The method is based on the introduction of a biasing potential which is zero when
 the system is moving towards the desired arrival point and which damps the
 fluctuations when the system attempts to move in the opposite direction. As in the
 case of the ratchet and pawl system, propelled by thermal motion of the solvent
-molecules, the biasing potential does not exert work on the system.
+molecules, the biasing potential does not exert work on the system. \f$\eta(t)\f$ is
+an additional white noise acting on the minimum position of the bias.
 
 \par Examples
-The following input sets up a restraint on the distance between atoms 3 and 5
-and the distance between atoms 2 and 4, at different equilibrium
-values, and tells plumed to print the energy of the restraint
+The following input sets up two biases, one on the distance between atoms 3 and 5
+and another on the distance between atoms 2 and 4. The two target values are defined
+using TO and the two strength using KAPPA. The total energy of the bias is printed.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
@@ -92,8 +101,8 @@ void Ratchet::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("compulsory","TO","The array of target values");
   keys.add("compulsory","KAPPA","The array of force constants.");
-  keys.add("optional","MIN","Array of starting values (usefull for restarting)");
-  keys.add("optional","NOISE","Array of noise intensities (add a temperature to the Ratchet)");
+  keys.add("optional","MIN","Array of starting values for the bias (set rho_m(t), otherwise it is set using the current value of ARG)");
+  keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the Ratchet)");
   keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the Ratchet)");
 }
 
@@ -124,7 +133,12 @@ random(getNumberOfArguments())
   for(unsigned i=0;i<kappa.size();i++) log.printf(" %f",kappa[i]);
   log.printf("\n");
 
-  for(unsigned i=0;i<getNumberOfArguments();i++) {char str_min[6]; sprintf(str_min,"min_%u",i+1); addComponent(str_min); componentIsNotPeriodic(str_min);}
+  for(unsigned i=0;i<getNumberOfArguments();i++) {
+     char str_min[6]; 
+     sprintf(str_min,"min_%u",i+1); 
+     addComponent(str_min); 
+     componentIsNotPeriodic(str_min);
+  }
   for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(-seed[i]);}
   addComponent("bias"); componentIsNotPeriodic("bias");
   addComponent("force2"); componentIsNotPeriodic("force2");
@@ -142,8 +156,12 @@ void Ratchet::calculate(){
     if(cv2<=diff) { diff=0.; temp[i]=0.; }
     double noise = 2.*random[i].Gaussian()*diff;
 
+    // min < 0 means that the variable has not been used in the input file, so the current position of the CV is used
+    // cv2 < min means that the collective variable is nearer to the target value than at any other previous time so
+    // min is set to the CV value
     if(min[i]<0.||cv2<min[i]) min[i] = cv2; 
     else {
+      // otherwise a noise is added to the minimum value
       min[i] += noise;  
       const double f = -2.*k*(cv2-min[i])*cv;
       setOutputForce(i,f);
