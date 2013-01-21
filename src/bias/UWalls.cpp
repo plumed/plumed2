@@ -31,18 +31,26 @@ namespace bias{
 
 //+PLUMEDOC BIAS UPPER_WALLS
 /*
-Add an upper wall on one or more variables.
-
+The LOWER_WALLS and UPPER_WALLS keywords define a wall for the value of one or more collective variables,
+ which limits the region of the phase space accessible during the simulation. 
+The restraining potential starts acting on the system when the value of the CV is greater 
+(in the case of UPPER_WALLS) or lower (in the case of LOWER_WALLS) than a certain limit \f$a_i\f$ (AT) 
+minus an offset \f$o_i\f$ (OFFSET).
 The expression for the bias due to the wall is given by:
 
-\f[
+\f$
   \sum_i {k_i}((x_i-a_i+o_i)/s_i)^e_i
-\f]
+\f$
+
+\f$k_i\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s_i\f$ (EPS) a rescaling factor and 
+\f$e_i\f$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFF = 0.
+
 
 \par Examples
-The following input tells plumed to restrain the distance between atoms 3 and 5
-and the distance between atoms 2 and 4, at different equilibrium
-values. It then tells plumed to print the energy of the restraint
+The following input tells plumed to add both a lower and an upper walls on the distance 
+between atoms 3 and 5 and the distance between atoms 2 and 4. The lower and upper limits
+are defined at different values. The strength of the walls is the same for the four cases. 
+It also tells plumed to print the energy of the walls. 
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
