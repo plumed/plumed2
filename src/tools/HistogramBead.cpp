@@ -82,6 +82,12 @@ w_j(s) = \int_{a + \frac{j-1}{n}(b-a)}^{a + \frac{j}{n}(b-a)} \sum_i K\left( \fr
 */
 //+ENDPLUMEDOC
 
+void HistogramBead::registerKeywords( Keywords& keys ){
+  keys.add("compulsory","LOWER","the lower boundary for this particular bin");
+  keys.add("compulsory","UPPER","the upper boundary for this particular bin");
+  keys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution");
+}
+
 HistogramBead::HistogramBead():
 init(false),
 lowb(0.0),
@@ -119,15 +125,12 @@ void HistogramBead::generateBins( const std::string& params, const std::string& 
   plumed_massert(range[0]<range[1],"Range specification is dubious"); 
   bool found_b=Tools::parse(data,dd+"SMEAR",smear);
   if(!found_b){ Tools::convert(0.5,smear); }  
-  bool usenorm=false; std::string normstr;
-  if(dd=="") Tools::parseFlag(data,dd+"NORM",usenorm);
-  if(usenorm && dd==""){ normstr="NORM"; } else { normstr=""; } 
 
   std::string lb,ub; double delr = ( range[1]-range[0] ) / static_cast<double>( nbins );
   for(unsigned i=0;i<nbins;++i){
      Tools::convert( range[0]+i*delr, lb );
      Tools::convert( range[0]+(i+1)*delr, ub );
-     bins.push_back( name + " " +  dd + "LOWER=" + lb + " " + dd + "UPPER=" + ub + " " + dd + "SMEAR=" + smear + " " + normstr );
+     bins.push_back( name + " " +  dd + "LOWER=" + lb + " " + dd + "UPPER=" + ub + " " + dd + "SMEAR=" + smear );
   }
   plumed_assert(bins.size()==nbins);
 }
@@ -151,7 +154,6 @@ void HistogramBead::set( const std::string& params, const std::string& dd, std::
   
   smear=0.5; Tools::parse(data,dd+"SMEAR",smear);
   width=smear*(highb-lowb); init=true;
-  bool usenorm; Tools::parseFlag(data,dd+"NORM",usenorm);
 }
 
 void HistogramBead::set( double l, double h, double w){
@@ -163,15 +165,6 @@ void HistogramBead::setKernelType( const std::string& ktype ){
   else if(ktype=="triangular") type=triangular;
   else plumed_merror("cannot understand kernel type " + ktype ); 
 }     
-
-void HistogramBead::printKeywords( Log& log ) const {
-  Keywords hkeys;
-  hkeys.add("compulsory","LOWER","the lower boundary for this particular bin");
-  hkeys.add("compulsory","UPPER","the upper boundary for this particular bin");
-  hkeys.add("compulsory","SMEAR","0.5","the ammount to smear the Gaussian for each value in the distribution"); 
-  hkeys.addFlag("NORM",false,"normalize the histogram according to the number of values we are histograming");
-  hkeys.print( log );
-}
 
 double HistogramBead::calculate( double x, double& df ) const {
   const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;

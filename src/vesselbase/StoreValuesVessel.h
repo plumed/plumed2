@@ -19,54 +19,45 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_vesselbase_VesselAccumulator_h
-#define __PLUMED_vesselbase_VesselAccumulator_h
+#ifndef __PLUMED_vesselbase_StoreValuesVessel_h
+#define __PLUMED_vesselbase_StoreValuesVessel_h
 
 #include <string>
 #include <cstring>
 #include <vector>
-#include "VesselValueAccess.h"
+#include "Vessel.h"
 
 namespace PLMD {
-namespace vesselbase {
+namespace vesselbase{
 
-class VesselAccumulator : public VesselValueAccess {
+class StoreValuesVessel : public Vessel {
 private:
-/// The number of buffered values
-  unsigned nbuffers;
-/// These are pointers to the values in ActionWithValue
-  std::vector<Value*> final_values;
+  std::vector<unsigned> start;
 protected:
-/// Create a value that can be passed between actions
-  void addOutput(const std::string& label, const std::string& description);
-/// Add a value to the buffer
-  void addBufferedValue();
-/// Get the number of values we are calculating
-  unsigned getNumberOfValues() const ;
-/// Get pointer to final value
-  Value* getPntrToOutput( const unsigned& i );
+/// Get the ith value in the vessel
+  double getValue( const unsigned& ) const ;  
+/// Add the derivatives from the value
+  void addDerivatives( const unsigned& ival, double& pref, Value* value_out );
 public:
-  VesselAccumulator( const VesselOptions& da );
+  static void registerKeywords( Keywords& keys );
+/// Constructor
+  StoreValuesVessel( const VesselOptions& );
+/// Return the number of terms
+  unsigned getNumberOfTerms(){ return 1; }
 /// This does the resizing of the buffer
   void resize();
-/// This applies all the forces
-  bool applyForce( std::vector<double>& forces );
+/// This makes sure all values are stored
+  bool calculate();
+/// This makes sure things further down the chain are resized
+  virtual void local_resizing()=0;
 };
 
 inline
-Value* VesselAccumulator::getPntrToOutput( const unsigned& iout ){
-  plumed_dbg_assert( iout<final_values.size() );
-  return final_values[iout];
+double StoreValuesVessel::getValue( const unsigned& ival ) const {
+  plumed_dbg_assert( ival<start.size()-1 );
+  return getBufferElement( start[ival] );
 }
-
-inline
-unsigned VesselAccumulator::getNumberOfValues() const {
-  return final_values.size();
-}
-
 
 }
 }
 #endif
-
-

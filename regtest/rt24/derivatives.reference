@@ -1,4 +1,4 @@
-#! FIELDS time parameter c1.moment_3 c1num.moment_3
+#! FIELDS time parameter c1.moment-3 c1num.moment-3
  0.000000 0  -0.0208  -0.0208
  0.000000 1  -0.0169  -0.0169
  0.000000 2  -0.0194  -0.0194

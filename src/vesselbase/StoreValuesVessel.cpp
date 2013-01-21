@@ -20,32 +20,49 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVessel.h"
-#include "VesselStoreAllValues.h"
+#include "StoreValuesVessel.h"
 
 namespace PLMD {
 namespace vesselbase{
 
-VesselStoreAllValues::VesselStoreAllValues( const VesselOptions& da ):
-VesselValueAccess(da)
-{
-  setNumberOfValues( getAction()->getNumberOfFunctionsInAction() );
+void StoreValuesVessel::registerKeywords( Keywords& keys ){
+  Vessel::registerKeywords( keys );
+  plumed_assert( keys.size()==0 );
 }
 
-void VesselStoreAllValues::resize(){
+StoreValuesVessel::StoreValuesVessel( const VesselOptions& da ):
+Vessel(da)
+{
+}
+
+void StoreValuesVessel::resize(){
   ActionWithVessel* aa=getAction();
   unsigned nfunc=aa->getNumberOfFunctionsInAction();
-  std::vector<unsigned> sizes( nfunc );
-  for(unsigned i=0;i<nfunc;++i) sizes[i]=aa->getNumberOfDerivatives(i);
-  setValueSizes( sizes ); local_resizing();
+  unsigned bufsize=0; start.resize( nfunc +1 );
+  for(unsigned i=0;i<nfunc;++i){
+      start[i] = bufsize;
+      bufsize += 1 + aa->getNumberOfDerivatives(i); 
+  }
+  start[nfunc]=bufsize;
+  resizeBuffer( bufsize ); local_resizing();
 }
 
-bool VesselStoreAllValues::calculate( const unsigned& i, const double& tolerance ){
-  unsigned ider=value_starts[i]; setBufferElement( ider, getAction()->getElementValue() ); ider++;
-  for(unsigned j=0;j<getAction()->getNumberOfDerivatives(i);++j){ setBufferElement( ider, getAction()->getElementDerivative(j) ); ider++; }
+bool StoreValuesVessel::calculate(){
+  ActionWithVessel* aa=getAction();
+  unsigned ibuf=start[aa->current]; setBufferElement( ibuf, aa->getElementValue(0) ); ibuf++;
+  for(unsigned ider=0;ider<getAction()->nderivatives;++ider){ setBufferElement( ibuf, aa->getElementDerivative(ider) ); ibuf++; } 
+  plumed_dbg_assert( ibuf==start[aa->current+1] );
   return true;
 }
 
+void StoreValuesVessel::addDerivatives( const unsigned& ival, double& pref, Value* value_out ){
+  unsigned j=0; ActionWithVessel* aa=getAction();
+  for(unsigned i=start[ival]+1;i<start[ival+1];++i){
+      value_out->addDerivative( aa->getOutputDerivativeIndex( ival, j ), pref*getBufferElement(i) ); j++;
+  }
 }
 
+
+}
 }
 

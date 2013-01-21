@@ -97,15 +97,28 @@ void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>&
   }
 }   
 
-void Keywords::reserve( const std::string & t, const std::string & k, const std::string & d ){
+void Keywords::reserve( const std::string & t, const std::string & k, const std::string & d, const bool isvessel ){
   plumed_assert( !exists(k) && !reserved(k) );
-  std::string fd;
+  std::string fd, lowkey=k;
+  std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
   if( t=="numbered" ){
-     fd=d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
+     if(isvessel){
+        fd = d + " The final value can be referenced using <em>label</em>." + lowkey + 
+                 ".  You can use multiple instances of this keyword i.e. " + 
+                 k +"1, " + k + "2, " + k + "3...  The corresponding values are then " 
+                 "referenced using <em>label</em>."+ lowkey +"-1,  <em>label</em>." + lowkey + 
+                 "-2,  <em>label</em>." + lowkey + "-3...";  
+     } else {
+       fd = d + " You can use multiple instances of this keyword i.e. " + k +"1, " + k + "2, " + k + "3...";
+     }
      allowmultiple.insert( std::pair<std::string,bool>(k,true) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType("optional")) );
   } else {
-     fd=d;
+     if(isvessel){
+        fd = " The final value can be referenced using  <em>label</em>." + lowkey + ".";
+     } else {
+        fd = d;
+     }
      allowmultiple.insert( std::pair<std::string,bool>(k,false) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
      if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,t) );
@@ -114,12 +127,15 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
   reserved_keys.push_back(k); 
 }
 
-void Keywords::reserveFlag( const std::string & k, const bool def, const std::string & d ){
+void Keywords::reserveFlag( const std::string & k, const bool def, const std::string & d, const bool isvessel ){
   plumed_assert( !exists(k) && !reserved(k) ); 
   std::string defstr;
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
   types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
-  documentation.insert( std::pair<std::string,std::string>(k,defstr + d) ); 
+  std::string fd,lowkey=k; std::transform(lowkey.begin(),lowkey.end(),lowkey.begin(),tolower);
+  if(isvessel) fd=defstr + d + " The final value can be referenced using <em>label</em>." + lowkey;
+  else fd=defstr + d;
+  documentation.insert( std::pair<std::string,std::string>(k,fd) ); 
   allowmultiple.insert( std::pair<std::string,bool>(k,false) );
   booldefs.insert( std::pair<std::string,bool>(k,def) ); 
   reserved_keys.push_back(k); 

@@ -1,4 +1,4 @@
-#! FIELDS time parameter a2.lt0.08 a2num.lt0.08
+#! FIELDS time parameter a2 a2num
  0.000000 0  -0.0002  -0.0002
  0.000000 1   0.0001   0.0001
  0.000000 2  -0.0002  -0.0002

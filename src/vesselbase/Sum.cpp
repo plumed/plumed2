@@ -19,47 +19,57 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "FunctionVessel.h"
 #include "VesselRegister.h"
-#include "WeightedSumVessel.h"
-#include "ActionWithVessel.h"
 
 namespace PLMD {
-namespace vesselbase {
+namespace vesselbase{
 
-class VesselMean : public vesselbase::WeightedSumVessel {
+class Sum : public FunctionVessel {
 private:
+  std::vector<double> df;
 public:
+  static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  VesselMean( const vesselbase::VesselOptions& da );
-  double getWeight( const unsigned& i, bool& hasDerivatives );
-  double compute( const unsigned& i, const unsigned& j, const double& val, double& df );
+  Sum( const VesselOptions& da );
+  unsigned getNumberOfTerms(){ return 1; }
+  std::string function_description();
+  bool calculate();
+  void finish();
 };
 
-PLUMED_REGISTER_VESSEL(VesselMean,"AVERAGE")
+PLUMED_REGISTER_VESSEL(Sum,"SUM")
 
-void VesselMean::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("AVERAGE",false,"take the average value of these variables and store it in value called average.");
+void Sum::registerKeywords( Keywords& keys ){
+  FunctionVessel::registerKeywords( keys );
 }
 
-VesselMean::VesselMean( const vesselbase::VesselOptions& da ) :
-WeightedSumVessel(da)
+void Sum::reserveKeyword( Keywords& keys ){
+  keys.reserveFlag("SUM",false,"calculate the sum of all the quantities.",true);
+}
+
+Sum::Sum( const VesselOptions& da ) :
+FunctionVessel(da),
+df(1,1.0)
 {
-  if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
-
-  useNorm();
-  addOutput("average","the average value");
 }
 
-double VesselMean::compute( const unsigned& i, const unsigned& j, const double& val, double& df ){
-  plumed_dbg_assert( j==0 );
-  df=1.0; return val;
+std::string Sum::function_description(){
+  return "the sum of all the values"; 
 }
 
-double VesselMean::getWeight( const unsigned& i, bool& hasDerivatives ){
-  plumed_dbg_assert( !getAction()->isPossibleToSkip() ); 
-  hasDerivatives=false;
-  return 1.0;
+bool Sum::calculate(){
+  double val=getAction()->getElementValue(0);
+  bool addval=addValue(0,val);
+  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, 1.0, this );
+  return addval;
 }
+
+void Sum::finish(){
+  setOutputValue( getFinalValue(0) ); mergeFinalDerivatives( df );
+}
+
+
 
 }
 }

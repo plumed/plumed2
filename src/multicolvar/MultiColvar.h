@@ -44,7 +44,7 @@ class MultiColvar :
   public ActionWithValue,
   public vesselbase::ActionWithVessel
   {
-friend class VesselCVDens;
+friend class Region;
 private:
   bool usepbc;
   bool readatoms;
@@ -68,8 +68,6 @@ private:
   Tensor ibox;
   bool centralAtomDerivativesAreInFractional;
   std::vector<Tensor> central_derivs;
-/// Used to make sure we update the correct atoms during neighbor list update
-  unsigned current;
 /// Read in ATOMS keyword
   void readAtomsKeyword( int& natoms );
 /// Read in the various GROUP keywords
@@ -129,8 +127,9 @@ public:
 /// Make sure we calculate the position of the central atom
   void useCentralAtom();
 /// Merge the derivatives 
-  void chainRuleForElementDerivatives( const unsigned j, const unsigned& vstart, const double& df, vesselbase::Vessel* valout );
-  void transferDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout );
+  void chainRuleForElementDerivatives( const unsigned& , const unsigned& , const double& , vesselbase::Vessel* );
+/// Also used for derivative merging
+  unsigned getOutputDerivativeIndex( const unsigned& ival, const unsigned& i );
 /// Can we skip the calculations of quantities
   virtual bool isPossibleToSkip();
 /// Turn of atom requests when this colvar is deactivated cos its small
@@ -187,7 +186,7 @@ void MultiColvar::activateValue( const unsigned j ){
 
 inline
 unsigned MultiColvar::getNumberOfDerivatives( const unsigned& j ){
-  return 3*colvar_atoms[current].getNumberActive() + 9;
+  return 3*colvar_atoms[j].getNumberActive() + 9;
 }
 
 inline
@@ -255,6 +254,16 @@ void MultiColvar::addBoxDerivatives(const Tensor& vir){
   addElementDerivative( 3*natoms+6, vir(2,0) );
   addElementDerivative( 3*natoms+7, vir(2,1) );
   addElementDerivative( 3*natoms+8, vir(2,2) );
+}
+
+inline
+unsigned MultiColvar::getOutputDerivativeIndex( const unsigned& ival, const unsigned& i ){
+  if( i<3*getNumberOfAtoms() ){
+      unsigned inat=std::floor( i/3 );
+      unsigned thisatom=linkIndex( inat, colvar_atoms[ival], all_atoms );
+      return 3*thisatom + i%3; 
+  } 
+  return 3*getNumberOfAtoms() + i - 3*colvar_atoms[ival].getNumberActive(); 
 }
 
 }

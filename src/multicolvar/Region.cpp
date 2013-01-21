@@ -23,7 +23,7 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "vesselbase/VesselRegister.h"
-#include "vesselbase/WeightedSumVessel.h"
+#include "vesselbase/FunctionVessel.h"
 #include "ActionVolume.h"
 #include "MultiColvar.h"
 #include "tools/HistogramBead.h"
@@ -88,8 +88,10 @@ DENSITY SPECIES=20-500 REGION={SIGMA=0.1 VOLUME=r2}
 //+ENDPLUMEDOC
 
 
-class VesselCVDens : public vesselbase::WeightedSumVessel {
+class Region : public vesselbase::FunctionVessel {
 private:
+  std::string volname;
+  double sigma;
   bool isDensity;
   double weight;
   Vector wdf;
@@ -98,105 +100,99 @@ private:
   bool not_in;
   HistogramBead bead;
 public:
+  static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  VesselCVDens( const vesselbase::VesselOptions& da );
-  double getWeight( const unsigned& i, bool& hasDerivatives );
-  double compute( const unsigned& i, const unsigned& j, const double& val, double& df );
-  void addDerivativesOfWeight( const unsigned& icv );
+  Region( const vesselbase::VesselOptions& da );
+  unsigned getNumberOfTerms(){ return 2; }
+  std::string function_description();
+  bool calculate();
+  void finish();
 };
 
-PLUMED_REGISTER_VESSEL(VesselCVDens,"REGION")
+PLUMED_REGISTER_VESSEL(Region,"REGION")
 
-void VesselCVDens::reserveKeyword( Keywords& keys ){
-  keys.reserve("numbered","REGION","calculate the average value of the CV within a portion of the box and store it in a value called label_av. " 
-                                    "For more details on how this quantity is calculated see \\ref region.");
+void Region::registerKeywords( Keywords& keys ){
+  FunctionVessel::registerKeywords( keys );
+  keys.add("compulsory","VOLUME","the label for the action that describes the volume of interest");
+  keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
+  keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
 }
 
-VesselCVDens::VesselCVDens( const vesselbase::VesselOptions& da ) :
-WeightedSumVessel(da),
+void Region::reserveKeyword( Keywords& keys ){
+  keys.reserve("numbered","REGION","calculate the average value of the CV within a portion of the box. " 
+                                    "For more details on how this quantity is calculated see \\ref region.",true);
+}
+
+Region::Region( const vesselbase::VesselOptions& da ) :
+FunctionVessel(da),
 not_in(false)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_massert( mycolv, "REGION can only be used with MultiColvars");
 
   isDensity=mycolv->isDensity();
-  if(!isDensity) useNorm(); 
 
-  std::vector<std::string> data=Tools::getWords(da.parameters);
-  std::string name; bool found_element=Tools::parse(data,"VOLUME",name);
-  if(!found_element){ error("No volume element specified in ccall to REGION"); return; }
-  if( name.substr(0,1)=="!" ){ name=name.substr(1); not_in=true; }
-  myvol = (mycolv->plumed).getActionSet().selectWithLabel<ActionVolume*>(name);
-  if(!myvol){ error( "in REGION " + name + " is not a valid volume element"); return; }
+  parse("VOLUME",volname);
+  if( volname.substr(0,1)=="!" ){ volname=volname.substr(1); not_in=true; }
+  myvol = (mycolv->plumed).getActionSet().selectWithLabel<ActionVolume*>(volname);
+  if(!myvol){ error( "in REGION " + volname + " is not a valid volume element"); return; }
   mycolv->centralAtomDerivativesAreInFractional=myvol->derivativesOfFractionalCoordinates();
   mycolv->addDependency( myvol );
 
-  double sigma; bool found_sigma=Tools::parse(data,"SIGMA",sigma);
-  if(!found_sigma){ error("No value for SIGMA specified in call to REGION"); return; }
-  myvol->setSigma( sigma );
+  parse("SIGMA",sigma); myvol->setSigma( sigma );
 
-  std::string kerneltype; bool found_kernel=Tools::parse(data,"KERNEL",kerneltype);
-  if(!found_kernel) kerneltype="gaussian";
+  std::string kerneltype; parse("KERNEL",kerneltype);
   bead.isPeriodic( 0, 1.0 ); bead.setKernelType( kerneltype );
-
-  if( isDensity ){
-      addOutput( name + "_num", "the number of atoms in " + name );
-  } else {
-      addOutput( name + "_av", "the average value of the cv in " + name);
-  }
 }
 
-double VesselCVDens::getWeight( const unsigned& i, bool& hasDerivatives ){
-  hasDerivatives=true;
+std::string Region::function_description(){
+  std::string str_sigma; Tools::convert( sigma, str_sigma );
+  std::string notin=""; if(not_in) notin=" not ";
+  if( isDensity ) return "the number of atoms" + notin + "in " + volname + ". Sigma is equal to " + str_sigma;
+  return "the average value of the cv" + notin + "in " + volname + ". Sigma is equal to " + str_sigma; 
+}
+
+bool Region::calculate(){
   Vector catom_pos=mycolv->retrieveCentralAtomPos();
+
+  double weight; Vector wdf;
   weight=myvol->calculateNumberInside( catom_pos, bead, wdf );
-  if( not_in ){ weight=1.0 - weight; wdf *= -1.; } //weight.chainRule(-1.); }
-  return weight;
-}
-
-void VesselCVDens::addDerivativesOfWeight( const unsigned& icv ){
-  int thisatom, thispos, in=0; unsigned innat=mycolv->colvar_atoms[icv].getNumberActive();
-  for(unsigned i=0;i<innat;++i){
-     thisatom=linkIndex( i, mycolv->colvar_atoms[icv], mycolv->all_atoms );
-     plumed_dbg_assert( thisatom>=0 ); thispos=3*thisatom;
-     addWeightDerivative( thispos , mycolv->getCentralAtomDerivative( i, 0, wdf ) ); in++;
-     addWeightDerivative( thispos+1,mycolv->getCentralAtomDerivative( i, 1, wdf ) ); in++;
-     addWeightDerivative( thispos+2,mycolv->getCentralAtomDerivative( i, 2, wdf ) ); in++;
-  } 
-}
-
-double VesselCVDens::compute( const unsigned& icv, const unsigned& j, const double& val, double& df ){
-  plumed_dbg_assert( j==0 ); 
-  if(isDensity){
-     bool hasDerivatives; double ww;
-     ww=getWeight( icv, hasDerivatives );
-     addDerivativesOfWeight( icv );
-     return ww;
-  } else {
-     int thisatom, thispos, in=0; 
-     unsigned innat=mycolv->colvar_atoms[icv].getNumberActive();
-     unsigned vstart=3*mycolv->getNumberOfAtoms() + 11;  // two Values and the virial
-     for(unsigned i=0;i<innat;++i){
-        thisatom=linkIndex( i, mycolv->colvar_atoms[icv], mycolv->all_atoms );
-        plumed_dbg_assert( thisatom>=0 ); thispos=vstart+3*thisatom;
-        addToBufferElement( thispos , weight*mycolv->getElementDerivative(in) + val*mycolv->getCentralAtomDerivative( i, 0, wdf ) ); in++;
-        addToBufferElement( thispos+1,weight*mycolv->getElementDerivative(in) + val*mycolv->getCentralAtomDerivative( i, 1, wdf ) ); in++;
-        addToBufferElement( thispos+2,weight*mycolv->getElementDerivative(in) + val*mycolv->getCentralAtomDerivative( i, 2, wdf ) ); in++;
-     } 
-     // Easy to merge the virial
-     unsigned outnat=vstart + 3*mycolv->getNumberOfAtoms();
-     addToBufferElement( outnat+0, weight*mycolv->getElementDerivative(in) ); in++;
-     addToBufferElement( outnat+1, weight*mycolv->getElementDerivative(in) ); in++;
-     addToBufferElement( outnat+2, weight*mycolv->getElementDerivative(in) ); in++;
-     addToBufferElement( outnat+3, weight*mycolv->getElementDerivative(in) ); in++;
-     addToBufferElement( outnat+4, weight*mycolv->getElementDerivative(in) ); in++;
-     addToBufferElement( outnat+5, weight*mycolv->getElementDerivative(in) ); in++;
-     addToBufferElement( outnat+6, weight*mycolv->getElementDerivative(in) ); in++;
-     addToBufferElement( outnat+7, weight*mycolv->getElementDerivative(in) ); in++;
-     addToBufferElement( outnat+8, weight*mycolv->getElementDerivative(in) ); in++;
-     df=1.0; return weight*val;
+  if( not_in ){ weight = 1.0 - weight; wdf *= -1.; }
+  mycolv->setElementValue( 1, weight );  
+ 
+  unsigned current=mycolv->current, ider=mycolv->getNumberOfDerivatives();
+  for(unsigned i=0;i<mycolv->colvar_atoms[current].getNumberActive();++i){
+     mycolv->addElementDerivative( ider, mycolv->getCentralAtomDerivative( i, 0, wdf ) ); ider++;
+     mycolv->addElementDerivative( ider, mycolv->getCentralAtomDerivative( i, 1, wdf ) ); ider++;
+     mycolv->addElementDerivative( ider, mycolv->getCentralAtomDerivative( i, 2, wdf ) ); ider++;
   }
-  return 0;
+
+  bool addval=addValue( 1, weight );
+  if(addval){
+     double colvar=mycolv->getElementValue(0);
+     addValue(0, colvar*weight );
+     mycolv->chainRuleForElementDerivatives( 1, 1, 1.0, this );
+     if(!isDensity){
+         mycolv->chainRuleForElementDerivatives( 0, 0, weight, this );
+         mycolv->chainRuleForElementDerivatives( 0, 1, colvar, this );
+     }
+  } 
+  return addval; 
+}
+
+void Region::finish(){
+  if(isDensity){
+     setOutputValue( getFinalValue(1) );
+     std::vector<double> df(2); df[0]=0.0; df[1]=1.0;
+     mergeFinalDerivatives( df );
+  } else {
+     double denom=getFinalValue(1);
+     setOutputValue( getFinalValue(0) / denom );
+     std::vector<double> df(2); 
+     df[0] = 1 / denom; 
+     df[1] = - getFinalValue(0) / (denom*denom);
+     mergeFinalDerivatives( df );
+  }
 }
 
 }

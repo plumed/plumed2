@@ -1,4 +1,4 @@
-#! FIELDS time parameter d1.s1_num d1n.s1_num
+#! FIELDS time parameter d1.region d1n.region
  0.000000 0   3.7599   3.7599
  0.000000 1   0.0000   0.0000
  0.000000 2   0.0000   0.0000

@@ -78,9 +78,9 @@ private:
   void printKeyword( const std::string& j, Log& log ) const ;
 /// Print a particular keyword (copy of the above that works with files)
   void printKeyword( const std::string& j, FILE* out ) const ;
+public:
 /// find out whether flag key is on or off by default.
   bool getLogicalDefault( std::string key, bool& def ) const ;
-public:
 /// Get the value of the default for the keyword named key
   bool getDefaultValue( std::string key, std::string& def ) const ;
 /// Return the number of defined keywords 
@@ -94,9 +94,9 @@ public:
 /// Print the documentation to a file (use by PLUMED::CLTool::readCommandLineArgs)
   void print( FILE* out ) const ;
 /// Reserve a keyword 
-  void reserve( const std::string & t, const std::string & k, const std::string & d );
+  void reserve( const std::string & t, const std::string & k, const std::string & d, const bool isvessel=false );
 /// Reserve a flag
-  void reserveFlag( const std::string & k, const bool def, const std::string & d );
+  void reserveFlag( const std::string & k, const bool def, const std::string & d, const bool isvessel=false );
 /// Use one of the reserved keywords
   void use( const std::string  & k );
 /// Get the ith keyword

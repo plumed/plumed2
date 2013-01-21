@@ -21,47 +21,109 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVessel.h"
 #include "Vessel.h"
+#include "ShortcutVessel.h"
 #include "tools/Exception.h"
-#include "core/Value.h"
+#include "tools/Communicator.h"
 #include "tools/Log.h"
 
 namespace PLMD {
 namespace vesselbase{
 
+Keywords VesselOptions::emptyKeys;
+
 VesselOptions::VesselOptions(const std::string& thisname, const unsigned& nlab, const std::string& params, ActionWithVessel* aa ):
 myname(thisname),
 numlab(nlab),
 action(aa),
+keywords(emptyKeys),
 parameters(params)
 {
-} 
+}
+
+VesselOptions::VesselOptions(const VesselOptions& da, const Keywords& keys ):
+myname(da.myname),
+numlab(da.numlab),
+action(da.action),
+keywords(keys),
+parameters(da.parameters)
+{
+}
+
+void Vessel::registerKeywords( Keywords& keys ){
+  plumed_assert( keys.size()==0 );
+}
 
 Vessel::Vessel( const VesselOptions& da ):
 myname(da.myname),
-label("unset"),
 numlab(da.numlab),
 action(da.action),
-log((da.action)->log),
-comm((da.action)->comm),
-serial((da.action)->serial)
+comm(da.action->comm),
+keywords(da.keywords),
+finished_read(false),
+log((da.action)->log)
 {
+  line=Tools::getWords( da.parameters );
 }
 
-void Vessel::setLabel( const std::string& mylab ){
-  plumed_massert( label=="unset", "label has already been set");
-  label=mylab;
+std::string Vessel::getName( const bool small_letters ) const {
+  if(!small_letters) return myname;
+  std::string outname=myname;
+  std::transform( outname.begin(),outname.end(),outname.begin(),tolower );
+  return outname;
 }
 
-bool Vessel::getLabel( std::string& mylab ) const {
-  if( label=="unset" ) return false;
-  mylab=label;
-  return true;
+std::string Vessel::getAllInput(){
+  std::string fullstring;
+  for(unsigned i=0;i<line.size();++i){ 
+      fullstring = fullstring + " " + line[i];
+  } 
+  line.clear(); line.resize(0);
+  return fullstring;
+}
+
+void Vessel::parseFlag(const std::string&key, bool & t){
+  // Check keyword has been registered
+  plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
+  // Check keyword is a flag
+  if(!keywords.style(key,"nohtml")){
+     plumed_massert(keywords.style(key,"flag"), "keyword " + key + " is not a flag");
+  }
+
+  // Read in the flag otherwise get the default value from the keywords object
+  if(!Tools::parseFlag(line,key,t)){
+     if( keywords.style(key,"nohtml") ){ 
+        t=false; 
+     } else if ( !keywords.getLogicalDefault(key,t) ){
+        plumed_merror("there is a flag with no logical default in a vessel - weird");
+     }
+  }
+}
+
+void Vessel::checkRead(){
+  if(!line.empty()){
+    std::string msg="cannot understand the following words from input : ";
+    for(unsigned i=0;i<line.size();i++) msg = msg + line[i] + ", ";
+    error(msg);
+  }
+  finished_read=true;
+  ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(this);
+  if(!sv) log.printf("  %s\n", description().c_str() );
 }
 
 void Vessel::error( const std::string& msg ){
   action->log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",myname.c_str(), (action->getName()).c_str(), (action->getLabel()).c_str(), msg.c_str() );
-  printKeywords();
+  if(finished_read) keywords.print( log );
   plumed_merror("ERROR for keyword " + myname + " in action "  + action->getName() + " with label " + action->getLabel() + " : " + msg );
+}
+
+void Vessel::stashBuffers(){
+  unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
+  unsigned n=0; for(unsigned i=rank;i<bufsize;i+=stride){ stash[n]=getBufferElement(i); n++; }
+}
+
+void Vessel::setBufferFromStash(){
+  unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
+  unsigned n=0; for(unsigned i=rank;i<bufsize;i+=stride){ addToBufferElement( i, stash[n]); n++; }
 }
 
 }

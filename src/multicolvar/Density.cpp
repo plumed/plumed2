@@ -65,7 +65,6 @@ PLUMED_REGISTER_ACTION(Density,"DENSITY")
 
 void Density::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  ActionWithVessel::autoParallelize( keys );
   keys.use("SPECIES"); 
   // Use density keywords
   keys.use("REGION"); 

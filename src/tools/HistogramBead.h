@@ -30,6 +30,7 @@
 
 namespace PLMD {
 
+class Keywords;
 class Log;
 
 /**
@@ -48,6 +49,7 @@ private:
         double min, max, max_minus_min, inv_max_minus_min;
         double difference( const double& d1, const double& d2 ) const ;
 public:
+        static void registerKeywords( Keywords& keys );
         static void generateBins( const std::string& params, const std::string& dd, std::vector<std::string>& bins );  
 	HistogramBead();
         std::string description() const ;
@@ -60,7 +62,6 @@ public:
 	double calculate(double x, double&df) const;
 	double getlowb() const ;
 	double getbigb() const ;
-	void printKeywords(Log& log) const;
 };	
 
 inline

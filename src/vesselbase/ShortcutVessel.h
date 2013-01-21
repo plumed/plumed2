@@ -19,30 +19,33 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_vesselbase_SumVessel_h
-#define __PLUMED_vesselbase_SumVessel_h
+#ifndef __PLUMED_vesselbase_ShortcutVessel_h
+#define __PLUMED_vesselbase_ShortcutVessel_h
 
 #include <string>
 #include <cstring>
 #include <vector>
-#include "VesselAccumulator.h"
+#include "Vessel.h"
+#include "core/Value.h"
 
 namespace PLMD {
 namespace vesselbase{
 
-class SumVessel : public VesselAccumulator {
+class ShortcutVessel : public Vessel {
+protected:
+  void addVessel( const std::string& name, const std::string& intput );  
 public:
-  SumVessel( const VesselOptions& );
-/// This retrieves data from action and calculates
-  bool calculate( const unsigned& , const double& );
-/// Compute the ith component and the derivatives
-  virtual double compute( const unsigned& , const double& , double& )=0;
-/// This does the final step of the calculation
-  void finish( const double& tolerance );
-/// Do any final compuations
-  virtual double final_computations( const unsigned& , const double& , double& );
+  static void registerKeywords( Keywords& keys );
+  ShortcutVessel( const VesselOptions& );
+  std::string description(){ plumed_error(); }
+  unsigned getNumberOfTerms(){ plumed_error(); return 0; }
+  void resize(){ plumed_error(); }
+  bool calculate(){ plumed_error(); }
+  void finish(){ plumed_error(); }
+  bool applyForce( std::vector<double>& forces ){ plumed_error(); }
 };
 
 }
 }
 #endif
+

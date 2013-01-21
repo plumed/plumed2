@@ -25,6 +25,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <algorithm>
 #include "tools/Exception.h"
 #include "tools/Keywords.h"
 #include "ActionWithVessel.h"
@@ -38,10 +39,11 @@ namespace vesselbase{
 
 /**
 \ingroup TOOLBOX
-Vessel is an abstract base class.  The classes that inherit
-from it can be used to calculate functions of a distribution of values such
-as the number of values less than a target, the minimum, the average and so 
-on.  This class is used in PLMD::ActionWithVessel.  
+Vessels are an important component of class PLMD::ActionWithVessel.  This class
+contains a large buffer array of doubles.  The various elements of this array
+can be accessed through vessels which are used to structure the elements of the
+double array.  As the buffer array is just a vector of doubles it can be easily 
+mpi gathered or passed to another node. 
 */
 
 //class ActionWithVessel;
@@ -54,14 +56,20 @@ private:
 /// The name of the particular vessel
   std::string myname;
 /// The numerical label for this vessel
-  unsigned numlab;
+  int numlab;
 /// Pointer to ActionWithVessel that this if from
   ActionWithVessel* action;
+/// The keywords
+  const Keywords& keywords;
+  static Keywords emptyKeys;
+/// This tells whether checkRead has been called
+  bool finished_read;
 public:
 /// The parameters that are read into the function
   std::string parameters;
 /// The constructor 
   VesselOptions( const std::string& thisname, const unsigned& nlab, const std::string& params, ActionWithVessel* aa );
+  VesselOptions(const VesselOptions& da, const Keywords& keys );
 };
 
 class Vessel {
@@ -69,66 +77,146 @@ friend class ActionWithVessel;
 private:
 /// The keyword for the vessel in the input file
   std::string myname;
-/// The label for this object in the input file
-  std::string label;
 /// The numerical label for this object
-  const unsigned numlab;
+  const int numlab;
 /// The action that this vessel is created within
   ActionWithVessel* action;
+/// A copy of the communicator
+  Communicator& comm;
+/// Something to store the buffer if this is required
+  std::vector<double> stash;
 /// The start of this Vessel's buffer in buffer in the underlying ActionWithVessel
   unsigned bufstart;
 /// The number of elements in this vessel's buffered data
   unsigned bufsize;
+/// Directive line.
+/// This line is progressively erased during vessel construction
+/// so as to check if all the present keywords are correct.
+  std::vector<std::string> line;
+/// The keywords
+  const PLMD::Keywords& keywords;
+/// This just checks we have done checkRead
+  bool finished_read;
 protected:
-/// Give a label to the vessel
-  void setLabel( const std::string& mylab );
-/// Get the label for the stuff in this function 
-  bool getLabel( std::string& mylab ) const ;
 /// Return the numerical label
-  unsigned getNumericalLabel() const ;
-/// Report an error in the input for a distribution function
+  int getNumericalLabel() const ;
+/// Report an error 
   void error(const std::string& errmsg);
+/// Parse something from the input
+  template<class T>
+  void parse(const std::string&key, T&t);
+/// Parse one keyword as std::vector
+  template<class T>
+  void parseVector(const std::string&key,std::vector<T>&t);
+/// Parse one keyword as boolean flag
+  void parseFlag(const std::string&key,bool&t);
+/// This returns the whole input line (it is used for less_than/more_than/between)
+  std::string getAllInput(); 
 /// Return a pointer to the action we are working in
   ActionWithVessel* getAction();
+/// Return the value of the tolerance
+  double getTolerance() const ;
 /// Set the size of the data buffer
   void resizeBuffer( const unsigned& n );
 /// Set the value of the ith element in the buffer
   void setBufferElement( const unsigned& i, const double& val);
 /// Get the value in the ith element of the buffer
   double getBufferElement( const unsigned& i ) const ;
+/// Store everything that is the buffers
+  void stashBuffers();
+/// Add the contents of the stash to the buffer
+  void setBufferFromStash();
 public:
 /// Reference to the log on which to output details
   Log& log;
-/// Reference to the plumed communicator
-  Communicator& comm;
-/// Are the calculations being done in serial
-  bool serial;
+/// Reserve any keywords for this particular vessel  
+  static void registerKeywords( Keywords& keys );
 /// The constructor
   Vessel( const VesselOptions& da );
-/// Add something to the ith element in the buffer
-  void addToBufferElement( const unsigned& i, const double& val);
-/// Calculate the part of the vessel that is done in the loop
-  virtual bool calculate( const unsigned& i, const double& tolerance )=0;
-/// Complete the calculation once the loop is finished
-  virtual void finish( const double& tolerance )=0;
-/// Reset the size of the buffers
-  virtual void resize()=0;
-/// Print any keywords that are used by this particular vessel
-  virtual void printKeywords(){}
-/// Retrieve the forces on the quantities in the vessel
-  virtual bool applyForce( std::vector<double>& forces )=0;
 /// Virtual destructor needed for proper inheritance
   virtual ~Vessel(){}
+/// Return the name
+  std::string getName( const bool small_letters ) const ;
+/// Check that readin was fine
+  void checkRead();
+/// Add something to the ith element in the buffer
+  void addToBufferElement( const unsigned& i, const double& val);
+/// Return a description of the vessel contents
+  virtual std::string description()=0;
+/// Do something before the loop
+  virtual void prepare(){};
+/// Calculate the part of the vessel that is done in the loop
+  virtual bool calculate()=0;
+/// Complete the calculation once the loop is finished
+  virtual void finish()=0;
+/// Reset the size of the buffers
+  virtual void resize()=0;
+/// Retrieve the forces on the quantities in the vessel
+  virtual bool applyForce( std::vector<double>& forces )=0;
+/// Retrieve the number of terms we need to accumulate
+  virtual unsigned getNumberOfTerms()=0;
 };
 
+template<class T>
+void Vessel::parse(const std::string&key, T&t ){
+  plumed_massert(keywords.exists(key),"keyword " + key + " has not been registered");
+
+  // Now try to read the keyword
+  bool found=Tools::parse(line,key,t); std::string def;
+  if ( !found && keywords.style(key,"compulsory") ){
+       if( keywords.getDefaultValue(key,def) ){
+          plumed_massert( def.length()!=0 && Tools::convert(def,t), "default value is dubious");
+       } else {
+          error("keyword " + key + " is comulsory for this vessel");
+       }
+  }
+}
+
+template<class T>
+void Vessel::parseVector(const std::string&key,std::vector<T>&t){
+  // Check keyword has been registered
+  plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
+  unsigned size=t.size(); bool skipcheck=false;
+  if(size==0) skipcheck=true;
+
+  // Now try to read the keyword
+  bool found; std::string def; T val;
+  found=Tools::parseVector(line,key,t);
+
+  // Check vectors size is correct (not if this is atoms or ARG)
+  if( !keywords.style(key,"atoms") && found ){
+     if( !skipcheck && t.size()!=size ) error("vector read in for keyword " + key + " has the wrong size");
+  }
+
+  // If it isn't read and it is compulsory see if a default value was specified 
+  if ( !found && keywords.style(key,"compulsory") ){
+       if( keywords.getDefaultValue(key,def) ){
+          if( def.length()==0 || !Tools::convert(def,val) ){
+             plumed_merror("weird default value for keyword " + key );
+          } else {
+             for(unsigned i=0;i<t.size();++i) t[i]=val;
+          }     
+       } else {
+          error("keyword " + key + " is compulsory");
+       }
+  } else if ( !found ){
+       t.resize(0);
+  }
+}
+
 inline
-unsigned Vessel::getNumericalLabel() const {
+int Vessel::getNumericalLabel() const {
   return numlab;
 }
 
 inline
 void Vessel::resizeBuffer( const unsigned& n ){
-  bufsize=n; 
+  bufsize=n; stash.resize(bufsize);  
+}
+
+inline
+double Vessel::getTolerance() const {
+  return action->tolerance;
 }
 
 inline

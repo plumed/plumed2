@@ -31,7 +31,6 @@ namespace multicolvar{
 
 void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  ActionWithVessel::autoParallelize( keys );
   keys.add("residues","RESIDUES","this command is used to specify the set of residues that could conceivably form part of the secondary structure. "
                               "It is possible to use residues numbers as the various chains and residues should have been identified else using an instance of the "
                               "\\ref MOLINFO action. If you wish to use all the residues from all the chains in your system you can do so by "
@@ -46,7 +45,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
-  keys.use("LESS_THAN"); keys.use("MIN"); keys.use("AVERAGE");
+  keys.use("LESS_THAN"); keys.use("MIN"); keys.use("MEAN");
 }
 
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
@@ -78,7 +77,7 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
          int nn; parse("NN",nn); int mm; parse("MM",mm);
          std::ostringstream ostr;
          ostr<<"RATIONAL R_0="<<r0<<" D_0="<<d0<<" NN="<<nn<<" MM="<<mm;
-         std::string input=ostr.str(); addVessel( "LESS_THAN", input );
+         std::string input=ostr.str(); addVessel( "LESS_THAN", input, -1 ); // -1 here means that this value will be named getLabel()
          readVesselKeywords();  // This makes sure resizing is done
      } 
   }

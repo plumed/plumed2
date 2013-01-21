@@ -43,13 +43,15 @@ private:
   typedef void(*keyword_pointer)(Keywords&);
 /// The set of possible distribution functions we can work with
   std::map<std::string,creator_pointer> m;
+/// Map action to a function which documents the related object
+  std::map<std::string,keyword_pointer> mk;
 /// A vector of function pointers - this is used to create the documentation
   Keywords keywords;
 public:
 /// The destructor
   ~VesselRegister();
 /// Add a new distribution function option to the register of distribution functions
-  void add(std::string keyword,creator_pointer,keyword_pointer k);
+  void add(std::string keyword,creator_pointer,keyword_pointer k,keyword_pointer ik);
 /// Remove a distribution function from the register of distribution functions
   void remove(creator_pointer f);
 /// Verify if a distribution keyword is present in the register
@@ -66,7 +68,7 @@ VesselRegister& vesselRegister();
   static class classname##RegisterMe{ \
     static PLMD::vesselbase::Vessel * create(const PLMD::vesselbase::VesselOptions&da){return new classname(da);} \
   public: \
-    classname##RegisterMe(){PLMD::vesselbase::vesselRegister().add(keyword,create,classname::reserveKeyword);}; \
+    classname##RegisterMe(){PLMD::vesselbase::vesselRegister().add(keyword,create,classname::reserveKeyword,classname::registerKeywords);}; \
     ~classname##RegisterMe(){PLMD::vesselbase::vesselRegister().remove(create);}; \
   } classname##RegisterMeObject;
 

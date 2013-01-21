@@ -72,7 +72,7 @@ private:
   bool numericalDerivatives;
 /// Return the index for the component named name
   int getComponent( const std::string& name ) const;
-protected:
+public:
 
 // -------- The action has one value only  ---------------- //
 
@@ -84,6 +84,7 @@ protected:
   void setNotPeriodic();
 /// Set the value to be periodic with a particular domain
   void setPeriodic( const std::string& min, const std::string& max );
+protected:
 /// Get a pointer to the default value
   Value* getPntrToValue();
 /// Set the default value (the one without name)

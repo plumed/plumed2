@@ -81,7 +81,6 @@ PLUMED_REGISTER_ACTION(CoordinationNumbers,"COORDINATIONNUMBER")
 
 void CoordinationNumbers::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  ActionWithVessel::autoParallelize( keys );
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.add("compulsory","NN","6","The n parameter of the switching function ");
   keys.add("compulsory","MM","12","The m parameter of the switching function ");
@@ -91,8 +90,8 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.use("AVERAGE"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
-  keys.use("MIN"); keys.use("WITHIN"); keys.use("MOMENTS");
+  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
+  keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.use("REGION"); 
 }
 

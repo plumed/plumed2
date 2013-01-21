@@ -21,52 +21,64 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "VesselRegister.h"
-#include "SumVessel.h"
+#include "FunctionVessel.h"
 #include "tools/SwitchingFunction.h"
 #include "ActionWithVessel.h"
 
 namespace PLMD {
 namespace vesselbase{
 
-class VesselMoreThan : public SumVessel {
+class MoreThan : public FunctionVessel {
 private:
+  std::vector<double> df;
   SwitchingFunction sf;
 public:
+  static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  VesselMoreThan( const VesselOptions& da );
-  double compute( const unsigned& i, const double& val, double& df ); 
-  void printKeywords();
+  MoreThan( const VesselOptions& da );
+  unsigned getNumberOfTerms(){ return 1; }
+  std::string function_description();
+  bool calculate();
+  void finish();
 };
 
-PLUMED_REGISTER_VESSEL(VesselMoreThan,"MORE_THAN")
+PLUMED_REGISTER_VESSEL(MoreThan,"MORE_THAN")
 
-void VesselMoreThan::reserveKeyword( Keywords& keys ){
+void MoreThan::registerKeywords( Keywords& keys ){
+  FunctionVessel::registerKeywords( keys );
+  SwitchingFunction::registerKeywords( keys );
+}
+
+void MoreThan::reserveKeyword( Keywords& keys ){
   keys.reserve("numbered","MORE_THAN","calculate the number of variables more than a certain target value. "
                                       "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
-                                      "is a \\ref switchingfunction. The final value can be referenced using "
-                                      "\\e label.gt\\f$(d_0 + r_0)\\f$.");
+                                      "is a \\ref switchingfunction.",true);
 }
 
-VesselMoreThan::VesselMoreThan( const VesselOptions& da ) :
-SumVessel(da)
+MoreThan::MoreThan( const VesselOptions& da ) :
+FunctionVessel(da),
+df(1,1.0)
 {
   if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
-
-  std::string errormsg;
-  sf.set( da.parameters, errormsg );
+  std::string errormsg; sf.set( getAllInput(), errormsg );
   if( errormsg.size()!=0 ) error( errormsg );
-  std::string vv; Tools::convert( sf.get_d0() + sf.get_r0(), vv ); 
-  addOutput("gt" + vv, "the number of values more than" + sf.description());
 }
 
-void VesselMoreThan::printKeywords(){
-  sf.printKeywords( log );
+std::string MoreThan::function_description(){
+  return "the number of values less than " + sf.description();
 }
 
-double VesselMoreThan::compute( const unsigned& i, const double& val, double& df ){
-  plumed_dbg_assert( i==0 );
-  double f; f=1.0 - sf.calculate(val, df); df*=-val;
-  return f;
+bool MoreThan::calculate(){
+  double val=getAction()->getElementValue(0);
+  double dval, f = 1.0 - sf.calculate(val, dval); dval*=-val;
+  bool addval=addValue(0,f);
+  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, dval, this );
+  return addval;
+}
+
+void MoreThan::finish(){
+  setOutputValue( getFinalValue(0) ); 
+  mergeFinalDerivatives( df );
 }
 
 }

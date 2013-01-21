@@ -22,6 +22,7 @@
 #include "tools/Communicator.h"
 #include "ActionWithVessel.h"
 #include "Vessel.h"
+#include "ShortcutVessel.h"
 #include "VesselRegister.h"
 
 using namespace std;
@@ -30,11 +31,8 @@ namespace vesselbase{
 
 void ActionWithVessel::registerKeywords(Keywords& keys){
   keys.add("optional","TOL","when accumulating sums quantities that contribute less than this will be ignored.");
+  keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.add( vesselRegister().getKeywords() );
-}
-
-void ActionWithVessel::autoParallelize(Keywords& keys){
-  keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize over collective variables");
 }
 
 ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
@@ -55,9 +53,11 @@ ActionWithVessel::~ActionWithVessel(){
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
 }
 
-void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const unsigned numlab ){
+void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ){
   read=true; VesselOptions da(name,numlab,input,this);
-  functions.push_back( vesselRegister().create(name,da) );
+  Vessel* vv=vesselRegister().create(name,da); vv->checkRead();
+  ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
+  if(!sv) functions.push_back(vv);
 }
 
 void ActionWithVessel::readVesselKeywords(){
@@ -97,26 +97,30 @@ void ActionWithVessel::readVesselKeywords(){
 }
 
 void ActionWithVessel::resizeFunctions(){
-  unsigned bufsize=0;
+  unsigned tmpnval,nvals=0, bufsize=0; 
   for(unsigned i=0;i<functions.size();++i){
      functions[i]->bufstart=bufsize;
      functions[i]->resize();
      bufsize+=functions[i]->bufsize;
+     tmpnval=functions[i]->getNumberOfTerms();
+     if(tmpnval>nvals) nvals=tmpnval;
   }
-  derivatives.resize( getNumberOfDerivatives(), 0.0 );
+  nderivatives=getNumberOfDerivatives();
+  thisval.resize( nvals ); thisval_wasset.resize( nvals, false );
+  derivatives.resize( nvals*nderivatives, 0.0 );
   buffer.resize( bufsize );
 }
 
-Vessel* ActionWithVessel::getVessel( const std::string& name ){
-  std::string myname;
-  for(unsigned i=0;i<functions.size();++i){
-     if( functions[i]->getLabel(myname) ){
-         if( myname==name ) return functions[i];
-     }
-  }
-  error("there is no vessel with name " + name);
-  return NULL;
-}
+//Vessel* ActionWithVessel::getVessel( const std::string& name ){
+//  std::string myname;
+//  for(unsigned i=0;i<functions.size();++i){
+//     if( functions[i]->getLabel(myname) ){
+//         if( myname==name ) return functions[i];
+//     }
+//  }
+//  error("there is no vessel with name " + name);
+//  return NULL;
+//}
 
 void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
   plumed_massert( read, "you must have a call to readVesselKeywords somewhere" );
@@ -125,7 +129,7 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
   if(serial){ stride=1; rank=0; }
 
   // Clear all data from previous calculations
-//  buffer.assign(buffer.size(),0.0);
+  buffer.assign(buffer.size(),0.0);
 
   bool keep;
   for(unsigned i=rank;i<ntasks;i+=stride){
@@ -144,10 +148,14 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
       for(unsigned j=0;j<functions.size();++j){
           // Calculate returns a bool that tells us if this particular
           // quantity is contributing more than the tolerance
-          if( functions[j]->calculate(i,tolerance) ) keep=true;
+          if( functions[j]->calculate() ) keep=true;
       }
       // Clear the derivatives from this step
-      for(unsigned j=0;j<getNumberOfDerivatives(i);++j) derivatives[j]=0.0;
+      for(unsigned k=0;k<thisval.size();++k){
+         thisval_wasset[k]=false;
+         unsigned kstart=k*getNumberOfDerivatives(); 
+         for(unsigned j=0;j<nderivatives;++j) derivatives[kstart+j]=0.0;
+      }
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
       if( !keep ) deactivate_task();
@@ -156,17 +164,12 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
   if(!serial && buffer.size()>0) comm.Sum( &buffer[0],buffer.size() ); 
 
   // Set the final value of the function
-  for(unsigned j=0;j<functions.size();++j) functions[j]->finish( tolerance ); 
+  for(unsigned j=0;j<functions.size();++j) functions[j]->finish(); 
 }
 
-void ActionWithVessel::chainRuleForElementDerivatives( const unsigned j, const unsigned& vstart, const double& df, Vessel* valout ){
-  plumed_dbg_assert( derivatives.size()==getNumberOfDerivatives(j) );
-  for(unsigned i=0;i<derivatives.size();++i) valout->addToBufferElement( vstart+i, df*derivatives[i] );
-}
-
-void ActionWithVessel::transferDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout ){
-  plumed_dbg_assert( derivatives.size()==getNumberOfDerivatives(j) );
-  for(unsigned i=0;i<derivatives.size();++i) valout->addDerivative( i, df*derivatives[i] );
+void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const double& df, Vessel* valout ){
+  unsigned nder=getNumberOfDerivatives(), bstart=(nder+1)*iout+1, vstart=nder*ider; 
+  for(unsigned i=0;i<nder;++i) valout->addToBufferElement( bstart+i, df*derivatives[vstart+i] );
 }
 
 void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){

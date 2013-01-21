@@ -1,4 +1,4 @@
-#! FIELDS time parameter b2.lt0.08 b2num.lt0.08
+#! FIELDS time parameter b2.less_than b2num.less_than
  0.000000 0  -0.0004  -0.0004
  0.000000 1  -0.0005  -0.0005
  0.000000 2  -0.0003  -0.0003

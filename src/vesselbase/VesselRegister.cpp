@@ -47,10 +47,14 @@ void VesselRegister::remove(creator_pointer f){
   }
 }
 
-void VesselRegister::add(std::string keyword,creator_pointer f,keyword_pointer k){
+void VesselRegister::add(std::string keyword,creator_pointer f,keyword_pointer k,keyword_pointer ik){
   plumed_massert(m.count(keyword)==0,"keyword has already been registered");
   m.insert(std::pair<std::string,creator_pointer>(keyword,f));
   k( keywords );   // Store the keywords for all the things
+  // Store a pointer to the function that creates keywords
+  // A pointer is stored and not the keywords because all
+  // Vessels must be dynamically loaded before the actions.
+  mk.insert(std::pair<std::string,keyword_pointer>(keyword,ik));
 }
 
 bool VesselRegister::check(std::string key){
@@ -60,7 +64,12 @@ bool VesselRegister::check(std::string key){
 
 Vessel* VesselRegister::create(std::string keyword, const VesselOptions&da){
   Vessel* df;
-  if(check(keyword)) df=m[keyword](da);
+  if(check(keyword)){
+      Keywords keys; mk[keyword](keys);
+      VesselOptions nda( da,keys );
+      df=m[keyword](nda);
+      keys.destroyData();
+  }
   else df=NULL;
   return df;
 }

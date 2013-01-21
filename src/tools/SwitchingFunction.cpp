@@ -81,6 +81,14 @@ keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function
 */
 //+ENDPLUMEDOC
 
+void SwitchingFunction::registerKeywords( Keywords& keys ){
+  keys.add("compulsory","R_0","the value of R_0 in the switching function");
+  keys.add("compulsory","D_0","0.0","the value of D_0 in the switching function");
+  keys.add("optional","D_MAX","the value at which the switching function can be assumed equal to zero");
+  keys.add("compulsory","NN","6","the value of n in the switching function (only needed for TYPE=RATIONAL)");
+  keys.add("compulsory","MM","12","the value of m in the switching function (only needed for TYPE=RATIONAL)");
+}
+
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg){
   vector<string> data=Tools::getWords(definition);
   if( data.size()<1 ) errormsg="missing all input for switching function"; 
@@ -117,11 +125,11 @@ std::string SwitchingFunction::description() const {
   std::ostringstream ostr;
   ostr<<1./invr0<<".  Using ";
   if(type==spline){
-     ostr<<"spline ";
+     ostr<<"rational";
   } else if(type==exponential){
-     ostr<<"exponential ";
+     ostr<<"exponential";
   } else if(type==gaussian){
-     ostr<<"gaussian ";
+     ostr<<"gaussian";
   } else{
      plumed_merror("Unknown switching function type");
   }

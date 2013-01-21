@@ -20,60 +20,65 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VesselRegister.h"
-#include "SumVessel.h"
+#include "FunctionVessel.h"
 #include "ActionWithVessel.h"
 
 namespace PLMD {
 namespace vesselbase{
 
-class VesselMin : public SumVessel {
+class Min : public FunctionVessel {
 private:
+  std::vector<double> df;
   double beta;
 public:
+  static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  VesselMin( const VesselOptions& da );
-  double compute( const unsigned& i, const double& val, double& df );
-  double final_computations( const unsigned& i, const double& valin, double& df );
-  void printKeywords();
+  Min( const VesselOptions& da );
+  unsigned getNumberOfTerms(){ return 1; }
+  std::string function_description();
+  bool calculate();
+  void finish();
 };
 
-PLUMED_REGISTER_VESSEL(VesselMin,"MIN")
+PLUMED_REGISTER_VESSEL(Min,"MIN")
 
-void VesselMin::reserveKeyword( Keywords& keys ){
-  keys.reserve("optional","MIN","calculate the minimum value and store it in a value called min. "
+void Min::registerKeywords( Keywords& keys ){
+  FunctionVessel::registerKeywords( keys );
+  keys.add("compulsory","BETA","the value of beta for the equation in the manual");
+}
+
+void Min::reserveKeyword( Keywords& keys ){
+  keys.reserve("optional","MIN","calculate the minimum value. "
                                 "To make this quantity continuous the minimum is calculated using "
                                 "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
-                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)");
+                                "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)",true);
 }
 
-VesselMin::VesselMin( const VesselOptions& da ) :
-SumVessel(da)
+Min::Min( const VesselOptions& da ) :
+FunctionVessel(da),
+df(1)
 {
   if( getAction()->isPeriodic() ) error("min is not a meaningful option for periodic variables");
+  parse("BETA",beta);
+}
 
-  std::vector<std::string> data=Tools::getWords(da.parameters);
-  if( data.size()!=1 ){ error("There should only be a value for beta in the input to MIN"); return; }
-  bool found_beta=Tools::parse(data,"BETA",beta);
-  if (!found_beta){ error("No value for BETA specified in call to MIN"); return; } 
-
+std::string Min::function_description(){
   std::string str_beta; Tools::convert( beta, str_beta );
-  addOutput("min","the minimum value. Beta is equal to " + str_beta);
+  return "the minimum value. Beta is equal to " + str_beta;
 }
 
-void VesselMin::printKeywords(){
-  Keywords mkeys; 
-  mkeys.add("compulsory","BETA","the value of beta for the equation in the manual");
-  mkeys.print(log);
+bool Min::calculate(){
+  double val=getAction()->getElementValue(0);
+  double dval, f = exp(beta/val); dval=f/(val*val);
+  bool addval=addValue(0,f);
+  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, dval, this );
+  return addval;
 }
 
-double VesselMin::compute( const unsigned& i, const double& val, double& df ){
-  double f; f=exp( beta/val ); df=f/(val*val);
-  return f;
-}
-
-double VesselMin::final_computations( const unsigned& i, const double& valin, double& df ){
-  double dist; dist=beta/std::log( valin ); df=dist*dist/valin;
-  return dist;
+void Min::finish(){
+  double valin=getFinalValue(0); double dist=beta/std::log( valin );
+  setOutputValue( dist ); df[0]=dist*dist/valin;  
+  mergeFinalDerivatives( df );
 }
 
 }

@@ -42,7 +42,7 @@ times.  This is used in PLMD::MultiColvar.
 
 class ActionWithVessel : public virtual Action {
 friend class Vessel;
-friend class FieldVessel;
+friend class ShortcutVessel;
 private:
 /// This is used to ensure that we have properly read the action
   bool read;
@@ -51,7 +51,9 @@ private:
 /// The tolerance on the accumulators for neighbour list
   double tolerance;
 /// The value of the current element in the sum
-  double thisval;
+  std::vector<double> thisval;
+/// A boolean that makes sure we don't accumulate very wrong derivatives
+  std::vector<bool> thisval_wasset;
 /// Vector of derivatives for the object
   std::vector<double> derivatives;
 /// The buffers we use for mpi summing DistributionFunction objects
@@ -62,7 +64,7 @@ private:
   using Action::deactivate;
 protected:
 /// Add a vessel to the list of vessels
-  void addVessel( const std::string& name, const std::string& input, const unsigned numlab=0 );
+  void addVessel( const std::string& name, const std::string& input, const int numlab=0 );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void readVesselKeywords();
 /// Return the value of the tolerance
@@ -75,25 +77,22 @@ protected:
   void runAllTasks( const unsigned& ntasks );
 /// Resize all the functions when the number of derivatives change
   void resizeFunctions();
-/// Clear all the data from the buffers 
-  void clearBuffers();
-/// Set the value of the element
-  void setElementValue( const double& );
 ///  Add some derivative of the quantity in the sum wrt to a numbered element
   void addElementDerivative( const unsigned&, const double& );
 public:
+/// The numerical index of the task we are curently performing
+  unsigned current;
+/// The number of derivatives involved in the current task
+  unsigned nderivatives;
   static void registerKeywords(Keywords& keys);
-/// By calling this function during register keywords you tell plumed to use a
-/// a default method to parallelize the calculation.
-  static void autoParallelize(Keywords& keys);
   ActionWithVessel(const ActionOptions&ao);
   ~ActionWithVessel();
 /// Activate the jth colvar
 /// Deactivate the current task in future loops
   virtual void deactivate_task()=0;
 /// Merge the derivatives
-  virtual void chainRuleForElementDerivatives( const unsigned j, const unsigned& vstart, const double& df, Vessel* valout );
-  virtual void transferDerivatives( const unsigned j, const Value& value_in, const double& df, Value* valout );
+  virtual void chainRuleForElementDerivatives( const unsigned& , const unsigned& , const double& , Vessel* );
+  virtual unsigned getOutputDerivativeIndex( const unsigned& ival, const unsigned& i ){ return i; }
 /// Can we skip the calculations of quantities
   virtual bool isPossibleToSkip(); 
 /// Are the base quantities periodic
@@ -110,8 +109,10 @@ public:
   virtual bool performTask( const unsigned& j )=0;
 /// Return a pointer to the field 
   Vessel* getVessel( const std::string& name );
+/// Set the value of the element
+  void setElementValue( const unsigned& , const double& );
 /// Get the value of this element
-  double getElementValue() const ;
+  double getElementValue( const unsigned& ival ) const ;
 /// Retrieve the derivative of the quantity in the sum wrt to a numbered element
   double getElementDerivative( const unsigned& ) const ;
 };
@@ -138,18 +139,19 @@ Vessel* ActionWithVessel::getPntrToVessel( const unsigned& i ){
 }
 
 inline
-double ActionWithVessel::getElementValue() const {
-  return thisval;
+double ActionWithVessel::getElementValue(const unsigned& ival) const {
+  return thisval[ival];
 }
 
 inline
-void ActionWithVessel::setElementValue( const double& val ){
-  thisval=val;
-}
-
-inline
-void ActionWithVessel::clearBuffers(){
-  buffer.assign(buffer.size(),0.0);
+void ActionWithVessel::setElementValue( const unsigned& ival, const double& val ){
+  if( thisval_wasset[ival] ){
+      unsigned nder=getNumberOfDerivatives();
+      unsigned nclear=getNumberOfDerivatives(nder); 
+      for(unsigned i=ival*nder;i<ival*nder+nclear;++i) derivatives[i]=0.0; 
+  }
+  thisval[ival]=val;
+  thisval_wasset[ival]=true;
 }
 
 inline

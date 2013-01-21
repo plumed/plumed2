@@ -1,4 +1,4 @@
-#! FIELDS time parameter d2.between0.5&1.5 d2n.between0.5&1.5
+#! FIELDS time parameter d2.between d2n.between
  0.000000 0  0.34759  0.34759
  0.000000 1 -0.00448 -0.00448
  0.000000 2  0.30655  0.30655

@@ -1,12 +1,12 @@
-#! FIELDS c1.moment_2 c1.moment_3 probs
-#! SET min_c1.moment_2 0.2
-#! SET max_c1.moment_2 1.2
-#! SET nbins_c1.moment_2  201
-#! SET periodic_c1.moment_2 false
-#! SET min_c1.moment_3 -0.5
-#! SET max_c1.moment_3 1.7
-#! SET nbins_c1.moment_3  441
-#! SET periodic_c1.moment_3 false
+#! FIELDS c1.moment-2 c1.moment-3 probs
+#! SET min_c1.moment-2 0.2
+#! SET max_c1.moment-2 1.2
+#! SET nbins_c1.moment-2  201
+#! SET periodic_c1.moment-2 false
+#! SET min_c1.moment-3 -0.5
+#! SET max_c1.moment-3 1.7
+#! SET nbins_c1.moment-3  441
+#! SET periodic_c1.moment-3 false
     0.200000000   -0.500000000    0.000000000
     0.205000000   -0.500000000    0.000000000
     0.210000000   -0.500000000    0.000000000

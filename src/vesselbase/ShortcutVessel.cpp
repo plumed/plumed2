@@ -19,27 +19,28 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "VesselValueAccess.h"
+#include "ShortcutVessel.h"
 #include "ActionWithVessel.h"
 
-namespace PLMD {
+namespace PLMD{
 namespace vesselbase{
 
-VesselValueAccess::VesselValueAccess( const VesselOptions& da ) :
+void ShortcutVessel::registerKeywords( Keywords& keys ){
+  Vessel::registerKeywords( keys );
+  plumed_assert( keys.size()==0 );
+}
+
+ShortcutVessel::ShortcutVessel( const VesselOptions& da):
 Vessel(da)
 {
 }
 
-void VesselValueAccess::setNumberOfValues( const unsigned& n ){
-   value_starts.resize( n + 1 );
-}
-
-void VesselValueAccess::setValueSizes( const std::vector<unsigned>& val_sizes ){
-  plumed_assert( (val_sizes.size()+1)==value_starts.size() );
-  unsigned vstart=0;
-  for(unsigned i=0;i<val_sizes.size();++i){ value_starts[i]=vstart; vstart+=val_sizes[i]+1; }
-  value_starts[val_sizes.size()]=vstart;
-  resizeBuffer( vstart ); 
+void ShortcutVessel::addVessel( const std::string& name, const std::string& input ){
+  unsigned numlab=1;
+  for(unsigned i=0;i<(getAction()->functions).size();++i){
+     if( (getAction()->functions[i])->getName(false)==name ) numlab++;
+  }
+  getAction()->addVessel( name, input, numlab );
 }
 
 }
