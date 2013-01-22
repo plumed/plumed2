@@ -176,18 +176,18 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
      const char   *desc[] = {
          "The [TT]mdrun[tt] program is the main computational chemistry engine",
          "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
-@@ -463,10 +469,11 @@
-           "DD node order" },
-         { "-npme",    FALSE, etINT, {&npme},
-           "Number of separate nodes to be used for PME, -1 is guess" },
-         { "-nt",      FALSE, etINT, {&hw_opt.nthreads_tot},
-           "Total number of threads to start (0 is guess)" },
-+    { efDAT, "-plumed", "plumed",   ffOPTRD },   /* PLUMED */
-         { "-ntmpi",   FALSE, etINT, {&hw_opt.nthreads_tmpi},
-           "Number of thread-MPI threads to start (0 is guess)" },
-         { "-ntomp",   FALSE, etINT, {&hw_opt.nthreads_omp},
-           "Number of OpenMP threads per MPI process/thread to start (0 is guess)" },
-         { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
+@@ -399,10 +405,11 @@
+         { efLOG, "-rs",     "rotslabs", ffOPTWR },
+         { efLOG, "-rt",     "rottorque", ffOPTWR },
+         { efMTX, "-mtx",    "nm",       ffOPTWR },
+         { efNDX, "-dn",     "dipole",   ffOPTWR },
+         { efRND, "-multidir", NULL,      ffOPTRDMULT},
++        { efDAT, "-plumed", "plumed",   ffOPTRD },   /* PLUMED */
+         { efDAT, "-membed", "membed",   ffOPTRD },
+         { efTOP, "-mp",     "membed",   ffOPTRD },
+         { efNDX, "-mn",     "membed",   ffOPTRD }
+     };
+ #define NFILE asize(fnm)
 @@ -731,19 +738,50 @@
      }
  
@@ -366,7 +366,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
 +                  dplumed=adb*re->beta[a]+bdb*re->beta[b];
 +                  delta+=dplumed;
 +                  if (bPrint)
-+                    fprintf(fplog,"  dplumed = %10.3e  d = %10.3e",dplumed,delta);
++                    fprintf(fplog,"dplumed = %10.3e  dE_Term = %10.3e (kT)\n",dplumed,delta);
 +                }
 +                /* END PLUMED */
                  if (delta <= 0)
