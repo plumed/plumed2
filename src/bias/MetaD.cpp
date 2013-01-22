@@ -140,6 +140,7 @@ private:
   int mw_rstride_;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
+  bool isFirstStep;
   
   void   readGaussians(IFile*);
   void   writeGaussian(const Gaussian&,OFile&);
@@ -204,7 +205,7 @@ PLUMED_BIAS_INIT(ao),
 BiasGrid_(NULL), wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
 height0_(0.0), biasf_(1.0), temp_(0.0),
-stride_(0), welltemp_(false),
+stride_(0), welltemp_(false),isFirstStep(true),
 // Other stuff
 dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
@@ -691,7 +692,8 @@ void MetaD::update(){
   bool multivariate;
 
   // adding hills criteria (could be more complex though)
-  bool nowAddAHill=(getStep()%stride_==0?true:false); 
+  bool nowAddAHill; 
+  if(getStep()%stride_==0 && !isFirstStep ){nowAddAHill=true;}else{nowAddAHill=false;isFirstStep=false;}
 
   for(unsigned i=0;i<cv.size();++i){cv[i]=getArgument(i);}
 
