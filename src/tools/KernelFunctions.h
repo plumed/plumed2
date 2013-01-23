@@ -54,6 +54,8 @@ public:
   std::vector<double> getCenter() const;
 /// Get the support
   std::vector<unsigned> getSupport( const std::vector<double>& dx ) const; 
+/// get it in continuous form
+  std::vector<double> getContinuousSupport( ) const; 
 /// Evaluate the kernel function  
   double evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv=true ) const;
 /// Read a kernel function from a file

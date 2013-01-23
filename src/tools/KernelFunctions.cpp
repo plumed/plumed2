@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "KernelFunctions.h"
 #include "IFile.h"
+#include <iostream> 
 
 namespace PLMD {
 
@@ -145,22 +146,34 @@ double KernelFunctions::getCutoff( const double& width ) const {
   return 0.0;
 }
 
-std::vector<unsigned> KernelFunctions::getSupport( const std::vector<double>& dx ) const {
-  plumed_dbg_assert( ndim()==dx.size() );
-  std::vector<unsigned> support( dx.size() );
+std::vector<double> KernelFunctions::getContinuousSupport( ) const {
+  unsigned ncv=ndim(); 
+  std::vector<double> support( ncv );
   if(diagonal){
-     for(unsigned i=0;i<dx.size();++i) support[i]=static_cast<unsigned>(ceil( getCutoff(width[i])/dx[i] ));
+     for(unsigned i=0;i<ncv;++i) support[i]=getCutoff(width[i]);
   } else {
-     unsigned ncv=ndim(); 
      Matrix<double> mymatrix( getMatrix() ), myinv( ncv,ncv );
      Invert(mymatrix,myinv);
      Matrix<double> myautovec(ncv,ncv); std::vector<double> myautoval(ncv);  
      diagMat(myinv,myautoval,myautovec);
-     for(unsigned i=0;i<dx.size();++i){
-         double extent=fabs(sqrt(myautoval[0])*myautovec(i,0)); 
-         support[i]=static_cast<unsigned>(ceil( getCutoff( extent )/dx[i] ));
+     double maxautoval;maxautoval=0.;
+     unsigned ind_maxautoval;
+     for (unsigned i=0;i<ncv;i++){
+             if(myautoval[i]>maxautoval){maxautoval=myautoval[i];ind_maxautoval=i;}
+     }
+     for(unsigned i=0;i<ncv;++i){
+         double extent=fabs(sqrt(maxautoval)*myautovec(i,ind_maxautoval)); 
+         support[i]=getCutoff( extent );
      }
   }
+ return support; 
+}
+
+std::vector<unsigned> KernelFunctions::getSupport( const std::vector<double>& dx ) const {
+  plumed_assert( ndim()==dx.size() );
+  std::vector<unsigned> support( dx.size() );
+  std::vector<double> vv=getContinuousSupport( );
+  for(unsigned i=0;i<dx.size();++i) support[i]=static_cast<unsigned>(ceil( vv[i]/dx[i] ));
   return support;
 }
 
