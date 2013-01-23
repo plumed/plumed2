@@ -218,13 +218,13 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
 KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::string>& valnames ){
   std::string sss; ifile->scanField("multivariate",sss);
   std::vector<double> cc( valnames.size() ), sig;
-  if( sss=="true" ){
+  if( sss=="false" ){
      sig.resize( valnames.size() );
      for(unsigned i=0;i<valnames.size();++i){
          ifile->scanField(valnames[i],cc[i]);
          ifile->scanField("sigma_"+valnames[i],sig[i]);
      }
-  } else if( sss=="false" ){
+  } else if( sss=="true" ){
      unsigned ncv=valnames.size();
      sig.resize( (ncv*(ncv+1))/2 );
      Matrix<double> upper(ncv,ncv), lower(ncv,ncv);

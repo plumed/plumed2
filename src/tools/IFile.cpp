@@ -149,7 +149,7 @@ IFile& IFile::scanField(Value* val){
 IFile& IFile::scanField(){
   if(!ignoreFields){
      for(unsigned i=0;i<fields.size();i++){
-       plumed_assert(fields[i].read);
+       plumed_massert(fields[i].read,"field "+fields[i].name+" was not read: all the fields need to be read otherwise you could miss important infos" );
      }
   }
   inMiddleOfField=false;

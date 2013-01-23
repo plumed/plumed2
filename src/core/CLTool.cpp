@@ -133,6 +133,7 @@ void CLTool::setRemainingToDefault(FILE* out){
                  inputData.insert(std::pair<std::string,std::string>(thiskey,def));
              } else {
                  fprintf(out,"ERROR : argument %s is compulsory. Use --help option for help\n",thiskey.c_str() );
+                 plumed_error();
              }
           }
       }

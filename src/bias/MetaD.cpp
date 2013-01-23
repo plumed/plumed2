@@ -275,7 +275,7 @@ mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
   parse("GRID_WFILE",gridfilename_); 
   parseFlag("STORE_GRIDS",storeOldGrids_);
   if(grid_ && gridfilename_.length()>0){
-    if(wgridstride_==0) error("frequency with which to output grid not specified use GRID_WSTRIDE");
+    if(wgridstride_==0 ) error("frequency with which to output grid not specified use GRID_WSTRIDE");
   }
   if(grid_ && wgridstride_>0){
     if(gridfilename_.length()==0) error("grid filename not specified use GRID_WFILE"); 
