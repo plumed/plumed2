@@ -161,6 +161,12 @@ public:
 */
   void readInputFile(std::string str);
 /**
+  Read an input string.
+  \param str name of the string
+*/
+  void readInputWords(const std::vector<std::string> &  str);
+
+/**
   Initialize the object.
   Should be called once.
 */
