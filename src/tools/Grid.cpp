@@ -41,6 +41,42 @@ Grid::Grid(const std::string& funcl, std::vector<Value*> args, const vector<std:
  plumed_massert(args.size()==gmin.size(),"grid dimensions in input do not match number of arguments");
  plumed_massert(args.size()==nbin.size(),"grid dimensions in input do not match number of arguments");
  plumed_massert(args.size()==gmax.size(),"grid dimensions in input do not match number of arguments");
+ unsigned dim=gmax.size(); 
+ std::vector<std::string> names; 
+ std::vector<bool> isperiodic; 
+ std::vector<string> pmin,pmax; 
+ names.resize( dim );
+ isperiodic.resize( dim );
+ pmin.resize( dim );
+ pmax.resize( dim );
+ for(unsigned int i=0;i<dim;++i){
+  names[i]=args[i]->getName();
+  if( args[i]->isPeriodic() ){
+      isperiodic[i]=true; 
+      args[i]->getDomain( pmin[i], pmax[i] );
+  } else {
+      isperiodic[i]=false;
+      pmin[i]="0.";
+      pmax[i]="0.";
+  }
+ }
+ // this is a value-independent initializator
+ Init(funcl,names,gmin,gmax,nbin,dospline,usederiv,doclear,isperiodic,pmin,pmax);
+}
+
+Grid::Grid(const std::string& funcl, const std::vector<string> &names, const std::vector<std::string> & gmin, 
+           const vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, bool usederiv, bool doclear, const std::vector<bool> &isperiodic, const std::vector<std::string> &pmin, const std::vector<std::string> &pmax ){
+ // this calls the initializator
+ Init(funcl,names,gmin,gmax,nbin,dospline,usederiv,doclear,isperiodic,pmin,pmax);
+}
+
+void Grid::Init(const std::string& funcl, const std::vector<std::string> &names, const vector<std::string> & gmin, 
+           const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, bool usederiv, bool doclear, 
+     	   const std::vector<bool> &isperiodic, const std::vector<std::string> &pmin, const std::vector<std::string> &pmax ){
+// various checks
+ plumed_massert(names.size()==gmin.size(),"grid dimensions in input do not match number of arguments");
+ plumed_massert(names.size()==nbin.size(),"grid dimensions in input do not match number of arguments");
+ plumed_massert(names.size()==gmax.size(),"grid dimensions in input do not match number of arguments");
  dimension_=gmax.size(); 
  str_min_=gmin; str_max_=gmax; 
  argnames.resize( dimension_ );
@@ -48,16 +84,17 @@ Grid::Grid(const std::string& funcl, std::vector<Value*> args, const vector<std:
  max_.resize( dimension_ );
  pbc_.resize( dimension_ );
  for(unsigned int i=0;i<dimension_;++i){
-  argnames[i]=args[i]->getName();
-  if( args[i]->isPeriodic() ){
+  argnames[i]=names[i];
+  if( isperiodic[i] ){
       pbc_[i]=true; 
-      args[i]->getDomain( str_min_[i], str_max_[i] );
+      str_min_[i]=pmin[i];
+      str_max_[i]=pmax[i];
   } else {
       pbc_[i]=false;
   }
+  Tools::convert(str_min_[i],min_[i]); 
+  Tools::convert(str_max_[i],max_[i]); 
   funcname=funcl;
-  Tools::convert( str_min_[i], min_[i] );
-  Tools::convert( str_max_[i], max_[i] );
   plumed_massert(max_[i]>min_[i],"maximum in grid must be larger than minimum");
   plumed_massert(nbin[i]>0,"number of grid points must be greater than zero");
  }
@@ -111,6 +148,11 @@ vector<bool> Grid::getIsPeriodic() const {
 vector<unsigned> Grid::getNbin() const {
  return nbin_;
 }
+
+vector<string> Grid::getArgNames() const {
+ return argnames;
+}
+
 
 unsigned Grid::getSize() const {
  return maxsize_;
@@ -430,6 +472,17 @@ void Grid::scaleAllValuesAndDerivatives( const double& scalef ){
   }
 }
 
+void Grid::applyFunctionAllValuesAndDerivatives( double (*func)(double val), double (*funcder)(double valder) ){
+  if(usederiv_){
+     for(unsigned i=0;i<grid_.size();++i){
+         grid_[i]=func(grid_[i]);
+         for(unsigned j=0;j<dimension_;++j) der_[i][j]=funcder(der_[i][j]);
+     }
+  } else {
+     for(unsigned i=0;i<grid_.size();++i) grid_[i]=func(grid_[i]);
+  }
+}
+
 void Grid::writeHeader(OFile& ofile){
  for(unsigned i=0;i<dimension_;++i){
      ofile.addConstantField("min_" + argnames[i]);
@@ -622,4 +675,105 @@ void SparseGrid::writeToFile(OFile& ofile){
    ofile.printField();
  }
 }
+
+
+void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBase * ptr2obj ){
+    unsigned i=0;
+    for(i=0;i<vHigh.size();i++){
+       if(vHigh[i]<0){
+    	  for(unsigned j=0;j<(getNbin())[i];j++){
+            vHigh[i]=int(j);  
+            projectOnLowDimension(val,vHigh,ptr2obj); // recursive function: this is the core of the mechanism
+            vHigh[i]=-1;
+          } 
+          return; // 
+       }
+    }
+    if(i==vHigh.size()){
+        //std::cerr<<"POINT: "; 
+        //for(unsigned j=0;j<vHigh.size();j++){
+        //   std::cerr<<vHigh[j]<<" ";
+        //} 
+        std::vector<unsigned> vv(vHigh.size()); 
+        for(unsigned j=0;j<vHigh.size();j++)vv[j]=unsigned(vHigh[j]);
+        //
+        // this is the real assignment !!!!! (hack this to have bias or other stuff)
+        //
+
+        // this case: produce fes
+        //val+=exp(beta*getValue(vv)) ;
+        double myv=getValue(vv);
+        val=ptr2obj->projectInnerLoop(val,myv) ;
+        // to be added: bias (same as before without negative sign) 
+        
+        //std::cerr<<" VAL: "<<val <<endl;
+    }
+};
+
+Grid Grid::project(const std::vector<std::string> proj , WeightBase *ptr2obj ){
+         // find extrema only for the projection
+         vector<string>   smallMin,smallMax;
+         vector<unsigned> smallBin;
+         vector<unsigned> dimMapping;
+         vector<bool> smallIsPeriodic;
+         vector<string> smallName;
+
+         // check if the two key methods are there
+         WeightBase* pp = dynamic_cast<WeightBase*>(ptr2obj);
+         if (!pp)plumed_merror("This WeightBase is not complete: you need a projectInnerLoop and projectOuterLoop ");
+ 
+         for(unsigned j=0;j<proj.size();j++){
+              for(unsigned i=0;i<getArgNames().size();i++){
+                    if(proj[j]==getArgNames()[i]){ 
+	    	         unsigned offset;		 
+ 	    	         // note that at sizetime the non periodic dimension get a bin more  	
+                         if(getIsPeriodic()[i]){offset=0;}else{offset=1;}
+                         smallMax.push_back(getMax()[i]);
+                         smallMin.push_back(getMin()[i]);
+                         smallBin.push_back(getNbin()[i]-offset);
+			 smallIsPeriodic.push_back(getIsPeriodic()[i]);
+                         dimMapping.push_back(i);
+			 smallName.push_back(getArgNames()[i]);
+                         break;
+                    }
+              }
+         }
+         Grid smallgrid("projection",smallName,smallMin,smallMax,smallBin,false,false,true,smallIsPeriodic,smallMin,smallMax);  
+         // check that the two grids are commensurate 
+         for(unsigned i=0;i<dimMapping.size();i++){
+              plumed_massert(  (smallgrid.getMax())[i] == (getMax())[dimMapping[i]],  "the two input grids are not compatible in max"   );  
+              plumed_massert(  (smallgrid.getMin())[i] == (getMin())[dimMapping[i]],  "the two input grids are not compatible in min"   );  
+              plumed_massert(  (smallgrid.getNbin())[i]== (getNbin())[dimMapping[i]], "the two input grids are not compatible in bin"   );  
+         }
+         vector<unsigned> toBeIntegrated;
+         for(unsigned i=0;i<getArgNames().size();i++){
+              bool doappend=true;
+         	for(unsigned j=0;j<dimMapping.size();j++){
+                 if(dimMapping[j]==i){doappend=false; break;}  
+              }
+              if(doappend)toBeIntegrated.push_back(i);
+         }
+         //for(unsigned i=0;i<dimMapping.size();i++ ){
+         //     cerr<<"Dimension to preserve "<<dimMapping[i]<<endl;
+         //}
+         //for(unsigned i=0;i<toBeIntegrated.size();i++ ){
+         //     cerr<<"Dimension to integrate "<<toBeIntegrated[i]<<endl;
+         //}
+
+         // loop over all the points in the Grid, find the corresponding fixed index, rotate over all the other ones  
+         for(unsigned i=0;i<smallgrid.getSize();i++){
+                 std::vector<unsigned> v;
+                 v=smallgrid.getIndices(i);
+                 std::vector<int> vHigh((getArgNames()).size(),-1);   
+                 for(unsigned j=0;j<dimMapping.size();j++)vHigh[dimMapping[j]]=int(v[j]);
+                 // the vector vhigh now contains at the beginning the index of the low dimension and -1 for the values that need to be calculated 
+                 double initval=0.;  
+                 projectOnLowDimension(initval,vHigh, ptr2obj); 
+                 // to integrate metadynamics
+                 smallgrid.setValue(i,ptr2obj->projectOuterLoop(initval));  
+         }
+
+     return smallgrid; 
+}
+
 }
