@@ -152,6 +152,7 @@ private:
   void   finiteDifferenceGaussian(const vector<double>&, const Gaussian&);
   vector<unsigned> getGaussianSupport(const Gaussian&);
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate  );
+  std::string fmt;
 
 public:
   MetaD(const ActionOptions&);
@@ -171,6 +172,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("compulsory","HEIGHT","the heights of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");
+  keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
@@ -231,6 +233,8 @@ isFirstStep(true)
   }
   // parse the sigma
   parseVector("SIGMA",sigma0_);
+
+  parse("FMT",fmt);
 
   // if you use normal sigma you need one sigma per argument 
   if (adaptive_==FlexibleBin::none){
@@ -363,6 +367,7 @@ isFirstStep(true)
   hillsOfile_.link(*this);
   if(plumed.getRestart()) hillsOfile_.open(ifilesnames[mw_id_],"aw");
   else hillsOfile_.open(ifilesnames[mw_id_]);
+  if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
   hillsOfile_.setHeavyFlush();
 // output periodicities of variables
