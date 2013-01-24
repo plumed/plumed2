@@ -710,7 +710,7 @@ void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBas
     }
 };
 
-Grid Grid::project(const std::vector<std::string> proj , WeightBase *ptr2obj ){
+Grid Grid::project(const std::vector<std::string> & proj , WeightBase *ptr2obj ){
          // find extrema only for the projection
          vector<string>   smallMin,smallMax;
          vector<unsigned> smallBin;

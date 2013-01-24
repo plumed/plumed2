@@ -206,12 +206,13 @@ PLUMED_BIAS_INIT(ao),
 BiasGrid_(NULL), wgridstride_(0), grid_(false),
 // Metadynamics basic parameters
 height0_(0.0), biasf_(1.0), temp_(0.0),
-stride_(0), welltemp_(false),isFirstStep(true),
+stride_(0), welltemp_(false),
 // Other stuff
 dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
 // Multiple walkers initialization
-mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1)
+mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
+isFirstStep(true)
 {
   // parse the flexible hills
   string adaptiveoption;

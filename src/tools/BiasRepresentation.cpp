@@ -40,7 +40,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 }; 
 /// overload the constructor: add the sigma  at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false),mycomm(cc),histosigma(sigma){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false),histosigma(sigma),mycomm(cc){
     ndim=tmpvalues.size();
     for(int i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
@@ -48,7 +48,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 }; 
 /// overload the constructor: add the grid at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin ):hasgrid(false), mycomm(cc),rescaledToBias(false){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin ):hasgrid(false), rescaledToBias(false), mycomm(cc){
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
@@ -58,7 +58,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     addGrid(gmin,gmax,nbin);
 }; 
 /// overload the constructor with some external sigmas: needed for histogram
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma):hasgrid(false), mycomm(cc),rescaledToBias(false),histosigma(sigma){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc){
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
@@ -114,7 +114,6 @@ KernelFunctions* BiasRepresentation::readFromPoint(IFile *ifile){
 	return new KernelFunctions(cc,histosigma,"gaussian",h,false);	
 }
 void BiasRepresentation::pushKernel( IFile *ifile ){
-        Value * v;
         KernelFunctions *kk;
         // here below the reading of the kernel is completely hidden
         if(histosigma.size()==0){ 

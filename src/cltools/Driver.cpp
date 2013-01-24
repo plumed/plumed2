@@ -189,6 +189,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      if(traj_xyz.length()>0 && trajectoryFile.length()==0) trajectoryFile=traj_xyz;
      if(trajectoryFile.length()==0){
        fprintf(stderr,"ERROR: missing trajectory data\n"); 
+       if(multi_log)fclose(multi_log);
        return 1;
      }
      string lengthUnits(""); parse("--length-units",lengthUnits);

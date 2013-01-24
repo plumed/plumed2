@@ -179,7 +179,7 @@ public:
 
 /// project a high dimensional grid onto a low dimensional one: this should be changed at some time 
 /// to enable many types of weighting
- Grid project( const std::vector<std::string> proj , WeightBase *ptr2obj  ); 
+ Grid project( const std::vector<std::string> & proj , WeightBase *ptr2obj  ); 
  void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj ); 
 };
 

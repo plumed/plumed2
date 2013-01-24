@@ -54,7 +54,7 @@ class FilesHandler{
 		void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin);
 		void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin, vector<double> &histosigma);
 }; 
-FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallelread , Action &action , Log &mylog ):filenames(filenames),parallelread(parallelread),beingread(0),log(&mylog),isopen(false){
+FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallelread , Action &action , Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false){
    this->action=&action;
    for(unsigned i=0;i<filenames.size();i++){
       IFile *ifile = new IFile();
@@ -180,7 +180,7 @@ public:
   FuncSumHills(const ActionOptions&);
   ~FuncSumHills();
   void calculate(); // this probably is not needed
-  bool checkFilesAreExisting(const vector<string> hills ); 
+  bool checkFilesAreExisting(const vector<string> & hills ); 
   static void registerKeywords(Keywords& keys);
 };
 
@@ -212,11 +212,11 @@ Function(ao),
 initstride(-1),
 stride(-1),
 iscltool(false),
-beta(-1.),
 integratehills(false),
 integratehisto(false),
 parallelread(false),
-negativebias(false)
+negativebias(false),
+beta(-1.)
 {
   // here read 
   // Grid Stuff
@@ -240,7 +240,7 @@ negativebias(false)
   	integratehills=false; // default behaviour 
   }else{
   	integratehills=true; 
-        for(unsigned i;i<hillsFiles.size();i++) log<<"  hillsfile  : "<<hillsFiles[i]<<"\n";
+        for(unsigned i=0;i<hillsFiles.size();i++) log<<"  hillsfile  : "<<hillsFiles[i]<<"\n";
   }
   // histo file: 
   parseVector("HISTOFILES",histoFiles);
@@ -498,11 +498,11 @@ void FuncSumHills::calculate(){
 FuncSumHills::~FuncSumHills(){
 }
 
-bool FuncSumHills::checkFilesAreExisting(const vector<string> hills ){
+bool FuncSumHills::checkFilesAreExisting(const vector<string> & hills ){
 	plumed_massert(hills.size()!=0,"the number of  files provided should be at least one" );
         IFile *ifile = new IFile();
         ifile->link(*this);
-        for(unsigned i; i< hills.size();i++){  
+        for(unsigned i=0; i< hills.size();i++){  
           plumed_massert(ifile->FileExist(hills[i]),"missing file "+hills[i]);
         }
         return true; 
