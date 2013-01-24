@@ -56,7 +56,6 @@ nframes(0)
 
   // open the file
   FILE* fp=fopen(reference.c_str(),"r");
-  unsigned nat=0;
   std::vector<AtomNumber> aaa;
   if (fp!=NULL)
   {
@@ -67,6 +66,7 @@ nframes(0)
          RMSD mymsd(log); 
          do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
          if(do_read){
+            unsigned nat=0;
             nframes++;
             if(mypdb.getAtomNumbers().size()==0) error("number of atoms in a frame should be more than zero");
             if(nat==0) nat=mypdb.getAtomNumbers().size();

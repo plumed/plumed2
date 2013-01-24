@@ -205,7 +205,7 @@ Grid* BiasRepresentation::getGridPtr(){
 	return BiasGrid_;
 };
 void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin){
-	vector<double> ss,cc,dd,binsize; 
+	vector<double> ss,cc,binsize; 
 	vmin.clear();vmin.resize(ndim,10.e20);
 	vmax.clear();vmax.resize(ndim,-10.e20);
 	vbin.clear();vbin.resize(ndim);

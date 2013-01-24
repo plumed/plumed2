@@ -78,7 +78,7 @@ IFile& IFile::advanceField(){
             j++;
           }
           done=true;
-      } else if( words.size()!=0 ) {
+      } else if( !words.empty() ) {
           plumed_merror("mismatch between number of fields in file and expected number");
       }
     }

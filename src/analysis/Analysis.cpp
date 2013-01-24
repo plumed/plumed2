@@ -108,13 +108,13 @@ old_norm(0.0)
                  }
              }
              log.printf("\n");
-             if( biases.size()==0 ) error("you are asking to reweight bias but there does not appear to be a bias acting on your system");
+             if( biases.empty() ) error("you are asking to reweight bias but there does not appear to be a bias acting on your system");
              requestArguments( arg );
          }
       }
 
       simtemp=0.; parse("TEMP",simtemp);
-      if( simtemp==0 && biases.size()>0 ) error("to reweight you must specify a temperature use TEMP");
+      if( simtemp==0 && !biases.empty() ) error("to reweight you must specify a temperature use TEMP");
       rtemp=0; 
       if( keywords.exists("REWEIGHT_TEMP") ) parse("REWEIGHT_TEMP",rtemp);
       if( rtemp!=0 ){
@@ -208,7 +208,7 @@ void Analysis::calculate(){
      // Reweighting because of temperature difference
      ww=-( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias) / plumed.getAtoms().getKBoltzmann();
      // Reweighting because of biases
-     if( biases.size()>0 ) ww += bias/( plumed.getAtoms().getKBoltzmann()*simtemp );
+     if( !biases.empty() ) ww += bias/( plumed.getAtoms().getKBoltzmann()*simtemp );
   }
 
   if(single_run){

@@ -191,7 +191,7 @@ bool ActionWithValue::checkNumericalDerivatives() const {
 
 inline
 unsigned ActionWithValue::getNumberOfDerivatives(){
-  plumed_assert( values.size()!=0 );
+  plumed_assert( !values.empty() );
   return values[0]->getNumberOfDerivatives(); 
 } 
 

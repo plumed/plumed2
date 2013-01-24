@@ -46,7 +46,6 @@ FAKE ATOMS=1 PERIODIC=-3.14,3.14   LABEL=d2
 //+ENDPLUMEDOC
    
 class ColvarFake : public Colvar {
-  bool pbc;
 
 public:
   static void registerKeywords( Keywords& keys );
@@ -122,8 +121,6 @@ PLUMED_COLVAR_INIT(ao)
 // calculator
 void ColvarFake::calculate(){
     plumed_merror("you should never have got here");
-    setValue  (0.);
-
 }
 
 }

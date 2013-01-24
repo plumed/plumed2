@@ -60,7 +60,6 @@ FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallel
       IFile *ifile = new IFile();
       ifile->link(action);
       ifiles.push_back(ifile);
-      string ss;
       plumed_massert((ifile->FileExist(filenames[i])), "the file "+filenames[i]+" does not exist " );
    }
    
@@ -70,7 +69,6 @@ FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallel
 // no check are made at this level
 bool FilesHandler::readBunch(BiasRepresentation *br , unsigned stride = -1){
         bool morefiles; morefiles=true;
-        bool fileisover; fileisover=false;
 	if(parallelread){
 		(*log)<<"  doing parallelread \n";
         }else{
@@ -85,7 +83,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br , unsigned stride = -1){
                 }
 		int n;
                 while(true){
-			fileisover=true;
+			bool fileisover=true;
 			while(scanOneHill(br,ff)){
 				// here do the dump if needed 
 				n=br->getNumberOfKernels();
