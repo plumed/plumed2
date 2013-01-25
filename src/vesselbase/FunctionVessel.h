@@ -34,7 +34,7 @@ namespace vesselbase{
 /**
 \ingroup TOOLBOX
 Objects that inherit from FunctionVessel can be used (in tandem with PLMD::ActionWithVessel) to calculate
-functions of the form \f$\product_k H_k[ \sum_j \product_i g_i(x) ]\f$.  They should take in a series of values
+functions of the form \f$\prod_k H_k[ \sum_j \prod_i g_i(x) ]\f$.  They should take in a series of values
 and return one single value.   
 */
 
