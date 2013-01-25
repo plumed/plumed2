@@ -165,6 +165,7 @@ unsigned Grid::getDimension() const {
 // we are flattening arrays using a column-major order
 unsigned Grid::getIndex(const vector<unsigned> & indices) const {
  plumed_assert(indices.size()==dimension_);
+ for(unsigned int i=0;i<dimension_;i++) plumed_assert(indices[i]>=0 && indices[i]<nbin_[i]);
  unsigned index=indices[dimension_-1];
  for(unsigned int i=dimension_-1;i>0;--i){
   index=index*nbin_[i-1]+indices[i-1];
