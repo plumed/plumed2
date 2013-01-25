@@ -832,7 +832,7 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
   }else{ 
     return false; 
   }; 
-};
+}
 
 }
 }

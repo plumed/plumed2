@@ -53,7 +53,7 @@ class FilesHandler{
 		bool scanOneHill(BiasRepresentation *br, IFile *ifile );
 		void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin);
 		void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin, vector<double> &histosigma);
-}; 
+};
 FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallelread , Action &action , Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false){
    this->action=&action;
    for(unsigned i=0;i<filenames.size();i++){
@@ -63,7 +63,7 @@ FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallel
       plumed_massert((ifile->FileExist(filenames[i])), "the file "+filenames[i]+" does not exist " );
    }
    
-};
+}
 
 // note that the FileHandler is completely transparent respect to the biasrepresentation 
 // no check are made at this level
@@ -116,7 +116,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br , unsigned stride = -1){
                 } 
         }        
 	return morefiles;
-};
+}
 void FilesHandler::getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin){
         // create the representation (no grid)
      	BiasRepresentation br(vals,cc);
@@ -124,7 +124,7 @@ void FilesHandler::getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<do
         readBunch(&br);
         // loop over the kernels and get the support 
  	br.getMinMaxBin(vmin,vmax,vbin);
-};
+}
 void FilesHandler::getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin, vector<double> &histosigma){
      	BiasRepresentation br(vals,cc,histosigma);
         // read all the kernels
@@ -132,7 +132,7 @@ void FilesHandler::getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<do
         // loop over the kernels and get the support 
  	br.getMinMaxBin(vmin,vmax,vbin);
         //for(unsigned i=0;i<vals.size();i++){cerr<<"XXX "<<vmin[i]<<" "<<vmax[i]<<" "<<vbin[i]<<"\n";}	
-};
+}
 bool FilesHandler::scanOneHill(BiasRepresentation *br, IFile *ifile ){
 	double dummy;
 	if(ifile->scanField("time",dummy)){
@@ -148,16 +148,16 @@ bool FilesHandler::scanOneHill(BiasRepresentation *br, IFile *ifile ){
 	}else{
 		return false;
 	}
-};
+}
 
 
 double  mylog( double v1 ){
       return log(v1);
-};
+}
 
 double  mylogder( double v1 ){
       return 1./v1;
-};
+}
 
 
 

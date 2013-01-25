@@ -38,7 +38,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
          values.push_back(tmpvalues[i]);
          names.push_back(values[i]->getName());
     } 
-}; 
+}
 /// overload the constructor: add the sigma  at constructor time 
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false),histosigma(sigma),mycomm(cc){
     ndim=tmpvalues.size();
@@ -46,7 +46,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
          values.push_back(tmpvalues[i]);
          names.push_back(values[i]->getName());
     } 
-}; 
+} 
 /// overload the constructor: add the grid at constructor time 
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin ):hasgrid(false), rescaledToBias(false), mycomm(cc){
     ndim=tmpvalues.size();
@@ -56,7 +56,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
     // initialize the grid 
     addGrid(gmin,gmax,nbin);
-}; 
+} 
 /// overload the constructor with some external sigmas: needed for histogram
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc){
     ndim=tmpvalues.size();
@@ -66,7 +66,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     }
     // initialize the grid 
     addGrid(gmin,gmax,nbin);
-};
+}
 
 void  BiasRepresentation::addGrid( vector<string> gmin, vector<string> gmax, vector<unsigned> nbin ){
     plumed_massert(hills.size()==0,"you can set the grid before loading the hills");
@@ -76,34 +76,34 @@ void  BiasRepresentation::addGrid( vector<string> gmin, vector<string> gmax, vec
     //cerr<<" initializing grid "<<endl;
     BiasGrid_=new Grid(ss,vv,gmin,gmax,nbin,false,true);
     hasgrid=true;	
-};
+}
 bool BiasRepresentation::hasSigmaInInput(){
    if(histosigma.size()==0){return false;}else{return true;} 
-};
+}
 void BiasRepresentation::setRescaledToBias(bool rescaled){
 	plumed_massert(hills.size()==0,"you can set the rescaling function only before loading hills");
         rescaledToBias=rescaled;
-};
+}
 const bool & BiasRepresentation::isRescaledToBias(){
 	return rescaledToBias;
-};
+}
 
 unsigned BiasRepresentation::getNumberOfDimensions(){
     return values.size();
-}; 
+} 
 vector<string> BiasRepresentation::getNames(){
     return names;
-}; 
+} 
 const string & BiasRepresentation::getName(unsigned i){
     return names[i];
-}; 
+} 
 
 const vector<Value*>& BiasRepresentation::getPtrToValues(){
     return values;
-}; 
+} 
 Value*  BiasRepresentation::getPtrToValue(unsigned i){
     return values[i];
-}; 
+} 
 
 KernelFunctions* BiasRepresentation::readFromPoint(IFile *ifile){
 	vector<double> cc( names.size() );
@@ -195,15 +195,15 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
                    BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
                   }
                 }
-        };
-};
+        }
+}
 int BiasRepresentation::getNumberOfKernels(){
 	return hills.size();
-};
+}
 Grid* BiasRepresentation::getGridPtr(){
         plumed_massert(hasgrid,"if you want the grid pointer then you should have defined a grid before"); 
 	return BiasGrid_;
-};
+}
 void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin){
 	vector<double> ss,cc,binsize; 
 	vmin.clear();vmin.resize(ndim,10.e20);
@@ -225,7 +225,7 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 			if(dmin<vmin[j])vmin[j]=dmin; 
 			if(dmax>vmax[j])vmax[j]=dmax; 
 			if(ddiv<binsize[j])binsize[j]=ddiv;		
-		};
+		}
 	}
 	for(unsigned j=0;j<ndim;j++){
 		// reset to periodicity
@@ -237,7 +237,7 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 		}
 		vbin[j]=static_cast<unsigned>(ceil((vmax[j]-vmin[j])/binsize[j]) );	
 	}
-};
+}
 
 
 
