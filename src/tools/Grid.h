@@ -35,6 +35,7 @@ class WeightBase{
     public:
         virtual double projectInnerLoop(double &input, double &v)=0;
         virtual double projectOuterLoop(double &v)=0;
+        virtual ~WeightBase(){};
 };
 
 class BiasWeight:public WeightBase{
