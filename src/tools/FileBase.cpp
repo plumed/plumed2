@@ -97,7 +97,7 @@ FileBase& FileBase::link(Action&action){
 }
 
 FileBase& FileBase::open(const std::string& path,const std::string& mode){
-  plumed_assert(!cloned);
+  plumed_massert(!cloned,"file "+path+" appears to be cloned");
   eof=false;
   err=false;
   fp=NULL;

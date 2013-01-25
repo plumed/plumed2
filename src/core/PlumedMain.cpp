@@ -70,7 +70,6 @@ PlumedMain::PlumedMain():
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
-  log.link(stdout);
   stopwatch.start();
   stopwatch.pause();
 }
@@ -340,6 +339,7 @@ void PlumedMain::init(){
 // check that initialization just happens once
   initialized=true;
   atoms.init();
+  if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
   log<<"PLUMED compiled on " __DATE__ " at " __TIME__ "\n";
   log<<"****  THIS IS AN EXPERIMENTAL VERSION ****\n";
