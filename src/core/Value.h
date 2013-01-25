@@ -205,7 +205,7 @@ unsigned Value::getNumberOfDerivatives() const {
 
 inline
 double Value::getDerivative(const unsigned n) const {
-  plumed_massert(n<derivatives.size(),"you are asking for a derivative that is out of bounds");
+  plumed_dbg_massert(n<derivatives.size(),"you are asking for a derivative that is out of bounds");
   return derivatives[n];
 }
 

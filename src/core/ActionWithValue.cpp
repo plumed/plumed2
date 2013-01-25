@@ -101,8 +101,8 @@ void ActionWithValue::setPeriodic( const std::string& min, const std::string& ma
 }
 
 Value* ActionWithValue::getPntrToValue(){
-  plumed_massert(values.size()==1,"The number of components is not equal to one");
-  plumed_massert(values[0]->name==getLabel(), "The value you are trying to retrieve is not the default");
+  plumed_dbg_massert(values.size()==1,"The number of components is not equal to one");
+  plumed_dbg_massert(values[0]->name==getLabel(), "The value you are trying to retrieve is not the default");
   return values[0];
 }
 
@@ -173,7 +173,7 @@ Value* ActionWithValue::getPntrToComponent( const std::string& name ){
 }
 
 Value* ActionWithValue::getPntrToComponent( int n ){
-  plumed_massert(n<values.size(),"you have requested a pointer that is out of bounds");
+  plumed_dbg_massert(n<values.size(),"you have requested a pointer that is out of bounds");
   return values[n];
 }
 
