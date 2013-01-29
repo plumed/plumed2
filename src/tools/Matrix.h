@@ -157,7 +157,7 @@ public:
   unsigned isSymmetric() const { 
      if (rw!=cl){ return 0; }
      unsigned sym=1; 
-     for(unsigned i=1;i<rw;++i) for(unsigned j=0;j<i;++j) if( std::fabs(data[i+j*cl]-data[j+i*cl])>1.e-30 ){ sym=0; break; }  
+     for(unsigned i=1;i<rw;++i) for(unsigned j=0;j<i;++j) if( std::fabs(data[i+j*cl]-data[j+i*cl])>1.e-10 ){ sym=0; break; }  
      return sym;
   }
 };
