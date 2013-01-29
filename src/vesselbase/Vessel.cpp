@@ -31,8 +31,9 @@ namespace vesselbase{
 
 Keywords VesselOptions::emptyKeys;
 
-VesselOptions::VesselOptions(const std::string& thisname, const unsigned& nlab, const std::string& params, ActionWithVessel* aa ):
+VesselOptions::VesselOptions(const std::string& thisname, const std::string& thislab, const unsigned& nlab, const std::string& params, ActionWithVessel* aa ):
 myname(thisname),
+mylabel(thislab),
 numlab(nlab),
 action(aa),
 keywords(emptyKeys),
@@ -42,6 +43,7 @@ parameters(params)
 
 VesselOptions::VesselOptions(const VesselOptions& da, const Keywords& keys ):
 myname(da.myname),
+mylabel(da.mylabel),
 numlab(da.numlab),
 action(da.action),
 keywords(keys),
@@ -63,13 +65,21 @@ finished_read(false),
 log((da.action)->log)
 {
   line=Tools::getWords( da.parameters );
+  if( da.mylabel.length()==0 && numlab>=0 ){
+      mylabel=myname; std::string nn; 
+      std::transform( mylabel.begin(), mylabel.end(), mylabel.begin(), tolower );
+      if(numlab>0){ Tools::convert( numlab, nn ); mylabel = mylabel + "-" + nn; }
+  } else if( numlab==0 ) {
+      mylabel=da.mylabel;
+  }
 }
 
-std::string Vessel::getName( const bool small_letters ) const {
-  if(!small_letters) return myname;
-  std::string outname=myname;
-  std::transform( outname.begin(),outname.end(),outname.begin(),tolower );
-  return outname;
+std::string Vessel::getName() const {
+  return myname;
+}
+
+std::string Vessel::getLabel() const {
+  return mylabel;
 }
 
 std::string Vessel::getAllInput(){

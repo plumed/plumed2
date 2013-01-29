@@ -55,6 +55,8 @@ class VesselOptions {
 private:
 /// The name of the particular vessel
   std::string myname;
+/// The label for this particular vessel;
+  std::string mylabel;
 /// The numerical label for this vessel
   int numlab;
 /// Pointer to ActionWithVessel that this if from
@@ -68,7 +70,7 @@ public:
 /// The parameters that are read into the function
   std::string parameters;
 /// The constructor 
-  VesselOptions( const std::string& thisname, const unsigned& nlab, const std::string& params, ActionWithVessel* aa );
+  VesselOptions( const std::string& thisname, const std::string& thislab, const unsigned& nlab, const std::string& params, ActionWithVessel* aa );
   VesselOptions(const VesselOptions& da, const Keywords& keys );
 };
 
@@ -77,6 +79,8 @@ friend class ActionWithVessel;
 private:
 /// The keyword for the vessel in the input file
   std::string myname;
+/// The label for the vessel for referencing
+  std::string mylabel;
 /// The numerical label for this object
   const int numlab;
 /// The action that this vessel is created within
@@ -136,7 +140,9 @@ public:
 /// Virtual destructor needed for proper inheritance
   virtual ~Vessel(){}
 /// Return the name
-  std::string getName( const bool small_letters ) const ;
+  std::string getName() const ;
+/// Return the label
+  std::string getLabel() const ;
 /// Check that readin was fine
   void checkRead();
 /// Add something to the ith element in the buffer

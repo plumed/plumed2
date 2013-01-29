@@ -38,7 +38,7 @@ Vessel(da)
 void ShortcutVessel::addVessel( const std::string& name, const std::string& input ){
   unsigned numlab=1;
   for(unsigned i=0;i<(getAction()->functions).size();++i){
-     if( (getAction()->functions[i])->getName(false)==name ) numlab++;
+     if( (getAction()->functions[i])->getName()==name ) numlab++;
   }
   getAction()->addVessel( name, input, numlab );
 }

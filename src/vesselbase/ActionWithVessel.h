@@ -64,7 +64,7 @@ private:
   using Action::deactivate;
 protected:
 /// Add a vessel to the list of vessels
-  void addVessel( const std::string& name, const std::string& input, const int numlab=0 );
+  void addVessel( const std::string& name, const std::string& input, const int numlab=0, const std::string thislab="" );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void readVesselKeywords();
 /// Return the value of the tolerance
@@ -79,6 +79,8 @@ protected:
   void resizeFunctions();
 ///  Add some derivative of the quantity in the sum wrt to a numbered element
   void addElementDerivative( const unsigned&, const double& );
+/// Set the derivative of the jth element wrt to a numbered element
+  void setElementDerivative( const unsigned&, const double& );
 public:
 /// The numerical index of the task we are curently performing
   unsigned current;
@@ -170,6 +172,13 @@ void ActionWithVessel::addElementDerivative( const unsigned& ider, const double&
   plumed_dbg_assert( ider<derivatives.size() );
   derivatives[ider] += der;
 }
+
+inline
+void ActionWithVessel::setElementDerivative( const unsigned& ider, const double& der ){
+  plumed_dbg_assert( ider<derivatives.size() );
+  derivatives[ider] = der;
+}
+
 
 } 
 }

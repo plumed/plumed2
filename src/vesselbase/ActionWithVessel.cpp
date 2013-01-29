@@ -53,8 +53,8 @@ ActionWithVessel::~ActionWithVessel(){
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
 }
 
-void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ){
-  read=true; VesselOptions da(name,numlab,input,this);
+void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab, const std::string thislab ){
+  read=true; VesselOptions da(name,thislab,numlab,input,this);
   Vessel* vv=vesselRegister().create(name,da); vv->checkRead();
   ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
   if(!sv) functions.push_back(vv);

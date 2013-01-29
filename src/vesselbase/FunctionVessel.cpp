@@ -35,32 +35,20 @@ Vessel(da)
 {
   ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
   plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
-  std::string vname,nn; int numval = getNumericalLabel();
+  int numval = getNumericalLabel();
   if( numval<0 ){   // This allows us to make multicolvars pretend to be colvars - this is used in AlphaRMSD etc
      plumed_massert( a->getNumberOfComponents()==0,"you can't multiple values with the action label");
      a->addValueWithDerivatives();  a->setNotPeriodic();
   } else {
-     if( numval>0 ){
-         Tools::convert(numval,nn); 
-         vname = getName(true) + "-" + nn;
-     } else {
-         vname = getName(true);
-     }
-     plumed_massert( !a->exists(getAction()->getLabel() + "." + vname), "you can't create the name multiple times");
-     a->addComponentWithDerivatives( vname ); a->componentIsNotPeriodic( vname );
+     plumed_massert( !a->exists(getAction()->getLabel() + "." + getLabel() ), "you can't create the name multiple times");
+     a->addComponentWithDerivatives( getLabel() ); a->componentIsNotPeriodic( getLabel() );
   }
   final_value=a->copyOutput( a->getNumberOfComponents()-1 );
 }
 
 std::string FunctionVessel::description(){
-  std::string vname,nn; int numval = getNumericalLabel();
-  if( numval>0 ){
-      Tools::convert(numval,nn); 
-      vname = getName(true) + "-" + nn; 
-  } else {
-      vname = getName(true);
-  }
-  return "value " + getAction()->getLabel() + "." + vname + " " + function_description();
+  std::string nn; int numval = getNumericalLabel();
+  return "value " + getAction()->getLabel() + "." + getLabel() + " " + function_description();
 }
 
 void FunctionVessel::resize(){
