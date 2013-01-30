@@ -163,7 +163,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 	  unsigned n=reference.size();
 	  for(unsigned i=0;i<n;i++){
 	      Vector d=delta(reference[i],positions[i]);
-	      derivatives[i]=2.0*d;
+	      derivatives[i]=2.0*displace[i]*d;
 	      dist+=displace[i]*d.modulo2();
 	      norm+=displace[i];
       }
