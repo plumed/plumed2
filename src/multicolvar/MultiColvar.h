@@ -99,6 +99,11 @@ protected:
   void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
 /// Retrieve derivative of central atom position wrt jcomp'th component of position of iatom'th atom
   double getCentralAtomDerivative( const unsigned& iatom, const unsigned jcomp, const Vector& df ) const ;
+/// Set a weight for this colvar (used in MEAN and HISTOGRAM)
+  void setWeight( const double& weight );
+/// Set the derivative of the weight (used in MEAN and HISTOGRAM)
+  void addAtomsDerivativeOfWeight( const unsigned& i, const Vector& wder );
+  void addBoxDerivativesOfWeight( const Tensor& vir );
 /// Get the number of atoms in this particular colvar
   unsigned getNAtoms() const;
 /// Get all the positions
@@ -265,6 +270,35 @@ unsigned MultiColvar::getOutputDerivativeIndex( const unsigned& ival, const unsi
   } 
   return 3*getNumberOfAtoms() + i - 3*colvar_atoms[ival].getNumberActive(); 
 }
+
+inline
+void MultiColvar::setWeight( const double& weight ){
+  setElementValue( 1, weight );
+}
+
+inline
+void MultiColvar::addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& wder ){
+  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
+  int nstart  = 3*getNumberOfAtoms() + 9 + 3*iatom;
+  addElementDerivative( nstart + 0, wder[0] );
+  addElementDerivative( nstart + 1, wder[1] );
+  addElementDerivative( nstart + 2, wder[2] );
+}
+
+inline
+void MultiColvar::addBoxDerivativesOfWeight( const Tensor& vir ){
+  int nstart = 3*getNumberOfAtoms() + 9 + 3*colvar_atoms[current].getNumberActive();
+  addElementDerivative( nstart+0, vir(0,0) );
+  addElementDerivative( nstart+1, vir(0,1) );
+  addElementDerivative( nstart+2, vir(0,2) );
+  addElementDerivative( nstart+3, vir(1,0) );
+  addElementDerivative( nstart+4, vir(1,1) );
+  addElementDerivative( nstart+5, vir(1,2) );
+  addElementDerivative( nstart+6, vir(2,0) );
+  addElementDerivative( nstart+7, vir(2,1) );
+  addElementDerivative( nstart+8, vir(2,2) );
+}
+
 
 }
 }

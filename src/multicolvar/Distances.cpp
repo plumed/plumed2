@@ -91,9 +91,14 @@ PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 
 void Distances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); keys.use("GROUP"); keys.use("GROUPA"); keys.use("GROUPB");
+  keys.use("ATOMS"); 
   keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); keys.use("DHENERGY");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
+  keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
+                              "the atoms in GROUPB. This must be used in conjuction with GROUPB.");
+  keys.add("atoms-2","GROUPB","Calculate the distances between all the atoms in GROUPA and all the atoms "
+                              "in GROUPB. This must be used in conjuction with GROUPA.");
 }
 
 Distances::Distances(const ActionOptions&ao):

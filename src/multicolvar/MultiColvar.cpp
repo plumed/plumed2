@@ -43,12 +43,6 @@ void MultiColvar::registerKeywords( Keywords& keys ){
                                "define the same number of atoms).  The eventual number of quantities calculated by this "
                                "action will depend on what functions of the distribution you choose to calculate."); 
   keys.reset_style("ATOMS","atoms");
-  keys.reserve("atoms-1","GROUP","this keyword is used for colvars that are calculated from a pair of atoms. "
-                               "One colvar is calculated for each distinct pair of atoms in the group.");
-  keys.reserve("atoms-2","GROUPA","this keyword is used for colvars that are calculated from a pair of atoms and must appaer with the keyword GROUPB. "
-                                "Every pair of atoms which involves one atom from GROUPA and one atom from GROUPB defines one colvar");
-  keys.reserve("atoms-2","GROUPB","this keyword is used for colvars that are calculate from a pair of atoms and must appaer with the keyword GROUPA. "
-                                "Every pair of atoms which involves one atom from GROUPA and one atom from GROUPB defines one colvar");
   keys.reserve("atoms-3","SPECIES","this keyword is used for colvars such as coordination number. In that context it specifies that plumed should calculate "
                                  "one coordination number for each of the atoms specified.  Each of these coordination numbers specifies how many of the "
                                  "other specified atoms are within a certain cutoff of the central atom.");
@@ -174,6 +168,10 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
   if( natoms==2 ){
       if( !keywords.exists("GROUPA") ) error("use GROUPA and GROUPB keywords as well as GROUP");
       if( !keywords.exists("GROUPB") ) error("use GROUPA and GROUPB keywords as well as GROUP");
+  } else if( natoms==3 ){
+      if( !keywords.exists("GROUPA") ) error("use GROUPA, GROUPB and GROUPC keywords as well as GROUP");
+      if( !keywords.exists("GROUPB") ) error("use GROUPA, GROUPB and GROUPC keywords as well as GROUP");
+      if( !keywords.exists("GROUPC") ) error("use GROUPA, GROUPB and GROUPC keywords as well as GROUP");
   } else {
       error("Cannot use groups keyword unless the number of atoms equals 2");
   }
@@ -183,11 +181,23 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
   if( !t.empty() ){
       readatoms=true;
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
-      std::vector<unsigned> newlist; 
-      for(unsigned i=1;i<t.size();++i){ 
-          for(unsigned j=0;j<i;++j){ 
-             newlist.push_back(i); newlist.push_back(j); addColvar( newlist ); newlist.clear();
-          }
+      std::vector<unsigned> newlist;
+      if(natoms==2){ 
+         for(unsigned i=1;i<t.size();++i){ 
+             for(unsigned j=0;j<i;++j){ 
+                newlist.push_back(i); newlist.push_back(j); addColvar( newlist ); newlist.clear();
+             }
+         }
+      } else if(natoms==3){
+         for(unsigned i=2;i<t.size();++i){
+            for(unsigned j=1;j<i;++j){
+               for(unsigned k=0;k<j;++k){
+                   newlist.push_back(i); newlist.push_back(j);
+                   newlist.push_back(k); addColvar( newlist );
+                   newlist.clear();
+               }
+            }
+         }
       }
       if( !verbose_output ){
           log.printf("  constructing colvars from %d atoms : ", t.size() );
@@ -200,14 +210,44 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
       if( !t1.empty() ){
          readatoms=true;
          parseAtomList("GROUPB",t2);
-         if ( t2.empty() ) error("GROUPB keyword defines no atoms or is missing. Use either GROUPA and GROUPB or just GROUP"); 
+         if ( t2.empty() && natoms==2 ) error("GROUPB keyword defines no atoms or is missing. Use either GROUPA and GROUPB or just GROUP"); 
          for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] ); 
          for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] ); 
          std::vector<unsigned> newlist;
-         for(unsigned i=0;i<t1.size();++i){
-             for(unsigned j=0;j<t2.size();++j){
-                 newlist.push_back(i); newlist.push_back( t1.size() + j ); addColvar( newlist ); newlist.clear();
-             }
+         if(natoms==2){
+            for(unsigned i=0;i<t1.size();++i){
+                for(unsigned j=0;j<t2.size();++j){
+                    newlist.push_back(i); newlist.push_back( t1.size() + j ); addColvar( newlist ); newlist.clear();
+                }
+            }
+         } else if(natoms==3){
+            if ( t2.empty() ) error("GROUPB keyword defines no atoms or is missing. Use either GROUPA and GROUPB, GROUPA, GROUPB and GROUPC or just GROUP");  
+            std::vector<AtomNumber> t3;
+            parseAtomList("GROUPC",t3);
+            if( t3.empty() ){
+                for(unsigned i=0;i<t1.size();++i){
+                   for(unsigned j=1;j<t2.size();++j){ 
+                      for(unsigned k=0;k<j;++k){
+                           newlist.push_back( t1.size() + j );
+                           newlist.push_back(i);
+                           newlist.push_back( t1.size() + k );
+                           addColvar( newlist ); newlist.clear();
+                      }
+                   }
+                }
+            } else {
+                for(unsigned i=0;i<t3.size();++i) all_atoms.addIndexToList( t3[i] );
+                for(unsigned i=0;i<t1.size();++i){
+                    for(unsigned j=0;j<t2.size();++j){
+                        for(unsigned k=0;k<t3.size();++k){
+                           newlist.push_back( t1.size() + j );
+                           newlist.push_back(i); 
+                           newlist.push_back( t1.size() + t2.size() + k );
+                           addColvar( newlist ); newlist.clear();
+                        }
+                    }
+                }
+            }
          }
       }
       if( !verbose_output ){
@@ -341,8 +381,9 @@ bool MultiColvar::performTask( const unsigned& j ){
 
   // Compute everything
   double vv=compute( j ); 
-  // And set the value of this element in ActionWithVessel
+  // Set the value of this element in ActionWithVessel
   setElementValue( 0, vv );
+
   return false;
 }
 
@@ -376,7 +417,7 @@ void MultiColvar::chainRuleForElementDerivatives( const unsigned& iout, const un
   }
 
   // Easy to merge the virial
-  unsigned outnat=1+ider*nder+3*getNumberOfAtoms(); 
+  unsigned outnat=bstart+3*getNumberOfAtoms(); 
   valout->addToBufferElement( outnat+0, df*getElementDerivative(in) ); in++;
   valout->addToBufferElement( outnat+1, df*getElementDerivative(in) ); in++;
   valout->addToBufferElement( outnat+2, df*getElementDerivative(in) ); in++;
