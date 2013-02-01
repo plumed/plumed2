@@ -37,7 +37,6 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Between( const VesselOptions& da );
-  unsigned getNumberOfTerms();
   std::string function_description();
   bool calculate();
   void finish();
@@ -68,9 +67,7 @@ FunctionVessel(da)
       Tools::convert(str_min,min); Tools::convert(str_max,max);
   }
 
-  parseFlag("NORM",norm); std::string errormsg;
-  if(norm){ df.resize(2); df[1]=0.0; }
-  else { df.resize(1); df[0]=1.0; }
+  parseFlag("NORM",norm); std::string errormsg; df.resize(2); 
 
   hist.set( getAllInput(),"",errormsg );
   if( !isPeriodic ) hist.isNotPeriodic();
@@ -83,32 +80,42 @@ std::string Between::function_description(){
   return "the number of values " + hist.description();
 }
 
-unsigned Between::getNumberOfTerms(){
-  if(norm) return 2; 
-  return 1;
-}
-
 bool Between::calculate(){
+  double weight=getAction()->getElementValue(1);
   double val=getAction()->getElementValue(0);
   double dval, f = hist.calculate(val, dval);
-  bool addval=addValue(0,f);
-  getAction()->chainRuleForElementDerivatives( 0, 0, dval, this ); 
-  if(norm){
-     bool ignore=addValue(1,1.0);
-     return true;
-  } 
-  return addval;
+
+  bool addval2, addval=addValue(1,weight);
+  if( addval ){
+     addval2=addValue(0,weight*f);
+     if( addval2 ){
+        getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
+        if(diffweight) getAction()->chainRuleForElementDerivatives( 0, 1, f, this ); 
+        if(norm){
+           if(diffweight) getAction()->chainRuleForElementDerivatives( 1, 1, 1.0, this );
+           return addval;
+        }
+     }
+  }
+  return addval2;
 }
 
 void Between::finish(){
-  if(norm){
-     setOutputValue( getFinalValue(0) / getFinalValue(1) ); 
-     df[0]=1.0 / getFinalValue(1); 
+  double denom=getFinalValue(1);
+  if( norm && diffweight ){ 
+     df[0] = 1.0 / denom;
+     setOutputValue( getFinalValue(0) / denom ); 
+     df[1] = -getFinalValue(0) / ( denom*denom );
+     mergeFinalDerivatives( df );
+  } else if (norm) {
+     df[0] = 1.0 / denom; df[1]=0.0;
+     setOutputValue( getFinalValue(0) / denom );
      mergeFinalDerivatives( df );
   } else {
      setOutputValue( getFinalValue(0) );
+     df[0] = 1.0; df[1]=0.0;
      mergeFinalDerivatives( df );
-  } 
+  }
 }
 
 }

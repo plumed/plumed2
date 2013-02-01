@@ -45,6 +45,8 @@ private:
 /// This is the pointer to the value we are creating
   Value* final_value;
 protected:
+/// Are the derivatives differentiable
+  bool diffweight;
 /// Add some value to the accumulator
   bool addValue( const unsigned& jval, const double& val );
 /// Set the final value
@@ -64,6 +66,8 @@ public:
   std::string description();
 /// The rest of the description of what we are calculating
   virtual std::string function_description()=0;
+/// Return number of terms
+  virtual unsigned getNumberOfTerms(){ return 2; }
 };
 
 inline

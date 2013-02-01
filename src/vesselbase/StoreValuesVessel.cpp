@@ -33,18 +33,19 @@ void StoreValuesVessel::registerKeywords( Keywords& keys ){
 StoreValuesVessel::StoreValuesVessel( const VesselOptions& da ):
 Vessel(da)
 {
+  diffweight=getAction()->weightHasDerivatives;
 }
 
 void StoreValuesVessel::resize(){
   ActionWithVessel* aa=getAction();
   unsigned nfunc=aa->getNumberOfFunctionsInAction();
-  unsigned bufsize=0; start.resize( nfunc +1 );
+  bufsize=0; start.resize( nfunc +1 );
   for(unsigned i=0;i<nfunc;++i){
       start[i] = bufsize;
       bufsize += 1 + aa->getNumberOfDerivatives(i); 
   }
   start[nfunc]=bufsize;
-  resizeBuffer( bufsize ); local_resizing();
+  resizeBuffer( 2*bufsize ); local_resizing();
 }
 
 bool StoreValuesVessel::calculate(){
@@ -52,12 +53,27 @@ bool StoreValuesVessel::calculate(){
   unsigned ibuf=start[aa->current]; setBufferElement( ibuf, aa->getElementValue(0) ); ibuf++;
   for(unsigned ider=0;ider<getAction()->nderivatives;++ider){ setBufferElement( ibuf, aa->getElementDerivative(ider) ); ibuf++; } 
   plumed_dbg_assert( ibuf==start[aa->current+1] );
+  ibuf=bufsize+start[aa->current]; setBufferElement( ibuf, aa->getElementValue(1) ); ibuf++;
+  if(diffweight){
+    unsigned nder=aa->getNumberOfDerivatives();
+    for(unsigned ider=0;ider<getAction()->nderivatives;++ider){ setBufferElement( ibuf, aa->getElementDerivative(nder+ider) ); ibuf++; }
+    plumed_dbg_assert( ibuf==(bufsize+start[aa->current+1]) );
+  }
   return true;
 }
 
 void StoreValuesVessel::addDerivatives( const unsigned& ival, double& pref, Value* value_out ){
   unsigned j=0; ActionWithVessel* aa=getAction();
   for(unsigned i=start[ival]+1;i<start[ival+1];++i){
+      value_out->addDerivative( aa->getOutputDerivativeIndex( ival, j ), pref*getBufferElement(i) ); j++;
+  }
+}
+
+void StoreValuesVessel::addWeightDerivatives( const unsigned& ival, double& pref, Value* value_out ){
+  if(!diffweight) return;
+
+  unsigned j=0; ActionWithVessel* aa=getAction();
+  for(unsigned i=bufsize+start[ival]+1;i<bufsize+start[ival+1];++i){
       value_out->addDerivative( aa->getOutputDerivativeIndex( ival, j ), pref*getBufferElement(i) ); j++;
   }
 }

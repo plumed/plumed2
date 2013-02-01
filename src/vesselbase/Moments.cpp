@@ -62,6 +62,7 @@ StoreValuesVessel(da)
 {
    ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
    plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
+   plumed_massert(!diffweight,"cannot do weighted moments properly");
 
    std::vector<std::string> moments=Tools::getWords(getAllInput(),"\t\n ,"); 
    Tools::interpretRanges(moments); unsigned nn;

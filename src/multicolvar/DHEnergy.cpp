@@ -40,7 +40,6 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   DHEnergy( const vesselbase::VesselOptions& da );
-  unsigned getNumberOfTerms(){ return 1; }
   std::string function_description();
   bool calculate();
   void finish();

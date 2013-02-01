@@ -32,18 +32,25 @@ namespace vesselbase{
 
 class StoreValuesVessel : public Vessel {
 private:
+  unsigned bufsize;
   std::vector<unsigned> start;
 protected:
+/// Are the weights differentiable
+  bool diffweight;
 /// Get the ith value in the vessel
   double getValue( const unsigned& ) const ;  
+/// Get the weight of the ith quantity in the vessel
+  double getWeight( const unsigned& ) const ;
 /// Add the derivatives from the value
   void addDerivatives( const unsigned& ival, double& pref, Value* value_out );
+/// Add the derivatives from the weight of the value
+  void addWeightDerivatives( const unsigned& ival, double& pref, Value* value_out );
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   StoreValuesVessel( const VesselOptions& );
 /// Return the number of terms
-  unsigned getNumberOfTerms(){ return 1; }
+  unsigned getNumberOfTerms(){ return 2; }
 /// This does the resizing of the buffer
   void resize();
 /// This makes sure all values are stored
@@ -56,6 +63,12 @@ inline
 double StoreValuesVessel::getValue( const unsigned& ival ) const {
   plumed_dbg_assert( ival<start.size()-1 );
   return getBufferElement( start[ival] );
+}
+
+inline
+double StoreValuesVessel::getWeight( const unsigned& ival ) const {
+  plumed_dbg_assert( ival<start.size()-1 );
+  return getBufferElement( bufsize + start[ival] );
 }
 
 }

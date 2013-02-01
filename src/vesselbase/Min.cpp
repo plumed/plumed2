@@ -34,7 +34,6 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Min( const VesselOptions& da );
-  unsigned getNumberOfTerms(){ return 1; }
   std::string function_description();
   bool calculate();
   void finish();
@@ -68,10 +67,14 @@ std::string Min::function_description(){
 }
 
 bool Min::calculate(){
+  double weight=getAction()->getElementValue(1);
+  if( weight<getTolerance() ) return false;
+
   double val=getAction()->getElementValue(0);
   double dval, f = exp(beta/val); dval=f/(val*val);
   bool addval=addValue(0,f);
-  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, dval, this );
+  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
+  if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
   return addval;
 }
 

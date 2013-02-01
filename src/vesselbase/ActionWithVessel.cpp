@@ -39,7 +39,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   Action(ao),
   read(false),
   serial(false),
-  tolerance(0)
+  weightHasDerivatives(false)
 {
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   else serial=true;
@@ -103,6 +103,7 @@ void ActionWithVessel::resizeFunctions(){
      functions[i]->resize();
      bufsize+=functions[i]->bufsize;
      tmpnval=functions[i]->getNumberOfTerms();
+     plumed_massert( tmpnval>1 , "There should always be at least two terms - one for the value and one for the weight");
      if(tmpnval>nvals) nvals=tmpnval;
   }
   nderivatives=getNumberOfDerivatives();
@@ -135,6 +136,8 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
   for(unsigned i=rank;i<ntasks;i+=stride){
       // Calculate the stuff in the loop for this action
       bool skipme=performTask(i);
+      // By default the weight is 1 
+      if(!thisval_wasset[1]) setElementValue( 1, 1.0 );
 
       // Check for conditions that allow us to just to skip the calculation
       if( skipme ){

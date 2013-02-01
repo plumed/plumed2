@@ -30,13 +30,11 @@ namespace vesselbase{
 
 class LessThan : public FunctionVessel {
 private:
-  std::vector<double> df;
   SwitchingFunction sf;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys ); 
   LessThan( const VesselOptions& da );
-  unsigned getNumberOfTerms(){ return 1; }
   std::string function_description();
   bool calculate();
   void finish();
@@ -56,8 +54,7 @@ void LessThan::reserveKeyword( Keywords& keys ){
 }
 
 LessThan::LessThan( const VesselOptions& da ) :
-FunctionVessel(da),
-df(1,1.0)
+FunctionVessel(da)
 {
   if( getAction()->isPeriodic() ) error("LESS_THAN is not a meaningful option for periodic variables");
   std::string errormsg; sf.set( getAllInput(), errormsg ); 
@@ -69,15 +66,20 @@ std::string LessThan::function_description(){
 }
 
 bool LessThan::calculate(){
+  double weight=getAction()->getElementValue(1);
+  if( weight<getTolerance() ) return false;
+
   double val=getAction()->getElementValue(0);
   double dval, f = sf.calculate(val, dval); dval*=val;
-  bool addval=addValue(0,f);
-  if(addval) getAction()->chainRuleForElementDerivatives(0, 0, dval, this);
+  bool addval=addValue(0,weight*f);
+  if(addval) getAction()->chainRuleForElementDerivatives(0, 0, weight*dval, this);
+  if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
   return addval; 
 }
 
 void LessThan::finish(){
   setOutputValue( getFinalValue(0) ); 
+  std::vector<double> df(2); df[0]=1.0; df[1]=0.0;
   mergeFinalDerivatives( df );
 }
 

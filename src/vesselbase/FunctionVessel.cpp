@@ -44,11 +44,12 @@ Vessel(da)
      a->addComponentWithDerivatives( getLabel() ); a->componentIsNotPeriodic( getLabel() );
   }
   final_value=a->copyOutput( a->getNumberOfComponents()-1 );
+  diffweight=getAction()->weightHasDerivatives;
 }
 
 std::string FunctionVessel::description(){
   std::string nn; int numval = getNumericalLabel();
-  return "value " + getAction()->getLabel() + "." + getLabel() + " " + function_description();
+  return "value " + getAction()->getLabel() + "." + getLabel() + " contains " + function_description();
 }
 
 void FunctionVessel::resize(){

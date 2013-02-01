@@ -43,6 +43,8 @@ times.  This is used in PLMD::MultiColvar.
 class ActionWithVessel : public virtual Action {
 friend class Vessel;
 friend class ShortcutVessel;
+friend class StoreValuesVessel;
+friend class FunctionVessel;
 private:
 /// This is used to ensure that we have properly read the action
   bool read;
@@ -63,6 +65,12 @@ private:
 /// Avoid hiding of base class virtual function
   using Action::deactivate;
 protected:
+/// Does the weight have derivatives
+  bool weightHasDerivatives;
+/// The numerical index of the task we are curently performing
+  unsigned current;
+/// The number of derivatives involved in the current task
+  unsigned nderivatives;
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0, const std::string thislab="" );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
@@ -82,10 +90,6 @@ protected:
 /// Set the derivative of the jth element wrt to a numbered element
   void setElementDerivative( const unsigned&, const double& );
 public:
-/// The numerical index of the task we are curently performing
-  unsigned current;
-/// The number of derivatives involved in the current task
-  unsigned nderivatives;
   static void registerKeywords(Keywords& keys);
   ActionWithVessel(const ActionOptions&ao);
   ~ActionWithVessel();
@@ -147,11 +151,9 @@ double ActionWithVessel::getElementValue(const unsigned& ival) const {
 
 inline
 void ActionWithVessel::setElementValue( const unsigned& ival, const double& val ){
-  if( thisval_wasset[ival] ){
-      unsigned nder=getNumberOfDerivatives();
-      unsigned nclear=getNumberOfDerivatives(nder); 
-      for(unsigned i=ival*nder;i<ival*nder+nclear;++i) derivatives[i]=0.0; 
-  }
+  // Element 0 is reserved for the value we are accumulating
+  // Element 1 is reserved for the normalization constant for calculating AVERAGES, normalized HISTOGRAMS
+  plumed_dbg_assert( !thisval_wasset[ival] );
   thisval[ival]=val;
   thisval_wasset[ival]=true;
 }
@@ -169,12 +171,18 @@ double ActionWithVessel::getElementDerivative( const unsigned& ider ) const {
 
 inline
 void ActionWithVessel::addElementDerivative( const unsigned& ider, const double& der ){
+#ifndef NDEBUG
+  if(ider==1) plumed_dbg_assert( weightHasDerivatives );
+#endif
   plumed_dbg_assert( ider<derivatives.size() );
   derivatives[ider] += der;
 }
 
 inline
 void ActionWithVessel::setElementDerivative( const unsigned& ider, const double& der ){
+#ifndef NDEBUG
+  if(ider==1) plumed_dbg_assert( weightHasDerivatives );
+#endif
   plumed_dbg_assert( ider<derivatives.size() );
   derivatives[ider] = der;
 }

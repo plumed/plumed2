@@ -36,7 +36,6 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   MoreThan( const VesselOptions& da );
-  unsigned getNumberOfTerms(){ return 1; }
   std::string function_description();
   bool calculate();
   void finish();
@@ -69,10 +68,14 @@ std::string MoreThan::function_description(){
 }
 
 bool MoreThan::calculate(){
+  double weight=getAction()->getElementValue(1);
+  if( weight<getTolerance() ) return false;
+
   double val=getAction()->getElementValue(0);
   double dval, f = 1.0 - sf.calculate(val, dval); dval*=-val;
-  bool addval=addValue(0,f);
-  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, dval, this );
+  bool addval=addValue(0,weight*f);
+  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
+  if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
   return addval;
 }
 

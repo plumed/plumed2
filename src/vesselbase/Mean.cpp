@@ -32,7 +32,6 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Mean( const vesselbase::VesselOptions& da );
-  unsigned getNumberOfTerms(){ return 2; }
   std::string function_description();
   bool calculate();
   void finish();
@@ -59,16 +58,25 @@ std::string Mean::function_description(){
 }
 
 bool Mean::calculate(){
-  double val=getAction()->getElementValue(0);
-  bool ignore=addValue(1,1.0);
-  bool addval=addValue( 0, getAction()->getElementValue(0) );
-  getAction()->chainRuleForElementDerivatives( 0, 0, 1.0, this );
-  return true;
+  double weight=getAction()->getElementValue(1);
+  bool addval=addValue( 1, weight );
+  if( addval ){
+     double colvar=getAction()->getElementValue(0);
+     bool ignore=addValue( 0, weight*colvar  );
+     getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
+     if(diffweight) getAction()->chainRuleForElementDerivatives( 0, 1, colvar, this );
+     if(diffweight) getAction()->chainRuleForElementDerivatives( 1, 1, 1.0, this );
+  }
+  return addval;
 }
 
 void Mean::finish(){
   setOutputValue( getFinalValue(0) / getFinalValue(1) ); 
-  std::vector<double> df(2); df[0]=1.0 / getFinalValue(1); df[1]=0.0; 
+  double denom=getFinalValue(1);
+  std::vector<double> df(2); 
+  df[0] = 1.0 / denom; 
+  if(diffweight) df[1] = -getFinalValue(0) / (denom*denom); 
+  else df[1]=0.0;
   mergeFinalDerivatives( df );
 }
 

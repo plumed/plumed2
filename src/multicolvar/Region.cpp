@@ -103,7 +103,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Region( const vesselbase::VesselOptions& da );
-  unsigned getNumberOfTerms(){ return 2; }
+  unsigned getNumberOfTerms(){ return 3; }
   std::string function_description();
   bool calculate();
   void finish();
@@ -158,23 +158,26 @@ bool Region::calculate(){
   double weight; Vector wdf;
   weight=myvol->calculateNumberInside( catom_pos, bead, wdf );
   if( not_in ){ weight = 1.0 - weight; wdf *= -1.; }
-  mycolv->setElementValue( 1, weight );  
+  mycolv->setElementValue( 2, weight );  
  
-  unsigned current=mycolv->current, ider=mycolv->getNumberOfDerivatives();
+  unsigned current=mycolv->current, ider=2*mycolv->getNumberOfDerivatives();
   for(unsigned i=0;i<mycolv->colvar_atoms[current].getNumberActive();++i){
      mycolv->addElementDerivative( ider, mycolv->getCentralAtomDerivative( i, 0, wdf ) ); ider++;
      mycolv->addElementDerivative( ider, mycolv->getCentralAtomDerivative( i, 1, wdf ) ); ider++;
      mycolv->addElementDerivative( ider, mycolv->getCentralAtomDerivative( i, 2, wdf ) ); ider++;
   }
 
-  bool addval=addValue( 1, weight );
+  double ww=mycolv->getElementValue(1);  // Get the standard weight
+  bool addval=addValue( 1, ww*weight );
   if(addval){
      double colvar=mycolv->getElementValue(0);
-     addValue(0, colvar*weight );
-     mycolv->chainRuleForElementDerivatives( 1, 1, 1.0, this );
+     addValue(0, colvar*weight*ww );
+     mycolv->chainRuleForElementDerivatives( 1, 2, ww, this );
+     if(diffweight) mycolv->chainRuleForElementDerivatives( 1, 1, weight, this );
      if(!isDensity){
-         mycolv->chainRuleForElementDerivatives( 0, 0, weight, this );
-         mycolv->chainRuleForElementDerivatives( 0, 1, colvar, this );
+         mycolv->chainRuleForElementDerivatives( 0, 0, ww*weight, this );
+         mycolv->chainRuleForElementDerivatives( 0, 2, ww*colvar, this );
+         if(diffweight) mycolv->chainRuleForElementDerivatives( 0, 1, colvar*weight, this );
      }
   } 
   return addval; 

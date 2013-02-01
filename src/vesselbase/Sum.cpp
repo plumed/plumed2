@@ -32,7 +32,6 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Sum( const VesselOptions& da );
-  unsigned getNumberOfTerms(){ return 1; }
   std::string function_description();
   bool calculate();
   void finish();
@@ -59,9 +58,13 @@ std::string Sum::function_description(){
 }
 
 bool Sum::calculate(){
+  double weight=getAction()->getElementValue(1);
+  if( weight<getTolerance() ) return false;
+
   double val=getAction()->getElementValue(0);
-  bool addval=addValue(0,val);
-  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, 1.0, this );
+  bool addval=addValue(0,weight*val);
+  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
+  if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, val, this);
   return addval;
 }
 

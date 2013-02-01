@@ -45,7 +45,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   keys.add("compulsory","D_0","0.0","The d_0 parameter of the switching function");
   keys.add("compulsory","NN","8","The n parameter of the switching function");
   keys.add("compulsory","MM","12","The m parameter of the switching function");
-  keys.use("LESS_THAN"); keys.use("MIN"); keys.use("MEAN");
+  keys.use("LESS_THAN"); keys.use("MIN"); 
 }
 
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
