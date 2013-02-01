@@ -30,7 +30,6 @@ void ActionWithVirtualAtom::registerKeywords(Keywords& keys){
   Action::registerKeywords(keys);
   ActionAtomistic::registerKeywords(keys);
   keys.add("atoms","ATOMS","the list of atoms which are involved the virtual atom's definition");
-  keys.addFlag("CALC_GRADIENTS", false, "  calculate the vector of gradients");
 }
 
 ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
