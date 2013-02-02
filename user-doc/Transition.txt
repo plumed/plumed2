@@ -203,11 +203,11 @@ so taht you have to read the documentation of the Plumed 2 Action.
 </TR>
 <TR>
   <TD> RDF </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> <b> \ref DISTANCES </b>, used in combination with HISTOGRAM / BETWEEN keyword </TD>
 </TR>
 <TR>
   <TD> ADF </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> <b> \ref ANGLES </b>, used in combination with HISTOGRAM / BETWEEN keyword </TD>
 </TR>
 <TR>
   <TD> POLY </TD>
