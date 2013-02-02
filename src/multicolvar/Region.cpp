@@ -172,12 +172,12 @@ bool Region::calculate(){
   if(addval){
      double colvar=mycolv->getElementValue(0);
      addValue(0, colvar*weight*ww );
-     mycolv->chainRuleForElementDerivatives( 1, 2, ww, this );
-     if(diffweight) mycolv->chainRuleForElementDerivatives( 1, 1, weight, this );
+     getAction()->chainRuleForElementDerivatives( 1, 2, ww, this );
+     if(diffweight) getAction()->chainRuleForElementDerivatives( 1, 1, weight, this );
      if(!isDensity){
-         mycolv->chainRuleForElementDerivatives( 0, 0, ww*weight, this );
-         mycolv->chainRuleForElementDerivatives( 0, 2, ww*colvar, this );
-         if(diffweight) mycolv->chainRuleForElementDerivatives( 0, 1, colvar*weight, this );
+         getAction()->chainRuleForElementDerivatives( 0, 0, ww*weight, this );
+         getAction()->chainRuleForElementDerivatives( 0, 2, ww*colvar, this );
+         if(diffweight) getAction()->chainRuleForElementDerivatives( 0, 1, colvar*weight, this );
      }
   } 
   return addval; 

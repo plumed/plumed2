@@ -171,8 +171,14 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
 }
 
 void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const double& df, Vessel* valout ){
-  unsigned nder=getNumberOfDerivatives(), bstart=(nder+1)*iout+1, vstart=nder*ider; 
-  for(unsigned i=0;i<nder;++i) valout->addToBufferElement( bstart+i, df*derivatives[vstart+i] );
+  chainRuleForElementDerivatives(iout,ider,1,0,df,valout);
+} 
+
+void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const unsigned& stride, 
+                                                       const unsigned& off, const double& df, Vessel* valout ){
+  plumed_dbg_assert( off<stride );
+  unsigned nder=getNumberOfDerivatives(), bstart=stride*(nder+1)*iout+stride+off, vstart=nder*ider; 
+  for(unsigned i=0;i<nder;++i) valout->addToBufferElement( bstart+i*stride, df*derivatives[vstart+i] );
 }
 
 void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){

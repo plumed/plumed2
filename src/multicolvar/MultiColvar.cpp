@@ -404,29 +404,31 @@ double MultiColvar::getCentralAtomDerivative( const unsigned& iatom, const unsig
   return df[0]*central_derivs[iatom](0,jcomp) + df[1]*central_derivs[iatom](1,jcomp) + df[2]*central_derivs[iatom](2,jcomp);
 }
 
-void MultiColvar::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const double& df, vesselbase::Vessel* valout ){    
+void MultiColvar::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const unsigned& stride, 
+                                                  const unsigned& off, const double& df, vesselbase::Vessel* valout ){    
+  plumed_dbg_assert( off<stride );
   unsigned nder=getNumberOfDerivatives();
-  int thisatom, thispos, in=ider*nder, bstart=(nder+1)*iout+1; 
+  int thisatom, thispos, in=ider*nder, bstart=stride*(nder+1)*iout+stride+off; 
   unsigned innat=colvar_atoms[current].getNumberActive();
   for(unsigned i=0;i<innat;++i){
      thisatom=linkIndex( i, colvar_atoms[current], all_atoms );
-     plumed_dbg_assert( thisatom>=0 ); thispos=bstart+3*thisatom;
+     plumed_dbg_assert( thisatom>=0 ); thispos=bstart+3*stride*thisatom;
      valout->addToBufferElement( thispos , df*getElementDerivative(in) ); in++;
-     valout->addToBufferElement( thispos+1, df*getElementDerivative(in) ); in++;
-     valout->addToBufferElement( thispos+2, df*getElementDerivative(in) ); in++; 
+     valout->addToBufferElement( thispos+stride, df*getElementDerivative(in) ); in++;
+     valout->addToBufferElement( thispos+2*stride, df*getElementDerivative(in) ); in++; 
   }
 
   // Easy to merge the virial
-  unsigned outnat=bstart+3*getNumberOfAtoms(); 
-  valout->addToBufferElement( outnat+0, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+1, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+2, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+3, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+4, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+5, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+6, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+7, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+8, df*getElementDerivative(in) ); in++;
+  unsigned outnat=bstart+3*stride*getNumberOfAtoms(); 
+  valout->addToBufferElement( outnat,   df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+stride, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+2*stride, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+3*stride, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+4*stride, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+5*stride, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+6*stride, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+7*stride, df*getElementDerivative(in) ); in++;
+  valout->addToBufferElement( outnat+8*stride, df*getElementDerivative(in) ); in++;
 }
 
 Vector MultiColvar::getSeparation( const Vector& vec1, const Vector& vec2 ) const {

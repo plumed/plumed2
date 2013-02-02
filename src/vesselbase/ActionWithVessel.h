@@ -97,7 +97,8 @@ public:
 /// Deactivate the current task in future loops
   virtual void deactivate_task()=0;
 /// Merge the derivatives
-  virtual void chainRuleForElementDerivatives( const unsigned& , const unsigned& , const double& , Vessel* );
+  void chainRuleForElementDerivatives( const unsigned&, const unsigned&, const double& , Vessel* );
+  virtual void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , Vessel* );
   virtual unsigned getOutputDerivativeIndex( const unsigned& ival, const unsigned& i ){ return i; }
 /// Can we skip the calculations of quantities
   virtual bool isPossibleToSkip(); 

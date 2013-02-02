@@ -132,7 +132,7 @@ public:
 /// Make sure we calculate the position of the central atom
   void useCentralAtom();
 /// Merge the derivatives 
-  void chainRuleForElementDerivatives( const unsigned& , const unsigned& , const double& , vesselbase::Vessel* );
+  void chainRuleForElementDerivatives( const unsigned& , const unsigned& , const unsigned& , const unsigned& , const double& , vesselbase::Vessel* );
 /// Also used for derivative merging
   unsigned getOutputDerivativeIndex( const unsigned& ival, const unsigned& i );
 /// Can we skip the calculations of quantities
