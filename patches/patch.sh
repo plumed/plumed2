@@ -223,7 +223,7 @@ case "$action" in
       echo "ERROR: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
       exit
     fi
-    PREPLUMED=$(find . -name "*.preplumed")
+    PREPLUMED=$(find . -name "*.preplumed" | sort)
     if ! test "$PREPLUMED" ; then
       echo "ERROR: I cannot find any .preplumed file. You have likely not patched yet."
       exit
