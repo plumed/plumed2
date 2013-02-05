@@ -98,27 +98,21 @@ Plumed.inc: $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_SHARED_OBJ) $(OBJ_DYNAMIC_WRAP
 Plumed.inc.runtime: Plumed.inc
 	@echo Building Plumed.inc, runtime-linking version
 	@echo "# PLUMED: runtime installation" > $@
-	@cat $< >> $@
-	@echo PLUMED_LOAD= '$$(PLUMED_RUNTIME_LOAD)' >> $@
-	@echo PLUMED_DEPENDENCIES= '$$(PLUMED_RUNTIME_DEPENDENCIES)' >> $@
+	@grep PLUMED_RUNTIME $< | sed 's/PLUMED_RUNTIME_/PLUMED_/' >> $@
 
 Plumed.inc.static: Plumed.inc
 	@echo Building Plumed.inc, static version
 	@echo "# PLUMED: static installation" > $@
-	@cat $< >> $@
-	@echo PLUMED_LOAD= '$$(PLUMED_STATIC_LOAD)' >> $@
-	@echo PLUMED_DEPENDENCIES= '$$(PLUMED_STATIC_DEPENDENCIES)' >> $@
+	@grep PLUMED_STATIC $< | sed 's/PLUMED_STATIC_/PLUMED_/' >> $@
 
 Plumed.inc.shared: Plumed.inc
 	@echo Building Plumed.inc, shared version
 	@echo "# PLUMED: shared installation" > $@
-	@cat $< >> $@
-	@echo PLUMED_LOAD= '$$(PLUMED_SHARED_LOAD)' >> $@
-	@echo PLUMED_DEPENDENCIES= '$$(PLUMED_SHARED_DEPENDENCIES)' >> $@
+	@grep PLUMED_SHARED $< | sed 's/PLUMED_SHARED_/PLUMED_/' >> $@
 
 Plumed.cmake: $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_SHARED_OBJ) $(OBJ_DYNAMIC_WRAPPER)
 	@echo Building Plumed.cmake
-	@echo "set(PLUMED_RUNTIME_LOAD " $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS)")" >> $@
+	@echo "set(PLUMED_RUNTIME_LOAD " $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS)")" > $@
 	@echo "set(PLUMED_STATIC_LOAD " $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)")" >> $@
 	@echo "set(PLUMED_SHARED_LOAD " $(realpath $(PLUMED_SHARED_OBJ)) $(LIBS) $(LDFLAGS)")" >> $@
 	@echo "set(PLUMED_RUNTIME_DEPENDENCIES) "   >> $@
@@ -128,23 +122,17 @@ Plumed.cmake: $(OBJ_KERNEL) $(OBJ_WRAPPER) $(PLUMED_SHARED_OBJ) $(OBJ_DYNAMIC_WR
 Plumed.cmake.runtime: Plumed.cmake
 	@echo Building Plumed.cmake, runtime-linking version
 	@echo "# PLUMED: runtime installation" > $@
-	@cat $< >> $@
-	@echo "set("PLUMED_LOAD '$${PLUMED_RUNTIME_LOAD}'")" >> $@
-	@echo "set("PLUMED_DEPENDENCIES '$${PLUMED_RUNTIME_DEPENDENCIES}'")" >> $@
+	@grep PLUMED_RUNTIME $< | sed 's/PLUMED_RUNTIME_/PLUMED_/' >> $@
 
 Plumed.cmake.static: Plumed.cmake
 	@echo Building Plumed.cmake, static version
 	@echo "# PLUMED: static installation" > $@
-	@cat $< >> $@
-	@echo "set("PLUMED_LOAD '$${PLUMED_STATIC_LOAD}'")" >> $@
-	@echo "set("PLUMED_DEPENDENCIES '$${PLUMED_STATIC_DEPENDENCIES}'")" >> $@
+	@grep PLUMED_STATIC $< | sed 's/PLUMED_STATIC_/PLUMED_/' >> $@
 
 Plumed.cmake.shared: Plumed.cmake
 	@echo Building Plumed.cmake, shared version
 	@echo "# PLUMED: shared installation" > $@
-	@cat $< >> $@
-	@echo "set("PLUMED_LOAD '$${PLUMED_SHARED_LOAD}'")" >> $@
-	@echo "set("PLUMED_DEPENDENCIES '$${PLUMED_SHARED_DEPENDENCIES}'")" >> $@
+	@grep PLUMED_SHARED $< | sed 's/PLUMED_SHARED_/PLUMED_/' >> $@
 
 
 # Individual dependencies
