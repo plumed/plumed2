@@ -26,6 +26,8 @@
 #include "Exception.h"
 #include <cmath>
 #include <iostream>
+#include "Matrix.h"
+#include "Tools.h"
 
 using namespace std;
 namespace PLMD{
@@ -125,26 +127,33 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 
   double ret=0.;
 
+// set to true one of these to enforce old routine (Davide's) or new one (Giovanni's)
+// it is just for testing. as soon as we agree on the implementation, this (together with the
+// checks below) can be removed
+  const bool enforce_old=false;
+  const bool enforce_new=false;
+
   switch(alignmentMethod){
 	case SIMPLE:
 		//	do a simple alignment without rotation 
 		ret=simpleAlignment(align,displace,positions,reference,log,derivatives,squared);
 		break;	
 	case OPTIMAL:
-		if (myoptimalalignment==NULL){ // do full initialization	
+		if(enforce_new || (!enforce_old && displace==align) ) ret=optimalAlignment(align,displace,positions,reference,derivatives,squared); 
+		else{
+			if (myoptimalalignment==NULL){ // do full initialization	
 			//
 			// I create the object only here
 			// since the alignment object require to know both position and reference
 			// and it is possible only at calculate time
 			//
-			myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
-        }
-		// this changes the P0 according the running frame
-		(*myoptimalalignment).assignP0(positions);
-
-		ret=(*myoptimalalignment).calculate(squared, derivatives);
-		//(*myoptimalalignment).weightedFindiffTest(false);
-
+				myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
+        		}
+			// this changes the P0 according the running frame
+			(*myoptimalalignment).assignP0(positions);
+			ret=(*myoptimalalignment).calculate(squared, derivatives);
+			//(*myoptimalalignment).weightedFindiffTest(false);
+		}
 		break;	
   }	
 
@@ -179,4 +188,118 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
       }
       return ret;
 }
+
+double RMSD::optimalAlignment(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared) {
+  double dist(0);
+  double norm(0);
+  const unsigned n=reference.size();
+  Tensor sum00w;
+  Tensor sum01w;
+  Tensor sum11w;
+
+  derivatives.resize(n);
+
+  Vector cpositions;
+  Vector creference;
+
+// first expensive loop: compute centers
+  for(unsigned iat=0;iat<n;iat++){
+    double w=align[iat];
+    norm+=w;
+    cpositions+=positions[iat]*w;
+    creference+=reference[iat]*w;
+  }
+  cpositions/=norm;
+  creference/=norm;
+  
+// second expensive loop: compute second moments wrt centers
+  for(unsigned iat=0;iat<n;iat++){
+    double w=align[iat];
+    sum00w+=Tensor(positions[iat]-cpositions,positions[iat]-cpositions)*w;
+    sum01w+=Tensor(positions[iat]-cpositions,reference[iat]-creference)*w;
+    sum11w+=Tensor(reference[iat]-creference,reference[iat]-creference)*w;
+  }
+
+  Tensor rr00=sum00w/norm;
+  Tensor rr01=sum01w/norm;
+  Tensor rr11=sum11w/norm;
+
+  Matrix<double> m=Matrix<double>(4,4);
+  double rrsq=rr00[0][0]+rr00[1][1]+rr00[2][2]+rr11[0][0]+rr11[1][1]+rr11[2][2];
+  m[0][0]=rrsq+2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
+  m[1][1]=rrsq+2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
+  m[2][2]=rrsq+2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
+  m[3][3]=rrsq+2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
+  m[0][1]=2.0*(-rr01[1][2]+rr01[2][1]);
+  m[0][2]=2.0*(+rr01[0][2]-rr01[2][0]);
+  m[0][3]=2.0*(-rr01[0][1]+rr01[1][0]);
+  m[1][2]=2.0*(-rr01[0][1]-rr01[1][0]);
+  m[1][3]=2.0*(-rr01[0][2]-rr01[2][0]);
+  m[2][3]=2.0*(-rr01[1][2]-rr01[2][1]);
+  m[1][0] = m[0][1];
+  m[2][0] = m[0][2];
+  m[2][1] = m[1][2];
+  m[3][0] = m[0][3];
+  m[3][1] = m[1][3];
+  m[3][2] = m[2][3];
+
+  vector<double> eigenvals;
+  Matrix<double> eigenvecs;
+  int diagerror=diagMat(m, eigenvals, eigenvecs );
+
+  if (diagerror!=0){
+    string sdiagerror;
+    Tools::convert(diagerror,sdiagerror);
+    string msg="DIAGONALIZATION FAILED WITH ERROR CODE "+sdiagerror;
+    plumed_merror(msg);
+  }
+
+  dist=eigenvals[0];
+
+  Matrix<double> ddist_dm(4,4);
+
+  for(int i=0;i<4;i++) for(int j=0;j<4;j++) ddist_dm[i][j]=eigenvecs[0][i]*eigenvecs[0][j];
+
+
+// Note: this should be a tensor, but since it is proportional to identity
+// I store it as a double
+  double ddist_drr00=ddist_dm[0][0]+ddist_dm[1][1]+ddist_dm[2][2]+ddist_dm[3][3];
+
+  Tensor ddist_drr01;
+  ddist_drr01[0][0]=2*(-ddist_dm[0][0]-ddist_dm[1][1]+ddist_dm[2][2]+ddist_dm[3][3]);
+  ddist_drr01[1][1]=2*(-ddist_dm[0][0]+ddist_dm[1][1]-ddist_dm[2][2]+ddist_dm[3][3]);
+  ddist_drr01[2][2]=2*(-ddist_dm[0][0]+ddist_dm[1][1]+ddist_dm[2][2]-ddist_dm[3][3]);
+// I exploit the fact that ddist_dm is symmetric
+  ddist_drr01[0][1]=2*(-ddist_dm[0][3]-ddist_dm[1][2])*2.0;
+  ddist_drr01[0][2]=2*(+ddist_dm[0][2]-ddist_dm[1][3])*2.0;
+  ddist_drr01[1][2]=2*(-ddist_dm[0][1]-ddist_dm[2][3])*2.0;
+  ddist_drr01[1][0]=2*(+ddist_dm[0][3]-ddist_dm[1][2])*2.0;
+  ddist_drr01[2][0]=2*(-ddist_dm[0][2]-ddist_dm[1][3])*2.0;
+  ddist_drr01[2][1]=2*(+ddist_dm[0][1]-ddist_dm[2][3])*2.0;
+
+  double ddist_dsum00w=ddist_drr00/norm;
+  Tensor ddist_dsum01w=ddist_drr01/norm;
+
+// third expensive loop: derivatives
+  for(unsigned iat=0;iat<n;iat++){
+    derivatives[iat]=
+      align[iat]*(2.0*ddist_dsum00w*(positions[iat]-cpositions) + matmul(ddist_dsum01w,reference[iat]-creference));
+  }
+
+  double ret;
+  if(!squared){
+     // sqrt and normalization
+     ret=sqrt(dist);
+     ///// sqrt and normalization on derivatives
+     for(unsigned i=0;i<n;i++){derivatives[i]*=(0.5/ret);}
+   }else{
+     ret=dist;
+   }
+   return ret;
+}
+
 }

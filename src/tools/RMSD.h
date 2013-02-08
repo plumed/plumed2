@@ -73,6 +73,11 @@ public:
   		                     const std::vector<Vector> & reference ,
   		                     Log* &log,
   		                     std::vector<Vector>  & derivatives, bool squared=false);
+  double optimalAlignment(const  std::vector<double>  & align,
+                          const  std::vector<double>  & displace,
+                          const std::vector<Vector> & positions,
+                          const std::vector<Vector> & reference ,
+                          std::vector<Vector>  & derivatives, bool squared=false);
 /// Compute rmsd
   double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false);
 };
