@@ -81,7 +81,7 @@ PRINT ARG=abmd.bias
 */
 //+ENDPLUMEDOC
 
-class Ratchet : public Bias{
+class ABMD : public Bias{
   std::vector<double> to;
   std::vector<double> min;
   std::vector<double> kappa;
@@ -89,24 +89,24 @@ class Ratchet : public Bias{
   std::vector<int> seed;
   vector<Random> random;
 public:
-  Ratchet(const ActionOptions&);
+  ABMD(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
 
-PLUMED_REGISTER_ACTION(Ratchet,"ABMD")
+PLUMED_REGISTER_ACTION(ABMD,"ABMD")
 
-void Ratchet::registerKeywords(Keywords& keys){
+void ABMD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","TO","The array of target values");
   keys.add("compulsory","KAPPA","The array of force constants.");
   keys.add("optional","MIN","Array of starting values for the bias (set rho_m(t), otherwise it is set using the current value of ARG)");
-  keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the Ratchet)");
-  keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the Ratchet)");
+  keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the ABMD)");
+  keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the ABMD)");
 }
 
-Ratchet::Ratchet(const ActionOptions&ao):
+ABMD::ABMD(const ActionOptions&ao):
 PLUMED_BIAS_INIT(ao),
 to(getNumberOfArguments(),0.0),
 min(getNumberOfArguments(),-1.0),
@@ -145,7 +145,7 @@ random(getNumberOfArguments())
 }
 
 
-void Ratchet::calculate(){
+void ABMD::calculate(){
   double ene=0.0;
   double totf2=0.0;
   for(unsigned i=0;i<getNumberOfArguments();++i){
