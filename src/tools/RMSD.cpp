@@ -186,26 +186,50 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 		                     const std::vector<Vector> & reference ,
 		                     Log* &log,
 		                     std::vector<Vector>  & derivatives, bool squared) {
-	  double dist(0);
-	  double norm(0);
-	  unsigned n=reference.size();
-	  for(unsigned i=0;i<n;i++){
-	      Vector d=delta(reference[i],positions[i]);
-	      derivatives[i]=2.0*displace[i]*d;
-	      dist+=displace[i]*d.modulo2();
-	      norm+=displace[i];
+      double dist(0);
+      double anorm(0);
+      double dnorm(0);
+      unsigned n=reference.size();
+
+      Vector apositions;
+      Vector areference;
+      Vector dpositions;
+      Vector dreference;
+
+      for(unsigned i=0;i<n;i++){
+        double aw=align[i];
+        double dw=displace[i];
+        anorm+=aw;
+        dnorm+=dw;
+        apositions+=positions[i]*aw;
+        areference+=reference[i]*aw;
+        dpositions+=positions[i]*dw;
+        dreference+=reference[i]*dw;
       }
 
-     double ret; 
+      double invdnorm=1.0/dnorm;
+      double invanorm=1.0/anorm;
+
+      apositions*=invanorm;
+      areference*=invanorm;
+      dpositions*=invdnorm;
+      dreference*=invdnorm;
+
+      Vector shift=((apositions-areference)-(dpositions-dreference));
+      for(unsigned i=0;i<n;i++){
+        Vector d=(positions[i]-apositions)-(reference[i]-areference);
+        dist+=displace[i]*d.modulo2();
+        derivatives[i]=2*(invdnorm*displace[i]*d+invanorm*align[i]*shift);
+      }
+     dist*=invdnorm;
+
      if(!squared){
 	// sqrt and normalization
-        ret=sqrt(dist/norm);
+        dist=sqrt(dist);
 	///// sqrt and normalization on derivatives
-        for(unsigned i=0;i<n;i++){derivatives[i]*=(0.5/ret/norm);}
-      }else{
-        ret=dist/norm;
+        for(unsigned i=0;i<n;i++){derivatives[i]*=(0.5/dist);}
       }
-      return ret;
+      return dist;
 }
 
 template <bool safe>
