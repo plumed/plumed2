@@ -76,11 +76,15 @@ void RMSD::setType(string mytype){
 	alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
 	if (mytype=="SIMPLE"){
 		alignmentMethod=SIMPLE;
-		log->printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
-	;}
+		log->printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n");
+	}
 	else if (mytype=="OPTIMAL"){
 		alignmentMethod=OPTIMAL;
 		log->printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n");
+	}
+	else if (mytype=="OPTIMAL-FAST"){
+		alignmentMethod=OPTIMAL_FAST;
+		log->printf("RMSD IS DONE WITH OPTIMAL-FAST ALIGNMENT METHOD (fast version, numerically less stable, only valid with align==displace)\n");
 	}
 	else plumed_merror("unknown RMSD type" + mytype);
 
@@ -100,6 +104,7 @@ string RMSD::getMethod(){
 	switch(alignmentMethod){
 		case SIMPLE: mystring.assign("SIMPLE");break; 
 		case OPTIMAL: mystring.assign("OPTIMAL");break; 
+		case OPTIMAL_FAST: mystring.assign("OPTIMAL-FAST");break; 
 	}	
 	return mystring;
 }
@@ -127,33 +132,27 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 
   double ret=0.;
 
-// set to true one of these to enforce old routine (Davide's) or new one (Giovanni's)
-// it is just for testing. as soon as we agree on the implementation, this (together with the
-// checks below) can be removed
-  const bool enforce_old=false;
-  const bool enforce_new=false;
-
   switch(alignmentMethod){
 	case SIMPLE:
 		//	do a simple alignment without rotation 
 		ret=simpleAlignment(align,displace,positions,reference,log,derivatives,squared);
 		break;	
+	case OPTIMAL_FAST:
+		ret=optimalAlignment(align,displace,positions,reference,derivatives,squared); 
+		break;
 	case OPTIMAL:
-		if(enforce_new || (!enforce_old && displace==align) ) ret=optimalAlignment(align,displace,positions,reference,derivatives,squared); 
-		else{
-			if (myoptimalalignment==NULL){ // do full initialization	
-			//
-			// I create the object only here
-			// since the alignment object require to know both position and reference
-			// and it is possible only at calculate time
-			//
-				myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
-        		}
-			// this changes the P0 according the running frame
-			(*myoptimalalignment).assignP0(positions);
-			ret=(*myoptimalalignment).calculate(squared, derivatives);
-			//(*myoptimalalignment).weightedFindiffTest(false);
-		}
+		if (myoptimalalignment==NULL){ // do full initialization	
+		//
+		// I create the object only here
+		// since the alignment object require to know both position and reference
+		// and it is possible only at calculate time
+		//
+			myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
+        	}
+		// this changes the P0 according the running frame
+		(*myoptimalalignment).assignP0(positions);
+		ret=(*myoptimalalignment).calculate(squared, derivatives);
+		//(*myoptimalalignment).weightedFindiffTest(false);
 		break;	
   }	
 
@@ -194,6 +193,8 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
                                      const std::vector<Vector> & positions,
                                      const std::vector<Vector> & reference ,
                                      std::vector<Vector>  & derivatives, bool squared) {
+  plumed_massert(displace==align,"OPTIMAL_FAST version of RMSD can only be used when displace weights are same as align weights");
+
   double dist(0);
   double norm(0);
   const unsigned n=reference.size();

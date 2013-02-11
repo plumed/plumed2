@@ -36,7 +36,7 @@ class OptimalAlignment;
 /// A class that implements RMSD calculations
 class RMSD
 {
-  enum AlignmentMethod {SIMPLE, OPTIMAL};
+  enum AlignmentMethod {SIMPLE, OPTIMAL, OPTIMAL_FAST};
   AlignmentMethod alignmentMethod;
   std::vector<Vector> reference;
   std::vector<double> align;
