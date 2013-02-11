@@ -43,16 +43,16 @@ atoms 3 and 4.
 \par Examples
 
 This command tells plumed to calculate the angle between the vector connecting atom 1 to atom 2 and
-the vector connecting atom 2 to atom 3
+the vector connecting atom 2 to atom 3 and to print it on file COLVAR1. At the same time,
+the angle between vector connecting atom 1 to atom 2 and the vector connecting atom 3 to atom 4 is printed
+on file COLVAR2.
 \verbatim
-ANGLE ATOMS=1,2,3 
+a: ANGLE ATOMS=1,2,3 
+b: ANGLE ATOMS=1,2,3,4
+PRINT ARG=a FILE=COLVAR1
+PRINT ARG=b FILE=COLVAR2
 \endverbatim
-
-This command tells plumed to calculate the angle between vector connecting atom 1 to atom 2 and
-the vector connecting atom 3 to atom 4
-\verbatim
-ANGLE ATOMS=1,2,3,4 
-\endverbatim
+(see also \ref PRINT)
 
 */
 //+ENDPLUMEDOC

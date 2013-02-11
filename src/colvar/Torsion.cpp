@@ -41,16 +41,13 @@ orthogonal to an axis.
 
 \par Examples
 
-The torsional angle between atoms 1, 2, 3 and 4 can be calculated using:
-
+This input tells plumed to print the torsional angle between atoms 1, 2, 3 and 4
+on file COLVAR.
 \verbatim
-TORSION ATOMS=1,2,3,4
-\endverbatim
-
-or alternatively using:
-
-\verbatim
-TORSION VECTOR1=2,1 AXIS=2,3 VECTOR2=3,4
+t: TORSION ATOMS=1,2,3,4
+# this is an alternative, equivalent, definition:
+# t: TORSION VECTOR1=2,1 AXIS=2,3 VECTOR2=3,4
+PRINT ARG=t FILE=COLVAR
 \endverbatim
 
 */
