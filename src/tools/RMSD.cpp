@@ -138,21 +138,41 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 		ret=simpleAlignment(align,displace,positions,reference,log,derivatives,squared);
 		break;	
 	case OPTIMAL_FAST:
-		ret=optimalAlignment(align,displace,positions,reference,derivatives,squared); 
+		// this is calling the fastest option:
+		ret=optimalAlignment<false>(align,displace,positions,reference,derivatives,squared); 
 		break;
 	case OPTIMAL:
-		if (myoptimalalignment==NULL){ // do full initialization	
-		//
-		// I create the object only here
-		// since the alignment object require to know both position and reference
-		// and it is possible only at calculate time
-		//
-			myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
-        	}
-		// this changes the P0 according the running frame
-		(*myoptimalalignment).assignP0(positions);
-		ret=(*myoptimalalignment).calculate(squared, derivatives);
-		//(*myoptimalalignment).weightedFindiffTest(false);
+		bool fastversion=true;
+		// this is because fast version only works with align==displace
+		if (align!=displace) fastversion=false;
+		// this is because of an inconsistent usage of weights in different versions:
+		unsigned i;
+		for(i=0;i<align.size();i++){
+		  if(align[i]!=0.0) break;
+		}
+		for(unsigned j=i+1;j<align.size();j++){
+		  if(align[i]!=align[j] && align[j]!=0.0){
+		    fastversion=false;
+		    break;
+		  }
+		}
+		if (fastversion){
+		// this is the fast routine but in the "safe" mode, which gives less numerical error:
+		  ret=optimalAlignment<true>(align,displace,positions,reference,derivatives,squared); 
+		} else {
+			if (myoptimalalignment==NULL){ // do full initialization	
+			//
+			// I create the object only here
+			// since the alignment object require to know both position and reference
+			// and it is possible only at calculate time
+			//
+				myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
+        		}
+			// this changes the P0 according the running frame
+			(*myoptimalalignment).assignP0(positions);
+			ret=(*myoptimalalignment).calculate(squared, derivatives);
+			//(*myoptimalalignment).weightedFindiffTest(false);
+		}
 		break;	
   }	
 
@@ -188,6 +208,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
       return ret;
 }
 
+template <bool safe>
 double RMSD::optimalAlignment(const  std::vector<double>  & align,
                                      const  std::vector<double>  & displace,
                                      const std::vector<Vector> & positions,
@@ -280,20 +301,28 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   rotation[2][0]=2*(+q[0]*q[2]+q[1]*q[3]);
   rotation[2][1]=2*(-q[0]*q[1]+q[2]*q[3]);
 
-  double prefactor=2.0/norm;
+  double invnorm=1.0/norm;
+  double prefactor=2.0*invnorm;
   Vector shift=cpositions-matmul(rotation,creference);
 
-  if(!squared){
-    dist=sqrt(dist);
-    prefactor*=0.5/dist;
-  }
+  if(!squared) prefactor*=0.5/sqrt(dist);
+
+// if "safe", recompute dist here to a better accuracy
+  if(safe) dist=0.0;
+
+// If safe is set to "false", MSD is taken from the eigenvalue of the M matrix
+// If safe is set to "true", MSD is recomputed from the rotational matrix
+// For some reason, this last approach leads to less numerical noise but adds an overhead
 
 // third expensive loop: derivatives
   for(unsigned iat=0;iat<n;iat++){
 // there is no need for derivatives of rotation and shift here as it is by construction zero
 // (similar to Hellman-Feynman forces)
     derivatives[iat]= prefactor*align[iat]*(positions[iat]-shift - matmul(rotation,reference[iat]));
+    if(safe) dist+=align[iat]*invnorm*modulo2(positions[iat]-shift - matmul(rotation,reference[iat]));
   }
+
+  if(!squared) dist=sqrt(dist);
 
   return dist;
 }

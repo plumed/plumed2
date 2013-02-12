@@ -73,6 +73,7 @@ public:
   		                     const std::vector<Vector> & reference ,
   		                     Log* &log,
   		                     std::vector<Vector>  & derivatives, bool squared=false);
+template <bool safe>
   double optimalAlignment(const  std::vector<double>  & align,
                           const  std::vector<double>  & displace,
                           const std::vector<Vector> & positions,
