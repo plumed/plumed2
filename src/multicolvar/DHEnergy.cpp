@@ -65,7 +65,7 @@ void DHEnergy::reserveKeyword( Keywords& keys ){
 
 DHEnergy::DHEnergy( const vesselbase::VesselOptions& da ) :
 FunctionVessel(da),
-df(1,1.0)
+df(2)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_massert( mycolv, "DHENERGY can only be used with MultiColvars and should only be used with DISTANCES");
@@ -100,7 +100,9 @@ bool DHEnergy::calculate(){
 }
 
 void DHEnergy::finish(){
-  setOutputValue( getFinalValue(0) ); mergeFinalDerivatives( df );
+  setOutputValue( getFinalValue(0) ); 
+  df[0]=1.0; df[1]=0.0;
+  mergeFinalDerivatives( df );
 }
 
 } 

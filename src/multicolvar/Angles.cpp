@@ -97,6 +97,7 @@ public:
 /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives();
   bool contributionIsSmall();
+  bool isPossibleToSkip(){ return true; }
   bool isPeriodic(){ return false; }
 };
 

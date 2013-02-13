@@ -186,14 +186,15 @@ bool Region::calculate(){
 void Region::finish(){
   if(isDensity){
      setOutputValue( getFinalValue(1) );
-     std::vector<double> df(2); df[0]=0.0; df[1]=1.0;
+     std::vector<double> df(3); df[0]=0.0; df[1]=1.0; df[2]=0.0;
      mergeFinalDerivatives( df );
   } else {
      double denom=getFinalValue(1);
      setOutputValue( getFinalValue(0) / denom );
-     std::vector<double> df(2); 
+     std::vector<double> df(3); 
      df[0] = 1 / denom; 
      df[1] = - getFinalValue(0) / (denom*denom);
+     df[2] = 0.0;
      mergeFinalDerivatives( df );
   }
 }

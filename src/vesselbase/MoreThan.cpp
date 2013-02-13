@@ -56,7 +56,7 @@ void MoreThan::reserveKeyword( Keywords& keys ){
 
 MoreThan::MoreThan( const VesselOptions& da ) :
 FunctionVessel(da),
-df(1,1.0)
+df(2)
 {
   if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
   std::string errormsg; sf.set( getAllInput(), errormsg );
@@ -81,6 +81,7 @@ bool MoreThan::calculate(){
 
 void MoreThan::finish(){
   setOutputValue( getFinalValue(0) ); 
+  df[0]=1.0; df[1]=0.0;
   mergeFinalDerivatives( df );
 }
 

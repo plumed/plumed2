@@ -136,8 +136,6 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
   for(unsigned i=rank;i<ntasks;i+=stride){
       // Calculate the stuff in the loop for this action
       bool skipme=performTask(i);
-      // By default the weight is 1 
-      if(!thisval_wasset[1]) setElementValue( 1, 1.0 );
 
       // Check for conditions that allow us to just to skip the calculation
       if( skipme ){
@@ -145,6 +143,8 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
          deactivate_task();
          continue;
       }
+      // By default the weight is 1 
+      if(!thisval_wasset[1]) setElementValue( 1, 1.0 );
 
       // Now calculate all the functions
       keep=false;

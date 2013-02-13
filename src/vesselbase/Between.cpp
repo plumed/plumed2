@@ -96,8 +96,9 @@ bool Between::calculate(){
            return addval;
         }
      }
+     return addval2;
   }
-  return addval2;
+  return addval;
 }
 
 void Between::finish(){

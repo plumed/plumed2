@@ -55,7 +55,7 @@ void Min::reserveKeyword( Keywords& keys ){
 
 Min::Min( const VesselOptions& da ) :
 FunctionVessel(da),
-df(1)
+df(2)
 {
   if( getAction()->isPeriodic() ) error("min is not a meaningful option for periodic variables");
   parse("BETA",beta);
@@ -80,7 +80,7 @@ bool Min::calculate(){
 
 void Min::finish(){
   double valin=getFinalValue(0); double dist=beta/std::log( valin );
-  setOutputValue( dist ); df[0]=dist*dist/valin;  
+  setOutputValue( dist ); df[0]=dist*dist/valin; df[1]=0.0;  
   mergeFinalDerivatives( df );
 }
 
