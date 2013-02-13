@@ -26,6 +26,8 @@
 #include "Exception.h"
 #include <cmath>
 #include <iostream>
+#include "Matrix.h"
+#include "Tools.h"
 
 using namespace std;
 namespace PLMD{
@@ -74,11 +76,15 @@ void RMSD::setType(string mytype){
 	alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
 	if (mytype=="SIMPLE"){
 		alignmentMethod=SIMPLE;
-		log->printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n")
-	;}
+		log->printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n");
+	}
 	else if (mytype=="OPTIMAL"){
 		alignmentMethod=OPTIMAL;
 		log->printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n");
+	}
+	else if (mytype=="OPTIMAL-FAST"){
+		alignmentMethod=OPTIMAL_FAST;
+		log->printf("RMSD IS DONE WITH OPTIMAL-FAST ALIGNMENT METHOD (fast version, numerically less stable, only valid with align==displace)\n");
 	}
 	else plumed_merror("unknown RMSD type" + mytype);
 
@@ -98,6 +104,7 @@ string RMSD::getMethod(){
 	switch(alignmentMethod){
 		case SIMPLE: mystring.assign("SIMPLE");break; 
 		case OPTIMAL: mystring.assign("OPTIMAL");break; 
+		case OPTIMAL_FAST: mystring.assign("OPTIMAL-FAST");break; 
 	}	
 	return mystring;
 }
@@ -130,21 +137,42 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 		//	do a simple alignment without rotation 
 		ret=simpleAlignment(align,displace,positions,reference,log,derivatives,squared);
 		break;	
+	case OPTIMAL_FAST:
+		// this is calling the fastest option:
+		ret=optimalAlignment<false>(align,displace,positions,reference,derivatives,squared); 
+		break;
 	case OPTIMAL:
-		if (myoptimalalignment==NULL){ // do full initialization	
+		bool fastversion=true;
+		// this is because fast version only works with align==displace
+		if (align!=displace) fastversion=false;
+		// this is because of an inconsistent usage of weights in different versions:
+		unsigned i;
+		for(i=0;i<align.size();i++){
+		  if(align[i]!=0.0) break;
+		}
+		for(unsigned j=i+1;j<align.size();j++){
+		  if(align[i]!=align[j] && align[j]!=0.0){
+		    fastversion=false;
+		    break;
+		  }
+		}
+		if (fastversion){
+		// this is the fast routine but in the "safe" mode, which gives less numerical error:
+		  ret=optimalAlignment<true>(align,displace,positions,reference,derivatives,squared); 
+		} else {
+			if (myoptimalalignment==NULL){ // do full initialization	
 			//
 			// I create the object only here
 			// since the alignment object require to know both position and reference
 			// and it is possible only at calculate time
 			//
-			myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
-        }
-		// this changes the P0 according the running frame
-		(*myoptimalalignment).assignP0(positions);
-
-		ret=(*myoptimalalignment).calculate(squared, derivatives);
-		//(*myoptimalalignment).weightedFindiffTest(false);
-
+				myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
+        		}
+			// this changes the P0 according the running frame
+			(*myoptimalalignment).assignP0(positions);
+			ret=(*myoptimalalignment).calculate(squared, derivatives);
+			//(*myoptimalalignment).weightedFindiffTest(false);
+		}
 		break;	
   }	
 
@@ -179,4 +207,124 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
       }
       return ret;
 }
+
+template <bool safe>
+double RMSD::optimalAlignment(const  std::vector<double>  & align,
+                                     const  std::vector<double>  & displace,
+                                     const std::vector<Vector> & positions,
+                                     const std::vector<Vector> & reference ,
+                                     std::vector<Vector>  & derivatives, bool squared) {
+  plumed_massert(displace==align,"OPTIMAL_FAST version of RMSD can only be used when displace weights are same as align weights");
+
+  double dist(0);
+  double norm(0);
+  const unsigned n=reference.size();
+// for these tensors I directly accumulate the trace:
+  double sum00w(0);
+  double sum11w(0);
+// for these
+  Tensor sum01w;
+
+  derivatives.resize(n);
+
+  Vector cpositions;
+  Vector creference;
+
+// first expensive loop: compute centers
+  for(unsigned iat=0;iat<n;iat++){
+    double w=align[iat];
+    norm+=w;
+    cpositions+=positions[iat]*w;
+    creference+=reference[iat]*w;
+  }
+  cpositions/=norm;
+  creference/=norm;
+  
+// second expensive loop: compute second moments wrt centers
+  for(unsigned iat=0;iat<n;iat++){
+    double w=align[iat];
+    sum00w+=dotProduct(positions[iat]-cpositions,positions[iat]-cpositions)*w;
+    sum01w+=Tensor(positions[iat]-cpositions,reference[iat]-creference)*w;
+    sum11w+=dotProduct(reference[iat]-creference,reference[iat]-creference)*w;
+  }
+
+  double rr00=sum00w/norm;
+  Tensor rr01=sum01w/norm;
+  double rr11=sum11w/norm;
+
+  Matrix<double> m=Matrix<double>(4,4);
+  m[0][0]=rr00+rr11+2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
+  m[1][1]=rr00+rr11+2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
+  m[2][2]=rr00+rr11+2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
+  m[3][3]=rr00+rr11+2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
+  m[0][1]=2.0*(-rr01[1][2]+rr01[2][1]);
+  m[0][2]=2.0*(+rr01[0][2]-rr01[2][0]);
+  m[0][3]=2.0*(-rr01[0][1]+rr01[1][0]);
+  m[1][2]=2.0*(-rr01[0][1]-rr01[1][0]);
+  m[1][3]=2.0*(-rr01[0][2]-rr01[2][0]);
+  m[2][3]=2.0*(-rr01[1][2]-rr01[2][1]);
+  m[1][0] = m[0][1];
+  m[2][0] = m[0][2];
+  m[2][1] = m[1][2];
+  m[3][0] = m[0][3];
+  m[3][1] = m[1][3];
+  m[3][2] = m[2][3];
+
+  vector<double> eigenvals;
+  Matrix<double> eigenvecs;
+  int diagerror=diagMat(m, eigenvals, eigenvecs );
+
+  if (diagerror!=0){
+    string sdiagerror;
+    Tools::convert(diagerror,sdiagerror);
+    string msg="DIAGONALIZATION FAILED WITH ERROR CODE "+sdiagerror;
+    plumed_merror(msg);
+  }
+
+  dist=eigenvals[0];
+
+  Matrix<double> ddist_dm(4,4);
+
+  Vector4d q(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
+
+// This is the rotation matrix that brings reference to positions
+// i.e. matmul(rotation,reference[iat])+shift is fitted to positions[iat]
+
+  Tensor rotation;
+  rotation[0][0]=q[0]*q[0]+q[1]*q[1]-q[2]*q[2]-q[3]*q[3];
+  rotation[1][1]=q[0]*q[0]-q[1]*q[1]+q[2]*q[2]-q[3]*q[3];
+  rotation[2][2]=q[0]*q[0]-q[1]*q[1]-q[2]*q[2]+q[3]*q[3];
+  rotation[0][1]=2*(+q[0]*q[3]+q[1]*q[2]);
+  rotation[0][2]=2*(-q[0]*q[2]+q[1]*q[3]);
+  rotation[1][2]=2*(+q[0]*q[1]+q[2]*q[3]);
+  rotation[1][0]=2*(-q[0]*q[3]+q[1]*q[2]);
+  rotation[2][0]=2*(+q[0]*q[2]+q[1]*q[3]);
+  rotation[2][1]=2*(-q[0]*q[1]+q[2]*q[3]);
+
+  double invnorm=1.0/norm;
+  double prefactor=2.0*invnorm;
+  Vector shift=cpositions-matmul(rotation,creference);
+
+  if(!squared) prefactor*=0.5/sqrt(dist);
+
+// if "safe", recompute dist here to a better accuracy
+  if(safe) dist=0.0;
+
+// If safe is set to "false", MSD is taken from the eigenvalue of the M matrix
+// If safe is set to "true", MSD is recomputed from the rotational matrix
+// For some reason, this last approach leads to less numerical noise but adds an overhead
+
+// third expensive loop: derivatives
+  for(unsigned iat=0;iat<n;iat++){
+// there is no need for derivatives of rotation and shift here as it is by construction zero
+// (similar to Hellman-Feynman forces)
+    derivatives[iat]= prefactor*align[iat]*(positions[iat]-shift - matmul(rotation,reference[iat]));
+    if(safe) dist+=align[iat]*invnorm*modulo2(positions[iat]-shift - matmul(rotation,reference[iat]));
+  }
+
+  if(!squared) dist=sqrt(dist);
+
+  return dist;
+}
+
 }

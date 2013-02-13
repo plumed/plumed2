@@ -36,7 +36,7 @@ class OptimalAlignment;
 /// A class that implements RMSD calculations
 class RMSD
 {
-  enum AlignmentMethod {SIMPLE, OPTIMAL};
+  enum AlignmentMethod {SIMPLE, OPTIMAL, OPTIMAL_FAST};
   AlignmentMethod alignmentMethod;
   std::vector<Vector> reference;
   std::vector<double> align;
@@ -73,6 +73,12 @@ public:
   		                     const std::vector<Vector> & reference ,
   		                     Log* &log,
   		                     std::vector<Vector>  & derivatives, bool squared=false);
+template <bool safe>
+  double optimalAlignment(const  std::vector<double>  & align,
+                          const  std::vector<double>  & displace,
+                          const std::vector<Vector> & positions,
+                          const std::vector<Vector> & reference ,
+                          std::vector<Vector>  & derivatives, bool squared=false);
 /// Compute rmsd
   double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false);
 };
