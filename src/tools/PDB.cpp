@@ -131,6 +131,16 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
   return file_is_alive;
 }
 
+void PDB::setArgKeyword( const std::string& new_args ){
+  bool replaced=false;
+  for(unsigned i=0;i<remark.size();++i){
+      if( remark[i].find("ARG=")!=std::string::npos){
+          remark[i]=new_args; replaced=true;
+      }
+  }
+  plumed_assert( replaced );
+}
+
 bool PDB::read(const std::string&file,bool naturalUnits,double scale){
   FILE* fp=fopen(file.c_str(),"r");
   if(!fp) return false;

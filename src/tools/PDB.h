@@ -56,6 +56,9 @@ public:
   const std::vector<double>     & getOccupancy()const;
 /// Access to the beta array
   const std::vector<double>     & getBeta()const;
+/// This is used to set the keyword ARG - this is so we
+/// we can use a1.* in the input for reference configurations 
+  void setArgKeyword( const std::string& new_args );
 /// Access to the lines of REMARK 
   const std::vector<std::string>     & getRemark()const;
 /// Access to the indexes

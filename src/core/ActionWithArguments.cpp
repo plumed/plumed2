@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithArguments.h"
 #include "ActionWithValue.h"
+#include "tools/Pdb.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
 
@@ -32,8 +33,10 @@ void ActionWithArguments::registerKeywords(Keywords& keys){
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){
-  vector<string> c; arg.clear(); parseVector(key,c);
+  vector<string> c; arg.clear(); parseVector(key,c); interpretArgumentList(c,arg);
+}
 
+void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg){
   for(unsigned i=0;i<c.size();i++){
       std::size_t dot=c[i].find_first_of('.');
       string a=c[i].substr(0,dot);
@@ -103,6 +106,19 @@ void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Va
            arg.push_back(action->copyOutput(c[i]));
         }
       }
+  }
+}
+
+void ActionWithArguments::expandArgKeywordInPDB( PDB& pdb ){
+  std::vector<std::string> pdb_remark=pdb.getRemark();
+  std::vector<std::string> arg_names;
+  bool found=Tools::parseVector(pdb_remark,"ARG",arg_names);
+  if( found ){ 
+      std::vector<Value*> arg_vals;
+      interpretArgumentList( arg_names, arg_vals );
+      std::string new_args="ARG=" + arg_vals[0]->getName();
+      for(unsigned i=1;i<arg_vals.size();++i) new_args = new_args + "," + arg_vals[i]->getName();
+      pdb.setArgKeyword( new_args );
   }
 }
 

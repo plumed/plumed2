@@ -44,6 +44,9 @@ class ActionWithArguments:
 {
   std::vector<Value*> arguments;
   bool lockRequestArguments;
+protected:
+/// This changes the arg keyword in the pdb file
+  void expandArgKeywordInPDB( PDB& pdb );
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
@@ -76,6 +79,8 @@ public:
   void unlockRequests();
 /// Returns an array of pointers to the arguments
   std::vector<Value*>    & getArguments();
+/// Convert a list of argument names into a list of pointers to the values
+  void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
 };
 
 
