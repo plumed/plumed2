@@ -74,6 +74,14 @@ s(r)=\exp\left(-\frac{ (r - d_0)^2 }{ 2r_0^2 }\right)
 </td> <td>
 {GAUSSIAN R_0=\f$r_0\f$ D_0=\f$d_0\f$} 
 </td> <td> \f$d_0=0.0\f$ </td>
+</tr> <tr> 
+<td> SMAP </td> <td>
+\f$
+s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)\right]^{-b/a}
+\f$
+</td> <td>
+{SMAP R_0=\f$r_0\f$ D_0=\f$d_0\f$ A=\f$a\f$ B=\f$b\f$}
+</td> <td> \f$d_0=0.0\f$ </td>
 </tr> 
 </table>
 
@@ -88,6 +96,8 @@ void SwitchingFunction::registerKeywords( Keywords& keys ){
   keys.add("optional","D_MAX","the value at which the switching function can be assumed equal to zero");
   keys.add("compulsory","NN","6","the value of n in the switching function (only needed for TYPE=RATIONAL)");
   keys.add("compulsory","MM","12","the value of m in the switching function (only needed for TYPE=RATIONAL)");
+  keys.add("compulsory","A","the value of a in the switching funciton (only needed for TYPE=SMAP)");
+  keys.add("compulsory","B","the value of b in the switching funciton (only needed for TYPE=SMAP)"); 
 }
 
 void SwitchingFunction::set(const std::string & definition,std::string& errormsg){
@@ -113,6 +123,12 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     mm=12;
     Tools::parse(data,"NN",nn);
     Tools::parse(data,"MM",mm);
+  } else if(name=="SMAP"){
+    type=smap;
+    Tools::parse(data,"A",a);
+    Tools::parse(data,"B",b);
+    c=pow(2., static_cast<double>(a)/static_cast<double>(b) ) - 1; 
+    d = -static_cast<double>(b) / static_cast<double>(a);
   } else if(name=="EXP") type=exponential;
   else if(name=="GAUSSIAN") type=gaussian;
   else errormsg="cannot understand switching function type '"+name+"'";
@@ -131,12 +147,16 @@ std::string SwitchingFunction::description() const {
      ostr<<"exponential";
   } else if(type==gaussian){
      ostr<<"gaussian";
+  } else if(type==smap){
+     ostr<<"smap";
   } else{
      plumed_merror("Unknown switching function type");
   }
   ostr<<" swiching function with parameters d0="<<d0;
   if(type==spline){
     ostr<<" nn="<<nn<<" mm="<<mm;
+  } else if(type==smap){
+    ostr<<" a="<<a<<" b="<<b;
   }
   return ostr.str(); 
 }
@@ -152,7 +172,11 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
      result=0.;
      dfunc=0.0;
   }else{
-    if(type==spline){
+    if(type==smap){
+      double sx=c*pow( rdist, a ); 
+      result=pow( 1.0 + sx, d ); 
+      dfunc=-b*sx/rdist*result/(1.0+sx); 
+    } else if(type==spline){
       if(rdist>(1.-100.0*epsilon) && rdist<(1+100.0*epsilon)){
          result=nn/mm;
          dfunc=0.5*nn*(nn-mm)/mm;
@@ -214,22 +238,6 @@ double SwitchingFunction::get_r0() const {
 
 double SwitchingFunction::get_d0() const {
   return d0;
-}
-
-void SwitchingFunction::printKeywords( Log& log ) const {
-  Keywords skeys;
-  skeys.add("compulsory","R_0","the value of R_0 in the switching function");
-  skeys.add("compulsory","D_0","0.0","the value of D_0 in the switching function");
-  skeys.add("optional","D_MAX","the value at which the switching function can be assumed equal to zero");
-  if(type==spline){
-     skeys.add("compulsory","NN","6","the value of n in the switching function");
-     skeys.add("compulsory","MM","12","the value of m in the switching function");
-  } else if(type==exponential){
-  } else if(type==gaussian){
-  } else {
-     return;
-  } 
-  skeys.print(log);
 }
 
 }
