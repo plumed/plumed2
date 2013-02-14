@@ -1,0 +1,13 @@
+/**
+
+@page tutorials How-tos
+
+The following pages describe how to perform a variety of tasks using plumed 2.0
+
+@TUTORIALS@
+
+In addition, the following websites contain resources that might be helpful  
+
+@WEBSITES@
+
+*/

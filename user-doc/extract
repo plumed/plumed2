@@ -83,6 +83,26 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"; dfile="automatic/DICTIONARY1.list";
 sort automatic/GLOSSARY1.list > automatic/GLOSSARY.list 
 sort automatic/DICTIONARY1.list > automatic/DICTIONARY.list
 
+# Generate links to tutorial pages
+for file in ./tutorials/*.txt ; do
+
+    link=`grep link: $file | sed -e 's/link://'`
+    describe=`grep description: $file | sed -e 's/description://'`
+
+    echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/TUTORIALS.list  
+
+done
+
+# Generate links to websites
+for file in ./tutorials/*.site; do
+
+   link=`grep link: $file | sed -e 's/link://'`
+   describe=`grep description: $file | sed -e 's/description://'`
+
+   echo "<tr> <td> $link </td> <td> $describe </td> </tr>" >> automatic/WEBSITES.list
+
+done
+
 # Generate all the documentation from keywords
 source ../sourceme.sh
 for file in automatic/*.tmp
@@ -113,7 +133,7 @@ do
     } > automatic/$flag.txt
 done
 
-for file in Bias Colvar Functions Installation Intro Analysis Glossary
+for file in Bias Colvar Functions Installation Intro Analysis Glossary Tutorials
 do
 
 cat $file.txt |
@@ -149,6 +169,16 @@ cat $file.txt |
   then
     echo "<table align=center frame=void width=95%% cellpadding=5%%>"
     cat automatic/DICTIONARY.list
+    echo "</table>"
+  elif [ "$LINE" = "@TUTORIALS@" ]
+  then
+    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+    cat automatic/TUTORIALS.list
+    echo "</table>"
+  elif [ "$LINE" = "@WEBSITES@" ]
+  then
+    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+    cat automatic/WEBSITES.list
     echo "</table>"
   elif [ "$LINE" = "@FUNCTION@" ]
   then

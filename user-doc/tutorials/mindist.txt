@@ -1,0 +1,50 @@
+/**
+\page mindist Calculating a minimum distance 
+
+To calculate and print the minimum distance between two groups of atoms you use the following commands
+
+\verbatim
+d1: DISTANCES GROUPA=1-10 GROUPB=11-20 MIN={BETA=500.} 
+PRINT ARG=d1.min FILE=colvar STRIDE=10
+\endverbatim
+(see \ref DISTANCES and \ref PRINT)
+
+In order to ensure differentiability the minimum is calculated using the following function:
+
+\f[
+s = \frac{\beta}{ \log \sum_i \exp\left( \frac{\beta}{s_i} \right) }
+\f]
+
+where \f$\beta\f$ is a user specified parameter.
+
+This input is used rather than a separate MINDIST colvar so that the same routine and the same input style can be 
+used to calculate minimum coordinatetion numbers (see \ref COORDINATIONNUMBER), minimum 
+angles (see \ref ANGLES) and many other variables.  
+
+This new way of calculating mindist is part of plumed 2's multicolvar functionality.  These special actions
+allow you to calculate multiple functions of a distribution of simple collective variables.  As an example you 
+can calculate the number of distances less than 1.0, the minimum distance, the number of distances more than
+2.0 and the number of distances between 1.0 and 2.0 by using the following command:
+
+\verbatim
+DISTANCES ...
+ GROUPA=1-10 GROUPB=11-20 
+ LESS_THAN={RATIONAL R_0=1.0} 
+ MORE_THAN={RATIONAL R_0=2.0} 
+ BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0} 
+ MIN={BETA=500.}
+... DISTANCES
+PRINT ARG=d1.less_than,d1.more_than,d1.between,d1.min FILE=colvar STRIDE=10
+\endverbatim
+(see \ref DISTANCES and \ref PRINT)
+
+A calculation performed this way is fast because the expensive part of the calculation - the calculation of all the distances - is only 
+done once per step.  Furthermore, it can be made faster by using the TOL keyword to discard those distance that make only a small contributions 
+to the final values together with the NL_STRIDE keyword, which ensures that the distances that make only a small contribution to the final values aren't
+calculated at every step.
+
+*/
+
+link: @subpage mindist
+
+description: This tutorial explains how to calculate the minimum distance between groups of atoms and serves as an introduction to MultiColvars

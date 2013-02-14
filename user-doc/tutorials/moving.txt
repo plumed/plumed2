@@ -1,23 +1,21 @@
 /**
-\page Transition Plumed 1 to Plumed 2: quick transition guide
+\page moving Moving from Plumed 1 to Plumed 2
 
-We here provide a sort of quick reference for Plumed 1 users so as to
-translate their plumed.dat files into the new Plumed 2 syntax.
-
-\section Groups
-
-In Plumed 1 groups were used, depending on the specific collective variable, for two tasks:
-- To provide centers of masses to collective variables such as distances, angles, etc. This can
-  be done now defining virtual atoms with \ref CENTER or \ref COM
+In Plumed 1 groups (lists) were used for two tasks:
+- To provide centers of masses to collective variables such as distances, angles, etc. This is 
+  now done by defining virtual atoms using either \ref CENTER or \ref COM
 - To provide lists of atoms to collective variables such as coordination, gyration radius, etc.
-  This can be done now directly in the line which defines the collective variable. To increase
-  readability of the plumed.dat file, it is possible to define \ref GROUP.
+  This is now done directly in the line that defines the collective variable. 
+
+If you would still like to use groups you can use the \ref GROUP commands.  Whenever the label
+for a \ref GROUP action appears in the input it is replaced by the list of atoms that were 
+specified in the \ref GROUP.
 
 \section Directives
 
-For all the documented directives of Plumed 1 you find hiere the corresponding
-action in Plumed 2. Please take into consideration that syntax is not totally equivalent,
-so taht you have to read the documentation of the Plumed 2 Action.
+What follows is a list of all the documented directives of Plumed 1 together with their 
+plumed 2 equivalents.  Be aware that the input syntaxes for these directives are not totally 
+equivalent.  You should read the documentation for the Plumed 2 Action.
 
 <TABLE>
 <TR> 
@@ -115,7 +113,7 @@ so taht you have to read the documentation of the Plumed 2 Action.
 </TR>
 <TR>
   <TD> MINDIST </TD>
-  <TD> \ref DISTANCES with keyword MIN </TD>
+  <TD> \ref DISTANCES with keyword MIN (See also \ref mindist) </TD>
 </TR>
 <TR>
   <TD> ANGLE </TD>
@@ -225,3 +223,6 @@ so taht you have to read the documentation of the Plumed 2 Action.
 
 */
 
+link: @subpage moving
+
+description: This tutorial explains how plumed 1 input files can be translated into the new plumed 2 syntax.
