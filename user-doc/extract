@@ -32,7 +32,7 @@ done
 
 # Generate all the documentation pages from comments
 cat ../*/*/*cpp |
-awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
+awk 'BEGIN{gfile="automatic/GLOSSARY1.list"; dfile="automatic/DICTIONARY1.list"; }{
   if($1=="//+ENDPLUMEDOC"){
      inside=0;
      print "*/" >output
@@ -40,6 +40,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
   if(inside>=2 && NF==0){
      print "</td> </tr>" > lfile
      if(inside==2){ printf "</td> </tr>\n" > gfile; }
+     if(inside==3){ printf "</td> </tr>\n" > dfile; }
      inside=1
   }
   if(inside==1 && $1!="/*" && $1!="*/") print $0 >output
@@ -47,6 +48,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
      print $0 > output
      print $0 > lfile
      if(inside==2){ printf "%s", $0 > gfile; }
+     if(inside==3){ printf "%s", $0 > dfile; }
   }
   if($1=="//+PLUMEDOC"){
     if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
@@ -64,6 +66,9 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
       inside=2;
     } else if ( $2=="INTERNAL" ){
       if(output!="")close(output);
+
+      printf "<tr> <td width=%s> \\subpage %s </td><td> %s </td><td>","5%",$3, $2 > dfile
+
       output="automatic/"$3".txt";
       lfile="automatic/"$3".txt";
       print "/**" > output
@@ -76,6 +81,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"}{
 
 # Now put the glossary in alphabetical order
 sort automatic/GLOSSARY1.list > automatic/GLOSSARY.list 
+sort automatic/DICTIONARY1.list > automatic/DICTIONARY.list
 
 # Generate all the documentation from keywords
 source ../sourceme.sh
@@ -138,6 +144,11 @@ cat $file.txt |
   then
     echo "<table align=center frame=void width=95%% cellpadding=5%%>"
     cat automatic/GLOSSARY.list
+    echo "</table>"
+  elif [ "$LINE" = "@DICTIONARY@" ]
+  then
+    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+    cat automatic/DICTIONARY.list
     echo "</table>"
   elif [ "$LINE" = "@FUNCTION@" ]
   then

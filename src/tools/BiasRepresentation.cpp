@@ -28,6 +28,8 @@ namespace PLMD {
 
 //+PLUMEDOC INTERNAL BiasRepresentation 
 /*
+An internal tool in plumed that is used to represent a bias
+
 */
 //+ENDPLUMEDOC
 

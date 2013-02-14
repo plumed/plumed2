@@ -27,6 +27,8 @@ namespace PLMD {
 
 //+PLUMEDOC INTERNAL kernelfunctions
 /*
+Functions that are used to construct histograms
+
 Constructing histograms is something you learnt to do relatively early in life. You perform an experiment a number of times, 
 count the number of times each result comes up and then draw a bar graph that describes how often each of the results came up.  
 This only works when there are a finite number of possible results.  If the result a number between 0 and 1 the bar chart is 

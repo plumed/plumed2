@@ -36,6 +36,9 @@ namespace function{
 /*
 Calculate a combination of variables using a matheval expression.
 
+If you are using a time dependent expression you can get the time using
+\subpage TIME   
+
 \par Examples
 The following input tells plumed to print the angle between vectors
 identified by atoms 1,2 and atoms 2,3

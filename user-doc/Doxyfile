@@ -1256,6 +1256,10 @@ DOT_CLEANUP            = YES
 
 CITE_BIB_FILES         = bibliography.bib
 
+# Needed to have custom tabs
+
+LAYOUT_FILE            = PlumedLayout.xml
+
 #---------------------------------------------------------------------------
 # Configuration::additions related to the search engine   
 #---------------------------------------------------------------------------

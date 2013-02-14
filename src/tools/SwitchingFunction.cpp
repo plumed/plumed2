@@ -30,6 +30,7 @@ namespace PLMD{
 
 //+PLUMEDOC INTERNAL switchingfunction 
 /*
+Functions that measure whether values are less than a certain quantity.
 
 Switching functions \f$s(r)\f$ take a minimum of one input parameter \f$d_0\f$.
 For \f$r \le d_0 \quad s(r)=1.0\f$ while for \f$r > d_0\f$ the function decays smoothly to 0.

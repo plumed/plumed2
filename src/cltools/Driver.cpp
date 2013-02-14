@@ -42,6 +42,10 @@ driver is a tool that allows one to to use plumed to post-process an existing tr
 
 The input to driver is specified using the command line arguments described below.
 
+In addition, you can use the special \subpage READ command inside your plumed input
+to read in colvar files that were generated during your MD simulation.  The values
+read in can then be treated like calculated colvars. 
+
 \par Examples
 
 The following command tells plumed to postprocess the trajectory contained in trajectory.xyz

@@ -7,8 +7,8 @@ us to understand anything by monitoring the atom postions directly.  Consquentia
 we introduce Collective variables (CVs) that describe the chemical processes we are 
 interested in and monitor these simpler quantities instead.  These CVs are used in all of the methods 
 implemented in plumed - they're values can be monitored using \ref PRINT, \ref Function of them can be calculated
-or they can be analyzed or biased using the \ref Methods implemented in plumed.  Before doing any of these things
-however we first have to inform plumed how to calculate them.    
+or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in plumed.  
+Before doing any of these things however we first have to inform plumed how to calculate them.    
  
 \section atomSpecs Specifying Atoms
 

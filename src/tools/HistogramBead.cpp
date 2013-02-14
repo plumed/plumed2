@@ -29,6 +29,8 @@ namespace PLMD{
 
 //+PLUMEDOC INTERNAL histogrambead 
 /*
+A function that can be used to calculate whether quantities are between fixed upper and lower bounds.
+
 If we have multiple instances of a variable we can estimate the probability distribution (pdf)
 for that variable using a process called kernel density estimation:
 

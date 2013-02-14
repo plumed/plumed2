@@ -32,6 +32,8 @@ namespace analysis {
 
 //+PLUMEDOC INTERNAL reweighting
 /*
+Calculate free energies from a biassed/higher temperature trajectory. 
+
 We can use our knowledge of the Boltzmann distribution in the cannonical ensemble to reweight the data
 contained in trajectories.  Using this procedure we can take trajectory at temperature \f$T_1\f$ and use it to 
 extract probabilities at a different temperature, \f$T_2\f$, using:
