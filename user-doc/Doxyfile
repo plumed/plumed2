@@ -1262,6 +1262,10 @@ CITE_BIB_FILES         = bibliography.bib
 
 LAYOUT_FILE            = PlumedLayout.xml
 
+# More beautiful equations
+
+USE_MATHJAX            = YES
+
 #---------------------------------------------------------------------------
 # Configuration::additions related to the search engine   
 #---------------------------------------------------------------------------
