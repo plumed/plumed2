@@ -44,7 +44,6 @@ void PathMSDBase::registerKeywords(Keywords& keys){
 
 PathMSDBase::PathMSDBase(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-pbc(true),
 neigh_size(-1),
 neigh_stride(-1.),
 nframes(0)

@@ -93,7 +93,6 @@ private:
   std::string volname;
   double sigma;
   bool isDensity;
-  double weight;
   Vector wdf;
   ActionVolume* myvol;
   MultiColvar* mycolv;

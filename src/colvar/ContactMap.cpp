@@ -56,7 +56,6 @@ private:
   bool pbc, dosum;
   NeighborList *nl;
   std::vector<SwitchingFunction> sfs;
-  bool reduceListAtNextStep;
 public:
   static void registerKeywords( Keywords& keys );
   ContactMap(const ActionOptions&);
@@ -85,8 +84,7 @@ void ContactMap::registerKeywords( Keywords& keys ){
 ContactMap::ContactMap(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true),
-dosum(false),
-reduceListAtNextStep(false)
+dosum(false)
 {
   parseFlag("SUM",dosum);
   bool nopbc=!pbc;

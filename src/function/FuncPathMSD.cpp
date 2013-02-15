@@ -62,7 +62,6 @@ PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
    
 class FuncPathMSD : public Function {
   double lambda;
-  bool pbc;
   int neigh_size;
   double neigh_stride;
   vector< pair<Value *,double> > neighpair;
@@ -124,13 +123,9 @@ void FuncPathMSD::registerKeywords(Keywords& keys){
 FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
 Action(ao),
 Function(ao),
-pbc(true),
 neigh_size(-1),
 neigh_stride(-1.)
 {
-//  bool nopbc=!pbc;
-//  parseFlag("NOPBC",nopbc);
-//  pbc=!nopbc;
 
   parse("LAMBDA",lambda);
   parse("NEIGH_SIZE",neigh_size);

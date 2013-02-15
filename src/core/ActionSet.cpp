@@ -26,6 +26,7 @@ namespace PLMD{
 
 ActionSet::ActionSet(PlumedMain&p):
 plumed(p){
+  (void) plumed; // to suppress warning about "unused plumed"
 }
 
 ActionSet::~ActionSet()

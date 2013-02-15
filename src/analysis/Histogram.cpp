@@ -91,7 +91,6 @@ private:
   std::vector<std::string> gmin, gmax; 
   std::vector<double> point, bw;
   std::vector<unsigned> gbin;
-  unsigned nfiles;
   std::string gridfname;
   std::string kerneltype; 
 public:
@@ -119,8 +118,7 @@ gmin(getNumberOfArguments()),
 gmax(getNumberOfArguments()),
 point(getNumberOfArguments()),
 bw(getNumberOfArguments()),
-gbin(getNumberOfArguments()),
-nfiles(0)
+gbin(getNumberOfArguments())
 {
   // Read stuff for Grid
   parseVector("GRID_MIN",gmin);

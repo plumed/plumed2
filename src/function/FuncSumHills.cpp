@@ -166,8 +166,7 @@ class FuncSumHills :
 {
   vector<string> hillsFiles,histoFiles; 
   vector<string> proj; 
-  unsigned highdim, lowdim;
-  int initstride,stride;
+  int initstride;
   bool iscltool,integratehills,integratehisto,parallelread;
   bool negativebias;
   double beta;
@@ -208,7 +207,6 @@ FuncSumHills::FuncSumHills(const ActionOptions&ao):
 Action(ao),
 Function(ao),
 initstride(-1),
-stride(-1),
 iscltool(false),
 integratehills(false),
 integratehisto(false),

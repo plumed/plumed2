@@ -72,7 +72,6 @@ PRINT ARG=pw,ppww.1,ppww.2
 class Piecewise :
   public Function
 {
-  bool normalize;
   std::vector<std::pair<double,double> > points;
 public:
   Piecewise(const ActionOptions&);
@@ -92,8 +91,7 @@ void Piecewise::registerKeywords(Keywords& keys){
 
 Piecewise::Piecewise(const ActionOptions&ao):
 Action(ao),
-Function(ao),
-normalize(false)
+Function(ao)
 {
   for(int i=0;;i++){
     std::vector<double> pp;

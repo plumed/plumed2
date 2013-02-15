@@ -49,7 +49,6 @@ PRINT ARG=ene
 
 
 class Energy : public Colvar {
-  bool components;
 
 public:
   Energy(const ActionOptions&);
@@ -66,8 +65,7 @@ using namespace std;
 PLUMED_REGISTER_ACTION(Energy,"ENERGY")
 
 Energy::Energy(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-components(false)
+PLUMED_COLVAR_INIT(ao)
 {
 //  if(checkNumericalDerivatives())
 //    error("Cannot use NUMERICAL_DERIVATIVES with ENERGY");

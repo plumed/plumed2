@@ -48,7 +48,6 @@ Vessel(da)
 }
 
 std::string FunctionVessel::description(){
-  std::string nn; int numval = getNumericalLabel();
   return "value " + getAction()->getLabel() + "." + getLabel() + " contains " + function_description();
 }
 

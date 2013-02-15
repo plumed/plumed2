@@ -73,10 +73,6 @@ class BiasRepresentation {
     vector<double> histosigma;	
     Grid* BiasGrid_;
     Communicator& mycomm;
-    // if this is set then you rescale the hills in read and write phase 
-    // so to have free energy/bias duality
-    bool welltemp_;
-    double biasf_;
 };
 
 }
