@@ -243,10 +243,9 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   double dist(0);
   double norm(0);
   const unsigned n=reference.size();
-// for these tensors I directly accumulate the trace:
+// This is the trace of positions*positions + reference*reference
   double sum00w(0);
-  double sum11w(0);
-// for these
+// This is positions*reference
   Tensor sum01w;
 
   derivatives.resize(n);
@@ -261,26 +260,27 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     cpositions+=positions[iat]*w;
     creference+=reference[iat]*w;
   }
-  cpositions/=norm;
-  creference/=norm;
+  double invnorm=1.0/norm;
+
+  cpositions*=invnorm;
+  creference*=invnorm;
   
 // second expensive loop: compute second moments wrt centers
   for(unsigned iat=0;iat<n;iat++){
     double w=align[iat];
-    sum00w+=dotProduct(positions[iat]-cpositions,positions[iat]-cpositions)*w;
+    sum00w+=(dotProduct(positions[iat]-cpositions,positions[iat]-cpositions)
+            +dotProduct(reference[iat]-creference,reference[iat]-creference))*w;
     sum01w+=Tensor(positions[iat]-cpositions,reference[iat]-creference)*w;
-    sum11w+=dotProduct(reference[iat]-creference,reference[iat]-creference)*w;
   }
 
-  double rr00=sum00w/norm;
-  Tensor rr01=sum01w/norm;
-  double rr11=sum11w/norm;
+  double rr00=sum00w*invnorm;
+  Tensor rr01=sum01w*invnorm;
 
   Matrix<double> m=Matrix<double>(4,4);
-  m[0][0]=rr00+rr11+2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
-  m[1][1]=rr00+rr11+2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
-  m[2][2]=rr00+rr11+2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
-  m[3][3]=rr00+rr11+2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
+  m[0][0]=rr00+2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
+  m[1][1]=rr00+2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
+  m[2][2]=rr00+2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
+  m[3][3]=rr00+2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
   m[0][1]=2.0*(-rr01[1][2]+rr01[2][1]);
   m[0][2]=2.0*(+rr01[0][2]-rr01[2][0]);
   m[0][3]=2.0*(-rr01[0][1]+rr01[1][0]);
@@ -325,7 +325,6 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   rotation[2][0]=2*(+q[0]*q[2]+q[1]*q[3]);
   rotation[2][1]=2*(-q[0]*q[1]+q[2]*q[3]);
 
-  double invnorm=1.0/norm;
   double prefactor=2.0*invnorm;
   Vector shift=cpositions-matmul(rotation,creference);
 
@@ -342,8 +341,9 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   for(unsigned iat=0;iat<n;iat++){
 // there is no need for derivatives of rotation and shift here as it is by construction zero
 // (similar to Hellman-Feynman forces)
-    derivatives[iat]= prefactor*align[iat]*(positions[iat]-shift - matmul(rotation,reference[iat]));
-    if(safe) dist+=align[iat]*invnorm*modulo2(positions[iat]-shift - matmul(rotation,reference[iat]));
+    Vector d(positions[iat]-shift - matmul(rotation,reference[iat]));
+    derivatives[iat]= prefactor*align[iat]*d;
+    if(safe) dist+=align[iat]*invnorm*modulo2(d);
   }
 
   if(!squared) dist=sqrt(dist);
