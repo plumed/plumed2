@@ -326,7 +326,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
 }
 
 void MultiColvar::prepare(){
-  bool updatetime=false;
+  updatetime=false;
   if( reduceAtNextStep ){
       colvar_list.mpi_gatherActiveMembers( comm );
       mpi_gatherActiveMembers( comm, colvar_atoms ); 
@@ -387,7 +387,8 @@ bool MultiColvar::performTask( const unsigned& j ){
   return false;
 }
 
-Vector MultiColvar::retrieveCentralAtomPos(){
+Vector MultiColvar::retrieveCentralAtomPos( const bool& frac ){
+  centralAtomDerivativesAreInFractional=frac; 
   ibox=getPbc().getInvBox().transpose();
   for(unsigned i=0;i<central_derivs.size();++i) central_derivs[i].zero();
   return getPbc().realToScaled( getCentralAtom() );
@@ -470,5 +471,23 @@ void MultiColvar::apply(){
     }
   }
 }
+
+StoreCentralAtomsVessel* MultiColvar::getCentralAtoms(){
+  // Look to see if vectors have already been created
+  StoreCentralAtomsVessel* mycatoms;
+  for(unsigned i=0;i<getNumberOfVessels();++i){
+     mycatoms=dynamic_cast<StoreCentralAtomsVessel*>( getPntrToVessel(i) );
+     if( mycatoms ) return mycatoms;
+  }
+
+  // Create the vessel
+  std::string input; addVessel( "CATOM_STASH", input );
+  resizeFunctions(); // This makes sure resizing of vessels is done
+
+  // And create a pointer to it here
+  mycatoms = dynamic_cast<StoreCentralAtomsVessel*>( getPntrToVessel( getNumberOfVessels() - 1 ) );
+  return mycatoms;
+}
+
 }
 }

@@ -85,8 +85,6 @@ protected:
   void runAllTasks( const unsigned& ntasks );
 /// Resize all the functions when the number of derivatives change
   void resizeFunctions();
-///  Add some derivative of the quantity in the sum wrt to a numbered element
-  void addElementDerivative( const unsigned&, const double& );
 /// Set the derivative of the jth element wrt to a numbered element
   void setElementDerivative( const unsigned&, const double& );
 public:
@@ -116,6 +114,8 @@ public:
   virtual bool performTask( const unsigned& j )=0;
 /// Return a pointer to the field 
   Vessel* getVessel( const std::string& name );
+///  Add some derivative of the quantity in the sum wrt to a numbered element
+  void addElementDerivative( const unsigned&, const double& );
 /// Set the value of the element
   void setElementValue( const unsigned& , const double& );
 /// Get the value of this element
@@ -183,7 +183,8 @@ void ActionWithVessel::addElementDerivative( const unsigned& ider, const double&
 inline
 void ActionWithVessel::setElementDerivative( const unsigned& ider, const double& der ){
 #ifndef NDEBUG
-  if(ider==1) plumed_dbg_assert( weightHasDerivatives );
+  unsigned ndertmp=getNumberOfDerivatives();
+  if( ider>=ndertmp && ider<2*ndertmp ) plumed_dbg_assert( weightHasDerivatives );
 #endif
   plumed_dbg_assert( ider<derivatives.size() );
   derivatives[ider] = der;

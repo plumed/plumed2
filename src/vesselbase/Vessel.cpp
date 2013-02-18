@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "ActionWithVessel.h"
 #include "Vessel.h"
-#include "ShortcutVessel.h"
 #include "tools/Exception.h"
 #include "tools/Communicator.h"
 #include "tools/Log.h"
@@ -116,8 +115,8 @@ void Vessel::checkRead(){
     error(msg);
   }
   finished_read=true;
-  ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(this);
-  if(!sv) log.printf("  %s\n", description().c_str() );
+  std::string describe=description();
+  if( describe.length()>0 ) log.printf("  %s\n", describe.c_str() );
 }
 
 void Vessel::error( const std::string& msg ){

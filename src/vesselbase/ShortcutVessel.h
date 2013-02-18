@@ -37,7 +37,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   ShortcutVessel( const VesselOptions& );
-  std::string description(){ plumed_error(); }
+  std::string description(){ return ""; }
   unsigned getNumberOfTerms(){ plumed_error(); return 0; }
   void resize(){ plumed_error(); }
   bool calculate(){ plumed_error(); }

@@ -135,7 +135,6 @@ not_in(false)
   if( volname.substr(0,1)=="!" ){ volname=volname.substr(1); not_in=true; }
   myvol = (mycolv->plumed).getActionSet().selectWithLabel<ActionVolume*>(volname);
   if(!myvol){ error( "in REGION " + volname + " is not a valid volume element"); return; }
-  mycolv->centralAtomDerivativesAreInFractional=myvol->derivativesOfFractionalCoordinates();
   mycolv->addDependency( myvol );
 
   parse("SIGMA",sigma); myvol->setSigma( sigma );
@@ -152,7 +151,7 @@ std::string Region::function_description(){
 }
 
 bool Region::calculate(){
-  Vector catom_pos=mycolv->retrieveCentralAtomPos();
+  Vector catom_pos=mycolv->retrieveCentralAtomPos( myvol->derivativesOfFractionalCoordinates() );
 
   double weight; Vector wdf;
   weight=myvol->calculateNumberInside( catom_pos, bead, wdf );

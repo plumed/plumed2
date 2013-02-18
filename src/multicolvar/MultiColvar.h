@@ -26,6 +26,7 @@
 #include "core/ActionWithValue.h"
 #include "tools/DynamicList.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "StoreCentralAtomsVessel.h"
 #include <vector>
 
 #define PLUMED_MULTICOLVAR_INIT(ao) Action(ao),MultiColvar(ao)
@@ -45,6 +46,7 @@ class MultiColvar :
   public vesselbase::ActionWithVessel
   {
 friend class Region;
+friend class StoreCentralAtomsVessel;
 private:
   bool usepbc;
   bool readatoms;
@@ -77,6 +79,8 @@ private:
 /// Update the atoms request
   void requestAtoms();
 protected:
+/// Are we on an update step
+  bool updatetime;
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
 /// Read in the atoms that form the backbone of a polymeric chain
@@ -118,7 +122,7 @@ public:
 /// Calculate the multicolvar
   void calculate();
 /// Prepare for the calculation
-  void prepare();
+  virtual void prepare();
 /// Apply the forces on the values
   void apply();
 /// Get the number of derivatives for this action
@@ -128,7 +132,7 @@ public:
 /// Return the number of derivatives for a given colvar
   unsigned getNumberOfDerivatives( const unsigned& j );
 /// Retrieve the position of the central atom
-  Vector retrieveCentralAtomPos();
+  Vector retrieveCentralAtomPos( const bool& frac );
 /// Make sure we calculate the position of the central atom
   void useCentralAtom();
 /// Merge the derivatives 
@@ -159,6 +163,9 @@ public:
   double getCharge(unsigned) const ;
 /// Get the absolute index of atom iatom
   AtomNumber getAbsoluteIndex(unsigned) const ;
+/// Return a pointer to the vessel that stores the positions of 
+/// all the central atoms
+  StoreCentralAtomsVessel* getCentralAtoms();
 };
 
 inline

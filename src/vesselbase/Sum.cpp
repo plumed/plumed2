@@ -49,7 +49,7 @@ void Sum::reserveKeyword( Keywords& keys ){
 
 Sum::Sum( const VesselOptions& da ) :
 FunctionVessel(da),
-df(1,1.0)
+df(2)
 {
 }
 
@@ -69,7 +69,9 @@ bool Sum::calculate(){
 }
 
 void Sum::finish(){
-  setOutputValue( getFinalValue(0) ); mergeFinalDerivatives( df );
+  setOutputValue( getFinalValue(0) ); 
+  df[0]=1.0; df[1]=0.0;
+  mergeFinalDerivatives( df );
 }
 
 

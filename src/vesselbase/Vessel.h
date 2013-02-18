@@ -145,6 +145,8 @@ public:
   std::string getLabel() const ;
 /// Check that readin was fine
   void checkRead();
+/// Set all the buffer elements to zero
+  void zero();
 /// Add something to the ith element in the buffer
   void addToBufferElement( const unsigned& i, const double& val);
 /// Return a description of the vessel contents
@@ -228,6 +230,11 @@ double Vessel::getTolerance() const {
 inline
 ActionWithVessel* Vessel::getAction(){
   return action;
+}
+
+inline
+void Vessel::zero(){
+  for(unsigned i=0;i<bufsize;++i) setBufferElement( i, 0.0 );
 }
 
 inline
