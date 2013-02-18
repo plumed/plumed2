@@ -139,26 +139,15 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 		break;	
 	case OPTIMAL_FAST:
 		// this is calling the fastest option:
-		ret=optimalAlignment<false>(align,displace,positions,reference,derivatives,squared); 
+                if(align==displace) ret=optimalAlignment<false,true>(align,displace,positions,reference,derivatives,squared); 
+                else                ret=optimalAlignment<false,false>(align,displace,positions,reference,derivatives,squared); 
 		break;
 	case OPTIMAL:
 		bool fastversion=true;
-		// this is because fast version only works with align==displace
-		if (align!=displace) fastversion=false;
-		// this is because of an inconsistent usage of weights in different versions:
-		unsigned i;
-		for(i=0;i<align.size();i++){
-		  if(align[i]!=0.0) break;
-		}
-		for(unsigned j=i+1;j<align.size();j++){
-		  if(align[i]!=align[j] && align[j]!=0.0){
-		    fastversion=false;
-		    break;
-		  }
-		}
 		if (fastversion){
 		// this is the fast routine but in the "safe" mode, which gives less numerical error:
-		  ret=optimalAlignment<true>(align,displace,positions,reference,derivatives,squared); 
+		  if(align==displace) ret=optimalAlignment<true,true>(align,displace,positions,reference,derivatives,squared); 
+		  else ret=optimalAlignment<true,false>(align,displace,positions,reference,derivatives,squared); 
 		} else {
 			if (myoptimalalignment==NULL){ // do full initialization	
 			//
@@ -232,19 +221,19 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
       return dist;
 }
 
-template <bool safe>
+template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment(const  std::vector<double>  & align,
                                      const  std::vector<double>  & displace,
                                      const std::vector<Vector> & positions,
                                      const std::vector<Vector> & reference ,
                                      std::vector<Vector>  & derivatives, bool squared) {
-  plumed_massert(displace==align,"OPTIMAL_FAST version of RMSD can only be used when displace weights are same as align weights");
-
   double dist(0);
   double norm(0);
+  double dnorm(0);
   const unsigned n=reference.size();
 // This is the trace of positions*positions + reference*reference
   double sum00w(0);
+  double sum11w(0);
 // This is positions*reference
   Tensor sum01w;
 
@@ -257,10 +246,13 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   for(unsigned iat=0;iat<n;iat++){
     double w=align[iat];
     norm+=w;
+    if(!alEqDis) dnorm+=displace[iat];
     cpositions+=positions[iat]*w;
     creference+=reference[iat]*w;
   }
   double invnorm=1.0/norm;
+  double invdnorm;
+  if(!alEqDis) invdnorm=1.0/dnorm;
 
   cpositions*=invnorm;
   creference*=invnorm;
@@ -268,19 +260,20 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 // second expensive loop: compute second moments wrt centers
   for(unsigned iat=0;iat<n;iat++){
     double w=align[iat];
-    sum00w+=(dotProduct(positions[iat]-cpositions,positions[iat]-cpositions)
-            +dotProduct(reference[iat]-creference,reference[iat]-creference))*w;
+    sum00w+=dotProduct(positions[iat]-cpositions,positions[iat]-cpositions)*w;
+    sum11w+=dotProduct(reference[iat]-creference,reference[iat]-creference)*w;
     sum01w+=Tensor(positions[iat]-cpositions,reference[iat]-creference)*w;
   }
 
   double rr00=sum00w*invnorm;
   Tensor rr01=sum01w*invnorm;
+  double rr11=sum11w*invnorm;
 
   Matrix<double> m=Matrix<double>(4,4);
-  m[0][0]=rr00+2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
-  m[1][1]=rr00+2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
-  m[2][2]=rr00+2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
-  m[3][3]=rr00+2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
+  m[0][0]=rr00+rr11+2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
+  m[1][1]=rr00+rr11+2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
+  m[2][2]=rr00+rr11+2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
+  m[3][3]=rr00+rr11+2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
   m[0][1]=2.0*(-rr01[1][2]+rr01[2][1]);
   m[0][2]=2.0*(+rr01[0][2]-rr01[2][0]);
   m[0][3]=2.0*(-rr01[0][1]+rr01[1][0]);
@@ -328,10 +321,10 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   double prefactor=2.0*invnorm;
   Vector shift=cpositions-matmul(rotation,creference);
 
-  if(!squared) prefactor*=0.5/sqrt(dist);
+  if(!squared && alEqDis) prefactor*=0.5/sqrt(dist);
 
 // if "safe", recompute dist here to a better accuracy
-  if(safe) dist=0.0;
+  if(safe || !alEqDis) dist=0.0;
 
 // If safe is set to "false", MSD is taken from the eigenvalue of the M matrix
 // If safe is set to "true", MSD is recomputed from the rotational matrix
@@ -342,11 +335,47 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 // there is no need for derivatives of rotation and shift here as it is by construction zero
 // (similar to Hellman-Feynman forces)
     Vector d(positions[iat]-shift - matmul(rotation,reference[iat]));
-    derivatives[iat]= prefactor*align[iat]*d;
-    if(safe) dist+=align[iat]*invnorm*modulo2(d);
+    if(alEqDis){
+      derivatives[iat]= prefactor*align[iat]*d;
+       if(safe) dist+=align[iat]*invnorm*modulo2(d);
+    } else {
+      dist+=displace[iat]*invdnorm*modulo2(d);
+// these are the derivatives assuming the roto-translation as frozen
+      derivatives[iat]=2*displace[iat]*invdnorm*d;
+    }
   }
 
-  if(!squared) dist=sqrt(dist);
+  if(!alEqDis){
+// Here we have to recover the correct derivatives.
+// Instead of computing explicitly the derivatives of the rotational matrix
+// we enforce that the final result is invariant wrt translation and rotation.
+// If we interpret these derivatives as forces, this amounts in
+// setting to zero the total force and torque.
+
+// This is the inertia matrix:
+    Tensor I;
+    for(unsigned iat=0;iat<n;iat++){
+      Vector p=positions[iat]-cpositions;
+      I+=align[iat]*(Tensor::identity()*modulo2(p)-Tensor(p,p));
+    }
+// Total force:
+    Vector lin; for(unsigned iat=0;iat<n;iat++) lin+=derivatives[iat];
+// Remove from each atom a force proportional to its weight
+    for(unsigned iat=0;iat<n;iat++) derivatives[iat]-=lin*align[iat]*invnorm;
+// Total torque:
+    Vector omega; for(unsigned iat=0;iat<n;iat++) omega+=crossProduct(positions[iat]-cpositions,derivatives[iat]);
+    omega=matmul(inverse(I),omega);
+// Remove from each atom a torque proportional to its weight
+    for(unsigned iat=0;iat<n;iat++) derivatives[iat]-=crossProduct(omega,positions[iat]-cpositions)*align[iat];
+  }
+
+  if(!squared){
+    dist=sqrt(dist);
+    if(!alEqDis){
+      double xx=0.5/dist;
+      for(unsigned iat=0;iat<n;iat++) derivatives[iat]*=xx;
+    }
+  }
 
   return dist;
 }
