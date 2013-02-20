@@ -68,7 +68,8 @@ command
 \endverbatim
 
 Now you can patch/unpatch your MD code, automatically linking PLUMED, as if it
-was an officially released interface.
+was an officially released interface (even though at this stage you do not
+have any functionality of plumed yet in your code - see below how to add it).
 
 Note that after you have this done, PLUMED creates a file in
 $PLUMED_ROOT/patches/ that is generally named 
@@ -152,6 +153,11 @@ fully contained in Plumed.h and Plumed.c files. For a reference to it, see
 \section mdImplementation A practical example
 
 We now describe how to pass data to plumed in from an MD code that is written in C/C++.
+First save all the files that you intend to modify into a .preplumed file (for
+example if you want to modify myfile.c save it first in its original version
+into myfile.c.preplumed): this will tell the patching procedure that this  is
+a file that will enter the set of the files to be modified. 
+
 In C or C++ files containing calls to plumed you will have to include the Plumed.h file.
 In addition, you will also have to define a plumed obect that is visible in all these routines
 and you will probably like to define some sort of plumedswitch,
