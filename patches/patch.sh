@@ -63,7 +63,7 @@ do
     (--mode=*) mode="${prefix_option#--mode=}" ;;
     (--diff=*) diff="${prefix_option#--diff=}" ;;
     (--engine|-e) prefix="--engine=" ;;
-    (--root) prefix="--root=" ;;
+    (--root=*) prefix="--root="; PLUMED_ROOT="${prefix_option#--root=}" ;;
     (--diff|-d) prefix="--diff=" ;;
     (--mode|-m) prefix="--mode=" ;;
     (--new|-n) prefix="--new=" ;;
