@@ -51,7 +51,7 @@ void StoreCentralAtomsVessel::resize(){
   unsigned bsize=0; start.resize( nfunc +1 );
   for(unsigned i=0;i<nfunc;++i){
       start[i] = bsize;
-      bsize += 3*( 1 + mycolv->getNumberOfDerivatives(i) );
+      bsize += 3*( 1 + 3*mycolv->colvar_atoms[i].getNumberActive() );
   }
   start[nfunc]=bsize;
   resizeBuffer( bsize ); 
@@ -65,15 +65,15 @@ void StoreCentralAtomsVessel::prepare(){
 
 bool StoreCentralAtomsVessel::calculate(){
   Vector catom_pos=mycolv->retrieveCentralAtomPos( false );
-  Vector wdf; wdf.zero(); 
 
   unsigned ibuf=start[mycolv->current];
   for(unsigned i=0;i<3;++i){
-      addToBufferElement( ibuf, catom_pos[i] ); ibuf++; wdf[i]=1.0;
+      addToBufferElement( ibuf, catom_pos[i] ); ibuf++; 
       for(unsigned j=0;j<mycolv->getNAtoms();++j){
-         addToBufferElement( ibuf, mycolv->getCentralAtomDerivative( j, i, wdf ) ); ibuf++;
+         for(unsigned k=0;k<3;++k){
+             addToBufferElement( ibuf, mycolv->central_derivs[j](i,k) ); ibuf++;
+         }
       }
-      wdf.zero();
   }
   plumed_dbg_assert( ibuf==start[mycolv->current+1] );
   return true;
@@ -83,7 +83,8 @@ Vector StoreCentralAtomsVessel::getPosition( const unsigned& ivec ) const {
   plumed_dbg_assert( ivec<mycolv->getNumberOfFunctionsInAction() );
   unsigned pos=start[ivec]; Vector mypos;
   for(unsigned i=0;i<3;++i){
-      mypos[i] = getBufferElement( pos ); pos+=mycolv->getNumberOfDerivatives(ivec)+1;
+      mypos[i] = getBufferElement( pos ); 
+      pos+=3*mycolv->colvar_atoms[ivec].getNumberActive()+1;
   }
   plumed_dbg_assert( pos==start[ivec+1] );
   return mypos;
@@ -106,12 +107,13 @@ bool StoreCentralAtomsVessel::applyForce(std::vector<double>& ff){
 void StoreCentralAtomsVessel::chainRuleForCentralAtom( const unsigned& iatom, const unsigned& iderno, const Vector& df, vesselbase::ActionWithVessel* act) const {
   plumed_dbg_assert( iatom<mycolv->getNumberOfFunctionsInAction() );
 
-  unsigned nder=mycolv->getNumberOfDerivatives(iatom);
+  unsigned nder=3*mycolv->colvar_atoms[iatom].getNumberActive();
   unsigned nder2=mycolv->getNumberOfDerivatives();
   for(unsigned ider=0;ider<nder;++ider){
+      unsigned jder = iderno*nder2 + mycolv->getOutputDerivativeIndex( iatom, ider );
       for(unsigned jcomp=0;jcomp<3;++jcomp){
-          unsigned ibuf=start[iatom] + jcomp*(nder+1) + ider;
-          act->addElementDerivative( iderno*nder2 + mycolv->getOutputDerivativeIndex(iatom, ider), df[jcomp]*getBufferElement(ibuf) );
+          unsigned ibuf=start[iatom] + jcomp*(nder+1) + 1 + ider;
+          act->addElementDerivative( jder, df[jcomp]*getBufferElement(ibuf) );
       }
   }
 }

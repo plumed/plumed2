@@ -95,7 +95,7 @@ void MultiColvar::addColvar( const std::vector<unsigned>& newatoms ){
 } 
 
 void MultiColvar::readAtoms( int& natoms ){
-  if( keywords.exists("ATOMS") ) readAtomsKeyword( natoms );
+  if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms );
   if( keywords.exists("GROUP") ) readGroupsKeyword( natoms );
   if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms );
 
@@ -134,12 +134,12 @@ void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, 
   }
 }
 
-void MultiColvar::readAtomsKeyword( int& natoms ){ 
+void MultiColvar::readAtomsLikeKeyword( const std::string key, int& natoms ){ 
   if( readatoms) return; 
 
   std::vector<AtomNumber> t; std::vector<unsigned> newlist;
   for(int i=1;;++i ){
-     parseAtomList("ATOMS", i, t );
+     parseAtomList(key, i, t );
      if( t.empty() ) break;
 
      if(!verbose_output){
@@ -151,7 +151,7 @@ void MultiColvar::readAtomsKeyword( int& natoms ){
      if( i==1 && natoms<0 ) natoms=t.size();
      if( t.size()!=natoms ){
          std::string ss; Tools::convert(i,ss); 
-         error("ATOMS" + ss + " keyword has the wrong number of atoms"); 
+         error(key + ss + " keyword has the wrong number of atoms"); 
      }
      for(unsigned j=0;j<natoms;++j){ 
         newlist.push_back( natoms*(i-1)+j ); 
@@ -391,7 +391,8 @@ Vector MultiColvar::retrieveCentralAtomPos( const bool& frac ){
   centralAtomDerivativesAreInFractional=frac; 
   ibox=getPbc().getInvBox().transpose();
   for(unsigned i=0;i<central_derivs.size();++i) central_derivs[i].zero();
-  return getPbc().realToScaled( getCentralAtom() );
+  if(frac) return getPbc().realToScaled( getCentralAtom() );
+  return getCentralAtom();
 }
 
 void MultiColvar::addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der ){

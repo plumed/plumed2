@@ -49,6 +49,7 @@ friend class Region;
 friend class StoreCentralAtomsVessel;
 private:
   bool usepbc;
+/// Have atoms been read in
   bool readatoms;
   bool verbose_output;
 /// Everything for controlling the updating of neighbor lists
@@ -70,8 +71,6 @@ private:
   Tensor ibox;
   bool centralAtomDerivativesAreInFractional;
   std::vector<Tensor> central_derivs;
-/// Read in ATOMS keyword
-  void readAtomsKeyword( int& natoms );
 /// Read in the various GROUP keywords
   void readGroupsKeyword( int& natoms );
 /// Read in the various SPECIES keywords
@@ -83,6 +82,8 @@ protected:
   bool updatetime;
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
+/// Read in ATOMS keyword
+  void readAtomsLikeKeyword( const std::string key, int& natoms );
 /// Read in the atoms that form the backbone of a polymeric chain
   void readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths );
 /// Add a colvar to the set of colvars we are calculating (in practise just a list of atoms)
@@ -270,7 +271,9 @@ void MultiColvar::addBoxDerivatives(const Tensor& vir){
 
 inline
 unsigned MultiColvar::getOutputDerivativeIndex( const unsigned& ival, const unsigned& i ){
-  if( i<3*getNumberOfAtoms() ){
+  plumed_dbg_assert( i<getNumberOfDerivatives( ival ) );
+  
+  if( i<3*colvar_atoms[ival].getNumberActive() ){
       unsigned inat=std::floor( i/3 );
       unsigned thisatom=linkIndex( inat, colvar_atoms[ival], all_atoms );
       return 3*thisatom + i%3; 
