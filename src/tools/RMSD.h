@@ -32,8 +32,33 @@ class Log;
 class PDB;
 class OptimalAlignment;
 
-/// \ingroup TOOLBOX
-/// A class that implements RMSD calculations
+/** \ingroup TOOLBOX
+A class that implements RMSD calculations
+This is a class that implements the various infrastructure to calculate the 
+RMSD or MSD respect a given frame. It can be done through an optimal alignment scheme
+as Kearsley or, more simply, by resetting the center of mass. 
+This is the class that decides this. A very simple use is  
+\verbatim
+#include "tools/PDB.h"
+#include "tools/RMSD.h"
+#include "tools/Vector.h"
+using namespace PLMD;
+RMSD rmsd;
+PDB pdb;
+// get the pdb (see PDB documentation)
+pdb.read("file.pdb",true,1.0);
+string type;
+type.assign("OPTIMAL");
+// set the reference and the type 
+rmsd.set(pdb,type);
+// this calculates the rmsd and the derivatives
+vector<Vector> derivs;
+double val; 
+val=rmsd.calculate(getPositions(),derivs,true);
+\endverbatim
+
+**/
+
 class RMSD
 {
   enum AlignmentMethod {SIMPLE, OPTIMAL, OPTIMAL_FAST};
