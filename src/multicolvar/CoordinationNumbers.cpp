@@ -92,7 +92,6 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ){
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
-  keys.use("REGION"); 
 }
 
 CoordinationNumbers::CoordinationNumbers(const ActionOptions&ao):

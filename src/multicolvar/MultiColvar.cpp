@@ -482,12 +482,10 @@ StoreCentralAtomsVessel* MultiColvar::getCentralAtoms(){
   }
 
   // Create the vessel
-  std::string input; addVessel( "CATOM_STASH", input );
-  resizeFunctions(); // This makes sure resizing of vessels is done
-
-  // And create a pointer to it here
-  mycatoms = dynamic_cast<StoreCentralAtomsVessel*>( getPntrToVessel( getNumberOfVessels() - 1 ) );
-  return mycatoms;
+  vesselbase::VesselOptions da("","",0,"",this); 
+  StoreCentralAtomsVessel* sv=new StoreCentralAtomsVessel(da);
+  addVessel(sv); resizeFunctions(); // This makes sure resizing of vessels is done
+  return sv;
 }
 
 }

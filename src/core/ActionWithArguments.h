@@ -69,7 +69,7 @@ public:
 /// Calculate the numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
 /// are doing.  The default will be correct for the vast majority of cases
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL );
+  virtual void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void lockRequests();
   void unlockRequests();
 /// Returns an array of pointers to the arguments

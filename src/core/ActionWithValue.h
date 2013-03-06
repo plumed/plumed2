@@ -143,13 +143,15 @@ public:
 /// Clear the forces on the values
   void clearInputForces();
 /// Clear the derivatives of values wrt parameters
-  void clearDerivatives();
+  virtual void clearDerivatives();
 /// Calculate the gradients and store them for all the values (need for projections) 
   void setGradientsIfNeeded();
 /// Set the value
   void setValue(Value*,double);
 /// Check if numerical derivatives should be used
   bool checkNumericalDerivatives() const ;
+/// This forces the class to use numerical derivatives 
+  void useNumericalDerivatives();
 // These are things for using vectors of values as fields
   virtual void checkFieldsAllowed(){ error("cannot use this action as a field"); }
   virtual unsigned getNumberOfDerivatives();
@@ -183,6 +185,11 @@ void ActionWithValue::setValue(const double& d){
 inline
 int ActionWithValue::getNumberOfComponents() const {
   return values.size();
+}
+
+inline
+void ActionWithValue::useNumericalDerivatives(){
+  numericalDerivatives=true;
 }
 
 inline

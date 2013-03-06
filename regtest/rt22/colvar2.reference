@@ -1,4 +1,4 @@
-#! FIELDS time c1.region
+#! FIELDS time s2.mean
  0.000000   1.2004
  0.050000   1.2019
  0.100000   1.2214

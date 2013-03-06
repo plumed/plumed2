@@ -19,6 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "ActionVolume.h"
 
 namespace PLMD {
@@ -27,13 +29,107 @@ namespace multicolvar {
 void ActionVolume::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
+  ActionWithValue::registerKeywords( keys );
+  ActionWithVessel::registerKeywords( keys );
+  keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MIN");
+  keys.add("compulsory","ARG","the label of the action that calculates the multicolvar we are interested in"); 
+  keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
+  keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
+  keys.addFlag("OUTSIDE",false,"calculate quantities for colvars that are on atoms outside the region of interest");
 }
 
 ActionVolume::ActionVolume(const ActionOptions&ao):
 Action(ao),
 ActionAtomistic(ao),
-sigma(0.0)
+ActionWithValue(ao),
+ActionWithVessel(ao)
 {
+  std::string mlab; parse("ARG",mlab);
+  mycolv = plumed.getActionSet().selectWithLabel<multicolvar::MultiColvar*>(mlab);
+  if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
+  addDependency(mycolv); mycolv->addBridgingVessel( this, myBridgeVessel );
+  std::string functype=mycolv->getName();
+  std::transform( functype.begin(), functype.end(), functype.begin(), tolower );
+  log.printf("  calculating %s inside region of insterest\n",functype.c_str() ); 
+ 
+  if( checkNumericalDerivatives() ){
+      // If we use numerical derivatives we have to force the base
+      // multicolvar to also use numerical derivatives
+      ActionWithValue* vv=dynamic_cast<ActionWithValue*>( mycolv );
+      plumed_assert( vv ); vv->useNumericalDerivatives();
+  }
+
+  parseFlag("OUTSIDE",not_in); parse("SIGMA",sigma); 
+  bead.isPeriodic( 0, 1.0 ); 
+  std::string kerneltype; parse("KERNEL",kerneltype); 
+  bead.setKernelType( kerneltype );
+
+  if( mycolv->isDensity() ){
+     std::string input;
+     addVessel( "SUM", input, -1 );  // -1 here means that this value will be named getLabel()
+     resizeFunctions();
+  } else {
+     weightHasDerivatives=true;
+     readVesselKeywords();
+  }
+}
+
+void ActionVolume::doJobsRequiredBeforeTaskList(){
+  ActionWithValue::clearDerivatives();
+  retrieveAtoms(); setupRegion();
+  ActionWithVessel::doJobsRequiredBeforeTaskList();
+}
+
+bool ActionVolume::performTask( const unsigned& j ){
+  nderivatives=mycolv->getNumberOfDerivatives();
+
+  Vector catom_pos=mycolv->retrieveCentralAtomPos( derivativesOfFractionalCoordinates() );
+
+  double weight; Vector wdf;
+  weight=calculateNumberInside( catom_pos, bead, wdf ); 
+  if( not_in ){ weight = 1.0 - weight; wdf *= -1.; }  
+
+  if( mycolv->isDensity() ){
+     setElementValue( 0, weight ); setElementValue( 1, 1.0 );
+     for(unsigned i=0;i<mycolv->getNAtoms();++i){
+        addElementDerivative( mycolv->getOutputDerivativeIndex(mycolv->current,3*i+0), mycolv->getCentralAtomDerivative(i, 0, wdf ) );
+        addElementDerivative( mycolv->getOutputDerivativeIndex(mycolv->current,3*i+1), mycolv->getCentralAtomDerivative(i, 1, wdf ) );
+        addElementDerivative( mycolv->getOutputDerivativeIndex(mycolv->current,3*i+2), mycolv->getCentralAtomDerivative(i, 2, wdf ) );
+     }
+  } else {
+     double colv=mycolv->getElementValue(0); setElementValue( 0, colv );
+     for(unsigned i=0;i<mycolv->nderivatives;++i){
+        addElementDerivative( mycolv->getOutputDerivativeIndex(mycolv->current,i), mycolv->getElementDerivative(i) ); 
+     }
+
+     double ww=mycolv->getElementValue(1);
+     setElementValue( 1, ww*weight ); 
+
+     for(unsigned i=0;i<mycolv->getNAtoms();++i){
+        addElementDerivative( nderivatives+mycolv->getOutputDerivativeIndex(mycolv->current,3*i+0), 
+                                   ww*mycolv->getCentralAtomDerivative(i, 0, wdf ) + weight*mycolv->getElementDerivative(nderivatives+3*i+0) );
+        addElementDerivative( nderivatives+mycolv->getOutputDerivativeIndex(mycolv->current,3*i+1),  
+                                   ww*mycolv->getCentralAtomDerivative(i, 1, wdf ) + weight*mycolv->getElementDerivative(nderivatives+3*i+1) );
+        addElementDerivative( nderivatives+mycolv->getOutputDerivativeIndex(mycolv->current,3*i+2),  
+                                   ww*mycolv->getCentralAtomDerivative(i, 2, wdf ) + weight*mycolv->getElementDerivative(nderivatives+3*i+2) );
+     }
+  }
+
+  // And compute the vessels
+  return calculateAllVessels();
+}
+
+void ActionVolume::calculateNumericalDerivatives(){
+  myBridgeVessel->completeNumericalDerivatives();
+}
+
+bool ActionVolume::isPeriodic(){
+  return mycolv->isPeriodic();
+}
+
+void ActionVolume::deactivate_task(){
+  plumed_merror("This should never be called");
 }
 
 }

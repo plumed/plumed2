@@ -1,4 +1,4 @@
-#! FIELDS time parameter c1.region c1n.region
+#! FIELDS time parameter s2.mean s2n.mean
  0.000000 0   0.3185   0.3185
  0.000000 1   0.2157   0.2157
  0.000000 2   0.1024   0.1024

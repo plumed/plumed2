@@ -32,8 +32,8 @@ a particular quantity is to be averaged for the atoms in a particular part of th
 The following commands tell plumed to calculate the average coordination number for the atoms
 that have x (in fractional coordinates) less than 0.5. The final value will be labeled r1_av.
 \verbatim
-SUBCELL XLOWER=0.0 XUPPER=0.5 LABEL=r1
-COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 REGION={SIGMA=0.1 VOLUME=r1}
+COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 LABEL=c
+SUBCELL ARG=c XLOWER=0.0 XUPPER=0.5 SIGMA=0.1 LABEL=s
 \endverbatim
 
 */
@@ -52,7 +52,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   VolumeSubcell(const ActionOptions& ao);
-  void calculate();
+  void setupRegion();
   bool derivativesOfFractionalCoordinates(){ return true; }
   double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives );
 }; 
@@ -88,7 +88,7 @@ zsmearp(0.0)
   checkRead();
 }
 
-void VolumeSubcell::calculate(){
+void VolumeSubcell::setupRegion(){
   cellbox=getBox(); 
   if( dox ) xsmearp = getSigma() / ( sqrt( cellbox(0,0)*cellbox(0,0) + cellbox(1,0)*cellbox(1,0) + cellbox(2,0)*cellbox(2,0) ) );
   if( doy ) ysmearp = getSigma() / ( sqrt( cellbox(0,1)*cellbox(0,1) + cellbox(1,1)*cellbox(1,1) + cellbox(2,1)*cellbox(2,1) ) );

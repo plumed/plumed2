@@ -24,6 +24,7 @@
 #include "Vessel.h"
 #include "ShortcutVessel.h"
 #include "VesselRegister.h"
+#include "BridgeVessel.h"
 
 using namespace std;
 namespace PLMD{
@@ -56,8 +57,20 @@ ActionWithVessel::~ActionWithVessel(){
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab, const std::string thislab ){
   read=true; VesselOptions da(name,thislab,numlab,input,this);
   Vessel* vv=vesselRegister().create(name,da); vv->checkRead();
+  addVessel(vv);
+}
+
+void ActionWithVessel::addVessel( Vessel* vv ){
   ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
   if(!sv) functions.push_back(vv);
+}
+
+void ActionWithVessel::addBridgingVessel( ActionWithVessel* tome, BridgeVessel* bv ){
+  read=true; VesselOptions da("","",0,"",this); 
+  bv=new BridgeVessel(da);
+  bv->setOutputAction( tome );
+  functions.push_back( dynamic_cast<Vessel*>(bv) );
+  resizeFunctions();
 }
 
 void ActionWithVessel::readVesselKeywords(){
@@ -97,7 +110,7 @@ void ActionWithVessel::readVesselKeywords(){
 }
 
 void ActionWithVessel::resizeFunctions(){
-  unsigned tmpnval,nvals=0, bufsize=0; 
+  unsigned tmpnval,nvals=2, bufsize=0; 
   for(unsigned i=0;i<functions.size();++i){
      functions[i]->bufstart=bufsize;
      functions[i]->resize();
@@ -123,16 +136,21 @@ void ActionWithVessel::resizeFunctions(){
 //  return NULL;
 //}
 
+void ActionWithVessel::doJobsRequiredBeforeTaskList(){
+  // Clear all data from previous calculations
+  buffer.assign(buffer.size(),0.0);
+  for(unsigned j=0;j<functions.size();++j) functions[j]->prepare();
+}
+
 void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
   plumed_massert( read, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial){ stride=1; rank=0; }
 
-  // Clear all data from previous calculations
-  buffer.assign(buffer.size(),0.0);
+  // Make sure jobs are done
+  doJobsRequiredBeforeTaskList();
 
-  bool keep;
   for(unsigned i=rank;i<ntasks;i+=stride){
       // Calculate the stuff in the loop for this action
       bool skipme=performTask(i);
@@ -147,22 +165,30 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
       if(!thisval_wasset[1]) setElementValue( 1, 1.0 );
 
       // Now calculate all the functions
-      keep=false;
-      for(unsigned j=0;j<functions.size();++j){
-          // Calculate returns a bool that tells us if this particular
-          // quantity is contributing more than the tolerance
-          if( functions[j]->calculate() ) keep=true;
-      }
-      // Clear the derivatives from this step
-      for(unsigned k=0;k<thisval.size();++k){
-         thisval_wasset[k]=false;
-         unsigned kstart=k*getNumberOfDerivatives(); 
-         for(unsigned j=0;j<nderivatives;++j) derivatives[kstart+j]=0.0;
-      }
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
-      if( !keep ) deactivate_task();
+      if( !calculateAllVessels() ) deactivate_task();
   }
+  finishComputations();
+}
+
+bool ActionWithVessel::calculateAllVessels(){
+  bool keep=false;
+  for(unsigned j=0;j<functions.size();++j){
+      // Calculate returns a bool that tells us if this particular
+      // quantity is contributing more than the tolerance
+      if( functions[j]->calculate() ) keep=true;
+  }
+  // Clear the derivatives from this step
+  for(unsigned k=0;k<thisval.size();++k){
+     thisval_wasset[k]=false;
+     unsigned kstart=k*getNumberOfDerivatives();
+     for(unsigned j=0;j<nderivatives;++j) derivatives[kstart+j]=0.0;
+  }
+  return keep;
+}
+
+void ActionWithVessel::finishComputations(){
   // MPI Gather everything
   if(!serial && buffer.size()>0) comm.Sum( &buffer[0],buffer.size() ); 
 

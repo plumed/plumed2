@@ -24,6 +24,10 @@
 
 #include "core/ActionAtomistic.h"
 #include "tools/HistogramBead.h"
+#include "core/ActionwithValue.h"
+#include "vesselbase/ActionWithVessel.h"
+#include "vesselbase/BridgeVessel.h"
+#include "MultiColvar.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -36,30 +40,71 @@ coordination number inside that part of the cell.
 */
 
 class ActionVolume :
-  public ActionAtomistic
+  public ActionAtomistic,
+  public ActionWithValue,
+  public vesselbase::ActionWithVessel
   {
 friend class Region;
 private:
+/// The value of sigma
   double sigma;
+/// Are we interested in the area outside the colvar
+  bool not_in;
+/// The bead for the histogram
+  HistogramBead bead;
+/// The action that is calculating the colvars of interest
+  MultiColvar* mycolv;
+/// The vessel that bridges
+  vesselbase::BridgeVessel* myBridgeVessel;
 protected:
-  void setSigma( const double& sig );
   double getSigma() const ;
 public:
   static void registerKeywords( Keywords& keys );
   ActionVolume(const ActionOptions&);
+/// Don't actually clear the derivatives when this is called from plumed main.  
+/// They are calculated inside another action and clearing them would be bad  
+  void clearDerivatives(){}
+/// Get the number of derivatives for this action
+  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+/// Return the number of Colvars this is calculating
+  unsigned getNumberOfFunctionsInAction();
+/// Return the number of derivatives for a given colvar
+  unsigned getNumberOfDerivatives( const unsigned& j );
+/// Is the output quantity periodic
+  bool isPeriodic();
+/// Do jobs required before tasks are undertaken
+  void doJobsRequiredBeforeTaskList();
+/// This calculates all the vessels and is called from within a bridge vessel
+  bool performTask(const unsigned& i );
+/// Routines that have to be defined so as not to have problems with virtual methods 
+  void deactivate_task();
+  void calculate(){}
+/// We need our own calculate numerical derivatives here
+  void calculateNumericalDerivatives();
+  virtual void setupRegion()=0;
   virtual bool derivativesOfFractionalCoordinates()=0;
   virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
   void apply(){};
 };
 
 inline
-void ActionVolume::setSigma( const double& sig ){
-  sigma=sig;
+double ActionVolume::getSigma() const {
+  return sigma;
 }
 
 inline
-double ActionVolume::getSigma() const {
-  return sigma;
+unsigned ActionVolume::getNumberOfDerivatives(){
+  return mycolv->getNumberOfDerivatives();
+}
+
+inline
+unsigned ActionVolume::getNumberOfFunctionsInAction(){
+  return mycolv->getNumberOfFunctionsInAction();
+}
+
+inline
+unsigned ActionVolume::getNumberOfDerivatives( const unsigned& j ){
+  return mycolv->getNumberOfDerivatives(j);
 }
 
 }

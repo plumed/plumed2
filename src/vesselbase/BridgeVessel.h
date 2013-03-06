@@ -19,49 +19,55 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_multicolvar_StoreCentralAtomsVessel_h
-#define __PLUMED_multicolvar_StoreCentralAtomsVessel_h
+#ifndef __PLUMED_vesselbase_BridgeVessel_h
+#define __PLUMED_vesselbase_BridgeVessel_h
 
-#include "vesselbase/Vessel.h" 
-#include "MultiColvar.h"
+#include <string>
+#include <cstring>
+#include <vector>
+#include "Vessel.h"
+#include "core/Value.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace vesselbase {
 
-class MultiColvar;
+/**
+\ingroup TOOLBOX
+This class allows you to calculate the vessel in one ActionWithVessel.  The user thinks
+it is created in a different Action however.  At the moment this is used for region 
+*/
 
-class StoreCentralAtomsVessel : public vesselbase::Vessel {
+class BridgeVessel : public Vessel {
 private:
-  MultiColvar* mycolv;
-  std::vector<unsigned> start;
-  bool wasforced;
   std::vector<double> forces;
+  unsigned inum;
+  std::vector<double> mynumerical_values;
+  ActionWithVessel* myOutputAction;
+  ActionWithValue* myOutputValues;
 public:
-/// Constructor
-  StoreCentralAtomsVessel( const vesselbase::VesselOptions& );
-/// Return the number of terms
-  unsigned getNumberOfTerms(){ return 2; }
-/// This does the resizing of the buffer
+  BridgeVessel( const VesselOptions& );
+/// Resize the quantities in the vessel
   void resize();
-/// This does nothing
-  std::string description(){ return""; }
-/// This does nothing
-  void finish(){}
-/// Add some force to the atoms
-  void addForces( const std::vector<double>& );
-/// Copy forces to local arrays
-  bool applyForce(std::vector<double>&);
-/// Set all forces equal to zero before main loop
+/// Setup the action we are outputting to
+  void setOutputAction( ActionWithVessel* myOutputAction );
+/// Apply some force 
+  bool applyForce( std::vector<double>& forces );
+/// Should not be called
+  std::string description();
+/// Want to get rid of this function
+  unsigned getNumberOfTerms(){ return 2; }
+/// Jobs to do before the task list starts
   void prepare();
-/// This makes sure all vectors are stored
+/// Actually do the calculation
   bool calculate();
-/// Get the orientation of the ith vector
-  Vector getPosition( const unsigned&  ) const ;
-/// Chain rule for central atom
-  void chainRuleForCentralAtom( const unsigned& iatom, const unsigned& iderno, const Vector& df, vesselbase::ActionWithVessel* act ) const ;
+/// Finish the calculation
+  void finish();
+/// Calculate numerical derivatives
+  void completeNumericalDerivatives();
 };
 
 }
 }
 #endif
+
 

@@ -33,6 +33,7 @@ class Value;
 namespace vesselbase{
 
 class Vessel;
+class BridgeVessel;
 
 /**
 \ingroup MULTIINHERIT
@@ -45,6 +46,7 @@ friend class Vessel;
 friend class ShortcutVessel;
 friend class StoreValuesVessel;
 friend class FunctionVessel;
+friend class BridgeVessel;
 private:
 /// This is used to ensure that we have properly read the action
   bool read;
@@ -73,6 +75,9 @@ protected:
   unsigned nderivatives;
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0, const std::string thislab="" );
+  void addVessel( Vessel* vv );
+/// Add a bridging vessel to the list of vessels
+  void addBridgingVessel( ActionWithVessel* tome, BridgeVessel* bv );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void readVesselKeywords();
 /// Return the value of the tolerance
@@ -83,10 +88,15 @@ protected:
    Vessel* getPntrToVessel( const unsigned& i );
 /// Calculate the values of all the vessels
   void runAllTasks( const unsigned& ntasks );
+/// Finish running all the calculations
+  void finishComputations();
 /// Resize all the functions when the number of derivatives change
   void resizeFunctions();
 /// Set the derivative of the jth element wrt to a numbered element
   void setElementDerivative( const unsigned&, const double& );
+/// This loops over all the vessels calculating them and also 
+/// sets all the element derivatives equal to zero
+  bool calculateAllVessels();
 public:
   static void registerKeywords(Keywords& keys);
   ActionWithVessel(const ActionOptions&ao);
@@ -110,6 +120,8 @@ public:
   virtual unsigned getNumberOfDerivatives()=0;
 /// Get number of derivatives for ith function
   virtual unsigned getNumberOfDerivatives( const unsigned& i );
+/// Do any jobs that are required before the task list is undertaken
+  virtual void doJobsRequiredBeforeTaskList();
 /// Calculate one of the functions in the distribution
   virtual bool performTask( const unsigned& j )=0;
 /// Return a pointer to the field 
@@ -174,7 +186,7 @@ inline
 void ActionWithVessel::addElementDerivative( const unsigned& ider, const double& der ){
 #ifndef NDEBUG
   unsigned ndertmp=getNumberOfDerivatives();
-  if( ider>=ndertmp && ider<2*ndertmp ) plumed_dbg_assert( weightHasDerivatives );
+  if( ider>=ndertmp && ider<2*ndertmp ) plumed_dbg_massert( weightHasDerivatives, "In " + getLabel() );
 #endif
   plumed_dbg_assert( ider<derivatives.size() );
   derivatives[ider] += der;
@@ -184,7 +196,7 @@ inline
 void ActionWithVessel::setElementDerivative( const unsigned& ider, const double& der ){
 #ifndef NDEBUG
   unsigned ndertmp=getNumberOfDerivatives();
-  if( ider>=ndertmp && ider<2*ndertmp ) plumed_dbg_assert( weightHasDerivatives );
+  if( ider>=ndertmp && ider<2*ndertmp ) plumed_dbg_massert( weightHasDerivatives, "In " + getLabel() );
 #endif
   plumed_dbg_assert( ider<derivatives.size() );
   derivatives[ider] = der;

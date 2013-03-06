@@ -45,7 +45,7 @@ class MultiColvar :
   public ActionWithValue,
   public vesselbase::ActionWithVessel
   {
-friend class Region;
+friend class ActionVolume;
 friend class StoreCentralAtomsVessel;
 private:
   bool usepbc;

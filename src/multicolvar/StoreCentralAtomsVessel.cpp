@@ -27,17 +27,6 @@
 namespace PLMD {
 namespace multicolvar {
 
-PLUMED_REGISTER_VESSEL(StoreCentralAtomsVessel,"CATOM_STASH")
-
-void StoreCentralAtomsVessel::registerKeywords( Keywords& keys ){
-  Vessel::registerKeywords( keys );
-  plumed_assert( keys.size()==0 );
-}
-
-void StoreCentralAtomsVessel::reserveKeyword( Keywords& keys ){
-  keys.reserve("optional","CATOM_STASH","This documentation shouldn't appear");
-}
-
 StoreCentralAtomsVessel::StoreCentralAtomsVessel( const vesselbase::VesselOptions& da ):
 Vessel(da),
 wasforced(false)

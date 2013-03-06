@@ -109,7 +109,7 @@ public:
 
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
 /// are doing.  The default will be correct for the vast majority of cases
-  void   calculateNumericalDerivatives( ActionWithValue* a=NULL );
+  virtual void   calculateNumericalDerivatives( ActionWithValue* a=NULL );
 
   void retrieveAtoms();
   void applyForces();
