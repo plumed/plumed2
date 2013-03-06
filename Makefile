@@ -7,11 +7,14 @@ SUBDIRS = $(SRCDIRS) user-doc developer-doc regtest
 SUBDIRSCLEAN=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all clean $(SRCDIRS) doc docclean check
+.PHONY: all lib clean $(SRCDIRS) doc docclean check
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
 all: $(SRCDIRS)
+
+lib:
+	$(MAKE)	-C src
      
 $(SRCDIRS):
 	$(MAKE) -C $@
