@@ -67,7 +67,7 @@ by:
 V(\vec{s}) = -F(\vec(s))
 \f]
 
-During post processing the free energy can be calculated in this way using the \subpage sum_hills
+During post processing the free energy can be calculated in this way using the \ref sum_hills
 utility.
 
 In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics 
