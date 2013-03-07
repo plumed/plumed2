@@ -24,7 +24,7 @@
 
 #include "core/ActionAtomistic.h"
 #include "tools/HistogramBead.h"
-#include "core/ActionwithValue.h"
+#include "core/ActionWithValue.h"
 #include "vesselbase/ActionWithVessel.h"
 #include "vesselbase/BridgeVessel.h"
 #include "MultiColvar.h"
