@@ -96,8 +96,7 @@ public:
   virtual double compute( const unsigned& j );
 /// Returns the number of coordinates of the field
   unsigned getNumberOfFieldDerivatives();
-  bool contributionIsSmall();
-  bool isPossibleToSkip(){ return true; }
+  void calculateWeight();
   bool isPeriodic(){ return false; }
 };
 
@@ -163,24 +162,22 @@ unsigned Angles::getNumberOfFieldDerivatives(){
   return 3*getNumberOfAtoms() + 9;
 }
 
-bool Angles::contributionIsSmall(){
+void Angles::calculateWeight(){
   dij=getSeparation( getPosition(1), getPosition(2) );
   dik=getSeparation( getPosition(1), getPosition(0) );
-  if(!use_sf) return false;
+  if(!use_sf){ setWeight(1.0); return; }
 
   double w1, w2, dw1, dw2, wtot;
   w1=sf1.calculate( dij.modulo(), dw1 );
   w2=sf2.calculate( dik.modulo(), dw2 );
-  wtot=w1*w2; dw1*=w2; dw2*=w1;
-  if( wtot<getTolerance() ) return true;
+  wtot=w1*w2; dw1*=w2; dw2*=w1; 
 
+  setWeight( wtot );
+  if( wtot<getTolerance() ) return; 
   addAtomsDerivativeOfWeight( 0, dw2*dik );
   addAtomsDerivativeOfWeight( 1, -dw1*dij - dw2*dik ); 
   addAtomsDerivativeOfWeight( 2, dw1*dij );
   addBoxDerivativesOfWeight( (-dw1)*Tensor(dij,dij) + (-dw2)*Tensor(dik,dik) );
-  setWeight( wtot );
-
-  return false;
 }
 
 double Angles::compute( const unsigned& j ){

@@ -373,18 +373,19 @@ const std::vector<Vector>& MultiColvar::getPositions(){
 bool MultiColvar::performTask( const unsigned& j ){
   current=colvar_list[j];                                                       // Store the number of the atom list we are currently working on
   nderivatives=3*colvar_atoms[current].getNumberActive() + 9;                   // Store the number of derivatives (for better performance)
-  if( colvar_atoms[current].getNumberActive()==0 ) return true;                 // Do nothing if there are no active atoms in the colvar
+  if( colvar_atoms[current].getNumberActive()==0 ) return false;                // Do nothing if there are no active atoms in the colvar
   posHasBeenSet=false;                                                          // This ensures we don't set the pos array more than once per step  
 
   // Do a quick check on the size of this contribution  
-  if( contributionIsSmall() ) return true;   
+  calculateWeight();
+  if( getElementValue(1)<getTolerance() ) return false;   
 
   // Compute everything
   double vv=compute( j ); 
   // Set the value of this element in ActionWithVessel
   setElementValue( 0, vv );
 
-  return false;
+  return true;
 }
 
 Vector MultiColvar::retrieveCentralAtomPos( const bool& frac ){

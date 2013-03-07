@@ -85,8 +85,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   ParabetaRMSD(const ActionOptions&);
-  bool contributionIsSmall();
-  bool isPossibleToSkip();
+  void calculateWeight();
 }; 
 
 PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
@@ -242,16 +241,10 @@ s_cutoff(0)
   setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
 }
 
-bool ParabetaRMSD::isPossibleToSkip(){
-  if(s_cutoff!=0) return true;
-  return false;
-}
-
-bool ParabetaRMSD::contributionIsSmall(){
-  if(s_cutoff==0) return false;
-
+void ParabetaRMSD::calculateWeight(){
   Vector distance; distance=getSeparation( getPosition(6),getPosition(21) );  // This is the CA of the two residues at the centers of the two chains
-  if( distance.modulo()>s_cutoff ) return true;
+  if( distance.modulo()>s_cutoff && s_cutoff>0) setWeight(0.0);
+  else setWeight(1.0);
 
   // Align the two strands
   if( usingRMSD() ){
@@ -263,7 +256,6 @@ bool ParabetaRMSD::contributionIsSmall(){
       }
       setAlignedPositions( pos );
   }   
-  return false;
 }
 
 }

@@ -140,8 +140,6 @@ public:
   void chainRuleForElementDerivatives( const unsigned& , const unsigned& , const unsigned& , const unsigned& , const double& , vesselbase::Vessel* );
 /// Also used for derivative merging
   unsigned getOutputDerivativeIndex( const unsigned& ival, const unsigned& i );
-/// Can we skip the calculations of quantities
-  virtual bool isPossibleToSkip();
 /// Turn of atom requests when this colvar is deactivated cos its small
   void deactivate_task();
 /// Turn on atom requests when the colvar is activated
@@ -149,7 +147,7 @@ public:
 /// Calcualte the colvar
   bool performTask( const unsigned& j );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
-  virtual bool contributionIsSmall(){ plumed_dbg_assert( !isPossibleToSkip() ); return false; }
+  virtual void calculateWeight();
 /// And a virtual function which actually computes the colvar
   virtual double compute( const unsigned& j )=0;  
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
@@ -168,11 +166,6 @@ public:
 /// all the central atoms
   StoreCentralAtomsVessel* getCentralAtoms();
 };
-
-inline
-bool MultiColvar::isPossibleToSkip(){
-  return (colvar_atoms[current].getNumberActive()==0); 
-}
 
 inline
 unsigned MultiColvar::getNumberOfDerivatives(){
@@ -279,6 +272,11 @@ unsigned MultiColvar::getOutputDerivativeIndex( const unsigned& ival, const unsi
       return 3*thisatom + i%3; 
   } 
   return 3*getNumberOfAtoms() + i - 3*colvar_atoms[ival].getNumberActive(); 
+}
+
+inline
+void MultiColvar::calculateWeight(){
+  setElementValue( 1, 1.0 );
 }
 
 inline

@@ -146,6 +146,7 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
   plumed_massert( read, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
+  unsigned nder=getNumberOfDerivatives();
   if(serial){ stride=1; rank=0; }
 
   // Make sure jobs are done
@@ -153,16 +154,19 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
 
   for(unsigned i=rank;i<ntasks;i+=stride){
       // Calculate the stuff in the loop for this action
-      bool skipme=performTask(i);
+      bool keep=performTask(i);
 
       // Check for conditions that allow us to just to skip the calculation
-      if( skipme ){
-         plumed_dbg_massert( isPossibleToSkip(), "To make your action work you must write a routine to get weights");
+      // the condition is that the weight of the contribution is low
+      if( !keep ){
+         plumed_dbg_assert( thisval[1]<getTolerance() && !thisval_wasset[0] );
+         // Clear everything from weight ready for next loop
+         thisval_wasset[1]=false; 
+         for(unsigned j=0;j<nderivatives;++j) derivatives[nder+j]=0.0; 
+         // Deactivate task
          deactivate_task();
          continue;
       }
-      // By default the weight is 1 
-      if(!thisval_wasset[1]) setElementValue( 1, 1.0 );
 
       // Now calculate all the functions
       // If the contribution of this quantity is very small at neighbour list time ignore it

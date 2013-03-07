@@ -119,7 +119,7 @@ bool MultiColvarFunction::performTask( const unsigned& j ){
 
   // Compute a weight for this quantity
   double weight=calculateWeight();
-  if( weight<getTolerance() ) return true;
+  if( weight<getTolerance() ) return false;
 
   // Now compute the quantity of interest
   double val=compute(); 
@@ -133,7 +133,7 @@ bool MultiColvarFunction::performTask( const unsigned& j ){
       }
   }
   setElementValue( 1, weight );
-  return false;
+  return true;
 }
 
 void MultiColvarFunction::apply(){

@@ -108,8 +108,6 @@ public:
   void chainRuleForElementDerivatives( const unsigned&, const unsigned&, const double& , Vessel* );
   virtual void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , Vessel* );
   virtual unsigned getOutputDerivativeIndex( const unsigned& ival, const unsigned& i ){ return i; }
-/// Can we skip the calculations of quantities
-  virtual bool isPossibleToSkip(); 
 /// Are the base quantities periodic
   virtual bool isPeriodic()=0;
 /// What are the domains of the base quantities
@@ -142,11 +140,6 @@ double ActionWithVessel::getTolerance() const {
 }
 
 inline
-bool ActionWithVessel::isPossibleToSkip(){
-  return false;
-}
-
-inline
 unsigned ActionWithVessel::getNumberOfVessels() const {
   return functions.size();
 }
@@ -166,7 +159,7 @@ inline
 void ActionWithVessel::setElementValue( const unsigned& ival, const double& val ){
   // Element 0 is reserved for the value we are accumulating
   // Element 1 is reserved for the normalization constant for calculating AVERAGES, normalized HISTOGRAMS
-  plumed_dbg_assert( !thisval_wasset[ival] );
+  plumed_dbg_massert( !thisval_wasset[ival], "In action named " + getName() + " with label " + getLabel() );
   thisval[ival]=val;
   thisval_wasset[ival]=true;
 }
