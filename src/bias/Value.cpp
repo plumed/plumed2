@@ -35,9 +35,9 @@ Takes the value of one variable and use it as a bias
 
 
 \par Examples
-The following input tells plumed to restrain the distance between atoms 3 and 5
-and the distance between atoms 2 and 4, at different equilibrium
-values. It then tells plumed to print the energy of the restraint
+The following input tells plumed to use the value of the distance between atoms 3 and 5
+and the value of the distance between atoms 2 and 4 as biases. 
+It then tells plumed to print the energy of the restraint
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=3,6 LABEL=d2
@@ -45,6 +45,31 @@ BIASVALUE ARG=d1,d2 LABEL=b
 PRINT ARG=d1,d2,b.d1,b.d2
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
+
+Another thing one can do is asking one system to follow  
+a circle in sin/cos according a  time dependence
+
+\verbatim
+t: TIME
+# this just print cos and sin of time
+cos: MATHEVAL ARG=t VAR=t FUNC=cos(t) PERIODIC=NO 
+sin: MATHEVAL ARG=t VAR=t FUNC=sin(t) PERIODIC=NO
+c1: COM ATOMS=1,2
+c2: COM ATOMS=3,4
+d: DISTANCE COMPONENTS ATOMS=c1,c2
+PRINT ARG=t,cos,sin,d.x,d.y,d.z STRIDE=1 FILE=colvar FMT=%8.4f
+# this calculates sine and cosine of a projected component of distance
+mycos:  MATHEVAL ARG=d.x,d.y  VAR=x,y   FUNC=x/sqrt(x*x+y*y) PERIODIC=NO
+mysin:  MATHEVAL ARG=d.x,d.y  VAR=x,y   FUNC=y/sqrt(x*x+y*y) PERIODIC=NO
+# this creates a moving spring so that the system follows a circle-like dynamics 
+# but it is not a bias, it is a simple value now
+vv1:  MATHEVAL ARG=mycos,mysin,cos,sin VAR=mc,ms,c,s  FUNC=100*((mc-c)^2+(ms-s)^2) PERIODIC=NO
+# this takes the value calculated with matheval and uses as a bias 
+cc: BIASVALUE ARG=vv1 
+# some printout
+PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.bias.vv1 STRIDE=1 FILE=colvar FMT=%8.4f
+\endverbatim
+
 
 */
 //+ENDPLUMEDOC
