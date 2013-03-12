@@ -249,7 +249,7 @@ void BiasRepresentation::clear(){
         hills.clear(); 
         // clear the grid
         if(hasgrid){
-              (*BiasGrid_).doclear();
+              BiasGrid_->clear();
         }
 }
 

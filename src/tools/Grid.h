@@ -82,10 +82,10 @@ protected:
  /// get "neighbors" for spline
  std::vector<unsigned> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
+
+public:
  /// clear grid
  virtual void clear();
- 
-public:
  /// this constructor here is Value-aware  
  Grid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
       const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, 
