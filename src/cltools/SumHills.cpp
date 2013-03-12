@@ -126,6 +126,24 @@ plumed sum_hills --hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt
 \endverbatim
 The two files can be eventually the same 
 
+Another interesting thing one can do is monitor the difference in blocks as a metadynamics goes on. 
+When the bias deposited is constant over the whole domain one can consider to be at convergence. 
+This can be done with the --nohistory keyword 
+
+\verbatim
+plumed sum_hills --stride 300 --hills PATHTOMYHILLSFILE  --nohistory 
+\endverbatim
+
+and similarly one can do the same for an histogram file 
+
+\verbatim
+plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6 --nohistory 
+\endverbatim
+
+just to check the hypothetical free energy calculated in single blocks of time during a simulation
+and not in a cumulative way
+
+
 */
 //+ENDPLUMEDOC
 
@@ -467,10 +485,10 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
                            ss.push_back(fields[i]);
 		   	   cvs.push_back(ss);	
 		   }
-                   std::cerr<<"found variable number  "<<cvs.size()<<" :  "<<cvs.back()[0]<<std::endl;
-		   if((cvs.back()).size()!=1){
-                   	std::cerr<<"component    "<<(cvs.back()).back()<<std::endl;
-	  	   }
+                   //std::cerr<<"found variable number  "<<cvs.size()<<" :  "<<cvs.back()[0]<<std::endl;
+		   //if((cvs.back()).size()!=1){
+                   //	std::cerr<<"component    "<<(cvs.back()).back()<<std::endl;
+	  	   //}
                    // get periodicity
                    pmin.push_back("none");
                    pmax.push_back("none");
@@ -481,14 +499,14 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
                         pmin[pmin.size()-1]=val; 
                        // std::cerr<<"found min   :  "<<pmin.back()<<std::endl;
                    }
-                   std::cerr<<"found min   :  "<<pmin.back()<<std::endl;
+                   //std::cerr<<"found min   :  "<<pmin.back()<<std::endl;
      	           if(ifile.FieldExist("max_"+mm)){
               		std::string val;
               		ifile.scanField("max_"+mm,val);
                         pmax[pmax.size()-1]=val; 
                        // std::cerr<<"found max   :  "<<pmax.back()<<std::endl;
                    }
-                   std::cerr<<"found max   :  "<<pmax.back()<<std::endl;
+                   //std::cerr<<"found max   :  "<<pmax.back()<<std::endl;
               }
           }
           // is multivariate ???
