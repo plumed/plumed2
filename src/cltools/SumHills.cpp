@@ -155,6 +155,7 @@ void CLToolSumHills::registerKeywords( Keywords& keys ){
   keys.add("optional","--kt","specify temperature for integrating out variables");
   keys.add("optional","--sigma"," a vector that specify the sigma for binning (only needed when doing histogram ");
   keys.addFlag("--negbias",false," print the negative bias instead of the free energy (only needed with welltempered runs and flexible hills) ");
+  keys.addFlag("--nohistory",false," to be used with --stride:  it splits the bias/histogram in pieces without previous history ");
 }
 
 CLToolSumHills::CLToolSumHills(const CLToolOptions& co ):
@@ -391,6 +392,11 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   std::string  stride; stride="";
   if(parse("--stride",stride)){
     actioninput.push_back("INITSTRIDE="+stride);
+    bool  nohistory; 
+    parseFlag("--nohistory",nohistory);
+    if(nohistory){
+       actioninput.push_back("NOHISTORY");
+    }
   }
   if(idw.size()!=0){ 
      addme="PROJ=";

@@ -182,6 +182,8 @@ public:
 /// to enable many types of weighting
  Grid project( const std::vector<std::string> & proj , WeightBase *ptr2obj  ); 
  void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj ); 
+/// do a clean
+ void doclear(){clear();} 
 };
 
   
