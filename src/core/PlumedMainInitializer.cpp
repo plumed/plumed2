@@ -24,7 +24,6 @@
 #include <cstdlib>
 
 using namespace std;
-namespace PLMD{
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 // THE FOLLOWING ARE UTILITIES WHICH ARE NECESSARY FOR DYNAMIC LOADING OF THE PLUMED KERNEL:
@@ -45,17 +44,17 @@ typedef struct {
    used from Plumed.c (for static binding) */
 
 extern "C" void*plumedmain_create(){
-  return new PlumedMain;
+  return new PLMD::PlumedMain;
 }
 
 extern "C" void plumedmain_cmd(void*plumed,const char*key,const void*val){
   plumed_massert(plumed,"trying to use a plumed object which is not initialized");
-  static_cast<PlumedMain*>(plumed)->cmd(key,val);
+  static_cast<PLMD::PlumedMain*>(plumed)->cmd(key,val);
 }
 
 extern "C" void plumedmain_finalize(void*plumed){
   plumed_massert(plumed,"trying to deallocate a plumed object which is not initialized");
-  delete static_cast<PlumedMain*>(plumed);
+  delete static_cast<PLMD::PlumedMain*>(plumed);
 }
 
 /* This refers to a function implemented in Plumed.c */
@@ -78,4 +77,3 @@ static class PlumedMainInitializer{
 }
 
 
-}

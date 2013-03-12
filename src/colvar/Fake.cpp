@@ -30,6 +30,7 @@
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR FAKE 
 /*
@@ -124,6 +125,7 @@ void ColvarFake::calculate(){
     plumed_merror("you should never have got here");
 }
 
+}
 }
 
 

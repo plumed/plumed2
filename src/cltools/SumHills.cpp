@@ -38,6 +38,7 @@
 using namespace std;
 
 namespace PLMD {
+namespace cltools {
 
 //+PLUMEDOC TOOLS sum_hills 
 /*
@@ -505,4 +506,5 @@ PLUMED_REGISTER_CLTOOL(CLToolSumHills,"sum_hills")
 
 
 
+}
 }
