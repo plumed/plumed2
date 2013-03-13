@@ -464,11 +464,9 @@ INPUT                  = IntroPP.txt \
                          AnalysisPP.txt \
                          ColvarPP.txt \ 
                          FunctionsPP.txt \
-                         ToolsPP.txt \ 
                          InstallationPP.txt \
                          WhatsNew.txt \
                          GlossaryPP.txt \
-                         Transition.txt \
                          TutorialsPP.txt \
                          tutorials \
                          automatic
