@@ -73,7 +73,7 @@ void Atoms::setBox(void*p){
 
 void Atoms::setPositions(void*p){
   plumed_massert( dataCanBeSet ,"setPositions must be called after setStep in MD code interface");
-  mdatoms->setp(p); positionsHaveBeenSet=2;
+  mdatoms->setp(p); positionsHaveBeenSet=3;
 }
 
 void Atoms::setMasses(void*p){
@@ -102,7 +102,7 @@ void Atoms::setEnergy(void*p){
 
 void Atoms::setForces(void*p){
   plumed_massert( dataCanBeSet ,"setForces must be called after setStep in MD code interface");
-  forcesHaveBeenSet=2;
+  forcesHaveBeenSet=3;
   mdatoms->setf(p);
 }
 
@@ -134,7 +134,7 @@ void Atoms::shareAll(){
 }
 
 void Atoms::share(const std::set<AtomNumber>& unique){
-  plumed_assert( positionsHaveBeenSet==2 && massesHaveBeenSet );
+  plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   mdatoms->getBox(box);
   mdatoms->getMasses(gatindex,masses);
   mdatoms->getCharges(gatindex,charges);
@@ -223,7 +223,7 @@ void Atoms::wait(){
 }
 
 void Atoms::updateForces(){
-  plumed_assert( forcesHaveBeenSet==2 );
+  plumed_assert( forcesHaveBeenSet==3 );
   if(forceOnEnergy*forceOnEnergy>epsilon){
      double alpha=1.0-forceOnEnergy;
      mdatoms->rescaleForces(gatindex,alpha);
