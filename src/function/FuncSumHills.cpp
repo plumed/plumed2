@@ -22,6 +22,7 @@
 #include "ActionRegister.h"
 #include "Function.h"
 #include "tools/Exception.h"
+#include "tools/Communicator.h"
 #include "tools/BiasRepresentation.h"
 #include "tools/File.h"
 #include "tools/Tools.h"
@@ -78,6 +79,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br , unsigned stride = -1){
         bool morefiles; morefiles=true;
 	if(parallelread){
 		(*log)<<"  doing parallelread \n";
+                plumed_merror("parallelread is not yet implemented !!!");
         }else{
 		(*log)<<"  doing serialread \n";
         	// read one by one hills      
@@ -178,7 +180,7 @@ class FuncSumHills :
   bool negativebias;
   bool nohistory;
   double beta;
-  string outhills,outhisto;
+  string outhills,outhisto,fmt;
   BiasRepresentation *biasrep;
   BiasRepresentation *historep;
 public:
@@ -210,6 +212,7 @@ void FuncSumHills::registerKeywords(Keywords& keys){
   keys.addFlag("PARALLELREAD",false,"read parallel HILLS file");
   keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in welltempered with flexible hills ");
   keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");
+  keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
 FuncSumHills::FuncSumHills(const ActionOptions&ao):
@@ -222,8 +225,13 @@ integratehisto(false),
 parallelread(false),
 negativebias(false),
 nohistory(false),
+fmt("%14.9f"),
 beta(-1.)
 {
+
+  // format
+  parse("FMT",fmt);
+  log<<"  Output format is "<<fmt<<"\n"; 
   // here read 
   // Grid Stuff
   vector<std::string> gmin;
@@ -429,10 +437,11 @@ beta(-1.)
                         if(initstride>0){ myout=outhills+ostr.str()+".dat" ;}else{myout=outhills;}
               		log<<"  Bias: Writing subgrid on file "<<myout<<" \n";
               		gridfile.open(myout);	
-         
+        		smallGrid.setOutputFmt(fmt); 
    	      		smallGrid.writeToFile(gridfile);
               		gridfile.close();
                         if(!ibias)integratehills=false;// once you get to the final bunch just give up 
+
 		}
 		if(integratehisto){
 
@@ -448,6 +457,7 @@ beta(-1.)
               		log<<"  Histo: Writing subgrid on file "<<myout<<" \n";
               		gridfile.open(myout);	
          
+        		smallGrid.setOutputFmt(fmt); 
    	      		smallGrid.writeToFile(gridfile);
               		gridfile.close();
 
@@ -468,6 +478,7 @@ beta(-1.)
 	                log<<"  Writing full grid on file "<<myout<<" \n";
 	                gridfile.open(myout);	
 	
+        		biasGrid.setOutputFmt(fmt); 
 	                biasGrid.writeToFile(gridfile);
 	                gridfile.close();
 			// rescale back prior to accumulate
@@ -486,6 +497,7 @@ beta(-1.)
 	                log<<"  Writing full grid on file "<<myout<<" \n";
 	                gridfile.open(myout);	
 	
+        		histoGrid.setOutputFmt(fmt); 
 	                histoGrid.writeToFile(gridfile);
 	                gridfile.close();
 

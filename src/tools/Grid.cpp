@@ -705,6 +705,7 @@ void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBas
     unsigned i=0;
     for(i=0;i<vHigh.size();i++){
        if(vHigh[i]<0){// this bin needs to be integrated out 
+          // parallelize here???
     	  for(unsigned j=0;j<(getNbin())[i];j++){
             vHigh[i]=int(j);  
             projectOnLowDimension(val,vHigh,ptr2obj); // recursive function: this is the core of the mechanism
