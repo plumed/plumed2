@@ -149,6 +149,10 @@ public:
  virtual double getValue(unsigned index) const;
  virtual double getValue(const std::vector<unsigned> & indices) const;
  virtual double getValue(const std::vector<double> & x) const;
+/// get minimum value
+  virtual double getMinValue() const;
+/// get maximum value
+  virtual double getMaxValue() const;
 /// get grid value and derivatives
  virtual double getValueAndDerivatives(unsigned index, std::vector<double>& der) const ;
  virtual double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;

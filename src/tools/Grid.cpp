@@ -24,6 +24,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstdio>
+#include <cfloat>
 
 #include "Grid.h"
 #include "Tools.h"
@@ -342,6 +343,27 @@ double Grid::getValue(unsigned index) const {
  plumed_assert(index<maxsize_);
  return grid_[index];
 }
+
+double Grid::getMinValue() const {
+ double minval;
+ minval=DBL_MAX;
+ for(unsigned i=0;i<grid_.size();++i){
+	 if(grid_[i]<minval)minval=grid_[i];
+ }
+ return minval;
+}
+
+double Grid::getMaxValue() const {
+ double maxval;
+ maxval=DBL_MIN;
+ for(unsigned i=0;i<grid_.size();++i){
+	 if(grid_[i]>maxval)maxval=grid_[i];
+ }
+ return maxval;
+}
+
+
+
 
 double Grid::getValue(const vector<unsigned> & indices) const {
  return getValue(getIndex(indices));
@@ -681,7 +703,7 @@ void SparseGrid::writeToFile(OFile& ofile){
 void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBase * ptr2obj ){
     unsigned i=0;
     for(i=0;i<vHigh.size();i++){
-       if(vHigh[i]<0){
+       if(vHigh[i]<0){// this bin needs to be integrated out 
     	  for(unsigned j=0;j<(getNbin())[i];j++){
             vHigh[i]=int(j);  
             projectOnLowDimension(val,vHigh,ptr2obj); // recursive function: this is the core of the mechanism
@@ -690,6 +712,7 @@ void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBas
           return; // 
        }
     }
+    // when there are no more bin to dig in then retrieve the value 
     if(i==vHigh.size()){
         //std::cerr<<"POINT: "; 
         //for(unsigned j=0;j<vHigh.size();j++){
@@ -706,7 +729,6 @@ void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBas
         double myv=getValue(vv);
         val=ptr2obj->projectInnerLoop(val,myv) ;
         // to be added: bias (same as before without negative sign) 
-        
         //std::cerr<<" VAL: "<<val <<endl;
     }
 }
@@ -767,11 +789,22 @@ Grid Grid::project(const std::vector<std::string> & proj , WeightBase *ptr2obj )
                  v=smallgrid.getIndices(i);
                  std::vector<int> vHigh((getArgNames()).size(),-1);   
                  for(unsigned j=0;j<dimMapping.size();j++)vHigh[dimMapping[j]]=int(v[j]);
-                 // the vector vhigh now contains at the beginning the index of the low dimension and -1 for the values that need to be calculated 
+                 // the vector vhigh now contains at the beginning the index of the low dimension and -1 for the values that need to be integrated 
                  double initval=0.;  
                  projectOnLowDimension(initval,vHigh, ptr2obj); 
-                 // to integrate metadynamics
-                 smallgrid.setValue(i,ptr2obj->projectOuterLoop(initval));  
+                 smallgrid.setValue(i,initval);  
+         }
+         // reset to zero just for biasing (this option can be evtl enabled in a future...) 
+         //double vmin;vmin=-smallgrid.getMinValue()+1;
+         for(unsigned i=0;i<smallgrid.getSize();i++){
+         //         //if(dynamic_cast<BiasWeight*>(ptr2obj)){
+	 //         //        smallgrid.addValue(i,vmin);// go to 1	
+         //         //}
+                  double vv=smallgrid.getValue(i); 
+                  smallgrid.setValue(i,ptr2obj->projectOuterLoop(vv));
+ 	 //         //if(dynamic_cast<BiasWeight*>(ptr2obj)){
+	 //         //        smallgrid.addValue(i,-vmin);// bring back to the value	
+         //         //}
          }
 
      return smallgrid; 
