@@ -74,6 +74,7 @@ Grid::Grid(const std::string& funcl, const std::vector<string> &names, const std
 void Grid::Init(const std::string& funcl, const std::vector<std::string> &names, const vector<std::string> & gmin, 
            const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, bool usederiv, bool doclear, 
      	   const std::vector<bool> &isperiodic, const std::vector<std::string> &pmin, const std::vector<std::string> &pmax ){
+ fmt_="%14.9f"; 
 // various checks
  plumed_massert(names.size()==gmin.size(),"grid dimensions in input do not match number of arguments");
  plumed_massert(names.size()==nbin.size(),"grid dimensions in input do not match number of arguments");
@@ -532,9 +533,9 @@ void Grid::writeToFile(OFile& ofile){
        if( pbc_[j] ) ofile.printField("periodic_" + argnames[j], "true" ); 
        else          ofile.printField("periodic_" + argnames[j], "false" );
    }
-   for(unsigned j=0;j<dimension_;++j){ ofile.fmtField(" %14.9f"); ofile.printField(argnames[j],xx[j]); }
-   ofile.fmtField(" %14.9f"); ofile.printField(funcname,f);
-   if(usederiv_) for(unsigned j=0;j<dimension_;++j){ ofile.fmtField(" %14.9f"); ofile.printField("der_" + argnames[j] ,der[j]); } 
+   for(unsigned j=0;j<dimension_;++j){ ofile.fmtField(" "+fmt_); ofile.printField(argnames[j],xx[j]); }
+   ofile.fmtField(" "+fmt_); ofile.printField(funcname,f);
+   if(usederiv_) for(unsigned j=0;j<dimension_;++j){ ofile.fmtField(" "+fmt_); ofile.printField("der_" + argnames[j] ,der[j]); } 
    ofile.printField();
  }
 }
@@ -678,7 +679,7 @@ void SparseGrid::writeToFile(OFile& ofile){
  vector<double> der(dimension_);
  double f;
  writeHeader(ofile);
- ofile.fmtField(" %14.9f");
+ ofile.fmtField(" "+fmt_);
  for(iterator it=map_.begin();it!=map_.end();++it){
    unsigned i=(*it).first;
    xx=getPoint(i);

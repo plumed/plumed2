@@ -78,7 +78,7 @@ protected:
  std::vector<bool> pbc_;
  unsigned maxsize_, dimension_;
  bool dospline_, usederiv_;
-
+ std::string fmt_; // format for output 
  /// get "neighbors" for spline
  std::vector<unsigned> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
@@ -186,8 +186,8 @@ public:
 /// to enable many types of weighting
  Grid project( const std::vector<std::string> & proj , WeightBase *ptr2obj  ); 
  void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj ); 
-/// do a clean
- void doclear(){clear();} 
+/// set output format
+ void setOutputFmt(std::string ss){fmt_=ss;};
 };
 
   
