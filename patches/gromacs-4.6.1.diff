@@ -48,7 +48,22 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  #endif
  #ifdef GMX_THREAD_MPI
  #include "tmpi.h"
-@@ -711,10 +717,50 @@
+@@ -235,10 +241,14 @@
+     /* PME load balancing data for GPU kernels */
+     pme_load_balancing_t pme_loadbal = NULL;
+     double               cycles_pmes;
+     gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
+ 
++/* PLUMED */
++    int plumedNeedsEnergy;
++/* END PLUMED */
++
+ #ifdef GMX_FAHCORE
+     /* Temporary addition for FAHCORE checkpointing */
+     int chkpt_ret;
+ #endif
+ 
+@@ -714,10 +724,50 @@
              }
          }
          fprintf(fplog, "\n");
@@ -99,7 +114,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
      print_date_and_time(fplog, cr->nodeid, "Started mdrun", runtime);
      wallcycle_start(wcycle, ewcRUN);
      if (fplog)
-@@ -1027,10 +1073,17 @@
+@@ -1030,10 +1080,17 @@
                                      vsite, shellfc, constr,
                                      nrnb, wcycle,
                                      do_verbose && !bPMETuneRunning);
@@ -117,7 +132,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  
          if (MASTER(cr) && do_log && !bFFscan)
          {
-@@ -1172,16 +1225,37 @@
+@@ -1175,16 +1232,39 @@
              /* The coordinates (x) are shifted (to get whole molecules)
               * in do_force.
               * This is parallellized as well, and does communication too.
@@ -126,12 +141,14 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 + 
 +            /* PLUMED */
 +            if(plumedswitch){
++              plumedNeedsEnergy=0;
 +              plumed_cmd(plumedmain,"setStep",&step);
 +              plumed_cmd(plumedmain,"setPositions",&state->x[mdatoms->start][0]);
 +              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[mdatoms->start]);
 +              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
 +              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
 +              plumed_cmd(plumedmain,"prepareCalc",NULL);
++              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
 +            }
 +            /* END PLUMED */
              do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
@@ -139,10 +156,11 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
                       f, force_vir, mdatoms, enerd, fcd,
                       state->lambda, graph,
                       fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
-                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
+-                     (bNS ? GMX_FORCE_NS : 0) | force_flags);
++                     (plumedNeedsEnergy? GMX_FORCE_ENERGY : 0) |(bNS ? GMX_FORCE_NS : 0) | force_flags);
 +            /* PLUMED */
 +            if(plumedswitch){
-+              plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
++              if(plumedNeedsEnergy) plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
 +              plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
 +              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
 +              plumed_cmd(plumedmain,"performCalc",NULL);

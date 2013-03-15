@@ -301,6 +301,11 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else if(word=="runFinalJobs"){  
        CHECK_INIT(initialized,word);
        runJobsAtEndOfCalculation();
+  } else if(word=="isEnergyNeeded"){
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
+       if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
+       else                       *(static_cast<int*>(val))=0;
   } else {
 // multi word commands
 

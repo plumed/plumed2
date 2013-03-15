@@ -166,6 +166,8 @@ public:
 
   double getEnergy()const{plumed_assert(collectEnergy && energyHasBeenSet); return energy;};
 
+  bool isEnergyNeeded()const{return collectEnergy;};
+
   void setMDEnergyUnits(double d){MDUnits.setEnergy(d);};
   void setMDLengthUnits(double d){MDUnits.setLength(d);};
   void setMDTimeUnits(double d){MDUnits.setTime(d);};
