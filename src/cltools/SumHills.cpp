@@ -44,6 +44,8 @@ namespace cltools {
 /*
 sum_hills is a tool that allows one to to use plumed to post-process an existing hills/colvar file 
 
+\par Examples
+
 a typical case is about the integration of a hills file: 
 
 \verbatim
@@ -126,6 +128,31 @@ plumed sum_hills --hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt
 \endverbatim
 The two files can be eventually the same 
 
+Another interesting thing one can do is monitor the difference in blocks as a metadynamics goes on. 
+When the bias deposited is constant over the whole domain one can consider to be at convergence. 
+This can be done with the --nohistory keyword 
+
+\verbatim
+plumed sum_hills --stride 300 --hills PATHTOMYHILLSFILE  --nohistory 
+\endverbatim
+
+and similarly one can do the same for an histogram file 
+
+\verbatim
+plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6 --nohistory 
+\endverbatim
+
+just to check the hypothetical free energy calculated in single blocks of time during a simulation
+and not in a cumulative way
+
+Output format can be controlled via the --fmt field
+
+\verbatim
+plumed sum_hills --hills PATHTOMYHILLSFILE  --fmt %8.3f 
+\endverbatim
+
+where here we chose a float with length of 8 and 3 digits 
+
 */
 //+ENDPLUMEDOC
 
@@ -155,6 +182,8 @@ void CLToolSumHills::registerKeywords( Keywords& keys ){
   keys.add("optional","--kt","specify temperature for integrating out variables");
   keys.add("optional","--sigma"," a vector that specify the sigma for binning (only needed when doing histogram ");
   keys.addFlag("--negbias",false," print the negative bias instead of the free energy (only needed with welltempered runs and flexible hills) ");
+  keys.addFlag("--nohistory",false," to be used with --stride:  it splits the bias/histogram in pieces without previous history ");
+  keys.add("optional","--fmt","specify the output format");
 }
 
 CLToolSumHills::CLToolSumHills(const CLToolOptions& co ):
@@ -254,6 +283,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   ss="setNatoms";
   plumed.cmd(ss,&nn);  
   ss="init";
+  if(Communicator::initialized())  plumed.cmd("setMPIComm",&pc.Get_comm()); 
   plumed.cmd("init",&nn);  
   vector <bool> isdone(cvs.size(),false);  
   for(int i=0;i<cvs.size();i++){
@@ -391,6 +421,11 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   std::string  stride; stride="";
   if(parse("--stride",stride)){
     actioninput.push_back("INITSTRIDE="+stride);
+    bool  nohistory; 
+    parseFlag("--nohistory",nohistory);
+    if(nohistory){
+       actioninput.push_back("NOHISTORY");
+    }
   }
   if(idw.size()!=0){ 
      addme="PROJ=";
@@ -416,6 +451,12 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   if(negbias){
  	actioninput.push_back("NEGBIAS");
   }
+
+
+  std::string fmt;fmt="";
+  parse("--fmt",fmt);
+  if(fmt!="")actioninput.push_back("FMT="+fmt);
+
 
 //  for(unsigned i=0;i< actioninput.size();i++){
 //   cerr<<"AA "<<actioninput[i]<<endl;	
@@ -461,10 +502,10 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
                            ss.push_back(fields[i]);
 		   	   cvs.push_back(ss);	
 		   }
-                   std::cerr<<"found variable number  "<<cvs.size()<<" :  "<<cvs.back()[0]<<std::endl;
-		   if((cvs.back()).size()!=1){
-                   	std::cerr<<"component    "<<(cvs.back()).back()<<std::endl;
-	  	   }
+                   //std::cerr<<"found variable number  "<<cvs.size()<<" :  "<<cvs.back()[0]<<std::endl;
+		   //if((cvs.back()).size()!=1){
+                   //	std::cerr<<"component    "<<(cvs.back()).back()<<std::endl;
+	  	   //}
                    // get periodicity
                    pmin.push_back("none");
                    pmax.push_back("none");
@@ -475,14 +516,14 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
                         pmin[pmin.size()-1]=val; 
                        // std::cerr<<"found min   :  "<<pmin.back()<<std::endl;
                    }
-                   std::cerr<<"found min   :  "<<pmin.back()<<std::endl;
+                   //std::cerr<<"found min   :  "<<pmin.back()<<std::endl;
      	           if(ifile.FieldExist("max_"+mm)){
               		std::string val;
               		ifile.scanField("max_"+mm,val);
                         pmax[pmax.size()-1]=val; 
                        // std::cerr<<"found max   :  "<<pmax.back()<<std::endl;
                    }
-                   std::cerr<<"found max   :  "<<pmax.back()<<std::endl;
+                   //std::cerr<<"found max   :  "<<pmax.back()<<std::endl;
               }
           }
           // is multivariate ???

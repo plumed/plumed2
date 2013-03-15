@@ -240,7 +240,18 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 		vbin[j]=static_cast<unsigned>(ceil((vmax[j]-vmin[j])/binsize[j]) );	
 	}
 }
-
+void BiasRepresentation::clear(){
+        // clear the hills
+	for(vector<KernelFunctions*>::const_iterator it = hills.begin(); it != hills.end(); it++)
+        {
+	    delete *it;
+        } 
+        hills.clear(); 
+        // clear the grid
+        if(hasgrid){
+              BiasGrid_->clear();
+        }
+}
 
 
 }

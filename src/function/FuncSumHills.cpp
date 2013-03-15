@@ -22,6 +22,7 @@
 #include "ActionRegister.h"
 #include "Function.h"
 #include "tools/Exception.h"
+#include "tools/Communicator.h"
 #include "tools/BiasRepresentation.h"
 #include "tools/File.h"
 #include "tools/Tools.h"
@@ -35,6 +36,13 @@ namespace function{
 
 //+PLUMEDOC FUNCTION FUNCSUMHILLS 
 /*
+This function is intended to be called by the command line tool sum_hills
+and it is meant to integrate a HILLS file or an HILLS file interpreted as 
+a histogram i a variety of ways. Therefore it is not expected that you use this 
+during your dynamics (it will crash!)
+
+In the future one could implement periodic integration during the metadynamics 
+or straightforward MD as a tool to check convergence
 
 */
 //+ENDPLUMEDOC
@@ -71,6 +79,7 @@ bool FilesHandler::readBunch(BiasRepresentation *br , unsigned stride = -1){
         bool morefiles; morefiles=true;
 	if(parallelread){
 		(*log)<<"  doing parallelread \n";
+                plumed_merror("parallelread is not yet implemented !!!");
         }else{
 		(*log)<<"  doing serialread \n";
         	// read one by one hills      
@@ -169,8 +178,9 @@ class FuncSumHills :
   int initstride;
   bool iscltool,integratehills,integratehisto,parallelread;
   bool negativebias;
+  bool nohistory;
   double beta;
-  string outhills,outhisto;
+  string outhills,outhisto,fmt;
   BiasRepresentation *biasrep;
   BiasRepresentation *historep;
 public:
@@ -201,6 +211,8 @@ void FuncSumHills::registerKeywords(Keywords& keys){
   keys.addFlag("ISCLTOOL",true,"use via plumed commandline: calculate at read phase and then go");
   keys.addFlag("PARALLELREAD",false,"read parallel HILLS file");
   keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in welltempered with flexible hills ");
+  keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");
+  keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
 FuncSumHills::FuncSumHills(const ActionOptions&ao):
@@ -212,8 +224,14 @@ integratehills(false),
 integratehisto(false),
 parallelread(false),
 negativebias(false),
+nohistory(false),
+fmt("%14.9f"),
 beta(-1.)
 {
+
+  // format
+  parse("FMT",fmt);
+  log<<"  Output format is "<<fmt<<"\n"; 
   // here read 
   // Grid Stuff
   vector<std::string> gmin;
@@ -330,6 +348,8 @@ beta(-1.)
   	 outhills="fes.dat";outhisto="correction.dat";}
   else{outhills="fes_";outhisto="correction_";
 	log<<"  Doing integration slices every "<<initstride<<" kernels\n";
+        parseFlag("NOHISTORY",nohistory); 
+        if(nohistory)log<<"  nohistory: each stride block has no memory of the previous block\n";
   }
 
   //what might it be this? 
@@ -390,43 +410,54 @@ beta(-1.)
     int nfiles=0;
     bool ibias=integratehills; bool ihisto=integratehisto;
     while(true){
-        if(  integratehills  && ibias  ){ log<<"  reading hills: \n"; ibias=hillsHandler->readBunch(biasrep,initstride) ; log<<"\n"; }   
-        if(  integratehisto  && ihisto ){ log<<"  reading histogram: \n"; ihisto=histoHandler->readBunch(historep,initstride) ;  log<<"\n";  }    
+        if(  integratehills  && ibias  ){
+		if(nohistory){biasrep->clear();log<<"  clearing history before reading a new block\n";}; 
+		log<<"  reading hills: \n"; 
+		ibias=hillsHandler->readBunch(biasrep,initstride) ; log<<"\n"; 
+        }   
+
+        if(  integratehisto  && ihisto ){
+		if(nohistory){historep->clear();log<<"  clearing history before reading a new block\n";}; 
+		log<<"  reading histogram: \n"; 
+		ihisto=histoHandler->readBunch(historep,initstride) ;  log<<"\n";  
+        }    
+
 	// dump: need to project?	
         if(proj.size()!=0){
 
 		if(integratehills){
 
-    	      		log<<"  Projecting on subgrid... \n";
+    	      		log<<"  Bias: Projecting on subgrid... \n";
               		BiasWeight *Bw=new BiasWeight(beta); 
-              		WeightBase *Wb=dynamic_cast<WeightBase*>(Bw); 
              		Grid biasGrid=*(biasrep->getGridPtr());
-   	      		Grid smallGrid=biasGrid.project(proj,Wb);
+   	      		Grid smallGrid=biasGrid.project(proj,Bw);
               		OFile gridfile; gridfile.link(*this);
 	      		std::ostringstream ostr;ostr<<nfiles;
               		string myout; 
                         if(initstride>0){ myout=outhills+ostr.str()+".dat" ;}else{myout=outhills;}
-              		log<<"  Writing subgrid on file "<<myout<<" \n";
+              		log<<"  Bias: Writing subgrid on file "<<myout<<" \n";
               		gridfile.open(myout);	
-         
+        		smallGrid.setOutputFmt(fmt); 
    	      		smallGrid.writeToFile(gridfile);
               		gridfile.close();
                         if(!ibias)integratehills=false;// once you get to the final bunch just give up 
+
 		}
 		if(integratehisto){
 
+    	      		log<<"  Histo: Projecting on subgrid... \n";
                         ProbWeight *Pw=new ProbWeight(beta);
-                        WeightBase *Wb=dynamic_cast<WeightBase*>(Pw);
              		Grid histoGrid=*(historep->getGridPtr());
-   	      		Grid smallGrid=histoGrid.project(proj,Wb);
+   	      		Grid smallGrid=histoGrid.project(proj,Pw);
 
               		OFile gridfile; gridfile.link(*this);
 	      		std::ostringstream ostr;ostr<<nfiles;
               		string myout; 
                         if(initstride>0){ myout=outhisto+ostr.str()+".dat" ;}else{myout=outhisto;}
-              		log<<"  Writing subgrid on file "<<myout<<" \n";
+              		log<<"  Histo: Writing subgrid on file "<<myout<<" \n";
               		gridfile.open(myout);	
          
+        		smallGrid.setOutputFmt(fmt); 
    	      		smallGrid.writeToFile(gridfile);
               		gridfile.close();
 
@@ -447,6 +478,7 @@ beta(-1.)
 	                log<<"  Writing full grid on file "<<myout<<" \n";
 	                gridfile.open(myout);	
 	
+        		biasGrid.setOutputFmt(fmt); 
 	                biasGrid.writeToFile(gridfile);
 	                gridfile.close();
 			// rescale back prior to accumulate
@@ -465,6 +497,7 @@ beta(-1.)
 	                log<<"  Writing full grid on file "<<myout<<" \n";
 	                gridfile.open(myout);	
 	
+        		histoGrid.setOutputFmt(fmt); 
 	                histoGrid.writeToFile(gridfile);
 	                gridfile.close();
 

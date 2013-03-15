@@ -78,14 +78,14 @@ protected:
  std::vector<bool> pbc_;
  unsigned maxsize_, dimension_;
  bool dospline_, usederiv_;
-
+ std::string fmt_; // format for output 
  /// get "neighbors" for spline
  std::vector<unsigned> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
+
+public:
  /// clear grid
  virtual void clear();
- 
-public:
  /// this constructor here is Value-aware  
  Grid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
       const std::vector<std::string> & gmax, const std::vector<unsigned> & nbin, bool dospline, 
@@ -149,6 +149,10 @@ public:
  virtual double getValue(unsigned index) const;
  virtual double getValue(const std::vector<unsigned> & indices) const;
  virtual double getValue(const std::vector<double> & x) const;
+/// get minimum value
+  virtual double getMinValue() const;
+/// get maximum value
+  virtual double getMaxValue() const;
 /// get grid value and derivatives
  virtual double getValueAndDerivatives(unsigned index, std::vector<double>& der) const ;
  virtual double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
@@ -182,6 +186,8 @@ public:
 /// to enable many types of weighting
  Grid project( const std::vector<std::string> & proj , WeightBase *ptr2obj  ); 
  void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj ); 
+/// set output format
+ void setOutputFmt(std::string ss){fmt_=ss;};
 };
 
   
