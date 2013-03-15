@@ -44,7 +44,7 @@ public:
 /// This does the resizing of the buffer
   void resize();
 /// This does nothing
-  std::string description(){ return""; }
+  std::string description(){ return ""; }
 /// This does nothing
   void finish(){}
 /// Add some force to the atoms

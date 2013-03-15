@@ -99,11 +99,15 @@ void StoreCentralAtomsVessel::chainRuleForCentralAtom( const unsigned& iatom, co
   unsigned nder=3*mycolv->colvar_atoms[iatom].getNumberActive();
   unsigned nder2=mycolv->getNumberOfDerivatives();
   for(unsigned ider=0;ider<nder;++ider){
-      unsigned jder = iderno*nder2 + mycolv->getOutputDerivativeIndex( iatom, ider );
+      unsigned ibuf=start[iatom] + 1 + ider; double thisder=0.0;
       for(unsigned jcomp=0;jcomp<3;++jcomp){
-          unsigned ibuf=start[iatom] + jcomp*(nder+1) + 1 + ider;
-          act->addElementDerivative( jder, df[jcomp]*getBufferElement(ibuf) );
+          thisder+=df[jcomp]*getBufferElement(ibuf);
+          ibuf+=(nder+1);
+          //unsigned ibuf=start[iatom] + jcomp*(nder+1) + 1 + ider;
+          //act->addElementDerivative( jder, df[jcomp]*getBufferElement(ibuf) );
       }
+      unsigned jder = iderno*nder2 + mycolv->getOutputDerivativeIndex( iatom, ider );
+      act->addElementDerivative( jder, thisder );
   }
 }
  
