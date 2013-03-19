@@ -22,6 +22,7 @@
 #ifndef __PLUMED_multicolvar_StoreCentralAtomsVessel_h
 #define __PLUMED_multicolvar_StoreCentralAtomsVessel_h
 
+#include "tools/DynamicList.h"
 #include "vesselbase/Vessel.h" 
 #include "MultiColvar.h"
 
@@ -35,6 +36,7 @@ private:
   MultiColvar* mycolv;
   std::vector<unsigned> start;
   bool wasforced;
+  std::vector< DynamicList<unsigned> > active_der;
   std::vector<double> forces;
 public:
 /// Constructor
@@ -45,8 +47,8 @@ public:
   void resize();
 /// This does nothing
   std::string description(){ return ""; }
-/// This does nothing
-  void finish(){}
+/// This should mpi gather the active atoms
+  void finish();
 /// Add some force to the atoms
   void addForces( const std::vector<double>& );
 /// Copy forces to local arrays

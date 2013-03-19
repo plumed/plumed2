@@ -85,8 +85,6 @@ private:
   const int numlab;
 /// The action that this vessel is created within
   ActionWithVessel* action;
-/// A copy of the communicator
-  Communicator& comm;
 /// Something to store the buffer if this is required
   std::vector<double> stash;
 /// The start of this Vessel's buffer in buffer in the underlying ActionWithVessel
@@ -102,6 +100,8 @@ private:
 /// This just checks we have done checkRead
   bool finished_read;
 protected:
+/// A copy of the communicator
+  Communicator& comm;
 /// Return the numerical label
   int getNumericalLabel() const ;
 /// Report an error 

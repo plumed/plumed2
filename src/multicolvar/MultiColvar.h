@@ -70,6 +70,7 @@ private:
   std::vector<Vector> pos;
   Tensor ibox;
   bool centralAtomDerivativesAreInFractional;
+  DynamicList<unsigned> atomsWithCatomDer;
   std::vector<Tensor> central_derivs;
 /// Read in the various GROUP keywords
   void readGroupsKeyword( int& natoms );
@@ -88,6 +89,8 @@ protected:
   void readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths );
 /// Add a colvar to the set of colvars we are calculating (in practise just a list of atoms)
   void addColvar( const std::vector<unsigned>& newatoms );
+/// Build lists of indexes of the derivatives from the colvar atoms arrays
+  void buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der ) const ;
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Find out if it is time to do neighbor list update

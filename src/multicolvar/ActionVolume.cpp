@@ -86,18 +86,20 @@ bool ActionVolume::performTask( const unsigned& j ){
 
   Vector catom_pos=mycolv->retrieveCentralAtomPos( derivativesOfFractionalCoordinates() );
 
-  double weight; Vector wdf;
+  double weight; Vector wdf; 
   weight=calculateNumberInside( catom_pos, bead, wdf ); 
   if( not_in ){ weight = 1.0 - weight; wdf *= -1.; }  
 
   if( mycolv->isDensity() ){
-     setElementValue( 0, weight ); setElementValue( 1, 1.0 );
+     setElementValue( 0, weight ); setElementValue( 1, 1.0 ); 
      for(unsigned i=0;i<mycolv->getNAtoms();++i){
-        addElementDerivative( mycolv->getOutputDerivativeIndex(mycolv->current,3*i+0), mycolv->getCentralAtomDerivative(i, 0, wdf ) );
-        addElementDerivative( mycolv->getOutputDerivativeIndex(mycolv->current,3*i+1), mycolv->getCentralAtomDerivative(i, 1, wdf ) );
-        addElementDerivative( mycolv->getOutputDerivativeIndex(mycolv->current,3*i+2), mycolv->getCentralAtomDerivative(i, 2, wdf ) );
+        unsigned nx=3*linkIndex( i, mycolv->colvar_atoms[mycolv->current], mycolv->all_atoms );
+        addElementDerivative( nx+0, mycolv->getCentralAtomDerivative(i, 0, wdf ) );
+        addElementDerivative( nx+1, mycolv->getCentralAtomDerivative(i, 1, wdf ) );
+        addElementDerivative( nx+2, mycolv->getCentralAtomDerivative(i, 2, wdf ) );
      }
   } else {
+     // Copy derivatives of the colvar and the value of the colvar
      double colv=mycolv->getElementValue(0); setElementValue( 0, colv );
      for(unsigned i=0;i<mycolv->nderivatives;++i){
         addElementDerivative( mycolv->getOutputDerivativeIndex(mycolv->current,i), mycolv->getElementDerivative(i) ); 
@@ -106,13 +108,20 @@ bool ActionVolume::performTask( const unsigned& j ){
      double ww=mycolv->getElementValue(1);
      setElementValue( 1, ww*weight ); 
 
-     for(unsigned i=0;i<mycolv->getNAtoms();++i){
-        addElementDerivative( nderivatives+mycolv->getOutputDerivativeIndex(mycolv->current,3*i+0), 
-                                   ww*mycolv->getCentralAtomDerivative(i, 0, wdf ) + weight*mycolv->getElementDerivative(nderivatives+3*i+0) );
-        addElementDerivative( nderivatives+mycolv->getOutputDerivativeIndex(mycolv->current,3*i+1),  
-                                   ww*mycolv->getCentralAtomDerivative(i, 1, wdf ) + weight*mycolv->getElementDerivative(nderivatives+3*i+1) );
-        addElementDerivative( nderivatives+mycolv->getOutputDerivativeIndex(mycolv->current,3*i+2),  
-                                   ww*mycolv->getCentralAtomDerivative(i, 2, wdf ) + weight*mycolv->getElementDerivative(nderivatives+3*i+2) );
+     // Add derivatives of weight if we have a weight
+     if( mycolv->weightHasDerivatives ){
+        for(unsigned i=0;i<mycolv->nderivatives;++i){
+           addElementDerivative( nderivatives+mycolv->getOutputDerivativeIndex(mycolv->current,i), weight*mycolv->getElementDerivative(nderivatives+i) );
+        } 
+     }
+
+     // Add derivatives of central atoms
+     for(unsigned i=0;i<mycolv->atomsWithCatomDer.getNumberActive();++i){
+         unsigned n=mycolv->atomsWithCatomDer[i];
+         unsigned nx=nderivatives+3*linkIndex( n, mycolv->colvar_atoms[mycolv->current], mycolv->all_atoms);
+         addElementDerivative( nx+0, ww*mycolv->getCentralAtomDerivative(i, 0, wdf ) );
+         addElementDerivative( nx+1, ww*mycolv->getCentralAtomDerivative(i, 1, wdf ) );
+         addElementDerivative( nx+2, ww*mycolv->getCentralAtomDerivative(i, 2, wdf ) );
      }
   }
 

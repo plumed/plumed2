@@ -58,8 +58,8 @@ Vessel::Vessel( const VesselOptions& da ):
 myname(da.myname),
 numlab(da.numlab),
 action(da.action),
-comm(da.action->comm),
 keywords(da.keywords),
+comm(da.action->comm),
 finished_read(false),
 log((da.action)->log)
 {

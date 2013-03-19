@@ -103,7 +103,11 @@ void MultiColvar::readAtoms( int& natoms ){
   all_atoms.activateAll(); colvar_list.activateAll();
   for(unsigned i=0;i<colvar_atoms.size();++i) colvar_atoms[i].activateAll(); 
   ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-  central_derivs.resize( getNumberOfAtoms() );
+  // Set up stuff for central atoms
+  for(unsigned i=0;i<colvar_atoms[0].fullSize();++i) atomsWithCatomDer.addIndexToList( i );
+  atomsWithCatomDer.deactivateAll();
+  central_derivs.resize( colvar_atoms[0].fullSize() );
+  for(unsigned i=0;i<central_derivs.size();++i) central_derivs[i].zero();
 }
 
 void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
@@ -339,7 +343,7 @@ void MultiColvar::prepare(){
   }
   if(updatetime){
      for(unsigned i=0;i<colvar_list.getNumberActive();++i) activateLinks( colvar_atoms[i], all_atoms ); 
-     all_atoms.updateActiveMembers(); central_derivs.resize( getNumberOfAtoms() );
+     all_atoms.updateActiveMembers(); 
      ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() ); resizeFunctions(); 
   }
 }
@@ -391,13 +395,24 @@ bool MultiColvar::performTask( const unsigned& j ){
 Vector MultiColvar::retrieveCentralAtomPos( const bool& frac ){
   centralAtomDerivativesAreInFractional=frac; 
   ibox=getPbc().getInvBox().transpose();
-  for(unsigned i=0;i<central_derivs.size();++i) central_derivs[i].zero();
-  if(frac) return getPbc().realToScaled( getCentralAtom() );
-  return getCentralAtom();
+
+  // Prepare to retrieve central atom
+  for(unsigned i=0;i<atomsWithCatomDer.getNumberActive();++i) central_derivs[ atomsWithCatomDer[i] ].zero(); 
+  atomsWithCatomDer.deactivateAll();   
+
+  // Retrieve the central atom position
+  Vector catom_pos;
+  if(frac) catom_pos=getPbc().realToScaled( getCentralAtom() );
+  else catom_pos=getCentralAtom();
+
+  // Complete the update of the active member list
+  atomsWithCatomDer.updateActiveMembers();
+  return catom_pos;
 }
 
 void MultiColvar::addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der ){
   plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
+  atomsWithCatomDer.activate(iatom);
   if( centralAtomDerivativesAreInFractional ) central_derivs[iatom] += matmul( ibox, der );
   else central_derivs[iatom] += der;
 }
@@ -474,6 +489,21 @@ void MultiColvar::apply(){
   }
 }
 
+void MultiColvar::buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der ) const {
+  active_der.resize( colvar_atoms.size() );
+  for(unsigned i=0;i<colvar_atoms.size();++i){
+     for(unsigned j=0;j<colvar_atoms[i].fullSize();++j){
+         active_der[i].addIndexToList( 3*colvar_atoms[i][j] + 0 );
+         active_der[i].addIndexToList( 3*colvar_atoms[i][j] + 1 );
+         active_der[i].addIndexToList( 3*colvar_atoms[i][j] + 2 );
+     }
+     unsigned virs=3*getNumberOfAtoms();
+     for(unsigned j=0;j<9;++j){
+        active_der[i].addIndexToList( virs ); virs++;
+     } 
+  } 
+}
+
 StoreCentralAtomsVessel* MultiColvar::getCentralAtoms(){
   // Look to see if vectors have already been created
   StoreCentralAtomsVessel* mycatoms;
@@ -488,6 +518,6 @@ StoreCentralAtomsVessel* MultiColvar::getCentralAtoms(){
   addVessel(sv); resizeFunctions(); // This makes sure resizing of vessels is done
   return sv;
 }
-
+     
 }
 }
