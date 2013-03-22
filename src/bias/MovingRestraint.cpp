@@ -96,7 +96,7 @@ the total bias deposited
 class MovingRestraint : public Bias{
   std::vector<std::vector<double> > at;
   std::vector<std::vector<double> > kappa;
-  std::vector<int> step;
+  std::vector<long int> step;
   std::vector<double> oldaa;
   std::vector<double> oldf;
   std::vector<string> verse;
@@ -126,7 +126,7 @@ PLUMED_BIAS_INIT(ao),
 verse(getNumberOfArguments())
 {
   parseVector("VERSE",verse);
-  vector<int> ss(1); ss[0]=-1;
+  vector<long int> ss(1); ss[0]=-1;
   std::vector<double> kk( getNumberOfArguments() ), aa( getNumberOfArguments() );
   for(int i=0;;i++){
     // Read in step 
@@ -147,7 +147,7 @@ verse(getNumberOfArguments())
   checkRead();
 
   for(unsigned i=0;i<step.size();i++){
-    log.printf("  step%u %d\n",i,step[i]);
+    log.printf("  step%u %ld\n",i,step[i]);
     log.printf("  at");
     for(unsigned j=0;j<at[i].size();j++) log.printf(" %f",at[i][j]);
     log.printf("\n");
@@ -177,7 +177,7 @@ void MovingRestraint::calculate(){
   double ene=0.0;
   double totf2=0.0;
   unsigned narg=getNumberOfArguments();
-  int now=getStep();
+  long int now=getStep();
   std::vector<double> kk(narg),aa(narg),f(narg);
   if(now<=step[0]){
     kk=kappa[0];

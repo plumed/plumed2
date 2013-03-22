@@ -67,6 +67,8 @@ public:
   static bool convert(const std::string & str,double & t);
 /// Convert a string to a int, reading it
   static bool convert(const std::string & str,int & t);
+/// Convert a string to a long int, reading it
+  static bool convert(const std::string & str,long int & t);
 /// Convert a string to an unsigned int, reading it
   static bool convert(const std::string & str,unsigned & t);
 /// Convert a string to a atom number, reading it

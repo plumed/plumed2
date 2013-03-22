@@ -117,7 +117,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +
 + /* PLUMED */
 +       if(plumedswitch){
-+         plumed_cmd(plumedmain,"setStep",&step);
++         long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
 +         plumed_cmd(plumedmain,"setPositions",&state->x[mdatoms->start][0]);
 +         plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[mdatoms->start]);
 +         plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
