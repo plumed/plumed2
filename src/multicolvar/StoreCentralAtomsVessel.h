@@ -36,6 +36,7 @@ private:
   MultiColvar* mycolv;
   std::vector<unsigned> start;
   bool wasforced;
+  unsigned nspace;
   std::vector< DynamicList<unsigned> > active_der;
   std::vector<double> forces;
 public:

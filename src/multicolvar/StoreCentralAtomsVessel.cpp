@@ -24,12 +24,15 @@
 #include "MultiColvar.h"
 #include "StoreCentralAtomsVessel.h"
 
+#define CATOMS_MAXATOMS 2
+
 namespace PLMD {
 namespace multicolvar {
 
 StoreCentralAtomsVessel::StoreCentralAtomsVessel( const vesselbase::VesselOptions& da ):
 Vessel(da),
-wasforced(false)
+wasforced(false),
+nspace(1 + 3*CATOMS_MAXATOMS)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_assert( mycolv );
@@ -42,7 +45,7 @@ void StoreCentralAtomsVessel::resize(){
   unsigned bsize=0; start.resize( nfunc +1 );
   for(unsigned i=0;i<nfunc;++i){
       start[i] = bsize;
-      bsize += 3*( 1 + mycolv->getNumberOfDerivatives() );
+      bsize += 3*( 1 + 3*CATOMS_MAXATOMS ); 
   }
   start[nfunc]=bsize;
   resizeBuffer( bsize ); 
@@ -58,15 +61,19 @@ bool StoreCentralAtomsVessel::calculate(){
   Vector catom_pos=mycolv->retrieveCentralAtomPos( false );
 
   // Store the value
-  unsigned ibuf=start[mycolv->current], nspace = 1 + mycolv->getNumberOfDerivatives();
+  unsigned ibuf=start[mycolv->current]; 
   for(unsigned i=0;i<3;++i){ addToBufferElement( ibuf, catom_pos[i] ); ibuf+=nspace; }
   plumed_dbg_assert( ibuf==start[mycolv->current+1] );
+
+  // Chect there is sufficent space for the derivatives
+  plumed_massert( 3*mycolv->atomsWithCatomDer.getNumberActive()<=3*CATOMS_MAXATOMS, 
+    "increase CATOMS_MAXATOMS in StoreCentralAtomsVessel");
 
   // Store the derivatives
   active_der[mycolv->current].deactivateAll();
   for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j){
       unsigned n=mycolv->atomsWithCatomDer[j]; 
-      ibuf = start[mycolv->current] + 1 + 3*mycolv->colvar_atoms[mycolv->current][n];
+      ibuf = start[mycolv->current] + 1 + 3*j;       
       for(unsigned i=0;i<3;++i){
           active_der[mycolv->current].activate(3*n+i); 
           for(unsigned k=0;k<3;++k) addToBufferElement( ibuf+k, mycolv->central_derivs[n](i,k) );
@@ -86,7 +93,7 @@ Vector StoreCentralAtomsVessel::getPosition( const unsigned& ivec ) const {
   unsigned pos=start[ivec]; Vector mypos;
   for(unsigned i=0;i<3;++i){
       mypos[i] = getBufferElement( pos ); 
-      pos+=mycolv->getNumberOfDerivatives() + 1;
+      pos+=nspace;      
   }
   plumed_dbg_assert( pos==start[ivec+1] );
   return mypos;
@@ -111,10 +118,11 @@ void StoreCentralAtomsVessel::chainRuleForCentralAtom( const unsigned& iatom, co
 
   unsigned nder=mycolv->getNumberOfDerivatives();
   for(unsigned ider=0;ider<active_der[iatom].getNumberActive();++ider){
-      unsigned ibuf=start[iatom] + 1 + active_der[iatom][ider]; double thisder=0.0;
+      unsigned ibuf=start[iatom] + 1 + ider;   
+      double thisder=0.0;
       for(unsigned jcomp=0;jcomp<3;++jcomp){
           thisder+=df[jcomp]*getBufferElement(ibuf);
-          ibuf+=(nder+1);
+          ibuf+=nspace;
       }
       unsigned jder = iderno*nder + active_der[iatom][ider];
       act->addElementDerivative( jder, thisder );
