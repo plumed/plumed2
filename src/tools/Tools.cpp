@@ -39,6 +39,15 @@ bool Tools::convert(const string & str,int & t){
         return remaining.length()==0;
 }
 
+bool Tools::convert(const string & str,long int & t){
+        istringstream istr(str.c_str());
+        bool ok=istr>>t;
+        if(!ok) return false;
+        string remaining;
+        istr>>remaining;
+        return remaining.length()==0;
+}
+
 bool Tools::convert(const string & str,unsigned & t){
         istringstream istr(str.c_str());
         bool ok=istr>>t;

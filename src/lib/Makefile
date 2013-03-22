@@ -44,11 +44,17 @@ PLUMED_MAIN_STATIC=plumed
 PLUMED_MAIN_SHARED=plumed-shared
 PLUMED_MAIN_RUNTIME=plumed-runtime
 
-.PHONY: all dirs $(DIRS)
+.PHONY: all dirs $(DIRS) all-static
 all:
 	@echo First making other dirs $(DIRS)
 	$(MAKE) dirs
 	$(MAKE) lib
+
+all-static:
+	@echo First making other dirs $(DIRS)
+	$(MAKE) dirs
+	$(MAKE) lib-static
+
 
 dirs: $(DIRS)
 
@@ -57,12 +63,15 @@ $(DIRS):
 
 
 # default target
-.PHONY: lib
-lib: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(OBJ_WRAPPER) \
-     $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
-     Plumed.inc Plumed.inc.runtime Plumed.inc.shared Plumed.inc.static \
-     Plumed.cmake Plumed.cmake.runtime Plumed.cmake.shared Plumed.cmake.static \
-     plumed-patch
+.PHONY: lib lib-static lib-shared
+
+lib: lib-static lib-shared
+
+lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) Plumed.inc.static Plumed.cmake.static plumed-patch
+
+lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
+           Plumed.inc Plumed.inc.runtime Plumed.inc.shared \
+           Plumed.cmake Plumed.cmake.runtime Plumed.cmake.shared
 
 plumed-patch:
 	@echo "#! /bin/bash" > plumed-patch

@@ -177,6 +177,11 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NULL(val,word);
        step=(*static_cast<int*>(val));
        atoms.startStep();
+ } else if(word=="setStepLong") {
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
+       step=(*static_cast<long int*>(val));
+       atoms.startStep();
 // words used less frequently:
   } else if(word=="setAtomsNlocal"){
        CHECK_INIT(initialized,word);

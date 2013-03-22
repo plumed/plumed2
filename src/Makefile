@@ -2,10 +2,13 @@
 .PHONY: all clean lib
 
 # by default we compile the lib directory, which in turn requests all the needeed modules
-all: lib
+all: lib lib-static
 
 lib: 
 	$(MAKE) -C lib
+
+lib-static: 
+	$(MAKE) -C lib all-static
      
 # list of all the contained directories which can be cleaned
 SUBDIRS =$(subst /Makefile,,$(wildcard */Makefile))

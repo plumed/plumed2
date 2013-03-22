@@ -99,7 +99,7 @@ public:
   void clearDependencies();
 
 /// Return the present timestep
-  int getStep()const; 
+  long int getStep()const; 
 
 /// Return the present time
   double getTime()const;
