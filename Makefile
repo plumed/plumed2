@@ -1,7 +1,7 @@
 -include Makefile.conf
 
 
-SRCDIRS = src extensions test
+SRCDIRS = src test
 SUBDIRS = $(SRCDIRS) user-doc developer-doc regtest
 
 SUBDIRSCLEAN=$(addsuffix .clean,$(SUBDIRS))
