@@ -79,34 +79,6 @@ void MultiColvar::readAtoms( int& natoms ){
   setupMultiColvarBase();
 }
 
-void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
-  plumed_massert( !readatoms, "I can only read atons using the RESIDUES keyword" );
-  plumed_massert( keywords.exists("RESIDUES"), "To read in the backbone atoms the keyword RESIDUES must be registered");
-  readatoms=true;
-
-  std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-  if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
-
-  std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
-  if( !verbose_output ){
-      if(resstrings[0]=="all"){
-         log.printf("  examining all possible secondary structure combinations\n");
-      } else {
-         log.printf("  examining secondary struture in residue poritions : %s ",resstrings[0].c_str() );
-         for(unsigned i=1;i<resstrings.size();++i) log.printf(", %s",resstrings[1].c_str() );
-         log.printf("\n");
-      }
-  }
-  std::vector< std::vector<AtomNumber> > backatoms; 
-  moldat[0]->getBackbone( resstrings, backnames, backatoms );
-
-  chain_lengths.resize( backatoms.size() );
-  for(unsigned i=0;i<backatoms.size();++i){
-     chain_lengths[i]=backatoms[i].size();
-     for(unsigned j=0;j<backatoms[i].size();++j) all_atoms.addIndexToList( backatoms[i][j] );
-  }
-}
-
 void MultiColvar::readAtomsLikeKeyword( const std::string key, int& natoms ){ 
   if( readatoms) return; 
 
@@ -328,26 +300,8 @@ Vector MultiColvar::calculateCentralAtomPosition(){
   Vector catom=getCentralAtom();
   atomsWithCatomDer.emptyActiveMembers();
   for(unsigned i=0;i<getNAtoms();++i) atomsWithCatomDer.updateIndex( getAtomIndex(i) );
+  atomsWithCatomDer.sortActiveList();
   return catom;
-}
-
-Vector MultiColvar::getCentralAtom(){
-  Vector fake;
-  plumed_merror("No central atoms with this colvar");
-  return fake;
-}
-
-void MultiColvar::setAlignedPositions( const std::vector<Vector>& apos ){
-  for(unsigned i=0;i<pos.size();++i) pos[i]=apos[i];
-}
-
-const std::vector<Vector>& MultiColvar::getPositions(){
-  unsigned natoms=getNAtoms();  
-  // Resize everything
-  if( pos.size()!=natoms ) pos.resize(natoms); 
-  // Get the position
-  for(unsigned i=0;i<natoms;++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(i) );  
-  return pos;
 }
      
 }

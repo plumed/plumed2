@@ -97,6 +97,7 @@ public:
 /// Returns the number of coordinates of the field
   void calculateWeight();
   bool isPeriodic(){ return false; }
+  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(Angles,"ANGLES")
@@ -186,6 +187,11 @@ double Angles::compute( const unsigned& j ){
   addBoxDerivatives( -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
 
   return angle;
+}
+
+Vector Angles::getCentralAtom(){
+   addCentralAtomDerivatives( 1, Tensor::identity() );
+   return getPosition(1);
 }
 
 }

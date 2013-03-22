@@ -25,38 +25,38 @@
 #include "core/Atoms.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace secondarystructure {
 
-//+PLUMEDOC COLVAR ANTIBETARMSD
+//+PLUMEDOC COLVAR PARABETARMSD
 /*
-Probe the antiparallel beta sheet content of your protein structure.
+Probe the parallel beta sheet content of your protein structure.
 
-Two protein segments containing three continguous residues can form an antiparallel beta sheet. 
+Two protein segments containing three continguous residues can form a parallel beta sheet. 
 Although if the two segments are part of the same protein chain they must be separated by 
-a minimum of 2 residues to make room for the turn. This colvar thus generates the set of 
-all possible six residue sections that could conceivably form an antiparallel beta sheet 
+a minimum of 3 residues to make room for the turn. This colvar thus generates the set of 
+all possible six residue sections that could conceivably form a parallel beta sheet 
 and calculates the RMSD distance between the configuration in which the residues find themselves
-and an idealized antiparallel beta sheet structure. These distances can be calculated by either 
+and an idealized parallel beta sheet structure. These distances can be calculated by either 
 aligning the instantaneous structure with the reference structure and measuring each
 atomic displacement or by calculating differences between the set of interatomic
 distances in the reference and instantaneous structures. 
 
 This colvar is based on the following reference \cite pietrucci09jctc.  The authors of 
-this paper use the set of distances from the anti parallel beta sheet configurations to measure 
-the number of segments that have an configuration that resemebles an anti paralel beta sheet. This is done by calculating
+this paper use the set of distances from the parallel beta sheet configurations to measure 
+the number of segments whose configuration resembles a parallel beta sheet. This is done by calculating
 the following sum of functions of the rmsd distances:
 
 \f[
 s = \sum_i \frac{ 1 - \left(\frac{r_i-d_0}{r_0}\right)^n } { 1 - \left(\frac{r_i-d_0}{r_0}\right)^m }
 \f]
 
-where the sum runs over all possible segments of antiparallel beta sheet.  By default the 
+where the sum runs over all possible segments of parallel beta sheet.  By default the 
 NN, MM and D_0 parameters are set equal to those used in \cite pietrucci09jctc.  The R_0
 parameter must be set by the user - the value used in \cite pietrucci09jctc was 0.08 nm.
 
 If you change the function in the above sum you can calculate quantities such as the average
-distance from a purely configuration composed of pure anti-parallel beta sheets or the distance between the set of 
-residues that is closest to an anti-parallel beta sheet and the reference configuration. To do these sorts of 
+distance from a structure composed of only parallel beta sheets or the distance between the set of 
+residues that is closest to a parallel beta sheet and the reference configuration. To do these sorts of 
 calculations you can use the AVERAGE and MIN keywords. In addition you can use the LESS_THAN
 keyword if you would like to change the form of the switching function. If you use any of these
 options you no longer need to specify NN, R_0, MM and D_0.   
@@ -68,41 +68,37 @@ anthing other than TYPE=DRMSD.  For more details as to how to do this see \ref W
 \par Examples
 
 The following input calculates the number of six residue segments of 
-protein that are in an antiparallel beta sheet configuration.
+protein that are in an parallel beta sheet configuration.
 
 \verbatim
 MOLINFO STRUCTURE=helix.pdb
-ANTIBETARMSD BACKBONE=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
+PARABETARMSD BACKBONE=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
 \endverbatim
 (see also \ref MOLINFO)
 
 */
 //+ENDPLUMEDOC
 
-class AntibetaRMSD : public SecondaryStructureRMSD {
+class ParabetaRMSD : public SecondaryStructureRMSD {
 private:
   double s_cutoff;
 public:
   static void registerKeywords( Keywords& keys );
-  AntibetaRMSD(const ActionOptions&);
-  void calculateWeight();
+  ParabetaRMSD(const ActionOptions&);
 }; 
 
-PLUMED_REGISTER_ACTION(AntibetaRMSD,"ANTIBETARMSD")
+PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")
 
-void AntibetaRMSD::registerKeywords( Keywords& keys ){
+void ParabetaRMSD::registerKeywords( Keywords& keys ){
   SecondaryStructureRMSD::registerKeywords( keys );
-  keys.add("compulsory","STYLE","all","Antiparallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
+  keys.add("compulsory","STYLE","all","Parallel beta sheets can either form in a single chain or from a pair of chains. If STYLE=all all "
                                       "chain configuration with the appropriate geometry are counted.  If STYLE=inter "
                                       "only sheet-like configurations involving two chains are counted, while if STYLE=intra "
                                       "only sheet-like configurations involving a single chain are counted");
-  keys.add("optional","STRANDS_CUTOFF","If in a segment of protein the two strands are further apart then the calculation "
-                                       "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
-                                       "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
-                                       "However, if you are using some other option, then this cannot be used");
+  keys.use("STRANDS_CUTOFF");
 }
 
-AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
+ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
 Action(ao),
 SecondaryStructureRMSD(ao),
 s_cutoff(0)
@@ -112,7 +108,7 @@ s_cutoff(0)
   backnames[0]="N"; backnames[1]="CA"; backnames[2]="CB"; backnames[3]="C"; backnames[4]="O";
   readBackboneAtoms( backnames, chains );
 
-  bool intra_chain(false), inter_chain(false); 
+  bool intra_chain, inter_chain; 
   std::string style; parse("STYLE",style);
   if( style=="all" ){ 
       intra_chain=true; inter_chain=true;
@@ -124,8 +120,8 @@ s_cutoff(0)
       error( style + " is not a valid directive for the STYLE keyword");
   }
 
-  parse("STRANDS_CUTOFF",s_cutoff);
-  if( s_cutoff>0) log.printf("  ignoring contributions from strands that are more than %f apart\n",s_cutoff);
+  // Align the atoms based on the positions of these two atoms
+  setAtomsFromStrands( 6, 21 );
 
   // This constructs all conceivable sections of antibeta sheet in the backbone of the chains
   if( intra_chain ){
@@ -133,13 +129,13 @@ s_cutoff(0)
     for(unsigned i=0;i<chains.size();++i){
        if( chains[i]<40 ) error("segment of backbone is not long enough to form an antiparallel beta hairpin. Each backbone fragment must contain a minimum of 8 residues");
        // Loop over all possible triples in each 8 residue segment of protein
-       nres=chains[i]/5; 
-       if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
-       for(unsigned ires=0;ires<nres-7;ires++){
-           for(unsigned jres=ires+7;jres<nres;jres++){
+       nres=chains[i]/5;
+       if( chains[i]%5!=0 ) error("backbone segment received does not contain a multiple of five residues"); 
+       for(unsigned ires=0;ires<nres-8;ires++){
+           for(unsigned jres=ires+6;jres<nres-2;jres++){
                for(unsigned k=0;k<15;++k){
                   nlist[k]=nprevious + ires*5+k;
-                  nlist[k+15]=nprevious + (jres-2)*5+k;
+                  nlist[k+15]=nprevious + jres*5+k;
                }
                addColvar( nlist );
            }
@@ -147,22 +143,23 @@ s_cutoff(0)
        nprevious+=chains[i];
     }
   }
+  // This constructs all conceivable sections of antibeta sheet that form between chains
   if( inter_chain ){
       if( chains.size()==1 && style!="all" ) error("there is only one chain defined so cannot use inter_chain option");
       unsigned iprev,jprev,inres,jnres; std::vector<unsigned> nlist(30);
       for(unsigned ichain=1;ichain<chains.size();++ichain){
          iprev=0; for(unsigned i=0;i<ichain;++i) iprev+=chains[i];
-         inres=chains[ichain]/5; 
+         inres=chains[ichain]/5;
          if( chains[ichain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
          for(unsigned ires=0;ires<inres-2;++ires){
             for(unsigned jchain=0;jchain<ichain;++jchain){
                 jprev=0; for(unsigned i=0;i<jchain;++i) jprev+=chains[i];
-                jnres=chains[jchain]/5;
+                jnres=chains[jchain]/5; 
                 if( chains[jchain]%5!=0 ) error("backbone segment received does not contain a multiple of five residues");
                 for(unsigned jres=0;jres<jnres-2;++jres){
                     for(unsigned k=0;k<15;++k){
-                       nlist[k]=iprev+ ires*5+k;
-                       nlist[k+15]=jprev+ jres*5+k;
+                       nlist[k]=iprev + ires*5+k;
+                       nlist[k+15]=jprev + jres*5+k;
                     } 
                     addColvar( nlist );
                 }
@@ -173,56 +170,71 @@ s_cutoff(0)
 
   // Build the reference structure ( in angstroms )
   std::vector<Vector> reference(30);
-  reference[0]=Vector( 2.263, -3.795,  1.722); // N    i
-  reference[1]=Vector( 2.493, -2.426,  2.263); // CA
-  reference[2]=Vector( 3.847, -1.838,  1.761); // CB
-  reference[3]=Vector( 1.301, -1.517,  1.921); // C
-  reference[4]=Vector( 0.852, -1.504,  0.739); // O
-  reference[5]=Vector( 0.818, -0.738,  2.917); // N    i+1
-  reference[6]=Vector(-0.299,  0.243,  2.748); // CA
-  reference[7]=Vector(-1.421, -0.076,  3.757); // CB
-  reference[8]=Vector( 0.273,  1.680,  2.854); // C
-  reference[9]=Vector( 0.902,  1.993,  3.888); // O
-  reference[10]=Vector( 0.119,  2.532,  1.813); // N    i+2
-  reference[11]=Vector( 0.683,  3.916,  1.680); // CA
-  reference[12]=Vector( 1.580,  3.940,  0.395); // CB
-  reference[13]=Vector(-0.394,  5.011,  1.630); // C
-  reference[14]=Vector(-1.459,  4.814,  0.982); // O
-  reference[15]=Vector(-2.962,  3.559, -1.359); // N    j-2
-  reference[16]=Vector(-2.439,  2.526, -2.287); // CA
-  reference[17]=Vector(-1.189,  3.006, -3.087); // CB
-  reference[18]=Vector(-2.081,  1.231, -1.520); // C
-  reference[19]=Vector(-1.524,  1.324, -0.409); // O
-  reference[20]=Vector(-2.326,  0.037, -2.095); // N    j-1
-  reference[21]=Vector(-1.858, -1.269, -1.554); // CA
-  reference[22]=Vector(-3.053, -2.199, -1.291); // CB
-  reference[23]=Vector(-0.869, -1.949, -2.512); // C
-  reference[24]=Vector(-1.255, -2.070, -3.710); // O
-  reference[25]=Vector( 0.326, -2.363, -2.072); // N    j
-  reference[26]=Vector( 1.405, -2.992, -2.872); // CA
-  reference[27]=Vector( 2.699, -2.129, -2.917); // CB
-  reference[28]=Vector( 1.745, -4.399, -2.330); // C
-  reference[29]=Vector( 1.899, -4.545, -1.102); // O
-
+  reference[0]=Vector( 1.244, -4.620, -2.127); // N    i
+  reference[1]=Vector(-0.016, -4.500, -1.395); // CA
+  reference[2]=Vector( 0.105, -5.089,  0.024); // CB
+  reference[3]=Vector(-0.287, -3.000, -1.301); // C
+  reference[4]=Vector( 0.550, -2.245, -0.822); // O
+  reference[5]=Vector(-1.445, -2.551, -1.779); // N    i+1
+  reference[6]=Vector(-1.752, -1.130, -1.677); // CA
+  reference[7]=Vector(-2.113, -0.550, -3.059); // CB
+  reference[8]=Vector(-2.906, -0.961, -0.689); // C
+  reference[9]=Vector(-3.867, -1.738, -0.695); // O
+  reference[10]=Vector(-2.774,  0.034,  0.190); // N    i+2
+  reference[11]=Vector(-3.788,  0.331,  1.201); // CA
+  reference[12]=Vector(-3.188,  0.300,  2.624); // CB
+  reference[13]=Vector(-4.294,  1.743,  0.937); // C
+  reference[14]=Vector(-3.503,  2.671,  0.821); // O
+  reference[15]=Vector( 4.746, -2.363,  0.188); // N    j
+  reference[16]=Vector( 3.427, -1.839,  0.545); // CA
+  reference[17]=Vector( 3.135, -1.958,  2.074); // CB
+  reference[18]=Vector( 3.346, -0.365,  0.181); // C
+  reference[19]=Vector( 4.237,  0.412,  0.521); // O
+  reference[20]=Vector( 2.261,  0.013, -0.487); // N    j+1
+  reference[21]=Vector( 2.024,  1.401, -0.875); // CA
+  reference[22]=Vector( 1.489,  1.514, -2.313); // CB
+  reference[23]=Vector( 0.914,  1.902,  0.044); // C
+  reference[24]=Vector(-0.173,  1.330,  0.052); // O
+  reference[25]=Vector( 1.202,  2.940,  0.828); // N    j+2
+  reference[26]=Vector( 0.190,  3.507,  1.718); // CA
+  reference[27]=Vector( 0.772,  3.801,  3.104); // CB
+  reference[28]=Vector(-0.229,  4.791,  1.038); // C
+  reference[29]=Vector( 0.523,  5.771,  0.996); // O
   // Store the secondary structure ( last number makes sure we convert to internal units nm )
   setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() ); 
-}
 
-void AntibetaRMSD::calculateWeight(){
-  Vector distance; distance=getSeparation( getPosition(6),getPosition(21) );  // This is the CA of the two residues at the centers of the two chains
-  if( distance.modulo()>s_cutoff && s_cutoff>0) setWeight(0.0);
-  else setWeight(1.0);
- 
-  // Align the two strands
-  if( usingRMSD() ){
-      std::vector<Vector> pos( getPositions() );
-      Vector origin_old, origin_new; origin_old=pos[21];
-      origin_new=pos[6]+distance;
-      for(unsigned i=15;i<30;++i){
-          pos[i]+=( origin_new - origin_old ); 
-      }
-      setAlignedPositions( pos );
-  }
+  reference[0]=Vector(-1.439, -5.122, -1.144); // N    i
+  reference[1]=Vector(-0.816, -3.803, -1.013); // CA
+  reference[2]=Vector( 0.099, -3.509, -2.206); // CB
+  reference[3]=Vector(-1.928, -2.770, -0.952); // C
+  reference[4]=Vector(-2.991, -2.970, -1.551); // O
+  reference[5]=Vector(-1.698, -1.687, -0.215); // N    i+1
+  reference[6]=Vector(-2.681, -0.613, -0.143); // CA
+  reference[7]=Vector(-3.323, -0.477,  1.267); // CB
+  reference[8]=Vector(-1.984,  0.681, -0.574); // C
+  reference[9]=Vector(-0.807,  0.921, -0.273); // O
+  reference[10]=Vector(-2.716,  1.492, -1.329); // N    i+2
+  reference[11]=Vector(-2.196,  2.731, -1.883); // CA
+  reference[12]=Vector(-2.263,  2.692, -3.418); // CB
+  reference[13]=Vector(-2.989,  3.949, -1.433); // C
+  reference[14]=Vector(-4.214,  3.989, -1.583); // O
+  reference[15]=Vector( 2.464, -4.352,  2.149); // N    j
+  reference[16]=Vector( 3.078, -3.170,  1.541); // CA
+  reference[17]=Vector( 3.398, -3.415,  0.060); // CB
+  reference[18]=Vector( 2.080, -2.021,  1.639); // C
+  reference[19]=Vector( 0.938, -2.178,  1.225); // O
+  reference[20]=Vector( 2.525, -0.886,  2.183); // N    j+1
+  reference[21]=Vector( 1.692,  0.303,  2.346); // CA
+  reference[22]=Vector( 1.541,  0.665,  3.842); // CB
+  reference[23]=Vector( 2.420,  1.410,  1.608); // C
+  reference[24]=Vector( 3.567,  1.733,  1.937); // O
+  reference[25]=Vector( 1.758,  1.976,  0.600); // N    j+2
+  reference[26]=Vector( 2.373,  2.987, -0.238); // CA
+  reference[27]=Vector( 2.367,  2.527, -1.720); // CB
+  reference[28]=Vector( 1.684,  4.331, -0.148); // C
+  reference[29]=Vector( 0.486,  4.430, -0.415); // O
+  // Store the secondary structure ( last number makes sure we convert to internal units nm )
+  setSecondaryStructure( reference, 0.17/atoms.getUnits().getLength(), 0.1/atoms.getUnits().getLength() );
 }
 
 }

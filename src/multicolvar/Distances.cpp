@@ -83,6 +83,7 @@ public:
   virtual double compute( const unsigned& j );
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
+  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
@@ -121,6 +122,12 @@ double Distances::compute( const unsigned& j ){
    addAtomsDerivatives( 1, invvalue*distance );
    addBoxDerivatives( -invvalue*Tensor(distance,distance) );
    return value;
+}
+
+Vector Distances::getCentralAtom(){
+   addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
+   addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
+   return 0.5*( getPosition(0) + getPosition(1) );
 }
 
 }

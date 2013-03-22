@@ -25,7 +25,7 @@
 #include "core/Atoms.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace secondarystructure {
 
 //+PLUMEDOC COLVAR ALPHARMSD
 /*

@@ -41,9 +41,6 @@ private:
 /// Have atoms been read in
   bool readatoms;
   bool verbose_output;
-/// These are used to store the values of CVs etc so they can be retrieved by distribution
-/// functions
-  std::vector<Vector> pos;
 /// Read in the various GROUP keywords
   void readGroupsKeyword( int& natoms );
 /// Read in the various SPECIES keywords
@@ -55,9 +52,7 @@ protected:
   void readAtoms( int& natoms );
 /// Read in ATOMS keyword
   void readAtomsLikeKeyword( const std::string key, int& natoms );
-/// Read in the atoms that form the backbone of a polymeric chain
-  void readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths );
-/// Add a colvar to the set of colvars we are calculating (in practise just a list of atoms)
+/// Add a collective variable
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Add some derivatives for an atom 
   void addAtomsDerivatives(const int&,const Vector&);
@@ -65,11 +60,6 @@ protected:
   void addAtomsDerivativeOfWeight( const unsigned& i, const Vector& wder );
 /// Add derivatives to the central atom position
   void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
-/// Get all the positions
-  const std::vector<Vector> & getPositions();
-/// This can be used to get rid of erroenous effects that might happen
-/// because molecules are split by the pbcs.
-  void setAlignedPositions( const std::vector<Vector>& );
 public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){};
@@ -87,7 +77,7 @@ public:
 /// Calculate the position of the central atom
   Vector calculateCentralAtomPosition();
 /// Get the position of the central atom
-  virtual Vector getCentralAtom();
+  virtual Vector getCentralAtom()=0;
 /// Get the mass of atom iatom
   double getMass(unsigned) const ;
 /// Get the charge of atom iatom
