@@ -167,7 +167,7 @@ bool Tools::getParsedLine(IFile& ifile,vector<string> & words){
     };
     int i0=0;
     if(mergenext && words.size()>0 && w.size()>0){
-      words[words.size()-1]+=w[0];
+      words[words.size()-1]+=" "+w[0];
       i0=1;
     }
     for(unsigned i=i0;i<w.size();++i) words.push_back(w[i]);
