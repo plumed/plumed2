@@ -25,6 +25,7 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "tools/Exception.h"
+#include "tools/DynamicList.h"
 #include <vector>
 
 namespace PLMD{
@@ -61,9 +62,13 @@ private:
 /// Vector of derivatives for the object
   std::vector<double> derivatives;
 /// The buffers we use for mpi summing DistributionFunction objects
+  unsigned current_buffer_start;
+  unsigned current_buffer_stride;
   std::vector<double> buffer;
 /// Pointers to the functions we are using on each value
   std::vector<Vessel*> functions;
+/// Tempory storage for forces
+  std::vector<double> tmpforces;
 /// Avoid hiding of base class virtual function
   using Action::deactivate;
 protected:
@@ -71,8 +76,8 @@ protected:
   bool weightHasDerivatives;
 /// The numerical index of the task we are curently performing
   unsigned current;
-/// The number of derivatives involved in the current task
-  unsigned nderivatives;
+/// The list of tasks we have to perform
+  DynamicList<unsigned> taskList;
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0, const std::string thislab="" );
   void addVessel( Vessel* vv );
@@ -87,7 +92,9 @@ protected:
 /// Get a pointer to the ith vessel
    Vessel* getPntrToVessel( const unsigned& i );
 /// Calculate the values of all the vessels
-  void runAllTasks( const unsigned& ntasks );
+  void runAllTasks();
+/// Deactivate the task we are currently working on
+  void deactivateCurrentTask();
 /// Finish running all the calculations
   void finishComputations();
 /// Resize all the functions when the number of derivatives change
@@ -97,6 +104,12 @@ protected:
 /// This loops over all the vessels calculating them and also 
 /// sets all the element derivatives equal to zero
   bool calculateAllVessels();
+/// Retrieve the forces from all the vessels (used in apply)
+  void getForcesFromVessels( std::vector<double>& forcesToApply );
+/// This is used to accumulate the derivatives when we merge using chainRuleForElementDerivatives
+  void accumulateDerivative( const unsigned& ider, const double& df );
+/// Clear tempory data that is calculated for each task
+  void clearAfterTask();
 public:
   static void registerKeywords(Keywords& keys);
   ActionWithVessel(const ActionOptions&ao);
@@ -106,8 +119,12 @@ public:
   virtual void deactivate_task()=0;
 /// Merge the derivatives
   void chainRuleForElementDerivatives( const unsigned&, const unsigned&, const double& , Vessel* );
-  virtual void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , Vessel* );
-  virtual unsigned getOutputDerivativeIndex( const unsigned& ival, const unsigned& i ){ return i; }
+  void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , Vessel* );
+  virtual void mergeDerivatives( const unsigned& ider, const double& df );
+  virtual unsigned getFirstDerivativeToMerge();
+  virtual unsigned getNextDerivativeToMerge( const unsigned& );
+  virtual void buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der );
+  virtual void clearDerivativesAfterTask( const unsigned& );
 /// Are the base quantities periodic
   virtual bool isPeriodic()=0;
 /// What are the domains of the base quantities
@@ -116,8 +133,6 @@ public:
   virtual unsigned getNumberOfFunctionsInAction()=0;
 /// Get the number of derivatives for final calculated quantity 
   virtual unsigned getNumberOfDerivatives()=0;
-/// Get number of derivatives for ith function
-  virtual unsigned getNumberOfDerivatives( const unsigned& i );
 /// Do any jobs that are required before the task list is undertaken
   virtual void doJobsRequiredBeforeTaskList();
 /// Calculate one of the functions in the distribution
@@ -165,8 +180,13 @@ void ActionWithVessel::setElementValue( const unsigned& ival, const double& val 
 }
 
 inline
-unsigned ActionWithVessel::getNumberOfDerivatives( const unsigned& i ){
-  return derivatives.size();
+unsigned ActionWithVessel::getFirstDerivativeToMerge(){
+  return 0;
+}
+
+inline
+unsigned ActionWithVessel::getNextDerivativeToMerge( const unsigned& ider){
+  return ider+1;
 }
 
 inline
@@ -193,6 +213,12 @@ void ActionWithVessel::setElementDerivative( const unsigned& ider, const double&
 #endif
   plumed_dbg_assert( ider<derivatives.size() );
   derivatives[ider] = der;
+}
+
+inline
+void ActionWithVessel::accumulateDerivative( const unsigned& ider, const double& der ){
+  plumed_dbg_assert( ider<getNumberOfDerivatives() );
+  buffer[current_buffer_start + current_buffer_stride*ider] += der;
 }
 
 

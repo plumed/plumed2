@@ -82,8 +82,6 @@ void ActionVolume::doJobsRequiredBeforeTaskList(){
 }
 
 bool ActionVolume::performTask( const unsigned& j ){
-  nderivatives=mycolv->getNumberOfDerivatives();
-
   Vector catom_pos=mycolv->retrieveCentralAtomPos( derivativesOfFractionalCoordinates() );
 
   double weight; Vector wdf; 
@@ -101,32 +99,33 @@ bool ActionVolume::performTask( const unsigned& j ){
   } else {
      // Copy derivatives of the colvar and the value of the colvar
      double colv=mycolv->getElementValue(0); setElementValue( 0, colv );
-     for(unsigned i=0;i<mycolv->nderivatives;++i){
-        addElementDerivative( mycolv->getOutputDerivativeIndex(mycolv->current,i), mycolv->getElementDerivative(i) ); 
+     for(unsigned i=mycolv->getFirstDerivativeToMerge();i<mycolv->getNumberOfDerivatives();i=mycolv->getNextDerivativeToMerge(i)){
+        addElementDerivative( i, mycolv->getElementDerivative(i) ); 
      }
 
      double ww=mycolv->getElementValue(1);
      setElementValue( 1, ww*weight ); 
+     unsigned nder=getNumberOfDerivatives();
 
      // Add derivatives of weight if we have a weight
      if( mycolv->weightHasDerivatives ){
-        for(unsigned i=0;i<mycolv->nderivatives;++i){
-           addElementDerivative( nderivatives+mycolv->getOutputDerivativeIndex(mycolv->current,i), weight*mycolv->getElementDerivative(nderivatives+i) );
+        for(unsigned i=mycolv->getFirstDerivativeToMerge();i<mycolv->getNumberOfDerivatives();i=mycolv->getNextDerivativeToMerge(i)){
+           addElementDerivative( nder+i, weight*mycolv->getElementDerivative(nder+i) );
         } 
      }
 
      // Add derivatives of central atoms
      for(unsigned i=0;i<mycolv->atomsWithCatomDer.getNumberActive();++i){
          unsigned n=mycolv->atomsWithCatomDer[i];
-         unsigned nx=nderivatives+3*linkIndex( n, mycolv->colvar_atoms[mycolv->current], mycolv->all_atoms);
+         unsigned nx=nder+3*linkIndex( n, mycolv->colvar_atoms[mycolv->current], mycolv->all_atoms);
          addElementDerivative( nx+0, ww*mycolv->getCentralAtomDerivative(i, 0, wdf ) );
          addElementDerivative( nx+1, ww*mycolv->getCentralAtomDerivative(i, 1, wdf ) );
          addElementDerivative( nx+2, ww*mycolv->getCentralAtomDerivative(i, 2, wdf ) );
      }
   }
 
-  // And compute the vessels 
-  return calculateAllVessels();
+  // Only continue if the weight is greater than tolerance
+  return ( weight>=getTolerance() );
 }
 
 void ActionVolume::calculateNumericalDerivatives(){

@@ -55,7 +55,12 @@ void BridgeVessel::prepare(){
 
 bool BridgeVessel::calculate(){
   unsigned j;
-  return myOutputAction->performTask(j);
+  bool res=myOutputAction->performTask(j);
+  if( !res ){
+      myOutputAction->clearAfterTask();
+      return false;
+  }
+  return myOutputAction->calculateAllVessels();
 }
 
 void BridgeVessel::finish(){

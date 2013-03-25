@@ -39,7 +39,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   Moments( const VesselOptions& da );
   std::string description();
-  void finish();
+  void performCalculationUsingAllValues();
   void local_resizing();
   bool applyForce( std::vector<double>& forces );
 };
@@ -92,7 +92,7 @@ std::string Moments::description(){
    return descri;
 }
 
-void Moments::finish(){
+void Moments::performCalculationUsingAllValues(){
   const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
   unsigned nvals=getAction()->getNumberOfFunctionsInAction();
 

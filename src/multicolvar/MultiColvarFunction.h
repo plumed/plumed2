@@ -42,8 +42,6 @@ private:
   int updateFreq;
   unsigned lastUpdate;
   bool reduceAtNextStep;
-/// A DynamicList containing the numbers of 1 - ncolvars
-  DynamicList<unsigned> colvar_list;
 /// The lists of the atoms involved in each of the individual colvars
 /// note these refer to the atoms in all_atoms
   std::vector< DynamicList<unsigned> > colvar_atoms;
@@ -93,8 +91,6 @@ public:
   void apply();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
-/// Return the number of derivatives for a given colvar
-  unsigned getNumberOfDerivatives( const unsigned& j );
 /// Get the number of vectors we are looping over
   unsigned getNumberOfFunctionsInAction();
 /// Turn of atom requests when this colvar is deactivated cos its small
@@ -130,14 +126,9 @@ unsigned MultiColvarFunction::getNumberOfDerivatives(){
 }
 
 inline
-unsigned MultiColvarFunction::getNumberOfDerivatives( const unsigned& j ){
-  return mycolv->getNumberOfDerivatives(j);
-}
-
-inline
 void MultiColvarFunction::deactivate_task(){
   if( !reduceAtNextStep ) return;          // Deactivating tasks only possible during neighbor list update
-  colvar_list.deactivate(current);         // Deactivate the colvar from the list
+  deactivateCurrentTask();                 // Deactivate the colvar from the list
   colvar_atoms[current].deactivateAll();   // Deactivate all atom requests for this colvar
 }
 

@@ -26,6 +26,7 @@
 #include <cstring>
 #include <vector>
 #include "Vessel.h"
+#include "tools/DynamicList.h"
 
 namespace PLMD {
 namespace vesselbase{
@@ -34,6 +35,7 @@ class StoreValuesVessel : public Vessel {
 private:
   unsigned bufsize;
   std::vector<unsigned> start;
+  std::vector< DynamicList<unsigned> > active_der;
 protected:
 /// Are the weights differentiable
   bool diffweight;
@@ -53,10 +55,14 @@ public:
   unsigned getNumberOfTerms(){ return 2; }
 /// This does the resizing of the buffer
   void resize();
-/// This makes sure all values are stored
-  bool calculate();
 /// This makes sure things further down the chain are resized
   virtual void local_resizing()=0;
+/// This makes sure all values are stored
+  bool calculate();
+/// Makes sure the dynamic lists are gathered
+  void finish();
+/// Do the calculation
+  virtual void performCalculationUsingAllValues()=0;
 };
 
 inline

@@ -69,25 +69,25 @@ void MultiColvarFunction::addColvar( const std::vector<unsigned>& newatoms ){
   if( colvar_atoms.size()>0 ) plumed_assert( colvar_atoms[0].fullSize()==newatoms.size() );
   DynamicList<unsigned> newlist;
   for(unsigned i=0;i<newatoms.size();++i) newlist.addIndexToList( newatoms[i] );
-  colvar_list.addIndexToList( colvar_atoms.size() );
+  taskList.addIndexToList( colvar_atoms.size() );
   colvar_atoms.push_back( newlist );
 }
 
 void MultiColvarFunction::completeSetup(){
-  colvar_list.activateAll();
+  taskList.activateAll();
   for(unsigned i=0;i<colvar_atoms.size();++i) colvar_atoms[i].activateAll();
 }
 
 void MultiColvarFunction::prepare(){
   bool updatetime=false;
   if( reduceAtNextStep ){
-      colvar_list.mpi_gatherActiveMembers( comm );
+      taskList.mpi_gatherActiveMembers( comm );
       mpi_gatherActiveMembers( comm, colvar_atoms ); 
       reduceAtNextStep=false; updatetime=true;
   }
   if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-      colvar_list.activateAll(); 
-      for(unsigned i=0;i<colvar_list.getNumberActive();++i) colvar_atoms[i].activateAll();
+      taskList.activateAll(); 
+      for(unsigned i=0;i<taskList.getNumberActive();++i) colvar_atoms[i].activateAll();
       reduceAtNextStep=true; updatetime=true; lastUpdate=getStep();
   }
   if(updatetime) resizeFunctions();
@@ -106,7 +106,7 @@ void MultiColvarFunction::calculate(){
      // And recalculate
      mycolv->calculate();
   }
-  runAllTasks( colvar_list.getNumberActive() );
+  runAllTasks();
 }
 
 void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
@@ -114,9 +114,6 @@ void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
 }
 
 bool MultiColvarFunction::performTask( const unsigned& j ){
-  current=colvar_list[j];
-  nderivatives=getNumberOfDerivatives();
-
   // Compute a weight for this quantity
   double weight=calculateWeight();
   if( weight<getTolerance() ) return false;
@@ -128,7 +125,7 @@ bool MultiColvarFunction::performTask( const unsigned& j ){
   setElementValue( 0, weight*val );
   if( weightHasDerivatives ){
       unsigned nder=getNumberOfDerivatives();
-      for(unsigned i=0;i<nderivatives;++i){
+      for(unsigned i=mycolv->getFirstDerivativeToMerge();i<mycolv->getNumberOfDerivatives();i=mycolv->getNextDerivativeToMerge(i)){
           setElementDerivative( i, weight*getElementDerivative(i) + val*getElementDerivative(nder+i) );
       }
   }

@@ -193,6 +193,24 @@ void ActionAtomistic::retrieveAtoms(){
   if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
 }
 
+void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned ind ){
+  for(unsigned i=0;i<indexes.size();++i){ 
+    forces[i][0]=forcesToApply[ind]; ind++; 
+    forces[i][1]=forcesToApply[ind]; ind++;
+    forces[i][2]=forcesToApply[ind]; ind++;
+  }
+  virial(0,0)=forcesToApply[ind]; ind++;
+  virial(0,1)=forcesToApply[ind]; ind++;
+  virial(0,2)=forcesToApply[ind]; ind++;
+  virial(1,0)=forcesToApply[ind]; ind++;
+  virial(1,1)=forcesToApply[ind]; ind++;
+  virial(1,2)=forcesToApply[ind]; ind++;
+  virial(2,0)=forcesToApply[ind]; ind++;
+  virial(2,1)=forcesToApply[ind]; ind++;
+  virial(2,2)=forcesToApply[ind]; ind++;
+  plumed_dbg_assert( ind==forcesToApply.size() );
+}
+
 void ActionAtomistic::applyForces(){
   vector<Vector>   & f(atoms.forces);
   Tensor           & v(atoms.virial);

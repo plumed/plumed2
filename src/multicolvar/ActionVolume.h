@@ -68,8 +68,6 @@ public:
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Return the number of Colvars this is calculating
   unsigned getNumberOfFunctionsInAction();
-/// Return the number of derivatives for a given colvar
-  unsigned getNumberOfDerivatives( const unsigned& j );
 /// Is the output quantity periodic
   bool isPeriodic();
 /// Do jobs required before tasks are undertaken
@@ -100,11 +98,6 @@ unsigned ActionVolume::getNumberOfDerivatives(){
 inline
 unsigned ActionVolume::getNumberOfFunctionsInAction(){
   return mycolv->getNumberOfFunctionsInAction();
-}
-
-inline
-unsigned ActionVolume::getNumberOfDerivatives( const unsigned& j ){
-  return mycolv->getNumberOfDerivatives(j);
 }
 
 }

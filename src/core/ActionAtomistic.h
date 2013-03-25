@@ -96,6 +96,8 @@ public:
   void parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t);
 /// Get reference to Pbc
   const Pbc & getPbc() const;
+/// Add the forces to the atoms
+  void setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned ind=0 );
 public:
 
 // virtual functions:

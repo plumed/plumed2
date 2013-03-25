@@ -59,8 +59,8 @@ myname(da.myname),
 numlab(da.numlab),
 action(da.action),
 keywords(da.keywords),
-comm(da.action->comm),
 finished_read(false),
+comm(da.action->comm),
 log((da.action)->log)
 {
   line=Tools::getWords( da.parameters );

@@ -70,7 +70,7 @@ void ActionWithVessel::addBridgingVessel( ActionWithVessel* tome, BridgeVessel* 
   bv=new BridgeVessel(da);
   bv->setOutputAction( tome );
   functions.push_back( dynamic_cast<Vessel*>(bv) );
-  resizeFunctions();
+  resizeFunctions(); 
 }
 
 void ActionWithVessel::readVesselKeywords(){
@@ -119,10 +119,17 @@ void ActionWithVessel::resizeFunctions(){
      plumed_massert( tmpnval>1 , "There should always be at least two terms - one for the value and one for the weight");
      if(tmpnval>nvals) nvals=tmpnval;
   }
-  nderivatives=getNumberOfDerivatives();
+  unsigned nder=getNumberOfDerivatives();
   thisval.resize( nvals ); thisval_wasset.resize( nvals, false );
-  derivatives.resize( nvals*nderivatives, 0.0 );
+  derivatives.resize( nvals*nder, 0.0 );
   buffer.resize( bufsize );
+  tmpforces.resize( getNumberOfDerivatives() );
+}
+
+void ActionWithVessel::deactivateCurrentTask(){
+  for(unsigned i=0;i<taskList.fullSize();++i){
+     if( taskList(i)==current ) taskList.deactivate(i);
+  }
 }
 
 //Vessel* ActionWithVessel::getVessel( const std::string& name ){
@@ -139,10 +146,11 @@ void ActionWithVessel::resizeFunctions(){
 void ActionWithVessel::doJobsRequiredBeforeTaskList(){
   // Clear all data from previous calculations
   buffer.assign(buffer.size(),0.0);
+  // Do any preparatory stuff for functions
   for(unsigned j=0;j<functions.size();++j) functions[j]->prepare();
 }
 
-void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
+void ActionWithVessel::runAllTasks(){
   plumed_massert( read, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
@@ -152,7 +160,9 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
   // Make sure jobs are done
   doJobsRequiredBeforeTaskList();
 
-  for(unsigned i=rank;i<ntasks;i+=stride){
+  for(unsigned i=rank;i<taskList.getNumberActive();i+=stride){
+      // Store the task we are currently working on
+      current=taskList[i];
       // Calculate the stuff in the loop for this action
       bool keep=performTask(i);
 
@@ -160,9 +170,8 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
       // the condition is that the weight of the contribution is low
       if( !keep ){
          plumed_dbg_assert( thisval[1]<getTolerance() && !thisval_wasset[0] );
-         // Clear everything from weight ready for next loop
-         thisval_wasset[1]=false; 
-         for(unsigned j=0;j<nderivatives;++j) derivatives[nder+j]=0.0; 
+         // Clear the derivatives
+         clearAfterTask();  
          // Deactivate task
          deactivate_task();
          continue;
@@ -176,6 +185,19 @@ void ActionWithVessel::runAllTasks( const unsigned& ntasks ){
   finishComputations();
 }
 
+void ActionWithVessel::clearAfterTask(){
+  // Clear the derivatives from this step
+  for(unsigned k=0;k<thisval.size();++k){
+     thisval_wasset[k]=false;
+     clearDerivativesAfterTask(k);
+  }
+}
+
+void ActionWithVessel::clearDerivativesAfterTask( const unsigned& ider ){
+  unsigned kstart=ider*getNumberOfDerivatives();
+  for(unsigned j=getFirstDerivativeToMerge();j<getNumberOfDerivatives();j=getNextDerivativeToMerge(j)) derivatives[ kstart+j ]=0.0;
+}
+
 bool ActionWithVessel::calculateAllVessels(){
   bool keep=false;
   for(unsigned j=0;j<functions.size();++j){
@@ -183,12 +205,7 @@ bool ActionWithVessel::calculateAllVessels(){
       // quantity is contributing more than the tolerance
       if( functions[j]->calculate() ) keep=true;
   }
-  // Clear the derivatives from this step
-  for(unsigned k=0;k<thisval.size();++k){
-     thisval_wasset[k]=false;
-     unsigned kstart=k*getNumberOfDerivatives();
-     for(unsigned j=0;j<nderivatives;++j) derivatives[kstart+j]=0.0;
-  }
+  clearAfterTask();
   return keep;
 }
 
@@ -201,14 +218,45 @@ void ActionWithVessel::finishComputations(){
 }
 
 void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const double& df, Vessel* valout ){
-  chainRuleForElementDerivatives(iout,ider,1,0,df,valout);
+  current_buffer_stride=1;
+  current_buffer_start=valout->bufstart + (getNumberOfDerivatives()+1)*iout + 1;
+  mergeDerivatives( ider, df );
 } 
 
 void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const unsigned& stride, 
                                                        const unsigned& off, const double& df, Vessel* valout ){
   plumed_dbg_assert( off<stride );
-  unsigned nder=getNumberOfDerivatives(), bstart=stride*(nder+1)*iout+stride+off, vstart=nder*ider; 
-  for(unsigned i=0;i<nder;++i) valout->addToBufferElement( bstart+i*stride, df*derivatives[vstart+i] );
+  current_buffer_stride=stride;
+  current_buffer_start=valout->bufstart + stride*(getNumberOfDerivatives()+1)*iout + stride + off;
+  mergeDerivatives( ider, df );
+}
+
+void ActionWithVessel::mergeDerivatives( const unsigned& ider, const double& df ){
+  unsigned nder=getNumberOfDerivatives(), vstart=nder*ider; 
+  for(unsigned i=getFirstDerivativeToMerge();i<getNumberOfDerivatives();i=getNextDerivativeToMerge(i)){
+     accumulateDerivative( i, df*derivatives[vstart+i] ); 
+  }
+}
+
+void ActionWithVessel::buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der ){
+  // Clear old derivative indexes
+  for(unsigned i=0;i<active_der.size();++i) active_der[i].clear();
+
+  // Build indexes
+  active_der.resize( getNumberOfFunctionsInAction() );
+  for(unsigned i=0;i<active_der.size();++i){
+    for(unsigned j=0;j<getNumberOfDerivatives();++j) active_der[i].addIndexToList( j );
+  }
+}
+
+void ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply ){
+  plumed_dbg_assert( forcesToApply.size()==getNumberOfDerivatives() );
+  forcesToApply.assign( forcesToApply.size(),0.0 );
+  for(int i=0;i<getNumberOfVessels();++i){
+    if( (functions[i]->applyForce( tmpforces )) ){
+       for(unsigned j=0;j<forcesToApply.size();++j) forcesToApply[j]+=tmpforces[j];
+    }
+  }
 }
 
 void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){

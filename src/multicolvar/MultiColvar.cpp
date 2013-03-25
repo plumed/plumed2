@@ -52,7 +52,7 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
   keys.addFlag("VERBOSE",false,"write a more detailed output");
-  keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
+  keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
                                   "that contributed less than TOL at the previous neighbor list update step are ignored.");
   ActionWithVessel::registerKeywords( keys );
 } 
@@ -90,7 +90,7 @@ void MultiColvar::addColvar( const std::vector<unsigned>& newatoms ){
      newlist.addIndexToList( newatoms[i] );
   }
   if( verbose_output ) log.printf("\n");
-  colvar_list.addIndexToList( colvar_atoms.size() );
+  taskList.addIndexToList( colvar_atoms.size() );
   colvar_atoms.push_back( newlist );
 } 
 
@@ -100,14 +100,17 @@ void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms );
 
   if( !readatoms ) error("No atoms have been read in");
-  all_atoms.activateAll(); colvar_list.activateAll();
+  taskList.activateAll();
   for(unsigned i=0;i<colvar_atoms.size();++i) colvar_atoms[i].activateAll(); 
-  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+  // Set up dynamic array for derivatives
+  for(unsigned i=0;i<colvar_atoms[0].fullSize();++i) atoms_with_derivatives.addIndexToList( i );
   // Set up stuff for central atoms
   for(unsigned i=0;i<colvar_atoms[0].fullSize();++i) atomsWithCatomDer.addIndexToList( i );
   atomsWithCatomDer.deactivateAll();
   central_derivs.resize( colvar_atoms[0].fullSize() );
   for(unsigned i=0;i<central_derivs.size();++i) central_derivs[i].zero();
+  // Resize all dynamic content
+  resizeDynamicArrays();
 }
 
 void MultiColvar::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
@@ -329,27 +332,37 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   } 
 }
 
+void MultiColvar::resizeDynamicArrays(){
+  for(unsigned i=0;i<taskList.getNumberActive();++i){
+      unsigned n=taskList[i];
+      activateLinks( colvar_atoms[n], all_atoms );
+  }
+  
+  all_atoms.updateActiveMembers(); 
+  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+  forcesToApply.resize( getNumberOfDerivatives() );
+}
+
 void MultiColvar::prepare(){
   updatetime=false;
   if( reduceAtNextStep ){
-      colvar_list.mpi_gatherActiveMembers( comm );
+      taskList.mpi_gatherActiveMembers( comm );
       mpi_gatherActiveMembers( comm, colvar_atoms ); 
       reduceAtNextStep=false; updatetime=true;
   }
   if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-      colvar_list.activateAll(); 
-      for(unsigned i=0;i<colvar_list.getNumberActive();++i) colvar_atoms[i].activateAll();
+      taskList.activateAll(); 
+      for(unsigned i=0;i<taskList.getNumberActive();++i) colvar_atoms[i].activateAll();
       reduceAtNextStep=true; updatetime=true; lastUpdate=getStep();
   }
   if(updatetime){
-     for(unsigned i=0;i<colvar_list.getNumberActive();++i) activateLinks( colvar_atoms[i], all_atoms ); 
-     all_atoms.updateActiveMembers(); 
-     ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() ); resizeFunctions(); 
+     resizeDynamicArrays();
+     resizeFunctions(); 
   }
 }
 
 void MultiColvar::calculate(){
-  runAllTasks( colvar_list.getNumberActive() );
+  runAllTasks();
 }
 
 Vector MultiColvar::getCentralAtom(){
@@ -368,15 +381,14 @@ const std::vector<Vector>& MultiColvar::getPositions(){
      // Resize everything
      if( pos.size()!=natoms ) pos.resize(natoms); 
      // Get the position
-     for(unsigned i=0;i<natoms;++i) pos[i]=ActionAtomistic::getPosition( colvar_atoms[current][i] );  
+     for(unsigned i=0;i<natoms;++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(i) );  
      posHasBeenSet=true; 
   }
   return pos;
 }
 
 bool MultiColvar::performTask( const unsigned& j ){
-  current=colvar_list[j];                                                       // Store the number of the atom list we are currently working on
-  nderivatives=3*colvar_atoms[current].getNumberActive() + 9;                   // Store the number of derivatives (for better performance)
+  atoms_with_derivatives.deactivateAll();                                       // Currently no atoms have derivatives
   if( colvar_atoms[current].getNumberActive()==0 ) return false;                // Do nothing if there are no active atoms in the colvar
   posHasBeenSet=false;                                                          // This ensures we don't set the pos array more than once per step  
 
@@ -388,7 +400,8 @@ bool MultiColvar::performTask( const unsigned& j ){
   double vv=compute( j ); 
   // Set the value of this element in ActionWithVessel
   setElementValue( 0, vv );
-
+  // And finally gather the list of active atoms
+  atoms_with_derivatives.updateActiveMembers();
   return true;
 }
 
@@ -422,80 +435,56 @@ double MultiColvar::getCentralAtomDerivative( const unsigned& iatom, const unsig
   return df[0]*central_derivs[iatom](0,jcomp) + df[1]*central_derivs[iatom](1,jcomp) + df[2]*central_derivs[iatom](2,jcomp);
 }
 
-void MultiColvar::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const unsigned& stride, 
-                                                  const unsigned& off, const double& df, vesselbase::Vessel* valout ){    
-  plumed_dbg_assert( off<stride );
-  unsigned nder=getNumberOfDerivatives();
-  int thisatom, thispos, in=ider*nder, bstart=stride*(nder+1)*iout+stride+off; 
-  unsigned innat=colvar_atoms[current].getNumberActive();
-  for(unsigned i=0;i<innat;++i){
-     thisatom=linkIndex( i, colvar_atoms[current], all_atoms );
-     plumed_dbg_assert( thisatom>=0 ); thispos=bstart+3*stride*thisatom;
-     valout->addToBufferElement( thispos , df*getElementDerivative(in) ); in++;
-     valout->addToBufferElement( thispos+stride, df*getElementDerivative(in) ); in++;
-     valout->addToBufferElement( thispos+2*stride, df*getElementDerivative(in) ); in++; 
-  }
-
-  // Easy to merge the virial
-  unsigned outnat=bstart+3*stride*getNumberOfAtoms(); 
-  valout->addToBufferElement( outnat,   df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+stride, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+2*stride, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+3*stride, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+4*stride, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+5*stride, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+6*stride, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+7*stride, df*getElementDerivative(in) ); in++;
-  valout->addToBufferElement( outnat+8*stride, df*getElementDerivative(in) ); in++;
-}
-
 Vector MultiColvar::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
   if(usepbc){ return pbcDistance( vec1, vec2 ); }
   else{ return delta( vec1, vec2 ); }
 }
 
 void MultiColvar::apply(){
-  vector<Vector>&   f(modifyForces());
-  Tensor&           v(modifyVirial());
+  getForcesFromVessels( forcesToApply );
+  setForcesOnAtoms( forcesToApply );
+}
 
-  for(unsigned i=0;i<f.size();i++){
-    f[i][0]=0.0;
-    f[i][1]=0.0;
-    f[i][2]=0.0;
+void MultiColvar::mergeDerivatives( const unsigned& ider, const double& df ){
+  unsigned vstart=getNumberOfDerivatives()*ider;
+  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
+     unsigned iatom=3*getAtomIndex( atoms_with_derivatives[i] );
+     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
+     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
+     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) );
   }
-  v.zero();
-
-  unsigned nat=getNumberOfAtoms(); 
-  std::vector<double> forces(3*getNumberOfAtoms()+9);
-
-  unsigned vstart=3*getNumberOfAtoms(); 
-  for(int i=0;i<getNumberOfVessels();++i){
-    if( (getPntrToVessel(i)->applyForce( forces )) ){
-     for(unsigned j=0;j<nat;++j){
-        f[j][0]+=forces[3*j+0];
-        f[j][1]+=forces[3*j+1];
-        f[j][2]+=forces[3*j+2];
-     }
-     v(0,0)+=forces[vstart+0];
-     v(0,1)+=forces[vstart+1];
-     v(0,2)+=forces[vstart+2];
-     v(1,0)+=forces[vstart+3];
-     v(1,1)+=forces[vstart+4];
-     v(1,2)+=forces[vstart+5];
-     v(2,0)+=forces[vstart+6];
-     v(2,1)+=forces[vstart+7];
-     v(2,2)+=forces[vstart+8];
-    }
+  unsigned nvir=3*getNumberOfAtoms();
+  for(unsigned j=0;j<9;++j){
+     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
   }
 }
 
-void MultiColvar::buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der ) const {
+void MultiColvar::clearDerivativesAfterTask( const unsigned& ider ){
+  unsigned vstart=getNumberOfDerivatives()*ider; 
+  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
+     unsigned iatom=vstart+3*getAtomIndex( atoms_with_derivatives[i] );
+     setElementDerivative( iatom, 0.0 ); iatom++;
+     setElementDerivative( iatom, 0.0 ); iatom++;
+     setElementDerivative( iatom, 0.0 );
+  }   
+  unsigned nvir=vstart+3*getNumberOfAtoms();
+  for(unsigned j=0;j<9;++j){
+     setElementDerivative( nvir, 0.0 ); nvir++;
+  }
+}
+
+void MultiColvar::buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der ){
+  // Clear old derivative indexes
+  for(unsigned i=0;i<active_der.size();++i) active_der[i].clear();
+
+  // Build indexes
   active_der.resize( colvar_atoms.size() );
   for(unsigned i=0;i<colvar_atoms.size();++i){
      for(unsigned j=0;j<colvar_atoms[i].fullSize();++j){
-         active_der[i].addIndexToList( 3*colvar_atoms[i][j] + 0 );
-         active_der[i].addIndexToList( 3*colvar_atoms[i][j] + 1 );
-         active_der[i].addIndexToList( 3*colvar_atoms[i][j] + 2 );
+         unsigned jatom=linkIndex( j, colvar_atoms[i], all_atoms );
+         active_der[i].addIndexToList( 3*jatom + 0 );
+         active_der[i].addIndexToList( 3*jatom + 1 );
+         active_der[i].addIndexToList( 3*jatom + 2 );
      }
      unsigned virs=3*getNumberOfAtoms();
      for(unsigned j=0;j<9;++j){

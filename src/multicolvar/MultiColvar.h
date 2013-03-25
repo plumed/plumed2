@@ -46,6 +46,7 @@ class MultiColvar :
   public vesselbase::ActionWithVessel
   {
 friend class ActionVolume;
+friend class MultiColvarFunction;
 friend class StoreCentralAtomsVessel;
 private:
   bool usepbc;
@@ -60,8 +61,8 @@ private:
   bool posHasBeenSet;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
-/// A DynamicList containing the numbers of 1 - ncolvars
-  DynamicList<unsigned> colvar_list; 
+/// A dynamic list containing those atoms with derivatives
+  DynamicList<unsigned> atoms_with_derivatives;
 /// The lists of the atoms involved in each of the individual colvars
 /// note these refer to the atoms in all_atoms
   std::vector< DynamicList<unsigned> > colvar_atoms;
@@ -72,12 +73,18 @@ private:
   bool centralAtomDerivativesAreInFractional;
   DynamicList<unsigned> atomsWithCatomDer;
   std::vector<Tensor> central_derivs;
+/// Stuff used to merge derivatives
+  unsigned imerge_deriv, imerge_natoms;
+/// The forces we are going to apply to things
+  std::vector<double> forcesToApply;
 /// Read in the various GROUP keywords
   void readGroupsKeyword( int& natoms );
 /// Read in the various SPECIES keywords
   void readSpeciesKeyword( int& natoms );
 /// Update the atoms request
   void requestAtoms();
+/// Resize all the dynamic arrays (used at neighbor list update time and during setup)
+  void resizeDynamicArrays();
 protected:
 /// Are we on an update step
   bool updatetime;
@@ -89,8 +96,8 @@ protected:
   void readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths );
 /// Add a colvar to the set of colvars we are calculating (in practise just a list of atoms)
   void addColvar( const std::vector<unsigned>& newatoms );
-/// Build lists of indexes of the derivatives from the colvar atoms arrays
-  void buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der ) const ;
+/// Return the index of an atom
+  unsigned getAtomIndex( const unsigned& ) const ;
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Find out if it is time to do neighbor list update
@@ -133,16 +140,8 @@ public:
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Return the number of Colvars this is calculating
   unsigned getNumberOfFunctionsInAction();  
-/// Return the number of derivatives for a given colvar
-  unsigned getNumberOfDerivatives( const unsigned& j );
 /// Retrieve the position of the central atom
   Vector retrieveCentralAtomPos( const bool& frac );
-/// Make sure we calculate the position of the central atom
-  void useCentralAtom();
-/// Merge the derivatives 
-  void chainRuleForElementDerivatives( const unsigned& , const unsigned& , const unsigned& , const unsigned& , const double& , vesselbase::Vessel* );
-/// Also used for derivative merging
-  unsigned getOutputDerivativeIndex( const unsigned& ival, const unsigned& i );
 /// Turn of atom requests when this colvar is deactivated cos its small
   void deactivate_task();
 /// Turn on atom requests when the colvar is activated
@@ -153,6 +152,14 @@ public:
   virtual void calculateWeight();
 /// And a virtual function which actually computes the colvar
   virtual double compute( const unsigned& j )=0;  
+/// These are replacing the virtual methods in ActionWithVessel
+  void mergeDerivatives( const unsigned& ider, const double& df );
+  unsigned getFirstDerivativeToMerge();
+  unsigned getNextDerivativeToMerge( const unsigned& );
+/// Clear tempory data that is calculated for each task
+  void clearDerivativesAfterTask( const unsigned& );
+/// Build lists of indexes of the derivatives from the colvar atoms arrays
+  void buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der );
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
   virtual Vector getCentralAtom(); 
 /// Is this a density?
@@ -171,6 +178,22 @@ public:
 };
 
 inline
+unsigned MultiColvar::getFirstDerivativeToMerge(){
+  imerge_deriv=0; imerge_natoms=atoms_with_derivatives.getNumberActive();
+  plumed_dbg_assert( colvar_atoms[current].isActive( atoms_with_derivatives[imerge_deriv] ) );
+  return 3*getAtomIndex( atoms_with_derivatives[imerge_deriv] ); 
+}
+
+inline
+unsigned MultiColvar::getNextDerivativeToMerge( const unsigned& j){
+  imerge_deriv++; 
+  if( imerge_deriv>=3*imerge_natoms ) return 3*getNumberOfAtoms() - 3*imerge_natoms + imerge_deriv;
+  unsigned imerge_atom=std::floor( imerge_deriv / 3 );
+  plumed_dbg_assert( colvar_atoms[current].isActive( atoms_with_derivatives[imerge_atom] ) ); 
+  return 3*getAtomIndex( imerge_atom ) + imerge_deriv%3;
+}
+
+inline
 unsigned MultiColvar::getNumberOfDerivatives(){
   return 3*getNumberOfAtoms()+9;
 } 
@@ -183,19 +206,8 @@ unsigned MultiColvar::getNumberOfFunctionsInAction(){
 inline
 void MultiColvar::deactivate_task(){
   if( !reduceAtNextStep ) return;          // Deactivating tasks only possible during neighbor list update
-  colvar_list.deactivate(current);         // Deactivate the colvar from the list
+  deactivateCurrentTask();                 // Deactivate the colvar from the list
   colvar_atoms[current].deactivateAll();   // Deactivate all atom requests for this colvar
-}
-
-inline
-void MultiColvar::activateValue( const unsigned j ){
-  colvar_atoms[j].activateAll(); 
-  colvar_atoms[j].updateActiveMembers();
-}
-
-inline
-unsigned MultiColvar::getNumberOfDerivatives( const unsigned& j ){
-  return 3*colvar_atoms[j].getNumberActive() + 9;
 }
 
 inline
@@ -206,7 +218,7 @@ bool MultiColvar::isTimeForNeighborListUpdate() const {
 inline
 void MultiColvar::removeAtomRequest( const unsigned& i ){
   plumed_massert(reduceAtNextStep,"found removeAtomRequest but not during neighbor list step");
-  colvar_atoms[current].deactivate(i); 
+  colvar_atoms[current].deactivate( getAtomIndex(i) ); 
 }
 
 inline
@@ -220,61 +232,52 @@ unsigned MultiColvar::getNAtoms() const {
 }
 
 inline
-const Vector & MultiColvar::getPosition( unsigned iatom ) const {
+unsigned MultiColvar::getAtomIndex( const unsigned& iatom ) const {
   plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  return ActionAtomistic::getPosition( colvar_atoms[current][iatom] );
+  return colvar_atoms[current][iatom];
+}
+
+inline
+const Vector & MultiColvar::getPosition( unsigned iatom ) const {
+  return ActionAtomistic::getPosition( getAtomIndex(iatom) );
 }
 
 inline
 double MultiColvar::getMass(unsigned iatom ) const {
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  return ActionAtomistic::getMass( colvar_atoms[current][iatom] );
+  return ActionAtomistic::getMass( getAtomIndex(iatom) );
 }
 
 inline
 double MultiColvar::getCharge(unsigned iatom ) const {
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  return ActionAtomistic::getCharge( colvar_atoms[current][iatom] );
+  return ActionAtomistic::getCharge( getAtomIndex(iatom) );
 }
 
 inline
 AtomNumber MultiColvar::getAbsoluteIndex(unsigned iatom) const {
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  return ActionAtomistic::getAbsoluteIndex( colvar_atoms[current][iatom] );
+  return ActionAtomistic::getAbsoluteIndex( getAtomIndex(iatom) );
 }
 
 inline
 void MultiColvar::addAtomsDerivatives(const int& iatom, const Vector& der){
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  addElementDerivative( 3*iatom+0, der[0] );
-  addElementDerivative( 3*iatom+1, der[1] );
-  addElementDerivative( 3*iatom+2, der[2] );
+  unsigned jatom=getAtomIndex(iatom); 
+  atoms_with_derivatives.activate(iatom);
+  addElementDerivative( 3*jatom+0, der[0] );
+  addElementDerivative( 3*jatom+1, der[1] );
+  addElementDerivative( 3*jatom+2, der[2] );
 }
 
 inline
 void MultiColvar::addBoxDerivatives(const Tensor& vir){
-  int natoms=colvar_atoms[current].getNumberActive();
-  addElementDerivative( 3*natoms+0, vir(0,0) );
-  addElementDerivative( 3*natoms+1, vir(0,1) );
-  addElementDerivative( 3*natoms+2, vir(0,2) );
-  addElementDerivative( 3*natoms+3, vir(1,0) );
-  addElementDerivative( 3*natoms+4, vir(1,1) );
-  addElementDerivative( 3*natoms+5, vir(1,2) );
-  addElementDerivative( 3*natoms+6, vir(2,0) );
-  addElementDerivative( 3*natoms+7, vir(2,1) );
-  addElementDerivative( 3*natoms+8, vir(2,2) );
-}
-
-inline
-unsigned MultiColvar::getOutputDerivativeIndex( const unsigned& ival, const unsigned& i ){
-  plumed_dbg_assert( i<getNumberOfDerivatives( ival ) );
-  
-  if( i<3*colvar_atoms[ival].getNumberActive() ){
-      unsigned inat=std::floor( i/3 );
-      unsigned thisatom=linkIndex( inat, colvar_atoms[ival], all_atoms );
-      return 3*thisatom + i%3; 
-  } 
-  return 3*getNumberOfAtoms() + i - 3*colvar_atoms[ival].getNumberActive(); 
+  unsigned nstart=3*getNumberOfAtoms(); 
+  addElementDerivative( nstart+0, vir(0,0) );
+  addElementDerivative( nstart+1, vir(0,1) );
+  addElementDerivative( nstart+2, vir(0,2) );
+  addElementDerivative( nstart+3, vir(1,0) );
+  addElementDerivative( nstart+4, vir(1,1) );
+  addElementDerivative( nstart+5, vir(1,2) );
+  addElementDerivative( nstart+6, vir(2,0) );
+  addElementDerivative( nstart+7, vir(2,1) );
+  addElementDerivative( nstart+8, vir(2,2) );
 }
 
 inline
@@ -289,8 +292,8 @@ void MultiColvar::setWeight( const double& weight ){
 
 inline
 void MultiColvar::addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& wder ){
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  int nstart  = 3*getNumberOfAtoms() + 9 + 3*iatom;
+  unsigned nstart  = 3*getNumberOfAtoms() + 9 + 3*getAtomIndex(iatom);
+  atoms_with_derivatives.activate(iatom); 
   addElementDerivative( nstart + 0, wder[0] );
   addElementDerivative( nstart + 1, wder[1] );
   addElementDerivative( nstart + 2, wder[2] );
@@ -298,7 +301,7 @@ void MultiColvar::addAtomsDerivativeOfWeight( const unsigned& iatom, const Vecto
 
 inline
 void MultiColvar::addBoxDerivativesOfWeight( const Tensor& vir ){
-  int nstart = 3*getNumberOfAtoms() + 9 + 3*colvar_atoms[current].getNumberActive();
+  int nstart = 6*getNumberOfAtoms() + 9;
   addElementDerivative( nstart+0, vir(0,0) );
   addElementDerivative( nstart+1, vir(0,1) );
   addElementDerivative( nstart+2, vir(0,2) );

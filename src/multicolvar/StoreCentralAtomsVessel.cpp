@@ -36,8 +36,6 @@ nspace(1 + 3*CATOMS_MAXATOMS)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_assert( mycolv );
-
-  mycolv->buildDerivativeIndexArrays( active_der );
 }
 
 void StoreCentralAtomsVessel::resize(){
@@ -50,6 +48,8 @@ void StoreCentralAtomsVessel::resize(){
   start[nfunc]=bsize;
   resizeBuffer( bsize ); 
   forces.resize( mycolv->getNumberOfDerivatives() );
+  // Update the active_derivative lists
+  mycolv->buildDerivativeIndexArrays( active_der );
 }
 
 void StoreCentralAtomsVessel::prepare(){

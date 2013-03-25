@@ -22,6 +22,8 @@
 #include "ActionWithVessel.h"
 #include "StoreValuesVessel.h"
 
+#define MAXDERIVATIVES 300
+
 namespace PLMD {
 namespace vesselbase{
 
@@ -42,39 +44,50 @@ void StoreValuesVessel::resize(){
   bufsize=0; start.resize( nfunc +1 );
   for(unsigned i=0;i<nfunc;++i){
       start[i] = bufsize;
-      bufsize += 1 + aa->getNumberOfDerivatives(i); 
+      bufsize += 1 + MAXDERIVATIVES; 
   }
   start[nfunc]=bufsize;
   resizeBuffer( 2*bufsize ); local_resizing();
+  // Build the arrays of indexes
+  getAction()->buildDerivativeIndexArrays( active_der );
 }
 
 bool StoreValuesVessel::calculate(){
   ActionWithVessel* aa=getAction();
   unsigned ibuf=start[aa->current]; setBufferElement( ibuf, aa->getElementValue(0) ); ibuf++;
-  for(unsigned ider=0;ider<getAction()->nderivatives;++ider){ setBufferElement( ibuf, aa->getElementDerivative(ider) ); ibuf++; } 
-  plumed_dbg_assert( ibuf==start[aa->current+1] );
+  for(unsigned ider=getAction()->getFirstDerivativeToMerge();ider<getAction()->getNumberOfDerivatives();ider=getAction()->getNextDerivativeToMerge(ider)){ 
+     active_der[aa->current].activate(ider);
+     setBufferElement( ibuf, aa->getElementDerivative(ider) ); ibuf++; 
+  } 
   ibuf=bufsize+start[aa->current]; setBufferElement( ibuf, aa->getElementValue(1) ); ibuf++;
   if(diffweight){
     unsigned nder=aa->getNumberOfDerivatives();
-    for(unsigned ider=0;ider<getAction()->nderivatives;++ider){ setBufferElement( ibuf, aa->getElementDerivative(nder+ider) ); ibuf++; }
-    plumed_dbg_assert( ibuf==(bufsize+start[aa->current+1]) );
+    for(unsigned ider=getAction()->getFirstDerivativeToMerge();ider<getAction()->getNumberOfDerivatives();ider=getAction()->getNextDerivativeToMerge(ider)){ 
+       active_der[aa->current].activate(ider);
+       setBufferElement( ibuf, aa->getElementDerivative(nder+ider) ); ibuf++; 
+    }
   }
   return true;
 }
 
+void StoreValuesVessel::finish(){
+  mpi_gatherActiveMembers( comm, active_der );
+  performCalculationUsingAllValues();
+}
+
 void StoreValuesVessel::addDerivatives( const unsigned& ival, double& pref, Value* value_out ){
-  unsigned j=0; ActionWithVessel* aa=getAction();
-  for(unsigned i=start[ival]+1;i<start[ival+1];++i){
-      value_out->addDerivative( aa->getOutputDerivativeIndex( ival, j ), pref*getBufferElement(i) ); j++;
+  unsigned jbuf=start[ival]+1;
+  for(unsigned i=0;i<active_der[ival].getNumberActive();++i){
+      value_out->addDerivative( active_der[ival][i], pref*getBufferElement(jbuf) ); jbuf++;
   }
 }
 
 void StoreValuesVessel::addWeightDerivatives( const unsigned& ival, double& pref, Value* value_out ){
   if(!diffweight) return;
 
-  unsigned j=0; ActionWithVessel* aa=getAction();
-  for(unsigned i=bufsize+start[ival]+1;i<bufsize+start[ival+1];++i){
-      value_out->addDerivative( aa->getOutputDerivativeIndex( ival, j ), pref*getBufferElement(i) ); j++;
+  unsigned jbuf=bufsize+start[ival]+1;
+  for(unsigned i=0;i<active_der[ival].getNumberActive();++i){
+      value_out->addDerivative( active_der[ival][i], pref*getBufferElement(jbuf) ); jbuf++;
   }
 }
 
