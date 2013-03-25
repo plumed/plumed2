@@ -127,6 +127,7 @@ bool FileBase::FileExist(const std::string& path){
     ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
   }
   if(ff) {do_exist=true; fclose(ff);}
+  if(comm) comm->Barrier();
   return do_exist; 
 }
 
