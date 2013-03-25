@@ -2,7 +2,7 @@
 .PHONY: all clean lib
 
 # by default we compile the lib directory, which in turn requests all the needeed modules
-all: lib lib-static
+all: lib
 
 lib: 
 	$(MAKE) -C lib
