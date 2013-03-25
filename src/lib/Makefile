@@ -163,7 +163,7 @@ endif
 clean:
 	rm -f $(CLEANLIST)
 	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
-	rm -f Plumed.inc* plumed-*
+	rm -f Plumed.inc* plumed-* Plumed.cmake*
 
 # generic makefile rules
 include ../maketools/make.rules
