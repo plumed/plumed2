@@ -49,6 +49,7 @@ class Debug:
   bool logActivity;
   bool logRequestedAtoms;
   bool novirial;
+  bool detailedTimers;
 public:
   Debug(const ActionOptions&ao);
 /// Register all the relevant keywords for the action  
@@ -66,6 +67,7 @@ void Debug::registerKeywords( Keywords& keys ){
   keys.addFlag("logActivity",false,"write in the log which actions are inactive and which are inactive");
   keys.addFlag("logRequestedAtoms",false,"write in the log which atoms have been requested at a given time");
   keys.addFlag("NOVIRIAL",false,"switch off the virial contribution for the entirity of the simulation");
+  keys.addFlag("DETAILED_TIMERS",false,"switch on detailed timers");
 }
 
 Debug::Debug(const ActionOptions&ao):
@@ -81,6 +83,9 @@ novirial(false){
   parseFlag("NOVIRIAL",novirial);
   if(novirial) log.printf("  Switching off virial contribution\n");
   if(novirial) plumed.novirial=true;
+  parseFlag("DETAILED_TIMERS",detailedTimers);
+  if(detailedTimers) log.printf("  Detailed timing on\n");
+  plumed.detailedTimers=true;
   checkRead();
 }
 

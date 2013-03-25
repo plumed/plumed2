@@ -135,6 +135,8 @@ public:
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
   bool novirial;
 
+/// Flag to switch on detailed timers
+  bool detailedTimers;
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);

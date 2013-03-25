@@ -66,7 +66,8 @@ PlumedMain::PlumedMain():
   restart(false),
   stopFlag(NULL),
   stopNow(false),
-  novirial(false)
+  novirial(false),
+  detailedTimers(false)
 {
   log.link(comm);
   log.setLinePrefix("PLUMED: ");
@@ -522,8 +523,15 @@ void PlumedMain::justCalculate(){
   stopwatch.start("4 Calculating (forward loop)");
   bias=0.0;
 
+  int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
+    std::string actionNumberLabel;
+    if(detailedTimers){
+      Tools::convert(iaction,actionNumberLabel);
+      actionNumberLabel="4A "+actionNumberLabel+" "+(*p)->getLabel();
+      stopwatch.start(actionNumberLabel);
+    }
     ActionWithValue*av=dynamic_cast<ActionWithValue*>(*p);
     ActionAtomistic*aa=dynamic_cast<ActionAtomistic*>(*p);
     {
@@ -543,6 +551,9 @@ void PlumedMain::justCalculate(){
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(*p);
       if(avv)avv->setGradientsIfNeeded();	
     }
+
+    if(detailedTimers) stopwatch.stop(actionNumberLabel);
+    iaction++;
   }
   stopwatch.stop("4 Calculating (forward loop)");
 }
@@ -550,22 +561,40 @@ void PlumedMain::justCalculate(){
 void PlumedMain::justApply(){
   
   if(!active)return;
+  int iaction=0;
   stopwatch.start("5 Applying (backward loop)");
 // apply them in reverse order
   for(ActionSet::reverse_iterator p=actionSet.rbegin();p!=actionSet.rend();++p){
-    if((*p)->isActive()) (*p)->apply();
-    ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
+    if((*p)->isActive()){
+
+      std::string actionNumberLabel;
+      if(detailedTimers){
+        Tools::convert(iaction,actionNumberLabel);
+        actionNumberLabel="5A "+actionNumberLabel+" "+(*p)->getLabel();
+        stopwatch.start(actionNumberLabel);
+      }
+
+      (*p)->apply();
+      ActionAtomistic*a=dynamic_cast<ActionAtomistic*>(*p);
 // still ActionAtomistic has a special treatment, since they may need to add forces on atoms
-    if(a) if(a->isActive()) a->applyForces();
+      if(a) a->applyForces();
+
+      if(detailedTimers) stopwatch.stop(actionNumberLabel);
+    }
+    iaction++;
   }
 
 // this is updating the MD copy of the forces
+  if(detailedTimers) stopwatch.start("5B Update forces");
   if(atoms.getNatoms()>0) atoms.updateForces();
+  if(detailedTimers) stopwatch.stop("5B Update forces");
 
+  if(detailedTimers) stopwatch.start("5C Update");
 // update step (for statistics, etc)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
     if((*p)->isActive()) (*p)->update();
   }
+  if(detailedTimers) stopwatch.stop("5C Update");
 // Check that no action has told the calculation to stop
   if(stopNow){
      if(stopFlag) (*stopFlag)=1;
