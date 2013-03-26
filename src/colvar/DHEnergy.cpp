@@ -36,13 +36,15 @@ namespace colvar{
 
 //+PLUMEDOC COLVAR DHENERGY
 /*
-Calculate Debye-Huckel interaction energy among GROUPA and GROUPB. The two groups should
-be disjointed. Notice that the value of the DHEN is returned in plumed units (see \ref UNITS).
+Calculate Debye-Huckel interaction energy among GROUPA and GROUPB.
+
+This collective variable can be used to analyze or induce electrostatically driven reactions \cite do13jctc.
+The two atom groups should be disjointed. Notice that the value of the DHENERGY is returned in plumed units (see \ref UNITS).
 
 \par Examples
 \verbatim
 # this is printing the electrostatic interaction between two groups of atoms
-dh: DHEN GROUPA=1-10 GROUPB=11-20 EPS=80.0 I=0.1 TEMP=300.0
+dh: DHENERGY GROUPA=1-10 GROUPB=11-20 EPS=80.0 I=0.1 TEMP=300.0
 PRINT ARG=dh
 \endverbatim
 (see also \ref PRINT)
@@ -113,7 +115,7 @@ constant(0.0)
   log<<"  at temperature "<<T<<" K\n";
   log<<"  at ionic strength "<<I<< "M\n";
   log<<"  these parameters correspond to a screening length of "<<(1.0/k)<<"\n";
-  log<<"  Bibliography "<<plumed.cite("Do, Carloni, Varani and Bussi, submitted (2013)")<<" \n";
+  log<<"  Bibliography "<<plumed.cite("Do, Carloni, Varani and Bussi, J. Chem. Theory Comput. 9, 1720 (2013)")<<" \n";
 }
 
 double DHEnergy::pairing(double distance,double&dfunc,unsigned i,unsigned j)const{

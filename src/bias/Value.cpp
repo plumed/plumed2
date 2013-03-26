@@ -33,8 +33,12 @@ namespace bias{
 /*
 Takes the value of one variable and use it as a bias
 
+This is the simplest possible bias: the bias potential is equal to a collective variable.
+It is useful to create custom biasing potential, e.g. applying a function (see \ref Function)
+to some collective variable then using the value of this function directly as a bias.
 
 \par Examples
+
 The following input tells plumed to use the value of the distance between atoms 3 and 5
 and the value of the distance between atoms 2 and 4 as biases. 
 It then tells plumed to print the energy of the restraint
@@ -69,6 +73,7 @@ cc: BIASVALUE ARG=vv1
 # some printout
 PRINT ARG=t,cos,sin,d.x,d.y,d.z,mycos,mysin,cc.bias.vv1 STRIDE=1 FILE=colvar FMT=%8.4f
 \endverbatim
+(see also \ref TIME, \ref MATHEVAL, \ref COM, \ref DISTANCE, and \ref PRINT).
 
 
 */

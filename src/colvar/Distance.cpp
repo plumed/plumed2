@@ -39,9 +39,10 @@ Calculate the distance between a pair of atoms.
 The following input tells plumed to print the distance between atoms 3 and 5,
 the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
 \verbatim
-DISTANCE ATOMS=3,5             LABEL=d1
-DISTANCE ATOMS=2,4 COMPONENTS  LABEL=d2
-PRINT ARG=d1,d2,d2.x
+d1:  DISTANCE ATOMS=3,5
+d2:  DISTANCE ATOMS=2,4
+d2c: DISTANCE ATOMS=2,4 COMPONENTS
+PRINT ARG=d1,d2,d2c.x
 \endverbatim
 (See also \ref PRINT).
 

@@ -31,11 +31,16 @@ namespace vatom{
 
 //+PLUMEDOC VATOM COM
 /*
-Calculate the center of mass for a group of atoms.  The computed
+Calculate the center of mass for a group of atoms.
+
+The computed
 center of mass is stored as a virtual atom that can be accessed in
-an atom list through the the label for the COM action that creates it.
+an atom list through the label for the COM action that creates it.
+
+For arbitrary weights (e.g. geometric center) see \ref CENTER.
 
 \par Examples
+
 The following input instructs plumed to print the distance between the
 center of mass for atoms 1,2,3,4,5,6,7 and that for atoms 15,20:
 \verbatim

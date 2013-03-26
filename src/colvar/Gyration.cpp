@@ -35,6 +35,7 @@ namespace colvar{
 //+PLUMEDOC COLVAR GYRATION
 /*
 Calculate the radius of gyration, or other properties related to it.
+
 The different properties can be calculated and selected by the TYPE keyword:
 the Radius of Gyration (RADIUS); the Trace of the Gyration Tensor (TRACE); 
 the Largest Principal Moment of the Gyration Tensor (GTPC_1); the middle Principal Moment of the Gyration Tensor (GTPC_2);

@@ -37,6 +37,7 @@ Return a constant quantity.
 Useful in combination with functions.
 
 \par Examples
+
 The following input instructs plumed to compute the distance
 between atoms 1 and 2. If this distance is between 1.0 and 2.0, it is
 printed. If it is lower than 1.0 (larger than 2.0), 1.0 (2.0) is printed

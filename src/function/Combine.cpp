@@ -31,7 +31,16 @@ namespace function{
 
 //+PLUMEDOC FUNCTION COMBINE
 /*
-Calculate a polynomial combination of a set of other variables
+Calculate a polynomial combination of a set of other variables.
+
+The functional form of this function is
+\f[
+C=\sum_{i=1}^{N_{arg}} c_i x_i^{p_i}
+\f]
+
+The coefficients c and powers p are provided as vectors.
+
+
 
 \par Examples
 The following input tells plumed to print the distance between atoms 3 and 5

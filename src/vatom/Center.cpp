@@ -32,11 +32,16 @@ namespace vatom{
 //+PLUMEDOC VATOM CENTER
 /*
 Calculate the center for a group of atoms, with arbitraty weights.
+
+The computed
+center is stored as a virtual atom that can be accessed in
+an atom list through the label for the CENTER action that creates it.
 Notice that the generated virtual atom has charge equal to the sum of the
 charges and mass equal to the sum of the masses. If used with the MASS flag,
 then it provides a result identical to \ref COM.
 
 \par Examples
+
 \verbatim
 # a point which is on the line connecting atoms 1 and 10, so that its distance
 # from 10 is twice its distance from 1:

@@ -57,6 +57,7 @@ know exactly what you are doing, leave the default stride (1), so that
 this action is performed at every MD step.
 
 \par Examples
+
 This command instructs plumed to reconstruct the molecule containing atoms 1-20
 at every step of the calculation.
 

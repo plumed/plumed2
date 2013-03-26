@@ -35,7 +35,7 @@ namespace colvar{
 /*
 Calculate an angle.
 
-This command can be used to angle between three atoms. Alternatively
+This command can be used to compute the angle between three atoms. Alternatively
 if four atoms appear in the atom
 specification it calculates the angle between the vector joining atoms 1 and 2 and that joining
 atoms 3 and 4.
@@ -47,8 +47,13 @@ the vector connecting atom 2 to atom 3 and to print it on file COLVAR1. At the s
 the angle between vector connecting atom 1 to atom 2 and the vector connecting atom 3 to atom 4 is printed
 on file COLVAR2.
 \verbatim
+
 a: ANGLE ATOMS=1,2,3 
+# equivalently one could state:
+# a: ANGLE ATOMS=1,2,2,3
+
 b: ANGLE ATOMS=1,2,3,4
+
 PRINT ARG=a FILE=COLVAR1
 PRINT ARG=b FILE=COLVAR2
 \endverbatim
@@ -71,7 +76,7 @@ PLUMED_REGISTER_ACTION(Angle,"ANGLE")
 
 void Angle::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords(keys);
-  keys.add("atoms","ATOMS","the list of atoms involved in this collective variable");
+  keys.add("atoms","ATOMS","the list of atoms involved in this collective variable (either 3 or 4 atoms)");
 }
 
 Angle::Angle(const ActionOptions&ao):

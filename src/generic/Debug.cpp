@@ -31,16 +31,19 @@ namespace generic {
 
 //+PLUMEDOC GENERIC DEBUG
 /*
-  Set some debug options
+Set some debug options.
 
-\par syntax
+Can be used while debugging or optimizing plumed.
+
+\par Examples
+
 \verbatim
-DEBUG [STRIDE=s] [NOVIRIAL] [logActivity]
+# print detailed (action-by-action) timers at the end of simulation
+DEBUG DETAILED_TIMERS
+# dump every two steps which are the atoms required from the MD code
+DEBUG logRequestedAtoms STRIDE=2
 \endverbatim
-The NOVIRIAL flag switches off (for the entire simulation) the contribution
-of virial computed in plumed. The logActivity keyword writes in the log
-the list of which objects are active and which are inactive
-as a sequence of + (active) and - (inactive). Logging is done with stride s.
+
 */
 //+ENDPLUMEDOC
 class Debug:

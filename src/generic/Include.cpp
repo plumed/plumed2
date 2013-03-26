@@ -36,6 +36,7 @@ Includes an external input file, similar to "#include" in C preprocessor.
 Useful to split very large plumed.dat files.
 
 \par Examples
+
 This input
 \verbatim
 c1: COM ATOMS=1-100

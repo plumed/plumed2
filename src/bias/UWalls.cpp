@@ -33,6 +33,7 @@ namespace bias{
 /*
 The LOWER_WALLS and UPPER_WALLS keywords define a wall for the value of one or more collective variables,
  which limits the region of the phase space accessible during the simulation. 
+
 The restraining potential starts acting on the system when the value of the CV is greater 
 (in the case of UPPER_WALLS) or lower (in the case of LOWER_WALLS) than a certain limit \f$a_i\f$ (AT) 
 minus an offset \f$o_i\f$ (OFFSET).
