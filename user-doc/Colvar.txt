@@ -77,12 +77,57 @@ The following list contains all the colvars that are currently implemented in pl
 
 @COLVAR@
 
-Often you do not need one of these collective variables directly.  What you want instead is a function of a distribution of
-collective variables of a particular type.  For instance you might need to calculate a minimum distance or the number of 
-coordination numbers greater than a 3.0.  Descriptions as to how to use plumed to calculate these kinds of CVs are given
+\section mcolv MultiColvar Documentation
+
+Often you do not need one of the collective variables described in the previous section.  What you want instead is a 
+function of a distribution of collective variables of a particular type.  For instance you might need to calculate a 
+minimum distance or the number of coordination numbers greater than a 3.0.  To avoid dupilcating the code to calculate
+an angle or distance many times and to make it easier to implement very complex collective variables plumed provides
+these sort of collective variables using so-called MultiColvars.  MultiColvars are named in this way because a single
+plumed action can be used to calculate a number of different collective variables.  For instance the \ref DISTANCES
+action can be used to calculate the minimum distance, the number of distances less than a certain value, the number of
+distances within a certain range...  Descriptions as to how to use plumed to calculate these kinds of CVs are given
 below:
 
-@MCOLVAR@
+@MCOLVAR@   
+
+To instruct plumed to calculate a multicolvar you give an instruction that looks something like this:
+
+\verbatim
+NAME <atoms involved> <parameters> <what am I calculating> TOL=0.001 LABEL=label
+\endverbatim
+
+Oftentimes the simplest way to specify the atoms involved is to use multiple instances of the ATOMS keyword 
+i.e. ATOMS1, ATOMS2, ATOMS3,...  Separate instances of the quantity specified by NAME are then calculated for 
+each of the sets of atoms.  For example if the command issued contains the following:
+
+\verbatim
+DISTANCES ATOMS1=1,2 ATOMS2=3,4 ATOMS3=5,6
+\endverbatim
+
+The distances between atoms 1 and 2, atoms 3 and 4, and atoms 5 and 6 are calculated. Obviously, generating 
+this sort of input is rather tedious so short cuts are also available many of the collective variables. 
+These are described on the manual pages for the actions.
+ 
+After specifying the atoms involved you sometimes need to specify some parameters that required in the 
+calculation.  For instance, for \ref COORDINATIONNUMBERS - the number of atoms in the first coordination
+sphere of each of the atoms in the system - you need to specify the parameters for a \ref switchingfunction
+that will tell us whether or not an atom is in the first coordination sphere.  Details as to how to do this
+are provided on the manual pages.  
+
+One of the most important keywords for multicolvars is the TOL keyword.  This specifies that terms in sums 
+that contribute less than a certain value can be ignored.  In addition, it is assumed that the derivative
+with respect to these terms are essentially zero.  By increasing the TOL parameter you can increase the speed 
+of the calculation.  Be aware, however, that this increase in speed is only possible because you are lowering the 
+accuracy with which you are computing the quantity of interest.
+
+Once you have specified the base quanties that are to be calculated from the atoms involved and any parameters
+you need to specify what function of these base quanties is to be calculated.  For most multicolvars you can calculate 
+the minimum, the number less than a target value, the number within a certain range, the number more than a target
+value and the average value directly.  In addition, the following more complex functions of the distribution of values 
+can be computed: 
+
+@MCOLVARF@ 
 
 */
 

@@ -22,18 +22,41 @@
 #include "core/ActionRegister.h"
 #include "ActionVolume.h"
 
-//+PLUMEDOC GENERIC SUBCELL
+//+PLUMEDOC MCOLVARF SUBCELL
 /*
-This action is used in conjunction with \ref region keyword.  It is used to specify that 
-a particular quantity is to be averaged for the atoms in a particular part of the cell.   
- 
+This quantity can be used to calculate functions of the distribution of collective 
+variables for the atoms that lie in a particular, user-specified part of of the cell.
+
+Each of the base quantities calculated by a multicolvar can can be assigned to a particular point in three 
+dimensional space. For example, if we have the coordination numbers for all the atoms in the
+system each coordination number can be assumed to lie on the position of the central atom. 
+Because each base quantity can be assigned to a particular point in space we can calculate functions of the
+distribution of base quantities in a particular part of the box by using:
+
+\f[
+\overline{s}_{\tau} = \frac{ \sum_i f(s_i) w(x_i,y_i,z_i) }{ \sum_i w(x_i,y_i,z_i) }  
+\f]  
+
+where the sum is over the collective variables, \f$s_i\f$, each of which can be thought to be at \f$ (x_i,y_i,z_i)\f$.
+The function \f$ w(x_i,y_i,z_i) \f$ measures whether or not the system is in the subregion of interest. It
+is equal to:
+
+\f[
+w(x_i,y_i,z_i) = \int_{xl}^{xu} \int_{yl}^{yu} \int_{zl}^{zu} \textrm{d}x\textrm{d}y\textrm{d}z K\left( \frac{x - x_i}{\sigma} \right)K\left( \frac{y - y_i}{\sigma} \right)K\left( \frac{z - z_i}{\sigma} \right) 
+\f]
+
+where \f$K\f$ is one of the kernel functions described on \ref histogrambead and \f$\sigma\f$ is a bandwidth parameter.
+The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
+
+When REGION is used with the \ref DENSITY action the number of atoms in the specified region is calculated  
+
 \par Examples
 
 The following commands tell plumed to calculate the average coordination number for the atoms
-that have x (in fractional coordinates) less than 0.5. The final value will be labeled r1_av.
+that have x (in fractional coordinates) less than 0.5. The final value will be labeled s.mean.
 \verbatim
 COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 LABEL=c
-SUBCELL ARG=c XLOWER=0.0 XUPPER=0.5 SIGMA=0.1 LABEL=s
+SUBCELL ARG=c XLOWER=0.0 XUPPER=0.5 SIGMA=0.1 MEAN LABEL=s
 \endverbatim
 
 */
