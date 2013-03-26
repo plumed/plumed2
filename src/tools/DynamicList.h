@@ -163,6 +163,8 @@ public:
   unsigned fullSize() const;
 /// Return the number of elements that are currently active
   unsigned getNumberActive() const;
+/// Find out if a member is active
+  bool isActive(const unsigned& ) const;
 /// Add something to the active list
   void addIndexToList( const T & ii );
 /// Make a particular element inactive
@@ -192,6 +194,11 @@ template <typename T>
 void DynamicList<T>::clear() {
   all.resize(0); translator.resize(0); 
   onoff.resize(0); active.resize(0);
+}
+
+template <typename T>
+bool DynamicList<T>::isActive( const unsigned& i ) const {
+  return (onoff[i]>0);
 }
 
 template <typename T>

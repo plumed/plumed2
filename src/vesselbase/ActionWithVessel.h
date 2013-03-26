@@ -207,10 +207,6 @@ void ActionWithVessel::addElementDerivative( const unsigned& ider, const double&
 
 inline
 void ActionWithVessel::setElementDerivative( const unsigned& ider, const double& der ){
-#ifndef NDEBUG
-  unsigned ndertmp=getNumberOfDerivatives();
-  if( ider>=ndertmp && ider<2*ndertmp ) plumed_dbg_massert( weightHasDerivatives, "In " + getLabel() );
-#endif
   plumed_dbg_assert( ider<derivatives.size() );
   derivatives[ider] = der;
 }

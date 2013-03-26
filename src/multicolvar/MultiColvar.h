@@ -180,7 +180,6 @@ public:
 inline
 unsigned MultiColvar::getFirstDerivativeToMerge(){
   imerge_deriv=0; imerge_natoms=atoms_with_derivatives.getNumberActive();
-  plumed_dbg_assert( colvar_atoms[current].isActive( atoms_with_derivatives[imerge_deriv] ) );
   return 3*getAtomIndex( atoms_with_derivatives[imerge_deriv] ); 
 }
 
@@ -189,7 +188,6 @@ unsigned MultiColvar::getNextDerivativeToMerge( const unsigned& j){
   imerge_deriv++; 
   if( imerge_deriv>=3*imerge_natoms ) return 3*getNumberOfAtoms() - 3*imerge_natoms + imerge_deriv;
   unsigned imerge_atom=std::floor( imerge_deriv / 3 );
-  plumed_dbg_assert( colvar_atoms[current].isActive( atoms_with_derivatives[imerge_atom] ) ); 
   return 3*getAtomIndex( imerge_atom ) + imerge_deriv%3;
 }
 
