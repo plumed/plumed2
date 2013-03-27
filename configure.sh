@@ -20,7 +20,6 @@ done
 
 ln -s configurations/$conf Makefile.conf
 
-
 case "$conf" in
 (aix.*)
   SOEXT=so
