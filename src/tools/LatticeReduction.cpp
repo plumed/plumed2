@@ -24,6 +24,8 @@
 
 namespace PLMD{
 
+const double epsilon=1e-28;
+
 void LatticeReduction::sort(Vector v[3]){
   for(int i=0;i<3;i++) for(int j=i+1;j<3;j++) if(modulo2(v[i])>modulo2(v[j])){
     Vector x=v[i]; v[i]=v[j]; v[j]=x;
@@ -41,7 +43,7 @@ void LatticeReduction::reduce(Vector&a,Vector&b){
     }
     a-=b*floor(dotProduct(a,b)/modulo2(b)+0.5);
     ma=modulo2(a);
-    if(mb<=ma) break;
+    if(mb<=ma+epsilon) break;
   }
 
   Vector t(a); a=b; b=t;
@@ -126,7 +128,7 @@ void LatticeReduction::reduceFast(Tensor&t){
         first=false;
       }
     }
-    if(modulo2(best)>=modulo2(v[2])) break;
+    if(modulo2(best)+epsilon>=modulo2(v[2])) break;
     v[2]=best;
   }
   sort(v);
