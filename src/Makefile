@@ -7,9 +7,6 @@ all: lib
 lib: 
 	$(MAKE) -C lib
 
-lib-static: 
-	$(MAKE) -C lib all-static
-     
 # list of all the contained directories which can be cleaned
 SUBDIRS =$(subst /Makefile,,$(wildcard */Makefile))
 SUBDIRSCLEAN=$(addsuffix .clean,$(SUBDIRS))

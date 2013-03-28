@@ -181,7 +181,7 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
 
 void ActionAtomistic::retrieveAtoms(){
   box=atoms.box;
-  pbc.setBox(box);
+  pbc=atoms.pbc;
   chargesWereSet=atoms.chargesWereSet();
   const vector<Vector> & p(atoms.positions);
   const vector<double> & c(atoms.charges);

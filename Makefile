@@ -7,7 +7,7 @@ SUBDIRS = $(SRCDIRS) user-doc developer-doc regtest
 SUBDIRSCLEAN=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check lib-static
+.PHONY: all lib clean $(SRCDIRS) doc docclean check
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -16,9 +16,6 @@ all: $(SRCDIRS)
 lib:
 	$(MAKE)	-C src
 
-lib-static:
-	$(MAKE)	-C src lib-static
-     
 $(SRCDIRS):
 	$(MAKE) -C $@
      

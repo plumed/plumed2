@@ -38,6 +38,7 @@ class MDAtomsBase;
 class PlumedMain;
 class ActionAtomistic;
 class ActionWithVirtualAtom;
+class Pbc;
 
 /// Class containing atom related quantities from the MD code.
 /// IT IS STILL UNDOCUMENTED. IT PROBABLY NEEDS A STRONG CLEANUP
@@ -52,6 +53,7 @@ class Atoms
   std::vector<double> charges;
   std::vector<ActionWithVirtualAtom*> virtualAtomsActions;
   Tensor box;
+  Pbc&   pbc;
   Tensor virial;
   double energy;
 
