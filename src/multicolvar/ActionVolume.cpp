@@ -91,7 +91,7 @@ bool ActionVolume::performTask( const unsigned& j ){
   if( mycolv->isDensity() ){
      setElementValue( 0, weight ); setElementValue( 1, 1.0 ); 
      for(unsigned i=0;i<mycolv->getNAtoms();++i){
-        unsigned nx=3*linkIndex( i, mycolv->colvar_atoms[mycolv->current], mycolv->all_atoms );
+        unsigned nx=3*mycolv->getAtomIndex( i ); 
         addElementDerivative( nx+0, mycolv->getCentralAtomDerivative(i, 0, wdf ) );
         addElementDerivative( nx+1, mycolv->getCentralAtomDerivative(i, 1, wdf ) );
         addElementDerivative( nx+2, mycolv->getCentralAtomDerivative(i, 2, wdf ) );
@@ -117,7 +117,7 @@ bool ActionVolume::performTask( const unsigned& j ){
      // Add derivatives of central atoms
      for(unsigned i=0;i<mycolv->atomsWithCatomDer.getNumberActive();++i){
          unsigned n=mycolv->atomsWithCatomDer[i];
-         unsigned nx=nder+3*linkIndex( n, mycolv->colvar_atoms[mycolv->current], mycolv->all_atoms);
+         unsigned nx=nder+3*mycolv->getAtomIndex( n ); 
          addElementDerivative( nx+0, ww*mycolv->getCentralAtomDerivative(i, 0, wdf ) );
          addElementDerivative( nx+1, ww*mycolv->getCentralAtomDerivative(i, 1, wdf ) );
          addElementDerivative( nx+2, ww*mycolv->getCentralAtomDerivative(i, 2, wdf ) );

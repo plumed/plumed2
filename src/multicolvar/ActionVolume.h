@@ -58,6 +58,7 @@ private:
   vesselbase::BridgeVessel* myBridgeVessel;
 protected:
   double getSigma() const ;
+  MultiColvar* getPntrToMultiColvar();
 public:
   static void registerKeywords( Keywords& keys );
   ActionVolume(const ActionOptions&);
@@ -88,6 +89,11 @@ public:
 inline
 double ActionVolume::getSigma() const {
   return sigma;
+}
+
+inline
+MultiColvar* ActionVolume::getPntrToMultiColvar(){
+  return mycolv;
 }
 
 inline
