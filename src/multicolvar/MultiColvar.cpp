@@ -82,7 +82,21 @@ centralAtomDerivativesAreInFractional(false)
 }
 
 void MultiColvar::addColvar( const std::vector<unsigned>& newatoms ){
-  if( colvar_atoms.size()>0 ) plumed_assert( colvar_atoms[0].fullSize()==newatoms.size() );
+  // Resize the working directories to the size of the largest colvar
+  if( newatoms.size()>central_derivs.size() ){
+      // Set up dynamic array for derivatives
+      atoms_with_derivatives.clear();
+      for(unsigned i=0;i<newatoms.size();++i) atoms_with_derivatives.addIndexToList( i );
+      atoms_with_derivatives.deactivateAll();
+      // Set up stuff for central atoms
+      atomsWithCatomDer.clear();
+      for(unsigned i=0;i<newatoms.size();++i) atomsWithCatomDer.addIndexToList( i );
+      atomsWithCatomDer.deactivateAll();
+      central_derivs.resize( newatoms.size() );
+      for(unsigned i=0;i<central_derivs.size();++i) central_derivs[i].zero();
+  }
+
+//  if( colvar_atoms.size()>0 ) plumed_assert( colvar_atoms[0].fullSize()==newatoms.size() );
   DynamicList<unsigned> newlist;
   if( verbose_output ) log.printf("  Colvar %d is calculated from atoms : ", colvar_atoms.size()+1);
   for(unsigned i=0;i<newatoms.size();++i){
@@ -102,13 +116,6 @@ void MultiColvar::readAtoms( int& natoms ){
   if( !readatoms ) error("No atoms have been read in");
   taskList.activateAll();
   for(unsigned i=0;i<colvar_atoms.size();++i) colvar_atoms[i].activateAll(); 
-  // Set up dynamic array for derivatives
-  for(unsigned i=0;i<colvar_atoms[0].fullSize();++i) atoms_with_derivatives.addIndexToList( i );
-  // Set up stuff for central atoms
-  for(unsigned i=0;i<colvar_atoms[0].fullSize();++i) atomsWithCatomDer.addIndexToList( i );
-  atomsWithCatomDer.deactivateAll();
-  central_derivs.resize( colvar_atoms[0].fullSize() );
-  for(unsigned i=0;i<central_derivs.size();++i) central_derivs[i].zero();
   // Resize all dynamic content
   resizeDynamicArrays();
 }
@@ -316,7 +323,9 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
          std::vector<unsigned> newlist;
          for(unsigned i=0;i<t1.size();++i){
             newlist.push_back(i);
-            for(unsigned j=0;j<t2.size();++j) newlist.push_back( t1.size() + j ); 
+            for(unsigned j=0;j<t2.size();++j){
+                if( t1[i]!=t2[j] ) newlist.push_back( t1.size() + j ); 
+            }
             addColvar( newlist ); newlist.clear();
          }
          if( !verbose_output ){
