@@ -59,15 +59,16 @@ std::string Mean::function_description(){
 
 bool Mean::calculate(){
   double weight=getAction()->getElementValue(1);
-  bool addval=addValue( 1, weight );
-  if( addval ){
-     double colvar=getAction()->getElementValue(0);
-     bool ignore=addValue( 0, weight*colvar  );
-     getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
-     if(diffweight) getAction()->chainRuleForElementDerivatives( 0, 1, colvar, this );
-     if(diffweight) getAction()->chainRuleForElementDerivatives( 1, 1, 1.0, this );
+  plumed_dbg_assert( weight>=getTolerance() );
+  addValueIgnoringTolerance( 1, weight );
+  double colvar=getAction()->getElementValue(0);
+  addValueIgnoringTolerance( 0, weight*colvar  );
+  getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
+  if(diffweight){
+     getAction()->chainRuleForElementDerivatives( 0, 1, colvar, this );
+     getAction()->chainRuleForElementDerivatives( 1, 1, 1.0, this );
   }
-  return addval;
+  return true;
 }
 
 void Mean::finish(){

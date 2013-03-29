@@ -56,12 +56,13 @@ void BridgeVessel::prepare(){
 
 bool BridgeVessel::calculate(){
   unsigned j;
-  bool res=myOutputAction->performTask(j);
-  if( !res ){
+  myOutputAction->performTask(j);
+  if( myOutputAction->thisval[1]<myOutputAction->getTolerance() ){
       myOutputAction->clearAfterTask();
-      return false;
+      return ( !myOutputAction->contributorsAreUnlocked || myOutputAction->thisval[1]>=myOutputAction->getNLTolerance() );
   }
-  return myOutputAction->calculateAllVessels();
+  bool keep=myOutputAction->calculateAllVessels();
+  return ( !myOutputAction->contributorsAreUnlocked || keep );
 }
 
 void BridgeVessel::finish(){

@@ -52,9 +52,10 @@ void MultiColvar::registerKeywords( Keywords& keys ){
   keys.reserve("atoms-4","SPECIESB","this keyword is used for colvars such as the coordination number.  It must appear with SPECIESA.  For a full explanation see " 
                                   "the documentation for that keyword");
   keys.addFlag("VERBOSE",false,"write a more detailed output");
-  keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
-                                  "that contributed less than TOL at the previous neighbor list update step are ignored.");
   ActionWithVessel::registerKeywords( keys );
+  keys.use("NL_TOL");
+  keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
+                                "that contributed less than TOL at the previous neighbor list update step are ignored.");
 } 
 
 MultiColvar::MultiColvar(const ActionOptions&ao):
@@ -67,7 +68,6 @@ readatoms(false),
 verbose_output(false),
 updateFreq(0),
 lastUpdate(0),
-reduceAtNextStep(false),
 posHasBeenSet(false),
 centralAtomDerivativesAreInFractional(false)
 {
@@ -345,15 +345,15 @@ void MultiColvar::resizeDynamicArrays(){
 
 void MultiColvar::prepare(){
   updatetime=false;
-  if( reduceAtNextStep ){
+  if( contributorsAreUnlocked ){
       taskList.mpi_gatherActiveMembers( comm );
       mpi_gatherActiveMembers( comm, colvar_atoms ); 
-      reduceAtNextStep=false; updatetime=true;
+      lockContributors(); updatetime=true;
   }
   if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
       taskList.activateAll(); 
       for(unsigned i=0;i<taskList.getNumberActive();++i) colvar_atoms[i].activateAll();
-      reduceAtNextStep=true; updatetime=true; lastUpdate=getStep();
+      unlockContributors(); updatetime=true; lastUpdate=getStep();
   }
   if(updatetime){
      resizeDynamicArrays();
@@ -387,14 +387,17 @@ const std::vector<Vector>& MultiColvar::getPositions(){
   return pos;
 }
 
-bool MultiColvar::performTask( const unsigned& j ){
-  atoms_with_derivatives.deactivateAll();                                       // Currently no atoms have derivatives
-  if( colvar_atoms[current].getNumberActive()==0 ) return false;                // Do nothing if there are no active atoms in the colvar
-  posHasBeenSet=false;                                                          // This ensures we don't set the pos array more than once per step  
+void MultiColvar::performTask( const unsigned& j ){
+  atoms_with_derivatives.deactivateAll();            // Currently no atoms have derivatives
+  if( colvar_atoms[current].getNumberActive()==0 ){  // Do nothing if there are no active atoms in the colvar
+     setElementValue(1,0.0);
+     return;                      
+  }
+  posHasBeenSet=false;                               // This ensures we don't set the pos array more than once per step  
 
   // Do a quick check on the size of this contribution  
   calculateWeight();
-  if( getElementValue(1)<getTolerance() ) return false;   
+  if( getElementValue(1)<getTolerance() ) return;   
 
   // Compute everything
   double vv=compute( j ); 
@@ -402,7 +405,7 @@ bool MultiColvar::performTask( const unsigned& j ){
   setElementValue( 0, vv );
   // And finally gather the list of active atoms
   atoms_with_derivatives.updateActiveMembers();
-  return true;
+  return;
 }
 
 Vector MultiColvar::retrieveCentralAtomPos( const bool& frac ){

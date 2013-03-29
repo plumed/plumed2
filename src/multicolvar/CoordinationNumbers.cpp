@@ -140,8 +140,8 @@ double CoordinationNumbers::compute( const unsigned& j ){
          addAtomsDerivatives( 0, (-dfunc)*distance );
          addAtomsDerivatives( i,  (dfunc)*distance );
          addBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
-      } else if( isTimeForNeighborListUpdate() ){
-         removeAtomRequest( i );   
+      } else {
+         removeAtomRequest( i, sw );   
       }
    }
 

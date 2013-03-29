@@ -67,14 +67,17 @@ std::string LessThan::function_description(){
 
 bool LessThan::calculate(){
   double weight=getAction()->getElementValue(1);
-  if( weight<getTolerance() ) return false;
+  plumed_dbg_assert( weight>=getTolerance() );
 
   double val=getAction()->getElementValue(0);
   double dval, f = sf.calculate(val, dval); dval*=val;
-  bool addval=addValue(0,weight*f);
-  if(addval) getAction()->chainRuleForElementDerivatives(0, 0, weight*dval, this);
-  if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
-  return addval; 
+  double contr=weight*f;
+  bool addval=addValueUsingTolerance(0,contr);
+  if(addval){ 
+    getAction()->chainRuleForElementDerivatives(0, 0, weight*dval, this);
+    if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
+  }
+  return ( contr>getNLTolerance() ); 
 }
 
 void LessThan::finish(){

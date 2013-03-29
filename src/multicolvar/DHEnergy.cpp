@@ -94,9 +94,9 @@ bool DHEnergy::calculate(){
   double invdistance = 1.0 / val;
   double f=exp(-k*val)*invdistance*constant*mycolv->getCharge(0)*mycolv->getCharge(1)/epsilon;
   double dval=-(k+invdistance)*f; 
-  bool addval=addValue(0,f);
-  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, dval, this ); 
-  return addval;
+  addValueIgnoringTolerance(0,f);
+  getAction()->chainRuleForElementDerivatives( 0, 0, dval, this ); 
+  return true;
 }
 
 void DHEnergy::finish(){

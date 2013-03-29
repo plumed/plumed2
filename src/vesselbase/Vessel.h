@@ -120,6 +120,8 @@ protected:
   ActionWithVessel* getAction();
 /// Return the value of the tolerance
   double getTolerance() const ;
+/// Return the value of the neighbor list tolerance
+  double getNLTolerance() const ;
 /// Set the size of the data buffer
   void resizeBuffer( const unsigned& n );
 /// Set the value of the ith element in the buffer
@@ -225,6 +227,11 @@ void Vessel::resizeBuffer( const unsigned& n ){
 inline
 double Vessel::getTolerance() const {
   return action->tolerance;
+}
+
+inline
+double Vessel::getNLTolerance() const {
+  return action->nl_tolerance;
 }
 
 inline

@@ -53,8 +53,10 @@ private:
   bool read;
 /// Do all calculations in serial
   bool serial;
-/// The tolerance on the accumulators for neighbour list
+/// The tolerance on the accumulators 
   double tolerance;
+/// Tolerance for quantities being put in neighbor lists
+  double nl_tolerance;
 /// The value of the current element in the sum
   std::vector<double> thisval;
 /// A boolean that makes sure we don't accumulate very wrong derivatives
@@ -69,9 +71,9 @@ private:
   std::vector<Vessel*> functions;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
-/// Avoid hiding of base class virtual function
-  using Action::deactivate;
 protected:
+/// The terms in the series are locked
+  bool contributorsAreUnlocked;
 /// Does the weight have derivatives
   bool weightHasDerivatives;
 /// The numerical index of the task we are curently performing
@@ -87,6 +89,8 @@ protected:
   void readVesselKeywords();
 /// Return the value of the tolerance
   double getTolerance() const ;
+/// Return the value for the neighbor list tolerance
+  double getNLTolerance() const ;
 /// Get the number of vessels
   unsigned getNumberOfVessels() const;
 /// Get a pointer to the ith vessel
@@ -110,6 +114,9 @@ protected:
   void accumulateDerivative( const unsigned& ider, const double& df );
 /// Clear tempory data that is calculated for each task
   void clearAfterTask();
+/// Used to make sure we are calculating everything during neighbor list update step
+  void unlockContributors();
+  void lockContributors();
 public:
   static void registerKeywords(Keywords& keys);
   ActionWithVessel(const ActionOptions&ao);
@@ -136,7 +143,7 @@ public:
 /// Do any jobs that are required before the task list is undertaken
   virtual void doJobsRequiredBeforeTaskList();
 /// Calculate one of the functions in the distribution
-  virtual bool performTask( const unsigned& j )=0;
+  virtual void performTask( const unsigned& j )=0;
 /// Return a pointer to the field 
   Vessel* getVessel( const std::string& name );
 ///  Add some derivative of the quantity in the sum wrt to a numbered element
@@ -152,6 +159,11 @@ public:
 inline
 double ActionWithVessel::getTolerance() const {
   return tolerance;
+}
+
+inline
+double ActionWithVessel::getNLTolerance() const {
+  return nl_tolerance;
 }
 
 inline
@@ -217,6 +229,16 @@ void ActionWithVessel::accumulateDerivative( const unsigned& ider, const double&
   buffer[current_buffer_start + current_buffer_stride*ider] += der;
 }
 
+inline
+void ActionWithVessel::unlockContributors(){
+  plumed_dbg_assert( taskList.getNumberActive()==taskList.fullSize() );
+  contributorsAreUnlocked=true;
+}
+
+inline
+void ActionWithVessel::lockContributors(){
+  contributorsAreUnlocked=false;
+}
 
 } 
 }

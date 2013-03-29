@@ -32,18 +32,23 @@ void ActionVolume::registerKeywords( Keywords& keys ){
   ActionWithValue::registerKeywords( keys );
   ActionWithVessel::registerKeywords( keys );
   keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MIN");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM"); 
   keys.add("compulsory","ARG","the label of the action that calculates the multicolvar we are interested in"); 
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.addFlag("OUTSIDE",false,"calculate quantities for colvars that are on atoms outside the region of interest");
+  keys.use("NL_TOL");
+  keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
+                                "that contributed less than TOL at the previous neighbor list update step are ignored.");
 }
 
 ActionVolume::ActionVolume(const ActionOptions&ao):
 Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
-ActionWithVessel(ao)
+ActionWithVessel(ao),
+updateFreq(0),
+lastUpdate(0)
 {
   std::string mlab; parse("ARG",mlab);
   mycolv = plumed.getActionSet().selectWithLabel<multicolvar::MultiColvar*>(mlab);
@@ -60,17 +65,28 @@ ActionWithVessel(ao)
       plumed_assert( vv ); vv->useNumericalDerivatives();
   }
 
+  // Neighbor list readin
+  parse("NL_STRIDE",updateFreq);
+  if(updateFreq>0){
+     if( !mycolv->isDensity() && updateFreq%mycolv->updateFreq!=0 ){ 
+        error("update frequency must be a multiple of update frequency for base multicolvar");  
+     }
+     log.printf("  Updating contributors every %d steps.\n",updateFreq);
+  } else {
+     log.printf("  Updating contributors every step.\n");
+  }
+
   parseFlag("OUTSIDE",not_in); parse("SIGMA",sigma); 
   bead.isPeriodic( 0, 1.0 ); 
   std::string kerneltype; parse("KERNEL",kerneltype); 
   bead.setKernelType( kerneltype );
-
+  weightHasDerivatives=true;
+  
   if( mycolv->isDensity() ){
      std::string input;
      addVessel( "SUM", input, -1 );  // -1 here means that this value will be named getLabel()
      resizeFunctions();
   } else {
-     weightHasDerivatives=true;
      readVesselKeywords();
   }
 }
@@ -81,7 +97,22 @@ void ActionVolume::doJobsRequiredBeforeTaskList(){
   ActionWithVessel::doJobsRequiredBeforeTaskList();
 }
 
-bool ActionVolume::performTask( const unsigned& j ){
+void ActionVolume::prepare(){
+  if( contributorsAreUnlocked ) lockContributors();
+  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
+      if( !mycolv->isDensity() ){
+          mycolv->taskList.activateAll();
+          for(unsigned i=0;i<mycolv->taskList.getNumberActive();++i) mycolv->colvar_atoms[i].activateAll();
+          mycolv->unlockContributors(); mycolv->resizeDynamicArrays();
+          plumed_dbg_assert( mycolv->getNumberOfVessels()==0 );
+      } else {
+          plumed_massert( mycolv->contributorsAreUnlocked, "contributors are not unlocked in base multicolvar" );
+      }
+      unlockContributors(); 
+  }
+}
+
+void ActionVolume::performTask( const unsigned& j ){
   Vector catom_pos=mycolv->retrieveCentralAtomPos( derivativesOfFractionalCoordinates() );
 
   double weight; Vector wdf; 
@@ -89,9 +120,10 @@ bool ActionVolume::performTask( const unsigned& j ){
   if( not_in ){ weight = 1.0 - weight; wdf *= -1.; }  
 
   if( mycolv->isDensity() ){
-     setElementValue( 0, weight ); setElementValue( 1, 1.0 ); 
+     unsigned nder=getNumberOfDerivatives();
+     setElementValue( 1, weight ); setElementValue( 0, 1.0 ); 
      for(unsigned i=0;i<mycolv->getNAtoms();++i){
-        unsigned nx=3*mycolv->getAtomIndex( i ); 
+        unsigned nx=nder + 3*mycolv->getAtomIndex( i ); 
         addElementDerivative( nx+0, mycolv->getCentralAtomDerivative(i, 0, wdf ) );
         addElementDerivative( nx+1, mycolv->getCentralAtomDerivative(i, 1, wdf ) );
         addElementDerivative( nx+2, mycolv->getCentralAtomDerivative(i, 2, wdf ) );
@@ -123,9 +155,6 @@ bool ActionVolume::performTask( const unsigned& j ){
          addElementDerivative( nx+2, ww*mycolv->getCentralAtomDerivative(i, 2, wdf ) );
      }
   }
-
-  // Only continue if the weight is greater than tolerance
-  return ( weight>=getTolerance() );
 }
 
 void ActionVolume::calculateNumericalDerivatives(){

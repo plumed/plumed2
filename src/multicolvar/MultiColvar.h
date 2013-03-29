@@ -56,7 +56,6 @@ private:
 /// Everything for controlling the updating of neighbor lists
   int updateFreq;
   unsigned lastUpdate;
-  bool reduceAtNextStep;
 /// A flag that tells us the position has been set already
   bool posHasBeenSet;
 /// The list of all the atoms involved in the colvar
@@ -100,10 +99,8 @@ protected:
   unsigned getAtomIndex( const unsigned& ) const ;
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
-/// Find out if it is time to do neighbor list update
-  bool isTimeForNeighborListUpdate() const ;
 /// Update the list of atoms after the neighbor list step
-  void removeAtomRequest( const unsigned& aa );
+  void removeAtomRequest( const unsigned& aa, const double& weight );
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
 /// Add some derivatives for an atom 
@@ -147,7 +144,7 @@ public:
 /// Turn on atom requests when the colvar is activated
   void activateValue( const unsigned j );
 /// Calcualte the colvar
-  bool performTask( const unsigned& j );
+  void performTask( const unsigned& j );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual void calculateWeight();
 /// And a virtual function which actually computes the colvar
@@ -203,20 +200,16 @@ unsigned MultiColvar::getNumberOfFunctionsInAction(){
 
 inline
 void MultiColvar::deactivate_task(){
-  if( !reduceAtNextStep ) return;          // Deactivating tasks only possible during neighbor list update
+  if( !contributorsAreUnlocked ) return;   // Deactivating tasks only possible during neighbor list update
   deactivateCurrentTask();                 // Deactivate the colvar from the list
   colvar_atoms[current].deactivateAll();   // Deactivate all atom requests for this colvar
 }
 
 inline
-bool MultiColvar::isTimeForNeighborListUpdate() const {
-  return reduceAtNextStep;
-}
-
-inline
-void MultiColvar::removeAtomRequest( const unsigned& i ){
-  plumed_massert(reduceAtNextStep,"found removeAtomRequest but not during neighbor list step");
-  colvar_atoms[current].deactivate( getAtomIndex(i) ); 
+void MultiColvar::removeAtomRequest( const unsigned& i, const double& weight ){
+  if( !contributorsAreUnlocked ) return;
+  plumed_dbg_assert( weight<getTolerance() );
+  if( weight<getNLTolerance() ) colvar_atoms[current].deactivate( getAtomIndex(i) ); 
 }
 
 inline
@@ -232,7 +225,7 @@ unsigned MultiColvar::getNAtoms() const {
 inline
 unsigned MultiColvar::getAtomIndex( const unsigned& iatom ) const {
   plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  return colvar_atoms[current][iatom];
+  return linkIndex( iatom, colvar_atoms[current], all_atoms );
 }
 
 inline

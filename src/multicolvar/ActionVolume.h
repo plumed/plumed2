@@ -56,6 +56,9 @@ private:
   MultiColvar* mycolv;
 /// The vessel that bridges
   vesselbase::BridgeVessel* myBridgeVessel;
+/// Everything for controlling the updating of neighbor lists
+  int updateFreq;
+  unsigned lastUpdate;
 protected:
   double getSigma() const ;
   MultiColvar* getPntrToMultiColvar();
@@ -71,10 +74,12 @@ public:
   unsigned getNumberOfFunctionsInAction();
 /// Is the output quantity periodic
   bool isPeriodic();
+/// Jobs to be done when the action is activated
+  void prepare();
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
 /// This calculates all the vessels and is called from within a bridge vessel
-  bool performTask(const unsigned& i );
+  void performTask(const unsigned& i );
 /// Routines that have to be defined so as not to have problems with virtual methods 
   void deactivate_task();
   void calculate(){}

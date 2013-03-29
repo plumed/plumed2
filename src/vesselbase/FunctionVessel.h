@@ -47,8 +47,10 @@ private:
 protected:
 /// Are the derivatives differentiable
   bool diffweight;
-/// Add some value to the accumulator
-  bool addValue( const unsigned& jval, const double& val );
+/// Add some value to the accumulator if it is greater than tolerance
+  bool addValueUsingTolerance( const unsigned& jval, const double& val );
+/// Add some value to the accumulator and ignore the tolerance
+  void addValueIgnoringTolerance( const unsigned& jval, const double& val );
 /// Set the final value
   void setOutputValue( const double& val );
 /// Get the nth value in the distribution
@@ -71,10 +73,15 @@ public:
 };
 
 inline
-bool FunctionVessel::addValue( const unsigned& jval, const double& val ){
+bool FunctionVessel::addValueUsingTolerance( const unsigned& jval, const double& val ){
   if( fabs(val)<getTolerance() ) return false; 
   addToBufferElement( (nderivatives+1)*jval, val );
   return true;
+}
+
+inline
+void FunctionVessel::addValueIgnoringTolerance( const unsigned& jval, const double& val ){
+  addToBufferElement( (nderivatives+1)*jval, val );
 }
 
 inline

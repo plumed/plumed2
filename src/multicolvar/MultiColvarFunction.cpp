@@ -43,8 +43,7 @@ ActionWithValue(ao),
 ActionWithVessel(ao),
 usepbc(false),
 updateFreq(0),
-lastUpdate(0),
-reduceAtNextStep(false)
+lastUpdate(0)
 {
   weightHasDerivatives=true; // In most cases the weight will have derivatives
 
@@ -80,15 +79,15 @@ void MultiColvarFunction::completeSetup(){
 
 void MultiColvarFunction::prepare(){
   bool updatetime=false;
-  if( reduceAtNextStep ){
+  if( contributorsAreUnlocked ){
       taskList.mpi_gatherActiveMembers( comm );
       mpi_gatherActiveMembers( comm, colvar_atoms ); 
-      reduceAtNextStep=false; updatetime=true;
+      lockContributors(); updatetime=true;
   }
   if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
       taskList.activateAll(); 
       for(unsigned i=0;i<taskList.getNumberActive();++i) colvar_atoms[i].activateAll();
-      reduceAtNextStep=true; updatetime=true; lastUpdate=getStep();
+      unlockContributors(); updatetime=true; lastUpdate=getStep();
   }
   if(updatetime) resizeFunctions();
 }
@@ -113,10 +112,11 @@ void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
   mycolv->calculateNumericalDerivatives( this );
 }
 
-bool MultiColvarFunction::performTask( const unsigned& j ){
+void MultiColvarFunction::performTask( const unsigned& j ){
   // Compute a weight for this quantity
   double weight=calculateWeight();
-  if( weight<getTolerance() ) return false;
+  setElementValue( 1, weight );
+  if( weight<getTolerance() ) return;
 
   // Now compute the quantity of interest
   double val=compute(); 
@@ -129,8 +129,7 @@ bool MultiColvarFunction::performTask( const unsigned& j ){
           setElementDerivative( i, weight*getElementDerivative(i) + val*getElementDerivative(nder+i) );
       }
   }
-  setElementValue( 1, weight );
-  return true;
+  return;
 }
 
 void MultiColvarFunction::apply(){
