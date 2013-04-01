@@ -48,7 +48,6 @@ public:
   SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
   virtual double compute( const unsigned& j );
-  unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
 };
 

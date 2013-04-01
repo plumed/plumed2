@@ -27,7 +27,7 @@
 #include "core/ActionWithValue.h"
 #include "vesselbase/ActionWithVessel.h"
 #include "vesselbase/BridgeVessel.h"
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -53,7 +53,7 @@ private:
 /// The bead for the histogram
   HistogramBead bead;
 /// The action that is calculating the colvars of interest
-  MultiColvar* mycolv;
+  MultiColvarBase* mycolv;
 /// The vessel that bridges
   vesselbase::BridgeVessel* myBridgeVessel;
 /// Everything for controlling the updating of neighbor lists
@@ -61,7 +61,7 @@ private:
   unsigned lastUpdate;
 protected:
   double getSigma() const ;
-  MultiColvar* getPntrToMultiColvar();
+  MultiColvarBase* getPntrToMultiColvar();
 public:
   static void registerKeywords( Keywords& keys );
   ActionVolume(const ActionOptions&);
@@ -70,8 +70,6 @@ public:
   void clearDerivatives(){}
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
-/// Return the number of Colvars this is calculating
-  unsigned getNumberOfFunctionsInAction();
 /// Is the output quantity periodic
   bool isPeriodic();
 /// Jobs to be done when the action is activated
@@ -97,18 +95,13 @@ double ActionVolume::getSigma() const {
 }
 
 inline
-MultiColvar* ActionVolume::getPntrToMultiColvar(){
+MultiColvarBase* ActionVolume::getPntrToMultiColvar(){
   return mycolv;
 }
 
 inline
 unsigned ActionVolume::getNumberOfDerivatives(){
   return mycolv->getNumberOfDerivatives();
-}
-
-inline
-unsigned ActionVolume::getNumberOfFunctionsInAction(){
-  return mycolv->getNumberOfFunctionsInAction();
 }
 
 }

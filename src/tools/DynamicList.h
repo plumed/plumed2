@@ -124,12 +124,6 @@ described above is what we believe can be used in other contexts.
 
 template <typename T>
 class DynamicList {
-/// This routine returns the index of the ith element in the first list from the second list
-template <typename U>
-friend unsigned linkIndex( const unsigned, const DynamicList<unsigned>& , const DynamicList<U>& ); 
-/// This routine activates everything from the second list that is required from the first
-template <typename U>
-friend void activateLinks( const DynamicList<unsigned>& , DynamicList<U>& );
 /// This gathers data split across nodes list of Dynamic lists
 template <typename U>
 friend void mpi_gatherActiveMembers(Communicator& , std::vector< DynamicList<U> >& ); 
@@ -143,14 +137,14 @@ private:
 /// The current number of active members
   unsigned nactive;
 /// This is the list of active members
-  std::vector<T> active;
+  std::vector<unsigned> active;
 public:
 /// Constructor
   DynamicList():nactive(0){}
 /// An operator that returns the element from the current active list
   inline T operator [] (const unsigned& i) const { 
      plumed_dbg_assert( i<nactive );
-     return active[i]; 
+     return all[ active[i] ]; 
   }
 /// An operator that returns the element from the full list (used in neighbour lists)
   inline T operator () (const unsigned& i) const {
@@ -179,14 +173,23 @@ public:
   void mpi_gatherActiveMembers(Communicator& comm);
 /// Get the list of active members
   void updateActiveMembers();
+/// Empty the list of active members
+  void emptyActiveMembers();
+/// This can be used for a fast version of updateActiveMembers in which only a subset of the
+/// indexes are checked
+  void updateIndex( const unsigned& ii );
+/// This sorts the elements in the active list
+  void sortActiveList();
 /// Retriee the list of active objects
   std::vector<T> retrieveActiveList(); 
+/// Return the index of this atom
+  unsigned linkIndex( const unsigned& ii ) const ;
 };
 
 template <typename T>
 std::vector<T> DynamicList<T>::retrieveActiveList(){
   std::vector<T> this_active(nactive);
-  for(unsigned k=0;k<nactive;++k) this_active[k]=active[k];
+  for(unsigned k=0;k<nactive;++k) this_active[k]=all[ active[k] ];
   return this_active;
 }
 
@@ -213,24 +216,27 @@ unsigned DynamicList<T>::getNumberActive() const {
 
 template <typename T>
 void DynamicList<T>::addIndexToList( const T & ii ){
-  all.push_back(ii); translator.push_back( all.size()-1 ); 
-  onoff.push_back(0); active.push_back(ii);
+  all.push_back(ii); active.resize( all.size() );
+  translator.push_back( all.size()-1 ); onoff.push_back(0); 
 }
 
 template <typename T>
 void DynamicList<T>::deactivate( const unsigned ii ){
-  plumed_massert(ii<all.size(),"ii is out of bounds");
+  plumed_dbg_massert(ii<all.size(),"ii is out of bounds");
   onoff[ii]=0; 
 }
 
 template <typename T>
 void DynamicList<T>::deactivateAll(){
-  for(unsigned i=0;i<onoff.size();++i) onoff[i]=0;
+  for(unsigned i=0;i<nactive;++i) onoff[ active[i] ]=0;
+#ifndef NDEBUG
+  for(unsigned i=0;i<onoff.size();++i) plumed_dbg_assert( onoff[i]==0 );
+#endif
 }
 
 template <typename T>
 void DynamicList<T>::activate( const unsigned ii ){
-  plumed_massert(ii<all.size(),"ii is out of bounds");
+  plumed_dbg_massert(ii<all.size(),"ii is out of bounds");
   onoff[ii]=1;
 }
 
@@ -253,24 +259,33 @@ template <typename T>
 void DynamicList<T>::updateActiveMembers(){
   unsigned kk=0; 
   for(unsigned i=0;i<all.size();++i){
-      if( onoff[i]==1 ){ translator[i]=kk; active[kk]=all[i]; kk++; }
+      if( onoff[i]==1 ){ translator[i]=kk; active[kk]=i; kk++; }
   }
   nactive=kk;
 }
 
-template <typename U>
-unsigned linkIndex( const unsigned ii, const DynamicList<unsigned>& l1, const DynamicList<U>& l2 ){
-  plumed_dbg_massert(ii<l1.nactive,"ii is out of bounds");
-  unsigned kk; kk=l1.active[ii];
-  plumed_dbg_massert(kk<l2.all.size(),"the lists are mismatched");
-  plumed_dbg_massert( l2.onoff[kk]==1, "This index is not currently in the second list" );
-  unsigned nn; nn=l2.translator[kk]; 
-  return nn; 
+template <typename T>
+void DynamicList<T>::emptyActiveMembers(){
+  nactive=0;
 }
 
-template <typename U>
-void activateLinks( const DynamicList<unsigned>& l1, DynamicList<U>& l2 ){
-  for(unsigned i=0;i<l1.nactive;++i) l2.activate( l1.active[i] );
+template <typename T>
+void DynamicList<T>::updateIndex( const unsigned& ii ){
+  if( onoff[ii]==1 ){
+     translator[nactive]=nactive; active[nactive]=ii; nactive++;
+  }
+}
+
+template <typename T>
+void DynamicList<T>::sortActiveList(){
+  std::sort( active.begin(), active.begin()+nactive );
+  for(unsigned i=0;i<nactive;++i) translator[ active[i] ]=i; 
+}
+
+template <typename T>
+unsigned DynamicList<T>::linkIndex( const unsigned& ii ) const {
+  plumed_dbg_assert( onoff[ii]==1 );
+  return translator[ii];
 }
 
 template <typename U>

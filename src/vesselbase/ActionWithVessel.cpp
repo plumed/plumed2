@@ -35,7 +35,7 @@ void ActionWithVessel::registerKeywords(Keywords& keys){
                             "terms are numbers inbetween zero and one it is assumed that terms less than a certain tolerance "
                             "make only a small contribution to the sum.  They can thus be safely ignored as can the the derivatives "
                             "wrt these small quantities.");
-  keys.reserve("optional","NL_TOL","this keyword can be used to speed up your calculation.  It must be used in conjuction with the TOL "
+  keys.reserve("hidden","NL_TOL","this keyword can be used to speed up your calculation.  It must be used in conjuction with the TOL "
                                    "keyword and the value for NL_TOL must be set less than the value for TOL.  This keyword ensures that "
                                    "quantities, which are much less than TOL and which will thus not added to the sums being accumulated "
                                    "are not calculated at every step. They are only calculated when the neighbor list is updated.");
@@ -140,7 +140,7 @@ void ActionWithVessel::resizeFunctions(){
   tmpforces.resize( getNumberOfDerivatives() );
 }
 
-void ActionWithVessel::deactivateCurrentTask(){
+void ActionWithVessel::deactivate_task(){
   plumed_dbg_assert( contributorsAreUnlocked );
   for(unsigned i=0;i<taskList.fullSize();++i){
      if( taskList(i)==current ) taskList.deactivate(i);
@@ -211,7 +211,7 @@ void ActionWithVessel::clearAfterTask(){
 
 void ActionWithVessel::clearDerivativesAfterTask( const unsigned& ider ){
   unsigned kstart=ider*getNumberOfDerivatives();
-  for(unsigned j=getFirstDerivativeToMerge();j<getNumberOfDerivatives();j=getNextDerivativeToMerge(j)) derivatives[ kstart+j ]=0.0;
+  for(unsigned j=0;j<getNumberOfDerivatives();++j) derivatives[ kstart+j ]=0.0;
 }
 
 bool ActionWithVessel::calculateAllVessels(){
@@ -249,19 +249,8 @@ void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, con
 
 void ActionWithVessel::mergeDerivatives( const unsigned& ider, const double& df ){
   unsigned nder=getNumberOfDerivatives(), vstart=nder*ider; 
-  for(unsigned i=getFirstDerivativeToMerge();i<getNumberOfDerivatives();i=getNextDerivativeToMerge(i)){
+  for(unsigned i=0;i<getNumberOfDerivatives();++i){
      accumulateDerivative( i, df*derivatives[vstart+i] ); 
-  }
-}
-
-void ActionWithVessel::buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der ){
-  // Clear old derivative indexes
-  for(unsigned i=0;i<active_der.size();++i) active_der[i].clear();
-
-  // Build indexes
-  active_der.resize( getNumberOfFunctionsInAction() );
-  for(unsigned i=0;i<active_der.size();++i){
-    for(unsigned j=0;j<getNumberOfDerivatives();++j) active_der[i].addIndexToList( j );
   }
 }
 

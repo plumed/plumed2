@@ -39,7 +39,6 @@ public:
   static void registerKeywords( Keywords& keys );
   Sphere( const ActionOptions& );
   bool isPeriodic(){ return false; }
-  unsigned getNumberOfFunctionsInAction();
   void performTask( const unsigned& j );
   void calculate();
 };
@@ -75,10 +74,6 @@ ManyRestraintsBase(ao)
 
   requestAtoms( atoms ); 
   createRestraints( atoms.size() );
-}
-
-unsigned Sphere::getNumberOfFunctionsInAction(){
-  return getNumberOfAtoms();
 }
 
 void Sphere::calculate(){

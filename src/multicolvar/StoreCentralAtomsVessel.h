@@ -24,21 +24,19 @@
 
 #include "tools/DynamicList.h"
 #include "vesselbase/Vessel.h" 
-#include "MultiColvar.h"
 
 namespace PLMD {
 namespace multicolvar {
 
-class MultiColvar;
+class MultiColvarBase;
+class MultiColvarFunction;
 
 class StoreCentralAtomsVessel : public vesselbase::Vessel {
 private:
-  MultiColvar* mycolv;
+  MultiColvarBase* mycolv;
   std::vector<unsigned> start;
-  bool wasforced;
   unsigned nspace;
-  std::vector< DynamicList<unsigned> > active_der;
-  std::vector<double> forces;
+  std::vector< DynamicList<unsigned> > active_atoms;
 public:
 /// Constructor
   StoreCentralAtomsVessel( const vesselbase::VesselOptions& );
@@ -50,18 +48,18 @@ public:
   std::string description(){ return ""; }
 /// This should mpi gather the active atoms
   void finish();
-/// Add some force to the atoms
-  void addForces( const std::vector<double>& );
-/// Copy forces to local arrays
-  bool applyForce(std::vector<double>&);
-/// Set all forces equal to zero before main loop
-  void prepare();
+/// This does nothing
+  bool applyForce(std::vector<double>&){ return false; }
 /// This makes sure all vectors are stored
   bool calculate();
 /// Get the orientation of the ith vector
   Vector getPosition( const unsigned&  ) const ;
-/// Chain rule for central atom
-  void chainRuleForCentralAtom( const unsigned& iatom, const unsigned& iderno, const Vector& df, vesselbase::ActionWithVessel* act ) const ;
+/// Add derivatives to central atom position
+  void addAtomsDerivatives( const unsigned& iatom, const Vector& df, MultiColvarFunction* funcout ) const ;
+/// Add derivatives of the weight wrt to the central atom position
+  void addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& df, MultiColvarFunction* funcout  ) const ; 
+/// Add derivative to the central atom position
+  void addDerivativeOfCentralAtomPos( const unsigned& iatom, const Tensor& df, MultiColvarFunction* funcout ) const ;
 };
 
 }

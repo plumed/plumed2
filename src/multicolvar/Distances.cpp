@@ -82,7 +82,6 @@ public:
 // active methods:
   virtual double compute( const unsigned& j );
 /// Returns the number of coordinates of the field
-  unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
 };
 
@@ -110,10 +109,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // And check everything has been read in correctly
   checkRead();
 }
-
-unsigned Distances::getNumberOfFieldDerivatives(){
-  return 3*getNumberOfAtoms() + 9;
-} 
 
 double Distances::compute( const unsigned& j ){
    Vector distance; 

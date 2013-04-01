@@ -95,7 +95,6 @@ public:
 // active methods:
   virtual double compute( const unsigned& j );
 /// Returns the number of coordinates of the field
-  unsigned getNumberOfFieldDerivatives();
   void calculateWeight();
   bool isPeriodic(){ return false; }
 };
@@ -156,10 +155,6 @@ use_sf(false)
   readVesselKeywords();
   // And check everything has been read in correctly
   checkRead();
-}
-
-unsigned Angles::getNumberOfFieldDerivatives(){
-  return 3*getNumberOfAtoms() + 9;
 }
 
 void Angles::calculateWeight(){

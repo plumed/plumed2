@@ -19,25 +19,25 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "VesselRegister.h"
-#include "StoreValuesVessel.h"
-#include "ActionWithVessel.h"
+#include "vesselbase/VesselRegister.h"
+#include "StoreColvarVessel.h"
+#include "vesselbase/ActionWithVessel.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace multicolvar{
 
 // This is the most efficient implementation 
 // The calculation of all the colvars is parallelized 
 // but the loops for calculating moments are not
 // Feel free to reimplement this if you know how
-class Moments : public StoreValuesVessel {
+class Moments : public StoreColvarVessel {
 private:
   std::vector<unsigned> powers;
   std::vector<Value*> value_out;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Moments( const VesselOptions& da );
+  Moments( const vesselbase::VesselOptions& da );
   std::string description();
   void performCalculationUsingAllValues();
   void local_resizing();
@@ -47,7 +47,7 @@ public:
 PLUMED_REGISTER_VESSEL(Moments,"MOMENTS")
 
 void Moments::registerKeywords( Keywords& keys ){
-  StoreValuesVessel::registerKeywords( keys );
+  StoreColvarVessel::registerKeywords( keys );
 }
 
 void Moments::reserveKeyword( Keywords& keys ){
@@ -57,8 +57,8 @@ void Moments::reserveKeyword( Keywords& keys ){
   "calculated values can be referenced using moment-\\f$m\\f$.");  
 }
 
-Moments::Moments( const VesselOptions& da) :
-StoreValuesVessel(da)
+Moments::Moments( const vesselbase::VesselOptions& da) :
+StoreColvarVessel(da)
 {
    ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
    plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
@@ -94,7 +94,7 @@ std::string Moments::description(){
 
 void Moments::performCalculationUsingAllValues(){
   const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
-  unsigned nvals=getAction()->getNumberOfFunctionsInAction();
+  unsigned nvals=getNumberOfStoredColvars(); 
 
   double mean=0; Value myvalue;
   if( getAction()->isPeriodic() ){

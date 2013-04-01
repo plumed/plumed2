@@ -22,79 +22,93 @@
 #include "MultiColvarFunction.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
-#include "MultiColvar.h"
+#include "MultiColvarBase.h"
 
 namespace PLMD {
 namespace multicolvar { 
 
 void MultiColvarFunction::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
+  MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","ARG","the label of the action that calculates the vectors we are interested in");
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
-  keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
-                                  "that contributed less than TOL at the previous neighbor list update step are ignored.");
-  vesselbase::ActionWithVessel::registerKeywords( keys );
 }
 
 MultiColvarFunction::MultiColvarFunction(const ActionOptions& ao):
 Action(ao),
-ActionWithValue(ao),
-ActionWithVessel(ao),
-usepbc(false),
-updateFreq(0),
-lastUpdate(0)
+MultiColvarBase(ao)
 {
-  weightHasDerivatives=true; // In most cases the weight will have derivatives
-
   std::string mlab; parse("ARG",mlab);
-  mycolv = plumed.getActionSet().selectWithLabel<multicolvar::MultiColvar*>(mlab); 
+  log.printf("  using vectors calculated by action %s\n",mlab.c_str() );
+  mycolv = plumed.getActionSet().selectWithLabel<multicolvar::MultiColvarBase*>(mlab); 
   if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
   addDependency(mycolv);
 
+  // Checks for neighbor list
+  if( mycolv->updateFreq>0 && updateFreq>0 ){
+      if( updateFreq%mycolv->updateFreq!=0 ) error("update frequency must be a multiple of the update frequency in the base colvar");
+  }
+
   // Retrieve the central atoms
   catoms = mycolv->getCentralAtoms();
-
-  if( keywords.exists("NOPBC") ){
-    bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
-    usepbc=!nopbc;
-  }
-  if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
-  if(updateFreq>0) log.printf("  Updating contributors every %d steps.\n",updateFreq);
-  else log.printf("  Updating contributors every step.\n");
-}
-
-void MultiColvarFunction::addColvar( const std::vector<unsigned>& newatoms ){
-  if( colvar_atoms.size()>0 ) plumed_assert( colvar_atoms[0].fullSize()==newatoms.size() );
-  DynamicList<unsigned> newlist;
-  for(unsigned i=0;i<newatoms.size();++i) newlist.addIndexToList( newatoms[i] );
-  taskList.addIndexToList( colvar_atoms.size() );
-  colvar_atoms.push_back( newlist );
 }
 
 void MultiColvarFunction::completeSetup(){
-  taskList.activateAll();
-  for(unsigned i=0;i<colvar_atoms.size();++i) colvar_atoms[i].activateAll();
-}
-
-void MultiColvarFunction::prepare(){
-  bool updatetime=false;
-  if( contributorsAreUnlocked ){
-      taskList.mpi_gatherActiveMembers( comm );
-      mpi_gatherActiveMembers( comm, colvar_atoms ); 
-      lockContributors(); updatetime=true;
+  // Copy list of atoms involved from base multicolvar
+  for(unsigned i=0;i<mycolv->all_atoms.fullSize();++i){
+     all_atoms.addIndexToList( mycolv->all_atoms(i) );
   }
-  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-      taskList.activateAll(); 
-      for(unsigned i=0;i<taskList.getNumberActive();++i) colvar_atoms[i].activateAll();
-      unlockContributors(); updatetime=true; lastUpdate=getStep();
-  }
-  if(updatetime) resizeFunctions();
+  setupMultiColvarBase();
 }
 
 Vector MultiColvarFunction::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
-  if(usepbc){ return mycolv->pbcDistance( vec1, vec2 ); }
-  else{ return delta( vec1, vec2 ); }
+  return mycolv->getSeparation( vec1, vec2 );
+}
+
+void MultiColvarFunction::unlockContributors(){
+  plumed_massert( mycolv->contributorsAreUnlocked,"contributors in base colvar are not unlocked"); 
+  ActionWithVessel::unlockContributors();
+}
+
+void MultiColvarFunction::lockContributors(){
+  mycolv->unlockContributors();
+  mpi_gatherActiveMembers( comm, colvar_atoms );
+ 
+  // Store tasks that are currently active in base colvar
+  unsigned nactive=mycolv->taskList.getNumberActive();
+  std::vector<unsigned> active_tasks( nactive );
+  for(unsigned i=0;i<nactive;++i) active_tasks[i]=mycolv->taskList[i];
+
+  // Now get the tasks that are active from here
+  mycolv->taskList.deactivateAll();
+  for(unsigned i=0;i<taskList.getNumberActive();++i){
+      unsigned n=taskList[i];
+      for(unsigned j=0;j<colvar_atoms[n].getNumberActive();++j){
+         mycolv->taskList.activate( colvar_atoms[n][j] );
+      }
+  }
+
+  // Add in tasks that are active in base
+  for(unsigned i=0;i<nactive;++i) mycolv->taskList.activate( active_tasks[i] );
+
+  // Redo preparation step 
+  mycolv->prepare();
+
+  // And lock
+  ActionWithVessel::lockContributors();
+}
+
+void MultiColvarFunction::resizeDynamicArrays(){
+  // Copy what is active in the base MultiColvar here
+  plumed_dbg_assert( all_atoms.fullSize()==mycolv->all_atoms.fullSize() );
+  all_atoms.deactivateAll();
+  for(unsigned i=0;i<mycolv->all_atoms.getNumberActive();++i){
+     unsigned iatom=mycolv->all_atoms.linkIndex( i ); 
+     all_atoms.activate( iatom );
+  }
+  all_atoms.updateActiveMembers();
+  // Request the atoms
+  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+  // Rerequest the dependency
+  addDependency(mycolv);
 }
 
 void MultiColvarFunction::calculate(){
@@ -108,37 +122,20 @@ void MultiColvarFunction::calculate(){
   runAllTasks();
 }
 
+double MultiColvarFunction::doCalculation( const unsigned& j ){
+  double val=compute(j);
+  atoms_with_derivatives.updateActiveMembers();
+  return val;
+}
+
 void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
   mycolv->calculateNumericalDerivatives( this );
 }
 
-void MultiColvarFunction::performTask( const unsigned& j ){
-  // Compute a weight for this quantity
-  double weight=calculateWeight();
-  setElementValue( 1, weight );
-  if( weight<getTolerance() ) return;
-
-  // Now compute the quantity of interest
-  double val=compute(); 
-
-  // And set everything ready for vessels
-  setElementValue( 0, weight*val );
-  if( weightHasDerivatives ){
-      unsigned nder=getNumberOfDerivatives();
-      for(unsigned i=mycolv->getFirstDerivativeToMerge();i<mycolv->getNumberOfDerivatives();i=mycolv->getNextDerivativeToMerge(i)){
-          setElementDerivative( i, weight*getElementDerivative(i) + val*getElementDerivative(nder+i) );
-      }
-  }
-  return;
-}
-
-void MultiColvarFunction::apply(){
-  std::vector<double> forces( getNumberOfDerivatives(), 0.0 );
-  for(int i=0;i<getNumberOfVessels();++i){
-     if( (getPntrToVessel(i)->applyForce( forces )) ){
-          catoms->addForces( forces );
-     } 
-  }
+Vector MultiColvarFunction::calculateCentralAtomPosition(){
+  Vector catom=getCentralAtom();
+  atomsWithCatomDer.updateActiveMembers();
+  return catom;
 }
 
 }

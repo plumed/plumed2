@@ -135,10 +135,6 @@ double SecondaryStructureRMSD::compute( const unsigned& j ){
   return r;
 }
 
-unsigned SecondaryStructureRMSD::getNumberOfFieldDerivatives(){
-  plumed_merror("Fields are not allowed for secondary structure variables");
-}
-
 bool SecondaryStructureRMSD::usingRMSD() const {
   if( secondary_rmsd.size()>0 ) return true;
   else return false;

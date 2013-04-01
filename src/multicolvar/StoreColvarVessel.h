@@ -19,26 +19,31 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_vesselbase_StoreValuesVessel_h
-#define __PLUMED_vesselbase_StoreValuesVessel_h
+#ifndef __PLUMED_multicolvar_StoreColvarVessel_h
+#define __PLUMED_multicolvar_StoreColvarVessel_h
 
 #include <string>
 #include <cstring>
 #include <vector>
-#include "Vessel.h"
+#include "vesselbase/Vessel.h"
 #include "tools/DynamicList.h"
 
 namespace PLMD {
-namespace vesselbase{
+namespace multicolvar{
 
-class StoreValuesVessel : public Vessel {
+class MultiColvarBase;
+
+class StoreColvarVessel : public vesselbase::Vessel {
 private:
   unsigned bufsize;
   std::vector<unsigned> start;
-  std::vector< DynamicList<unsigned> > active_der;
+  MultiColvarBase* mycolv;
+  std::vector< DynamicList<unsigned> > active_atoms;
 protected:
 /// Are the weights differentiable
   bool diffweight;
+/// Get the number of stored colvar values
+  unsigned getNumberOfStoredColvars() const ;
 /// Get the ith value in the vessel
   double getValue( const unsigned& ) const ;  
 /// Get the weight of the ith quantity in the vessel
@@ -50,7 +55,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  StoreValuesVessel( const VesselOptions& );
+  StoreColvarVessel( const vesselbase::VesselOptions& );
 /// Return the number of terms
   unsigned getNumberOfTerms(){ return 2; }
 /// This does the resizing of the buffer
@@ -66,15 +71,20 @@ public:
 };
 
 inline
-double StoreValuesVessel::getValue( const unsigned& ival ) const {
+double StoreColvarVessel::getValue( const unsigned& ival ) const {
   plumed_dbg_assert( ival<start.size()-1 );
   return getBufferElement( start[ival] );
 }
 
 inline
-double StoreValuesVessel::getWeight( const unsigned& ival ) const {
+double StoreColvarVessel::getWeight( const unsigned& ival ) const {
   plumed_dbg_assert( ival<start.size()-1 );
   return getBufferElement( bufsize + start[ival] );
+}
+
+inline
+unsigned StoreColvarVessel::getNumberOfStoredColvars() const {
+  return start.size()-1;
 }
 
 }

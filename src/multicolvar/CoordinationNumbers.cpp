@@ -73,7 +73,6 @@ public:
   virtual double compute( const unsigned& j ); 
   Vector getCentralAtom();
 /// Returns the number of coordinates of the field
-  unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
 };
 
@@ -122,10 +121,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // And check everything has been read in correctly
   checkRead();
 }
-
-unsigned CoordinationNumbers::getNumberOfFieldDerivatives(){
-  return getNumberOfFunctionsInAction();
-} 
 
 double CoordinationNumbers::compute( const unsigned& j ){
    double value=0, dfunc; Vector distance;
