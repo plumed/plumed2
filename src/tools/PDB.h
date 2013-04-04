@@ -27,6 +27,7 @@
 #include <vector>
 #include <string>
 #include "Log.h"
+#include <map>
 
 
 namespace PLMD{
@@ -42,6 +43,8 @@ class PDB{
   std::vector<double> beta;
   std::vector<std::string> remark;
   std::vector<AtomNumber> numbers;
+  std::map<AtomNumber,unsigned> number2index;
+  std::vector<std::string> residuenames;
 public:
 /// Read the pdb from a file, scaling positions by a factor scale
   bool read(const std::string&file,bool naturalUnits,double scale);
@@ -73,6 +76,12 @@ public:
   void renameAtoms( const std::string& old_name, const std::string& new_name );
 ///use the log to dump information  
   friend Log& operator<<(Log& ostr, const PDB& pdb);
+/// return the name of a specific atom
+  std::string getAtomName(AtomNumber a) const;
+/// return the residue number for a specific atom
+  unsigned getResidueNumber(AtomNumber a) const;
+/// return the residue name for a specific atom
+  std::string getResidueName(AtomNumber a) const;
 };
 
 }

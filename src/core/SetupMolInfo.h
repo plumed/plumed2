@@ -41,6 +41,9 @@ public:
   static void registerKeywords( Keywords& keys );
   SetupMolInfo(const ActionOptions&ao);
   void getBackbone( std::vector<std::string>& resstrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone );
+  std::string getAtomName(AtomNumber a)const;
+  unsigned getResidueNumber(AtomNumber a)const;
+  std::string getResidueName(AtomNumber a)const;
 };
 
 }

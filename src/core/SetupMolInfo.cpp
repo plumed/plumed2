@@ -151,4 +151,17 @@ void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::
   }
 }
 
+
+std::string SetupMolInfo::getAtomName(AtomNumber a)const{
+  return pdb.getAtomName(a);
+}
+
+unsigned SetupMolInfo::getResidueNumber(AtomNumber a)const{
+  return pdb.getResidueNumber(a);
+}
+
+std::string SetupMolInfo::getResidueName(AtomNumber a)const{
+  return pdb.getResidueName(a);
+}
+
 }
