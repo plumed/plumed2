@@ -110,6 +110,13 @@ public:
   static std::vector<std::string> ls(const std::string&);
 /// removes leading and trailing blanks from a string
   static void stripLeadingAndTrailingBlanks( std::string& str );
+/// Extract the extensions from a file name.
+/// E.g.: extension("pippo.xyz")="xyz".
+/// It only returns extensions with a length between 1 and 4
+/// E.g.: extension("pippo.12345")="" whereas extenion("pippo.1234")="1234";
+/// It is also smart enough to detect "/", so that 
+/// extension("pippo/.t")="" whereas extension("pippo/a.t")="t"
+  static std::string extension(const std::string&);
 };
 
 template <class T>

@@ -267,4 +267,18 @@ void Tools::stripLeadingAndTrailingBlanks( std::string& str ){
   if( first<last ) str=str.substr(first,last+1);
 }
 
+std::string Tools::extension(const std::string&s){
+  size_t n=s.find_last_of(".");
+  std::string ext;
+  string base=s;
+  if(n!=std::string::npos && n+1<s.length() && n+5>=s.length()){
+    ext=s.substr(n+1);
+    if(ext.find("/")!=std::string::npos) ext="";
+    string base=s.substr(0,n);
+    if(base.length()==0) ext="";
+    if(base.length()>0 && base[base.length()-1]=='/') ext="";
+  }
+  return ext;
+}
+
 }
