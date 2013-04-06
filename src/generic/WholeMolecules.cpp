@@ -41,7 +41,10 @@ namespace generic{
 //+PLUMEDOC GENERIC WHOLEMOLECULES
 /*
 This action is used to rebuild molecules that can become split by the periodic
-boundary conditions in a manner similar to the ALIGN_ATOMS keyword of plumed1.
+boundary conditions.
+
+It is similar to the ALIGN_ATOMS keyword of plumed1, and is needed since some
+MD dynamics code (e.g. GROMACS) can break molecules during the calculation.
 
 Running some CVs without this command can cause there to be discontinuities changes
 in the CV value and artifacts in the calculations.  This command can be applied 
@@ -59,17 +62,23 @@ this action is performed at every MD step.
 \par Examples
 
 This command instructs plumed to reconstruct the molecule containing atoms 1-20
-at every step of the calculation.
+at every step of the calculation and dump them on a file.
 
 \verbatim
+# to see the effect, one could dump the atoms as they were before molecule reconstruction:
+# DUMPATOMS FILE=dump-broken.xyz ATOMS=1-20
 WHOLEMOLECULES STRIDE=1 ENTITY0=1-20
+DUMPATOMS FILE=dump.xyz ATOMS=1-20
 \endverbatim
+(see also \ref DUMPATOMS)
 
 This command instructs plumed to reconstruct two molecules containing atoms 1-20 and 30-40
 
 \verbatim
 WHOLEMOLECULES STRIDE=1 ENTITY0=1-20 ENTITY1=30-40
+DUMPATOMS FILE=dump.xyz ATOMS=1-20,30-40
 \endverbatim
+(see also \ref DUMPATOMS)
 
 This command instructs plumed to reconstruct the chain of backbone atoms in a 
 protein

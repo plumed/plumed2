@@ -84,10 +84,12 @@ MOVINGRESTRAINT ...
 \endverbatim
 
 By default the Action is issuing some values which are 
-the work on each degree of freedom, the center of the harmoni potential,
+the work on each degree of freedom, the center of the harmonic potential,
 the total bias deposited  
 
 (See also \ref DISTANCE).
+
+\attention Work is not computed properly when KAPPA is time dependent.
 
 */
 //+ENDPLUMEDOC
@@ -117,7 +119,7 @@ void MovingRestraint::registerKeywords( Keywords& keys ){
   keys.reset_style("STEP","compulsory");
   keys.add("numbered","AT","ATx is equal to the position of the restraint at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no ATx is specified for STEPx then the values of AT are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("AT","compulsory"); 
-  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no ATx is specified for STEPx then the values of KAPPAx are kept constant during the interval of time between STEPx-1 and STEPx.");
+  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("KAPPA","compulsory");
 }
 
