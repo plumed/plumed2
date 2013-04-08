@@ -285,8 +285,7 @@ void SecondaryStructureRMSD::mergeDerivatives( const unsigned& ider, const doubl
 }
 
 void SecondaryStructureRMSD::apply(){
-  getForcesFromVessels( forcesToApply );
-  setForcesOnAtoms( forcesToApply );
+  if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
 }
 
 }

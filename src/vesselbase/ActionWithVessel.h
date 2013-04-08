@@ -106,7 +106,7 @@ protected:
 /// sets all the element derivatives equal to zero
   bool calculateAllVessels();
 /// Retrieve the forces from all the vessels (used in apply)
-  void getForcesFromVessels( std::vector<double>& forcesToApply );
+  bool getForcesFromVessels( std::vector<double>& forcesToApply );
 /// This is used to accumulate the derivatives when we merge using chainRuleForElementDerivatives
   void accumulateDerivative( const unsigned& ider, const double& df );
 /// Clear tempory data that is calculated for each task

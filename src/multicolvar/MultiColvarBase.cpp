@@ -198,8 +198,7 @@ void MultiColvarBase::clearDerivativesAfterTask( const unsigned& ider ){
 }
 
 void MultiColvarBase::apply(){
-  getForcesFromVessels( forcesToApply );
-  setForcesOnAtoms( forcesToApply );
+  if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
 }
 
 StoreCentralAtomsVessel* MultiColvarBase::getCentralAtoms(){

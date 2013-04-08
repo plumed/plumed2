@@ -56,8 +56,8 @@ void ManyRestraintsBase::createRestraints( const unsigned& nrestraints ){
 void ManyRestraintsBase::apply(){
   plumed_dbg_assert( getNumberOfComponents()==1 );
   getPntrToComponent(0)->addForce(-1.0);
-  getForcesFromVessels( forcesToApply );
-  setForcesOnAtoms( forcesToApply );
+  bool wasforced=getForcesFromVessels( forcesToApply );
+  plumed_assert( wasforced ); setForcesOnAtoms( forcesToApply );
 }
 
 }
