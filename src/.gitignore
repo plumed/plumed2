@@ -1,3 +1,32 @@
+/*
+
+# Only track modules that are part of the plumed core
+!/Makefile
+!/README
+!/analysis
+!/bias
+!/cltools
+!/colvar
+!/config
+!/core
+!/function
+!/generic
+!/header.sh
+!/imd
+!/lib
+!/main
+!/maketools
+!/manyrestraints
+!/multicolvar
+!/reference
+!/secondarystructure
+!/setup
+!/tools
+!/vatom
+!/vesselbase
+!/wrapper
+
+# And just ignore these files
 *.xxd
 /*.on
 /*.off
