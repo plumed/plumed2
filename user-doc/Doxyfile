@@ -468,6 +468,7 @@ INPUT                  = IntroPP.txt \
                          WhatsNew.txt \
                          GlossaryPP.txt \
                          TutorialsPP.txt \
+                         ModulesPP.txt \
                          tutorials \
                          automatic
 

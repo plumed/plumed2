@@ -110,7 +110,7 @@ this sort of input is rather tedious so short cuts are also available many of th
 These are described on the manual pages for the actions.
  
 After specifying the atoms involved you sometimes need to specify some parameters that required in the 
-calculation.  For instance, for \ref COORDINATIONNUMBERS - the number of atoms in the first coordination
+calculation.  For instance, for \ref COORDINATIONNUMBER - the number of atoms in the first coordination
 sphere of each of the atoms in the system - you need to specify the parameters for a \ref switchingfunction
 that will tell us whether or not an atom is in the first coordination sphere.  Details as to how to do this
 are provided on the manual pages.  
