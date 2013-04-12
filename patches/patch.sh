@@ -225,7 +225,7 @@ case "$action" in
     fi
     PREPLUMED=$(find . -name "*.preplumed" | sort)
     if ! test "$PREPLUMED" ; then
-      echo "ERROR: I cannot find any .preplumed file. You have likely not patched yet."
+      echo "ERROR: I cannot find any .preplumed file. There is nothing to save."
       exit
     fi
     if type -t plumed_preliminary_test 1>/dev/null ; then
@@ -278,7 +278,7 @@ EOF
     fi
     PREPLUMED=$(find . -name "*.preplumed")
     if ! test "$PREPLUMED" ; then
-      echo "WARNING: I cannot find any .preplumed file. You have likely not patched yet."
+      echo "No .preplumed file found, nothing to restore."
     else
       echo "Reverting changes and touching reverted files"
       for bckfile in $PREPLUMED ; do
