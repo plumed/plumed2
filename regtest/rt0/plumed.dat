@@ -20,3 +20,5 @@ PRINT ...
 ... PRINT
 
 ENDPLUMED
+
+text here should be ignored
