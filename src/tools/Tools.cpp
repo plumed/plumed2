@@ -64,6 +64,13 @@ bool Tools::convert(const string & str,AtomNumber &a){
   return r;
 }
 
+bool Tools::convert(const string & str,float & t){
+  double tt;
+  bool r=convert(str,tt);
+  t=double(tt);
+  return r;
+}
+
 bool Tools::convert(const string & str,double & t){
         if(str=="PI" || str=="+PI" || str=="+pi" || str=="pi"){
           t=pi; return true;

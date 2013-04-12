@@ -65,6 +65,8 @@ public:
   static bool getParsedLine(IFile&ifile,std::vector<std::string> & line);
 /// Convert a string to a double, reading it
   static bool convert(const std::string & str,double & t);
+/// Convert a string to a float, reading it
+  static bool convert(const std::string & str,float & t);
 /// Convert a string to a int, reading it
   static bool convert(const std::string & str,int & t);
 /// Convert a string to a long int, reading it
