@@ -272,10 +272,11 @@ void SecondaryStructureRMSD::mergeDerivatives( const unsigned& ider, const doubl
      accumulateDerivative( thispos, df*ader[1] ); thispos++;
      accumulateDerivative( thispos, df*ader[2] ); 
   }
-  if( alignType!="DRMSD" ){ 
-     vir[closest].zero();
+  Tensor virial;
+  if( !references[closest]->getVirial( virial ) ){ 
+     virial.zero();
      for(unsigned i=0;i<colvar_atoms[getCurrentTask()].size();++i){
-         vir[closest]+=(-1.0*Tensor( pos[i], der[closest][i] ));
+         virial+=(-1.0*Tensor( pos[i], references[closest]->getAtomDerivative(i) ));
      }
   } 
 
