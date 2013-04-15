@@ -30,8 +30,6 @@
 namespace PLMD {
 
 class SingleDomainRMSD;
-class DRMSD;
-class RMSD;
 
 namespace secondarystructure {
 
@@ -43,8 +41,6 @@ class SecondaryStructureRMSD :
   public vesselbase::ActionWithVessel
 {
 private:
-/// Are we using pbc
-  bool pbcon;
 /// Tempory integer to say which refernce configuration is the closest
   unsigned closest;
 /// The type of rmsd we are calculating
@@ -53,12 +49,8 @@ private:
   DynamicList<AtomNumber> all_atoms;
 /// The atoms involved in each of the secondary structure segments
   std::vector< std::vector<unsigned> > colvar_atoms;
-/// The reference configurations
-  std::vector<RMSD*> secondary_rmsd;
-  std::vector<DRMSD*> secondary_drmsd;
-/// Stuff for derivatives
-  std::vector< std::vector<Vector> > der;
-  std::vector<Tensor> vir;
+/// The list of reference configurations
+  std::vector<SingleDomainRMSD*> references;
 /// Everything for controlling the updating of neighbor lists
   int updateFreq;
   bool firsttime;
