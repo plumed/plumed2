@@ -23,7 +23,8 @@
 #include "core/PlumedMain.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
-#include "tools/RMSD.h"
+#include "reference/RMSDBase.h"
+#include "reference/MetricRegister.h"
 #include "core/Atoms.h"
 
 
@@ -34,14 +35,12 @@ namespace colvar{
    
 class RMSD : public Colvar {
 	
-  PLMD::RMSD rmsd;
-	
+  PLMD::RMSDBase* rmsd;
   bool squared; 
-
-  vector<Vector> derivs;
 
 public:
   RMSD(const ActionOptions&);
+  ~RMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -135,7 +134,7 @@ void RMSD::registerKeywords(Keywords& keys){
 }
 
 RMSD::RMSD(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),rmsd(log),squared(false)
+PLUMED_COLVAR_INIT(ao),squared(false)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -154,25 +153,32 @@ PLUMED_COLVAR_INIT(ao),rmsd(log),squared(false)
   if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
       error("missing input file " + reference );
 
-  rmsd.set(pdb,type);
+  rmsd = metricRegister().create<RMSDBase>(type,log,pdb);
+  
+  std::vector<AtomNumber> atoms;
+  rmsd->getAtomRequests( atoms );
+  rmsd->setNumberOfAtoms( atoms.size() );
+  requestAtoms( atoms );
 
-  requestAtoms(pdb.getAtomNumbers());
-
-  derivs.resize(getNumberOfAtoms());
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
-  log.printf("  method for alignment : %s \n",rmsd.getMethod().c_str() );
+  log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
+}
 
+RMSD::~RMSD(){
+  delete rmsd;
 }
 
 
 // calculator
 void RMSD::calculate(){
-  double r=rmsd.calculate(getPositions(),derivs,squared);
-  setValue(r);
-  for(unsigned i=0;i<derivs.size();i++) setAtomsDerivatives(i,derivs[i]);
-  Tensor virial;
+  double r=rmsd->calculate( getPositions(), squared );
+
+  setValue(r); 
+  for(unsigned i=0;i<getNumberOfAtoms();i++) setAtomsDerivatives( i, rmsd->getAtomDerivative(i) );
+
+  Tensor virial; plumed_dbg_assert( !rmsd->getVirial(virial) );
   setBoxDerivativesNoPbc();
 }
 
