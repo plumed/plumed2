@@ -49,10 +49,11 @@ class ReferenceConfigurationOptions {
 friend class ReferenceConfiguration;
 private:
   std::string tt;
-  Log* ll;
+  Log& ll;
 public:
   ReferenceConfigurationOptions( const std::string& type, Log& log );
   bool usingFastOption() const ;
+  std::string getMultiRMSDType() const ;
 };
 
 class ReferenceConfiguration {
@@ -64,7 +65,7 @@ private:
   std::vector<std::string> line;
 protected:
 /// The output log
-  Log* log;
+  Log& log;
 /// Derivatives wrt to the arguments
   std::vector<double> arg_ders;
 /// The virial contribution has to be stored 

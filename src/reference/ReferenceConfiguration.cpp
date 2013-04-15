@@ -29,12 +29,18 @@ namespace PLMD{
 
 ReferenceConfigurationOptions::ReferenceConfigurationOptions( const std::string& type, Log& log ):
 tt(type),
-ll(&log)
+ll(log)
 {
 }
 
 bool ReferenceConfigurationOptions::usingFastOption() const {
   return (tt.find("-FAST")!=std::string::npos);
+}
+
+std::string ReferenceConfigurationOptions::getMultiRMSDType() const {
+  plumed_assert( tt.find("MULTI-")!=std::string::npos );
+  std::size_t dot=tt.find_first_of("MULTI-");
+  return tt.substr(dot+6); 
 }
 
 ReferenceConfiguration::ReferenceConfiguration( const ReferenceConfigurationOptions& ro ):

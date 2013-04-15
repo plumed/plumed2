@@ -64,6 +64,8 @@ private:
 protected:
 /// Read in the atoms from the pdb file
   void readAtomsFromPDB( const PDB& );
+/// Add atom indices to list
+  void setAtomIndices( const std::vector<AtomNumber>& atomnumbers );
 /// Read a list of atoms from the pdb input file
   bool parseAtomList( const std::string& , std::vector<unsigned>& );
 /// Get the vector of alignment weights

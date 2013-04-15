@@ -70,9 +70,14 @@ MetricRegister& metricRegister();
 
 template <class T>
 T* MetricRegister::create( const std::string& type, Log& log ){
-  std::size_t dash=type.find("-FAST"); // We must remove the fast label 
-  std::string ftype=type.substr(0,dash);   
-  plumed_assert( check(ftype) );
+  std::string ftype;
+  if( type.find("MULTI-")!=std::string::npos ){
+     ftype="MULTI";
+  } else {
+     std::size_t dash=type.find("-FAST"); // We must remove the fast label 
+     ftype=type.substr(0,dash);   
+  }
+  plumed_massert( check(ftype), "metric " + ftype + " does not exist" );
   ReferenceConfigurationOptions ro( type, log );
   ReferenceConfiguration* conf=m[ftype]( ro );
   T* confout = dynamic_cast<T*>( conf );
