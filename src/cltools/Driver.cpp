@@ -87,6 +87,7 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
+  keys.add("atoms","--igro","the trajectory in gro format");
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
@@ -185,12 +186,27 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   if(!noatoms) parse("--dump-forces",dumpforces);
   if(dumpforces!="") parse("--dump-forces-fmt",dumpforcesFmt);
 
+  string trajectory_fmt;
+
 // Read in an xyz file
   string trajectoryFile(""), pdbfile("");
   bool pbc_cli_given=false; vector<double> pbc_cli_box(9,0.0);
   if(!noatoms){
      std::string traj_xyz; parse("--ixyz",traj_xyz);
-     if(traj_xyz.length()>0 && trajectoryFile.length()==0) trajectoryFile=traj_xyz;
+     std::string traj_gro; parse("--igro",traj_gro);
+     if(traj_xyz.length()>0 && traj_gro.length()>0){
+       fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
+       if(multi_log)fclose(multi_log);
+       return 1;
+     }
+     if(traj_xyz.length()>0 && trajectoryFile.length()==0){
+       trajectoryFile=traj_xyz;
+       trajectory_fmt="xyz";
+     }
+     if(traj_gro.length()>0 && trajectoryFile.length()==0){
+       trajectoryFile=traj_gro;
+       trajectory_fmt="gro";
+     }
      if(trajectoryFile.length()==0){
        fprintf(stderr,"ERROR: missing trajectory data\n"); 
        if(multi_log)fclose(multi_log);
@@ -306,7 +322,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
     int natoms;
     bool first_step=false;
-    if(!noatoms) sscanf(line.c_str(),"%100d",&natoms);
+    if(!noatoms){
+      if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
+      sscanf(line.c_str(),"%100d",&natoms);
+    }
     if(checknatoms<0 && !noatoms){
       pd_nlocal=natoms;
       pd_start=0;
@@ -395,49 +414,68 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
     p.cmd("setStep",&step);
     if(!noatoms){
-       bool ok=Tools::getline(fp,line);
-       if(!ok) error("premature end of trajectory file");
+       if(trajectory_fmt=="xyz"){
+         if(!Tools::getline(fp,line)) error("premature end of trajectory file");
 
-       std::vector<double> celld(9,0.0);
-       if(pbc_cli_given==false) {
-         std::vector<std::string> words;
-         words=Tools::getWords(line);
-         if(words.size()==3){
-           sscanf(line.c_str(),"%100lf %100lf %100lf",&celld[0],&celld[4],&celld[8]);
-         } else if(words.size()==9){
-           sscanf(line.c_str(),"%100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf",
-                  &celld[0], &celld[1], &celld[2],
-                  &celld[3], &celld[4], &celld[5],
-                  &celld[6], &celld[7], &celld[8]);
-         } else error("needed box in second line of xyz file");
-       } else {			// from command line
-         celld=pbc_cli_box;
+         std::vector<double> celld(9,0.0);
+         if(pbc_cli_given==false) {
+           std::vector<std::string> words;
+           words=Tools::getWords(line);
+           if(words.size()==3){
+             sscanf(line.c_str(),"%100lf %100lf %100lf",&celld[0],&celld[4],&celld[8]);
+           } else if(words.size()==9){
+             sscanf(line.c_str(),"%100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf %100lf",
+                    &celld[0], &celld[1], &celld[2],
+                    &celld[3], &celld[4], &celld[5],
+                    &celld[6], &celld[7], &celld[8]);
+           } else error("needed box in second line of xyz file");
+         } else {			// from command line
+           celld=pbc_cli_box;
+         }
+         for(unsigned i=0;i<9;i++)cell[i]=real(celld[i]);
        }
-       for(unsigned i=0;i<9;i++)cell[i]=real(celld[i]);
 
        // Read coordinates
        for(int i=0;i<natoms;i++){
          bool ok=Tools::getline(fp,line);
          if(!ok) error("premature end of trajectory file");
-         char dummy[1000];
          double cc[3];
-         std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
+         if(trajectory_fmt=="xyz"){
+           char dummy[1000];
+           std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
+         } else if(trajectory_fmt=="gro"){
+           Tools::convert(line.substr(20,8),cc[0]);
+           Tools::convert(line.substr(28,8),cc[1]);
+           Tools::convert(line.substr(36,8),cc[2]);
+         } else plumed_error();
          if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ){
            coordinates[3*i]=real(cc[0]);
            coordinates[3*i+1]=real(cc[1]);
            coordinates[3*i+2]=real(cc[2]);
          }
-         if(debug_dd){
-           for(int i=0;i<dd_nlocal;++i){
-             int kk=dd_gatindex[i];
-             dd_coordinates[3*i+0]=coordinates[3*kk+0];
-             dd_coordinates[3*i+1]=coordinates[3*kk+1];
-             dd_coordinates[3*i+2]=coordinates[3*kk+2];
-           }
-         }
+       }
+       if(trajectory_fmt=="gro"){
+         if(!Tools::getline(fp,line)) error("premature end of trajectory file");
+         std::vector<string> words=Tools::getWords(line);
+         if(words.size()<=3) error("cannot understand box format");
+         Tools::convert(words[0],cell[0]);
+         Tools::convert(words[1],cell[4]);
+         Tools::convert(words[2],cell[8]);
+         if(words.size()>3) Tools::convert(words[3],cell[1]);
+         if(words.size()>4) Tools::convert(words[4],cell[2]);
+         if(words.size()>5) Tools::convert(words[5],cell[3]);
+         if(words.size()>6) Tools::convert(words[6],cell[5]);
+         if(words.size()>7) Tools::convert(words[7],cell[6]);
+         if(words.size()>8) Tools::convert(words[8],cell[7]);
        }
 
        if(debug_dd){
+         for(int i=0;i<dd_nlocal;++i){
+           int kk=dd_gatindex[i];
+           dd_coordinates[3*i+0]=coordinates[3*kk+0];
+           dd_coordinates[3*i+1]=coordinates[3*kk+1];
+           dd_coordinates[3*i+2]=coordinates[3*kk+2];
+         }
          p.cmd("setForces",&dd_forces[0]);
          p.cmd("setPositions",&dd_coordinates[0]);
          p.cmd("setMasses",&dd_masses[0]);
