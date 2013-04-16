@@ -157,6 +157,10 @@ if [ -z "$config" ]
 then
   config="$PLUMED_ROOT/patches/${engine}.config"
 fi
+if [ -z "$otherfiles" ]
+then
+  test -d "$PLUMED_ROOT/patches/${engine}" && otherfiles="$PLUMED_ROOT/patches/${engine}/"
+fi
 
 echo "MD engine: $engine"
 echo "PLUMED location: $PLUMED_ROOT"
@@ -166,6 +170,11 @@ if [ -f "$config" ]
 then
   echo "sourcing config file: $config"
   source "$config"
+fi
+
+if [ -d "$otherfiles" ]
+then
+  echo "extra files located in: $otherfiles"
 fi
 
 case "$mode" in
