@@ -51,7 +51,7 @@ void StoreCentralAtomsVessel::resize(){
   resizeBuffer( bsize ); 
   // Update the active_derivative lists
   for(unsigned i=0;i<active_atoms.size();++i){
-     active_atoms[i].clear();
+     active_atoms[i].clear(); active_atoms[i].setupMPICommunication( comm );
      for(unsigned j=0;j<mycolv->getNumberOfAtoms();++j){
          active_atoms[i].addIndexToList(j);
      }

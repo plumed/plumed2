@@ -54,7 +54,7 @@ void StoreColvarVessel::resize(){
   resizeBuffer( 2*bufsize ); local_resizing();
   // Build the arrays of indexes
   for(unsigned i=0;i<active_atoms.size();++i){
-     active_atoms[i].clear();
+     active_atoms[i].clear(); active_atoms[i].setupMPICommunication( comm );
      for(unsigned j=0;j<mycolv->getNumberOfAtoms();++j) active_atoms[i].addIndexToList(j);
   }
 }

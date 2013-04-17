@@ -62,6 +62,8 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
      if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %lf inbetween neighbor list update steps\n");
      else log.printf("\n");
   }
+  // Setup stuff for communicating what tasks have been deactivated across all nodes
+  taskList.setupMPICommunication( comm );
 }
 
 ActionWithVessel::~ActionWithVessel(){

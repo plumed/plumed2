@@ -61,7 +61,7 @@ centralAtomDerivativesAreInFractional(false)
 }
 
 void MultiColvarBase::addColvar( const std::vector<unsigned>& newatoms ){
-  DynamicList<unsigned> newlist;
+  DynamicList<unsigned> newlist; newlist.setupMPICommunication( comm );
   for(unsigned i=0;i<newatoms.size();++i) newlist.addIndexToList( newatoms[i] );
   taskList.addIndexToList( colvar_atoms.size() );
   colvar_atoms.push_back( newlist );
@@ -142,8 +142,8 @@ Vector MultiColvarBase::retrieveCentralAtomPos( const bool& frac ){
   // Prepare to retrieve central atom
   for(unsigned i=0;i<atomsWithCatomDer.getNumberActive();++i){
      central_derivs[ atomsWithCatomDer[i] ].zero(); 
-     atomsWithCatomDer.deactivate( atomsWithCatomDer[i] );
   }
+  atomsWithCatomDer.deactivateAll();
 
   // Retrieve the central atom position
   Vector catom_pos;
