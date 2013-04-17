@@ -30,14 +30,45 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
 
 // Set up units
 // LAMMPS units wrt kj/mol - nm - ps
-   double energyUnits=1.0; // kj/mol ????
-   double lengthUnits=0.1; // A
-   double timeUnits=0.001; // fs
-   p->cmd("setMDEnergyUnits",&energyUnits);
-   p->cmd("setMDLengthUnits",&lengthUnits);
-   p->cmd("setMDTimeUnits",&timeUnits);
-// As an alternative, when LAMMPS is used in natural units, use this:
-//   p->cmd("setNaturalUnits");
+// Set up units
+
+  if (force->boltz == 1.0){
+// LAMMPS units lj
+    p->cmd("setNaturalUnits");
+  } else {
+    double energyUnits=1.0;
+    double lengthUnits=1.0;
+    double timeUnits=1.0;
+    if (force->boltz == 0.0019872067){
+// LAMMPS units real :: kcal/mol; angstrom; fs
+      energyUnits=4.184;
+      lengthUnits=0.1;
+      timeUnits=0.001;
+    } else if (force->boltz == 8.617343e-5){
+// LAMMPS units metal :: eV; angstrom; fs
+      energyUnits=96.48530749925792;
+      lengthUnits=0.1;
+      timeUnits=0.001;
+    } else if (force->boltz == 1.3806504e-23){
+// LAMMPS units si :: Joule, m; s
+      energyUnits=0.001;
+      lengthUnits=1.e-9;
+      timeUnits=1.e-12;
+    } else if (force->boltz == 1.3806504e-16){
+// LAMMPS units cgs :: erg; cms;, s
+      energyUnits=6.0221418e13;
+      lengthUnits=1.e-7;
+      timeUnits=1.e-12;
+    } else if (force->boltz == 3.16681534e-6){
+// LAMMPS units electron :: Hartree, bohr, fs
+      energyUnits=2625.5257;
+      lengthUnits=0.052917725;
+      timeUnits=1.e-12;
+    } else error->all(FLERR,"Odd LAMMPS units, plumed cannot work with that");
+    p->cmd("setMDEnergyUnits",&energyUnits);
+    p->cmd("setMDLengthUnits",&lengthUnits);
+    p->cmd("setMDTimeUnits",&timeUnits);
+  }
 
 // Read fix parameters:
   int next=0;
@@ -52,7 +83,7 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
       p->cmd("setPlumedDat",arg[i]);
       next=0;
     }
-    else error->all(FLERR,"syntax error in fix plumed");
+    else error->all(FLERR,"syntax error in fix plumed - use 'fix name plumed plumedfile plumed.dat outfile plumed.out' ");
   }
   if(next==1) error->all(FLERR,"missing argument for outfile option");
   if(next==2) error->all(FLERR,"missing argument for plumedfile option");
