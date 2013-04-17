@@ -44,6 +44,8 @@ void Units::setEnergy(const std::string &s){
     energy=4.184;
   } else if(s=="j/mol"){
     energy=0.001;
+  } else if(s=="eV"){
+    energy=96.48530749925792;
   } else {
     energy=-1.0;
     energyString="";
