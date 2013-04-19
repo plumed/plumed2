@@ -88,6 +88,8 @@ public:
   unsigned getNumberOfAtoms()const{return indexes.size();};
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
+/// Get the vector of absolute indexes
+  const std::vector<AtomNumber> & getAbsoluteIndexes()const;
 /// Get the absolute index of an atom
   AtomNumber getAbsoluteIndex(int i)const;
 /// Parse a list of atoms without a numbered keyword
@@ -140,6 +142,11 @@ inline
 double ActionAtomistic::getCharge(int i) const {
   if( !chargesWereSet ) error("charges were not passed to plumed");
   return charges[i];
+}
+
+inline
+const std::vector<AtomNumber> & ActionAtomistic::getAbsoluteIndexes()const{
+  return indexes;
 }
 
 inline
