@@ -4,7 +4,7 @@
 \section NewFeatures List of new features
 
 - Input file (plumed.dat) syntax is much more flexible and has more 
-  error checking (see \ref NewInputSyntax). Units are treated
+  error checking. Units are treated
   consistently, so that the plumed.dat file can be ported from on
   MD code to another.
 - Plumed is now compiled as a library, independently of the MD code.
@@ -32,15 +32,13 @@
 
 Caveats:
 - Plumed 2 input file (plumed.dat) has a syntax which is not
-  compatible with Plumed 1 (see \ref NewInputSyntax).
+  compatible with Plumed 1.
   Transition should be easy, but cannot
   be done just using the new version with the old input file.
 - Plumed 2 is written in C++, thus requires a C++ compiler
 - Plumed 2 may not include all the features that were available
   in plumed 1.
 
-\section NewInputSyntax New syntax for the input file
-
-[Briefly describe the difference between old and new input]
+A tutorial explaining how to move from plumed 1 to plumed 2 is available (see \ref moving).
 
 */

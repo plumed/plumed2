@@ -8,13 +8,34 @@ At the present times plumed can be added to the following list of codes:
 
 \section CompilingPlumed Compiling Plumed
 
-[Configuration]
+First configure using
+\verbatim
+> ./configure
+\endverbatim
 
-[Compilation]
+In case it is necessary, edit the resulting Makefile.conf. A new file sourceme.sh
+will appear in the main plumed directory. Just source it (presently only for bash shell):
+\verbatim
+> source sourceme.sh
+\endverbatim
 
-[Installation?]
+Then compile plumed
+\verbatim
+> make -j 4
+\endverbatim
 
-[How to test plumed without MD engine]
+A "plumed" executable should be in your path. Try to type
+\verbatim
+> plumed -h
+\endverbatim
+
+You can also check if plumed is correctly compiled performing our regression tests.
+Be warned that some of them just fails because of the different numerical accuracy of different machines.
+\verbatim
+> cd regtest
+> make
+\endverbatim 
+
 
 \section Patching Patching your MD code
 
@@ -35,12 +56,6 @@ The script will interactively ask which MD engine you are patching.
 If your MD code is not supported, you may want to implement an interface for
 it. Refer to the <a href="../../developer-doc/html/index.html"> developer
 manual </a>.
-
-[How to test if interface has been installed properly]
-
-\section InstallingPlumedOnAMainframe Installing Plumed on a mainframe
-
-[Notes on shared libraries, modules, etc.]
 
 
 */
