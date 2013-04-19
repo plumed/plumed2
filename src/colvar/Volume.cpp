@@ -47,7 +47,6 @@ PRINT ARG=vol
 
 
 class Volume : public Colvar {
-  bool components;
 
 public:
   Volume(const ActionOptions&);
@@ -60,16 +59,11 @@ public:
 PLUMED_REGISTER_ACTION(Volume,"VOLUME")
 
 Volume::Volume(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-components(false)
+PLUMED_COLVAR_INIT(ao)
 {
   std::vector<AtomNumber> atoms;
-  parseFlag("COMPONENTS",components);
   checkRead();
 
-  if(components){
-// todo
-  }
   addValueWithDerivatives(); setNotPeriodic();
   requestAtoms(atoms);
 }
@@ -78,16 +72,11 @@ void Volume::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-//  keys.remove("NUMERICAL_DERIVATIVES"); 
-  keys.addFlag("COMPONENTS",false,"use xx, yy, zz, alpha, beta, gamma as the colvars rather than the box volume");
 }
 
 
 // calculator
 void Volume::calculate(){
-  if(components){
-// todo
-  };
 
   double v=getBox().determinant();
   setBoxDerivatives(-v*Tensor::identity());
