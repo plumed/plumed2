@@ -78,7 +78,7 @@ void Volume::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES"); 
+//  keys.remove("NUMERICAL_DERIVATIVES"); 
   keys.addFlag("COMPONENTS",false,"use xx, yy, zz, alpha, beta, gamma as the colvars rather than the box volume");
 }
 
@@ -89,8 +89,9 @@ void Volume::calculate(){
 // todo
   };
 
-  setBoxDerivatives(-1.0*Tensor::identity());
-  setValue         (getBox().determinant());
+  double v=getBox().determinant();
+  setBoxDerivatives(-v*Tensor::identity());
+  setValue         (v);
 }
 
 }
