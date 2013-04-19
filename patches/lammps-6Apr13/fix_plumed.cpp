@@ -45,10 +45,10 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
       lengthUnits=0.1;
       timeUnits=0.001;
     } else if (force->boltz == 8.617343e-5){
-// LAMMPS units metal :: eV; angstrom; fs
+// LAMMPS units metal :: eV; angstrom; ps
       energyUnits=96.48530749925792;
       lengthUnits=0.1;
-      timeUnits=0.001;
+      timeUnits=1.0;
     } else if (force->boltz == 1.3806504e-23){
 // LAMMPS units si :: Joule, m; s
       energyUnits=0.001;
@@ -63,7 +63,7 @@ FixPlumed::FixPlumed(LAMMPS *lmp, int narg, char **arg) :
 // LAMMPS units electron :: Hartree, bohr, fs
       energyUnits=2625.5257;
       lengthUnits=0.052917725;
-      timeUnits=1.e-12;
+      timeUnits=0.001;
     } else error->all(FLERR,"Odd LAMMPS units, plumed cannot work with that");
     p->cmd("setMDEnergyUnits",&energyUnits);
     p->cmd("setMDLengthUnits",&lengthUnits);
