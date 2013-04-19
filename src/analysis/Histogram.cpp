@@ -97,12 +97,13 @@ public:
   static void registerKeywords( Keywords& keys );
   Histogram(const ActionOptions&ao);
   void performAnalysis();
+  void performTask();
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 
 void Histogram::registerKeywords( Keywords& keys ){
-  Analysis::registerKeywords( keys );
+  Analysis::registerKeywords( keys ); keys.reset_style("METRIC","hidden");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("compulsory","GRID_BIN","the number of bins for the grid");
@@ -143,6 +144,8 @@ gbin(getNumberOfArguments())
   for(unsigned i=0;i<gbin.size();++i) log.printf(" %d",gbin[i]);
   log.printf("\n");
 }
+
+void Histogram::performTask(){ plumed_error(); }
 
 void Histogram::performAnalysis(){
   // Back up old histogram files
