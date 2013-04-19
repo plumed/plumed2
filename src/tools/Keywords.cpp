@@ -489,7 +489,7 @@ bool Keywords::getLogicalDefault( std::string key, bool& def ) const {
 }
 
 bool Keywords::getDefaultValue( std::string key, std::string& def ) const {
-   plumed_assert( style(key,"compulsory") );
+   plumed_assert( style(key,"compulsory") || style(key,"hidden") );
 
    if( numdefs.find(key)!=numdefs.end() ){
       def=numdefs.find(key)->second;

@@ -278,13 +278,13 @@ void Action::parse(const std::string&key,T&t){
   found=Tools::parse(line,key,t);
   
   // If it isn't read and it is compulsory see if a default value was specified 
-  if ( !found && keywords.style(key,"compulsory") ){
+  if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
        if( keywords.getDefaultValue(key,def) ){
           if( def.length()==0 || !Tools::convert(def,t) ){
              log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
              this->exit(1);
           }           
-       } else {
+       } else if( keywords.style(key,"compulsory") ){
           error("keyword " + key + " is comulsory for this action");
        }
   }   
@@ -326,7 +326,7 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
   }
 
   // If it isn't read and it is compulsory see if a default value was specified 
-  if ( !found && keywords.style(key,"compulsory") ){
+  if ( !found && (keywords.style(key,"compulsory") || keywords.style(key,"hidden")) ){
        if( keywords.getDefaultValue(key,def) ){
           if( def.length()==0 || !Tools::convert(def,val) ){
              log.printf("ERROR in action %s with label %s : keyword %s has weird default value",name.c_str(),label.c_str(),key.c_str() );
@@ -334,7 +334,7 @@ void Action::parseVector(const std::string&key,std::vector<T>&t){
           } else {
              for(unsigned i=0;i<t.size();++i) t[i]=val;
           }          
-       } else {
+       } else if( keywords.style(key,"compulsory") ){
           error("keyword " + key + " is compulsory for this action");
        }
   } else if ( !found ){
