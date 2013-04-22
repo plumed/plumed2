@@ -173,7 +173,7 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   // Set the reference structure
-  references.push_back( metricRegister().create<SingleDomainRMSD>( alignType, log ) ); 
+  references.push_back( metricRegister().create<SingleDomainRMSD>( alignType ) ); 
   unsigned nn=references.size()-1;
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
   references[nn]->setBoundsOnDistances( true , bondlength );  // We always use pbc

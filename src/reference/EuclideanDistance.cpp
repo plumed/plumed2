@@ -37,7 +37,6 @@ EuclideanDistance::EuclideanDistance( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
 ArgumentOnlyDistance(ro)
 {
-  log.printf("WARNING: using Euclidean distance make sure units of constituent colvars are all the same\n");
 }
 
 void EuclideanDistance::read( const PDB& pdb ){

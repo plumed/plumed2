@@ -99,7 +99,7 @@ ofmt("%f")
   parse("FMT",ofmt);  // Read the format for output files
   // Read in the metric style
   parse("METRIC",metricname); std::vector<AtomNumber> atom_numbers;
-  ReferenceConfiguration* checkref=metricRegister().create<ReferenceConfiguration>( metricname, log );
+  ReferenceConfiguration* checkref=metricRegister().create<ReferenceConfiguration>( metricname );
   // Check if we should read atoms
   ReferenceAtoms* hasatoms=dynamic_cast<ReferenceAtoms*>( checkref );
   if( hasatoms ){
@@ -163,7 +163,7 @@ ofmt("%f")
           ndata=freq/getStride();
           data.resize( ndata );
           for(unsigned i=0;i<ndata;++i){ 
-             data[i]=metricRegister().create<ReferenceConfiguration>( metricname, log ); 
+             data[i]=metricRegister().create<ReferenceConfiguration>( metricname ); 
              data[i]->setNamesAndAtomNumbers( atom_numbers, getArguments() );
           }
           logweights.resize( ndata );
@@ -263,7 +263,7 @@ void Analysis::calculate(){
   if(single_run){
      // Get the arguments and store them in a vector of vectors
 //     for(unsigned i=0;i<getNumberOfArguments();++i) args[i]=getArgument(i);
-     data.push_back( metricRegister().create<ReferenceConfiguration>( metricname, log ) );
+     data.push_back( metricRegister().create<ReferenceConfiguration>( metricname ) );
      plumed_dbg_assert( data.size()==idata+1 );
      data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), getArguments() );
      data[idata]->setReference( getPositions(), getArguments(), getMetric() );

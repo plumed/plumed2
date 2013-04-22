@@ -118,7 +118,7 @@ PLUMED_COLVAR_INIT(ao), pbc_(true)
       error("missing input file " + reference );
 
   // store target_ distance
-  ReferenceConfigurationOptions ro( "DRMSD", log );
+  ReferenceConfigurationOptions ro( "DRMSD" );
   drmsd_= new PLMD::DRMSD( ro );
   drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
   drmsd_->set( pdb );

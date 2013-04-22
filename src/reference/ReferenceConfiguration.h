@@ -33,7 +33,6 @@ namespace PLMD{
 
 class Value;
 class Pbc;
-class Log;
 class OFile;
 class PDB;
 
@@ -49,9 +48,8 @@ class ReferenceConfigurationOptions {
 friend class ReferenceConfiguration;
 private:
   std::string tt;
-  Log& ll;
 public:
-  ReferenceConfigurationOptions( const std::string& type, Log& log );
+  ReferenceConfigurationOptions( const std::string& type );
   bool usingFastOption() const ;
   std::string getMultiRMSDType() const ;
 };
@@ -64,8 +62,6 @@ private:
 /// A vector containing all the remarks from the pdb input
   std::vector<std::string> line;
 protected:
-/// The output log
-  Log& log;
 /// Derivatives wrt to the arguments
   std::vector<double> arg_ders;
 /// The virial contribution has to be stored 

@@ -79,7 +79,7 @@ Function(ao)
   expandArgKeywordInPDB( pdb );
 
   // Generate the reference structure
-  target=metricRegister().create<ArgumentOnlyDistance>( type, log, pdb );
+  target=metricRegister().create<ArgumentOnlyDistance>( type, pdb );
 
   // Get the argument names
   std::vector<std::string> args_to_retrieve;

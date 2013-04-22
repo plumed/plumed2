@@ -59,7 +59,7 @@ void MultiDomainRMSD::read( const PDB& pdb ){
           if( !parse("LOWER_CUTOFF"+num,lower,true) ) lower=0.0;
           if( !parse("UPPER_CUTTOFF"+num,upper,true) ) upper=std::numeric_limits<double>::max( );
        }
-       domains.push_back( metricRegister().create<SingleDomainRMSD>( ftype, log ) );
+       domains.push_back( metricRegister().create<SingleDomainRMSD>( ftype ) );
        positions.resize( blocks[i] - blocks[i-1] + 1 );
        align.resize( blocks[i] - blocks[i-1] + 1 );
        displace.resize( blocks[i] - blocks[i-1] + 1 );

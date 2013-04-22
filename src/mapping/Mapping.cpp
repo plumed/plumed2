@@ -82,8 +82,8 @@ ActionWithVessel(ao)
         // Create the reference configuration
         ReferenceConfiguration* mymsd;
         // If skipchecks are enabled metric types must be specified in the input file
-        if(skipchecks) mymsd=metricRegister().create<ReferenceConfiguration>( "", log, mypdb );
-        else mymsd=metricRegister().create<ReferenceConfiguration>( mtype, log, mypdb ); 
+        if(skipchecks) mymsd=metricRegister().create<ReferenceConfiguration>( "", mypdb );
+        else mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb ); 
         // Get the atoms and arguments we require
         mymsd->getAtomRequests( atoms_to_retrieve, skipchecks );
         mymsd->getArgumentRequests( args_to_retrieve, skipchecks );
@@ -111,7 +111,7 @@ ActionWithVessel(ao)
   // Create copies of all the frames (so we can store all derivatives stuff)
   unsigned nframes=frames.size();
   for(unsigned i=0;i<nframes;++i){ 
-     frames.push_back( new FakeFrame( ReferenceConfigurationOptions("fake",log) ) ); 
+     frames.push_back( new FakeFrame( ReferenceConfigurationOptions("fake") ) ); 
   }
   fframes.resize( frames.size(), 0.0 ); dfframes.resize( frames.size(), 0.0 );
   if( atoms_to_retrieve.size()>0 ){ 

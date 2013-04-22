@@ -27,9 +27,8 @@
 
 namespace PLMD{
 
-ReferenceConfigurationOptions::ReferenceConfigurationOptions( const std::string& type, Log& log ):
-tt(type),
-ll(log)
+ReferenceConfigurationOptions::ReferenceConfigurationOptions( const std::string& type ):
+tt(type)
 {
 }
 
@@ -45,7 +44,6 @@ std::string ReferenceConfigurationOptions::getMultiRMSDType() const {
 
 ReferenceConfiguration::ReferenceConfiguration( const ReferenceConfigurationOptions& ro ):
 name(ro.tt),
-log(ro.ll),
 arg_ders(0),
 atom_ders(0)
 {

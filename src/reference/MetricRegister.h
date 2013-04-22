@@ -52,10 +52,10 @@ public:
   bool check(std::string type);
 /// Create a reference configuration and don't set a point of reference
   template <class T>
-  T* create( const std::string& type , Log& log );
+  T* create( const std::string& type );
 /// Create a reference configuration and set the point of reference from the pdb 
   template <class T>
-  T* create( const std::string& type , Log& log, const PDB& pdb );
+  T* create( const std::string& type , const PDB& pdb );
 };
 
 MetricRegister& metricRegister();
@@ -69,7 +69,7 @@ MetricRegister& metricRegister();
   } classname##RegisterMeObject;
 
 template <class T>
-T* MetricRegister::create( const std::string& type, Log& log ){
+T* MetricRegister::create( const std::string& type ){
   std::string ftype;
   if( type.find("MULTI-")!=std::string::npos ){
      ftype="MULTI";
@@ -78,7 +78,7 @@ T* MetricRegister::create( const std::string& type, Log& log ){
      ftype=type.substr(0,dash);   
   }
   plumed_massert( check(ftype), "metric " + ftype + " does not exist" );
-  ReferenceConfigurationOptions ro( type, log );
+  ReferenceConfigurationOptions ro( type );
   ReferenceConfiguration* conf=m[ftype]( ro );
   T* confout = dynamic_cast<T*>( conf );
   if(!confout) plumed_merror( type + " metric is not valid in this context");
@@ -86,7 +86,7 @@ T* MetricRegister::create( const std::string& type, Log& log ){
 }
 
 template <class T>
-T* MetricRegister::create( const std::string& type, Log& log, const PDB& pdb ){
+T* MetricRegister::create( const std::string& type, const PDB& pdb ){
   std::string rtype;
   if( type.length()==0 ){
      std::vector<std::string> remarks( pdb.getRemark() );
@@ -95,7 +95,7 @@ T* MetricRegister::create( const std::string& type, Log& log, const PDB& pdb ){
   } else {
      rtype=type;
   } 
-  T* confout=create<T>( rtype, log ); 
+  T* confout=create<T>( rtype ); 
   confout->set( pdb );
   return confout;
 }
