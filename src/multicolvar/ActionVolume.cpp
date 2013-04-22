@@ -53,7 +53,6 @@ lastUpdate(0)
   std::string mlab; parse("ARG",mlab);
   mycolv = plumed.getActionSet().selectWithLabel<multicolvar::MultiColvarBase*>(mlab);
   if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
-  addDependency(mycolv); mycolv->addBridgingVessel( this, myBridgeVessel );
   std::string functype=mycolv->getName();
   std::transform( functype.begin(), functype.end(), functype.begin(), tolower );
   log.printf("  calculating %s inside region of insterest\n",functype.c_str() ); 
@@ -89,6 +88,9 @@ lastUpdate(0)
   } else {
      readVesselKeywords();
   }
+
+  // Now set up the bridging vessel (has to be done this way for internal arrays to be resized properly)
+  addDependency(mycolv); myBridgeVessel = mycolv->addBridgingVessel( this );
 }
 
 void ActionVolume::doJobsRequiredBeforeTaskList(){
@@ -172,7 +174,7 @@ void ActionVolume::performTask( const unsigned& j ){
   }
 }
 
-void ActionVolume::calculateNumericalDerivatives(){
+void ActionVolume::calculateNumericalDerivatives( ActionWithValue* a ){
   myBridgeVessel->completeNumericalDerivatives();
 }
 

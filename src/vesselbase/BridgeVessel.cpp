@@ -26,7 +26,8 @@ namespace PLMD {
 namespace vesselbase {
 
 BridgeVessel::BridgeVessel( const VesselOptions& da ):
-Vessel(da)
+Vessel(da),
+inum(0)
 {
   resizeBuffer(0);
 }
@@ -81,7 +82,8 @@ void BridgeVessel::completeNumericalDerivatives(){
   inum=0; const double delta=sqrt(epsilon);
   ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( getAction() );
   unsigned nder=myOutputAction->getNumberOfDerivatives();
-  myOutputValues->clearDerivatives();
+  for(unsigned j=0;j<myOutputValues->getNumberOfComponents();++j) ( myOutputValues->copyOutput(j) )->clearDerivatives();   
+
   if( aa ){
       ActionWithArguments* aarg=dynamic_cast<ActionWithArguments*>( getAction() );
       plumed_assert( !aarg ); Tensor box=aa->getBox();

@@ -83,7 +83,7 @@ protected:
   void addVessel( const std::string& name, const std::string& input, const int numlab=0, const std::string thislab="" );
   void addVessel( Vessel* vv );
 /// Add a bridging vessel to the list of vessels
-  void addBridgingVessel( ActionWithVessel* tome, BridgeVessel* bv );
+  BridgeVessel* addBridgingVessel( ActionWithVessel* tome );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void readVesselKeywords();
 /// Return the value of the tolerance

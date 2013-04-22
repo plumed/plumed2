@@ -81,12 +81,13 @@ void ActionWithVessel::addVessel( Vessel* vv ){
   if(!sv) functions.push_back(vv);
 }
 
-void ActionWithVessel::addBridgingVessel( ActionWithVessel* tome, BridgeVessel* bv ){
+BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   read=true; VesselOptions da("","",0,"",this); 
-  bv=new BridgeVessel(da);
+  BridgeVessel* bv=new BridgeVessel(da);
   bv->setOutputAction( tome );
   functions.push_back( dynamic_cast<Vessel*>(bv) );
-  resizeFunctions(); 
+  resizeFunctions();
+  return bv; 
 }
 
 void ActionWithVessel::readVesselKeywords(){
