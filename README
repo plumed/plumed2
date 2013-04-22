@@ -29,9 +29,20 @@ developer-doc/html/index.html
 
 GIT VERSION
 
-The branch meant to be the most stable (= less unstable) one is "master"
-To report problems with the git version:
-* subscribe to google group plumed2-git (still limited access)
-* when reporting provide the git hash (get it with "git rev-parse HEAD")
-* be patient...
+Several branches and tags are stored on the git repository.
+
+Branches named v2.X correspond to release branches.
+
+Master branch may contain non tested features and is not expected to be used by non-developers.
+It is typically containing features that will be available on the next release.
+
+Tags named v2.XbY correspond to beta releases - use with care
+Tags named v2.X.Y correspond to official releases - use the latest available.
+
+To report problems found on beta or official releases, use the normal plumed-users
+mailing list. Just state exactly which version you are using.
+
+To report problems found on master branch, use the plumed2-git mailing list.
+This is also the correct place for discussions about new features etc.
+When reporting please provide the git hash (get it with "git rev-parse HEAD").
 
