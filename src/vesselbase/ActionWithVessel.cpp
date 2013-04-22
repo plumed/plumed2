@@ -59,7 +59,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
      if( keywords.exists("NL_TOL") ) parse("NL_TOL",nl_tolerance);
      if( nl_tolerance>tolerance ) error("NL_TOL must be smaller than TOL"); 
      log.printf(" Ignoring contributions less than %lf",tolerance);
-     if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %lf inbetween neighbor list update steps\n");
+     if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %lf inbetween neighbor list update steps\n",nl_tolerance);
      else log.printf("\n");
   }
   // Setup stuff for communicating what tasks have been deactivated across all nodes
