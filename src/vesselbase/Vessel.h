@@ -64,8 +64,6 @@ private:
 /// The keywords
   const Keywords& keywords;
   static Keywords emptyKeys;
-/// This tells whether checkRead has been called
-  bool finished_read;
 public:
 /// The parameters that are read into the function
   std::string parameters;

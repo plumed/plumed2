@@ -275,7 +275,6 @@ template <typename T>
 void DynamicList<T>::mpi_gatherActiveMembers(Communicator& comm){
   plumed_massert( comm.Get_size()==nprocessors, "error missing a call to DynamicList::setupMPICommunication");
   comm.Sum(&onoff[0],onoff.size());
-  unsigned size=comm.Get_size();
   // When we mpi gather onoff to be on it should be active on ALL nodes
   for(unsigned i=0;i<all.size();++i) if( onoff[i]>0 && onoff[i]%nprocessors==0 ){ onoff[i]=nprocessors; } 
   updateActiveMembers();

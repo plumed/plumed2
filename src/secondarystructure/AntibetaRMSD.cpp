@@ -80,8 +80,6 @@ ANTIBETARMSD BACKBONE=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LA
 //+ENDPLUMEDOC
 
 class AntibetaRMSD : public SecondaryStructureRMSD {
-private:
-  double s_cutoff;
 public:
   static void registerKeywords( Keywords& keys );
   AntibetaRMSD(const ActionOptions&);
@@ -100,8 +98,7 @@ void AntibetaRMSD::registerKeywords( Keywords& keys ){
 
 AntibetaRMSD::AntibetaRMSD(const ActionOptions&ao):
 Action(ao),
-SecondaryStructureRMSD(ao),
-s_cutoff(0)
+SecondaryStructureRMSD(ao)
 {
   // read in the backbone atoms
   std::vector<std::string> backnames(5); std::vector<unsigned> chains;

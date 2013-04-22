@@ -225,8 +225,8 @@ integratehisto(false),
 parallelread(false),
 negativebias(false),
 nohistory(false),
-fmt("%14.9f"),
-beta(-1.)
+beta(-1.),
+fmt("%14.9f")
 {
 
   // format

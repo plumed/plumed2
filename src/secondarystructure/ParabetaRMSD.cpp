@@ -80,8 +80,6 @@ PARABETARMSD BACKBONE=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LA
 //+ENDPLUMEDOC
 
 class ParabetaRMSD : public SecondaryStructureRMSD {
-private:
-  double s_cutoff;
 public:
   static void registerKeywords( Keywords& keys );
   ParabetaRMSD(const ActionOptions&);
@@ -100,15 +98,14 @@ void ParabetaRMSD::registerKeywords( Keywords& keys ){
 
 ParabetaRMSD::ParabetaRMSD(const ActionOptions&ao):
 Action(ao),
-SecondaryStructureRMSD(ao),
-s_cutoff(0)
+SecondaryStructureRMSD(ao)
 {
   // read in the backbone atoms
   std::vector<std::string> backnames(5); std::vector<unsigned> chains;
   backnames[0]="N"; backnames[1]="CA"; backnames[2]="CB"; backnames[3]="C"; backnames[4]="O";
   readBackboneAtoms( backnames, chains );
 
-  bool intra_chain, inter_chain; 
+  bool intra_chain(false), inter_chain(false); 
   std::string style; parse("STYLE",style);
   if( style=="all" ){ 
       intra_chain=true; inter_chain=true;
