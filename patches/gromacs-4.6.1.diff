@@ -468,4 +468,23 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
          replica_id  = re->repl;
          test_for_replica_exchange(fplog, cr->ms, re, enerd, det(state_local->box), step, time);
          prepare_to_do_exchange(fplog, re->destinations, replica_id, re->nrepl, &maxswap,
+@@ -1355,14 +1434,14 @@
+                 exchange_partner = re->order[replica_id][j];
+ 
+                 if (exchange_partner != replica_id)
+                 {
+                     /* Exchange the global states between the master nodes */
+-                    if (debug)
+-                    {
+-                        fprintf(debug, "Exchanging %d with %d\n", replica_id, exchange_partner);
+-                    }
++                    //if (debug)
++                    //{
++                        fprintf(fplog, "Exchanging %d with %d\n", replica_id, exchange_partner);
++                    //}
+                     exchange_state(cr->ms, exchange_partner, state);
+                 }
+             }
+             /* For temperature-type replica exchange, we need to scale
+              * the velocities. */
 EOF_EOF
