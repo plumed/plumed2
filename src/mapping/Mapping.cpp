@@ -22,7 +22,6 @@
 #include "Mapping.h"
 #include "vesselbase/Vessel.h"
 #include "reference/MetricRegister.h"
-#include "reference/ReferenceConfiguration.h"
 #include "tools/PDB.h"
 #include "tools/Matrix.h"
 #include "core/PlumedMain.h"
@@ -52,26 +51,29 @@ ActionWithVessel(ao)
 {
   // Read the input
   std::string mtype; parse("TYPE",mtype);
-  std::string reference; parse("REFERENCE",reference);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
-
+  // Setup the object that does the mapping
+  mymap = new PointWiseMapping( mtype, skipchecks ); 
+ 
   // Read the properties we require
-  bool hasprop=false;
   if( keywords.exists("PROPERTY") ){
-     hasprop=true; parseVector("PROPERTY",property);
+     std::vector<std::string> property;
+     parseVector("PROPERTY",property);
      if(property.size()==0) error("no properties were specified");
+     mymap->setPropertyNames( property, false );
   } else {
-     property.resize(1); property[0]="sss";
+     std::vector<std::string> property(1); 
+     property[0]="sss";
+     mymap->setPropertyNames( property, true );
   }
 
   // Open reference file
+  std::string reference; parse("REFERENCE",reference); 
   FILE* fp=fopen(reference.c_str(),"r"); 
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations 
-  bool do_read=true; 
-  std::vector<AtomNumber> atoms_to_retrieve;
-  std::vector<std::string> args_to_retrieve;
+  bool do_read=true; unsigned nfram=0;
   while (do_read){
      PDB mypdb; 
      // Read the pdb file
@@ -79,50 +81,27 @@ ActionWithVessel(ao)
      // Fix argument names
      expandArgKeywordInPDB( mypdb );
      if(do_read){
-        // Create the reference configuration
-        ReferenceConfiguration* mymsd;
-        // If skipchecks are enabled metric types must be specified in the input file
-        if(skipchecks) mymsd=metricRegister().create<ReferenceConfiguration>( "", mypdb );
-        else mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb ); 
-        // Get the atoms and arguments we require
-        mymsd->getAtomRequests( atoms_to_retrieve, skipchecks );
-        mymsd->getArgumentRequests( args_to_retrieve, skipchecks );
-
-        // Now get the low dimensional projection
-        std::vector<double> labelvals;
-        if(hasprop){
-           labelvals.resize( property.size() );
-           for(unsigned i=0;i<property.size();++i) mymsd->parse( property[i], labelvals[i] );  
-        } else {
-           labelvals.resize(1);  
-           labelvals[0]=static_cast<double>( frames.size() + 1 );
-        }
-        mymsd->checkRead();                       // Check that everything in the input has been read in
-        frames.push_back( mymsd );                // Store the reference 
-        low_dim.push_back( labelvals );           // Store the low-dimensional projection
+        mymap->readFrame( mypdb ); nfram++;
      } else {
         break;
-     } 
+     }
   }
   fclose(fp); 
-  if(frames.size()==0 ) error("no reference configurations were specified");
-  log.printf("  found %d configurations in file %s\n",frames.size(),reference.c_str() );
+  if(nfram==0 ) error("no reference configurations were specified");
+  log.printf("  found %d configurations in file %s\n",nfram,reference.c_str() );
 
-  // Create copies of all the frames (so we can store all derivatives stuff)
-  unsigned nframes=frames.size();
-  for(unsigned i=0;i<nframes;++i){ 
-     frames.push_back( new FakeFrame( ReferenceConfigurationOptions("fake") ) ); 
-  }
-  fframes.resize( frames.size(), 0.0 ); dfframes.resize( frames.size(), 0.0 );
-  if( atoms_to_retrieve.size()>0 ){ 
-     requestAtoms( atoms_to_retrieve );
-     for(unsigned i=0;i<frames.size();++i) frames[i]->setNumberOfAtoms( atoms_to_retrieve.size() );
-  }
-  if( args_to_retrieve.size()>0 ){
-     std::vector<Value*> req_args;
-     interpretArgumentList( args_to_retrieve, req_args ); requestArguments( req_args );
-     for(unsigned i=0;i<frames.size();++i) frames[i]->setNumberOfArguments( args_to_retrieve.size() ); 
-  }
+  // Finish the setup of the mapping object
+  // Get the arguments and atoms that are required
+  std::vector<AtomNumber> atoms; std::vector<std::string> args;
+  mymap->getAtomAndArgumentRequirements( atoms, args );
+  requestAtoms( atoms ); std::vector<Value*> req_args;
+  interpretArgumentList( args, req_args ); requestArguments( req_args );
+  // Duplicate all frames (duplicates are used by sketch-map)
+  mymap->duplicateFrameList(); 
+  fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
+  plumed_assert( !mymap->mappingNeedsSetup() );
+  // Resize all derivative arrays
+  mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
   // Resize forces array
   forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
 }
@@ -133,15 +112,31 @@ void Mapping::turnOnDerivatives(){
 } 
 
 Mapping::~Mapping(){
-  for(unsigned i=0;i<frames.size();++i) delete frames[i];
+  delete mymap;
+}
+
+void Mapping::prepare(){
+  if( mymap->mappingNeedsSetup() ){
+      // Get the arguments and atoms that are required
+      std::vector<AtomNumber> atoms; std::vector<std::string> args;
+      mymap->getAtomAndArgumentRequirements( atoms, args );
+      requestAtoms( atoms ); std::vector<Value*> req_args; 
+      interpretArgumentList( args, req_args ); requestArguments( req_args );
+      // Duplicate all frames (duplicates are used by sketch-map)
+      mymap->duplicateFrameList();
+      // Get the number of frames in the path
+      unsigned nfram=getNumberOfReferencePoints();
+      fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 ); 
+      plumed_assert( !mymap->mappingNeedsSetup() );
+      // Resize all derivative arrays
+      mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
+      // Resize forces array
+      forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
+  }
 }
 
 unsigned Mapping::getPropertyIndex( const std::string& name ) const {
-  for(unsigned i=0;i<property.size();++i){
-     if( name==property[i] ) return i;
-  }
-  error("no property with name " + name + " found");
-  return 0;
+  return mymap->getPropertyIndex( name );
 }
 
 double Mapping::getLambda(){
@@ -160,7 +155,7 @@ std::string Mapping::getArgumentName( unsigned& iarg ){
 
 double Mapping::calculateDistanceFunction( const unsigned& ifunc, const bool& squared ){
   // Calculate the distance
-  double dd=frames[ifunc]->calculate( getPositions(), getPbc(), getArguments(), squared );
+  double dd = mymap->calcDistanceFromConfiguration( ifunc, getPositions(), getPbc(), getArguments(), squared );     
 
   // Transform distance by whatever
   fframes[ifunc]=transformHD( dd, dfframes[ifunc] );
@@ -184,22 +179,22 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ){
 }
 
 void Mapping::mergeDerivatives( const unsigned& ider, const double& df ){
-  unsigned frameno=ider*low_dim.size() + getCurrentTask();
+  unsigned cur = getCurrentTask(), frameno=ider*getNumberOfReferencePoints() + cur;
   for(unsigned i=0;i<getNumberOfArguments();++i){
-      accumulateDerivative( i, df*dfframes[frameno]*frames[getCurrentTask()]->getArgumentDerivative(i) );
+      accumulateDerivative( i, df*dfframes[frameno]*mymap->getArgumentDerivative(cur,i) );
   }
   if( getNumberOfAtoms()>0 ){
       Vector ader; Tensor tmpvir; tmpvir.zero();
       unsigned n=getNumberOfArguments(); 
       for(unsigned i=0;i<getNumberOfAtoms();++i){
-          ader=frames[getCurrentTask()]->getAtomDerivative(i);
+          ader=mymap->getAtomDerivatives( cur, i );            
           accumulateDerivative( n, df*dfframes[frameno]*ader[0] ); n++;
           accumulateDerivative( n, df*dfframes[frameno]*ader[1] ); n++;
           accumulateDerivative( n, df*dfframes[frameno]*ader[2] ); n++;
           tmpvir += -1.0*Tensor( getPosition(i), ader );
       }
       Tensor vir; 
-      if( !frames[getCurrentTask()]->getVirial( vir ) ) vir=tmpvir;
+      if( !mymap->getVirial( cur, vir ) ) vir=tmpvir;
       accumulateDerivative( n, df*dfframes[frameno]*vir(0,0) ); n++;
       accumulateDerivative( n, df*dfframes[frameno]*vir(0,1) ); n++;
       accumulateDerivative( n, df*dfframes[frameno]*vir(0,2) ); n++;

@@ -63,6 +63,7 @@ void ReferenceConfiguration::set( const PDB& pdb ){
   if( parse("TYPE",ignore,true) ){
       if(ignore!=name) error("mismatch for name");
   }
+  if( !parse("WEIGHT",weight,true) ) weight=1.0;
   read( pdb );
 }
 

@@ -19,13 +19,12 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_mapping_FakeFrame_h
-#define __PLUMED_mapping_FakeFrame_h
+#ifndef __PLUMED_reference_FakeFrame_h
+#define __PLUMED_reference_FakeFrame_h
 
-#include "reference/ReferenceConfiguration.h"
+#include "ReferenceConfiguration.h"
 
 namespace PLMD {
-namespace mapping {
 
 class FakeFrame :
 public PLMD::ReferenceConfiguration
@@ -38,7 +37,6 @@ public:
   }
 };
 
-}
 }
 #endif
 

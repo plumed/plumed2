@@ -26,13 +26,12 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "vesselbase/ActionWithVessel.h"
-#include "FakeFrame.h"
+#include "reference/PointWiseMapping.h"
 #include <vector>
 
 namespace PLMD {
 
 class PDB;
-class ReferenceConfiguration;
 
 namespace mapping {
 
@@ -45,17 +44,13 @@ class Mapping :
 private:
 //  The derivative wrt to the distance from the frame
   std::vector<double> dfframes;
-/// These are the configurations that serve as references
-  std::vector<ReferenceConfiguration*> frames; 
-/// The names of the projection coordinates
-  std::vector<std::string> property;
+/// This holds all the reference information
+  PointWiseMapping* mymap;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
 protected:
 /// The (transformed) distance from each frame
   std::vector<double> fframes;
-/// These are where the reference configurations should be projected
-  std::vector< std::vector<double> > low_dim;  // N.B. These are protected for a reason
 /// Get the number of frames in the path
   unsigned getNumberOfReferencePoints() const ;
 /// Calculate the value of the distance from the ith frame
@@ -93,13 +88,15 @@ public:
   double getCurrentHighDimFunctionValue( const unsigned& ider ) const ;
 /// Perform chain rule for derivatives
   void mergeDerivatives( const unsigned& , const double& );
+/// Stuff to do before we do the calculation
+  void prepare();
 /// Apply the forces 
   void apply();
 };
 
 inline
 unsigned Mapping::getNumberOfReferencePoints() const {
-  return low_dim.size();
+  return mymap->getNumberOfMappedPoints();   
 }
 
 inline
@@ -123,33 +120,32 @@ void Mapping::unlockRequests(){
 
 inline
 unsigned Mapping::getNumberOfProperties() const {
-  return property.size();
+  return mymap->getNumberOfProperties();   
 }
 
 inline
 std::string Mapping::getPropertyName( const unsigned& iprop ) const {
-  plumed_dbg_assert( iprop<property.size() );
-  return property[iprop];
+  return mymap->getPropertyName(iprop);  
 }
 
 inline
 double Mapping::getPropertyValue( const unsigned& iprop ) const {
   plumed_dbg_assert( iprop<property.size() );
-  return low_dim[getCurrentTask()][iprop];
+  return mymap->getPropertyValue( getCurrentTask(), iprop ); 
 }
 
 inline 
 double Mapping::getCurrentHighDimFunctionValue( const unsigned& ider ) const {
   plumed_dbg_assert( ider<2 );
-  return fframes[ider*low_dim.size() + getCurrentTask()];
+  return fframes[ider*getNumberOfReferencePoints() + getCurrentTask()];
 }
 
 inline
 void Mapping::storeDistanceFunction( const unsigned& ifunc ){
-  plumed_dbg_assert( ifunc<low_dim.size() );
-  unsigned storef=low_dim.size()+ifunc;
+  plumed_dbg_assert( ifunc<getNumberOfReferencePoints() );
+  unsigned storef=getNumberOfReferencePoints()+ifunc;
   fframes[storef]=fframes[ifunc]; dfframes[storef]=dfframes[ifunc];
-  frames[storef]->copyDerivatives( frames[ifunc] );
+  mymap->copyFrameDerivatives( ifunc, storef );
 }
 
 }

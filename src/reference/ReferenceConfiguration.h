@@ -59,6 +59,8 @@ friend class SingleDomainRMSD;
 private:
 /// The name of this particular config
   std::string name;
+/// A weight assigned to this particular frame
+  double weight;
 /// A vector containing all the remarks from the pdb input
   std::vector<std::string> line;
 protected:
@@ -91,6 +93,8 @@ public:
   virtual void set( const PDB& );
 /// Do all local business for setting the configuration 
   virtual void read( const PDB& )=0;
+/// Return the weight for this frame
+  double getWeight() const ;
 /// Calculate the distance from the reference configuration
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const bool& squared=false );
 /// Calculate the distance from the reference configuration
@@ -135,6 +139,11 @@ inline
 double ReferenceConfiguration::getArgumentDerivative( const unsigned& ider ) const {
   plumed_dbg_assert( ider<arg_ders.size() );
   return arg_ders[ider];
+}
+
+inline
+double ReferenceConfiguration::getWeight() const {
+  return weight;
 }
 
 template<class T>
