@@ -22,6 +22,7 @@
 #ifndef __PLUMED_tools_DynamicList_h
 #define __PLUMED_tools_DynamicList_h
 
+#include <vector>
 #include "Communicator.h"
 
 namespace PLMD {
