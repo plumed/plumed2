@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "vesselbase/VesselRegister.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "tools/DynamicList.h"
 #include "MultiColvar.h"
 #include "MultiColvarFunction.h"
 #include "StoreCentralAtomsVessel.h"
@@ -37,7 +38,7 @@ nspace(1 + 3*CATOMS_MAXATOMS)
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_assert( mycolv );
   // Resize the active derivative lists
-  active_atoms.resize( mycolv->colvar_atoms.size() );
+  active_atoms.resize( mycolv->colvar_atoms.size() + mycolv->colvar_atoms.size()*CATOMS_MAXATOMS );
 }
 
 void StoreCentralAtomsVessel::resize(){
@@ -49,13 +50,10 @@ void StoreCentralAtomsVessel::resize(){
   }
   start[nfunc]=bsize;
   resizeBuffer( bsize ); 
-  // Update the active_derivative lists
-  for(unsigned i=0;i<active_atoms.size();++i){
-     active_atoms[i].clear(); active_atoms[i].setupMPICommunication( comm );
-     for(unsigned j=0;j<mycolv->getNumberOfAtoms();++j){
-         active_atoms[i].addIndexToList(j);
-     }
-  }
+}
+
+void StoreCentralAtomsVessel::prepare(){
+  active_atoms.assign( active_atoms.size(),0 );
 }
 
 bool StoreCentralAtomsVessel::calculate(){
@@ -71,22 +69,23 @@ bool StoreCentralAtomsVessel::calculate(){
     "increase CATOMS_MAXATOMS in StoreCentralAtomsVessel");
 
   // Store the derivatives
-  active_atoms[mycolv->current].deactivateAll();
+  unsigned atom_der_index=0; unsigned atom_der_index_start = mycolv->colvar_atoms.size() + mycolv->current*CATOMS_MAXATOMS;
   for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j){
       unsigned n=mycolv->atomsWithCatomDer[j]; 
-      active_atoms[mycolv->current].activate(n); 
+      active_atoms[ atom_der_index_start + atom_der_index ] = n; atom_der_index++;
       ibuf = start[mycolv->current] + 1 + 3*j;       
       for(unsigned i=0;i<3;++i){
           for(unsigned k=0;k<3;++k) addToBufferElement( ibuf+k, mycolv->central_derivs[n](i,k) );
           ibuf += nspace;
       }
   }
+  active_atoms[mycolv->current] = atom_der_index;
 
   return true;
 }
 
 void StoreCentralAtomsVessel::finish(){
-  mpi_gatherActiveMembers( comm, active_atoms );
+  comm.Sum( &active_atoms[0], active_atoms.size() );
 }
 
 Vector StoreCentralAtomsVessel::getPosition( const unsigned& ivec ) const {
@@ -103,8 +102,8 @@ Vector StoreCentralAtomsVessel::getPosition( const unsigned& ivec ) const {
 void StoreCentralAtomsVessel::addAtomsDerivatives( const unsigned& iatom, const Vector& df, MultiColvarFunction* funcout ) const {
   plumed_dbg_assert( iatom<mycolv->colvar_atoms.size() );
 
-  Vector thisder;
-  for(unsigned ider=0;ider<active_atoms[iatom].getNumberActive();++ider){
+  Vector thisder; unsigned atom_der_index_start = mycolv->colvar_atoms.size() + iatom*CATOMS_MAXATOMS;
+  for(unsigned ider=0;ider<active_atoms[iatom];++ider){
       unsigned ibuf=start[iatom] + 1 + 3*ider; thisder.zero();
       for(unsigned jcomp=0;jcomp<3;++jcomp){
           thisder[0]+=df[jcomp]*getBufferElement(ibuf);
@@ -112,7 +111,7 @@ void StoreCentralAtomsVessel::addAtomsDerivatives( const unsigned& iatom, const 
           thisder[2]+=df[jcomp]*getBufferElement(ibuf+2);
           ibuf+=nspace;
       }
-      unsigned jatom = active_atoms[iatom][ider];
+      unsigned jatom = active_atoms[ atom_der_index_start + ider ];
       funcout->addAtomsDerivatives( jatom, thisder );
   }
 }
@@ -120,8 +119,8 @@ void StoreCentralAtomsVessel::addAtomsDerivatives( const unsigned& iatom, const 
 void StoreCentralAtomsVessel::addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& df, MultiColvarFunction* funcout ) const {
   plumed_dbg_assert( iatom<mycolv->colvar_atoms.size() );
  
-  Vector thisder; 
-  for(unsigned ider=0;ider<active_atoms[iatom].getNumberActive();++ider){
+  Vector thisder; unsigned atom_der_index_start = mycolv->colvar_atoms.size() + iatom*CATOMS_MAXATOMS;
+  for(unsigned ider=0;ider<active_atoms[iatom];++ider){
       unsigned ibuf=start[iatom] + 1 + 3*ider; thisder.zero();
       for(unsigned jcomp=0;jcomp<3;++jcomp){
           thisder[0]+=df[jcomp]*getBufferElement(ibuf);
@@ -129,7 +128,7 @@ void StoreCentralAtomsVessel::addAtomsDerivativeOfWeight( const unsigned& iatom,
           thisder[2]+=df[jcomp]*getBufferElement(ibuf+2);
           ibuf+=nspace;
       }   
-      unsigned jatom = active_atoms[iatom][ider];
+      unsigned jatom = active_atoms[ atom_der_index_start + ider];
       funcout->addAtomsDerivativeOfWeight( jatom, thisder );
   }   
 }
@@ -137,19 +136,18 @@ void StoreCentralAtomsVessel::addAtomsDerivativeOfWeight( const unsigned& iatom,
 void StoreCentralAtomsVessel::addDerivativeOfCentralAtomPos( const unsigned& iatom, const Tensor& df, MultiColvarFunction* funcout ) const {
   plumed_dbg_assert( iatom<mycolv->colvar_atoms.size() );
 
-  Tensor thisder;
-  for(unsigned ider=0;ider<active_atoms[iatom].getNumberActive();++ider){
+  Tensor thisder; unsigned atom_der_index_start = mycolv->colvar_atoms.size() + iatom*CATOMS_MAXATOMS;
+  for(unsigned ider=0;ider<active_atoms[iatom];++ider){
      unsigned ibuf=start[iatom] + 1 + 3*ider; thisder.zero();
      for(unsigned jcomp=0;jcomp<3;++jcomp){
          for(unsigned kcomp=0;kcomp<3;++kcomp){
              for(unsigned k=0;k<3;++k) thisder(jcomp,kcomp)+=df(jcomp,k)*getBufferElement(ibuf+k*nspace+kcomp);
          }
      }
-     unsigned jatom = active_atoms[iatom][ider];
+     unsigned jatom = active_atoms[ atom_der_index_start + ider];
      funcout->addCentralAtomDerivatives( jatom, thisder );
   }
 }     
-
 
 }
 }

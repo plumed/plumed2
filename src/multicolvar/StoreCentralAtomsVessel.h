@@ -22,7 +22,6 @@
 #ifndef __PLUMED_multicolvar_StoreCentralAtomsVessel_h
 #define __PLUMED_multicolvar_StoreCentralAtomsVessel_h
 
-#include "tools/DynamicList.h"
 #include "vesselbase/Vessel.h" 
 
 namespace PLMD {
@@ -36,7 +35,7 @@ private:
   MultiColvarBase* mycolv;
   std::vector<unsigned> start;
   unsigned nspace;
-  std::vector< DynamicList<unsigned> > active_atoms;
+  std::vector<unsigned> active_atoms;
 public:
 /// Constructor
   StoreCentralAtomsVessel( const vesselbase::VesselOptions& );
@@ -50,6 +49,8 @@ public:
   void finish();
 /// This does nothing
   bool applyForce(std::vector<double>&){ return false; }
+/// Clear index arrays
+  void prepare();
 /// This makes sure all vectors are stored
   bool calculate();
 /// Get the orientation of the ith vector
