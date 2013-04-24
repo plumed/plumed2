@@ -69,7 +69,7 @@ PLUMED_REGISTER_CLTOOL(GenTemplate,"gentemplate")
 
 void GenTemplate::registerKeywords( Keywords& keys ){
   CLTool::registerKeywords( keys );
-  keys.add("compulsory","--action","print the template for this particular action");
+  keys.add("optional","--action","print the template for this particular action");
   keys.addFlag("--list",false,"print a list of the available actions");
   keys.addFlag("--include-optional",false,"also print optional modifiers");
 }
@@ -93,7 +93,7 @@ int GenTemplate::main(FILE* in, FILE*out,Communicator& pc){
    bool include_optional;
    parseFlag("--include-optional",include_optional);
    if( !actionRegister().printTemplate(action,include_optional) ){
-       fprintf(stderr,"specified action is not registered\n");
+       error("there is no registered action named " + action);  
        return 1; 
    }
  } else return 1;

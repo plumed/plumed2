@@ -11,7 +11,9 @@ SUBDIRSCLEAN=$(addsuffix .clean,$(SUBDIRS))
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
-all: $(SRCDIRS)
+all:
+	$(MAKE) lib
+	$(MAKE) -C test
 
 lib:
 	$(MAKE)	-C src
