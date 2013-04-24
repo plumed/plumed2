@@ -361,18 +361,20 @@ void Keywords::print( FILE* out ) const {
   for(unsigned i=0;i<keys.size();++i){
      if ( (types.find(keys[i])->second).isCompulsory() ) nkeys++;
   }
+  unsigned ncompulsory=nkeys;
   if( nkeys>0 ){
      fprintf(out,"\nThe following arguments are compulsory: \n\n");
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isCompulsory() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
      }
   }
-  nkeys=0;
+  nkeys=0; 
   for(unsigned i=0;i<keys.size();++i){
-     if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
+     if ( (types.find(keys[i])->second).isFlag() ) nkeys++; 
   }
   if( nkeys>0 ){
-     fprintf( out,"\nIn addition you may use the following options: \n\n");
+     if(ncompulsory>0) fprintf( out,"\nIn addition you may use the following options: \n\n");
+     else fprintf( out,"\nThe following options are available\n\n");
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isFlag() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
      }
