@@ -97,7 +97,6 @@ void Pbc::fullSearch(Vector&d)const{
 
 void Pbc::setBox(const Tensor&b){
   box=b;
-// UP TO NOW ONLY WORKS WITH ORTHOROMIBIC (should implement matrix inversion)
 // detect type:
   const double epsilon=1e-28;
 
