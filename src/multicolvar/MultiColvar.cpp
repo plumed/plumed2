@@ -54,7 +54,6 @@ void MultiColvar::registerKeywords( Keywords& keys ){
 MultiColvar::MultiColvar(const ActionOptions&ao):
 Action(ao),
 MultiColvarBase(ao),
-readatoms(false),
 verbose_output(false)
 {
   parseFlag("VERBOSE",verbose_output);
@@ -74,13 +73,13 @@ void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("GROUP") ) readGroupsKeyword( natoms );
   if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms );
 
-  if( !readatoms ) error("No atoms have been read in");
+  if( all_atoms.fullSize()==0 ) error("No atoms have been read in");
   // Setup the multicolvar base
   setupMultiColvarBase();
 }
 
 void MultiColvar::readAtomsLikeKeyword( const std::string key, int& natoms ){ 
-  if( readatoms) return; 
+  if( all_atoms.fullSize()>0 ) return; 
 
   std::vector<AtomNumber> t; std::vector<unsigned> newlist;
   for(int i=1;;++i ){
@@ -103,12 +102,12 @@ void MultiColvar::readAtomsLikeKeyword( const std::string key, int& natoms ){
         all_atoms.addIndexToList( t[j] );
      }
      t.resize(0); addColvar( newlist );
-     newlist.clear(); readatoms=true;
+     newlist.clear(); 
   }
 }
 
 void MultiColvar::readGroupsKeyword( int& natoms ){
-  if( readatoms ) return;
+  if( all_atoms.fullSize()>0 ) return;
 
   if( natoms==2 ){
       if( !keywords.exists("GROUPA") ) error("use GROUPA and GROUPB keywords as well as GROUP");
@@ -124,7 +123,6 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
   std::vector<AtomNumber> t;
   parseAtomList("GROUP",t);
   if( !t.empty() ){
-      readatoms=true;
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
       std::vector<unsigned> newlist;
       if(natoms==2){ 
@@ -153,7 +151,6 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
       std::vector<AtomNumber> t1,t2; 
       parseAtomList("GROUPA",t1);
       if( !t1.empty() ){
-         readatoms=true;
          parseAtomList("GROUPB",t2);
          if ( t2.empty() && natoms==2 ) error("GROUPB keyword defines no atoms or is missing. Use either GROUPA and GROUPB or just GROUP"); 
          for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] ); 
@@ -208,12 +205,12 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
 }
 
 void MultiColvar::readSpeciesKeyword( int& natoms ){
-  if( readatoms ) return ;
+  if( all_atoms.fullSize()>0 ) return ;
 
   std::vector<AtomNumber> t;
   parseAtomList("SPECIES",t);
   if( !t.empty() ){
-      readatoms=true; natoms=t.size();
+      natoms=t.size();
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
       std::vector<unsigned> newlist;
       if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ){
@@ -245,7 +242,6 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
       std::vector<AtomNumber> t1,t2;
       parseAtomList("SPECIESA",t1);
       if( !t1.empty() ){
-         readatoms=true; 
          parseAtomList("SPECIESB",t2);
          if ( t2.empty() ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
          natoms=1+t2.size();
@@ -285,6 +281,7 @@ void MultiColvar::resizeDynamicArrays(){
 }
 
 void MultiColvar::calculate(){
+  if( checkNumericalDerivatives() ) calculationsRequiredBeforeNumericalDerivatives();
   runAllTasks();
 }
 

@@ -83,6 +83,7 @@ public:
   virtual double compute( const unsigned& j );
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
+  unsigned getNumberOfAtomsInCentralAtomDerivatives(){ return 2; }
   Vector getCentralAtom();
 };
 

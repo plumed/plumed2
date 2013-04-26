@@ -38,15 +38,12 @@ thereof, whtin it there is \ref AddingAMultiColvar "information" as to how to go
 
 class MultiColvar : public MultiColvarBase {
 private:
-/// Have atoms been read in
-  bool readatoms;
+/// Do we want lots of details in the output
   bool verbose_output;
 /// Read in the various GROUP keywords
   void readGroupsKeyword( int& natoms );
 /// Read in the various SPECIES keywords
   void readSpeciesKeyword( int& natoms );
-/// Update the atoms request
-  void requestAtoms();
 protected:
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
@@ -60,14 +57,19 @@ protected:
   void addAtomsDerivativeOfWeight( const unsigned& i, const Vector& wder );
 /// Add derivatives to the central atom position
   void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
+/// Get the index of an atom
+   unsigned getAtomIndex( const unsigned& iatom ) const ;
 public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){};
   static void registerKeywords( Keywords& keys );
 /// Resize all the dynamic arrays (used at neighbor list update time and during setup)
-  void resizeDynamicArrays();
+  virtual void resizeDynamicArrays();
 /// Get the position of atom iatom
   const Vector & getPosition(unsigned) const;
+/// This is used in VectorMultiColvar.  In there we use a MultiColvar as if it is 
+/// a MultiColvarFunction so we can calculate functions of vectors that output functions
+  virtual void calculationsRequiredBeforeNumericalDerivatives(){}
 /// Calculate the multicolvar
   virtual void calculate();
 /// Do the calculation
@@ -85,6 +87,12 @@ public:
 /// Get the absolute index of atom iatom
   AtomNumber getAbsoluteIndex(unsigned) const ;
 };
+
+inline
+unsigned MultiColvar::getAtomIndex( const unsigned& iatom ) const {
+  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
+  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
+}
 
 inline
 const Vector & MultiColvar::getPosition( unsigned iatom ) const {

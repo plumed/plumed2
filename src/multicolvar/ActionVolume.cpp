@@ -100,7 +100,7 @@ void ActionVolume::doJobsRequiredBeforeTaskList(){
 }
 
 void ActionVolume::prepare(){
-  if( contributorsAreUnlocked ) lockContributors();
+  if( areContributorsUnlocked() ) lockContributors();
   if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
       if( !mycolv->isDensity() ){
           mycolv->taskList.activateAll();
@@ -108,7 +108,7 @@ void ActionVolume::prepare(){
           mycolv->unlockContributors(); mycolv->resizeDynamicArrays();
           plumed_dbg_assert( mycolv->getNumberOfVessels()==0 );
       } else {
-          plumed_massert( mycolv->contributorsAreUnlocked, "contributors are not unlocked in base multicolvar" );
+          plumed_massert( mycolv->areContributorsUnlocked(), "contributors are not unlocked in base multicolvar" );
       }
       unlockContributors(); 
   }

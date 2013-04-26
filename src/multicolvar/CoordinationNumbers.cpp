@@ -71,6 +71,7 @@ public:
   CoordinationNumbers(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& j ); 
+  unsigned getNumberOfAtomsInCentralAtomDerivatives(){ return 1; }
   Vector getCentralAtom();
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }

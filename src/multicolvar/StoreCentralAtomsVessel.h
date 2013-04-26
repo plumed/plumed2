@@ -32,9 +32,13 @@ class MultiColvarFunction;
 
 class StoreCentralAtomsVessel : public vesselbase::Vessel {
 private:
+/// The base multicolvar
   MultiColvarBase* mycolv;
-  std::vector<unsigned> start;
+// The number of derivatives for each central atom
+  unsigned nder_atoms;
+// 3*nder_atoms + 1 (the number of scalars stored per central_atom)
   unsigned nspace;
+/// A list that is used to store the indices of the derivatives
   std::vector<unsigned> active_atoms;
 public:
 /// Constructor
@@ -61,7 +65,12 @@ public:
   void addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& df, MultiColvarFunction* funcout  ) const ; 
 /// Add derivative to the central atom position
   void addDerivativeOfCentralAtomPos( const unsigned& iatom, const Tensor& df, MultiColvarFunction* funcout ) const ;
+/// Get the index of the derivative
+  unsigned getDerivativeIndex( const unsigned& iatom, const unsigned& jder ) const ;
+/// Get the value of the derivatives wrt to the central atom position
+  Tensor getDerivatives( const unsigned& iatom, const unsigned& jder ) const ;
 };
+
 
 }
 }
