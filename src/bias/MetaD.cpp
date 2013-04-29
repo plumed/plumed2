@@ -290,7 +290,7 @@ isFirstStep(true)
   // Multiple walkers
   parse("WALKERS_N",mw_n_);
   parse("WALKERS_ID",mw_id_);
-  if(mw_n_>1) error("walker ID should be a numerical value less than the total number of walkers"); // plumed_assert(mw_n_>mw_id_);}
+  if(mw_n_<=mw_id_) error("walker ID should be a numerical value less than the total number of walkers");
   parse("WALKERS_DIR",mw_dir_);
   parse("WALKERS_RSTRIDE",mw_rstride_);
 
