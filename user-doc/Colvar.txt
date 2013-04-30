@@ -27,6 +27,18 @@ could also be specified using:
 TORIONS ATOMS=1-4
 \endverbatim
 
+Ranges of atom can also be defined with a stride. For example:
+
+\verbatim
+COM ATOMS=1,11,21,31,41,51
+\endverbatim
+
+could also be specified using:
+
+\verbatim
+COM ATOMS=1-51:10
+\endverbatim
+
 In addition, for certain colvars, pdb files can be read in using the following keywords:
 
 @TOPOLOGY@
