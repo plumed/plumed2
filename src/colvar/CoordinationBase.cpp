@@ -83,10 +83,12 @@ reduceListAtNextStep(false)
   log.printf("  between two groups of %d and %d atoms\n",ga_lista.size(),gb_lista.size());
   log.printf("  first group:\n");
   for(unsigned int i=0;i<ga_lista.size();++i){
+   if ( (i+1) % 25 == 0 ) log.printf("  \n");
    log.printf("  %d", ga_lista[i].serial());
   }
   log.printf("  \n  second group:\n");
   for(unsigned int i=0;i<gb_lista.size();++i){
+   if ( (i+1) % 25 == 0 ) log.printf("  \n");
    log.printf("  %d", gb_lista[i].serial());
   }
   log.printf("  \n");
