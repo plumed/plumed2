@@ -234,14 +234,26 @@ void Tools::interpretRanges(std::vector<std::string>&s){
     vector<string> words;
     words=getWords(*p,"-");
     int a,b;
-    if(words.size()==2 && convert(words[0],a) && convert(words[1],b)){
-      plumed_massert(b>=a,"interpreting range \"" + words[0] + "-" + words[1] +"\", second atom should have higher index than first atom");
-      for(int i=a;i<=b;i++){
-        string ss;
-        convert(i,ss);
-        news.push_back(ss);
+    int c=1;
+    bool found=false;
+    if(words.size()==2 && convert(words[0],a)){
+      vector<string> bwords=getWords(words[1],":");
+      if(bwords.size()==2 && convert(bwords[0],b) && convert(bwords[1],c)) found=true;
+      else if(convert(words[1],b)){
+        c=1;
+        found=true;
       }
-    }else news.push_back(*p);
+      if(found){
+        plumed_massert(b>=a,"interpreting ranges "+ *p + ", second number should be larger than first number");
+        plumed_massert(c>0,"interpreting ranges "+ *p + ", stride should be positive");
+        for(int i=a;i<=b;i+=c){
+          string ss;
+          convert(i,ss);
+          news.push_back(ss);
+        }
+      }
+    }
+    if(!found) news.push_back(*p);
   }
   s=news;
 }
