@@ -204,4 +204,5 @@ Erik Lindahl, 2008-10-07.
 #define plumed_lapack_slarfg PLUMED_BLAS_F77_FUNC(slarfg,SLARFG)
 #define plumed_lapack_slagtf PLUMED_BLAS_F77_FUNC(slagtf,SLAGTF)
 #define plumed_lapack_sgeqrf PLUMED_BLAS_F77_FUNC(sgeqrf,SGEQRF)
+#define plumed_lapack_dgesvd PLUMED_BLAS_F77_FUNC(dgesvd,DGESVD)
 #endif

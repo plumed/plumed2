@@ -892,6 +892,10 @@ void
     PLUMED_BLAS_F77_FUNC(sgeqrf, SGEQRF) (int *m, int *n, float *a, int *lda, float *tau,
                               float *work, int *lwork, int *info);
 
+void 
+   PLUMED_BLAS_F77_FUNC(dgesvd, DGESVD)(const char *jobu, const char *jobvt, int *m, int *n, double *a,
+                              int *lda, double *s, double *u, int *ldu, double *vt, int *ldvt, double *work, 
+                              int *lwork, int *info );
 
 }
 #if defined(__PLUMED_INTERNAL_LAPACK) || defined (__PLUMED_INTERNAL_BLAS)

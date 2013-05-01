@@ -27,8 +27,6 @@
 
 namespace PLMD {
 
-class multicolvar::MultiColvarFunction;
-
 namespace crystallization {
 
 class VectorMultiColvar;
