@@ -19,27 +19,28 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ArgumentOnlyDistance.h"
-#include "core/Value.h"
+#include "LandmarkSelectionBase.h"
+#include "LandmarkRegister.h"
 
 namespace PLMD {
+namespace analysis {
 
-ArgumentOnlyDistance::ArgumentOnlyDistance( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ReferenceArguments(ro)
+class CopyAllFrames : public LandmarkSelectionBase {
+public:
+  CopyAllFrames( const LandmarkSelectionOptions& lo );
+  void select( MultiReferenceBase* );
+};
+
+PLUMED_REGISTER_LANDMARKS(CopyAllFrames,"ALL")
+
+CopyAllFrames::CopyAllFrames( const LandmarkSelectionOptions& lo ):
+LandmarkSelectionBase(lo)
 {
 }
 
-double ArgumentOnlyDistance::calculate( const std::vector<Value*>& vals, const bool& squared ){
-  clearDerivatives();
-  if( tmparg.size()!=vals.size() ) tmparg.resize( vals.size() );
-  for(unsigned i=0;i<vals.size();++i) tmparg[i]=vals[i]->get();
-  return calc( vals, tmparg, squared );
+void CopyAllFrames::select( MultiReferenceBase* myframes ){
+  for(unsigned i=0;i<getNumberOfFrames();++i) selectFrame( i, myframes );
 }
 
-double ArgumentOnlyDistance::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
-  plumed_dbg_assert( pos.size()==0 );
-  return calc( vals, arg, squared );
 }
-
 }

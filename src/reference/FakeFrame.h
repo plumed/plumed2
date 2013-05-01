@@ -32,7 +32,7 @@ public PLMD::ReferenceConfiguration
 public:
   FakeFrame( const ReferenceConfigurationOptions& ro ) : ReferenceConfiguration(ro) {}
   void read( const PDB& ){ plumed_merror("should not be called"); }
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const bool& squared ){ 
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){ 
      plumed_merror("should not be called"); return 1.0; 
   }
 };

@@ -35,7 +35,7 @@ void PointWiseMapping::setPropertyNames( const std::vector<std::string>& prop, c
 }
 
 void PointWiseMapping::readRestOfFrame(){
-  plumed_assert( property.size()>0 );
+  plumed_dbg_assert( property.size()>0 );
 
   std::vector<double> labelvals;
   if( !ispath ){
@@ -46,7 +46,15 @@ void PointWiseMapping::readRestOfFrame(){
       labelvals[0]=static_cast<double>( frames.size() ); 
   }
   low_dim.push_back( labelvals ); 
+  plumed_dbg_assert( low_dim.size()==getNumberOfReferenceFrames() );
 } 
+
+void PointWiseMapping::resizeRestOfFrame(){
+  plumed_dbg_assert( property.size()>0 );
+  std::vector<double> labelvals( property.size() );
+  low_dim.push_back( labelvals );
+  plumed_dbg_assert( low_dim.size()==getNumberOfReferenceFrames() );
+}
 
 void PointWiseMapping::getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args ){
   plumed_assert( atoms.size()==0 && args.size()==0 );
@@ -77,5 +85,15 @@ unsigned PointWiseMapping::getPropertyIndex( const std::string& name ) const {
   plumed_merror("no property with name " + name + " found");
   return 0;
 }
+
+void PointWiseMapping::print( const std::string& method, const unsigned& time, OFile& afile ){
+  afile.printf("DESCRIPTION: results from %s analysis performed at time %f\n", method.c_str(), time );
+  for(unsigned i=0;i<frames.size();++i){
+      afile.printf("REMARK: WEIGHT=%f %s=%f ", weights[i], property[0].c_str(), low_dim[i][0] );
+      for(unsigned j=1;j<property.size();++j) afile.printf("%s=%f ", property[j].c_str(), low_dim[i][j]);
+      afile.printf("\n"); 
+      frames[i]->print( afile );
+  }
+} 
 
 }

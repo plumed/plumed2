@@ -36,11 +36,10 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ){
   parseVector( "ARG", arg_names );
 
   reference_args.resize( arg_names.size() );
-  metric.resize( arg_names.size(), arg_names.size() );
   for(unsigned i=0;i<arg_names.size();++i) parse( arg_names[i], reference_args[i] );
 
   if( hasmetric ){
-      double thissig;
+      double thissig; metric.resize( arg_names.size(), arg_names.size() );
       for(unsigned i=0;i<reference_args.size();++i){
           for(unsigned j=i;j<reference_args.size();++j){
               parse( "sigma_" + arg_names[i] + "_" + arg_names[j], thissig );
@@ -50,19 +49,19 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ){
   }
 }
 
-void ReferenceArguments::setArgumentNames( const std::vector<Value*>& arg_vals ){
+void ReferenceArguments::setArgumentNames( const std::vector<std::string>& arg_vals ){
   reference_args.resize( arg_vals.size() ); 
   arg_names.resize( arg_vals.size() ); 
   der_index.resize( arg_vals.size() );
   for(unsigned i=0;i<arg_vals.size();++i){
-     arg_names[i]=arg_vals[i]->getName(); der_index[i]=i; 
+     arg_names[i]=arg_vals[i]; der_index[i]=i; 
   }
   if( hasmetric ) metric.resize( arg_vals.size(), arg_vals.size() );
 }
 
-void ReferenceArguments::setReferenceArguments( const std::vector<Value*>& arg_vals, const std::vector<double>& sigma ){
+void ReferenceArguments::setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma ){
   plumed_dbg_assert( reference_args.size()==arg_vals.size() );
-  for(unsigned i=0;i<arg_vals.size();++i) reference_args[i]=arg_vals[i]->get();
+  for(unsigned i=0;i<arg_vals.size();++i) reference_args[i]=arg_vals[i];
   
   if( hasmetric ){
      unsigned k=0;
@@ -116,17 +115,32 @@ void ReferenceArguments::printArguments( OFile& ofile ) const {
   ofile.printf("\n");
 }
 
-double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> vals, const bool& squared ){
+const std::vector<double>& ReferenceArguments::getReferenceMetric(){
+  if( hasmetric ){
+     unsigned ntot=(reference_args.size() / 2 )*(reference_args.size()+1);
+     if( trig_metric.size()!=ntot ) trig_metric.resize( ntot );
+     unsigned k=0;
+     for(unsigned i=0;i<reference_args.size();++i){
+         for(unsigned j=i;j<reference_args.size();++j){
+             plumed_dbg_assert( fabs( metric(i,j)-metric(j,i) ) < epsilon );
+             trig_metric[k]=metric(i,j); k++;
+         }
+     }
+  }
+  return trig_metric;
+}
+
+double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> vals, const std::vector<double>& arg, const bool& squared ){
   double r=0;
   if( hasmetric ){
       double dp_i, dp_j;
       for(unsigned i=0;i<reference_args.size();++i){
           unsigned ik=der_index[i]; arg_ders[ ik ]=0;
-          dp_i=vals[ik]->difference( reference_args[i] );
+          dp_i=vals[ik]->difference( reference_args[i], arg[ik] );
           for(unsigned j=0;j<reference_args.size();++j){
              unsigned jk=der_index[j];
              if(i==j) dp_j=dp_i;
-             else dp_j=vals[jk]->difference( reference_args[j], vals[jk]->get() );
+             else dp_j=vals[jk]->difference( reference_args[j], arg[jk] );
 
              arg_ders[ ik ]+=metric(i,j)*dp_j;
              r+=dp_i*dp_j*metric(i,j);
@@ -136,7 +150,7 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
       double dp_i;
       for(unsigned i=0;i<reference_args.size();++i){
           unsigned ik=der_index[i];
-          dp_i=vals[ik]->difference( reference_args[i], vals[ik]->get() );
+          dp_i=vals[ik]->difference( reference_args[i], arg[ik] );
           r+=dp_i*dp_i; arg_ders[ik]=dp_i;
       }
   }

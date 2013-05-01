@@ -19,27 +19,42 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "ArgumentOnlyDistance.h"
-#include "core/Value.h"
+#ifndef __PLUMED_analysis_AnalysisWithLandmarks_h
+#define __PLUMED_analysis_AnalysisWithLandmarks_h
+
+#include "Analysis.h"
 
 namespace PLMD {
 
-ArgumentOnlyDistance::ArgumentOnlyDistance( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro),
-ReferenceArguments(ro)
-{
-}
+class MultiReferenceBase;
 
-double ArgumentOnlyDistance::calculate( const std::vector<Value*>& vals, const bool& squared ){
-  clearDerivatives();
-  if( tmparg.size()!=vals.size() ) tmparg.resize( vals.size() );
-  for(unsigned i=0;i<vals.size();++i) tmparg[i]=vals[i]->get();
-  return calc( vals, tmparg, squared );
-}
+namespace analysis {
 
-double ArgumentOnlyDistance::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
-  plumed_dbg_assert( pos.size()==0 );
-  return calc( vals, arg, squared );
-}
+class LandmarkSelectionBase;
+
+class AnalysisWithLandmarks : public Analysis {
+friend class LandmarkSelectionBase;
+private:
+/// This object selects landmarks from the data
+  LandmarkSelectionBase* landmarkSelector;
+/// A pointer to the data we are analyzing             
+  MultiReferenceBase* data_to_analyze;
+protected:
+/// Set the data that needs to be analyzed
+  void setDataToAnalyze( MultiReferenceBase* mydata );
+/// Return the number of landmarks we are selecting
+  unsigned getNumberOfLandmarks() const ;
+public:
+  static void registerKeywords( Keywords& keys );
+  AnalysisWithLandmarks( const ActionOptions& );
+  ~AnalysisWithLandmarks();
+/// Do the analysis
+  void performAnalysis();
+  virtual void analyzeLandmarks()=0;
+/// This does nothing
+  void performTask();
+};
 
 }
+}
+#endif

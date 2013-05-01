@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiReferenceBase.h"
+#include "tools/Communicator.h"
 #include "MetricRegister.h"
 
 namespace PLMD {
@@ -36,6 +37,11 @@ MultiReferenceBase::~MultiReferenceBase(){
   for(unsigned i=0;i<frames.size();++i) delete frames[i];
 }
 
+void MultiReferenceBase::clearFrames(){
+  for(unsigned i=0;i<frames.size();++i) delete frames[i];
+  frames.resize(0); weights.resize(0);
+}
+
 void MultiReferenceBase::readFrame( PDB& mypdb ){
   wasSet=true; 
   // If skipchecks are enabled metric types must be specified in the input file
@@ -50,6 +56,32 @@ void MultiReferenceBase::readFrame( PDB& mypdb ){
   readRestOfFrame();
   // Check readin was succesfull
   mymsd->checkRead();
+}
+
+void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy, const double& weight ){
+  // Create a reference configuration of the appropriate type
+  ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( frameToCopy->getName() );
+  // Copy names of arguments and and indexes
+  mymsd->setNamesAndAtomNumbers( frameToCopy->getAbsoluteIndexes(), frameToCopy->getArgumentNames() );
+  // Copy reference positions, reference arguments and reference metric
+  mymsd->setReference( frameToCopy->getReferencePositions(), frameToCopy->getReferenceArguments(), frameToCopy->getReferenceMetric() );
+  // Easy bit - copy the weight and store the frame
+  frames.push_back( mymsd ); weights.push_back( weight );
+  plumed_dbg_assert( weight.size()==frames.size() );
+  // This resizes the low dim array
+  resizeRestOfFrame();
+}
+
+void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> vals, Communicator& comm, Matrix<double>& distances ){
+  distances=0.0;
+  unsigned k=0, size=comm.Get_size(), rank=comm.Get_rank(); 
+  for(unsigned i=1;i<frames.size();++i){
+      for(unsigned j=0;j<i;++j){
+          if( (k++)%size!=rank ) continue;         
+          distances(i,j) = distances(j,i) = distance( pbc, vals, frames[i], frames[j], false );
+      }
+  }
+//  comm.Sum( distances );
 }
 
 }

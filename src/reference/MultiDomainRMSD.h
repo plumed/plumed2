@@ -44,7 +44,7 @@ public:
 /// Read in the input from a pdb
   void read( const PDB& );
 /// Calculate
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const bool& squared );
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc,  const bool& squared );
 };
 

@@ -64,8 +64,8 @@ double SingleDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& p
   return calc( pos, pbc, squared );
 }
 
-double SingleDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const bool& squared ){
-  plumed_dbg_assert( vals.size()==0 && pos.size()==getNumberOfAtoms() );
+double SingleDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
+  plumed_dbg_assert( vals.size()==0 && pos.size()==getNumberOfAtoms() && arg.size()==0 );
   return calc( pos, pbc, squared );
 }
 

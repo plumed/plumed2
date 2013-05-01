@@ -56,6 +56,7 @@ public:
 
 class ReferenceConfiguration {
 friend class SingleDomainRMSD;
+friend double distance( const Pbc& pbc, const std::vector<Value*> vals, ReferenceConfiguration*, ReferenceConfiguration*, const bool& squared );
 private:
 /// The name of this particular config
   std::string name;
@@ -63,6 +64,15 @@ private:
   double weight;
 /// A vector containing all the remarks from the pdb input
   std::vector<std::string> line;
+/// This is used to store the values of arguments
+  std::vector<double> tmparg;
+/// These are used to do fake things when we copy frames
+  std::vector<AtomNumber> fake_atom_numbers;
+  std::vector<std::string> fake_arg_names;
+/// These are use by the distance function above
+  std::vector<Vector> fake_refatoms;
+  std::vector<double> fake_refargs;
+  std::vector<double> fake_metric;
 protected:
 /// Derivatives wrt to the arguments
   std::vector<double> arg_ders;
@@ -71,8 +81,6 @@ protected:
   Tensor virial;
 /// Derivatives wrt to the atoms
   std::vector<Vector> atom_ders;
-/// Return the name of this metric
-  std::string getName() const ;
 /// Crash with an error
   void error(const std::string& msg);
 /// Clear the derivatives 
@@ -81,6 +89,8 @@ public:
   ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
 /// Destructor
   virtual ~ReferenceConfiguration();
+/// Return the name of this metric
+  std::string getName() const ;
 /// Retrieve the atoms that are required for this guy
   virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false ){}
 /// Retrieve the arguments that are required for this guy
@@ -98,7 +108,7 @@ public:
 /// Calculate the distance from the reference configuration
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const bool& squared=false );
 /// Calculate the distance from the reference configuration
-  virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const bool& squared )=0;
+  virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, const bool& squared )=0;
 /// Return the derivative wrt to the ith atom
   Vector getAtomDerivative( const unsigned& ) const ;
 /// Return the derivative wrt to the ith argument
@@ -120,13 +130,22 @@ public:
 /// Copy derivatives from one frame to this frame
   void copyDerivatives( const ReferenceConfiguration* );
 /// Set the atom numbers and the argument names
-  void setNamesAndAtomNumbers( const std::vector<AtomNumber>& numbers, const std::vector<Value*>& arg );
+  void setNamesAndAtomNumbers( const std::vector<AtomNumber>& numbers, const std::vector<std::string>& arg );
 /// Set the reference structure (perhaps should also pass the pbc and align and displace )
-  void setReference( const std::vector<Vector>& pos, const std::vector<Value*>& arg, const std::vector<double>& metric );
+  void setReference( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric );
 /// Print a pdb file containing the reference configuration
   void print( OFile& ofile, const double& time, const double& weight, const double& old_norm );
+  void print( OFile& ofile );
 /// Get one of the referene arguments
   virtual double getReferenceArgument( const unsigned& i ){ plumed_error(); return 0.0; }
+/// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
+/// to make PLMD::distance work
+  virtual const std::vector<Vector>& getReferencePositions();
+  virtual const std::vector<double>& getReferenceArguments(); 
+  virtual const std::vector<double>& getReferenceMetric();
+/// These are overwritten in ReferenceArguments and ReferenceAtoms to make frame copying work
+  virtual const std::vector<AtomNumber>& getAbsoluteIndexes();
+  virtual const std::vector<std::string>& getArgumentNames();
 };
 
 inline
@@ -159,6 +178,33 @@ bool ReferenceConfiguration::parseVector(const std::string&key,std::vector<T>&t,
   if(!ignore_missing && !found)  error(key + " is missing");
   return found;
 }
+
+inline
+const std::vector<Vector>& ReferenceConfiguration::getReferencePositions(){
+  return fake_refatoms;
+}
+
+inline
+const std::vector<double>& ReferenceConfiguration::getReferenceArguments(){
+  return fake_refargs;
+}
+
+inline
+const std::vector<double>& ReferenceConfiguration::getReferenceMetric(){
+  return fake_metric;
+}
+
+inline
+const std::vector<AtomNumber>& ReferenceConfiguration::getAbsoluteIndexes(){
+  return fake_atom_numbers;
+}
+
+inline
+const std::vector<std::string>& ReferenceConfiguration::getArgumentNames(){
+  return fake_arg_names;
+}
+
+
 
 }
 #endif

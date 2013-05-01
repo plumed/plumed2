@@ -110,8 +110,8 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
   return totd;
 }
 
-double MultiDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const bool& squared ){
-  plumed_dbg_assert( vals.size()==0 && pos.size()==getNumberOfAtoms() );
+double MultiDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
+  plumed_dbg_assert( vals.size()==0 && pos.size()==getNumberOfAtoms() && arg.size()==0 );
   return calculate( pos, pbc, squared );
 }
 

@@ -30,6 +30,8 @@ class PointWiseMapping : public MultiReferenceBase {
 private:
 /// This is a path
   bool ispath;
+/// The matrix of interframe distances
+  Matrix<double> dmat;
 /// The names of the projection coordinates
   std::vector<std::string> property;
 /// These are where the reference configurations should be projected
@@ -42,6 +44,8 @@ public:
   bool mappingNeedsSetup() const;
 /// Read in the data from a file 
   void readRestOfFrame();
+/// Resize everything else from a file
+  void resizeRestOfFrame();
 /// Find what is required of us from the reference frames
   void getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args );
 /// Make a second copy of the frame list 
@@ -66,6 +70,10 @@ public:
   double getArgumentDerivative( const unsigned& iframe, const unsigned& jarg );
 /// Copy derivative information from frame number from to frame number to
   void copyFrameDerivatives( const unsigned& from, const unsigned& to );
+/// Get a pointer to the matrix of pairwise distances
+  Matrix<double>& modifyDmat();
+/// Print out the low dimensional mapping
+  void print( const std::string& method, const unsigned& time, OFile& afile );
 };
 
 inline
@@ -115,6 +123,12 @@ bool PointWiseMapping::getVirial( const unsigned& iframe, Tensor& vir ){
 inline
 double PointWiseMapping::getArgumentDerivative( const unsigned& iframe, const unsigned& jarg ){
   return frames[iframe]->getArgumentDerivative(jarg);
+}
+
+inline
+Matrix<double>& PointWiseMapping::modifyDmat(){
+  if( dmat.nrows()!=frames.size() || dmat.ncols()!=frames.size() ) dmat.resize( frames.size(), frames.size() );
+  return dmat;
 }
 
 

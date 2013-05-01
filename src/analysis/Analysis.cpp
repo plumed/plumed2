@@ -94,9 +94,13 @@ needeng(false),
 idata(0),
 firstAnalysisDone(false),
 old_norm(0.0),
-ofmt("%f")
+ofmt("%f"),
+current_args(getNumberOfArguments()),
+argument_names(getNumberOfArguments())
 {
   parse("FMT",ofmt);  // Read the format for output files
+  // Make a vector containing all the argument names
+  for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i]=getPntrToArgument(i)->getName();
   // Read in the metric style
   parse("METRIC",metricname); std::vector<AtomNumber> atom_numbers;
   ReferenceConfiguration* checkref=metricRegister().create<ReferenceConfiguration>( metricname );
@@ -164,13 +168,12 @@ ofmt("%f")
           data.resize( ndata );
           for(unsigned i=0;i<ndata;++i){ 
              data[i]=metricRegister().create<ReferenceConfiguration>( metricname ); 
-             data[i]->setNamesAndAtomNumbers( atom_numbers, getArguments() );
+             data[i]->setNamesAndAtomNumbers( atom_numbers, argument_names );
           }
           logweights.resize( ndata );
           weights.resize( ndata );
       } else {       
           log.printf("  analyzing all data in trajectory\n");
-          args.resize( getNumberOfArguments() );
       }
       if( keywords.exists("NOMEMORY") ){ nomemory=false; parseFlag("NOMEMORY",nomemory); }
       if(nomemory) log.printf("  doing a separate analysis for each block of data\n");
@@ -260,26 +263,26 @@ void Analysis::calculate(){
   // Reweighting because of biases
   if( !biases.empty() ) ww += bias/( plumed.getAtoms().getKBoltzmann()*simtemp );
 
+  // Get the arguments ready to transfer to reference configuration
+  for(unsigned i=0;i<getNumberOfArguments();++i) current_args[i]=getArgument(i);
+
   if(single_run){
-     // Get the arguments and store them in a vector of vectors
-//     for(unsigned i=0;i<getNumberOfArguments();++i) args[i]=getArgument(i);
      data.push_back( metricRegister().create<ReferenceConfiguration>( metricname ) );
      plumed_dbg_assert( data.size()==idata+1 );
-     data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), getArguments() );
-     data[idata]->setReference( getPositions(), getArguments(), getMetric() );
+     data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
+     data[idata]->setReference( getPositions(), current_args, getMetric() );
      logweights.push_back(ww);
   } else {
      // Get the arguments and store them in a vector of vectors
-     data[idata]->setReference( getPositions(), getArguments(), getMetric() );
-//     for(unsigned i=0;i<getNumberOfArguments();++i) data[idata][i]=getArgument(i);
+     data[idata]->setReference( getPositions(), current_args, getMetric() );
      logweights[idata] = ww; 
   }
 
   // Write data to checkpoint file
-  if( write_chq ){ 
-    rfile.rewind(); 
-    data[idata]->print( rfile, getTime(), logweights[idata], old_norm ); 
-    rfile.flush();
+  if( write_chq ){
+     rfile.rewind();
+     data[idata]->print( rfile, getTime(), logweights[idata], old_norm );
+     rfile.flush();
   }
   // Increment data counter
   idata++;

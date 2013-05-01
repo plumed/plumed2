@@ -46,6 +46,7 @@ class ReferenceArguments :
 private:
 /// The N X N matrix we are using to calculate our Malanobius distance
   Matrix<double> metric;
+  std::vector<double> trig_metric;
 /// The values of the colvars in the reference configuration
   std::vector<double> reference_args;
 /// The names of the arguments
@@ -61,25 +62,40 @@ protected:
   void setReferenceArguments();
 /// Calculate the euclidean/malanobius distance the atoms have moved from the reference
 /// configuration in CV space
-  double calculateArgumentDistance( const std::vector<Value*> vals, const bool& squared );
+  double calculateArgumentDistance( const std::vector<Value*> vals, const std::vector<double>& arg, const bool& squared );
 public:
   ReferenceArguments( const ReferenceConfigurationOptions& ro );
 /// Get the arguments required 
   void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false );
 /// Set the names of the arguments
-  void setArgumentNames( const std::vector<Value*>& arg_vals );
+  void setArgumentNames( const std::vector<std::string>& arg_vals );
 /// Set the positions of the refernce arguments
-  void setReferenceArguments( const std::vector<Value*>& arg_vals, const std::vector<double>& sigma );
+  void setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma );
 /// Get the value of the ith reference argument
   double getReferenceArgument( const unsigned& i );
 /// Print the arguments out
   void printArguments( OFile& ofile ) const ;
+/// Return all the reference arguments
+  const std::vector<double>& getReferenceArguments();
+  const std::vector<double>& getReferenceMetric();
+/// Return names
+  const std::vector<std::string>& getArgumentNames();
 };
 
 inline
 double ReferenceArguments::getReferenceArgument( const unsigned& i ){
   plumed_dbg_assert( i<reference_args.size() );
   return reference_args[i];
+}
+
+inline
+const std::vector<double>& ReferenceArguments::getReferenceArguments(){
+  return reference_args;
+}
+
+inline
+const std::vector<std::string>& ReferenceArguments::getArgumentNames(){
+  return arg_names;
 }
 
 }

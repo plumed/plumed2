@@ -100,6 +100,10 @@ public:
   void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
 /// Print the atomic positions
   void printAtoms( OFile& ofile ) const ;
+/// Return all the reference positions
+  const std::vector<Vector>& getReferencePositions();
+/// Return all atom indexes
+  const std::vector<AtomNumber>& getAbsoluteIndexes();
 };
 
 inline
@@ -155,6 +159,17 @@ inline
 void ReferenceAtoms::addBoxDerivatives( const Tensor& vir ){
   virialWasSet=true; virial+=vir;
 }
+
+inline
+const std::vector<Vector>& ReferenceAtoms::getReferencePositions(){
+  return reference_atoms;
+}
+
+inline
+const std::vector<AtomNumber>& ReferenceAtoms::getAbsoluteIndexes(){
+  return indices;
+}
+
 
 }
 #endif
