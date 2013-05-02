@@ -85,14 +85,12 @@ the kernels we can use in this method.
 */
 //+ENDPLUMEDOC
 
-KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const double& w, const bool& norm ):
+KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate, const double& w, const bool norm ):
 center(at),
 width(sig)
 {
-  unsigned ncv=center.size();
-  if( width.size()==ncv ) diagonal=true;
-  else if( width.size()==(ncv*(ncv+1))/2 ) diagonal=false;
-  else plumed_merror("specified sigma is neither diagonal or full covariance matrix");
+  if (multivariate==true)diagonal=false;
+  if (multivariate==false)diagonal=true;
 
   // Setup the kernel type
   if(type=="GAUSSIAN" || type=="gaussian"){
@@ -105,10 +103,10 @@ width(sig)
 
   if( norm ){
     double det;
+    unsigned ncv=ndim(); 
     if(diagonal){
        det=1; for(unsigned i=0;i<width.size();++i) det*=width[i];
     } else {
-       unsigned ncv=ndim(); 
        Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
        Invert(mymatrix,myinv); double logd;
        logdet( myinv, logd );
@@ -233,13 +231,16 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
 KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::string>& valnames ){
   std::string sss; ifile->scanField("multivariate",sss);
   std::vector<double> cc( valnames.size() ), sig;
+  bool multivariate;
   if( sss=="false" ){
+     multivariate=false;
      sig.resize( valnames.size() );
      for(unsigned i=0;i<valnames.size();++i){
          ifile->scanField(valnames[i],cc[i]);
          ifile->scanField("sigma_"+valnames[i],sig[i]);
      }
   } else if( sss=="true" ){
+     multivariate=true;
      unsigned ncv=valnames.size();
      sig.resize( (ncv*(ncv+1))/2 );
      Matrix<double> upper(ncv,ncv), lower(ncv,ncv);
@@ -257,7 +258,7 @@ KernelFunctions* KernelFunctions::read( IFile* ifile, const std::vector<std::str
       plumed_merror("multivariate flag should equal true or false");
   } 
   double h; ifile->scanField("height",h);
-  return new KernelFunctions( cc, sig, "gaussian", h, false );
+  return new KernelFunctions( cc, sig, "gaussian", multivariate ,h, false);
 }
 
 }
