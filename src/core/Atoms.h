@@ -55,6 +55,9 @@ class Atoms
   Tensor box;
   Pbc&   pbc;
   Tensor virial;
+// this is the energy set by each processor:
+  double md_energy;
+// this is the summed energy:
   double energy;
 
   bool   dataCanBeSet;
