@@ -415,7 +415,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   // set names
   std::string outfile;
   if(parse("--outfile",outfile)){
-       actioninput.push_back("btim="+outfile); 
+       actioninput.push_back("OUTHILLS="+outfile); 
   } 
   std::string outhisto;
   if(parse("--outhisto",outhisto)){
