@@ -56,6 +56,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("compulsory","NEIGH_FREQ","10","Period in step for neighbour list update.");
   keys.add("compulsory","WRITE_CS","0","Write chemical shifts period.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
+  keys.add("optional","TERMINI","Defines the protonation states of the chain-termini.");
   keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges");  
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas");  
 }
@@ -104,16 +105,32 @@ PLUMED_COLVAR_INIT(ao)
   log.printf("  loading template %s\n", stringapdb.c_str()); log.flush();
   Almost::PDB pdb((char*)stringapdb.c_str());
 
+  vector<string> termini;
+  string stringa_mol;
+  parse("TERMINI",stringa_mol);
+  if(stringa_mol.length()>0) {
+    int num_chains = pdb[0].size();
+    vector<string> data=Tools::getWords(stringa_mol,",");
+    if(data.size()!=2*num_chains) plumed_merror("You have to define both the NTerm and the CTerm for each chain of your system!\n");
+    for(unsigned i=0;i<data.size();i++) termini.push_back(data[i]);
+  } else {
+    int num_chains = pdb[0].size();
+    for(unsigned i=0;i<(2*num_chains);i++) termini.push_back("DEFAULT");
+  }
+
   log.printf("  building molecule ..."); log.flush();
   for(unsigned i=0;i<pdb[0].size();i++){
+    unsigned j=2*i;
     string str;
     str +='A'+i;
     Protein p(str);
-    p.build_missing(pdb[0][i],mdb,"DEFAULT","NONE");
+    p.build_missing(pdb[0][i],mdb,termini[j],termini[j+1]);
     if(disu) p.auto_disu_bonds(2.9,mdb);
     molecules.add_protein(p);
   }
   log.printf(" done!\n"); log.flush(); 
+  log.printf("  Writing converted template.pdb ...\n"); log.flush();
+  mol2pdb(molecules,"converted-template.pdb");
 
   log.printf("  Initialization of the predictor ...\n"); log.flush();
   CamShift2 a = CamShift2(molecules, stringadb);
@@ -176,8 +193,6 @@ PLUMED_COLVAR_INIT(ao)
   a.set_box_nupdate(neigh_f);
   a.set_lambda(1);
   cam_list.push_back(a);
-  log.printf("  Writing converted template.pdb ...\n"); log.flush();
-  mol2pdb(molecules,"converted-template.pdb");
 
   sh = new double*[numResidues];
   sh[0] = new double[numResidues*6];
