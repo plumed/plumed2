@@ -2,7 +2,8 @@
 
 #include "Colvar.h"
 #include "ActionRegister.h"
-#include "tools/Matrix.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "tools/Communicator.h"
 
 #include <string>
@@ -24,7 +25,7 @@ namespace PLMD{
 */
 //+ENDPLUMEDOC
 
-class ColvarCS2Backbone : public Colvar {
+class CS2Backbone : public Colvar {
   vector<CamShift2> cam_list;
   Molecules molecules;
   int  numResidues;
@@ -33,16 +34,19 @@ class ColvarCS2Backbone : public Colvar {
   bool ensemble;
   bool serial;
   double **sh;
+  double ene_pl2alm;
+  double len_pl2alm;
+  double for_pl2alm;
 public:
-  ColvarCS2Backbone(const ActionOptions&);
-  ~ColvarCS2Backbone();
+  CS2Backbone(const ActionOptions&);
+  ~CS2Backbone();
   static void registerKeywords( Keywords& keys );
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(ColvarCS2Backbone,"CS2BACKBONE")
+PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
-void ColvarCS2Backbone::registerKeywords( Keywords& keys ){
+void CS2Backbone::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
   keys.add("atoms","ATOMS","The atoms to be included in the calculatios, e.g. the whole protein.");
@@ -56,16 +60,12 @@ void ColvarCS2Backbone::registerKeywords( Keywords& keys ){
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas");  
 }
 
-ColvarCS2Backbone::ColvarCS2Backbone(const ActionOptions&ao):
+CS2Backbone::CS2Backbone(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao)
 {
   string stringadb;
   string stringamdb;
   string stringapdb;
-
-  vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  checkRead();
 
   serial=false;
   parseFlag("SERIAL",serial);
@@ -93,7 +93,7 @@ PLUMED_COLVAR_INIT(ao)
 
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(multi_sim_com.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+  if(ensemble&&multi_sim_comm.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
 
   stringadb  = stringa_data + string("/camshift.db");
   stringamdb = stringa_data + string("/") + stringa_forcefield;
@@ -181,7 +181,19 @@ PLUMED_COLVAR_INIT(ao)
 
   sh = new double*[numResidues];
   sh[0] = new double[numResidues*6];
-  for ( int i = 1 ; i < numResidues ; i++)  sh[i] = sh[i-1] + 6; 
+  for (int i=1; i<numResidues; i++)  sh[i]=sh[i-1]+6; 
+
+  /* Energy and Lenght conversion */
+  ene_pl2alm = 4.186/plumed.getAtoms().getUnits().getEnergy();
+  len_pl2alm = 10.00*plumed.getAtoms().getUnits().getLength();
+  for_pl2alm = ene_pl2alm*len_pl2alm;
+  log.printf("  Conversion table from plumed to Almost:\n");
+  log.printf("    Energy %lf\n", ene_pl2alm);
+  log.printf("    Length %lf\n", len_pl2alm);
+
+  vector<AtomNumber> atoms;
+  parseAtomList("ATOMS",atoms);
+  checkRead();
 
   addValueWithDerivatives();
   setNotPeriodic();
@@ -189,14 +201,14 @@ PLUMED_COLVAR_INIT(ao)
   log.printf("  DONE!\n"); log.flush();
 }
 
-ColvarCS2Backbone::~ColvarCS2Backbone()
+CS2Backbone::~CS2Backbone()
 {
   delete[] sh[0];
   delete[] sh;
 }
 
 
-void ColvarCS2Backbone::calculate()
+void CS2Backbone::calculate()
 {
   double energy=0.;
   Tensor virial;
@@ -212,9 +224,9 @@ void ColvarCS2Backbone::calculate()
   for (int i = 0; i < N; i++) {
      int ipos = 4 * i;
      Vector Pos = getPosition(i);
-     coor.coor[ipos]   = 10.*Pos[0];
-     coor.coor[ipos+1] = 10.*Pos[1];
-     coor.coor[ipos+2] = 10.*Pos[2];
+     coor.coor[ipos]   = len_pl2alm*Pos[0];
+     coor.coor[ipos+1] = len_pl2alm*Pos[1];
+     coor.coor[ipos+2] = len_pl2alm*Pos[2];
   }
   cam_list[0].ens_return_shifts(coor, sh);
   if(!serial) comm.Sum(&sh[0][0], numResidues*6);
@@ -254,13 +266,13 @@ void ColvarCS2Backbone::calculate()
     For[0] = forces.coor[ipos];
     For[1] = forces.coor[ipos+1];
     For[2] = forces.coor[ipos+2];
-    deriv[i] = 41.86*For;
+    deriv[i] = for_pl2alm*For;
     if(ensemble) {double fact = 1./((double) ens_dim); deriv[i]*=fact;}
     virial=virial+(-1.*Tensor(getPosition(i),deriv[i]));
   }
 
   for(unsigned i=0;i<getNumberOfAtoms();++i) setAtomsDerivatives(i,deriv[i]);
-  setValue           (4.186*energy);
+  setValue           (ene_pl2alm*energy);
   setBoxDerivatives  (virial);
 }
 
