@@ -93,6 +93,7 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
 
 void NeighborList::update(const vector<Vector>& positions) {
  neighbors_.clear();
+ const double d2=distance_*distance_;
 // check if positions array has the correct length 
  plumed_assert(positions.size()==fullatomlist_.size());
  for(unsigned int i=0;i<nallpairs_;++i){
@@ -105,8 +106,8 @@ void NeighborList::update(const vector<Vector>& positions) {
    } else {
     distance=delta(positions[index0],positions[index1]);
    }
-   double value=distance.modulo();
-   if(value<=distance_) {neighbors_.push_back(index);} 
+   double value=modulo2(distance);
+   if(value<=d2) {neighbors_.push_back(index);} 
  }
  setRequestList();
 }
