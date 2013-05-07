@@ -84,7 +84,6 @@ public WithCmd
   FILE*in;
   FILE*out;
   Communicator&comm;
-  Communicator&multi_sim_comm;
   static int run(int argc, char **argv,FILE*in,FILE*out,Communicator&pc);
 public:
   CLToolMain();

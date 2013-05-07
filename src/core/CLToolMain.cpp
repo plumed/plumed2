@@ -40,14 +40,12 @@ CLToolMain::CLToolMain():
 argc(0),
 in(stdin),
 out(stdout),
-comm(*new Communicator),
-multi_sim_comm(*new Communicator)
+comm(*new Communicator)
 {
 }
 
 CLToolMain::~CLToolMain(){
   delete &comm;
-  delete &multi_sim_comm;
 }
 
 #define CHECK_NULL(val,word) plumed_massert(val,"NULL pointer received in cmd(\"CLTool " + word + "\")");
@@ -75,8 +73,6 @@ void CLToolMain::cmd(const std::string& word,void*val){
        comm.Set_comm(val);
   } else if(word=="setMPIFComm"){
        comm.Set_fcomm(val);
-  } else if(word=="setMPImultiSimComm"){
-       multi_sim_comm.Set_comm(val);
   } else if(word=="run"){
        CHECK_NULL(val,word);
        argc=argv.size();
