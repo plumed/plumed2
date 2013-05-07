@@ -38,6 +38,8 @@ GREX::GREX(PlumedMain&p):
   partner(-1), // = unset
   localDeltaBias(0),
   foreignDeltaBias(0),
+  localUNow(0),
+  localUSwap(0),
   myreplica(-1) // = unset
 {
   p.setSuffix(".NA");
@@ -93,6 +95,20 @@ void GREX::cmd(const string&key,void*val){
     CHECK_NULL(val,key);
     double x=localDeltaBias/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
     atoms.double2MD(x,val);
+  }else if(key=="cacheLocalUNow"){
+    CHECK_INIT(initialized,key);
+    CHECK_NULL(val,key);
+    double x;
+    atoms.MD2double(val,x);
+    localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+    intracomm.Sum(&localUNow,1);
+  }else if(key=="cacheLocalUSwap"){
+    CHECK_INIT(initialized,key);
+    CHECK_NULL(val,key);
+    double x;
+    atoms.MD2double(val,x);
+    localUSwap=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+    intracomm.Sum(&localUSwap,1);
   }else if(key=="getForeignDeltaBias"){
     CHECK_INIT(initialized,key);
     CHECK_NULL(val,key);
@@ -150,11 +166,12 @@ void GREX::calculate(){
   plumedMain.prepareDependencies();
   plumedMain.justCalculate();
   localDeltaBias+=plumedMain.getBias();
+  localDeltaBias+=localUSwap-localUNow;
   if(intracomm.Get_rank()==0){
     Communicator::Request req=intercomm.Isend(&localDeltaBias,1,partner,1067);
     intercomm.Recv(&foreignDeltaBias,1,partner,1067);
     req.wait();
-//fprintf(stderr,">>> %d %d %20.12f %20.12f\n",intercomm.Get_rank(),partner,localDeltaBias,foreignDeltaBias);
+//fprintf(stderr,">>> %d %d %20.12f %20.12f %20.12f %20.12f\n",intercomm.Get_rank(),partner,localDeltaBias,foreignDeltaBias,localUSwap,localUNow);
   }
   intracomm.Bcast(&foreignDeltaBias,1,0);
 }
