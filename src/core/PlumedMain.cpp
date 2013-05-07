@@ -50,6 +50,7 @@ namespace PLMD{
 
 PlumedMain::PlumedMain():
   comm(*new Communicator),
+  multi_sim_comm(*new Communicator),
   dlloader(*new DLLoader),
   cltool(NULL),
   stopwatch(*new Stopwatch),
@@ -89,6 +90,7 @@ PlumedMain::~PlumedMain(){
   if(cltool) delete cltool;
   delete &dlloader;
   delete &comm;
+  delete &multi_sim_comm;
 }
 
 /////////////////////////////////////////////////////////////
@@ -265,6 +267,9 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        comm.Set_fcomm(val);
        atoms.setDomainDecomposition(comm);
+  } else if(word=="setMPImultiSimComm"){
+       CHECK_NOTINIT(initialized,word);
+       multi_sim_comm.Set_comm(val);
   } else if(word=="setNatoms"){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
