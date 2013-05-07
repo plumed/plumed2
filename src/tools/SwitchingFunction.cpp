@@ -163,13 +163,14 @@ std::string SwitchingFunction::description() const {
 
 double SwitchingFunction::calculate(double distance,double&dfunc)const{
   plumed_massert(init,"you are trying to use an unset SwitchingFunction");
+  if(distance>dmax){
+    dfunc=0.0;
+    return 0.0;
+  }
   const double rdist = (distance-d0)*invr0;
   double result;
   if(rdist<=0.){
      result=1.;
-     dfunc=0.0;
-  }else if(rdist>dmax){
-     result=0.;
      dfunc=0.0;
   }else{
     if(type==smap){
@@ -229,7 +230,7 @@ void SwitchingFunction::set(int nn,int mm,double r0,double d0){
   this->mm=mm;
   this->invr0=1.0/r0;
   this->d0=d0;
-  this->dmax=pow(0.00001,1./(nn-mm));
+  this->dmax=d0+r0*pow(0.00001,1./(nn-mm));
 }
 
 double SwitchingFunction::get_r0() const {
