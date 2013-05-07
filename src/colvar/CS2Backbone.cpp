@@ -234,7 +234,7 @@ void CS2Backbone::calculate()
   Coor<double> forces(N);
 
   forces.clear();
-  for(unsigned i=0; i<numResidues; i++) for(unsigned j=0; j<6; j++) sh[i][j]=0.;
+  for(int i=0; i<numResidues; i++) for(unsigned j=0; j<6; j++) sh[i][j]=0.;
 
   for (int i = 0; i < N; i++) {
      int ipos = 4 * i;
@@ -246,7 +246,7 @@ void CS2Backbone::calculate()
   cam_list[0].ens_return_shifts(coor, sh);
   if(!serial) comm.Sum(&sh[0][0], numResidues*6);
 
-  int printout=0;
+  bool printout=0;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
   if(printout) {
     string csfile;
@@ -259,14 +259,15 @@ void CS2Backbone::calculate()
     cam_list[0].printout_chemical_shifts(csfile.c_str());
   }
 
+  double fact=1.0;
   if(ensemble) {
+    fact = 1./((double) ens_dim);
     if(comm.Get_rank()==0) { // I am the master of my replica
       // among replicas
-      double fact = 1./((double) ens_dim);
       multi_sim_comm.Sum(&sh[0][0], numResidues*6);
       multi_sim_comm.Barrier(); 
-      for(unsigned i=0;i<6;i++) for(unsigned j=0;j<numResidues;j++) sh[j][i] *= fact; 
-    } else for(unsigned i=0;i<6;i++) for(unsigned j=0;j<numResidues;j++) sh[j][i] = 0.;
+      for(unsigned i=0;i<6;i++) for(int j=0;j<numResidues;j++) sh[j][i] *= fact; 
+    } else for(unsigned i=0;i<6;i++) for(int j=0;j<numResidues;j++) sh[j][i] = 0.;
     // inside each replica
     comm.Sum(&sh[0][0], numResidues*6);
   }
@@ -281,8 +282,7 @@ void CS2Backbone::calculate()
     For[0] = forces.coor[ipos];
     For[1] = forces.coor[ipos+1];
     For[2] = forces.coor[ipos+2];
-    deriv[i] = for_pl2alm*For;
-    if(ensemble) {double fact = 1./((double) ens_dim); deriv[i]*=fact;}
+    deriv[i] = fact*for_pl2alm*For;
     virial=virial+(-1.*Tensor(getPosition(i),deriv[i]));
   }
 
