@@ -1,3 +1,24 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2013 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.0.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_HAS_ALMOST
 
 #include "Colvar.h"
@@ -20,8 +41,27 @@ using namespace Almost;
 
 namespace PLMD{
 
-//+PLUMEDOC COLVAR CS2-BACKBONE 
+//+PLUMEDOC COLVAR CS2BACKBONE 
 /*
+This collective variable calculates the backbone chemical shifts for a protein (CA, CB, C', H, HA, N)
+using the CamShift method \cite Kohlhoff:2009us. The backcalculated chemical shifts are then compared
+with a set of provided chemical shifts to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
+
+It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
+to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
+
+WHOLEMOLECULE ENTITY0=1-174
+cs: CS2BACKBONE ATOM=1-174 DATA data/ FF a03_gromacs.mdb FLAT 0.0 NRES 13 [ENSEMBLE]
+PRINT ARG=cs 
+
+In general the system for which chemical shifts are to be calculated must be completly included in
+ATOMS. It should also be made WHOLE before the the backcalculation. CamShift is included in the
+free package ALMOST that can be dowload via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
+
+
+Experimental chemical shifts must be provided for all the nuclei and the residues of the system of interest setting to 0 those 
+that are missing.
+
 */
 //+ENDPLUMEDOC
 
@@ -210,6 +250,10 @@ PLUMED_COLVAR_INIT(ao)
   parseAtomList("ATOMS",atoms);
   checkRead();
 
+  log<<"  Bibliography "
+     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n"
+     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)") <<"\n";
+
   addValueWithDerivatives();
   setNotPeriodic();
   requestAtoms(atoms);
@@ -246,7 +290,7 @@ void CS2Backbone::calculate()
   cam_list[0].ens_return_shifts(coor, sh);
   if(!serial) comm.Sum(&sh[0][0], numResidues*6);
 
-  bool printout=0;
+  bool printout=false;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
   if(printout) {
     string csfile;
