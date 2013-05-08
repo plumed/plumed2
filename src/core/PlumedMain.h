@@ -75,6 +75,7 @@ public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.
   Communicator&comm;
+  Communicator&multi_sim_comm;
 
 private:
   DLLoader& dlloader;

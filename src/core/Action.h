@@ -156,6 +156,7 @@ public:
   void checkRead();
 
   Communicator& comm;
+  Communicator& multi_sim_comm;
 
   const Keywords& keywords;
 /// Prepare an Action for calculation
