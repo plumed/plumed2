@@ -75,7 +75,6 @@ void MultiReferenceBase::setWeights( const std::vector<double>& weights ){
    for(unsigned i=0;i<weights.size();++i) frames[i]->setWeight( weights[i] );
 }
 
-
 void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> vals, Communicator& comm, Matrix<double>& distances, const bool& squared ){
   distances=0.0;
   unsigned k=0, size=comm.Get_size(), rank=comm.Get_rank(); 
