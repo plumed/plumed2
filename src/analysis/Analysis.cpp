@@ -61,7 +61,8 @@ void Analysis::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  keys.use("ARG");
+  keys.use("ARG"); keys.reset_style("ARG","optional");
+  keys.add("atoms","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
   keys.add("compulsory","METRIC","EUCLIDEAN","how are we measuring the distances between configurations");
   keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis");
   keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
@@ -171,7 +172,6 @@ argument_names(getNumberOfArguments())
              data[i]->setNamesAndAtomNumbers( atom_numbers, argument_names );
           }
           logweights.resize( ndata );
-          weights.resize( ndata );
       } else {       
           log.printf("  analyzing all data in trajectory\n");
       }
@@ -234,6 +234,8 @@ void Analysis::readDataFromFile( const std::string& filename ){
 
 void Analysis::parseOutputFile( const std::string& key, std::string& filename ){
   parse(key,filename);
+  if(filename=="dont output") return;
+
   if( !plumed.getRestart() ){
       OFile ofile; ofile.link(*this);
       ofile.setBackupString("analysis");
@@ -247,7 +249,7 @@ void Analysis::prepare(){
 
 void Analysis::calculate(){
   // Don't store the first step (also don't store if we are getting data from elsewhere)
-  if( getStep()==0 || reusing_data ) return;
+  if( (!single_run && getStep()==0) || reusing_data ) return;
   // This is used when we have a full quota of data from the first run
   if( !single_run && idata==logweights.size() ) return; 
 
@@ -270,11 +272,11 @@ void Analysis::calculate(){
      data.push_back( metricRegister().create<ReferenceConfiguration>( metricname ) );
      plumed_dbg_assert( data.size()==idata+1 );
      data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
-     data[idata]->setReference( getPositions(), current_args, getMetric() );
+     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
      logweights.push_back(ww);
   } else {
      // Get the arguments and store them in a vector of vectors
-     data[idata]->setReference( getPositions(), current_args, getMetric() );
+     data[idata]->setReferenceConfig( getPositions(), current_args, getMetric() );
      logweights[idata] = ww; 
   }
 
@@ -299,15 +301,23 @@ std::vector<double> Analysis::getMetric() const {
   return empty;
 }
 
+double Analysis::getWeight( const unsigned& idata ) const {
+  if( !reusing_data ){
+     plumed_dbg_assert( idata<data.size() );
+     return data[idata]->getWeight();
+  } else {
+     return mydatastash->getWeight(idata);
+  }
+}
+
 void Analysis::finalizeWeights( const bool& ignore_weights ){
   // Check that we have the correct ammount of data
   if( !reusing_data && idata!=logweights.size() ) error("something has gone wrong.  Am trying to run analysis but I don't have sufficient data");
-  if( weights.size()!=logweights.size() ) weights.resize( logweights.size() );
 
   norm=0;  // Reset normalization constant
   if( ignore_weights ){
       for(unsigned i=0;i<logweights.size();++i){
-          weights[i]=1.0; norm+=1.0;
+          data[i]->setWeight(1.0); norm+=1.0;
       } 
   } else if( nomemory ){
       // Find the maximum weight
@@ -321,7 +331,7 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
       }
       // Calculate weights (no memory)
       for(unsigned i=0;i<logweights.size();++i){
-          weights[i]=exp( logweights[i]-maxweight );
+          data[i]->setWeight( exp( logweights[i]-maxweight ) );
       }
   // Calculate normalized weights (with memory)
   } else {
@@ -332,18 +342,19 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
       if( !firstAnalysisDone ) old_norm=1.0;
       // Calculate weights (with memory)
       for(unsigned i=0;i<logweights.size();++i){
-          weights[i] = exp( logweights[i] ) / old_norm;
+          data[i]->setWeight( exp( logweights[i] ) / old_norm );
       }
       if( !firstAnalysisDone ) old_norm=0.0;
   }
+  
 }
 
 void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
   plumed_dbg_assert( getNumberOfAtoms()==0 );
   if( !reusing_data ){
-      plumed_dbg_assert( idata<weights.size() &&  point.size()==getNumberOfArguments() );
+      plumed_dbg_assert( idata<logweights.size() &&  point.size()==getNumberOfArguments() );
       for(unsigned i=0;i<point.size();++i) point[i]=data[idata]->getReferenceArgument(i);
-      weight=weights[idata];
+      weight=data[idata]->getWeight();
   } else {
       return mydatastash->getDataPoint( idata, point, weight );
   }

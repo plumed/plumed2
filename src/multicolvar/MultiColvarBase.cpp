@@ -77,6 +77,11 @@ usespecies(false)
   }
 }
 
+void MultiColvarBase::addTaskToList( const unsigned& taskCode ){
+  plumed_assert( getNumberOfVessels()==0 );
+  ActionWithVessel::addTaskToList( taskCode );
+}
+
 void MultiColvarBase::copyAtomListToFunction( MultiColvarBase* myfunction ){
   for(unsigned i=0;i<all_atoms.fullSize();++i) myfunction->all_atoms.addIndexToList( all_atoms(i) );
 }

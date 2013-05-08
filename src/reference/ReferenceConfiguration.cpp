@@ -69,7 +69,7 @@ void ReferenceConfiguration::set( const PDB& pdb ){
 }
 
 void ReferenceConfiguration::setNumberOfArguments( const unsigned& n ){
-  arg_ders.resize(n); 
+  arg_ders.resize(n); tmparg.resize(n);
 }
 
 void ReferenceConfiguration::setNumberOfAtoms( const unsigned& n ){
@@ -109,8 +109,8 @@ void ReferenceConfiguration::setNamesAndAtomNumbers( const std::vector<AtomNumbe
   }
 }
 
-void ReferenceConfiguration::setReference( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric ){
-  plumed_dbg_assert( pos.size()==atomm_ders.size() && arg.size()==arg_ders.size() );
+void ReferenceConfiguration::setReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric ){
+  plumed_dbg_assert( pos.size()==atom_ders.size() && arg.size()==arg_ders.size() );
   // Copy the atomic positions to the reference
   ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>( this );
   if(!atoms){
@@ -156,13 +156,13 @@ void ReferenceConfiguration::copyDerivatives( const ReferenceConfiguration* ref 
 }
 
 void ReferenceConfiguration::print( OFile& ofile, const double& time, const double& weight, const double& old_norm ){
-  ofile.printf("REMARK: TIME=%f LOG_WEIGHT=%f OLD_NORM=%f\n",time, weight, old_norm );
-  print( ofile );
+  ofile.printf("REMARK TIME=%f LOG_WEIGHT=%f OLD_NORM=%f\n",time, weight, old_norm );
+  print( ofile, "%f" );  // HARD CODED FORMAT HERE AS THIS IS FOR CHECKPOINT FILE
 }
 
-void ReferenceConfiguration::print( OFile& ofile ){
+void ReferenceConfiguration::print( OFile& ofile, const std::string& fmt ){
   ReferenceArguments* args=dynamic_cast<ReferenceArguments*>(this);
-  if(args) args->printArguments( ofile );
+  if(args) args->printArguments( ofile, fmt );
   ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>(this);
   if(atoms) atoms->printAtoms( ofile );
   ofile.printf("END\n");
@@ -172,7 +172,7 @@ double distance( const Pbc& pbc, const std::vector<Value*> vals, ReferenceConfig
   double dist1=ref1->calc( ref2->getReferencePositions(), pbc, vals, ref2->getReferenceArguments(), squared );
 #ifndef NDEBUG
   // Check that A - B = B - A
-  double dist2=ref2->calc( ref1->getReferencePositions(), pbc, vals, ref1->getReferenceArguments(), square );
+  double dist2=ref2->calc( ref1->getReferencePositions(), pbc, vals, ref1->getReferenceArguments(), squared );
   plumed_dbg_assert( fabs(dist1-dist2)<epsilon );
 #endif 
   return dist1;

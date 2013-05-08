@@ -97,7 +97,7 @@ public:
 /// Set the indices of the reference atoms
   void setAtomNumbers( const std::vector<AtomNumber>& numbers );
 /// Set the positions of the reference atoms
-  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
+  virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in )=0;
 /// Print the atomic positions
   void printAtoms( OFile& ofile ) const ;
 /// Return all the reference positions

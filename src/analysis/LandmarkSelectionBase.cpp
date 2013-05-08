@@ -39,7 +39,6 @@ action(lo.action)
   input.erase( input.begin() );
   if( style=="ALL" ){
       novoronoi=true;
-      nlandmarks=action->getNumberOfDataPoints();
   } else {
       parse("N",nlandmarks);
       parseFlag("NOVORONOI",novoronoi);
@@ -82,7 +81,7 @@ double LandmarkSelectionBase::getDistanceBetweenFrames( const unsigned& iframe, 
 
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe, MultiReferenceBase* myframes){
   plumed_assert( myframes->getNumberOfReferenceFrames()<nlandmarks );
-  myframes->copyFrame( action->data[iframe], getWeightOfFrame(iframe) );
+  myframes->copyFrame( action->data[iframe] );
 }
 
 void LandmarkSelectionBase::selectLandmarks( MultiReferenceBase* myframes ){
@@ -105,7 +104,7 @@ void LandmarkSelectionBase::selectLandmarks( MultiReferenceBase* myframes ){
           weights[closest] += getWeightOfFrame(i);
       }
       action->comm.Sum( &weights[0], weights.size() );
-      for(unsigned j=0;j<nlandmarks;++j) myframes->setWeight( j, weights[j] );
+      myframes->setWeights( weights );
   }
 }
 

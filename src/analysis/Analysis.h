@@ -76,7 +76,7 @@ private:
 /// The piece of data we are inserting
   unsigned idata;
 /// The weights of all the data points
-  std::vector<double> logweights, weights;
+  std::vector<double> logweights;
 /// Have we analyzed the data for the first time
   bool firstAnalysisDone;
 /// The value of the old normalization constant
@@ -205,16 +205,6 @@ std::vector<Value*> Analysis::getArguments(){
 inline
 std::string Analysis::getOutputFormat() const {
   return ofmt;
-}
-
-inline
-double Analysis::getWeight( const unsigned& idata ) const {
-  if( !reusing_data ){
-     plumed_dbg_assert( idata<data.size() );
-     return weights[idata];
-  } else {
-     return mydatastash->getWeight(idata);
-  }
 }
 
 }

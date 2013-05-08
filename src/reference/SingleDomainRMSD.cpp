@@ -44,7 +44,7 @@ void SingleDomainRMSD::readReference( const PDB& pdb ){
   for(unsigned i=0;i<pdb.size();++i) reference_atoms[i]-=center;
 } 
 
-void SingleDomainRMSD::setReference( const std::vector<Vector>& conf, const std::vector<double> align_in, const std::vector<double> displace_in ){
+void SingleDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){
   reference_atoms.resize( conf.size() ); align.resize( conf.size() ); 
   displace.resize( conf.size() ); der_index.resize( conf.size() );
   double wa=0, wd=0; 

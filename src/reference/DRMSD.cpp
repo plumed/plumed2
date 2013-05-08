@@ -49,6 +49,12 @@ void DRMSD::read( const PDB& pdb ){
   if( !parse("LOWER_CUTOFF",lower,true) ) lower=0.0; 
   if( !parse("UPPER_CUTTOFF",upper,true) ) upper=std::numeric_limits<double>::max( );
   setBoundsOnDistances( !nopbc, lower, upper );
+  setup_targets();
+}
+
+void DRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){
+  SingleDomainRMSD::setReferenceAtoms( conf, align_in, displace_in );
+  setup_targets();
 }
 
 void DRMSD::setup_targets(){
@@ -67,7 +73,7 @@ void DRMSD::setup_targets(){
 }
 
 double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared ){
-  if( targets.size()==0 ) setup_targets();
+  plumed_dbg_assert( targets.size()>0 );
 
   Vector distance; 
   double drmsd=0.; 

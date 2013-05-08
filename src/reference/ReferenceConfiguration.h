@@ -103,6 +103,8 @@ public:
   virtual void set( const PDB& );
 /// Do all local business for setting the configuration 
   virtual void read( const PDB& )=0;
+/// Set the weight for this frame
+  void setWeight( const double& ww );
 /// Return the weight for this frame
   double getWeight() const ;
 /// Calculate the distance from the reference configuration
@@ -132,10 +134,10 @@ public:
 /// Set the atom numbers and the argument names
   void setNamesAndAtomNumbers( const std::vector<AtomNumber>& numbers, const std::vector<std::string>& arg );
 /// Set the reference structure (perhaps should also pass the pbc and align and displace )
-  void setReference( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric );
+  void setReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric );
 /// Print a pdb file containing the reference configuration
   void print( OFile& ofile, const double& time, const double& weight, const double& old_norm );
-  void print( OFile& ofile );
+  void print( OFile& ofile, const std::string& fmt );
 /// Get one of the referene arguments
   virtual double getReferenceArgument( const unsigned& i ){ plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
@@ -158,6 +160,11 @@ inline
 double ReferenceConfiguration::getArgumentDerivative( const unsigned& ider ) const {
   plumed_dbg_assert( ider<arg_ders.size() );
   return arg_ders[ider];
+}
+
+inline
+void ReferenceConfiguration::setWeight( const double& ww ){
+  weight=ww;
 }
 
 inline

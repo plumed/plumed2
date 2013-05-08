@@ -104,6 +104,7 @@ PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 
 void Histogram::registerKeywords( Keywords& keys ){
   Analysis::registerKeywords( keys ); keys.reset_style("METRIC","hidden");
+  keys.remove("ATOMS"); keys.reset_style("ARG","compulsory");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("compulsory","GRID_BIN","the number of bins for the grid");

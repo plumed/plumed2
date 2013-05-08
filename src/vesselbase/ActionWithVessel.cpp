@@ -107,7 +107,6 @@ StoreDataVessel* ActionWithVessel::buildDataStashes(){
 }
 
 void ActionWithVessel::addTaskToList( const unsigned& taskCode ){
-  plumed_assert( functions.size()==0 );  // We cannot add more tasks after vessels added
   indexOfTaskInFullList.push_back( fullTaskList.size() );
   fullTaskList.push_back( taskCode ); partialTaskList.push_back( taskCode ); 
   taskFlags.push_back(0); nactive_tasks = fullTaskList.size();
@@ -230,6 +229,11 @@ void ActionWithVessel::activateTheseTasks( std::vector<bool>& additionalTasks ){
 void ActionWithVessel::deactivate_task(){
   plumed_dbg_assert( contributorsAreUnlocked );
   taskFlags[task_index]=1;
+}
+
+void ActionWithVessel::deactivateTasksInRange( const unsigned& lower, const unsigned& upper ){
+  plumed_dbg_assert( contributorsAreUnlocked && lower<upper && upper<taskFlags.size() );
+  for(unsigned i=lower;i<upper;++i) taskFlags[i]=1;
 }
 
 void ActionWithVessel::doJobsRequiredBeforeTaskList(){
@@ -363,6 +367,17 @@ bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply 
 
 void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){
   plumed_merror("If your function is periodic you need to add a retrieveDomain function so that ActionWithVessel can retrieve the domain");
+}
+
+Vessel* ActionWithVessel::getVesselWithName( const std::string& mynam ){
+  int target=-1;
+  for(unsigned i=0;i<functions.size();++i){
+     if( functions[i]->getName().find(mynam)!=std::string::npos ){
+        if( target<0 ) target=i; 
+        else error("found more than one " + mynam + " object in action");
+     }  
+  }
+  return functions[target];
 }
 
 }

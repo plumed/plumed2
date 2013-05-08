@@ -57,6 +57,8 @@ protected:
   double calculateDistanceFunction( const unsigned& ifunc, const bool& squared );
 /// Store the distance function
   void storeDistanceFunction( const unsigned& ifunc );
+/// Get the value of the weight
+  double getWeight() const ;
 public:
   static void registerKeywords( Keywords& keys );
   Mapping(const ActionOptions&);
@@ -130,8 +132,13 @@ std::string Mapping::getPropertyName( const unsigned& iprop ) const {
 
 inline
 double Mapping::getPropertyValue( const unsigned& iprop ) const {
-  plumed_dbg_assert( iprop<property.size() );
+  plumed_dbg_assert( iprop<getNumberOfProperties() );
   return mymap->getPropertyValue( getCurrentTask(), iprop ); 
+}
+
+inline
+double Mapping::getWeight() const {
+  return mymap->getWeight( getCurrentTask() ); 
 }
 
 inline 

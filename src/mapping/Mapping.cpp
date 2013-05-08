@@ -73,7 +73,8 @@ ActionWithVessel(ao)
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations 
-  bool do_read=true; unsigned nfram=0;
+  bool do_read=true; std::vector<double> weights; 
+  unsigned nfram=0, wnorm=0., ww;
   while (do_read){
      PDB mypdb; 
      // Read the pdb file
@@ -81,14 +82,19 @@ ActionWithVessel(ao)
      // Fix argument names
      expandArgKeywordInPDB( mypdb );
      if(do_read){
-        mymap->readFrame( mypdb ); nfram++;
+        mymap->readFrame( mypdb ); ww=mymap->getWeight( nfram ); 
+        weights.push_back( ww );
+        wnorm+=ww; nfram++;
      } else {
         break;
      }
   }
   fclose(fp); 
+
   if(nfram==0 ) error("no reference configurations were specified");
   log.printf("  found %d configurations in file %s\n",nfram,reference.c_str() );
+  for(unsigned i=0;i<weights.size();++i) weights[i] /= wnorm;
+  mymap->setWeights( weights );
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
@@ -103,7 +109,11 @@ ActionWithVessel(ao)
   // Resize all derivative arrays
   mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
   // Resize forces array
-  forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
+  if( getNumberOfAtoms()>0 ){ 
+     forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
+  } else {
+     forcesToApply.resize( getNumberOfArguments() );
+  }
 }
 
 void Mapping::turnOnDerivatives(){
@@ -156,7 +166,6 @@ std::string Mapping::getArgumentName( unsigned& iarg ){
 double Mapping::calculateDistanceFunction( const unsigned& ifunc, const bool& squared ){
   // Calculate the distance
   double dd = mymap->calcDistanceFromConfiguration( ifunc, getPositions(), getPbc(), getArguments(), squared );     
-
   // Transform distance by whatever
   fframes[ifunc]=transformHD( dd, dfframes[ifunc] );
   return fframes[ifunc];

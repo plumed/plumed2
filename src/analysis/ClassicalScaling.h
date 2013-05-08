@@ -19,29 +19,22 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "LandmarkSelectionBase.h"
-#include "LandmarkRegister.h"
+#ifndef __PLUMED_analysis_ClassicalScaling_h
+#define __PLUMED_analysis_ClassicalScaling_h
+
+#include <vector>
 
 namespace PLMD {
+
+class PointWiseMapping;
+
 namespace analysis {
 
-class CopyAllFrames : public LandmarkSelectionBase {
+class ClassicalScaling {
 public:
-  CopyAllFrames( const LandmarkSelectionOptions& lo );
-  void select( MultiReferenceBase* );
+  static void run( PointWiseMapping* mymap );
 };
 
-PLUMED_REGISTER_LANDMARKS(CopyAllFrames,"ALL")
-
-CopyAllFrames::CopyAllFrames( const LandmarkSelectionOptions& lo ):
-LandmarkSelectionBase(lo)
-{
-}
-
-void CopyAllFrames::select( MultiReferenceBase* myframes ){
-  nlandmarks = action->getNumberOfDataPoints();
-  for(unsigned i=0;i<getNumberOfFrames();++i) selectFrame( i, myframes );
-}
-
 }
 }
+#endif

@@ -80,6 +80,8 @@ protected:
   unsigned natomsper;  
 /// Vector containing the indices of the current atoms
   std::vector<unsigned> current_atoms;
+/// Add a task to the list of tasks
+  void addTaskToList( const unsigned& taskCode );
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase();
 /// Set the value of the cutoff for the link cells

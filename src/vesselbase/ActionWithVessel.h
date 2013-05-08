@@ -144,6 +144,8 @@ protected:
   unsigned getCurrentTask() const ;
 /// Deactivate all the tasks in the task list
   void deactivateAllTasks();
+/// Deactivate all tasks with i in lower \le  i < upper
+  void deactivateTasksInRange( const unsigned& lower, const unsigned& upper );
 /// Add a task to the full list
   void addTaskToList( const unsigned& taskCode );
 public:
@@ -203,6 +205,8 @@ public:
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 /// These are overwritten in MultiColvarFunction
   virtual void activateIndexes( const unsigned&, const unsigned&, const std::vector<unsigned>& ){}
+/// Return a particular named vessel
+  Vessel* getVesselWithName( const std::string& mynam );
 };
 
 inline

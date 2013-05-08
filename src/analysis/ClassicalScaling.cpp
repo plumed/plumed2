@@ -19,28 +19,37 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "LandmarkSelectionBase.h"
-#include "LandmarkRegister.h"
+#include "ClassicalScaling.h"
+#include "reference/PointWiseMapping.h"
 
 namespace PLMD {
 namespace analysis {
 
-class CopyAllFrames : public LandmarkSelectionBase {
-public:
-  CopyAllFrames( const LandmarkSelectionOptions& lo );
-  void select( MultiReferenceBase* );
-};
+void ClassicalScaling::run( PointWiseMapping* mymap ){
+   // Retrieve the distances from the dimensionality reduction object
+   double half=(-0.5); Matrix<double> distances( half*mymap->modifyDmat() ); 
+ 
+   // Apply centering transtion
+   unsigned n=distances.nrows(); double sum;
+   // First HM
+   for(unsigned i=0;i<n;++i){
+       sum=0; for(unsigned j=0;j<n;++j) sum+=distances(i,j);
+       for(unsigned j=0;j<n;++j) distances(i,j) -= sum/n;
+   }
+   // Now (HM)H
+   for(unsigned i=0;i<n;++i){
+      sum=0; for(unsigned j=0;j<n;++j) sum+=distances(j,i);
+      for(unsigned j=0;j<n;++j) distances(j,i) -= sum/n; 
+   }
 
-PLUMED_REGISTER_LANDMARKS(CopyAllFrames,"ALL")
+   // Diagonalize matrix
+   std::vector<double> eigval(n); Matrix<double> eigvec(n,n);
+   diagMat( distances, eigval, eigvec );
 
-CopyAllFrames::CopyAllFrames( const LandmarkSelectionOptions& lo ):
-LandmarkSelectionBase(lo)
-{
-}
-
-void CopyAllFrames::select( MultiReferenceBase* myframes ){
-  nlandmarks = action->getNumberOfDataPoints();
-  for(unsigned i=0;i<getNumberOfFrames();++i) selectFrame( i, myframes );
+   // Pass final projections to map object
+   for(unsigned i=0;i<n;++i){
+      for(unsigned j=0;j<mymap->getNumberOfProperties();++j) mymap->setProjectionCoordinate( i, j, sqrt(eigval[n-1-j])*eigvec(n-1-j,i) ); 
+   }
 }
 
 }

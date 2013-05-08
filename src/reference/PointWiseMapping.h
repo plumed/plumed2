@@ -42,6 +42,8 @@ public:
   void setPropertyNames( const std::vector<std::string>& prop, const bool isp );
 /// Check if setup was completed
   bool mappingNeedsSetup() const;
+/// Delete the low dimensional projections
+  void clearRestOfData();
 /// Read in the data from a file 
   void readRestOfFrame();
 /// Resize everything else from a file
@@ -73,7 +75,11 @@ public:
 /// Get a pointer to the matrix of pairwise distances
   Matrix<double>& modifyDmat();
 /// Print out the low dimensional mapping
-  void print( const std::string& method, const unsigned& time, OFile& afile );
+  void print( const std::string& method, const unsigned& time, OFile& afile, const std::string& fmt );
+/// Get the low dimensional embedding coordinate
+  double getProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord ) const ;
+/// Set the value of the projection coordinate
+  void setProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord, const double& coord );
 };
 
 inline
@@ -84,7 +90,7 @@ bool PointWiseMapping::mappingNeedsSetup() const {
 
 inline
 void PointWiseMapping::copyFrameDerivatives( const unsigned& from, const unsigned& to ){
-  plumed_dbg_assert( to>frames.size()/2 & from<frames.size()/2 );
+  plumed_dbg_assert( to>=frames.size()/2 & from<frames.size()/2 );
   frames[to]->copyDerivatives( frames[from] );
 }
 
@@ -131,6 +137,17 @@ Matrix<double>& PointWiseMapping::modifyDmat(){
   return dmat;
 }
 
+inline
+double PointWiseMapping::getProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord ) const {
+  plumed_dbg_assert( iframe<frames.size() && jcoord<property.size() );
+  return low_dim[iframe][jcoord];
+}
+
+inline
+void PointWiseMapping::setProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord, const double& coord ){
+  plumed_dbg_assert( iframe<frames.size() && jcoord<property.size() );
+  low_dim[iframe][jcoord]=coord;
+} 
 
 }
 #endif

@@ -106,12 +106,21 @@ void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, 
   }
 }
 
-void ReferenceArguments::printArguments( OFile& ofile ) const {
-  ofile.printf("REMARK: ARG=%s", arg_names[0].c_str() );
+void ReferenceArguments::printArguments( OFile& ofile, const std::string& fmt ) const {
+  ofile.printf("REMARK ARG=%s", arg_names[0].c_str() );
   for(unsigned i=1;i<arg_names.size();++i) ofile.printf(",%s", arg_names[i].c_str() );
   ofile.printf("\n");
-  ofile.printf("REMARK: ");
-  for(unsigned i=0;i<arg_names.size();++i) ofile.printf("%s=%f ",arg_names[i].c_str(), reference_args[i] );
+  ofile.printf("REMARK ");
+  std::string descr2;
+  if(fmt.find("-")!=std::string::npos){
+     descr2="%s=" + fmt + " ";
+  } else {
+     // This ensures numbers are left justified (i.e. next to the equals sign
+     std::size_t psign=fmt.find("%");
+     plumed_assert( psign!=std::string::npos );
+     descr2="%s=%-" + fmt.substr(psign+1) + " ";
+  }
+  for(unsigned i=0;i<arg_names.size();++i) ofile.printf( descr2.c_str(),arg_names[i].c_str(), reference_args[i] );
   ofile.printf("\n");
 }
 

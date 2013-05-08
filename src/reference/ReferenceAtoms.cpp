@@ -48,14 +48,6 @@ void ReferenceAtoms::setAtomNumbers( const std::vector<AtomNumber>& numbers ){
   }
 }
 
-void ReferenceAtoms::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){
-  plumed_dbg_assert( conf.size()==numbers.size() && align_in.size()==numbers.size() && displace_in.size()==numbers.size() );
-  for(unsigned i=0;i<conf.size();++i){
-     reference_atoms[i]=conf[i]; align[i]=align_in[i];
-     displace[i]=displace_in[i]; 
-  }
-}
-
 void ReferenceAtoms::printAtoms( OFile& ofile ) const {
   for(unsigned i=0;i<reference_atoms.size();++i){
       ofile.printf("ATOM  %4d X    RES   %4d %8.3f %8.3f %8.3f %6.2f %6.2f\n",

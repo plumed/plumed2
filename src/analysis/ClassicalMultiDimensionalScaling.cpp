@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AnalysisWithLandmarks.h"
+#include "ClassicalScaling.h"
 #include "reference/PointWiseMapping.h"
 #include "core/ActionRegister.h"
 
@@ -59,13 +60,14 @@ AnalysisWithLandmarks(ao)
   if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
   std::vector<std::string> propnames( nlow ); std::string num;
   for(unsigned i=0;i<propnames.size();++i){
-     Tools::convert(i+1,num);
-     propnames[i]=getLabel() + "." + num;
+     Tools::convert(i+1,num); std::string lab=getLabel();
+     if(lab.find("@")!=std::string::npos) propnames[i]=getName() + "." + num;
+     else propnames[i]=getLabel() + "." + num;
   }
   myembedding->setPropertyNames( propnames, false );
 
-  parse("EMBEDDING_OFILE",efilename);
-  parse("OUTPUT_FILE",ofilename);
+  parseOutputFile("EMBEDDING_OFILE",efilename);
+  parseOutputFile("OUTPUT_FILE",ofilename);
 }
 
 ClassicalMultiDimensionalScaling::~ClassicalMultiDimensionalScaling(){
@@ -73,15 +75,35 @@ ClassicalMultiDimensionalScaling::~ClassicalMultiDimensionalScaling(){
 }
 
 void ClassicalMultiDimensionalScaling::analyzeLandmarks(){
-  printf("RUNNING ANALYSIS AT STEP %f\n",getStep() );
+  // Calculate all pairwise diatances
+  myembedding->calculateAllDistances( getPbc(), getArguments(), comm, myembedding->modifyDmat(), true );
+
+  // Run multidimensional scaling
+  ClassicalScaling::run( myembedding );
+
+  // Output the embedding as long lists of data
+//  std::string gfname=saveResultsFromPreviousAnalyses( ofilename );
+  OFile gfile; gfile.link(*this); 
+  gfile.setBackupString("analysis");
+  gfile.fmtField(getOutputFormat()+" ");
+  gfile.open( ofilename.c_str() );
+  
+  // Print embedding coordinates
+  for(unsigned i=0;i<myembedding->getNumberOfReferenceFrames();++i){
+      for(unsigned j=0;j<nlow;++j){
+          std::string num; Tools::convert(j+1,num);
+          gfile.printField( getLabel() + "." + num , myembedding->getProjectionCoordinate(i,j) );
+      }
+      gfile.printField();
+  }  
+  gfile.close();
 
   // Output the embedding in plumed format
   if( efilename!="dont output"){
-     //std::string ifname=saveResultsFromPreviousAnalyses( efilename );
-     // OFile afile; afile.link(*this);
-     // afile.open( efilename.c_str(), "w" );
-     // myembedding->print( "classical mds", getTime(), afile );
-     // afile.close();
+     OFile afile; afile.link(*this); afile.setBackupString("analysis");
+     afile.open( efilename.c_str() );
+     myembedding->print( "classical mds", getTime(), afile, getOutputFormat() );
+     afile.close();
   }
 }
 

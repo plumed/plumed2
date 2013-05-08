@@ -35,6 +35,7 @@ private:
   bool nopbc;
   double lower, upper;
   std::map< std::pair <unsigned,unsigned> , double> targets;
+  void setup_targets();
 public:
   DRMSD( const ReferenceConfigurationOptions& ro );
 /// This sets upper and lower bounds on distances to be used in DRMSD 
@@ -42,7 +43,7 @@ public:
 /// Check that similar comparisons are being performed - perhaps this is needed ask Davide? GAT
 //  void check( ReferenceConfiguration* , ReferenceConfiguration* );
   void read( const PDB& );
-  void setup_targets();
+  void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
   double calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared );
 };
 

@@ -70,8 +70,8 @@ void MultiDomainRMSD::read( const PDB& pdb ){
            displace[n]=pdb.getBeta()[j];
            n++;
        }
-       domains[i-1]->setReference( positions, align, displace );
        domains[i-1]->setBoundsOnDistances( true, lower, upper );  // Currently no option for nopbc
+       domains[i-1]->setReferenceAtoms( positions, align, displace );
        domains[i-1]->setNumberOfAtoms( positions.size() );
        
        double ww=0; parse("WEIGHT"+num, ww, true );
@@ -80,6 +80,10 @@ void MultiDomainRMSD::read( const PDB& pdb ){
    }   
    // And set the atom numbers for this object
    setAtomNumbers( pdb.getAtomNumbers() );
+}
+
+void MultiDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){
+  plumed_error();
 }
 
 double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc,  const bool& squared ){

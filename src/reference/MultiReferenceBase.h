@@ -36,8 +36,6 @@ private:
 /// The type of metric we are using
   std::string mtype;
 protected:
-/// These are the weights of the frames
-  std::vector<double> weights;
 /// These are the configurations that serve as references
   std::vector<ReferenceConfiguration*> frames;
 /// Read something from the last frame
@@ -49,6 +47,7 @@ public:
   virtual ~MultiReferenceBase();
 /// Delete all the data in the reference object
   void clearFrames();
+  virtual void clearRestOfData(){};
 /// Read a frame from the input
   void readFrame( PDB& pdb ); 
 /// Do additional reading required by derived class
@@ -63,11 +62,13 @@ public:
 /// Return the ith reference frame
   ReferenceConfiguration* getFrame( const unsigned& iframe );
 /// Copy a reference configuration into the multi reference object
-  void copyFrame( ReferenceConfiguration* frameToCopy, const double& weight ); 
+  void copyFrame( ReferenceConfiguration* frameToCopy ); 
 /// Set the weight of the ith frame
-  void setWeight( const unsigned& iframe, const double& w );
+  void setWeights( const std::vector<double>& ww );
+/// Retrieve the weight of one of the frames
+  double getWeight( const unsigned& ifram ) const ;
 /// Calculate the distances between all the frames and store in a matrix
-  void calculateAllDistances( const Pbc& pbc, const std::vector<Value*> vals, Communicator& comm, Matrix<double>& distances );
+  void calculateAllDistances( const Pbc& pbc, const std::vector<Value*> vals, Communicator& comm, Matrix<double>& distances, const bool& squared );
 };
 
 template <class T>
@@ -87,16 +88,16 @@ unsigned MultiReferenceBase::getNumberOfReferenceFrames() const {
 }
 
 inline
+double MultiReferenceBase::getWeight( const unsigned& ifram ) const { 
+  plumed_dbg_assert( ifram<frames.size() );
+  return frames[ifram]->getWeight();
+}
+
+inline
 ReferenceConfiguration* MultiReferenceBase::getFrame( const unsigned& iframe ){
    plumed_dbg_assert( iframe<frames.size() );
    return frames[iframe];
 } 
-
-inline
-void MultiReferenceBase::setWeight( const unsigned& iframe, const double& w ){
-   plumed_dbg_assert( iframe<frames.size() );
-   weights[iframe]=w;
-}
 
 }
 #endif

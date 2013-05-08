@@ -47,6 +47,10 @@ void PointWiseMapping::readRestOfFrame(){
   }
   low_dim.push_back( labelvals ); 
   plumed_dbg_assert( low_dim.size()==getNumberOfReferenceFrames() );
+}
+
+void PointWiseMapping::clearRestOfData(){
+  low_dim.resize(0);
 } 
 
 void PointWiseMapping::resizeRestOfFrame(){
@@ -86,13 +90,23 @@ unsigned PointWiseMapping::getPropertyIndex( const std::string& name ) const {
   return 0;
 }
 
-void PointWiseMapping::print( const std::string& method, const unsigned& time, OFile& afile ){
-  afile.printf("DESCRIPTION: results from %s analysis performed at time %f\n", method.c_str(), time );
+void PointWiseMapping::print( const std::string& method, const unsigned& time, OFile& afile, const std::string& fmt ){
+  std::string descr2, descr="DESCRIPTION: results from %s analysis performed at time " + fmt +"\n";
+  afile.printf(descr.c_str(), method.c_str(), time );
+  if(fmt.find("-")!=std::string::npos){
+     descr="REMARK WEIGHT=" + fmt + " %s=" + fmt + " "; descr2="%s=" + fmt;
+  } else {
+     // This ensures numbers are left justified (i.e. next to the equals sign
+     std::size_t psign=fmt.find("%");
+     plumed_assert( psign!=std::string::npos );
+     descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + " %s=%-" + fmt.substr(psign+1) + " "; 
+     descr2="%s=%-" + fmt.substr(psign+1);
+  }
   for(unsigned i=0;i<frames.size();++i){
-      afile.printf("REMARK: WEIGHT=%f %s=%f ", weights[i], property[0].c_str(), low_dim[i][0] );
-      for(unsigned j=1;j<property.size();++j) afile.printf("%s=%f ", property[j].c_str(), low_dim[i][j]);
+      afile.printf(descr.c_str(), frames[i]->getWeight(), property[0].c_str(), low_dim[i][0] );
+      for(unsigned j=1;j<property.size();++j) afile.printf(descr2.c_str(), property[j].c_str(), low_dim[i][j]);
       afile.printf("\n"); 
-      frames[i]->print( afile );
+      frames[i]->print( afile, fmt );
   }
 } 
 

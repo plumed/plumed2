@@ -177,7 +177,7 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   unsigned nn=references.size()-1;
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
   references[nn]->setBoundsOnDistances( true , bondlength );  // We always use pbc
-  references[nn]->setReference( structure, align, displace );
+  references[nn]->setReferenceAtoms( structure, align, displace );
   references[nn]->setNumberOfAtoms( structure.size() );
 }
 

@@ -39,49 +39,53 @@ MultiReferenceBase::~MultiReferenceBase(){
 
 void MultiReferenceBase::clearFrames(){
   for(unsigned i=0;i<frames.size();++i) delete frames[i];
-  frames.resize(0); weights.resize(0);
+  frames.resize(0); 
+  clearRestOfData();
 }
 
 void MultiReferenceBase::readFrame( PDB& mypdb ){
   wasSet=true; 
   // If skipchecks are enabled metric types must be specified in the input file
   ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
-  // Read in the weight we are allocating to this particular point in space
-  double ww; mymsd->getWeight();
   // Save everything
-  weights.push_back(ww); frames.push_back( mymsd );
-  // Double check
-  plumed_assert( weights.size()==frames.size() );
+  frames.push_back( mymsd );
   // Do reading in derived class
   readRestOfFrame();
   // Check readin was succesfull
   mymsd->checkRead();
 }
 
-void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy, const double& weight ){
+void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ){
   // Create a reference configuration of the appropriate type
   ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( frameToCopy->getName() );
   // Copy names of arguments and and indexes
   mymsd->setNamesAndAtomNumbers( frameToCopy->getAbsoluteIndexes(), frameToCopy->getArgumentNames() );
   // Copy reference positions, reference arguments and reference metric
-  mymsd->setReference( frameToCopy->getReferencePositions(), frameToCopy->getReferenceArguments(), frameToCopy->getReferenceMetric() );
-  // Easy bit - copy the weight and store the frame
-  frames.push_back( mymsd ); weights.push_back( weight );
-  plumed_dbg_assert( weight.size()==frames.size() );
+  mymsd->setReferenceConfig( frameToCopy->getReferencePositions(), frameToCopy->getReferenceArguments(), frameToCopy->getReferenceMetric() );
+  // Copy weight
+  mymsd->setWeight( frameToCopy->getWeight() );
+  // Easy bit - copy the frame
+  frames.push_back( mymsd ); 
   // This resizes the low dim array
   resizeRestOfFrame();
 }
 
-void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> vals, Communicator& comm, Matrix<double>& distances ){
+void MultiReferenceBase::setWeights( const std::vector<double>& weights ){
+   plumed_assert( weights.size()==frames.size() );
+   for(unsigned i=0;i<weights.size();++i) frames[i]->setWeight( weights[i] );
+}
+
+
+void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> vals, Communicator& comm, Matrix<double>& distances, const bool& squared ){
   distances=0.0;
   unsigned k=0, size=comm.Get_size(), rank=comm.Get_rank(); 
   for(unsigned i=1;i<frames.size();++i){
       for(unsigned j=0;j<i;++j){
           if( (k++)%size!=rank ) continue;         
-          distances(i,j) = distances(j,i) = distance( pbc, vals, frames[i], frames[j], false );
+          distances(i,j) = distances(j,i) = distance( pbc, vals, frames[i], frames[j], squared );
       }
   }
-//  comm.Sum( distances );
+  comm.Sum( distances );
 }
 
 }
