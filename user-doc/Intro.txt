@@ -13,6 +13,9 @@ features available in plumed 2.0 and to work out how to install plumed 2.0 in yo
 - \subpage WhatsNew
 - \subpage Installation 
 
+See also \ref CHANGES-2-0 and \ref CHANGES-2-1
+
+
 \section qintro A quick introduction
 
 To run plumed 2.0 you need to provide one input file.  In this file you specify what it

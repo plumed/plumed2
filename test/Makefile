@@ -1,6 +1,6 @@
 -include ../Makefile.conf
 
-SUBDIRS = link simplemd
+SUBDIRS = link
 
 .PHONY: all clean $(SUBDIRS)
 
@@ -11,5 +11,4 @@ $(SUBDIRS):
 
 clean:
 	cd link && make clean
-	cd simplemd && make clean
 

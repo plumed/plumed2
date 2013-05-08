@@ -205,12 +205,12 @@ void FixPlumed::post_force(int vflag)
   p->cmd("calc");
 
 // retransform virial to lammps representation:
-  Fix::virial[0]=virial[0][0];
-  Fix::virial[1]=virial[1][1];
-  Fix::virial[2]=virial[2][2];
-  Fix::virial[3]=virial[0][1];
-  Fix::virial[4]=virial[0][2];
-  Fix::virial[5]=virial[1][2];
+  Fix::virial[0]=-virial[0][0];
+  Fix::virial[1]=-virial[1][1];
+  Fix::virial[2]=-virial[2][2];
+  Fix::virial[3]=-virial[0][1];
+  Fix::virial[4]=-virial[0][2];
+  Fix::virial[5]=-virial[1][2];
 }
 
 void FixPlumed::post_force_respa(int vflag, int ilevel, int iloop)

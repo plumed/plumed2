@@ -150,16 +150,13 @@ void ActionWithVessel::deactivate_task(){
   }
 }
 
-//Vessel* ActionWithVessel::getVessel( const std::string& name ){
-//  std::string myname;
-//  for(unsigned i=0;i<functions.size();++i){
-//     if( functions[i]->getLabel(myname) ){
-//         if( myname==name ) return functions[i];
-//     }
-//  }
-//  error("there is no vessel with name " + name);
-//  return NULL;
-//}
+void ActionWithVessel::activateTheseTasks( const std::vector<bool>& additionalTasks ){
+  plumed_dbg_assert( additionalTasks.size()==taskList.fullSize() );
+  for(unsigned i=0;i<additionalTasks.size();++i){
+      if( additionalTasks[i] ) taskList.activate(i);
+  }
+  taskList.updateActiveMembers();
+}
 
 void ActionWithVessel::doJobsRequiredBeforeTaskList(){
   // Clear all data from previous calculations

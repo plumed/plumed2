@@ -156,6 +156,7 @@ public:
   void checkRead();
 
   Communicator& comm;
+  Communicator& multi_sim_comm;
 
   const Keywords& keywords;
 /// Prepare an Action for calculation
@@ -285,7 +286,7 @@ void Action::parse(const std::string&key,T&t){
              this->exit(1);
           }           
        } else if( keywords.style(key,"compulsory") ){
-          error("keyword " + key + " is comulsory for this action");
+          error("keyword " + key + " is compulsory for this action");
        }
   }   
 }

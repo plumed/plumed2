@@ -1,0 +1,9 @@
+/**
+
+@page CHANGES-2-1 CHANGES-2-1
+
+Let's add here everything relevant which is in master branch and not in v2.0.
+
+After release of 2.1, we will document here fixes and additions on the 2.1.x series.
+
+*/

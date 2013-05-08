@@ -53,9 +53,8 @@ MultiColvarBase(ao)
 
 void MultiColvarFunction::completeSetup(){
   // Copy list of atoms involved from base multicolvar
-  for(unsigned i=0;i<mycolv->all_atoms.fullSize();++i){
-     all_atoms.addIndexToList( mycolv->all_atoms(i) );
-  }
+  mycolv->copyAtomListToFunction( this );
+  // Do all setup stuff in MultiColvarBase
   setupMultiColvarBase();
 }
 
@@ -64,30 +63,19 @@ Vector MultiColvarFunction::getSeparation( const Vector& vec1, const Vector& vec
 }
 
 void MultiColvarFunction::unlockContributors(){
-  plumed_massert( mycolv->contributorsAreUnlocked,"contributors in base colvar are not unlocked"); 
+  plumed_massert( mycolv->areContributorsUnlocked(),"contributors in base colvar are not unlocked"); 
   ActionWithVessel::unlockContributors();
 }
 
 void MultiColvarFunction::lockContributors(){
-  mycolv->unlockContributors();
-  mpi_gatherActiveMembers( comm, colvar_atoms );
- 
-  // Store tasks that are currently active in base colvar
-  unsigned nactive=mycolv->taskList.getNumberActive();
-  std::vector<unsigned> active_tasks( nactive );
-  for(unsigned i=0;i<nactive;++i) active_tasks[i]=mycolv->taskList[i];
-
-  // Now get the tasks that are active from here
-  mycolv->taskList.deactivateAll();
+  // Make a list of the tasks required 
+  std::vector<bool> additionalTasks( mycolv->getNumberOfTasks(), false );
   for(unsigned i=0;i<taskList.getNumberActive();++i){
-      unsigned n=taskList[i];
-      for(unsigned j=0;j<colvar_atoms[n].getNumberActive();++j){
-         mycolv->taskList.activate( colvar_atoms[n][j] );
-      }
+      current=taskList[i];
+      for(unsigned j=0;j<getNAtoms();++j) additionalTasks[ getAtomIndex(j) ]=true;
   }
-
-  // Add in tasks that are active in base
-  for(unsigned i=0;i<nactive;++i) mycolv->taskList.activate( active_tasks[i] );
+  // And add these to the requirements in the base colvar
+  mycolv->activateTheseTasks( additionalTasks ); 
 
   // Redo preparation step 
   mycolv->prepare();
@@ -97,16 +85,9 @@ void MultiColvarFunction::lockContributors(){
 }
 
 void MultiColvarFunction::resizeDynamicArrays(){
-  // Copy what is active in the base MultiColvar here
-  plumed_dbg_assert( all_atoms.fullSize()==mycolv->all_atoms.fullSize() );
-  all_atoms.deactivateAll();
-  for(unsigned i=0;i<mycolv->all_atoms.getNumberActive();++i){
-     unsigned iatom=mycolv->all_atoms.linkIndex( i ); 
-     all_atoms.activate( iatom );
-  }
-  all_atoms.updateActiveMembers();
+  mycolv->copyActiveAtomsToFunction( this );
   // Request the atoms
-  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+  requestAtoms();
   // Rerequest the dependency
   addDependency(mycolv);
 }
@@ -130,6 +111,10 @@ double MultiColvarFunction::doCalculation( const unsigned& j ){
 
 void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
   mycolv->calculateNumericalDerivatives( this );
+}
+
+unsigned MultiColvarFunction::getNumberOfAtomsInCentralAtomDerivatives(){
+  return getNCAtomDerivatives()*mycolv->getNumberOfAtomsInCentralAtomDerivatives();
 }
 
 Vector MultiColvarFunction::calculateCentralAtomPosition(){

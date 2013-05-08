@@ -70,9 +70,9 @@ private:
   std::vector<Vessel*> functions;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
-protected:
 /// The terms in the series are locked
   bool contributorsAreUnlocked;
+protected:
 /// Does the weight have derivatives
   bool weightHasDerivatives;
 /// The numerical index of the task we are curently performing
@@ -116,6 +116,7 @@ public:
   ActionWithVessel(const ActionOptions&ao);
   ~ActionWithVessel();
 /// Used to make sure we are calculating everything during neighbor list update step
+  bool areContributorsUnlocked() const ;
   virtual void unlockContributors();
   virtual void lockContributors();
 /// Activate the jth colvar
@@ -132,8 +133,14 @@ public:
   virtual void retrieveDomain( std::string& min, std::string& max);
 /// Get the number of derivatives for final calculated quantity 
   virtual unsigned getNumberOfDerivatives()=0;
+/// Switch on additional tasks
+  void activateTheseTasks( const std::vector<bool>& addtionalTasks );
 /// Do any jobs that are required before the task list is undertaken
   virtual void doJobsRequiredBeforeTaskList();
+/// Get the full size of the taskList dynamic list
+  unsigned getNumberOfTasks() const ;
+/// Get the index for a particular numbered task
+  unsigned getIndexForTask( const unsigned& itask ) const ;
 /// Calculate one of the functions in the distribution
   virtual void performTask( const unsigned& j )=0;
 /// Return a pointer to the field 
@@ -212,6 +219,11 @@ void ActionWithVessel::accumulateDerivative( const unsigned& ider, const double&
 }
 
 inline
+bool ActionWithVessel::areContributorsUnlocked() const {
+  return contributorsAreUnlocked;
+}
+
+inline
 void ActionWithVessel::unlockContributors(){
   plumed_dbg_assert( taskList.getNumberActive()==taskList.fullSize() );
   contributorsAreUnlocked=true;
@@ -220,6 +232,16 @@ void ActionWithVessel::unlockContributors(){
 inline
 void ActionWithVessel::lockContributors(){
   contributorsAreUnlocked=false;
+}
+
+inline
+unsigned ActionWithVessel::getNumberOfTasks() const {
+  return taskList.fullSize();
+}
+
+inline
+unsigned ActionWithVessel::getIndexForTask( const unsigned& itask ) const {
+  return taskList.linkIndex( itask );
 }
 
 } 

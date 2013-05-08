@@ -58,6 +58,7 @@ Action::Action(const ActionOptions&ao):
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),
+  multi_sim_comm(plumed.multi_sim_comm),
   keywords(ao.keys)
 {
   line.erase(line.begin());

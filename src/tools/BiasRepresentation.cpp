@@ -113,7 +113,7 @@ KernelFunctions* BiasRepresentation::readFromPoint(IFile *ifile){
          ifile->scanField(names[i],cc[i]);
         }
         double h=1.0; 
-	return new KernelFunctions(cc,histosigma,"gaussian",h,false);	
+	return new KernelFunctions(cc,histosigma,"gaussian",false,h,false);	
 }
 void BiasRepresentation::pushKernel( IFile *ifile ){
         KernelFunctions *kk;

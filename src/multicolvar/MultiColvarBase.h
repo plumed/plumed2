@@ -52,9 +52,6 @@ private:
   DynamicList<AtomNumber> all_atoms;
 /// A dynamic list containing those atoms with derivatives
   DynamicList<unsigned> atoms_with_derivatives;
-/// The lists of the atoms involved in each of the individual colvars
-/// note these refer to the atoms in all_atoms
-  std::vector< DynamicList<unsigned> > colvar_atoms;
 /// Variables used for central atoms
   Tensor ibox;
   bool centralAtomDerivativesAreInFractional;
@@ -65,16 +62,18 @@ private:
 /// This resizes the local arrays after neighbor list updates and during initialization
   void resizeLocalArrays();
 protected:
+/// The lists of the atoms involved in each of the individual colvars
+  std::vector< DynamicList<unsigned> > colvar_atoms;
 /// Add a colvar to the set of colvars we are calculating (in practise just a list of atoms)
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase();
+/// Request the atoms from action atomistic
+  void requestAtoms();
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
-/// Return the index of an atom
-  unsigned getAtomIndex( const unsigned& ) const ;
 /// Add some derivatives for an atom 
   void addAtomsDerivatives(const int&,const Vector&);
 /// Add some derivatives to the virial
@@ -120,11 +119,16 @@ public:
   virtual void calculateWeight();
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
   virtual Vector calculateCentralAtomPosition()=0; 
+  virtual unsigned getNumberOfAtomsInCentralAtomDerivatives()=0;
 /// Is this a density?
   virtual bool isDensity(){ return false; }
 /// Return a pointer to the vessel that stores the positions of 
 /// all the central atoms
   StoreCentralAtomsVessel* getCentralAtoms();
+/// Copy the list of atoms involved to a second MultiColvarBase (used by functions)
+  void copyAtomListToFunction( MultiColvarBase* myfunction );
+/// Make sure the same list of atoms is active in a function
+  void copyActiveAtomsToFunction( MultiColvarBase* myfunction );
 };
 
 inline
@@ -133,21 +137,15 @@ unsigned MultiColvarBase::getNumberOfDerivatives(){
 }
 
 inline
-unsigned MultiColvarBase::getAtomIndex( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
-}
-
-inline
 void MultiColvarBase::removeAtomRequest( const unsigned& i, const double& weight ){
-  if( !contributorsAreUnlocked ) return;
+  if( !areContributorsUnlocked() ) return;
   plumed_dbg_assert( weight<getTolerance() );
   if( weight<getNLTolerance() ) colvar_atoms[current].deactivate( i );
 }
 
 inline
 void MultiColvarBase::deactivate_task(){
-  if( !contributorsAreUnlocked ) return;   // Deactivating tasks only possible during neighbor list update
+  if( !areContributorsUnlocked() ) return;   // Deactivating tasks only possible during neighbor list update
   colvar_atoms[current].deactivateAll();   // Deactivate all atom requests for this colvar
   ActionWithVessel::deactivate_task();     // Deactivate the colvar from the list
 }

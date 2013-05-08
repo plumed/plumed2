@@ -12,6 +12,7 @@
 !/function
 !/generic
 !/header.sh
+!/release.sh
 !/imd
 !/lib
 !/main

@@ -26,7 +26,6 @@
 #include <cstring>
 #include <vector>
 #include "vesselbase/Vessel.h"
-#include "tools/DynamicList.h"
 
 namespace PLMD {
 namespace multicolvar{
@@ -38,7 +37,7 @@ private:
   unsigned bufsize;
   std::vector<unsigned> start;
   MultiColvarBase* mycolv;
-  std::vector< DynamicList<unsigned> > active_atoms;
+  std::vector<unsigned> active_atoms;
 protected:
 /// Are the weights differentiable
   bool diffweight;
@@ -62,6 +61,8 @@ public:
   void resize();
 /// This makes sure things further down the chain are resized
   virtual void local_resizing()=0;
+/// Makes index arrays are empty prior to loop 
+  void prepare();
 /// This makes sure all values are stored
   bool calculate();
 /// Makes sure the dynamic lists are gathered

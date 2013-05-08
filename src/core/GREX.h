@@ -43,6 +43,8 @@ class GREX:
   int partner;
   double localDeltaBias;
   double foreignDeltaBias;
+  double localUNow;
+  double localUSwap;
   std::vector<double> allDeltaBias;
   std::string buffer;
   int myreplica;

@@ -22,8 +22,9 @@
 #include "vesselbase/ActionWithVessel.h"
 #include "StoreColvarVessel.h"
 #include "MultiColvarBase.h"
+#include "tools/DynamicList.h"
 
-#define MAXDERIVATIVES 300
+#define MAXATOMS 300
 
 namespace PLMD {
 namespace multicolvar{
@@ -40,7 +41,7 @@ Vessel(da)
   plumed_assert( mycolv );
   diffweight=mycolv->weightHasDerivatives;
   // Resize the active derivative lists
-  active_atoms.resize( mycolv->colvar_atoms.size() );
+  active_atoms.resize( mycolv->colvar_atoms.size() + mycolv->colvar_atoms.size()*MAXATOMS );
 }
 
 void StoreColvarVessel::resize(){
@@ -48,31 +49,32 @@ void StoreColvarVessel::resize(){
   bufsize=0; start.resize( nfunc +1 );
   for(unsigned i=0;i<nfunc;++i){
       start[i] = bufsize;
-      bufsize += 1 + MAXDERIVATIVES; 
+      bufsize += 1 + 3*MAXATOMS + 9; 
   }
   start[nfunc]=bufsize;
   resizeBuffer( 2*bufsize ); local_resizing();
-  // Build the arrays of indexes
-  for(unsigned i=0;i<active_atoms.size();++i){
-     active_atoms[i].clear(); active_atoms[i].setupMPICommunication( comm );
-     for(unsigned j=0;j<mycolv->getNumberOfAtoms();++j) active_atoms[i].addIndexToList(j);
-  }
+}
+
+void StoreColvarVessel::prepare(){
+  active_atoms.assign( active_atoms.size(),0 );
 }
 
 bool StoreColvarVessel::calculate(){
-  plumed_massert( 3*mycolv->atoms_with_derivatives.getNumberActive()+9<=MAXDERIVATIVES,
-        "Error increase MAXDERIVATIVES in StoreColvarVessel");
+  plumed_massert( mycolv->atoms_with_derivatives.getNumberActive()<=MAXATOMS,
+        "Error increase MAXATOMS in StoreColvarVessel");
 
   unsigned ibuf=start[mycolv->current]; 
   setBufferElement( ibuf, mycolv->getElementValue(0) ); ibuf++;
+  unsigned atom_der_index=0; unsigned atom_der_index_start = mycolv->colvar_atoms.size() + mycolv->current*MAXATOMS;
   for(unsigned j=0;j<mycolv->atoms_with_derivatives.getNumberActive();++j){
      unsigned iatom=mycolv->atoms_with_derivatives[j]; 
-     active_atoms[mycolv->current].activate(iatom);
+     active_atoms[ atom_der_index_start + atom_der_index ] = iatom; atom_der_index++;
      unsigned ider=3*iatom;
      setBufferElement( ibuf, mycolv->getElementDerivative(ider) ); ider++; ibuf++; 
      setBufferElement( ibuf, mycolv->getElementDerivative(ider) ); ider++; ibuf++;
      setBufferElement( ibuf, mycolv->getElementDerivative(ider) ); ibuf++;
   } 
+  active_atoms[mycolv->current] = atom_der_index;
   unsigned ivir=3*mycolv->getNumberOfAtoms();
   for(unsigned j=0;j<9;++j){
      setBufferElement( ibuf, mycolv->getElementDerivative(ivir) ); ivir++; ibuf++;
@@ -96,18 +98,19 @@ bool StoreColvarVessel::calculate(){
 }
 
 void StoreColvarVessel::finish(){
-  mpi_gatherActiveMembers( comm, active_atoms );
+  comm.Sum( &active_atoms[0], active_atoms.size() );
   performCalculationUsingAllValues();
 }
 
 void StoreColvarVessel::addDerivatives( const unsigned& ival, double& pref, Value* value_out ){
-  for(unsigned i=0;i<active_atoms[ival].getNumberActive();++i){
-      unsigned jbuf=start[ival] + 1 + 3*i;
-      value_out->addDerivative( 3*active_atoms[ival][i] + 0, pref*getBufferElement(jbuf) ); jbuf++;
-      value_out->addDerivative( 3*active_atoms[ival][i] + 1, pref*getBufferElement(jbuf) ); jbuf++;
-      value_out->addDerivative( 3*active_atoms[ival][i] + 2, pref*getBufferElement(jbuf) ); 
+  unsigned atom_der_index_start = mycolv->colvar_atoms.size() + ival*MAXATOMS;
+  for(unsigned i=0;i<active_atoms[ival];++i){
+      unsigned jbuf=start[ival] + 1 + 3*i; unsigned aind=3*active_atoms[ atom_der_index_start + i ];
+      value_out->addDerivative( aind, pref*getBufferElement(jbuf) ); jbuf++; aind++;
+      value_out->addDerivative( aind, pref*getBufferElement(jbuf) ); jbuf++; aind++;
+      value_out->addDerivative( aind, pref*getBufferElement(jbuf) ); 
   }
-  unsigned jbuf=start[ival] + 1 + 3*active_atoms[ival].getNumberActive();
+  unsigned jbuf=start[ival] + 1 + 3*active_atoms[ival];
   unsigned nder=3*mycolv->getNumberOfAtoms();
   for(unsigned i=0;i<9;++i){
      value_out->addDerivative( nder, pref*getBufferElement(jbuf) ); nder++; jbuf++;
@@ -117,13 +120,14 @@ void StoreColvarVessel::addDerivatives( const unsigned& ival, double& pref, Valu
 void StoreColvarVessel::addWeightDerivatives( const unsigned& ival, double& pref, Value* value_out ){
   if(!diffweight) return;
 
-  unsigned jbuf=bufsize+start[ival]+1;
-  for(unsigned i=0;i<active_atoms[ival].getNumberActive();++i){
-      value_out->addDerivative( 3*active_atoms[ival][i] + 0, pref*getBufferElement(jbuf) ); jbuf++;
-      value_out->addDerivative( 3*active_atoms[ival][i] + 1, pref*getBufferElement(jbuf) ); jbuf++;
-      value_out->addDerivative( 3*active_atoms[ival][i] + 2, pref*getBufferElement(jbuf) ); jbuf++;
+  unsigned atom_der_index_start = mycolv->colvar_atoms.size() + ival*MAXATOMS;
+  for(unsigned i=0;i<active_atoms[ival];++i){
+      unsigned jbuf=bufsize+start[ival] + 1 +3*i; unsigned aind=3*active_atoms[ atom_der_index_start + i ];
+      value_out->addDerivative( aind, pref*getBufferElement(jbuf) ); jbuf++; aind++;
+      value_out->addDerivative( aind, pref*getBufferElement(jbuf) ); jbuf++; aind++;
+      value_out->addDerivative( aind, pref*getBufferElement(jbuf) ); 
   }
-  jbuf=bufsize+start[ival] + 1 + 3*active_atoms[ival].getNumberActive();
+  unsigned jbuf=bufsize+start[ival] + 1 + 3*active_atoms[ival];
   unsigned nder=3*mycolv->getNumberOfAtoms();
   for(unsigned i=0;i<9;++i){ 
      value_out->addDerivative( nder, pref*getBufferElement(jbuf) ); nder++; jbuf++;

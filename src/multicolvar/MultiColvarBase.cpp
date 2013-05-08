@@ -67,6 +67,20 @@ void MultiColvarBase::addColvar( const std::vector<unsigned>& newatoms ){
   colvar_atoms.push_back( newlist );
 }
 
+void MultiColvarBase::copyAtomListToFunction( MultiColvarBase* myfunction ){
+  for(unsigned i=0;i<all_atoms.fullSize();++i) myfunction->all_atoms.addIndexToList( all_atoms(i) );
+}
+
+void MultiColvarBase::copyActiveAtomsToFunction( MultiColvarBase* myfunction ){
+  plumed_dbg_assert( myfunction->all_atoms.fullSize()==all_atoms.fullSize() );
+  myfunction->all_atoms.deactivateAll();
+  for(unsigned i=0;i<all_atoms.getNumberActive();++i){
+      unsigned iatom=all_atoms.linkIndex( i );
+      myfunction->all_atoms.activate( iatom );
+  }
+  myfunction->all_atoms.updateActiveMembers();
+}
+
 void MultiColvarBase::setupMultiColvarBase(){
   // Activate everything
   taskList.activateAll();
@@ -77,11 +91,15 @@ void MultiColvarBase::setupMultiColvarBase(){
   resizeLocalArrays();
   // And resize the local vessels
   resizeFunctions();
+}
+
+void MultiColvarBase::requestAtoms(){
+  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
 } 
 
 void MultiColvarBase::prepare(){
   bool updatetime=false;
-  if( contributorsAreUnlocked ){
+  if( areContributorsUnlocked() ){
       taskList.mpi_gatherActiveMembers( comm );
       mpi_gatherActiveMembers( comm, colvar_atoms ); 
       lockContributors(); updatetime=true;
