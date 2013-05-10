@@ -45,7 +45,7 @@ protected:
   void addComponentWithDerivatives( const std::string& name ); 
 public:
   Function(const ActionOptions&);
-  virtual ~Function(){};
+  virtual ~Function(){}
   void apply();
   static void registerKeywords(Keywords&);
 };

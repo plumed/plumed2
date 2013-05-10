@@ -60,10 +60,10 @@ public ActionWithArguments
   string file;
   OFile of;
 public:
-  void calculate(){};
+  void calculate(){}
   DumpForces(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){};
+  void apply(){}
   void update();
   ~DumpForces();
 };
@@ -99,7 +99,7 @@ void DumpForces::update(){
   of.printField("time",getTime());
   for(unsigned i=0;i<getNumberOfArguments();i++){
     of.fmtField(" %15.10f").printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce());
-  };
+  }
   of.printField();
 }
 

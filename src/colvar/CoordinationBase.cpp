@@ -107,15 +107,16 @@ CoordinationBase::~CoordinationBase(){
 }
 
 void CoordinationBase::prepare(){
- if(nl->getStride()>0)
- if(firsttime || (getStep()%nl->getStride()==0)){
-   requestAtoms(nl->getFullAtomList());
-   invalidateList=true;
-   firsttime=false;
- }else{
-   requestAtoms(nl->getReducedAtomList());
-   invalidateList=false;
- }
+  if(nl->getStride()>0){
+    if(firsttime || (getStep()%nl->getStride()==0)){
+      requestAtoms(nl->getFullAtomList());
+      invalidateList=true;
+      firsttime=false;
+    }else{
+      requestAtoms(nl->getReducedAtomList());
+      invalidateList=false;
+    }
+  }
 }
 
 // calculator

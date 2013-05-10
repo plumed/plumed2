@@ -95,9 +95,9 @@ public:
 /// virtual function mapping to the specific main for each tool
   virtual int main( FILE* in, FILE*out, Communicator&pc )=0;
 /// virtual function returning a one-line descriptor for the tool
-  virtual std::string description()const{return "(no description available)";};
+  virtual std::string description()const{return "(no description available)";}
 /// virtual destructor to allow inheritance
-  virtual ~CLTool(){};
+  virtual ~CLTool(){}
 };
 
 template<class T>
