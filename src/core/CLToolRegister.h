@@ -55,8 +55,9 @@ class CLToolRegister{
 public:
 /// Register a new class.
 /// \param key The name of the directive to be used in the input file
-/// \param key A pointer to a function which creates an object of that class
-  void add(std::string key,creator_pointer,keywords_pointer);
+/// \param cp  A pointer to a function which creates an object of that class
+/// \param kp  A pointer to a function which returns the allowed keywords
+  void add(std::string key,creator_pointer cp,keywords_pointer kp);
 /// Verify if a directive is present in the register
   bool check(std::string cltool);
 /// Create an CLTool of the type indicated in the options

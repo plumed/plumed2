@@ -93,9 +93,9 @@ The important bussiness comes when we start activating and deactivating members.
 a dynamic list none of the members are active for bussiness.  Hence, getNumberActive() returns 0.
 There are four routines that we can use to change this situation.
 
-<table align=center frame=void width=95%% cellpadding=5%%>
+<table align="center" frame="void" width="95%" cellpadding="5%">
 <tr>
-<td width=5%> activateAll() </td> <td> make all members active </td>
+<td width="5%"> activateAll() </td> <td> make all members active </td>
 </tr><tr>
 <td> activate(i) </td> <td> make the ith element of the list active (in the example above this mean we doSomething() for element i of aa) </td>
 </tr><tr>
