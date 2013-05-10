@@ -57,7 +57,7 @@ public:
   Debug(const ActionOptions&ao);
 /// Register all the relevant keywords for the action  
   static void registerKeywords( Keywords& keys );
-  void calculate(){};
+  void calculate(){}
   void apply();
 };
 

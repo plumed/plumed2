@@ -53,12 +53,12 @@ class PathMSDBase : public Colvar {
   struct imgOrderByDist {
        bool operator ()(ImagePath const& a, ImagePath const& b) {
            return (a).distance < (b).distance;
-       };
+       }
   };
   struct imgOrderBySimilarity {
        bool operator ()(ImagePath const& a, ImagePath const& b) {
            return (a).similarity > (b).similarity;
-       };
+       }
   };
 
   double lambda;

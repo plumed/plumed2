@@ -229,7 +229,7 @@ public:
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
-  long int getStep()const{return step;};
+  long int getStep()const{return step;}
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library

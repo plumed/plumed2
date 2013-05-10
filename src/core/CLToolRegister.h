@@ -92,8 +92,8 @@ std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar);
   static class classname##RegisterMe{ \
     static PLMD::CLTool* create(const PLMD::CLToolOptions&ao){return new classname(ao);} \
   public: \
-    classname##RegisterMe(){PLMD::cltoolRegister().add(directive,create,classname::registerKeywords);}; \
-    ~classname##RegisterMe(){PLMD::cltoolRegister().remove(create);}; \
+    classname##RegisterMe(){PLMD::cltoolRegister().add(directive,create,classname::registerKeywords);} \
+    ~classname##RegisterMe(){PLMD::cltoolRegister().remove(create);} \
   } classname##RegisterMeObject;
 
 

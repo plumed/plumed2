@@ -54,7 +54,7 @@ public:
   Read(const ActionOptions&);
   ~Read();
   void prepare();
-  void apply(){};
+  void apply(){}
   void calculate();
   void update();
   std::string getFilename() const;

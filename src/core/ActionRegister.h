@@ -103,8 +103,8 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
   static class classname##RegisterMe{ \
     static PLMD::Action* create(const PLMD::ActionOptions&ao){return new classname(ao);} \
   public: \
-    classname##RegisterMe(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);}; \
-    ~classname##RegisterMe(){PLMD::actionRegister().remove(create);}; \
+    classname##RegisterMe(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);} \
+    ~classname##RegisterMe(){PLMD::actionRegister().remove(create);} \
   } classname##RegisterMeObject;
 
 

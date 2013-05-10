@@ -50,7 +50,7 @@ public:
   Time(const ActionOptions&);
 // active methods:
   virtual void calculate();
-  virtual void apply(){};
+  virtual void apply(){}
 };
 
 PLUMED_REGISTER_ACTION(Time,"TIME")

@@ -72,8 +72,8 @@ public:
   Group(const ActionOptions&ao);
   ~Group();
   static void registerKeywords( Keywords& keys );
-  void calculate(){};
-  void apply(){};
+  void calculate(){}
+  void apply(){}
 };
 
 PLUMED_REGISTER_ACTION(Group,"GROUP")

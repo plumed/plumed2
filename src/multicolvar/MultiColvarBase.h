@@ -94,7 +94,7 @@ protected:
   void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
 public:
   MultiColvarBase(const ActionOptions&);
-  ~MultiColvarBase(){};
+  ~MultiColvarBase(){}
   static void registerKeywords( Keywords& keys );
 /// Prepare for the calculation
   void prepare();

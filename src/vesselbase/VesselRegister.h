@@ -68,8 +68,8 @@ VesselRegister& vesselRegister();
   static class classname##RegisterMe{ \
     static PLMD::vesselbase::Vessel * create(const PLMD::vesselbase::VesselOptions&da){return new classname(da);} \
   public: \
-    classname##RegisterMe(){PLMD::vesselbase::vesselRegister().add(keyword,create,classname::reserveKeyword,classname::registerKeywords);}; \
-    ~classname##RegisterMe(){PLMD::vesselbase::vesselRegister().remove(create);}; \
+    classname##RegisterMe(){PLMD::vesselbase::vesselRegister().add(keyword,create,classname::reserveKeyword,classname::registerKeywords);} \
+    ~classname##RegisterMe(){PLMD::vesselbase::vesselRegister().remove(create);} \
   } classname##RegisterMeObject;
 
 }

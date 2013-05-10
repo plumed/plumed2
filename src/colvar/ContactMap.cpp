@@ -62,7 +62,7 @@ public:
   ~ContactMap();
 // active methods:
   virtual void calculate();
-  void checkFieldsAllowed(){};
+  void checkFieldsAllowed(){}
 };
 
 PLUMED_REGISTER_ACTION(ContactMap,"CONTACTMAP")

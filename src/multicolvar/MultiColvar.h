@@ -62,7 +62,7 @@ protected:
   void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
 public:
   MultiColvar(const ActionOptions&);
-  ~MultiColvar(){};
+  ~MultiColvar(){}
   static void registerKeywords( Keywords& keys );
 /// Resize all the dynamic arrays (used at neighbor list update time and during setup)
   void resizeDynamicArrays();

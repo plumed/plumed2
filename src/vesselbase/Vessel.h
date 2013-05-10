@@ -152,7 +152,7 @@ public:
 /// Return a description of the vessel contents
   virtual std::string description()=0;
 /// Do something before the loop
-  virtual void prepare(){};
+  virtual void prepare(){}
 /// Calculate the part of the vessel that is done in the loop
   virtual bool calculate()=0;
 /// Complete the calculation once the loop is finished

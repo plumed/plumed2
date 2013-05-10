@@ -65,7 +65,7 @@ public:
     checkRead();
   }
   static void registerKeywords( Keywords& keys );
-  void calculate(){};
+  void calculate(){}
   void apply(){
     plumed.fflush();
     log.flush();
