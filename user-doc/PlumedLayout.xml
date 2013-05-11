@@ -2,7 +2,7 @@
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
-    <tab type="user" visible="no" url="mymodules.html" title="Modules"/>
+    <tab type="user" visible="yes" url="mymodules.html" title="Modules"/>
     <tab type="user" visible="yes" url="glossary.html" title="Glossary"/>
     <tab type="user" visible="yes" url="tutorials.html" title="How-tos"/>
     <tab type="pages" visible="no" title="" intro=""/>
