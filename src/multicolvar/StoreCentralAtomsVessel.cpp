@@ -59,7 +59,7 @@ void StoreCentralAtomsVessel::resize(){
 }
 
 bool StoreCentralAtomsVessel::calculate(){
-  Vector catom_pos=mycolv->retrieveCentralAtomPos( false );
+  Vector catom_pos=mycolv->retrieveCentralAtomPos();
 
   // Store the value
   unsigned ibuf=start[mycolv->current]; 

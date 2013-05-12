@@ -78,7 +78,6 @@ public:
   static void registerKeywords( Keywords& keys );
   VolumeAround(const ActionOptions& ao);
   void setupRegion();
-  bool derivativesOfFractionalCoordinates(){ return false; }
   double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives );
 }; 
 

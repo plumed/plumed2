@@ -107,7 +107,6 @@ public:
 /// We need our own calculate numerical derivatives here
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   virtual void setupRegion()=0;
-  virtual bool derivativesOfFractionalCoordinates()=0;
   virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
 /// Forces here are applied through the bridge
   void applyBridgeForces( const std::vector<double>& bb );

@@ -58,7 +58,6 @@ private:
   std::vector< DynamicList<unsigned> > colvar_atoms;
 /// Variables used for central atoms
   Tensor ibox;
-  bool centralAtomDerivativesAreInFractional;
   DynamicList<unsigned> atomsWithCatomDer;
   std::vector<Tensor> central_derivs;
 /// The forces we are going to apply to things
@@ -116,7 +115,7 @@ public:
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Retrieve the position of the central atom
-  Vector retrieveCentralAtomPos( const bool& frac );
+  Vector retrieveCentralAtomPos();
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual void calculateWeight();
 /// A virtual routine to get the position of the central atom - used for things like cv gradient

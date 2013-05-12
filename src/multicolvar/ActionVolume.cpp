@@ -121,7 +121,7 @@ void ActionVolume::prepare(){
 }
 
 void ActionVolume::performTask( const unsigned& j ){
-  Vector catom_pos=mycolv->retrieveCentralAtomPos( derivativesOfFractionalCoordinates() );
+  Vector catom_pos=mycolv->retrieveCentralAtomPos();
 
   double weight; Vector wdf; 
   weight=calculateNumberInside( catom_pos, bead, wdf ); 
