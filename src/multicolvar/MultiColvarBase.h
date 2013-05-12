@@ -38,6 +38,7 @@ class MultiColvarBase :
   public vesselbase::ActionWithVessel
   {
 friend class ActionVolume;
+friend class VolumeSubcell;
 friend class StoreColvarVessel;
 friend class StoreCentralAtomsVessel;
 friend class MultiColvarFunction;

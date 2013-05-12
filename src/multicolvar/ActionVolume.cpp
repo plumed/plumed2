@@ -76,7 +76,7 @@ lastUpdate(0)
   }
 
   parseFlag("OUTSIDE",not_in); parse("SIGMA",sigma); 
-  bead.isPeriodic( 0, 1.0 ); 
+  bead.isNotPeriodic(); 
   std::string kerneltype; parse("KERNEL",kerneltype); 
   bead.setKernelType( kerneltype );
   weightHasDerivatives=true;
@@ -91,6 +91,12 @@ lastUpdate(0)
 
   // Now set up the bridging vessel (has to be done this way for internal arrays to be resized properly)
   addDependency(mycolv); myBridgeVessel = mycolv->addBridgingVessel( this );
+}
+
+void ActionVolume::requestAtoms( const std::vector<AtomNumber>& atoms ){
+  ActionAtomistic::requestAtoms(atoms); bridgeVariable=3*atoms.size();
+  addDependency( mycolv ); mycolv->resizeFunctions();
+  tmpforces.resize( 3*atoms.size()+9 );
 }
 
 void ActionVolume::doJobsRequiredBeforeTaskList(){
@@ -184,6 +190,15 @@ bool ActionVolume::isPeriodic(){
 
 void ActionVolume::deactivate_task(){
   plumed_merror("This should never be called");
+}
+
+void ActionVolume::applyBridgeForces( const std::vector<double>& bb ){ 
+  plumed_dbg_assert( bb.size()==tmpforces.size()-9 );
+  // Forces on local atoms
+  for(unsigned i=0;i<bb.size();++i) tmpforces[i]=bb[i];
+  // Virial contribution is zero
+  for(unsigned i=bb.size();i<bb.size()+9;++i) tmpforces[i]=0.0;
+  setForcesOnAtoms( tmpforces, 0 );
 }
 
 }

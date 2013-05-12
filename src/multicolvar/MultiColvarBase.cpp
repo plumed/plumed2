@@ -136,7 +136,8 @@ void MultiColvarBase::performTask( const unsigned& j ){
 }
 
 Vector MultiColvarBase::retrieveCentralAtomPos( const bool& frac ){
-  centralAtomDerivativesAreInFractional=frac; 
+  centralAtomDerivativesAreInFractional=false;
+//  centralAtomDerivativesAreInFractional=frac; 
   ibox=getPbc().getInvBox().transpose();
 
   // Prepare to retrieve central atom
@@ -146,10 +147,11 @@ Vector MultiColvarBase::retrieveCentralAtomPos( const bool& frac ){
   atomsWithCatomDer.deactivateAll();
 
   // Retrieve the central atom position
-  Vector catom_pos;
-  if(frac) catom_pos=getPbc().realToScaled( calculateCentralAtomPosition() );
-  else catom_pos=calculateCentralAtomPosition();
-  return catom_pos;
+  return calculateCentralAtomPosition();
+//  Vector catom_pos;
+//  if(frac) catom_pos=getPbc().realToScaled( calculateCentralAtomPosition() );
+//  else catom_pos=calculateCentralAtomPosition();
+//  return catom_pos;
 }
 
 void MultiColvarBase::addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der ){
