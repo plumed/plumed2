@@ -57,8 +57,7 @@ void BridgeVessel::prepare(){
 }
 
 bool BridgeVessel::calculate(){
-  unsigned j;
-  myOutputAction->performTask(j);
+  myOutputAction->performTask( getAction()->current );
   if( myOutputAction->thisval[1]<myOutputAction->getTolerance() ){
       myOutputAction->clearAfterTask();
       return ( !myOutputAction->contributorsAreUnlocked || myOutputAction->thisval[1]>=myOutputAction->getNLTolerance() );

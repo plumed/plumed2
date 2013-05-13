@@ -111,6 +111,10 @@ public:
 /// Forces here are applied through the bridge
   void applyBridgeForces( const std::vector<double>& bb );
   void apply(){};
+/// These routines replace the virtual routines in ActionWithVessel for 
+/// code optimization
+  void mergeDerivatives( const unsigned& ider, const double& df );
+  void clearDerivativesAfterTask( const unsigned& ider );
 };
 
 inline
@@ -174,15 +178,15 @@ void ActionVolume::addBoxDerivatives( const Tensor& vir ){
   double pref=mycolv->getElementValue(1);
   if( not_in ) pref*=-1;
   unsigned nstart = getNumberOfDerivatives() + mycolv->getNumberOfDerivatives() - 9;
-  addElementDerivative( nstart + 0, pref*vir(0,0) ); // printf("VIR %f ",vir(0,0) ); 
-  addElementDerivative( nstart + 1, pref*vir(0,1) ); // printf("%f ",vir(0,1) ); 
-  addElementDerivative( nstart + 2, pref*vir(0,2) ); // printf("%f ",vir(0,2) ); 
-  addElementDerivative( nstart + 3, pref*vir(1,0) ); // printf("%f ",vir(1,0) ); 
-  addElementDerivative( nstart + 4, pref*vir(1,1) ); // printf("%f ",vir(1,1) ); 
-  addElementDerivative( nstart + 5, pref*vir(1,2) ); // printf("%f ",vir(1,2) ); 
-  addElementDerivative( nstart + 6, pref*vir(2,0) ); // printf("%f ",vir(2,0) ); 
-  addElementDerivative( nstart + 7, pref*vir(2,1) ); // printf("%f ",vir(2,1) ); 
-  addElementDerivative( nstart + 8, pref*vir(2,2) ); // printf("%f \n",vir(2,2) ); 
+  addElementDerivative( nstart + 0, pref*vir(0,0) );  
+  addElementDerivative( nstart + 1, pref*vir(0,1) ); 
+  addElementDerivative( nstart + 2, pref*vir(0,2) ); 
+  addElementDerivative( nstart + 3, pref*vir(1,0) ); 
+  addElementDerivative( nstart + 4, pref*vir(1,1) ); 
+  addElementDerivative( nstart + 5, pref*vir(1,2) ); 
+  addElementDerivative( nstart + 6, pref*vir(2,0) ); 
+  addElementDerivative( nstart + 7, pref*vir(2,1) ); 
+  addElementDerivative( nstart + 8, pref*vir(2,2) ); 
 }
 
 }
