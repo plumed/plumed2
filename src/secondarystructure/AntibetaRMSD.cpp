@@ -72,7 +72,7 @@ protein that are in an antiparallel beta sheet configuration.
 
 \verbatim
 MOLINFO STRUCTURE=helix.pdb
-ANTIBETARMSD BACKBONE=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
+ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL=a
 \endverbatim
 (see also \ref MOLINFO)
 
