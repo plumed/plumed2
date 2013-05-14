@@ -368,8 +368,6 @@ void PlumedMain::init(){
   log<<"  PLUMED: a portable plugin for free-energy calculations with molecular dynamics\n";
   log<<"  Comp. Phys. Comm. 180, 1961 (2009)\n";
   log<<"For further information see the PLUMED web page at www.plumed-code.org\n";
-  log<<"List of registered actions:\n";
-  log<<actionRegister();
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
