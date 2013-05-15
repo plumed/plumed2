@@ -224,7 +224,7 @@ PLUMED_COLVAR_INIT(ao)
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) {stride=1; rank=0;}
-  if(stride>1) log.printf("  Parallelized over %i processors\n", stride);
+  if(stride>1) log.printf("  Parallelized over %d processors\n", stride);
   a.set_mpi(stride, rank);
   
   if(ensemble) { ens_dim=multi_sim_comm.Get_size(); log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }

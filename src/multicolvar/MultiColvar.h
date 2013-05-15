@@ -51,7 +51,7 @@ protected:
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
 /// Read in ATOMS keyword
-  void readAtomsLikeKeyword( const std::string key, int& natoms );
+  void readAtomsLikeKeyword( const std::string & key, int& natoms );
 /// Add a collective variable
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Add some derivatives for an atom 

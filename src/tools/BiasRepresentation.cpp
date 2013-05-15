@@ -242,7 +242,7 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 }
 void BiasRepresentation::clear(){
         // clear the hills
-	for(vector<KernelFunctions*>::const_iterator it = hills.begin(); it != hills.end(); it++)
+	for(vector<KernelFunctions*>::const_iterator it = hills.begin(); it != hills.end(); ++it)
         {
 	    delete *it;
         } 

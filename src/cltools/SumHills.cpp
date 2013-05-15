@@ -312,7 +312,6 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   unsigned nn=1;
   ss="setNatoms";
   plumed.cmd(ss,&nn);  
-  ss="init";
   if(Communicator::initialized())  plumed.cmd("setMPIComm",&pc.Get_comm()); 
   plumed.cmd("init",&nn);  
   vector <bool> isdone(cvs.size(),false);  
