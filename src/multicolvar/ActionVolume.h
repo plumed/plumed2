@@ -86,7 +86,7 @@ public:
   virtual void setupRegion()=0;
   virtual bool derivativesOfFractionalCoordinates()=0;
   virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
-  void apply(){};
+  void apply(){}
 };
 
 inline

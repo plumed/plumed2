@@ -60,10 +60,10 @@ public ActionWithArguments
   string fmt;
   OFile of;
 public:
-  void calculate(){};
+  void calculate(){}
   DumpDerivatives(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){};
+  void apply(){}
   void update();
   ~DumpDerivatives();
 };
@@ -114,7 +114,7 @@ void DumpDerivatives::update(){
     for(unsigned i=0;i<getNumberOfArguments();i++){
       of.fmtField(fmt);
       of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getDerivative(ipar) );
-    };
+    }
     of.printField();
   }
 }

@@ -65,7 +65,7 @@ void GREX::cmd(const string&key,void*val){
   }else if(key=="setMPIIntercomm"){
     CHECK_NOTINIT(initialized,key);
     intercomm.Set_comm(val);
-    plumedMain.cmd("setMPImultiSimComm",&intercomm.Get_comm());
+    plumedMain.multi_sim_comm.Set_comm(val);
   }else if(key=="init"){
     CHECK_NOTINIT(initialized,key);
     initialized=true;

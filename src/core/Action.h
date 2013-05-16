@@ -169,8 +169,8 @@ public:
 /// Register all the relevant keywords for the action  
   static void registerKeywords( Keywords& keys );
 
-  virtual void lockRequests(){};
-  virtual void unlockRequests(){};
+  virtual void lockRequests(){}
+  virtual void unlockRequests(){}
 
 /// Calculate an Action.
 /// This method is called one or more times per step.
@@ -185,12 +185,12 @@ public:
 /// Update.
 /// This method is called one time per step.
 /// The set of all Actions is updated in forward order.
-  virtual void update(){};
+  virtual void update(){}
 
 /// RunFinalJobs
 /// This method is called once at the very end of the calculation.
 /// The set of all Actions in run for the final time in forward order.
-  virtual void runFinalJobs(){};
+  virtual void runFinalJobs(){}
 
 /// Tell to the Action to flush open files
   void fflush();
