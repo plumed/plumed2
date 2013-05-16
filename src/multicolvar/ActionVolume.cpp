@@ -76,7 +76,7 @@ lastUpdate(0)
   }
 
   parseFlag("OUTSIDE",not_in); parse("SIGMA",sigma); 
-  bead.isPeriodic( 0, 1.0 ); 
+  bead.isNotPeriodic(); 
   std::string kerneltype; parse("KERNEL",kerneltype); 
   bead.setKernelType( kerneltype );
   weightHasDerivatives=true;
@@ -91,6 +91,14 @@ lastUpdate(0)
 
   // Now set up the bridging vessel (has to be done this way for internal arrays to be resized properly)
   addDependency(mycolv); myBridgeVessel = mycolv->addBridgingVessel( this );
+  // Setup a dynamic list 
+  resizeLocalArrays();
+}
+
+void ActionVolume::requestAtoms( const std::vector<AtomNumber>& atoms ){
+  ActionAtomistic::requestAtoms(atoms); bridgeVariable=3*atoms.size();
+  addDependency( mycolv ); mycolv->resizeFunctions();
+  tmpforces.resize( 3*atoms.size()+9 );
 }
 
 void ActionVolume::doJobsRequiredBeforeTaskList(){
@@ -100,7 +108,8 @@ void ActionVolume::doJobsRequiredBeforeTaskList(){
 }
 
 void ActionVolume::prepare(){
-  if( areContributorsUnlocked() ) lockContributors();
+  bool updatetime=false;
+  if( contributorsAreUnlocked ){ updatetime=true; lockContributors(); }
   if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
       if( !mycolv->isDensity() ){
           mycolv->taskList.activateAll();
@@ -108,14 +117,23 @@ void ActionVolume::prepare(){
           mycolv->unlockContributors(); mycolv->resizeDynamicArrays();
           plumed_dbg_assert( mycolv->getNumberOfVessels()==0 );
       } else {
-          plumed_massert( mycolv->areContributorsUnlocked(), "contributors are not unlocked in base multicolvar" );
+          plumed_massert( mycolv->contributorsAreUnlocked, "contributors are not unlocked in base multicolvar" );
       }
       unlockContributors(); 
+      updatetime=true;
   }
+  if( updatetime ) resizeLocalArrays();
+}
+
+void ActionVolume::resizeLocalArrays(){
+  activeAtoms.clear();
+  for(unsigned i=0;i<mycolv->getNumberOfAtoms();++i) activeAtoms.addIndexToList(i);
+  activeAtoms.deactivateAll();
 }
 
 void ActionVolume::performTask( const unsigned& j ){
-  Vector catom_pos=mycolv->retrieveCentralAtomPos( derivativesOfFractionalCoordinates() );
+  activeAtoms.deactivateAll(); // Currently no atoms are active so deactivate them all
+  Vector catom_pos=mycolv->retrieveCentralAtomPos();
 
   double weight; Vector wdf; 
   weight=calculateNumberInside( catom_pos, bead, wdf ); 
@@ -125,8 +143,8 @@ void ActionVolume::performTask( const unsigned& j ){
      unsigned nder=getNumberOfDerivatives();
      setElementValue( 1, weight ); setElementValue( 0, 1.0 ); 
      for(unsigned i=0;i<mycolv->atomsWithCatomDer.getNumberActive();++i){
-        unsigned n=mycolv->atomsWithCatomDer[i];
-        unsigned nx=nder + 3*n; 
+        unsigned n=mycolv->atomsWithCatomDer[i], nx=nder + 3*n;
+        activeAtoms.activate(n);
         addElementDerivative( nx+0, mycolv->getCentralAtomDerivative(n, 0, wdf ) );
         addElementDerivative( nx+1, mycolv->getCentralAtomDerivative(n, 1, wdf ) );
         addElementDerivative( nx+2, mycolv->getCentralAtomDerivative(n, 2, wdf ) );
@@ -135,10 +153,11 @@ void ActionVolume::performTask( const unsigned& j ){
      // Copy derivatives of the colvar and the value of the colvar
      double colv=mycolv->getElementValue(0); setElementValue( 0, colv );
      for(unsigned i=0;i<mycolv->atoms_with_derivatives.getNumberActive();++i){
-        unsigned n=3*mycolv->atoms_with_derivatives(i);
-        addElementDerivative( n, mycolv->getElementDerivative(n) ); n++;
-        addElementDerivative( n, mycolv->getElementDerivative(n) ); n++;
-        addElementDerivative( n, mycolv->getElementDerivative(n) ); 
+        unsigned n=mycolv->atoms_with_derivatives[i], nx=3*n;
+        activeAtoms.activate(n);
+        addElementDerivative( nx+0, mycolv->getElementDerivative(nx+0) );
+        addElementDerivative( nx+1, mycolv->getElementDerivative(nx+1) );
+        addElementDerivative( nx+2, mycolv->getElementDerivative(nx+2) ); 
      }
      unsigned nvir=3*mycolv->getNumberOfAtoms();
      for(unsigned i=0;i<9;++i){ 
@@ -152,10 +171,11 @@ void ActionVolume::performTask( const unsigned& j ){
      // Add derivatives of weight if we have a weight
      if( mycolv->weightHasDerivatives ){
         for(unsigned i=0;i<mycolv->atoms_with_derivatives.getNumberActive();++i){
-           unsigned n=3*mycolv->atoms_with_derivatives(i);
-           addElementDerivative( nder+n, weight*mycolv->getElementDerivative(nder+n) ); n++;
-           addElementDerivative( nder+n, weight*mycolv->getElementDerivative(nder+n) ); n++;
-           addElementDerivative( nder+n, weight*mycolv->getElementDerivative(nder+n) );
+           unsigned n=mycolv->atoms_with_derivatives[i], nx=nder + 3*n;
+           activeAtoms.activate(n); 
+           addElementDerivative( nx+0, weight*mycolv->getElementDerivative(nx+0) ); 
+           addElementDerivative( nx+1, weight*mycolv->getElementDerivative(nx+1) ); 
+           addElementDerivative( nx+2, weight*mycolv->getElementDerivative(nx+2) );
         } 
         unsigned nwvir=3*mycolv->getNumberOfAtoms();
         for(unsigned i=0;i<9;++i){
@@ -165,13 +185,60 @@ void ActionVolume::performTask( const unsigned& j ){
 
      // Add derivatives of central atoms
      for(unsigned i=0;i<mycolv->atomsWithCatomDer.getNumberActive();++i){
-         unsigned n=mycolv->atomsWithCatomDer[i];
-         unsigned nx=nder+3*n; 
+         unsigned n=mycolv->atomsWithCatomDer[i], nx=nder+3*n;
+         activeAtoms.activate(n); 
          addElementDerivative( nx+0, ww*mycolv->getCentralAtomDerivative(n, 0, wdf ) );
          addElementDerivative( nx+1, ww*mycolv->getCentralAtomDerivative(n, 1, wdf ) );
          addElementDerivative( nx+2, ww*mycolv->getCentralAtomDerivative(n, 2, wdf ) );
      }
   }
+  activeAtoms.updateActiveMembers();
+}
+
+void ActionVolume::mergeDerivatives( const unsigned& ider, const double& df ){
+  unsigned vstart=getNumberOfDerivatives()*ider;
+  // Merge atom derivatives
+  for(unsigned i=0;i<activeAtoms.getNumberActive();++i){
+     unsigned iatom=3*activeAtoms[i];
+     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
+     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
+     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) );
+  }
+  // Merge virial derivatives
+  unsigned nvir=3*mycolv->getNumberOfAtoms();
+  for(unsigned j=0;j<9;++j){
+     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
+  }
+  // Merge local atom derivatives
+  for(unsigned j=0;j<getNumberOfAtoms();++j){
+     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
+     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
+     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
+  }
+  plumed_dbg_assert( nvir==getNumberOfDerivatives() );
+}
+
+void ActionVolume::clearDerivativesAfterTask( const unsigned& ider ){
+  unsigned vstart=getNumberOfDerivatives()*ider;
+  // Clear atom derivatives
+  for(unsigned i=0;i<activeAtoms.getNumberActive();++i){
+     unsigned iatom=vstart+3*activeAtoms[i];
+     setElementDerivative( iatom, 0.0 ); iatom++;
+     setElementDerivative( iatom, 0.0 ); iatom++;
+     setElementDerivative( iatom, 0.0 );
+  }
+  // Clear virial contribution
+  unsigned nvir=vstart+3*mycolv->getNumberOfAtoms();
+  for(unsigned j=0;j<9;++j){
+     setElementDerivative( nvir, 0.0 ); nvir++;
+  }
+  // Clear derivatives of local atoms
+  for(unsigned j=0;j<getNumberOfAtoms();++j){
+     setElementDerivative( nvir, 0.0 ); nvir++;
+     setElementDerivative( nvir, 0.0 ); nvir++;
+     setElementDerivative( nvir, 0.0 ); nvir++;
+  }
+  plumed_dbg_assert( (nvir-vstart)==getNumberOfDerivatives() );
 }
 
 void ActionVolume::calculateNumericalDerivatives( ActionWithValue* a ){
@@ -184,6 +251,15 @@ bool ActionVolume::isPeriodic(){
 
 void ActionVolume::deactivate_task(){
   plumed_merror("This should never be called");
+}
+
+void ActionVolume::applyBridgeForces( const std::vector<double>& bb ){ 
+  plumed_dbg_assert( bb.size()==tmpforces.size()-9 );
+  // Forces on local atoms
+  for(unsigned i=0;i<bb.size();++i) tmpforces[i]=bb[i];
+  // Virial contribution is zero
+  for(unsigned i=bb.size();i<bb.size()+9;++i) tmpforces[i]=0.0;
+  setForcesOnAtoms( tmpforces, 0 );
 }
 
 }
