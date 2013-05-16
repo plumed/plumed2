@@ -74,7 +74,7 @@ void BridgeVessel::finish(){
              mynumerical_values[inum]=myOutputValues->getOutputQuantity(i);
              inum++;
          }
-         plumed_dbg_assert( inum<=mynerical_values.size() );
+         plumed_dbg_assert( inum<=mynumerical_values.size() );
      } else {
          plumed_assert( inum==mynumerical_values.size() );
      }
