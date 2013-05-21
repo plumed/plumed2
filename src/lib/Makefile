@@ -8,6 +8,9 @@ DIRS=$(sort ../config ../wrapper ../main  $(KERNEL_MODULES))
 # include the machine dependent configuration
 -include ../../Makefile.conf
 
+# include installation info
+-include ../config/install.conf
+
 # if machine dependent configuration has been found:
 ifdef GCCDEP
 
@@ -23,7 +26,7 @@ SRC_MAIN=../main/main.cpp
 
 # source for plumed kernel
 # everything else
-SRC_KERNEL=$(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.cpp 2>/dev/null ; ls $$dir/*.c 2>/dev/null ; done) ../config/Config.o
+SRC_KERNEL=$(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.cpp 2>/dev/null ; ls $$dir/*.c 2>/dev/null ; done) ../config/Config$(PLUMED_INSTALL).o
 
 # corresponding objects:
 OBJ_WRAPPER=../wrapper/PlumedStatic.o
@@ -34,15 +37,16 @@ OBJ_KERNEL=$(XXX:.c=.o)
 ALL_OBJ=$(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
 # plumed kernel
-PLUMED_KERNEL=libplumedKernel.$(SOEXT)
+PLUMED_KERNEL=$(PLUMED_LIBDIR)libplumedKernel.$(SOEXT)
 
 # plumed library (kernel + wrapper)
-PLUMED_SHARED_OBJ=libplumed.$(SOEXT)
+PLUMED_SHARED_OBJ=$(PLUMED_LIBDIR)libplumed.$(SOEXT)
 
 # plumed main exec
-PLUMED_MAIN_STATIC=plumed
-PLUMED_MAIN_SHARED=plumed-shared
-PLUMED_MAIN_RUNTIME=plumed-runtime
+PLUMED_MAIN_STATIC=$(PLUMED_LIBDIR)plumed
+PLUMED_MAIN_SHARED=$(PLUMED_LIBDIR)plumed-shared
+PLUMED_MAIN_RUNTIME=$(PLUMED_LIBDIR)plumed-runtime
+PLUMED_MAIN_PATCH=$(PLUMED_LIBDIR)plumed-patch
 
 .PHONY: all dirs $(DIRS) all-static
 ifdef SOEXT
@@ -58,6 +62,51 @@ all-static:
 	$(MAKE) lib-static
 
 
+install:
+	cd ../config ; $(MAKE)
+# two steps to be sure that ../config/install.conf is up to date
+	$(MAKE) install-do
+
+install-do:
+	$(MAKE) uninstall
+	mkdir -p $(PLUMED_INSTALL_PREFIX)/bin
+	mkdir -p $(PLUMED_INSTALL_ROOT)/src/lib
+	mkdir -p $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+# rebuild libraries and main using new target dir
+	$(MAKE) PLUMED_LIBDIR=$(PLUMED_INSTALL_ROOT)/src/lib/ PLUMED_INSTALL=Install all
+# copy .h, .cpp .o compile_options.sh and documentation:
+	cd ../../ ; tar cf - patches scripts src/*/*.h src/*/*.cpp src/*/*.o src/config/compile_options.sh *-doc | tar xf - -C $(PLUMED_INSTALL_ROOT)/
+# also copy .h files into include/ dir
+	cd ../../src ; tar cf - */*.h $$(find . -type l) | tar xf - -C $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)/
+# copy inc files changing the path
+	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../../)| $(PLUMED_INSTALL_ROOT)/|g" $$file > $(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
+# install links
+	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-patch $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
+ifdef SOEXT
+	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumed.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
+	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumedKernel.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
+endif
+	@echo "To uninstall, remove the following files and directories:"
+	@echo  $(PLUMED_INSTALL_ROOT)
+	@echo  $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	@echo $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	@echo $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
+ifdef SOEXT
+	@echo $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
+	@echo $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
+endif
+
+uninstall:
+	rm -fr $(PLUMED_INSTALL_ROOT)
+	rm -fr $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
+ifdef SOEXT
+	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
+	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
+endif
+
 dirs: $(DIRS)
 
 $(DIRS):
@@ -69,18 +118,18 @@ $(DIRS):
 
 lib: lib-static lib-shared
 
-lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) Plumed.inc.static Plumed.cmake.static plumed-patch
+lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) Plumed.inc.static Plumed.cmake.static $(PLUMED_MAIN_PATCH)
 
 lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
            Plumed.inc Plumed.inc.runtime Plumed.inc.shared \
            Plumed.cmake Plumed.cmake.runtime Plumed.cmake.shared
 
-plumed-patch:
-	@echo "#! /bin/bash" > plumed-patch
-	@echo "echo 'NOTE: shell only version of path, useful for cross compiling'" >> plumed-patch
-	@echo "export PLUMED_ROOT=\"$(realpath ../../)\"" >> plumed-patch
-	@echo "source \"$(realpath ../../scripts/patch.sh)\"" >> plumed-patch
-	chmod a+x plumed-patch
+$(PLUMED_MAIN_PATCH):
+	@echo "#! /bin/bash" > $(PLUMED_MAIN_PATCH)
+	@echo "echo 'NOTE: shell only version of path, useful for cross compiling'" >> $(PLUMED_MAIN_PATCH)
+	@echo "export PLUMED_ROOT=\"$(realpath $(PLUMED_LIBDIR)../../)\"" >> $(PLUMED_MAIN_PATCH)
+	@echo "source \"\$$PLUMED_ROOT\"/scripts/patch.sh" >> $(PLUMED_MAIN_PATCH)
+	chmod a+x $(PLUMED_MAIN_PATCH)
 
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)
