@@ -1,11 +1,17 @@
 
-.PHONY: all clean lib
+.PHONY: all clean lib install uninstall
 
 # by default we compile the lib directory, which in turn requests all the needeed modules
 all: lib
 
 lib: 
 	$(MAKE) -C lib
+
+install:
+	$(MAKE) -C lib install
+
+uninstall:
+	$(MAKE) -C lib uninstall
 
 # list of all the contained directories which can be cleaned
 SUBDIRS =$(subst /Makefile,,$(wildcard */Makefile))

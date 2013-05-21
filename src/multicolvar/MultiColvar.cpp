@@ -78,7 +78,7 @@ void MultiColvar::readAtoms( int& natoms ){
   setupMultiColvarBase();
 }
 
-void MultiColvar::readAtomsLikeKeyword( const std::string key, int& natoms ){ 
+void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){ 
   if( all_atoms.fullSize()>0 ) return; 
 
   std::vector<AtomNumber> t; std::vector<unsigned> newlist;
