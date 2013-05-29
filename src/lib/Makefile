@@ -80,6 +80,22 @@ install-do:
 	cd ../../src ; tar cf - */*.h $$(find . -type l) | tar xf - -C $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)/
 # copy inc files changing the path
 	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../../)| $(PLUMED_INSTALL_ROOT)/|g" $$file > $(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
+# modulefile
+	@echo "#%Module1.0##############################################"          >  $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "proc ModulesHelp { } {"                                             >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "  puts stderr \"\tAdds paths for Plumed\""                          >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "}"                                                                  >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "module-whatis   \"Adds paths for Plumed\""                          >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "# Manually add here dependencies and conflicts"                     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "prepend-path  PATH               $(PLUMED_INSTALL_PREFIX)/bin"      >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "prepend-path  CPATH              $(PLUMED_INSTALL_PREFIX)/include/" >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "prepend-path  INCLUDE            $(PLUMED_INSTALL_PREFIX)/include/" >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "prepend-path  LIBRARY_PATH       $(PLUMED_INSTALL_PREFIX)/lib/"     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "prepend-path  LD_LIBRARY_PATH    $(PLUMED_INSTALL_PREFIX)/lib/"     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@echo "prepend-path  DYLD_LIBRARY_PATH  $(PLUMED_INSTALL_PREFIX)/lib/"     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+ifdef SOEXT
+	@echo "setenv        PLUMED_KERNEL      $(PLUMED_INSTALL_PREFIX)/lib/libplumedKernel.$(SOEXT)" >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+endif
 # install links
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-patch $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch

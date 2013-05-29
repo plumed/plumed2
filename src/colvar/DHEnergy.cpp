@@ -44,7 +44,7 @@ The two atom groups should be disjointed. Notice that the value of the DHENERGY 
 \par Examples
 \verbatim
 # this is printing the electrostatic interaction between two groups of atoms
-dh: DHENERGY GROUPA=1-10 GROUPB=11-20 EPS=80.0 I=0.1 TEMP=300.0
+dh: DHENERGY GROUPA=1-10 GROUPB=11-20 EPSILON=80.0 I=0.1 TEMP=300.0
 PRINT ARG=dh
 \endverbatim
 (see also \ref PRINT)
