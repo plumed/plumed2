@@ -457,7 +457,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        if(trajectory_fmt=="gro"){
          if(!Tools::getline(fp,line)) error("premature end of trajectory file");
          std::vector<string> words=Tools::getWords(line);
-         if(words.size()<=3) error("cannot understand box format");
+         if(words.size()<3) error("cannot understand box format");
          Tools::convert(words[0],cell[0]);
          Tools::convert(words[1],cell[4]);
          Tools::convert(words[2],cell[8]);
