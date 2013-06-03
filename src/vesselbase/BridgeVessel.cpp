@@ -96,7 +96,7 @@ void BridgeVessel::completeNumericalDerivatives(){
 
   const double delta=sqrt(epsilon);
   ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( getAction() );
-  unsigned nder=myOutputAction->getNumberOfDerivatives(); unsigned nvals=myOutputValues->getNumberOfComponents();
+  unsigned nvals=myOutputValues->getNumberOfComponents();
   for(unsigned j=0;j<nvals;++j) ( myOutputValues->copyOutput(j) )->clearDerivatives();   
 
   if( aa ){
@@ -120,6 +120,7 @@ void BridgeVessel::completeNumericalDerivatives(){
       }
   } else {
       plumed_merror("not implemented or tested yet");
+//      unsigned nder=myOutputAction->getNumberOfDerivatives();
 //      for(unsigned j=0;j<nvals;++j){
 //          double ref=( myOutputValues->copyOutput(j) )->get();
 //          if( ( myOutputValues->copyOutput(j) )->hasDerivatives() ){

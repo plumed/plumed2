@@ -214,6 +214,10 @@ void Action::calculateFromPDB( const PDB& pdb ){
   calculate();
 }
 
+bool Action::getExchangeStep()const{
+  return plumed.getExchangeStep();
+}
+
 
 }
 

@@ -249,6 +249,8 @@ public:
 /// the atoms from the pdb input file rather than taking them from the 
 /// MD code
   virtual void readAtomsFromPDB( const PDB&  ){}
+/// Check if we are on an exchange step
+  bool getExchangeStep()const;
 };
 
 /////////////////////

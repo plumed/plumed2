@@ -122,6 +122,9 @@ private:
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
   ExchangePatterns& exchangePatterns;
 
+/// Set to true if on an exchange step
+  bool exchangeStep;
+
 /// Flag for restart
   bool restart;
 
@@ -256,6 +259,10 @@ public:
   bool getRestart()const;
 /// Set restart flag
   void setRestart(bool f){restart=f;}
+/// Set exchangeStep flag
+  void setExchangeStep(bool f);
+/// Get exchangeStep flag
+  bool getExchangeStep()const;
 /// Stop the calculation cleanly (both the MD code and plumed)
   void stop();
 };
@@ -286,6 +293,16 @@ void PlumedMain::setSuffix(const std::string&s){
 inline
 bool PlumedMain::getRestart()const{
   return restart;
+}
+
+inline
+void PlumedMain::setExchangeStep(bool s){
+  exchangeStep=s;
+}
+
+inline
+bool PlumedMain::getExchangeStep()const{
+  return exchangeStep;
 }
 
 }

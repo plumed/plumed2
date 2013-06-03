@@ -164,8 +164,10 @@ void GREX::calculate(){
   intracomm.Bcast(&rbuf[0],nn,0);
   istringstream i(string(&rbuf[0],rbuf.size()));
   atoms.readBinary(i);
+  plumedMain.setExchangeStep(true);
   plumedMain.prepareDependencies();
   plumedMain.justCalculate();
+  plumedMain.setExchangeStep(false);
   localDeltaBias+=plumedMain.getBias();
   localDeltaBias+=localUSwap-localUNow;
   if(intracomm.Get_rank()==0){
