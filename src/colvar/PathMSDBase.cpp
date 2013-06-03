@@ -102,6 +102,8 @@ nframes(0)
 
 void PathMSDBase::calculate(){
 
+  if(neigh_size>0 && getExchangeStep()) error("Neighbor lists for this collective variable are not compatible with replica exchange, sorry for that!");
+
   //log.printf("NOW CALCULATE! \n");
 
 
