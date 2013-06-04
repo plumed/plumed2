@@ -64,6 +64,7 @@ PlumedMain::PlumedMain():
   actionSet(*new ActionSet(*this)),
   bias(0.0),
   exchangePatterns(*new(ExchangePatterns)),
+  exchangeStep(false),
   restart(false),
   stopFlag(NULL),
   stopNow(false),
