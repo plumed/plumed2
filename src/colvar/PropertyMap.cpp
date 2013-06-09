@@ -47,9 +47,13 @@ where the parameters \f$X_i\f$  and  \f$Y_i\f$ are provided in the input pdb (al
 
 \par Examples
 \verbatim
-p3: PROPERTYMAP REFERENCE=../../trajectories/path_msd/allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=0.2
+p3: PROPERTYMAP REFERENCE=../../trajectories/path_msd/allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=4
 PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 \endverbatim
+
+note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
+recommended for performance) and states that the neighbor list will be calculated every 4
+timesteps and consider only the closest 8 member to the actual md snapshots.
 
 In this case the input line instructs plumed to look for two properties X and Y with attached values in the REMARK 
 line of the reference pdb (Note: No spaces from X and = and 1 !!!!).
