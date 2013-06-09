@@ -43,12 +43,13 @@ Here below is a case where you have defined three frames and you want to
 calculate the progress alng the path and the distance from it in p1
 
 \verbatim
-p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=1.0 NEIGH_SIZE=8 PROPERTY=X,Y 
+p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8 PROPERTY=X,Y
 PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 \endverbatim
 
-note that NEIGH_STRIDE=1.0 NEIGH_SIZE=8 control the neighborlist parameter (optional but
-recommended for perfomance).
+note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
+recommended for performance) and states that the neighbor list will be calculated every 4
+timesteps and consider only the closest 8 member to the actual md snapshots.
 
 \note
 The implementation of this collective variable and of \ref PROPERTYMAP
