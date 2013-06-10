@@ -170,6 +170,9 @@ private:
   int mw_rstride_;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
+  double uppI_;
+  double lowI_;
+  bool doInt_;
   bool isFirstStep;
   
   void   readGaussians(IFile*);
@@ -218,6 +221,8 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
+  keys.add("optional","LOWER_INTERVAL","monodimensional lower limit, below the limit the system will not fell the bias (when used together with grid SPLINES are automatically deactivated)");
+  keys.add("optional","UPPER_INTERVAL","monodimensional upper limit, above the limit the system will not fell the bias (when used together with grid SPLINES are automatically deactivated)");
 }
 
 MetaD::~MetaD(){
@@ -244,6 +249,8 @@ dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
 // Multiple walkers initialization
 mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
+// Interval initialization
+uppI_(-1), lowI_(-1), doInt_(false),
 isFirstStep(true)
 {
   // parse the flexible hills
@@ -324,6 +331,10 @@ isFirstStep(true)
   parse("WALKERS_DIR",mw_dir_);
   parse("WALKERS_RSTRIDE",mw_rstride_);
 
+  // Inteval keyword
+  parse("UPPER_INTERVAL",uppI_);
+  parse("LOWER_INTERVAL",lowI_);
+
   checkRead();
 
   log.printf("  Gaussian width ");
@@ -334,6 +345,13 @@ isFirstStep(true)
   log.printf("  Gaussian deposition pace %d\n",stride_); 
   log.printf("  Gaussian file %s\n",hillsfname.c_str());
   if(welltemp_){log.printf("  Well-Tempered Bias Factor %f\n",biasf_);}
+  if(uppI_!=lowI_) {
+    log.printf("  Upper and Lower limits correction for the bias activated\n");
+    if(sigma0_.size()!=1) error("Bias limits correction works only for monodimensional metadynamics!");
+    if(uppI_<lowI_) error("The Upper limit must be greater than the Lower limit!");
+    doInt_=true;
+    spline=false;
+  }
   if(grid_){
    log.printf("  Grid min");
    for(unsigned i=0;i<gmin.size();++i) log.printf(" %s",gmin[i].c_str() );
@@ -514,7 +532,7 @@ void MetaD::addGaussian(const Gaussian& hill)
     for(unsigned i=0;i<neighbors.size();++i){
      unsigned ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=0.0;}
-     BiasGrid_->getPoint(ineigh,xx);   
+     BiasGrid_->getPoint(ineigh,xx);
      double bias=evaluateGaussian(xx,hill,&der[0]);
      BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
     } 
@@ -602,7 +620,10 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
   if(der){
    vector<double> vder(getNumberOfArguments());
    bias=BiasGrid_->getValueAndDerivatives(cv,vder);
-   for(unsigned i=0;i<getNumberOfArguments();++i){der[i]=vder[i];}
+
+   if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) { // because interval can be used only with monodimensional metaD
+     for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]=vder[i];}
+   }
   }else{
    bias=BiasGrid_->getValue(cv);
   }
@@ -640,9 +661,10 @@ double MetaD::evaluateGaussian
         }
     } 
     if(dp2<DP2CUTOFF){
-     bias=hill.height*exp(-dp2);
-     if(der){
-      for(unsigned i=0;i<cv.size();++i){
+     if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) {
+       bias=hill.height*exp(-dp2);
+       if(der){
+        for(unsigned i=0;i<cv.size();++i){
                 double tmp=0.0;
                 k=i;
                 for(unsigned j=0;j<cv.size();++j){
@@ -650,6 +672,7 @@ double MetaD::evaluateGaussian
                         }
                         der[i]-=tmp;
                 }   
+       }
      }
     }
  }else{
@@ -660,9 +683,11 @@ double MetaD::evaluateGaussian
     }
     dp2*=0.5;
     if(dp2<DP2CUTOFF){
-     bias=hill.height*exp(-dp2);
-     if(der){
-      for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp_[i]*hill.invsigma[i];}
+     if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) {
+       bias=hill.height*exp(-dp2);
+       if(der){
+        for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp_[i]*hill.invsigma[i];}
+       }
      }
     }
  }
