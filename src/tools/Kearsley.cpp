@@ -205,25 +205,25 @@ double Kearsley::calculate(bool rmsd) {
 	for(i=0;i<alignmap.size();i++){
 
 		k=alignmap[i];
-        tmp1=align[k];
+		tmp1=sqrt(align[k]/totalign);
 
 		// adopt scaled coordinates
 
-	rr1=p1reset[k]*tmp1;
-        rr0=p0reset[k]*tmp1;
+		rr1=p1reset[k]*tmp1;
+		rr0=p0reset[k]*tmp1;
 
-	rrsq=modulo2(rr0)+modulo2(rr1);
+		rrsq=modulo2(rr0)+modulo2(rr1);
 
-        m[0][0] +=  rrsq+2.*(-rr0[0]*rr1[0]-rr0[1]*rr1[1]-rr0[2]*rr1[2]);
-        m[1][1] +=  rrsq+2.*(-rr0[0]*rr1[0]+rr0[1]*rr1[1]+rr0[2]*rr1[2]);
-        m[2][2] +=  rrsq+2.*(+rr0[0]*rr1[0]-rr0[1]*rr1[1]+rr0[2]*rr1[2]);
-        m[3][3] +=  rrsq+2.*(+rr0[0]*rr1[0]+rr0[1]*rr1[1]-rr0[2]*rr1[2]);
-        m[0][1] += 2.*(-rr0[1]*rr1[2]+rr0[2]*rr1[1]);
-        m[0][2] += 2.*( rr0[0]*rr1[2]-rr0[2]*rr1[0]);
-        m[0][3] += 2.*(-rr0[0]*rr1[1]+rr0[1]*rr1[0]);
-        m[1][2] -= 2.*( rr0[0]*rr1[1]+rr0[1]*rr1[0]);
-        m[1][3] -= 2.*( rr0[0]*rr1[2]+rr0[2]*rr1[0]);
-        m[2][3] -= 2.*( rr0[1]*rr1[2]+rr0[2]*rr1[1]);
+		m[0][0] +=  rrsq+2.*(-rr0[0]*rr1[0]-rr0[1]*rr1[1]-rr0[2]*rr1[2]);
+		m[1][1] +=  rrsq+2.*(-rr0[0]*rr1[0]+rr0[1]*rr1[1]+rr0[2]*rr1[2]);
+		m[2][2] +=  rrsq+2.*(+rr0[0]*rr1[0]-rr0[1]*rr1[1]+rr0[2]*rr1[2]);
+		m[3][3] +=  rrsq+2.*(+rr0[0]*rr1[0]+rr0[1]*rr1[1]-rr0[2]*rr1[2]);
+		m[0][1] += 2.*(-rr0[1]*rr1[2]+rr0[2]*rr1[1]);
+		m[0][2] += 2.*( rr0[0]*rr1[2]-rr0[2]*rr1[0]);
+		m[0][3] += 2.*(-rr0[0]*rr1[1]+rr0[1]*rr1[0]);
+		m[1][2] -= 2.*( rr0[0]*rr1[1]+rr0[1]*rr1[0]);
+		m[1][3] -= 2.*( rr0[0]*rr1[2]+rr0[2]*rr1[0]);
+		m[2][3] -= 2.*( rr0[1]*rr1[2]+rr0[2]*rr1[1]);
 
 	};
 	m[1][0] = m[0][1];
@@ -250,7 +250,7 @@ double Kearsley::calculate(bool rmsd) {
 	q[1]=s*eigenvecs(0,1);
 	q[2]=s*eigenvecs(0,2);
 	q[3]=s*eigenvecs(0,3);
-	err=eigenvals[0]/totalign;
+	err=eigenvals[0];
 
 	//log->printf(" ERR: %20.10f \n",err);
 
@@ -358,10 +358,7 @@ double Kearsley::calculate(bool rmsd) {
 	dmatdp0.resize(3*3*3*natoms);
 	for(i=0;i<dmatdp0.size();i++)dmatdp0[i]=0.;
 
-
 	vector<double> dd_dr_temp;dd_dr_temp.resize(natoms);
-
-
 
 	vector<Vector> derr_dr1;
 	derr_dr1.resize(natoms);
@@ -379,7 +376,7 @@ double Kearsley::calculate(bool rmsd) {
 	for(iii=0;iii<alignmap.size();iii++){
 
 		i=alignmap[iii];
-		tmp1=align[i];
+		tmp1=sqrt(align[i]/totalign);
 
 		// once again: derivative respect to scaled distance
 
@@ -494,7 +491,7 @@ double Kearsley::calculate(bool rmsd) {
 		 * pi matrix : coefficents in per theory
 		 */
 
-                pi0.zero();
+        pi0.zero();
 		pi1.zero();
 		derr_dr1[i].zero();
 		derr_dr0[i].zero();
@@ -509,10 +506,12 @@ double Kearsley::calculate(bool rmsd) {
 				};
 			};
 		};
+/*
 		derr_dr1[i]/=totalign;
 		derr_dr0[i]/=totalign;
 
 
+*/
 
 		for(j=0;j<3;j++){
 			for (k=0;k<3;k++){
@@ -547,12 +546,12 @@ double Kearsley::calculate(bool rmsd) {
 	if(comcorr_r1){
 		for(k=0;k<alignmap.size();k++){
 			i=alignmap[k];
-			array_3_n[i]=align[i]*derr_dr1[i];
-			tmp1=align[i]/totalign;
+			tmp1=sqrt(align[i]/totalign);
+			array_3_n[i]=tmp1*derr_dr1[i];
 			if(do_center){
 				for(jj=0;jj<alignmap.size();jj++){
 					j=alignmap[jj];
-					array_3_n[i]-=tmp1*align[j]*derr_dr1[j];
+					array_3_n[i]-=tmp1*(align[j]/totalign)*derr_dr1[j];
 				}
 			}
 		}
@@ -570,12 +569,12 @@ double Kearsley::calculate(bool rmsd) {
 	if(do_comcorr_r0){
 		for(k=0;k<alignmap.size();k++){
 			i=alignmap[k];
-			array_3_n[i]=align[i]*derr_dr0[i];
-			tmp1=align[i]/totalign;
+			tmp1=sqrt(align[i]/totalign);
+			array_3_n[i]=tmp1*derr_dr0[i];
 			if(do_center){
 				for(jj=0;jj<alignmap.size();jj++){
 					j=alignmap[jj];
-					array_3_n[i]-=tmp1*align[j]*derr_dr0[j];
+					array_3_n[i]-=tmp1*(align[j]/totalign)*derr_dr0[j];
 				}
 			}
 		}
@@ -597,12 +596,12 @@ double Kearsley::calculate(bool rmsd) {
 					for(ll=0;ll<alignmap.size();ll++){
 						l=alignmap[ll];
 						int ind=i*3*3*natoms+j*3*natoms+k*natoms+l;
-						dd_dr_temp[l]=align[l]*dmatdp1[ind];
-						tmp1=align[l]/totalign;
+						tmp1=sqrt(align[l]/totalign);
+						dd_dr_temp[l]=tmp1*dmatdp1[ind];
 						if(do_center){
 							for(nn=0;nn<alignmap.size();nn++){
 								n=alignmap[nn];
-								dd_dr_temp[l]-=dmatdp1[ind-l+n]*tmp1*align[n];
+								dd_dr_temp[l]-=dmatdp1[ind-l+n]*tmp1*align[n]/totalign;
 							}
 						}
 
@@ -626,12 +625,12 @@ double Kearsley::calculate(bool rmsd) {
 					for(ll=0;ll<alignmap.size();ll++){
 						l=alignmap[ll];
 						int ind=i*3*3*natoms+j*3*natoms+k*natoms+l;
-						dd_dr_temp[l]=align[l]*dmatdp0[ind];
-						tmp1=align[l]/totalign;
+						tmp1=sqrt(align[l]/totalign);
+						dd_dr_temp[l]=tmp1*dmatdp0[ind];
 						if(do_center){
 							for(nn=0;nn<alignmap.size();nn++){
 								n=alignmap[nn];
-								dd_dr_temp[l]-=dmatdp0[ind-l+n]*tmp1*align[n];
+								dd_dr_temp[l]-=dmatdp0[ind-l+n]*tmp1*align[n]/totalign;
 							}
 						}
 					}
