@@ -356,6 +356,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 #ifdef __PLUMED_HAS_MOLFILE
        if(use_molfile==true){
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
+        ts_in.coords = (float *)malloc(3*natoms * sizeof(float));
        }else{
 #endif
        fp=fopen(trajectoryFile.c_str(),"r");
@@ -524,38 +525,38 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     if(!noatoms){
 #ifdef __PLUMED_HAS_MOLFILE
        if(use_molfile){
-          if(pbc_cli_given==false) {
-	 	 // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution  
-	 	 double cosBC=cos(ts_in.alpha*pi/180.); 
-	 	 //double sinBC=sin(ts_in.alpha*pi/180.); 
-	 	 double cosAC=cos(ts_in.beta*pi/180.); 
-	 	 double cosAB=cos(ts_in.gamma*pi/180.); 
-	 	 double sinAB=sin(ts_in.gamma*pi/180.); 
-         	 double Ax=ts_in.A; 
-         	 double Bx=ts_in.B*cosAB; 
-         	 double By=ts_in.B*sinAB; 
-	 	 // If sinAB is zero, then we can't determine C uniquely since it's defined
-	 	 //  in terms of the angle between A and B.
-	 	 double Cx,Cy,Cz; 
-	 	 if (sinAB>0.){
-         	   Cx=ts_in.C*cosAC;
-	 	   Cy=ts_in.C*cosBC-cosAC*cosAB/sinAB;
-         	   Cz=ts_in.C*pow(1.-Cx*Cx-Cy*Cy,0.5);
-	 	 }else{Cx=0.;Cy=0.;Cz=0.;} 
-                 //convert to nm
-         	 cell[0]=Ax/10.;cell[1]=0.;cell[2]=0.;
-         	 cell[3]=Bx/10.;cell[4]=By/10.;cell[5]=0.;
-         	 cell[6]=Cx/10.;cell[7]=Cy/10.;cell[8]=Cz/10.;
-         	 //cerr<<"CELL "<<cell[0]<<" "<<cell[1]<<" "<<cell[2]<<" "<<cell[3]<<" "<<cell[4]<<" "<<cell[5]<<" "<<cell[6]<<" "<<cell[7]<<" "<<cell[8]<<endl;
-          }else{
-            	 for(unsigned i=0;i<9;i++)cell[i]=pbc_cli_box[i];
-          }
-	  // info on coords
-          // the order is xyzxyz...
-          for(int i=0;i<3*natoms;i++){
-	      coordinates[i]=real(ts_in.coords[i])/10.; //convert to nm
-    	      //cerr<<"COOR "<<coordinates[i]<<endl;
-          }
+    	   if(pbc_cli_given==false) {
+    		   // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
+    		   real cosBC=cos(ts_in.alpha*pi/180.);
+    		   //double sinBC=sin(ts_in.alpha*pi/180.);
+    		   real cosAC=cos(ts_in.beta*pi/180.);
+    		   real cosAB=cos(ts_in.gamma*pi/180.);
+    		   real sinAB=sin(ts_in.gamma*pi/180.);
+    		   real Ax=ts_in.A;
+    		   real Bx=ts_in.B*cosAB;
+    		   real By=ts_in.B*sinAB;
+    		   // If sinAB is zero, then we can't determine C uniquely since it's defined
+    		   //  in terms of the angle between A and B.
+    		   real Cx,Cy,Cz;
+    		   if (sinAB>0.){
+    			   Cx=ts_in.C*cosAC;
+    			   Cy=ts_in.C*cosBC-cosAC*cosAB/sinAB;
+    			   Cz=ts_in.C*pow(1.-Cx*Cx-Cy*Cy,0.5);
+    		   }else{Cx=0.;Cy=0.;Cz=0.;}
+    		   //convert to nm
+    		   cell[0]=Ax/10.;cell[1]=0.;cell[2]=0.;
+    		   cell[3]=Bx/10.;cell[4]=By/10.;cell[5]=0.;
+    		   cell[6]=Cx/10.;cell[7]=Cy/10.;cell[8]=Cz/10.;
+    		   //cerr<<"CELL "<<cell[0]<<" "<<cell[1]<<" "<<cell[2]<<" "<<cell[3]<<" "<<cell[4]<<" "<<cell[5]<<" "<<cell[6]<<" "<<cell[7]<<" "<<cell[8]<<endl;
+    	   }else{
+    		   for(unsigned i=0;i<9;i++)cell[i]=pbc_cli_box[i];
+    	   }
+    	   // info on coords
+    	   // the order is xyzxyz...
+    	   for(unsigned i=0;i<3*natoms;i++){
+    		   coordinates[i]=real(ts_in.coords[i]/10.); //convert to nm
+    		   //cerr<<"COOR "<<coordinates[i]<<endl;
+    	   }
        }else{
 #endif
        if(trajectory_fmt=="xyz"){
