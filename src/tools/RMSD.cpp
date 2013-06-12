@@ -145,17 +145,6 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
 		bool fastversion=true;
 		// this is because fast version only works with align==displace
 		if (align!=displace) fastversion=false;
-		// this is because of an inconsistent usage of weights in different versions:
-		unsigned i;
-		for(i=0;i<align.size();i++){
-		  if(align[i]!=0.0) break;
-		}
-		for(unsigned j=i+1;j<align.size();j++){
-		  if(align[i]!=align[j] && align[j]!=0.0){
-		    fastversion=false;
-		    break;
-		  }
-		}
 		if (fastversion){
 		// this is the fast routine but in the "safe" mode, which gives less numerical error:
 		  ret=optimalAlignment<true>(align,displace,positions,reference,derivatives,squared); 
