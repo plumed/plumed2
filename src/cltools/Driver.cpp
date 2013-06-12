@@ -26,7 +26,7 @@
 #include "tools/Communicator.h"
 #include "tools/Random.h"
 #include <cstdio>
-#include <string>
+#include <cstring>
 #include <vector>
 #include "tools/Units.h"
 #include "tools/PDB.h"
@@ -449,13 +449,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
         	   //
         	   // calculate the distance between dots (as in gromacs gmxlib/confio.c, routine get_w_conf )
         	   //
-        	   char      *p1, *p2, *p3;
+        	   const char      *p1, *p2, *p3;
         	   p1 = strchr(line.c_str(), '.');
         	   if (p1 == NULL) error("seems there are no coordinates in the gro file");
         	   p2 = strchr(&p1[1], '.');
         	   if (p2 == NULL) error("seems there is only one coordinates in the gro file");
         	   ddist = p2 - p1;
-        	   int ndec = ddist - 5;
         	   p3 = strchr(&p2[1], '.');
         	   if (p3 == NULL)error("seems there are only two coordinates in the gro file");
         	   if (p3 - p2 != ddist)error("not uniform spacing in fields in the gro file");
