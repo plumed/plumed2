@@ -83,9 +83,9 @@ double AlphaBeta::compute( const unsigned& j ){
   double svalue = -0.5*sin(value-target);
   double cvalue = 1.+cos(value-target);
 
-  dd0 *= -svalue;
-  dd1 *= -svalue;
-  dd2 *= -svalue;
+  dd0 *= svalue;
+  dd1 *= svalue;
+  dd2 *= svalue;
   value = 0.5*cvalue;
 
   addAtomsDerivatives(0,dd0);
