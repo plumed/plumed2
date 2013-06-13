@@ -8,3 +8,5 @@
 !test2
 !cs2back/*
 !cs2back
+!cs2back/data
+!cs2back/data/*
