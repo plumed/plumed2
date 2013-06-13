@@ -52,6 +52,8 @@ with a set of experimental values to generate a score \cite Robustelli:2010dn \c
 It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
 to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
 
+HOW TO COMPILE IT
+
 In general the system for which chemical shifts are to be calculated must be completly included in
 ATOMS. It should also be made WHOLE before the the backcalculation. CamShift is included in the
 free package ALMOST v.2.1 that can be dowload via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
@@ -64,17 +66,86 @@ make
 
 Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
 
-Experimental chemical shifts must be provided for all the nuclei and the residues of the system of interest setting to 0 those 
-that are missing.
+PLUMED 2 must then be compiled by linking ALMOST: 
+
+\verbatim
+in DYNAMIC_LIBS the following paths should be added: 
+
+-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm \
+-L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 \
+-L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl \
+-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx
+
+and in CPPFLAGS
+
+-I/ALMOST_BASE_PATH/almost/branches/almost-2.1/include \
+-I/ALMOST_BASE_PATH/almost/branches/almost-2.1/include/almost \
+-I/ALMOST_BASE_PATH/almost/branches/almost-2.1/lib/sqlite-3.6.23.1 -D__PLUMED_HAS_ALMOST
+
+with ALMOST_BASE_PATH the full path to the ALMOST folder
+\endverbatim
+
+HOW TO USE IT
+
+To use CamShift as a restraint or as collective variable or as a replica-averaged restraint 
+first of all the experimental data are needed. CamShift uses backbone and Cb chemical shifts 
+that must be provided as text files:
+
+\verbatim
+CAshifts.dat:
+CBshifts.dat:
+Cshifts.dat:
+Hshifts.dat:
+HAshifts.dat:
+Nshifts.dat:
+#1 0.0
+2 55.5
+3 58.4
+.
+.
+#last 0.0
+#last+1 (first) of second chain
+.
+#last of second chain
+\endverbatim
+
+All of them must always be there. If a chemical shift for an atom of a residue is not available 0.0 must be used. 
+So if for example all the Cb are not available all the chemical shifts for all the residues should be set as 0.0.
+
+A template.pdb file is needed to the generate a topology of the protein within ALMOST. For histidines in protonation 
+states different from D the HIE/HIP name should be used in the template.pdb. GLH and ASH can be used for the alternative 
+protonation of GLU and ASP. Non-standard amino acids and other molecules are not yet supported! If multiple chains are 
+present the chain identifier must be in the standard PDB format, together with the TER keyword at the end of each chain.
+Residues numbering should always go from 1 to N in both the chemical shifts files as well as in the template.pdb file.
+Two more keywords can be used to setup the topology: CYS-DISU to tell ALMOST to look for disulphide bridges and TERMINI
+to define the protonation state of the the chain's termini (currently only DEFAULT (NH3+, CO2-) and NONE (NH, CO)).
+
+Two more standard files are also needed: an ALMOST force-field file, corresponding to the force-field family used in
+the MD code, (a03_cs2_gromacs.mdb for the amber family or all22_gromacs.mdb for the charmm family) and camshift.db, 
+both these files can be copied from almost/branches/almost-2.1/toppar.
+
+All the above files must be in a single folder that must be specified with the keyword DATA. 
 
 \par Examples
 
+case 1:
+
 \verbatim
-WHOLEMOLECULE ENTITY0=1-174
-cs: CS2BACKBONE ATOM=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 [ENSEMBLE]
+WHOLEMOLECULES ENTITY0=1-174
+cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 ENSEMBLE
+cse: RESTRAINT ARG=cs SLOPE=24 KAPPA=0 AT=0.
+PRINT ARG=cs,cse.bias
+\endverbatim
+
+case 2:
+
+\verbatim
+WHOLEMOLECULES ENTITY0=1-174
+cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=1.0 NRES=13 TERMINI=DEFAULT,NONE CYS-DISU PRINT=1000
 PRINT ARG=cs
 \endverbatim
-(See also \ref WHOLEMOLECULE)
+
+(See also \ref WHOLEMOLECULES, \ref RESTRAINT and \ref PRINT)
 
 */
 //+ENDPLUMEDOC
@@ -102,7 +173,7 @@ PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose.");
   keys.add("atoms","ATOMS","The atoms to be included in the calculatios, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
@@ -111,8 +182,9 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("compulsory","WRITE_CS","0","Write chemical shifts period.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
   keys.add("optional","TERMINI","Defines the protonation states of the chain-termini.");
-  keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges");  
-  keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas");  
+  keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges.");  
+  keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");  
+  keys.remove("NOPBC");
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
