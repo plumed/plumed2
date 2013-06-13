@@ -43,24 +43,38 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR CS2BACKBONE 
 /*
-This collective variable calculates the backbone chemical shifts for a protein (CA, CB, C', H, HA, N)
-using the CamShift method \cite Kohlhoff:2009us. The backcalculated chemical shifts are then compared
-with a set of provided chemical shifts to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
+This collective variable calculates a scoring function based on the comparison of backcalculated and
+experimental backbone chemical shifts for a protein (CA, CB, C', H, HA, N).
+
+CamShift \cite Kohlhoff:2009us is employed to back calculate the chemical shifts that are then compared
+with a set of experimental values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
 
 It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
 to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
 
-WHOLEMOLECULE ENTITY0=1-174
-cs: CS2BACKBONE ATOM=1-174 DATA data/ FF a03_gromacs.mdb FLAT 0.0 NRES 13 [ENSEMBLE]
-PRINT ARG=cs 
-
 In general the system for which chemical shifts are to be calculated must be completly included in
 ATOMS. It should also be made WHOLE before the the backcalculation. CamShift is included in the
-free package ALMOST that can be dowload via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
+free package ALMOST v.2.1 that can be dowload via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
+ALMOST 2.1 can be found in branches/almost-2.1/ and it can be compiled:
 
+\verbatim
+./configure 
+make
+\endverbatim
+
+Once the code is compiled you should find the ALMOST library libAlm.a in src/lib/
 
 Experimental chemical shifts must be provided for all the nuclei and the residues of the system of interest setting to 0 those 
 that are missing.
+
+\par Examples
+
+\verbatim
+WHOLEMOLECULE ENTITY0=1-174
+cs: CS2BACKBONE ATOM=1-174 DATA data/ FF a03_gromacs.mdb FLAT 0.0 NRES 13 [ENSEMBLE]
+PRINT ARG=cs
+\endverbatim
+(See also \ref WHOLEMOLECULE)
 
 */
 //+ENDPLUMEDOC
@@ -134,7 +148,11 @@ PLUMED_COLVAR_INIT(ao)
 
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&multi_sim_comm.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+  if(ensemble&&comm.Get_rank()==0) {
+    if(multi_sim_comm.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+    else ens_dim=multi_sim_comm.Get_size(); 
+  } else ens_dim=0; 
+  if(ensemble) comm.Sum(&ens_dim, 1);
 
   stringadb  = stringa_data + string("/camshift.db");
   stringamdb = stringa_data + string("/") + stringa_forcefield;
@@ -227,7 +245,7 @@ PLUMED_COLVAR_INIT(ao)
   if(stride>1) log.printf("  Parallelized over %d processors\n", stride);
   a.set_mpi(stride, rank);
   
-  if(ensemble) { ens_dim=multi_sim_comm.Get_size(); log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }
+  if(ensemble) { log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }
 
   a.set_flat_bottom_const(grains);
   a.set_box_nupdate(neigh_f);
