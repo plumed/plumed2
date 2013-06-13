@@ -1,0 +1,3 @@
+type=driver
+arg="--plumed plumed.dat --trajectory-stride 1 --timestep 0.005 --igro traj_3dec.gro "
+extra_files="../../trajectories/grofiles/traj_3dec.gro ../../trajectories/grofiles/sugar.dat "
