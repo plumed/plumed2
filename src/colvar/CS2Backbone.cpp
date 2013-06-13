@@ -62,7 +62,7 @@ ALMOST 2.1 can be found in branches/almost-2.1/ and it can be compiled:
 make
 \endverbatim
 
-Once the code is compiled you should find the ALMOST library libAlm.a in src/lib/
+Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
 
 Experimental chemical shifts must be provided for all the nuclei and the residues of the system of interest setting to 0 those 
 that are missing.
@@ -71,7 +71,7 @@ that are missing.
 
 \verbatim
 WHOLEMOLECULE ENTITY0=1-174
-cs: CS2BACKBONE ATOM=1-174 DATA data/ FF a03_gromacs.mdb FLAT 0.0 NRES 13 [ENSEMBLE]
+cs: CS2BACKBONE ATOM=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 [ENSEMBLE]
 PRINT ARG=cs
 \endverbatim
 (See also \ref WHOLEMOLECULE)
@@ -269,8 +269,8 @@ PLUMED_COLVAR_INIT(ao)
   checkRead();
 
   log<<"  Bibliography "
-     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n"
-     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)") <<"\n";
+     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
+     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
 
   addValueWithDerivatives();
   setNotPeriodic();
