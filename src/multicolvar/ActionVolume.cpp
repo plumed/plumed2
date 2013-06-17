@@ -140,7 +140,7 @@ void ActionVolume::performTask( const unsigned& j ){
   if( not_in ){ weight = 1.0 - weight; wdf *= -1.; }  
 
   if( mycolv->isDensity() ){
-     unsigned nder=getNumberOfDerivatives(); 
+     unsigned nder=getNumberOfDerivatives();
      setElementValue( 1, weight ); setElementValue( 0, 1.0 ); 
      for(unsigned i=0;i<mycolv->atomsWithCatomDer.getNumberActive();++i){
         unsigned n=mycolv->atomsWithCatomDer[i], nx=nder + 3*n;
@@ -148,19 +148,6 @@ void ActionVolume::performTask( const unsigned& j ){
         addElementDerivative( nx+0, mycolv->getCentralAtomDerivative(n, 0, wdf ) );
         addElementDerivative( nx+1, mycolv->getCentralAtomDerivative(n, 1, wdf ) );
         addElementDerivative( nx+2, mycolv->getCentralAtomDerivative(n, 2, wdf ) );
-     }
-     // Virial contribution
-     if( !derivativesOfFractionalCoordinates() ){
-        Tensor vir( catom_pos, wdf ); nder+=3*mycolv->getNumberOfAtoms();
-        addElementDerivative( nder+0, -vir(0,0) ); 
-        addElementDerivative( nder+1, -vir(0,1) );
-        addElementDerivative( nder+2, -vir(0,2) );
-        addElementDerivative( nder+3, -vir(1,0) );
-        addElementDerivative( nder+4, -vir(1,1) );
-        addElementDerivative( nder+5, -vir(1,2) );
-        addElementDerivative( nder+6, -vir(2,0) );
-        addElementDerivative( nder+7, -vir(2,1) );
-        addElementDerivative( nder+8, -vir(2,2) );
      }
   } else {
      // Copy derivatives of the colvar and the value of the colvar
@@ -203,19 +190,6 @@ void ActionVolume::performTask( const unsigned& j ){
          addElementDerivative( nx+0, ww*mycolv->getCentralAtomDerivative(n, 0, wdf ) );
          addElementDerivative( nx+1, ww*mycolv->getCentralAtomDerivative(n, 1, wdf ) );
          addElementDerivative( nx+2, ww*mycolv->getCentralAtomDerivative(n, 2, wdf ) );
-     }
-     // Virial contribution for central atoms
-     if( !derivativesOfFractionalCoordinates() ){
-        Tensor vir( catom_pos, wdf ); nder+=3*mycolv->getNumberOfAtoms();
-        addElementDerivative( nder+0, -ww*vir(0,0) );
-        addElementDerivative( nder+1, -ww*vir(0,1) );
-        addElementDerivative( nder+2, -ww*vir(0,2) );
-        addElementDerivative( nder+3, -ww*vir(1,0) );
-        addElementDerivative( nder+4, -ww*vir(1,1) );
-        addElementDerivative( nder+5, -ww*vir(1,2) );
-        addElementDerivative( nder+6, -ww*vir(2,0) );
-        addElementDerivative( nder+7, -ww*vir(2,1) );
-        addElementDerivative( nder+8, -ww*vir(2,2) );
      }
   }
   activeAtoms.updateActiveMembers();
