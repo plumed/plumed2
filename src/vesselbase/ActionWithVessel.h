@@ -70,13 +70,15 @@ private:
   std::vector<Vessel*> functions;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
+protected:
 /// The terms in the series are locked
   bool contributorsAreUnlocked;
-protected:
 /// Does the weight have derivatives
   bool weightHasDerivatives;
 /// The numerical index of the task we are curently performing
   unsigned current;
+/// This is used for numerical derivatives of bridge variables
+  unsigned bridgeVariable;
 /// The list of tasks we have to perform
   DynamicList<unsigned> taskList;
 /// Add a vessel to the list of vessels
@@ -115,8 +117,6 @@ public:
   static void registerKeywords(Keywords& keys);
   ActionWithVessel(const ActionOptions&ao);
   ~ActionWithVessel();
-/// Used to make sure we are calculating everything during neighbor list update step
-  bool areContributorsUnlocked() const ;
   virtual void unlockContributors();
   virtual void lockContributors();
 /// Activate the jth colvar
@@ -153,6 +153,8 @@ public:
   double getElementValue( const unsigned& ival ) const ;
 /// Retrieve the derivative of the quantity in the sum wrt to a numbered element
   double getElementDerivative( const unsigned& ) const ;
+/// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
+  virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 };
 
 inline
@@ -216,11 +218,6 @@ inline
 void ActionWithVessel::accumulateDerivative( const unsigned& ider, const double& der ){
   plumed_dbg_assert( ider<getNumberOfDerivatives() );
   buffer[current_buffer_start + current_buffer_stride*ider] += der;
-}
-
-inline
-bool ActionWithVessel::areContributorsUnlocked() const {
-  return contributorsAreUnlocked;
 }
 
 inline

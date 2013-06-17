@@ -63,7 +63,7 @@ class PathMSDBase : public Colvar {
 
   double lambda;
   int neigh_size;
-  double neigh_stride;
+  int neigh_stride;
   std::vector<RMSD> msdv;
   std::string reference;
   std::vector<Vector> derivs_s;

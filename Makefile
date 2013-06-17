@@ -13,10 +13,15 @@ SUBDIRSCLEAN=$(addsuffix .clean,$(SUBDIRS))
 ifdef GCCDEP
 all:
 	$(MAKE) lib
-	$(MAKE) -C test
 
 lib:
 	$(MAKE)	-C src
+
+install:
+	$(MAKE) -C src install
+
+uninstall:
+	$(MAKE) -C src uninstall
 
 $(SRCDIRS):
 	$(MAKE) -C $@

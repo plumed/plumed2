@@ -86,7 +86,29 @@ V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta
 \right),
 \f]
 
-This method ensures that the bias converges more smoothly. 
+This method ensures that the bias converges more smoothly.
+
+Note that you can use here also the flexible gaussian approach  \cite Branduardi:2012dl
+in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
+to the space in collective variable covered in a given time. In this case the width of the deposited
+gaussian potential is denoted by one value only that is a Cartesian space (ADAPTIVE=GEOM) or a time
+(ADAPTIVE=DIFF). Note that a specific integration technique for the deposited gaussians
+should be used in this case. Check the documentation for utility sum_hills.
+
+With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero 
+outside boundary \cite . If, for example, metadynamics is performed on a CV s and one is interested only 
+to the free energy for s > sw, the history dependent potential is still updated according to the above
+equations but the metadynamics force is set to zero for s < sw. Notice that Gaussians are added also 
+if s < sw, as the tails of these Gaussians influence VG in the relevant region s > sw. In this way, the 
+force on the system in the region s > sw comes from both metadynamics and the force field, in the region 
+s < sw only from the latter. This approach allows obtaining a history-dependent bias potential VG that 
+fluctuates around a stable estimator, equal to the negative of the free energy far enough from the 
+boundaries. Note that:
+- It works only for one-dimensional biases;
+- It works with GRID but automatically turn off the SPLINES so set a higher number of BINS;
+- The interval limit sw in a region where the free energy derivative is not large;
+- If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
+  be used together with a soft wall at sw
 
 \par Examples
 The following input is for a standard metadynamics calculation using as
@@ -100,6 +122,29 @@ METAD ARG=d1,d2 SIGMA=0.2,0.2 HEIGHT=0.3 PACE=500 LABEL=restraint
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endverbatim
 (See also \ref DISTANCE \ref PRINT).
+
+\par
+If you use adaptive Gaussians, with diffusion scheme where you use
+a Gaussian that should cover the space of 20 timesteps in collective variables
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+METAD ARG=d1,d2 SIGMA=20 HEIGHT=0.3 PACE=500 LABEL=restraint ADAPTIVE=DIFF
+PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
+\endverbatim
+
+\par
+If you use adaptive Gaussians, with geometrical scheme where you use
+a Gaussian that should cover the space of 0.05 nm in Cartesian space
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+METAD ARG=d1,d2 SIGMA=0.05 HEIGHT=0.3 PACE=500 LABEL=restraint ADAPTIVE=GEOM
+PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
+\endverbatim
+
+
+
 
 */
 //+ENDPLUMEDOC
@@ -140,6 +185,9 @@ private:
   int mw_rstride_;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
+  double uppI_;
+  double lowI_;
+  bool doInt_;
   bool isFirstStep;
   
   void   readGaussians(IFile*);
@@ -183,11 +231,12 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
   keys.add("optional","GRID_WFILE","the file on which to write the grid");
   keys.addFlag("STORE_GRIDS",false,"store all the grid files the calculation generates. They will be deleted if this keyword is not present");
-  keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance or time dimensions");
+  keys.add("optional","ADAPTIVE","use a geometric (=GEOM) or diffusion (=DIFF) based hills width scheme. Sigma is one number that has distance units or timestep dimensions");
   keys.add("optional","WALKERS_ID", "walker id");
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
+  keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not fell the bias (when used together with grid SPLINES are automatically deactivated)");
 }
 
 MetaD::~MetaD(){
@@ -214,6 +263,8 @@ dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
 // Multiple walkers initialization
 mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
+// Interval initialization
+uppI_(-1), lowI_(-1), doInt_(false),
 isFirstStep(true)
 {
   // parse the flexible hills
@@ -224,7 +275,7 @@ isFirstStep(true)
 		  log.printf("  Uses Geometry-based hills width: sigma must be in distance units and only one sigma is needed\n");
 		  adaptive_=FlexibleBin::geometry;	
   }else if (adaptiveoption=="DIFF"){
-		  log.printf("  Uses Diffusion-based hills width: sigma must be in time units and only one sigma is needed\n");
+		  log.printf("  Uses Diffusion-based hills width: sigma must be in timesteps and only one sigma is needed\n");
 		  adaptive_=FlexibleBin::diffusion;	
   }else if (adaptiveoption=="NONE"){
 		  adaptive_=FlexibleBin::none;	
@@ -242,9 +293,9 @@ isFirstStep(true)
   }else{
   // if you use flexible hills you need one sigma  
          if(sigma0_.size()!=1){
-	     error("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
+        	 error("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
          } 
-  	 flexbin=new FlexibleBin(adaptive_,this,sigma0_[0]); 
+         flexbin=new FlexibleBin(adaptive_,this,sigma0_[0]);
   }
   parse("HEIGHT",height0_);
   if( height0_<=0.0 ) error("error cannot add zero height or negative height hills");
@@ -294,16 +345,30 @@ isFirstStep(true)
   parse("WALKERS_DIR",mw_dir_);
   parse("WALKERS_RSTRIDE",mw_rstride_);
 
+  // Inteval keyword
+  vector<double> tmpI(2);
+  parseVector("INTERVAL",tmpI);
+  if(tmpI.size()!=2&&tmpI.size()!=0) error("both a lower and an upper limits must be provided with INTERVAL");
+  else if(tmpI.size()==2) {
+    lowI_=tmpI.at(0);
+    uppI_=tmpI.at(1);
+    if(getNumberOfArguments()!=1) error("INTERVAL limits correction works only for monodimensional metadynamics!");
+    if(uppI_<lowI_) error("The Upper limit must be greater than the Lower limit!");
+    doInt_=true;
+    spline=false;
+  }
+
   checkRead();
 
   log.printf("  Gaussian width ");
-  if (adaptive_==FlexibleBin::diffusion)log.printf(" (Note: The units of sigma are in time) ");
+  if (adaptive_==FlexibleBin::diffusion)log.printf(" (Note: The units of sigma are in timesteps) ");
   if (adaptive_==FlexibleBin::geometry)log.printf(" (Note: The units of sigma are in dist units) ");
   for(unsigned i=0;i<sigma0_.size();++i) log.printf(" %f",sigma0_[i]);
   log.printf("  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_); 
   log.printf("  Gaussian file %s\n",hillsfname.c_str());
   if(welltemp_){log.printf("  Well-Tempered Bias Factor %f\n",biasf_);}
+  if(doInt_) log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
   if(grid_){
    log.printf("  Grid min");
    for(unsigned i=0;i<gmin.size();++i) log.printf(" %s",gmin[i].c_str() );
@@ -406,7 +471,7 @@ bool MetaD::readChunkOfGaussians(IFile *ifile, unsigned n)
  vector<double> center(ncv);
  vector<double> sigma(ncv);
  double height;
- int nhills=0; 
+ unsigned nhills=0;
  bool multivariate=false;
  std::vector<Value> tmpvalues;
  for(unsigned j=0;j<getNumberOfArguments();++j) tmpvalues.push_back( Value( this, getPntrToArgument(j)->getName(), false ) ); 
@@ -484,7 +549,7 @@ void MetaD::addGaussian(const Gaussian& hill)
     for(unsigned i=0;i<neighbors.size();++i){
      unsigned ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=0.0;}
-     BiasGrid_->getPoint(ineigh,xx);   
+     BiasGrid_->getPoint(ineigh,xx);
      double bias=evaluateGaussian(xx,hill,&der[0]);
      BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
     } 
@@ -572,7 +637,10 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
   if(der){
    vector<double> vder(getNumberOfArguments());
    bias=BiasGrid_->getValueAndDerivatives(cv,vder);
-   for(unsigned i=0;i<getNumberOfArguments();++i){der[i]=vder[i];}
+
+   if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) { // because interval can be used only with monodimensional metaD
+     for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]=vder[i];}
+   }
   }else{
    bias=BiasGrid_->getValue(cv);
   }
@@ -610,9 +678,10 @@ double MetaD::evaluateGaussian
         }
     } 
     if(dp2<DP2CUTOFF){
-     bias=hill.height*exp(-dp2);
-     if(der){
-      for(unsigned i=0;i<cv.size();++i){
+     if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) {
+       bias=hill.height*exp(-dp2);
+       if(der){
+        for(unsigned i=0;i<cv.size();++i){
                 double tmp=0.0;
                 k=i;
                 for(unsigned j=0;j<cv.size();++j){
@@ -620,6 +689,7 @@ double MetaD::evaluateGaussian
                         }
                         der[i]-=tmp;
                 }   
+       }
      }
     }
  }else{
@@ -630,9 +700,11 @@ double MetaD::evaluateGaussian
     }
     dp2*=0.5;
     if(dp2<DP2CUTOFF){
-     bias=hill.height*exp(-dp2);
-     if(der){
-      for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp_[i]*hill.invsigma[i];}
+     if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) {
+       bias=hill.height*exp(-dp2);
+       if(der){
+        for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp_[i]*hill.invsigma[i];}
+       }
      }
     }
  }

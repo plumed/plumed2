@@ -63,7 +63,7 @@ Vector MultiColvarFunction::getSeparation( const Vector& vec1, const Vector& vec
 }
 
 void MultiColvarFunction::unlockContributors(){
-  plumed_massert( mycolv->areContributorsUnlocked(),"contributors in base colvar are not unlocked"); 
+  plumed_massert( mycolv->contributorsAreUnlocked,"contributors in base colvar are not unlocked"); 
   ActionWithVessel::unlockContributors();
 }
 

@@ -233,10 +233,10 @@ void Tools::interpretRanges(std::vector<std::string>&s){
   for(vector<string>::iterator p=s.begin();p!=s.end();++p){
     vector<string> words;
     words=getWords(*p,"-");
-    int a,b;
-    int c=1;
+    int a;
     bool found=false;
     if(words.size()==2 && convert(words[0],a)){
+      int b,c=1;
       vector<string> bwords=getWords(words[1],":");
       if(bwords.size()==2 && convert(bwords[0],b) && convert(bwords[1],c)) found=true;
       else if(convert(words[1],b)){
@@ -289,7 +289,6 @@ void Tools::stripLeadingAndTrailingBlanks( std::string& str ){
 std::string Tools::extension(const std::string&s){
   size_t n=s.find_last_of(".");
   std::string ext;
-  string base=s;
   if(n!=std::string::npos && n+1<s.length() && n+5>=s.length()){
     ext=s.substr(n+1);
     if(ext.find("/")!=std::string::npos) ext="";

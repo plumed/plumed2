@@ -1,0 +1,5 @@
+TORSION ATOMS=2,5,6,7  LABEL=t1
+TORSION ATOMS=5,6,7,9  LABEL=t2
+PRINT ARG=t1,t2 STRIDE=1 FILE=colvar FMT=%8.4f
+# note : the units of sigma are in timesteps
+METAD ARG=t1 SIGMA=2 ADAPTIVE=DIFF HEIGHT=1.0 PACE=2 LABEL=md  FMT=%14.6f

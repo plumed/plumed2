@@ -26,7 +26,7 @@
 #include "tools/Communicator.h"
 #include "tools/Random.h"
 #include <cstdio>
-#include <string>
+#include <cstring>
 #include <vector>
 #include "tools/Units.h"
 #include "tools/PDB.h"
@@ -434,7 +434,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
          }
          for(unsigned i=0;i<9;i++)cell[i]=real(celld[i]);
        }
-
+  	   int ddist=0;
        // Read coordinates
        for(int i=0;i<natoms;i++){
          bool ok=Tools::getline(fp,line);
@@ -444,9 +444,24 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
            char dummy[1000];
            std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
          } else if(trajectory_fmt=="gro"){
-           Tools::convert(line.substr(20,8),cc[0]);
-           Tools::convert(line.substr(28,8),cc[1]);
-           Tools::convert(line.substr(36,8),cc[2]);
+           // do the gromacs way
+           if(!i){
+        	   //
+        	   // calculate the distance between dots (as in gromacs gmxlib/confio.c, routine get_w_conf )
+        	   //
+        	   const char      *p1, *p2, *p3;
+        	   p1 = strchr(line.c_str(), '.');
+        	   if (p1 == NULL) error("seems there are no coordinates in the gro file");
+        	   p2 = strchr(&p1[1], '.');
+        	   if (p2 == NULL) error("seems there is only one coordinates in the gro file");
+        	   ddist = p2 - p1;
+        	   p3 = strchr(&p2[1], '.');
+        	   if (p3 == NULL)error("seems there are only two coordinates in the gro file");
+        	   if (p3 - p2 != ddist)error("not uniform spacing in fields in the gro file");
+           }
+           Tools::convert(line.substr(20,ddist),cc[0]);
+           Tools::convert(line.substr(20+ddist,ddist),cc[1]);
+           Tools::convert(line.substr(20+ddist+ddist,ddist),cc[2]);
          } else plumed_error();
          if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ){
            coordinates[3*i]=real(cc[0]);
@@ -457,7 +472,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        if(trajectory_fmt=="gro"){
          if(!Tools::getline(fp,line)) error("premature end of trajectory file");
          std::vector<string> words=Tools::getWords(line);
-         if(words.size()<=3) error("cannot understand box format");
+         if(words.size()<3) error("cannot understand box format");
          Tools::convert(words[0],cell[0]);
          Tools::convert(words[1],cell[4]);
          Tools::convert(words[2],cell[8]);

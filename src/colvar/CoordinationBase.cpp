@@ -115,6 +115,7 @@ void CoordinationBase::prepare(){
     }else{
       requestAtoms(nl->getReducedAtomList());
       invalidateList=false;
+      if(getExchangeStep()) error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
     }
   }
 }

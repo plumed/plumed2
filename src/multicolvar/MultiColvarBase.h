@@ -38,6 +38,7 @@ class MultiColvarBase :
   public vesselbase::ActionWithVessel
   {
 friend class ActionVolume;
+friend class VolumeSubcell;
 friend class StoreColvarVessel;
 friend class StoreCentralAtomsVessel;
 friend class MultiColvarFunction;
@@ -54,7 +55,6 @@ private:
   DynamicList<unsigned> atoms_with_derivatives;
 /// Variables used for central atoms
   Tensor ibox;
-  bool centralAtomDerivativesAreInFractional;
   DynamicList<unsigned> atomsWithCatomDer;
   std::vector<Tensor> central_derivs;
 /// The forces we are going to apply to things
@@ -114,7 +114,7 @@ public:
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Retrieve the position of the central atom
-  Vector retrieveCentralAtomPos( const bool& frac );
+  Vector retrieveCentralAtomPos();
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual void calculateWeight();
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
@@ -138,14 +138,14 @@ unsigned MultiColvarBase::getNumberOfDerivatives(){
 
 inline
 void MultiColvarBase::removeAtomRequest( const unsigned& i, const double& weight ){
-  if( !areContributorsUnlocked() ) return;
+  if( !contributorsAreUnlocked ) return;
   plumed_dbg_assert( weight<getTolerance() );
   if( weight<getNLTolerance() ) colvar_atoms[current].deactivate( i );
 }
 
 inline
 void MultiColvarBase::deactivate_task(){
-  if( !areContributorsUnlocked() ) return;   // Deactivating tasks only possible during neighbor list update
+  if( !contributorsAreUnlocked ) return;   // Deactivating tasks only possible during neighbor list update
   colvar_atoms[current].deactivateAll();   // Deactivate all atom requests for this colvar
   ActionWithVessel::deactivate_task();     // Deactivate the colvar from the list
 }

@@ -254,13 +254,14 @@ inline
 double Value::getForce() const {
   return inputForce;
 }
-
+/// d2-d1
 inline
 double Value::difference(double d1,double d2)const{
   if(periodicity==notperiodic){
     return d2-d1;
   }else if(periodicity==periodic){
     double s=(d2-d1)*inv_max_minus_min;
+    // remember: pbc brings the difference in a range of -0.5:0.5
     s=Tools::pbc(s);
     return s*max_minus_min;
   } else plumed_merror("periodicity should be set to compute differences");
@@ -268,7 +269,7 @@ double Value::difference(double d1,double d2)const{
 
 inline
 double Value::bringBackInPbc(double d1)const{
-	return difference(min , d1);
+	return difference(min+max_minus_min/2. , d1);
 }
 
 inline
