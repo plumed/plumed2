@@ -32,7 +32,7 @@ using namespace std;
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
                            const bool& do_pair, const bool& do_pbc, const Pbc& pbc,
-                           const double& distance, const unsigned& stride):
+                           const double& distance, const unsigned& stride): reduced(false),
                            do_pair_(do_pair), do_pbc_(do_pbc), pbc_(&pbc),
                            distance_(distance), stride_(stride)
 {
@@ -54,7 +54,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
                            const Pbc& pbc, const double& distance,
-                           const unsigned& stride):
+                           const unsigned& stride): reduced(false),
                            do_pbc_(do_pbc), pbc_(&pbc),
                            distance_(distance), stride_(stride){
  fullatomlist_=list0;
@@ -119,10 +119,11 @@ void NeighborList::setRequestList() {
   requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
  }
  Tools::removeDuplicates(requestlist_);
+ reduced=false;
 }
 
 vector<AtomNumber>& NeighborList::getReducedAtomList() {
- for(unsigned int i=0;i<size();++i){
+ if(!reduced)for(unsigned int i=0;i<size();++i){
   unsigned newindex0=0,newindex1=0;
   AtomNumber index0=fullatomlist_[neighbors_[i].first];
   AtomNumber index1=fullatomlist_[neighbors_[i].second];
@@ -132,6 +133,7 @@ vector<AtomNumber>& NeighborList::getReducedAtomList() {
   p = std::find(requestlist_.begin(), requestlist_.end(), index1); plumed_assert(p!=requestlist_.end()); newindex1=p-requestlist_.begin();
   neighbors_[i]=pair<unsigned,unsigned>(newindex0,newindex1);
  }
+ reduced=true;
  return requestlist_;
 }
 
