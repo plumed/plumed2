@@ -318,6 +318,10 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NULL(val,word);
        if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
        else                       *(static_cast<int*>(val))=0;
+  } else if(word=="getBias"){
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
+       *(static_cast<double*>(val))=getBias(); 
   } else {
 // multi word commands
 
