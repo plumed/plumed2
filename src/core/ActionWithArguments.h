@@ -70,7 +70,7 @@ public:
   void addForcesOnArguments( const std::vector<double>& forces );
 public:
   ActionWithArguments(const ActionOptions&);
-  virtual ~ActionWithArguments(){};
+  virtual ~ActionWithArguments(){}
 /// Calculate the numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
 /// are doing.  The default will be correct for the vast majority of cases

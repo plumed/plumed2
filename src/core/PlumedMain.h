@@ -75,6 +75,7 @@ public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.
   Communicator&comm;
+  Communicator&multi_sim_comm;
 
 private:
   DLLoader& dlloader;
@@ -120,6 +121,9 @@ private:
 
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
   ExchangePatterns& exchangePatterns;
+
+/// Set to true if on an exchange step
+  bool exchangeStep;
 
 /// Flag for restart
   bool restart;
@@ -228,7 +232,7 @@ public:
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
-  long int getStep()const{return step;};
+  long int getStep()const{return step;}
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library
@@ -255,6 +259,10 @@ public:
   bool getRestart()const;
 /// Set restart flag
   void setRestart(bool f){restart=f;}
+/// Set exchangeStep flag
+  void setExchangeStep(bool f);
+/// Get exchangeStep flag
+  bool getExchangeStep()const;
 /// Stop the calculation cleanly (both the MD code and plumed)
   void stop();
 };
@@ -285,6 +293,16 @@ void PlumedMain::setSuffix(const std::string&s){
 inline
 bool PlumedMain::getRestart()const{
   return restart;
+}
+
+inline
+void PlumedMain::setExchangeStep(bool s){
+  exchangeStep=s;
+}
+
+inline
+bool PlumedMain::getExchangeStep()const{
+  return exchangeStep;
 }
 
 }

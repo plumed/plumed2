@@ -312,7 +312,6 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   unsigned nn=1;
   ss="setNatoms";
   plumed.cmd(ss,&nn);  
-  ss="init";
   if(Communicator::initialized())  plumed.cmd("setMPIComm",&pc.Get_comm()); 
   plumed.cmd("init",&nn);  
   vector <bool> isdone(cvs.size(),false);  
@@ -454,6 +453,10 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   if(grid_has_bin){
      addme="GRID_BIN="; for(unsigned i=0;i<(ncv-1);i++)addme+=gbin[i]+","; addme+=gbin[ncv-1];
      actioninput.push_back(addme);
+//  }else{
+//	  //automatic bin: 50 per dimension;
+//	  addme="GRID_BIN="; for(unsigned i=0;i<(ncv-1);i++)addme+="50,"; addme+="50";
+//	  actioninput.push_back(addme);
   }
   std::string  stride; stride="";
   if(parse("--stride",stride)){

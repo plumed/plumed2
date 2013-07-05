@@ -38,6 +38,7 @@ class MultiColvarBase :
   public vesselbase::ActionWithVessel
   {
 friend class ActionVolume;
+friend class VolumeSubcell;
 friend class StoreColvarVessel;
 friend class StoreCentralAtomsVessel;
 friend class MultiColvarFunction;
@@ -57,7 +58,6 @@ private:
   std::vector< DynamicList<unsigned> > colvar_atoms;
 /// Variables used for central atoms
   Tensor ibox;
-  bool centralAtomDerivativesAreInFractional;
   DynamicList<unsigned> atomsWithCatomDer;
   std::vector<Tensor> central_derivs;
 /// The forces we are going to apply to things
@@ -94,7 +94,7 @@ protected:
   void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
 public:
   MultiColvarBase(const ActionOptions&);
-  ~MultiColvarBase(){};
+  ~MultiColvarBase(){}
   static void registerKeywords( Keywords& keys );
 /// Prepare for the calculation
   void prepare();
@@ -115,7 +115,7 @@ public:
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Retrieve the position of the central atom
-  Vector retrieveCentralAtomPos( const bool& frac );
+  Vector retrieveCentralAtomPos();
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual void calculateWeight();
 /// A virtual routine to get the position of the central atom - used for things like cv gradient

@@ -44,10 +44,10 @@ public ActionWithArguments
   string fmt;
   OFile of;
 public:
-  void calculate(){};
+  void calculate(){}
   DumpProjections(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){};
+  void apply(){}
   void update();
   bool checkNeedsGradients()const{return true;}
   ~DumpProjections();
@@ -89,7 +89,7 @@ void DumpProjections::update(){
       of.fmtField(fmt);
       of.printField(getPntrToArgument(i)->getName()+"-"+getPntrToArgument(j)->getName(),getProjection(i,j));
     }
-  };
+  }
   of.printField();
 }
 

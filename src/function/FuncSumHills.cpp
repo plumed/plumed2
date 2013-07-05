@@ -57,7 +57,7 @@ class FilesHandler{
         bool isopen;
 	public:
 		FilesHandler(const vector<string> &filenames, const bool &parallelread ,  Action &myaction , Log &mylog);
-		bool readBunch(BiasRepresentation *br, unsigned stride);
+		bool readBunch(BiasRepresentation *br, int stride);
 		bool scanOneHill(BiasRepresentation *br, IFile *ifile );
 		void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin);
 		void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin, vector<double> &histosigma);
@@ -75,7 +75,7 @@ FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallel
 
 // note that the FileHandler is completely transparent respect to the biasrepresentation 
 // no check are made at this level
-bool FilesHandler::readBunch(BiasRepresentation *br , unsigned stride = -1){
+bool FilesHandler::readBunch(BiasRepresentation *br , int stride = -1){
         bool morefiles; morefiles=true;
 	if(parallelread){
 		(*log)<<"  doing parallelread \n";

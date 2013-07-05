@@ -69,11 +69,11 @@ public ActionWithArguments
   vector<Value*> rotateArguments;
 /////////////////////////////////////////
 public:
-  void calculate(){};
+  void calculate(){}
   void prepare();
   Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){};
+  void apply(){}
   void update();
   ~Print();
 };
@@ -151,7 +151,7 @@ void Print::update(){
         ofile.fmtField(fmt);
         ofile.printField( getPntrToArgument(i), getArgument(i) );
         //ofile.printField(getPntrToArgument(i)->getName(),getArgument(i));
-      };
+      }
       ofile.printField();
 }
 

@@ -69,7 +69,6 @@ df(2)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_massert( mycolv, "DHENERGY can only be used with MultiColvars and should only be used with DISTANCES");
-  std::vector<std::string> data=Tools::getWords(da.parameters);
 
   parse("I",I); parse("TEMP",T); parse("EPSILON",epsilon);
   

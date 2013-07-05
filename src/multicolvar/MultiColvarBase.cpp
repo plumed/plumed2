@@ -48,8 +48,7 @@ ActionWithValue(ao),
 ActionWithVessel(ao),
 usepbc(false),
 updateFreq(0),
-lastUpdate(0),
-centralAtomDerivativesAreInFractional(false)
+lastUpdate(0)
 {
   if( keywords.exists("NOPBC") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
@@ -135,8 +134,7 @@ void MultiColvarBase::performTask( const unsigned& j ){
   return;
 }
 
-Vector MultiColvarBase::retrieveCentralAtomPos( const bool& frac ){
-  centralAtomDerivativesAreInFractional=frac; 
+Vector MultiColvarBase::retrieveCentralAtomPos(){
   ibox=getPbc().getInvBox().transpose();
 
   // Prepare to retrieve central atom
@@ -146,17 +144,13 @@ Vector MultiColvarBase::retrieveCentralAtomPos( const bool& frac ){
   atomsWithCatomDer.deactivateAll();
 
   // Retrieve the central atom position
-  Vector catom_pos;
-  if(frac) catom_pos=getPbc().realToScaled( calculateCentralAtomPosition() );
-  else catom_pos=calculateCentralAtomPosition();
-  return catom_pos;
+  return calculateCentralAtomPosition();
 }
 
 void MultiColvarBase::addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der ){
   plumed_dbg_assert( iatom<getNumberOfAtoms() );
   atomsWithCatomDer.activate(iatom);
-  if( centralAtomDerivativesAreInFractional ) central_derivs[iatom] += matmul( ibox, der );
-  else central_derivs[iatom] += der;
+  central_derivs[iatom] += der;
 }
 
 double MultiColvarBase::getCentralAtomDerivative( const unsigned& iatom, const unsigned jcomp, const Vector& df ) const {

@@ -75,7 +75,7 @@ typedef vector<double>::const_iterator myiter;
 struct ordering {
        bool operator ()(pair<unsigned , myiter> const& a, pair<unsigned , myiter> const& b) {
            return *(a.second) < *(b.second);
-       };
+       }
 };
 // sorting utility
 vector<int> increasingOrder( vector<double> &v){
@@ -84,7 +84,7 @@ vector<int> increasingOrder( vector<double> &v){
    unsigned n = 0;
    for (myiter it = v.begin(); it != v.end(); ++it, ++n){
        order[n] = make_pair(n, it); // note: heere i do not put the values but the addresses that point to the value 
-   };
+   }
    // now sort according the second value
    sort(order.begin(), order.end(), ordering());
    typedef vector< pair<unsigned , myiter> >::const_iterator pairiter;
@@ -100,7 +100,7 @@ vector<int> increasingOrder( vector<double> &v){
 struct pairordering {
        bool operator ()(pair<Value * , double> const& a, pair<Value* , double> const& b) {
            return (a).second > (b).second;
-       };
+       }
 };
 
 public:

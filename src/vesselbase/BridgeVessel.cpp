@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "BridgeVessel.h"
+#include "tools/Matrix.h"
 #include "core/ActionWithArguments.h"
 
 namespace PLMD {
@@ -36,7 +37,7 @@ void BridgeVessel::resize(){
   forces.resize( myOutputAction->getNumberOfDerivatives() );
   myOutputAction->resizeFunctions();
   if( myOutputAction->checkNumericalDerivatives() ){
-      mynumerical_values.resize( myOutputAction->getNumberOfDerivatives()*myOutputValues->getNumberOfComponents() );
+      mynumerical_values.resize( getAction()->getNumberOfDerivatives()*myOutputValues->getNumberOfComponents() );
       inum=0;
   }
 }
@@ -56,8 +57,7 @@ void BridgeVessel::prepare(){
 }
 
 bool BridgeVessel::calculate(){
-  unsigned j;
-  myOutputAction->performTask(j);
+  myOutputAction->performTask( getAction()->current );
   if( myOutputAction->thisval[1]<myOutputAction->getTolerance() ){
       myOutputAction->clearAfterTask();
       return ( !myOutputAction->contributorsAreUnlocked || myOutputAction->thisval[1]>=myOutputAction->getNLTolerance() );
@@ -74,53 +74,84 @@ void BridgeVessel::finish(){
              mynumerical_values[inum]=myOutputValues->getOutputQuantity(i);
              inum++;
          }
+         plumed_dbg_assert( inum<=mynumerical_values.size() );
+     } else {
+         plumed_assert( inum==mynumerical_values.size() );
      }
   } 
 }
 
 void BridgeVessel::completeNumericalDerivatives(){
-  inum=0; const double delta=sqrt(epsilon);
+  unsigned nextra = myOutputAction->getNumberOfDerivatives() - getAction()->getNumberOfDerivatives();
+  Matrix<double> tmpder( myOutputValues->getNumberOfComponents(), nextra );
+  ActionWithVessel* vval=dynamic_cast<ActionWithVessel*>( myOutputAction );
+  for(unsigned i=0;i<nextra;++i){
+      vval->bridgeVariable=i; getAction()->calculate();
+      for(unsigned j=0;j<myOutputValues->getNumberOfComponents();++j) tmpder(j,i) = myOutputValues->getOutputQuantity(j);
+  }
+  vval->bridgeVariable=nextra; getAction()->calculate(); 
+  inum=0;  // Reset inum now that we have finished calling calculate
+  std::vector<double> base( myOutputValues->getNumberOfComponents() );
+  for(unsigned j=0;j<myOutputValues->getNumberOfComponents();++j) base[j] = myOutputValues->getOutputQuantity(j);
+
+  const double delta=sqrt(epsilon);
   ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( getAction() );
-  unsigned nder=myOutputAction->getNumberOfDerivatives();
-  for(unsigned j=0;j<myOutputValues->getNumberOfComponents();++j) ( myOutputValues->copyOutput(j) )->clearDerivatives();   
+  unsigned nvals=myOutputValues->getNumberOfComponents();
+  for(unsigned j=0;j<nvals;++j) ( myOutputValues->copyOutput(j) )->clearDerivatives();   
 
   if( aa ){
       ActionWithArguments* aarg=dynamic_cast<ActionWithArguments*>( getAction() );
-      plumed_assert( !aarg ); Tensor box=aa->getBox();
-      for(unsigned j=0;j<myOutputValues->getNumberOfComponents();++j){
+      plumed_assert( !aarg ); Tensor box=aa->getBox(); 
+      unsigned natoms=aa->getNumberOfAtoms();
+      for(unsigned j=0;j<nvals;++j){
           double ref=( myOutputValues->copyOutput(j) )->get();
           if( ( myOutputValues->copyOutput(j) )->hasDerivatives() ){
-              for(unsigned i=0;i<nder-9;++i){
-                  double d=( mynumerical_values[j*nder+i] - ref)/delta;
+              for(unsigned i=0;i<3*natoms;++i){
+                  double d=( mynumerical_values[i*nvals+j] - ref)/delta;
                   ( myOutputValues->copyOutput(j) )->addDerivative(i,d);
               }
               Tensor virial;
-              for(int i=0;i<3;i++) for(int k=0;k<3;k++) virial(i,k)=( mynumerical_values[nder-9+3*k+i]-ref)/delta;
-              virial=-1.0*matmul(box.transpose(),virial);
-              for(int i=0;i<3;i++) for(int k=0;k<3;k++) ( myOutputValues->copyOutput(j) )->addDerivative(nder-9+3*k+i,virial(i,k));
+              for(int i=0;i<3;i++) for(int k=0;k<3;k++){
+                 virial(i,k)=( mynumerical_values[ nvals*(3*natoms + 3*i + k) + j ]-ref)/delta;
+              }
+              virial=-matmul(box.transpose(),virial);
+              for(int i=0;i<3;i++) for(int k=0;k<3;k++) ( myOutputValues->copyOutput(j) )->addDerivative(3*natoms+3*k+i,virial(k,i));
           }
       }
   } else {
-      for(unsigned j=0;j<myOutputValues->getNumberOfComponents();++j){
-          double ref=( myOutputValues->copyOutput(j) )->get();
-          if( ( myOutputValues->copyOutput(j) )->hasDerivatives() ){
-              for(unsigned i=0;i<nder;++i){
-                  double d=( mynumerical_values[j*nder+i] - ref)/delta;
-                  ( myOutputValues->copyOutput(j) )->addDerivative(i,d);
-              }
-          }
-      }
+      plumed_merror("not implemented or tested yet");
+//      unsigned nder=myOutputAction->getNumberOfDerivatives();
+//      for(unsigned j=0;j<nvals;++j){
+//          double ref=( myOutputValues->copyOutput(j) )->get();
+//          if( ( myOutputValues->copyOutput(j) )->hasDerivatives() ){
+//              for(unsigned i=0;i<nder;++i){
+//                  double d=( mynumerical_values[i*nvals+j] - ref)/delta;
+//                  ( myOutputValues->copyOutput(j) )->addDerivative(i,d);
+//              }
+//          }
+//      }
+  }
+  // Add the derivatives wrt to the local quantities we are working with
+  for(unsigned j=0;j<nvals;++j){
+     unsigned k=0;
+     for(unsigned i=getAction()->getNumberOfDerivatives();i<myOutputAction->getNumberOfDerivatives();++i){
+        ( myOutputValues->copyOutput(j) )->addDerivative( i, (tmpder(j,k)-base[j])/sqrt(epsilon) ); k++;
+     }
   }
 }
 
 bool BridgeVessel::applyForce( std::vector<double>& outforces ){
   bool hasforce=false; outforces.assign(outforces.size(),0.0);
+  unsigned nextra = myOutputAction->getNumberOfDerivatives() - getAction()->getNumberOfDerivatives();
+  std::vector<double> eforces( nextra, 0.0 );
   for(unsigned i=0;i<myOutputAction->getNumberOfVessels();++i){
      if( ( myOutputAction->getPntrToVessel(i) )->applyForce( forces ) ){
          hasforce=true;
          for(unsigned j=0;j<outforces.size();++j) outforces[j]+=forces[j];
+         for(unsigned j=0;j<nextra;++j) eforces[j]+=forces[ outforces.size()+j ];
      }
   }
+  if(hasforce) myOutputAction->applyBridgeForces( eforces );
   return hasforce;
 }
 

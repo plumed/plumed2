@@ -98,7 +98,7 @@ public:
 /// Check for error/eof.
   operator bool () const;
 /// Set heavyFlush flag
-  void setHeavyFlush(){ heavyFlush=true;};
+  void setHeavyFlush(){ heavyFlush=true;}
 /// Opens the file (without auto-backup)
   FileBase& open(const std::string&name,const std::string& mode);
 /// Check if the file exists
