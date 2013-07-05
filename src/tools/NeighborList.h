@@ -35,6 +35,7 @@ class Pbc;
 /// A class that implements neighbor lists from two lists or a single list of atoms
 class NeighborList  
 {
+  bool reduced;
   bool do_pair_,do_pbc_,twolists_;
   const PLMD::Pbc* pbc_;
   std::vector<PLMD::AtomNumber> fullatomlist_,requestlist_;
@@ -77,7 +78,7 @@ public:
   std::pair<unsigned,unsigned> getClosePair(unsigned i) const;
 /// Get the list of neighbors of the i-th atom
   std::vector<unsigned> getNeighbors(unsigned i);
-  ~NeighborList(){};
+  ~NeighborList(){}
 };
 
 }

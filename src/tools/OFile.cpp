@@ -242,7 +242,7 @@ OFile& OFile::open(const std::string&path){
        if(ff) std::fclose(ff);
        if(fff) std::fclose(fff);
      }
-     comm->Barrier();
+     if(comm)comm->Barrier();
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
   }
   if(plumed) plumed->insertFile(*this);

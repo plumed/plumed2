@@ -50,6 +50,7 @@ namespace PLMD{
 
 PlumedMain::PlumedMain():
   comm(*new Communicator),
+  multi_sim_comm(*new Communicator),
   dlloader(*new DLLoader),
   cltool(NULL),
   stopwatch(*new Stopwatch),
@@ -63,6 +64,7 @@ PlumedMain::PlumedMain():
   actionSet(*new ActionSet(*this)),
   bias(0.0),
   exchangePatterns(*new(ExchangePatterns)),
+  exchangeStep(false),
   restart(false),
   stopFlag(NULL),
   stopNow(false),
@@ -89,6 +91,7 @@ PlumedMain::~PlumedMain(){
   if(cltool) delete cltool;
   delete &dlloader;
   delete &comm;
+  delete &multi_sim_comm;
 }
 
 /////////////////////////////////////////////////////////////
@@ -265,6 +268,9 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        comm.Set_fcomm(val);
        atoms.setDomainDecomposition(comm);
+  } else if(word=="setMPImultiSimComm"){
+       CHECK_NOTINIT(initialized,word);
+       multi_sim_comm.Set_comm(val);
   } else if(word=="setNatoms"){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
@@ -312,6 +318,10 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NULL(val,word);
        if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
        else                       *(static_cast<int*>(val))=0;
+  } else if(word=="getBias"){
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
+       *(static_cast<double*>(val))=getBias(); 
   } else {
 // multi word commands
 
@@ -363,8 +373,6 @@ void PlumedMain::init(){
   log<<"  PLUMED: a portable plugin for free-energy calculations with molecular dynamics\n";
   log<<"  Comp. Phys. Comm. 180, 1961 (2009)\n";
   log<<"For further information see the PLUMED web page at www.plumed-code.org\n";
-  log<<"List of registered actions:\n";
-  log<<actionRegister();
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));

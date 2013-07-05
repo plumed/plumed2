@@ -389,7 +389,6 @@ private:
 public:
 /**
    Retrieve the C plumed structure for this object
-    \param p The C plumed structure.
 */
   operator plumed()const;
 /**

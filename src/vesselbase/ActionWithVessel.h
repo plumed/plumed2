@@ -77,6 +77,8 @@ protected:
   bool weightHasDerivatives;
 /// The numerical index of the task we are curently performing
   unsigned current;
+/// This is used for numerical derivatives of bridge variables
+  unsigned bridgeVariable;
 /// The list of tasks we have to perform
   DynamicList<unsigned> taskList;
 /// Add a vessel to the list of vessels
@@ -146,6 +148,8 @@ public:
   double getElementValue( const unsigned& ival ) const ;
 /// Retrieve the derivative of the quantity in the sum wrt to a numbered element
   double getElementDerivative( const unsigned& ) const ;
+/// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
+  virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 };
 
 inline

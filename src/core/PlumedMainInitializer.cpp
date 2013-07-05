@@ -71,7 +71,7 @@ static class PlumedMainInitializer{
   PlumedMainInitializer(){
     plumed_plumedmain_function_holder fh={plumedmain_create,plumedmain_cmd,plumedmain_finalize};
     plumed_kernel_register(&fh);
-  };
+  }
 } RegisterMe;
 
 }

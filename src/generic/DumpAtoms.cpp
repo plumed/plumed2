@@ -98,8 +98,8 @@ public:
   DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
   static void registerKeywords( Keywords& keys );
-  void calculate(){};
-  void apply(){};
+  void calculate(){}
+  void apply(){}
   void update();
 };
 

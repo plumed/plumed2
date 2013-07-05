@@ -33,7 +33,8 @@ class CoordinationBase : public Colvar {
   bool pbc;
   bool serial;
   NeighborList *nl;
-  bool reduceListAtNextStep;
+  bool invalidateList;
+  bool firsttime;
   
 public:
   CoordinationBase(const ActionOptions&);

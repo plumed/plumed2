@@ -13,6 +13,9 @@ features available in plumed 2.0 and to work out how to install plumed 2.0 in yo
 - \subpage WhatsNew
 - \subpage Installation 
 
+See also \ref CHANGES-2-0
+
+
 \section qintro A quick introduction
 
 To run plumed 2.0 you need to provide one input file.  In this file you specify what it
@@ -80,6 +83,7 @@ PRINT ARG=d1 FILE=colvar STRIDE=10
 Also notice that all the actions can be labeled, and that many actions besides normal collective variables can define
 one or more value, which can be then referred using the corresponding label.
 
+\section Units A note on units
 By default the plumed inputs and outputs quantities in the following units:
 
 - Energy - kJ/mol

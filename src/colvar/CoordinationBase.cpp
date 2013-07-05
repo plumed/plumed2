@@ -45,7 +45,8 @@ CoordinationBase::CoordinationBase(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 pbc(true),
 serial(false),
-reduceListAtNextStep(false)
+invalidateList(true),
+firsttime(true)
 {
 
   parseFlag("SERIAL",serial);
@@ -106,13 +107,17 @@ CoordinationBase::~CoordinationBase(){
 }
 
 void CoordinationBase::prepare(){
- if(reduceListAtNextStep){
-   requestAtoms(nl->getReducedAtomList());
-   reduceListAtNextStep=false;
- }
- if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
-  requestAtoms(nl->getFullAtomList());
- }
+  if(nl->getStride()>0){
+    if(firsttime || (getStep()%nl->getStride()==0)){
+      requestAtoms(nl->getFullAtomList());
+      invalidateList=true;
+      firsttime=false;
+    }else{
+      requestAtoms(nl->getReducedAtomList());
+      invalidateList=false;
+      if(getExchangeStep()) error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
+    }
+  }
 }
 
 // calculator
@@ -124,7 +129,7 @@ void CoordinationBase::calculate()
  vector<Vector> deriv(getNumberOfAtoms());
 // deriv.resize(getPositions().size());
 
- if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
+ if(nl->getStride()>0 && invalidateList){
    nl->update(getPositions());
  }
 
@@ -166,11 +171,6 @@ void CoordinationBase::calculate()
  for(unsigned i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);
  setValue           (ncoord);
  setBoxDerivatives  (virial);
-
- if(nl->getStride()>0 && (getStep()-nl->getLastUpdate())>=nl->getStride()){
-  reduceListAtNextStep=true;
-  nl->setLastUpdate(getStep());
- }
 
 }
 }

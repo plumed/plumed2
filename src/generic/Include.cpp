@@ -69,8 +69,8 @@ class Include :
 public:
   static void registerKeywords( Keywords& keys );
   Include(const ActionOptions&ao);
-  void calculate(){};
-  void apply(){};
+  void calculate(){}
+  void apply(){}
 };
 
 PLUMED_REGISTER_ACTION(Include,"INCLUDE")

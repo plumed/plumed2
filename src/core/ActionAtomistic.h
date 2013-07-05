@@ -85,7 +85,7 @@ public:
 /// Get a reference to force on energy
   double & modifyForceOnEnergy();
 /// Get number of available atoms
-  unsigned getNumberOfAtoms()const{return indexes.size();};
+  unsigned getNumberOfAtoms()const{return indexes.size();}
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
 /// Get the vector of absolute indexes
