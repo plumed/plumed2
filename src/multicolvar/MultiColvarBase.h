@@ -51,8 +51,6 @@ private:
   unsigned lastUpdate;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
-/// A dynamic list containing those atoms with derivatives
-  DynamicList<unsigned> atoms_with_derivatives;
 /// Variables used for central atoms
   Tensor ibox;
   DynamicList<unsigned> atomsWithCatomDer;
@@ -62,6 +60,8 @@ private:
 /// This resizes the local arrays after neighbor list updates and during initialization
   void resizeLocalArrays();
 protected:
+/// A dynamic list containing those atoms with derivatives
+  DynamicList<unsigned> atoms_with_derivatives;
 /// The lists of the atoms involved in each of the individual colvars
   std::vector< DynamicList<unsigned> > colvar_atoms;
 /// Add a colvar to the set of colvars we are calculating (in practise just a list of atoms)
