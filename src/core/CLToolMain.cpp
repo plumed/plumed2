@@ -118,6 +118,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
     } else if(a=="--has-mpi"){
       if(Communicator::initialized()) return 0;
       else return 1;
+    } else if(a=="--has-matheval"){
+      return (config::hasMatheval()?0:1);
     } else if(a=="--no-mpi"){
 // this is ignored, as it is parsed in main
       if(i>1){
@@ -176,7 +178,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
         "  plumed [command] -h       : to print help for a specific command\n"
         "Options:\n"
         "  [help|-h|--help]          : to print this help\n"
-        "  [--has-mpi]               : fails if plumed is running with MPI\n"
+        "  [--has-mpi]               : fails if plumed is running without MPI\n"
+        "  [--has-matheval]          : fails if plumed is compiled without matheval\n"
         "  [--load LIB]              : loads a shared object (typically a plugin library)\n"
         "  [--standalone-executable] : tells plumed not to look for commands implemented as scripts\n"
         "Commands:\n";
