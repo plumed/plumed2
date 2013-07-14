@@ -110,6 +110,8 @@ boundaries. Note that:
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
   be used together with a soft wall at sw
 
+Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
+
 \par Examples
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
@@ -143,7 +145,26 @@ METAD ARG=d1,d2 SIGMA=0.05 HEIGHT=0.3 PACE=500 LABEL=restraint ADAPTIVE=GEOM
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endverbatim
 
-
+\par
+Multiple walkers can be also use as in  \cite multiplewalkers 
+These are enabled by setting the number of walker used, the id of the  
+current walker which interprets the input file, the directory where the   
+hills containing files resides, and the frequency to read the other walkers.
+Here is an example
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+METAD ...
+   ARG=d1 SIGMA=0.05 HEIGHT=0.3 PACE=500 LABEL=restraint 
+   WALKERS_N=10
+   WALKERS_ID=3
+   WALKERS_DIR=../
+   WALKERS_RSTRIDE=100
+... METAD
+\endverbatim
+where  WALKERS_N is the total number of walkers, WALKERS_ID is the   
+id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory  
+where all the walkers are located. WALKERS_RSTRIDE is the number of step between 
+one update and the other. 
 
 
 */
@@ -465,6 +486,9 @@ isFirstStep(true)
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
+  if(mw_n_>1) log<<plumed.cite(
+    "Raiteri, Laio, Gervasio, Micheletti, Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
+ 
   log<<"\n";
 
 }

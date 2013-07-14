@@ -54,6 +54,9 @@ all:
 	@echo First making other dirs $(DIRS)
 	$(MAKE) dirs
 	$(MAKE) lib
+else
+all:
+	$(MAKE) all-static
 endif
 
 all-static:
