@@ -43,8 +43,6 @@ private:
 public:
 /// Constructor
   StoreCentralAtomsVessel( const vesselbase::VesselOptions& );
-/// Return the number of terms
-  unsigned getNumberOfTerms(){ return 2; }
 /// This does the resizing of the buffer
   void resize();
 /// This does nothing

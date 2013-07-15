@@ -40,6 +40,7 @@ void ActionWithVessel::registerKeywords(Keywords& keys){
                                    "quantities, which are much less than TOL and which will thus not added to the sums being accumulated "
                                    "are not calculated at every step. They are only calculated when the neighbor list is updated.");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
+  keys.addFlag("LOWMEM",false,"lower the memory requirements");
   keys.add( vesselRegister().getKeywords() );
 }
 
@@ -53,6 +54,8 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   else serial=true;
   if(serial)log.printf("  doing calculation in serial\n");
+  parseFlag("LOWMEM",lowmem);
+  if(lowmem)log.printf("  lowering memory requirements\n");
   tolerance=nl_tolerance=epsilon; 
   if( keywords.exists("TOL") ) parse("TOL",tolerance);
   if( tolerance>epsilon){
@@ -127,18 +130,14 @@ void ActionWithVessel::readVesselKeywords(){
 }
 
 void ActionWithVessel::resizeFunctions(){
-  unsigned tmpnval,nvals=2, bufsize=0; 
+  unsigned bufsize=0; 
   for(unsigned i=0;i<functions.size();++i){
      functions[i]->bufstart=bufsize;
      functions[i]->resize();
      bufsize+=functions[i]->bufsize;
-     tmpnval=functions[i]->getNumberOfTerms();
-     plumed_massert( tmpnval>1 , "There should always be at least two terms - one for the value and one for the weight");
-     if(tmpnval>nvals) nvals=tmpnval;
   }
-  unsigned nder=getNumberOfDerivatives();
-  thisval.resize( nvals ); thisval_wasset.resize( nvals, false );
-  derivatives.resize( nvals*nder, 0.0 );
+  thisval.resize( getNumberOfQuantities() ); thisval_wasset.resize( getNumberOfQuantities(), false );
+  derivatives.resize( getNumberOfQuantities()*getNumberOfDerivatives(), 0.0 );
   buffer.resize( bufsize );
   tmpforces.resize( getNumberOfDerivatives() );
 }

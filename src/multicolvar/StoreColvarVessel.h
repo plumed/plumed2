@@ -55,8 +55,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   StoreColvarVessel( const vesselbase::VesselOptions& );
-/// Return the number of terms
-  unsigned getNumberOfTerms(){ return 2; }
 /// This does the resizing of the buffer
   void resize();
 /// This makes sure things further down the chain are resized

@@ -46,12 +46,15 @@ class ActionWithVessel : public virtual Action {
 friend class Vessel;
 friend class ShortcutVessel;
 friend class FunctionVessel;
+friend class StoreDataVessel;
 friend class BridgeVessel;
 private:
 /// This is used to ensure that we have properly read the action
   bool read;
 /// Do all calculations in serial
   bool serial;
+/// Lower memory requirements
+  bool lowmem;
 /// The tolerance on the accumulators 
   double tolerance;
 /// Tolerance for quantities being put in neighbor lists
@@ -133,6 +136,8 @@ public:
   virtual void retrieveDomain( std::string& min, std::string& max);
 /// Get the number of derivatives for final calculated quantity 
   virtual unsigned getNumberOfDerivatives()=0;
+/// Get the number of quantities that are calculated during each task
+  virtual unsigned getNumberOfQuantities();
 /// Switch on additional tasks
   void activateTheseTasks( const std::vector<bool>& addtionalTasks );
 /// Do any jobs that are required before the task list is undertaken
@@ -170,6 +175,11 @@ double ActionWithVessel::getNLTolerance() const {
 inline
 unsigned ActionWithVessel::getNumberOfVessels() const {
   return functions.size();
+}
+
+inline
+unsigned ActionWithVessel::getNumberOfQuantities(){
+  return 2;
 }
 
 inline

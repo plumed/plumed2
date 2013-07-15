@@ -54,8 +54,6 @@ public:
   bool applyForce( std::vector<double>& forces );
 /// Should not be called
   std::string description();
-/// Want to get rid of this function
-  unsigned getNumberOfTerms(){ return 2; }
 /// Jobs to do before the task list starts
   void prepare();
 /// Actually do the calculation
