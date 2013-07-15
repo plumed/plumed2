@@ -37,6 +37,8 @@ bool hasMatheval();
 
 bool hasDlopen();
 
+bool hasAlmost();
+
 }
 }
 

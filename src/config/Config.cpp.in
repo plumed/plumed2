@@ -57,6 +57,13 @@ bool hasDlopen(){
 #endif
 }
 
+bool hasAlmost(){
+#if __PLUMED_HAS_ALMOST
+      return true;
+#else
+      return false;
+#endif
+}
 
 }
 }
