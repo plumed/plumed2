@@ -19,39 +19,36 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_multicolvar_StoreCentralAtomsVessel_h
-#define __PLUMED_multicolvar_StoreCentralAtomsVessel_h
+#ifndef __PLUMED_vesselbase_StoreValueAndWeightVessel_h
+#define __PLUMED_vesselbase_StoreValueAndWeightVessel_h
 
-#include "vesselbase/StoreDataVessel.h" 
+#include <string>
+#include <cstring>
+#include <vector>
+#include "StoreDataVessel.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace vesselbase {
 
-class MultiColvarBase;
-class MultiColvarFunction;
-
-class StoreCentralAtomsVessel : public vesselbase::StoreDataVessel {
-private:
-/// The base multicolvar
-  MultiColvarBase* mycolv;
-/// A vector that is used to store derivatives
-  std::vector<double> tmpdf;
+class StoreValueAndWeightVessel : public StoreDataVessel {
 public:
-/// Constructor
-  StoreCentralAtomsVessel( const vesselbase::VesselOptions& );
-/// This does nothing
-  std::string description(){ return ""; }
-/// Get the orientation of the ith vector
-  Vector getPosition( const unsigned& );
-/// Recalculate the central atom position
-  void performTask( const unsigned& );
-/// Get the indices
-  void getIndexList( const unsigned& , const unsigned& , const unsigned& , std::vector<unsigned>& );
-/// Add derivatives to central atom position
-  void addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const Vector& df, MultiColvarBase* funcout );
+  static void registerKeywords( Keywords& keys );
+  StoreValueAndWeightVessel( const VesselOptions& );
+  double getValue( const unsigned& );
+  double getWeight( const unsigned& );
 };
+
+inline
+double StoreValueAndWeightVessel::getValue( const unsigned& ival ){
+  return getComponent( ival, 0 );
+}
+
+inline
+double StoreValueAndWeightVessel::getWeight( const unsigned& ival ){
+  return getComponent( ival, 1 );
+}
+
 
 }
 }
 #endif
-

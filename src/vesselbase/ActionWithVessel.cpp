@@ -39,6 +39,8 @@ void ActionWithVessel::registerKeywords(Keywords& keys){
                                    "keyword and the value for NL_TOL must be set less than the value for TOL.  This keyword ensures that "
                                    "quantities, which are much less than TOL and which will thus not added to the sums being accumulated "
                                    "are not calculated at every step. They are only calculated when the neighbor list is updated.");
+  keys.add("hidden","MAXDERIVATIVES","The maximum number of derivatives that can be used when storing data.  This controls when "
+                                     "we have to start using lowmem");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
   keys.add( vesselRegister().getKeywords() );
@@ -48,14 +50,18 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   Action(ao),
   read(false),
   serial(false),
+  lowmem(false),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false)
 {
+  maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   else serial=true;
   if(serial)log.printf("  doing calculation in serial\n");
-  parseFlag("LOWMEM",lowmem);
-  if(lowmem)log.printf("  lowering memory requirements\n");
+  if( keywords.exists("LOWMEM") ){
+     parseFlag("LOWMEM",lowmem);
+     if(lowmem)log.printf("  lowering memory requirements\n");
+  }
   tolerance=nl_tolerance=epsilon; 
   if( keywords.exists("TOL") ) parse("TOL",tolerance);
   if( tolerance>epsilon){
@@ -94,6 +100,9 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
 }
 
 void ActionWithVessel::readVesselKeywords(){
+  // Set maxderivatives if it is too big
+  if( maxderivatives>getNumberOfDerivatives() ) maxderivatives=getNumberOfDerivatives();
+
   // Loop over all keywords find the vessels and create appropriate functions
   for(unsigned i=0;i<keywords.size();++i){
       std::string thiskey,input; thiskey=keywords.getKeyword(i);
@@ -200,16 +209,24 @@ void ActionWithVessel::runAllTasks(){
   finishComputations();
 }
 
+void ActionWithVessel::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
+  indices[jstore]=getNumberOfDerivatives();
+  if( indices[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");
+
+  unsigned kder = ntotal + jstore*getNumberOfDerivatives();
+  for(unsigned jder=0;jder<getNumberOfDerivatives();++jder){ indices[ kder ] = jder; kder++; }
+}
+
 void ActionWithVessel::clearAfterTask(){
   // Clear the derivatives from this step
   for(unsigned k=0;k<thisval.size();++k){
-     thisval_wasset[k]=false;
      clearDerivativesAfterTask(k);
   }
 }
 
 void ActionWithVessel::clearDerivativesAfterTask( const unsigned& ider ){
   unsigned kstart=ider*getNumberOfDerivatives();
+  thisval[ider]=0.0; thisval_wasset[ider]=false;
   for(unsigned j=0;j<getNumberOfDerivatives();++j) derivatives[ kstart+j ]=0.0;
 }
 

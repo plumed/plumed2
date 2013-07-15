@@ -307,6 +307,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
 }
 
 void MultiColvar::resizeDynamicArrays(){
+  all_atoms.deactivateAll();
   for(unsigned i=0;i<taskList.getNumberActive();++i){
       unsigned n=taskList[i];
       for(unsigned j=0;j<colvar_atoms[n].getNumberActive();++j){ 
@@ -323,12 +324,11 @@ void MultiColvar::calculate(){
   runAllTasks();
 }
 
-double MultiColvar::doCalculation( const unsigned& j ){
-  double val=compute(j);
+void MultiColvar::updateActiveAtoms(){
+  if( atoms_with_derivatives.updateComplete() ) return;
   atoms_with_derivatives.emptyActiveMembers();
   for(unsigned i=0;i<getNAtoms();++i) atoms_with_derivatives.updateIndex( getAtomIndex(i) );
   atoms_with_derivatives.sortActiveList();
-  return val;
 }
 
 Vector MultiColvar::calculateCentralAtomPosition(){

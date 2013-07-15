@@ -41,6 +41,8 @@ MultiColvarBase(ao)
   mycolv = plumed.getActionSet().selectWithLabel<multicolvar::MultiColvarBase*>(mlab); 
   if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
   addDependency(mycolv);
+  // Make sure we use low memory option in base colvar
+  mycolv->setLowMemOption( usingLowMem() );
 
   // Checks for neighbor list
   if( mycolv->updateFreq>0 && updateFreq>0 ){
@@ -103,19 +105,16 @@ void MultiColvarFunction::calculate(){
   runAllTasks();
 }
 
-double MultiColvarFunction::doCalculation( const unsigned& j ){
-  double val=compute(j);
-  atoms_with_derivatives.updateActiveMembers();
-  return val;
-}
-
 void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
   mycolv->calculateNumericalDerivatives( this );
 }
 
-unsigned MultiColvarFunction::getNumberOfAtomsInCentralAtomDerivatives(){
-  return getNCAtomDerivatives()*mycolv->getNumberOfAtomsInCentralAtomDerivatives();
-}
+void MultiColvarFunction::updateActiveAtoms(){
+  if( atoms_with_derivatives.updateComplete() ) return;
+  atoms_with_derivatives.emptyActiveMembers();
+  for(unsigned i=0;i<getNumberOfAtoms();++i) atoms_with_derivatives.updateIndex(i);
+  atoms_with_derivatives.sortActiveList();
+} 
 
 Vector MultiColvarFunction::calculateCentralAtomPosition(){
   Vector catom=getCentralAtom();

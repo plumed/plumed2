@@ -149,6 +149,7 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
 
   if( secondary_rmsd.size()==0 && secondary_drmsd.size()==0 ){ 
      pos.resize( structure.size() ); taskList.activateAll();
+     all_atoms.deactivateAll();
      for(unsigned i=0;i<taskList.getNumberActive();++i){
         for(unsigned j=0;j<colvar_atoms[i].size();++j) all_atoms.activate( colvar_atoms[i][j] );
      }
@@ -201,6 +202,7 @@ void SecondaryStructureRMSD::prepare(){
       lastUpdate=getStep();
   }
   if(updatetime){
+     all_atoms.deactivateAll();
      for(unsigned i=0;i<taskList.getNumberActive();++i){
         for(unsigned j=0;j<colvar_atoms[i].size();++j) all_atoms.activate( colvar_atoms[i][j] ); 
      }
@@ -254,7 +256,8 @@ void SecondaryStructureRMSD::performTask( const unsigned& j ){
          if( nr<r ){ closest=i; r=nr; }
      }
   }
-  setElementValue(1,1.0); setElementValue(0,r);
+  setElementValue(1,1.0); 
+  setElementValue(0,r);
   return;
 }
 
@@ -289,6 +292,10 @@ void SecondaryStructureRMSD::mergeDerivatives( const unsigned& ider, const doubl
 
 void SecondaryStructureRMSD::apply(){
   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
+}
+
+void SecondaryStructureRMSD::clearDerivativesAfterTask( const unsigned& ival ){
+  thisval_wasset[ival]=false; setElementValue( ival, 0.0 ); thisval_wasset[ival]=false;
 }
 
 }

@@ -97,7 +97,6 @@ public:
 /// Returns the number of coordinates of the field
   void calculateWeight();
   bool isPeriodic(){ return false; }
-  unsigned getNumberOfAtomsInCentralAtomDerivatives(){ return 1; }
   Vector getCentralAtom();
 };
 

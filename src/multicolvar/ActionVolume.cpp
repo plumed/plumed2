@@ -239,6 +239,8 @@ void ActionVolume::clearDerivativesAfterTask( const unsigned& ider ){
      setElementDerivative( nvir, 0.0 ); nvir++;
   }
   plumed_dbg_assert( (nvir-vstart)==getNumberOfDerivatives() );
+  // Clear values
+  thisval_wasset[ider]=false; setElementValue( ider, 0.0 ); thisval_wasset[ider]=false;
 }
 
 void ActionVolume::calculateNumericalDerivatives( ActionWithValue* a ){

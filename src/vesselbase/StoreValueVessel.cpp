@@ -19,39 +19,21 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_multicolvar_StoreCentralAtomsVessel_h
-#define __PLUMED_multicolvar_StoreCentralAtomsVessel_h
-
-#include "vesselbase/StoreDataVessel.h" 
+#include "StoreValueVessel.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace vesselbase {
 
-class MultiColvarBase;
-class MultiColvarFunction;
+void StoreValueVessel::registerKeywords( Keywords& keys ){
+  StoreDataVessel::registerKeywords( keys );
+}
 
-class StoreCentralAtomsVessel : public vesselbase::StoreDataVessel {
-private:
-/// The base multicolvar
-  MultiColvarBase* mycolv;
-/// A vector that is used to store derivatives
-  std::vector<double> tmpdf;
-public:
-/// Constructor
-  StoreCentralAtomsVessel( const vesselbase::VesselOptions& );
-/// This does nothing
-  std::string description(){ return ""; }
-/// Get the orientation of the ith vector
-  Vector getPosition( const unsigned& );
-/// Recalculate the central atom position
-  void performTask( const unsigned& );
-/// Get the indices
-  void getIndexList( const unsigned& , const unsigned& , const unsigned& , std::vector<unsigned>& );
-/// Add derivatives to central atom position
-  void addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const Vector& df, MultiColvarBase* funcout );
-};
+StoreValueVessel::StoreValueVessel( const VesselOptions& da):
+StoreDataVessel(da)
+{
+  if( weightHasDerivatives() ) error("this quantity cannot be calculated if weights have derivatives");
+  completeSetup( 0, 1 );
+}
 
 }
 }
-#endif
-

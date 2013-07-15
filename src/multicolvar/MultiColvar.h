@@ -76,10 +76,8 @@ public:
   virtual void calculationsRequiredBeforeNumericalDerivatives(){}
 /// Calculate the multicolvar
   virtual void calculate();
-/// Do the calculation
-  double doCalculation( const unsigned& j );
-/// Actually compute the colvar
-  virtual double compute( const unsigned& j )=0;
+/// Update the atoms that have derivatives
+  void updateActiveAtoms();
 /// Calculate the position of the central atom
   Vector calculateCentralAtomPosition();
 /// Get the position of the central atom
@@ -120,12 +118,12 @@ AtomNumber MultiColvar::getAbsoluteIndex(unsigned iatom) const {
 
 inline
 void MultiColvar::addAtomsDerivatives(const int& iatom, const Vector& der){
-  MultiColvarBase::addAtomsDerivatives( getAtomIndex(iatom), der );
+  MultiColvarBase::addAtomsDerivatives( 0, getAtomIndex(iatom), der );
 }
 
 inline
 void MultiColvar::addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& wder ){
-  MultiColvarBase::addAtomsDerivativeOfWeight( getAtomIndex(iatom), wder );
+  MultiColvarBase::addAtomsDerivatives( 1, getAtomIndex(iatom), wder );
 }
 
 inline

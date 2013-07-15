@@ -81,7 +81,6 @@ public:
   AlphaBeta(const ActionOptions&);
   virtual double compute( const unsigned& j );
   bool isPeriodic(){ return false; }
-  unsigned getNumberOfAtomsInCentralAtomDerivatives(){ return 2; }
   Vector getCentralAtom();  
 };
 

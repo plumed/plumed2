@@ -91,7 +91,7 @@ public:
   void prepare();
   void calculate();
   void performTask( const unsigned& j );
-  void clearDerivativesAfterTask( const unsigned& ){}
+  void clearDerivativesAfterTask( const unsigned& );
   void apply();
   void mergeDerivatives( const unsigned& , const double& );
   bool isPeriodic(){ return false; }
