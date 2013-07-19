@@ -106,6 +106,10 @@ ifdef SOEXT
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumed.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumedKernel.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
 endif
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_ROOT)
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
 	@echo "To uninstall, remove the following files and directories:"
 	@echo  $(PLUMED_INSTALL_ROOT)
 	@echo  $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
