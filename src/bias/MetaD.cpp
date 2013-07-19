@@ -110,6 +110,8 @@ boundaries. Note that:
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
   be used together with a soft wall at sw
 
+Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
+
 \par Examples
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5
@@ -143,7 +145,26 @@ METAD ARG=d1,d2 SIGMA=0.05 HEIGHT=0.3 PACE=500 LABEL=restraint ADAPTIVE=GEOM
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endverbatim
 
-
+\par
+Multiple walkers can be also use as in  \cite multiplewalkers 
+These are enabled by setting the number of walker used, the id of the  
+current walker which interprets the input file, the directory where the   
+hills containing files resides, and the frequency to read the other walkers.
+Here is an example
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+METAD ...
+   ARG=d1 SIGMA=0.05 HEIGHT=0.3 PACE=500 LABEL=restraint 
+   WALKERS_N=10
+   WALKERS_ID=3
+   WALKERS_DIR=../
+   WALKERS_RSTRIDE=100
+... METAD
+\endverbatim
+where  WALKERS_N is the total number of walkers, WALKERS_ID is the   
+id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory  
+where all the walkers are located. WALKERS_RSTRIDE is the number of step between 
+one update and the other. 
 
 
 */
@@ -167,10 +188,11 @@ private:
   vector<Gaussian> hills_;
   OFile hillsOfile_;
   Grid* BiasGrid_;
+  Grid* ExtGrid_;
   bool storeOldGrids_;
-  std::string gridfilename_;
+  std::string gridfilename_,gridreadfilename_;
   int wgridstride_; 
-  bool grid_;
+  bool grid_,hasextgrid_;
   double height0_;
   double biasf_;
   double temp_;
@@ -237,6 +259,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
   keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not fell the bias (when used together with grid SPLINES are automatically deactivated)");
+  keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
 }
 
 MetaD::~MetaD(){
@@ -254,7 +277,7 @@ MetaD::~MetaD(){
 MetaD::MetaD(const ActionOptions& ao):
 PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
-BiasGrid_(NULL), wgridstride_(0), grid_(false),
+BiasGrid_(NULL),ExtGrid_(NULL), wgridstride_(0), grid_(false), hasextgrid_(false),
 // Metadynamics basic parameters
 height0_(0.0), biasf_(1.0), temp_(0.0),
 stride_(0), welltemp_(false),
@@ -334,9 +357,12 @@ isFirstStep(true)
   if(grid_ && gridfilename_.length()>0){
     if(wgridstride_==0 ) error("frequency with which to output grid not specified use GRID_WSTRIDE");
   }
+
   if(grid_ && wgridstride_>0){
     if(gridfilename_.length()==0) error("grid filename not specified use GRID_WFILE"); 
   }
+
+  parse("GRID_RFILE",gridreadfilename_);
 
   // Multiple walkers
   parse("WALKERS_N",mw_n_);
@@ -383,6 +409,11 @@ isFirstStep(true)
    if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
    if(wgridstride_>0){log.printf("  Grid is written on file %s with stride %d\n",gridfilename_.c_str(),wgridstride_);} 
   }
+  if(gridreadfilename_.length()>0){
+	   log.printf("  Reading an additional bias from grid in file %s \n",gridreadfilename_.c_str());
+  }
+
+
   if(mw_n_>1){
    log.printf("  %d multiple walkers active\n",mw_n_);
    log.printf("  walker id %d\n",mw_id_);
@@ -400,6 +431,20 @@ isFirstStep(true)
    std::string funcl=getLabel() + ".bias";
    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+  }
+
+// initializing external grid
+  if(gridreadfilename_.length()>0){
+   hasextgrid_=true;
+   // read the grid in input, find the keys
+   IFile gridfile; gridfile.open(gridreadfilename_);
+   std::string funcl=getLabel() + ".bias";
+   ExtGrid_=Grid::create(funcl,getArguments(),gridfile,false,false,true);
+   gridfile.close();
+   if(ExtGrid_->getDimension()!=getNumberOfArguments()) error("mismatch between dimensionality of input grid and number of arguments");
+   for(unsigned i=0;i<getNumberOfArguments();++i){
+     if( getPntrToArgument(i)->isPeriodic()!=ExtGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
+   }
   }
 
 // creating vector of ifile* for hills reading 
@@ -441,6 +486,9 @@ isFirstStep(true)
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
+  if(mw_n_>1) log<<plumed.cite(
+    "Raiteri, Laio, Gervasio, Micheletti, Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
+ 
   log<<"\n";
 
 }
@@ -644,6 +692,17 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
   }else{
    bias=BiasGrid_->getValue(cv);
   }
+ }
+ if(hasextgrid_){
+	  if(der){
+	   vector<double> vder(getNumberOfArguments());
+	   bias+=ExtGrid_->getValueAndDerivatives(cv,vder);
+	   if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) { // because interval can be used only with monodimensional metaD
+	     for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]+=vder[i];}
+	   }
+	  }else{
+	   bias+=ExtGrid_->getValue(cv);
+	  }
  }
  return bias;
 }

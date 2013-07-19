@@ -41,6 +41,30 @@ std::string getMakefile(){
   return std::string(conf,conf+std::strlen(conf));
 }
 
+bool hasMatheval(){
+#if __PLUMED_HAS_MATHEVAL
+      return true;
+#else
+      return false;
+#endif
+}
+
+bool hasDlopen(){
+#if __PLUMED_HAS_DLOPEN
+      return true;
+#else
+      return false;
+#endif
+}
+
+bool hasAlmost(){
+#if __PLUMED_HAS_ALMOST
+      return true;
+#else
+      return false;
+#endif
+}
+
 }
 }
 
