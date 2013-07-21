@@ -41,7 +41,7 @@ int main(int argc,char**argv){
   if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
   if(!nompi) MPI_Init(&argc,&argv);
 #endif
-  int ret;
+  int ret=0;
 
   PLMD::Plumed* p=new PLMD::Plumed;
   p->cmd("CLTool setArgc",&argc);
