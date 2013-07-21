@@ -265,6 +265,12 @@ public:
   bool getExchangeStep()const;
 /// Stop the calculation cleanly (both the MD code and plumed)
   void stop();
+/// Enforce active flag.
+/// This is a (bit dirty) hack to solve a bug. When there is no active ActionPilot,
+/// several shortcuts are used. However, these shortcuts can block GREX module.
+/// This function allows to enforce active plumed when doing exchanges,
+/// thus fixing the bug.
+  void resetActive(bool active);
 };
 
 /////
@@ -303,6 +309,11 @@ void PlumedMain::setExchangeStep(bool s){
 inline
 bool PlumedMain::getExchangeStep()const{
   return exchangeStep;
+}
+
+inline
+void PlumedMain::resetActive(bool active){
+  this->active=active;
 }
 
 }
