@@ -144,6 +144,7 @@ void GREX::cmd(const string&key,void*val){
 
 void GREX::savePositions(){
   plumedMain.prepareDependencies();
+  plumedMain.resetActive(true);
   atoms.shareAll();
   plumedMain.waitData();
   ostringstream o;
