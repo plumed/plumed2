@@ -475,8 +475,7 @@ isFirstStep(true)
 
 // open hills file for writing
   hillsOfile_.link(*this);
-  if(plumed.getRestart()) hillsOfile_.open(ifilesnames[mw_id_],"aw");
-  else hillsOfile_.open(ifilesnames[mw_id_]);
+  hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
   hillsOfile_.setHeavyFlush();
@@ -528,12 +527,12 @@ bool MetaD::readChunkOfGaussians(IFile *ifile, unsigned n)
   if(welltemp_){height*=(biasf_-1.0)/biasf_;}
   addGaussian(Gaussian(center,sigma,height,multivariate));
   if(nhills==n){
-      log.printf("      %d Gaussians read\n",nhills);
+      log.printf("      %u Gaussians read\n",nhills);
       return true;
   }
   nhills++;
  }     
- log.printf("      %d Gaussians read\n",nhills);
+ log.printf("      %u Gaussians read\n",nhills);
  return false;
 }
 
