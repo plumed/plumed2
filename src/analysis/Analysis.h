@@ -100,8 +100,6 @@ protected:
   double getNormalization() const;
 /// Are we analyzing each data block separately (if we are not this also returns the old normalization )
   bool usingMemory() const; 
-/// Save the results in files from previous runs of the analysis algorithm
-  std::string saveResultsFromPreviousAnalyses( const std::string & filename );
 /// Convert the stored log weights to proper weights
   void finalizeWeights( const bool& ignore_weights );
 /// Overwrite ActionWithArguments getArguments() so that we don't return

@@ -210,7 +210,7 @@ OFile& OFile::printField(){
   return *this;
 }
 
-OFile& OFile::open(const std::string&path){
+OFile& OFile::open(const std::string&path, const std::string& backstring ){
   plumed_assert(!cloned);
   eof=false;
   err=false;
@@ -236,7 +236,7 @@ OFile& OFile::open(const std::string&path){
            std::string num;
            Tools::convert(i,num);
            if(i>maxbackup) plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
-           backup=directory+"bck."+num+"."+file;
+           backup=directory+backstring +"."+num+"."+file;
            fff=std::fopen(backup.c_str(),"r");
            if(!fff) break;
          }

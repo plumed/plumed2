@@ -145,7 +145,7 @@ gbin(getNumberOfArguments())
 
 void Histogram::performAnalysis(){
   // Back up old histogram files
-  std::string oldfname=saveResultsFromPreviousAnalyses( gridfname );
+//  std::string oldfname=saveResultsFromPreviousAnalyses( gridfname );
 
   // Get pbc stuff for grid
   std::vector<bool> pbc; std::string dmin,dmax;
@@ -153,9 +153,10 @@ void Histogram::performAnalysis(){
      pbc.push_back( getPeriodicityInformation(i,dmin,dmax) );
      if(pbc[i]){ Tools::convert(dmin,gmin[i]); Tools::convert(dmax,gmax[i]); }
   }
-  Grid* gg; 
-  if( oldfname.length()>0 && usingMemory() ){
-      IFile oldf; oldf.link(*this); oldf.open(oldfname);
+
+  Grid* gg; IFile oldf; oldf.link(*this); 
+  if( usingMemory() && oldf.FileExist(gridfname) ){
+      oldf.open(gridfname);
       gg = Grid::create( "probs", getArguments(), oldf, gmin, gmax, gbin, false, false, false );
       oldf.close();
   } else {
@@ -175,7 +176,7 @@ void Histogram::performAnalysis(){
 
   // Write the grid to a file
   OFile gridfile; gridfile.link(*this); 
-  gridfile.open( gridfname ); gg->writeToFile( gridfile );
+  gridfile.open( gridfname, "analysis" ); gg->writeToFile( gridfile );
   // Close the file 
   gridfile.close(); delete gg;
 }

@@ -131,7 +131,7 @@ public:
 /// be either opened explicitly, linked to a FILE or linked to a OFile
   OFile& link(OFile&);
 /// Opens the file using automatic append/backup
-  OFile& open(const std::string&name);
+  OFile& open(const std::string&name, const std::string& backstring="bck");
 /// Set the prefix for output.
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
 /// be parsed using fields in a IFile.
