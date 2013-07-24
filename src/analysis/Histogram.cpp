@@ -175,8 +175,8 @@ void Histogram::performAnalysis(){
   gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
 
   // Write the grid to a file
-  OFile gridfile; gridfile.link(*this); 
-  gridfile.open( gridfname, "analysis" ); gg->writeToFile( gridfile );
+  OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
+  gridfile.open( gridfname ); gg->writeToFile( gridfile );
   // Close the file 
   gridfile.close(); delete gg;
 }

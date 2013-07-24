@@ -114,6 +114,8 @@ public virtual FileBase{
   std::string linePrefix;
 /// Temporary ostringstream for << output
   std::ostringstream oss;
+/// The string used for backing up files
+  std::string backstring;
 /// Find field index given name
   unsigned findField(const std::string&name)const;
 public:
@@ -130,8 +132,10 @@ public:
 /// written on the linked OFile. Notice that a OFile should
 /// be either opened explicitly, linked to a FILE or linked to a OFile
   OFile& link(OFile&);
+/// Set the string name to be used for automatic backup
+  void setBackupString( const std::string& );
 /// Opens the file using automatic append/backup
-  OFile& open(const std::string&name, const std::string& backstring="bck");
+  OFile& open(const std::string&name); 
 /// Set the prefix for output.
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
 /// be parsed using fields in a IFile.

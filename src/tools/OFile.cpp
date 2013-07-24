@@ -48,7 +48,8 @@ size_t OFile::llwrite(const char*ptr,size_t s){
 
 OFile::OFile():
   linked(NULL),
-  fieldChanged(false)
+  fieldChanged(false),
+  backstring("bck")
 {
   fmtField();
   buflen=1;
@@ -210,7 +211,11 @@ OFile& OFile::printField(){
   return *this;
 }
 
-OFile& OFile::open(const std::string&path, const std::string& backstring ){
+void OFile::setBackupString( const std::string& str ){
+  backstring=str;
+}
+
+OFile& OFile::open(const std::string&path){
   plumed_assert(!cloned);
   eof=false;
   err=false;
