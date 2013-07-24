@@ -156,14 +156,13 @@ old_norm(0.0)
           // Read in data from input file
           readDataFromFile( filename );
           // Setup the restart file (append mode)
-          if( write_chq ) rfile.open( filename.c_str());
+          if( write_chq ) rfile.open( filename.c_str() );  // In append mode automatically because of restart
           // Run the analysis if we stoped in the middle of it last time
           if( idata==ndata ) runAnalysis();
           log.printf("  restarting analysis with %u points read from restart file\n",idata);
       } else if( write_chq ){
           // Setup the restart file (delete any old one)
-          remove( filename.c_str() ); 
-          rfile.open( filename.c_str());
+          rfile.open( filename.c_str() );  // In overwrite mode automatically because there is no restart
       }
       if( write_chq ){
          rfile.addConstantField("old_normalization");
@@ -299,7 +298,6 @@ void Analysis::runAnalysis(){
   // Delete the checkpoint file
   if( write_chq ){
      std::string filename = getName() + "_" + getLabel() + ".chkpnt";
-     if( remove( filename.c_str() )!=0  ) warning("problem deleting checkpoint file " + filename );
      // If we are running more than one calculation only reopen the restart file
      if( !single_run ) rfile.open( filename.c_str(), "w+" ); 
   }
