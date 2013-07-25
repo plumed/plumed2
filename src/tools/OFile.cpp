@@ -31,6 +31,7 @@
 
 #include <iostream>
 #include <string>
+#include <cstdlib>
 
 namespace PLMD{
 
@@ -221,7 +222,9 @@ OFile& OFile::open(const std::string&path){
   if(plumed && plumed->getRestart()){
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"a");
   } else {
-     if(!comm || comm->Get_rank()==0){
+     int maxbackup=100;
+     if(std::getenv("PLUMED_MAXBACKUP")) Tools::convert(std::getenv("PLUMED_MAXBACKUP"),maxbackup);
+     if(maxbackup>0 && (!comm || comm->Get_rank()==0)){
        FILE* ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
        FILE* fff=NULL;
        if(ff){
@@ -232,6 +235,7 @@ OFile& OFile::open(const std::string&path){
          for(int i=0;;i++){
            std::string num;
            Tools::convert(i,num);
+           if(i>maxbackup) plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
            backup=directory+"bck."+num+"."+file;
            fff=std::fopen(backup.c_str(),"r");
            if(!fff) break;

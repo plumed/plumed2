@@ -2,19 +2,33 @@
 
 \page Installation Installation
 
-At the present times plumed can be added to the following list of codes:
-
-@CODES@
-
 \section CompilingPlumed Compiling Plumed
 
-First configure using
+Plumed does not yet have any automatic configuration procedure and most of the 
+decisions should be taken by the user. As a first step configure with the command:
 \verbatim
 > ./configure
 \endverbatim
 
-In case it is necessary, edit the resulting Makefile.conf. A new file sourceme.sh
-will appear in the main plumed directory. Just source it (presently only for bash shell):
+You will have to choose among a set of available preconfigured files.
+Choose the one closest to your machine, then edit the resulting
+Makefile.conf file. Notable variables there:
+- LIBS : these are the libraries needed when patching an MD code; typically only "-ldl" (needed to have functions for dynamic loading).
+- DYNAMIC_LIB : these are the libraries needed to compile the plumed
+library (e.g. -L/path/to/matheval -lmatheval etc). Notice that for the
+plumed shared library to be compiled properly these should be dynamic
+libraries.
+- CPPFLAGS : add here definition needed to enable specific optional functions;
+e.g. use -D__PLUMED_HAS_MATHEVAL to enable matheval library
+- SOEXT : this gives the extension for shared libraries in your system, typically
+"so" on unix, "dylib" on mac; in case your system does not support dynamic libraries or, for some other reason, you would like only static executables you can
+just set this variable to a blank ("SOEXT=").
+
+Also notice that a  new file sourceme.sh
+appears in the main plumed directory.
+This file should be "sourced" (presently only working for bash shell)
+if you want to use plumed *without installin it* (i.e. from the compilation
+directory. It is a good idea to source it now:
 \verbatim
 > source sourceme.sh
 \endverbatim
@@ -24,7 +38,8 @@ Then compile plumed
 > make -j 4
 \endverbatim
 
-A "plumed" executable should be in your path. Try to type
+If compilation is successful, 
+a "plumed" executable should be in your path. Try to type
 \verbatim
 > plumed -h
 \endverbatim
@@ -35,13 +50,105 @@ Be warned that some of them just fails because of the different numerical accura
 > cd regtest
 > make
 \endverbatim 
+Notice that regtests are performed using the "plumed" executable that is currenty in the path.
+You can check with exact version they will use with the command
+\verbatim
+> which plumed
+\endverbatim
+This means that if you do not source "sourceme.sh" file, tests will fails. Moreover, in case you have
+another version of plumed installed somewhere regtests might use that one instead
+of the just-compiled one.
 
+Also notice that the compiled executable, which now sits in src/lib/plumed, relies
+on other resource files present in the compilation directory.
+This directory should thus stay in the correct place, and one should not
+rename or delete it. The path to the plumed root directory is indeed
+hardcoded in the plumed executable and can be verified with
+\verbatim
+> plumed info --root
+\endverbatim
+In case you try to use the plumed executable without the compilation
+directory in place (e.g. you move away the src/lib/plumed static executable
+and delete or rename the compilation directory) plumed will 
+not work correctly and will give you an
+error message
+\verbatim
+> plumed help
+ERROR: I cannot find /xxx/yyy/patches directory
+\endverbatim
+You can force plumed to run anyway using the option --standalone-executable:
+\verbatim
+> plumed --standalone-executable help
+\endverbatim
+Anyway, many features will not be available in this way.
+This is currently the only way to use a plumed static executable on Windows.
+
+
+\section Installing Installing PLUMED
+
+It might be convenient to install plumed in a predefined location.
+This will allow you to remove the original compilation directory,
+or to recompile e.g. a different plumed version in the same place.
+Notice that installation *is optional*. Even from the compilation
+directory, if environment is properly set (see sourceme.sh file)
+plumed should work.
+
+To install plumed one should first decide the location. Just set
+the environment variable PLUMED_PREFIX, then type "make install"
+\verbatim
+> export PLUMED_PREFIX=$HOME/opt
+> make install
+\endverbatim
+The latest command should be executed with root permissions (e.g. "sudo make install")
+in case you want to install plumed on a system directory.
+An almost full copy of the compilation directory will
+be installed into $PLUMED_PREFIX/lib/plumed/ directory. A link to the proper
+plumed executable will be set up in $PLUMED_PREFIX/bin,
+plumed include files will be copied to $PLUMED_PREFIX/include/plumed
+and plumed libraries will be linked to $PLUMED_PREFIX/lib.
+
+One should then set the environment properly. We suggest to do it using
+the module framework (http://modules.sourceforge.net). An ad hoc generated
+module file for plumed can then be found in $PLUMED_PREFIX/lib/plumed/src/lib/modulefile
+Just edit it at your will and put it in your modulefile directory.
+This will also allow you to install several plumed versions alongside and
+switch among them. If you do not want to use modules, you can 
+still have a look at the modulefile we did so as to know which
+environment variables should be set for plumed to work correctly.
+
+If the environment is properly configured one should be able to do
+the following things:
+- use "plumed" executable from the command line. this is also possible before installing.
+- link against the plumed library using "-lplumed" flag for the linker. this allows
+  one to use plumed library in general purpose programs
+- use the plumed internal functionalities (C++ classes) including
+  header files such as "#include <plumed/tools/Vector.h>". this is also usefule to
+  exploit the plumed library in general purpose programs
+
+As a final note, one may want to install several plumed version
+alongside without using modules.
+An alternative is to also define the environment variable PLUMED_LIBSUFFIX. E.g. with
+\verbatim
+> export PLUMED_PREFIX=$HOME/opt
+> export PLUMED_LIBSUFFIX=v2.0
+> make install
+\endverbatim
+will install plumed executable with name "plumed-v2.0". All the other files will be renamed accordingly,
+e.g. the plumed library will be loaded with "-lplumed-v2.0" and the plumed header files
+will be included with "#include <plumed-v2.0/tools/Vector.h>. This trick is useful if you
+do not want to set up modules, but we think using modules (see above) is more flexible.
 
 \section Patching Patching your MD code
 
-To patch your MD code, you should have PLUMED already installed and properly
+At the present times plumed can be added to the following list of codes:
+
+@CODES@
+
+To patch your MD code, you should have PLUMED already properly
 working. In particular, you should have the command "plumed" in your execution
-path. Then, follow these steps
+path, either because it is installed or because you are using it
+from the compilation directory.
+Then, follow these steps
 - Configure and compile your MD enginge
 - Test if it is working properly
 - Go to the root diretory of the MD engine
@@ -52,6 +159,22 @@ path. Then, follow these steps
 The script will interactively ask which MD engine you are patching.
 - Recompile the MD code (if dependencies are set up properly in the MD engine,
   only modified files will be recompiled)
+
+There are different options when patching, check them using 
+\verbatim
+> plumed patch --help
+\endverbatim
+Interesing ones:
+- --shared allows you to link plumed as a shared library. when plumed is updated, there will be no need to recompile the MD code
+- --runtime allows you to choose the location of the plumed library at runtime, setting the variable PLUMED_KERNEL.
+- --static (default) just link plumed as a collection of object files
+
+A note for cross compiling: in case you are compiling an executable from a different machine, then
+"plumed" executable will not be available in the compilation environment. You can thus use the following command
+\verbatim
+> plumed-patch
+\endverbatim
+as a replacement of "plumed patch". This trick only works with "patch" subcommand (e.g. no "plumed-help" available...).
 
 If your MD code is not supported, you may want to implement an interface for
 it. Refer to the <a href="../../developer-doc/html/index.html"> developer

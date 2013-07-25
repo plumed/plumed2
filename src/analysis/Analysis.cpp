@@ -156,14 +156,14 @@ old_norm(0.0)
           // Read in data from input file
           readDataFromFile( filename );
           // Setup the restart file (append mode)
-          if( write_chq ) rfile.open( filename.c_str(), "aw" );
+          if( write_chq ) rfile.open( filename.c_str());
           // Run the analysis if we stoped in the middle of it last time
           if( idata==ndata ) runAnalysis();
           log.printf("  restarting analysis with %u points read from restart file\n",idata);
       } else if( write_chq ){
           // Setup the restart file (delete any old one)
           remove( filename.c_str() ); 
-          rfile.open( filename.c_str(), "w+" );
+          rfile.open( filename.c_str());
       }
       if( write_chq ){
          rfile.addConstantField("old_normalization");
