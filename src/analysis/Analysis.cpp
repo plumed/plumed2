@@ -192,6 +192,15 @@ void Analysis::readDataFromFile( const std::string& filename ){
   if(old_norm>0) firstAnalysisDone=true;
 }
 
+void Analysis::parseOutputFile( const std::string& key, std::string& filename ){
+  parse(key,filename);
+  if( !plumed.getRestart() ){
+      OFile ofile; ofile.link(*this);
+      ofile.setBackupString("analysis");
+      ofile.backupAllFiles(filename);
+  } 
+}
+
 void Analysis::prepare(){
   if(needeng) plumed.getAtoms().setCollectEnergy(true);
 }

@@ -134,6 +134,14 @@ public:
   OFile& link(OFile&);
 /// Set the string name to be used for automatic backup
   void setBackupString( const std::string& );
+/// Backup a file by giving it a different name
+  void backupFile( const std::string& bstring, const std::string& fname );
+/// This backs up all the files that would have been created with the
+/// name str.  It is used in analysis when you are not restarting.  Analysis 
+/// output files at different times, which are names analysis.0.<filename>,
+/// analysis.1.<filename> and <filename>, are backed up to bck.0.analysis.0.<filename>,
+/// bck.0.analysis.1.<filename> and bck.0.<filename>
+  void backupAllFiles( const std::string& str );
 /// Opens the file using automatic append/backup
   OFile& open(const std::string&name); 
 /// Set the prefix for output.

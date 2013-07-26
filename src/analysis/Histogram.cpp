@@ -124,7 +124,8 @@ gbin(getNumberOfArguments())
   parseVector("GRID_MIN",gmin);
   parseVector("GRID_MAX",gmax);
   parseVector("GRID_BIN",gbin);
-  parse("GRID_WFILE",gridfname); 
+  parseOutputFile("GRID_WFILE",gridfname); 
+
   // Read stuff for window functions
   parseVector("BANDWIDTH",bw);
   // Read the type of kernel we are using

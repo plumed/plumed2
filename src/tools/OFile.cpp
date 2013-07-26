@@ -215,6 +215,48 @@ void OFile::setBackupString( const std::string& str ){
   backstring=str;
 }
 
+void OFile::backupAllFiles( const std::string& str ){
+  plumed_assert( backstring!="bck" && plumed && !plumed->getRestart() );
+  size_t found=str.find_last_of("/\\");
+  std::string filename = str + plumed->getSuffix();
+  std::string directory=filename.substr(0,found+1);
+  std::string file=filename.substr(found+1);
+  if( FileExist(filename) ) backupFile("bck", filename);
+  for(int i=0;;i++){
+     std::string num; Tools::convert(i,num);
+     std::string filestr = directory + backstring + "." + num + "." + file;
+     if( !FileExist(filestr) ) break;
+     backupFile( "bck", filestr);
+  }
+}
+
+void OFile::backupFile( const std::string& bstring, const std::string& fname ){
+   int maxbackup=100;
+   if(std::getenv("PLUMED_MAXBACKUP")) Tools::convert(std::getenv("PLUMED_MAXBACKUP"),maxbackup);
+   if(maxbackup>0 && (!comm || comm->Get_rank()==0)){
+     FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
+     FILE* fff=NULL;
+     if(ff){
+       std::string backup;
+       size_t found=fname.find_last_of("/\\");
+       std::string directory=fname.substr(0,found+1);
+       std::string file=fname.substr(found+1);
+       for(int i=0;;i++){
+         std::string num;
+         Tools::convert(i,num);
+         if(i>maxbackup) plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
+         backup=directory+bstring +"."+num+"."+file;
+         fff=std::fopen(backup.c_str(),"r");
+         if(!fff) break;
+       }
+       int check=rename(fname.c_str(),backup.c_str());
+       plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for some reason");
+     }
+     if(ff) std::fclose(ff);
+     if(fff) std::fclose(fff);
+   }
+}
+
 OFile& OFile::open(const std::string&path){
   plumed_assert(!cloned);
   eof=false;
@@ -227,30 +269,7 @@ OFile& OFile::open(const std::string&path){
   if(plumed && plumed->getRestart()){
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"a");
   } else {
-     int maxbackup=100;
-     if(std::getenv("PLUMED_MAXBACKUP")) Tools::convert(std::getenv("PLUMED_MAXBACKUP"),maxbackup);
-     if(maxbackup>0 && (!comm || comm->Get_rank()==0)){
-       FILE* ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
-       FILE* fff=NULL;
-       if(ff){
-         std::string backup;
-         size_t found=this->path.find_last_of("/\\");
-         std::string directory=this->path.substr(0,found+1);
-         std::string file=this->path.substr(found+1);
-         for(int i=0;;i++){
-           std::string num;
-           Tools::convert(i,num);
-           if(i>maxbackup) plumed_merror("cannot backup file "+file+" maximum number of backup is "+num+"\n");
-           backup=directory+backstring +"."+num+"."+file;
-           fff=std::fopen(backup.c_str(),"r");
-           if(!fff) break;
-         }
-         int check=rename(this->path.c_str(),backup.c_str());
-         plumed_massert(check==0,"renaming "+this->path+" into "+backup+" failed for some reason");
-       }
-       if(ff) std::fclose(ff);
-       if(fff) std::fclose(fff);
-     }
+     backupFile( backstring, this->path );
      if(comm)comm->Barrier();
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
   }

@@ -88,6 +88,10 @@ private:
 /// you probably need getNormalization()
   double retrieveNorm() const ;
 protected:
+/// This is used to read in output file names for analysis methods.  When
+/// this method is used and the calculation is not restarted old analysis
+/// files are backed up.
+  void parseOutputFile( const std::string& key, std::string& filename );
 /// Return the number of arguments (this overwrites the one in ActionWithArguments)
   unsigned getNumberOfArguments() const;
 /// Return the number of data points
