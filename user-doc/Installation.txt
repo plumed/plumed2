@@ -99,7 +99,8 @@ the environment variable PLUMED_PREFIX, then type "make install"
 > export PLUMED_PREFIX=$HOME/opt
 > make install
 \endverbatim
-The latest command should be executed with root permissions (e.g. "sudo make install")
+If PLUMED_PREFIX is not set, it will be assumed to be /usr/local.
+The install command should be executed with root permissions (e.g. "sudo make install")
 in case you want to install plumed on a system directory.
 An almost full copy of the compilation directory will
 be installed into $PLUMED_PREFIX/lib/plumed/ directory. A link to the proper
