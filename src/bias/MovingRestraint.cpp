@@ -172,6 +172,9 @@ verse(getNumberOfArguments())
         work.push_back(0.); // initialize the work value 
   }
 
+  log<<"  Bibliography ";
+  log<<cite("Grubmuller, Heymann, and Tavan, Science 271, 997 (1996)")<<"\n";
+
 }
 
 
