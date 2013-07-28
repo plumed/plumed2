@@ -84,21 +84,7 @@ install-do:
 # copy inc files changing the path
 	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../../)| $(PLUMED_INSTALL_ROOT)/|g" $$file > $(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
 # modulefile
-	@echo "#%Module1.0##############################################"          >  $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "proc ModulesHelp { } {"                                             >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "  puts stderr \"\tAdds paths for Plumed\""                          >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "}"                                                                  >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "module-whatis   \"Adds paths for Plumed\""                          >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "# Manually add here dependencies and conflicts"                     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  PATH               $(PLUMED_INSTALL_PREFIX)/bin"      >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  CPATH              $(PLUMED_INSTALL_PREFIX)/include/" >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  INCLUDE            $(PLUMED_INSTALL_PREFIX)/include/" >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  LIBRARY_PATH       $(PLUMED_INSTALL_PREFIX)/lib/"     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  LD_LIBRARY_PATH    $(PLUMED_INSTALL_PREFIX)/lib/"     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  DYLD_LIBRARY_PATH  $(PLUMED_INSTALL_PREFIX)/lib/"     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-ifdef SOEXT
-	@echo "setenv        PLUMED_KERNEL      $(PLUMED_INSTALL_PREFIX)/lib/libplumedKernel.$(SOEXT)" >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-endif
+	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|"> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
 # install links
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-patch $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
@@ -110,9 +96,27 @@ endif
 	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
+	@echo
+	@echo "*** PLUMED has been installed ***"
+	@echo
+	@echo "Install prefix : $(PLUMED_INSTALL_PREFIX)"
+	@echo "Full name      : plumed$(PLUMED_INSTALL_LIBSUFFIX)"
+	@echo
+	@echo "Setup your environment"
+	@echo "- Ensure this is in your execution path : $(PLUMED_INSTALL_PREFIX)/bin"
+	@echo "- Ensure this is in your include path   : $(PLUMED_INSTALL_PREFIX)/include"
+ifdef SOEXT
+	@echo "- Ensure this is in your library path   : $(PLUMED_INSTALL_PREFIX)/lib"
+	@echo "For runtime binding:"
+	@echo "- Set this environment variable         : PLUMED_KERNEL=$(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)"
+endif
+	@echo
+	@echo "To create a tcl module that sets all the variables above, use this one as a starting point:"
+	@echo "$(PLUMED_INSTALL_ROOT)/src/lib/modulefile"
+	@echo
 	@echo "To uninstall, remove the following files and directories:"
-	@echo  $(PLUMED_INSTALL_ROOT)
-	@echo  $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	@echo $(PLUMED_INSTALL_ROOT)
+	@echo $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	@echo $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	@echo $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
 ifdef SOEXT
@@ -125,10 +129,8 @@ uninstall:
 	rm -fr $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
-ifdef SOEXT
 	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
 	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
-endif
 
 dirs: $(DIRS)
 

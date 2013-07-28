@@ -156,14 +156,12 @@ old_norm(0.0)
           // Read in data from input file
           readDataFromFile( filename );
           // Setup the restart file (append mode)
-          if( write_chq ) rfile.open( filename.c_str());
+          if( write_chq ) rfile.open( filename.c_str() );  // In append mode automatically because of restart
           // Run the analysis if we stoped in the middle of it last time
-          if( idata==ndata ) runAnalysis();
           log.printf("  restarting analysis with %u points read from restart file\n",idata);
       } else if( write_chq ){
           // Setup the restart file (delete any old one)
-          remove( filename.c_str() ); 
-          rfile.open( filename.c_str());
+          rfile.open( filename.c_str() );  // In overwrite mode automatically because there is no restart
       }
       if( write_chq ){
          rfile.addConstantField("old_normalization");
@@ -194,6 +192,15 @@ void Analysis::readDataFromFile( const std::string& filename ){
   if(old_norm>0) firstAnalysisDone=true;
 }
 
+void Analysis::parseOutputFile( const std::string& key, std::string& filename ){
+  parse(key,filename);
+  if( !plumed.getRestart() ){
+      OFile ofile; ofile.link(*this);
+      ofile.setBackupString("analysis");
+      ofile.backupAllFiles(filename);
+  } 
+}
+
 void Analysis::prepare(){
   if(needeng) plumed.getAtoms().setCollectEnergy(true);
 }
@@ -201,6 +208,9 @@ void Analysis::prepare(){
 void Analysis::calculate(){
   // Don't store the first step (also don't store if we are getting data from elsewhere)
   if( getStep()==0 || reusing_data ) return;
+  // This is used when we have a full quota of data from the first run
+  if( idata==logweights.size() ) return; 
+
   // Retrieve the bias
   double bias=0.0; for(unsigned i=0;i<biases.size();++i) bias+=biases[i]->get();
 
@@ -299,7 +309,6 @@ void Analysis::runAnalysis(){
   // Delete the checkpoint file
   if( write_chq ){
      std::string filename = getName() + "_" + getLabel() + ".chkpnt";
-     if( remove( filename.c_str() )!=0  ) warning("problem deleting checkpoint file " + filename );
      // If we are running more than one calculation only reopen the restart file
      if( !single_run ) rfile.open( filename.c_str(), "w+" ); 
   }
@@ -328,29 +337,6 @@ void Analysis::runFinalJobs() {
   if( getNumberOfDataPoints()==0 ) error("no data is available for analysis");
   runAnalysis(); 
 }
-
-std::string Analysis::saveResultsFromPreviousAnalyses( const std::string & filename ){
-  FILE* ff=std::fopen( filename.c_str() ,"r");
-  // Perhaps replace this with an warning and a backup at some stage
-  if(ff && !firstAnalysisDone) error("found file named " + filename + " from previous calculation");
-  FILE* fff=NULL; std::string num, backup;
-  if( ff ){
-     FILE* fff=NULL;
-     for(unsigned i=1;;i++){
-         Tools::convert(i,num);
-         backup=filename + "." + num;
-         fff=std::fopen(backup.c_str(),"r");
-         if(!fff) break;
-     }   
-     int check=rename(filename.c_str(), backup.c_str() );
-     plumed_massert(check==0,"renaming " + filename + " to " + backup + " failed");
-  } else {
-     return "";
-  }
-  if(ff) fclose(ff);
-  if(fff) fclose(fff); 
-  return backup; 
-} 
 
 }
 }

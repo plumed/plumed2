@@ -124,7 +124,8 @@ gbin(getNumberOfArguments())
   parseVector("GRID_MIN",gmin);
   parseVector("GRID_MAX",gmax);
   parseVector("GRID_BIN",gbin);
-  parse("GRID_WFILE",gridfname); 
+  parseOutputFile("GRID_WFILE",gridfname); 
+
   // Read stuff for window functions
   parseVector("BANDWIDTH",bw);
   // Read the type of kernel we are using
@@ -145,7 +146,7 @@ gbin(getNumberOfArguments())
 
 void Histogram::performAnalysis(){
   // Back up old histogram files
-  std::string oldfname=saveResultsFromPreviousAnalyses( gridfname );
+//  std::string oldfname=saveResultsFromPreviousAnalyses( gridfname );
 
   // Get pbc stuff for grid
   std::vector<bool> pbc; std::string dmin,dmax;
@@ -153,9 +154,10 @@ void Histogram::performAnalysis(){
      pbc.push_back( getPeriodicityInformation(i,dmin,dmax) );
      if(pbc[i]){ Tools::convert(dmin,gmin[i]); Tools::convert(dmax,gmax[i]); }
   }
-  Grid* gg; 
-  if( oldfname.length()>0 && usingMemory() ){
-      IFile oldf; oldf.link(*this); oldf.open(oldfname);
+
+  Grid* gg; IFile oldf; oldf.link(*this); 
+  if( usingMemory() && oldf.FileExist(gridfname) ){
+      oldf.open(gridfname);
       gg = Grid::create( "probs", getArguments(), oldf, gmin, gmax, gbin, false, false, false );
       oldf.close();
   } else {
@@ -174,7 +176,7 @@ void Histogram::performAnalysis(){
   gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
 
   // Write the grid to a file
-  OFile gridfile; gridfile.link(*this); 
+  OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
   gridfile.open( gridfname ); gg->writeToFile( gridfile );
   // Close the file 
   gridfile.close(); delete gg;
