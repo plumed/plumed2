@@ -271,6 +271,9 @@ public:
 /// This function allows to enforce active plumed when doing exchanges,
 /// thus fixing the bug.
   void resetActive(bool active);
+
+/// Access to exchange patterns
+  ExchangePatterns& getExchangePatterns(){return exchangePatterns;}
 };
 
 /////
