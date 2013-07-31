@@ -31,8 +31,10 @@ namespace bias{
 
 //+PLUMEDOC BIAS MOVINGRESTRAINT
 /*
-Add a time-dependent, harmonic restraint on one or more variables, this form
-of bias can be used to performed steered MD and Jarzynski sampling \cite jarzynski.
+Add a time-dependent, harmonic restraint on one or more variables.
+
+This form of bias can be used to performed steered MD \cite Grubmuller3
+and Jarzynski sampling \cite jarzynski.
 
 The harmoic restraint on your system is given by:
 
@@ -171,6 +173,9 @@ verse(getNumberOfArguments())
         addComponent(comp); componentIsNotPeriodic(comp);
         work.push_back(0.); // initialize the work value 
   }
+
+  log<<"  Bibliography ";
+  log<<cite("Grubmuller, Heymann, and Tavan, Science 271, 997 (1996)")<<"\n";
 
 }
 

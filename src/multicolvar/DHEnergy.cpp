@@ -80,7 +80,7 @@ df(2)
 
 std::string DHEnergy::function_description(){
   std::ostringstream ostr;
-  ostr<<"the Debye-Huckel interaction energy "<<getAction()->plumed.cite("Do, Carloni, Varani and Bussi, submitted (2013)")<<"."; 
+  ostr<<"the Debye-Huckel interaction energy "<<getAction()->plumed.cite("Do, Carloni, Varani and Bussi, J. Chem. Theory Comput. 9, 1720 (2013)")<<"."; 
   ostr<<" Parameters : temperature "<<T<<" K, ionic strength "<<I<<" M, ";
   ostr<<"solvent dielectric constant "<<epsilon;
   return ostr.str();
