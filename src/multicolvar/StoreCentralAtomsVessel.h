@@ -45,6 +45,7 @@ public:
   Vector getPosition( const unsigned& );
 /// Recalculate the central atom position
   void performTask( const unsigned& );
+  void finishTask( const unsigned& );
 /// Get the indices
   void getIndexList( const unsigned& , const unsigned& , const unsigned& , std::vector<unsigned>& );
 /// Add derivatives to central atom position

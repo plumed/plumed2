@@ -48,7 +48,6 @@ void ActionWithVessel::registerKeywords(Keywords& keys){
 
 ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   Action(ao),
-  read(false),
   serial(false),
   lowmem(false),
   contributorsAreUnlocked(false),
@@ -80,18 +79,18 @@ ActionWithVessel::~ActionWithVessel(){
 }
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab, const std::string thislab ){
-  read=true; VesselOptions da(name,thislab,numlab,input,this);
+  VesselOptions da(name,thislab,numlab,input,this);
   Vessel* vv=vesselRegister().create(name,da); vv->checkRead();
   addVessel(vv);
 }
 
 void ActionWithVessel::addVessel( Vessel* vv ){
   ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
-  if(!sv) functions.push_back(vv);
+  if(!sv){ functions.push_back(vv); }
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
-  read=true; VesselOptions da("","",0,"",this); 
+  VesselOptions da("","",0,"",this); 
   BridgeVessel* bv=new BridgeVessel(da);
   bv->setOutputAction( tome );
   functions.push_back( dynamic_cast<Vessel*>(bv) );
@@ -174,7 +173,7 @@ void ActionWithVessel::doJobsRequiredBeforeTaskList(){
 }
 
 void ActionWithVessel::runAllTasks(){
-  plumed_massert( read, "you must have a call to readVesselKeywords somewhere" );
+  plumed_massert( functions.size()>0, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial){ stride=1; rank=0; }

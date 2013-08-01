@@ -57,6 +57,11 @@ void StoreCentralAtomsVessel::performTask( const unsigned& itask ){
   Vector ignore = mycolv->retrieveCentralAtomPos();
 }
 
+void StoreCentralAtomsVessel::finishTask( const unsigned& itask ){
+  mycolv->atomsWithCatomDer.deactivateAll();
+  Vector ignore = mycolv->retrieveCentralAtomPos();
+}
+
 void StoreCentralAtomsVessel::addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const Vector& df, MultiColvarBase* funcout ){
   for(unsigned ider=0;ider<getNumberOfDerivatives(iatom);ider+=3){
      for(unsigned i=0;i<3;++i) tmpdf[i]=df[0];

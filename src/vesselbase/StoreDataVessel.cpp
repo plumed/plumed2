@@ -123,7 +123,7 @@ void StoreDataVessel::storeDerivativesLowMem( const unsigned& jstore ){
 bool StoreDataVessel::calculate(){
   unsigned myelem = getAction()->current;
   // Normalize vector if it is required
-  performTask( myelem );
+  finishTask( myelem );
 
   // Store the values 
   storeValues( myelem );
@@ -217,6 +217,7 @@ void StoreDataVessel::chainRule( const unsigned& ival, const unsigned& jout, con
 
   jder = jout*act->getNumberOfDerivatives() + active_der[kder+ider];
   act->addElementDerivative( jder, chainRule( ival, ider, df ) );
+  act->activateIndex( active_der[kder+ider] );
 }
 
 void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>& df, Value* val ){
@@ -228,6 +229,17 @@ void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>
   else kder = getAction()->getNumberOfTasks() + ival*(nspace-1);
 
   for(unsigned i=0;i<active_der[ival];++i) val->addDerivative( active_der[kder+i] , final_derivatives[i] );
+}
+
+void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>& df, std::vector<double>& derout ){
+  plumed_dbg_assert( derout.size()==final_derivatives.size() );
+  chainRule( ival, df );
+
+  unsigned kder;
+  if( getAction()->lowmem ) kder = max_lowmem_stash + ival*getAction()->getNumberOfDerivatives();
+  else kder = getAction()->getNumberOfTasks() + ival*(nspace-1);
+
+  for(unsigned i=0;i<active_der[ival];++i) derout[ active_der[kder+i] ] += final_derivatives[i];
 }
 
 void StoreDataVessel::transformComponents( const unsigned& jstore, const double& weight, double& wdf, const std::vector<double>& dfvec ){

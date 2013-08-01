@@ -140,6 +140,7 @@ public:
   void copyActiveAtomsToFunction( MultiColvarBase* myfunction );
 /// Activate the atoms that have derivatives from a storeDataVessel
   void activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ); 
+  void activateIndex( const unsigned& );
 };
 
 inline
@@ -207,6 +208,12 @@ void MultiColvarBase::setWeight( const double& weight ){
 inline
 void MultiColvarBase::addBoxDerivativesOfWeight( const Tensor& vir ){
   addBoxDerivatives( 1, vir );
+}
+
+inline
+void MultiColvarBase::activateIndex( const unsigned& ider ){
+  unsigned iatom = std::floor( ider / 3 );
+  atoms_with_derivatives.activate( iatom );
 }
 
 }

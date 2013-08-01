@@ -49,8 +49,6 @@ friend class FunctionVessel;
 friend class StoreDataVessel;
 friend class BridgeVessel;
 private:
-/// This is used to ensure that we have properly read the action
-  bool read;
 /// Do all calculations in serial
   bool serial;
 /// Lower memory requirements
@@ -172,8 +170,9 @@ public:
   double getElementDerivative( const unsigned& ) const ;
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
-/// This is overwritten in MultiColvarFunction
+/// These are overwritten in MultiColvarFunction
   virtual void activateIndexes( const unsigned&, const unsigned&, const std::vector<unsigned>& ){}
+  virtual void activateIndex( const unsigned& ){}
 };
 
 inline

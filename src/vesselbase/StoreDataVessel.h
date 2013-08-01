@@ -78,6 +78,8 @@ protected:
   double getComponent( const unsigned& , const unsigned& );
 /// Chain rule the vector and output derivatives to a value
   void chainRule( const unsigned& , const std::vector<double>&, Value* );
+/// Calculate derivatives using chain rule and save in std::vector
+  void chainRule( const unsigned& ival, const std::vector<double>& df, std::vector<double>& derout );
 /// Multiply the vector by a scalar that is a function of the components of the vector
 /// (used to normalize vectors)
   void transformComponents( const unsigned& jstore, const double& weight, double& wdf, const std::vector<double>& dfvec );
@@ -94,6 +96,8 @@ public:
   virtual void recompute( const unsigned& , const unsigned& );
 /// This reperforms the task in the underlying action
   virtual void performTask( const unsigned& );
+/// This reperforms the task
+  virtual void finishTask( const unsigned& ){};
 /// This stores the data when not using lowmem
   bool calculate();
 /// This stores the data we get from the calculation

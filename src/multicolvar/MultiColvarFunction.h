@@ -71,8 +71,6 @@ public:
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 /// Calculate the position of the central atom
   Vector calculateCentralAtomPosition();
-/// Get the number of atoms that have derivatives wrt to the central atom
-  virtual unsigned getNCAtomDerivatives()=0;
 /// Get the position of the central atom
   virtual Vector getCentralAtom()=0;
 };
