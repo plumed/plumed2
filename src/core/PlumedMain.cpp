@@ -363,15 +363,11 @@ void PlumedMain::init(){
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
   log<<"PLUMED compiled on " __DATE__ " at " __TIME__ "\n";
-  log<<"****  THIS IS AN EXPERIMENTAL VERSION ****\n";
-  log<<"More info on Google group 'plumed2-git'\n";
   log<<"There is not yet a published paper describing this software.\n";
   log<<"If you use it in a publication please explicitly state\n";
-  log<<"which version you are using and cite the previous paper:\n";
-  log<<"  M. Bonomi, D. Branduardi, G. Bussi, C. Camilloni, D. Provasi, P. Raiteri,\n";
-  log<<"  D. Donadio, F. Marinelli, F. Pietrucci, R. A. Broglia and M. Parrinello\n";
-  log<<"  PLUMED: a portable plugin for free-energy calculations with molecular dynamics\n";
-  log<<"  Comp. Phys. Comm. 180, 1961 (2009)\n";
+  log<<"which version you are using and cite the previous paper ";
+  log<<cite("Bonomi, Branduardi, Bussi, Camilloni, Provasi, Raiteri, Donadio, Marinelli, Pietrucci,\n      Broglia and Parrinello, Comp. Phys. Comm. 180, 1961 (2009)");
+  log<<"\n";
   log<<"For further information see the PLUMED web page at www.plumed-code.org\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());

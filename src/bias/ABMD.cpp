@@ -118,6 +118,8 @@ random(getNumberOfArguments())
   // Note : parseVector will check that number of arguments is correct
   parseVector("KAPPA",kappa);
   parseVector("MIN",min);
+  if(min.size()==0) min.assign(getNumberOfArguments(),-1.0);
+  if(min.size()!=getNumberOfArguments()) error("MIN array should have the same size as ARG array");
   parseVector("NOISE",temp);
   parseVector("SEED",seed);
   parseVector("TO",to);

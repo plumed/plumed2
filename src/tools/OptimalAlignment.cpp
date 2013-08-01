@@ -110,6 +110,10 @@ double OptimalAlignment::calculate(bool squared, std::vector<Vector> & derivativ
 
 	return err;
 }
+
+#ifdef __INTEL_COMPILER
+#pragma intel optimization_level 2
+#endif
 /// this does the weighed alignment if the vector of alignment is different from displacement
 double OptimalAlignment::weightedAlignment( bool rmsd){
 	double tmp0,tmp1,walign,wdisplace,const1,ret;

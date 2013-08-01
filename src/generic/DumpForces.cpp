@@ -87,7 +87,7 @@ ActionWithArguments(ao)
   parse("FILE",file);
   if( file.length()==0 ) error("name of file was not specified");
   of.link(*this);
-  of.open(file,"wa");
+  of.open(file);
   log.printf("  on file %s\n",file.c_str());
   if( getNumberOfArguments()==0 ) error("no arguments have been specified");
   checkRead();

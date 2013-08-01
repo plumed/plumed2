@@ -88,6 +88,10 @@ private:
 /// you probably need getNormalization()
   double retrieveNorm() const ;
 protected:
+/// This is used to read in output file names for analysis methods.  When
+/// this method is used and the calculation is not restarted old analysis
+/// files are backed up.
+  void parseOutputFile( const std::string& key, std::string& filename );
 /// Return the number of arguments (this overwrites the one in ActionWithArguments)
   unsigned getNumberOfArguments() const;
 /// Return the number of data points
@@ -100,8 +104,6 @@ protected:
   double getNormalization() const;
 /// Are we analyzing each data block separately (if we are not this also returns the old normalization )
   bool usingMemory() const; 
-/// Save the results in files from previous runs of the analysis algorithm
-  std::string saveResultsFromPreviousAnalyses( const std::string & filename );
 /// Convert the stored log weights to proper weights
   void finalizeWeights( const bool& ignore_weights );
 /// Overwrite ActionWithArguments getArguments() so that we don't return

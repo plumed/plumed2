@@ -114,6 +114,8 @@ public virtual FileBase{
   std::string linePrefix;
 /// Temporary ostringstream for << output
   std::ostringstream oss;
+/// The string used for backing up files
+  std::string backstring;
 /// Find field index given name
   unsigned findField(const std::string&name)const;
 public:
@@ -130,8 +132,18 @@ public:
 /// written on the linked OFile. Notice that a OFile should
 /// be either opened explicitly, linked to a FILE or linked to a OFile
   OFile& link(OFile&);
+/// Set the string name to be used for automatic backup
+  void setBackupString( const std::string& );
+/// Backup a file by giving it a different name
+  void backupFile( const std::string& bstring, const std::string& fname );
+/// This backs up all the files that would have been created with the
+/// name str.  It is used in analysis when you are not restarting.  Analysis 
+/// output files at different times, which are names analysis.0.<filename>,
+/// analysis.1.<filename> and <filename>, are backed up to bck.0.analysis.0.<filename>,
+/// bck.0.analysis.1.<filename> and bck.0.<filename>
+  void backupAllFiles( const std::string& str );
 /// Opens the file using automatic append/backup
-  OFile& open(const std::string&name);
+  OFile& open(const std::string&name); 
 /// Set the prefix for output.
 /// Typically "PLUMED: ". Notice that lines with a prefix cannot
 /// be parsed using fields in a IFile.
