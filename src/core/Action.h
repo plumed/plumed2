@@ -251,6 +251,9 @@ public:
   virtual void readAtomsFromPDB( const PDB&  ){}
 /// Check if we are on an exchange step
   bool getExchangeStep()const;
+
+/// Cite a paper see PlumedMain::cite
+  std::string cite(const std::string&s);
 };
 
 /////////////////////

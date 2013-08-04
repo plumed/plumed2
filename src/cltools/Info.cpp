@@ -91,7 +91,7 @@ int Info::main(FILE* in, FILE*out,Communicator& pc){
  std::string developerdoc=config::getPlumedRoot()+"developer-doc/html/index.html";
  if(printuserdoc) fprintf(out,"%s\n",userdoc.c_str());
  if(printdeveloperdoc) fprintf(out,"%s\n",developerdoc.c_str());
- std::string versionname="v2.0b0";
+ std::string versionname="v2.0b1";
  if(printversion) fprintf(out,"%s\n",versionname.c_str());
 
  return 0;

@@ -487,6 +487,8 @@ isFirstStep(true)
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
   if(mw_n_>1) log<<plumed.cite(
     "Raiteri, Laio, Gervasio, Micheletti, Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
+  if(adaptive_!=FlexibleBin::none) log<<plumed.cite(
+    "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
  
   log<<"\n";
 

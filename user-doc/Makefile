@@ -15,6 +15,7 @@ else
 all:
 	./extract
 	doxygen
+	cp Octocat.png html/
 	./report_errors
 
 endif
