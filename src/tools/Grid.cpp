@@ -364,8 +364,6 @@ double Grid::getMaxValue() const {
 }
 
 
-
-
 double Grid::getValue(const vector<unsigned> & indices) const {
  return getValue(getIndex(indices));
 }
