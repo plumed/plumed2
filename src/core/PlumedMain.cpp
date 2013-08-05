@@ -409,11 +409,6 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words){
   else if(words[0]=="_SET_SUFFIX"){
     plumed_assert(words.size()==2);
     setSuffix(words[1]);
-  }
-  else if(words[0]=="RANDOM_EXCHANGES"){
-    exchangePatterns.setFlag(exchangePatterns.RANDOM);
-    // I convert the seed to -seed because I think it is more general to use a positive seed in input
-    if(words.size()>2&&words[1]=="SEED") {int seed; Tools::convert(words[2],seed); exchangePatterns.setSeed(-seed); }
   } else {
     std::vector<std::string> interpreted(words);
     Tools::interpretLabel(interpreted);
