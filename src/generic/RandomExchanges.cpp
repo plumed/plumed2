@@ -32,9 +32,42 @@ namespace generic{
 
 //+PLUMEDOC GENERIC RANDOM_EXCHANGES
 /*
-Set random pattern for exchanges
+Set random pattern for exchanges.
+
+In this way, exchanges will not be done between replicas with consecutive index, but
+will be done using a random pattern.  Typically used in bias exchange \cite piana.
 
 \par Examples
+
+Using the following three input files one can run a bias exchange
+metadynamics simulation using a different angle in each replica.
+Exchanges will be randomly tried between replicas 0-1, 0-2 and 1-2
+
+Here is plumed.dat.0
+\verbatim
+RANDOM_EXCHANGES
+t: TORSION ATOMS=1,2,3,4
+METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
+\endverbatim
+
+Here is plumed.dat.1
+\verbatim
+RANDOM_EXCHANGES
+t: TORSION ATOMS=2,3,4,5
+METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
+\endverbatim
+
+Here is plumed.dat.2
+\verbatim
+RANDOM_EXCHANGES
+t: TORSION ATOMS=3,4,5,6
+METAD ARG=t HEIGHT=0.1 PACE=100 SIGMA=0.3
+\endverbatim
+
+\warning Multi replica simulations are presently only working with gromacs.
+
+\warning The directive should appear in input files for every replicas. In case SEED is specified, it
+should be the same in all input files.
 
 */
 //+ENDPLUMEDOC
