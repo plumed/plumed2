@@ -132,7 +132,6 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ){
 
 int ActionWithValue::getComponent( const std::string& name ) const {
   plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
-  plumed_massert(name!=getLabel(),"You should never be calling this routine to retrieve the value");
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0;i<values.size();++i){
      if (values[i]->name==thename) return i;
