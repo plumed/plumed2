@@ -30,11 +30,17 @@ namespace multicolvar {
 
 class MultiColvarFunction : public MultiColvarBase {
 private:
+/// The list of atoms that are involved in this colvar
+  std::vector<unsigned> subatomlist;
 /// The multicolvar from which we construct these quantities
   multicolvar::MultiColvarBase* mycolv;
 /// The central atom positions
   multicolvar::StoreCentralAtomsVessel* catoms;
 protected:
+/// Get the number of colvar functions we are calculating
+  unsigned getNumberOfColvarFunctions() const;
+/// Get the index of the ith colvar we are using
+  unsigned getColvarIndex( const unsigned& ) const;
 /// Get the number of functions in the multicolvar we are operating on
   unsigned getNumberOfBaseFunctions() const;
 /// Return a pointer to the multicolvar we are using as a base function
@@ -78,6 +84,18 @@ public:
 inline
 unsigned MultiColvarFunction::getNumberOfBaseFunctions() const {
   return mycolv->colvar_atoms.size();
+}
+
+inline
+unsigned MultiColvarFunction::getNumberOfColvarFunctions() const {
+  plumed_dbg_assert( subatomlist.size()>0 );
+  return subatomlist.size();
+}
+
+inline
+unsigned MultiColvarFunction::getColvarIndex( const unsigned& jindex ) const {
+  plumed_dbg_assert( subatomlist.size()>0 && jindex<subatomlist.size() );
+  return subatomlist[jindex];
 }
 
 inline

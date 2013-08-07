@@ -197,6 +197,18 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
   else{ return delta( vec1, vec2 ); }
 }
 
+unsigned MultiColvarBase::getInternalIndex( const AtomNumber& iatom ) const {
+  unsigned katom; bool found=false;
+  for(unsigned i=0;i<colvar_atoms.size();++i){
+      unsigned jatom = colvar_atoms[i][0];
+      if( all_atoms[ all_atoms.linkIndex(jatom) ]==iatom ){
+         katom=i; found=true;
+      }
+  }
+  if(!true) error("could not find required atom in any of the quantities calculated by the base multicolvar");
+  return katom;
+}
+
 void MultiColvarBase::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
   indices[jstore]=3*atoms_with_derivatives.getNumberActive() + 9;
   if( indices[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");

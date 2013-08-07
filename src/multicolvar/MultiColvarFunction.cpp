@@ -30,6 +30,7 @@ namespace multicolvar {
 void MultiColvarFunction::registerKeywords( Keywords& keys ){
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","ARG","the label of the action that calculates the vectors we are interested in");
+  keys.reserve("atoms","ONLY_ATOMS","only calculate this quantity for these central atoms");
 }
 
 MultiColvarFunction::MultiColvarFunction(const ActionOptions& ao):
@@ -51,6 +52,20 @@ MultiColvarBase(ao)
 
   // Retrieve the central atoms
   catoms = mycolv->getCentralAtoms();
+
+  if( keywords.exists("ONLY_ATOMS") ){
+      std::vector<AtomNumber> atoms; parseAtomList("ONLY_ATOMS",atoms);
+      if( atoms.size()>0 ){ 
+         log.printf("  calculating function for atoms ");
+         for(unsigned i=0;i<atoms.size();++i){
+            log.printf("%d ",atoms[i].serial() );
+            subatomlist.push_back( mycolv->getInternalIndex(atoms[i]) );
+         }
+         log.printf("\n");
+      } else {
+         for(unsigned i=0;i<mycolv->colvar_atoms.size();++i) subatomlist.push_back( i );
+      }
+  } 
 }
 
 void MultiColvarFunction::completeSetup(){

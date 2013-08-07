@@ -136,6 +136,8 @@ public:
   StoreCentralAtomsVessel* getCentralAtoms();
 /// Copy the list of atoms involved to a second MultiColvarBase (used by functions)
   void copyAtomListToFunction( MultiColvarBase* myfunction );
+/// Return the number of the colvar in which iatom is the first atom
+  unsigned getInternalIndex( const AtomNumber& iatom ) const ;
 /// Make sure the same list of atoms is active in a function
   void copyActiveAtomsToFunction( MultiColvarBase* myfunction );
 /// Activate the atoms that have derivatives from a storeDataVessel
