@@ -163,6 +163,8 @@ void Histogram::performAnalysis(){
   } else {
       gg = new Grid( "probs", getArguments(), gmin, gmax, gbin,false,false);
   }
+  // Set output format for grid
+  gg->setOutputFmt( getOutputFormat() );
 
   // Now build the histogram
   double weight; std::vector<double> point( getNumberOfArguments() );
