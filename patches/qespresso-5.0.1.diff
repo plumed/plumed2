@@ -81,7 +81,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./PW/src/plugin_initialization.f90" << 
 +            CALL plumed_f_gcmd("setRealPrecision"//char(0),8)
 +            energyUnits=1312.75  ! Ry to kjoule mol 
 +            lengthUnits=0.0529177249 ! bohr to nm
-+            timeUnits=au_ps ! internal time to ps
++            timeUnits=2*au_ps ! internal time to ps
 +            call plumed_f_gcmd("setMDEnergyUnits"//char(0),energyUnits)
 +            call plumed_f_gcmd("setMDLengthUnits"//char(0),lengthUnits)
 +            call plumed_f_gcmd("setMDTimeUnits"//char(0),timeUnits)
