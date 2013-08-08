@@ -126,6 +126,11 @@ void Random::fromString(const std::string & str){
 	for (int i = 0; i < NTAB; i++) istr>>iv[i];
 }
 
+// This allows to have the same stream of random numbers
+// with different compilers:
+#ifdef __INTEL_COMPILER
+#pragma intel optimization_level 0
+#endif
 
 double Random::Gaussian(){
 	double v1,v2,rsq;
@@ -139,7 +144,7 @@ double Random::Gaussian(){
 		rsq=v1*v1+v2*v2;
 		if(rsq<1.0 && rsq>0.0) break;
 	}
-	double fac=sqrt(-2.*log(rsq)/rsq);
+	double fac=sqrt(-2.*std::log(rsq)/rsq);
         saveGaussian=v1*fac;
         switchGaussian=true;
 	return v2*fac;
