@@ -349,6 +349,25 @@ void write_positions(const string& trajfile,int natoms,const vector<Vector>& pos
   fclose(fp);
 }
 
+void write_final_positions(const string& outputfile,int natoms,const vector<Vector>& positions,const double cell[3],const bool wrapatoms)
+{
+// write positions on file outputfile
+  Vector pos;
+  FILE*fp;
+  fp=fopen(outputfile.c_str(),"w");
+  fprintf(fp,"%d\n",natoms);
+  fprintf(fp,"%f %f %f\n",cell[0],cell[1],cell[2]);
+  for(int iatom=0;iatom<natoms;iatom++){
+// usually, it is better not to apply pbc here, so that diffusion
+// is more easily calculated from a trajectory file:
+    if(wrapatoms) pbc(cell,positions[iatom],pos);
+    else for(int k=0;k<3;k++) pos[k]=positions[iatom][k];
+    fprintf(fp,"Ar %10.7f %10.7f %10.7f\n",pos[0],pos[1],pos[2]);
+  }
+  fclose(fp);
+}
+
+
 void write_statistics(const string & statfile,const int istep,const double tstep,
                       const int natoms,const int ndim,const double engkin,const double engconf,const double engint){
 // write statistics on file statfile
@@ -560,6 +579,8 @@ int main(FILE* in,FILE*out,PLMD::Communicator& pc){
 
   }
 
+// write final positions
+  write_final_positions(outputfile,natoms,positions,cell,wrapatoms);
 
 // close the statistic file if it was open:
   if(write_statistics_fp) fclose(write_statistics_fp);
