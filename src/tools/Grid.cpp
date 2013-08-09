@@ -273,8 +273,8 @@ vector<unsigned> Grid::getNeighbors
    int i0=small_indices[i]-nneigh[i]+indices[i];
    if(!pbc_[i] && i0<0)         continue;
    if(!pbc_[i] && i0>=nbin_[i]) continue;
-   if( pbc_[i] && i0<0)         i0+=nbin_[i];
-   if( pbc_[i] && i0>=nbin_[i]) i0-=nbin_[i];
+   if( pbc_[i] && i0<0)         i0=nbin_[i]-(-i0)%nbin_[i];
+   if( pbc_[i] && i0>=nbin_[i]) i0%=nbin_[i];
    tmp_indices[ll]=((unsigned)i0);
    ll++;
   }
