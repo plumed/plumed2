@@ -783,6 +783,11 @@ double MetaD::getHeight(const vector<double>& cv)
 
 void MetaD::calculate()
 {
+
+// this is because presently there is no way to properly pass information
+// on adaptive hills (diff) after exchanges:
+  if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) error("ADAPTIVE=DIFF is not compatible with replica exchange");
+
   unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
   for(unsigned i=0;i<ncv;++i){cv[i]=getArgument(i);}
