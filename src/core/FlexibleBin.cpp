@@ -30,12 +30,33 @@ using namespace std;
 namespace PLMD{
 
 
-FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction,  double const &d ):type(type),paction(paction),sigma(d){
+FlexibleBin::FlexibleBin(int type, ActionWithArguments *paction,  double const &d , vector<double> &smin, vector<double> &smax):type(type),paction(paction),sigma(d),sigmamin(smin),sigmamax(smax){
 	// initialize the averages and the variance matrices
 	if(type==diffusion){
 		unsigned ncv=paction->getNumberOfArguments();	
 		vector<double> average(ncv*(ncv+1)/2);
 		vector<double> variance(ncv*(ncv+1)/2);
+	}
+	paction->log<<"  Limits for sigmas using adaptive hills:  \n"; 
+	for(unsigned i=0;i<paction->getNumberOfArguments();++i){
+		paction->log<<"   CV  "<<paction->getPntrToArgument(i)->getName()<<":\n";
+		if(sigmamin[i]>0.){
+				limitmin.push_back(true);
+				paction->log<<"       Min "<<sigmamin[i];	
+				sigmamin[i]*=sigmamin[i];	// this is because the matrix which is calculated is the sigmasquared	
+			}else{
+				limitmin.push_back(false);
+				paction->log<<"       Min No ";	
+		}
+		if(sigmamax[i]>0.){
+				limitmax.push_back(true);
+				paction->log<<"       Max "<<sigmamax[i];	
+				sigmamax[i]*=sigmamax[i];		
+			}else{
+				limitmax.push_back(false);
+				paction->log<<"       Max No ";	
+		}
+		paction->log<<" \n";	
 	}
 
 }
@@ -140,9 +161,48 @@ vector<double> FlexibleBin::getInverseMatrix() const{
 			k++;	
 		}
 	}
-	//paction->log<<"MATRIX\n";
-	//matrixOut(paction->log,matrix);	
-        // get the inverted matrix
+//	paction->log<<"MATRIX\n";
+//	matrixOut(paction->log,matrix);	
+#define NEWFLEX
+#ifdef NEWFLEX
+       	// diagonalize to impose boundaries (only if boundaries are set)
+        Matrix<double> eigenvecs(ncv,ncv); 	
+ 	vector<double> eigenvals(ncv);		
+        if(diagMat( matrix , eigenvals , eigenvecs )!=0){plumed_merror("diagonalization in FlexibleBin failed! This matrix is weird\n");};	
+//	paction->log<<"EIGENVECS \n";
+//	matrixOut(paction->log,eigenvecs);
+	// rescale lambdas
+        for (i=0;i<ncv;i++){	
+	 	if(limitmin[i] && eigenvals[i]<sigmamin[i]){
+//			paction->log<<"Limiting to min: "<<eigenvals[i]<<" to "<<sigmamin[i]<<"\n";
+		   eigenvals[i]=sigmamin[i]*copysign(1.,eigenvals[i]);
+		}
+	 	if(limitmax[i] && eigenvals[i]>sigmamax[i]){
+//			paction->log<<"Limiting to max: "<<eigenvals[i]<<" to "<<sigmamax[i]<<"\n";
+			eigenvals[i]=sigmamax[i]*copysign(1.,eigenvals[i]);
+		}
+	}
+	// normalize eigenvecs
+        Matrix<double> newinvmatrix(ncv,ncv); 	
+	for (i=0;i<ncv;i++){
+		for (j=0;j<ncv;j++){
+			newinvmatrix[i][j]=eigenvecs[j][i]/eigenvals[i];
+		}
+	}
+
+        vector<double> uppervec(ncv*(ncv+1)/2);
+	k=0;
+	for (i=0;i<ncv;i++){
+		for (j=i;j<ncv;j++){
+			double scal=0;
+			for(unsigned l=0;l<ncv;++l){
+				scal+=eigenvecs[i][l]*newinvmatrix[l][j];
+			}	
+			uppervec[k]=scal; k++;			
+		}
+	}
+#else 
+	// get the inverted matrix
 	Matrix<double> invmatrix(ncv,ncv);	
 	Invert(matrix,invmatrix);
         vector<double> uppervec(ncv*(ncv+1)/2); 
@@ -156,6 +216,7 @@ vector<double> FlexibleBin::getInverseMatrix() const{
 		}
 	}
 	//paction->log<<"------------ END GET INVERSE MATRIX ---------------\n";
+#endif
 
 	return uppervec;  
 }
