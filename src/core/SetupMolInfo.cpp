@@ -74,8 +74,7 @@ pdb(*new(PDB))
     std::string reference; parse("STRUCTURE",reference);
 
 
-    if( ! pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()),
-        error("missing input file " + reference ));
+    if( ! pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()))plumed_merror("missing input file " + reference );
     std::vector<std::string> chains; pdb.getChainNames( chains );
     log.printf("  pdb file named %s contains %d chains \n",reference.c_str(), chains.size() );
     for(unsigned i=0;i<chains.size();++i){
