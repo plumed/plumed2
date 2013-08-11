@@ -318,6 +318,12 @@ isFirstStep(true)
          if(sigma0_.size()!=1){
         	 error("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
          } 
+	 // if adaptive then the number must be an integer
+ 	 if(adaptive_==FlexibleBin::diffusion){
+		if(int(sigma0_[0])-sigma0_[0]>1.e-9 || int(sigma0_[0])-sigma0_[0] <-1.e-9 || int(sigma0_[0])<1 ){
+		 	plumed_merror("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of timesteps\n");	
+		} 
+	 } 
          flexbin=new FlexibleBin(adaptive_,this,sigma0_[0]);
   }
   parse("HEIGHT",height0_);
