@@ -47,6 +47,10 @@ obj: $(OBJ)
 lib:
 	cd ../lib ; make
 
+.PHONY: install
+install:
+	cd ../lib ; make install
+
 -include $(DEP)
 
 # if machine dependent configuration has not been found:
