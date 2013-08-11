@@ -38,9 +38,14 @@ class FlexibleBin{
 		std::vector<double> variance;	
 		// this is only there
 		std::vector<double> average;
+		// minimum and maximum values	
+		std::vector<double> sigmamin;	
+		std::vector<double> sigmamax;	
+		std::vector<bool>  limitmax;	
+		std::vector<bool>  limitmin;	
 	public:
 		/// a constructor that takes the pointer of the action that contains it
-		FlexibleBin(int type,ActionWithArguments *paction, double const &d);
+		FlexibleBin(int type,ActionWithArguments *paction, double const &d, std::vector<double> &sigmamin, std::vector<double> &sigmamax );
 		/// update the average (always for diffusion) or calculate the geom covariance (  only when do_when_zero is zero)
 		void update(bool nowAddAHill );
 		std::vector<double> getMatrix() const;
