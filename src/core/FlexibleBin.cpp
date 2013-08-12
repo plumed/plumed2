@@ -168,25 +168,54 @@ vector<double> FlexibleBin::getInverseMatrix() const{
        	// diagonalize to impose boundaries (only if boundaries are set)
         Matrix<double> eigenvecs(ncv,ncv); 	
  	vector<double> eigenvals(ncv);		
+
+	//eigenvecs: first is eigenvec number, second is eigenvec component	
         if(diagMat( matrix , eigenvals , eigenvecs )!=0){plumed_merror("diagonalization in FlexibleBin failed! This matrix is weird\n");};	
+	
 //	paction->log<<"EIGENVECS \n";
 //	matrixOut(paction->log,eigenvecs);
-	// rescale lambdas
-        for (i=0;i<ncv;i++){	
-	 	if(limitmin[i] && eigenvals[i]<sigmamin[i]){
-//			paction->log<<"Limiting to min: "<<eigenvals[i]<<" to "<<sigmamin[i]<<"\n";
-		   eigenvals[i]=sigmamin[i]*copysign(1.,eigenvals[i]);
-		}
-	 	if(limitmax[i] && eigenvals[i]>sigmamax[i]){
-//			paction->log<<"Limiting to max: "<<eigenvals[i]<<" to "<<sigmamax[i]<<"\n";
-			eigenvals[i]=sigmamax[i]*copysign(1.,eigenvals[i]);
-		}
+      	
+        //for (i=0;i<ncv;i++){//loop on the dimension 	
+        //	for (j=0;j<ncv;j++){//loop on the dimension 	
+        //	eigenvecs[i][j]=0.;
+        //	if(i==j)eigenvecs[i][j]=1.;
+        //	}	
+        //}
+	
+	for (i=0;i<ncv;i++){//loop on the dimension 
+          if( limitmax[i] ){
+		  //limit every  component that is larger
+	       	  for (j=0;j<ncv;j++){//loop on components	
+	          	if(pow(eigenvals[j]*eigenvecs[j][i],2)>pow(sigmamax[i],2) ){
+                  	     eigenvals[j]=sqrt(pow(sigmamax[i]/(eigenvecs[j][i]),2))*copysign(1.,eigenvals[j]);
+		  	}			
+	          }		
+	  }
 	}
+	for (i=0;i<ncv;i++){//loop on the dimension 
+	  // find the largest one:  if it is smaller than min  then rescale
+	  if( limitmin[i] ){
+	           unsigned imax;		
+                   double fmax=-1.e10;
+	       	   for (j=0;j<ncv;j++){//loop on components	
+                        double fact=pow(eigenvals[j]*eigenvecs[j][i],2);
+		        if(fact>fmax){
+		         fmax=fact;imax=j;
+		        } 	
+        	   }
+                   if(fmax<pow(sigmamin[i],2) ){
+                             eigenvals[imax]=sqrt(pow(sigmamin[i]/(eigenvecs[imax][i]),2))*copysign(1.,eigenvals[imax]);
+                   }
+
+	  }
+
+	}  
+
 	// normalize eigenvecs
         Matrix<double> newinvmatrix(ncv,ncv); 	
 	for (i=0;i<ncv;i++){
 		for (j=0;j<ncv;j++){
-			newinvmatrix[i][j]=eigenvecs[j][i]/eigenvals[i];
+			newinvmatrix[j][i]=eigenvecs[j][i]/eigenvals[j];
 		}
 	}
 
@@ -196,7 +225,7 @@ vector<double> FlexibleBin::getInverseMatrix() const{
 		for (j=i;j<ncv;j++){
 			double scal=0;
 			for(unsigned l=0;l<ncv;++l){
-				scal+=eigenvecs[i][l]*newinvmatrix[l][j];
+				scal+=eigenvecs[l][i]*newinvmatrix[l][j];
 			}	
 			uppervec[k]=scal; k++;			
 		}
