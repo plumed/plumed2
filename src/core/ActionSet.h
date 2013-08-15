@@ -62,6 +62,8 @@ public:
   T selectWithLabel(const std::string&s)const;
 /// get the labels in the list of actions in form of a string (useful to debug)
   std::string getLabelList() const;
+/// get the labels in the form of a vector of strings  
+  std::vector<std::string> getLabelVector() const;
 };
 
 /////
