@@ -44,8 +44,6 @@ PRINT ARG=ene
 \endverbatim
 (See also \ref PRINT).
 
-\bug This command does not work with variable cell simulations. Should it also include long range corrections?
-
 */
 //+ENDPLUMEDOC
 

@@ -78,6 +78,8 @@ private:
   bool firstAnalysisDone;
 /// The value of the old normalization constant
   double norm, old_norm;
+/// The format to use in output files
+  std::string ofmt;
 /// The checkpoint file
   OFile rfile;
 /// Read in data from a file
@@ -109,6 +111,8 @@ protected:
 /// Overwrite ActionWithArguments getArguments() so that we don't return
 /// the bias
   std::vector<Value*> getArguments();
+/// Return the format to use for numbers in output files
+  std::string getOutputFormat() const ;
 public:
   static void registerKeywords( Keywords& keys );
   Analysis(const ActionOptions&);
@@ -168,6 +172,11 @@ std::vector<Value*> Analysis::getArguments(){
   std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
   for(unsigned i=0;i<biases.size();++i) arg_vals.erase(arg_vals.end()-1);
   return arg_vals;
+}
+
+inline
+std::string Analysis::getOutputFormat() const {
+  return ofmt;
 }
 
 }

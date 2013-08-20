@@ -60,6 +60,7 @@ void Analysis::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis");
   keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
   keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA");
+  keys.add("optional","FMT","the format that should be used in analysis output files");
   keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics. For more information see \\ref reweighting.");
   keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting.");
   keys.add("optional","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability "
@@ -83,8 +84,10 @@ ignore_reweight(false),
 needeng(false),
 idata(0),
 firstAnalysisDone(false),
-old_norm(0.0)
+old_norm(0.0),
+ofmt("%f")
 {
+  parse("FMT",ofmt);  // Read the format for output files
   std::string prev_analysis; parse("REUSE_DATA_FROM",prev_analysis);
   if( prev_analysis.length()>0 ){
       reusing_data=true;

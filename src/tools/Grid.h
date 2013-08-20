@@ -25,6 +25,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cmath>
 
 namespace PLMD{ 
 
@@ -43,7 +44,7 @@ class BiasWeight:public WeightBase{
       double beta,invbeta;
       BiasWeight(double v){beta=v;invbeta=1./beta;}
       double projectInnerLoop(double &input, double &v){return  input+exp(beta*v);}
-      double projectOuterLoop(double &v){return -invbeta*log(v);}
+      double projectOuterLoop(double &v){return -invbeta*std::log(v);}
 };
 
 class ProbWeight:public WeightBase{
@@ -51,7 +52,7 @@ class ProbWeight:public WeightBase{
       double beta,invbeta;
       ProbWeight(double v){beta=v;invbeta=1./beta;}
       double projectInnerLoop(double &input, double &v){return  input+v;}
-      double projectOuterLoop(double &v){return -invbeta*log(v);}
+      double projectOuterLoop(double &v){return -invbeta*std::log(v);}
 };
 
 
