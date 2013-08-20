@@ -30,6 +30,7 @@ Needed software:
 * latex to build the user manual - used by doxygen
 * graphviz (www.graphviz.org) to show class hierarchy in developer manual - used by doxygen
 * a modern version of the "patch" command
+* lapack and blas libraries
 
 Quick compilation instructions:
 * configure for your system:
