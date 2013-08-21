@@ -180,6 +180,7 @@ read_input(double& temperature,
       fprintf(stderr,"ndim should be 1,2 or 3\n");
       exit(1);
   }
+  wrapatoms=false;
 }
 
 void read_natoms(const string & inputfile,int & natoms){
