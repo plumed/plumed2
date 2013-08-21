@@ -8,3 +8,4 @@ listcutoff  3.0
 nstep 50
 nconfig 10 trajectory.xyz
 nstat   10 energies.dat
+wrapatoms T
