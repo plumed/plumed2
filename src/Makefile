@@ -14,8 +14,8 @@ uninstall:
 	$(MAKE) -C lib uninstall
 
 # list of all the contained directories which can be cleaned
-SUBDIRS =$(subst /Makefile,,$(wildcard */Makefile))
-SUBDIRSCLEAN=$(addsuffix .clean,$(SUBDIRS))
+SUBDIRS :=$(subst /Makefile,,$(wildcard */Makefile))
+SUBDIRSCLEAN :=$(addsuffix .clean,$(SUBDIRS))
 .PHONY: $(SUBDIRS)
 
 # this is cleaning all subdirectories

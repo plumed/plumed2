@@ -1,8 +1,8 @@
 # here we build the list of modules to be linked in plumedKernel
-KERNEL_MODULES=$(addprefix ../,$(shell ../maketools/find_modules.sh))
+KERNEL_MODULES := $(addprefix ../,$(shell ../maketools/find_modules.sh))
 
 # This adds modules which are built anyway and linked with some ad hoc procedure
-DIRS=$(sort ../config ../wrapper ../main  $(KERNEL_MODULES))
+DIRS := $(sort ../config ../wrapper ../main  $(KERNEL_MODULES))
 
 
 # include the machine dependent configuration
@@ -26,31 +26,31 @@ SRC_MAIN=../main/main.cpp
 
 # source for plumed kernel
 # everything else
-SRC_KERNEL=$(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.cpp 2>/dev/null ; ls $$dir/*.c 2>/dev/null ; done) ../config/Config$(PLUMED_INSTALL).o
+SRC_KERNEL := $(shell for dir in $(KERNEL_MODULES) ; do ls $$dir/*.cpp 2>/dev/null ; ls $$dir/*.c 2>/dev/null ; done) ../config/Config$(PLUMED_INSTALL).o
 
 # corresponding objects:
-OBJ_WRAPPER=../wrapper/PlumedStatic.o
-OBJ_DYNAMIC_WRAPPER=../wrapper/Plumed.o
-OBJ_MAIN=$(SRC_MAIN:.cpp=.o)
-XXX=$(SRC_KERNEL:.cpp=.o)
-OBJ_KERNEL=$(XXX:.c=.o)
-ALL_OBJ=$(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
+OBJ_WRAPPER := ../wrapper/PlumedStatic.o
+OBJ_DYNAMIC_WRAPPER := ../wrapper/Plumed.o
+OBJ_MAIN := $(SRC_MAIN:.cpp=.o)
+XXX := $(SRC_KERNEL:.cpp=.o)
+OBJ_KERNEL := $(XXX:.c=.o)
+ALL_OBJ := $(OBJ_KERNEL) $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER) $(OBJ_MAIN)
 
 # plumed kernel
-PLUMED_KERNEL=$(PLUMED_LIBDIR)libplumedKernel.$(SOEXT)
+PLUMED_KERNEL := $(PLUMED_LIBDIR)libplumedKernel.$(SOEXT)
 
 # plumed library (kernel + wrapper)
-PLUMED_SHARED_OBJ=$(PLUMED_LIBDIR)libplumed.$(SOEXT)
+PLUMED_SHARED_OBJ := $(PLUMED_LIBDIR)libplumed.$(SOEXT)
 
 # plumed scripts
-PLUMED_SCRIPTS_SH=$(shell cd ../../scripts/ ; ls *.sh 2>/dev/null)
-PLUMED_SCRIPTS=$(PLUMED_SCRIPTS_SH:.sh=)
-PLUMED_SCRIPTS_EXE=$(addprefix $(PLUMED_LIBDIR)plumed-,$(PLUMED_SCRIPTS))
+PLUMED_SCRIPTS_SH := $(shell cd ../../scripts/ ; ls *.sh 2>/dev/null)
+PLUMED_SCRIPTS := $(PLUMED_SCRIPTS_SH:.sh=)
+PLUMED_SCRIPTS_EXE := $(addprefix $(PLUMED_LIBDIR)plumed-,$(PLUMED_SCRIPTS))
 
 # plumed main exec
-PLUMED_MAIN_STATIC=$(PLUMED_LIBDIR)plumed
-PLUMED_MAIN_SHARED=$(PLUMED_LIBDIR)plumed-shared
-PLUMED_MAIN_RUNTIME=$(PLUMED_LIBDIR)plumed-runtime
+PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
+PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
+PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
 
 .PHONY: all dirs $(DIRS) all-static
 ifdef SOEXT
