@@ -79,7 +79,7 @@ bool StoreCentralAtomsVessel::calculate(){
 }
 
 void StoreCentralAtomsVessel::finish(){
-  comm.Sum( &active_atoms[0], active_atoms.size() );
+  comm.Sum(active_atoms);
 }
 
 Vector StoreCentralAtomsVessel::getPosition( const unsigned& ivec ) const {
