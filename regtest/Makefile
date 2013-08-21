@@ -1,8 +1,8 @@
-ACTIVE_MODULES = $(shell ./scripts/find_modules.sh) basic
+ACTIVE_MODULES := $(shell ./scripts/find_modules.sh) basic
 #SUBDIRS = $(subst /Makefile,,$(wildcard rt*/Makefile))
-SUBDIRS = $(shell for dir in $(ACTIVE_MODULES) ; do ls $$dir/rt*/Makefile | sed 's/\Makefile//' 2>/dev/null; done)
-SUBDIRSCLEAN = $(addsuffix .clean,$(SUBDIRS))
-SUBDIRSVALGRIND = $(addsuffix .valgrind,$(SUBDIRS))
+SUBDIRS := $(shell for dir in $(ACTIVE_MODULES) ; do ls $$dir/rt*/Makefile | sed 's/\Makefile//' 2>/dev/null; done)
+SUBDIRSCLEAN := $(addsuffix .clean,$(SUBDIRS))
+SUBDIRSVALGRIND := $(addsuffix .valgrind,$(SUBDIRS))
 
 .PHONY: all clean valgrind $(SUBDIRS) $(SUBDIRSCLEAN) $(SUBDIRSVALGRIND)
 
