@@ -101,6 +101,7 @@ static void registerKeywords( Keywords& keys ){
   keys.add("compulsory","maxneighbours","10000","The maximum number of neighbours an atom can have");
   keys.add("compulsory","idum","0","The random number seed");
   keys.add("compulsory","ndim","3","The dimensionality of the system (some interesting LJ clusters are two dimensional)");
+  keys.add("compulsory","wrapatoms","false","If true, atomic coordinates are written wrapped in minimal cell");
 }
 
 SimpleMD( const CLToolOptions& co ) :
@@ -180,6 +181,10 @@ read_input(double& temperature,
       fprintf(stderr,"ndim should be 1,2 or 3\n");
       exit(1);
   }
+  std::string w;
+  parse("wrapatoms",w);
+  wrapatoms=false;
+  if(w.length()>0 && (w[0]=='T' || w[0]=='t')) wrapatoms=true;
 }
 
 void read_natoms(const string & inputfile,int & natoms){
