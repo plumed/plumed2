@@ -127,7 +127,8 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 
 \par
 If you use adaptive Gaussians, with diffusion scheme where you use
-a Gaussian that should cover the space of 20 timesteps in collective variables
+a Gaussian that should cover the space of 20 timesteps in collective variables.
+Note that in this case the histogram correction is needed when summing up hills. 
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
@@ -137,13 +138,31 @@ PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 
 \par
 If you use adaptive Gaussians, with geometrical scheme where you use
-a Gaussian that should cover the space of 0.05 nm in Cartesian space
+a Gaussian that should cover the space of 0.05 nm in Cartesian space.
+Note that in this case the histogram correction is needed when summing up hills. 
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 METAD ARG=d1,d2 SIGMA=0.05 HEIGHT=0.3 PACE=500 LABEL=restraint ADAPTIVE=GEOM
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endverbatim
+
+\par
+When using adaptive Gaussians you might want to limit how the hills width can change. 
+You can use SIGMA_MIN and SIGMA_MAX keywords.
+The sigmas should specified in terms of CV so you should use the CV units. 
+Note that if you use a negative number, this means that the limit is not set.
+Note also that in this case the histogram correction is needed when summing up hills. 
+\verbatim
+DISTANCE ATOMS=3,5 LABEL=d1
+DISTANCE ATOMS=2,4 LABEL=d2
+METAD ...
+  ARG=d1,d2 SIGMA=0.05 HEIGHT=0.3 PACE=500 LABEL=restraint ADAPTIVE=GEOM
+  SIGMA_MIN=0.2,0.1 SIGMA_MAX=0.5,1.0	
+... METAD 
+PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
+\endverbatim
+
 
 \par
 Multiple walkers can be also use as in  \cite multiplewalkers 
@@ -185,6 +204,8 @@ private:
      }
   };
   vector<double> sigma0_;
+  vector<double> sigma0min_;
+  vector<double> sigma0max_;
   vector<Gaussian> hills_;
   OFile hillsOfile_;
   Grid* BiasGrid_;
@@ -260,6 +281,8 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
   keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not fell the bias (when used together with grid SPLINES are automatically deactivated)");
   keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
+  keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
+  keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
 }
 
 MetaD::~MetaD(){
@@ -318,7 +341,23 @@ isFirstStep(true)
          if(sigma0_.size()!=1){
         	 error("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
          } 
-         flexbin=new FlexibleBin(adaptive_,this,sigma0_[0]);
+	 // if adaptive then the number must be an integer
+ 	 if(adaptive_==FlexibleBin::diffusion){
+		if(int(sigma0_[0])-sigma0_[0]>1.e-9 || int(sigma0_[0])-sigma0_[0] <-1.e-9 || int(sigma0_[0])<1 ){
+		 	plumed_merror("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of timesteps\n");	
+		} 
+	 } 
+	 // here evtl parse the sigma min and max values
+	 
+	 parseVector("SIGMA_MIN",sigma0min_);
+	 if(sigma0min_.size()>0 && sigma0min_.size()<getNumberOfArguments()){error("the number of SIGMA_MIN values be at least the number of the arguments"); }
+	 else if(sigma0min_.size()==0) { sigma0min_.resize(getNumberOfArguments());for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	} 
+
+	 parseVector("SIGMA_MAX",sigma0max_);
+	 if(sigma0max_.size()>0 && sigma0max_.size()<getNumberOfArguments()){error("the number of SIGMA_MAX values be at least the number of the arguments"); }
+	 else if(sigma0max_.size()==0) { sigma0max_.resize(getNumberOfArguments());for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	} 
+
+         flexbin=new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
   parse("HEIGHT",height0_);
   if( height0_<=0.0 ) error("error cannot add zero height or negative height hills");
@@ -783,6 +822,11 @@ double MetaD::getHeight(const vector<double>& cv)
 
 void MetaD::calculate()
 {
+
+// this is because presently there is no way to properly pass information
+// on adaptive hills (diff) after exchanges:
+  if(adaptive_==FlexibleBin::diffusion && getExchangeStep()) error("ADAPTIVE=DIFF is not compatible with replica exchange");
+
   unsigned ncv=getNumberOfArguments();
   vector<double> cv(ncv);
   for(unsigned i=0;i<ncv;++i){cv[i]=getArgument(i);}

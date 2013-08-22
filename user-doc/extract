@@ -16,9 +16,9 @@ do
 done
 
 # Create the list of codes that plumed works with from the set of available patches
-for file in ../patches/*.config
+for file in ../patches/*.diff
 do
-   echo "- $file" | sed -e 's/.config//' | sed -e 's/..\/patches\///' >> automatic/codes.list
+   echo "- $file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///' >> automatic/codes.list
 done
 
 ## Check for utilities that register actions with no documentation

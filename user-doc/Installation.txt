@@ -17,7 +17,8 @@ Makefile.conf file. Notable variables there:
 - DYNAMIC_LIB : these are the libraries needed to compile the plumed
 library (e.g. -L/path/to/matheval -lmatheval etc). Notice that for the
 plumed shared library to be compiled properly these should be dynamic
-libraries.
+libraries. Also notice that plumed requires BLAS and LAPACK library;
+see \ref BlasAndLapack for further info.
 - CPPFLAGS : add here definition needed to enable specific optional functions;
 e.g. use -D__PLUMED_HAS_MATHEVAL to enable matheval library
 - SOEXT : this gives the extension for shared libraries in your system, typically
@@ -82,6 +83,29 @@ You can force plumed to run anyway using the option --standalone-executable:
 \endverbatim
 Anyway, many features will not be available in this way.
 This is currently the only way to use a plumed static executable on Windows.
+
+\section BlasAndLapack BLAS and LAPACK
+
+We tried to keep PLUMED as independent as possible from external libraries.
+Moreover, some libraries (e.g. Almost and Matheval) providing
+extra features are optional. However, to have a properly working PLUMED
+you need to link BLAS and LAPACK libraries. Here you find some note.
+
+First of all, the DYNAMIC_LIB variable in the configuration file
+should contain the flag necessary to load these libraries
+(typically -llapack -lblas, but full path specification with -L
+should be necessary depending on your system configuration).
+
+Even though you can incur in some problem.
+- If the linker complains and suggest to recompiled lapack with -fPIC, it means that you have static lapack libraries. Either install dynamic lapack libraries
+or switch to static compilation of PLUMED (by unsetting the SOEXT variable
+in configuration file).
+- If the linker complains that dsyevr_ cannot be found, try to add
+  -DF77_NO_UNDERSCORE to CPPFLAGS
+- If the linker complains about other missing functions (typically starting with
+  "for_" prefix) then you should link also Fortran libraries. Indeed, PLUMED
+  is written in C++ and often C++ linkers do not include by default Fortran libraries
+  which are required for lapack and blas to work. Please check the documentation of your compiler.
 
 
 \section Installing Installing PLUMED
