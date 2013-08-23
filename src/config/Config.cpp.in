@@ -30,6 +30,10 @@ std::string getSoExt(){
   return "@SOEXT@";
 }
 
+bool isInstalled(){
+  return @ISINSTALLED@;
+}
+
 std::string getPlumedRoot(){
   return "@PLUMED_ROOT@";
 }

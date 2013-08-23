@@ -39,6 +39,8 @@ bool hasDlopen();
 
 bool hasAlmost();
 
+bool isInstalled();
+
 }
 }
 
