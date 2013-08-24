@@ -15,6 +15,14 @@ where each "hot" atom has a "_" appended to the atom type, e.g.:
 
      1 amber99_43_     1    RC5    O5'      1    -0.6223         16   ; qtot -0.6223
 
+Notice that the section that should be edited is the [atoms] section for all the
+molecules that you wish to affect (typically only for the solute, but you may also
+want to change solvent parameters).
+
+Also remember to first produce the processed.top file with grompp -pp. Editing a normal
+topol.top file will not work, because it does not contain all the parameters.
+The processed.top file should not have any "#include" statement.
+
 # produce a processed topology
 grompp -pp
 # choose the "hot" atoms
