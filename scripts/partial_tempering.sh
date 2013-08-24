@@ -179,9 +179,10 @@ function error(msg)
     print $1,$2""suffix,$3,$4,sqrt(scale)*$5," ; scaled";
     print $1""suffix,$2""suffix,$3,$4,scale*$5," ; scaled";
 # ATOMS
-  } else if(rec=="atoms" && NF>=8){
+  } else if(rec=="atoms" && NF>=7){
      if($2~".*"suffix"$"){
-       print $1,$2,$3,$4,$5,$6,$7*sqrt(scale),$8,comments;
+       if(NF>=8) print $1,$2,$3,$4,$5,$6,$7*sqrt(scale),$8,comments;
+       if(NF==7) print $1,$2,$3,$4,$5,$6,$7*sqrt(scale),comments;
        list_of_atoms[n_of_atoms]=$1;
        n_of_atoms++;
      }
