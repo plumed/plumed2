@@ -155,7 +155,7 @@ lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED
 
 $(PLUMED_SCRIPTS_EXE):
 	@echo "#! /bin/bash" > $@
-	@echo "echo 'NOTE: shell only version, useful when plumed is cross compiled'" >> $@
+	@echo "echo 'NOTE: shell only version, useful when plumed is cross compiled' >&2" >> $@
 	@echo "export PLUMED_ROOT=\"$(realpath $(PLUMED_LIBDIR)../../)\"" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 	chmod a+x $@

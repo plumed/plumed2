@@ -115,6 +115,8 @@ names(getNumberOfArguments())
 
   evaluator=evaluator_create(const_cast<char*>(func.c_str()));
 
+  if(!evaluator) error("There was some problem in parsing matheval formula "+func);
+
   char **check_names;
   int    check_count;
   evaluator_get_variables(evaluator,&check_names,&check_count);
