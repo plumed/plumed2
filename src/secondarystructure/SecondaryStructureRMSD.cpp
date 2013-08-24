@@ -217,7 +217,7 @@ void SecondaryStructureRMSD::calculate(){
   runAllTasks();
 }
 
-void SecondaryStructureRMSD::performTask( const unsigned& j ){
+void SecondaryStructureRMSD::performTask(){
   // Retrieve the positions
   for(unsigned i=0;i<pos.size();++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(i) );
 

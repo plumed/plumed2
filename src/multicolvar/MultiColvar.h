@@ -92,8 +92,9 @@ public:
 
 inline
 unsigned MultiColvar::getAtomIndex( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
+  plumed_dbg_assert( iatom<natomsper );
+  return current_atoms[iatom];
+//  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
 }
 
 inline

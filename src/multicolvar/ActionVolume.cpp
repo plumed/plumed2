@@ -113,7 +113,8 @@ void ActionVolume::prepare(){
   if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
       if( !mycolv->isDensity() ){
           mycolv->taskList.activateAll();
-          for(unsigned i=0;i<mycolv->taskList.getNumberActive();++i) mycolv->colvar_atoms[i].activateAll();
+          // GAT broken neighbor list
+          // for(unsigned i=0;i<mycolv->taskList.getNumberActive();++i) mycolv->colvar_atoms[i].activateAll();
           mycolv->unlockContributors(); mycolv->resizeDynamicArrays();
           plumed_dbg_assert( mycolv->getNumberOfVessels()==0 );
       } else {
@@ -131,7 +132,7 @@ void ActionVolume::resizeLocalArrays(){
   activeAtoms.deactivateAll();
 }
 
-void ActionVolume::performTask( const unsigned& j ){
+void ActionVolume::performTask(){
   activeAtoms.deactivateAll(); // Currently no atoms are active so deactivate them all
   Vector catom_pos=mycolv->retrieveCentralAtomPos();
 

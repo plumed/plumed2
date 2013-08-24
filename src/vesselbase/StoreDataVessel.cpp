@@ -69,7 +69,8 @@ void StoreDataVessel::recompute( const unsigned& ivec, const unsigned& jstore ){
   ActionWithVessel* act = getAction();
 
   // Set the task we want to reperform
-  act->current = ivec;
+  act->current = act->taskList(ivec);
+  act->lindex = act->taskList.linkIndex(ivec);
   // Reperform the task
   performTask( jstore );
   // Store the derivatives
@@ -88,6 +89,7 @@ void StoreDataVessel::storeValues( const unsigned& myelem ){
 }
 
 void StoreDataVessel::storeDerivativesHighMem( const unsigned& myelem ){
+  plumed_dbg_assert( myelem<getAction()->getNumberOfTasks() );
   ActionWithVessel* act=getAction();
   getIndexList( act->getNumberOfTasks(), myelem, nspace-1, active_der );
 
@@ -121,7 +123,7 @@ void StoreDataVessel::storeDerivativesLowMem( const unsigned& jstore ){
 }
 
 bool StoreDataVessel::calculate(){
-  unsigned myelem = getAction()->current;
+  unsigned myelem = getAction()->lindex;
   // Normalize vector if it is required
   finishTask( myelem );
 
@@ -245,7 +247,7 @@ void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>
 void StoreDataVessel::transformComponents( const unsigned& jstore, const double& weight, double& wdf, const std::vector<double>& dfvec ){
   plumed_dbg_assert( dfvec.size()==vecsize );
   ActionWithVessel* act = getAction();
-  unsigned myelem = act->current;
+  unsigned myelem = act->lindex;
 
   unsigned ibuf = myelem * vecsize * nspace;
   for(unsigned icomp=0;icomp<vecsize;++icomp){
@@ -254,6 +256,7 @@ void StoreDataVessel::transformComponents( const unsigned& jstore, const double&
   }  
 
   if( !act->lowmem ) {
+      plumed_dbg_assert( jstore<getAction()->getNumberOfTasks() ); 
       for(unsigned ider=0;ider<active_der[myelem];++ider){
           double comp2=0.0; unsigned ibuf = myelem * vecsize * nspace + 1 + ider;
           for(unsigned jcomp=0;jcomp<vecsize;++jcomp){

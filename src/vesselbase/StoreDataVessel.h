@@ -132,7 +132,7 @@ bool StoreDataVessel::usingLowMem(){
 
 inline
 void StoreDataVessel::performTask( const unsigned& ivec ){
-  if( usingLowMem() ) getAction()->performTask( ivec );
+  if( usingLowMem() ) getAction()->performTask();
 }
 
 inline

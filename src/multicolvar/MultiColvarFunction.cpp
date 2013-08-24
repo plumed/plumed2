@@ -59,13 +59,24 @@ MultiColvarBase(ao)
          log.printf("  calculating function for atoms ");
          for(unsigned i=0;i<atoms.size();++i){
             log.printf("%d ",atoms[i].serial() );
-            subatomlist.push_back( mycolv->getInternalIndex(atoms[i]) );
+            taskList.addIndexToList( mycolv->getInternalIndex(atoms[i]) );
          }
          log.printf("\n");
       } else {
-         for(unsigned i=0;i<mycolv->colvar_atoms.size();++i) subatomlist.push_back( i );
+         for(unsigned i=0;i<mycolv->taskList.fullSize();++i) taskList.addIndexToList( i );
       }
-  } 
+      usespecies=true; ablocks.resize(1); ablocks[0].resize( getNumberOfBaseFunctions() );
+      for(unsigned i=0;i<getNumberOfBaseFunctions();++i) ablocks[0][i]=i; 
+      current_atoms.resize( 1 + ablocks[0].size() );
+  } else {
+      usespecies=false; nblock=getNumberOfBaseFunctions(); ablocks.resize(2);
+      for(unsigned i=0;i<2;++i) ablocks[i].resize(nblock);
+      for(unsigned i=0;i<getNumberOfBaseFunctions();++i){ ablocks[0][i]=i; ablocks[1][i]=i; }
+      for(unsigned i=1;i<getNumberOfBaseFunctions();++i){
+         for(unsigned j=0;j<i;++j) taskList.addIndexToList( i*nblock + j );
+      }
+      current_atoms.resize( 2 );
+  }
 }
 
 void MultiColvarFunction::completeSetup(){

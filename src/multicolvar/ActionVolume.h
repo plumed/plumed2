@@ -100,7 +100,7 @@ public:
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
 /// This calculates all the vessels and is called from within a bridge vessel
-  void performTask(const unsigned& i );
+  void performTask();
 /// Routines that have to be defined so as not to have problems with virtual methods 
   void deactivate_task();
   void calculate(){}

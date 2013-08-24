@@ -79,7 +79,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   AlphaBeta(const ActionOptions&);
-  virtual double compute( const unsigned& j );
+  virtual double compute();
   bool isPeriodic(){ return false; }
   Vector getCentralAtom();  
 };
@@ -127,7 +127,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double AlphaBeta::compute( const unsigned& j ){
+double AlphaBeta::compute(){
   Vector d0,d1,d2;
   d0=getSeparation(getPosition(1),getPosition(0));
   d1=getSeparation(getPosition(2),getPosition(1));
@@ -136,8 +136,8 @@ double AlphaBeta::compute( const unsigned& j ){
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
   double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
-  double svalue = -0.5*sin(value-target[current]);
-  double cvalue = 1.+cos(value-target[current]);
+  double svalue = -0.5*sin(value-target[lindex]);
+  double cvalue = 1.+cos(value-target[lindex]);
 
   dd0 *= svalue;
   dd1 *= svalue;

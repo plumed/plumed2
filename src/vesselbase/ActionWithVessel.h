@@ -78,6 +78,8 @@ protected:
   bool contributorsAreUnlocked;
 /// Does the weight have derivatives
   bool weightHasDerivatives;
+/// The position of the current task in the taskList
+  unsigned lindex;
 /// The numerical index of the task we are curently performing
   unsigned current;
 /// This is used for numerical derivatives of bridge variables
@@ -153,7 +155,7 @@ public:
 /// Get the index for a particular numbered task
   unsigned getIndexForTask( const unsigned& itask ) const ;
 /// Calculate one of the functions in the distribution
-  virtual void performTask( const unsigned& j )=0;
+  virtual void performTask()=0;
 /// Return a pointer to the field 
   Vessel* getVessel( const std::string& name );
 /// Set the derivative of the jth element wrt to a numbered element

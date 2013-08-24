@@ -48,22 +48,17 @@ ActionWithValue(ao),
 ActionWithVessel(ao),
 usepbc(false),
 updateFreq(0),
-lastUpdate(0)
+lastUpdate(0),
+usespecies(false)
 {
   if( keywords.exists("NOPBC") ){ 
     bool nopbc=!usepbc; parseFlag("NOPBC",nopbc);
     usepbc=!nopbc;
   } 
+  if( keywords.exists("SPECIES") ) usespecies=true;
   if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
   if(updateFreq>0) log.printf("  Updating contributors every %d steps.\n",updateFreq);
   else log.printf("  Updating contributors every step.\n");
-}
-
-void MultiColvarBase::addColvar( const std::vector<unsigned>& newatoms ){
-  DynamicList<unsigned> newlist; newlist.setupMPICommunication( comm );
-  for(unsigned i=0;i<newatoms.size();++i) newlist.addIndexToList( newatoms[i] );
-  taskList.addIndexToList( colvar_atoms.size() );
-  colvar_atoms.push_back( newlist );
 }
 
 void MultiColvarBase::copyAtomListToFunction( MultiColvarBase* myfunction ){
@@ -83,7 +78,22 @@ void MultiColvarBase::copyActiveAtomsToFunction( MultiColvarBase* myfunction ){
 void MultiColvarBase::setupMultiColvarBase(){
   // Activate everything
   taskList.activateAll();
-  for(unsigned i=0;i<colvar_atoms.size();++i) colvar_atoms[i].activateAll();
+  // Setup decoder array
+  if( !usespecies ){
+     decoder.resize( ablocks.size() ); unsigned code=1;
+     for(unsigned i=0;i<ablocks.size();++i){ decoder[ablocks.size()-1-i]=code; code *= nblock; } 
+  } else if( ablocks.size()>0 ) {
+     plumed_assert( ablocks.size()==1 );
+     // Setup coordination sphere
+     csphere_atoms.resize( taskList.fullSize() );
+     for(unsigned i=0;i<taskList.fullSize();++i){
+        for(unsigned j=0;j<ablocks[0].size();++j){
+           if( taskList(i)!=ablocks[0][j] ) csphere_atoms[i].addIndexToList( ablocks[0][j] );
+        }
+        csphere_atoms[i].activateAll();
+     } 
+  }
+  
   // Resize stuff in derived classes 
   resizeDynamicArrays();
   // Resize local arrays
@@ -100,12 +110,14 @@ void MultiColvarBase::prepare(){
   bool updatetime=false;
   if( contributorsAreUnlocked ){
       taskList.mpi_gatherActiveMembers( comm );
-      mpi_gatherActiveMembers( comm, colvar_atoms ); 
+      if( usespecies ) mpi_gatherActiveMembers( comm, csphere_atoms ); 
       lockContributors(); updatetime=true;
   }
   if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
       taskList.activateAll(); 
-      for(unsigned i=0;i<taskList.getNumberActive();++i) colvar_atoms[i].activateAll();
+      if(usespecies){ 
+         for(unsigned i=0;i<taskList.getNumberActive();++i) csphere_atoms[i].activateAll();
+      }
       unlockContributors(); updatetime=true; lastUpdate=getStep();
   }
   if(updatetime){
@@ -130,17 +142,43 @@ void MultiColvarBase::resizeLocalArrays(){
   forcesToApply.resize( getNumberOfDerivatives() );
 }
 
-void MultiColvarBase::performTask( const unsigned& j ){
+bool MultiColvarBase::setupCurrentAtomList(){
+  if( usespecies ){
+     natomsper=1;
+     current_atoms[0]=all_atoms.linkIndex( current );
+     for(unsigned j=0;j<ablocks.size();++j){
+        for(unsigned i=0;i<csphere_atoms[current].getNumberActive();++i){
+           current_atoms[natomsper]=all_atoms.linkIndex( csphere_atoms[current][i] );
+           natomsper++; 
+        }
+     }
+     if( natomsper==1 ) return isDensity();
+  } else {
+     natomsper=current_atoms.size();
+     unsigned scode = current;
+     for(unsigned i=0;i<ablocks.size();++i){
+        unsigned ind=std::floor( scode / decoder[i] );
+        current_atoms[i]=all_atoms.linkIndex( ablocks[i][ind] );
+        scode -= ind*decoder[i];
+     }
+  }  
+  return true;
+}
+
+void MultiColvarBase::performTask(){
   // Currently no atoms have derivatives so deactivate those that are active
   atoms_with_derivatives.deactivateAll();
   // Currently no central atoms have derivatives so deactive them all
   atomsWithCatomDer.deactivateAll();
+  // Retrieve the atom list
+  if( !setupCurrentAtomList() ) return;
 
   // Do nothing if there are no active atoms in the colvar
-  if( colvar_atoms[current].getNumberActive()==0 ){  
-     setElementValue(1,0.0);
-     return;                      
-  }
+//  if( colvar_atoms[current].getNumberActive()==0 ){  
+//     setElementValue(1,0.0);
+//     return;                      
+//  }   Add retrieve atoms here
+
   // Do a quick check on the size of this contribution  
   calculateWeight();
   if( getElementValue(1)<getTolerance() ){
@@ -149,14 +187,14 @@ void MultiColvarBase::performTask( const unsigned& j ){
   }
 
   // Compute everything
-  double vv=doCalculation( j );
+  double vv=doCalculation();
   // Set the value of this element in ActionWithVessel
   setElementValue( 0, vv );
   return;
 }
 
-double MultiColvarBase::doCalculation( const unsigned& j ){
-  double val=compute(j); updateActiveAtoms();
+double MultiColvarBase::doCalculation(){
+  double val=compute(); updateActiveAtoms();
   return val;
 }
 
@@ -198,10 +236,10 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
 }
 
 unsigned MultiColvarBase::getInternalIndex( const AtomNumber& iatom ) const {
+  plumed_massert( usespecies && ablocks.size()==1, "This should only be used to interogate atom centered multicolvars");
   unsigned katom; bool found=false;
-  for(unsigned i=0;i<colvar_atoms.size();++i){
-      unsigned jatom = colvar_atoms[i][0];
-      if( all_atoms[ all_atoms.linkIndex(jatom) ]==iatom ){
+  for(unsigned i=0;i<ablocks[0].size();++i){
+      if( all_atoms[ all_atoms.linkIndex(ablocks[0][i]) ]==iatom ){
          katom=i; found=true;
       }
   }

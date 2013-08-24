@@ -182,10 +182,12 @@ void ActionWithVessel::runAllTasks(){
   doJobsRequiredBeforeTaskList();
 
   for(unsigned i=rank;i<taskList.getNumberActive();i+=stride){
+      // This is the position of the task in the dynamic list
+      lindex=taskList.linkIndex(i);
       // Store the task we are currently working on
       current=taskList[i];
       // Calculate the stuff in the loop for this action
-      performTask(i);
+      performTask();
       // Weight should be between zero and one
       plumed_dbg_assert( thisval[1]>=0 && thisval[1]<=1.0 );
 

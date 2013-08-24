@@ -56,15 +56,25 @@ private:
   DynamicList<unsigned> atomsWithCatomDer;
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
+/// Neighbor lists for coordination numbers
+  std::vector<DynamicList<unsigned> > csphere_atoms;
 /// This resizes the local arrays after neighbor list updates and during initialization
   void resizeLocalArrays();
 protected:
 /// A dynamic list containing those atoms with derivatives
   DynamicList<unsigned> atoms_with_derivatives;
-/// The lists of the atoms involved in each of the individual colvars
-  std::vector< DynamicList<unsigned> > colvar_atoms;
-/// Add a colvar to the set of colvars we are calculating (in practise just a list of atoms)
-  void addColvar( const std::vector<unsigned>& newatoms );
+/// Using the species keyword to read in atoms
+  bool usespecies;
+/// Number of atoms in each block
+  unsigned nblock;
+/// This is used when turning cvcodes into atom numbers
+  std::vector<unsigned> decoder;
+/// Blocks of atom numbers
+  std::vector< std::vector<unsigned> > ablocks;
+/// Number of atoms in the cv - set at start of calculation
+  unsigned natomsper;  
+/// Vector containing the indices of the current atoms
+  std::vector<unsigned> current_atoms;
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase();
 /// Request the atoms from action atomistic
@@ -95,6 +105,8 @@ protected:
   void getCentralAtomIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ) const ;
 /// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
   void quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout );
+/// This sets up the list of atoms that are involved in this colvar
+  bool setupCurrentAtomList();
 public:
   MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(){}
@@ -103,13 +115,13 @@ public:
   void prepare();
   virtual void resizeDynamicArrays()=0;
 /// Perform one of the tasks
-  void performTask( const unsigned& j );
+  void performTask();
 /// And a virtual function which actually computes the colvar
-  virtual double doCalculation( const unsigned& j );  
+  virtual double doCalculation();  
 /// Update the atoms that have derivatives
   virtual void updateActiveAtoms()=0;
 /// This is replaced once we have a function to calculate the cv
-  virtual double compute( const unsigned& j )=0;
+  virtual double compute()=0;
 /// These replace the functions in ActionWithVessel to make the code faster
   void mergeDerivatives( const unsigned& ider, const double& df );
   void clearDerivativesAfterTask( const unsigned& ider );
@@ -152,15 +164,16 @@ unsigned MultiColvarBase::getNumberOfDerivatives(){
 
 inline
 void MultiColvarBase::removeAtomRequest( const unsigned& i, const double& weight ){
+  plumed_dbg_assert( usespecies );
   if( !contributorsAreUnlocked ) return;
   plumed_dbg_assert( weight<getTolerance() );
-  if( weight<getNLTolerance() ) colvar_atoms[current].deactivate( i );
+// GAT neighbor list
+  if( weight<getNLTolerance() ) csphere_atoms[current].deactivate( i );
 }
 
 inline
 void MultiColvarBase::deactivate_task(){
   if( !contributorsAreUnlocked ) return;      // Deactivating tasks only possible during neighbor list update
-  colvar_atoms[current].deactivateAll();      // Deactivate all atom requests for this colvar
   ActionWithVessel::deactivate_task();        // Deactivate the colvar from the list
 }
 
@@ -176,7 +189,7 @@ unsigned MultiColvarBase::getNumberOfQuantities(){
 
 inline
 unsigned MultiColvarBase::getNAtoms() const {
-  return colvar_atoms[current].getNumberActive();
+  return natomsper;   // colvar_atoms[current].getNumberActive();
 }
 
 inline
