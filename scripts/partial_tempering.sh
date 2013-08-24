@@ -57,6 +57,10 @@ function error(msg)
      print "ERROR:",msg > "/dev/stderr" ;
      exit;
 }
+function warning(msg)
+{
+     print "WARNING:",msg | "cat 1>&2"
+}
 {
 # This is the suffix for "hot" atoms:
   suffix="_";
@@ -82,23 +86,29 @@ function error(msg)
   if(rec=="atomtypes" && NF>=4){
     if((length($4)==1 && $4~"[a-zA-Z]")) error("in atomtypes");
     else if((length($6)==1 && $6~"[a-zA-Z]")){
+      bondtypefield=2;
       epsilonfield=8;
     }
     else if((length($5)==1 && $5~"[a-zA-Z]")){
-      if(substr($1,0,1) ~"[a-zA-Z]") epsilonfield=7;
+      if(substr($1,0,1) ~"[a-zA-Z]"){
+        bondtypefield=1;
+        epsilonfield=7;
+      }
       else error("in atomtypes");
     } else error("in atomtypes");
     if(epsilonfield!=NF) error("in atomtypes");
 # NOTE: OPLS uses bond types, thus we have to save the bondtype
-#   atom[$1]=$2;
 # For other force fields (e.g. AMBER) atomtype is used as bondtype
 # and column two is ignored (it is just atomic number).
-    atom[$1]=$1;
+    atom[$1]=$bondtypefield;
   }
 
 # storing dihedraltypes:
-  if(rec=="dihedraltypes" && ($5==9 || $5==4)){
-    string=":"$6" "$7" "$8;
+  if(rec=="dihedraltypes" && ($5==1 || $5==2 || $5==3 || $5==4 || $5==5 || $5==9)){
+    if($5==1 || $5==4 || $5==9) string=":"$6" "$7" "$8;
+    else if($5==2) string=":"$6" "$7;
+    else if($5==3) string=":"$6" "$7" "$8" "$9" "$10" "$11;
+    else if($5==5) string=":"$6" "$7" "$8" "$9;
     type=$1"-"$2"-"$3"-"$4"-"$5
     if(type in params) params[type]=params[type]string;
     else               params[type]=NR""string;
@@ -122,7 +132,7 @@ function error(msg)
 
 ##### PRINTING #####
 # DIHEDRALS
-  if(rec=="dihedrals" && ($5==9 || $5==4) ){
+  if(rec=="dihedrals" && ($5==1 || $5==2 || $5==3 || $5==4 || $5==5 || $5==9) ){
     found1=0; found4=0;
     for(j=0;j<n_of_atoms;j++) {
       if($1==list_of_atoms[j]) found1=1;
@@ -132,8 +142,24 @@ function error(msg)
     if(found1)sscale*=sqrt(scale);
     if(found2)sscale*=sqrt(scale);
 
-     if(NF==8){
-       printf($1" "$2" "$3" "$4" "$5" "$6" "$7*sscale" "$8 "comments\n");
+# this is the case in which dihedrals are online:
+     if(NF>5){
+       printf($1" "$2" "$3" "$4" "$5" ");
+       if($5==1 || $5==4 || $5==9){
+                                   if(NF!=8) error("dihedrals with type 1,4,9 should have 8 fields");
+                                   printf($6" "$7*sscale" "$8);
+       } else if($5==2) {
+                                   if(NF!=7) error("dihedrals with type 2 should have 7 fields");
+                                   printf($6" "$7*sscale);
+       } else if($5==3) {
+                                   if(NF!=11) error("dihedrals with type 3 should have 11 fields");
+                                   printf($6*sscale" "$7*sscale" "$8*sscale" "$9*sscale" "$10*sscale" "$11*sscale);
+       } else if($5==5) {
+                                   if(NF!=9) error("dihedrals with type 5 should have 9 fields");
+                                   printf($6*sscale" "$7*sscale" "$8*sscale" "$9*sscale);
+       } else error("dihedrals with more than 5 fields should be 1,2,3,4,5 or 9");
+       printf(" "comments"\n");
+# this is the case in which we have to search the database
      } else if(NF==5){
        param="";
        atype[1]=atom[ato[$1]]
@@ -163,18 +189,34 @@ function error(msg)
        }
        
     n=split(param,array,":");
-    if(n<=1) error("params not found "$1" "$2" "$3" "$4" "$5" "ato[$1]" "ato[$2]" "ato[$3]" "ato[$4]);
-    if($5!=9 && n!=2) error("multiple dihedrals should be type 9");
+    if(n<=1) error("params not found "$1" "$2" "$3" "$4" "$5" "atype[1]" "atype[2]" "atype[3]" "atype[4]);
+    if($5!=9 && n!=2){
+# in case of multiple dihedrals !=9, all parameters should be the same, otherwise I suspect there is some problem
+      for(i=3;i<=n;i++){
+        if(array[i]!=array[2]) error("multiple dihedrals !=9: parameters "array[i]" and "array[2]" are different\n");
+      }
+# then, I just take one of the instances
+      param=array[1]":"array[2];
+      n=split(param,array,":");
+    }
     
-    printf("; parameters for types %s %s %s %s at LINE(%s)\n",ato[$1],ato[$2],ato[$3],ato[$4],array[1]);
+    printf("; parameters for types %s %s %s %s at LINE(%s)\n",atype[1],atype[2],atype[3],atype[4],array[1]);
     for(i=2;i<=n;i++){
       printf($1" "$2" "$3" "$4" "$5" ");
       split(array[i],array1," ");
-      printf(array1[1]" "sscale*array1[2]" "array1[3]);
+      if($5==1 || $5==4 || $5==9){
+                                  printf(array1[1]" "array1[2]*sscale" "array1[3]);
+      } else if($5==2) {
+                                  printf(array1[1]" "array1[2]*sscale);
+      } else if($5==3) {
+                                  printf(array1[1]*sscale" "array1[2]*sscale" "array1[3]*sscale" "array1[4]*sscale" "array1[5]*sscale" "array1[6]*sscale);
+      } else if($5==5) {
+                                  printf(array1[1]*sscale" "array1[2]*sscale" "array1[3]*sscale" "array1[4]*sscale);
+      } else error("dihedrals with more than 5 fields should be 1,2,3,4,5 or 9");
       printf(comments);
       printf("\n");
     }
-   } else error("dihedrals should have 5 or 8 fields");
+   } else error("dihedrals should have at least 5 fields");
 # ATOMTYPES
   } else if(rec=="atomtypes" && NF>=4){
     for(i=1;i<NF;i++)printf($i" "); print $NF,comments;
