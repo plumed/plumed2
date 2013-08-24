@@ -140,7 +140,7 @@ function warning(msg)
     }
     sscale=1.0;
     if(found1)sscale*=sqrt(scale);
-    if(found2)sscale*=sqrt(scale);
+    if(found4)sscale*=sqrt(scale);
 
 # this is the case in which dihedrals are online:
      if(NF>5){
