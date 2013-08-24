@@ -63,7 +63,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
      int chkpt_ret;
  #endif
  
-@@ -714,10 +724,50 @@
+@@ -715,10 +725,50 @@
              }
          }
          fprintf(fplog, "\n");
@@ -114,7 +114,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
      print_date_and_time(fplog, cr->nodeid, "Started mdrun", runtime);
      wallcycle_start(wcycle, ewcRUN);
      if (fplog)
-@@ -1030,10 +1080,17 @@
+@@ -1031,10 +1081,17 @@
                                      vsite, shellfc, constr,
                                      nrnb, wcycle,
                                      do_verbose && !bPMETuneRunning);
@@ -132,7 +132,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  
          if (MASTER(cr) && do_log && !bFFscan)
          {
-@@ -1079,10 +1136,96 @@
+@@ -1080,10 +1137,96 @@
              }
          }
  
@@ -229,7 +229,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
           * or at the last step (but not when we do not want confout),
           * but never at the first step or with rerun.
           */
-@@ -1175,16 +1318,43 @@
+@@ -1176,16 +1319,43 @@
              /* The coordinates (x) are shifted (to get whole molecules)
               * in do_force.
               * This is parallellized as well, and does communication too.
