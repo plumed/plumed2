@@ -908,38 +908,38 @@ Protein             3
 [ dihedrals ] 
 ;  ai    aj    ak    al funct            c0            c1            c2            c3            c4            c5
 ; parameters for types HC CT C O at LINE(550)
-1 2 5 6 9 0.0 2.36682781799 1
-1 2 5 6 9 180.0 0.236682781799 3
+1 2 5 6 9 0.0 1.6736 1
+1 2 5 6 9 180.0 0.16736 3
 ; parameters for types HC CT C N at LINE(601)
 1 2 5 7 9 0.0 0 0
 ; parameters for types HC CT C O at LINE(550)
-3 2 5 6 9 0.0 2.36682781799 1
-3 2 5 6 9 180.0 0.236682781799 3
+3 2 5 6 9 0.0 1.6736 1
+3 2 5 6 9 180.0 0.16736 3
 ; parameters for types HC CT C N at LINE(601)
 3 2 5 7 9 0.0 0 0
 ; parameters for types HC CT C O at LINE(550)
-4 2 5 6 9 0.0 2.36682781799 1
-4 2 5 6 9 180.0 0.236682781799 3
+4 2 5 6 9 0.0 1.6736 1
+4 2 5 6 9 180.0 0.16736 3
 ; parameters for types HC CT C N at LINE(601)
 4 2 5 7 9 0.0 0 0
 ; parameters for types CT C N H at LINE(627)
-2 5 7 8 9 180.0 7.39633693121 2
+2 5 7 8 9 180.0 5.23 2
 ; parameters for types CT C N CT at LINE(627)
-2 5 7 9 9 180.0 7.39633693121 2
+2 5 7 9 9 180.0 5.23 2
 ; parameters for types O C N H at LINE(532)
-6 5 7 8 9 180.0 7.39633693121 2
-6 5 7 8 9 0.0 5.91706954497 1
+6 5 7 8 9 180.0 5.23 2
+6 5 7 8 9 0.0 4.184 1
 ; parameters for types O C N CT at LINE(627)
-6 5 7 9 9 180.0 7.39633693121 2
+6 5 7 9 9 180.0 5.23 2
 ; parameters for types C N CT H1 at LINE(620)
 5 7 9 10 9 0.0 0 0
 ; parameters for types C N CT CT at LINE(526)
-5 7 9 11 9 0.0 5.91706954497 1
-5 7 9 11 9 0.0 5.91706954497 2
-5 7 9 11 9 0.0 1.18341390899 3
+5 7 9 11 9 0.0 4.184 1
+5 7 9 11 9 0.0 4.184 2
+5 7 9 11 9 0.0 0.8368 3
 ; parameters for types C N CT C at LINE(521)
-5 7 9 15 9 0.0 0.798804388571 2
-5 7 9 15 9 0.0 1.24258460444 3
+5 7 9 15 9 0.0 0.56484 2
+5 7 9 15 9 0.0 0.87864 3
 ; parameters for types H N CT H1 at LINE(620)
 8 7 9 10 9 0.0 0 0
 ; parameters for types H N CT CT at LINE(620)
@@ -947,49 +947,49 @@ Protein             3
 ; parameters for types H N CT C at LINE(620)
 8 7 9 15 9 0.0 0 0
 ; parameters for types N CT CT HC at LINE(619)
-7 9 11 12 9 0.0 0.460213377467 3
+7 9 11 12 9 0.0 0.32542 3
 ; parameters for types N CT CT HC at LINE(619)
-7 9 11 13 9 0.0 0.460213377467 3
+7 9 11 13 9 0.0 0.32542 3
 ; parameters for types N CT CT HC at LINE(619)
-7 9 11 14 9 0.0 0.460213377467 3
+7 9 11 14 9 0.0 0.32542 3
 ; parameters for types H1 CT CT HC at LINE(619)
-10 9 11 12 9 0.0 0.460213377467 3
+10 9 11 12 9 0.0 0.32542 3
 ; parameters for types H1 CT CT HC at LINE(619)
-10 9 11 13 9 0.0 0.460213377467 3
+10 9 11 13 9 0.0 0.32542 3
 ; parameters for types H1 CT CT HC at LINE(619)
-10 9 11 14 9 0.0 0.460213377467 3
+10 9 11 14 9 0.0 0.32542 3
 ; parameters for types C CT CT HC at LINE(619)
-15 9 11 12 9 0.0 0.460213377467 3
+15 9 11 12 9 0.0 0.32542 3
 ; parameters for types C CT CT HC at LINE(619)
-15 9 11 13 9 0.0 0.460213377467 3
+15 9 11 13 9 0.0 0.32542 3
 ; parameters for types C CT CT HC at LINE(619)
-15 9 11 14 9 0.0 0.460213377467 3
+15 9 11 14 9 0.0 0.32542 3
 ; parameters for types N CT C O at LINE(601)
 7 9 15 16 9 0.0 0 0
 ; parameters for types N CT C N at LINE(523)
-7 9 15 17 9 180.0 1.33134064762 1
-7 9 15 17 9 180.0 4.67448494053 2
-7 9 15 17 9 180.0 1.62719412487 3
+7 9 15 17 9 180.0 0.9414 1
+7 9 15 17 9 180.0 3.30536 2
+7 9 15 17 9 180.0 1.1506 3
 ; parameters for types H1 CT C O at LINE(548)
-10 9 15 16 9 0.0 2.36682781799 1
-10 9 15 16 9 180.0 0.236682781799 3
+10 9 15 16 9 0.0 1.6736 1
+10 9 15 16 9 180.0 0.16736 3
 ; parameters for types H1 CT C N at LINE(601)
 10 9 15 17 9 0.0 0 0
 ; parameters for types CT CT C O at LINE(601)
 11 9 15 16 9 0.0 0 0
 ; parameters for types CT CT C N at LINE(529)
-11 9 15 17 9 0.0 0.591706954497 1
-11 9 15 17 9 0.0 0.591706954497 2
-11 9 15 17 9 0.0 1.18341390899 3
+11 9 15 17 9 0.0 0.4184 1
+11 9 15 17 9 0.0 0.4184 2
+11 9 15 17 9 0.0 0.8368 3
 ; parameters for types CT C N H at LINE(627)
-9 15 17 18 9 180.0 7.39633693121 2
+9 15 17 18 9 180.0 5.23 2
 ; parameters for types CT C N CT at LINE(627)
-9 15 17 19 9 180.0 7.39633693121 2
+9 15 17 19 9 180.0 5.23 2
 ; parameters for types O C N H at LINE(532)
-16 15 17 18 9 180.0 7.39633693121 2
-16 15 17 18 9 0.0 5.91706954497 1
+16 15 17 18 9 180.0 5.23 2
+16 15 17 18 9 0.0 4.184 1
 ; parameters for types O C N CT at LINE(627)
-16 15 17 19 9 180.0 7.39633693121 2
+16 15 17 19 9 180.0 5.23 2
 ; parameters for types C N CT H1 at LINE(620)
 15 17 19 20 9 0.0 0 0
 ; parameters for types C N CT H1 at LINE(620)
@@ -1006,13 +1006,13 @@ Protein             3
 [ dihedrals ] 
 ;  ai    aj    ak    al funct            c0            c1            c2            c3
 ; parameters for types CT N C O at LINE(501)
-2 7 5 6 4 180.00 31.0646151111 2
+2 7 5 6 4 180.00 21.966 2
 ; parameters for types C CT N H at LINE(472)
-5 9 7 8 4 180.00 3.25438824973 2
+5 9 7 8 4 180.00 2.3012 2
 ; parameters for types CT N C O at LINE(501)
-9 17 15 16 4 180.00 31.0646151111 2
+9 17 15 16 4 180.00 21.966 2
 ; parameters for types C CT N H at LINE(472)
-15 19 17 18 4 180.00 3.25438824973 2
+15 19 17 18 4 180.00 2.3012 2
 
 ; Include Position restraint file
 
