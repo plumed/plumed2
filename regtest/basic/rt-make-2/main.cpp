@@ -1,0 +1,82 @@
+#include "mpi.h"
+#include "plumed/tools/Communicator.h"
+#include "plumed/tools/Tools.h"
+#include <fstream>
+#include <string>
+
+using namespace PLMD;
+
+template<typename T>
+void reset(Communicator& comm,std::vector<T> & v){
+  for(unsigned i=0;i<v.size();i++) v[i]=(i+1)*(comm.Get_rank()+1);
+}
+
+template<typename T>
+void dump(Communicator& comm,std::ostream&ofs,const std::vector<T> & v){
+  for(unsigned i=0;i<v.size();i++) ofs<<" "<<v[i]; ofs<<"\n";
+}
+
+void run(Communicator& comm){
+  std::string ff;
+  Tools::convert(comm.Get_rank(),ff);
+  ff="output"+ff;
+  std::ofstream ofs(ff.c_str());
+  std::vector<int> a(4*comm.Get_size());
+  std::vector<int> b(a);
+  std::vector<int> collect;
+  Communicator::Request req;
+
+  reset(comm,a);
+  comm.Sum(&a[0],a.size());
+  dump(comm,ofs,a);
+
+  reset(comm,a);
+  comm.Bcast(&a[0],a.size(),0);
+  dump(comm,ofs,a);
+
+  reset(comm,a);
+  comm.Bcast(&a[0],a.size(),2);
+  dump(comm,ofs,a);
+
+  reset(comm,a);
+  Communicator::Status status;
+  if(comm.Get_rank()==0) req=comm.Isend(&a[0],a.size(),1,77);
+  if(comm.Get_rank()==1) req=comm.Isend(&a[0],a.size(),2,77);
+  if(comm.Get_rank()==2) req=comm.Isend(&a[0],a.size(),0,77);
+  if(comm.Get_rank()==0) comm.Recv(&b[0],b.size(),2,77,status);
+  if(comm.Get_rank()==1) comm.Recv(&b[0],b.size(),0,77);
+  if(comm.Get_rank()==2) comm.Recv(&b[0],b.size(),1,77);
+  if(comm.Get_rank()==0) req.wait();
+  if(comm.Get_rank()==1) req.wait(status);
+  if(comm.Get_rank()==2) req.wait();
+  dump(comm,ofs,a);
+  if(comm.Get_rank()==0) ofs<<"status "<<status.Get_count<int>()<<"\n";
+  if(comm.Get_rank()==1) ofs<<"status "<<status.Get_count<int>()<<"\n";
+
+  reset(comm,a);
+  collect.assign(a.size()*comm.Get_size(),0.0);
+  comm.Allgather(&a[0],a.size(),&collect[0],a.size());
+  dump(comm,ofs,collect);
+
+  reset(comm,a);
+  std::vector<int> displace(comm.Get_size());
+  std::vector<int> count(comm.Get_size());
+  for(int l=0;l<comm.Get_size();l++) count[l]=1+l;
+  displace[0]=0;
+  for(int l=0;l<comm.Get_size()-1;l++) displace[l+1]=displace[l]+count[l];
+  collect.assign(displace[comm.Get_size()-1]+count[comm.Get_size()-1],0.0);
+  comm.Allgatherv(&a[0],count[comm.Get_rank()],&collect[0],&count[0],&displace[0]);
+  dump(comm,ofs,collect);
+}
+
+int main(int argc,char**argv){
+  MPI_Init(&argc,&argv);
+  {
+    MPI_Comm c;
+    MPI_Comm_dup(MPI_COMM_WORLD,&c);
+    PLMD::Communicator comm;
+    comm.Set_comm(&c);
+    run(comm);
+  }
+  MPI_Finalize();
+}
