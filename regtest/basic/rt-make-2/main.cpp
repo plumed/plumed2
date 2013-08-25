@@ -3,6 +3,8 @@
 #include "plumed/tools/Tools.h"
 #include <fstream>
 #include <string>
+#include "plumed/tools/Vector.h"
+#include "plumed/tools/Tensor.h"
 
 using namespace PLMD;
 
@@ -67,6 +69,35 @@ void run(Communicator& comm){
   collect.assign(displace[comm.Get_size()-1]+count[comm.Get_size()-1],0.0);
   comm.Allgatherv(&a[0],count[comm.Get_rank()],&collect[0],&count[0],&displace[0]);
   dump(comm,ofs,collect);
+
+  std::vector<Vector> vec(comm.Get_size());
+  std::vector<Vector> newvec(comm.Get_size());
+  for(unsigned i=0;i<vec.size();i++) vec[i]=Vector((i+1)*(comm.Get_rank()+1),(i+1)*(comm.Get_rank()+1)+100,(i+1)*(comm.Get_rank()+1)+200);
+  if(comm.Get_rank()==0) req=comm.Isend(&vec[0][0],3*vec.size(),1,78);
+  if(comm.Get_rank()==1) req=comm.Isend(&vec[0][0],3*vec.size(),2,78);
+  if(comm.Get_rank()==2) req=comm.Isend(&vec[0][0],3*vec.size(),0,78);
+  if(comm.Get_rank()==0) comm.Recv(&newvec[0][0],3*newvec.size(),2,78);
+  if(comm.Get_rank()==1) comm.Recv(&newvec[0][0],3*newvec.size(),0,78);
+  if(comm.Get_rank()==2) comm.Recv(&newvec[0][0],3*newvec.size(),1,78);
+  req.wait();
+  for(unsigned i=0;i<vec.size();i++) ofs<<" "<<newvec[i][0]<<" "<<newvec[i][1]<<" "<<newvec[i][2]<<"\n";
+
+  std::vector<Tensor> ten(comm.Get_size());
+  std::vector<Tensor> newten(comm.Get_size());
+  for(unsigned i=0;i<ten.size();i++)
+    ten[i]=Tensor((i+1)*(comm.Get_rank()+1),(i+1)*(comm.Get_rank()+1)+100,(i+1)*(comm.Get_rank()+1)+200,
+                  (i+1)*(comm.Get_rank()+1)+300,(i+1)*(comm.Get_rank()+1)+400,(i+1)*(comm.Get_rank()+1)+500,
+                  (i+1)*(comm.Get_rank()+1)+600,(i+1)*(comm.Get_rank()+1)+700,(i+1)*(comm.Get_rank()+1)+800);
+  if(comm.Get_rank()==0) req=comm.Isend(&ten[0][0][0],9*ten.size(),1,78);
+  if(comm.Get_rank()==1) req=comm.Isend(&ten[0][0][0],9*ten.size(),2,78);
+  if(comm.Get_rank()==2) req=comm.Isend(&ten[0][0][0],9*ten.size(),0,78);
+  if(comm.Get_rank()==0) comm.Recv(&newten[0][0][0],9*newten.size(),2,78);
+  if(comm.Get_rank()==1) comm.Recv(&newten[0][0][0],9*newten.size(),0,78);
+  if(comm.Get_rank()==2) comm.Recv(&newten[0][0][0],9*newten.size(),1,78);
+  req.wait();
+  for(unsigned i=0;i<ten.size();i++) ofs<<" "<<newten[i][0][0]<<" "<<newten[i][0][1]<<" "<<newten[i][0][2]<<"\n"
+                                        <<" "<<newten[i][1][0]<<" "<<newten[i][1][1]<<" "<<newten[i][1][2]<<"\n"
+                                        <<" "<<newten[i][2][0]<<" "<<newten[i][2][1]<<" "<<newten[i][2][2]<<"\n";
 }
 
 int main(int argc,char**argv){
