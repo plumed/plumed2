@@ -28,6 +28,12 @@ void run(Communicator& comm){
   std::vector<int> collect;
   Communicator::Request req;
 
+  double pippo=0;
+ 
+  pippo=comm.Get_rank()+1;
+  comm.Bcast(pippo,0);
+  ofs<<pippo<<"\n";
+
   reset(comm,a);
   comm.Sum(&a[0],a.size());
   dump(comm,ofs,a);
@@ -43,11 +49,11 @@ void run(Communicator& comm){
   reset(comm,a);
   Communicator::Status status;
   if(comm.Get_rank()==0) req=comm.Isend(&a[0],a.size(),1,77);
-  if(comm.Get_rank()==1) req=comm.Isend(&a[0],a.size(),2,77);
-  if(comm.Get_rank()==2) req=comm.Isend(&a[0],a.size(),0,77);
+  if(comm.Get_rank()==1) req=comm.Isend(a,2,77);
+  if(comm.Get_rank()==2) req=comm.Isend(a,0,77);
   if(comm.Get_rank()==0) comm.Recv(&b[0],b.size(),2,77,status);
-  if(comm.Get_rank()==1) comm.Recv(&b[0],b.size(),0,77);
-  if(comm.Get_rank()==2) comm.Recv(&b[0],b.size(),1,77);
+  if(comm.Get_rank()==1) comm.Recv(b,0,77);
+  if(comm.Get_rank()==2) comm.Recv(b,1,77);
   if(comm.Get_rank()==0) req.wait();
   if(comm.Get_rank()==1) req.wait(status);
   if(comm.Get_rank()==2) req.wait();
@@ -74,11 +80,11 @@ void run(Communicator& comm){
   std::vector<Vector> newvec(comm.Get_size());
   for(unsigned i=0;i<vec.size();i++) vec[i]=Vector((i+1)*(comm.Get_rank()+1),(i+1)*(comm.Get_rank()+1)+100,(i+1)*(comm.Get_rank()+1)+200);
   if(comm.Get_rank()==0) req=comm.Isend(&vec[0][0],3*vec.size(),1,78);
-  if(comm.Get_rank()==1) req=comm.Isend(&vec[0][0],3*vec.size(),2,78);
-  if(comm.Get_rank()==2) req=comm.Isend(&vec[0][0],3*vec.size(),0,78);
+  if(comm.Get_rank()==1) req=comm.Isend(&vec[0],vec.size(),2,78);
+  if(comm.Get_rank()==2) req=comm.Isend(vec,0,78);
   if(comm.Get_rank()==0) comm.Recv(&newvec[0][0],3*newvec.size(),2,78);
-  if(comm.Get_rank()==1) comm.Recv(&newvec[0][0],3*newvec.size(),0,78);
-  if(comm.Get_rank()==2) comm.Recv(&newvec[0][0],3*newvec.size(),1,78);
+  if(comm.Get_rank()==1) comm.Recv(&newvec[0],newvec.size(),0,78);
+  if(comm.Get_rank()==2) comm.Recv(newvec,1,78);
   req.wait();
   for(unsigned i=0;i<vec.size();i++) ofs<<" "<<newvec[i][0]<<" "<<newvec[i][1]<<" "<<newvec[i][2]<<"\n";
 
