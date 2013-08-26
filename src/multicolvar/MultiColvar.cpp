@@ -54,7 +54,6 @@ void MultiColvar::registerKeywords( Keywords& keys ){
 MultiColvar::MultiColvar(const ActionOptions&ao):
 Action(ao),
 MultiColvarBase(ao),
-readatoms(false),
 verbose_output(false)
 {
   parseFlag("VERBOSE",verbose_output);
@@ -74,13 +73,13 @@ void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("GROUP") ) readGroupsKeyword( natoms );
   if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms );
 
-  if( !readatoms ) error("No atoms have been read in");
+  if( all_atoms.fullSize()==0 ) error("No atoms have been read in");
   // Setup the multicolvar base
   setupMultiColvarBase();
 }
 
 void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){ 
-  if( readatoms) return; 
+  if( all_atoms.fullSize()>0 ) return; 
 
   std::vector<AtomNumber> t; std::vector<unsigned> newlist;
   for(int i=1;;++i ){
@@ -103,28 +102,27 @@ void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){
         all_atoms.addIndexToList( t[j] );
      }
      t.resize(0); addColvar( newlist );
-     newlist.clear(); readatoms=true;
+     newlist.clear(); 
   }
 }
 
 void MultiColvar::readGroupsKeyword( int& natoms ){
-  if( readatoms ) return;
+  if( all_atoms.fullSize()>0 ) return;
 
   if( natoms==2 ){
-      if( !keywords.exists("GROUPA") ) error("use GROUPA and GROUPB keywords as well as GROUP");
-      if( !keywords.exists("GROUPB") ) error("use GROUPA and GROUPB keywords as well as GROUP");
+     if( !keywords.exists("GROUPA") ) error("use GROUPA and GROUPB keywords as well as GROUP");
+     if( !keywords.exists("GROUPB") ) error("use GROUPA and GROUPB keywords as well as GROUP");
   } else if( natoms==3 ){
-      if( !keywords.exists("GROUPA") ) error("use GROUPA, GROUPB and GROUPC keywords as well as GROUP");
-      if( !keywords.exists("GROUPB") ) error("use GROUPA, GROUPB and GROUPC keywords as well as GROUP");
-      if( !keywords.exists("GROUPC") ) error("use GROUPA, GROUPB and GROUPC keywords as well as GROUP");
+     if( !keywords.exists("GROUPA") ) error("use GROUPA, GROUPB and GROUPC keywords as well as GROUP");
+     if( !keywords.exists("GROUPB") ) error("use GROUPA, GROUPB and GROUPC keywords as well as GROUP");
+     if( !keywords.exists("GROUPC") ) error("use GROUPA, GROUPB and GROUPC keywords as well as GROUP");
   } else {
-      error("Cannot use groups keyword unless the number of atoms equals 2");
+     error("Cannot use groups keyword unless the number of atoms equals 2 or 3");
   }
   
   std::vector<AtomNumber> t;
   parseAtomList("GROUP",t);
   if( !t.empty() ){
-      readatoms=true;
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
       std::vector<unsigned> newlist;
       if(natoms==2){ 
@@ -150,70 +148,107 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
           log.printf("\n");
       }
   } else {
-      std::vector<AtomNumber> t1,t2; 
-      parseAtomList("GROUPA",t1);
-      if( !t1.empty() ){
-         readatoms=true;
-         parseAtomList("GROUPB",t2);
-         if ( t2.empty() && natoms==2 ) error("GROUPB keyword defines no atoms or is missing. Use either GROUPA and GROUPB or just GROUP"); 
-         for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] ); 
-         for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] ); 
-         std::vector<unsigned> newlist;
-         if(natoms==2){
-            for(unsigned i=0;i<t1.size();++i){
-                for(unsigned j=0;j<t2.size();++j){
-                    newlist.push_back(i); newlist.push_back( t1.size() + j ); addColvar( newlist ); newlist.clear();
-                }
-            }
-         } else if(natoms==3){
-            if ( t2.empty() ) error("GROUPB keyword defines no atoms or is missing. Use either GROUPA and GROUPB, GROUPA, GROUPB and GROUPC or just GROUP");  
-            std::vector<AtomNumber> t3;
-            parseAtomList("GROUPC",t3);
-            if( t3.empty() ){
-                for(unsigned i=0;i<t1.size();++i){
-                   for(unsigned j=1;j<t2.size();++j){ 
-                      for(unsigned k=0;k<j;++k){
-                           newlist.push_back( t1.size() + j );
-                           newlist.push_back(i);
-                           newlist.push_back( t1.size() + k );
-                           addColvar( newlist ); newlist.clear();
-                      }
-                   }
-                }
-            } else {
-                for(unsigned i=0;i<t3.size();++i) all_atoms.addIndexToList( t3[i] );
-                for(unsigned i=0;i<t1.size();++i){
-                    for(unsigned j=0;j<t2.size();++j){
-                        for(unsigned k=0;k<t3.size();++k){
-                           newlist.push_back( t1.size() + j );
-                           newlist.push_back(i); 
-                           newlist.push_back( t1.size() + t2.size() + k );
-                           addColvar( newlist ); newlist.clear();
-                        }
-                    }
-                }
-            }
-         }
+      if(natoms==2){
+         readTwoGroups("GROUPA","GROUPB");
+      } else if(natoms==3){
+         readThreeGroups("GROUPA","GROUPB","GROUPC",true);
+      } else {
+         plumed_merror("can only use groups for colvars involving 2 or 3 atoms");
+      }
+  }
+}
+
+void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key2 ){
+  plumed_assert( all_atoms.fullSize()==0 );
+
+  std::vector<AtomNumber> t1, t2; std::vector<unsigned> newlist; 
+  parseAtomList(key1,t1); parseAtomList(key2,t2);
+  if( t1.empty() ) error("missing atom specification " + key1);
+  if ( t2.empty() ) error("missing atom specification " + key2); 
+  for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] ); 
+  for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] ); 
+  for(unsigned i=0;i<t1.size();++i){
+     for(unsigned j=0;j<t2.size();++j){
+         newlist.push_back(i); newlist.push_back( t1.size() + j ); addColvar( newlist ); newlist.clear();
+     }
+  }
+  if( !verbose_output ){
+      log.printf("  constructing colvars from two groups containing %d and %d atoms respectively\n",t1.size(),t2.size() );
+      log.printf("  group %s contains atoms : ", key1.c_str() );
+      for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() );
+      log.printf("\n");
+      log.printf("  group %s contains atoms : ", key2.c_str() );
+      for(unsigned i=0;i<t2.size();++i) log.printf("%d ",t2[i].serial() );
+      log.printf("\n");
+  }
+}
+
+void MultiColvar::readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2 ){
+  plumed_assert( all_atoms.fullSize()==0 );
+
+  std::vector<AtomNumber> t1, t2, t3; std::vector<unsigned> newlist;
+  parseAtomList(key1,t1); parseAtomList(key2,t2);
+  if( t1.empty() ) error("missing atom specification " + key1);
+  if( t2.empty() ) error("missing atom specification " + key2);
+  for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] );
+  for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] );
+  parseAtomList(key3,t3);
+  if( t3.empty() && !allow2 ){
+      error("missing atom specification " + key3);
+  } else if( t3.empty() ){
+      for(unsigned i=0;i<t1.size();++i){
+        for(unsigned j=1;j<t2.size();++j){ 
+           for(unsigned k=0;k<j;++k){
+                newlist.push_back( t1.size() + j );
+                newlist.push_back(i);
+                newlist.push_back( t1.size() + k );
+                addColvar( newlist ); newlist.clear();
+           }
+        }
       }
       if( !verbose_output ){
-          log.printf("  constructing colvars from two groups containing %d and %d atoms respectively\n",t1.size(),t2.size() );
-          log.printf("  group A contains atoms : ");
-          for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() );
-          log.printf("\n"); 
-          log.printf("  group B contains atoms : ");
-          for(unsigned i=0;i<t2.size();++i) log.printf("%d ",t2[i].serial() );
-          log.printf("\n");
+        log.printf("  constructing colvars from two groups containing %d and %d atoms respectively\n",t1.size(),t2.size() ); 
+        log.printf("  group %s contains atoms : ", key1.c_str() );
+        for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() ); 
+        log.printf("\n"); 
+        log.printf("  group %s contains atoms : ", key2.c_str() );
+        for(unsigned i=0;i<t2.size();++i) log.printf("%d ",t2[i].serial() ); 
+        log.printf("\n");
+      }
+  } else {
+      for(unsigned i=0;i<t3.size();++i) all_atoms.addIndexToList( t3[i] );
+      for(unsigned i=0;i<t1.size();++i){
+          for(unsigned j=0;j<t2.size();++j){
+              for(unsigned k=0;k<t3.size();++k){
+                 newlist.push_back( t1.size() + j );
+                 newlist.push_back(i); 
+                 newlist.push_back( t1.size() + t2.size() + k );
+                 addColvar( newlist ); newlist.clear();
+              }
+          }
+      }
+      if( !verbose_output ){
+        log.printf("  constructing colvars from three groups containing %d, %d  and %d atoms respectively\n",t1.size(),t2.size(),t3.size() );
+        log.printf("  group %s contains atoms : ", key1.c_str() );
+        for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() );
+        log.printf("\n"); 
+        log.printf("  group %s contains atoms : ", key2.c_str() );
+        for(unsigned i=0;i<t2.size();++i) log.printf("%d ",t2[i].serial() );
+        log.printf("\n");
+        log.printf("  group %s contains atoms : ", key3.c_str() );
+        for(unsigned i=0;i<t3.size();++i) log.printf("%d ",t3[i].serial() );
+        log.printf("\n");
       }
   }
 }
 
 void MultiColvar::readSpeciesKeyword( int& natoms ){
-  if( readatoms ) return ;
+  if( all_atoms.fullSize()>0 ) return ;
 
   std::vector<AtomNumber> t;
   parseAtomList("SPECIES",t);
   if( !t.empty() ){
-      readatoms=true; natoms=t.size();
+      natoms=t.size();
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
       std::vector<unsigned> newlist;
       if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ){
@@ -245,7 +280,6 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
       std::vector<AtomNumber> t1,t2;
       parseAtomList("SPECIESA",t1);
       if( !t1.empty() ){
-         readatoms=true; 
          parseAtomList("SPECIESB",t2);
          if ( t2.empty() ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
          natoms=1+t2.size();
