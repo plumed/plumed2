@@ -49,6 +49,10 @@ protected:
   void readAtoms( int& natoms );
 /// Read in ATOMS keyword
   void readAtomsLikeKeyword( const std::string & key, int& natoms );
+/// Read two group keywords
+  void readTwoGroups( const std::string& key1, const std::string& key2 );
+/// Read three groups
+  void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2 );
 /// Add a collective variable
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Add some derivatives for an atom 
