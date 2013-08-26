@@ -100,7 +100,7 @@ function warning(msg)
 # NOTE: OPLS uses bond types, thus we have to save the bondtype
 # For other force fields (e.g. AMBER) atomtype is used as bondtype
 # and column two is ignored (it is just atomic number).
-    atom[$1]=$bondtypefield;
+    bondtype[$1]=$bondtypefield;
   }
 
 # storing dihedraltypes:
@@ -162,10 +162,10 @@ function warning(msg)
 # this is the case in which we have to search the database
      } else if(NF==5){
        param="";
-       atype[1]=atom[ato[$1]]
-       atype[2]=atom[ato[$2]]
-       atype[3]=atom[ato[$3]]
-       atype[4]=atom[ato[$4]]
+       atype[1]=bondtype[ato[$1]]
+       atype[2]=bondtype[ato[$2]]
+       atype[3]=bondtype[ato[$3]]
+       atype[4]=bondtype[ato[$4]]
        
        progression=NR
        for(iswitch=0;iswitch<32;iswitch++){
@@ -220,7 +220,7 @@ function warning(msg)
 # ATOMTYPES
   } else if(rec=="atomtypes" && NF>=4){
     for(i=1;i<NF;i++)printf($i" "); print $NF,comments;
-    printf($1""suffix" "$1" ");
+    printf($1""suffix" "bondtype[$1]" ");
       for(i=3;i<NF;i++)printf($i" "); print scale*$NF," ; scaled";
 # ATOMTYPES (PAIRS)
   } else if(rec=="nonbond_params" && NF>=5){
