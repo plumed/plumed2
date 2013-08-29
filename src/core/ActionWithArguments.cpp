@@ -25,8 +25,7 @@
 #include "PlumedMain.h"
 #include "ActionSet.h"
 #include <iostream>
-#define CREGEX
-#ifdef CREGEX
+#ifdef __PLUMED_HAS_CREGEX 
 #include <cstring>
 #include "regex.h" 
 #endif
@@ -52,7 +51,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
         found2=c[i].find(")",found1+1,1); // find it again
 	if(found2!=std::string::npos){
 		// start regex parsing
-#ifdef CREGEX
+#ifdef __PLUMED_HAS_CREGEX 
 		// take the string enclosed in quotes and put in round brackets	
 		std::string myregex=c[i].substr(found1,found2-found1+1);
 	 	log.printf("  Evaluating regexp for this action: %s \n",myregex.c_str());	

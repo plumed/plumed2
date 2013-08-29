@@ -5,6 +5,9 @@
 When you use a collective variable that has many calculated components and you want to 
 refer to them as arguments you can use regular expressions.
 
+If your machine enables this (i.e. has "regex.h" C header ) 
+then you can compile plumed with the preprocessor flag -D__PLUMED_HAS_CREGEX  
+
 Regular expressions are enclosed in round braces and must not contain spaces (the components 
 name have no spaces indeed, so why using them?).
 
