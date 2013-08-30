@@ -134,6 +134,8 @@ public:
   Value* copyOutput( const unsigned& n ) const;
 /// get a string that contains all the available components 
   std::string getComponentsList( ) const ;
+/// get a vector that contains the label for all the components
+  std::vector<std::string> getComponentsVector( ) const ;
 
 
 // -- Routines for everything else -- //

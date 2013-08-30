@@ -41,6 +41,8 @@ bool hasAlmost();
 
 bool isInstalled();
 
+bool hasCregex();
+
 }
 }
 
