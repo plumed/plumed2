@@ -169,10 +169,8 @@ double ActionWithValue::getOutputQuantity(const unsigned j) const {
 inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
   std::string thename; thename=getLabel() + "." + name;
-  if( exists(thename) ){
-      for(unsigned i=0;i<values.size();++i){
-         if( values[i]->name==thename ) return values[i]->value;
-      }
+  for(unsigned i=0;i<values.size();++i){
+    if( values[i]->name==thename ) return values[i]->value;
   }
   return 0.0;
 }

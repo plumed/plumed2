@@ -53,6 +53,7 @@ OFile::OFile():
 {
   fmtField();
   buflen=1;
+  actual_buffer_length=0;
   buffer=new char[buflen];
 // these are set to zero to avoid valgrind errors
   for(unsigned i=0;i<buflen;++i) buffer[i]=0;
@@ -78,14 +79,13 @@ OFile& OFile::setLinePrefix(const std::string&l){
 }
 
 int OFile::printf(const char*fmt,...){
-  size_t pointer=strlen(buffer);
   va_list arg;
   va_start(arg, fmt);
-  int r=std::vsnprintf(&buffer[pointer],buflen-pointer,fmt,arg);
+  int r=std::vsnprintf(&buffer[actual_buffer_length],buflen-actual_buffer_length,fmt,arg);
   va_end(arg);
-  if(r>=buflen-pointer){
+  if(r>=buflen-actual_buffer_length){
     int newlen=buflen;
-    while(newlen<=r+pointer) newlen*=2;
+    while(newlen<=r+actual_buffer_length) newlen*=2;
     char* newbuf=new char [newlen];
     memmove(newbuf,buffer,buflen);
     for(int k=buflen;k<newlen;k++) newbuf[k]=0;
@@ -94,22 +94,25 @@ int OFile::printf(const char*fmt,...){
     buflen=newlen;
     va_list arg;
     va_start(arg, fmt);
-    r=std::vsnprintf(&buffer[pointer],buflen-pointer,fmt,arg);
+    r=std::vsnprintf(&buffer[actual_buffer_length],buflen-actual_buffer_length,fmt,arg);
     va_end(arg);
   }
-  plumed_massert(r>-1 && r<buflen-pointer,"error using fmt string " + std::string(fmt));
+  plumed_massert(r>-1 && r<buflen-actual_buffer_length,"error using fmt string " + std::string(fmt));
 
 // Line is buffered until newline, then written with a PLUMED: prefix
   char*p1=buffer;
   char*p2;
-  while((p2=strchr(p1,'\n'))){
-    *p2='\0';
+// newline is only searched in the just added portion:
+  char*psearch=p1+actual_buffer_length;
+  actual_buffer_length+=r;
+  while((p2=strchr(psearch,'\n'))){
     if(linePrefix.length()>0) llwrite(linePrefix.c_str(),linePrefix.length());
-    llwrite(p1,std::strlen(p1));
-    llwrite("\n",1);
+    llwrite(p1,p2-p1+1);
+    actual_buffer_length-=(p2-p1)+1;
     p1=p2+1;
+    psearch=p1;
   };
-  memmove(buffer,p1,strlen(p1)+1);
+  if(buffer!=p1) memmove(buffer,p1,actual_buffer_length);
   return r;
 }
 

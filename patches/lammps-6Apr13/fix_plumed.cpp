@@ -170,7 +170,7 @@ void FixPlumed::post_force(int vflag)
     for(int i=0;i<nlocal;i++){
       gatindex[i]=atom->tag[i]-1;
       masses[i]=atom->mass[atom->type[i]];
-      charges[i]=atom->q[atom->type[i]];
+      if(atom->q) charges[i]=atom->q[atom->type[i]];
     }
     p->cmd("setAtomsNlocal",&nlocal);
     p->cmd("setAtomsGatindex",gatindex);
@@ -198,7 +198,7 @@ void FixPlumed::post_force(int vflag)
   p->cmd("setBox",&box[0][0]);
   p->cmd("setForces",&atom->f[0][0]);
   p->cmd("setMasses",&masses[0]);
-  p->cmd("setCharges",&charges[0]);
+  if(atom->q) p->cmd("setCharges",&charges[0]);
   p->cmd("setVirial",&virial[0][0]);
 
 // do the real calculation:

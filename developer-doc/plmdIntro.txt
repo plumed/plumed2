@@ -240,7 +240,7 @@ Matrix<double> mat;   // This is a matrix of doubles
 <b>
 The most common way we use this kind of functionality in plumed 2.0 is when we take advantage of the
 features that are available in the C++ standard library.  For more details on the standard library
-visit \ref http://www.cplusplus.com/reference/
+visit http://www.cplusplus.com/reference/
 </b>  
 
 \section dynamic-poly Dynamic Polymorhpism

@@ -42,7 +42,7 @@ This quantity calculates:
 \f] 
 
 where the sum over \f$i\f$ is over all the ``bridging atoms" and 
-\f$s_A\f$ and \f$s_B\f$ are \ref switchingfunctions.
+\f$s_A\f$ and \f$s_B\f$ are \ref switchingfunction.
 
 \par Examples
 
@@ -83,7 +83,7 @@ void Bridge::registerKeywords( Keywords& keys ){
                                       "of the structure.");
   keys.add("atoms-2","GROUPA","The list of atoms that are in the first interesting part of the structure"); 
   keys.add("atoms-2","GROUPB","The list of atoms that are in the second interesting part of the structure"); 
-  keys.add("optional","SWITCH","The parameters of the two \\ref switchingfunctions in the above formula");
+  keys.add("optional","SWITCH","The parameters of the two \\ref switchingfunction in the above formula");
   keys.add("optional","SWITCHA","The \\ref switchingfunction on the distance between bridging atoms and the atoms in "
                                 "group A");
   keys.add("optional","SWITCHB","The \\ref switchingfunction on the distance between the bridging atoms and the atoms in "
