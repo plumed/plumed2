@@ -83,6 +83,8 @@ PRINT ARG=d1 FILE=colvar STRIDE=10
 Also notice that all the actions can be labeled, and that many actions besides normal collective variables can define
 one or more value, which can be then referred using the corresponding label.
 
+Actions can be referred also with POSIX regular expressions (see \ref Regex). For this you need to compile plumed with the appropriate flag.  
+
 \section Units A note on units
 By default the plumed inputs and outputs quantities in the following units:
 

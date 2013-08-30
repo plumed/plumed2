@@ -1,0 +1,61 @@
+/**
+
+\page Regex Regular Expressions
+
+When you use a collective variable that has many calculated components and you want to 
+refer to them as arguments you can use regular expressions.
+
+If your machine enables this (i.e. has "regex.h" C header ) 
+then you can compile plumed with the preprocessor flag -D__PLUMED_HAS_CREGEX  
+
+Regular expressions are enclosed in round braces and must not contain spaces (the components 
+name have no spaces indeed, so why using them?).
+
+As an example
+\verbatim
+d1: DISTANCE ATOMS=1,2 COMPONENTS
+PRINT ARG=(d1\.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
+\endverbatim
+
+selects for printout both  d1.x and d1.y components which are generated through distance in the order they are created by plumed.
+Notice that the "." character should be escaped if one wants to interpret it as a literal ".". Unescaped dots will match any character,
+according to regular expression syntax. E.g.
+\verbatim
+d1: DISTANCE ATOMS=1,2 COMPONENTS
+dxy: DISTANCE ATOMS=1,3
+
+# this will match d1.x,d1.y,dxy
+PRINT ARG=(d1.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
+
+# this will match d1.x,d1.y only
+PRINT ARG=(d1\.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
+\endverbatim
+
+You can also include more by using comma separated regular expressions 
+
+\verbatim
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+d1: DISTANCE ATOMS=7,17 COMPONENTS
+PRINT ARG=(d1\.[xy]),(t[0-9]) STRIDE=100 FILE=colvar FMT=%8.4f
+\endverbatim
+
+(this selects t1,t2,d1.x and d2.x) Beware if you have overlapping selection they will be duplicated.
+
+You can equivalently use (recommended) regexp themself with the "or" operator. 
+
+\verbatim
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+d1: DISTANCE ATOMS=7,17 COMPONENTS
+PRINT ARG=(d1\.[xy]|t[0-9]) STRIDE=100 FILE=colvar FMT=%8.4f
+\endverbatim
+
+that selects the same arguments.
+
+In the log produced you can see if your regular expression is effectively matching the component you want.
+
+For more info see, for example, http://www.regular-expressions.info/reference.html.
+
+*/
+
