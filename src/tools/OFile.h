@@ -92,6 +92,8 @@ public virtual FileBase{
   char* buffer;
 /// Internal buffer length
   int buflen;
+/// This variables stores the actual buffer length
+  unsigned actual_buffer_length;
 /// Class identifying a single field for fielded output
   class Field:
   public FieldBase{
