@@ -183,7 +183,7 @@ do
     } > automatic/$flag.txt
 done
 
-for file in Bias Colvar Functions Installation Intro Analysis Glossary Tutorials Modules
+for file in Bias Colvar Functions Installation Intro Analysis Glossary Tutorials Modules Regex
 do
 
 cat $file.txt |

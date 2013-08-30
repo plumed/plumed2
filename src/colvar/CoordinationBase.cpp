@@ -108,6 +108,7 @@ CoordinationBase::~CoordinationBase(){
 
 void CoordinationBase::prepare(){
   if(nl->getStride()>0){
+    if(getExchangeStep()) error("Neighbor lists for this collective variable are not compatible with replica exchange, sorry for that!");
     if(firsttime || (getStep()%nl->getStride()==0)){
       requestAtoms(nl->getFullAtomList());
       invalidateList=true;

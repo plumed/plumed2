@@ -119,6 +119,8 @@ public:
 /// It is also smart enough to detect "/", so that 
 /// extension("pippo/.t")="" whereas extension("pippo/a.t")="t"
   static std::string extension(const std::string&);
+/// Fast int power
+  static double fastpow(double base,int exp);
 };
 
 template <class T>
@@ -181,6 +183,25 @@ void Tools::convert(T i,std::string & str){
         std::ostringstream ostr;
         ostr<<i;
         str=ostr.str();
+}
+
+inline
+double Tools::fastpow(double base, int exp)
+{
+    if(exp<0){
+      exp=-exp;
+      base=1.0/base;
+    }
+    double result = 1.0;
+    while (exp)
+    {
+        if (exp & 1)
+            result *= base;
+        exp >>= 1;
+        base *= base;
+    }
+
+    return result;
 }
 
 }
