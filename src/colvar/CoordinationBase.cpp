@@ -164,9 +164,9 @@ void CoordinationBase::calculate()
  }
 
  if(!serial){
-   comm.Sum(&ncoord,1);
+   comm.Sum(ncoord);
    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
-   comm.Sum(&virial[0][0],9);
+   comm.Sum(virial);
  }
 
  for(unsigned i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);

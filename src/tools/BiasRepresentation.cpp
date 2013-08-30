@@ -189,8 +189,8 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
 		   // a pointer of double as it was in old gaussian 
                    for(int j=0;j<ndim;++j){ allder[ndim*i+j]=tmpder[j];tmpder[j]=0.;}
                   }
-                  mycomm.Sum(&allbias[0],allbias.size());
-                  mycomm.Sum(&allder[0],allder.size());
+                  mycomm.Sum(allbias);
+                  mycomm.Sum(allder);
                   for(unsigned i=0;i<neighbors.size();++i){
                    unsigned ineigh=neighbors[i];
                    for(unsigned j=0;j<ndim;++j){der[j]=allder[ndim*i+j];}

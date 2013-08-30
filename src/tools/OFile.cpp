@@ -42,7 +42,7 @@ size_t OFile::llwrite(const char*ptr,size_t s){
     if(!fp) plumed_merror("writing on uninitilized File");
     r=fwrite(ptr,1,s,fp);
   }
-  if(comm) comm->Bcast(&r,1,0);
+  if(comm) comm->Bcast(r,0);
   return r;
 }
 
