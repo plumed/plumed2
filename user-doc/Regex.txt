@@ -14,10 +14,22 @@ name have no spaces indeed, so why using them?).
 As an example
 \verbatim
 d1: DISTANCE ATOMS=1,2 COMPONENTS
-PRINT ARG=(d1.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
+PRINT ARG=(d1\.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
 \endverbatim
 
 selects for printout both  d1.x and d1.y components which are generated through distance in the order they are created by plumed.
+Notice that the "." character should be escaped if one wants to interpret it as a literal ".". Unescaped dots will match any character,
+according to regular expression syntax. E.g.
+\verbatim
+d1: DISTANCE ATOMS=1,2 COMPONENTS
+dxy: DISTANCE ATOMS=1,3
+
+# this will match d1.x,d1.y,dxy
+PRINT ARG=(d1.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
+
+# this will match d1.x,d1.y only
+PRINT ARG=(d1\.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
+\endverbatim
 
 You can also include more by using comma separated regular expressions 
 
@@ -25,7 +37,7 @@ You can also include more by using comma separated regular expressions
 t1: TORSION ATOMS=5,7,9,15
 t2: TORSION ATOMS=7,9,15,17
 d1: DISTANCE ATOMS=7,17 COMPONENTS
-PRINT ARG=(d1.[xy]),(t[0-9]) STRIDE=100 FILE=colvar FMT=%8.4f
+PRINT ARG=(d1\.[xy]),(t[0-9]) STRIDE=100 FILE=colvar FMT=%8.4f
 \endverbatim
 
 (this selects t1,t2,d1.x and d2.x) Beware if you have overlapping selection they will be duplicated.
@@ -36,7 +48,7 @@ You can equivalently use (recommended) regexp themself with the "or" operator.
 t1: TORSION ATOMS=5,7,9,15
 t2: TORSION ATOMS=7,9,15,17
 d1: DISTANCE ATOMS=7,17 COMPONENTS
-PRINT ARG=(d1.[xy]|t[0-9]) STRIDE=100 FILE=colvar FMT=%8.4f
+PRINT ARG=(d1\.[xy]|t[0-9]) STRIDE=100 FILE=colvar FMT=%8.4f
 \endverbatim
 
 that selects the same arguments.
