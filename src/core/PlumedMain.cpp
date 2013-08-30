@@ -251,7 +251,6 @@ void PlumedMain::cmd(const std::string & word,void*val){
 // only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
 // use as cmd("setNaturalUnits")
        CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setMDNaturalUnits(true);
   } else if(word=="setNoVirial"){
        CHECK_NOTINIT(initialized,word);

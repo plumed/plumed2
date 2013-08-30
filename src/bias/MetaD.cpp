@@ -96,7 +96,7 @@ gaussian potential is denoted by one value only that is a Cartesian space (ADAPT
 should be used in this case. Check the documentation for utility sum_hills.
 
 With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero 
-outside boundary \cite . If, for example, metadynamics is performed on a CV s and one is interested only 
+outside boundary \cite baftizadeh2012protein. If, for example, metadynamics is performed on a CV s and one is interested only 
 to the free energy for s > sw, the history dependent potential is still updated according to the above
 equations but the metadynamics force is set to zero for s < sw. Notice that Gaussians are added also 
 if s < sw, as the tails of these Gaussians influence VG in the relevant region s > sw. In this way, the 
@@ -533,10 +533,11 @@ isFirstStep(true)
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
   if(mw_n_>1) log<<plumed.cite(
-    "Raiteri, Laio, Gervasio, Micheletti, Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
+    "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
   if(adaptive_!=FlexibleBin::none) log<<plumed.cite(
     "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
- 
+  if(doInt_) log<<plumed.cite(
+     "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   log<<"\n";
 
 }
