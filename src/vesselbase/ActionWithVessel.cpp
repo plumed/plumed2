@@ -227,7 +227,7 @@ bool ActionWithVessel::calculateAllVessels(){
 
 void ActionWithVessel::finishComputations(){
   // MPI Gather everything
-  if(!serial && buffer.size()>0) comm.Sum( &buffer[0],buffer.size() ); 
+  if(!serial && buffer.size()>0) comm.Sum( buffer);
 
   // Set the final value of the function
   for(unsigned j=0;j<functions.size();++j) functions[j]->finish(); 

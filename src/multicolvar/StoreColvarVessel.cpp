@@ -98,7 +98,7 @@ bool StoreColvarVessel::calculate(){
 }
 
 void StoreColvarVessel::finish(){
-  comm.Sum( &active_atoms[0], active_atoms.size() );
+  comm.Sum(active_atoms);
   performCalculationUsingAllValues();
 }
 

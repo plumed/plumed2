@@ -659,8 +659,8 @@ void MetaD::addGaussian(const Gaussian& hill)
      BiasGrid_->getPoint(ineigh,xx);
      allbias[i]=evaluateGaussian(xx,hill,&allder[ncv*i]);
     }
-    comm.Sum(&allbias[0],allbias.size());
-    comm.Sum(&allder[0],allder.size());
+    comm.Sum(allbias);
+    comm.Sum(allder);
     for(unsigned i=0;i<neighbors.size();++i){
      unsigned ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=allder[ncv*i+j];}
@@ -727,8 +727,8 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
    //finite difference test 
    //finiteDifferenceGaussian(cv,hills_[i]);
   }
-  comm.Sum(&bias,1);
-  if(der) comm.Sum(&der[0],getNumberOfArguments());
+  comm.Sum(bias);
+  if(der) comm.Sum(der,getNumberOfArguments());
  }else{
   if(der){
    vector<double> vder(getNumberOfArguments());

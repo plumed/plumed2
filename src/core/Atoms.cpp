@@ -172,7 +172,7 @@ void Atoms::share(const std::set<AtomNumber>& unique){
       vector<int> displ(n);
       vector<int> counts5(n);
       vector<int> displ5(n);
-      dd.Allgather(&count,1,&counts[0],1);
+      dd.Allgather(count,counts);
       displ[0]=0;
       for(int i=1;i<n;++i) displ[i]=displ[i-1]+counts[i-1];
       for(int i=0;i<n;++i) counts5[i]=counts[i]*5;
@@ -199,7 +199,7 @@ void Atoms::wait(){
   dataCanBeSet=false; // Everything should be set by this stage
 
   if(dd){
-    dd.Bcast(&box[0][0],9,0);
+    dd.Bcast(box,0);
   }
   pbc.setBox(box);
 
@@ -224,7 +224,7 @@ void Atoms::wait(){
         charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[5*i+4];
       }
     }
-    if(collectEnergy) dd.Sum(&energy,1);
+    if(collectEnergy) dd.Sum(energy);
   }
 }
 

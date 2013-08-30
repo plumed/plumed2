@@ -69,6 +69,17 @@ bool hasAlmost(){
 #endif
 }
 
+
+bool hasCregex(){
+#if __PLUMED_HAS_CREGEX
+      return true;
+#else
+      return false;
+#endif
+}
+
+
+
 }
 }
 
