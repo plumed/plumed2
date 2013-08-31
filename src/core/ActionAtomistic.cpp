@@ -22,6 +22,7 @@
 #include "ActionAtomistic.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
+#include "SetupMolInfo.h"
 #include <vector>
 #include <string>
 #include "ActionWithValue.h"
@@ -165,6 +166,14 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
        t.insert(t.end(),m->second.begin(),m->second.end());
        ok=true;
      }
+   }
+// here we check if this is a special symbol for MOLINFO
+   if(!ok){
+      vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+      if( moldat.size()>0 ){
+          vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( strings[i], atom_list );
+          if( atom_list.size()>0 ){ ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
+      }
    }
 // here we check if the atom name is the name of an added virtual atom
    if(!ok){

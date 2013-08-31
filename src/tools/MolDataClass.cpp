@@ -108,7 +108,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
          std::size_t dash=symbol.find_first_of('-');
          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
          std::string resname = mypdb.getResidueName(resnum);
-         if( allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
+         if( !allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
          numbers.resize(4); 
          numbers[0]=mypdb.getNamedAtomFromResidue("C",resnum-1); 
          numbers[1]=mypdb.getNamedAtomFromResidue("N",resnum);
@@ -118,7 +118,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
          std::size_t dash=symbol.find_first_of('-');
          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
          std::string resname = mypdb.getResidueName(resnum);
-         if( allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
+         if( !allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
          numbers.resize(4); 
          numbers[0]=mypdb.getNamedAtomFromResidue("N",resnum); 
          numbers[1]=mypdb.getNamedAtomFromResidue("CA",resnum);
