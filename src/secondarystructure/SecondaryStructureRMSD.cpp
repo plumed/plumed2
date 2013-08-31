@@ -100,7 +100,7 @@ void SecondaryStructureRMSD::setAtomsFromStrands( const unsigned& atom1, const u
   align_atom_1=atom1; align_atom_2=atom2; 
 }
 
-void SecondaryStructureRMSD::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
+void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std::vector<unsigned>& chain_lengths ){
   std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
 
@@ -115,7 +115,7 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::vector<std::string>& 
       }
   }
   std::vector< std::vector<AtomNumber> > backatoms;
-  moldat[0]->getBackbone( resstrings, backnames, backatoms );
+  moldat[0]->getBackbone( resstrings, moltype, backatoms );
 
   chain_lengths.resize( backatoms.size() );
   for(unsigned i=0;i<backatoms.size();++i){

@@ -75,7 +75,7 @@ private:
   unsigned getAtomIndex( const unsigned& iatom );
 protected:
 /// Get the atoms in the backbone
-  void readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths );
+  void readBackboneAtoms( const std::string& backnames, std::vector<unsigned>& chain_lengths );
 /// Add a set of atoms to calculat ethe rmsd from
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Set a reference configuration

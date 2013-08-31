@@ -85,7 +85,7 @@ protein
 
 \verbatim
 MOLINFO REFERENCE=helix.pdb
-WHOLEMOLECULES STRIDE=1 RESIDUES=ALL RES_ATOMS=N,CA,CB,C,O
+WHOLEMOLECULES STRIDE=1 RESIDUES=all MOLTYPE=protein 
 \endverbatim
 (See also \ref MOLINFO)
 
@@ -112,11 +112,11 @@ void WholeMolecules::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY1, ENTITY2,...");
   keys.reset_style("ENTITY","atoms");
-  keys.add("residues","RESIDUES","this command specifies a set of residues which all must be aligned. It must be used in tandem with the \\ref MOLINFO "
-                              "action and the RES_ATOMS keyword. If you wish to use all the residues from all the chains in your system you can do so by "
+  keys.add("residues","RESIDUES","this command specifies that the backbone atoms in a set of residues all must be aligned. It must be used in tandem with the \\ref MOLINFO "
+                              "action and the MOLTYPE keyword. If you wish to use all the residues from all the chains in your system you can do so by "
                               "specifying all. Alternatively, if you wish to use a subset of the residues you can specify the particular residues "
                               "you are interested in as a list of numbers"); 
-  keys.add("optional","RES_ATOMS","this command tells plumed what atoms should be aligned in each of the residues that are being aligned");
+  keys.add("optional","MOLTYPE","the type of molecule that is under study.  This is used to define the backbone atoms");
 }
 
 WholeMolecules::WholeMolecules(const ActionOptions&ao):
@@ -139,12 +139,15 @@ ActionAtomistic(ao)
   // Read residues to align from MOLINFO
   vector<string> resstrings; parseVector("RESIDUES",resstrings);
   if( resstrings.size()>0 ){
-      vector<string> backnames; parseVector("RES_ATOMS",backnames);
-      if(backnames.size()==0) error("Found RESIDUES keyword without any specification of the atoms that should be in a residue - use RES_ATOMS");
+      if( resstrings.size()==1 ){
+          if( resstrings[0]=="all" ) resstrings[0]="all-ter";   // Include terminal groups in alignment
+      }
+      string moltype; parse("MOLTYPE",moltype);
+      if(moltype.length()==0) error("Found RESIDUES keyword without specification of the moleclue - use MOLTYPE");
       std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
       if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
       std::vector< std::vector<AtomNumber> > backatoms;
-      moldat[0]->getBackbone( resstrings, backnames, backatoms );
+      moldat[0]->getBackbone( resstrings, moltype, backatoms );
       for(unsigned i=0;i<backatoms.size();++i){
           log.printf("  atoms in entity %d : ", groups.size()+1 );
           for(unsigned j=0;j<backatoms[i].size();++j) log.printf("%d ",backatoms[i][j].serial() );

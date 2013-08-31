@@ -39,8 +39,12 @@ using this command you can find the backbone atoms in your structure automatical
 Please be aware that the pdb parser in plumed is far from perfect. You should thus check the log file
 and examine what plumed is actually doing whenenver you use the MOLINFO action.
 
-\bug At the moment all atoms named HA1 are treated as if they are CB atoms.  This makes it possible to deal
-with GLY residues in colvars like \ref ALPHARMSD. 
+\bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
+may not be true - GLY is problematic for secondary structure residues as it is achiral. 
+
+\bug If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein 
+( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to 
+interpret termnal residue 1.
 
 \par Examples
 

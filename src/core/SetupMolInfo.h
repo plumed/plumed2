@@ -34,16 +34,21 @@ class SetupMolInfo :
 public ActionSetup,  
 public ActionAtomistic {
 private:
+/// A pdb file containing the topology
   PDB& pdb;
+/// The type of molecule in the pdb
+  std::string mytype;
+/// The backbone that was read in from the pdb file
   std::vector< std::vector<AtomNumber> > read_backbone;
 public:
   ~SetupMolInfo();
   static void registerKeywords( Keywords& keys );
   SetupMolInfo(const ActionOptions&ao);
-  void getBackbone( std::vector<std::string>& resstrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone );
+  void getBackbone( std::vector<std::string>& resstrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone );
   std::string getAtomName(AtomNumber a)const;
   unsigned getResidueNumber(AtomNumber a)const;
   std::string getResidueName(AtomNumber a)const;
+  void interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms )const;
 };
 
 }
