@@ -30,17 +30,26 @@ vi processed.top
 # generate the actual topology
 plumed partial_tempering \$scale < processed.top > topol\$i.top
 
-WARNING: It's not very robust! A suggested check is to compare partial_tempering with scale=1.0
-to non-scaled force field. E.g.
+WARNING: It's not very robust and there might be force-field dependent issues!
+A few tests are strongly suggested.
+
+1. Compare partial_tempering with scale=1.0 to non-scaled force field. E.g.
 grompp -o topol-unscaled.tpr
 grompp -pp
-vi processed.top # choose the "hot" atoms
+vi processed.top # choose the "hot" atoms appending "_". You can choose whatever.
 plumed partial_tempering 1.0 < processed.top > topol-scaled.top # scale with factor 1
 grompp -p topol-scaled.top -o topol-scaled.tpr
 # Then do a rerun on a trajectory
 mdrun -s topol-unscaled.tpr -rerun rerun.trr
 mdrun -s topol-scaled.tpr -rerun rerun.trr
 # and compare the resuling energy files. they should be identical
+
+2. Compare partial_tempering with scale=0.5 to non-scaled force field.
+Repeat the same procedure but using "plumed partial_tempering 0.5".
+Choose all the atoms in all the relevant [atoms] sections (e.g. solute, solvent and ions).
+In the two resulting energy files you should see:
+long range electrostatics, LJ, and dihedral energy is *half* in the scaled case
+all other terms (bonds/bends) are identical.
 
 EOF
   exit
