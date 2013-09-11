@@ -461,7 +461,25 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
  
      if (debug)
      {
-@@ -1045,19 +1059,57 @@
+@@ -869,10 +883,17 @@
+     }
+     if (bPrint)
+     {
+         fprintf(fplog, "Repl %d <-> %d  dE_term = %10.3e (kT)\n", a, b, delta);
+     }
++
++/* PLUMED */
++/* this is necessary because with plumed HREX the energy contribution is
++   already taken into account */
++    if(getenv("PLUMED_HREX")) delta=0.0;
++/* END PLUMED */
++
+     if (re->bNPT)
+     {
+         /* revist the calculation for 5.0.  Might be some improvements. */
+         dpV = (beta[ap]*re->pres[ap]-beta[bp]*re->pres[bp])*(Vol[b]-Vol[a])/PRESFAC;
+         if (bPrint)
+@@ -1045,19 +1066,57 @@
      }
      else
      {
@@ -519,7 +537,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
                      /* accepted */
                      prob[i] = 1;
                      bEx[i]  = TRUE;
-@@ -1306,10 +1358,14 @@
+@@ -1306,10 +1365,14 @@
       * exchanges. */
      /* Where each replica ends up after the exchange attempt(s). */
      /* The order in which multiple exchanges will occur. */
@@ -534,7 +552,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
          replica_id  = re->repl;
          test_for_replica_exchange(fplog, cr->ms, re, enerd, det(state_local->box), step, time);
          prepare_to_do_exchange(fplog, re->destinations, replica_id, re->nrepl, &maxswap,
-@@ -1437,5 +1493,12 @@
+@@ -1437,5 +1500,12 @@
          fprintf(fplog, "\n");
      }
      /* print the transition matrix */
