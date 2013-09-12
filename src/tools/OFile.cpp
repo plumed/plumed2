@@ -280,6 +280,16 @@ OFile& OFile::open(const std::string&path){
   return *this;
 }
 
+OFile& OFile::rewind(){
+// we use here "hard" rewind, which means close/reopen
+// the reason is that normal rewind does not work when in append mode
+  plumed_assert(fp);
+  clearFields();
+  fclose(fp);
+  fp=std::fopen(const_cast<char*>(path.c_str()),"w");
+  return *this;
+}
+
 }
 
 
