@@ -132,7 +132,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  
          if (MASTER(cr) && do_log && !bFFscan)
          {
-@@ -1176,16 +1233,39 @@
+@@ -1176,16 +1233,41 @@
              /* The coordinates (x) are shifted (to get whole molecules)
               * in do_force.
               * This is parallellized as well, and does communication too.
@@ -148,6 +148,8 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
 +              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
 +              plumed_cmd(plumedmain,"prepareCalc",NULL);
++              plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
++              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
 +              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
 +            }
 +            /* END PLUMED */
@@ -160,10 +162,10 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +                     (plumedNeedsEnergy? GMX_FORCE_ENERGY : 0) |(bNS ? GMX_FORCE_NS : 0) | force_flags);
 +            /* PLUMED */
 +            if(plumedswitch){
-+              if(plumedNeedsEnergy) plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-+              plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
-+              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
-+              plumed_cmd(plumedmain,"performCalc",NULL);
++              if(plumedNeedsEnergy){
++                plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
++                plumed_cmd(plumedmain,"performCalc",NULL);
++              }
 +              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
 +                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
 +            }
@@ -487,4 +489,45 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/repl_ex.c" << \EOF_EOF
              }
              /* For temperature-type replica exchange, we need to scale
               * the velocities. */
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./src/mdlib/force.c" << \EOF_EOF
+--- ./src/mdlib/force.c.preplumed
++++ ./src/mdlib/force.c
+@@ -65,10 +65,17 @@
+ #include "partdec.h"
+ #include "qmmm.h"
+ #include "mpelogging.h"
+ #include "gmx_omp_nthreads.h"
+ 
++/* PLUMED */
++#include "../../Plumed.h"
++extern int    plumedswitch;
++extern plumed plumedmain;
++/* END PLUMED */
++
++
+ void ns(FILE              *fp,
+         t_forcerec        *fr,
+         rvec               x[],
+         matrix             box,
+         gmx_groups_t      *groups,
+@@ -690,10 +697,18 @@
+         pr_rvecs(debug, 0, "fshift after bondeds", fr->fshift, SHIFTS);
+     }
+ 
+     GMX_MPE_LOG(ev_force_finish);
+ 
++
++/* PLUMED */
++ int plumedNeedsEnergy;
++ plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
++ if(!plumedNeedsEnergy) plumed_cmd(plumedmain,"performCalc",NULL);
++/* END PLUMED */
++
++
+ }
+ 
+ void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd)
+ {
+     int i, n2;
 EOF_EOF
