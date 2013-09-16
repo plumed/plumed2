@@ -889,9 +889,20 @@ void MetaD::update(){
   }
 // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
+// in case old grids are stored, a sequence of grids should appear
+// this call results in a repetition of the header:
     if(storeOldGrids_) gridfile_.clearFields();
+// in case only latest grid is stored, file should be rewound
+// this will overwrite previously written grids
     else gridfile_.rewind();
     BiasGrid_->writeToFile(gridfile_); 
+// if a single grid is stored, it is necessary to flush it, otherwise
+// the file might stay empty forever (when a single grid is not large enough to
+// trigger flushing from the operating system).
+// on the other hand, if grids are stored one after the other this is
+// no necessary, and we leave the flushing control to the user as usual
+// (with FLUSH keyword)
+    if(!storeOldGrids_) gridfile_.flush();
   }
 
 // if multiple walkers and time to read Gaussians
