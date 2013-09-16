@@ -194,7 +194,6 @@ public:
   bool usingNaturalUnits()const;
   void setNaturalUnits(bool n){naturalUnits=n;}
   void setMDNaturalUnits(bool n){MDnaturalUnits=n;}
-  Vector & modifyPosition(AtomNumber i){ return positions[i.index()];}
 };
 
 inline
