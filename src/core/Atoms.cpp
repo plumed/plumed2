@@ -32,6 +32,10 @@ using namespace std;
 
 namespace PLMD {
 
+/// We assume that charges and masses are constant along the simulation
+/// Set this to false if you want to revert to the original (expensive) behavior
+static const bool shareMassAndChargeOnlyAtFirstStep=true;
+
 class PlumedMain;
 
 Atoms::Atoms(PlumedMain&plumed):
@@ -47,6 +51,7 @@ Atoms::Atoms(PlumedMain&plumed):
   boxHasBeenSet(false),
   forcesHaveBeenSet(0),
   virialHasBeenSet(false),
+  massAndChargeOK(false),
   plumed(plumed),
   naturalUnits(false),
   timestep(0.0),
@@ -121,6 +126,13 @@ void Atoms::setForces(void*p,int i){
 
 void Atoms::share(){
   std::set<AtomNumber> unique;
+// At first step I scatter all the atoms so as to store their mass and charge
+// Notice that this works with the assumption that charges and masses are
+// not changing during the simulation!
+  if(!massAndChargeOK && shareMassAndChargeOnlyAtFirstStep){
+    shareAll();
+    return;
+  }
   if(dd && int(gatindex.size())<natoms){
     for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
       unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
@@ -139,9 +151,14 @@ void Atoms::shareAll(){
 void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   mdatoms->getBox(box);
-  mdatoms->getMasses(gatindex,masses);
-  mdatoms->getCharges(gatindex,charges);
   mdatoms->getPositions(gatindex,positions);
+// how many double per atom should be scattered:
+  int ndata=3;
+  if(!massAndChargeOK){
+    ndata=5;
+    mdatoms->getCharges(gatindex,charges);
+    mdatoms->getMasses(gatindex,masses);
+  }
   if(dd && int(gatindex.size())<natoms){
     if(dd.async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
@@ -151,11 +168,13 @@ void Atoms::share(const std::set<AtomNumber>& unique){
     for(std::set<AtomNumber>::const_iterator p=unique.begin();p!=unique.end();++p){
       if(dd.g2l[p->index()]>=0){
         dd.indexToBeSent[count]=p->index();
-        dd.positionsToBeSent[5*count+0]=positions[p->index()][0];
-        dd.positionsToBeSent[5*count+1]=positions[p->index()][1];
-        dd.positionsToBeSent[5*count+2]=positions[p->index()][2];
-        dd.positionsToBeSent[5*count+3]=masses[p->index()];
-        dd.positionsToBeSent[5*count+4]=charges[p->index()];
+        dd.positionsToBeSent[ndata*count+0]=positions[p->index()][0];
+        dd.positionsToBeSent[ndata*count+1]=positions[p->index()][1];
+        dd.positionsToBeSent[ndata*count+2]=positions[p->index()][2];
+        if(!massAndChargeOK){
+          dd.positionsToBeSent[ndata*count+3]=masses[p->index()];
+          dd.positionsToBeSent[ndata*count+4]=charges[p->index()];
+        }
         count++;
       }
     }
@@ -164,7 +183,7 @@ void Atoms::share(const std::set<AtomNumber>& unique){
       dd.mpi_request_index.resize(dd.Get_size());
       for(int i=0;i<dd.Get_size();i++){
         dd.mpi_request_index[i]=dd.Isend(&dd.indexToBeSent[0],count,i,666);
-        dd.mpi_request_positions[i]=dd.Isend(&dd.positionsToBeSent[0],5*count,i,667);
+        dd.mpi_request_positions[i]=dd.Isend(&dd.positionsToBeSent[0],ndata*count,i,667);
       }
     }else{
       const int n=(dd.Get_size());
@@ -175,17 +194,19 @@ void Atoms::share(const std::set<AtomNumber>& unique){
       dd.Allgather(count,counts);
       displ[0]=0;
       for(int i=1;i<n;++i) displ[i]=displ[i-1]+counts[i-1];
-      for(int i=0;i<n;++i) counts5[i]=counts[i]*5;
-      for(int i=0;i<n;++i) displ5[i]=displ[i]*5;
+      for(int i=0;i<n;++i) counts5[i]=counts[i]*ndata;
+      for(int i=0;i<n;++i) displ5[i]=displ[i]*ndata;
       dd.Allgatherv(&dd.indexToBeSent[0],count,&dd.indexToBeReceived[0],&counts[0],&displ[0]);
-      dd.Allgatherv(&dd.positionsToBeSent[0],5*count,&dd.positionsToBeReceived[0],&counts5[0],&displ5[0]);
+      dd.Allgatherv(&dd.positionsToBeSent[0],ndata*count,&dd.positionsToBeReceived[0],&counts5[0],&displ5[0]);
       int tot=displ[n-1]+counts[n-1];
       for(int i=0;i<tot;i++){
-        positions[dd.indexToBeReceived[i]][0]=dd.positionsToBeReceived[5*i+0];
-        positions[dd.indexToBeReceived[i]][1]=dd.positionsToBeReceived[5*i+1];
-        positions[dd.indexToBeReceived[i]][2]=dd.positionsToBeReceived[5*i+2];
-        masses[dd.indexToBeReceived[i]]      =dd.positionsToBeReceived[5*i+3];
-        charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[5*i+4];
+        positions[dd.indexToBeReceived[i]][0]=dd.positionsToBeReceived[ndata*i+0];
+        positions[dd.indexToBeReceived[i]][1]=dd.positionsToBeReceived[ndata*i+1];
+        positions[dd.indexToBeReceived[i]][2]=dd.positionsToBeReceived[ndata*i+2];
+        if(!massAndChargeOK){
+          masses[dd.indexToBeReceived[i]]      =dd.positionsToBeReceived[ndata*i+3];
+          charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[ndata*i+4];
+        }
       }
     }
   }
@@ -197,6 +218,9 @@ void Atoms::share(const std::set<AtomNumber>& unique){
 
 void Atoms::wait(){
   dataCanBeSet=false; // Everything should be set by this stage
+// How many double per atom should be scattered
+  int ndata=3;
+  if(!massAndChargeOK)ndata=5;
 
   if(dd){
     dd.Bcast(box,0);
@@ -213,19 +237,24 @@ void Atoms::wait(){
       for(int i=0;i<dd.Get_size();i++){
         dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
         int c=status.Get_count<int>();
-        dd.Recv(&dd.positionsToBeReceived[5*count],dd.positionsToBeReceived.size()-5*count,i,667);
+        dd.Recv(&dd.positionsToBeReceived[ndata*count],dd.positionsToBeReceived.size()-ndata*count,i,667);
         count+=c;
       }
       for(int i=0;i<count;i++){
-        positions[dd.indexToBeReceived[i]][0]=dd.positionsToBeReceived[5*i+0];
-        positions[dd.indexToBeReceived[i]][1]=dd.positionsToBeReceived[5*i+1];
-        positions[dd.indexToBeReceived[i]][2]=dd.positionsToBeReceived[5*i+2];
-        masses[dd.indexToBeReceived[i]]      =dd.positionsToBeReceived[5*i+3];
-        charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[5*i+4];
+        positions[dd.indexToBeReceived[i]][0]=dd.positionsToBeReceived[ndata*i+0];
+        positions[dd.indexToBeReceived[i]][1]=dd.positionsToBeReceived[ndata*i+1];
+        positions[dd.indexToBeReceived[i]][2]=dd.positionsToBeReceived[ndata*i+2];
+        if(!massAndChargeOK){
+          masses[dd.indexToBeReceived[i]]      =dd.positionsToBeReceived[ndata*i+3];
+          charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[ndata*i+4];
+        }
       }
     }
     if(collectEnergy) dd.Sum(energy);
   }
+// I take note that masses and charges have been set once for all
+// at the beginning of the simulation.
+  if(shareMassAndChargeOnlyAtFirstStep) massAndChargeOK=true;
 }
 
 void Atoms::updateForces(){

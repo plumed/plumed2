@@ -69,6 +69,7 @@ class Atoms
   bool boxHasBeenSet;
   unsigned forcesHaveBeenSet;
   bool virialHasBeenSet;
+  bool massAndChargeOK;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
