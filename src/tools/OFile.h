@@ -184,6 +184,8 @@ this method can be used to clean the field list.
 /// Formatted output with << operator
   template <class T>
   friend OFile& operator<<(OFile&,const T &);
+/// Rewind a file
+  OFile&rewind();
 };
 
 /// Write using << syntax
