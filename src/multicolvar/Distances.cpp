@@ -80,10 +80,9 @@ public:
   static void registerKeywords( Keywords& keys );
   Distances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j );
+  virtual double compute();
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
-  unsigned getNumberOfAtomsInCentralAtomDerivatives(){ return 2; }
   Vector getCentralAtom();
 };
 
@@ -112,7 +111,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double Distances::compute( const unsigned& j ){
+double Distances::compute(){
    Vector distance; 
    distance=getSeparation( getPosition(0), getPosition(1) );
    const double value=distance.modulo();

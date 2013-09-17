@@ -104,6 +104,29 @@ void run(Communicator& comm){
   for(unsigned i=0;i<ten.size();i++) ofs<<" "<<newten[i][0][0]<<" "<<newten[i][0][1]<<" "<<newten[i][0][2]<<"\n"
                                         <<" "<<newten[i][1][0]<<" "<<newten[i][1][1]<<" "<<newten[i][1][2]<<"\n"
                                         <<" "<<newten[i][2][0]<<" "<<newten[i][2][1]<<" "<<newten[i][2][2]<<"\n";
+
+  std::string stringsend;
+  std::string stringrecv;
+  if(comm.Get_rank()==0){
+    stringsend="uno";
+    stringrecv="uno";
+    req=comm.Isend(stringsend,1,80);
+    comm.Recv(stringrecv,2,80);
+  }
+  if(comm.Get_rank()==1){
+    stringsend="due";
+    stringrecv="due";
+    req=comm.Isend(stringsend,2,80);
+    comm.Recv(stringrecv,0,80);
+  }
+  if(comm.Get_rank()==2){
+    stringsend="tre";
+    stringrecv="tre";
+    req=comm.Isend(stringsend,0,80);
+    comm.Recv(stringrecv,1,80);
+  }
+  req.wait();
+  ofs<<stringsend<<" "<<stringrecv<<"\n";
 }
 
 int main(int argc,char**argv){

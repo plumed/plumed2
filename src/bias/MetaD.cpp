@@ -208,6 +208,7 @@ private:
   vector<double> sigma0max_;
   vector<Gaussian> hills_;
   OFile hillsOfile_;
+  OFile gridfile_;
   Grid* BiasGrid_;
   Grid* ExtGrid_;
   bool storeOldGrids_;
@@ -291,6 +292,7 @@ MetaD::~MetaD(){
   if(flexbin) delete flexbin;
   if(BiasGrid_) delete BiasGrid_;
   hillsOfile_.close();
+  if(wgridstride_>0) gridfile_.close();
   delete [] dp_;
   // close files
   for(int i=0;i<mw_n_;++i){
@@ -476,6 +478,11 @@ isFirstStep(true)
    std::string funcl=getLabel() + ".bias";
    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+  }
+
+  if(wgridstride_>0){
+    gridfile_.link(*this);
+    gridfile_.open(gridfilename_);
   }
 
 // initializing external grid
@@ -924,11 +931,20 @@ void MetaD::update(){
   }
 // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
-    OFile gridfile; gridfile.link(*this);
-    if(!storeOldGrids_) remove( gridfilename_.c_str() );
-    gridfile.open(gridfilename_);
-    BiasGrid_->writeToFile(gridfile); 
-    gridfile.close();
+// in case old grids are stored, a sequence of grids should appear
+// this call results in a repetition of the header:
+    if(storeOldGrids_) gridfile_.clearFields();
+// in case only latest grid is stored, file should be rewound
+// this will overwrite previously written grids
+    else gridfile_.rewind();
+    BiasGrid_->writeToFile(gridfile_); 
+// if a single grid is stored, it is necessary to flush it, otherwise
+// the file might stay empty forever (when a single grid is not large enough to
+// trigger flushing from the operating system).
+// on the other hand, if grids are stored one after the other this is
+// no necessary, and we leave the flushing control to the user as usual
+// (with FLUSH keyword)
+    if(!storeOldGrids_) gridfile_.flush();
   }
 
 // if multiple walkers and time to read Gaussians

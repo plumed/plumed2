@@ -39,7 +39,7 @@ public:
   static void registerKeywords( Keywords& keys );
   Sphere( const ActionOptions& );
   bool isPeriodic(){ return false; }
-  void performTask( const unsigned& j );
+  void performTask();
   void calculate();
 };
 
@@ -90,7 +90,7 @@ void Sphere::calculate(){
   runAllTasks();
 }
 
-void Sphere::performTask( const unsigned& j ){
+void Sphere::performTask(){
   Vector distance;
 
   if(!nopbc){

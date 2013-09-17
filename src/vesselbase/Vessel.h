@@ -161,8 +161,6 @@ public:
   virtual void resize()=0;
 /// Retrieve the forces on the quantities in the vessel
   virtual bool applyForce( std::vector<double>& forces )=0;
-/// Retrieve the number of terms we need to accumulate
-  virtual unsigned getNumberOfTerms()=0;
 };
 
 template<class T>

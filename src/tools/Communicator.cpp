@@ -224,19 +224,11 @@ bool Communicator::initialized(){
   else return false;
 }
 
-void Communicator::Request::wait(){
-#ifdef __PLUMED_MPI
- plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
-  MPI_Wait(&r,MPI_STATUS_IGNORE);
-#else
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
-#endif
-}
-
 void Communicator::Request::wait(Status&s){
 #ifdef __PLUMED_MPI
  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
-  MPI_Wait(&r,&s.s);
+  if(&s==&StatusIgnore) MPI_Wait(&r,MPI_STATUS_IGNORE);
+  else MPI_Wait(&r,&s.s);
 #else
   (void) s;
   plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");

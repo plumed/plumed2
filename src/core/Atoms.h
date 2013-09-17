@@ -69,6 +69,7 @@ class Atoms
   bool boxHasBeenSet;
   unsigned forcesHaveBeenSet;
   bool virialHasBeenSet;
+  bool massAndChargeOK;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
@@ -194,7 +195,6 @@ public:
   bool usingNaturalUnits()const;
   void setNaturalUnits(bool n){naturalUnits=n;}
   void setMDNaturalUnits(bool n){MDnaturalUnits=n;}
-  Vector & modifyPosition(AtomNumber i){ return positions[i.index()];}
 };
 
 inline

@@ -35,6 +35,8 @@ private:
 /// The central atom positions
   multicolvar::StoreCentralAtomsVessel* catoms;
 protected:
+/// Get the index of the ith colvar we are using
+  unsigned getColvarIndex( const unsigned& ) const;
 /// Get the number of functions in the multicolvar we are operating on
   unsigned getNumberOfBaseFunctions() const;
 /// Return a pointer to the multicolvar we are using as a base function
@@ -63,32 +65,27 @@ public:
   void atomHasDerivative( const unsigned& iatom );
 /// Resize the dynamic arrays 
   void resizeDynamicArrays();
+/// Update the atoms that are active
+  void updateActiveAtoms();
 /// Regular calculate
   void calculate();
 /// Calculate the numerical derivatives for this action
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-/// Do the calculation
-  double doCalculation( const unsigned& j );
-/// Actually compute the colvar
-  virtual double compute( const unsigned& j )=0;
 /// Calculate the position of the central atom
   Vector calculateCentralAtomPosition();
-/// Get the number of atoms that have derivatives wrt to the central atom
-  unsigned getNumberOfAtomsInCentralAtomDerivatives();
-  virtual unsigned getNCAtomDerivatives()=0;
 /// Get the position of the central atom
   virtual Vector getCentralAtom()=0;
 };
 
 inline
 unsigned MultiColvarFunction::getNumberOfBaseFunctions() const {
-  return mycolv->colvar_atoms.size();
+  return mycolv->taskList.fullSize(); 
 }
 
 inline
 unsigned MultiColvarFunction::getAtomIndex( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  return mycolv->getIndexForTask( colvar_atoms[current][iatom] ); 
+  plumed_dbg_assert( iatom<natomsper );
+  return mycolv->getIndexForTask( current_atoms[iatom] ); 
 }
 
 inline
@@ -98,20 +95,30 @@ MultiColvarBase* MultiColvarFunction::getPntrToMultiColvar(){
 
 inline
 Vector MultiColvarFunction::getPositionOfCentralAtom( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
+  plumed_dbg_assert( iatom<natomsper );
   return catoms->getPosition( getAtomIndex(iatom) );
 }
 
 inline
 void MultiColvarFunction::addCentralAtomsDerivatives( const unsigned& iatom, const Vector& der ){
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  catoms->addAtomsDerivatives( getAtomIndex(iatom), der, this ); 
+  plumed_dbg_assert( iatom<natomsper );
+  if( usingLowMem() ){
+      catoms->recompute( getAtomIndex(iatom), 0 ); 
+      catoms->addAtomsDerivatives( 0, 0, der, this );
+  } else {
+      catoms->addAtomsDerivatives( getAtomIndex(iatom), 0, der, this ); 
+  }
 }
 
 inline
 void MultiColvarFunction::addCentralAtomsDerivativesOfWeight( const unsigned& iatom, const Vector& der ){
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  catoms->addAtomsDerivativeOfWeight( getAtomIndex(iatom), der, this );
+  plumed_dbg_assert( iatom<natomsper );
+  if( usingLowMem() ){
+     catoms->recompute( getAtomIndex(iatom), 0 );
+     catoms->addAtomsDerivatives( 0, 1, der, this );
+  } else {
+     catoms->addAtomsDerivatives( getAtomIndex(iatom), 1, der, this );
+  }
 }
 
 inline
@@ -121,7 +128,20 @@ void MultiColvarFunction::atomHasDerivative( const unsigned& iatom ){
 
 inline
 void MultiColvarFunction::addDerivativeOfCentralAtomPos( const unsigned& iatom, const Tensor& der ){
-  catoms->addDerivativeOfCentralAtomPos( getAtomIndex(iatom), der, this );
+  plumed_dbg_assert( iatom<natomsper );
+  if( usingLowMem() ){
+     catoms->recompute( getAtomIndex(iatom), 0 ); Vector tmpder;
+     for(unsigned i=0;i<3;++i){
+         for(unsigned j=0;j<3;++j) tmpder[j]=der(i,j); 
+         catoms->addAtomsDerivatives( 0, 2+i, tmpder, this );
+     }
+  } else {
+     Vector tmpder;
+     for(unsigned i=0;i<3;++i){ 
+         for(unsigned j=0;j<3;++j) tmpder[j]=der(i,j); 
+         catoms->addAtomsDerivatives( getAtomIndex(iatom), 2+i, tmpder, this );
+     }
+  }
 }
 
 

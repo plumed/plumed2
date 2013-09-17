@@ -90,8 +90,8 @@ public:
   unsigned getNumberOfDerivatives();
   void prepare();
   void calculate();
-  void performTask( const unsigned& j );
-  void clearDerivativesAfterTask( const unsigned& ){}
+  void performTask();
+  void clearDerivativesAfterTask( const unsigned& );
   void apply();
   void mergeDerivatives( const unsigned& , const double& );
   bool isPeriodic(){ return false; }

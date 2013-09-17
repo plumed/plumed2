@@ -54,8 +54,7 @@ public:
   static void registerKeywords( Keywords& keys );
   Density(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j );
-  unsigned getNumberOfAtomsInCentralAtomDerivatives(){ return 1; }
+  virtual double compute();
   Vector getCentralAtom();
   /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
@@ -72,13 +71,13 @@ void Density::registerKeywords( Keywords& keys ){
 Density::Density(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
-  int nat; readAtoms( nat ); 
+  int nat=1; readAtoms( nat ); 
   readVesselKeywords();
   // And check everything has been read in correctly
   checkRead(); 
 }
 
-double Density::compute( const unsigned& j ){
+double Density::compute(){
   return 1.0;
 }
 

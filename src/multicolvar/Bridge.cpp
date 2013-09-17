@@ -67,11 +67,10 @@ public:
   static void registerKeywords( Keywords& keys );
   Bridge(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j );
+  virtual double compute();
 /// Returns the number of coordinates of the field
   void calculateWeight();
   bool isPeriodic(){ return false; }
-  unsigned getNumberOfAtomsInCentralAtomDerivatives(){ return 1; }
   Vector getCentralAtom();
 };
 
@@ -128,30 +127,30 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 void Bridge::calculateWeight(){
-  Vector dij=getSeparation( getPosition(1), getPosition(0) );
+  Vector dij=getSeparation( getPosition(0), getPosition(1) );
   double dw, w=sf1.calculate( dij.modulo(), dw );
   setWeight( w );
 
   if( w<getTolerance() ) return; 
-  addAtomsDerivativeOfWeight( 1, -dw*dij );
-  addAtomsDerivativeOfWeight( 0, dw*dij );
+  addAtomsDerivativeOfWeight( 0, -dw*dij );
+  addAtomsDerivativeOfWeight( 1, dw*dij );
   addBoxDerivativesOfWeight( (-dw)*Tensor(dij,dij) );
 }
 
-double Bridge::compute( const unsigned& j ){
-  Vector dik=getSeparation( getPosition(1), getPosition(2) );
+double Bridge::compute(){
+  Vector dik=getSeparation( getPosition(0), getPosition(2) );
   double dw, w=sf2.calculate( dik.modulo(), dw );
 
   // And finish the calculation
-  addAtomsDerivatives( 1, -dw*dik );
+  addAtomsDerivatives( 0, -dw*dik );
   addAtomsDerivatives( 2,  dw*dik );
   addBoxDerivatives( (-dw)*Tensor(dik,dik) );
   return w;
 }
 
 Vector Bridge::getCentralAtom(){
-   addCentralAtomDerivatives( 1, Tensor::identity() );
-   return getPosition(1);
+   addCentralAtomDerivatives( 0, Tensor::identity() );
+   return getPosition(0);
 }
 
 }

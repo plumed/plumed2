@@ -93,11 +93,10 @@ public:
   static void registerKeywords( Keywords& keys );
   Angles(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j );
+  virtual double compute();
 /// Returns the number of coordinates of the field
   void calculateWeight();
   bool isPeriodic(){ return false; }
-  unsigned getNumberOfAtomsInCentralAtomDerivatives(){ return 1; }
   Vector getCentralAtom();
 };
 
@@ -160,8 +159,8 @@ use_sf(false)
 }
 
 void Angles::calculateWeight(){
-  dij=getSeparation( getPosition(1), getPosition(2) );
-  dik=getSeparation( getPosition(1), getPosition(0) );
+  dij=getSeparation( getPosition(0), getPosition(2) );
+  dik=getSeparation( getPosition(0), getPosition(1) );
   if(!use_sf){ setWeight(1.0); return; }
 
   double w1, w2, dw1, dw2, wtot;
@@ -171,19 +170,19 @@ void Angles::calculateWeight(){
 
   setWeight( wtot );
   if( wtot<getTolerance() ) return; 
-  addAtomsDerivativeOfWeight( 0, dw2*dik );
-  addAtomsDerivativeOfWeight( 1, -dw1*dij - dw2*dik ); 
+  addAtomsDerivativeOfWeight( 1, dw2*dik );
+  addAtomsDerivativeOfWeight( 0, -dw1*dij - dw2*dik ); 
   addAtomsDerivativeOfWeight( 2, dw1*dij );
   addBoxDerivativesOfWeight( (-dw1)*Tensor(dij,dij) + (-dw2)*Tensor(dik,dik) );
 }
 
-double Angles::compute( const unsigned& j ){
+double Angles::compute(){
   Vector ddij,ddik; PLMD::Angle a; 
   double angle=a.compute(dij,dik,ddij,ddik);
 
   // And finish the calculation
-  addAtomsDerivatives( 0, ddik );
-  addAtomsDerivatives( 1, - ddik - ddij );
+  addAtomsDerivatives( 1, ddik );
+  addAtomsDerivatives( 0, - ddik - ddij );
   addAtomsDerivatives( 2, ddij );
   addBoxDerivatives( -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
 
@@ -191,8 +190,8 @@ double Angles::compute( const unsigned& j ){
 }
 
 Vector Angles::getCentralAtom(){
-   addCentralAtomDerivatives( 1, Tensor::identity() );
-   return getPosition(1);
+   addCentralAtomDerivatives( 0, Tensor::identity() );
+   return getPosition(0);
 }
 
 }

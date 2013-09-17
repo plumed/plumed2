@@ -39,20 +39,28 @@ void ActionWithVessel::registerKeywords(Keywords& keys){
                                    "keyword and the value for NL_TOL must be set less than the value for TOL.  This keyword ensures that "
                                    "quantities, which are much less than TOL and which will thus not added to the sums being accumulated "
                                    "are not calculated at every step. They are only calculated when the neighbor list is updated.");
+  keys.add("hidden","MAXDERIVATIVES","The maximum number of derivatives that can be used when storing data.  This controls when "
+                                     "we have to start using lowmem");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
+  keys.addFlag("LOWMEM",false,"lower the memory requirements");
   keys.add( vesselRegister().getKeywords() );
 }
 
 ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   Action(ao),
-  read(false),
   serial(false),
+  lowmem(false),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false)
 {
+  maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   else serial=true;
   if(serial)log.printf("  doing calculation in serial\n");
+  if( keywords.exists("LOWMEM") ){
+     parseFlag("LOWMEM",lowmem);
+     if(lowmem)log.printf("  lowering memory requirements\n");
+  }
   tolerance=nl_tolerance=epsilon; 
   if( keywords.exists("TOL") ) parse("TOL",tolerance);
   if( tolerance>epsilon){
@@ -71,18 +79,18 @@ ActionWithVessel::~ActionWithVessel(){
 }
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab, const std::string thislab ){
-  read=true; VesselOptions da(name,thislab,numlab,input,this);
+  VesselOptions da(name,thislab,numlab,input,this);
   Vessel* vv=vesselRegister().create(name,da); vv->checkRead();
   addVessel(vv);
 }
 
 void ActionWithVessel::addVessel( Vessel* vv ){
   ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
-  if(!sv) functions.push_back(vv);
+  if(!sv){ functions.push_back(vv); }
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
-  read=true; VesselOptions da("","",0,"",this); 
+  VesselOptions da("","",0,"",this); 
   BridgeVessel* bv=new BridgeVessel(da);
   bv->setOutputAction( tome );
   functions.push_back( dynamic_cast<Vessel*>(bv) );
@@ -91,6 +99,9 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
 }
 
 void ActionWithVessel::readVesselKeywords(){
+  // Set maxderivatives if it is too big
+  if( maxderivatives>getNumberOfDerivatives() ) maxderivatives=getNumberOfDerivatives();
+
   // Loop over all keywords find the vessels and create appropriate functions
   for(unsigned i=0;i<keywords.size();++i){
       std::string thiskey,input; thiskey=keywords.getKeyword(i);
@@ -127,18 +138,14 @@ void ActionWithVessel::readVesselKeywords(){
 }
 
 void ActionWithVessel::resizeFunctions(){
-  unsigned tmpnval,nvals=2, bufsize=0; 
+  unsigned bufsize=0; 
   for(unsigned i=0;i<functions.size();++i){
      functions[i]->bufstart=bufsize;
      functions[i]->resize();
      bufsize+=functions[i]->bufsize;
-     tmpnval=functions[i]->getNumberOfTerms();
-     plumed_massert( tmpnval>1 , "There should always be at least two terms - one for the value and one for the weight");
-     if(tmpnval>nvals) nvals=tmpnval;
   }
-  unsigned nder=getNumberOfDerivatives();
-  thisval.resize( nvals ); thisval_wasset.resize( nvals, false );
-  derivatives.resize( nvals*nder, 0.0 );
+  thisval.resize( getNumberOfQuantities() ); thisval_wasset.resize( getNumberOfQuantities(), false );
+  derivatives.resize( getNumberOfQuantities()*getNumberOfDerivatives(), 0.0 );
   buffer.resize( bufsize );
   tmpforces.resize( getNumberOfDerivatives() );
 }
@@ -166,7 +173,7 @@ void ActionWithVessel::doJobsRequiredBeforeTaskList(){
 }
 
 void ActionWithVessel::runAllTasks(){
-  plumed_massert( read, "you must have a call to readVesselKeywords somewhere" );
+  plumed_massert( functions.size()>0, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial){ stride=1; rank=0; }
@@ -175,10 +182,12 @@ void ActionWithVessel::runAllTasks(){
   doJobsRequiredBeforeTaskList();
 
   for(unsigned i=rank;i<taskList.getNumberActive();i+=stride){
+      // This is the position of the task in the dynamic list
+      lindex=taskList.linkIndex(i);
       // Store the task we are currently working on
       current=taskList[i];
       // Calculate the stuff in the loop for this action
-      performTask(i);
+      performTask();
       // Weight should be between zero and one
       plumed_dbg_assert( thisval[1]>=0 && thisval[1]<=1.0 );
 
@@ -201,16 +210,24 @@ void ActionWithVessel::runAllTasks(){
   finishComputations();
 }
 
+void ActionWithVessel::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
+  indices[jstore]=getNumberOfDerivatives();
+  if( indices[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");
+
+  unsigned kder = ntotal + jstore*getNumberOfDerivatives();
+  for(unsigned jder=0;jder<getNumberOfDerivatives();++jder){ indices[ kder ] = jder; kder++; }
+}
+
 void ActionWithVessel::clearAfterTask(){
   // Clear the derivatives from this step
   for(unsigned k=0;k<thisval.size();++k){
-     thisval_wasset[k]=false;
      clearDerivativesAfterTask(k);
   }
 }
 
 void ActionWithVessel::clearDerivativesAfterTask( const unsigned& ider ){
   unsigned kstart=ider*getNumberOfDerivatives();
+  thisval[ider]=0.0; thisval_wasset[ider]=false;
   for(unsigned j=0;j<getNumberOfDerivatives();++j) derivatives[ kstart+j ]=0.0;
 }
 

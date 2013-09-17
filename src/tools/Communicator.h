@@ -127,8 +127,7 @@ public:
   class Request{
   public:
     MPI_Request r;
-    void wait();
-    void wait(Status&);
+    void wait(Status&s=StatusIgnore);
   };
 /// Default constructor
   Communicator();
