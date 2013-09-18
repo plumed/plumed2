@@ -46,8 +46,7 @@ ActionWithVessel(ao)
 
 void ManyRestraintsBase::createRestraints( const unsigned& nrestraints ){
   std::string fake_input; 
-  for(unsigned i=0;i<nrestraints;++i) taskList.addIndexToList(i);
-  taskList.activateAll();
+  for(unsigned i=0;i<nrestraints;++i) addTaskToList(i);
   addVessel( "SUM", fake_input, 0, "bias" );
   readVesselKeywords();
   forcesToApply.resize( getNumberOfDerivatives() );

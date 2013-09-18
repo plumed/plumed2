@@ -60,14 +60,12 @@ private:
 /// The vessel that bridges
   vesselbase::BridgeVessel* myBridgeVessel;
 /// Everything for controlling the updating of neighbor lists
+  bool firsttime;
   int updateFreq;
-  unsigned lastUpdate;
 /// Fast merging of derivatives (automatic skips of zero contributions)
   DynamicList<unsigned> activeAtoms;
 /// This is used to store forces temporarily in apply
   std::vector<double> tmpforces;
-/// This sets up array above
-  void resizeLocalArrays();
 protected:
   double getSigma() const ;
 /// Get the cell box
@@ -91,6 +89,8 @@ public:
 /// Don't actually clear the derivatives when this is called from plumed main.  
 /// They are calculated inside another action and clearing them would be bad  
   void clearDerivatives(){}
+// This is used during neighbor list update step
+  void finishTaskListUpdate();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Is the output quantity periodic

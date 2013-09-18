@@ -61,8 +61,7 @@ private:
   std::vector<Tensor> vir;
 /// Everything for controlling the updating of neighbor lists
   int updateFreq;
-  unsigned lastUpdate;
-  bool reduceAtNextStep;
+  bool firsttime;
 /// Variables for strands cutoff
   bool align_strands;
   double s_cutoff;
@@ -89,6 +88,7 @@ public:
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();
   void prepare();
+  void finishTaskListUpdate();
   void calculate();
   void performTask();
   void clearDerivativesAfterTask( const unsigned& );
@@ -109,7 +109,7 @@ unsigned SecondaryStructureRMSD::getNumberOfDerivatives(){
 
 inline
 unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& iatom ){
-  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
+  return all_atoms.linkIndex( colvar_atoms[getCurrentTask()][iatom] );
 }
 
 }

@@ -48,7 +48,7 @@ private:
   bool usepbc;
 /// Everything for controlling the updating of neighbor lists
   int updateFreq;
-  unsigned lastUpdate;
+  bool firsttime;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
 /// Variables used for central atoms
@@ -57,7 +57,11 @@ private:
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
 /// Neighbor lists for coordination numbers
+  unsigned csphere_start;
+  std::vector<unsigned> csphere_flags;
   std::vector<DynamicList<unsigned> > csphere_atoms;
+/// This does neighbor list update for atom centered symmetry functions
+  void updateCSphereArrays();
 /// This resizes the local arrays after neighbor list updates and during initialization
   void resizeLocalArrays();
 protected:
@@ -77,8 +81,6 @@ protected:
   std::vector<unsigned> current_atoms;
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase();
-/// Request the atoms from action atomistic
-  void requestAtoms();
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Do we use pbc to calculate this quantity
@@ -106,14 +108,17 @@ protected:
 /// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
   void quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout );
 /// This sets up the list of atoms that are involved in this colvar
-  bool setupCurrentAtomList();
+  bool setupCurrentAtomList( const unsigned& taskCode );
 public:
   MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(){}
   static void registerKeywords( Keywords& keys );
+/// Used in setupCurrentAtomList to get atom numbers 
+/// Base quantities are different in MultiColvar and MultiColvarFunction
+  virtual unsigned getBaseQuantityIndex( const unsigned& code )=0;
 /// Prepare for the calculation
   void prepare();
-  virtual void resizeDynamicArrays()=0;
+//  virtual void resizeDynamicArrays()=0;
 /// Perform one of the tasks
   void performTask();
 /// And a virtual function which actually computes the colvar
@@ -127,8 +132,6 @@ public:
   void clearDerivativesAfterTask( const unsigned& ider );
 /// Apply the forces from this action
   void apply();
-/// Deactivate one of the tasks
-  void deactivate_task();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Get the number of quantities that are calculated each time
@@ -167,14 +170,7 @@ void MultiColvarBase::removeAtomRequest( const unsigned& i, const double& weight
   plumed_dbg_assert( usespecies );
   if( !contributorsAreUnlocked ) return;
   plumed_dbg_assert( weight<getTolerance() );
-// GAT neighbor list
-  if( weight<getNLTolerance() ) csphere_atoms[current].deactivate( i );
-}
-
-inline
-void MultiColvarBase::deactivate_task(){
-  if( !contributorsAreUnlocked ) return;      // Deactivating tasks only possible during neighbor list update
-  ActionWithVessel::deactivate_task();        // Deactivate the colvar from the list
+  if( weight<getNLTolerance() ) csphere_flags[ csphere_start + i ] = 1;
 }
 
 inline

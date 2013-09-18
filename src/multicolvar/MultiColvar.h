@@ -23,6 +23,7 @@
 #define __PLUMED_multicolvar_MultiColvar_h
 
 #include "MultiColvarBase.h"
+#include "tools/SwitchingFunction.h"
 #include <vector>
 
 #define PLUMED_MULTICOLVAR_INIT(ao) Action(ao),MultiColvar(ao)
@@ -53,6 +54,8 @@ protected:
   void readTwoGroups( const std::string& key1, const std::string& key2 );
 /// Read three groups
   void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2 );
+/// This is used to make neighbor list update fast when three atoms are involved in the colvar (e.g. ANGLES, WATERBRIDGE)
+  void threeBodyNeighborList( const SwitchingFunction& sf );
 /// Add a collective variable
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Add some derivatives for an atom 
@@ -68,12 +71,14 @@ public:
   ~MultiColvar(){}
   static void registerKeywords( Keywords& keys );
 /// Resize all the dynamic arrays (used at neighbor list update time and during setup)
-  virtual void resizeDynamicArrays();
+//  virtual void resizeDynamicArrays();
 /// Get the position of atom iatom
   const Vector & getPosition(unsigned) const;
 /// This is used in VectorMultiColvar.  In there we use a MultiColvar as if it is 
 /// a MultiColvarFunction so we can calculate functions of vectors that output functions
   virtual void calculationsRequiredBeforeNumericalDerivatives(){}
+/// Finish the update of the task list
+  void finishTaskListUpdate();
 /// Calculate the multicolvar
   virtual void calculate();
 /// Update the atoms that have derivatives
@@ -88,7 +93,14 @@ public:
   double getCharge(unsigned) const ;
 /// Get the absolute index of atom iatom
   AtomNumber getAbsoluteIndex(unsigned) const ;
+/// Get base quantity index
+  unsigned getBaseQuantityIndex( const unsigned& code );
 };
+
+inline
+unsigned MultiColvar::getBaseQuantityIndex( const unsigned& code ){
+  return all_atoms.linkIndex( code );
+}
 
 inline
 unsigned MultiColvar::getAtomIndex( const unsigned& iatom ) const {

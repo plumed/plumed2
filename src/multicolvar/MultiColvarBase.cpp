@@ -48,7 +48,6 @@ ActionWithValue(ao),
 ActionWithVessel(ao),
 usepbc(false),
 updateFreq(0),
-lastUpdate(0),
 usespecies(false)
 {
   if( keywords.exists("NOPBC") ){ 
@@ -57,8 +56,13 @@ usespecies(false)
   } 
   if( keywords.exists("SPECIES") ) usespecies=true;
   if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
-  if(updateFreq>0) log.printf("  Updating contributors every %d steps.\n",updateFreq);
-  else log.printf("  Updating contributors every step.\n");
+  if(updateFreq>0){
+     firsttime=true;
+     log.printf("  Updating contributors every %d steps.\n",updateFreq);
+  } else {
+     firsttime=false; contributorsAreUnlocked=true;   // This will lock during first prepare step methinks
+     log.printf("  Updating contributors every step.\n");
+  }
 }
 
 void MultiColvarBase::copyAtomListToFunction( MultiColvarBase* myfunction ){
@@ -76,8 +80,6 @@ void MultiColvarBase::copyActiveAtomsToFunction( MultiColvarBase* myfunction ){
 }
 
 void MultiColvarBase::setupMultiColvarBase(){
-  // Activate everything
-  taskList.activateAll();
   // Setup decoder array
   if( !usespecies ){
      decoder.resize( ablocks.size() ); unsigned code=1;
@@ -85,49 +87,46 @@ void MultiColvarBase::setupMultiColvarBase(){
   } else if( ablocks.size()>0 ) {
      plumed_assert( ablocks.size()==1 );
      // Setup coordination sphere
-     csphere_atoms.resize( taskList.fullSize() );
-     for(unsigned i=0;i<taskList.fullSize();++i){
+     csphere_atoms.resize( getFullNumberOfTasks() ); unsigned nflags=0;
+     for(unsigned i=0;i<getFullNumberOfTasks();++i){
         for(unsigned j=0;j<ablocks[0].size();++j){
-           if( taskList(i)!=ablocks[0][j] ) csphere_atoms[i].addIndexToList( ablocks[0][j] );
+           if( getActiveTask(i)!=ablocks[0][j] ){
+               csphere_atoms[i].addIndexToList( ablocks[0][j] ); nflags++;
+           }
         }
         csphere_atoms[i].activateAll();
      } 
+     csphere_flags.resize( nflags, 0 );
   }
-  
-  // Resize stuff in derived classes 
-  resizeDynamicArrays();
-  // Resize local arrays
-  resizeLocalArrays();
-  // And resize the local vessels
-  resizeFunctions();
+  finishTaskListUpdate();
 }
 
-void MultiColvarBase::requestAtoms(){
-  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-} 
 
 void MultiColvarBase::prepare(){
-  bool updatetime=false;
+  if( contributorsAreUnlocked ) lockContributors();
+  if( updateFreq>0 ){
+     if( firsttime || getStep()%updateFreq==0 ){ firsttime=false; unlockContributors(); }
+  }
+}
+
+void MultiColvarBase::updateCSphereArrays(){
+  if( !usespecies || isDensity() ) return ;
+
   if( contributorsAreUnlocked ){
-      taskList.mpi_gatherActiveMembers( comm );
-      if( usespecies ) mpi_gatherActiveMembers( comm, csphere_atoms ); 
-      lockContributors(); updatetime=true;
-  }
-  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-      taskList.activateAll(); 
-      if(usespecies){ 
-         for(unsigned i=0;i<taskList.getNumberActive();++i) csphere_atoms[i].activateAll();
-      }
-      unlockContributors(); updatetime=true; lastUpdate=getStep();
-  }
-  if(updatetime){
-     // Resize stuff in derived classes
-     resizeDynamicArrays();
-     // Resize local arrays
-     resizeLocalArrays();
-     // Resize vessels
-     resizeFunctions(); 
-  }
+     if( !serialCalculation() ) comm.Sum( csphere_flags );
+     unsigned istart=0;
+     for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
+         csphere_atoms[i].deactivateAll();
+         for(unsigned j=0;j<csphere_atoms[i].fullSize();++j){
+             if( csphere_flags[istart+j]==0 ) csphere_atoms[i].activate(j);
+         }
+         csphere_atoms[i].updateActiveMembers();
+         istart += csphere_atoms[i].fullSize();
+     }
+     plumed_assert( istart==csphere_flags.size() );
+  } else {
+     for(unsigned i=0;i<csphere_flags.size();++i) csphere_flags[i]=0;
+  } 
 }
 
 void MultiColvarBase::resizeLocalArrays(){
@@ -142,23 +141,26 @@ void MultiColvarBase::resizeLocalArrays(){
   forcesToApply.resize( getNumberOfDerivatives() );
 }
 
-bool MultiColvarBase::setupCurrentAtomList(){
+bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode ){
   if( usespecies ){
      natomsper=1;
-     current_atoms[0]=all_atoms.linkIndex( current );
+     current_atoms[0]=getBaseQuantityIndex( taskCode );
+     if( contributorsAreUnlocked ){
+        csphere_start=0; for(unsigned i=0;i<taskCode;++i) csphere_start+=csphere_atoms[i].fullSize();
+     }
      for(unsigned j=0;j<ablocks.size();++j){
-        for(unsigned i=0;i<csphere_atoms[current].getNumberActive();++i){
-           current_atoms[natomsper]=all_atoms.linkIndex( csphere_atoms[current][i] );
+        for(unsigned i=0;i<csphere_atoms[taskCode].getNumberActive();++i){
+           current_atoms[natomsper]=getBaseQuantityIndex( csphere_atoms[taskCode][i] );
            natomsper++; 
         }
      }
      if( natomsper==1 ) return isDensity();
   } else {
      natomsper=current_atoms.size();
-     unsigned scode = current;
+     unsigned scode = taskCode;
      for(unsigned i=0;i<ablocks.size();++i){
         unsigned ind=std::floor( scode / decoder[i] );
-        current_atoms[i]=all_atoms.linkIndex( ablocks[i][ind] );
+        current_atoms[i]=getBaseQuantityIndex( ablocks[i][ind] );
         scode -= ind*decoder[i];
      }
   }  
@@ -171,7 +173,7 @@ void MultiColvarBase::performTask(){
   // Currently no central atoms have derivatives so deactive them all
   atomsWithCatomDer.deactivateAll();
   // Retrieve the atom list
-  if( !setupCurrentAtomList() ) return;
+  if( !setupCurrentAtomList( getCurrentTask() ) ) return;
 
   // Do nothing if there are no active atoms in the colvar
 //  if( colvar_atoms[current].getNumberActive()==0 ){  

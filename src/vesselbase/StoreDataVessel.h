@@ -74,6 +74,8 @@ protected:
   unsigned getNumberOfDerivatives( const unsigned& );
 /// Retrieve the values from the underlying ActionWithVessel
   void storeValues( const unsigned& );
+/// Set the Task that needs redoing
+  void setTaskToRecompute( const unsigned& ivec );
 /// Get a component of the stored vector
   double getComponent( const unsigned& , const unsigned& );
 /// Chain rule the vector and output derivatives to a value
@@ -137,13 +139,13 @@ void StoreDataVessel::performTask( const unsigned& ivec ){
 
 inline
 double StoreDataVessel::getComponent( const unsigned& ival, const unsigned& jcomp ){
-  plumed_dbg_assert( ival<getAction()->getNumberOfTasks() && jcomp<vecsize );
+  plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() && jcomp<vecsize );
   return getBufferElement( ival*(vecsize*nspace) + jcomp*nspace ); 
 }
 
 inline
 unsigned StoreDataVessel::getNumberOfDerivatives( const unsigned& ival ){
-  plumed_dbg_assert( ival<getAction()->getNumberOfTasks() );
+  plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() );
   return active_der[ival];
 }
 

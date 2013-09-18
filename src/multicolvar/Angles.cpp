@@ -92,7 +92,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   Angles(const ActionOptions&);
-// active methods:
+/// Updates neighbor list
+  virtual void doJobsRequiredBeforeTaskList();
   virtual double compute();
 /// Returns the number of coordinates of the field
   void calculateWeight();
@@ -157,6 +158,15 @@ use_sf(false)
   // And check everything has been read in correctly
   checkRead();
 }
+
+// This should give big speed ups during neighbor list update steps
+void Angles::doJobsRequiredBeforeTaskList(){
+  // Do jobs required by action with vessel
+  ActionWithVessel::doJobsRequiredBeforeTaskList();
+  if( !use_sf || getCurrentNumberOfActiveTasks()==ablocks[0].size() ) return ;
+  // First step of update of three body neighbor list
+  threeBodyNeighborList( sf1 );
+} 
 
 void Angles::calculateWeight(){
   dij=getSeparation( getPosition(0), getPosition(2) );

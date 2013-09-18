@@ -86,7 +86,9 @@ bool Between::calculate(){
   double val=getAction()->getElementValue(0);
   double dval, f = hist.calculate(val, dval);
 
-  addValueIgnoringTolerance(1,weight);
+  bool bigw=addValueUsingTolerance(1,weight);
+  if( !bigw ) return false;
+
   double contr=weight*f;
   bool addval=addValueUsingTolerance(0,contr);
   if( addval ){

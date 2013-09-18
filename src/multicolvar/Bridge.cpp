@@ -68,7 +68,7 @@ public:
   Bridge(const ActionOptions&);
 // active methods:
   virtual double compute();
-/// Returns the number of coordinates of the field
+  void doJobsRequiredBeforeTaskList();
   void calculateWeight();
   bool isPeriodic(){ return false; }
   Vector getCentralAtom();
@@ -124,6 +124,13 @@ PLUMED_MULTICOLVAR_INIT(ao)
   readVesselKeywords();
   // And check everything has been read in correctly
   checkRead();
+}
+
+void Bridge::doJobsRequiredBeforeTaskList(){
+  // Do jobs required by action with vessel
+  ActionWithVessel::doJobsRequiredBeforeTaskList();
+  // First step of update of three body neighbor list
+  threeBodyNeighborList( sf1 );
 }
 
 void Bridge::calculateWeight(){

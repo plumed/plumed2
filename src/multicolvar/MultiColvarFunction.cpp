@@ -59,11 +59,11 @@ MultiColvarBase(ao)
          log.printf("  calculating function for atoms ");
          for(unsigned i=0;i<atoms.size();++i){
             log.printf("%d ",atoms[i].serial() );
-            taskList.addIndexToList( mycolv->getInternalIndex(atoms[i]) );
+            addTaskToList( mycolv->getInternalIndex(atoms[i]) );
          }
          log.printf("\n");
       } else {
-         for(unsigned i=0;i<mycolv->taskList.fullSize();++i) taskList.addIndexToList( i );
+         for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList( i );
       }
       usespecies=true; ablocks.resize(1); ablocks[0].resize( getNumberOfBaseFunctions() );
       for(unsigned i=0;i<getNumberOfBaseFunctions();++i) ablocks[0][i]=i; 
@@ -73,7 +73,7 @@ MultiColvarBase(ao)
       for(unsigned i=0;i<2;++i) ablocks[i].resize(nblock);
       for(unsigned i=0;i<getNumberOfBaseFunctions();++i){ ablocks[0][i]=i; ablocks[1][i]=i; }
       for(unsigned i=1;i<getNumberOfBaseFunctions();++i){
-         for(unsigned j=0;j<i;++j) taskList.addIndexToList( i*nblock + j );
+         for(unsigned j=0;j<i;++j) addTaskToList( i*nblock + j );
       }
       current_atoms.resize( 2 );
   }
@@ -90,35 +90,58 @@ Vector MultiColvarFunction::getSeparation( const Vector& vec1, const Vector& vec
   return mycolv->getSeparation( vec1, vec2 );
 }
 
-void MultiColvarFunction::unlockContributors(){
-  plumed_massert( mycolv->contributorsAreUnlocked,"contributors in base colvar are not unlocked"); 
-  ActionWithVessel::unlockContributors();
-}
-
-void MultiColvarFunction::lockContributors(){
+void MultiColvarFunction::finishTaskListUpdate(){
+  updateCSphereArrays();  // Stuff for atom centered symmetry function nlist
   // Make a list of the tasks required 
-  std::vector<bool> additionalTasks( mycolv->getNumberOfTasks(), false );
-  for(unsigned i=0;i<taskList.getNumberActive();++i){
-      current=taskList[i];
-      for(unsigned j=0;j<getNAtoms();++j) additionalTasks[ getAtomIndex(j) ]=true;
+  std::vector<bool> additionalTasks( mycolv->getFullNumberOfTasks(), false );
+  for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
+      bool check=setupCurrentAtomList( getActiveTask(i) );
+      plumed_assert( check );
+      for(unsigned j=0;j<natomsper;++j) additionalTasks[ current_atoms[j] ] = true;
   }
-  // And add these to the requirements in the base colvar
-  mycolv->activateTheseTasks( additionalTasks ); 
-
-  // Redo preparation step 
+  // Add these requirements in the base colvar
+  mycolv->activateTheseTasks( additionalTasks );
+  // Redo preparation step for base colvar
   mycolv->prepare();
-
-  // And lock
-  ActionWithVessel::lockContributors();
-}
-
-void MultiColvarFunction::resizeDynamicArrays(){
+  // Copy the active atoms here
   mycolv->copyActiveAtomsToFunction( this );
   // Request the atoms
-  requestAtoms();
+  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
   // Rerequest the dependency
   addDependency(mycolv);
+  // Resize arrays in MultiColvarBase
+  resizeLocalArrays();
 }
+
+// void MultiColvarFunction::unlockContributors(){
+//   plumed_massert( mycolv->contributorsAreUnlocked,"contributors in base colvar are not unlocked"); 
+//   ActionWithVessel::unlockContributors();
+// }
+// 
+// void MultiColvarFunction::lockContributors(){
+//   // Make a list of the tasks required 
+//   std::vector<bool> additionalTasks( mycolv->getNumberOfTasks(), false );
+//   for(unsigned i=0;i<taskList.getNumberActive();++i){
+//       current=taskList[i];
+//       for(unsigned j=0;j<getNAtoms();++j) additionalTasks[ getAtomIndex(j) ]=true;
+//   }
+//   // And add these to the requirements in the base colvar
+//   mycolv->activateTheseTasks( additionalTasks ); 
+// 
+//   // Redo preparation step 
+//   mycolv->prepare();
+// 
+//   // And lock
+//   ActionWithVessel::lockContributors();
+// }
+// 
+// void MultiColvarFunction::resizeDynamicArrays(){
+//   mycolv->copyActiveAtomsToFunction( this );
+//   // Request the atoms
+//   requestAtoms();
+//   // Rerequest the dependency
+//   addDependency(mycolv);
+// }
 
 void MultiColvarFunction::calculate(){
   if( checkNumericalDerivatives() ){
