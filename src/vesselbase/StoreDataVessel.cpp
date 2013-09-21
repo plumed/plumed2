@@ -65,6 +65,7 @@ void StoreDataVessel::getIndexList( const unsigned& ntotal, const unsigned& jsto
 
 void StoreDataVessel::setTaskToRecompute( const unsigned& ivec ){
  getAction()->current = getAction()->fullTaskList[ivec];
+ getAction()->task_index = ivec;
 }
 
 void StoreDataVessel::recompute( const unsigned& ivec, const unsigned& jstore ){
@@ -194,34 +195,6 @@ void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>
   }
 }
 
-void StoreDataVessel::chainRule( const unsigned& ival, const unsigned& jout, const std::vector<double>& df, ActionWithVessel* act ){
-  plumed_dbg_assert( act->getNumberOfDerivatives()==final_derivatives.size() && jout<act->getNumberOfQuantities() );
-  plumed_dbg_assert( act->getNumberOfDerivatives()==final_derivatives.size() && jout<act->getNumberOfQuantities() );
-  chainRule( ival, df );
-
-  unsigned kder, outstart = jout*getAction()->getNumberOfDerivatives();
-  if( getAction()->lowmem ) kder = max_lowmem_stash + ival*getAction()->getNumberOfDerivatives();
-  else kder = getAction()->getFullNumberOfTasks() + ival*(nspace-1);
-
-  for(unsigned i=0;i<active_der[ival];++i){
-     act->addElementDerivative( outstart + active_der[kder+i], final_derivatives[i] );
-  }
-  act->activateIndexes( kder, active_der[ival], active_der );
-}
-
-void StoreDataVessel::chainRule( const unsigned& ival, const unsigned& jout, const unsigned& ider, const std::vector<double>& df, ActionWithVessel* act ){
-  plumed_dbg_assert( act->getNumberOfDerivatives()==final_derivatives.size() && jout<act->getNumberOfQuantities() );
-  plumed_dbg_assert( act->getNumberOfDerivatives()==final_derivatives.size() && jout<act->getNumberOfQuantities() );
-
-  unsigned kder, jder;
-  if( getAction()->lowmem ) kder = max_lowmem_stash + ival*getAction()->getNumberOfDerivatives();
-  else kder = getAction()->getFullNumberOfTasks() + ival*(nspace-1);
-
-  jder = jout*act->getNumberOfDerivatives() + active_der[kder+ider];
-  act->addElementDerivative( jder, chainRule( ival, ider, df ) );
-  act->activateIndex( active_der[kder+ider] );
-}
-
 void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>& df, Value* val ){
   plumed_dbg_assert( val->getNumberOfDerivatives()==final_derivatives.size() );
   chainRule( ival, df ); 
@@ -231,84 +204,6 @@ void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>
   else kder = getAction()->getFullNumberOfTasks() + ival*(nspace-1);
 
   for(unsigned i=0;i<active_der[ival];++i) val->addDerivative( active_der[kder+i] , final_derivatives[i] );
-}
-
-void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>& df, std::vector<double>& derout ){
-  plumed_dbg_assert( derout.size()==final_derivatives.size() );
-  chainRule( ival, df );
-
-  unsigned kder;
-  if( getAction()->lowmem ) kder = max_lowmem_stash + ival*getAction()->getNumberOfDerivatives();
-  else kder = getAction()->getFullNumberOfTasks() + ival*(nspace-1);
-
-  for(unsigned i=0;i<active_der[ival];++i) derout[ active_der[kder+i] ] += final_derivatives[i];
-}
-
-void StoreDataVessel::transformComponents( const unsigned& jstore, const double& weight, double& wdf, const std::vector<double>& dfvec ){
-  plumed_dbg_assert( dfvec.size()==vecsize );
-  ActionWithVessel* act = getAction();
-  unsigned myelem = act->getCurrentPositionInTaskList();
-
-  unsigned ibuf = myelem * vecsize * nspace;
-  for(unsigned icomp=0;icomp<vecsize;++icomp){
-     fvec[icomp]=getBufferElement(ibuf);
-     setBufferElement( ibuf, weight*getBufferElement(ibuf)  ); ibuf+=nspace;
-  }  
-
-  if( !act->lowmem ) {
-      plumed_dbg_assert( jstore<getAction()->getFullNumberOfTasks() ); 
-      for(unsigned ider=0;ider<active_der[myelem];++ider){
-          double comp2=0.0; unsigned ibuf = myelem * vecsize * nspace + 1 + ider;
-          for(unsigned jcomp=0;jcomp<vecsize;++jcomp){
-              comp2  += fvec[jcomp]*dfvec[jcomp]*getBufferElement(ibuf);
-              ibuf += nspace;
-          }
-          ibuf = myelem * vecsize * nspace + 1 + ider;
-          for(unsigned jcomp=0;jcomp<vecsize;++jcomp){
-             setBufferElement( ibuf, weight*dfvec[jcomp]*getBufferElement(ibuf) + wdf*comp2*fvec[jcomp] );
-             ibuf += nspace;
-          }
-      }
-  } else {
-      plumed_dbg_assert( jstore<max_lowmem_stash );
-      unsigned maxder = act->getNumberOfDerivatives();
-      for(unsigned ider=0;ider<active_der[jstore];++ider){
-          double comp2=0.0; 
-          unsigned ibuf = jstore * vecsize * maxder + ider;
-          for(unsigned jcomp=0;jcomp<vecsize;++jcomp){
-              comp2 += fvec[jcomp]*dfvec[jcomp]*local_derivatives[ibuf];
-              ibuf += maxder; 
-          }
-          ibuf = jstore * vecsize * maxder + ider; 
-          for(unsigned jcomp=0;jcomp<vecsize;++jcomp){
-             local_derivatives[ibuf] = weight*dfvec[jcomp]*local_derivatives[ibuf] + wdf*comp2*fvec[jcomp]; 
-             ibuf += maxder;
-          }
-      }
-  } 
-}
-
-void StoreDataVessel::chainRuleForComponent( const unsigned& ival, const unsigned& jcomp, const unsigned& jout, const double& df, ActionWithVessel* act ){ 
-  unsigned outstart=jout*act->getNumberOfDerivatives();
-
-  if(getAction()->lowmem){
-     plumed_dbg_assert( ival<max_lowmem_stash );
-     unsigned maxder = getAction()->getNumberOfDerivatives();
-     unsigned ibuf = ival*(vecsize*maxder) + jcomp*maxder; 
-     unsigned kder = max_lowmem_stash + ival*maxder;
-     for(unsigned ider=0;ider<active_der[ival];++ider){
-        act->addElementDerivative( outstart + active_der[kder+ider], df*local_derivatives[ibuf+ider] ); 
-     }
-     act->activateIndexes( kder, active_der[ival], active_der );
-  } else {
-     plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() );
-     unsigned ibuf = ival*(vecsize*nspace) + jcomp*nspace + 1;
-     unsigned kder = getAction()->getFullNumberOfTasks() + ival*(nspace-1);
-     for(unsigned ider=0;ider<active_der[ival];++ider){
-        act->addElementDerivative( outstart + active_der[kder+ider], df*getBufferElement(ibuf+ider) );  
-     }
-     act->activateIndexes( kder, active_der[ival], active_der );
-  }
 }
 
 }

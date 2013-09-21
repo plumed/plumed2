@@ -117,7 +117,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
   // And setup the ActionWithVessel
-  readVesselKeywords();
   if( getNumberOfVessels()!=0 ) error("should not have vessels for this action");
   std::string fake_input;
   addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()

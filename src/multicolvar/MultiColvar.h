@@ -95,11 +95,18 @@ public:
   AtomNumber getAbsoluteIndex(unsigned) const ;
 /// Get base quantity index
   unsigned getBaseQuantityIndex( const unsigned& code );
+/// Return true if two indexes are the same
+  bool same_index( const unsigned&, const unsigned& );
 };
 
 inline
 unsigned MultiColvar::getBaseQuantityIndex( const unsigned& code ){
   return all_atoms.linkIndex( code );
+}
+
+inline
+bool MultiColvar::same_index( const unsigned& code1, const unsigned& code2 ){
+  return ( all_atoms(code1)==all_atoms(code2) );
 }
 
 inline

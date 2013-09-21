@@ -130,8 +130,6 @@ Angles::Angles(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao),
 use_sf(false)
 {
-  // Read in the atoms
-  int natoms=3; readAtoms( natoms );
   std::string sfinput,errors; parse("SWITCH",sfinput);
   if( sfinput.length()>0 ){
       use_sf=true;
@@ -152,9 +150,8 @@ use_sf(false)
          log.printf("  only calculating angles when the distance between GROUPA and GROUPC atoms is less than %s\n", sf2.description().c_str() );
       }
   }
-
-  // And setup the ActionWithVessel
-  readVesselKeywords();
+  // Read in the atoms
+  int natoms=3; readAtoms( natoms );
   // And check everything has been read in correctly
   checkRead();
 }

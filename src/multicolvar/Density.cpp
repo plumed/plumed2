@@ -59,6 +59,7 @@ public:
   /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
   bool isDensity(){ return true; }
+  bool hasDifferentiableOrientation() const { return true; }
 };
 
 PLUMED_REGISTER_ACTION(Density,"DENSITY")
@@ -72,7 +73,6 @@ Density::Density(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   int nat=1; readAtoms( nat ); 
-  readVesselKeywords();
   // And check everything has been read in correctly
   checkRead(); 
 }

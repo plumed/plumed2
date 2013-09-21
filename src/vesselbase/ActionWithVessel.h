@@ -195,7 +195,6 @@ public:
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 /// These are overwritten in MultiColvarFunction
   virtual void activateIndexes( const unsigned&, const unsigned&, const std::vector<unsigned>& ){}
-  virtual void activateIndex( const unsigned& ){}
 };
 
 inline

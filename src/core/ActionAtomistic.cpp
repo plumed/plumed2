@@ -86,6 +86,10 @@ void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
   calculateAtomicNumericalDerivatives( a, 0 );
 }
 
+void ActionAtomistic::changeBox( const Tensor& newbox ){
+  pbc.setBox( newbox );
+}
+
 void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum ){
   if(!a){
     a=dynamic_cast<ActionWithValue*>(this);

@@ -112,7 +112,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
   // And setup the ActionWithVessel
-  readVesselKeywords();
   checkRead();
 }
 

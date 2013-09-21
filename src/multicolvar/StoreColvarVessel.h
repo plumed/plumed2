@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.
+   This file is part of plumed, version 2.0.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -25,21 +25,24 @@
 #include <string>
 #include <cstring>
 #include <vector>
-#include "StoreDataVessel.h"
+#include "vesselbase/StoreDataVessel.h"
 
 namespace PLMD {
-namespace vesselbase {
+namespace multicolvar {
 
-class StoreValueVessel : public StoreDataVessel {
+class MultiColvarFunction;
+
+class StoreColvarVessel : public vesselbase::StoreDataVessel {
 public:
   static void registerKeywords( Keywords& keys );
-  StoreValueVessel( const VesselOptions& );
+  StoreColvarVessel( const vesselbase::VesselOptions& );
   double getValue( const unsigned& );
   virtual std::string description(){ return ""; }
+  void chainRuleForComponent( const unsigned& , const unsigned& , const unsigned& , const double& , MultiColvarFunction* );
 };
 
 inline
-double StoreValueVessel::getValue( const unsigned& ival ){
+double StoreColvarVessel::getValue( const unsigned& ival ){
   return getComponent( ival, 0 );
 }
 

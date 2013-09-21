@@ -116,7 +116,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
 
   // And setup the ActionWithVessel
-  readVesselKeywords();
   if( getNumberOfVessels()==0 ){
      std::string fake_input;
      addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()

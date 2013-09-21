@@ -49,7 +49,7 @@ public:
 /// Get the indices
   void getIndexList( const unsigned& , const unsigned& , const unsigned& , std::vector<unsigned>& );
 /// Add derivatives to central atom position
-  void addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const Vector& df, MultiColvarBase* funcout );
+  void addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& df, MultiColvarFunction* funcout );
 };
 
 }

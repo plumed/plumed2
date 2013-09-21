@@ -106,7 +106,7 @@ void Action::parseFlag(const std::string&key,bool & t){
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
   // Check keyword is a flag
   if(!keywords.style(key,"nohtml")){
-     plumed_massert(keywords.style(key,"flag"), "keyword " + key + " is not a flag");
+     plumed_massert(keywords.style(key,"flag") || keywords.style(key,"hidden"), "keyword " + key + " is not a flag");
   }
 
   // Read in the flag otherwise get the default value from the keywords object
