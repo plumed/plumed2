@@ -187,8 +187,8 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
  
 +/* PLUMED */
 +#include "../../Plumed.h"
-+int    plumedswitch;
-+plumed plumedmain;
++extern int    plumedswitch;
++extern plumed plumedmain; extern void(*plumedcmd)(plumed,const char*,const void*);
 +/* END PLUMED */
 +
  int cmain(int argc, char *argv[])
@@ -217,7 +217,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
 +    /* PLUMED */
 +    plumedswitch=0;
 +    if (opt2bSet("-plumed",NFILE,fnm)) plumedswitch=1;
-+    if(plumedswitch){
++    if(plumedswitch){ plumedcmd=plumed_cmd;
 +      int plumed_is_there=0;
 +      int real_precision=sizeof(real);
 +      real energyUnits=1.0;
@@ -493,7 +493,7 @@ EOF_EOF
 patch -u -l -b -F 5 --suffix=.preplumed "./src/mdlib/force.c" << \EOF_EOF
 --- ./src/mdlib/force.c.preplumed
 +++ ./src/mdlib/force.c
-@@ -65,10 +65,17 @@
+@@ -65,10 +65,18 @@
  #include "partdec.h"
  #include "qmmm.h"
  #include "mpelogging.h"
@@ -501,8 +501,9 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/mdlib/force.c" << \EOF_EOF
  
 +/* PLUMED */
 +#include "../../Plumed.h"
-+extern int    plumedswitch;
-+extern plumed plumedmain;
++int    plumedswitch=0;
++plumed plumedmain;
++void(*plumedcmd)(plumed,const char*,const void*)=NULL;
 +/* END PLUMED */
 +
 +
@@ -511,7 +512,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/mdlib/force.c" << \EOF_EOF
          rvec               x[],
          matrix             box,
          gmx_groups_t      *groups,
-@@ -690,10 +697,18 @@
+@@ -690,10 +698,20 @@
          pr_rvecs(debug, 0, "fshift after bondeds", fr->fshift, SHIFTS);
      }
  
@@ -519,9 +520,11 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/mdlib/force.c" << \EOF_EOF
  
 +
 +/* PLUMED */
-+ int plumedNeedsEnergy;
-+ plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
-+ if(!plumedNeedsEnergy) plumed_cmd(plumedmain,"performCalc",NULL);
++ if(plumedswitch){
++   int plumedNeedsEnergy;
++   (*plumedcmd)(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
++   if(!plumedNeedsEnergy) (*plumedcmd)(plumedmain,"performCalc",NULL);
++ }
 +/* END PLUMED */
 +
 +
