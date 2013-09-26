@@ -890,12 +890,6 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
         fprintf(fplog, "Repl %d <-> %d  dE_term = %10.3e (kT)\n", a, b, delta);
     }
 
-/* PLUMED */
-/* this is necessary because with plumed HREX the energy contribution is
-   already taken into account */
-    if(plumed_hrex) delta=0.0;
-/* END PLUMED */
-
     if (re->bNPT)
     {
         /* revist the calculation for 5.0.  Might be some improvements. */
@@ -1112,6 +1106,10 @@ test_for_replica_exchange(FILE                 *fplog,
             if (i % 2 == m)
             {
                 delta = calc_delta(fplog, bPrint, re, a, b, a, b);
+/* this is necessary because with plumed HREX the energy contribution is
+   already taken into account */
+                if(plumed_hrex) delta=0.0;
+
                 /* PLUMED */
                 if(plumedswitch){
                   real adb,bdb,dplumed;
