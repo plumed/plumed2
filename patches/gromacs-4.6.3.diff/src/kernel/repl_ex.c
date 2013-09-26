@@ -540,7 +540,7 @@ static void exchange_rvecs(const gmx_multisim_t *ms, int b, rvec *v, int n)
     }
 }
 
-static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
+void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
 {
     /* When t_state changes, this code should be updated. */
     int ngtc, nnhpres;
@@ -660,7 +660,7 @@ static void scale_velocities(t_state *state, real fac)
     }
 }
 
-static void pd_collect_state(const t_commrec *cr, t_state *state)
+void pd_collect_state(const t_commrec *cr, t_state *state)
 {
     int shift;
 
@@ -885,6 +885,13 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
     {
         fprintf(fplog, "Repl %d <-> %d  dE_term = %10.3e (kT)\n", a, b, delta);
     }
+
+/* PLUMED */
+/* this is necessary because with plumed HREX the energy contribution is
+   already taken into account */
+    if(getenv("PLUMED_HREX")) delta=0.0;
+/* END PLUMED */
+
     if (re->bNPT)
     {
         /* revist the calculation for 5.0.  Might be some improvements. */
@@ -1518,3 +1525,12 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
     /* print the transition matrix */
     print_transition_matrix(fplog, "", re->nrepl, re->nmoves, re->nattempt);
 }
+
+int replica_exchange_get_repl(const gmx_repl_ex_t re){
+  return re->repl;
+};
+
+int replica_exchange_get_nrepl(const gmx_repl_ex_t re){
+  return re->nrepl;
+};
+
