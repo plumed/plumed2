@@ -59,6 +59,10 @@ extern int    plumedswitch;
 extern plumed plumedmain;
 /* END PLUMED */
 
+/* PLUMED HREX */
+extern int plumed_hrex;
+/* END PLUMED HREX */
+
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
 
@@ -889,7 +893,7 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
 /* PLUMED */
 /* this is necessary because with plumed HREX the energy contribution is
    already taken into account */
-    if(getenv("PLUMED_HREX")) delta=0.0;
+    if(plumed_hrex) delta=0.0;
 /* END PLUMED */
 
     if (re->bNPT)
@@ -1002,6 +1006,8 @@ test_for_replica_exchange(FILE                 *fplog,
     /* PLUMED */
     int plumed_test_exchange_pattern=0;
     /* END PLUMED */
+
+    if(plumed_test_exchange_pattern && plumed_hrex) gmx_fatal(FARGS,"hrex not compatible with ad hoc exchange patterns");
 
     if (bMultiEx)
     {

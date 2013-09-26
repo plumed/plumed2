@@ -99,6 +99,11 @@ extern int    plumedswitch;
 extern plumed plumedmain;
 /* END PLUMED */
 
+/* PLUMED HREX */
+extern int plumed_hrex;
+/* END PLUMED HREX */
+
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -1139,9 +1144,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         GMX_MPE_LOG(ev_timestep2);
 
+
         gmx_bool bHREX;
-        bHREX= repl_ex_nst > 0 && (step>0) && !bLastStep && do_per_step(step,repl_ex_nst)
-            && getenv("PLUMED_HREX");
+        bHREX= repl_ex_nst > 0 && (step>0) && !bLastStep && do_per_step(step,repl_ex_nst) && plumed_hrex;
 
 /* Hamiltonian Replica Exchange */
         if(plumedswitch) if(bHREX){
