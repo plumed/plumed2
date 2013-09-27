@@ -110,7 +110,7 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::vector<std::string>& 
          log.printf("  examining all possible secondary structure combinations");
       } else {
          log.printf("  examining secondary struture in residue poritions : %s ",resstrings[0].c_str() );
-         for(unsigned i=1;i<resstrings.size();++i) log.printf(", %s",resstrings[1].c_str() );
+         for(unsigned i=1;i<resstrings.size();++i) log.printf(", %s",resstrings[i].c_str() );
          log.printf("\n");
       }
   }
