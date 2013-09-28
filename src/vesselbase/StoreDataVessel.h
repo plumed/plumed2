@@ -65,10 +65,6 @@ protected:
 /// Finish the setup of the storage object by setting how much
 /// data has to be stored
   void completeSetup( const unsigned& , const unsigned& );
-/// Get the number of derivatives for the ith value
-  unsigned getNumberOfDerivatives( const unsigned& );
-/// Get one of the stored indexes
-  unsigned getStoredIndex( const unsigned& , const unsigned& );
 /// Return value of nspace
   unsigned getNumberOfDerivativeSpacesPerComponent() const ;
 /// Retrieve the values from the underlying ActionWithVessel
@@ -82,7 +78,7 @@ protected:
 /// Chain rule the vector and output derivatives to a value
   void chainRule( const unsigned& , const std::vector<double>&, Value* );
 /// Get the ibuf'th local derivative value
-  double getLocalDerivative( const unsigned& ibuf ) const ;
+  double getLocalDerivative( const unsigned& ibuf );
 /// Set the ibuf'th local derivative value
   void setLocalDerivative( const unsigned& ibuf, const double& val );
 public:
@@ -94,6 +90,10 @@ public:
   virtual void resize();
 /// Clear certain data before start of main loop
   void prepare();
+/// Get the number of derivatives for the ith value
+  unsigned getNumberOfDerivatives( const unsigned& );
+/// Get one of the stored indexes
+  unsigned getStoredIndex( const unsigned& , const unsigned& );
 /// Get a component of the stored vector
   double getComponent( const unsigned& , const unsigned& );
 /// Recalculate a vector - used in lowmem mode
@@ -163,7 +163,7 @@ unsigned StoreDataVessel::getNumberOfDerivatives( const unsigned& ival ){
 
 inline
 unsigned StoreDataVessel::getStoredIndex( const unsigned& ival, const unsigned& jindex ){
-  plumed_dbg_assert( ival<getAction()->getFullNumberOfTassks() && jindex<active_der[ival] );
+  plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() && jindex<active_der[ival] );
 
   unsigned kder;
   if( getAction()->lowmem ) kder = max_lowmem_stash + ival*getAction()->getNumberOfDerivatives();
@@ -173,7 +173,7 @@ unsigned StoreDataVessel::getStoredIndex( const unsigned& ival, const unsigned& 
 }
 
 inline
-double StoreDataVessel::getLocalDerivative( const unsigned& ibuf ) const {
+double StoreDataVessel::getLocalDerivative( const unsigned& ibuf ){
   plumed_dbg_assert( getAction()->lowmem && ibuf<local_derivatives.size() );
   return local_derivatives[ibuf];
 }

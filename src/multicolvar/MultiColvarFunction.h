@@ -38,6 +38,8 @@ private:
 /// Used for numerical derivatives
   Matrix<double> numder_store;
 protected:
+/// Get the total number of tasks that this calculation is based on
+  unsigned getFullNumberOfBaseTasks() const ;
 /// Get the index of the ith colvar we are using
   unsigned getColvarIndex( const unsigned& ) const;
 /// Get the position of one of the central atoms
@@ -62,6 +64,8 @@ protected:
   unsigned getNumberOfBaseMultiColvars() const ;
 /// Get an example of the underlying multicolvar
   MultiColvarBase* getBaseMultiColvar( const unsigned& icolv );
+/// Return the base multicolvar index that this colvar is a part of
+  unsigned getBaseColvarNumber( const unsigned& iatom ) const ;
 public:
   MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
@@ -102,6 +106,11 @@ bool MultiColvarFunction::same_index( const unsigned& code1, const unsigned& cod
   return ( code1==code2 );
 }
 
+inline
+unsigned MultiColvarFunction::getFullNumberOfBaseTasks() const {
+  return colvar_label.size();
+}
+
 
 inline
 unsigned MultiColvarFunction::getNumberOfBaseMultiColvars() const {
@@ -119,6 +128,11 @@ unsigned MultiColvarFunction::convertToLocalIndex( const unsigned& index, const 
   unsigned t1 = index;
   for(unsigned k=0;k<mcv_code;++k) t1 -= mybasemulticolvars[k]->getFullNumberOfTasks();
   return t1;
+}
+
+inline
+unsigned MultiColvarFunction::getBaseColvarNumber( const unsigned& iatom ) const {
+  return colvar_label[ current_atoms[iatom] ];
 }
 
 inline

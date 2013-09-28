@@ -55,7 +55,7 @@ Vector StoreCentralAtomsVessel::getPosition( const unsigned& iatom ){
 void StoreCentralAtomsVessel::performTask( const unsigned& itask ){
   mycolv->atomsWithCatomDer.deactivateAll();
   bool check=mycolv->setupCurrentAtomList( mycolv->getCurrentTask() );
-  plumed_dbg_assert( !check );
+  plumed_dbg_assert( check );
   Vector ignore = mycolv->retrieveCentralAtomPos();
 }
 

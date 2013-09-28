@@ -60,6 +60,8 @@ public:
   bool isPeriodic(){ return false; }
   bool isDensity(){ return true; }
   bool hasDifferentiableOrientation() const { return true; }
+  void addOrientationDerivatives( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, const std::vector<double>& weight, MultiColvarFunction* func ){}
+  void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 };
 
 PLUMED_REGISTER_ACTION(Density,"DENSITY")
@@ -84,6 +86,10 @@ double Density::compute(){
 Vector Density::getCentralAtom(){
    addCentralAtomDerivatives( 0, Tensor::identity() );
    return getPosition(0);
+}
+
+void Density::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
+   indices[jstore]=0; 
 }
 
 }

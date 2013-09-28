@@ -109,8 +109,6 @@ protected:
    Vessel* getPntrToVessel( const unsigned& i );
 /// Calculate the values of all the vessels
   void runAllTasks();
-/// Finish running all the calculations
-  void finishComputations();
 /// Resize all the functions when the number of derivatives change
   void resizeFunctions();
 /// This loops over all the vessels calculating them and also 
@@ -157,6 +155,8 @@ public:
   void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , Vessel* );
   virtual void mergeDerivatives( const unsigned& ider, const double& df );
   virtual void clearDerivativesAfterTask( const unsigned& );
+/// Finish running all the calculations
+  virtual void finishComputations();
 /// Are the base quantities periodic
   virtual bool isPeriodic()=0;
 /// What are the domains of the base quantities
@@ -232,7 +232,7 @@ inline
 void ActionWithVessel::setElementValue( const unsigned& ival, const double& val ){
   // Element 0 is reserved for the value we are accumulating
   // Element 1 is reserved for the normalization constant for calculating AVERAGES, normalized HISTOGRAMS
-  plumed_dbg_massert( !thisval_wasset[ival], "In action named " + getName() + " with label " + getLabel() );
+  // plumed_dbg_massert( !thisval_wasset[ival], "In action named " + getName() + " with label " + getLabel() );
   thisval[ival]=val;
   thisval_wasset[ival]=true;
 }
