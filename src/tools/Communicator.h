@@ -30,6 +30,7 @@
 #include <string>
 #include "Vector.h"
 #include "Tensor.h"
+#include "Matrix.h"
 
 namespace PLMD{
 
@@ -81,6 +82,11 @@ class Communicator{
     template <typename T> Data(std::vector<T>&v){
       if(v.size()>0){ Data d(&v[0],v.size()); pointer=d.pointer; size=d.size; type=d.type; }
       else { pointer=NULL; size=0; }
+    }
+/// Init from reference to PLMD::Matrix
+    template <typename T> Data(Matrix<T>&m ){
+      if(m.nrows()*m.ncols()>0){ Data d(&m(0,0),m.nrows()*m.ncols()); pointer=d.pointer; size=d.size; type=d.type; }
+      else{ pointer=NULL; size=0; } 
     }
 /// Init from reference to std::string
     Data(std::string&s){
