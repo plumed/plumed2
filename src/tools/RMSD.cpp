@@ -270,10 +270,10 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   double rr11=sum11w*invnorm;
 
   Matrix<double> m=Matrix<double>(4,4);
-  m[0][0]=rr00+rr11+2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
-  m[1][1]=rr00+rr11+2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
-  m[2][2]=rr00+rr11+2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
-  m[3][3]=rr00+rr11+2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
+  m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
+  m[1][1]=2.0*(-rr01[0][0]+rr01[1][1]+rr01[2][2]);
+  m[2][2]=2.0*(+rr01[0][0]-rr01[1][1]+rr01[2][2]);
+  m[3][3]=2.0*(+rr01[0][0]+rr01[1][1]-rr01[2][2]);
   m[0][1]=2.0*(-rr01[1][2]+rr01[2][1]);
   m[0][2]=2.0*(+rr01[0][2]-rr01[2][0]);
   m[0][3]=2.0*(-rr01[0][1]+rr01[1][0]);
@@ -287,6 +287,26 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   m[3][1] = m[1][3];
   m[3][2] = m[2][3];
 
+  Tensor dm_drr01[4][4];
+  if(!alEqDis){
+    dm_drr01[0][0] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,-1.0);
+    dm_drr01[1][1] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,+1.0, 0.0,  0.0, 0.0,+1.0);
+    dm_drr01[2][2] = 2.0*Tensor(+1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,+1.0);
+    dm_drr01[3][3] = 2.0*Tensor(+1.0, 0.0, 0.0,  0.0,+1.0, 0.0,  0.0, 0.0,-1.0);
+    dm_drr01[0][1] = 2.0*Tensor( 0.0, 0.0, 0.0,  0.0, 0.0,-1.0,  0.0,+1.0, 0.0);
+    dm_drr01[0][2] = 2.0*Tensor( 0.0, 0.0,+1.0,  0.0, 0.0, 0.0, -1.0, 0.0, 0.0);
+    dm_drr01[0][3] = 2.0*Tensor( 0.0,-1.0, 0.0, +1.0, 0.0, 0.0,  0.0, 0.0, 0.0);
+    dm_drr01[1][2] = 2.0*Tensor( 0.0,-1.0, 0.0, -1.0, 0.0, 0.0,  0.0, 0.0, 0.0);
+    dm_drr01[1][3] = 2.0*Tensor( 0.0, 0.0,-1.0,  0.0, 0.0, 0.0, -1.0, 0.0, 0.0);
+    dm_drr01[2][3] = 2.0*Tensor( 0.0, 0.0, 0.0,  0.0, 0.0,-1.0,  0.0,-1.0, 0.0);
+    dm_drr01[1][0] = dm_drr01[0][1];
+    dm_drr01[2][0] = dm_drr01[0][2];
+    dm_drr01[2][1] = dm_drr01[1][2];
+    dm_drr01[3][0] = dm_drr01[0][3];
+    dm_drr01[3][1] = dm_drr01[1][3];
+    dm_drr01[3][2] = dm_drr01[2][3];
+  }
+
   vector<double> eigenvals;
   Matrix<double> eigenvecs;
   int diagerror=diagMat(m, eigenvals, eigenvecs );
@@ -298,11 +318,30 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     plumed_merror(msg);
   }
 
-  dist=eigenvals[0];
+  dist=eigenvals[0]+rr00+rr11;
 
   Matrix<double> ddist_dm(4,4);
 
   Vector4d q(eigenvecs[0][0],eigenvecs[0][1],eigenvecs[0][2],eigenvecs[0][3]);
+
+  Tensor dq_drr01[4];
+  if(!alEqDis){
+    double dq_dm[4][4][4];
+    for(unsigned i=0;i<4;i++) for(unsigned j=0;j<4;j++) for(unsigned k=0;k<4;k++){
+      double tmp=0.0;
+// perturbation theory for matrix m
+      for(unsigned l=1;l<4;l++) tmp+=eigenvecs[l][j]*eigenvecs[l][i]/(eigenvals[0]-eigenvals[l])*eigenvecs[0][k];
+      dq_dm[i][j][k]=tmp;
+    }
+// propagation to _drr01
+    for(unsigned i=0;i<4;i++){
+      Tensor tmp;
+      for(unsigned j=0;j<4;j++) for(unsigned k=0;k<4;k++) {
+        tmp+=dq_dm[i][j][k]*dm_drr01[j][k];
+      }
+      dq_drr01[i]=tmp;
+    }
+  }
 
 // This is the rotation matrix that brings reference to positions
 // i.e. matmul(rotation,reference[iat])+shift is fitted to positions[iat]
@@ -318,8 +357,21 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   rotation[2][0]=2*(+q[0]*q[2]+q[1]*q[3]);
   rotation[2][1]=2*(-q[0]*q[1]+q[2]*q[3]);
 
+  
+  Tensor drotation_drr01[3][3];
+  if(!alEqDis){
+    drotation_drr01[0][0]=2*q[0]*dq_drr01[0]+2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
+    drotation_drr01[1][1]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]+2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
+    drotation_drr01[2][2]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]+2*q[3]*dq_drr01[3];
+    drotation_drr01[0][1]=2*(+(q[0]*dq_drr01[3]+dq_drr01[0]*q[3])+(q[1]*dq_drr01[2]+dq_drr01[1]*q[2]));
+    drotation_drr01[0][2]=2*(-(q[0]*dq_drr01[2]+dq_drr01[0]*q[2])+(q[1]*dq_drr01[3]+dq_drr01[1]*q[3]));
+    drotation_drr01[1][2]=2*(+(q[0]*dq_drr01[1]+dq_drr01[0]*q[1])+(q[2]*dq_drr01[3]+dq_drr01[2]*q[3]));
+    drotation_drr01[1][0]=2*(-(q[0]*dq_drr01[3]+dq_drr01[0]*q[3])+(q[1]*dq_drr01[2]+dq_drr01[1]*q[2]));
+    drotation_drr01[2][0]=2*(+(q[0]*dq_drr01[2]+dq_drr01[0]*q[2])+(q[1]*dq_drr01[3]+dq_drr01[1]*q[3]));
+    drotation_drr01[2][1]=2*(-(q[0]*dq_drr01[1]+dq_drr01[0]*q[1])+(q[2]*dq_drr01[3]+dq_drr01[2]*q[3]));
+  }
+
   double prefactor=2.0*invnorm;
-  Vector shift=cpositions-matmul(rotation,creference);
 
   if(!squared && alEqDis) prefactor*=0.5/sqrt(dist);
 
@@ -330,45 +382,39 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 // If safe is set to "true", MSD is recomputed from the rotational matrix
 // For some reason, this last approach leads to less numerical noise but adds an overhead
 
+  Tensor ddist_drotation;
+  Vector ddist_dcpositions;
+
 // third expensive loop: derivatives
   for(unsigned iat=0;iat<n;iat++){
+    Vector d(positions[iat]-cpositions - matmul(rotation,reference[iat]-creference));
+    if(alEqDis){
 // there is no need for derivatives of rotation and shift here as it is by construction zero
 // (similar to Hellman-Feynman forces)
-    Vector d(positions[iat]-shift - matmul(rotation,reference[iat]));
-    if(alEqDis){
       derivatives[iat]= prefactor*align[iat]*d;
        if(safe) dist+=align[iat]*invnorm*modulo2(d);
     } else {
+// the case for align != displace is different, sob:
       dist+=displace[iat]*invdnorm*modulo2(d);
 // these are the derivatives assuming the roto-translation as frozen
       derivatives[iat]=2*displace[iat]*invdnorm*d;
+// here I accumulate derivatives wrt rotation matrix ..
+      ddist_drotation+=-2*displace[iat]*invdnorm*extProduct(d,reference[iat]-creference);
+// .. and cpositions
+      ddist_dcpositions+=-2*displace[iat]*invdnorm*d;
     }
   }
 
   if(!alEqDis){
-// Here we have to recover the correct derivatives.
-// Instead of computing explicitly the derivatives of the rotational matrix
-// we enforce that the final result is invariant wrt translation and rotation.
-// If we interpret these derivatives as forces, this amounts in
-// setting to zero the total force and torque.
-
-// This is the inertia matrix:
-    Tensor I;
+    Tensor ddist_drr01;
+    for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) ddist_drr01+=ddist_drotation[i][j]*drotation_drr01[i][j];
     for(unsigned iat=0;iat<n;iat++){
-      Vector p=positions[iat]-cpositions;
-      I+=align[iat]*(Tensor::identity()*modulo2(p)-Tensor(p,p));
+// this is propagating to positions.
+// I am implicitly using the derivative of rr01 wrt positions here
+      derivatives[iat]+=matmul(ddist_drr01,(reference[iat]-creference))*align[iat]*invnorm;
+      derivatives[iat]+=ddist_dcpositions*align[iat]*invnorm;
     }
-// Total force:
-    Vector lin; for(unsigned iat=0;iat<n;iat++) lin+=derivatives[iat];
-// Remove from each atom a force proportional to its weight
-    for(unsigned iat=0;iat<n;iat++) derivatives[iat]-=lin*align[iat]*invnorm;
-// Total torque:
-    Vector omega; for(unsigned iat=0;iat<n;iat++) omega+=crossProduct(positions[iat]-cpositions,derivatives[iat]);
-    omega=matmul(inverse(I),omega);
-// Remove from each atom a torque proportional to its weight
-    for(unsigned iat=0;iat<n;iat++) derivatives[iat]-=crossProduct(omega,positions[iat]-cpositions)*align[iat];
   }
-
   if(!squared){
     dist=sqrt(dist);
     if(!alEqDis){
