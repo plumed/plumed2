@@ -3,6 +3,11 @@
 nerror=0
 nok=0
 notapp=0
+html=
+
+if [ "$1" == --html ] ; then
+html=1
+fi
 
 echo
 echo
@@ -10,7 +15,13 @@ echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "+ Test session ended at $(date)"
 
 dirs=$(
-  for file in rt*/Makefile
+  for mod in `./scripts/find_modules.sh` ; do 
+    for file in $mod/rt*/Makefile
+    do
+      echo ${file%Makefile}
+    done
+  done
+  for file in basic/rt*/Makefile
   do
     echo ${file%Makefile}
   done
@@ -20,14 +31,18 @@ dirs=$(
 for dir in $dirs
 do
   file=${dir}report.txt
+  fullname="$file"
+  if [ -n "$html" ] ; then
+    fullname='<a href="'"$file"'">'"$file"'</a>'
+  fi
   if grep -q NOT_APPLIABLE $file ; then
     ((notapp++))
     echo + test $dir NOT APPLIABLE
-    echo + check file $file for more information
+    echo + check file $fullname for more information
   elif grep -q FAILURE $file ; then
     ((nerror++))
     echo + ERROR in test $dir
-    echo + check file $file for more information
+    echo + check file $fullname for more information
   else
     ((nok++))
   fi

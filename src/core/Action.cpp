@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -58,6 +58,7 @@ Action::Action(const ActionOptions&ao):
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),
+  multi_sim_comm(plumed.multi_sim_comm),
   keywords(ao.keys)
 {
   line.erase(line.begin());
@@ -211,6 +212,14 @@ void Action::calculateFromPDB( const PDB& pdb ){
   }
   readAtomsFromPDB( pdb );
   calculate();
+}
+
+bool Action::getExchangeStep()const{
+  return plumed.getExchangeStep();
+}
+
+std::string Action::cite(const std::string&s){
+  return plumed.cite(s);
 }
 
 

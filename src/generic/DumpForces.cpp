@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -60,10 +60,10 @@ public ActionWithArguments
   string file;
   OFile of;
 public:
-  void calculate(){};
+  void calculate(){}
   DumpForces(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){};
+  void apply(){}
   void update();
   ~DumpForces();
 };
@@ -87,7 +87,7 @@ ActionWithArguments(ao)
   parse("FILE",file);
   if( file.length()==0 ) error("name of file was not specified");
   of.link(*this);
-  of.open(file,"wa");
+  of.open(file);
   log.printf("  on file %s\n",file.c_str());
   if( getNumberOfArguments()==0 ) error("no arguments have been specified");
   checkRead();
@@ -99,7 +99,7 @@ void DumpForces::update(){
   of.printField("time",getTime());
   for(unsigned i=0;i<getNumberOfArguments();i++){
     of.fmtField(" %15.10f").printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getForce());
-  };
+  }
   of.printField();
 }
 

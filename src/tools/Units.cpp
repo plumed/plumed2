@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -44,6 +44,8 @@ void Units::setEnergy(const std::string &s){
     energy=4.184;
   } else if(s=="j/mol"){
     energy=0.001;
+  } else if(s=="eV"){
+    energy=96.48530749925792;
   } else {
     energy=-1.0;
     energyString="";

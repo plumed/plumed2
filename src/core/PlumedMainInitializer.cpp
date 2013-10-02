@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -71,7 +71,7 @@ static class PlumedMainInitializer{
   PlumedMainInitializer(){
     plumed_plumedmain_function_holder fh={plumedmain_create,plumedmain_cmd,plumedmain_finalize};
     plumed_kernel_register(&fh);
-  };
+  }
 } RegisterMe;
 
 }

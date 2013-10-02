@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -29,17 +29,11 @@ namespace colvar{
 
 //+PLUMEDOC COLVAR PROPERTYMAP 
 /*
-The implementation of this collective variable is based on the \ref PATHMSD.
+Calculate generic property maps.
 
-A typical input is
+This Colvar calculates the property maps according to the work of Spiwok \cite Spiwok:2011ce.
 
-\par Examples
-\verbatim
-p3: PROPERTYMAP REFERENCE=../../trajectories/path_msd/allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=0.2
-PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
-\endverbatim
 
-where it calculates the property maps according to the work of Spiwok \cite Spiwok:2011ce 
 Basically it calculates
 \f{eqnarray}
 X=\frac{\sum_i X_i*\exp(-\lambda D_i(x))}{\sum_i  \exp(-\lambda D_i(x))} \\
@@ -50,6 +44,16 @@ zzz=-\frac{1}{\lambda}\log(\sum_i  \exp(-\lambda D_i(x)))
 
 where the parameters \f$X_i\f$  and  \f$Y_i\f$ are provided in the input pdb (allv.pdb in this case) and  
  \f$D_i(x)\f$  is the MSD after optimal alignment calculated on the pdb frames you input (see Kearsley).
+
+\par Examples
+\verbatim
+p3: PROPERTYMAP REFERENCE=../../trajectories/path_msd/allv.pdb PROPERTY=X,Y LAMBDA=69087 NEIGH_SIZE=8 NEIGH_STRIDE=4
+PRINT ARG=p3.X,p3.Y,p3.zzz STRIDE=1 FILE=colvar FMT=%8.4f
+\endverbatim
+
+note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
+recommended for performance) and states that the neighbor list will be calculated every 4
+timesteps and consider only the closest 8 member to the actual md snapshots.
 
 In this case the input line instructs plumed to look for two properties X and Y with attached values in the REMARK 
 line of the reference pdb (Note: No spaces from X and = and 1 !!!!).
@@ -67,6 +71,11 @@ ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
 ....
 END
 \endverbatim
+
+\note
+The implementation of this collective variable and of \ref PATHMSD
+is shared, as well as most input options.
+
 */
 //+ENDPLUMEDOC
    

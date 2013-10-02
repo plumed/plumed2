@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -69,7 +69,6 @@ df(2)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_massert( mycolv, "DHENERGY can only be used with MultiColvars and should only be used with DISTANCES");
-  std::vector<std::string> data=Tools::getWords(da.parameters);
 
   parse("I",I); parse("TEMP",T); parse("EPSILON",epsilon);
   
@@ -81,7 +80,7 @@ df(2)
 
 std::string DHEnergy::function_description(){
   std::ostringstream ostr;
-  ostr<<"the Debye-Huckel interaction energy "<<getAction()->plumed.cite("Do, Carloni, Varani and Bussi, submitted (2013)")<<"."; 
+  ostr<<"the Debye-Huckel interaction energy "<<getAction()->plumed.cite("Do, Carloni, Varani and Bussi, J. Chem. Theory Comput. 9, 1720 (2013)")<<"."; 
   ostr<<" Parameters : temperature "<<T<<" K, ionic strength "<<I<<" M, ";
   ostr<<"solvent dielectric constant "<<epsilon;
   return ostr.str();
@@ -94,9 +93,9 @@ bool DHEnergy::calculate(){
   double invdistance = 1.0 / val;
   double f=exp(-k*val)*invdistance*constant*mycolv->getCharge(0)*mycolv->getCharge(1)/epsilon;
   double dval=-(k+invdistance)*f; 
-  bool addval=addValue(0,f);
-  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, dval, this ); 
-  return addval;
+  addValueIgnoringTolerance(0,f);
+  getAction()->chainRuleForElementDerivatives( 0, 0, dval, this ); 
+  return true;
 }
 
 void DHEnergy::finish(){

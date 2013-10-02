@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -82,8 +82,8 @@ public:
 // active methods:
   virtual double compute( const unsigned& j );
 /// Returns the number of coordinates of the field
-  unsigned getNumberOfFieldDerivatives();
   bool isPeriodic(){ return false; }
+  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
@@ -111,10 +111,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-unsigned Distances::getNumberOfFieldDerivatives(){
-  return 3*getNumberOfAtoms() + 9;
-} 
-
 double Distances::compute( const unsigned& j ){
    Vector distance; 
    distance=getSeparation( getPosition(0), getPosition(1) );
@@ -126,6 +122,12 @@ double Distances::compute( const unsigned& j ){
    addAtomsDerivatives( 1, invvalue*distance );
    addBoxDerivatives( -invvalue*Tensor(distance,distance) );
    return value;
+}
+
+Vector Distances::getCentralAtom(){
+   addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
+   addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
+   return 0.5*( getPosition(0) + getPosition(1) );
 }
 
 }

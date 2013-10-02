@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -85,9 +85,11 @@ public:
 /// Get a reference to force on energy
   double & modifyForceOnEnergy();
 /// Get number of available atoms
-  unsigned getNumberOfAtoms()const{return indexes.size();};
+  unsigned getNumberOfAtoms()const{return indexes.size();}
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
+/// Get the vector of absolute indexes
+  const std::vector<AtomNumber> & getAbsoluteIndexes()const;
 /// Get the absolute index of an atom
   AtomNumber getAbsoluteIndex(int i)const;
 /// Parse a list of atoms without a numbered keyword
@@ -112,6 +114,9 @@ public:
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
 /// are doing.  The default will be correct for the vast majority of cases
   virtual void   calculateNumericalDerivatives( ActionWithValue* a=NULL );
+/// Numerical derivative routine to use when using Actions that inherit from BOTH 
+/// ActionWithArguments and ActionAtomistic
+  void calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum );
 
   void retrieveAtoms();
   void applyForces();
@@ -137,6 +142,11 @@ inline
 double ActionAtomistic::getCharge(int i) const {
   if( !chargesWereSet ) error("charges were not passed to plumed");
   return charges[i];
+}
+
+inline
+const std::vector<AtomNumber> & ActionAtomistic::getAbsoluteIndexes()const{
+  return indexes;
 }
 
 inline

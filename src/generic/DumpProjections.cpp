@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -44,10 +44,10 @@ public ActionWithArguments
   string fmt;
   OFile of;
 public:
-  void calculate(){};
+  void calculate(){}
   DumpProjections(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){};
+  void apply(){}
   void update();
   bool checkNeedsGradients()const{return true;}
   ~DumpProjections();
@@ -75,7 +75,7 @@ fmt("%15.10f")
   if( file.length()==0 ) error("filename not specified");
   parse("FMT",fmt);
   fmt=" "+fmt;
-  of.open(file.c_str(),"wa");
+  of.open(file);
   log.printf("  on file %s\n",file.c_str());
   log.printf("  with format %s\n",fmt.c_str());
   checkRead();
@@ -89,7 +89,7 @@ void DumpProjections::update(){
       of.fmtField(fmt);
       of.printField(getPntrToArgument(i)->getName()+"-"+getPntrToArgument(j)->getName(),getProjection(i,j));
     }
-  };
+  }
   of.printField();
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -44,6 +44,9 @@ class ActionWithArguments:
 {
   std::vector<Value*> arguments;
   bool lockRequestArguments;
+protected:
+/// This changes the arg keyword in the pdb file
+  void expandArgKeywordInPDB( PDB& pdb );
 public:
 /// Get the scalar product between the gradients of two variables
   double getProjection(unsigned i,unsigned j)const;
@@ -63,9 +66,11 @@ public:
   void parseArgumentList(const std::string&key,std::vector<Value*>&args);
 /// Setup the dependencies
   void requestArguments(const std::vector<Value*> &arg);
+/// Add forces to arguments (used in apply)
+  void addForcesOnArguments( const std::vector<double>& forces );
 public:
   ActionWithArguments(const ActionOptions&);
-  virtual ~ActionWithArguments(){};
+  virtual ~ActionWithArguments(){}
 /// Calculate the numerical derivatives
 /// N.B. only pass an ActionWithValue to this routine if you know exactly what you 
 /// are doing.  The default will be correct for the vast majority of cases
@@ -74,6 +79,8 @@ public:
   void unlockRequests();
 /// Returns an array of pointers to the arguments
   std::vector<Value*>    & getArguments();
+/// Convert a list of argument names into a list of pointers to the values
+  void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
 };
 
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -35,13 +35,22 @@ This command instructs plumed to flush all the open files with a user specified 
 
 This
 is useful for preventing data loss that would otherwise arrise as a consequence of the code
-storing data for printing in the buffers
+storing data for printing in the buffers. Notice that wherever it is written in the 
+plumed input file, it will flush all the open files.
 
 \par Examples
 A command like this in the input will instruct plumed to flush all the output files every 100 steps
 \verbatim
+d1: DISTANCE ATOMS=1,10
+PRINT ARG=d1 STRIDE=5 FILE=colvar1
+
 FLUSH STRIDE=100
+
+d2: DISTANCE ATOMS=2,11
+# also this print is flushed every 100 steps:
+PRINT ARG=d2 STRIDE=10 FILE=colvar2
 \endverbatim
+(see also \ref DISTANCE and \ref PRINT).
 */
 //+ENDPLUMEDOC
 
@@ -56,7 +65,7 @@ public:
     checkRead();
   }
   static void registerKeywords( Keywords& keys );
-  void calculate(){};
+  void calculate(){}
   void apply(){
     plumed.fflush();
     log.flush();

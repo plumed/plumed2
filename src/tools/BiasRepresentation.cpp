@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -113,7 +113,7 @@ KernelFunctions* BiasRepresentation::readFromPoint(IFile *ifile){
          ifile->scanField(names[i],cc[i]);
         }
         double h=1.0; 
-	return new KernelFunctions(cc,histosigma,"gaussian",h,false);	
+	return new KernelFunctions(cc,histosigma,"gaussian",false,h,false);	
 }
 void BiasRepresentation::pushKernel( IFile *ifile ){
         KernelFunctions *kk;
@@ -242,7 +242,7 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 }
 void BiasRepresentation::clear(){
         // clear the hills
-	for(vector<KernelFunctions*>::const_iterator it = hills.begin(); it != hills.end(); it++)
+	for(vector<KernelFunctions*>::const_iterator it = hills.begin(); it != hills.end(); ++it)
         {
 	    delete *it;
         } 

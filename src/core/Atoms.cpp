@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -98,8 +98,8 @@ void Atoms::setVirial(void*p){
 
 void Atoms::setEnergy(void*p){
   plumed_massert( dataCanBeSet ,"setEnergy must be called after setStep in MD code interface");
-  MD2double(p,energy);
-  energy*=MDUnits.getEnergy()/units.getEnergy();
+  MD2double(p,md_energy);
+  md_energy*=MDUnits.getEnergy()/units.getEnergy();
   energyHasBeenSet=true;
 }
 
@@ -202,6 +202,8 @@ void Atoms::wait(){
     dd.Bcast(&box[0][0],9,0);
   }
   pbc.setBox(box);
+
+  if(collectEnergy) energy=md_energy;
 
   if(dd && int(gatindex.size())<natoms){
 // receive toBeReceived

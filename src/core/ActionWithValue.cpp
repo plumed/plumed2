@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -132,7 +132,6 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ){
 
 int ActionWithValue::getComponent( const std::string& name ) const {
   plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
-  plumed_massert(name!=getLabel(),"You should never be calling this routine to retrieve the value");
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0;i<values.size();++i){
      if (values[i]->name==thename) return i;
@@ -143,9 +142,18 @@ int ActionWithValue::getComponent( const std::string& name ) const {
 
 std::string ActionWithValue::getComponentsList( ) const {
   std::string complist;
-  plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
+  //plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
   for(unsigned i=0;i<values.size();++i){
      complist+=values[i]->name+" ";
+  }
+  return complist;
+}
+
+std::vector<std::string> ActionWithValue::getComponentsVector( ) const {
+  std::vector<std::string> complist;
+  //plumed_massert( !exists( getLabel() ), "You should not be calling this routine if you are using a value");
+  for(unsigned i=0;i<values.size();++i){
+     complist.push_back(values[i]->name);
   }
   return complist;
 }

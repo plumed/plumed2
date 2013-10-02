@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -65,6 +65,8 @@ public:
   static bool getParsedLine(IFile&ifile,std::vector<std::string> & line);
 /// Convert a string to a double, reading it
   static bool convert(const std::string & str,double & t);
+/// Convert a string to a float, reading it
+  static bool convert(const std::string & str,float & t);
 /// Convert a string to a int, reading it
   static bool convert(const std::string & str,int & t);
 /// Convert a string to a long int, reading it
@@ -110,6 +112,15 @@ public:
   static std::vector<std::string> ls(const std::string&);
 /// removes leading and trailing blanks from a string
   static void stripLeadingAndTrailingBlanks( std::string& str );
+/// Extract the extensions from a file name.
+/// E.g.: extension("pippo.xyz")="xyz".
+/// It only returns extensions with a length between 1 and 4
+/// E.g.: extension("pippo.12345")="" whereas extenion("pippo.1234")="1234";
+/// It is also smart enough to detect "/", so that 
+/// extension("pippo/.t")="" whereas extension("pippo/a.t")="t"
+  static std::string extension(const std::string&);
+/// Fast int power
+  static double fastpow(double base,int exp);
 };
 
 template <class T>
@@ -154,6 +165,7 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
   return false;
 }
 
+/// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
 inline
 double Tools::pbc(double x){
   if(std::numeric_limits<int>::round_style == std::round_toward_zero) {
@@ -171,6 +183,25 @@ void Tools::convert(T i,std::string & str){
         std::ostringstream ostr;
         ostr<<i;
         str=ostr.str();
+}
+
+inline
+double Tools::fastpow(double base, int exp)
+{
+    if(exp<0){
+      exp=-exp;
+      base=1.0/base;
+    }
+    double result = 1.0;
+    while (exp)
+    {
+        if (exp & 1)
+            result *= base;
+        exp >>= 1;
+        base *= base;
+    }
+
+    return result;
 }
 
 }

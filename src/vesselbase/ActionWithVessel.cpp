@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -31,7 +31,14 @@ namespace PLMD{
 namespace vesselbase{
 
 void ActionWithVessel::registerKeywords(Keywords& keys){
-  keys.add("optional","TOL","when accumulating sums quantities that contribute less than this will be ignored.");
+  keys.add("optional","TOL","this keyword can be used to speed up your calculation. When accumulating sums in which the individual "
+                            "terms are numbers inbetween zero and one it is assumed that terms less than a certain tolerance "
+                            "make only a small contribution to the sum.  They can thus be safely ignored as can the the derivatives "
+                            "wrt these small quantities.");
+  keys.reserve("hidden","NL_TOL","this keyword can be used to speed up your calculation.  It must be used in conjuction with the TOL "
+                                   "keyword and the value for NL_TOL must be set less than the value for TOL.  This keyword ensures that "
+                                   "quantities, which are much less than TOL and which will thus not added to the sums being accumulated "
+                                   "are not calculated at every step. They are only calculated when the neighbor list is updated.");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.add( vesselRegister().getKeywords() );
 }
@@ -40,14 +47,23 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   Action(ao),
   read(false),
   serial(false),
+  contributorsAreUnlocked(false),
   weightHasDerivatives(false)
 {
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
   else serial=true;
   if(serial)log.printf("  doing calculation in serial\n");
-  tolerance=epsilon; 
+  tolerance=nl_tolerance=epsilon; 
   if( keywords.exists("TOL") ) parse("TOL",tolerance);
-  if( tolerance>epsilon) log.printf(" Ignoring contributions less than %lf\n",tolerance);
+  if( tolerance>epsilon){
+     if( keywords.exists("NL_TOL") ) parse("NL_TOL",nl_tolerance);
+     if( nl_tolerance>tolerance ) error("NL_TOL must be smaller than TOL"); 
+     log.printf(" Ignoring contributions less than %lf",tolerance);
+     if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %lf inbetween neighbor list update steps\n",nl_tolerance);
+     else log.printf("\n");
+  }
+  // Setup stuff for communicating what tasks have been deactivated across all nodes
+  taskList.setupMPICommunication( comm );
 }
 
 ActionWithVessel::~ActionWithVessel(){
@@ -65,12 +81,13 @@ void ActionWithVessel::addVessel( Vessel* vv ){
   if(!sv) functions.push_back(vv);
 }
 
-void ActionWithVessel::addBridgingVessel( ActionWithVessel* tome, BridgeVessel* bv ){
+BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   read=true; VesselOptions da("","",0,"",this); 
-  bv=new BridgeVessel(da);
+  BridgeVessel* bv=new BridgeVessel(da);
   bv->setOutputAction( tome );
   functions.push_back( dynamic_cast<Vessel*>(bv) );
-  resizeFunctions(); 
+  resizeFunctions();
+  return bv; 
 }
 
 void ActionWithVessel::readVesselKeywords(){
@@ -126,7 +143,8 @@ void ActionWithVessel::resizeFunctions(){
   tmpforces.resize( getNumberOfDerivatives() );
 }
 
-void ActionWithVessel::deactivateCurrentTask(){
+void ActionWithVessel::deactivate_task(){
+  plumed_dbg_assert( contributorsAreUnlocked );
   for(unsigned i=0;i<taskList.fullSize();++i){
      if( taskList(i)==current ) taskList.deactivate(i);
   }
@@ -154,7 +172,6 @@ void ActionWithVessel::runAllTasks(){
   plumed_massert( read, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
-  unsigned nder=getNumberOfDerivatives();
   if(serial){ stride=1; rank=0; }
 
   // Make sure jobs are done
@@ -164,23 +181,25 @@ void ActionWithVessel::runAllTasks(){
       // Store the task we are currently working on
       current=taskList[i];
       // Calculate the stuff in the loop for this action
-      bool keep=performTask(i);
+      performTask(i);
+      // Weight should be between zero and one
+      plumed_dbg_assert( thisval[1]>=0 && thisval[1]<=1.0 );
 
       // Check for conditions that allow us to just to skip the calculation
-      // the condition is that the weight of the contribution is low
-      if( !keep ){
-         plumed_dbg_assert( thisval[1]<getTolerance() && !thisval_wasset[0] );
+      // the condition is that the weight of the contribution is low 
+      // N.B. Here weights are assumed to be between zero and one
+      if( thisval[1]<tolerance ){
          // Clear the derivatives
          clearAfterTask();  
-         // Deactivate task
-         deactivate_task();
+         // Deactivate task if it is less than the neighbor list tolerance
+         if( thisval[1]<nl_tolerance && contributorsAreUnlocked ) deactivate_task();
          continue;
       }
 
       // Now calculate all the functions
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
-      if( !calculateAllVessels() ) deactivate_task();
+      if( !calculateAllVessels() && contributorsAreUnlocked ) deactivate_task();
   }
   finishComputations();
 }
@@ -195,7 +214,7 @@ void ActionWithVessel::clearAfterTask(){
 
 void ActionWithVessel::clearDerivativesAfterTask( const unsigned& ider ){
   unsigned kstart=ider*getNumberOfDerivatives();
-  for(unsigned j=getFirstDerivativeToMerge();j<getNumberOfDerivatives();j=getNextDerivativeToMerge(j)) derivatives[ kstart+j ]=0.0;
+  for(unsigned j=0;j<getNumberOfDerivatives();++j) derivatives[ kstart+j ]=0.0;
 }
 
 bool ActionWithVessel::calculateAllVessels(){
@@ -233,30 +252,22 @@ void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, con
 
 void ActionWithVessel::mergeDerivatives( const unsigned& ider, const double& df ){
   unsigned nder=getNumberOfDerivatives(), vstart=nder*ider; 
-  for(unsigned i=getFirstDerivativeToMerge();i<getNumberOfDerivatives();i=getNextDerivativeToMerge(i)){
+  for(unsigned i=0;i<getNumberOfDerivatives();++i){
      accumulateDerivative( i, df*derivatives[vstart+i] ); 
   }
 }
 
-void ActionWithVessel::buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der ){
-  // Clear old derivative indexes
-  for(unsigned i=0;i<active_der.size();++i) active_der[i].clear();
-
-  // Build indexes
-  active_der.resize( getNumberOfFunctionsInAction() );
-  for(unsigned i=0;i<active_der.size();++i){
-    for(unsigned j=0;j<getNumberOfDerivatives();++j) active_der[i].addIndexToList( j );
-  }
-}
-
-void ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply ){
+bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply ){
   plumed_dbg_assert( forcesToApply.size()==getNumberOfDerivatives() );
   forcesToApply.assign( forcesToApply.size(),0.0 );
+  bool wasforced=false;
   for(int i=0;i<getNumberOfVessels();++i){
     if( (functions[i]->applyForce( tmpforces )) ){
+       wasforced=true;
        for(unsigned j=0;j<forcesToApply.size();++j) forcesToApply[j]+=tmpforces[j];
     }
   }
+  return wasforced;
 }
 
 void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){

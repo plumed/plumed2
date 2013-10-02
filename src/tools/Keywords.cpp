@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -181,7 +181,8 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
 } 
 
 void Keywords::addFlag( const std::string & k, const bool def, const std::string & d ){
-  plumed_assert( !exists(k) && !reserved(k) ); std::string defstr;
+  plumed_massert( !exists(k) && !reserved(k), "keyword " + k + " has already been registered"); 
+  std::string defstr;
   if( def ) { defstr="( default=on ) "; } else { defstr="( default=off ) "; }
   types.insert( std::pair<std::string,KeyType>(k,KeyType("flag")) );
   documentation.insert( std::pair<std::string,std::string>(k,defstr + d) );
@@ -360,18 +361,20 @@ void Keywords::print( FILE* out ) const {
   for(unsigned i=0;i<keys.size();++i){
      if ( (types.find(keys[i])->second).isCompulsory() ) nkeys++;
   }
+  unsigned ncompulsory=nkeys;
   if( nkeys>0 ){
      fprintf(out,"\nThe following arguments are compulsory: \n\n");
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isCompulsory() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
      }
   }
-  nkeys=0;
+  nkeys=0; 
   for(unsigned i=0;i<keys.size();++i){
-     if ( (types.find(keys[i])->second).isFlag() ) nkeys++;
+     if ( (types.find(keys[i])->second).isFlag() ) nkeys++; 
   }
   if( nkeys>0 ){
-     fprintf( out,"\nIn addition you may use the following options: \n\n");
+     if(ncompulsory>0) fprintf( out,"\nIn addition you may use the following options: \n\n");
+     else fprintf( out,"\nThe following options are available\n\n");
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isFlag() ) printKeyword( keys[i], out );   //log.printKeyword( keys[i], documentation[i] );
      }
@@ -488,7 +491,7 @@ bool Keywords::getLogicalDefault( std::string key, bool& def ) const {
 }
 
 bool Keywords::getDefaultValue( std::string key, std::string& def ) const {
-   plumed_assert( style(key,"compulsory") );
+   plumed_assert( style(key,"compulsory") || style(key,"hidden") );
 
    if( numdefs.find(key)!=numdefs.end() ){
       def=numdefs.find(key)->second;

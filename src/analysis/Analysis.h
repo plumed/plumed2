@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -78,6 +78,8 @@ private:
   bool firstAnalysisDone;
 /// The value of the old normalization constant
   double norm, old_norm;
+/// The format to use in output files
+  std::string ofmt;
 /// The checkpoint file
   OFile rfile;
 /// Read in data from a file
@@ -88,6 +90,10 @@ private:
 /// you probably need getNormalization()
   double retrieveNorm() const ;
 protected:
+/// This is used to read in output file names for analysis methods.  When
+/// this method is used and the calculation is not restarted old analysis
+/// files are backed up.
+  void parseOutputFile( const std::string& key, std::string& filename );
 /// Return the number of arguments (this overwrites the one in ActionWithArguments)
   unsigned getNumberOfArguments() const;
 /// Return the number of data points
@@ -100,13 +106,13 @@ protected:
   double getNormalization() const;
 /// Are we analyzing each data block separately (if we are not this also returns the old normalization )
   bool usingMemory() const; 
-/// Save the results in files from previous runs of the analysis algorithm
-  std::string saveResultsFromPreviousAnalyses( const std::string & filename );
 /// Convert the stored log weights to proper weights
   void finalizeWeights( const bool& ignore_weights );
 /// Overwrite ActionWithArguments getArguments() so that we don't return
 /// the bias
   std::vector<Value*> getArguments();
+/// Return the format to use for numbers in output files
+  std::string getOutputFormat() const ;
 public:
   static void registerKeywords( Keywords& keys );
   Analysis(const ActionOptions&);
@@ -166,6 +172,11 @@ std::vector<Value*> Analysis::getArguments(){
   std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
   for(unsigned i=0;i<biases.size();++i) arg_vals.erase(arg_vals.end()-1);
   return arg_vals;
+}
+
+inline
+std::string Analysis::getOutputFormat() const {
+  return ofmt;
 }
 
 }

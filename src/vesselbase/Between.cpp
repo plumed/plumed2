@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -82,23 +82,21 @@ std::string Between::function_description(){
 
 bool Between::calculate(){
   double weight=getAction()->getElementValue(1);
+  plumed_dbg_assert( weight>=getTolerance() );
   double val=getAction()->getElementValue(0);
   double dval, f = hist.calculate(val, dval);
 
-  bool addval2, addval=addValue(1,weight);
+  addValueIgnoringTolerance(1,weight);
+  double contr=weight*f;
+  bool addval=addValueUsingTolerance(0,contr);
   if( addval ){
-     addval2=addValue(0,weight*f);
-     if( addval2 ){
-        getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
-        if(diffweight) getAction()->chainRuleForElementDerivatives( 0, 1, f, this ); 
-        if(norm){
-           if(diffweight) getAction()->chainRuleForElementDerivatives( 1, 1, 1.0, this );
-           return addval;
-        }
+     getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
+     if(diffweight){
+        getAction()->chainRuleForElementDerivatives( 0, 1, f, this ); 
+        if(norm) getAction()->chainRuleForElementDerivatives( 1, 1, 1.0, this );
      }
-     return addval2;
   }
-  return addval;
+  return ( contr>getNLTolerance() );
 }
 
 void Between::finish(){

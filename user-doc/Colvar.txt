@@ -6,13 +6,13 @@ Chemical systems contain an enormous number atoms, which, in most cases makes it
 us to understand anything by monitoring the atom postions directly.  Consquentially,
 we introduce Collective variables (CVs) that describe the chemical processes we are 
 interested in and monitor these simpler quantities instead.  These CVs are used in all of the methods 
-implemented in plumed - they're values can be monitored using \ref PRINT, \ref Function of them can be calculated
-or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in plumed.  
-Before doing any of these things however we first have to inform plumed how to calculate them.    
+implemented in PLUMED - they're values can be monitored using \ref PRINT, \ref Function of them can be calculated
+or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in PLUMED.  
+Before doing any of these things however we first have to inform PLUMED how to calculate them.    
  
 \section atomSpecs Specifying Atoms
 
-The vast majority of the CVs implemented in plumed are calculated from a list of atom positions.  Within plumed
+The vast majority of the CVs implemented in PLUMED are calculated from a list of atom positions.  Within PLUMED
 atoms are always specified according to their numerical indices in the molecular dynamics input file.  This can
 be done either using a comma separated list of numbers or, if a long list atom of contiguous atoms is required, 
 by using the shortcut 10-100, which specifies all the atom indexes between 10 and 100 (including 10 and 100).  So for example:
@@ -27,11 +27,23 @@ could also be specified using:
 TORIONS ATOMS=1-4
 \endverbatim
 
+Ranges of atom can also be defined with a stride. For example:
+
+\verbatim
+COM ATOMS=1,11,21,31,41,51
+\endverbatim
+
+could also be specified using:
+
+\verbatim
+COM ATOMS=1-51:10
+\endverbatim
+
 In addition, for certain colvars, pdb files can be read in using the following keywords:
 
 @TOPOLOGY@
 
-The read in pdb files are used by plumed to define things like residues, the backbone atoms and so on.  These can then be
+The read in pdb files are used by PLUMED to define things like residues, the backbone atoms and so on.  These can then be
 used within the input to colvars to make inputting the lists of atoms involved more straightforward.  Documentation for 
 how these shortcuts can be used can be found in the documentation for the various CVs.
 
@@ -65,15 +77,15 @@ If you don't want to calculate CVs from the virtual atom.  That is to say you ju
 PLUMED is designed so that for the majority of the CVs implemented the periodic boundary conditions are treated 
 in the same manner as they would be treated in the host code.  In some codes this can be problematic when the colvars
 you are using involve some property of a molecule.  These codes allow the atoms in the molecules to become separated by 
-periodic boundaries, a fact which plumed could only deal with were the topology passed from the MD code to plumed.  Making this
+periodic boundaries, a fact which PLUMED could only deal with were the topology passed from the MD code to PLUMED.  Making this
 work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
 in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
-in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In plumed 1.0 this was done
-using the ALIGN_ATOMS keyword.  In plumed 2.0 the same effect can be acchieved using the \subpage WHOLEMOLECULES command.
+in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In PLUMED 1 this was done
+using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be acchieved using the \subpage WHOLEMOLECULES command.
 
 \section cvavail CV Documentation
 
-The following list contains all the colvars that are currently implemented in plumed 2.0.
+The following list contains all the colvars that are currently implemented in PLUMED 2.
 
 @COLVAR@
 
@@ -82,16 +94,16 @@ The following list contains all the colvars that are currently implemented in pl
 Often you do not need one of the collective variables described in the previous section.  What you want instead is a 
 function of a distribution of collective variables of a particular type.  For instance you might need to calculate a 
 minimum distance or the number of coordination numbers greater than a 3.0.  To avoid dupilcating the code to calculate
-an angle or distance many times and to make it easier to implement very complex collective variables plumed provides
+an angle or distance many times and to make it easier to implement very complex collective variables PLUMED provides
 these sort of collective variables using so-called MultiColvars.  MultiColvars are named in this way because a single
-plumed action can be used to calculate a number of different collective variables.  For instance the \ref DISTANCES
+PLUMED action can be used to calculate a number of different collective variables.  For instance the \ref DISTANCES
 action can be used to calculate the minimum distance, the number of distances less than a certain value, the number of
-distances within a certain range...  Descriptions as to how to use plumed to calculate these kinds of CVs are given
+distances within a certain range...  Descriptions as to how to use PLUMED to calculate these kinds of CVs are given
 below:
 
 @MCOLVAR@   
 
-To instruct plumed to calculate a multicolvar you give an instruction that looks something like this:
+To instruct PLUMED to calculate a multicolvar you give an instruction that looks something like this:
 
 \verbatim
 NAME <atoms involved> <parameters> <what am I calculating> TOL=0.001 LABEL=label
@@ -110,7 +122,7 @@ this sort of input is rather tedious so short cuts are also available many of th
 These are described on the manual pages for the actions.
  
 After specifying the atoms involved you sometimes need to specify some parameters that required in the 
-calculation.  For instance, for \ref COORDINATIONNUMBERS - the number of atoms in the first coordination
+calculation.  For instance, for \ref COORDINATIONNUMBER - the number of atoms in the first coordination
 sphere of each of the atoms in the system - you need to specify the parameters for a \ref switchingfunction
 that will tell us whether or not an atom is in the first coordination sphere.  Details as to how to do this
 are provided on the manual pages.  

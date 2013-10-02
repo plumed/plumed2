@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -50,7 +50,7 @@ public:
   Time(const ActionOptions&);
 // active methods:
   virtual void calculate();
-  virtual void apply(){};
+  virtual void apply(){}
 };
 
 PLUMED_REGISTER_ACTION(Time,"TIME")

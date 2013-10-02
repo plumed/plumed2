@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -32,7 +32,7 @@ using namespace std;
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNumber>& list1,
                            const bool& do_pair, const bool& do_pbc, const Pbc& pbc,
-                           const double& distance, const unsigned& stride):
+                           const double& distance, const unsigned& stride): reduced(false),
                            do_pair_(do_pair), do_pbc_(do_pbc), pbc_(&pbc),
                            distance_(distance), stride_(stride)
 {
@@ -54,7 +54,7 @@ NeighborList::NeighborList(const vector<AtomNumber>& list0, const vector<AtomNum
 
 NeighborList::NeighborList(const vector<AtomNumber>& list0, const bool& do_pbc,
                            const Pbc& pbc, const double& distance,
-                           const unsigned& stride):
+                           const unsigned& stride): reduced(false),
                            do_pbc_(do_pbc), pbc_(&pbc),
                            distance_(distance), stride_(stride){
  fullatomlist_=list0;
@@ -93,6 +93,7 @@ pair<unsigned,unsigned> NeighborList::getIndexPair(unsigned ipair) {
 
 void NeighborList::update(const vector<Vector>& positions) {
  neighbors_.clear();
+ const double d2=distance_*distance_;
 // check if positions array has the correct length 
  plumed_assert(positions.size()==fullatomlist_.size());
  for(unsigned int i=0;i<nallpairs_;++i){
@@ -105,8 +106,8 @@ void NeighborList::update(const vector<Vector>& positions) {
    } else {
     distance=delta(positions[index0],positions[index1]);
    }
-   double value=distance.modulo();
-   if(value<=distance_) {neighbors_.push_back(index);} 
+   double value=modulo2(distance);
+   if(value<=d2) {neighbors_.push_back(index);} 
  }
  setRequestList();
 }
@@ -118,22 +119,21 @@ void NeighborList::setRequestList() {
   requestlist_.push_back(fullatomlist_[neighbors_[i].second]);
  }
  Tools::removeDuplicates(requestlist_);
+ reduced=false;
 }
 
 vector<AtomNumber>& NeighborList::getReducedAtomList() {
- std::vector< pair<unsigned,unsigned> > newneighbors;
- for(unsigned int i=0;i<size();++i){
+ if(!reduced)for(unsigned int i=0;i<size();++i){
   unsigned newindex0=0,newindex1=0;
   AtomNumber index0=fullatomlist_[neighbors_[i].first];
   AtomNumber index1=fullatomlist_[neighbors_[i].second];
-  for(unsigned j=0;j<requestlist_.size();++j){
-   if(requestlist_[j]==index0) newindex0=j;
-   if(requestlist_[j]==index1) newindex1=j;
-  }
-  newneighbors.push_back(pair<unsigned,unsigned>(newindex0,newindex1));
+// I exploit the fact that requestlist_ is an ordered vector
+  vector<AtomNumber>::iterator p;
+  p = std::find(requestlist_.begin(), requestlist_.end(), index0); plumed_assert(p!=requestlist_.end()); newindex0=p-requestlist_.begin();
+  p = std::find(requestlist_.begin(), requestlist_.end(), index1); plumed_assert(p!=requestlist_.end()); newindex1=p-requestlist_.begin();
+  neighbors_[i]=pair<unsigned,unsigned>(newindex0,newindex1);
  }
- neighbors_.clear();
- neighbors_=newneighbors;
+ reduced=true;
  return requestlist_;
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -50,6 +50,7 @@ namespace PLMD{
 
 PlumedMain::PlumedMain():
   comm(*new Communicator),
+  multi_sim_comm(*new Communicator),
   dlloader(*new DLLoader),
   cltool(NULL),
   stopwatch(*new Stopwatch),
@@ -63,6 +64,7 @@ PlumedMain::PlumedMain():
   actionSet(*new ActionSet(*this)),
   bias(0.0),
   exchangePatterns(*new(ExchangePatterns)),
+  exchangeStep(false),
   restart(false),
   stopFlag(NULL),
   stopNow(false),
@@ -89,6 +91,7 @@ PlumedMain::~PlumedMain(){
   if(cltool) delete cltool;
   delete &dlloader;
   delete &comm;
+  delete &multi_sim_comm;
 }
 
 /////////////////////////////////////////////////////////////
@@ -248,7 +251,6 @@ void PlumedMain::cmd(const std::string & word,void*val){
 // only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
 // use as cmd("setNaturalUnits")
        CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setMDNaturalUnits(true);
   } else if(word=="setNoVirial"){
        CHECK_NOTINIT(initialized,word);
@@ -265,6 +267,9 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        comm.Set_fcomm(val);
        atoms.setDomainDecomposition(comm);
+  } else if(word=="setMPImultiSimComm"){
+       CHECK_NOTINIT(initialized,word);
+       multi_sim_comm.Set_comm(val);
   } else if(word=="setNatoms"){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
@@ -312,6 +317,10 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NULL(val,word);
        if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
        else                       *(static_cast<int*>(val))=0;
+  } else if(word=="getBias"){
+       CHECK_INIT(initialized,word);
+       CHECK_NULL(val,word);
+       *(static_cast<double*>(val))=getBias(); 
   } else {
 // multi word commands
 
@@ -353,18 +362,10 @@ void PlumedMain::init(){
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
   log<<"PLUMED compiled on " __DATE__ " at " __TIME__ "\n";
-  log<<"****  THIS IS AN EXPERIMENTAL VERSION ****\n";
-  log<<"More info on Google group 'plumed2-git'\n";
-  log<<"There is not yet a published paper describing this software.\n";
-  log<<"If you use it in a publication please explicitly state\n";
-  log<<"which version you are using and cite the previous paper:\n";
-  log<<"  M. Bonomi, D. Branduardi, G. Bussi, C. Camilloni, D. Provasi, P. Raiteri,\n";
-  log<<"  D. Donadio, F. Marinelli, F. Pietrucci, R. A. Broglia and M. Parrinello\n";
-  log<<"  PLUMED: a portable plugin for free-energy calculations with molecular dynamics\n";
-  log<<"  Comp. Phys. Comm. 180, 1961 (2009)\n";
-  log<<"For further information see the PLUMED web page at www.plumed-code.org\n";
-  log<<"List of registered actions:\n";
-  log<<actionRegister();
+  log<<"Please cite this paper when using PLUMED ";
+  log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. DOI:10.1016/j.cpc.2013.09.018 (2013)");
+  log<<"\n";
+  log<<"For further information see the PLUMED web page at http://www.plumed-code.org\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
@@ -391,7 +392,7 @@ void PlumedMain::readInputFile(std::string str){
   ifile.open(str);
   std::vector<std::string> words;
   exchangePatterns.setFlag(exchangePatterns.NONE);
-  while(Tools::getParsedLine(ifile,words)) readInputWords(words);
+  while(Tools::getParsedLine(ifile,words) && words[0]!="ENDPLUMED") readInputWords(words);
   log.printf("END FILE: %s\n",str.c_str());
   log.flush();	
 
@@ -405,11 +406,6 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words){
   else if(words[0]=="_SET_SUFFIX"){
     plumed_assert(words.size()==2);
     setSuffix(words[1]);
-  }
-  else if(words[0]=="RANDOM_EXCHANGES"){
-    exchangePatterns.setFlag(exchangePatterns.RANDOM);
-    // I convert the seed to -seed because I think it is more general to use a positive seed in input
-    if(words.size()>2&&words[1]=="SEED") {int seed; Tools::convert(words[2],seed); exchangePatterns.setSeed(-seed); }
   } else {
     std::vector<std::string> interpreted(words);
     Tools::interpretLabel(interpreted);

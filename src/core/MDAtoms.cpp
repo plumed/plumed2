@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -127,6 +127,7 @@ void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&
 
 template <class T>
 void MDAtomsTyped<T>::rescaleForces(const vector<int>&index,double factor){
+  if(virial) for(unsigned i=0;i<3;i++)for(unsigned j=0;j<3;j++) virial[3*i+j]*=T(factor);
   for(unsigned i=0;i<index.size();++i){
     fx[stride*i]*=T(factor);
     fy[stride*i]*=T(factor);

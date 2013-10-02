@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -53,17 +53,17 @@ class PathMSDBase : public Colvar {
   struct imgOrderByDist {
        bool operator ()(ImagePath const& a, ImagePath const& b) {
            return (a).distance < (b).distance;
-       };
+       }
   };
   struct imgOrderBySimilarity {
        bool operator ()(ImagePath const& a, ImagePath const& b) {
            return (a).similarity > (b).similarity;
-       };
+       }
   };
 
   double lambda;
   int neigh_size;
-  double neigh_stride;
+  int neigh_stride;
   std::vector<RMSD> msdv;
   std::string reference;
   std::vector<Vector> derivs_s;

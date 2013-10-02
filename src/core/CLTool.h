@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -95,9 +95,9 @@ public:
 /// virtual function mapping to the specific main for each tool
   virtual int main( FILE* in, FILE*out, Communicator&pc )=0;
 /// virtual function returning a one-line descriptor for the tool
-  virtual std::string description()const{return "(no description available)";};
+  virtual std::string description()const{return "(no description available)";}
 /// virtual destructor to allow inheritance
-  virtual ~CLTool(){};
+  virtual ~CLTool(){}
 };
 
 template<class T>

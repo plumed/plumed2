@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -59,6 +59,8 @@ df(2)
 {
   if( getAction()->isPeriodic() ) error("min is not a meaningful option for periodic variables");
   parse("BETA",beta);
+
+  if( diffweight ) error("can't calculate min if weight is differentiable");
 }
 
 std::string Min::function_description(){
@@ -67,15 +69,11 @@ std::string Min::function_description(){
 }
 
 bool Min::calculate(){
-  double weight=getAction()->getElementValue(1);
-  if( weight<getTolerance() ) return false;
-
   double val=getAction()->getElementValue(0);
   double dval, f = exp(beta/val); dval=f/(val*val);
-  bool addval=addValue(0,f);
-  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
-  if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
-  return addval;
+  addValueIgnoringTolerance(0,f);
+  getAction()->chainRuleForElementDerivatives( 0, 0, dval, this );
+  return true;
 }
 
 void Min::finish(){

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -69,11 +69,11 @@ public ActionWithArguments
   vector<Value*> rotateArguments;
 /////////////////////////////////////////
 public:
-  void calculate(){};
+  void calculate(){}
   void prepare();
   Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){};
+  void apply(){}
   void update();
   ~Print();
 };
@@ -101,7 +101,7 @@ rotate(0)
   ofile.link(*this);
   parse("FILE",file);
   if(file.length()>0){
-    ofile.open(file.c_str());
+    ofile.open(file);
     log.printf("  on file %s\n",file.c_str());
   } else {
     log.printf("  on plumed log file\n");
@@ -151,7 +151,7 @@ void Print::update(){
         ofile.fmtField(fmt);
         ofile.printField( getPntrToArgument(i), getArgument(i) );
         //ofile.printField(getPntrToArgument(i)->getName(),getArgument(i));
-      };
+      }
       ofile.printField();
 }
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -59,13 +59,13 @@ std::string Sum::function_description(){
 
 bool Sum::calculate(){
   double weight=getAction()->getElementValue(1);
-  if( weight<getTolerance() ) return false;
+  plumed_dbg_assert( weight>=getTolerance() );
 
   double val=getAction()->getElementValue(0);
-  bool addval=addValue(0,weight*val);
-  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
+  addValueIgnoringTolerance(0,weight*val);
+  getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
   if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, val, this);
-  return addval;
+  return true;
 }
 
 void Sum::finish(){

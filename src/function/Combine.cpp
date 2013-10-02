@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -48,8 +48,8 @@ its square (as computed from the x,y,z components) and the distance
 again as computed from the square root of the square.
 \verbatim
 DISTANCE LABEL=dist      ATOMS=3,5 COMPONENTS
-COMBINE  LABEL=distance2 ARG=dist.x,dist.y,dist.z POWERS=2,2,2
-COMBINE  LABEL=distance  ARG=distance2 POWERS=0.5
+COMBINE  LABEL=distance2 ARG=dist.x,dist.y,dist.z POWERS=2,2,2 PERIODIC=NO
+COMBINE  LABEL=distance  ARG=distance2 POWERS=0.5 PERIODIC=NO
 PRINT ARG=distance,distance2
 \endverbatim
 (See also \ref PRINT and \ref DISTANCE).

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -110,6 +110,10 @@ double OptimalAlignment::calculate(bool squared, std::vector<Vector> & derivativ
 
 	return err;
 }
+
+#ifdef __INTEL_COMPILER
+#pragma intel optimization_level 2
+#endif
 /// this does the weighed alignment if the vector of alignment is different from displacement
 double OptimalAlignment::weightedAlignment( bool rmsd){
 	double tmp0,tmp1,walign,wdisplace,const1,ret;

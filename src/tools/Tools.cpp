@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -61,6 +61,13 @@ bool Tools::convert(const string & str,AtomNumber &a){
   int i;
   bool r=convert(str,i);
   if(r) a.setSerial(i);
+  return r;
+}
+
+bool Tools::convert(const string & str,float & t){
+  double tt;
+  bool r=convert(str,tt);
+  t=double(tt);
   return r;
 }
 
@@ -226,15 +233,27 @@ void Tools::interpretRanges(std::vector<std::string>&s){
   for(vector<string>::iterator p=s.begin();p!=s.end();++p){
     vector<string> words;
     words=getWords(*p,"-");
-    int a,b;
-    if(words.size()==2 && convert(words[0],a) && convert(words[1],b)){
-      plumed_massert(b>=a,"interpreting range \"" + words[0] + "-" + words[1] +"\", second atom should have higher index than first atom");
-      for(int i=a;i<=b;i++){
-        string ss;
-        convert(i,ss);
-        news.push_back(ss);
+    int a;
+    bool found=false;
+    if(words.size()==2 && convert(words[0],a)){
+      int b,c=1;
+      vector<string> bwords=getWords(words[1],":");
+      if(bwords.size()==2 && convert(bwords[0],b) && convert(bwords[1],c)) found=true;
+      else if(convert(words[1],b)){
+        c=1;
+        found=true;
       }
-    }else news.push_back(*p);
+      if(found){
+        plumed_massert(b>=a,"interpreting ranges "+ *p + ", second number should be larger than first number");
+        plumed_massert(c>0,"interpreting ranges "+ *p + ", stride should be positive");
+        for(int i=a;i<=b;i+=c){
+          string ss;
+          convert(i,ss);
+          news.push_back(ss);
+        }
+      }
+    }
+    if(!found) news.push_back(*p);
   }
   s=news;
 }
@@ -264,7 +283,20 @@ vector<string> Tools::ls(const string&d){
 void Tools::stripLeadingAndTrailingBlanks( std::string& str ){
   std::size_t first=str.find_first_not_of(' ');
   std::size_t last=str.find_last_not_of(' ');
-  if( first<last ) str=str.substr(first,last+1);
+  if( first<=last && first!=std::string::npos) str=str.substr(first,last+1);
+}
+
+std::string Tools::extension(const std::string&s){
+  size_t n=s.find_last_of(".");
+  std::string ext;
+  if(n!=std::string::npos && n+1<s.length() && n+5>=s.length()){
+    ext=s.substr(n+1);
+    if(ext.find("/")!=std::string::npos) ext="";
+    string base=s.substr(0,n);
+    if(base.length()==0) ext="";
+    if(base.length()>0 && base[base.length()-1]=='/') ext="";
+  }
+  return ext;
 }
 
 }

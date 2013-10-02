@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -34,7 +34,7 @@ This Colvar calculates path collective variables.
 This is the Path Collective Variables implementation 
 ( see \cite brand07 ).
 This variable computes the progress along a given set of frames that is provided  
-in input ("s" component) and the distance from them ("z" component). 
+in input ("sss" component) and the distance from them ("zzz" component). 
 (see below).
 
 \par Examples
@@ -43,28 +43,18 @@ Here below is a case where you have defined three frames and you want to
 calculate the progress alng the path and the distance from it in p1
 
 \verbatim
-p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=1.0 NEIGH_SIZE=8 PROPERTY=X,Y 
-PRINT ARG=p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
+p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8 PROPERTY=X,Y
+PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 \endverbatim
 
-note that NEIGH_STRIDE=1.0 NEIGH_SIZE=8 control the neighborlist parameter (optional but
-recommended for perfomance)
-while PROPERTY=X,Y allows to do an "isomap" style kind of path (a-la Spiwok) 
-where property is in the form of a REMARK line (note no spaces!!!) in the REFERENCE
-e.g.
+note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
+recommended for performance) and states that the neighbor list will be calculated every 4
+timesteps and consider only the closest 8 member to the actual md snapshots.
 
-\verbatim
-REMARK X=1 Y=2 
-ATOM      1  CL  ALA     1      -3.171   0.295   2.045  1.00  1.00
-ATOM      5  CLP ALA     1      -1.819  -0.143   1.679  1.00  1.00
-.......
-END
-REMARK X=2 Y=3 
-ATOM      1  CL  ALA     1      -3.175   0.365   2.024  1.00  1.00
-ATOM      5  CLP ALA     1      -1.814  -0.106   1.685  1.00  1.00
-....
-END
-\endverbatim
+\note
+The implementation of this collective variable and of \ref PROPERTYMAP
+is shared, as well as most input options.
+
 
 */
 //+ENDPLUMEDOC

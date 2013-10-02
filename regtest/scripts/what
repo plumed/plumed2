@@ -7,7 +7,7 @@ for action in $(
           s/)/ /g' | awk '{print $3}' | sed -e 's/\([\"]\)//g'
 )
 do
-  if  ! grep -q $action $(plumed info --root)/regtest/rt*/plumed.dat
+  if  ! grep -q $action */rt*/plumed.dat
   then
     echo "WARNING : There are no regtests for action $action"
   fi

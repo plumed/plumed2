@@ -1,0 +1,26 @@
+MOLINFO STRUCTURE=helix.pdb
+
+# this change the interal plumed units to A
+# in this regtest, it will only affect output of xyz files
+# (which are by default in plumed units)
+UNITS LENGTH=A
+
+# full dump
+DUMPATOMS FILE=helix.gro ATOMS=1-132
+DUMPATOMS FILE=helix.xyz ATOMS=1-132
+# check that default fmt (unrecognized extension) is xyz
+DUMPATOMS FILE=helix     ATOMS=1-132
+DUMPATOMS FILE=helix.xy  ATOMS=1-132
+# enforce a different format:
+DUMPATOMS FILE=helix.ttt TYPE=gro
+
+# this is to test units (notice that .gro files are always in nm, even when not specified):
+DUMPATOMS FILE=helix-nm.gro ATOMS=1-132 UNITS=nm
+DUMPATOMS FILE=helix-nm.xyz ATOMS=1-132 UNITS=nm
+
+# dump only a subset, plus a fictitious atom (without molinfo data)
+c: COM ATOMS=1-6,127-132
+DUMPATOMS FILE=helix-sub.xyz ATOMS=1-6,127-132,c
+DUMPATOMS FILE=helix-sub.gro ATOMS=1-6,127-132,c
+
+

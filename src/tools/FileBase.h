@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -98,7 +98,7 @@ public:
 /// Check for error/eof.
   operator bool () const;
 /// Set heavyFlush flag
-  void setHeavyFlush(){ heavyFlush=true;};
+  void setHeavyFlush(){ heavyFlush=true;}
 /// Opens the file (without auto-backup)
   FileBase& open(const std::string&name,const std::string& mode);
 /// Check if the file exists

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -134,6 +134,8 @@ public:
   Value* copyOutput( const unsigned& n ) const;
 /// get a string that contains all the available components 
   std::string getComponentsList( ) const ;
+/// get a vector that contains the label for all the components
+  std::vector<std::string> getComponentsVector( ) const ;
 
 
 // -- Routines for everything else -- //
@@ -167,10 +169,8 @@ double ActionWithValue::getOutputQuantity(const unsigned j) const {
 inline
 double ActionWithValue::getOutputQuantity( const std::string& name ) const {
   std::string thename; thename=getLabel() + "." + name;
-  if( exists(thename) ){
-      for(unsigned i=0;i<values.size();++i){
-         if( values[i]->name==thename ) return values[i]->value;
-      }
+  for(unsigned i=0;i<values.size();++i){
+    if( values[i]->name==thename ) return values[i]->value;
   }
   return 0.0;
 }

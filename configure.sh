@@ -3,6 +3,12 @@
 
 rm -f sourceme.sh Makefile.conf
 
+if (($#==1)) ; then
+
+conf=$1
+
+else
+
 prefix=""
 case "$(uname)" in
 (Linux)  prefix=linux. ;;
@@ -18,8 +24,10 @@ do
   [[ -n "$conf" ]] && break
 done
 
-ln -s configurations/$conf Makefile.conf
+fi
 
+
+ln -s configurations/$conf Makefile.conf
 
 case "$conf" in
 (aix.*)
@@ -35,11 +43,16 @@ case "$conf" in
   SOEXT=so
 esac
 
-echo 'export PATH="$PATH:'"$PWD"'/src/lib/"' >> sourceme.sh
+echo 'export PATH="'"$PWD"'/src/lib/:$PATH"' >> sourceme.sh
 # this is just for mac:
-echo 'export DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH:'"$PWD"'/src/lib/"' >> sourceme.sh
+echo 'export DYLD_LIBRARY_PATH="'"$PWD"'/src/lib:$DYLD_LIBRARY_PATH"' >> sourceme.sh
 
 cat << EOF >> sourceme.sh
 export PLUMED_KERNEL="$PWD/src/lib/libplumedKernel.$SOEXT"
 EOF
+
+echo "PLUMED will be installed using prefix /usr/local"
+echo "If you wish to change this, set PLUMED_PREFIX environment variable before compiling"
+echo "Executable will be named 'plumed'"
+echo "To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before compiling"
 

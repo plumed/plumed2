@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -38,23 +38,40 @@ Pbc::Pbc():
 
 void Pbc::buildShifts(std::vector<Vector> shifts[2][2][2])const{
   const double small=1e-28;
+
+// clear all shifts
   for(int i=0;i<2;i++) for(int j=0;j<2;j++) for(int k=0;k<2;k++) shifts[i][j][k].clear();
+
+// enumerate all possible shifts
+// since box is reduced, only 27 shifts have to be attempted
   for(int l=-1;l<=1;l++) for(int m=-1;m<=1;m++) for(int n=-1;n<=1;n++){
+
+// int/double shift vectors
     int ishift[3]={l,m,n};
     Vector dshift(l,m,n);
-    unsigned count=0;
+
 // count how many components are != 0
+    unsigned count=0;
     for(int s=0;s<3;s++) if(ishift[s]!=0) count++;
+
 // skips trivial (0,0,0) and cases with three shifts
+// only 18 shifts survive past this point
     if(count==0 || count==3) continue;
-// check if that WS face is perpendicular to the axis
+
+// check if that Wigner-Seitz face is perpendicular to the axis.
+// this allows to eliminate shifts in symmetric cells.
+// e.g., if one lactice vector is orthogonal to the plane spanned
+// by the other two vectors, that shift should never be tried
     Vector cosdir=matmul(reduced,transpose(reduced),dshift);
     double dp=dotProduct(dshift,cosdir);
     double ref=modulo2(dshift)*modulo2(cosdir);
     if(std::fabs(ref-dp*dp)<small) continue;
 
+// here we start pruning depending on the sign of the scaled coordinate
     for(int i=0;i<2;i++) for(int j=0;j<2;j++) for(int k=0;k<2;k++){
+
       int block[3]={2*i-1,2*j-1,2*k-1};
+
 // skip cases where shift would bring too far from origin
       bool skip=false;
       for(int s=0;s<3;s++) if(ishift[s]*block[s]>0) skip=true;
@@ -66,6 +83,8 @@ void Pbc::buildShifts(std::vector<Vector> shifts[2][2][2])const{
         if(((1-ishift[s]*ishift[s])*block[s])*cosdir[s]<-small) skip=false;
       }
       if(skip)continue;
+
+// if we arrive to this point, shift is eligible and is added to the list
       shifts[i][j][k].push_back(matmul(transpose(reduced),dshift));
     }
   }
@@ -83,8 +102,6 @@ void Pbc::fullSearch(Vector&d)const{
    Vector best(d);
    double lbest=d.modulo2();
    for(int i=-smax;i<=smax;i++) for(int j=-smax;j<=smax;j++) for(int k=-smax;k<=smax;k++){
-//     int x=i*i+j*j+k*k;
-//     if(x==0 || x==3) continue;
      Vector trial=d+i*a0+j*a1+k*a2;
      double ltrial=trial.modulo2();
      if(ltrial<lbest){
@@ -97,7 +114,6 @@ void Pbc::fullSearch(Vector&d)const{
 
 void Pbc::setBox(const Tensor&b){
   box=b;
-// UP TO NOW ONLY WORKS WITH ORTHOROMIBIC (should implement matrix inversion)
 // detect type:
   const double epsilon=1e-28;
 

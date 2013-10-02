@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -34,13 +34,32 @@ namespace generic{
 Define a group of atoms so that a particular list of atoms can be referenced with a single label
 in definitions of CVs or virtual atoms.
 
+Notice that this command just creates a shortcut, and does not imply any real calculation.
+It is just convenient to better organize input files. Might be used in combination with
+the \ref INCLUDE command so as to store long group definitions in a separate files.
+
 \par Examples
-This command creates a group of atoms containing atoms 1,2 and 3 and assigns the label
-g1 to this group.  When the label g1 appears in atom lists it is automatically expanded 
-and replaced by the list of atoms (i.e. atoms 1,2 and 3). 
+
+This command create a group of atoms containing atoms 1,4,7,11 and 14 (labeled 'o'), and another containing
+atoms 2,3,5,6,8,9,12,13 (labeled 'h'):
 \verbatim
-GROUP ATOMS=1,2,3 LABEL=g1
+o: GROUP ATOMS=1,4,7,11,14
+h: GROUP ATOMS=2,3,5,6,8,9,12,13
+# compute the coordination among the two groups
+c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
+
+# same could have been obtained without GROUP, just writing:
+# c: COORDINATION GROUPA=1,4,7,11,14 GROUPB=2,3,5,6,8,9,12,13
 \endverbatim
+(see also \ref COORDINATION)
+
+Groups can be conveniently stored in a separate file
+\verbatim
+INCLUDE groups.dat
+c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
+\endverbatim
+(see also \ref INCLUDE and \ref COORDINATION).
+The groups.dat file could be very long and include lists of thousand atoms without cluttering the main plumed.dat file.
 
 */
 //+ENDPLUMEDOC
@@ -53,8 +72,8 @@ public:
   Group(const ActionOptions&ao);
   ~Group();
   static void registerKeywords( Keywords& keys );
-  void calculate(){};
-  void apply(){};
+  void calculate(){}
+  void apply(){}
 };
 
 PLUMED_REGISTER_ACTION(Group,"GROUP")

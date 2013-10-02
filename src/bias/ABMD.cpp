@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -118,6 +118,8 @@ random(getNumberOfArguments())
   // Note : parseVector will check that number of arguments is correct
   parseVector("KAPPA",kappa);
   parseVector("MIN",min);
+  if(min.size()==0) min.assign(getNumberOfArguments(),-1.0);
+  if(min.size()!=getNumberOfArguments()) error("MIN array should have the same size as ARG array");
   parseVector("NOISE",temp);
   parseVector("SEED",seed);
   parseVector("TO",to);

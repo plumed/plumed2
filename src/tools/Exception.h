@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -104,7 +104,7 @@ public:
 /// Returns the error message
   virtual const char* what() const throw(){return msg.c_str();}
 /// Destructor should be defined and should not throw other exceptions
-  virtual ~Exception() throw(){};
+  virtual ~Exception() throw(){}
 };
 
 // With GNU compiler, we can use __PRETTY_FUNCTION__ to get the function name

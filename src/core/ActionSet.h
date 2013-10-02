@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -62,6 +62,8 @@ public:
   T selectWithLabel(const std::string&s)const;
 /// get the labels in the list of actions in form of a string (useful to debug)
   std::string getLabelList() const;
+/// get the labels in the form of a vector of strings  
+  std::vector<std::string> getLabelVector() const;
 };
 
 /////

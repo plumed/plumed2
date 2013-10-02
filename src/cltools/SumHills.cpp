@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -153,6 +153,36 @@ plumed sum_hills --hills PATHTOMYHILLSFILE  --fmt %8.3f
 
 where here we chose a float with length of 8 and 3 digits 
 
+The output can be named in a arbitrary way  : 
+
+\verbatim
+plumed sum_hills --hills PATHTOMYHILLSFILE  --outfile myfes.dat 
+\endverbatim
+
+will produce a file myfes.dat which contains the free energy.
+
+If you use stride, this keyword is the suffix 
+
+\verbatim
+plumed sum_hills --hills PATHTOMYHILLSFILE  --outfile myfes_ --stride 100
+\endverbatim
+
+will produce myfes_0.dat,  myfes_1.dat, myfes_2.dat etc.
+
+The same is true for the output coming from histogram corrections 
+\verbatim
+plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto mycorrection.dat
+\endverbatim
+
+is producing a file mycorrection.dat
+while, when using stride, this is the suffix 
+
+\verbatim
+plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto mycorrection_ --stride 100 
+\endverbatim
+
+that gives  mycorrection_0.dat,  mycorrection_1.dat,  mycorrection_3.dat etc..
+
 */
 //+ENDPLUMEDOC
 
@@ -282,7 +312,6 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   unsigned nn=1;
   ss="setNatoms";
   plumed.cmd(ss,&nn);  
-  ss="init";
   if(Communicator::initialized())  plumed.cmd("setMPIComm",&pc.Get_comm()); 
   plumed.cmd("init",&nn);  
   vector <bool> isdone(cvs.size(),false);  
@@ -377,15 +406,22 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   		plumed_massert(parse("--kt",kt),"if you make a dimensionality reduction (--idw) or a histogram (--histo) then you need to define --kt ");
   }
 
-  /*
-
-	different implementation through function
-
-  */
-
   std::string addme;
+
   actioninput.push_back("FUNCSUMHILLS");
   actioninput.push_back("ISCLTOOL");
+
+  // set names
+  std::string outfile;
+  if(parse("--outfile",outfile)){
+       actioninput.push_back("OUTHILLS="+outfile); 
+  } 
+  std::string outhisto;
+  if(parse("--outhisto",outhisto)){
+       actioninput.push_back("OUTHISTO="+outhisto); 
+  } 
+
+
   addme="ARG=";
   for(unsigned i=0;i<(ncv-1);i++){
       if(cvs[i].size()==1){
@@ -417,6 +453,10 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   if(grid_has_bin){
      addme="GRID_BIN="; for(unsigned i=0;i<(ncv-1);i++)addme+=gbin[i]+","; addme+=gbin[ncv-1];
      actioninput.push_back(addme);
+//  }else{
+//	  //automatic bin: 50 per dimension;
+//	  addme="GRID_BIN="; for(unsigned i=0;i<(ncv-1);i++)addme+="50,"; addme+="50";
+//	  actioninput.push_back(addme);
   }
   std::string  stride; stride="";
   if(parse("--stride",stride)){

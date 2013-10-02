@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -25,6 +25,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <cmath>
 
 namespace PLMD{ 
 
@@ -35,23 +36,23 @@ class WeightBase{
     public:
         virtual double projectInnerLoop(double &input, double &v)=0;
         virtual double projectOuterLoop(double &v)=0;
-        virtual ~WeightBase(){};
+        virtual ~WeightBase(){}
 };
 
 class BiasWeight:public WeightBase{
     public:
       double beta,invbeta;
-      BiasWeight(double v){beta=v;invbeta=1./beta;};
-      double projectInnerLoop(double &input, double &v){return  input+exp(beta*v);};
-      double projectOuterLoop(double &v){return -invbeta*log(v);};
+      BiasWeight(double v){beta=v;invbeta=1./beta;}
+      double projectInnerLoop(double &input, double &v){return  input+exp(beta*v);}
+      double projectOuterLoop(double &v){return -invbeta*std::log(v);}
 };
 
 class ProbWeight:public WeightBase{
     public:
       double beta,invbeta;
-      ProbWeight(double v){beta=v;invbeta=1./beta;};
-      double projectInnerLoop(double &input, double &v){return  input+v;};
-      double projectOuterLoop(double &v){return -invbeta*log(v);};
+      ProbWeight(double v){beta=v;invbeta=1./beta;}
+      double projectInnerLoop(double &input, double &v){return  input+v;}
+      double projectOuterLoop(double &v){return -invbeta*std::log(v);}
 };
 
 
@@ -180,14 +181,14 @@ public:
 /// dump grid on file
  virtual void writeToFile(OFile&);
 
- virtual ~Grid(){};
+ virtual ~Grid(){}
 
 /// project a high dimensional grid onto a low dimensional one: this should be changed at some time 
 /// to enable many types of weighting
  Grid project( const std::vector<std::string> & proj , WeightBase *ptr2obj  ); 
  void projectOnLowDimension(double &val , std::vector<int> &varHigh, WeightBase* ptr2obj ); 
 /// set output format
- void setOutputFmt(std::string ss){fmt_=ss;};
+ void setOutputFmt(std::string ss){fmt_=ss;}
 };
 
   
@@ -206,7 +207,7 @@ class SparseGrid : public Grid
  SparseGrid(const std::string& funcl, std::vector<Value*> args, const std::vector<std::string> & gmin, 
             const std::vector<std::string> & gmax, 
             const std::vector<unsigned> & nbin, bool dospline, bool usederiv):
-            Grid(funcl,args,gmin,gmax,nbin,dospline,usederiv,false){};
+            Grid(funcl,args,gmin,gmax,nbin,dospline,usederiv,false){}
  
  unsigned getSize() const;
  unsigned getMaxSize() const;
@@ -236,7 +237,7 @@ class SparseGrid : public Grid
 /// dump grid on file
  void writeToFile(OFile&);
 
- virtual ~SparseGrid(){};
+ virtual ~SparseGrid(){}
 };
 }
 

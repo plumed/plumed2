@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -95,9 +95,9 @@ public:
 // active methods:
   virtual double compute( const unsigned& j );
 /// Returns the number of coordinates of the field
-  unsigned getNumberOfFieldDerivatives();
   void calculateWeight();
   bool isPeriodic(){ return false; }
+  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(Angles,"ANGLES")
@@ -158,10 +158,6 @@ use_sf(false)
   checkRead();
 }
 
-unsigned Angles::getNumberOfFieldDerivatives(){
-  return 3*getNumberOfAtoms() + 9;
-}
-
 void Angles::calculateWeight(){
   dij=getSeparation( getPosition(1), getPosition(2) );
   dik=getSeparation( getPosition(1), getPosition(0) );
@@ -191,6 +187,11 @@ double Angles::compute( const unsigned& j ){
   addBoxDerivatives( -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
 
   return angle;
+}
+
+Vector Angles::getCentralAtom(){
+   addCentralAtomDerivatives( 1, Tensor::identity() );
+   return getPosition(1);
 }
 
 }

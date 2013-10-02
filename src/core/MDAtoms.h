@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -51,7 +51,7 @@ public:
 /// Creates an MDAtomsTyped<T> object such that sizeof(T)==n
   static MDAtomsBase* create(unsigned n);
 /// Virtual destructor, just to allow inheritance.
-  virtual ~MDAtomsBase(){};
+  virtual ~MDAtomsBase(){}
 /// Get the size of MD-real
   virtual unsigned getRealPrecision()const=0;
 /// Set a pointer to the mass array in the MD code

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -67,6 +67,9 @@ void Info::registerKeywords( Keywords& keys ){
   CLTool::registerKeywords( keys );
   keys.addFlag("--configuration",false,"prints the configuration file");
   keys.addFlag("--root",false,"print the location of the root directory for the plumed source");
+  keys.addFlag("--user-doc",false,"print the location of user manual (html)");
+  keys.addFlag("--developer-doc",false,"print the location of user manual (html)");
+  keys.addFlag("--version",false,"print the version number");
 }
 
 Info::Info(const CLToolOptions& co ):
@@ -79,14 +82,19 @@ int Info::main(FILE* in, FILE*out,Communicator& pc){
 
  bool printconfiguration; parseFlag("--configuration",printconfiguration);
  bool printroot; parseFlag("--root",printroot);
+ bool printuserdoc; parseFlag("--user-doc",printuserdoc);
+ bool printdeveloperdoc; parseFlag("--developer-doc",printdeveloperdoc);
+ bool printversion; parseFlag("--version",printversion);
  if(printroot) fprintf(out,"%s\n",config::getPlumedRoot().c_str());
+ if(printconfiguration) fprintf(out,"%s",config::getMakefile().c_str());
+ std::string userdoc=config::getPlumedRoot()+"user-doc/html/index.html";
+ std::string developerdoc=config::getPlumedRoot()+"developer-doc/html/index.html";
+ if(printuserdoc) fprintf(out,"%s\n",userdoc.c_str());
+ if(printdeveloperdoc) fprintf(out,"%s\n",developerdoc.c_str());
+ std::string versionname="v2.0b1";
+ if(printversion) fprintf(out,"%s\n",versionname.c_str());
 
- if(printconfiguration){
-    fprintf(out,"%s",config::getMakefile().c_str());
-    return 0;
-  }
-
-  return 0;
+ return 0;
 }
 
 

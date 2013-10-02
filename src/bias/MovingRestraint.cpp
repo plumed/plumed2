@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -31,8 +31,10 @@ namespace bias{
 
 //+PLUMEDOC BIAS MOVINGRESTRAINT
 /*
-Add a time-dependent, harmonic restraint on one or more variables, this form
-of bias can be used to performed steered MD and Jarzynski sampling \cite jarzynski.
+Add a time-dependent, harmonic restraint on one or more variables.
+
+This form of bias can be used to performed steered MD \cite Grubmuller3
+and Jarzynski sampling \cite jarzynski.
 
 The harmoic restraint on your system is given by:
 
@@ -84,10 +86,12 @@ MOVINGRESTRAINT ...
 \endverbatim
 
 By default the Action is issuing some values which are 
-the work on each degree of freedom, the center of the harmoni potential,
+the work on each degree of freedom, the center of the harmonic potential,
 the total bias deposited  
 
 (See also \ref DISTANCE).
+
+\attention Work is not computed properly when KAPPA is time dependent.
 
 */
 //+ENDPLUMEDOC
@@ -117,7 +121,7 @@ void MovingRestraint::registerKeywords( Keywords& keys ){
   keys.reset_style("STEP","compulsory");
   keys.add("numbered","AT","ATx is equal to the position of the restraint at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no ATx is specified for STEPx then the values of AT are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("AT","compulsory"); 
-  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no ATx is specified for STEPx then the values of KAPPAx are kept constant during the interval of time between STEPx-1 and STEPx.");
+  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("KAPPA","compulsory");
 }
 
@@ -169,6 +173,9 @@ verse(getNumberOfArguments())
         addComponent(comp); componentIsNotPeriodic(comp);
         work.push_back(0.); // initialize the work value 
   }
+
+  log<<"  Bibliography ";
+  log<<cite("Grubmuller, Heymann, and Tavan, Science 271, 997 (1996)")<<"\n";
 
 }
 

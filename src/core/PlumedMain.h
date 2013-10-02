@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -75,6 +75,7 @@ public:
 /// Communicator for plumed.
 /// Includes all the processors used by plumed.
   Communicator&comm;
+  Communicator&multi_sim_comm;
 
 private:
   DLLoader& dlloader;
@@ -120,6 +121,9 @@ private:
 
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
   ExchangePatterns& exchangePatterns;
+
+/// Set to true if on an exchange step
+  bool exchangeStep;
 
 /// Flag for restart
   bool restart;
@@ -228,7 +232,7 @@ public:
 /// Referenge to the log stream
   Log & getLog();
 /// Return the number of the step
-  long int getStep()const{return step;};
+  long int getStep()const{return step;}
 /// Stop the run
   void exit(int c=0);
 /// Load a shared library
@@ -255,8 +259,21 @@ public:
   bool getRestart()const;
 /// Set restart flag
   void setRestart(bool f){restart=f;}
+/// Set exchangeStep flag
+  void setExchangeStep(bool f);
+/// Get exchangeStep flag
+  bool getExchangeStep()const;
 /// Stop the calculation cleanly (both the MD code and plumed)
   void stop();
+/// Enforce active flag.
+/// This is a (bit dirty) hack to solve a bug. When there is no active ActionPilot,
+/// several shortcuts are used. However, these shortcuts can block GREX module.
+/// This function allows to enforce active plumed when doing exchanges,
+/// thus fixing the bug.
+  void resetActive(bool active);
+
+/// Access to exchange patterns
+  ExchangePatterns& getExchangePatterns(){return exchangePatterns;}
 };
 
 /////
@@ -285,6 +302,21 @@ void PlumedMain::setSuffix(const std::string&s){
 inline
 bool PlumedMain::getRestart()const{
   return restart;
+}
+
+inline
+void PlumedMain::setExchangeStep(bool s){
+  exchangeStep=s;
+}
+
+inline
+bool PlumedMain::getExchangeStep()const{
+  return exchangeStep;
+}
+
+inline
+void PlumedMain::resetActive(bool active){
+  this->active=active;
 }
 
 }

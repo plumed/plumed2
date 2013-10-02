@@ -1,2 +1,19 @@
+/*
+# in this directory only accept tests that test the plumed core
+!/.gitignore
+!/Makefile
+!/README
+!/function
+!/analysis
+!/basic
+!/multicolvar
+!/secondarystructure
+!/trajectories
+!/scripts
+!/manyrestraints
+!/has-almost
+
+# These files we just want to ignore completely
 tmp
 report.txt
+crystallization

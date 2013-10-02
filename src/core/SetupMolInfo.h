@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -41,6 +41,9 @@ public:
   static void registerKeywords( Keywords& keys );
   SetupMolInfo(const ActionOptions&ao);
   void getBackbone( std::vector<std::string>& resstrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone );
+  std::string getAtomName(AtomNumber a)const;
+  unsigned getResidueNumber(AtomNumber a)const;
+  std::string getResidueName(AtomNumber a)const;
 };
 
 }

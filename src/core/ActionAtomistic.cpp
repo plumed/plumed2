@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -81,6 +81,10 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
 }
 
 void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
+  calculateAtomicNumericalDerivatives( a, 0 );
+}
+
+void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum ){
   if(!a){
     a=dynamic_cast<ActionWithValue*>(this);
     plumed_massert(a,"only Actions with a value can be differentiated");
@@ -123,13 +127,13 @@ void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
     if(v->hasDerivatives()){
       for(int i=0;i<natoms;i++) for(int k=0;k<3;k++) {
         double d=(value[j*natoms+i][k]-ref)/delta;
-        v->addDerivative(3*i+k,d);
+        v->addDerivative(startnum+3*i+k,d);
       }
       Tensor virial;
       for(int i=0;i<3;i++) for(int k=0;k<3;k++)virial(i,k)= (valuebox[j](i,k)-ref)/delta;
 // BE CAREFUL WITH NON ORTHOROMBIC CELL
       virial=-matmul(box.transpose(),virial);
-      for(int i=0;i<3;i++) for(int k=0;k<3;k++) v->addDerivative(3*natoms+3*k+i,virial(k,i));
+      for(int i=0;i<3;i++) for(int k=0;k<3;k++) v->addDerivative(startnum+3*natoms+3*k+i,virial(k,i));
     }
   }
 }

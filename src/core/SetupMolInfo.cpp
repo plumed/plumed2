@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -72,7 +72,9 @@ pdb(*new(PDB))
   }
   if( read_backbone.size()==0 ){
     std::string reference; parse("STRUCTURE",reference);
-    pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength());
+
+
+    if( ! pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()))plumed_merror("missing input file " + reference );
     std::vector<std::string> chains; pdb.getChainNames( chains );
     log.printf("  pdb file named %s contains %d chains \n",reference.c_str(), chains.size() );
     for(unsigned i=0;i<chains.size();++i){
@@ -149,6 +151,19 @@ void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::
   for(unsigned i=0;i<backbone.size();++i){
      if( backbone[i].size()%atnames.size()!=0 ) error("number of atoms in one of the segments of backbone is not a multiple of the number of atoms in each residue");
   }
+}
+
+
+std::string SetupMolInfo::getAtomName(AtomNumber a)const{
+  return pdb.getAtomName(a);
+}
+
+unsigned SetupMolInfo::getResidueNumber(AtomNumber a)const{
+  return pdb.getResidueNumber(a);
+}
+
+std::string SetupMolInfo::getResidueName(AtomNumber a)const{
+  return pdb.getResidueName(a);
 }
 
 }

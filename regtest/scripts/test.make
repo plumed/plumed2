@@ -1,13 +1,13 @@
 
 test:
-	../scripts/run
+	../../scripts/run
 
 reset:
-	../scripts/reset
+	../../scripts/reset
 
 clean:
 	rm -fr tmp/ report.txt
 
 valgrind:
-	../scripts/run --valgrind
+	../../scripts/run --valgrind
 

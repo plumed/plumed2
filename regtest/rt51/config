@@ -1,4 +1,0 @@
-type=sum_hills
-# this is to test the histogram correction 
-arg=" --kt 0.6 --sigma 0.2,0.2 --bin 30,30 --histo HILLS_t1 --fmt %8.3f "
-extra_files="../trajectories/HILLS_t1 "

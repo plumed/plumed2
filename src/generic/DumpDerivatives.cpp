@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -60,10 +60,10 @@ public ActionWithArguments
   string fmt;
   OFile of;
 public:
-  void calculate(){};
+  void calculate(){}
   DumpDerivatives(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
-  void apply(){};
+  void apply(){}
   void update();
   ~DumpDerivatives();
 };
@@ -91,7 +91,7 @@ fmt("%15.10f")
   parse("FMT",fmt);
   fmt=" "+fmt;
   of.link(*this);
-  of.open(file,"wa");
+  of.open(file);
   log.printf("  on file %s\n",file.c_str());
   log.printf("  with format %s\n",fmt.c_str());
   unsigned nargs=getNumberOfArguments();
@@ -114,7 +114,7 @@ void DumpDerivatives::update(){
     for(unsigned i=0;i<getNumberOfArguments();i++){
       of.fmtField(fmt);
       of.printField(getPntrToArgument(i)->getName(),getPntrToArgument(i)->getDerivative(ipar) );
-    };
+    }
     of.printField();
   }
 }

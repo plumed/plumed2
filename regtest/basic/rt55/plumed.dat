@@ -1,0 +1,15 @@
+
+v: VOLUME
+PRINT ARG=v FILE=v
+DUMPDERIVATIVES ARG=v FILE=dv
+
+cell: CELL
+PRINT ARG=cell.ax,cell.ay,cell.az,cell.bx,cell.by,cell.bz,cell.cx,cell.cy,cell.cz FILE=cell
+DUMPDERIVATIVES ARG=cell.ax,cell.ay,cell.az,cell.bx,cell.by,cell.bz,cell.cx,cell.cy,cell.cz FILE=dcell
+
+# this is to check derivatives:
+# vn: VOLUME NUMERICAL_DERIVATIVES
+# celln: CELL NUMERICAL_DERIVATIVES
+# DUMPDERIVATIVES ARG=vn FILE=dvn FMT=%8.4f
+# DUMPDERIVATIVES ARG=celln.ax,celln.ay,celln.az,celln.bx,celln.by,celln.bz,celln.cx,celln.cy,celln.cz FILE=dcelln FMT=%8.4f
+

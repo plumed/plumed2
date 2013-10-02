@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -41,7 +41,7 @@ int main(int argc,char**argv){
   if(argc>1 && !strcmp(argv[1],"--no-mpi")) nompi=true;
   if(!nompi) MPI_Init(&argc,&argv);
 #endif
-  int ret;
+  int ret=0;
 
   PLMD::Plumed* p=new PLMD::Plumed;
   p->cmd("CLTool setArgc",&argc);

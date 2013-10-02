@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -47,7 +47,6 @@ PRINT ARG=vol
 
 
 class Volume : public Colvar {
-  bool components;
 
 public:
   Volume(const ActionOptions&);
@@ -60,16 +59,11 @@ public:
 PLUMED_REGISTER_ACTION(Volume,"VOLUME")
 
 Volume::Volume(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),
-components(false)
+PLUMED_COLVAR_INIT(ao)
 {
   std::vector<AtomNumber> atoms;
-  parseFlag("COMPONENTS",components);
   checkRead();
 
-  if(components){
-// todo
-  }
   addValueWithDerivatives(); setNotPeriodic();
   requestAtoms(atoms);
 }
@@ -78,19 +72,15 @@ void Volume::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
-  keys.remove("NUMERICAL_DERIVATIVES"); 
-  keys.addFlag("COMPONENTS",false,"use xx, yy, zz, alpha, beta, gamma as the colvars rather than the box volume");
 }
 
 
 // calculator
 void Volume::calculate(){
-  if(components){
-// todo
-  };
 
-  setBoxDerivatives(-1.0*Tensor::identity());
-  setValue         (getBox().determinant());
+  double v=getBox().determinant();
+  setBoxDerivatives(-v*Tensor::identity());
+  setValue         (v);
 }
 
 }

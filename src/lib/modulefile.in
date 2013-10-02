@@ -1,0 +1,40 @@
+#%Module1.0##############################################
+
+# Manually add here dependencies and conflicts
+
+# this is the prefix path, and should be set properly:
+set prefix "@_PREFIX_@"
+# this is the extension for dynamic libraries
+# if set to empty, switches off plumed library
+set soext  "@_SOEXT_@"
+
+# everything past this line should not need any editing
+
+proc ModulesHelp { } {
+  puts stderr "Adds paths for Plumed"
+}
+
+module-whatis   "Adds paths for Plumed"
+
+# execution path
+prepend-path  PATH               $prefix/bin
+
+# include path
+prepend-path  CPATH              $prefix/include/
+prepend-path  INCLUDE            $prefix/include/
+
+# paths for libraries are only set if plumed is compiled as a dynamic library
+if { [ string length $soext ]  != 0 } {
+
+# this is checking if PLUMED_KERNEL is already set
+if { [module-info mode load] && [ info exists ::env(PLUMED_KERNEL) ] } {
+    puts stderr "WARNING: PLUMED_KERNEL variable was already set, you are now overriding it"
+    puts stderr " (typically means that you are loading two plumed modules, both defining dynamic libraries)"
+}
+
+# library path
+prepend-path  LIBRARY_PATH       $prefix/lib/
+prepend-path  LD_LIBRARY_PATH    $prefix/lib/
+prepend-path  DYLD_LIBRARY_PATH  $prefix/lib/
+setenv        PLUMED_KERNEL      $prefix/lib/libplumedKernel.$soext
+}

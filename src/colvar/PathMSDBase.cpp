@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -45,7 +45,7 @@ void PathMSDBase::registerKeywords(Keywords& keys){
 PathMSDBase::PathMSDBase(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 neigh_size(-1),
-neigh_stride(-1.),
+neigh_stride(-1),
 nframes(0)
 {
   parse("LAMBDA",lambda);
@@ -86,14 +86,14 @@ nframes(0)
     log<<"Found TOTAL "<<nframes<< " PDB in the file "<<reference.c_str()<<" \n"; 
     if(nframes==0) error("at least one frame expected");
   } 
-  if(neigh_stride>0. || neigh_size>0){
-           if(neigh_size>nframes){
+  if(neigh_stride>0 || neigh_size>0){
+           if(neigh_size>int(nframes)){
            	log.printf(" List size required ( %d ) is too large: resizing to the maximum number of frames required: %u  \n",neigh_size,nframes);
  		neigh_size=nframes;
            }
            log.printf("  Neighbor list enabled: \n");
            log.printf("                size   :  %d elements\n",neigh_size);
-           log.printf("                stride :  %f time \n",neigh_stride);
+           log.printf("                stride :  %d timesteps \n",neigh_stride);
   }else{
            log.printf("  Neighbor list NOT enabled \n");
   }
@@ -101,6 +101,8 @@ nframes(0)
 }
 
 void PathMSDBase::calculate(){
+
+  if(neigh_size>0 && getExchangeStep()) error("Neighbor lists for this collective variable are not compatible with replica exchange, sorry for that!");
 
   //log.printf("NOW CALCULATE! \n");
 
@@ -192,7 +194,10 @@ void PathMSDBase::calculate(){
   //  here set next round neighbors
   //
   if (neigh_size>0){
-	if( int(getStep())%int(neigh_stride/getTimeStep())==0 ){
+	//if( int(getStep())%int(neigh_stride/getTimeStep())==0 ){
+	// enforce consistency: the stride is in time steps
+	if( int(getStep())%int(neigh_stride)==0 ){
+
 		// next round do it all:empty the vector	
 		imgVec.clear();
         }

@@ -1,0 +1,4 @@
+type=sum_hills
+# this is to test a different name
+arg=" --min -pi,pi --max -pi,pi --bin 99,99 --hills HILLS_t1 "
+extra_files="../../trajectories/HILLS_t1"

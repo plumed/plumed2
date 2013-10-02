@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -26,7 +26,6 @@
 #include "Matrix.h"
 #include "core/Value.h"
 #include <vector>
-#include <math.h>
 
 namespace PLMD {
 
@@ -47,7 +46,7 @@ private:
 /// Get the cutoff for a kernel
   double getCutoff( const double& width ) const ;
 public:
-  KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const double& w, const bool& norm );
+  KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate ,const double& w, const bool norm );
 /// Get the dimensionality of the kernel
   unsigned ndim() const;
 /// Get the position of the center 

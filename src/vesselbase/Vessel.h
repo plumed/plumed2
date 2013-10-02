@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -64,8 +64,6 @@ private:
 /// The keywords
   const Keywords& keywords;
   static Keywords emptyKeys;
-/// This tells whether checkRead has been called
-  bool finished_read;
 public:
 /// The parameters that are read into the function
   std::string parameters;
@@ -120,6 +118,8 @@ protected:
   ActionWithVessel* getAction();
 /// Return the value of the tolerance
   double getTolerance() const ;
+/// Return the value of the neighbor list tolerance
+  double getNLTolerance() const ;
 /// Set the size of the data buffer
   void resizeBuffer( const unsigned& n );
 /// Set the value of the ith element in the buffer
@@ -152,7 +152,7 @@ public:
 /// Return a description of the vessel contents
   virtual std::string description()=0;
 /// Do something before the loop
-  virtual void prepare(){};
+  virtual void prepare(){}
 /// Calculate the part of the vessel that is done in the loop
   virtual bool calculate()=0;
 /// Complete the calculation once the loop is finished
@@ -225,6 +225,11 @@ void Vessel::resizeBuffer( const unsigned& n ){
 inline
 double Vessel::getTolerance() const {
   return action->tolerance;
+}
+
+inline
+double Vessel::getNLTolerance() const {
+  return action->nl_tolerance;
 }
 
 inline

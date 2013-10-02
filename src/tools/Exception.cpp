@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -45,21 +45,21 @@ std::string Exception::format(const std::string&msg,const std::string&file,unsig
 }
 
 
-Exception::Exception()
+Exception::Exception():
+  msg(format("","",0,""))
 {
-  this->msg=format("","",0,"");
   abortIfExceptionsAreDisabled();
 }
 
-Exception::Exception(const std::string&msg)
+Exception::Exception(const std::string&msg):
+  msg(format(msg,"",0,""))
 {
-  this->msg=format(msg,"",0,"");
   abortIfExceptionsAreDisabled();
 }
 
-Exception::Exception(const std::string&msg,const std::string&file,unsigned line,const std::string&function)
+Exception::Exception(const std::string&msg,const std::string&file,unsigned line,const std::string&function):
+  msg(format(msg,file,line,function))
 {
-  this->msg=format(msg,file,line,function);
   abortIfExceptionsAreDisabled();
 }
 

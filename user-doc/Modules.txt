@@ -1,0 +1,47 @@
+/**
+
+@page mymodules Modules
+
+PLUMED 2 is written and maintained by five core developers none of whom work full
+time on the maintanence and upkeep of the code.  From our point of view it is thus 
+desirable to keep the core of the code small.  In addition, we are very keen that 
+users who contribute functionality to PLUMED get the plaudits that they deserve. 
+For these reasons many of PLUMED's more advanced functionalities are provided in 
+modules that users can download.  To download a module you simply change to the 
+<c> plumed2/mymodules </c> directory and issue the following command:
+
+\verbatim
+./plumed-get-module.sh <name of module>
+\endverbatim  
+
+The following optional modules can be added to PLUMED 2:
+
+@MODULES@
+
+\section addmodule Adding a module
+
+If you have a PLUMED module that you would like us to advertise on the website
+you should copy the directory structure from <c> plumed2/template-module </c> 
+as well as all the files inside that directory and place your source and regtest
+files in appropriate directories.  You are responsible for finding a suitable 
+web repository to host the code that you have developed (we use http://www.assembla.com 
+for PLUMED). You do not need to give us write access to your repository as ensuring that
+your code keeps working with any new release of PLUMED is YOUR responsibility.
+
+Once you are ready to release your code simply send any email to one of the developers
+with a txt file that contains the following information in the following format:
+
+\verbatim
+NAME: <the name of your module>
+
+AUTHOR: <the list of people involved in the development of the module>
+
+REPOSITORY: <the command that retreives the code e.g. git clone git@git.assembla.com:plumed2.git>
+
+DESCRIPTION:
+
+<a short description of what it is your module calculates>
+<citations and equations can be included using the usual doxygen commands>
+\endverbatim
+
+*/

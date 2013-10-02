@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -69,14 +69,17 @@ std::string MoreThan::function_description(){
 
 bool MoreThan::calculate(){
   double weight=getAction()->getElementValue(1);
-  if( weight<getTolerance() ) return false;
+  plumed_dbg_assert( weight>=getTolerance() );
 
   double val=getAction()->getElementValue(0);
   double dval, f = 1.0 - sf.calculate(val, dval); dval*=-val;
-  bool addval=addValue(0,weight*f);
-  if(addval) getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
-  if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
-  return addval;
+  double contr=weight*f;
+  bool addval=addValueUsingTolerance(0,contr);
+  if(addval){
+    getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
+    if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
+  }
+  return ( contr>getNLTolerance() );
 }
 
 void MoreThan::finish(){

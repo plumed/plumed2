@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -84,36 +84,35 @@ PLUMED_COLVAR_INIT(ao)
   // only one component for this variable 
   	addValueWithDerivatives(); 
   }
-  
-   std::vector<std::string> period;
-   parseVector("PERIODIC",period); 
-   if(period.size()!=0){
-           plumed_massert(getNumberOfComponents()*2==period.size(),"the periodicty should coincide with the number of components");
-           if(getNumberOfComponents()>1){
-          	 for(unsigned i=0;i<getNumberOfComponents();i++){
-	  	      string pp=comps[i];
-   	  	      if(period[i*2]!="none" && period[i*2+1]!="none" ){
-   	  	      	componentIsPeriodic(pp,period[i*2],period[i*2+1]);
-   	  	      }else{
-   	  	      	componentIsNotPeriodic(pp);
-   	  	      }
-   	  	 }
-           }else{
-   	  	 if(period[0]!="none" && period[1]!="none" ){
-   	  	 	setPeriodic(period[0],period[1]);
-   	  	 }else{
-   	  	 	setNotPeriodic();
-   	  	 }
-           }
-   }else{
-         if(getNumberOfComponents()>1){
-	       for(unsigned i=0;i<getNumberOfComponents();i++){
-	   		componentIsNotPeriodic(getPntrToComponent(i)->getName());
-		}
-	 } else {
-		                        setNotPeriodic();
-        }
-   } 
+  std::vector<std::string> period;
+  parseVector("PERIODIC",period);
+  if(period.size()!=0){
+	  plumed_massert(getNumberOfComponents()*2==period.size(),"the periodicty should coincide with the number of components");
+	  if(comps.size()!=0){
+		  for(unsigned i=0;i<getNumberOfComponents();i++){
+			  string pp=comps[i];
+			  if(period[i*2]!="none" && period[i*2+1]!="none" ){
+				  componentIsPeriodic(pp,period[i*2],period[i*2+1]);
+			  }else{
+				  componentIsNotPeriodic(pp);
+			  }
+		  }
+	  }else{
+		  if(period[0]!="none" && period[1]!="none" ){
+			  setPeriodic(period[0],period[1]);
+		  }else{
+			  setNotPeriodic();
+		  }
+	  }
+  }else{
+	  if(comps.size()!=0){
+		  for(unsigned i=0;i<getNumberOfComponents();i++){
+			  componentIsNotPeriodic(getPntrToComponent(i)->getName());
+		  }
+	  } else {
+		  setNotPeriodic();
+	  }
+  }
    checkRead();
    requestAtoms(atoms);
 

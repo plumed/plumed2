@@ -1,0 +1,149 @@
+patch -u -l -b -F 5 --suffix=.preplumed "./PW/src/forces.f90" << \EOF_EOF
+--- ./PW/src/forces.f90.preplumed
++++ ./PW/src/forces.f90
+@@ -247,11 +247,13 @@
+   !
+   IF( textfor ) force(:,:) = force(:,:) + extfor(:,:)
+   !
+   ! ... call void routine for user define/ plugin patches on forces
+   !
+-  CALL plugin_forces()
++  ! plugin should be called after stress has been computed
++  ! Look in pwscf.f90
++  ! CALL plugin_forces()
+   !
+   ! ... write on output the forces
+   !
+   DO na = 1, nat
+      !
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./PW/src/plugin_forces.f90" << \EOF_EOF
+--- ./PW/src/plugin_forces.f90.preplumed
++++ ./PW/src/plugin_forces.f90
+@@ -16,9 +16,51 @@
+   USE kinds,            ONLY : DP
+   USE io_files,         ONLY : outdir
+   !
+   USE plugin_flags
+   !
++  USE cell_base,        ONLY : alat, at
++  USE ions_base,        ONLY : tau, nat,amass
++  USE force_mod,        ONLY : force,sigma
++  USE control_flags,    ONLY : istep
++  USE ener,             ONLY : etot 
++  !
+   IMPLICIT NONE
+   !
++  INTEGER:: i,j
++  REAL(DP) :: at_plumed(3,3)
++  REAL(DP) :: virial(3,3)
++  REAL(DP) :: volume
++  REAL(DP), ALLOCATABLE :: tau_plumed(:,:)
++  !
++  IF(use_plumed) then
++    IF(ionode)THEN
++      at_plumed=alat*at;  ! the cell, rescaled properly
++      allocate(tau_plumed(3,nat))
++      tau_plumed=alat*tau
++      volume=+at_plumed(1,1)*at_plumed(2,2)*at_plumed(3,3) &
++             +at_plumed(1,2)*at_plumed(2,3)*at_plumed(3,1) &
++             +at_plumed(1,3)*at_plumed(2,1)*at_plumed(3,2) &
++             -at_plumed(1,1)*at_plumed(3,2)*at_plumed(2,3) &
++             -at_plumed(1,2)*at_plumed(3,3)*at_plumed(2,1) &
++             -at_plumed(1,3)*at_plumed(3,1)*at_plumed(2,2) 
++      virial=-sigma*volume
++
++      CALL plumed_f_gcmd("setStep"//char(0),istep)
++      CALL plumed_f_gcmd("setMasses"//char(0),amass)
++      CALL plumed_f_gcmd("setForces"//char(0),force)
++      CALL plumed_f_gcmd("setPositions"//char(0),tau_plumed)
++      CALL plumed_f_gcmd("setBox"//char(0),at_plumed)
++      CALL plumed_f_gcmd("setVirial"//char(0),virial)
++      CALL plumed_f_gcmd("setEnergy"//char(0),etot)
++      CALL plumed_f_gcmd("calc"//char(0),0)
++
++      sigma=-virial/volume
++
++      deallocate(tau_plumed)
++    ENDIF
++    CALL mp_bcast(force, ionode_id, intra_image_comm)
++    CALL mp_bcast(sigma, ionode_id, intra_image_comm)
++  ENDIF
++  !
+   !
+ END SUBROUTINE plugin_forces
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./PW/src/plugin_initialization.f90" << \EOF_EOF
+--- ./PW/src/plugin_initialization.f90.preplumed
++++ ./PW/src/plugin_initialization.f90
+@@ -13,9 +13,50 @@
+   USE kinds,            ONLY : DP
+   USE io_files,         ONLY : tmp_dir
+   !
+   USE plugin_flags
+   !
++  USE ions_base,        ONLY : amass, ityp, nat
++  !
++  USE dynamics_module,  ONLY : dt
++  USE constants,        ONLY : au_ps
++  !
++  !
+   IMPLICIT NONE
+   !
++  INTEGER  :: na
++  INTEGER  :: plumedavailable
++  REAL*8   :: energyUnits,lengthUnits,timeUnits 
++  !
++  IF(use_plumed) then
++
++     CALL plumed_f_installed(plumedavailable)
++   
++     IF(plumedavailable<=0)THEN
++        write(stdout,*)"YOU ARE LOOKING FOR PLUMED BUT LOOKS LIKE IT IS NOT AVAILABLE: DO YOU HAVE IT IN YOUR LD_LIBRARY_PATH?" 
++        STOP 
++     ELSE 
++        IF (ionode) THEN
++
++            write(stdout,*)"  CREATING PLUMED FROM THE PROGRAM" 
++            call plumed_f_gcreate()
++            CALL plumed_f_gcmd("setRealPrecision"//char(0),8)
++            energyUnits=1312.75  ! Ry to kjoule mol 
++            lengthUnits=0.0529177249 ! bohr to nm
++            timeUnits=2*au_ps ! internal time to ps
++            call plumed_f_gcmd("setMDEnergyUnits"//char(0),energyUnits)
++            call plumed_f_gcmd("setMDLengthUnits"//char(0),lengthUnits)
++            call plumed_f_gcmd("setMDTimeUnits"//char(0),timeUnits)
++            call plumed_f_gcmd("setPlumedDat"//char(0),"plumed.dat"//char(0))
++            call plumed_f_gcmd("setLogFile"//char(0),"PLUMED.OUT"//char(0))
++            call plumed_f_gcmd("setNatoms"//char(0),nat)
++            call plumed_f_gcmd("setMDEngine"//char(0),"qespresso");
++            call plumed_f_gcmd("setTimestep"//char(0),dt);
++            call plumed_f_gcmd("init"//char(0),0);
++
++
++        ENDIF
++     ENDIF
++  ENDIF
++  !
+   !
+ END SUBROUTINE plugin_initialization
+EOF_EOF
+patch -u -l -b -F 5 --suffix=.preplumed "./PW/src/pwscf.f90" << \EOF_EOF
+--- ./PW/src/pwscf.f90.preplumed
++++ ./PW/src/pwscf.f90
+@@ -126,10 +126,14 @@
+      !
+      ! ... stress calculation
+      !
+      IF ( lstres ) CALL stress ( sigma )
+      !
++     ! ... this is the right place for plugin forces:
++     !
++     CALL plugin_forces()
++     !
+      IF ( lmd .OR. lbfgs ) THEN
+         !
+         if (fix_volume) CALL impose_deviatoric_stress(sigma)
+         !
+         if (fix_area)  CALL  impose_deviatoric_stress_2d(sigma)
+EOF_EOF

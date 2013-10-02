@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -38,9 +38,9 @@ class Keywords;
 /// tabulated functions from file, matheval, etc...
 class SwitchingFunction{
   bool init;
-  enum {spline,exponential,gaussian} type;
-  int nn,mm;
-  double invr0,d0,dmax;
+  enum {spline,exponential,gaussian,smap} type;
+  int nn,mm,a,b;
+  double invr0,d0,dmax,c,d;
 public:
   static void registerKeywords( Keywords& keys );
   SwitchingFunction();
@@ -50,7 +50,6 @@ public:
   double calculate(double x,double&df)const;
   double get_d0() const;
   double get_r0() const;
-  void printKeywords( Log& log ) const ;
 };
 
 }

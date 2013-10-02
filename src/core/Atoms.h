@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -55,6 +55,9 @@ class Atoms
   Tensor box;
   Pbc&   pbc;
   Tensor virial;
+// this is the energy set by each processor:
+  double md_energy;
+// this is the summed energy:
   double energy;
 
   bool   dataCanBeSet;
@@ -104,10 +107,10 @@ class Atoms
     std::vector<double> positionsToBeReceived;
     std::vector<int>    indexToBeSent;
     std::vector<int>    indexToBeReceived;
-    operator bool(){return on;};
+    operator bool(){return on;}
     DomainDecomposition():
       on(false), async(false)
-      {};
+      {}
     void enable(Communicator& c);
   };
 
@@ -136,7 +139,7 @@ public:
   void setNatoms(int);
   const int & getNatoms()const;
 
-  void setCollectEnergy(bool b){ collectEnergy=b; };
+  void setCollectEnergy(bool b){ collectEnergy=b; }
 
   void setDomainDecomposition(Communicator&);
   void setAtomsGatindex(int*);
@@ -166,16 +169,16 @@ public:
   void add(const ActionAtomistic*);
   void remove(const ActionAtomistic*);
 
-  double getEnergy()const{plumed_assert(collectEnergy && energyHasBeenSet); return energy;};
+  double getEnergy()const{plumed_assert(collectEnergy && energyHasBeenSet); return energy;}
 
-  bool isEnergyNeeded()const{return collectEnergy;};
+  bool isEnergyNeeded()const{return collectEnergy;}
 
-  void setMDEnergyUnits(double d){MDUnits.setEnergy(d);};
-  void setMDLengthUnits(double d){MDUnits.setLength(d);};
-  void setMDTimeUnits(double d){MDUnits.setTime(d);};
-  const Units& getMDUnits(){return MDUnits;};
-  void setUnits(const Units&u){units=u;};
-  const Units& getUnits(){return units;};
+  void setMDEnergyUnits(double d){MDUnits.setEnergy(d);}
+  void setMDLengthUnits(double d){MDUnits.setLength(d);}
+  void setMDTimeUnits(double d){MDUnits.setTime(d);}
+  const Units& getMDUnits(){return MDUnits;}
+  void setUnits(const Units&u){units=u;}
+  const Units& getUnits(){return units;}
   void updateUnits();
 
   AtomNumber addVirtualAtom(ActionWithVirtualAtom*);
@@ -189,9 +192,9 @@ public:
   double getKBoltzmann()const;
   double getMDKBoltzmann()const;
   bool usingNaturalUnits()const;
-  void setNaturalUnits(bool n){naturalUnits=n;};
-  void setMDNaturalUnits(bool n){MDnaturalUnits=n;};
-  Vector & modifyPosition(AtomNumber i){ return positions[i.index()];};
+  void setNaturalUnits(bool n){naturalUnits=n;}
+  void setMDNaturalUnits(bool n){MDnaturalUnits=n;}
+  Vector & modifyPosition(AtomNumber i){ return positions[i.index()];}
 };
 
 inline

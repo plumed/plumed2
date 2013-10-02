@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -47,6 +47,16 @@ std::string ActionSet::getLabelList() const{
   };
   return  outlist;
 }
+
+std::vector<std::string> ActionSet::getLabelVector() const{
+  std::vector<std::string> outlist;
+  for(const_iterator p=begin();p!=end();++p){
+    outlist.push_back(dynamic_cast<Action*>(*p)->getLabel());
+  };
+  return  outlist;
+}
+
+
 
 
 }

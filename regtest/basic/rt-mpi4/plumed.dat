@@ -1,0 +1,14 @@
+# NOTICE: this test will not work with neighbor lists because they are not compatible with repl ex
+#c: COORDINATION GROUPA=1-108 GROUPB=1-108  NLIST NL_STRIDE=2 NL_CUTOFF=2.0 R_0=0.5
+c2: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=0.5
+
+RESTRAINT ARG=c2 AT=0 SLOPE=1
+
+PRINT ...
+  STRIDE=1
+  ARG=c2
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+ENDPLUMED
+

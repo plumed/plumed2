@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -48,6 +48,27 @@ const std::vector<AtomNumber> & PDB::getAtomNumbers()const{
   return numbers;
 }
 
+std::string PDB::getAtomName(AtomNumber a)const{
+  std::map<AtomNumber,unsigned>::const_iterator p;
+  p=number2index.find(a);
+  if(p==number2index.end()) return "";
+  else return atomsymb[p->second];
+}
+
+unsigned PDB::getResidueNumber(AtomNumber a)const{
+  std::map<AtomNumber,unsigned>::const_iterator p;
+  p=number2index.find(a);
+  if(p==number2index.end()) return 0;
+  else return residue[p->second];
+}
+
+std::string PDB::getResidueName(AtomNumber a) const{
+  std::map<AtomNumber,unsigned>::const_iterator p;
+  p=number2index.find(a);
+  if(p==number2index.end()) return "";
+  else return residuenames[p->second];
+}
+
 unsigned PDB::size()const{
   return positions.size();
 }
@@ -65,6 +86,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
     string record=line.substr(0,6);
     string serial=line.substr(6,5);
     string atomname=line.substr(12,4);
+    string residuename=line.substr(17,3);
     string chainID=line.substr(21,1);
     string resnum=line.substr(22,4);
     string x=line.substr(30,8);
@@ -94,6 +116,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
       // scale into nm
       p*=scale;
       numbers.push_back(a);
+      number2index[a]=positions.size();
       std::size_t startpos=atomname.find_first_not_of(" \t");
       std::size_t endpos=atomname.find_last_not_of(" \t");
       atomsymb.push_back( atomname.substr(startpos, endpos-startpos+1) );
@@ -102,9 +125,20 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
       occupancy.push_back(o);
       beta.push_back(b);
       positions.push_back(p);
+      residuenames.push_back(residuename);
     }
   }
   return file_is_alive;
+}
+
+void PDB::setArgKeyword( const std::string& new_args ){
+  bool replaced=false;
+  for(unsigned i=0;i<remark.size();++i){
+      if( remark[i].find("ARG=")!=std::string::npos){
+          remark[i]=new_args; replaced=true;
+      }
+  }
+  plumed_assert( replaced );
 }
 
 bool PDB::read(const std::string&file,bool naturalUnits,double scale){

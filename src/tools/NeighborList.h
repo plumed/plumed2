@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -35,6 +35,7 @@ class Pbc;
 /// A class that implements neighbor lists from two lists or a single list of atoms
 class NeighborList  
 {
+  bool reduced;
   bool do_pair_,do_pbc_,twolists_;
   const PLMD::Pbc* pbc_;
   std::vector<PLMD::AtomNumber> fullatomlist_,requestlist_;
@@ -77,7 +78,7 @@ public:
   std::pair<unsigned,unsigned> getClosePair(unsigned i) const;
 /// Get the list of neighbors of the i-th atom
   std::vector<unsigned> getNeighbors(unsigned i);
-  ~NeighborList(){};
+  ~NeighborList(){}
 };
 
 }

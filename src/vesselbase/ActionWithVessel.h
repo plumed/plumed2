@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2013 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -45,7 +45,6 @@ times.  This is used in PLMD::MultiColvar.
 class ActionWithVessel : public virtual Action {
 friend class Vessel;
 friend class ShortcutVessel;
-friend class StoreValuesVessel;
 friend class FunctionVessel;
 friend class BridgeVessel;
 private:
@@ -53,8 +52,10 @@ private:
   bool read;
 /// Do all calculations in serial
   bool serial;
-/// The tolerance on the accumulators for neighbour list
+/// The tolerance on the accumulators 
   double tolerance;
+/// Tolerance for quantities being put in neighbor lists
+  double nl_tolerance;
 /// The value of the current element in the sum
   std::vector<double> thisval;
 /// A boolean that makes sure we don't accumulate very wrong derivatives
@@ -69,32 +70,34 @@ private:
   std::vector<Vessel*> functions;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
-/// Avoid hiding of base class virtual function
-  using Action::deactivate;
 protected:
+/// The terms in the series are locked
+  bool contributorsAreUnlocked;
 /// Does the weight have derivatives
   bool weightHasDerivatives;
 /// The numerical index of the task we are curently performing
   unsigned current;
+/// This is used for numerical derivatives of bridge variables
+  unsigned bridgeVariable;
 /// The list of tasks we have to perform
   DynamicList<unsigned> taskList;
 /// Add a vessel to the list of vessels
   void addVessel( const std::string& name, const std::string& input, const int numlab=0, const std::string thislab="" );
   void addVessel( Vessel* vv );
 /// Add a bridging vessel to the list of vessels
-  void addBridgingVessel( ActionWithVessel* tome, BridgeVessel* bv );
+  BridgeVessel* addBridgingVessel( ActionWithVessel* tome );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void readVesselKeywords();
 /// Return the value of the tolerance
   double getTolerance() const ;
+/// Return the value for the neighbor list tolerance
+  double getNLTolerance() const ;
 /// Get the number of vessels
   unsigned getNumberOfVessels() const;
 /// Get a pointer to the ith vessel
    Vessel* getPntrToVessel( const unsigned& i );
 /// Calculate the values of all the vessels
   void runAllTasks();
-/// Deactivate the task we are currently working on
-  void deactivateCurrentTask();
 /// Finish running all the calculations
   void finishComputations();
 /// Resize all the functions when the number of derivatives change
@@ -105,7 +108,7 @@ protected:
 /// sets all the element derivatives equal to zero
   bool calculateAllVessels();
 /// Retrieve the forces from all the vessels (used in apply)
-  void getForcesFromVessels( std::vector<double>& forcesToApply );
+  bool getForcesFromVessels( std::vector<double>& forcesToApply );
 /// This is used to accumulate the derivatives when we merge using chainRuleForElementDerivatives
   void accumulateDerivative( const unsigned& ider, const double& df );
 /// Clear tempory data that is calculated for each task
@@ -114,29 +117,27 @@ public:
   static void registerKeywords(Keywords& keys);
   ActionWithVessel(const ActionOptions&ao);
   ~ActionWithVessel();
+/// Used to make sure we are calculating everything during neighbor list update step
+  virtual void unlockContributors();
+  virtual void lockContributors();
 /// Activate the jth colvar
 /// Deactivate the current task in future loops
-  virtual void deactivate_task()=0;
+  virtual void deactivate_task();
 /// Merge the derivatives
   void chainRuleForElementDerivatives( const unsigned&, const unsigned&, const double& , Vessel* );
   void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , Vessel* );
   virtual void mergeDerivatives( const unsigned& ider, const double& df );
-  virtual unsigned getFirstDerivativeToMerge();
-  virtual unsigned getNextDerivativeToMerge( const unsigned& );
-  virtual void buildDerivativeIndexArrays( std::vector< DynamicList<unsigned> >& active_der );
   virtual void clearDerivativesAfterTask( const unsigned& );
 /// Are the base quantities periodic
   virtual bool isPeriodic()=0;
 /// What are the domains of the base quantities
   virtual void retrieveDomain( std::string& min, std::string& max);
-/// Get the number of functions from which we are calculating the distribtuion
-  virtual unsigned getNumberOfFunctionsInAction()=0;
 /// Get the number of derivatives for final calculated quantity 
   virtual unsigned getNumberOfDerivatives()=0;
 /// Do any jobs that are required before the task list is undertaken
   virtual void doJobsRequiredBeforeTaskList();
 /// Calculate one of the functions in the distribution
-  virtual bool performTask( const unsigned& j )=0;
+  virtual void performTask( const unsigned& j )=0;
 /// Return a pointer to the field 
   Vessel* getVessel( const std::string& name );
 ///  Add some derivative of the quantity in the sum wrt to a numbered element
@@ -147,11 +148,18 @@ public:
   double getElementValue( const unsigned& ival ) const ;
 /// Retrieve the derivative of the quantity in the sum wrt to a numbered element
   double getElementDerivative( const unsigned& ) const ;
+/// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
+  virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 };
 
 inline
 double ActionWithVessel::getTolerance() const {
   return tolerance;
+}
+
+inline
+double ActionWithVessel::getNLTolerance() const {
+  return nl_tolerance;
 }
 
 inline
@@ -177,16 +185,6 @@ void ActionWithVessel::setElementValue( const unsigned& ival, const double& val 
   plumed_dbg_massert( !thisval_wasset[ival], "In action named " + getName() + " with label " + getLabel() );
   thisval[ival]=val;
   thisval_wasset[ival]=true;
-}
-
-inline
-unsigned ActionWithVessel::getFirstDerivativeToMerge(){
-  return 0;
-}
-
-inline
-unsigned ActionWithVessel::getNextDerivativeToMerge( const unsigned& ider){
-  return ider+1;
 }
 
 inline
@@ -217,6 +215,16 @@ void ActionWithVessel::accumulateDerivative( const unsigned& ider, const double&
   buffer[current_buffer_start + current_buffer_stride*ider] += der;
 }
 
+inline
+void ActionWithVessel::unlockContributors(){
+  plumed_dbg_assert( taskList.getNumberActive()==taskList.fullSize() );
+  contributorsAreUnlocked=true;
+}
+
+inline
+void ActionWithVessel::lockContributors(){
+  contributorsAreUnlocked=false;
+}
 
 } 
 }
