@@ -362,12 +362,10 @@ void PlumedMain::init(){
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
   log<<"PLUMED compiled on " __DATE__ " at " __TIME__ "\n";
-  log<<"There is not yet a published paper describing this software.\n";
-  log<<"If you use it in a publication please explicitly state\n";
-  log<<"which version you are using and cite the previous paper ";
-  log<<cite("Bonomi, Branduardi, Bussi, Camilloni, Provasi, Raiteri, Donadio, Marinelli, Pietrucci,\n      Broglia and Parrinello, Comp. Phys. Comm. 180, 1961 (2009)");
+  log<<"Please cite this paper when using PLUMED ";
+  log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. DOI:10.1016/j.cpc.2013.09.018 (2013)");
   log<<"\n";
-  log<<"For further information see the PLUMED web page at www.plumed-code.org\n";
+  log<<"For further information see the PLUMED web page at http://www.plumed-code.org\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
