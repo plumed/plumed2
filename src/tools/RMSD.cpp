@@ -22,19 +22,18 @@
 #include "RMSD.h"
 #include "PDB.h"
 #include "Log.h"
-#include "OptimalAlignment.h"
 #include "Exception.h"
 #include <cmath>
 #include <iostream>
 #include "Matrix.h"
 #include "Tools.h"
+#include "Tensor.h"
 
 using namespace std;
 namespace PLMD{
 
 RMSD::RMSD(Log & log ):
   alignmentMethod(SIMPLE),
-  myoptimalalignment(NULL),
   log(&log){}
 
 RMSD& RMSD::operator=(const RMSD& v){
@@ -42,9 +41,6 @@ RMSD& RMSD::operator=(const RMSD& v){
   reference=v.reference;
   align=v.align;
   displace=v.displace;
-// in this manner the new RMSD is built empty and will just allocate its own
-// myoptimalalignment when used (in calculate())
-  myoptimalalignment=NULL;
 
   log=v.log;
   return *this ;
@@ -56,9 +52,6 @@ RMSD::RMSD(const RMSD & oldrmsd):
   reference(oldrmsd.reference),
   align(oldrmsd.align),
   displace(oldrmsd.align),
-// in this manner the new RMSD is built empty and will just allocate its own
-// myoptimalalignment when used (in calculate())
-  myoptimalalignment(NULL),
   log( oldrmsd.log )
   {  }
 
@@ -71,7 +64,6 @@ void RMSD::set(const PDB&pdb, string mytype ){
 }
 
 void RMSD::setType(string mytype){
-	myoptimalalignment=NULL;
 
 	alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
 	if (mytype=="SIMPLE"){
@@ -95,8 +87,8 @@ void RMSD::clear(){
   align.clear();
   displace.clear();
 }
+
 RMSD::~RMSD(){
-	if(myoptimalalignment!=NULL) delete myoptimalalignment;
 }
 
 string RMSD::getMethod(){
@@ -143,25 +135,9 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
                 else                ret=optimalAlignment<false,false>(align,displace,positions,reference,derivatives,squared); 
 		break;
 	case OPTIMAL:
-		bool fastversion=true;
-		if (fastversion){
 		// this is the fast routine but in the "safe" mode, which gives less numerical error:
-		  if(align==displace) ret=optimalAlignment<true,true>(align,displace,positions,reference,derivatives,squared); 
-		  else ret=optimalAlignment<true,false>(align,displace,positions,reference,derivatives,squared); 
-		} else {
-			if (myoptimalalignment==NULL){ // do full initialization	
-			//
-			// I create the object only here
-			// since the alignment object require to know both position and reference
-			// and it is possible only at calculate time
-			//
-				myoptimalalignment=new OptimalAlignment(align,displace,positions,reference,log);
-        		}
-			// this changes the P0 according the running frame
-			(*myoptimalalignment).assignP0(positions);
-			ret=(*myoptimalalignment).calculate(squared, derivatives);
-			//(*myoptimalalignment).weightedFindiffTest(false);
-		}
+		if(align==displace) ret=optimalAlignment<true,true>(align,displace,positions,reference,derivatives,squared); 
+		else ret=optimalAlignment<true,false>(align,displace,positions,reference,derivatives,squared); 
 		break;	
   }	
 
@@ -221,6 +197,8 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
       return dist;
 }
 
+// notice that in the current implementation the safe argument only makes sense for
+// align==displace
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment(const  std::vector<double>  & align,
                                      const  std::vector<double>  & displace,

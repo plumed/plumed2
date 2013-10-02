@@ -30,7 +30,6 @@ namespace PLMD{
 
 class Log;
 class PDB;
-class OptimalAlignment;
 
 /** \ingroup TOOLBOX
 A class that implements RMSD calculations
@@ -66,7 +65,6 @@ class RMSD
   std::vector<Vector> reference;
   std::vector<double> align;
   std::vector<double> displace;
-  OptimalAlignment *myoptimalalignment;
   Log *log;
 public:
 /// Constructor
