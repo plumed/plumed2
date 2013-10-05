@@ -36,25 +36,6 @@ RMSD::RMSD(Log & log ):
   alignmentMethod(SIMPLE),
   log(&log){}
 
-RMSD& RMSD::operator=(const RMSD& v){
-  alignmentMethod=v.alignmentMethod;
-  reference=v.reference;
-  align=v.align;
-  displace=v.displace;
-
-  log=v.log;
-  return *this ;
-}
-
-
-RMSD::RMSD(const RMSD & oldrmsd):
-  alignmentMethod(oldrmsd.alignmentMethod),
-  reference(oldrmsd.reference),
-  align(oldrmsd.align),
-  displace(oldrmsd.align),
-  log( oldrmsd.log )
-  {  }
-
 void RMSD::set(const PDB&pdb, string mytype ){
 
 	setReference(pdb.getPositions());
@@ -88,9 +69,6 @@ void RMSD::clear(){
   displace.clear();
 }
 
-RMSD::~RMSD(){
-}
-
 string RMSD::getMethod(){
 	string mystring;
 	switch(alignmentMethod){
@@ -106,18 +84,34 @@ void RMSD::setReference(const vector<Vector> & reference){
   this->reference=reference;
   plumed_massert(align.empty(),"you should first clear() an RMSD object, then set a new referece");
   plumed_massert(displace.empty(),"you should first clear() an RMSD object, then set a new referece");
-  align.resize(n,1.0);
-  displace.resize(n,1.0);
+  align.resize(n,1.0/n);
+  displace.resize(n,1.0/n);
+  Vector center;
+  for(unsigned i=0;i<n;i++) center+=this->reference[i]*align[i];
+  for(unsigned i=0;i<n;i++) this->reference[i]-=center;
 }
 
 void RMSD::setAlign(const vector<double> & align){
+  unsigned n=reference.size();
   plumed_massert(this->align.size()==align.size(),"mismatch in dimension of align/displace arrays");
   this->align=align;
+  double w=0.0;
+  for(unsigned i=0;i<n;i++) w+=this->align[i];
+  double inv=1.0/w;
+  for(unsigned i=0;i<n;i++) this->align[i]*=inv;
+  Vector center;
+  for(unsigned i=0;i<n;i++) center+=reference[i]*this->align[i];
+  for(unsigned i=0;i<n;i++) reference[i]-=center;
 }
 
 void RMSD::setDisplace(const vector<double> & displace){
+  unsigned n=reference.size();
   plumed_massert(this->displace.size()==displace.size(),"mismatch in dimension of align/displace arrays");
   this->displace=displace;
+  double w=0.0;
+  for(unsigned i=0;i<n;i++) w+=this->displace[i];
+  double inv=1.0/w;
+  for(unsigned i=0;i<n;i++) this->displace[i]*=inv;
 }
 
 double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared){
@@ -152,8 +146,6 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 		                     Log* &log,
 		                     std::vector<Vector>  & derivatives, bool squared) {
       double dist(0);
-      double anorm(0);
-      double dnorm(0);
       unsigned n=reference.size();
 
       Vector apositions;
@@ -164,34 +156,23 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
       for(unsigned i=0;i<n;i++){
         double aw=align[i];
         double dw=displace[i];
-        anorm+=aw;
-        dnorm+=dw;
         apositions+=positions[i]*aw;
         areference+=reference[i]*aw;
         dpositions+=positions[i]*dw;
         dreference+=reference[i]*dw;
       }
 
-      double invdnorm=1.0/dnorm;
-      double invanorm=1.0/anorm;
-
-      apositions*=invanorm;
-      areference*=invanorm;
-      dpositions*=invdnorm;
-      dreference*=invdnorm;
-
       Vector shift=((apositions-areference)-(dpositions-dreference));
       for(unsigned i=0;i<n;i++){
         Vector d=(positions[i]-apositions)-(reference[i]-areference);
         dist+=displace[i]*d.modulo2();
-        derivatives[i]=2*(invdnorm*displace[i]*d+invanorm*align[i]*shift);
+        derivatives[i]=2*(displace[i]*d+align[i]*shift);
       }
-     dist*=invdnorm;
 
      if(!squared){
-	// sqrt and normalization
+	// sqrt
         dist=sqrt(dist);
-	///// sqrt and normalization on derivatives
+	///// sqrt on derivatives
         for(unsigned i=0;i<n;i++){derivatives[i]*=(0.5/dist);}
       }
       return dist;
@@ -206,46 +187,30 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
                                      const std::vector<Vector> & reference ,
                                      std::vector<Vector>  & derivatives, bool squared) {
   double dist(0);
-  double norm(0);
-  double dnorm(0);
   const unsigned n=reference.size();
 // This is the trace of positions*positions + reference*reference
-  double sum00w(0);
-  double sum11w(0);
+  double rr00(0);
+  double rr11(0);
 // This is positions*reference
-  Tensor sum01w;
+  Tensor rr01;
 
   derivatives.resize(n);
 
   Vector cpositions;
-  Vector creference;
 
 // first expensive loop: compute centers
   for(unsigned iat=0;iat<n;iat++){
     double w=align[iat];
-    norm+=w;
-    if(!alEqDis) dnorm+=displace[iat];
     cpositions+=positions[iat]*w;
-    creference+=reference[iat]*w;
   }
-  double invnorm=1.0/norm;
-  double invdnorm;
-  if(!alEqDis) invdnorm=1.0/dnorm;
 
-  cpositions*=invnorm;
-  creference*=invnorm;
-  
 // second expensive loop: compute second moments wrt centers
   for(unsigned iat=0;iat<n;iat++){
     double w=align[iat];
-    sum00w+=dotProduct(positions[iat]-cpositions,positions[iat]-cpositions)*w;
-    sum11w+=dotProduct(reference[iat]-creference,reference[iat]-creference)*w;
-    sum01w+=Tensor(positions[iat]-cpositions,reference[iat]-creference)*w;
+    rr00+=dotProduct(positions[iat]-cpositions,positions[iat]-cpositions)*w;
+    rr11+=dotProduct(reference[iat],reference[iat])*w;
+    rr01+=Tensor(positions[iat]-cpositions,reference[iat])*w;
   }
-
-  double rr00=sum00w*invnorm;
-  Tensor rr01=sum01w*invnorm;
-  double rr11=sum11w*invnorm;
 
   Matrix<double> m=Matrix<double>(4,4);
   m[0][0]=2.0*(-rr01[0][0]-rr01[1][1]-rr01[2][2]);
@@ -349,7 +314,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     drotation_drr01[2][1]=2*(-(q[0]*dq_drr01[1]+dq_drr01[0]*q[1])+(q[2]*dq_drr01[3]+dq_drr01[2]*q[3]));
   }
 
-  double prefactor=2.0*invnorm;
+  double prefactor=2.0;
 
   if(!squared && alEqDis) prefactor*=0.5/sqrt(dist);
 
@@ -365,21 +330,21 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 
 // third expensive loop: derivatives
   for(unsigned iat=0;iat<n;iat++){
-    Vector d(positions[iat]-cpositions - matmul(rotation,reference[iat]-creference));
+    Vector d(positions[iat]-cpositions - matmul(rotation,reference[iat]));
     if(alEqDis){
 // there is no need for derivatives of rotation and shift here as it is by construction zero
 // (similar to Hellman-Feynman forces)
       derivatives[iat]= prefactor*align[iat]*d;
-       if(safe) dist+=align[iat]*invnorm*modulo2(d);
+       if(safe) dist+=align[iat]*modulo2(d);
     } else {
 // the case for align != displace is different, sob:
-      dist+=displace[iat]*invdnorm*modulo2(d);
+      dist+=displace[iat]*modulo2(d);
 // these are the derivatives assuming the roto-translation as frozen
-      derivatives[iat]=2*displace[iat]*invdnorm*d;
+      derivatives[iat]=2*displace[iat]*d;
 // here I accumulate derivatives wrt rotation matrix ..
-      ddist_drotation+=-2*displace[iat]*invdnorm*extProduct(d,reference[iat]-creference);
+      ddist_drotation+=-2*displace[iat]*extProduct(d,reference[iat]);
 // .. and cpositions
-      ddist_dcpositions+=-2*displace[iat]*invdnorm*d;
+      ddist_dcpositions+=-2*displace[iat]*d;
     }
   }
 
@@ -389,8 +354,8 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
     for(unsigned iat=0;iat<n;iat++){
 // this is propagating to positions.
 // I am implicitly using the derivative of rr01 wrt positions here
-      derivatives[iat]+=matmul(ddist_drr01,(reference[iat]-creference))*align[iat]*invnorm;
-      derivatives[iat]+=ddist_dcpositions*align[iat]*invnorm;
+      derivatives[iat]+=matmul(ddist_drr01,reference[iat])*align[iat];
+      derivatives[iat]+=ddist_dcpositions*align[iat];
     }
   }
   if(!squared){

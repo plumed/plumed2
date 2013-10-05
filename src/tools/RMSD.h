@@ -62,19 +62,17 @@ class RMSD
 {
   enum AlignmentMethod {SIMPLE, OPTIMAL, OPTIMAL_FAST};
   AlignmentMethod alignmentMethod;
+// Reference coordinates
   std::vector<Vector> reference;
+// Weights for alignment
   std::vector<double> align;
+// Weights for deviation
   std::vector<double> displace;
+// Logfile
   Log *log;
 public:
 /// Constructor
   RMSD(Log & log );
-/// a copy constructor
-  RMSD(const RMSD &);
-/// assignment
-  RMSD& operator=(const RMSD& );
-/// the destructor needs to delete the myalignment object eventually
-  ~RMSD();
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure
