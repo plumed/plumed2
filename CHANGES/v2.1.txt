@@ -3,8 +3,12 @@
 @page CHANGES-2-1 CHANGES-2-1
 
 Changes from version 2.0 which are relevant for users:
+- Several optimizations in the following actions: WHOLEMOLECULES, ...
+- Faster atom scattering with domain decomposition.
 
 Changes from version 2.0 which are relevant for developers:
+- Added regtests for plumed as a library (e.g. basic/rt-make-0).
+- Improved class Communicator. Many operations can now be done directly on Vectors, Tensors, and std::vector.
 - Patches for GPL codes (QuantumEspresso and Gromacs) now also include
   original code so as to simplify their modification.
 
