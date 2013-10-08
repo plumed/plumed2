@@ -2,8 +2,10 @@
 
 @page CHANGES-2-1 CHANGES-2-1
 
-Let's add here everything relevant which is in master branch and not in v2.0.
+Changes from version 2.0 which are relevant for users:
 
-After release of 2.1, we will document here fixes and additions on the 2.1.x series.
+Changes from version 2.0 which are relevant for developers:
+- Patches for GPL codes (QuantumEspresso and Gromacs) now also include
+  original code so as to simplify their modification.
 
 */
