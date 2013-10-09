@@ -157,7 +157,13 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
   }
 
   FILE* mystdin=in;
-  if(argc==2) mystdin=fopen(argv[1],"r");
+  if(argc==2){
+    mystdin=fopen(argv[1],"r");
+    if(!mystdin){
+      fprintf(stderr,"ERROR: cannot open file %s\n",argv[1]);
+      return false;
+    }
+  }
 
   char buffer[256]; std::string line; line.resize(256);
   while(fgets(buffer,256,mystdin)){

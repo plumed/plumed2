@@ -190,6 +190,10 @@ read_input(double& temperature,
 void read_natoms(const string & inputfile,int & natoms){
 // read the number of atoms in file "input.xyz"
   FILE* fp=fopen(inputfile.c_str(),"r");
+  if(!fp){
+    fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
+    exit(1);
+  }
   fscanf(fp,"%1000d",&natoms);
   fclose(fp);
 }
@@ -198,6 +202,10 @@ void read_positions(const string& inputfile,int natoms,vector<Vector>& positions
 // read positions and cell from a file called inputfile
 // natoms (input variable) and number of atoms in the file should be consistent
   FILE* fp=fopen(inputfile.c_str(),"r");
+  if(!fp){
+    fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
+    exit(1);
+  }
   char buffer[256];
   char atomname[256];
   fgets(buffer,256,fp);
