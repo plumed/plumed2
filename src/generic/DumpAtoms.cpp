@@ -94,6 +94,9 @@ class DumpAtoms:
   std::vector<unsigned>    residueNumbers;
   std::vector<std::string> residueNames;
   std::string type;
+  std::string fmt_gro_pos;
+  std::string fmt_gro_box;
+  std::string fmt_xyz;
 public:
   DumpAtoms(const ActionOptions&);
   ~DumpAtoms();
@@ -113,6 +116,7 @@ void DumpAtoms::registerKeywords( Keywords& keys ){
   keys.add("atoms", "ATOMS", "the atom indices whose positions you would like to print out");
   keys.add("compulsory", "FILE", "file on which to output coordinates. .gro extension is automatically detected");
   keys.add("compulsory", "UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
+  keys.add("optional", "PRECISION","The number of digits in trajectory file");
   keys.add("optional", "TYPE","file type, either xyz or gro, can override an automatically detected file extension");
 }
 
@@ -139,6 +143,24 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
     if(ntype!="xyz" && ntype!="gro") error("TYPE should be either xyz or gro");
     log<<"  file type enforced to be "<<ntype<<"\n";
     type=ntype;
+  }
+
+  fmt_gro_pos="%8.3f";
+  fmt_gro_box="%12.7f";
+  fmt_xyz="%f";
+
+  string precision;
+  parse("PRECISION",precision);
+  if(precision.length()>0){
+    int p;
+    Tools::convert(precision,p);
+    log<<"  with precision "<<p<<"\n";
+    string a,b;
+    Tools::convert(p+5,a);
+    Tools::convert(p,b);
+    fmt_gro_pos="%"+a+"."+b+"f";
+    fmt_gro_box=fmt_gro_pos;
+    fmt_xyz=fmt_gro_box;
   }
 
   parseAtomList("ATOMS",atoms);
@@ -175,9 +197,9 @@ void DumpAtoms::update(){
     of.printf("%d\n",getNumberOfAtoms());
     const Tensor & t(getPbc().getBox());
     if(getPbc().isOrthorombic()){
-      of.printf(" %f %f %f\n",lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
+      of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
     }else{
-      of.printf(" %f %f %f %f %f %f %f %f %f\n",
+      of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),
                    lenunit*t(0,0),lenunit*t(0,1),lenunit*t(0,2),
                    lenunit*t(1,0),lenunit*t(1,1),lenunit*t(1,2),
                    lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
@@ -187,7 +209,7 @@ void DumpAtoms::update(){
       const char* defname="X";
       const char* name=defname;
       if(names.size()>0) if(names[i].length()>0) name=names[i].c_str();
-      of.printf("%s %f %f %f\n",name,lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
+      of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),name,lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
     }
   } else if(type=="gro"){
     const Tensor & t(getPbc().getBox());
@@ -201,10 +223,11 @@ void DumpAtoms::update(){
       if(residueNumbers.size()>0) residueNumber=residueNumbers[i];
       std::string resname="";
       if(residueNames.size()>0) resname=residueNames[i];
-      of.printf("%5u%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f\n",residueNumber,resname.c_str(),name,getAbsoluteIndex(i).serial(),
-         lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2),0.0,0.0,0.0);
+      of.printf(("%5u%-5s%5s%5d"+fmt_gro_pos+fmt_gro_pos+fmt_gro_pos+"\n").c_str(),
+         residueNumber,resname.c_str(),name,getAbsoluteIndex(i).serial(),
+         lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2));
     }
-    of.printf("%12.7f %12.7f %12.7f %12.7f %12.7f %12.7f %12.7f %12.7f %12.7f\n",
+    of.printf((fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+" "+fmt_gro_box+"\n").c_str(),
            lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2),
            lenunit*t(0,1),lenunit*t(0,2),lenunit*t(1,0),
            lenunit*t(1,2),lenunit*t(2,0),lenunit*t(2,1));
