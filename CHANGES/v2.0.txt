@@ -17,6 +17,8 @@ In addition, it is now much easier to contribute new functionality to the code b
 - A modular structure 
 - Developer and user documentation 
 
-After release, we will document here fixes and additions on the 2.0.x series.
+Version 2.0.1:
+- Several small fixes in documentation and log file
+- Added message when "plumed simpled" is used on a non-existing file
 
 */
