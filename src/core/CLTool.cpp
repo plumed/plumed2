@@ -38,7 +38,7 @@ keys(k)
 }
 
 void CLTool::registerKeywords( Keywords& keys ){
-  keys.addFlag("--help",false,"print this help");
+  keys.addFlag("--help/-h",false,"print this help");
 }
 
 CLTool::CLTool(const CLToolOptions& co ): 
@@ -106,6 +106,9 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ){
          }
          if(!found){
             fprintf(stderr,"ERROR in input for command line tool %s : %s option is unknown \n\n", name.c_str(), a.c_str() );
+            fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
+            fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
+            keywords.print( out ); 
             printhelp=true;
          }
       }
@@ -160,7 +163,10 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
   if(argc==2){
     mystdin=fopen(argv[1],"r");
     if(!mystdin){
-      fprintf(stderr,"ERROR: cannot open file %s\n",argv[1]);
+      fprintf(stderr,"ERROR: cannot open file %s\n\n",argv[1]);
+      fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
+      fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
+      keywords.print( out );
       return false;
     }
   }
@@ -183,7 +189,10 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
          }
      }
      if(!found){
-        fprintf(stderr,"ERROR in input for command line tool %s : unknown keyword %s found in input file\n",name.c_str(),keyword.c_str());
+        fprintf(stderr,"ERROR in input for command line tool %s : unknown keyword %s found in input file\n\n",name.c_str(),keyword.c_str());
+        fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
+        fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
+        keywords.print( out );
         if(mystdin) fclose(mystdin);
         return false;
      }
