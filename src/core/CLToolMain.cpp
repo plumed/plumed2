@@ -183,7 +183,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
  if(printhelp){
     string msg=
         "Usage: plumed [options] [command] [command options]\n"
-        "  plumed [command] -h       : to print help for a specific command\n"
+        "  plumed [command] -h|--help: to print help for a specific command\n"
         "Options:\n"
         "  [help|-h|--help]          : to print this help\n"
         "  [--is-installed]          : fails if plumed is not installed\n"
