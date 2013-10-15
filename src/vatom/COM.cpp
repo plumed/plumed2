@@ -76,6 +76,7 @@ COM::COM(const ActionOptions&ao):
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
+  if(atoms.size()==0) error("at least one atom should be specified");
   checkRead();
   log.printf("  of atoms");
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());
