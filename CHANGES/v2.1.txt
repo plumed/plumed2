@@ -6,6 +6,7 @@ Includes all fixes in branch 2.0 (see \ref CHANGES-2-0) up to 2.0.1
 
 Changes from version 2.0 which are relevant for users:
 - Added option PRECISION to set number of digits in DUMPATOMS
+- Added NDX_FILE and NDX_GROUP to action GROUP, allowing to import atom lists from ndx files
 - Several optimizations in the following actions: WHOLEMOLECULES, ...
 - Faster atom scattering with domain decomposition.
 
