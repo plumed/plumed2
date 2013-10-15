@@ -17,8 +17,12 @@ In addition, it is now much easier to contribute new functionality to the code b
 - A modular structure 
 - Developer and user documentation 
 
-Version 2.0.1:
+Version 2.0.1 (unpublised yet, check out branch v2.0 on git repository)
+For users:
 - Several small fixes in documentation and log file
 - Added message when "plumed simpled" is used on a non-existing file
+For developers:
+- Several small fixes in documentation
+- Added possibility to setup replica exchange from MD codes in fortran (commands "GREX setMPIFIntercomm" and "GREX setMPIFIntracomm")
 
 */

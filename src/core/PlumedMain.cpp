@@ -293,6 +293,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
        stopFlag=static_cast<int*>(val);
+// other commands that should be used after initialization:
   } else if(word=="getExchangesFlag"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
