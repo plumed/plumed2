@@ -335,7 +335,6 @@ void DynamicList<T>::sortActiveList(){
 
 template <typename T>
 unsigned DynamicList<T>::linkIndex( const unsigned& ii ) const {
-  plumed_dbg_assert( onoff[ii]>0 && onoff[ii]%nprocessors==0 );
   return translator[ii];
 }
 
