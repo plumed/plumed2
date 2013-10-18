@@ -27,5 +27,6 @@ For users:
 For developers:
 - Several small fixes in documentation
 - Added possibility to setup replica exchange from MD codes in fortran (commands "GREX setMPIFIntercomm" and "GREX setMPIFIntracomm")
+- cmd("setStopFlag") should now be called after PLUMED initialization.
 
 */
