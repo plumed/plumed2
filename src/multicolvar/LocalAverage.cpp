@@ -23,7 +23,7 @@
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 
-//+PLUMEDOC MCOLVARF SPRINT
+//+PLUMEDOC MCOLVARF LOCAL_AVERAGE
 /*
 Calculate averages over spherical regions centered on atoms
 
