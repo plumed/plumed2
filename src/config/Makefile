@@ -8,7 +8,7 @@ all:
 	@echo "Updating ConfigInstall.cpp"
 	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
          sed "s/@ISINSTALLED@/true/g" | \
-	 ../maketools/update-plumedroot.sh ConfigInstall.cpp
+	env prefix="${prefix}" ../maketools/update-plumedroot.sh ConfigInstall.cpp
 	$(MAKE) do-all
 
 do-all: Config.o ConfigInstall.o compile_options.sh 

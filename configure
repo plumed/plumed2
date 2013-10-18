@@ -1,0 +1,10 @@
+#! /bin/bash
+
+rm -f sourceme.sh Makefile.conf
+
+cd autoconf
+./configure "${@}"
+cp Makefile.conf ../
+cp sourceme.sh ../
+
+
