@@ -256,8 +256,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   int rr=sizeof(real);
   p.cmd("setRealPrecision",&rr);
   int checknatoms=-1;
-  int plumedStopCondition=0;
-  p.cmd("setStopFlag",&plumedStopCondition);
   int step=0;
   if(Communicator::initialized()){
     if(multi){
@@ -327,7 +325,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   while(true){
     if(!noatoms){
        if(!Tools::getline(fp,line)) break;
-    } else if ( plumedStopCondition ) break;
+    }
 
     int natoms;
     bool first_step=false;
@@ -421,7 +419,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
       }
     }
 
+    int plumedStopCondition=0;
     p.cmd("setStep",&step);
+    p.cmd("setStopFlag",&plumedStopCondition);
     if(!noatoms){
        if(trajectory_fmt=="xyz"){
          if(!Tools::getline(fp,line)) error("premature end of trajectory file");
@@ -558,6 +558,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      for(int i=0;i<natoms;i++)
        fprintf(fp_forces,fmt.c_str(),forces[3*i],forces[3*i+1],forces[3*i+2]);
    }
+
+    if(noatoms && plumedStopCondition) break;
 
     step+=stride;
   }
