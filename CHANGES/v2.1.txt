@@ -12,6 +12,7 @@ Changes from version 2.0 which are relevant for users:
 - SPRINT topological collective variables
 - Improved multicolvar neighbor lists
 - Maximum colvar as well as minimum colvar is now possible
+- COMMITTOR analysis
 
 Changes from version 2.0 which are relevant for developers:
 - Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional
