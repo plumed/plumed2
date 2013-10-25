@@ -40,7 +40,7 @@ Makefile.conf.xxd: ../../Makefile.conf
 # file to import compilation options inside a bash script
 compile_options.sh:
 	@echo Building compile_options.sh, a sourceable bash script with some compilation options
-	@echo "compile=\""$(CXX) -c -I\"\$$PLUMED_ROOT\"/src $(CPPFLAGS) $(CXXFLAGS) -o"\"" > $@
+	@echo "compile='"$(CXX) -c -I'\$$PLUMED_ROOT'/src $(CPPFLAGS) $(CXXFLAGS) -o"'" > $@
 	@echo "link='"$(LDSO) -o"'" >> $@
 	@echo "soext='"$(SOEXT)"'" >> $@
 
