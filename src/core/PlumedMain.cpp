@@ -183,7 +183,6 @@ void PlumedMain::cmd(const std::string & word,void*val){
        atoms.setAtomsNlocal(*static_cast<int*>(val));
   } else if(word=="setAtomsGatindex"){
        CHECK_INIT(initialized,word);
-       //CHECK_NULL(val,word);
        atoms.setAtomsGatindex(static_cast<int*>(val));
   } else if(word=="setAtomsContiguous"){
        CHECK_INIT(initialized,word);

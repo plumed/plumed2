@@ -287,6 +287,7 @@ void Atoms::setAtomsNlocal(int n){
 }
 
 void Atoms::setAtomsGatindex(int*g){
+  plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
   for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=g[i];
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
   if(dd) for(unsigned i=0;i<gatindex.size();i++) dd.g2l[gatindex[i]]=i;
