@@ -168,8 +168,10 @@ unsigned Grid::getDimension() const {
 unsigned Grid::getIndex(const vector<unsigned> & indices) const {
  plumed_assert(indices.size()==dimension_);
  for(unsigned int i=0;i<dimension_;i++)
-  if(indices[i]<0 || indices[i]>=nbin_[i]) {
-    std::string msg="ERROR: the system is looking for a value outside the grid along the " + i;
+  if(indices[i]>=nbin_[i]) {
+    std::string is;
+    Tools::convert(i,is);
+    std::string msg="ERROR: the system is looking for a value outside the grid along the " + is;
     plumed_merror(msg+" index!");
   }
  unsigned index=indices[dimension_-1];
