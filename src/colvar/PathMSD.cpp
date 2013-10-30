@@ -40,7 +40,7 @@ in input ("sss" component) and the distance from them ("zzz" component).
 \par Examples
 
 Here below is a case where you have defined three frames and you want to  
-calculate the progress alng the path and the distance from it in p1
+calculate the progress along the path and the distance from it in p1
 
 \verbatim
 p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8 
