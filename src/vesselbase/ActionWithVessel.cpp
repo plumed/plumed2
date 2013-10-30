@@ -220,7 +220,7 @@ void ActionWithVessel::doJobsRequiredBeforeTaskList(){
 }
 
 void ActionWithVessel::runAllTasks(){
-  if( getExchangeStep() && !contributorsAreUnlocked ) error("contributors must be unlocked during exchange steps");
+  if( getExchangeStep() && nactive_tasks!=fullTaskList.size()  ) error("contributors must be unlocked during exchange steps");
   plumed_massert( functions.size()>0, "you must have a call to readVesselKeywords somewhere" );
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();

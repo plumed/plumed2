@@ -18,11 +18,15 @@ In addition, it is now much easier to contribute new functionality to the code b
 - Developer and user documentation 
 
 Version 2.0.1 (unpublised yet, check out branch v2.0 on git repository)
+
 For users:
 - Several small fixes in documentation and log file
+- Fixed a bug in HISTOGRAM with REWEIGHT_BIAS. Reweighting was only done when also temperature-reweighing was enabled.
 - Added message when "plumed simpled" is used on a non-existing file
+
 For developers:
 - Several small fixes in documentation
 - Added possibility to setup replica exchange from MD codes in fortran (commands "GREX setMPIFIntercomm" and "GREX setMPIFIntracomm")
+- cmd("setStopFlag") should now be called after PLUMED initialization.
 
 */

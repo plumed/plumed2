@@ -244,7 +244,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
 
 /* PLUMED */
-    int plumedNeedsEnergy;
+    int plumedNeedsEnergy=0;
+    int plumedWantsToStop=0;
 /* END PLUMED */
 
 #ifdef GMX_FAHCORE
@@ -1257,11 +1258,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* PLUMED */
             if(plumedswitch){
               if(plumedNeedsEnergy) plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
+              plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
               plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
               plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
               plumed_cmd(plumedmain,"performCalc",NULL);
               if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
                  do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
+              if(plumedWantsToStop) ir->nsteps=step_rel+1;
             }
             /* END PLUMED */
         }
