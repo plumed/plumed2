@@ -175,7 +175,8 @@ public:
 /// Used for calculating weighted averages
   virtual void finishWeightedAverageCalculation( MultiColvarFunction* func );
 /// Add derivatives to the orientations
-  virtual void addOrientationDerivatives( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, const std::vector<double>& weight, MultiColvarFunction* func );
+  virtual void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
+                                                const std::vector<double>& weight, MultiColvarFunction* func );
 /// This is true if multicolvar is calculating a vector or if the multicolvar is the density
   virtual bool hasDifferentiableOrientation() const { return false; }
 };

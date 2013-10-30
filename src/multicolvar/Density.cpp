@@ -60,7 +60,8 @@ public:
   bool isPeriodic(){ return false; }
   bool isDensity(){ return true; }
   bool hasDifferentiableOrientation() const { return true; }
-  void addOrientationDerivatives( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, const std::vector<double>& weight, MultiColvarFunction* func ){}
+  void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
+                                        const std::vector<double>& weight, MultiColvarFunction* func ){}
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 };
 

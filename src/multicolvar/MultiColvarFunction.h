@@ -177,7 +177,7 @@ inline
 void MultiColvarFunction::addOrientationDerivatives( const unsigned& iatom , const std::vector<double>& der ){
   plumed_dbg_assert( iatom<natomsper ); unsigned mmc = colvar_label[ current_atoms[iatom] ];
   unsigned jout=2; if( usespecies && iatom==0 ) jout=1;
-  mybasemulticolvars[mmc]->addOrientationDerivatives( convertToLocalIndex(current_atoms[iatom],mmc), jout, mmc, der, this );
+  mybasemulticolvars[mmc]->addOrientationDerivativesToBase( convertToLocalIndex(current_atoms[iatom],mmc), jout, mmc, der, this );
 }
 
 }

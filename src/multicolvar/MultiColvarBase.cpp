@@ -401,8 +401,8 @@ void MultiColvarBase::finishWeightedAverageCalculation( MultiColvarFunction* fun
   func->quotientRule( 0, 1, 0 );
 }
 
-void MultiColvarBase::addOrientationDerivatives( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
-                                                 const std::vector<double>& weight, MultiColvarFunction* func ) {
+void MultiColvarBase::addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
+                                                       const std::vector<double>& weight, MultiColvarFunction* func ) {
   plumed_merror("This should not be called - invalid use of multicolvar in function");
 } 
      
