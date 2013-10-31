@@ -288,7 +288,7 @@ PLUMED_COLVAR_INIT(ao)
   a.remove_problematic("GLN", "CB");
   a.remove_problematic("ILE", "CB");
   a.remove_problematic("PRO", "N");  a.remove_problematic("PRO", "H");
-  a.remove_problematic("GLY", "HA"); a.remove_problematic("PRO", "CB");
+  a.remove_problematic("GLY", "HA"); a.remove_problematic("GLY", "CB");
   /* this is a workaround for those chemical shifts that are not parameterized */
   a.remove_problematic("HIE", "HA"); a.remove_problematic("HIP", "HA"); a.remove_problematic("HSP", "HA");
   a.remove_problematic("HIE", "H");  a.remove_problematic("HIP", "H");  a.remove_problematic("HSP", "H"); 
