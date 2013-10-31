@@ -103,8 +103,8 @@
 
   To check if the global object has been initialized, use
 \verbatim
-  (C)        plumed_g_initialized
-  (C++)      PLMD::Plumed::g_initialized
+  (C)        plumed_ginitialized
+  (C++)      PLMD::Plumed::ginitialized
   (FORTRAN)  PLUMED_F_GINITIALIZED
 \endverbatim
 

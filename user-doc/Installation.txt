@@ -7,7 +7,7 @@
 PLUMED does not yet have any automatic configuration procedure and most of the 
 decisions should be taken by the user. As a first step configure with the command:
 \verbatim
-> ./configure
+> ./configure.sh
 \endverbatim
 
 You will have to choose among a set of available preconfigured files.
