@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -81,17 +81,20 @@ void Atoms::setBox(void*p){
 
 void Atoms::setPositions(void*p){
   plumed_massert( dataCanBeSet ,"setPositions must be called after setStep in MD code interface");
+  plumed_massert( p || gatindex.size()==0, "NULL position pointer with non-zero local atoms");
   mdatoms->setp(p); positionsHaveBeenSet=3;
 }
 
 void Atoms::setMasses(void*p){
   plumed_massert( dataCanBeSet ,"setMasses must be called after setStep in MD code interface");
+  plumed_massert( p || gatindex.size()==0, "NULL mass pointer with non-zero local atoms");
   mdatoms->setm(p); massesHaveBeenSet=true;
 
 }
 
 void Atoms::setCharges(void*p){
   plumed_massert( dataCanBeSet, "setCharges must be called after setStep in MD code interface");
+  plumed_massert( p || gatindex.size()==0, "NULL charges pointer with non-zero local atoms");
   mdatoms->setc(p); chargesHaveBeenSet=true;
 }
 
@@ -110,17 +113,20 @@ void Atoms::setEnergy(void*p){
 
 void Atoms::setForces(void*p){
   plumed_massert( dataCanBeSet ,"setForces must be called after setStep in MD code interface");
+  plumed_massert( p || gatindex.size()==0, "NULL force pointer with non-zero local atoms");
   forcesHaveBeenSet=3;
   mdatoms->setf(p);
 }
 
 void Atoms::setPositions(void*p,int i){
   plumed_massert( dataCanBeSet ,"setPositions must be called after setStep in MD code interface");
+  plumed_massert( p || gatindex.size()==0, "NULL positions pointer with non-zero local atoms");
   mdatoms->setp(p,i); positionsHaveBeenSet++;
 }
 
 void Atoms::setForces(void*p,int i){
   plumed_massert( dataCanBeSet ,"setForces must be called after setStep in MD code interface");
+  plumed_massert( p || gatindex.size()==0, "NULL force pointer with non-zero local atoms");
   mdatoms->setf(p,i); forcesHaveBeenSet++;
 }
 
@@ -310,6 +316,7 @@ void Atoms::setAtomsNlocal(int n){
 }
 
 void Atoms::setAtomsGatindex(int*g){
+  plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
   for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=g[i];
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
   if(dd) for(unsigned i=0;i<gatindex.size();i++) dd.g2l[gatindex[i]]=i;

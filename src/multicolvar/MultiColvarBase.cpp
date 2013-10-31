@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
+#include "MultiColvarFunction.h"
 #include "vesselbase/Vessel.h"
 #include "tools/Pbc.h"
 #include <vector>
@@ -48,7 +49,8 @@ ActionWithValue(ao),
 ActionWithVessel(ao),
 usepbc(false),
 updateFreq(0),
-lastUpdate(0),
+mycatoms(NULL),        // This will be destroyed by ActionWithVesel
+myvalues(NULL),        // This will be destroyed by ActionWithVesel 
 usespecies(false)
 {
   if( keywords.exists("NOPBC") ){ 
@@ -57,27 +59,27 @@ usespecies(false)
   } 
   if( keywords.exists("SPECIES") ) usespecies=true;
   if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
-  if(updateFreq>0) log.printf("  Updating contributors every %d steps.\n",updateFreq);
-  else log.printf("  Updating contributors every step.\n");
+  if(updateFreq>0){
+     firsttime=true;
+     log.printf("  Updating contributors every %d steps.\n",updateFreq);
+  } else {
+     firsttime=false; contributorsAreUnlocked=true;   // This will lock during first prepare step methinks
+     log.printf("  Updating contributors every step.\n");
+  }
 }
 
 void MultiColvarBase::copyAtomListToFunction( MultiColvarBase* myfunction ){
   for(unsigned i=0;i<all_atoms.fullSize();++i) myfunction->all_atoms.addIndexToList( all_atoms(i) );
 }
 
-void MultiColvarBase::copyActiveAtomsToFunction( MultiColvarBase* myfunction ){
-  plumed_dbg_assert( myfunction->all_atoms.fullSize()==all_atoms.fullSize() );
-  myfunction->all_atoms.deactivateAll();
+void MultiColvarBase::copyActiveAtomsToFunction( MultiColvarBase* myfunction, const unsigned& start ){
   for(unsigned i=0;i<all_atoms.getNumberActive();++i){
       unsigned iatom=all_atoms.linkIndex( i );
-      myfunction->all_atoms.activate( iatom );
+      myfunction->all_atoms.activate( start + iatom );
   }
-  myfunction->all_atoms.updateActiveMembers();
 }
 
 void MultiColvarBase::setupMultiColvarBase(){
-  // Activate everything
-  taskList.activateAll();
   // Setup decoder array
   if( !usespecies ){
      decoder.resize( ablocks.size() ); unsigned code=1;
@@ -85,49 +87,49 @@ void MultiColvarBase::setupMultiColvarBase(){
   } else if( ablocks.size()>0 ) {
      plumed_assert( ablocks.size()==1 );
      // Setup coordination sphere
-     csphere_atoms.resize( taskList.fullSize() );
-     for(unsigned i=0;i<taskList.fullSize();++i){
+     csphere_atoms.resize( getFullNumberOfTasks() ); unsigned nflags=0;
+     for(unsigned i=0;i<getFullNumberOfTasks();++i){
         for(unsigned j=0;j<ablocks[0].size();++j){
-           if( taskList(i)!=ablocks[0][j] ) csphere_atoms[i].addIndexToList( ablocks[0][j] );
+           if( !same_index( getActiveTask(i), ablocks[0][j] ) ){
+               csphere_atoms[i].addIndexToList( ablocks[0][j] ); nflags++;
+           }
         }
         csphere_atoms[i].activateAll();
      } 
+     csphere_flags.resize( nflags, 0 );
   }
-  
-  // Resize stuff in derived classes 
-  resizeDynamicArrays();
-  // Resize local arrays
-  resizeLocalArrays();
-  // And resize the local vessels
-  resizeFunctions();
+  // Do an initial task list update
+  finishTaskListUpdate();
+  // Setup underlying ActionWithVessel
+  readVesselKeywords();
 }
 
-void MultiColvarBase::requestAtoms(){
-  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-} 
 
 void MultiColvarBase::prepare(){
-  bool updatetime=false;
+  if( contributorsAreUnlocked ) lockContributors();
+  if( updateFreq>0 ){
+     if( firsttime || getStep()%updateFreq==0 ){ firsttime=false; unlockContributors(); }
+  }
+}
+
+void MultiColvarBase::updateCSphereArrays(){
+  if( !usespecies || isDensity() ) return ;
+
   if( contributorsAreUnlocked ){
-      taskList.mpi_gatherActiveMembers( comm );
-      if( usespecies ) mpi_gatherActiveMembers( comm, csphere_atoms ); 
-      lockContributors(); updatetime=true;
-  }
-  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-      taskList.activateAll(); 
-      if(usespecies){ 
-         for(unsigned i=0;i<taskList.getNumberActive();++i) csphere_atoms[i].activateAll();
-      }
-      unlockContributors(); updatetime=true; lastUpdate=getStep();
-  }
-  if(updatetime){
-     // Resize stuff in derived classes
-     resizeDynamicArrays();
-     // Resize local arrays
-     resizeLocalArrays();
-     // Resize vessels
-     resizeFunctions(); 
-  }
+     if( !serialCalculation() ) comm.Sum( csphere_flags );
+     unsigned istart=0;
+     for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
+         csphere_atoms[i].deactivateAll();
+         for(unsigned j=0;j<csphere_atoms[i].fullSize();++j){
+             if( csphere_flags[istart+j]==0 ) csphere_atoms[i].activate(j);
+         }
+         csphere_atoms[i].updateActiveMembers();
+         istart += csphere_atoms[i].fullSize();
+     }
+     plumed_assert( istart==csphere_flags.size() );
+  } else {
+     for(unsigned i=0;i<csphere_flags.size();++i) csphere_flags[i]=0;
+  } 
 }
 
 void MultiColvarBase::resizeLocalArrays(){
@@ -142,24 +144,27 @@ void MultiColvarBase::resizeLocalArrays(){
   forcesToApply.resize( getNumberOfDerivatives() );
 }
 
-bool MultiColvarBase::setupCurrentAtomList(){
+bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode ){
   if( usespecies ){
      natomsper=1;
-     current_atoms[0]=all_atoms.linkIndex( current );
+     current_atoms[0]=getBaseQuantityIndex( taskCode );
+     if( contributorsAreUnlocked ){
+        csphere_start=0; for(unsigned i=0;i<taskCode;++i) csphere_start+=csphere_atoms[i].fullSize();
+     }
      for(unsigned j=0;j<ablocks.size();++j){
-        for(unsigned i=0;i<csphere_atoms[current].getNumberActive();++i){
-           current_atoms[natomsper]=all_atoms.linkIndex( csphere_atoms[current][i] );
+        for(unsigned i=0;i<csphere_atoms[taskCode].getNumberActive();++i){
+           current_atoms[natomsper]=getBaseQuantityIndex( csphere_atoms[taskCode][i] );
            natomsper++; 
         }
      }
      if( natomsper==1 ) return isDensity();
   } else {
      natomsper=current_atoms.size();
-     unsigned scode = current;
+     unsigned scode = taskCode;
      for(unsigned i=0;i<ablocks.size();++i){
         unsigned ind=std::floor( scode / decoder[i] );
-        current_atoms[i]=all_atoms.linkIndex( ablocks[i][ind] );
-        scode -= ind*decoder[i];
+        current_atoms[i]=getBaseQuantityIndex( ablocks[i][ind] );
+        scode -= ind*decoder[i]; 
      }
   }  
   return true;
@@ -171,7 +176,7 @@ void MultiColvarBase::performTask(){
   // Currently no central atoms have derivatives so deactive them all
   atomsWithCatomDer.deactivateAll();
   // Retrieve the atom list
-  if( !setupCurrentAtomList() ) return;
+  if( !setupCurrentAtomList( getCurrentTask() ) ) return;
 
   // Do nothing if there are no active atoms in the colvar
 //  if( colvar_atoms[current].getNumberActive()==0 ){  
@@ -237,7 +242,7 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
 
 unsigned MultiColvarBase::getInternalIndex( const AtomNumber& iatom ) const {
   plumed_massert( usespecies && ablocks.size()==1, "This should only be used to interogate atom centered multicolvars");
-  unsigned katom; bool found=false;
+  unsigned katom=0; bool found=false;
   for(unsigned i=0;i<ablocks[0].size();++i){
       if( all_atoms[ all_atoms.linkIndex(ablocks[0][i]) ]==iatom ){
          katom=i; found=true;
@@ -272,6 +277,7 @@ void MultiColvarBase::getCentralAtomIndexList( const unsigned& ntotal, const uns
 }
 
 void MultiColvarBase::activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ){
+  plumed_assert( number>0 );
   for(unsigned i=0;i<number-9;i+=3){
       plumed_dbg_assert( indexes[istart+i]%3==0 ); unsigned iatom=indexes[istart+i]/3; 
       atoms_with_derivatives.activate( iatom ); 
@@ -339,20 +345,66 @@ void MultiColvarBase::apply(){
   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
 }
 
-StoreCentralAtomsVessel* MultiColvarBase::getCentralAtoms(){
-  // Look to see if vectors have already been created
-  StoreCentralAtomsVessel* mycatoms;
-  for(unsigned i=0;i<getNumberOfVessels();++i){
-     mycatoms=dynamic_cast<StoreCentralAtomsVessel*>( getPntrToVessel(i) );
-     if( mycatoms ) return mycatoms;
-  }
-
-  // Create the vessel
-  vesselbase::VesselOptions da("","",0,"",this); 
-  StoreCentralAtomsVessel* sv=new StoreCentralAtomsVessel(da);
-  addVessel(sv); resizeFunctions(); // This makes sure resizing of vessels is done
-  return sv;
+bool MultiColvarBase::setupCentralAtomVessel(){
+  if( mycatoms ) return true;
+  vesselbase::VesselOptions da("","",0,"",this);
+  mycatoms=new StoreCentralAtomsVessel(da);
+  addVessel(mycatoms);
+  return false;
 }
+
+void MultiColvarBase::useInMultiColvarFunction( const bool store_director ){
+  // Create the store central atoms vessel
+  if( setupCentralAtomVessel() ) return;
+
+  // Create the store values vessel
+  vesselbase::VesselOptions ta("","",0,"",this);
+  myvalues=new StoreColvarVessel(ta);   // Currently ignoring weights - good thing?
+  addVessel(myvalues); 
+
+  // Make sure resizing of vessels is done
+  resizeFunctions();  
+  return;
+}
+
+Vector MultiColvarBase::getCentralAtomPosition( const unsigned& iatom ) const {
+  plumed_dbg_assert( mycatoms );
+  return mycatoms->getPosition( iatom );
+}
+
+void MultiColvarBase::addCentralAtomDerivativeToFunction( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& der, MultiColvarFunction* func ){
+  plumed_dbg_assert( mycatoms ); 
+  if( usingLowMem() ){
+      mycatoms->recompute( iatom, 0 ); ;
+      mycatoms->addAtomsDerivatives( 0, jout, base_cv_no, der, func );
+  } else{
+      mycatoms->addAtomsDerivatives( iatom, jout, base_cv_no, der, func ); 
+  }
+}
+
+void MultiColvarBase::getValueForTask( const unsigned& iatom, std::vector<double>& vals ) const {
+  plumed_dbg_assert( myvalues && vals.size() );
+  vals[0]=myvalues->getValue( iatom );
+}
+
+void MultiColvarBase::addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, MultiColvarFunction* func ){
+  plumed_dbg_assert( myvalues );
+  if( usingLowMem() ){
+     myvalues->recompute( iatom, 0 );
+     myvalues->chainRuleForComponent( 0, 0, base_cv_no, weight, func );
+  } else {
+     myvalues->chainRuleForComponent( iatom, 0, base_cv_no, weight, func );
+  }
+}
+
+void MultiColvarBase::finishWeightedAverageCalculation( MultiColvarFunction* func ){
+  func->quotientRule( 0, 1, 0 );
+}
+
+void MultiColvarBase::addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
+                                                       const std::vector<double>& weight, MultiColvarFunction* func ) {
+  plumed_merror("This should not be called - invalid use of multicolvar in function");
+} 
      
 }
 }

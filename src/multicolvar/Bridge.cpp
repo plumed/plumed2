@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -68,7 +68,7 @@ public:
   Bridge(const ActionOptions&);
 // active methods:
   virtual double compute();
-/// Returns the number of coordinates of the field
+  void doJobsRequiredBeforeTaskList();
   void calculateWeight();
   bool isPeriodic(){ return false; }
   Vector getCentralAtom();
@@ -117,13 +117,19 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
   // And setup the ActionWithVessel
-  readVesselKeywords();
   if( getNumberOfVessels()!=0 ) error("should not have vessels for this action");
   std::string fake_input;
   addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
   readVesselKeywords();
   // And check everything has been read in correctly
   checkRead();
+}
+
+void Bridge::doJobsRequiredBeforeTaskList(){
+  // Do jobs required by action with vessel
+  ActionWithVessel::doJobsRequiredBeforeTaskList();
+  // First step of update of three body neighbor list
+  threeBodyNeighborList( sf1 );
 }
 
 void Bridge::calculateWeight(){

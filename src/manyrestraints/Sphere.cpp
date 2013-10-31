@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -94,9 +94,9 @@ void Sphere::performTask(){
   Vector distance;
 
   if(!nopbc){
-    distance=pbcDistance(com,getPosition(current));
+    distance=pbcDistance(com,getPosition( getCurrentTask() ));
   } else {
-    distance=delta(com,getPosition(current));
+    distance=delta(com,getPosition( getCurrentTask() ));
   }
 
   double value=distance.modulo();
@@ -111,7 +111,7 @@ void Sphere::performTask(){
      for(unsigned i=0;i<getNumberOfAtoms();++i) addAtomsDerivatives( i, -com_deriv[i]*f*distance );
 
      // Add derivatives for other atom 
-     addAtomsDerivatives( current, f*distance );
+     addAtomsDerivatives( getCurrentTask(), f*distance );
 
      // Add derivatives for virial
      addBoxDerivatives( -f*Tensor(distance,distance) );

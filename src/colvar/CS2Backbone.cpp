@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -141,7 +141,7 @@ case 2:
 
 \verbatim
 WHOLEMOLECULES ENTITY0=1-174
-cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=1.0 NRES=13 TERMINI=DEFAULT,NONE CYS-DISU PRINT=1000
+cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=1.0 NRES=13 TERMINI=DEFAULT,NONE CYS-DISU WRITE_CS=1000
 PRINT ARG=cs
 \endverbatim
 
@@ -179,7 +179,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
   keys.add("compulsory","FLAT","1.0","Flat region in the scoring function.");
   keys.add("compulsory","NEIGH_FREQ","10","Period in step for neighbour list update.");
-  keys.add("compulsory","WRITE_CS","0","Write chemical shifts period.");
+  keys.add("compulsory","WRITE_CS","0","Write the back-calculated chemical shifts every # steps.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
   keys.add("optional","TERMINI","Defines the protonation states of the chain-termini.");
   keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges.");  
@@ -285,8 +285,10 @@ PLUMED_COLVAR_INIT(ao)
   log.printf("  Initializing N shifts %s\n", stringadb.c_str()); log.flush();
   a.read_cs(stringadb, "N");
   /* this is a workaround for those chemical shifts that can result in too large forces */
-  a.remove_problematic("GLN","CB");
-  a.remove_problematic("ILE","CB");
+  a.remove_problematic("GLN", "CB");
+  a.remove_problematic("ILE", "CB");
+  a.remove_problematic("PRO", "N");  a.remove_problematic("PRO", "H");
+  a.remove_problematic("GLY", "HA"); a.remove_problematic("GLY", "CB");
   /* this is a workaround for those chemical shifts that are not parameterized */
   a.remove_problematic("HIE", "HA"); a.remove_problematic("HIP", "HA"); a.remove_problematic("HSP", "HA");
   a.remove_problematic("HIE", "H");  a.remove_problematic("HIP", "H");  a.remove_problematic("HSP", "H"); 
@@ -385,6 +387,8 @@ void CS2Backbone::calculate()
   if(printout) {
     string csfile;
     char tmps1[21], tmps2[21];
+    // add to the name the label of the cv in such a way to have different files
+    // when there is more than one defined variable
     sprintf(tmps1, "%li", getStep());
     if(ensemble) {
       sprintf(tmps2, "%i", multi_sim_comm.Get_rank());

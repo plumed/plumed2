@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -84,6 +84,10 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
 
 void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
   calculateAtomicNumericalDerivatives( a, 0 );
+}
+
+void ActionAtomistic::changeBox( const Tensor& newbox ){
+  pbc.setBox( newbox );
 }
 
 void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum ){

@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -54,8 +54,8 @@ Vector StoreCentralAtomsVessel::getPosition( const unsigned& iatom ){
 
 void StoreCentralAtomsVessel::performTask( const unsigned& itask ){
   mycolv->atomsWithCatomDer.deactivateAll();
-  bool check=mycolv->setupCurrentAtomList();
-  plumed_dbg_assert( !check );
+  bool check=mycolv->setupCurrentAtomList( mycolv->getCurrentTask() );
+  plumed_dbg_assert( check );
   Vector ignore = mycolv->retrieveCentralAtomPos();
 }
 
@@ -64,14 +64,15 @@ void StoreCentralAtomsVessel::finishTask( const unsigned& itask ){
   Vector ignore = mycolv->retrieveCentralAtomPos();
 }
 
-void StoreCentralAtomsVessel::addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const Vector& df, MultiColvarBase* funcout ){
+void StoreCentralAtomsVessel::addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, 
+                                                   const Vector& df, MultiColvarFunction* funcout ){
   for(unsigned ider=0;ider<getNumberOfDerivatives(iatom);ider+=3){
      for(unsigned i=0;i<3;++i) tmpdf[i]=df[0];
-     chainRule( iatom, jout, ider+0, tmpdf, funcout );
+     funcout->addStoredDerivative( jout, base_cv_no, getStoredIndex( iatom, ider+0 ), chainRule(iatom, ider+0, tmpdf)  ); 
      for(unsigned i=0;i<3;++i) tmpdf[i]=df[1];
-     chainRule( iatom, jout, ider+1, tmpdf, funcout );
+     funcout->addStoredDerivative( jout, base_cv_no, getStoredIndex( iatom, ider+1 ), chainRule(iatom, ider+1, tmpdf)  );
      for(unsigned i=0;i<3;++i) tmpdf[i]=df[2];
-     chainRule( iatom, jout, ider+2, tmpdf, funcout );
+     funcout->addStoredDerivative( jout, base_cv_no, getStoredIndex( iatom, ider+2 ), chainRule(iatom, ider+2, tmpdf)  );
   }
 }
 

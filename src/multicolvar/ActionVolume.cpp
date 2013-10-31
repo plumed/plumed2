@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -47,8 +47,7 @@ Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
-updateFreq(0),
-lastUpdate(0)
+updateFreq(0)
 {
   std::string mlab; parse("ARG",mlab);
   mycolv = plumed.getActionSet().selectWithLabel<multicolvar::MultiColvarBase*>(mlab);
@@ -70,8 +69,10 @@ lastUpdate(0)
      if( !mycolv->isDensity() && updateFreq%mycolv->updateFreq!=0 ){ 
         error("update frequency must be a multiple of update frequency for base multicolvar");  
      }
+     firsttime=true;
      log.printf("  Updating contributors every %d steps.\n",updateFreq);
   } else {
+     firsttime=false; contributorsAreUnlocked=true; // This will lock during first prepare step
      log.printf("  Updating contributors every step.\n");
   }
 
@@ -84,15 +85,14 @@ lastUpdate(0)
   if( mycolv->isDensity() ){
      std::string input;
      addVessel( "SUM", input, -1 );  // -1 here means that this value will be named getLabel()
-     resizeFunctions();
   } else {
      readVesselKeywords();
   }
 
   // Now set up the bridging vessel (has to be done this way for internal arrays to be resized properly)
   addDependency(mycolv); myBridgeVessel = mycolv->addBridgingVessel( this );
-  // Setup a dynamic list 
-  resizeLocalArrays();
+  // And resize atoms
+  finishTaskListUpdate();
 }
 
 void ActionVolume::requestAtoms( const std::vector<AtomNumber>& atoms ){
@@ -110,23 +110,20 @@ void ActionVolume::doJobsRequiredBeforeTaskList(){
 void ActionVolume::prepare(){
   bool updatetime=false;
   if( contributorsAreUnlocked ){ updatetime=true; lockContributors(); }
-  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-      if( !mycolv->isDensity() ){
-          mycolv->taskList.activateAll();
-          // GAT broken neighbor list
-          // for(unsigned i=0;i<mycolv->taskList.getNumberActive();++i) mycolv->colvar_atoms[i].activateAll();
-          mycolv->unlockContributors(); mycolv->resizeDynamicArrays();
-          plumed_dbg_assert( mycolv->getNumberOfVessels()==0 );
-      } else {
-          plumed_massert( mycolv->contributorsAreUnlocked, "contributors are not unlocked in base multicolvar" );
+  if( updateFreq>0 ){
+      if( firsttime || getStep()%updateFreq==0 ){
+         if( !mycolv->isDensity() ){
+             mycolv->unlockContributors(); 
+         } else {
+             plumed_massert( mycolv->contributorsAreUnlocked, "contributors are not unlocked in base multicolvar" );
+         }
+         unlockContributors(); 
+         firsttime=false;
       }
-      unlockContributors(); 
-      updatetime=true;
   }
-  if( updatetime ) resizeLocalArrays();
 }
 
-void ActionVolume::resizeLocalArrays(){
+void ActionVolume::finishTaskListUpdate(){
   activeAtoms.clear();
   for(unsigned i=0;i<mycolv->getNumberOfAtoms();++i) activeAtoms.addIndexToList(i);
   activeAtoms.deactivateAll();

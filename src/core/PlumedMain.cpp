@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -115,27 +115,21 @@ void PlumedMain::cmd(const std::string & word,void*val){
        atoms.setBox(val);
   } else if(word=="setPositions") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setPositions(val);
   } else if(word=="setMasses") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setMasses(val);
   } else if(word=="setCharges") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setCharges(val);
   } else if(word=="setPositionsX") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setPositions(val,0);
   } else if(word=="setPositionsY") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setPositions(val,1);
   } else if(word=="setPositionsZ") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setPositions(val,2);
   } else if(word=="setVirial") {
        CHECK_INIT(initialized,word);
@@ -147,19 +141,15 @@ void PlumedMain::cmd(const std::string & word,void*val){
        atoms.setEnergy(val);
   } else if(word=="setForces") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setForces(val);
   } else if(word=="setForcesX") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setForces(val,0);
   } else if(word=="setForcesY") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setForces(val,1);
   } else if(word=="setForcesZ") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setForces(val,2);
   } else if(word=="calc") {
        CHECK_INIT(initialized,word);
@@ -193,7 +183,6 @@ void PlumedMain::cmd(const std::string & word,void*val){
        atoms.setAtomsNlocal(*static_cast<int*>(val));
   } else if(word=="setAtomsGatindex"){
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setAtomsGatindex(static_cast<int*>(val));
   } else if(word=="setAtomsContiguous"){
        CHECK_INIT(initialized,word);
@@ -289,8 +278,9 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
        log.open(static_cast<char*>(val),"w");
+// other commands that should be used after initialization:
   } else if(word=="setStopFlag"){
-       CHECK_NOTINIT(initialized,word);
+       CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
        stopFlag=static_cast<int*>(val);
   } else if(word=="getExchangesFlag"){
@@ -362,12 +352,10 @@ void PlumedMain::init(){
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
   log<<"PLUMED compiled on " __DATE__ " at " __TIME__ "\n";
-  log<<"There is not yet a published paper describing this software.\n";
-  log<<"If you use it in a publication please explicitly state\n";
-  log<<"which version you are using and cite the previous paper ";
-  log<<cite("Bonomi, Branduardi, Bussi, Camilloni, Provasi, Raiteri, Donadio, Marinelli, Pietrucci,\n      Broglia and Parrinello, Comp. Phys. Comm. 180, 1961 (2009)");
+  log<<"Please cite this paper when using PLUMED ";
+  log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. DOI:10.1016/j.cpc.2013.09.018 (2013)");
   log<<"\n";
-  log<<"For further information see the PLUMED web page at www.plumed-code.org\n";
+  log<<"For further information see the PLUMED web page at http://www.plumed-code.org\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));

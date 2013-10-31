@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -222,9 +222,9 @@ void Analysis::calculate(){
      double energy=plumed.getAtoms().getEnergy()+bias;
      // Reweighting because of temperature difference
      ww=-( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias) / plumed.getAtoms().getKBoltzmann();
-     // Reweighting because of biases
-     if( !biases.empty() ) ww += bias/( plumed.getAtoms().getKBoltzmann()*simtemp );
   }
+  // Reweighting because of biases
+  if( !biases.empty() ) ww += bias/( plumed.getAtoms().getKBoltzmann()*simtemp );
 
   if(single_run){
      // Get the arguments and store them in a vector of vectors

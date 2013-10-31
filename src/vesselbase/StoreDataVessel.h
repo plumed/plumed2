@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -57,11 +57,6 @@ private:
   std::vector<double> local_derivatives;
 /// The final derivatives
   std::vector<double> final_derivatives;
-/// Chain rule and store output in local array called final_derivatives
-/// with vectors this does chain rule for dot products
-  void chainRule( const unsigned& , const std::vector<double>& );
-/// This is the proper chain rule for vectors
-  double chainRule( const unsigned&, const unsigned&, const std::vector<double>& );
 protected:
 /// Is the weight differentiable
   bool weightHasDerivatives();
@@ -70,19 +65,22 @@ protected:
 /// Finish the setup of the storage object by setting how much
 /// data has to be stored
   void completeSetup( const unsigned& , const unsigned& );
-/// Get the number of derivatives for the ith value
-  unsigned getNumberOfDerivatives( const unsigned& );
+/// Return value of nspace
+  unsigned getNumberOfDerivativeSpacesPerComponent() const ;
 /// Retrieve the values from the underlying ActionWithVessel
   void storeValues( const unsigned& );
-/// Get a component of the stored vector
-  double getComponent( const unsigned& , const unsigned& );
+/// Set the Task that needs redoing
+  void setTaskToRecompute( const unsigned& ivec );
+/// Set a component of one of the vectors
+  void setComponent( const unsigned& , const unsigned& , const double& );
+/// This is the proper chain rule for vectors
+  double chainRule( const unsigned&, const unsigned&, const std::vector<double>& );
 /// Chain rule the vector and output derivatives to a value
   void chainRule( const unsigned& , const std::vector<double>&, Value* );
-/// Calculate derivatives using chain rule and save in std::vector
-  void chainRule( const unsigned& ival, const std::vector<double>& df, std::vector<double>& derout );
-/// Multiply the vector by a scalar that is a function of the components of the vector
-/// (used to normalize vectors)
-  void transformComponents( const unsigned& jstore, const double& weight, double& wdf, const std::vector<double>& dfvec );
+/// Get the ibuf'th local derivative value
+  double getLocalDerivative( const unsigned& ibuf );
+/// Set the ibuf'th local derivative value
+  void setLocalDerivative( const unsigned& ibuf, const double& val );
 public:
   static void registerKeywords( Keywords& keys );
   StoreDataVessel( const VesselOptions& );
@@ -92,24 +90,29 @@ public:
   virtual void resize();
 /// Clear certain data before start of main loop
   void prepare();
+/// Get the number of derivatives for the ith value
+  unsigned getNumberOfDerivatives( const unsigned& );
+/// Get one of the stored indexes
+  unsigned getStoredIndex( const unsigned& , const unsigned& );
+/// Get a component of the stored vector
+  double getComponent( const unsigned& , const unsigned& );
 /// Recalculate a vector - used in lowmem mode
   virtual void recompute( const unsigned& , const unsigned& );
 /// This reperforms the task in the underlying action
   virtual void performTask( const unsigned& );
 /// This reperforms the task
   virtual void finishTask( const unsigned& ){};
+/// Chain rule and store output in local array called final_derivatives
+/// with vectors this does chain rule for dot products
+  void chainRule( const unsigned& , const std::vector<double>& );
+/// Get the ider'th final derivative value
+  double getFinalDerivative( const unsigned& ider ) const ;
 /// This stores the data when not using lowmem
   bool calculate();
 /// This stores the data we get from the calculation
   void storeDerivativesLowMem( const unsigned& );
 /// This stores the data we get from the calculation
   void storeDerivativesHighMem( const unsigned& );
-/// Chain rule the vector and output derivatives to an ActionWithVessel element
-  void chainRule( const unsigned& , const unsigned&, const std::vector<double>&, ActionWithVessel* );
-/// Chain rule the vector and output derivatives to an ActionWithVessel element
-  void chainRule( const unsigned& , const unsigned&, const unsigned&, const std::vector<double>&, ActionWithVessel* );
-/// This adds the derivatives to the elements
-  void chainRuleForComponent( const unsigned& , const unsigned& , const unsigned& , const double& , ActionWithVessel* );
 /// Final step in gathering data
   virtual void finish();
 /// Activate indexes (this is used at end of chain rule)
@@ -137,14 +140,54 @@ void StoreDataVessel::performTask( const unsigned& ivec ){
 
 inline
 double StoreDataVessel::getComponent( const unsigned& ival, const unsigned& jcomp ){
-  plumed_dbg_assert( ival<getAction()->getNumberOfTasks() && jcomp<vecsize );
+  plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() && jcomp<vecsize );
   return getBufferElement( ival*(vecsize*nspace) + jcomp*nspace ); 
 }
 
 inline
+void StoreDataVessel::setComponent( const unsigned& ival, const unsigned& jcomp, const double& val ){
+  plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() && jcomp<vecsize );
+  setBufferElement( ival*(vecsize*nspace) + jcomp*nspace, val );
+}
+
+inline
+unsigned StoreDataVessel::getNumberOfDerivativeSpacesPerComponent() const {
+  return nspace;
+}
+
+inline
 unsigned StoreDataVessel::getNumberOfDerivatives( const unsigned& ival ){
-  plumed_dbg_assert( ival<getAction()->getNumberOfTasks() );
+  plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() );
   return active_der[ival];
+}
+
+inline
+unsigned StoreDataVessel::getStoredIndex( const unsigned& ival, const unsigned& jindex ){
+  plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() && jindex<active_der[ival] );
+
+  unsigned kder;
+  if( getAction()->lowmem ) kder = max_lowmem_stash + ival*getAction()->getNumberOfDerivatives();
+  else kder = getAction()->getFullNumberOfTasks() + ival*(nspace-1); 
+
+  return active_der[kder + jindex];
+}
+
+inline
+double StoreDataVessel::getLocalDerivative( const unsigned& ibuf ){
+  plumed_dbg_assert( getAction()->lowmem && ibuf<local_derivatives.size() );
+  return local_derivatives[ibuf];
+}
+
+inline
+double StoreDataVessel::getFinalDerivative( const unsigned& ider ) const {
+  plumed_dbg_assert( ider<final_derivatives.size() );
+  return final_derivatives[ider];
+}
+
+inline
+void StoreDataVessel::setLocalDerivative( const unsigned& ibuf, const double& val ){
+  plumed_dbg_assert( getAction()->lowmem && ibuf<local_derivatives.size() );
+  local_derivatives[ibuf]=val;
 }
 
 }

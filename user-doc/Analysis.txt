@@ -2,7 +2,7 @@
 
 \page Analysis Analysis
 
-Once you have calculated a number of collective variables plumed allows you to either analyse
+Once you have calculated a number of collective variables PLUMED allows you to either analyse
 your trajectory.  The list of available on-the-fly analysis tools contains:
 
 @ANALYSIS@

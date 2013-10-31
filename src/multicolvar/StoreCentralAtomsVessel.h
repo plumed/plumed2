@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -49,7 +49,7 @@ public:
 /// Get the indices
   void getIndexList( const unsigned& , const unsigned& , const unsigned& , std::vector<unsigned>& );
 /// Add derivatives to central atom position
-  void addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const Vector& df, MultiColvarBase* funcout );
+  void addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& df, MultiColvarFunction* funcout );
 };
 
 }

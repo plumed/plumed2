@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -66,6 +66,13 @@ void GREX::cmd(const string&key,void*val){
     CHECK_NOTINIT(initialized,key);
     intercomm.Set_comm(val);
     plumedMain.multi_sim_comm.Set_comm(val);
+  }else if(key=="setMPIFIntracomm"){
+    CHECK_NOTINIT(initialized,key);
+    intracomm.Set_fcomm(val);
+  }else if(key=="setMPIFIntercomm"){
+    CHECK_NOTINIT(initialized,key);
+    intercomm.Set_fcomm(val);
+    plumedMain.multi_sim_comm.Set_fcomm(val);
   }else if(key=="init"){
     CHECK_NOTINIT(initialized,key);
     initialized=true;

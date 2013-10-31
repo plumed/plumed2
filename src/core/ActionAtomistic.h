@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -105,6 +105,8 @@ public:
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 /// Parse an list of atom with a numbred keyword
   void parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t);
+/// Change the box shape 
+  void changeBox( const Tensor& newbox );
 /// Get reference to Pbc
   const Pbc & getPbc() const;
 /// Add the forces to the atoms

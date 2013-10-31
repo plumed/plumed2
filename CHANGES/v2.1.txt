@@ -2,8 +2,25 @@
 
 @page CHANGES-2-1 CHANGES-2-1
 
-Let's add here everything relevant which is in master branch and not in v2.0.
+Includes all fixes in branch 2.0 (see \ref CHANGES-2-0) up to 2.0.1
 
-After release of 2.1, we will document here fixes and additions on the 2.1.x series.
+Changes from version 2.0 which are relevant for users:
+- Added option PRECISION to set number of digits in DUMPATOMS
+- Added NDX_FILE and NDX_GROUP to action GROUP, allowing to import atom lists from ndx files
+- Several optimizations in the following actions: WHOLEMOLECULES, ...
+- Faster atom scattering with domain decomposition.
+- SPRINT topological collective variables
+- Improved multicolvar neighbor lists
+- Maximum colvar as well as minimum colvar is now possible
+- COMMITTOR analysis
+- Added possibility to use negative strides in atom ranges (e.g. 10-1:-3)
+
+Changes from version 2.0 which are relevant for developers:
+- Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional
+  flag (--is-installed) to probe if running from a compilation directory or from a fully installed copy
+  (this is needed for regtests to work properly).
+- Improved class Communicator. Many operations can now be done directly on Vectors, Tensors, std::vector and PLMD::Matrix.
+- Patches for GPL codes (QuantumEspresso and Gromacs) now also include
+  original code so as to simplify their modification.
 
 */

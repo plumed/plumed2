@@ -18,6 +18,10 @@ DUMPATOMS FILE=helix.ttt TYPE=gro
 DUMPATOMS FILE=helix-nm.gro ATOMS=1-132 UNITS=nm
 DUMPATOMS FILE=helix-nm.xyz ATOMS=1-132 UNITS=nm
 
+# this is to test precision
+DUMPATOMS FILE=helix-pr.gro ATOMS=1-132 PRECISION=12
+DUMPATOMS FILE=helix-pr.xyz ATOMS=1-132 PRECISION=12
+
 # dump only a subset, plus a fictitious atom (without molinfo data)
 c: COM ATOMS=1-6,127-132
 DUMPATOMS FILE=helix-sub.xyz ATOMS=1-6,127-132,c

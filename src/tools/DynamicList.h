@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -178,8 +178,10 @@ public:
   void setupMPICommunication( Communicator& comm );
 /// Add something to the active list
   void addIndexToList( const T & ii );
+/// Find the index of in the list which has value t
+  int getIndexOfElement( const T& t ) const ;
 /// Make a particular element inactive
-  void deactivate( const unsigned ii ); 
+  void deactivate( const T& t ); 
 /// Make everything in the list inactive
   void deactivateAll();
 /// Make something active
@@ -245,10 +247,21 @@ void DynamicList<T>::setupMPICommunication( Communicator& comm ){
 }
 
 template <typename T>
-void DynamicList<T>::deactivate( const unsigned ii ){
-  plumed_dbg_massert(ii<all.size(),"ii is out of bounds");
+int DynamicList<T>::getIndexOfElement( const T& t ) const {
+  bool found=false;
+  for(unsigned i=0;i<all.size();++i){
+     if( t==all[i] ){ found=true; return i; }
+  }
+  plumed_merror("Could not find an element in the dynamic list");
+  return 0;
+}
+
+template <typename T>
+void DynamicList<T>::deactivate( const T& t ){
   plumed_dbg_assert( allWereActivated );
-  if( onoff[ii]==0 || onoff[ii]%nprocessors!=0 ) return ;
+  unsigned ii=getIndexOfElement( t );
+  if( onoff[ii]==0 || onoff[ii]%nprocessors!=0 ) return;
+  // Deactivates the component
   if( rank==0 ) onoff[ii]=nprocessors-1;
   else onoff[ii]=nprocessors-rank; 
 }
@@ -258,6 +271,8 @@ void DynamicList<T>::deactivateAll(){
   allWereDeactivated=true; allWereActivated=false;
   for(unsigned i=0;i<nactive;++i) onoff[ active[i] ]= 0; 
   nactive=0;
+  // Reset translator
+  for(unsigned i=0;i<all.size();++i) translator[i]=i;
 #ifndef NDEBUG
   for(unsigned i=0;i<onoff.size();++i) plumed_dbg_assert( onoff[i]==0 );
 #endif
@@ -320,7 +335,6 @@ void DynamicList<T>::sortActiveList(){
 
 template <typename T>
 unsigned DynamicList<T>::linkIndex( const unsigned& ii ) const {
-  plumed_dbg_assert( onoff[ii]>0 && onoff[ii]%nprocessors==0 );
   return translator[ii];
 }
 
