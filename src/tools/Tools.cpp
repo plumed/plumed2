@@ -231,29 +231,36 @@ bool Tools::getKey(vector<string>& line,const string & key,string & s){
 void Tools::interpretRanges(std::vector<std::string>&s){
   vector<string> news;
   for(vector<string>::iterator p=s.begin();p!=s.end();++p){
-    vector<string> words;
-    words=getWords(*p,"-");
-    int a;
-    bool found=false;
-    if(words.size()==2 && convert(words[0],a)){
-      int b,c=1;
-      vector<string> bwords=getWords(words[1],":");
-      if(bwords.size()==2 && convert(bwords[0],b) && convert(bwords[1],c)) found=true;
-      else if(convert(words[1],b)){
-        c=1;
-        found=true;
+    news.push_back(*p);
+    size_t dash=p->find("-");
+    if(dash==string::npos) continue;
+    int first;
+    if(!Tools::convert(p->substr(0,dash),first)) continue;
+    int stride=1;
+    int second;
+    size_t colon=p->substr(dash+1).find(":");
+    if(colon!=string::npos){
+      if(!Tools::convert(p->substr(dash+1).substr(0,colon),second) ||
+         !Tools::convert(p->substr(dash+1).substr(colon+1),stride)) continue;
+    } else {
+      if(!Tools::convert(p->substr(dash+1),second)) continue;
+    }
+    news.resize(news.size()-1);
+    if(first<=second){
+      plumed_massert(stride>0,"interpreting ranges "+ *p + ", stride should be positive");
+      for(int i=first;i<=second;i+=stride){
+        string ss;
+        convert(i,ss);
+        news.push_back(ss);
       }
-      if(found){
-        plumed_massert(b>=a,"interpreting ranges "+ *p + ", second number should be larger than first number");
-        plumed_massert(c>0,"interpreting ranges "+ *p + ", stride should be positive");
-        for(int i=a;i<=b;i+=c){
-          string ss;
-          convert(i,ss);
-          news.push_back(ss);
-        }
+    } else {
+      plumed_massert(stride<0,"interpreting ranges "+ *p + ", stride should be positive");
+      for(int i=first;i>=second;i+=stride){
+        string ss;
+        convert(i,ss);
+        news.push_back(ss);
       }
     }
-    if(!found) news.push_back(*p);
   }
   s=news;
 }
