@@ -153,7 +153,7 @@ DumpAtoms::DumpAtoms(const ActionOptions&ao):
 
   checkRead();
   of.link(*this);
-  of.open(file.c_str());
+  of.open(file);
   log.printf("  printing the following atoms in %s :", unitname.c_str() );
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial() );
   log.printf("\n");

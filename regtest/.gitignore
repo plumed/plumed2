@@ -11,6 +11,7 @@
 !/trajectories
 !/scripts
 !/manyrestraints
+!/has-almost
 
 # These files we just want to ignore completely
 tmp

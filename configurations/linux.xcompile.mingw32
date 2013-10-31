@@ -12,6 +12,7 @@
 
 # Requirements
 #  - A recent mingw32 distribution (tested on FC17)
+#  - A cross-compiled versions of laplack and blas (tested 3.4.2)
 
 # Notes
 #  - Changed lines are marked with #MINGW
@@ -25,9 +26,10 @@
 
 #CHECK_BOUNDARIES=-D_GLIBCXX_DEBUG
 
-#LIBS=-ldl     #MINGW
+LIBS=
 
-DYNAMIC_LIBS=-lstdc++ #-llapack -lblas
+# GB in this branch it is not necessary to link external lapack/blas
+DYNAMIC_LIBS=-lstdc++  -lgfortran
 DOUBLEPRECISION=-fdefault-real-8
 
 #MINGW: -DLOPEN +EXCEPTIONS -fPIC
@@ -35,6 +37,8 @@ CPPFLAGS=-D__PLUMED_EXCEPTIONS $(CHECK_BOUNDARIES) -I. $(PLUMED_INCLUDE)
 CXXFLAGS=-pedantic -Wall -O  -ansi
 CFLAGS=-pedantic -Wall -O  -ansi
 
+LDFLAGS=
+SOEXT=dll
 
 LDFLAGS=-static	#MINGW - to embed libgfortran
 SOEXT=dll	#MINGW - not really used

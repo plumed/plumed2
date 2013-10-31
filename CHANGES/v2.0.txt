@@ -10,6 +10,7 @@ with respect to plumed 1.3. Here is a summary of the difference:
 - Many complex collective variables are considerably faster than they were in plumed1.  In particular, all variables based on RMSD distances. 
 - Centers of mass can be used as if they were atoms. Hence, unlike plumed 1.3, you can use center of mass positions in ALL collective variables.
 - The virial contribution is now computed and passed to the MD code.  Plumed can thus now be used to perform biased NPT simulations 
+
 In addition, it is now much easier to contribute new functionality to the code because: 
 - There is a much simpler interface between plumed and the base MD codes. This makes it much easier to add plumed to a new MD code. 
 - There is C++ object oriented programming and full compatibility with the C++ standard library 

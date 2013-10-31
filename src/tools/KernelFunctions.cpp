@@ -22,6 +22,7 @@
 #include "KernelFunctions.h"
 #include "IFile.h"
 #include <iostream> 
+#include <cmath>
 
 namespace PLMD {
 
@@ -110,7 +111,7 @@ width(sig)
        Matrix<double> mymatrix( getMatrix() ), myinv( ncv, ncv );
        Invert(mymatrix,myinv); double logd;
        logdet( myinv, logd );
-       det=exp(logd);
+       det=std::exp(logd);
     }
     double volume;
     if( ktype==gaussian ){
@@ -205,7 +206,7 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   }
   double kderiv, kval;
   if(ktype==gaussian){
-     kval=height*exp(-0.5*r2); kderiv=-kval;
+     kval=height*std::exp(-0.5*r2); kderiv=-kval;
   } else {
      double r=sqrt(r2);
      if(ktype==triangular){

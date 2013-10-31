@@ -66,6 +66,16 @@ then
   exit 0;
 fi
 
+for need in $plumed_needs
+do
+  echo "Checking for $need"
+  if ! plumed --has-$need
+  then
+    echo "NOT_APPLIABLE ($need NOT INSTALLED)"
+    exit 0;
+  fi
+done
+
 case "$type" in
 (simplemd)
   test -f in || {

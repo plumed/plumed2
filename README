@@ -1,5 +1,26 @@
+CONTENT
+
+CHANGES/        : change log
+COPYING.LESSER  : license
+Makefile        : makefile
+PEOPLE          : list of authors
+README          : this file
+README.git      : quick reference for git
+configurations/ : template configuration files
+configure.sh    : configuration script
+developer-doc   : developer documentation
+patches         : set of diff and patch scripts, needed to embed plumed in MD programs
+regtest         : extensive set of regression tests, including reference results
+scripts         : shell tools
+src             : source code
+test            : examples
+user-doc        : user documentation
 
 INSTALL
+
+Extensive installation instructions are in the user documentation.
+A precompiled version of the user documentation can be found here:
+http://plumed.github.io/doc-v2.0
 
 Needed software:
 * GNU make
@@ -9,8 +30,9 @@ Needed software:
 * latex to build the user manual - used by doxygen
 * graphviz (www.graphviz.org) to show class hierarchy in developer manual - used by doxygen
 * a modern version of the "patch" command
+* lapack and blas libraries
 
-Quick instructions:
+Quick compilation instructions:
 * configure for your system:
 > ./configure.sh
 * if necessary, edit Makefile.conf
@@ -18,6 +40,8 @@ Quick instructions:
 > source ./sourceme.sh
 * compile plumed
 > make
+* the "plumed" executable should be now in the path
+> plumed help
 * compile the manuals
 > make doc
 
@@ -26,6 +50,16 @@ user-doc/html/index.html
 
 The starting point for developer documentation is
 developer-doc/html/index.html
+
+* To install plumed:
+> export PLUMED_PREFIX=/usr/local
+> umask 022
+> make install
+* A sample modulefile with environment variable will be placed in
+$PLUMED_PREFIX/lib/plumed/src/lib/modulefile
+* Path to installed documentation can be found with command
+> plumed info --user-doc
+
 
 GIT VERSION
 
