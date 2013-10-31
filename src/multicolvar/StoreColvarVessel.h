@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -19,8 +19,8 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_vesselbase_StoreValueVessel_h
-#define __PLUMED_vesselbase_StoreValueVessel_h
+#ifndef __PLUMED_multicolvar_StoreColvarVessel_h
+#define __PLUMED_multicolvar_StoreColvarVessel_h
 
 #include <string>
 #include <cstring>
