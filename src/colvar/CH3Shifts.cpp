@@ -41,7 +41,7 @@ using namespace Almost;
 
 namespace PLMD{
 
-//+PLUMEDOC COLVAR CS3-METHYL_SHIFTS 
+//+PLUMEDOC COLVAR CH3SHIFTS 
 /*
 This collective variable calculates a scoring function based on the comparison of backcalculated and
 experimental methyl groups chemical shifts for a protein (ALA:HB; ILE:HD,HG2; LEU:HD1,HD2; THR:HG2;
@@ -157,7 +157,7 @@ PLUMED_REGISTER_ACTION(CH3Shifts,"CH3SHIFTS")
 void CH3Shifts::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   //keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose.");
-  keys.add("atoms","ATOMS","The atoms to be included in the calculatios, e.g. the whole protein.");
+  keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
   keys.add("compulsory","FLAT","1.0","Flat region in the scoring function.");

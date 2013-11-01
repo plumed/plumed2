@@ -173,7 +173,7 @@ PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 void CS2Backbone::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose.");
-  keys.add("atoms","ATOMS","The atoms to be included in the calculatios, e.g. the whole protein.");
+  keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
   keys.add("compulsory","FLAT","1.0","Flat region in the scoring function.");
