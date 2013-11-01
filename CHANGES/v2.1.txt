@@ -10,6 +10,7 @@ Changes from version 2.0 which are relevant for users:
 - Several optimizations in the following actions: WHOLEMOLECULES, ...
 - Faster atom scattering with domain decomposition.
 - SPRINT topological collective variables
+- CH3Shifts collective variable
 - Improved multicolvar neighbor lists
 - Maximum colvar as well as minimum colvar is now possible
 - COMMITTOR analysis
