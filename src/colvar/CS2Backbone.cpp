@@ -87,8 +87,7 @@ with ALMOST_BASE_PATH the full path to the ALMOST folder
 
 HOW TO USE IT
 
-To use CamShift as a restraint or as collective variable or as a replica-averaged restraint 
-first of all the experimental data are needed. CamShift uses backbone and Cb chemical shifts 
+To use CamShift a set of experimental data is needed. CamShift uses backbone and Cb chemical shifts 
 that must be provided as text files:
 
 \verbatim
@@ -239,12 +238,12 @@ PLUMED_COLVAR_INIT(ao)
   string stringa_mol;
   parse("TERMINI",stringa_mol);
   if(stringa_mol.length()>0) {
-    int num_chains = pdb[0].size();
+    unsigned num_chains = pdb[0].size();
     vector<string> data=Tools::getWords(stringa_mol,",");
     if(data.size()!=2*num_chains) plumed_merror("You have to define both the NTerm and the CTerm for each chain of your system!\n");
     for(unsigned i=0;i<data.size();i++) termini.push_back(data[i]);
   } else {
-    int num_chains = pdb[0].size();
+    unsigned num_chains = pdb[0].size();
     for(unsigned i=0;i<(2*num_chains);i++) termini.push_back("DEFAULT");
   }
 

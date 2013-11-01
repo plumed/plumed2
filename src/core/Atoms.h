@@ -204,7 +204,7 @@ const int & Atoms::getNatoms()const{
 
 inline
 bool Atoms::isVirtualAtom(AtomNumber i)const{
-  return i.index()>=getNatoms();
+  return i.index()>=(unsigned) getNatoms();
 }
 
 inline

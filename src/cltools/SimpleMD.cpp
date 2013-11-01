@@ -499,7 +499,7 @@ int main(FILE* in,FILE*out,PLMD::Communicator& pc){
   list.resize(listsize);
 
 // masses are hard-coded to 1
-  for(unsigned i=0;i<natoms;++i) masses[i]=1.0; 
+  for(int i=0;i<natoms;++i) masses[i]=1.0; 
 
 // energy integral initialized to 0
   engint=0.0;

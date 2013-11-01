@@ -323,7 +323,7 @@ bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply 
   plumed_dbg_assert( forcesToApply.size()==getNumberOfDerivatives() );
   forcesToApply.assign( forcesToApply.size(),0.0 );
   bool wasforced=false;
-  for(int i=0;i<getNumberOfVessels();++i){
+  for(unsigned i=0;i<getNumberOfVessels();++i){
     if( (functions[i]->applyForce( tmpforces )) ){
        wasforced=true;
        for(unsigned j=0;j<forcesToApply.size();++j) forcesToApply[j]+=tmpforces[j];
