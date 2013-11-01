@@ -161,7 +161,7 @@ void CH3Shifts::registerKeywords( Keywords& keys ){
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
   keys.add("compulsory","FLAT","1.0","Flat region in the scoring function.");
-  //keys.add("compulsory","NEIGH_FREQ","10","Period in step for neighbour list update.");
+  keys.add("compulsory","NEIGH_FREQ","10","Period in step for neighbour list update.");
   keys.add("compulsory","WRITE_CS","0","Write chemical shifts period.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
   keys.add("optional","TERMINI","Defines the protonation states of the chain-termini.");
@@ -178,7 +178,7 @@ PLUMED_COLVAR_INIT(ao)
   string stringapdb;
 
   serial=false;
-  parseFlag("SERIAL",serial);
+  //parseFlag("SERIAL",serial);
 
   string stringa_data;
   parse("DATA",stringa_data);
@@ -258,8 +258,10 @@ PLUMED_COLVAR_INIT(ao)
   a.set_mpi(stride, rank);*/
   
   if(ensemble) { log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }
-  a->set_w_cs(2);
+  a->set_w_cs(1);
   a->set_flat_bottom_const(grains);
+  a->set_box_nupdate(neigh_f);
+  a->set_box_cutnb(11.); // cut-off for neigh-list
   meth_list.push_back(a);
   /* Energy and Lenght conversion */
   ene_pl2alm = 4.186/plumed.getAtoms().getUnits().getEnergy();
