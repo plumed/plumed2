@@ -110,6 +110,10 @@ class Communicator{
       if(v.size()>0){ ConstData d(&v[0],v.size()); pointer=d.pointer; size=d.size; type=d.type; }
       else { pointer=NULL; size=0; }
     }
+    template <typename T> ConstData(const Matrix<T>&m ){
+      if(m.nrows()*m.ncols()>0){ ConstData d(&m(0,0),m.nrows()*m.ncols()); pointer=d.pointer; size=d.size; type=d.type; }
+      else{ pointer=NULL; size=0; }
+    }
     ConstData(const std::string&s){
       if(s.size()>0){ ConstData d(&s[0],s.size()); pointer=d.pointer; size=d.size; type=d.type; }
       else { pointer=NULL; size=0; }
