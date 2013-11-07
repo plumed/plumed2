@@ -16,6 +16,7 @@ Changes from version 2.0 which are relevant for users:
 - COMMITTOR analysis
 - Added possibility to use negative strides in atom ranges (e.g. 10-1:-3)
 - Added possibility to use \ref COORDINATION or \ref DHENERGY with NLIST in replica exchange simulations
+- Added STRETCH flag to switching functions
 
 Changes from version 2.0 which are relevant for developers:
 - Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional
