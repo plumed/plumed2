@@ -263,6 +263,11 @@ PLUMED_COLVAR_INIT(ao)
   a->set_box_nupdate(neigh_f);
   a->set_box_cutnb(11.); // cut-off for neigh-list
   meth_list.push_back(a);
+
+  sh = new double*[numResidues];
+  sh[0] = new double[numResidues*8];
+  for (int i=1; i<numResidues; i++)  sh[i]=sh[i-1]+8; 
+
   /* Energy and Lenght conversion */
   ene_pl2alm = 4.186/plumed.getAtoms().getUnits().getEnergy();
   len_pl2alm = 10.00*plumed.getAtoms().getUnits().getLength();
@@ -270,10 +275,6 @@ PLUMED_COLVAR_INIT(ao)
   log.printf("  Conversion table from plumed to Almost:\n");
   log.printf("    Energy %lf\n", ene_pl2alm);
   log.printf("    Length %lf\n", len_pl2alm);
-
-  sh = new double*[numResidues];
-  sh[0] = new double[numResidues*8];
-  for (int i=1; i<numResidues; i++)  sh[i]=sh[i-1]+8; 
 
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -306,6 +307,7 @@ void CH3Shifts::calculate()
   Coor<double> forces(N);
 
   forces.clear();
+  for(int i=0; i<numResidues; i++) for(unsigned j=0; j<6; j++) sh[i][j]=0.;
 
   for (int i = 0; i < N; i++) {
      int ipos = 4 * i;
