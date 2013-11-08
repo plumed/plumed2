@@ -1,6 +1,9 @@
 /**
 
-@page CHANGES-2-0 CHANGES-2-0
+@page CHANGES-2-0 Version 2.0
+
+Version 2.0.0
+-------------
 
 Version 2.0 is a complete rewrite, so there is no way to write a complete set of difference
 with respect to plumed 1.3. Here is a summary of the difference:
@@ -17,17 +20,22 @@ In addition, it is now much easier to contribute new functionality to the code b
 - A modular structure 
 - Developer and user documentation 
 
-Version 2.0.1 (unpublised yet, check out branch v2.0 on git repository)
+Version 2.0.1 - unreleased
+--------------------------
+This version has not been released yet.
+See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
 
 For users:
-- Fixed a bug in HISTOGRAM with REWEIGHT_BIAS. Reweighting was only done when also temperature-reweighing was enabled.
-- Fixed a bug that was sometime crashing the code with GROMACS, domain decompositions and implicit solvent.
-- Added message when "plumed simpled" is used on a non-existing file.
-- Several small fixes in documentation and log file
+- Fixed a bug in \ref HISTOGRAM with REWEIGHT_BIAS. Reweighting was only done when also temperature-reweighing was enabled.
+- Fixed a bug that was sometime crashing the code with GROMACS, domain decomposition and implicit solvent.
+- Added message when `plumed simpled` is used on a non-existing file.
+- Fixed `plumed mklib` such that it deletes the target shared library in case
+  of compilation error.
+- Several small fixes in documentation and log file.
 
 For developers:
-- Added possibility to setup replica exchange from MD codes in fortran (commands "GREX setMPIFIntercomm" and "GREX setMPIFIntracomm")
+- Added possibility to setup replica exchange from MD codes in fortran (commands "GREX setMPIFIntercomm" and "GREX setMPIFIntracomm").
 - cmd("setStopFlag") should now be called after PLUMED initialization.
-- Several small fixes in documentation
+- Several small fixes in documentation.
 
 */
