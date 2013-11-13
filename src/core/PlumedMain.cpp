@@ -587,6 +587,14 @@ void PlumedMain::justApply(){
      else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
   }  
   stopwatch.stop("5 Applying (backward loop)");
+
+// flush by default every 10000 steps
+// hopefully will not affect performance
+  if(step%10000==0){
+    fflush();
+    log.flush();
+    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) (*p)->fflush();
+  }
 }
 
 void PlumedMain::load(const std::string& ss){
