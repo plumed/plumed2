@@ -174,13 +174,17 @@ void Gyration::calculate(){
     case RADIUS:
     case TRACE:
       // Now compute radius of gyration
-      for(unsigned i=0;i<getNumberOfAtoms();i++){
-        diff=delta( com, getPosition(i) );
-        d=diff.modulo();
-        if( use_masses ){
+      if( use_masses ){
+        for(unsigned i=0;i<getNumberOfAtoms();i++){
+          diff=delta( com, getPosition(i) );
+          d=diff.modulo();
           rgyr += getMass(i)*d*d;
           derivatives[i]=diff*getMass(i);
-        } else {
+        }
+      } else {
+        for(unsigned i=0;i<getNumberOfAtoms();i++){
+          diff=delta( com, getPosition(i) );
+          d=diff.modulo();
           rgyr += d*d;
           derivatives[i]=diff;
         }
@@ -190,6 +194,7 @@ void Gyration::calculate(){
       //calculate gyration tensor
       if( use_masses ) {
         for(unsigned i=0;i<getNumberOfAtoms();i++){
+          diff=delta( com, getPosition(i) );
           gyr_tens[0][0]+=getMass(i)*diff[0]*diff[0];
           gyr_tens[1][1]+=getMass(i)*diff[1]*diff[1];
           gyr_tens[2][2]+=getMass(i)*diff[2]*diff[2];
@@ -199,6 +204,7 @@ void Gyration::calculate(){
         }
       } else {
         for(unsigned i=0;i<getNumberOfAtoms();i++){
+          diff=delta( com, getPosition(i) );
           gyr_tens[0][0]+=diff[0]*diff[0];
           gyr_tens[1][1]+=diff[1]*diff[1];
           gyr_tens[2][2]+=diff[2]*diff[2];
@@ -268,7 +274,6 @@ void Gyration::calculate(){
         det = -det;
       } 
       if(fabs(det-1.)>0.0001) error("Plumed Error: Cannot diagonalize gyration tensor\n");
-      double rm = rgyr*totmass;
       switch(rg_type) {
         case GTPC_1:
         case GTPC_2:
@@ -276,12 +281,14 @@ void Gyration::calculate(){
         {
           int pc_index = rg_type-2; //index of principal component
           rgyr=sqrt(princ_comp[pc_index]/totmass);
+          double rm = rgyr*totmass;
           if(rm>1e-6) prefactor[pc_index]=1.0/rm; //some parts of derivate
           break;
         }
 	case GYRATION_3:        //the smallest principal radius of gyration
         {
           rgyr=sqrt((princ_comp[1]+princ_comp[2])/totmass);
+          double rm = rgyr*totmass;
 	  if (rm>1e-6){
             prefactor[1]=1.0/rm;
             prefactor[2]=1.0/rm;
@@ -291,6 +298,7 @@ void Gyration::calculate(){
 	case GYRATION_2:       //the midle principal radius of gyration
         {
           rgyr=sqrt((princ_comp[0]+princ_comp[2])/totmass);
+          double rm = rgyr*totmass;
 	  if (rm>1e-6){
             prefactor[0]=1.0/rm;
             prefactor[2]=1.0/rm;
@@ -300,6 +308,7 @@ void Gyration::calculate(){
 	case GYRATION_1:      //the largest principal radius of gyration
         {
           rgyr=sqrt((princ_comp[0]+princ_comp[1])/totmass);
+          double rm = rgyr*totmass;
 	  if (rm>1e-6){
             prefactor[0]=1.0/rm;
             prefactor[1]=1.0/rm;
@@ -309,6 +318,7 @@ void Gyration::calculate(){
 	case ASPHERICITY:
         {
           rgyr=sqrt((princ_comp[0]-0.5*(princ_comp[1]+princ_comp[2]))/totmass); 
+          double rm = rgyr*totmass;
 	  if (rm>1e-6){   
             prefactor[0]= 1.0/rm;
             prefactor[1]=-0.5/rm;
@@ -319,6 +329,7 @@ void Gyration::calculate(){
 	case ACYLINDRICITY:
         {
           rgyr=sqrt((princ_comp[1]-princ_comp[2])/totmass); 
+          double rm = rgyr*totmass;
 	  if (rm>1e-6){   //avoid division by zero  
             prefactor[1]= 1.0/rm;
             prefactor[2]=-1.0/rm;
