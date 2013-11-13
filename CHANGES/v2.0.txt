@@ -27,6 +27,7 @@ For users:
 - Fixed a bug in \ref HISTOGRAM with REWEIGHT_BIAS. Reweighting was only done when also temperature-reweighing was enabled.
 - Fixed a bug that was sometime crashing code with domain decomposition and
   non-dense simulation boxes (e.g. implicit solvent).
+- Flush all files every 10000 steps by default, without need to use \ref FLUSH
 - Errors when writing input for \ref switchingfunction are now properly
   recognized.
 - Added message when `plumed simpled` is used on a non-existing file.
