@@ -472,6 +472,12 @@ isFirstStep(true)
    std::string funcl=getLabel() + ".bias";
    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   std::vector<std::string> actualmin=BiasGrid_->getMin();
+   std::vector<std::string> actualmax=BiasGrid_->getMax();
+   for(unsigned i=0;i<getNumberOfArguments();i++){
+     if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
+     if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+   }
   }
 
   if(wgridstride_>0){
