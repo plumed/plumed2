@@ -135,7 +135,9 @@ use_sf(false)
       use_sf=true;
       weightHasDerivatives=true;
       sf1.set(sfinput,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors ); 
       sf2.set(sfinput,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors ); 
       log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
   } else {
       parse("SWITCHA",sfinput); 
@@ -143,9 +145,11 @@ use_sf(false)
          use_sf=true;
          weightHasDerivatives=true;
          sf1.set(sfinput,errors);
+         if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors ); 
          sfinput.clear(); parse("SWITCHB",sfinput);
          if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
          sf2.set(sfinput,errors); 
+         if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
          log.printf("  only calculating angles when the distance between GROUPA and GROUPB atoms is less than %s\n", sf1.description().c_str() );
          log.printf("  only calculating angles when the distance between GROUPA and GROUPC atoms is less than %s\n", sf2.description().c_str() );
       }
