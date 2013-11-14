@@ -93,7 +93,7 @@ nframes(0)
            }
            log.printf("  Neighbor list enabled: \n");
            log.printf("                size   :  %d elements\n",neigh_size);
-           log.printf("                stride :  %f timesteps \n",neigh_stride);
+           log.printf("                stride :  %d timesteps \n",neigh_stride);
   }else{
            log.printf("  Neighbor list NOT enabled \n");
   }

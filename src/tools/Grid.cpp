@@ -167,7 +167,13 @@ unsigned Grid::getDimension() const {
 // we are flattening arrays using a column-major order
 unsigned Grid::getIndex(const vector<unsigned> & indices) const {
  plumed_assert(indices.size()==dimension_);
- for(unsigned int i=0;i<dimension_;i++) plumed_assert(indices[i]>=0 && indices[i]<nbin_[i]);
+ for(unsigned int i=0;i<dimension_;i++)
+  if(indices[i]>=nbin_[i]) {
+    std::string is;
+    Tools::convert(i,is);
+    std::string msg="ERROR: the system is looking for a value outside the grid along the " + is;
+    plumed_merror(msg+" index!");
+  }
  unsigned index=indices[dimension_-1];
  for(unsigned int i=dimension_-1;i>0;--i){
   index=index*nbin_[i-1]+indices[i-1];
@@ -182,15 +188,15 @@ unsigned Grid::getIndex(const vector<double> & x) const {
 
 // we are flattening arrays using a column-major order
 vector<unsigned> Grid::getIndices(unsigned index) const {
- vector<unsigned> indices;
+ vector<unsigned> indices(dimension_);
  unsigned kk=index;
- indices.push_back(index%nbin_[0]);
+ indices[0]=(index%nbin_[0]);
  for(unsigned int i=1;i<dimension_-1;++i){
   kk=(kk-indices[i-1])/nbin_[i-1];
-  indices.push_back(kk%nbin_[i]);
+  indices[i]=(kk%nbin_[i]);
  }
  if(dimension_>=2){
-  indices.push_back((kk-indices[dimension_-2])/nbin_[dimension_-2]);
+  indices[dimension_-1]=((kk-indices[dimension_-2])/nbin_[dimension_-2]);
  }
  return indices;
 }
@@ -246,33 +252,39 @@ vector<unsigned> Grid::getNeighbors
  (const vector<unsigned> &indices,const vector<unsigned> &nneigh)const{
  plumed_assert(indices.size()==dimension_ && nneigh.size()==dimension_);
 
- vector<unsigned> neighbors, small_bin; 
+ vector<unsigned> neighbors;
+ vector<unsigned> small_bin(dimension_);
+
  unsigned small_nbin=1;
  for(unsigned j=0;j<dimension_;++j){
-  small_bin.push_back(2*nneigh[j]+1);
+  small_bin[j]=(2*nneigh[j]+1);
   small_nbin*=small_bin[j];
  }
  
+ vector<unsigned> small_indices(dimension_);
+ vector<unsigned> tmp_indices;
  for(unsigned index=0;index<small_nbin;++index){
-  vector<unsigned> small_indices;
+  tmp_indices.resize(dimension_);
   unsigned kk=index;
-  small_indices.push_back(index%small_bin[0]);
+  small_indices[0]=(index%small_bin[0]);
   for(unsigned i=1;i<dimension_-1;++i){
    kk=(kk-small_indices[i-1])/small_bin[i-1];
-   small_indices.push_back(kk%small_bin[i]);
+   small_indices[i]=(kk%small_bin[i]);
   }
   if(dimension_>=2){
-   small_indices.push_back((kk-small_indices[dimension_-2])/small_bin[dimension_-2]);
+   small_indices[dimension_-1]=((kk-small_indices[dimension_-2])/small_bin[dimension_-2]);
   }
-  vector<unsigned> tmp_indices;
+  unsigned ll=0;
   for(unsigned i=0;i<dimension_;++i){
    int i0=small_indices[i]-nneigh[i]+indices[i];
    if(!pbc_[i] && i0<0)         continue;
    if(!pbc_[i] && i0>=nbin_[i]) continue;
-   if( pbc_[i] && i0<0)         i0+=nbin_[i];
-   if( pbc_[i] && i0>=nbin_[i]) i0-=nbin_[i];
-   tmp_indices.push_back((unsigned)i0);
+   if( pbc_[i] && i0<0)         i0=nbin_[i]-(-i0)%nbin_[i];
+   if( pbc_[i] && i0>=nbin_[i]) i0%=nbin_[i];
+   tmp_indices[ll]=((unsigned)i0);
+   ll++;
   }
+  tmp_indices.resize(ll);
   if(tmp_indices.size()==dimension_){neighbors.push_back(getIndex(tmp_indices));}
  } 
  return neighbors;

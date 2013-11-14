@@ -1,6 +1,9 @@
 /**
 
-@page CHANGES-2-0 CHANGES-2-0
+@page CHANGES-2-0 Version 2.0
+
+Version 2.0.0
+-------------
 
 Version 2.0 is a complete rewrite, so there is no way to write a complete set of difference
 with respect to plumed 1.3. Here is a summary of the difference:
@@ -10,12 +13,37 @@ with respect to plumed 1.3. Here is a summary of the difference:
 - Many complex collective variables are considerably faster than they were in plumed1.  In particular, all variables based on RMSD distances. 
 - Centers of mass can be used as if they were atoms. Hence, unlike plumed 1.3, you can use center of mass positions in ALL collective variables.
 - The virial contribution is now computed and passed to the MD code.  Plumed can thus now be used to perform biased NPT simulations 
+
 In addition, it is now much easier to contribute new functionality to the code because: 
 - There is a much simpler interface between plumed and the base MD codes. This makes it much easier to add plumed to a new MD code. 
 - There is C++ object oriented programming and full compatibility with the C++ standard library 
 - A modular structure 
 - Developer and user documentation 
 
-After release, we will document here fixes and additions on the 2.0.x series.
+Version 2.0.1
+-------------
+
+For users:
+- Fixed a bug in \ref HISTOGRAM with REWEIGHT_BIAS. Reweighting was only done when also temperature-reweighing was enabled.
+- Fixed a bug that was sometime crashing code with domain decomposition and
+  non-dense simulation boxes (e.g. implicit solvent).
+- Flush all files every 10000 steps by default, without need to use \ref FLUSH
+- Errors when writing input for \ref switchingfunction are now properly
+  recognized.
+- Added message when `plumed simpled` is used on a non-existing file.
+- Fixed `plumed mklib` such that it deletes the target shared library in case
+  of compilation error.
+- Several small fixes in documentation and log file.
+
+For developers:
+- Added possibility to setup replica exchange from MD codes in fortran (commands "GREX setMPIFIntercomm" and "GREX setMPIFIntracomm").
+- cmd("setStopFlag") should now be called after PLUMED initialization.
+- Several small fixes in documentation.
 
 */
+
+NOTICE: add this text to the last (unreleased) version:
+
+This version has not been released yet.
+See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
+

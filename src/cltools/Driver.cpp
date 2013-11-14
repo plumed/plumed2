@@ -26,7 +26,7 @@
 #include "tools/Communicator.h"
 #include "tools/Random.h"
 #include <cstdio>
-#include <string>
+#include <cstring>
 #include <vector>
 #include <map>
 #include "tools/Units.h"
@@ -131,6 +131,7 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
   keys.add("compulsory","--trajectory-stride","1","the frequency with which frames were output to this trajectory during the simulation");
+  keys.add("compulsory","--multi","0","set number of replicas for multi environment (needs mpi)");
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
@@ -142,7 +143,7 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
   keys.add("hidden","--debug-dd","use a fake domain decomposition");
   keys.add("hidden","--debug-pd","use a fake particle decomposition");
-  keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange");
+  keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange, specify exchange stride");
   keys.add("hidden","--debug-grex-log","log file for debug=grex");
 #ifdef __PLUMED_HAS_MOLFILE
   MOLFILE_INIT_ALL
@@ -203,29 +204,37 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   if( debug_pd || debug_dd ){
     if(noatoms) error("cannot debug without atoms");
   }
-  int multi=1;
-  FILE*multi_log=NULL;
-  bool debug_grex=parse("--debug-grex",fakein);
+
+// set up for multi replica driver:
+  int multi=0;
+  parse("--multi",multi);
   Communicator intracomm;
   Communicator intercomm;
-  if(debug_grex){
-    if(noatoms) error("must have atoms to debug_grex");
-    Tools::convert(fakein,multi);
+  if(multi){
     int ntot=pc.Get_size();
     int nintra=ntot/multi;
-    if(multi*nintra!=ntot) error("invalid number of processes for debug_grex");
-    //plumed_massert(multi*nintra==ntot,"xxx");
+    if(multi*nintra!=ntot) error("invalid number of processes for multi environment");
     pc.Split(pc.Get_rank()/nintra,pc.Get_rank(),intracomm);
     pc.Split(pc.Get_rank()%nintra,pc.Get_rank(),intercomm);
+  } else {
+    intracomm.Set_comm(pc.Get_comm());
+  }
+
+// set up for debug replica exchange:
+  bool debug_grex=parse("--debug-grex",fakein);
+  int  grex_stride=0;
+  FILE*grex_log=NULL;
+  if(debug_grex){
+    if(noatoms) error("must have atoms to debug_grex");
+    if(multi<2)  error("--debug_grex needs --multi with at least two replicas");
+    Tools::convert(fakein,grex_stride);
     string n; Tools::convert(intercomm.Get_rank(),n);
     string file;
     parse("--debug-grex-log",file);
     if(file.length()>0){
       file+="."+n;
-      multi_log=fopen(file.c_str(),"w");
+      grex_log=fopen(file.c_str(),"w");
     }
-  } else {
-    intracomm.Set_comm(pc.Get_comm());
   }
 
 // Read the plumed input file name  
@@ -271,7 +280,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 #endif
      if(traj_xyz.length()>0 && traj_gro.length()>0){
        fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
-       if(multi_log)fclose(multi_log);
+       if(grex_log)fclose(grex_log);
        return 1;
      }
      if(traj_xyz.length()>0 && trajectoryFile.length()==0){
@@ -284,7 +293,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      }
      if(trajectoryFile.length()==0){
        fprintf(stderr,"ERROR: missing trajectory data\n"); 
-       if(multi_log)fclose(multi_log);
+       if(grex_log)fclose(grex_log);
        return 1;
      }
      string lengthUnits(""); parse("--length-units",lengthUnits);
@@ -322,11 +331,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   int rr=sizeof(real);
   p.cmd("setRealPrecision",&rr);
   int checknatoms=-1;
-  int plumedStopCondition=0;
-  p.cmd("setStopFlag",&plumedStopCondition);
   int step=0;
   if(Communicator::initialized()){
-    if(multi>1){
+    if(multi){
       if(intracomm.Get_rank()==0) p.cmd("GREX setMPIIntercomm",&intercomm.Get_comm());
       p.cmd("GREX setMPIIntracomm",&intracomm.Get_comm());
       p.cmd("GREX init");
@@ -339,7 +346,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   p.cmd("setPlumedDat",plumedFile.c_str());
   p.cmd("setLog",out);
 
-  if(debug_grex){
+  if(multi){
     string n;
     Tools::convert(intercomm.Get_rank(),n);
     trajectoryFile+="."+n;
@@ -420,8 +427,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 #ifdef __PLUMED_HAS_MOLFILE
        }
 #endif
-    } else if ( plumedStopCondition ) break;
-// add the condition to close the file and die
+    }
 
     bool first_step=false;
     if(!noatoms){
@@ -521,7 +527,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
       }
     }
 
+    int plumedStopCondition=0;
     p.cmd("setStep",&step);
+    p.cmd("setStopFlag",&plumedStopCondition);
     if(!noatoms){
 #ifdef __PLUMED_HAS_MOLFILE
        if(use_molfile){
@@ -579,7 +587,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
          }
          for(unsigned i=0;i<9;i++)cell[i]=real(celld[i]);
        }
-
+  	   int ddist=0;
        // Read coordinates
        for(int i=0;i<natoms;i++){
          bool ok=Tools::getline(fp,line);
@@ -589,9 +597,24 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
            char dummy[1000];
            std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
          } else if(trajectory_fmt=="gro"){
-           Tools::convert(line.substr(20,8),cc[0]);
-           Tools::convert(line.substr(28,8),cc[1]);
-           Tools::convert(line.substr(36,8),cc[2]);
+           // do the gromacs way
+           if(!i){
+        	   //
+        	   // calculate the distance between dots (as in gromacs gmxlib/confio.c, routine get_w_conf )
+        	   //
+        	   const char      *p1, *p2, *p3;
+        	   p1 = strchr(line.c_str(), '.');
+        	   if (p1 == NULL) error("seems there are no coordinates in the gro file");
+        	   p2 = strchr(&p1[1], '.');
+        	   if (p2 == NULL) error("seems there is only one coordinates in the gro file");
+        	   ddist = p2 - p1;
+        	   p3 = strchr(&p2[1], '.');
+        	   if (p3 == NULL)error("seems there are only two coordinates in the gro file");
+        	   if (p3 - p2 != ddist)error("not uniform spacing in fields in the gro file");
+           }
+           Tools::convert(line.substr(20,ddist),cc[0]);
+           Tools::convert(line.substr(20+ddist,ddist),cc[1]);
+           Tools::convert(line.substr(20+ddist+ddist,ddist),cc[2]);
          } else plumed_error();
          if(!debug_pd || ( i>=pd_start && i<pd_start+pd_nlocal) ){
            coordinates[3*i]=real(cc[0]);
@@ -652,15 +675,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      dd_forces.assign(3*natoms,0.0);
      intracomm.Sum(&forces[0],natoms*3);
    }
-   int multi_stride=2;
-   if(multi>1 &&step%multi_stride==0){
+   if(debug_grex &&step%grex_stride==0){
      p.cmd("GREX savePositions");
      if(intracomm.Get_rank()>0){
        p.cmd("GREX prepare");
      } else {
        int r=intercomm.Get_rank();
        int n=intercomm.Get_size();
-       int partner=r+(2*((r+step/multi_stride)%2))-1;
+       int partner=r+(2*((r+step/grex_stride)%2))-1;
        if(partner<0)partner=0;
        if(partner>=n) partner=n-1;
        p.cmd("GREX setPartner",&partner);
@@ -669,9 +691,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        for(int i=0;i<n;i++){
          string s; Tools::convert(i,s);
          real a; s="GREX getDeltaBias "+s; p.cmd(s.c_str(),&a);
-         if(multi_log) fprintf(multi_log," %f",a);
+         if(grex_log) fprintf(grex_log," %f",a);
        }
-       if(multi_log) fprintf(multi_log,"\n");
+       if(grex_log) fprintf(grex_log,"\n");
      }
    }
 
@@ -685,13 +707,15 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        fprintf(fp_forces,fmt.c_str(),forces[3*i],forces[3*i+1],forces[3*i+2]);
    }
 
+    if(noatoms && plumedStopCondition) break;
+
     step+=stride;
   }
   p.cmd("runFinalJobs");
 
   if(fp_forces) fclose(fp_forces);
   if(fp && fp!=in)fclose(fp);
-  if(multi_log) fclose(multi_log);
+  if(grex_log) fclose(grex_log);
   
   return 0;
 }

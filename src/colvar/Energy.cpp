@@ -34,6 +34,8 @@ namespace colvar{
 /*
 Calculate the total energy of the simulation box.
 
+Total energy can be biased with umbrella sampling \cite bart-karp98jpcb or with well tempered metadynamics \cite Bonomi:2009p17935.
+
 \par Examples
 The following input instructs plumed to print the energy of the system
 \verbatim
@@ -41,8 +43,6 @@ ENERGY LABEL=ene
 PRINT ARG=ene
 \endverbatim
 (See also \ref PRINT).
-
-\bug This command does not work with variable cell simulations. Should it also include long range corrections?
 
 */
 //+ENDPLUMEDOC
@@ -72,6 +72,10 @@ PLUMED_COLVAR_INIT(ao)
   isEnergy=true;
   addValueWithDerivatives(); setNotPeriodic();
   getPntrToValue()->resizeDerivatives(1);
+  log<<"  Bibliography ";
+  log<<plumed.cite("Bartels and Karplus, J. Phys. Chem. B 102, 865 (1998)");
+  log<<plumed.cite("Bonomi and Parrinello, J. Comp. Chem. 30, 1615 (2009)");
+  log<<"\n";
 }
 
 void Energy::registerKeywords( Keywords& keys ){

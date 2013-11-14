@@ -66,6 +66,13 @@ void GREX::cmd(const string&key,void*val){
     CHECK_NOTINIT(initialized,key);
     intercomm.Set_comm(val);
     plumedMain.multi_sim_comm.Set_comm(val);
+  }else if(key=="setMPIFIntracomm"){
+    CHECK_NOTINIT(initialized,key);
+    intracomm.Set_fcomm(val);
+  }else if(key=="setMPIFIntercomm"){
+    CHECK_NOTINIT(initialized,key);
+    intercomm.Set_fcomm(val);
+    plumedMain.multi_sim_comm.Set_fcomm(val);
   }else if(key=="init"){
     CHECK_NOTINIT(initialized,key);
     initialized=true;
@@ -144,6 +151,7 @@ void GREX::cmd(const string&key,void*val){
 
 void GREX::savePositions(){
   plumedMain.prepareDependencies();
+  plumedMain.resetActive(true);
   atoms.shareAll();
   plumedMain.waitData();
   ostringstream o;

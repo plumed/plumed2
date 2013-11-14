@@ -26,7 +26,6 @@
 #include "Matrix.h"
 #include "core/Value.h"
 #include <vector>
-#include <math.h>
 
 namespace PLMD {
 

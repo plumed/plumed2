@@ -2,7 +2,7 @@
 
 @page tutorials How-tos
 
-The following pages describe how to perform a variety of tasks using plumed 2.0
+The following pages describe how to perform a variety of tasks using PLUMED 2
 
 @TUTORIALS@
 

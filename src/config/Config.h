@@ -33,6 +33,14 @@ std::string getPlumedRoot();
 
 std::string getMakefile();
 
+bool hasMatheval();
+
+bool hasDlopen();
+
+bool hasAlmost();
+
+bool hasCregex();
+
 }
 }
 

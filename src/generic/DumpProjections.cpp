@@ -75,7 +75,7 @@ fmt("%15.10f")
   if( file.length()==0 ) error("filename not specified");
   parse("FMT",fmt);
   fmt=" "+fmt;
-  of.open(file.c_str(),"wa");
+  of.open(file);
   log.printf("  on file %s\n",file.c_str());
   log.printf("  with format %s\n",fmt.c_str());
   checkRead();

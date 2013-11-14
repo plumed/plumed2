@@ -218,6 +218,10 @@ bool Action::getExchangeStep()const{
   return plumed.getExchangeStep();
 }
 
+std::string Action::cite(const std::string&s){
+  return plumed.cite(s);
+}
+
 
 }
 

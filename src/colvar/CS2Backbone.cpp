@@ -43,24 +43,109 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR CS2BACKBONE 
 /*
-This collective variable calculates the backbone chemical shifts for a protein (CA, CB, C', H, HA, N)
-using the CamShift method \cite Kohlhoff:2009us. The backcalculated chemical shifts are then compared
-with a set of provided chemical shifts to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
+This collective variable calculates a scoring function based on the comparison of backcalculated and
+experimental backbone chemical shifts for a protein (CA, CB, C', H, HA, N).
+
+CamShift \cite Kohlhoff:2009us is employed to back calculate the chemical shifts that are then compared
+with a set of experimental values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
 
 It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
 to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
 
-WHOLEMOLECULE ENTITY0=1-174
-cs: CS2BACKBONE ATOM=1-174 DATA data/ FF a03_gromacs.mdb FLAT 0.0 NRES 13 [ENSEMBLE]
-PRINT ARG=cs 
+HOW TO COMPILE IT
 
 In general the system for which chemical shifts are to be calculated must be completly included in
 ATOMS. It should also be made WHOLE before the the backcalculation. CamShift is included in the
-free package ALMOST that can be dowload via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
+free package ALMOST v.2.1 that can be dowload via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
+ALMOST 2.1 can be found in branches/almost-2.1/ and it can be compiled:
 
+\verbatim
+./configure 
+make
+\endverbatim
 
-Experimental chemical shifts must be provided for all the nuclei and the residues of the system of interest setting to 0 those 
-that are missing.
+Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
+
+PLUMED 2 must then be compiled by linking ALMOST: 
+
+\verbatim
+in DYNAMIC_LIBS the following paths should be added: 
+
+-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm \
+-L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 \
+-L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl \
+-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx
+
+and in CPPFLAGS
+
+-I/ALMOST_BASE_PATH/almost/branches/almost-2.1/include \
+-I/ALMOST_BASE_PATH/almost/branches/almost-2.1/include/almost \
+-I/ALMOST_BASE_PATH/almost/branches/almost-2.1/lib/sqlite-3.6.23.1 -D__PLUMED_HAS_ALMOST
+
+with ALMOST_BASE_PATH the full path to the ALMOST folder
+\endverbatim
+
+HOW TO USE IT
+
+To use CamShift as a restraint or as collective variable or as a replica-averaged restraint 
+first of all the experimental data are needed. CamShift uses backbone and Cb chemical shifts 
+that must be provided as text files:
+
+\verbatim
+CAshifts.dat:
+CBshifts.dat:
+Cshifts.dat:
+Hshifts.dat:
+HAshifts.dat:
+Nshifts.dat:
+#1 0.0
+2 55.5
+3 58.4
+.
+.
+#last 0.0
+#last+1 (first) of second chain
+.
+#last of second chain
+\endverbatim
+
+All of them must always be there. If a chemical shift for an atom of a residue is not available 0.0 must be used. 
+So if for example all the Cb are not available all the chemical shifts for all the residues should be set as 0.0.
+
+A template.pdb file is needed to the generate a topology of the protein within ALMOST. For histidines in protonation 
+states different from D the HIE/HIP name should be used in the template.pdb. GLH and ASH can be used for the alternative 
+protonation of GLU and ASP. Non-standard amino acids and other molecules are not yet supported! If multiple chains are 
+present the chain identifier must be in the standard PDB format, together with the TER keyword at the end of each chain.
+Residues numbering should always go from 1 to N in both the chemical shifts files as well as in the template.pdb file.
+Two more keywords can be used to setup the topology: CYS-DISU to tell ALMOST to look for disulphide bridges and TERMINI
+to define the protonation state of the the chain's termini (currently only DEFAULT (NH3+, CO2-) and NONE (NH, CO)).
+
+Two more standard files are also needed: an ALMOST force-field file, corresponding to the force-field family used in
+the MD code, (a03_cs2_gromacs.mdb for the amber family or all22_gromacs.mdb for the charmm family) and camshift.db, 
+both these files can be copied from almost/branches/almost-2.1/toppar.
+
+All the above files must be in a single folder that must be specified with the keyword DATA. 
+
+\par Examples
+
+case 1:
+
+\verbatim
+WHOLEMOLECULES ENTITY0=1-174
+cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 ENSEMBLE
+cse: RESTRAINT ARG=cs SLOPE=24 KAPPA=0 AT=0.
+PRINT ARG=cs,cse.bias
+\endverbatim
+
+case 2:
+
+\verbatim
+WHOLEMOLECULES ENTITY0=1-174
+cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=1.0 NRES=13 TERMINI=DEFAULT,NONE CYS-DISU WRITE_CS=1000
+PRINT ARG=cs
+\endverbatim
+
+(See also \ref WHOLEMOLECULES, \ref RESTRAINT and \ref PRINT)
 
 */
 //+ENDPLUMEDOC
@@ -88,17 +173,18 @@ PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
 
 void CS2Backbone::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
+  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose.");
   keys.add("atoms","ATOMS","The atoms to be included in the calculatios, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
   keys.add("compulsory","FLAT","1.0","Flat region in the scoring function.");
   keys.add("compulsory","NEIGH_FREQ","10","Period in step for neighbour list update.");
-  keys.add("compulsory","WRITE_CS","0","Write chemical shifts period.");
+  keys.add("compulsory","WRITE_CS","0","Write the back-calculated chemical shifts every # steps.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
   keys.add("optional","TERMINI","Defines the protonation states of the chain-termini.");
-  keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges");  
-  keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas");  
+  keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges.");  
+  keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");  
+  keys.remove("NOPBC");
 }
 
 CS2Backbone::CS2Backbone(const ActionOptions&ao):
@@ -134,7 +220,11 @@ PLUMED_COLVAR_INIT(ao)
 
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&multi_sim_comm.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+  if(ensemble&&comm.Get_rank()==0) {
+    if(multi_sim_comm.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+    else ens_dim=multi_sim_comm.Get_size(); 
+  } else ens_dim=0; 
+  if(ensemble) comm.Sum(&ens_dim, 1);
 
   stringadb  = stringa_data + string("/camshift.db");
   stringamdb = stringa_data + string("/") + stringa_forcefield;
@@ -224,10 +314,10 @@ PLUMED_COLVAR_INIT(ao)
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) {stride=1; rank=0;}
-  if(stride>1) log.printf("  Parallelized over %d processors\n", stride);
+  if(stride>1) log.printf("  Parallelized over %u processors\n", stride);
   a.set_mpi(stride, rank);
   
-  if(ensemble) { ens_dim=multi_sim_comm.Get_size(); log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }
+  if(ensemble) { log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }
 
   a.set_flat_bottom_const(grains);
   a.set_box_nupdate(neigh_f);
@@ -251,8 +341,8 @@ PLUMED_COLVAR_INIT(ao)
   checkRead();
 
   log<<"  Bibliography "
-     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n"
-     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)") <<"\n";
+     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
+     <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
 
   addValueWithDerivatives();
   setNotPeriodic();
@@ -295,6 +385,8 @@ void CS2Backbone::calculate()
   if(printout) {
     string csfile;
     char tmps1[21], tmps2[21];
+    // add to the name the label of the cv in such a way to have different files
+    // when there is more than one defined variable
     sprintf(tmps1, "%li", getStep());
     if(ensemble) {
       sprintf(tmps2, "%i", multi_sim_comm.Get_rank());

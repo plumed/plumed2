@@ -55,7 +55,7 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
                                        "However, if you are using some other option, then this cannot be used");
   keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("VERBOSE",false,"write a more detailed output");
-  keys.add("optional","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
+  keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
                                   "that contributed less than TOL at the previous neighbor list update step are ignored.");
   ActionWithVessel::registerKeywords( keys );
   keys.use("LESS_THAN"); keys.use("MIN"); 
@@ -110,7 +110,7 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::vector<std::string>& 
          log.printf("  examining all possible secondary structure combinations");
       } else {
          log.printf("  examining secondary struture in residue poritions : %s ",resstrings[0].c_str() );
-         for(unsigned i=1;i<resstrings.size();++i) log.printf(", %s",resstrings[1].c_str() );
+         for(unsigned i=1;i<resstrings.size();++i) log.printf(", %s",resstrings[i].c_str() );
          log.printf("\n");
       }
   }
@@ -148,8 +148,11 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   if( secondary_rmsd.size()==0 && secondary_drmsd.size()==0 ){ 
-     pos.resize( structure.size() );
-     all_atoms.activateAll(); taskList.activateAll();
+     pos.resize( structure.size() ); taskList.activateAll();
+     for(unsigned i=0;i<taskList.getNumberActive();++i){
+        for(unsigned j=0;j<colvar_atoms[i].size();++j) all_atoms.activate( colvar_atoms[i][j] );
+     }
+     all_atoms.updateActiveMembers();
      ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
      forcesToApply.resize( getNumberOfDerivatives() );
 

@@ -42,11 +42,15 @@ PLUMED_KERNEL=$(PLUMED_LIBDIR)libplumedKernel.$(SOEXT)
 # plumed library (kernel + wrapper)
 PLUMED_SHARED_OBJ=$(PLUMED_LIBDIR)libplumed.$(SOEXT)
 
+# plumed scripts
+PLUMED_SCRIPTS_SH=$(shell cd ../../scripts/ ; ls *.sh 2>/dev/null)
+PLUMED_SCRIPTS=$(PLUMED_SCRIPTS_SH:.sh=)
+PLUMED_SCRIPTS_EXE=$(addprefix $(PLUMED_LIBDIR)plumed-,$(PLUMED_SCRIPTS))
+
 # plumed main exec
 PLUMED_MAIN_STATIC=$(PLUMED_LIBDIR)plumed
 PLUMED_MAIN_SHARED=$(PLUMED_LIBDIR)plumed-shared
 PLUMED_MAIN_RUNTIME=$(PLUMED_LIBDIR)plumed-runtime
-PLUMED_MAIN_PATCH=$(PLUMED_LIBDIR)plumed-patch
 
 .PHONY: all dirs $(DIRS) all-static
 ifdef SOEXT
@@ -54,6 +58,9 @@ all:
 	@echo First making other dirs $(DIRS)
 	$(MAKE) dirs
 	$(MAKE) lib
+else
+all:
+	$(MAKE) all-static
 endif
 
 all-static:
@@ -81,33 +88,41 @@ install-do:
 # copy inc files changing the path
 	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../../)| $(PLUMED_INSTALL_ROOT)/|g" $$file > $(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
 # modulefile
-	@echo "#%Module1.0##############################################"          >  $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "proc ModulesHelp { } {"                                             >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "  puts stderr \"\tAdds paths for Plumed\""                          >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "}"                                                                  >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "module-whatis   \"Adds paths for Plumed\""                          >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "# Manually add here dependencies and conflicts"                     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  PATH               $(PLUMED_INSTALL_PREFIX)/bin"      >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  CPATH              $(PLUMED_INSTALL_PREFIX)/include/" >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  INCLUDE            $(PLUMED_INSTALL_PREFIX)/include/" >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  LIBRARY_PATH       $(PLUMED_INSTALL_PREFIX)/lib/"     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  LD_LIBRARY_PATH    $(PLUMED_INSTALL_PREFIX)/lib/"     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-	@echo "prepend-path  DYLD_LIBRARY_PATH  $(PLUMED_INSTALL_PREFIX)/lib/"     >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-ifdef SOEXT
-	@echo "setenv        PLUMED_KERNEL      $(PLUMED_INSTALL_PREFIX)/lib/libplumedKernel.$(SOEXT)" >> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
-endif
+	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|"> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
 # install links
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-patch $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
+	for file in $(PLUMED_SCRIPTS) ; do ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-$$file $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-$$file ; done
 ifdef SOEXT
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumed.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumedKernel.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
 endif
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_ROOT)
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-*
+	@echo
+	@echo "*** PLUMED has been installed ***"
+	@echo
+	@echo "Install prefix : $(PLUMED_INSTALL_PREFIX)"
+	@echo "Full name      : plumed$(PLUMED_INSTALL_LIBSUFFIX)"
+	@echo
+	@echo "Setup your environment"
+	@echo "- Ensure this is in your execution path : $(PLUMED_INSTALL_PREFIX)/bin"
+	@echo "- Ensure this is in your include path   : $(PLUMED_INSTALL_PREFIX)/include"
+ifdef SOEXT
+	@echo "- Ensure this is in your library path   : $(PLUMED_INSTALL_PREFIX)/lib"
+	@echo "For runtime binding:"
+	@echo "- Set this environment variable         : PLUMED_KERNEL=$(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)"
+endif
+	@echo
+	@echo "To create a tcl module that sets all the variables above, use this one as a starting point:"
+	@echo "$(PLUMED_INSTALL_ROOT)/src/lib/modulefile"
+	@echo
 	@echo "To uninstall, remove the following files and directories:"
-	@echo  $(PLUMED_INSTALL_ROOT)
-	@echo  $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	@echo $(PLUMED_INSTALL_ROOT)
+	@echo $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	@echo $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	@echo $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
+	@for file in $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-* ; do echo $$file ; done
 ifdef SOEXT
 	@echo $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
 	@echo $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
@@ -117,11 +132,9 @@ uninstall:
 	rm -fr $(PLUMED_INSTALL_ROOT)
 	rm -fr $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-patch
-ifdef SOEXT
+	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-*
 	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
 	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
-endif
 
 dirs: $(DIRS)
 
@@ -134,18 +147,18 @@ $(DIRS):
 
 lib: lib-static lib-shared
 
-lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) Plumed.inc.static Plumed.cmake.static $(PLUMED_MAIN_PATCH)
+lib-static: $(PLUMED_MAIN_STATIC) $(OBJ_WRAPPER) Plumed.inc.static Plumed.cmake.static $(PLUMED_SCRIPTS_EXE)
 
 lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME) \
            Plumed.inc Plumed.inc.runtime Plumed.inc.shared \
            Plumed.cmake Plumed.cmake.runtime Plumed.cmake.shared
 
-$(PLUMED_MAIN_PATCH):
-	@echo "#! /bin/bash" > $(PLUMED_MAIN_PATCH)
-	@echo "echo 'NOTE: shell only version of path, useful for cross compiling'" >> $(PLUMED_MAIN_PATCH)
-	@echo "export PLUMED_ROOT=\"$(realpath $(PLUMED_LIBDIR)../../)\"" >> $(PLUMED_MAIN_PATCH)
-	@echo "source \"\$$PLUMED_ROOT\"/scripts/patch.sh" >> $(PLUMED_MAIN_PATCH)
-	chmod a+x $(PLUMED_MAIN_PATCH)
+$(PLUMED_SCRIPTS_EXE):
+	@echo "#! /bin/bash" > $@
+	@echo "echo 'NOTE: shell only version, useful when plumed is cross compiled' >&2" >> $@
+	@echo "export PLUMED_ROOT=\"$(realpath $(PLUMED_LIBDIR)../../)\"" >> $@
+	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
+	chmod a+x $@
 
 $(PLUMED_KERNEL):$(OBJ_KERNEL)
 	$(LDSO) -o $@ $^ $(DYNAMIC_LIBS)

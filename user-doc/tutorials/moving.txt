@@ -48,7 +48,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> INTERVAL </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> <b> \ref METAD with INTERVAL  </b> </TD>
 </TR>
 <TR>
   <TD> INVERT </TD>
@@ -133,7 +133,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> WATERBRIDGE </TD>
-  <TD> <b> currently missing </b>, can be emulated with multiple \ref COORDINATION combined with \ref MATHEVAL </TD>
+  <TD> \ref BRIDGE </TD> 
 </TR>
 <TR>
   <TD> RGYR </TD>
@@ -149,7 +149,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> ALPHABETA </TD>
-  <TD> <b> currently missing </b>, can be emulated with multiple \ref TORSION combined with \ref MATHEVAL</TD>
+  <TD> \ref ALPHABETA </TD>
 </TR>
 <TR>
   <TD> ALPHARMSD </TD>
