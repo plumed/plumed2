@@ -30,7 +30,7 @@ For users:
 - Flush all files every 10000 steps by default, without need to use \ref FLUSH
 - Errors when writing input for \ref switchingfunction are now properly
   recognized.
-- Added message when `plumed simpled` is used on a non-existing file.
+- Added message when \ref simplemd is used on a non-existing file.
 - Fixed `plumed mklib` such that it deletes the target shared library in case
   of compilation error.
 - Several small fixes in documentation and log file.
@@ -41,10 +41,11 @@ For developers:
 - cmd("setStopFlag") should now be called after PLUMED initialization.
 - Several small fixes in documentation.
 
-*/
-
-NOTICE: add this text to the last (unreleased) version:
-
-This version has not been released yet.
+Unreleased changes
+-------------
 See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
+
+There are currently no unreleased changes.
+
+*/
 
