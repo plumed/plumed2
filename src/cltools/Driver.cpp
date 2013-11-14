@@ -151,7 +151,7 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   for(int i=0;i<plugins.size();i++){
 	string kk="--mf_"+string(plugins[i]->name);
 	string mm=" molfile: the trajectory in "+string(plugins[i]->name)+" format " ;
-	cerr<<"REGISTERING "<<kk<<mm<<endl;
+	//cerr<<"REGISTERING "<<kk<<mm<<endl;
   	keys.add("atoms",kk,mm);
   }
 #endif
