@@ -27,6 +27,7 @@ For users:
 - Fixed a bug in \ref HISTOGRAM with REWEIGHT_BIAS. Reweighting was only done when also temperature-reweighing was enabled.
 - Fixed a bug that was sometime crashing code with domain decomposition and
   non-dense simulation boxes (e.g. implicit solvent).
+- Performance improvements for \ref GYRATION.
 - Flush all files every 10000 steps by default, without need to use \ref FLUSH
 - Errors when writing input for \ref switchingfunction are now properly
   recognized.
@@ -34,7 +35,6 @@ For users:
 - Fixed `plumed mklib` such that it deletes the target shared library in case
   of compilation error.
 - Several small fixes in documentation and log file.
-- Performance improvements for \ref GYRATION.
 
 For developers:
 - Added possibility to setup replica exchange from MD codes in fortran (commands "GREX setMPIFIntercomm" and "GREX setMPIFIntracomm").
