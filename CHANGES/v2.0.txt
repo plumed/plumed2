@@ -34,6 +34,7 @@ For users:
 - Fixed `plumed mklib` such that it deletes the target shared library in case
   of compilation error.
 - Several small fixes in documentation and log file.
+- Performance improvements for \ref GYRATION.
 
 For developers:
 - Added possibility to setup replica exchange from MD codes in fortran (commands "GREX setMPIFIntercomm" and "GREX setMPIFIntracomm").
