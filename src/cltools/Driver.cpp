@@ -543,15 +543,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     		   real Ax=ts_in.A;
     		   real Bx=ts_in.B*cosAB;
     		   real By=ts_in.B*sinAB;
-    		   // If sinAB is zero, then we can't determine C uniquely since it's defined
-    		   //  in terms of the angle between A and B.
-    		   real Cx,Cy,Cz;
-    		   if (sinAB>0.){
-    			   Cx=ts_in.C*cosAC;
-    			   Cy=ts_in.C*cosBC-cosAC*cosAB/sinAB;
-    			   Cz=ts_in.C*pow(1.-Cx*Cx-Cy*Cy,0.5);
-    		   }else{Cx=0.;Cy=0.;Cz=0.;}
-    		   //convert to nm
+                   real Cx=ts_in.C*cosAC;
+                   real Cy=(ts_in.C*ts_in.B*cosBC-Cx*Bx)/By;
+                   real Cz=sqrt(ts_in.C*ts_in.C-Cx*Cx-Cy*Cy);
     		   cell[0]=Ax/10.;cell[1]=0.;cell[2]=0.;
     		   cell[3]=Bx/10.;cell[4]=By/10.;cell[5]=0.;
     		   cell[6]=Cx/10.;cell[7]=Cy/10.;cell[8]=Cz/10.;
