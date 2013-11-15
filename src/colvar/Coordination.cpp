@@ -84,8 +84,10 @@ CoordinationBase(ao)
 
   string sw,errors;
   parse("SWITCH",sw);
-  if(sw.length()>0) switchingFunction.set(sw,errors);
-  else {
+  if(sw.length()>0){
+    switchingFunction.set(sw,errors);
+    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+  } else {
     int nn=6;
     int mm=12;
     double d0=0.0;
