@@ -100,15 +100,19 @@ PLUMED_MULTICOLVAR_INIT(ao)
   std::string sfinput,errors; parse("SWITCH",sfinput);
   if( sfinput.length()>0 ){
       sf1.set(sfinput,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
       sf2.set(sfinput,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );   
   } else {
       parse("SWITCHA",sfinput); 
       if(sfinput.length()>0){
          weightHasDerivatives=true;
          sf1.set(sfinput,errors);
+         if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors );
          sfinput.clear(); parse("SWITCHB",sfinput);
          if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
          sf2.set(sfinput,errors); 
+         if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
       } else {
          error("missing definition of switching functions");
       } 

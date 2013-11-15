@@ -20,15 +20,18 @@ In addition, it is now much easier to contribute new functionality to the code b
 - A modular structure 
 - Developer and user documentation 
 
-Version 2.0.1 - unreleased
---------------------------
-This version has not been released yet.
-See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
+Version 2.0.1
+-------------
 
 For users:
 - Fixed a bug in \ref HISTOGRAM with REWEIGHT_BIAS. Reweighting was only done when also temperature-reweighing was enabled.
-- Fixed a bug that was sometime crashing the code with GROMACS, domain decomposition and implicit solvent.
-- Added message when `plumed simpled` is used on a non-existing file.
+- Fixed a bug that was sometime crashing code with domain decomposition and
+  non-dense simulation boxes (e.g. implicit solvent).
+- Performance improvements for \ref GYRATION.
+- Flush all files every 10000 steps by default, without need to use \ref FLUSH
+- Errors when writing input for \ref switchingfunction are now properly
+  recognized.
+- Added message when \ref simplemd is used on a non-existing file.
 - Fixed `plumed mklib` such that it deletes the target shared library in case
   of compilation error.
 - Several small fixes in documentation and log file.
@@ -38,4 +41,11 @@ For developers:
 - cmd("setStopFlag") should now be called after PLUMED initialization.
 - Several small fixes in documentation.
 
+Unreleased changes
+-------------
+See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
+
+There are currently no unreleased changes.
+
 */
+
