@@ -4785,7 +4785,7 @@ fi
 
 
     if test $found == ok ; then
-      $as_echo "#define __PLUMED_HAS_MPI 1" >>confdefs.h
+      $as_echo "#define __PLUMED_MPI 1" >>confdefs.h
 
     fi
 
@@ -4804,7 +4804,7 @@ fi
 
 
     if test $found == ok ; then
-      $as_echo "#define __PLUMED_HAS_REGEX 1" >>confdefs.h
+      $as_echo "#define __PLUMED_HAS_CREGEX 1" >>confdefs.h
 
     fi
 
