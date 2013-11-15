@@ -27,7 +27,7 @@ fi
 
 rm -f "$obj" "$lib"
 
-$compile "$obj" "$file" && $link "$lib" "$obj"
+eval "$compile" "$obj" "$file" && $link "$lib" "$obj"
 
 
 
