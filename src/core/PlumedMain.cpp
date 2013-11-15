@@ -115,27 +115,21 @@ void PlumedMain::cmd(const std::string & word,void*val){
        atoms.setBox(val);
   } else if(word=="setPositions") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setPositions(val);
   } else if(word=="setMasses") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setMasses(val);
   } else if(word=="setCharges") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setCharges(val);
   } else if(word=="setPositionsX") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setPositions(val,0);
   } else if(word=="setPositionsY") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setPositions(val,1);
   } else if(word=="setPositionsZ") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setPositions(val,2);
   } else if(word=="setVirial") {
        CHECK_INIT(initialized,word);
@@ -147,19 +141,15 @@ void PlumedMain::cmd(const std::string & word,void*val){
        atoms.setEnergy(val);
   } else if(word=="setForces") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setForces(val);
   } else if(word=="setForcesX") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setForces(val,0);
   } else if(word=="setForcesY") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setForces(val,1);
   } else if(word=="setForcesZ") {
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setForces(val,2);
   } else if(word=="calc") {
        CHECK_INIT(initialized,word);
@@ -193,7 +183,6 @@ void PlumedMain::cmd(const std::string & word,void*val){
        atoms.setAtomsNlocal(*static_cast<int*>(val));
   } else if(word=="setAtomsGatindex"){
        CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
        atoms.setAtomsGatindex(static_cast<int*>(val));
   } else if(word=="setAtomsContiguous"){
        CHECK_INIT(initialized,word);
@@ -598,6 +587,14 @@ void PlumedMain::justApply(){
      else plumed_merror("your md code cannot handle plumed stop events - add a call to plumed.comm(stopFlag,stopCondition)");
   }  
   stopwatch.stop("5 Applying (backward loop)");
+
+// flush by default every 10000 steps
+// hopefully will not affect performance
+  if(step%10000==0){
+    fflush();
+    log.flush();
+    for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) (*p)->fflush();
+  }
 }
 
 void PlumedMain::load(const std::string& ss){

@@ -470,7 +470,7 @@ INPUT                  = IntroPP.txt \
                          TutorialsPP.txt \
                          ModulesPP.txt \
                          RegexPP.txt \
-                         ../CHANGES/v2.0.txt ../CHANGES/v2.1.txt \
+                         ../CHANGES \
                          tutorials \
                          automatic
 

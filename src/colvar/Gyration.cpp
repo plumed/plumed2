@@ -73,9 +73,8 @@ PRINT ARG=rg STRIDE=1 FILE=colvar
 
 class Gyration : public Colvar {
 private:
-  std::string Type;
   enum CV_TYPE {RADIUS, TRACE, GTPC_1, GTPC_2, GTPC_3, ASPHERICITY, ACYLINDRICITY, KAPPA2, GYRATION_3, GYRATION_2, GYRATION_1, TOT};
-  int  rg_type;
+  int rg_type;
   bool use_masses;
 public:
   static void registerKeywords( Keywords& keys );
@@ -102,6 +101,7 @@ use_masses(true)
   bool not_use_masses=!use_masses;
   parseFlag("NOT_MASS_WEIGHTED",not_use_masses);
   use_masses=!not_use_masses;
+  std::string Type;
   parse("TYPE",Type);
   checkRead();
 
@@ -152,47 +152,59 @@ void Gyration::calculate(){
   for(unsigned i=0;i<3;i++)  for(unsigned j=0;j<3;j++) gyr_tens(i,j)=0.;
 
   // Find the center of mass
-  if( use_masses ) totmass += getMass(0); 
-  else totmass += 1.0;
   pos0=getPosition(0); 
   com.zero();
-  for(unsigned i=1;i<getNumberOfAtoms();i++){
-     diff=delta( pos0, getPosition(i) );
-     if( use_masses ){
-         totmass += getMass(i);
-         com += getMass(i)*diff;
-     } else {
-         totmass += 1.0;
-         com += diff;
-     }
+  if(use_masses) {
+    totmass=getMass(0);
+    for(unsigned i=1;i<getNumberOfAtoms();i++){
+      diff=delta( pos0, getPosition(i) );
+      totmass += getMass(i);
+      com += getMass(i)*diff;
+    }
+  } else {
+    totmass=(double)getNumberOfAtoms();
+    for(unsigned i=1;i<getNumberOfAtoms();i++){
+      diff=delta( pos0, getPosition(i) );
+      com += diff;
+    }
   }
   com = com / totmass + pos0;
 
-  // Now compute radius of gyration
-  for(unsigned i=0;i<getNumberOfAtoms();i++){
-    diff=delta( com, getPosition(i) );
-    d=diff.modulo();
-    switch(rg_type) {
-      case RADIUS:
-      case TRACE:
-        if( use_masses ){
+  switch(rg_type) {
+    case RADIUS:
+    case TRACE:
+      // Now compute radius of gyration
+      if( use_masses ){
+        for(unsigned i=0;i<getNumberOfAtoms();i++){
+          diff=delta( com, getPosition(i) );
+          d=diff.modulo();
           rgyr += getMass(i)*d*d;
           derivatives[i]=diff*getMass(i);
-        } else {
+        }
+      } else {
+        for(unsigned i=0;i<getNumberOfAtoms();i++){
+          diff=delta( com, getPosition(i) );
+          d=diff.modulo();
           rgyr += d*d;
           derivatives[i]=diff;
         }
-        break;
-      default: //calculate gyration tensor
-      {
-        if( use_masses ) {
+      }
+      break;
+    default: 
+      //calculate gyration tensor
+      if( use_masses ) {
+        for(unsigned i=0;i<getNumberOfAtoms();i++){
+          diff=delta( com, getPosition(i) );
           gyr_tens[0][0]+=getMass(i)*diff[0]*diff[0];
           gyr_tens[1][1]+=getMass(i)*diff[1]*diff[1];
           gyr_tens[2][2]+=getMass(i)*diff[2]*diff[2];
           gyr_tens[0][1]+=getMass(i)*diff[0]*diff[1];
           gyr_tens[0][2]+=getMass(i)*diff[0]*diff[2];
           gyr_tens[1][2]+=getMass(i)*diff[1]*diff[2];
-        } else {
+        }
+      } else {
+        for(unsigned i=0;i<getNumberOfAtoms();i++){
+          diff=delta( com, getPosition(i) );
           gyr_tens[0][0]+=diff[0]*diff[0];
           gyr_tens[1][1]+=diff[1]*diff[1];
           gyr_tens[2][2]+=diff[2]*diff[2];
@@ -200,17 +212,17 @@ void Gyration::calculate(){
           gyr_tens[0][2]+=diff[0]*diff[2];
           gyr_tens[1][2]+=diff[1]*diff[2];
         }
-        break;
       }
-    }
+      break;
   }
 
   switch(rg_type) {
     case RADIUS:
     {
       rgyr=sqrt(rgyr/totmass);
+      double fact=1./(rgyr*totmass);
       for(unsigned i=0;i<getNumberOfAtoms();i++){
-        derivatives[i] /= rgyr*totmass;
+        derivatives[i] *= fact;
         setAtomsDerivatives(i,derivatives[i]);
       }
       break;
@@ -227,7 +239,6 @@ void Gyration::calculate(){
     default:
     {
       // first make the matrix symmetric
-
       gyr_tens[1][0] = gyr_tens[0][1];
       gyr_tens[2][0] = gyr_tens[0][2];
       gyr_tens[2][1] = gyr_tens[1][2];
@@ -254,13 +265,15 @@ void Gyration::calculate(){
       }
       //calculate determinant of transformation matrix
       double det;  
-      det=transf[0][0]*transf[1][1]*transf[2][2]+transf[0][1]*transf[1][2]*transf[2][0]+transf[0][2]*transf[1][0]*transf[2][1]- transf[0][2]*transf[1][1]*transf[2][0]-transf[0][1]*transf[1][0]*transf[2][2]-transf[0][0]*transf[1][2]*transf[2][1]; 
+      det = transf[0][0]*transf[1][1]*transf[2][2]+transf[0][1]*transf[1][2]*transf[2][0]+
+            transf[0][2]*transf[1][0]*transf[2][1]-transf[0][2]*transf[1][1]*transf[2][0]-
+            transf[0][1]*transf[1][0]*transf[2][2]-transf[0][0]*transf[1][2]*transf[2][1]; 
       // trasformation matrix for rotation must have positive determinant, otherwise multiply one column by (-1)
-      if (det<0) { for (unsigned j=0;j<3;j++) transf[j][2]=-transf[j][2];
-                   det=transf[0][0]*transf[1][1]*transf[2][2]+transf[0][1]*transf[1][2]*transf[2][0]+transf[0][2]*transf[1][0]*transf[2][1]- transf[0][2]*transf[1][1]*transf[2][0]-transf[0][1]*transf[1][0]*transf[2][2]-transf[0][0]*transf[1][2]*transf[2][1]; 
-      }
-      if (fabs(det-1.)>0.0001) error("Plumed Error: Cannot diagonalize gyration tensor\n"); //check again, if det(transf)!=1 something is wrong, die
-
+      if(det<0) { 
+        for(unsigned j=0;j<3;j++) transf[j][2]=-transf[j][2];
+        det = -det;
+      } 
+      if(fabs(det-1.)>0.0001) error("Plumed Error: Cannot diagonalize gyration tensor\n");
       switch(rg_type) {
         case GTPC_1:
         case GTPC_2:
@@ -268,52 +281,58 @@ void Gyration::calculate(){
         {
           int pc_index = rg_type-2; //index of principal component
           rgyr=sqrt(princ_comp[pc_index]/totmass);
-          if(rgyr*totmass>1e-6) prefactor[pc_index]=1.0/(totmass*rgyr); //some parts of derivate
+          double rm = rgyr*totmass;
+          if(rm>1e-6) prefactor[pc_index]=1.0/rm; //some parts of derivate
           break;
         }
 	case GYRATION_3:        //the smallest principal radius of gyration
         {
           rgyr=sqrt((princ_comp[1]+princ_comp[2])/totmass);
-	  if (rgyr*totmass>1e-6){
-            prefactor[1]=1.0/(totmass*rgyr);
-            prefactor[2]=1.0/(totmass*rgyr);
+          double rm = rgyr*totmass;
+	  if (rm>1e-6){
+            prefactor[1]=1.0/rm;
+            prefactor[2]=1.0/rm;
 	  }
           break;
         }
 	case GYRATION_2:       //the midle principal radius of gyration
         {
           rgyr=sqrt((princ_comp[0]+princ_comp[2])/totmass);
-	  if (rgyr*totmass>1e-6){
-            prefactor[0]=1.0/(totmass*rgyr);
-            prefactor[2]=1.0/(totmass*rgyr);
+          double rm = rgyr*totmass;
+	  if (rm>1e-6){
+            prefactor[0]=1.0/rm;
+            prefactor[2]=1.0/rm;
 	  }
           break;
         }
 	case GYRATION_1:      //the largest principal radius of gyration
         {
           rgyr=sqrt((princ_comp[0]+princ_comp[1])/totmass);
-	  if (rgyr*totmass>1e-6){
-            prefactor[0]=1.0/(totmass*rgyr);
-            prefactor[1]=1.0/(totmass*rgyr);
+          double rm = rgyr*totmass;
+	  if (rm>1e-6){
+            prefactor[0]=1.0/rm;
+            prefactor[1]=1.0/rm;
 	  }
           break;             
         }
 	case ASPHERICITY:
         {
           rgyr=sqrt((princ_comp[0]-0.5*(princ_comp[1]+princ_comp[2]))/totmass); 
-	  if (rgyr*totmass>1e-6){   //avoid division by zero 
-            prefactor[0]= 1.0/(totmass*rgyr);
-            prefactor[1]=-0.5/(totmass*rgyr);
-            prefactor[2]=-0.5/(totmass*rgyr);
+          double rm = rgyr*totmass;
+	  if (rm>1e-6){   
+            prefactor[0]= 1.0/rm;
+            prefactor[1]=-0.5/rm;
+            prefactor[2]=-0.5/rm;
 	  }
 	  break;
         }
 	case ACYLINDRICITY:
         {
           rgyr=sqrt((princ_comp[1]-princ_comp[2])/totmass); 
-	  if (rgyr*totmass>1e-6){   //avoid division by zero  
-            prefactor[1]= 1.0/(totmass*rgyr);
-            prefactor[2]=-1.0/(totmass*rgyr);
+          double rm = rgyr*totmass;
+	  if (rm>1e-6){   //avoid division by zero  
+            prefactor[1]= 1.0/rm;
+            prefactor[2]=-1.0/rm;
 	  }
           break;
         }
@@ -329,20 +348,29 @@ void Gyration::calculate(){
 	  }
           break;
         }
-      }      
-      for(unsigned i=0;i<getNumberOfAtoms();i++){
-        Vector tX;
-        diff=delta( com,getPosition(i) );
-        //project atomic postional vectors to diagonalized frame
-        for (unsigned j=0;j<3;j++) tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];  
-        if( use_masses ) { 
-          for (unsigned j=0;j<3;j++) 
-            derivatives[i][j]=getMass(i)*(prefactor[0]*transf[j][0]*tX[0]+prefactor[1]*transf[j][1]*tX[1]+prefactor[2]*transf[j][2]*tX[2]);
-        } else {                   
-          for (unsigned j=0;j<3;j++) 
-            derivatives[i][j]=(prefactor[0]*transf[j][0]*tX[0]+prefactor[1]*transf[j][1]*tX[1]+prefactor[2]*transf[j][2]*tX[2]);
+      }
+      if(use_masses) { 
+        for(unsigned i=0;i<getNumberOfAtoms();i++){
+          Vector tX;
+          diff=delta( com,getPosition(i) );
+          //project atomic postional vectors to diagonalized frame
+          for(unsigned j=0;j<3;j++) tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];  
+          for(unsigned j=0;j<3;j++) derivatives[i][j]=getMass(i)*(prefactor[0]*transf[j][0]*tX[0]+
+                                                                  prefactor[1]*transf[j][1]*tX[1]+
+                                                                  prefactor[2]*transf[j][2]*tX[2]);
+          setAtomsDerivatives(i,derivatives[i]);
         }
-        setAtomsDerivatives(i,derivatives[i]);
+      } else {
+        for(unsigned i=0;i<getNumberOfAtoms();i++){
+          Vector tX;
+          diff=delta( com,getPosition(i) );
+          //project atomic postional vectors to diagonalized frame
+          for(unsigned j=0;j<3;j++) tX[j]=transf[0][j]*diff[0]+transf[1][j]*diff[1]+transf[2][j]*diff[2];  
+          for(unsigned j=0;j<3;j++) derivatives[i][j]=prefactor[0]*transf[j][0]*tX[0]+
+                                                      prefactor[1]*transf[j][1]*tX[1]+
+                                                      prefactor[2]*transf[j][2]*tX[2];
+          setAtomsDerivatives(i,derivatives[i]);
+        }
       }
       break;
     }

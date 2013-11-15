@@ -137,7 +137,7 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
 	biasf.push_back(dummyd);
         // the domain does not pertain to the kernel but to the values here defined 
 	string	mins,maxs,minv,maxv,mini,maxi;mins="min_";maxs="max_";
-        for(unsigned i=0 ; i<ndim; i++){
+        for(int i=0 ; i<ndim; i++){
             if(values[i]->isPeriodic()){		
 	      ifile->scanField(mins+names[i],minv);		
 	      ifile->scanField(maxs+names[i],maxv);		
@@ -155,7 +155,7 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
                  vector<double> der(ndim);
                  vector<double> xx(ndim);
                  if(mycomm.Get_size()==1){
-                  for(int i=0;i<neighbors.size();++i){
+                  for(unsigned i=0;i<neighbors.size();++i){
                    unsigned ineigh=neighbors[i];
                    for(int j=0;j<ndim;++j){der[j]=0.0;}
                    BiasGrid_->getPoint(ineigh,xx);   
@@ -193,7 +193,7 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
                   mycomm.Sum(allder);
                   for(unsigned i=0;i<neighbors.size();++i){
                    unsigned ineigh=neighbors[i];
-                   for(unsigned j=0;j<ndim;++j){der[j]=allder[ndim*i+j];}
+                   for(int j=0;j<ndim;++j){der[j]=allder[ndim*i+j];}
                    BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
                   }
                 }
@@ -220,7 +220,7 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 			ss=hills[i]->getContinuousSupport();	
 		}
 		cc=hills[i]->getCenter();
-		for(unsigned j=0;j<ndim;j++){
+		for(int j=0;j<ndim;j++){
 			double dmin=cc[j]-ss[j];
 			double dmax=cc[j]+ss[j];
 			double ddiv=ss[j]/double(ndiv);
@@ -229,7 +229,7 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 			if(ddiv<binsize[j])binsize[j]=ddiv;		
 		}
 	}
-	for(unsigned j=0;j<ndim;j++){
+	for(int j=0;j<ndim;j++){
 		// reset to periodicity
 		if(values[j]->isPeriodic()){
 			double minv,maxv;

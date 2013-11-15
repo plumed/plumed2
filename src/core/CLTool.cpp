@@ -72,7 +72,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ){
   std::string prefix(""), a(""), thiskey;
 
   // Set all flags to default false
-  for(int k=0;k<keywords.size();++k){
+  for(unsigned k=0;k<keywords.size();++k){
       thiskey=keywords.get(k);
       if( keywords.style(thiskey,"flag") ) inputData.insert(std::pair<std::string,std::string>(thiskey,"false"));
   }
@@ -86,7 +86,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ){
          printhelp=true;
       } else {
          bool found=false;
-         for(int k=0;k<keywords.size();++k){
+         for(unsigned k=0;k<keywords.size();++k){
            thiskey=keywords.get(k);
            if( keywords.style(thiskey,"flag") ){
                if( a==thiskey ){ found=true; inputData[thiskey]="true"; }
@@ -127,7 +127,7 @@ bool CLTool::readCommandLineArgs( int argc, char**argv, FILE*out ){
 
 void CLTool::setRemainingToDefault(FILE* out){
   std::string def, thiskey;
-  for(int k=0;k<keywords.size();++k){
+  for(unsigned k=0;k<keywords.size();++k){
       thiskey=keywords.get(k);
       if( keywords.style(thiskey,"compulsory") ){
           if( inputData.count(thiskey)==0 ){
@@ -174,7 +174,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
   char buffer[256]; std::string line; line.resize(256);
   while(fgets(buffer,256,mystdin)){
      line=buffer; 
-     for(int i=0;i<line.length();++i) if(line[i]=='#' || line[i]=='\n') line.erase(i);
+     for(unsigned i=0;i<line.length();++i) if(line[i]=='#' || line[i]=='\n') line.erase(i);
      Tools::stripLeadingAndTrailingBlanks( line );
      if(line.length()==0) continue;
      sscanf(line.c_str(),"%255s",buffer);

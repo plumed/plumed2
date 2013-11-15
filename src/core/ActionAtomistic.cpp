@@ -108,7 +108,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
     positions[i][k]=positions[i][k]+delta;
     a->calculate();
     positions[i][k]=savedPositions[i][k];
-    for(unsigned j=0;j<nval;j++){
+    for(int j=0;j<nval;j++){
       value[j*natoms+i][k]=a->getOutputQuantity(j);
     }
   }
@@ -122,12 +122,12 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
    box(i,k)=arg0;
    pbc.setBox(box);
    for(int j=0;j<natoms;j++) positions[j]=savedPositions[j];
-   for(unsigned j=0;j<nval;j++) valuebox[j](i,k)=a->getOutputQuantity(j);
+   for(int j=0;j<nval;j++) valuebox[j](i,k)=a->getOutputQuantity(j);
  }
 
   a->calculate();
   a->clearDerivatives();
-  for(unsigned j=0;j<nval;j++){
+  for(int j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
     double ref=v->get();
     if(v->hasDerivatives()){
