@@ -896,30 +896,38 @@ void MetaD::update(){
    }else{
 	thissigma=sigma0_;    // returns normal sigma
    }
+// In case we use walkers_mpi, it is now necessary to communicate with other replicas.
    if(walkers_mpi){
      int nw=0;
      int mw=0;
      if(comm.Get_rank()==0){
+// Only root of group can communicate with other walkers
        nw=multi_sim_comm.Get_size();
        mw=multi_sim_comm.Get_rank();
      }
+// Communicate to the other members of the same group
+// info abount number of walkers and walker index
      comm.Bcast(nw,0);
      comm.Bcast(mw,0);
+// Allocate arrays to store all walkers hills
      std::vector<double> all_cv(nw*cv.size(),0.0);
      std::vector<double> all_sigma(nw*thissigma.size(),0.0);
      std::vector<double> all_height(nw,0.0);
      std::vector<int>    all_multivariate(nw,0);
      if(comm.Get_rank()==0){
+// Communicate (only root)
        multi_sim_comm.Allgather(cv,all_cv);
        multi_sim_comm.Allgather(thissigma,all_sigma);
        multi_sim_comm.Allgather(height,all_height);
        multi_sim_comm.Allgather(int(multivariate),all_multivariate);
      }
+// Share info with group members
      comm.Bcast(all_cv,0);
      comm.Bcast(all_sigma,0);
      comm.Bcast(all_height,0);
      comm.Bcast(all_multivariate,0);
      for(int i=0;i<nw;i++){
+// actually add hills one by one
        std::vector<double> cv_now(cv.size());
        std::vector<double> sigma_now(thissigma.size());
        for(int j=0;j<cv.size();j++) cv_now[j]=all_cv[i*cv.size()+j];
