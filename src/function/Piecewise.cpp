@@ -101,7 +101,7 @@ Function(ao)
      if(i>0 && points[i].first<=points[i-1].first) error("points abscissas should be monotonously increasing");
   }
 
-  for(int i=0;i<getNumberOfArguments();i++)
+  for(unsigned i=0;i<getNumberOfArguments();i++)
     if(getPntrToArgument(i)->isPeriodic())
     error("Cannot use PIECEWISE on periodic arguments");
 
@@ -109,7 +109,7 @@ Function(ao)
     addValueWithDerivatives(); 
     setNotPeriodic();
   }else{
-    for(int i=0;i<getNumberOfArguments();i++){
+    for(unsigned i=0;i<getNumberOfArguments();i++){
       string s; Tools::convert(i+1,s);
       addComponentWithDerivatives(s); 
       getPntrToComponent(i)->setNotPeriodic();
@@ -123,9 +123,9 @@ Function(ao)
 }
 
 void Piecewise::calculate(){
-  for(int i=0;i<getNumberOfArguments();i++){
+  for(unsigned i=0;i<getNumberOfArguments();i++){
     double val=getArgument(i);
-    int p=0;
+    unsigned p=0;
     for(;p<points.size();p++){
       if(val<points[p].first) break;
     }

@@ -33,7 +33,7 @@
 
 #include <almost/mdb.h>
 #include <almost/pdb.h>
-#include <almost/forcefield/const/camshift2.h>
+#include <almost/camshift3/meth/methcs.h>
 #include <almost/io/formostream.h>
 
 using namespace std;
@@ -41,12 +41,13 @@ using namespace Almost;
 
 namespace PLMD{
 
-//+PLUMEDOC COLVAR CS2BACKBONE 
+//+PLUMEDOC COLVAR CH3SHIFTS 
 /*
 This collective variable calculates a scoring function based on the comparison of backcalculated and
-experimental backbone chemical shifts for a protein (CA, CB, C', H, HA, N).
+experimental methyl groups chemical shifts for a protein (ALA:HB; ILE:HD,HG2; LEU:HD1,HD2; THR:HG2;
+VAL:HG1,HG2).
 
-CamShift \cite Kohlhoff:2009us is employed to back calculate the chemical shifts that are then compared
+CH3Shift \cite Sahakyan:2011bn is employed to back calculate the chemical shifts that are then compared
 with a set of experimental values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
 
 It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
@@ -55,7 +56,7 @@ to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \ci
 HOW TO COMPILE IT
 
 In general the system for which chemical shifts are to be calculated must be completly included in
-ATOMS. It should also be made WHOLE before the the backcalculation. CamShift is included in the
+ATOMS. It should also be made WHOLE before the the backcalculation. CH3Shift is included in the
 free package ALMOST v.2.1 that can be dowload via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
 ALMOST 2.1 can be found in branches/almost-2.1/ and it can be compiled:
 
@@ -87,29 +88,12 @@ with ALMOST_BASE_PATH the full path to the ALMOST folder
 
 HOW TO USE IT
 
-To use CamShift a set of experimental data is needed. CamShift uses backbone and Cb chemical shifts 
-that must be provided as text files:
+To use CH3Shift takes from a text file the experimental chemical shifts:
 
 \verbatim
-CAshifts.dat:
-CBshifts.dat:
-Cshifts.dat:
-Hshifts.dat:
-HAshifts.dat:
-Nshifts.dat:
-#1 0.0
-2 55.5
-3 58.4
-.
-.
-#last 0.0
-#last+1 (first) of second chain
-.
-#last of second chain
-\endverbatim
+CH3shifts.dat:
 
-All of them must always be there. If a chemical shift for an atom of a residue is not available 0.0 must be used. 
-So if for example all the Cb are not available all the chemical shifts for all the residues should be set as 0.0.
+\endverbatim
 
 A template.pdb file is needed to the generate a topology of the protein within ALMOST. For histidines in protonation 
 states different from D the HIE/HIP name should be used in the template.pdb. GLH and ASH can be used for the alternative 
@@ -119,11 +103,11 @@ Residues numbering should always go from 1 to N in both the chemical shifts file
 Two more keywords can be used to setup the topology: CYS-DISU to tell ALMOST to look for disulphide bridges and TERMINI
 to define the protonation state of the the chain's termini (currently only DEFAULT (NH3+, CO2-) and NONE (NH, CO)).
 
-Two more standard files are also needed: an ALMOST force-field file, corresponding to the force-field family used in
-the MD code, (a03_cs2_gromacs.mdb for the amber family or all22_gromacs.mdb for the charmm family) and camshift.db, 
-both these files can be copied from almost/branches/almost-2.1/toppar.
+One more standard file is also needed, that is an ALMOST force-field file, corresponding to the force-field family used in
+the MD code, (a03_cs2_gromacs.mdb for the amber family or all22_gromacs.mdb for the charmm family).
 
-All the above files must be in a single folder that must be specified with the keyword DATA. 
+All the above files must be in a single folder that must be specified with the keyword DATA (multiple definition of the 
+CV can point to different folders). 
 
 \par Examples
 
@@ -131,7 +115,7 @@ case 1:
 
 \verbatim
 WHOLEMOLECULES ENTITY0=1-174
-cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 ENSEMBLE
+cs: CH3SHIFTS ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 ENSEMBLE
 cse: RESTRAINT ARG=cs SLOPE=24 KAPPA=0 AT=0.
 PRINT ARG=cs,cse.bias
 \endverbatim
@@ -140,7 +124,7 @@ case 2:
 
 \verbatim
 WHOLEMOLECULES ENTITY0=1-174
-cs: CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=1.0 NRES=13 TERMINI=DEFAULT,NONE CYS-DISU WRITE_CS=1000
+cs: CH3SHIFTS ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=1.0 NRES=13 TERMINI=DEFAULT,NONE CYS-DISU WRITE_CS=1000
 PRINT ARG=cs
 \endverbatim
 
@@ -149,8 +133,8 @@ PRINT ARG=cs
 */
 //+ENDPLUMEDOC
 
-class CS2Backbone : public Colvar {
-  vector<CamShift2> cam_list;
+class CH3Shifts : public Colvar {
+  vector<MethCS*> meth_list;
   Molecules molecules;
   int  numResidues;
   int  pperiod;
@@ -162,23 +146,23 @@ class CS2Backbone : public Colvar {
   double len_pl2alm;
   double for_pl2alm;
 public:
-  CS2Backbone(const ActionOptions&);
-  ~CS2Backbone();
+  CH3Shifts(const ActionOptions&);
+  ~CH3Shifts();
   static void registerKeywords( Keywords& keys );
   virtual void calculate();
 };
 
-PLUMED_REGISTER_ACTION(CS2Backbone,"CS2BACKBONE")
+PLUMED_REGISTER_ACTION(CH3Shifts,"CH3SHIFTS")
 
-void CS2Backbone::registerKeywords( Keywords& keys ){
+void CH3Shifts::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
-  keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose.");
+  //keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose.");
   keys.add("atoms","ATOMS","The atoms to be included in the calculation, e.g. the whole protein.");
   keys.add("compulsory","DATA","data/","The folder with the experimental chemical shifts.");
   keys.add("compulsory","FF","a03_gromacs.mdb","The ALMOST force-field to map the atoms' names.");
   keys.add("compulsory","FLAT","1.0","Flat region in the scoring function.");
   keys.add("compulsory","NEIGH_FREQ","10","Period in step for neighbour list update.");
-  keys.add("compulsory","WRITE_CS","0","Write the back-calculated chemical shifts every # steps.");
+  keys.add("compulsory","WRITE_CS","0","Write chemical shifts period.");
   keys.add("compulsory","NRES","Number of residues, corresponding to the number of chemical shifts.");
   keys.add("optional","TERMINI","Defines the protonation states of the chain-termini.");
   keys.addFlag("CYS-DISU",false,"Set to TRUE if your system has disulphide bridges.");  
@@ -186,7 +170,7 @@ void CS2Backbone::registerKeywords( Keywords& keys ){
   keys.remove("NOPBC");
 }
 
-CS2Backbone::CS2Backbone(const ActionOptions&ao):
+CH3Shifts::CH3Shifts(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao)
 {
   string stringadb;
@@ -194,7 +178,7 @@ PLUMED_COLVAR_INIT(ao)
   string stringapdb;
 
   serial=false;
-  parseFlag("SERIAL",serial);
+  //parseFlag("SERIAL",serial);
 
   string stringa_data;
   parse("DATA",stringa_data);
@@ -225,7 +209,7 @@ PLUMED_COLVAR_INIT(ao)
   } else ens_dim=0; 
   if(ensemble) comm.Sum(&ens_dim, 1);
 
-  stringadb  = stringa_data + string("/camshift.db");
+  stringadb  = stringa_data + string("/CH3shifts.dat");
   stringamdb = stringa_data + string("/") + stringa_forcefield;
   stringapdb = stringa_data + string("/template.pdb");
 
@@ -262,72 +246,27 @@ PLUMED_COLVAR_INIT(ao)
   mol2pdb(molecules,"converted-template.pdb");
 
   log.printf("  Initialization of the predictor ...\n"); log.flush();
-  CamShift2 a = CamShift2(molecules, stringadb);
+  MethCS* a = new MethCS(molecules);
 
   log.printf("  Reading experimental data ...\n"); log.flush();
-  stringadb = stringa_data + string("/CAshifts.dat");
-  log.printf("  Initializing CA shifts %s\n", stringadb.c_str()); log.flush();
-  a.read_cs(stringadb, "CA");
-  stringadb = stringa_data + string("/CBshifts.dat");
-  log.printf("  Initializing CB shifts %s\n", stringadb.c_str()); log.flush();
-  a.read_cs(stringadb, "CB");
-  stringadb = stringa_data + string("/Cshifts.dat");
-  log.printf("  Initializing C' shifts %s\n", stringadb.c_str()); log.flush();
-  a.read_cs(stringadb, "C");
-  stringadb = stringa_data + string("/HAshifts.dat");
-  log.printf("  Initializing HA shifts %s\n", stringadb.c_str()); log.flush();
-  a.read_cs(stringadb, "HA");
-  stringadb = stringa_data + string("/Hshifts.dat");
-  log.printf("  Initializing H shifts %s\n", stringadb.c_str()); log.flush();
-  a.read_cs(stringadb, "H");
-  stringadb = stringa_data + string("/Nshifts.dat");
-  log.printf("  Initializing N shifts %s\n", stringadb.c_str()); log.flush();
-  a.read_cs(stringadb, "N");
-  /* this is a workaround for those chemical shifts that can result in too large forces */
-  a.remove_problematic("GLN", "CB");
-  a.remove_problematic("ILE", "CB");
-  a.remove_problematic("PRO", "N");  a.remove_problematic("PRO", "H");
-  a.remove_problematic("GLY", "HA"); a.remove_problematic("GLY", "CB");
-  /* this is a workaround for those chemical shifts that are not parameterized */
-  a.remove_problematic("HIE", "HA"); a.remove_problematic("HIP", "HA"); a.remove_problematic("HSP", "HA");
-  a.remove_problematic("HIE", "H");  a.remove_problematic("HIP", "H");  a.remove_problematic("HSP", "H"); 
-  a.remove_problematic("HIE", "N");  a.remove_problematic("HIP", "N");  a.remove_problematic("HSP", "N"); 
-  a.remove_problematic("HIE", "CA"); a.remove_problematic("HIP", "CA"); a.remove_problematic("HSP", "CA");
-  a.remove_problematic("HIE", "CB"); a.remove_problematic("HIP", "CB"); a.remove_problematic("HSP", "CB");
-  a.remove_problematic("HIE", "C");  a.remove_problematic("HIP", "C");  a.remove_problematic("HSP", "C"); 
-  a.remove_problematic("GLH", "HA"); a.remove_problematic("ASH", "HA"); a.remove_problematic("HSE", "HA");
-  a.remove_problematic("GLH", "H");  a.remove_problematic("ASH", "H");  a.remove_problematic("HSE", "H");
-  a.remove_problematic("GLH", "N");  a.remove_problematic("ASH", "N");  a.remove_problematic("HSE", "N");
-  a.remove_problematic("GLH", "CA"); a.remove_problematic("ASH", "CA"); a.remove_problematic("HSE", "CA");
-  a.remove_problematic("GLH", "CB"); a.remove_problematic("ASH", "CB"); a.remove_problematic("HSE", "CB");
-  a.remove_problematic("GLH", "C");  a.remove_problematic("ASH", "C");  a.remove_problematic("HSE", "C");
-  if(disu) { 
-    a.remove_problematic("CYS", "HA");
-    a.remove_problematic("CYS", "H");
-    a.remove_problematic("CYS", "N");
-    a.remove_problematic("CYS", "CA");
-    a.remove_problematic("CYS", "CB");
-    a.remove_problematic("CYS", "C");
-  }
-  /* done */
-
+  a->read_cs(stringadb);
   log.printf("  Setting parameters ...\n"); log.flush();
-  unsigned stride=comm.Get_size();
+  /*unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   if(serial) {stride=1; rank=0;}
-  if(stride>1) log.printf("  Parallelized over %u processors\n", stride);
-  a.set_mpi(stride, rank);
+  if(stride>1) log.printf("  Parallelized over %d processors\n", stride);
+  a.set_mpi(stride, rank);*/
   
   if(ensemble) { log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }
-
-  a.set_flat_bottom_const(grains);
-  a.set_box_nupdate(neigh_f);
-  a.set_lambda(1);
-  cam_list.push_back(a);
+  a->set_w_cs(1);
+  a->set_flat_bottom_const(grains);
+  a->set_box_nupdate(neigh_f);
+  a->set_box_cutnb(11.); // cut-off for neigh-list
+  meth_list.push_back(a);
 
   sh = new double*[numResidues];
-  sh[0] = new double[numResidues*6];
-  for (int i=1; i<numResidues; i++)  sh[i]=sh[i-1]+6; 
+  sh[0] = new double[numResidues*8];
+  for (int i=1; i<numResidues; i++)  sh[i]=sh[i-1]+8; 
 
   /* Energy and Lenght conversion */
   ene_pl2alm = 4.186/plumed.getAtoms().getUnits().getEnergy();
@@ -342,7 +281,7 @@ PLUMED_COLVAR_INIT(ao)
   checkRead();
 
   log<<"  Bibliography "
-     <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
+     <<plumed.cite("Sahakyan AB, Vranken WF, Cavalli A, Vendruscolo M, J. Biomol. NMR 50, 331 (2011)")
      <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
 
   addValueWithDerivatives();
@@ -351,14 +290,13 @@ PLUMED_COLVAR_INIT(ao)
   log.printf("  DONE!\n"); log.flush();
 }
 
-CS2Backbone::~CS2Backbone()
+CH3Shifts::~CH3Shifts()
 {
   delete[] sh[0];
   delete[] sh;
 }
 
-
-void CS2Backbone::calculate()
+void CH3Shifts::calculate()
 {
   double energy=0.;
   Tensor virial;
@@ -378,39 +316,80 @@ void CS2Backbone::calculate()
      coor.coor[ipos+1] = len_pl2alm*Pos[1];
      coor.coor[ipos+2] = len_pl2alm*Pos[2];
   }
-  cam_list[0].ens_return_shifts(coor, sh);
-  if(!serial) comm.Sum(&sh[0][0], numResidues*6);
-
-  bool printout=false;
-  if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
-  if(printout) {
-    string csfile;
-    char tmps1[21], tmps2[21];
-    // add to the name the label of the cv in such a way to have different files
-    // when there is more than one defined variable
-    sprintf(tmps1, "%li", getStep());
-    if(ensemble) {
-      sprintf(tmps2, "%i", multi_sim_comm.Get_rank());
-      csfile = string("cs")+tmps2+"-"+tmps1+string(".dat");
-    } else csfile = string("cs")+tmps1+string(".dat");
-    cam_list[0].printout_chemical_shifts(csfile.c_str());
-  }
 
   double fact=1.0;
-  if(ensemble) {
-    fact = 1./((double) ens_dim);
-    if(comm.Get_rank()==0) { // I am the master of my replica
-      // among replicas
-      multi_sim_comm.Sum(&sh[0][0], numResidues*6);
-      multi_sim_comm.Barrier(); 
-      for(unsigned i=0;i<6;i++) for(int j=0;j<numResidues;j++) sh[j][i] *= fact; 
-    } else for(unsigned i=0;i<6;i++) for(int j=0;j<numResidues;j++) sh[j][i] = 0.;
-    // inside each replica
-    comm.Sum(&sh[0][0], numResidues*6);
+  if(!ensemble) { 
+     energy = meth_list[0]->calc_cs_force(coor, forces);
+     bool printout=false;
+     if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
+     if(printout) {
+       string csfile;
+       char tmps1[21];
+       // add to the name the label of the cv in such a way to have different files
+       // when there is more than one defined variable
+       sprintf(tmps1, "%li", getStep());
+       csfile = string("cs")+tmps1+string(".dat");
+       meth_list[0]->write_cs(csfile.c_str());
+     }
+  } else {
+     meth_list[0]->calc_cs(coor);
+     bool printout=false;
+     if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
+     if(printout) {
+       string csfile;
+       char tmps1[21], tmps2[21];
+       // add to the name the label of the cv in such a way to have different files
+       // when there is more than one defined variable
+       sprintf(tmps1, "%li", getStep());
+       sprintf(tmps2, "%i", multi_sim_comm.Get_rank());
+       csfile = string("cs")+tmps2+"-"+tmps1+string(".dat");
+       meth_list[0]->write_cs(csfile.c_str());
+     }
+     unsigned size = meth_list[0]->ala_calc_hb.size();
+     for(unsigned j=0;j<size;j++) sh[0][j] = meth_list[0]->ala_calc_hb[j];
+     size = meth_list[0]->ile_calc_hd.size();
+     for(unsigned j=0;j<size;j++) sh[1][j] = meth_list[0]->ile_calc_hd[j];
+     size = meth_list[0]->ile_calc_hg2.size();
+     for(unsigned j=0;j<size;j++) sh[2][j] = meth_list[0]->ile_calc_hg2[j];
+     size = meth_list[0]->leu_calc_hd1.size();
+     for(unsigned j=0;j<size;j++) sh[3][j] = meth_list[0]->leu_calc_hd1[j];
+     size = meth_list[0]->leu_calc_hd2.size();
+     for(unsigned j=0;j<size;j++) sh[4][j] = meth_list[0]->leu_calc_hd2[j];
+     size = meth_list[0]->thr_calc_hg2.size();
+     for(unsigned j=0;j<size;j++) sh[5][j] = meth_list[0]->thr_calc_hg2[j];
+     size = meth_list[0]->val_calc_hg1.size();
+     for(unsigned j=0;j<size;j++) sh[6][j] = meth_list[0]->val_calc_hg1[j];
+     size = meth_list[0]->val_calc_hg2.size();
+     for(unsigned j=0;j<size;j++) sh[7][j] = meth_list[0]->val_calc_hg2[j];
+     fact = 1./((double) ens_dim);
+     if(comm.Get_rank()==0) { // I am the master of my replica
+       // among replicas
+       multi_sim_comm.Sum(&sh[0][0], numResidues*8);
+       multi_sim_comm.Barrier(); 
+       for(unsigned i=0;i<8;i++) for(int j=0;j<numResidues;j++) sh[j][i] *= fact; 
+     } else for(unsigned i=0;i<8;i++) for(int j=0;j<numResidues;j++) sh[j][i] = 0.;
+     // inside each replica
+     comm.Sum(&sh[0][0], numResidues*8);
+     // now send the averaged shifts back to almost
+     size = meth_list[0]->ala_calc_hb.size();
+     for(unsigned j=0;j<size;j++)  meth_list[0]->ala_calc_hb[j] = sh[0][j];
+     size = meth_list[0]->ile_calc_hd.size();
+     for(unsigned j=0;j<size;j++) meth_list[0]->ile_calc_hd[j] = sh[1][j];
+     size = meth_list[0]->ile_calc_hg2.size();
+     for(unsigned j=0;j<size;j++) meth_list[0]->ile_calc_hg2[j] = sh[2][j];
+     size = meth_list[0]->leu_calc_hd1.size();
+     for(unsigned j=0;j<size;j++) meth_list[0]->leu_calc_hd1[j] = sh[3][j];
+     size = meth_list[0]->leu_calc_hd2.size();
+     for(unsigned j=0;j<size;j++) meth_list[0]->leu_calc_hd2[j] = sh[4][j];
+     size = meth_list[0]->thr_calc_hg2.size();
+     for(unsigned j=0;j<size;j++) meth_list[0]->thr_calc_hg2[j] = sh[5][j];
+     size = meth_list[0]->val_calc_hg1.size();
+     for(unsigned j=0;j<size;j++) meth_list[0]->val_calc_hg1[j] = sh[6][j];
+     size = meth_list[0]->val_calc_hg2.size();
+     for(unsigned j=0;j<size;j++) meth_list[0]->val_calc_hg2[j] = sh[7][j];
+     // calculate all the forces now
+     energy = meth_list[0]->ens_calc_cs_force(coor, forces);
   }
-
-  energy = cam_list[0].ens_energy_force(coor, forces, sh);
-  if(!serial) comm.Sum(&forces[0][0], N*4);
 
   for (int i = 0; i < N; i++)
   {

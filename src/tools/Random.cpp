@@ -120,7 +120,7 @@ void Random::toString(std::string & str)const{
 
 void Random::fromString(const std::string & str){
 	std::string s=str;
-	for(int i=0;i<s.length();i++) if(s[i]=='|') s[i]=' ';
+	for(unsigned i=0;i<s.length();i++) if(s[i]=='|') s[i]=' ';
 	std::istringstream istr(s.c_str());
 	istr>>idum>>iy;
 	for (int i = 0; i < NTAB; i++) istr>>iv[i];

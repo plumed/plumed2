@@ -363,7 +363,7 @@ void Atoms::createFullList(int*n){
   std::sort(fullListTmp.begin(),fullListTmp.end());
   int nn=std::unique(fullListTmp.begin(),fullListTmp.end())-fullListTmp.begin();
   fullList.resize(nn);
-  for(unsigned i=0;i<nn;++i) fullList[i]=fullListTmp[i].index();
+  for(int i=0;i<nn;++i) fullList[i]=fullListTmp[i].index();
   *n=nn;
 }
 

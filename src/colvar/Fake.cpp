@@ -89,7 +89,7 @@ PLUMED_COLVAR_INIT(ao)
   if(period.size()!=0){
 	  plumed_massert(getNumberOfComponents()*2==period.size(),"the periodicty should coincide with the number of components");
 	  if(comps.size()!=0){
-		  for(unsigned i=0;i<getNumberOfComponents();i++){
+		  for(int i=0;i<getNumberOfComponents();i++){
 			  string pp=comps[i];
 			  if(period[i*2]!="none" && period[i*2+1]!="none" ){
 				  componentIsPeriodic(pp,period[i*2],period[i*2+1]);
@@ -106,7 +106,7 @@ PLUMED_COLVAR_INIT(ao)
 	  }
   }else{
 	  if(comps.size()!=0){
-		  for(unsigned i=0;i<getNumberOfComponents();i++){
+		  for(int i=0;i<getNumberOfComponents();i++){
 			  componentIsNotPeriodic(getPntrToComponent(i)->getName());
 		  }
 	  } else {

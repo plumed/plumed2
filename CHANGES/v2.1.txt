@@ -1,19 +1,25 @@
 /**
 
-@page CHANGES-2-1 CHANGES-2-1
+@page CHANGES-2-1 Version 2.1
 
-Includes all fixes in branch 2.0 (see \ref CHANGES-2-0) up to 2.0.1
+Version 2.1.0 - unreleased
+------------------------
+
+Includes all fixes in branch 2.0 (see \ref CHANGES-2-0) up to 2.0.1.
 
 Changes from version 2.0 which are relevant for users:
-- Added option PRECISION to set number of digits in DUMPATOMS
-- Added NDX_FILE and NDX_GROUP to action GROUP, allowing to import atom lists from ndx files
-- Several optimizations in the following actions: WHOLEMOLECULES, ...
+- Added option PRECISION to set number of digits in \ref DUMPATOMS.
+- Added NDX_FILE and NDX_GROUP to action \ref GROUP, allowing to import atom lists from ndx files.
+- Several optimizations in the following actions: \ref WHOLEMOLECULES, ...
 - Faster atom scattering with domain decomposition.
-- SPRINT topological collective variables
-- Improved multicolvar neighbor lists
-- Maximum colvar as well as minimum colvar is now possible
-- COMMITTOR analysis
-- Added possibility to use negative strides in atom ranges (e.g. 10-1:-3)
+- \ref SPRINT topological collective variables.
+- \ref CH3SHIFTS collective variable.
+- Improved multicolvar neighbor lists.
+- Maximum colvar as well as minimum colvar is now possible.
+- \ref COMMITTOR analysis.
+- Added possibility to use negative strides in atom ranges (e.g. 10-1:-3).
+- Added possibility to use \ref COORDINATION or \ref DHENERGY with NLIST in replica exchange simulations.
+- Added STRETCH flag to \ref switchingfunction.
 
 Changes from version 2.0 which are relevant for developers:
 - Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional

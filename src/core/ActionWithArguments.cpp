@@ -249,13 +249,13 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ){
     arguments[i]->set(arg0+sqrt(epsilon));
     a->calculate();
     arguments[i]->set(arg0);
-    for(unsigned j=0;j<nval;j++){
+    for(int j=0;j<nval;j++){
       value[i*nval+j]=a->getOutputQuantity(j);
     }
   }
   a->calculate();
   a->clearDerivatives();
-  for(unsigned j=0;j<nval;j++){
+  for(int j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
     if( v->hasDerivatives() ) for(int i=0;i<npar;i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/sqrt(epsilon));
   }

@@ -195,7 +195,7 @@ vector<double> FlexibleBin::getInverseMatrix() const{
 	for (i=0;i<ncv;i++){//loop on the dimension 
 	  // find the largest one:  if it is smaller than min  then rescale
 	  if( limitmin[i] ){
-	           unsigned imax;		
+	           unsigned imax=0;		
                    double fmax=-1.e10;
 	       	   for (j=0;j<ncv;j++){//loop on components	
                         double fact=pow(eigenvals[j]*eigenvecs[j][i],2);

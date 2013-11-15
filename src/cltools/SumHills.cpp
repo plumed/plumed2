@@ -315,7 +315,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   if(Communicator::initialized())  plumed.cmd("setMPIComm",&pc.Get_comm()); 
   plumed.cmd("init",&nn);  
   vector <bool> isdone(cvs.size(),false);  
-  for(int i=0;i<cvs.size();i++){
+  for(unsigned i=0;i<cvs.size();i++){
      if(!isdone[i]){
        isdone[i]=true;	
        std::vector<std::string> actioninput; 
@@ -516,7 +516,7 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
           ifile.scanFieldList(fields);
           size_t founds,foundm,foundp;
           bool before_sigma=true;
-          for(int i=0;i<fields.size();i++){
+          for(unsigned i=0;i<fields.size();i++){
               size_t pos = 0;
               //found=(fields[i].find("sigma_", pos) || fields[i].find("min_", pos) || fields[i].find("max_", pos) ) ;
               founds=fields[i].find("sigma_", pos)  ;

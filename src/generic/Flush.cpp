@@ -32,6 +32,7 @@ using namespace std;
 //+PLUMEDOC GENERIC FLUSH
 /*
 This command instructs plumed to flush all the open files with a user specified frequency.
+Notice that all files are flushed anyway every 10000 steps.
 
 This
 is useful for preventing data loss that would otherwise arrise as a consequence of the code

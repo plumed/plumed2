@@ -94,7 +94,7 @@ void Sort::calculate(){
   }
 // STL sort sorts based on first element (value) then second (index)
   sort(vals.begin(),vals.end());
-  for(unsigned i=0;i<getNumberOfComponents();++i){
+  for(int i=0;i<getNumberOfComponents();++i){
     Value* v=getPntrToComponent(i);
     v->set(vals[i].first);
     setDerivative(v,vals[i].second,1.0);

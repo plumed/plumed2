@@ -41,6 +41,7 @@ class SwitchingFunction{
   enum {spline,exponential,gaussian,smap} type;
   int nn,mm,a,b;
   double invr0,d0,dmax,c,d;
+  double stretch,shift;
 public:
   static void registerKeywords( Keywords& keys );
   SwitchingFunction();
