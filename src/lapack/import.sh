@@ -1,11 +1,17 @@
-GRO=$HOME/plumed2/tmp/gromacs-4.6.1/
+if (( $# != 1 ))
+then
+  echo "Usage: ./import.sh gromacsdir"
+  exit 1
+fi
 
-cp $GRO/src/gmxlib/gmx_lapack/lapack_copyright COPYRIGHT
+GRO="$1"
 
-cp $GRO/src/gmxlib/gmx_lapack/lapack_limits.h .
+cp "$GRO"/src/gmxlib/gmx_lapack/lapack_copyright COPYRIGHT
+
+cp "$GRO"/src/gmxlib/gmx_lapack/lapack_limits.h .
 
 
-sed 's|"types/simple.h"|"simple.h"|' $GRO/include/gmx_lapack.h |
+sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_lapack.h |
   sed 's|F77_FUNC|PLUMED_BLAS_F77_FUNC|' |
   grep -v visibility.h |
   awk '{
@@ -25,7 +31,7 @@ sed 's|"types/simple.h"|"simple.h"|' $GRO/include/gmx_lapack.h |
          if(inside && $1=="#endif") inside=0;
        }' > lapack.h
 
-cp $GRO/src/gmxlib/gmx_lapack/*.c .
+cp "$GRO"/src/gmxlib/gmx_lapack/*.c .
 
 cat << EOF > simple.h
 #ifndef PLUMED_lapack_simple_h

@@ -1,8 +1,14 @@
-GRO=$HOME/plumed2/tmp/gromacs-4.6.1/
+if (( $# != 1 ))
+then
+  echo "Usage: ./import.sh gromacsdir"
+  exit 1
+fi
 
-cp $GRO/src/gmxlib/gmx_blas/blas_copyright COPYRIGHT
+GRO="$1"
 
-sed 's|"types/simple.h"|"simple.h"|' $GRO/include/gmx_blas.h |
+cp "$GRO"/src/gmxlib/gmx_blas/blas_copyright COPYRIGHT
+
+sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
   sed 's|F77_FUNC|PLUMED_BLAS_F77_FUNC|' |
   awk '{
          if($1=="#ifdef" && $2=="__cplusplus"){
@@ -21,7 +27,7 @@ sed 's|"types/simple.h"|"simple.h"|' $GRO/include/gmx_blas.h |
          if(inside && $1=="#endif") inside=0;
        }' > blas.h
 
-cp $GRO/src/gmxlib/gmx_blas/*.c .
+cp "$GRO"/src/gmxlib/gmx_blas/*.c .
 
 cat << EOF > simple.h
 #ifndef PLUMED_blas_simple_h
