@@ -92,6 +92,8 @@ public virtual FileBase{
   char* buffer;
 /// Internal buffer length
   int buflen;
+/// This variables stores the actual buffer length
+  unsigned actual_buffer_length;
 /// Class identifying a single field for fielded output
   class Field:
   public FieldBase{
@@ -182,6 +184,8 @@ this method can be used to clean the field list.
 /// Formatted output with << operator
   template <class T>
   friend OFile& operator<<(OFile&,const T &);
+/// Rewind a file
+  OFile&rewind();
 };
 
 /// Write using << syntax

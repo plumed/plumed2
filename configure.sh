@@ -3,6 +3,12 @@
 
 rm -f sourceme.sh Makefile.conf
 
+if (($#==1)) ; then
+
+conf=$1
+
+else
+
 prefix=""
 case "$(uname)" in
 (Linux)  prefix=linux. ;;
@@ -17,6 +23,9 @@ select conf in $conflist
 do
   [[ -n "$conf" ]] && break
 done
+
+fi
+
 
 ln -s configurations/$conf Makefile.conf
 

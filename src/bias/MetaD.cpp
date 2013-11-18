@@ -96,7 +96,7 @@ gaussian potential is denoted by one value only that is a Cartesian space (ADAPT
 should be used in this case. Check the documentation for utility sum_hills.
 
 With the keyword INTERVAL one changes the metadynamics algorithm setting the bias force equal to zero 
-outside boundary \cite . If, for example, metadynamics is performed on a CV s and one is interested only 
+outside boundary \cite baftizadeh2012protein. If, for example, metadynamics is performed on a CV s and one is interested only 
 to the free energy for s > sw, the history dependent potential is still updated according to the above
 equations but the metadynamics force is set to zero for s < sw. Notice that Gaussians are added also 
 if s < sw, as the tails of these Gaussians influence VG in the relevant region s > sw. In this way, the 
@@ -208,6 +208,7 @@ private:
   vector<double> sigma0max_;
   vector<Gaussian> hills_;
   OFile hillsOfile_;
+  OFile gridfile_;
   Grid* BiasGrid_;
   Grid* ExtGrid_;
   bool storeOldGrids_;
@@ -289,6 +290,7 @@ MetaD::~MetaD(){
   if(flexbin) delete flexbin;
   if(BiasGrid_) delete BiasGrid_;
   hillsOfile_.close();
+  if(wgridstride_>0) gridfile_.close();
   delete [] dp_;
   // close files
   for(int i=0;i<mw_n_;++i){
@@ -470,6 +472,17 @@ isFirstStep(true)
    std::string funcl=getLabel() + ".bias";
    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   std::vector<std::string> actualmin=BiasGrid_->getMin();
+   std::vector<std::string> actualmax=BiasGrid_->getMax();
+   for(unsigned i=0;i<getNumberOfArguments();i++){
+     if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
+     if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+   }
+  }
+
+  if(wgridstride_>0){
+    gridfile_.link(*this);
+    gridfile_.open(gridfilename_);
   }
 
 // initializing external grid
@@ -525,10 +538,11 @@ isFirstStep(true)
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
   if(mw_n_>1) log<<plumed.cite(
-    "Raiteri, Laio, Gervasio, Micheletti, Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
+    "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
   if(adaptive_!=FlexibleBin::none) log<<plumed.cite(
     "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
- 
+  if(doInt_) log<<plumed.cite(
+     "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   log<<"\n";
 
 }
@@ -881,11 +895,20 @@ void MetaD::update(){
   }
 // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
-    OFile gridfile; gridfile.link(*this);
-    if(!storeOldGrids_) remove( gridfilename_.c_str() );
-    gridfile.open(gridfilename_);
-    BiasGrid_->writeToFile(gridfile); 
-    gridfile.close();
+// in case old grids are stored, a sequence of grids should appear
+// this call results in a repetition of the header:
+    if(storeOldGrids_) gridfile_.clearFields();
+// in case only latest grid is stored, file should be rewound
+// this will overwrite previously written grids
+    else gridfile_.rewind();
+    BiasGrid_->writeToFile(gridfile_); 
+// if a single grid is stored, it is necessary to flush it, otherwise
+// the file might stay empty forever (when a single grid is not large enough to
+// trigger flushing from the operating system).
+// on the other hand, if grids are stored one after the other this is
+// no necessary, and we leave the flushing control to the user as usual
+// (with FLUSH keyword)
+    if(!storeOldGrids_) gridfile_.flush();
   }
 
 // if multiple walkers and time to read Gaussians

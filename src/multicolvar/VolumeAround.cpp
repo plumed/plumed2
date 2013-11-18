@@ -23,7 +23,7 @@
 #include "tools/Pbc.h"
 #include "ActionVolume.h"
 
-//+PLUMEDOC MCOLVARF REGION 
+//+PLUMEDOC MCOLVARF AROUND
 /*
 This quantity can be used to calculate functions of the distribution of collective 
 variables for the atoms that lie in a particular, user-specified part of of the cell.
@@ -49,7 +49,7 @@ w(x_i,y_i,z_i) = \int_{xl}^{xu} \int_{yl}^{yu} \int_{zl}^{zu} \textrm{d}x\textrm
 where \f$K\f$ is one of the kernel functions described on \ref histogrambead and \f$\sigma\f$ is a bandwidth parameter.
 The function \f$(s_i)\f$ can be any of the usual LESS_THAN, MORE_THAN, WITHIN etc that are used in all other multicolvars.
 
-When REGION is used with the \ref DENSITY action the number of atoms in the specified region is calculated  
+When AROUND is used with the \ref DENSITY action the number of atoms in the specified region is calculated  
 
 \par Examples
 
@@ -58,7 +58,7 @@ that have x (in fractional coordinates) within 2.0 nm of the com of mass c1. The
 \verbatim
 COM ATOMS=1-100 LABEL=c1
 COORDINATIONNUMBER SPECIES=1-100 R_0=1.0 LABEL=c
-REGION ARG=c ORIGIN=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
+AROUND ARG=c ORIGIN=c1 XLOWER=-2.0 XUPPER=2.0 SIGMA=0.1 MEAN LABEL=s
 \endverbatim
 
 */

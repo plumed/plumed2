@@ -128,7 +128,7 @@ The constructor reads the plumed input files and as such it must:
 - Read in the atoms involved in the CV
 - And finally check that readin was succesful
 
-The first of these tasks is dealt with in detail on the following page: \usingDoxygen.  Furthermore, to do the second and third 
+The first of these tasks is dealt with in detail on the following page: \ref usingDoxygen.  Furthermore, to do the second and third 
 tasks on this list one simply calls PLMD::MultiColvar::readAtoms and PLMD::Action::checkRead.  (you must have decided which of the 
 keywords described above you are using to read the atoms however for readAtoms to work).  
 
