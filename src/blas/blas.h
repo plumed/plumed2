@@ -93,6 +93,9 @@ Erik Lindahl, 2008-10-07.
 
 namespace PLMD{
 namespace blas{
+#ifdef __PLUMED_EXTERNAL_BLAS
+extern "C"{
+#endif
 #if 0
 }
 #endif
@@ -232,6 +235,9 @@ int
     PLUMED_BLAS_F77_FUNC(isamax, ISAMAX) (int *n, float *dx, int *incx);
 
 
+#ifdef __PLUMED_EXTERNAL_BLAS
+}
+#endif
 }
 }
 

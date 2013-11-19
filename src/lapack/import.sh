@@ -21,8 +21,14 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_lapack.h |
            if(a==1){
              print "namespace PLMD{"
              print "namespace lapack{"
+             print "#ifdef __PLUMED_EXTERNAL_LAPACK"
+             print "extern \"C\"{"
+             print "#endif"
            }
            if(a==2){
+             print "#ifdef __PLUMED_EXTERNAL_LAPACK"
+             print "}"
+             print "#endif"
              print "}"
              print "}"
            }
@@ -59,6 +65,8 @@ cat << EOF > simple.h
 #endif
 EOF
 
+{
+echo "#ifndef __PLUMED_EXTERNAL_LAPACK"
 for file in "$GRO"/src/gmxlib/gmx_lapack/*.c
 do
   awk '{
@@ -81,7 +89,9 @@ do
  sed 's|gmx_lapack|lapack|g' |
  sed 's|gmx_blas|blas/blas|g' |
  sed 's|<types/simple.h>|"simple.h"|'
-done > lapack.cpp
+done
+echo "#endif"
+} > lapack.cpp
 
 cd ../
 ./header.sh

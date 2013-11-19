@@ -93,6 +93,9 @@ Erik Lindahl, 2008-10-07.
 
 namespace PLMD{
 namespace lapack{
+#ifdef __PLUMED_EXTERNAL_LAPACK
+extern "C"{
+#endif
 #if 0
 }
 #endif
@@ -886,6 +889,9 @@ void
                               float *work, int *lwork, int *info);
 
 
+#ifdef __PLUMED_EXTERNAL_LAPACK
+}
+#endif
 }
 }
 
