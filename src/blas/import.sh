@@ -27,8 +27,6 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
          if(inside && $1=="#endif") inside=0;
        }' > blas.h
 
-cp "$GRO"/src/gmxlib/gmx_blas/*.c .
-
 cat << EOF > simple.h
 #ifndef PLUMED_blas_simple_h
 #define PLUMED_blas_simple_h
@@ -56,9 +54,8 @@ cat << EOF > simple.h
 #endif
 EOF
 
-for file in *.c
+for file in "$GRO"/src/gmxlib/gmx_blas/*.c
 do
-  cp $file ${file%.c}.cpp
   awk '{
     if(match($0,"F77_FUNC") && !done){
       print "namespace PLMD{"
@@ -71,13 +68,12 @@ do
     print save
     print "}"
     print "}"
-  }' $file |
+  }' "$file" |
  sed 's|F77_FUNC|PLUMED_BLAS_F77_FUNC|' |
  sed 's|GMX_|PLUMED_GMX_|g' |
  sed 's|gmx_blas|blas|g' |
- sed 's|<types/simple.h>|"simple.h"|' > ${file%.c}.cpp
-  rm $file
-done
+ sed 's|<types/simple.h>|"simple.h"|'
+done > blas.cpp
 
 cd ../
 ./header.sh
