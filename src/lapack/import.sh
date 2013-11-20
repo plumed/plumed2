@@ -1,11 +1,17 @@
-GRO=$HOME/plumed2/tmp/gromacs-4.6.1/
+if (( $# != 1 ))
+then
+  echo "Usage: ./import.sh gromacsdir"
+  exit 1
+fi
 
-cp $GRO/src/gmxlib/gmx_lapack/lapack_copyright COPYRIGHT
+GRO="$1"
 
-cp $GRO/src/gmxlib/gmx_lapack/lapack_limits.h .
+cp "$GRO"/src/gmxlib/gmx_lapack/lapack_copyright COPYRIGHT
+
+cp "$GRO"/src/gmxlib/gmx_lapack/lapack_limits.h .
 
 
-sed 's|"types/simple.h"|"simple.h"|' $GRO/include/gmx_lapack.h |
+sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_lapack.h |
   sed 's|F77_FUNC|PLUMED_BLAS_F77_FUNC|' |
   grep -v visibility.h |
   awk '{
@@ -15,8 +21,14 @@ sed 's|"types/simple.h"|"simple.h"|' $GRO/include/gmx_lapack.h |
            if(a==1){
              print "namespace PLMD{"
              print "namespace lapack{"
+             print "#ifdef __PLUMED_EXTERNAL_LAPACK"
+             print "extern \"C\"{"
+             print "#endif"
            }
            if(a==2){
+             print "#ifdef __PLUMED_EXTERNAL_LAPACK"
+             print "}"
+             print "#endif"
              print "}"
              print "}"
            }
@@ -24,8 +36,6 @@ sed 's|"types/simple.h"|"simple.h"|' $GRO/include/gmx_lapack.h |
          if(!inside) print
          if(inside && $1=="#endif") inside=0;
        }' > lapack.h
-
-cp $GRO/src/gmxlib/gmx_lapack/*.c .
 
 cat << EOF > simple.h
 #ifndef PLUMED_lapack_simple_h
@@ -55,9 +65,10 @@ cat << EOF > simple.h
 #endif
 EOF
 
-for file in *.c
+{
+echo "#ifndef __PLUMED_EXTERNAL_LAPACK"
+for file in "$GRO"/src/gmxlib/gmx_lapack/*.c
 do
-  cp $file ${file%.c}.cpp
   awk '{
     if(match($0,"F77_FUNC") && !done){
       print "#include \"blas/blas.h\""
@@ -72,14 +83,15 @@ do
     print save
     print "}"
     print "}"
-  }' $file |
+  }' "$file" |
  sed 's|F77_FUNC|PLUMED_BLAS_F77_FUNC|' |
  sed 's|GMX_|PLUMED_GMX_|g' |
  sed 's|gmx_lapack|lapack|g' |
  sed 's|gmx_blas|blas/blas|g' |
- sed 's|<types/simple.h>|"simple.h"|' > ${file%.c}.cpp
-  rm $file
+ sed 's|<types/simple.h>|"simple.h"|'
 done
+echo "#endif"
+} > lapack.cpp
 
 cd ../
 ./header.sh

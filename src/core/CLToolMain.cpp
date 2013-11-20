@@ -122,6 +122,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       return (config::hasMatheval()?0:1);
     } else if(a=="--has-almost"){
       return (config::hasAlmost()?0:1);
+    } else if(a=="--has-cregex"){
+      return (config::hasCregex()?0:1);
     } else if(a=="--has-dlopen"){
       return (config::hasDlopen()?0:1);
     } else if(a=="--no-mpi"){
@@ -179,7 +181,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
  if(printhelp){
     string msg=
         "Usage: plumed [options] [command] [command options]\n"
-        "  plumed [command] -h       : to print help for a specific command\n"
+        "  plumed [command] -h|--help: to print help for a specific command\n"
         "Options:\n"
         "  [help|-h|--help]          : to print this help\n"
         "  [--has-mpi]               : fails if plumed is running without MPI\n"

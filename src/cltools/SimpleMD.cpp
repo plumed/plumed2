@@ -101,6 +101,7 @@ static void registerKeywords( Keywords& keys ){
   keys.add("compulsory","maxneighbours","10000","The maximum number of neighbours an atom can have");
   keys.add("compulsory","idum","0","The random number seed");
   keys.add("compulsory","ndim","3","The dimensionality of the system (some interesting LJ clusters are two dimensional)");
+  keys.add("compulsory","wrapatoms","false","If true, atomic coordinates are written wrapped in minimal cell");
 }
 
 SimpleMD( const CLToolOptions& co ) :
@@ -180,11 +181,19 @@ read_input(double& temperature,
       fprintf(stderr,"ndim should be 1,2 or 3\n");
       exit(1);
   }
+  std::string w;
+  parse("wrapatoms",w);
+  wrapatoms=false;
+  if(w.length()>0 && (w[0]=='T' || w[0]=='t')) wrapatoms=true;
 }
 
 void read_natoms(const string & inputfile,int & natoms){
 // read the number of atoms in file "input.xyz"
   FILE* fp=fopen(inputfile.c_str(),"r");
+  if(!fp){
+    fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
+    exit(1);
+  }
   fscanf(fp,"%1000d",&natoms);
   fclose(fp);
 }
@@ -193,6 +202,10 @@ void read_positions(const string& inputfile,int natoms,vector<Vector>& positions
 // read positions and cell from a file called inputfile
 // natoms (input variable) and number of atoms in the file should be consistent
   FILE* fp=fopen(inputfile.c_str(),"r");
+  if(!fp){
+    fprintf(stderr,"ERROR: file %s not found\n",inputfile.c_str());
+    exit(1);
+  }
   char buffer[256];
   char atomname[256];
   fgets(buffer,256,fp);

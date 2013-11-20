@@ -12,7 +12,7 @@ LAPACK does not come with a formal named "license", but a general statement sayi
 via anonymous ftp and the World Wide Web. Thus, it can be included in commercial software
 packages (and has been). We only ask that proper credit be given to the authors."
 
-While the rest of Gromacs is GPL, we think it's only fair to give you the same rights to
+While the rest of Gromacs is LGPL, we think it's only fair to give you the same rights to
 our modified LAPACK files as the original netlib versions, so do what you want with them.
 
 However, be warned that we have only tested that they to the right thing in the cases used
@@ -93,6 +93,9 @@ Erik Lindahl, 2008-10-07.
 
 namespace PLMD{
 namespace lapack{
+#ifdef __PLUMED_EXTERNAL_LAPACK
+extern "C"{
+#endif
 #if 0
 }
 #endif
@@ -886,6 +889,9 @@ void
                               float *work, int *lwork, int *info);
 
 
+#ifdef __PLUMED_EXTERNAL_LAPACK
+}
+#endif
 }
 }
 
