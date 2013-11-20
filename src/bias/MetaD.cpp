@@ -163,7 +163,6 @@ METAD ...
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endverbatim
 
-
 \par
 Multiple walkers can be also use as in  \cite multiplewalkers 
 These are enabled by setting the number of walker used, the id of the  
@@ -185,6 +184,12 @@ id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory
 where all the walkers are located. WALKERS_RSTRIDE is the number of step between 
 one update and the other. 
 
+\par
+The kinetics of the transitions between basins can also be analysed on the fly as
+in \cite pratyush13prl. The flag ACCELERATION turn on accumulation of the acceleration
+factor that can then be used to determine the rate. This method can be used together
+with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
+It must be used together with well-tempered metadynamics.
 
 */
 //+ENDPLUMEDOC
@@ -228,6 +233,8 @@ private:
   int mw_id_;
   int mw_rstride_;
   bool walkers_mpi;
+  bool acceleration;
+  double acc;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
   double uppI_;
@@ -286,6 +293,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
+  keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");  
 }
 
 MetaD::~MetaD(){
@@ -314,6 +322,7 @@ flexbin(NULL),
 // Multiple walkers initialization
 mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
 walkers_mpi(false),
+acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
 isFirstStep(true)
@@ -431,6 +440,9 @@ isFirstStep(true)
     spline=false;
   }
 
+  acceleration=false;
+  parseFlag("ACCELERATION",acceleration);
+
   checkRead();
 
   log.printf("  Gaussian width ");
@@ -469,6 +481,12 @@ isFirstStep(true)
   }
 
   addComponent("bias"); componentIsNotPeriodic("bias");
+
+  if(acceleration) {
+    if(!welltemp_) error("The calculation of the acceleration works only if Welltempered metadynamics is on"); 
+    log.printf("  calculation on the fly of the acceleration factor");
+    addComponent("acc"); componentIsNotPeriodic("acc");
+  }
 
 // for performance
   dp_ = new double[getNumberOfArguments()];
@@ -551,6 +569,8 @@ isFirstStep(true)
     "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
   if(doInt_) log<<plumed.cite(
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
+  if(acceleration) log<<plumed.cite(
+     "Pratyush and Parrinello, Phys. Rev. Lett. ... (2013)");
   log<<"\n";
 
 }
@@ -857,7 +877,12 @@ void MetaD::calculate()
   for(unsigned i=0;i<ncv;++i){der[i]=0.0;}
   double ene=getBiasAndDerivatives(cv,der);
   getPntrToComponent("bias")->set(ene);
-
+// calculate the acceleration factor
+  if(acceleration&&!isFirstStep) {
+    acc += exp(ene/(plumed.getAtoms().getKBoltzmann()*temp_));
+    double mean_acc = acc/((double) getStep());
+    getPntrToComponent("acc")->set(mean_acc);
+  }
 // set Forces 
   for(unsigned i=0;i<ncv;++i){
    const double f=-der[i];
@@ -930,8 +955,8 @@ void MetaD::update(){
 // actually add hills one by one
        std::vector<double> cv_now(cv.size());
        std::vector<double> sigma_now(thissigma.size());
-       for(int j=0;j<cv.size();j++) cv_now[j]=all_cv[i*cv.size()+j];
-       for(int j=0;j<thissigma.size();j++) sigma_now[j]=all_sigma[i*thissigma.size()+j];
+       for(unsigned j=0;j<cv.size();j++) cv_now[j]=all_cv[i*cv.size()+j];
+       for(unsigned j=0;j<thissigma.size();j++) sigma_now[j]=all_sigma[i*thissigma.size()+j];
        Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i],all_multivariate[i]);
        addGaussian(newhill);
        writeGaussian(newhill,hillsOfile_);
