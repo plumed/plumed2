@@ -118,6 +118,7 @@ class Atoms
   };
 
   DomainDecomposition dd;
+  long int ddStep;  //last step in which dd happened
 
   void share(const std::set<AtomNumber>&);
 
@@ -144,6 +145,12 @@ public:
 
   void setNatoms(int);
   const int & getNatoms()const;
+
+  const long int& getDdStep()const;
+  const std::vector<int>& getGatindex()const;
+  const Pbc& getPbc()const;
+  void getLocalPositions(std::vector<Vector>&);
+  void getLocalForces(std::vector<Vector>&);
 
   void setCollectEnergy(bool b){ collectEnergy=b; }
 
@@ -205,6 +212,21 @@ public:
 inline
 const int & Atoms::getNatoms()const{
   return natoms;
+}
+
+inline
+const long int& Atoms::getDdStep()const{
+  return ddStep;
+}
+
+inline
+const std::vector<int>& Atoms::getGatindex()const{
+  return gatindex;
+}
+
+inline
+const Pbc& Atoms::getPbc()const{
+  return pbc;
 }
 
 inline

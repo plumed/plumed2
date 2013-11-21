@@ -56,7 +56,8 @@ Atoms::Atoms(PlumedMain&plumed):
   naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
-  kbT(0.0)
+  kbT(0.0),
+  ddStep(0)
 {
   mdatoms=MDAtomsBase::create(sizeof(double));
 }
@@ -317,6 +318,7 @@ void Atoms::setAtomsNlocal(int n){
 }
 
 void Atoms::setAtomsGatindex(int*g){
+  ddStep=plumed.getStep();
   plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
   for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=g[i];
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
@@ -324,6 +326,7 @@ void Atoms::setAtomsGatindex(int*g){
 }
 
 void Atoms::setAtomsContiguous(int start){
+  ddStep=plumed.getStep();
   for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=start+i;
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
   if(dd) for(unsigned i=0;i<gatindex.size();i++) dd.g2l[gatindex[i]]=i;
@@ -457,6 +460,15 @@ double Atoms::getMDKBoltzmann()const{
   else return kBoltzmann/MDUnits.getEnergy();
 }
 
+void Atoms::getLocalPositions(std::vector<Vector>& localPositions){
+  mdatoms->getPositions(gatindex,positions);
+  localPositions.resize(gatindex.size());
+  for(int i=0; i<gatindex.size();i++) localPositions[i] = positions[gatindex[i]];
 }
 
+void Atoms::getLocalForces(std::vector<Vector>& localForces){
+  localForces.resize(gatindex.size());
+  for(int i=0; i<gatindex.size(); i++) localForces[i] = forces[gatindex[i]];
+}
 
+}
