@@ -1,11 +1,8 @@
 /**
 
-@page CHANGES-2-1 Version 2.1
+@page CHANGES-UNRELEASED Unreleased changes
 
-Version 2.1.0 - unreleased
-------------------------
-
-Includes all fixes in branch 2.0 (see \ref CHANGES-2-0) up to 2.0.1.
+Include all fixes in branch 2.0 indicated in \ref CHANGES-2-0 .
 
 Changes from version 2.0 which are relevant for users:
 - Added WALKERS_MPI to \ref METAD, allowing to run multiple walkers in a mpi-based multi-replica framework.
