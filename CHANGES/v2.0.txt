@@ -6,19 +6,43 @@ Version 2.0.0
 -------------
 
 Version 2.0 is a complete rewrite, so there is no way to write a complete set of difference
-with respect to plumed 1.3. Here is a summary of the difference:
-- The input is simpler and more error proof. Many checks are now performed and in this way common errors are avoided. 
+with respect to plumed 1.3. Here is a possibly incomplete summary of the difference:
+- The input is simpler, more flexible, and more error proof. Many checks are now performed and in this way common errors are avoided. 
 - The units are now the same for all MD codes.  If you want to use a different unit than the default you set it in the input file. 
 - The analysis tools are now much more flexible.  As an example of this it is now possible to write different collective variables with different frequencies 
 - Many complex collective variables are considerably faster than they were in plumed1.  In particular, all variables based on RMSD distances. 
 - Centers of mass can be used as if they were atoms. Hence, unlike plumed 1.3, you can use center of mass positions in ALL collective variables.
 - The virial contribution is now computed and passed to the MD code.  Plumed can thus now be used to perform biased NPT simulations 
+- Variables can be dumped on different files and with different files, and are
+  computed only when this is necessary.
+- PLUMED is now compiled as a separate library. This simplifies the patching
+  procedure, but might require some extra work to configure PLUMED properly.
+  Since PLUMED can be loaded as a shared library, it is possible to setup
+  everything such that PLUMED and MD codes can be updated independently from each
+  other.
 
 In addition, it is now much easier to contribute new functionality to the code because: 
 - There is a much simpler interface between plumed and the base MD codes. This makes it much easier to add plumed to a new MD code. 
 - There is C++ object oriented programming and full compatibility with the C++ standard library 
-- A modular structure 
-- Developer and user documentation 
+- A modular structure
+- New collective variables and methods can be released independently
+- There is an extensive developer documentation
+- User documentation is provided together inside the implementation files
+- Interfacing with MD codes is simpler. Hopefully, in the future, these
+  interface will be maitained by the developers of the MD codes
+  independently from PLUMED developers. This will allow more MD codes
+  to be compatible with PLUMED.
+
+Caveats:
+- PLUMED 2 input file (plumed.dat) has a syntax which is not
+  compatible with PLUMED 1.
+  Transition should be easy, but cannot
+  be done just using the new version with the old input file.
+- PLUMED 2 is written in C++, thus requires a C++ compiler
+- PLUMED 2 may not include all the features that were available
+  in PLUMED 1.
+
+A tutorial explaining how to move from PLUMED 1 to PLUMED 2 is available (see \ref moving).
 
 Version 2.0.1
 -------------
