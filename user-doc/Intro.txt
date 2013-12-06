@@ -10,13 +10,15 @@ The original PLUMED 1 was highly successful and had over 1000 users.  PLUMED 2 \
 extensive rewrite of the original in a way that makes it more modular and thus easier to implement 
 new methods, more straightforward to add it to MD codes and hopefully simpler to use.  
 This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
-<a href="../../developer-doc/html/index.html"> developer manual </a>.  Alternatively, to look at a list of the new 
-features available in PLUMED 2 and to work out how to install PLUMED 2 in your MD code check out:
+<a href="../../developer-doc/html/index.html"> developer manual </a>.
 
-- \subpage WhatsNew
-- \subpage Installation 
+To know the difference between PLUMED 1 and PLUMED 2, and to
+follow the development of PLUMED 2, you can checkout the detailed changelog:
+- Changes for \ref CHANGES-2-0
 
-See also \ref CHANGES-2-0.
+A short tutorial explaining how to move from PLUMED 1 to PLUMED 2 is also available (see \ref moving)
+
+To install PLUMED 2, see this page: \subpage Installation
 
 \section qintro A quick introduction
 

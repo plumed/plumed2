@@ -33,6 +33,9 @@ namespace colvar{
 //+PLUMEDOC COLVAR DISTANCE
 /*
 Calculate the distance between a pair of atoms.
+By default the distance is computed taking into account periodic
+boundary conditions. This behavior can be changed with the NOPBC flag.
+Moreover, single components (x,y, and z) can be also computed.
 
 \par Examples
 
@@ -45,6 +48,37 @@ d2c: DISTANCE ATOMS=2,4 COMPONENTS
 PRINT ARG=d1,d2,d2c.x
 \endverbatim
 (See also \ref PRINT).
+
+The following input computes the end-to-end distance for a polymer
+of 100 atoms and keeps it at a value around 5.
+\verbatim
+WHOLEMOLECULES ENTITY0=1-100
+e2e: DISTANCE ATOMS=1,100 NOPBC
+RESTRAINT ARG=e2e KAPPA=1 AT=5
+\endverbatim
+(See also \ref WHOLEMOLECULES and \ref RESTRAINT).
+
+Notice that NOPBC is used
+to be sure that if the end-to-end distance is larger than half the simulation
+box the distance is compute properly. Also notice that, since many MD
+codes break molecules across cell boundary, it might be necessary to
+use the \ref WHOLEMOLECULES keyword (also notice that it should be
+_before_ distance). The list of atoms provided to WHOLEMOLECULES
+here contains all the atoms between 1 and 100. Strictly speaking, this
+is not necessary. If you know for sure that atoms with difference in
+the index say equal to 10 are _not_ going to be farther than half cell
+you can e.g. use
+\verbatim
+WHOLEMOLECULES ENTITY0=1,10,20,30,40,50,60,70,80,90,100
+e2e: DISTANCE ATOMS=1,100 NOPBC
+RESTRAINT ARG=e2e KAPPA=1 AT=5
+\endverbatim
+Just be sure that the ordered list provide to WHOLEMOLECULES has the following
+properties:
+- Consecutive atoms should be closer than half-cell throughout the entire simulation.
+- Atoms required later for the distance (e.g. 1 and 100) should be included in the list
+
+
 
 */
 //+ENDPLUMEDOC
