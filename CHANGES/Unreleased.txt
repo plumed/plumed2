@@ -27,5 +27,7 @@ Changes from version 2.0 which are relevant for developers:
 - Improved class Communicator. Many operations can now be done directly on Vectors, Tensors, std::vector and PLMD::Matrix.
 - Patches for GPL codes (QuantumEspresso and Gromacs) now also include
   original code so as to simplify their modification.
+- Fixed dependencies among actions such that it is now possible (and reliable)
+  to use MPI calls inside Action::prepare()
 
 */
