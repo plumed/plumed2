@@ -72,7 +72,7 @@ class Action
   std::vector<std::string> line;
 
 public:
-  typedef std::set<Action*> Dependencies;
+  typedef std::vector<Action*> Dependencies;
 
 private:
 /// Actions on which this Action depends.

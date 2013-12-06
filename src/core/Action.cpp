@@ -121,7 +121,7 @@ void Action::parseFlag(const std::string&key,bool & t){
 }
 
 void Action::addDependency(Action*action){
-  after.insert(action);
+  after.push_back(action);
 }
 
 void Action::activate(){
