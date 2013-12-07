@@ -15,6 +15,8 @@ Actions (choose one):
                     save, this needs *.preplumed files (*)
   -n NEWENGINE, --new NEWENGINE
                     create a new patch named NEWENGINE (*)
+  -i, --info
+                    output information on the patching procedure for a particular code                
 Options:
   -e ENGINE, --engine ENGINE
                     set MD engine to ENGINE (default: choose interactively)
@@ -57,6 +59,7 @@ do
     (--save|-s)         test -n "$action" && multiple_actions=yes ; action=save ;;
     (--revert|-R|-r)    test -n "$action" && multiple_actions=yes ; action=revert ;;
     (--list-engines|-l) test -n "$action" && multiple_actions=yes ; action=list ;;
+    (--info|-i)         test -n "$action" && multiple_actions=yes ; action=info ;;
     (--new=*)           test -n "$action" && multiple_actions=yes ; action=new ; newpatch="${prefix_option#--new=}" ;;
     (--description)     echo "patch an MD engine" ; exit ;;
     (--engine=*) engine="${prefix_option#--engine=}" ;;
@@ -225,6 +228,9 @@ case "$action" in
       echo "Executing plumed_after_patch function"
       plumed_after_patch
     fi
+  ;;
+  (info)
+    plumed_patch_info 
   ;;
   (save)
     if [ ! -L Plumed.h -o ! -L Plumed.inc ]
