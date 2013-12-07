@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -167,7 +167,13 @@ unsigned Grid::getDimension() const {
 // we are flattening arrays using a column-major order
 unsigned Grid::getIndex(const vector<unsigned> & indices) const {
  plumed_assert(indices.size()==dimension_);
- for(unsigned int i=0;i<dimension_;i++) plumed_assert(indices[i]>=0 && indices[i]<nbin_[i]);
+ for(unsigned int i=0;i<dimension_;i++)
+  if(indices[i]>=nbin_[i]) {
+    std::string is;
+    Tools::convert(i,is);
+    std::string msg="ERROR: the system is looking for a value outside the grid along the " + is;
+    plumed_merror(msg+" index!");
+  }
  unsigned index=indices[dimension_-1];
  for(unsigned int i=dimension_-1;i>0;--i){
   index=index*nbin_[i-1]+indices[i-1];
@@ -368,8 +374,6 @@ double Grid::getMaxValue() const {
  }
  return maxval;
 }
-
-
 
 
 double Grid::getValue(const vector<unsigned> & indices) const {

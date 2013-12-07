@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -92,8 +92,9 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   Angles(const ActionOptions&);
-// active methods:
-  virtual double compute( const unsigned& j );
+/// Updates neighbor list
+  virtual void doJobsRequiredBeforeTaskList();
+  virtual double compute();
 /// Returns the number of coordinates of the field
   void calculateWeight();
   bool isPeriodic(){ return false; }
@@ -129,14 +130,14 @@ Angles::Angles(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao),
 use_sf(false)
 {
-  // Read in the atoms
-  int natoms=3; readAtoms( natoms );
   std::string sfinput,errors; parse("SWITCH",sfinput);
   if( sfinput.length()>0 ){
       use_sf=true;
       weightHasDerivatives=true;
       sf1.set(sfinput,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors ); 
       sf2.set(sfinput,errors);
+      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors ); 
       log.printf("  only calculating angles for atoms separated by less than %s\n", sf1.description().c_str() );
   } else {
       parse("SWITCHA",sfinput); 
@@ -144,23 +145,33 @@ use_sf(false)
          use_sf=true;
          weightHasDerivatives=true;
          sf1.set(sfinput,errors);
+         if( errors.length()!=0 ) error("problem reading SWITCHA keyword : " + errors ); 
          sfinput.clear(); parse("SWITCHB",sfinput);
          if(sfinput.length()==0) error("found SWITCHA keyword without SWITCHB");
          sf2.set(sfinput,errors); 
+         if( errors.length()!=0 ) error("problem reading SWITCHB keyword : " + errors );
          log.printf("  only calculating angles when the distance between GROUPA and GROUPB atoms is less than %s\n", sf1.description().c_str() );
          log.printf("  only calculating angles when the distance between GROUPA and GROUPC atoms is less than %s\n", sf2.description().c_str() );
       }
   }
-
-  // And setup the ActionWithVessel
-  readVesselKeywords();
+  // Read in the atoms
+  int natoms=3; readAtoms( natoms );
   // And check everything has been read in correctly
   checkRead();
 }
 
+// This should give big speed ups during neighbor list update steps
+void Angles::doJobsRequiredBeforeTaskList(){
+  // Do jobs required by action with vessel
+  ActionWithVessel::doJobsRequiredBeforeTaskList();
+  if( !use_sf || getCurrentNumberOfActiveTasks()==ablocks[0].size() ) return ;
+  // First step of update of three body neighbor list
+  threeBodyNeighborList( sf1 );
+} 
+
 void Angles::calculateWeight(){
-  dij=getSeparation( getPosition(1), getPosition(2) );
-  dik=getSeparation( getPosition(1), getPosition(0) );
+  dij=getSeparation( getPosition(0), getPosition(2) );
+  dik=getSeparation( getPosition(0), getPosition(1) );
   if(!use_sf){ setWeight(1.0); return; }
 
   double w1, w2, dw1, dw2, wtot;
@@ -170,19 +181,19 @@ void Angles::calculateWeight(){
 
   setWeight( wtot );
   if( wtot<getTolerance() ) return; 
-  addAtomsDerivativeOfWeight( 0, dw2*dik );
-  addAtomsDerivativeOfWeight( 1, -dw1*dij - dw2*dik ); 
+  addAtomsDerivativeOfWeight( 1, dw2*dik );
+  addAtomsDerivativeOfWeight( 0, -dw1*dij - dw2*dik ); 
   addAtomsDerivativeOfWeight( 2, dw1*dij );
   addBoxDerivativesOfWeight( (-dw1)*Tensor(dij,dij) + (-dw2)*Tensor(dik,dik) );
 }
 
-double Angles::compute( const unsigned& j ){
+double Angles::compute(){
   Vector ddij,ddik; PLMD::Angle a; 
   double angle=a.compute(dij,dik,ddij,ddik);
 
   // And finish the calculation
-  addAtomsDerivatives( 0, ddik );
-  addAtomsDerivatives( 1, - ddik - ddij );
+  addAtomsDerivatives( 1, ddik );
+  addAtomsDerivatives( 0, - ddik - ddij );
   addAtomsDerivatives( 2, ddij );
   addBoxDerivatives( -(Tensor(dij,ddij)+Tensor(dik,ddik)) );
 
@@ -190,8 +201,8 @@ double Angles::compute( const unsigned& j ){
 }
 
 Vector Angles::getCentralAtom(){
-   addCentralAtomDerivatives( 1, Tensor::identity() );
-   return getPosition(1);
+   addCentralAtomDerivatives( 0, Tensor::identity() );
+   return getPosition(0);
 }
 
 }

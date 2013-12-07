@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -163,7 +163,6 @@ METAD ...
 PRINT ARG=d1,d2,restraint.bias STRIDE=100  FILE=COLVAR
 \endverbatim
 
-
 \par
 Multiple walkers can be also use as in  \cite multiplewalkers 
 These are enabled by setting the number of walker used, the id of the  
@@ -185,6 +184,12 @@ id of the present walker (starting from 0 ) and the WALKERS_DIR is the directory
 where all the walkers are located. WALKERS_RSTRIDE is the number of step between 
 one update and the other. 
 
+\par
+The kinetics of the transitions between basins can also be analysed on the fly as
+in \cite pratyush13prl. The flag ACCELERATION turn on accumulation of the acceleration
+factor that can then be used to determine the rate. This method can be used together
+with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
+It must be used together with well-tempered metadynamics.
 
 */
 //+ENDPLUMEDOC
@@ -208,6 +213,7 @@ private:
   vector<double> sigma0max_;
   vector<Gaussian> hills_;
   OFile hillsOfile_;
+  OFile gridfile_;
   Grid* BiasGrid_;
   Grid* ExtGrid_;
   bool storeOldGrids_;
@@ -226,6 +232,9 @@ private:
   string mw_dir_;
   int mw_id_;
   int mw_rstride_;
+  bool walkers_mpi;
+  bool acceleration;
+  double acc;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
   double uppI_;
@@ -283,12 +292,15 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
+  keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
+  keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");  
 }
 
 MetaD::~MetaD(){
   if(flexbin) delete flexbin;
   if(BiasGrid_) delete BiasGrid_;
   hillsOfile_.close();
+  if(wgridstride_>0) gridfile_.close();
   delete [] dp_;
   // close files
   for(int i=0;i<mw_n_;++i){
@@ -309,6 +321,8 @@ dp_(NULL), adaptive_(FlexibleBin::none),
 flexbin(NULL),
 // Multiple walkers initialization
 mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
+walkers_mpi(false),
+acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
 isFirstStep(true)
@@ -410,6 +424,9 @@ isFirstStep(true)
   parse("WALKERS_DIR",mw_dir_);
   parse("WALKERS_RSTRIDE",mw_rstride_);
 
+  // MPI version
+  parseFlag("WALKERS_MPI",walkers_mpi);
+
   // Inteval keyword
   vector<double> tmpI(2);
   parseVector("INTERVAL",tmpI);
@@ -422,6 +439,9 @@ isFirstStep(true)
     doInt_=true;
     spline=false;
   }
+
+  acceleration=false;
+  parseFlag("ACCELERATION",acceleration);
 
   checkRead();
 
@@ -462,6 +482,12 @@ isFirstStep(true)
 
   addComponent("bias"); componentIsNotPeriodic("bias");
 
+  if(acceleration) {
+    if(!welltemp_) error("The calculation of the acceleration works only if Welltempered metadynamics is on"); 
+    log.printf("  calculation on the fly of the acceleration factor");
+    addComponent("acc"); componentIsNotPeriodic("acc");
+  }
+
 // for performance
   dp_ = new double[getNumberOfArguments()];
 
@@ -470,6 +496,17 @@ isFirstStep(true)
    std::string funcl=getLabel() + ".bias";
    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
+   std::vector<std::string> actualmin=BiasGrid_->getMin();
+   std::vector<std::string> actualmax=BiasGrid_->getMax();
+   for(unsigned i=0;i<getNumberOfArguments();i++){
+     if(gmin[i]!=actualmin[i]) log<<"  WARNING: GRID_MIN["<<i<<"] has been adjusted to "<<actualmin[i]<<" to fit periodicity\n";
+     if(gmax[i]!=actualmax[i]) log<<"  WARNING: GRID_MAX["<<i<<"] has been adjusted to "<<actualmax[i]<<" to fit periodicity\n";
+   }
+  }
+
+  if(wgridstride_>0){
+    gridfile_.link(*this);
+    gridfile_.open(gridfilename_);
   }
 
 // initializing external grid
@@ -485,6 +522,8 @@ isFirstStep(true)
      if( getPntrToArgument(i)->isPeriodic()!=ExtGrid_->getIsPeriodic()[i] ) error("periodicity mismatch between arguments and input bias");
    }
   }
+
+  if(walkers_mpi && mw_n_>1) error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
 
 // creating vector of ifile* for hills reading 
 // open all files at the beginning and read Gaussians if restarting
@@ -530,6 +569,8 @@ isFirstStep(true)
     "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
   if(doInt_) log<<plumed.cite(
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
+  if(acceleration) log<<plumed.cite(
+     "Pratyush and Parrinello, Phys. Rev. Lett. ... (2013)");
   log<<"\n";
 
 }
@@ -652,8 +693,8 @@ void MetaD::addGaussian(const Gaussian& hill)
      BiasGrid_->getPoint(ineigh,xx);
      allbias[i]=evaluateGaussian(xx,hill,&allder[ncv*i]);
     }
-    comm.Sum(&allbias[0],allbias.size());
-    comm.Sum(&allder[0],allder.size());
+    comm.Sum(allbias);
+    comm.Sum(allder);
     for(unsigned i=0;i<neighbors.size();++i){
      unsigned ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=allder[ncv*i+j];}
@@ -720,8 +761,8 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
    //finite difference test 
    //finiteDifferenceGaussian(cv,hills_[i]);
   }
-  comm.Sum(&bias,1);
-  if(der) comm.Sum(&der[0],getNumberOfArguments());
+  comm.Sum(bias);
+  if(der) comm.Sum(der,getNumberOfArguments());
  }else{
   if(der){
    vector<double> vder(getNumberOfArguments());
@@ -836,7 +877,12 @@ void MetaD::calculate()
   for(unsigned i=0;i<ncv;++i){der[i]=0.0;}
   double ene=getBiasAndDerivatives(cv,der);
   getPntrToComponent("bias")->set(ene);
-
+// calculate the acceleration factor
+  if(acceleration&&!isFirstStep) {
+    acc += exp(ene/(plumed.getAtoms().getKBoltzmann()*temp_));
+    double mean_acc = acc/((double) getStep());
+    getPntrToComponent("acc")->set(mean_acc);
+  }
 // set Forces 
   for(unsigned i=0;i<ncv;++i){
    const double f=-der[i];
@@ -875,18 +921,69 @@ void MetaD::update(){
    }else{
 	thissigma=sigma0_;    // returns normal sigma
    }
-   Gaussian newhill=Gaussian(cv,thissigma,height,multivariate);
-   addGaussian(newhill);
+// In case we use walkers_mpi, it is now necessary to communicate with other replicas.
+   if(walkers_mpi){
+     int nw=0;
+     int mw=0;
+     if(comm.Get_rank()==0){
+// Only root of group can communicate with other walkers
+       nw=multi_sim_comm.Get_size();
+       mw=multi_sim_comm.Get_rank();
+     }
+// Communicate to the other members of the same group
+// info abount number of walkers and walker index
+     comm.Bcast(nw,0);
+     comm.Bcast(mw,0);
+// Allocate arrays to store all walkers hills
+     std::vector<double> all_cv(nw*cv.size(),0.0);
+     std::vector<double> all_sigma(nw*thissigma.size(),0.0);
+     std::vector<double> all_height(nw,0.0);
+     std::vector<int>    all_multivariate(nw,0);
+     if(comm.Get_rank()==0){
+// Communicate (only root)
+       multi_sim_comm.Allgather(cv,all_cv);
+       multi_sim_comm.Allgather(thissigma,all_sigma);
+       multi_sim_comm.Allgather(height,all_height);
+       multi_sim_comm.Allgather(int(multivariate),all_multivariate);
+     }
+// Share info with group members
+     comm.Bcast(all_cv,0);
+     comm.Bcast(all_sigma,0);
+     comm.Bcast(all_height,0);
+     comm.Bcast(all_multivariate,0);
+     for(int i=0;i<nw;i++){
+// actually add hills one by one
+       std::vector<double> cv_now(cv.size());
+       std::vector<double> sigma_now(thissigma.size());
+       for(unsigned j=0;j<cv.size();j++) cv_now[j]=all_cv[i*cv.size()+j];
+       for(unsigned j=0;j<thissigma.size();j++) sigma_now[j]=all_sigma[i*thissigma.size()+j];
+       Gaussian newhill=Gaussian(cv_now,sigma_now,all_height[i],all_multivariate[i]);
+       addGaussian(newhill);
+       writeGaussian(newhill,hillsOfile_);
+     }
+   } else {
+     Gaussian newhill=Gaussian(cv,thissigma,height,multivariate);
+     addGaussian(newhill);
 // print on HILLS file
-   writeGaussian(newhill,hillsOfile_);
+     writeGaussian(newhill,hillsOfile_);
+   }
   }
 // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
-    OFile gridfile; gridfile.link(*this);
-    if(!storeOldGrids_) remove( gridfilename_.c_str() );
-    gridfile.open(gridfilename_);
-    BiasGrid_->writeToFile(gridfile); 
-    gridfile.close();
+// in case old grids are stored, a sequence of grids should appear
+// this call results in a repetition of the header:
+    if(storeOldGrids_) gridfile_.clearFields();
+// in case only latest grid is stored, file should be rewound
+// this will overwrite previously written grids
+    else gridfile_.rewind();
+    BiasGrid_->writeToFile(gridfile_); 
+// if a single grid is stored, it is necessary to flush it, otherwise
+// the file might stay empty forever (when a single grid is not large enough to
+// trigger flushing from the operating system).
+// on the other hand, if grids are stored one after the other this is
+// no necessary, and we leave the flushing control to the user as usual
+// (with FLUSH keyword)
+    if(!storeOldGrids_) gridfile_.flush();
   }
 
 // if multiple walkers and time to read Gaussians

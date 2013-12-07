@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -24,12 +24,12 @@
 
 #include "Action.h"
 #include "tools/Tensor.h"
+#include "Atoms.h"
 #include <vector>
 #include <set>
 
 namespace PLMD {
 
-class Atoms;
 class Pbc;
 class PDB;
 
@@ -55,6 +55,9 @@ class ActionAtomistic :
 
   bool                  lockRequestAtoms; // forbid changes to request atoms
 
+  bool                  donotretrieve;
+  bool                  donotforce;
+
 protected:
   Atoms&                atoms;
 
@@ -66,9 +69,15 @@ public:
 /// MAYBE WE HAVE TO FIND SOMETHING MORE CLEAR FOR DYNAMIC
 /// LISTS OF ATOMS
   void requestAtoms(const std::vector<AtomNumber> & a);
-/// Get position of i-th atom
+/// Get position of i-th atom (access by relative index)
   const Vector & getPosition(int)const;
-/// Get position of i-th atom
+/// Get position of i-th atom (access by absolute AtomNumber).
+/// With direct access to the global atom array
+  const Vector & getPosition(AtomNumber)const;
+/// Get modifiable position of i-th atom (access by absolute AtomNumber).
+/// Should be used by action that need to modify the stored atomic coordinates
+  Vector & modifyPosition(AtomNumber);
+/// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
   const std::vector<Vector> & getPositions()const;
@@ -96,10 +105,22 @@ public:
   void parseAtomList(const std::string&key,std::vector<AtomNumber> &t);
 /// Parse an list of atom with a numbred keyword
   void parseAtomList(const std::string&key,const int num, std::vector<AtomNumber> &t);
+/// Change the box shape 
+  void changeBox( const Tensor& newbox );
 /// Get reference to Pbc
   const Pbc & getPbc() const;
 /// Add the forces to the atoms
   void setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned ind=0 );
+/// Skip atom retrieval - use with care.
+/// If this function is called during initialization, then atoms are
+/// not going to be retrieved. Can be used for optimization. Notice that
+/// calling getPosition(int) in an Action where DoNotRetrieve() was called might
+/// lead to undefined behavior.
+  void doNotRetrieve(){donotretrieve=true;}
+/// Skip atom forces - use with care.
+/// If this function is called during initialization, then forces are
+/// not going to be propagated. Can be used for optimization.
+  void doNotForce(){donotforce=true;}
 public:
 
 // virtual functions:
@@ -131,6 +152,16 @@ public:
 inline
 const Vector & ActionAtomistic::getPosition(int i)const{
   return positions[i];
+}
+
+inline
+const Vector & ActionAtomistic::getPosition(AtomNumber i)const{
+  return atoms.positions[i.index()];
+}
+
+inline
+Vector & ActionAtomistic::modifyPosition(AtomNumber i){
+  return atoms.positions[i.index()];
 }
 
 inline
@@ -178,13 +209,6 @@ inline
 Tensor & ActionAtomistic::modifyVirial(){
   return virial;
 }
-
-inline
-void ActionAtomistic::clearOutputForces(){
-  for(unsigned i=0;i<forces.size();++i)forces[i].zero();
-  forceOnEnergy=0.0;
-}
-
 
 inline
 double & ActionAtomistic::modifyForceOnEnergy(){

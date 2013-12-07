@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -57,7 +57,7 @@ void BridgeVessel::prepare(){
 }
 
 bool BridgeVessel::calculate(){
-  myOutputAction->performTask( getAction()->current );
+  myOutputAction->performTask();
   if( myOutputAction->thisval[1]<myOutputAction->getTolerance() ){
       myOutputAction->clearAfterTask();
       return ( !myOutputAction->contributorsAreUnlocked || myOutputAction->thisval[1]>=myOutputAction->getNLTolerance() );
@@ -70,7 +70,7 @@ void BridgeVessel::finish(){
   myOutputAction->finishComputations();
   if( myOutputAction->checkNumericalDerivatives() ){
      if ( inum<mynumerical_values.size() ){
-         for(unsigned i=0;i<myOutputValues->getNumberOfComponents();++i){
+         for(int i=0;i<myOutputValues->getNumberOfComponents();++i){
              mynumerical_values[inum]=myOutputValues->getOutputQuantity(i);
              inum++;
          }
@@ -87,12 +87,12 @@ void BridgeVessel::completeNumericalDerivatives(){
   ActionWithVessel* vval=dynamic_cast<ActionWithVessel*>( myOutputAction );
   for(unsigned i=0;i<nextra;++i){
       vval->bridgeVariable=i; getAction()->calculate();
-      for(unsigned j=0;j<myOutputValues->getNumberOfComponents();++j) tmpder(j,i) = myOutputValues->getOutputQuantity(j);
+      for(int j=0;j<myOutputValues->getNumberOfComponents();++j) tmpder(j,i) = myOutputValues->getOutputQuantity(j);
   }
   vval->bridgeVariable=nextra; getAction()->calculate(); 
   inum=0;  // Reset inum now that we have finished calling calculate
   std::vector<double> base( myOutputValues->getNumberOfComponents() );
-  for(unsigned j=0;j<myOutputValues->getNumberOfComponents();++j) base[j] = myOutputValues->getOutputQuantity(j);
+  for(int j=0;j<myOutputValues->getNumberOfComponents();++j) base[j] = myOutputValues->getOutputQuantity(j);
 
   const double delta=sqrt(epsilon);
   ActionAtomistic* aa=dynamic_cast<ActionAtomistic*>( getAction() );

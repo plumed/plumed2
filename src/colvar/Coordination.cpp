@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -84,8 +84,10 @@ CoordinationBase(ao)
 
   string sw,errors;
   parse("SWITCH",sw);
-  if(sw.length()>0) switchingFunction.set(sw,errors);
-  else {
+  if(sw.length()>0){
+    switchingFunction.set(sw,errors);
+    if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+  } else {
     int nn=6;
     int mm=12;
     double d0=0.0;

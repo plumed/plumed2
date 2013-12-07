@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -79,7 +79,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   AlphaBeta(const ActionOptions&);
-  virtual double compute( const unsigned& j );
+  virtual double compute();
   bool isPeriodic(){ return false; }
   Vector getCentralAtom();  
 };
@@ -100,7 +100,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   // Read in the atoms
   int natoms=4; readAtoms( natoms );
   // Resize target
-  target.resize( taskList.fullSize() );
+  target.resize( getFullNumberOfTasks() );
 
   // Read in reference values
   unsigned ntarget=0;
@@ -116,7 +116,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
 
   // And setup the ActionWithVessel
-  readVesselKeywords();
   if( getNumberOfVessels()==0 ){
      std::string fake_input;
      addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
@@ -127,7 +126,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double AlphaBeta::compute( const unsigned& j ){
+double AlphaBeta::compute(){
   Vector d0,d1,d2;
   d0=getSeparation(getPosition(1),getPosition(0));
   d1=getSeparation(getPosition(2),getPosition(1));
@@ -136,8 +135,9 @@ double AlphaBeta::compute( const unsigned& j ){
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
   double value  = t.compute(d0,d1,d2,dd0,dd1,dd2);
-  double svalue = -0.5*sin(value-target[current]);
-  double cvalue = 1.+cos(value-target[current]);
+  unsigned tindex = getCurrentPositionInTaskList();
+  double svalue = -0.5*sin(value-target[tindex]);
+  double cvalue = 1.+cos(value-target[tindex]);
 
   dd0 *= svalue;
   dd1 *= svalue;

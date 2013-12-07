@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -72,7 +72,7 @@ class Action
   std::vector<std::string> line;
 
 public:
-  typedef std::set<Action*> Dependencies;
+  typedef std::vector<Action*> Dependencies;
 
 private:
 /// Actions on which this Action depends.

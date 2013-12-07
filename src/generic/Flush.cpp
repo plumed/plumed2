@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -32,6 +32,7 @@ using namespace std;
 //+PLUMEDOC GENERIC FLUSH
 /*
 This command instructs plumed to flush all the open files with a user specified frequency.
+Notice that all files are flushed anyway every 10000 steps.
 
 This
 is useful for preventing data loss that would otherwise arrise as a consequence of the code

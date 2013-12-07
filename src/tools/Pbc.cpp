@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -184,7 +184,7 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const{
         double lbest(modulo2(best));
 // loop over possible shifts:
         if(nshifts) *nshifts+=myshifts.size();
-        for(int i=0;i<myshifts.size();i++){
+        for(unsigned i=0;i<myshifts.size();i++){
           Vector trial=d+myshifts[i];
           double ltrial=modulo2(trial);
           if(ltrial<lbest){

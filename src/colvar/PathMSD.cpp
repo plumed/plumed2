@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -40,10 +40,10 @@ in input ("sss" component) and the distance from them ("zzz" component).
 \par Examples
 
 Here below is a case where you have defined three frames and you want to  
-calculate the progress alng the path and the distance from it in p1
+calculate the progress along the path and the distance from it in p1
 
 \verbatim
-p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8 PROPERTY=X,Y
+p1: PATHMSD REFERENCE=file.pdb  LAMBDA=500.0 NEIGH_STRIDE=4 NEIGH_SIZE=8 
 PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 \endverbatim
 

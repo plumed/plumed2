@@ -36,5 +36,5 @@ if { [module-info mode load] && [ info exists ::env(PLUMED_KERNEL) ] } {
 prepend-path  LIBRARY_PATH       $prefix/lib/
 prepend-path  LD_LIBRARY_PATH    $prefix/lib/
 prepend-path  DYLD_LIBRARY_PATH  $prefix/lib/
-setenv        PLUMED_KERNEL      $prefix/lib/libplumedKernel.dylib
+setenv        PLUMED_KERNEL      $prefix/lib/libplumedKernel.$soext
 }

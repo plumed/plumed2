@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -88,6 +88,7 @@ Center::Center(const ActionOptions&ao):
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
+  if(atoms.size()==0) error("at least one atom should be specified");
   parseVector("WEIGHTS",weights);
   parseFlag("MASS",weight_mass);
   checkRead();

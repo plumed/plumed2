@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -22,8 +22,7 @@
 #ifndef __PLUMED_multicolvar_StoreCentralAtomsVessel_h
 #define __PLUMED_multicolvar_StoreCentralAtomsVessel_h
 
-#include "tools/DynamicList.h"
-#include "vesselbase/Vessel.h" 
+#include "vesselbase/StoreDataVessel.h" 
 
 namespace PLMD {
 namespace multicolvar {
@@ -31,35 +30,26 @@ namespace multicolvar {
 class MultiColvarBase;
 class MultiColvarFunction;
 
-class StoreCentralAtomsVessel : public vesselbase::Vessel {
+class StoreCentralAtomsVessel : public vesselbase::StoreDataVessel {
 private:
+/// The base multicolvar
   MultiColvarBase* mycolv;
-  std::vector<unsigned> start;
-  unsigned nspace;
-  std::vector< DynamicList<unsigned> > active_atoms;
+/// A vector that is used to store derivatives
+  std::vector<double> tmpdf;
 public:
 /// Constructor
   StoreCentralAtomsVessel( const vesselbase::VesselOptions& );
-/// Return the number of terms
-  unsigned getNumberOfTerms(){ return 2; }
-/// This does the resizing of the buffer
-  void resize();
 /// This does nothing
   std::string description(){ return ""; }
-/// This should mpi gather the active atoms
-  void finish();
-/// This does nothing
-  bool applyForce(std::vector<double>&){ return false; }
-/// This makes sure all vectors are stored
-  bool calculate();
 /// Get the orientation of the ith vector
-  Vector getPosition( const unsigned&  ) const ;
+  Vector getPosition( const unsigned& );
+/// Recalculate the central atom position
+  void performTask( const unsigned& );
+  void finishTask( const unsigned& );
+/// Get the indices
+  void getIndexList( const unsigned& , const unsigned& , const unsigned& , std::vector<unsigned>& );
 /// Add derivatives to central atom position
-  void addAtomsDerivatives( const unsigned& iatom, const Vector& df, MultiColvarFunction* funcout ) const ;
-/// Add derivatives of the weight wrt to the central atom position
-  void addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& df, MultiColvarFunction* funcout  ) const ; 
-/// Add derivative to the central atom position
-  void addDerivativeOfCentralAtomPos( const unsigned& iatom, const Tensor& df, MultiColvarFunction* funcout ) const ;
+  void addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& df, MultiColvarFunction* funcout );
 };
 
 }

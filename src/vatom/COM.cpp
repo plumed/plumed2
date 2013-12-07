@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -76,6 +76,7 @@ COM::COM(const ActionOptions&ao):
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
+  if(atoms.size()==0) error("at least one atom should be specified");
   checkRead();
   log.printf("  of atoms");
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());

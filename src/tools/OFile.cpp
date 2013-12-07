@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -42,7 +42,7 @@ size_t OFile::llwrite(const char*ptr,size_t s){
     if(!fp) plumed_merror("writing on uninitilized File");
     r=fwrite(ptr,1,s,fp);
   }
-  if(comm) comm->Bcast(&r,1,0);
+  if(comm) comm->Bcast(r,0);
   return r;
 }
 
@@ -277,6 +277,16 @@ OFile& OFile::open(const std::string&path){
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
   }
   if(plumed) plumed->insertFile(*this);
+  return *this;
+}
+
+OFile& OFile::rewind(){
+// we use here "hard" rewind, which means close/reopen
+// the reason is that normal rewind does not work when in append mode
+  plumed_assert(fp);
+  clearFields();
+  fclose(fp);
+  fp=std::fopen(const_cast<char*>(path.c_str()),"w");
   return *this;
 }
 

@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -26,6 +26,7 @@
 #include "core/ActionWithValue.h"
 #include "tools/DynamicList.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "StoreColvarVessel.h"
 #include "StoreCentralAtomsVessel.h"
 #include <vector>
 
@@ -39,7 +40,6 @@ class MultiColvarBase :
   {
 friend class ActionVolume;
 friend class VolumeSubcell;
-friend class StoreColvarVessel;
 friend class StoreCentralAtomsVessel;
 friend class MultiColvarFunction;
 friend class MultiColvar;
@@ -48,43 +48,58 @@ private:
   bool usepbc;
 /// Everything for controlling the updating of neighbor lists
   int updateFreq;
-  unsigned lastUpdate;
+  bool firsttime;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
-/// A dynamic list containing those atoms with derivatives
-  DynamicList<unsigned> atoms_with_derivatives;
-/// The lists of the atoms involved in each of the individual colvars
-/// note these refer to the atoms in all_atoms
-  std::vector< DynamicList<unsigned> > colvar_atoms;
 /// Variables used for central atoms
   Tensor ibox;
   DynamicList<unsigned> atomsWithCatomDer;
-  std::vector<Tensor> central_derivs;
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
+/// Neighbor lists for coordination numbers
+  unsigned csphere_start;
+  std::vector<unsigned> csphere_flags;
+  std::vector<DynamicList<unsigned> > csphere_atoms;
+/// A copy of the vessel containing the catoms
+  StoreCentralAtomsVessel* mycatoms;
+/// A copy of the vessel containg the values of each colvar
+  StoreColvarVessel* myvalues;
+/// This does neighbor list update for atom centered symmetry functions
+  void updateCSphereArrays();
 /// This resizes the local arrays after neighbor list updates and during initialization
   void resizeLocalArrays();
 protected:
-/// Add a colvar to the set of colvars we are calculating (in practise just a list of atoms)
-  void addColvar( const std::vector<unsigned>& newatoms );
+/// A dynamic list containing those atoms with derivatives
+  DynamicList<unsigned> atoms_with_derivatives;
+/// Using the species keyword to read in atoms
+  bool usespecies;
+/// Number of atoms in each block
+  unsigned nblock;
+/// This is used when turning cvcodes into atom numbers
+  std::vector<unsigned> decoder;
+/// Blocks of atom numbers
+  std::vector< std::vector<unsigned> > ablocks;
+/// Number of atoms in the cv - set at start of calculation
+  unsigned natomsper;  
+/// Vector containing the indices of the current atoms
+  std::vector<unsigned> current_atoms;
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase();
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
-/// Return the index of an atom
-  unsigned getAtomIndex( const unsigned& ) const ;
-/// Add some derivatives for an atom 
-  void addAtomsDerivatives(const int&,const Vector&);
-/// Add some derivatives to the virial
+/// Add some derivatives for an atom
+  void addAtomsDerivatives(const unsigned&, const unsigned&, const Vector& );
+/// Add some derivatives for a box
+  void addBoxDerivatives(const unsigned&, const Tensor& );
+/// Add some derivatives of the value to the virial
   void addBoxDerivatives(const Tensor&);
 /// Retrieve derivative of central atom position wrt jcomp'th component of position of iatom'th atom
-  double getCentralAtomDerivative( const unsigned& iatom, const unsigned jcomp, const Vector& df ) const ;
+  double getCentralAtomDerivative( const unsigned& iatom, const unsigned& jcomp, const Vector& df );
 /// Set a weight for this colvar (used in MEAN and HISTOGRAM)
   void setWeight( const double& weight );
 /// Set the derivative of the weight (used in MEAN and HISTOGRAM)
-  void addAtomsDerivativeOfWeight( const unsigned& i, const Vector& wder );
   void addBoxDerivativesOfWeight( const Tensor& vir );
 /// Get the number of atoms in this particular colvar
   unsigned getNAtoms() const;
@@ -92,39 +107,78 @@ protected:
   void removeAtomRequest( const unsigned& aa, const double& weight );
 /// Add derivative of central atom position wrt to position of iatom'th atom
   void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
+/// Get the indices for the central atom
+  void getCentralAtomIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ) const ;
+/// This sets up the list of atoms that are involved in this colvar
+  bool setupCurrentAtomList( const unsigned& taskCode );
+/// This is used internally to setup central atom stuff
+  bool setupCentralAtomVessel();
 public:
   MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(){}
   static void registerKeywords( Keywords& keys );
+/// Used in setupCurrentAtomList to get atom numbers 
+/// Base quantities are different in MultiColvar and MultiColvarFunction
+  virtual unsigned getBaseQuantityIndex( const unsigned& code )=0;
+/// Are two indexes corresponding to the same thing
+  virtual bool same_index( const unsigned&, const unsigned& )=0;
 /// Prepare for the calculation
   void prepare();
-  virtual void resizeDynamicArrays()=0;
-/// Return the size of the colvar_atoms array
-  unsigned getNumberOfColvars() const ;
+//  virtual void resizeDynamicArrays()=0;
 /// Perform one of the tasks
-  void performTask( const unsigned& j );
+  void performTask();
 /// And a virtual function which actually computes the colvar
-  virtual double doCalculation( const unsigned& j )=0;  
+  virtual double doCalculation();  
+/// Update the atoms that have derivatives
+  virtual void updateActiveAtoms()=0;
+/// This is replaced once we have a function to calculate the cv
+  virtual double compute()=0;
 /// These replace the functions in ActionWithVessel to make the code faster
   void mergeDerivatives( const unsigned& ider, const double& df );
   void clearDerivativesAfterTask( const unsigned& ider );
 /// Apply the forces from this action
   void apply();
-/// Deactivate one of the tasks
-  void deactivate_task();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+/// Get the number of quantities that are calculated each time
+  virtual unsigned getNumberOfQuantities();
 /// Retrieve the position of the central atom
   Vector retrieveCentralAtomPos();
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual void calculateWeight();
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
   virtual Vector calculateCentralAtomPosition()=0; 
+/// Get the list of indices that have derivatives
+ void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 /// Is this a density?
   virtual bool isDensity(){ return false; }
-/// Return a pointer to the vessel that stores the positions of 
-/// all the central atoms
-  StoreCentralAtomsVessel* getCentralAtoms();
+/// Store central atoms so that this can be used in a function
+  virtual void useInMultiColvarFunction( const bool store_director );
+/// Copy the list of atoms involved to a second MultiColvarBase (used by functions)
+  void copyAtomListToFunction( MultiColvarBase* myfunction );
+/// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
+  void quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout );
+/// Return the number of the colvar in which iatom is the first atom
+  unsigned getInternalIndex( const AtomNumber& iatom ) const ;
+/// Make sure the same list of atoms is active in a function
+  void copyActiveAtomsToFunction( MultiColvarBase* myfunction, const unsigned& start );
+/// Activate the atoms that have derivatives from a storeDataVessel
+  void activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ); 
+/// Get the position of the iatom th central atom (used in multicolvarfunction)
+  Vector getCentralAtomPosition( const unsigned& iatom ) const ;
+/// Add central atom derivatives to a multicolvar function
+  void addCentralAtomDerivativeToFunction( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& der, MultiColvarFunction* func ); 
+/// Get the value for this task
+  virtual void getValueForTask( const unsigned& iatom, std::vector<double>& vals ) const ;
+/// Used to accumulate values
+  virtual void addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, MultiColvarFunction* func );
+/// Used for calculating weighted averages
+  virtual void finishWeightedAverageCalculation( MultiColvarFunction* func );
+/// Add derivatives to the orientations
+  virtual void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
+                                                const std::vector<double>& weight, MultiColvarFunction* func );
+/// This is true if multicolvar is calculating a vector or if the multicolvar is the density
+  virtual bool hasDifferentiableOrientation() const { return false; }
 };
 
 inline
@@ -133,23 +187,11 @@ unsigned MultiColvarBase::getNumberOfDerivatives(){
 }
 
 inline
-unsigned MultiColvarBase::getAtomIndex( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<colvar_atoms[current].getNumberActive() );
-  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
-}
-
-inline
 void MultiColvarBase::removeAtomRequest( const unsigned& i, const double& weight ){
+  plumed_dbg_assert( usespecies );
   if( !contributorsAreUnlocked ) return;
   plumed_dbg_assert( weight<getTolerance() );
-  if( weight<getNLTolerance() ) colvar_atoms[current].deactivate( i );
-}
-
-inline
-void MultiColvarBase::deactivate_task(){
-  if( !contributorsAreUnlocked ) return;   // Deactivating tasks only possible during neighbor list update
-  colvar_atoms[current].deactivateAll();   // Deactivate all atom requests for this colvar
-  ActionWithVessel::deactivate_task();     // Deactivate the colvar from the list
+  if( weight<getNLTolerance() ) csphere_flags[ csphere_start + i ] = 1;
 }
 
 inline
@@ -158,35 +200,31 @@ bool MultiColvarBase::usesPbc() const {
 }
 
 inline
-unsigned MultiColvarBase::getNumberOfColvars() const {
-  return colvar_atoms.size();
+unsigned MultiColvarBase::getNumberOfQuantities(){
+  return 5;
 }
 
 inline
 unsigned MultiColvarBase::getNAtoms() const {
-  return colvar_atoms[current].getNumberActive();
+  return natomsper;   // colvar_atoms[current].getNumberActive();
 }
 
 inline
-void MultiColvarBase::addAtomsDerivatives(const int& iatom, const Vector& der){
+void MultiColvarBase::addAtomsDerivatives(const unsigned& ielem, const unsigned& iatom, const Vector& der ){
   atoms_with_derivatives.activate(iatom);
-  addElementDerivative( 3*iatom+0, der[0] );
-  addElementDerivative( 3*iatom+1, der[1] );
-  addElementDerivative( 3*iatom+2, der[2] );
-} 
+  unsigned ibase=ielem*getNumberOfDerivatives() + 3*iatom;
+  for(unsigned i=0;i<3;++i) addElementDerivative( ibase + i, der[i] );
+}
+
+inline 
+void MultiColvarBase::addBoxDerivatives(const unsigned& ielem, const Tensor& vir ){
+  unsigned ibase=ielem*getNumberOfDerivatives() + 3*getNumberOfAtoms();
+  for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) addElementDerivative( ibase+3*i+j, vir(i,j) );
+}
 
 inline
 void MultiColvarBase::addBoxDerivatives(const Tensor& vir){
-  unsigned nstart=3*getNumberOfAtoms(); 
-  addElementDerivative( nstart+0, vir(0,0) );
-  addElementDerivative( nstart+1, vir(0,1) );
-  addElementDerivative( nstart+2, vir(0,2) );
-  addElementDerivative( nstart+3, vir(1,0) );
-  addElementDerivative( nstart+4, vir(1,1) );
-  addElementDerivative( nstart+5, vir(1,2) );
-  addElementDerivative( nstart+6, vir(2,0) );
-  addElementDerivative( nstart+7, vir(2,1) );
-  addElementDerivative( nstart+8, vir(2,2) );
+  addBoxDerivatives( 0, vir );
 }
 
 inline
@@ -200,26 +238,8 @@ void MultiColvarBase::setWeight( const double& weight ){
 }
 
 inline
-void MultiColvarBase::addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& wder ){
-  unsigned nstart  = 3*getNumberOfAtoms() + 9 + 3*iatom;   
-  atoms_with_derivatives.activate(iatom);
-  addElementDerivative( nstart + 0, wder[0] );
-  addElementDerivative( nstart + 1, wder[1] );
-  addElementDerivative( nstart + 2, wder[2] );
-}
-
-inline
 void MultiColvarBase::addBoxDerivativesOfWeight( const Tensor& vir ){
-  int nstart = 6*getNumberOfAtoms() + 9;
-  addElementDerivative( nstart+0, vir(0,0) );
-  addElementDerivative( nstart+1, vir(0,1) );
-  addElementDerivative( nstart+2, vir(0,2) );
-  addElementDerivative( nstart+3, vir(1,0) );
-  addElementDerivative( nstart+4, vir(1,1) );
-  addElementDerivative( nstart+5, vir(1,2) );
-  addElementDerivative( nstart+6, vir(2,0) );
-  addElementDerivative( nstart+7, vir(2,1) );
-  addElementDerivative( nstart+8, vir(2,2) );
+  addBoxDerivatives( 1, vir );
 }
 
 }
