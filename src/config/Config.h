@@ -41,6 +41,8 @@ bool hasAlmost();
 
 bool hasCregex();
 
+bool hasMolfile();
+
 }
 }
 

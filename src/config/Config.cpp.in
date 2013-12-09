@@ -74,6 +74,14 @@ bool hasCregex(){
 #endif
 }
 
+bool hasMolfile(){
+#if __PLUMED_HAS_MOLFILE
+      return true;
+#else
+      return false;
+#endif
+}
+
 
 
 }
