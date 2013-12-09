@@ -56,13 +56,13 @@ syntax.
 
 \verbatim
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
-t1: TORSION ATOMS=phi-3
-t2: TORSION ATOMS=psi-4
+t1: TORSION ATOMS=@phi-3
+t2: TORSION ATOMS=@psi-4
 PRINT ARG=t1,t2 FILE=colvar STRIDE=10
 \endverbatim
 
-Here, phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
-Similarly psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
+Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
+Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
 */
 //+ENDPLUMEDOC
    

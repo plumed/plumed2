@@ -67,15 +67,15 @@ about the topology of the protein molecule.  This means that you can specify tor
 \verbatim
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
 DIHCOR ...
-ATOMS1=phi-3,psi-3
-ATOMS2=psi-3,phi-4
-ATOMS4=phi-4,psi-4
+ATOMS1=@phi-3,@psi-3
+ATOMS2=@psi-3,@phi-4
+ATOMS4=@phi-4,@psi-4
 ... DIHCOR
 PRINT ARG=dih FILE=colvar STRIDE=10
 \endverbatim
 
-Here, phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
-Similarly psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
+Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
+Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
 
 */
 //+ENDPLUMEDOC

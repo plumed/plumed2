@@ -165,6 +165,18 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
    AtomNumber atom;
    ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
    if(ok) t.push_back(atom);
+// here we check if this is a special symbol for MOLINFO
+   if( !ok && strings[i].compare(0,1,"@")==0 ){
+      std::size_t dot=strings[i].find_first_of("@"); std::string symbol=strings[i].substr(dot+1);
+      vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+      if( moldat.size()>0 ){
+          vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( symbol, atom_list );
+          if( atom_list.size()>0 ){ ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
+          else { error(strings[i] + " is not a label plumed knows"); }
+      } else {
+          error("atoms specified using @ symbol but no MOLINFO was available");
+      }
+   }
 // here we check if the atom name is the name of a group
    if(!ok){
      if(atoms.groups.count(strings[i])){
@@ -172,14 +184,6 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
        t.insert(t.end(),m->second.begin(),m->second.end());
        ok=true;
      }
-   }
-// here we check if this is a special symbol for MOLINFO
-   if(!ok){
-      vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
-      if( moldat.size()>0 ){
-          vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( strings[i], atom_list );
-          if( atom_list.size()>0 ){ ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
-      }
    }
 // here we check if the atom name is the name of an added virtual atom
    if(!ok){
@@ -193,7 +197,8 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
        }
      }
    }
-   plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
+   if(!ok) error("it was not possible to interpret atom name " + strings[i]);
+   // plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 } 
 
