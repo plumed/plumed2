@@ -32,6 +32,9 @@ Options:
                     same as --mode runtime
   -d FILE, --diff FILE
                     set the path to diff file (default: ROOT/patches/ENGINE.diff) (*)
+  -q, --quiet
+                    do not write loggin information; useful with -i to print just
+                    the patching information
   -f, --force
                     force patching (*)
 
@@ -51,6 +54,7 @@ multiple_actions=
 
 otherfiles=
 save_originals=
+quiet=
 
 
 for option
@@ -81,6 +85,7 @@ do
     (--shared) mode=shared ;;
     (--runtime) mode=runtime ;;
     (--force|-f) force=yes ;;
+    (--quiet|-q) quiet=yes ;;
     (*)
       echo "ERROR: Unknown option $prefix_option. Use -h for help."
       exit
@@ -97,8 +102,8 @@ if [ -z "$action" ] ; then
   exit
 fi
 
-echo "PLUMED patching tool"
-echo
+test -n "$quiet" || echo "PLUMED patching tool"
+test -n "$quiet" || echo
 if [ -z "$PLUMED_ROOT" ]
 then
   echo "ERROR: I cannot find PLUMED"
@@ -136,14 +141,14 @@ fi
 
 if [ "$action" == new ]
 then
-  echo "Creating a new patch"
+  test -n "$quiet" || echo "Creating a new patch"
   if [[ -e "$PLUMED_ROOT"/patches/"$newpatch".diff ]] ; then
       echo "ERROR: patch $newpatch is already defined"
       exit
   fi
   touch "$PLUMED_ROOT"/patches/"$newpatch".diff
-  echo "Created file $PLUMED_ROOT/patches/$newpatch.diff"
-  echo "Also consider the possibility of adding a $PLUMED_ROOT/patches/$newpatch.config file"
+  test -n "$quiet" || echo "Created file $PLUMED_ROOT/patches/$newpatch.diff"
+  test -n "$quiet" || echo "Also consider the possibility of adding a $PLUMED_ROOT/patches/$newpatch.config file"
   exit
 fi
 
@@ -172,19 +177,19 @@ then
   test -d "$PLUMED_ROOT/patches/${engine}" && otherfiles="$PLUMED_ROOT/patches/${engine}/"
 fi
 
-echo "MD engine: $engine"
-echo "PLUMED location: $PLUMED_ROOT"
-echo "diff file: $diff"
+test -n "$quiet" || echo "MD engine: $engine"
+test -n "$quiet" || echo "PLUMED location: $PLUMED_ROOT"
+test -n "$quiet" || echo "diff file: $diff"
 
 if [ -f "$config" ]
 then
-  echo "sourcing config file: $config"
+  test -n "$quiet" || echo "sourcing config file: $config"
   source "$config"
 fi
 
 if [ -d "$otherfiles" ]
 then
-  echo "extra files located in: $otherfiles"
+  test -n "$quiet" || echo "extra files located in: $otherfiles"
 fi
 
 case "$mode" in
@@ -223,16 +228,16 @@ case "$action" in
       exit
     fi
     if type -t plumed_before_patch 1>/dev/null ; then
-      echo "Executing plumed_before_patch function"
+      test -n "$quiet" || echo "Executing plumed_before_patch function"
       plumed_before_patch
     fi
-    echo "Linking Plumed.h and Plumed.inc ($mode mode)"
+    test -n "$quiet" || echo "Linking Plumed.h and Plumed.inc ($mode mode)"
     ln -s "$PLUMED_ROOT/src/wrapper/Plumed.h"
     ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
     ln -s "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
 
     if [ -d "$diff" ]; then
-      echo "Patching with on-the-fly diff from stored originals"
+      test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
       PREPLUMED=$(cd $diff ; find . -name "*.preplumed" | sort)
       for bckfile in $PREPLUMED ; do
         file="${bckfile%.preplumed}"
@@ -244,17 +249,22 @@ case "$action" in
         fi
       done
     else
-      echo "Patching with stored diff"
+      test -n "$quiet" || echo "Patching with stored diff"
       bash "$diff"
     fi
     
     if type -t plumed_after_patch 1>/dev/null ; then
-      echo "Executing plumed_after_patch function"
+      test -n "$quiet" || echo "Executing plumed_after_patch function"
       plumed_after_patch
     fi
   ;;
   (info)
-    plumed_patch_info 
+    if type -t plumed_patch_info 1>/dev/null ; then
+      test -n "$quiet" || echo "Executing plumed_patch_info function"
+      plumed_patch_info
+    else
+      echo "No special info for this MD engine"
+    fi
   ;;
   (save)
     if [ ! -L Plumed.h -o ! -L Plumed.inc ]
@@ -277,9 +287,9 @@ case "$action" in
       exit
       fi
     fi
-    echo "Saving your changes to $diff"
-    echo "Preplumed files:"
-    echo "$PREPLUMED"
+    test -n "$quiet" || echo "Saving your changes to $diff"
+    test -n "$quiet" || echo "Preplumed files:"
+    test -n "$quiet" || echo "$PREPLUMED"
     if [ -d "$diff" ] && [ -z "$save_originals" ]; then
       echo "This patch uses the dir format (originals are saved)"
       echo "Are you sure you want to save the single diff?"
@@ -296,10 +306,10 @@ case "$action" in
         fi
       done
       if [ "$answer" = originals ] ; then
-        echo "saving originals"
+        test -n "$quiet" || echo "saving originals"
         save_originals=yes
       else
-        echo "saving single diff file"
+        test -n "$quiet" || echo "saving single diff file"
       fi
     fi
     test -e "$diff" && rm -r "$diff"
@@ -334,21 +344,21 @@ EOF
       exit
     fi
     if type -t plumed_before_revert 1>/dev/null ; then
-      echo "Executing plumed_before_revert function"
+      test -n "$quiet" || echo "Executing plumed_before_revert function"
       plumed_before_revert
     fi
     if [ ! -L Plumed.h -o ! -L Plumed.inc ]
     then
       echo "WARNING: I cannot find Plumed.h and Plumed.inc files. You have likely not patched yet."
     else
-    echo "Removing Plumed.h and Plumed.inc"
+    test -n "$quiet" || echo "Removing Plumed.h and Plumed.inc"
       rm Plumed.h Plumed.inc Plumed.cmake
     fi
     PREPLUMED=$(find . -name "*.preplumed")
     if ! test "$PREPLUMED" ; then
       echo "No .preplumed file found, nothing to restore."
     else
-      echo "Reverting changes and touching reverted files"
+      test -n "$quiet" || echo "Reverting changes and touching reverted files"
       for bckfile in $PREPLUMED ; do
         file="${bckfile%.preplumed}"
         mv "$bckfile" "$file"
@@ -356,7 +366,7 @@ EOF
       done
     fi
     if type -t plumed_after_revert 1>/dev/null ; then
-      echo "Executing plumed_after_revert function"
+      test -n "$quiet" || echo "Executing plumed_after_revert function"
       plumed_after_revert
     fi
 esac
