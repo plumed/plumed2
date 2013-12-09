@@ -9,7 +9,8 @@ Changes from version 2.0 which are relevant for users:
 - Added ACCELERATION to \ref METAD, allowing to calculate on the fly the Metadynamics acceleration factor.
 - Added option PRECISION to set number of digits in \ref DUMPATOMS.
 - Added NDX_FILE and NDX_GROUP to action \ref GROUP, allowing to import atom lists from ndx files.
-- Several optimizations in the following actions: \ref WHOLEMOLECULES, ...
+- Small optimization in \ref WHOLEMOLECULES
+- Small optimization in \ref COORDINATION when NN and MM are even and D_0=0
 - Faster atom scattering with domain decomposition.
 - \ref SPRINT topological collective variables.
 - \ref CH3SHIFTS collective variable.
@@ -31,5 +32,7 @@ Changes from version 2.0 which are relevant for developers:
   original code so as to simplify their modification.
 - Fixed dependencies among actions such that it is now possible (and reliable)
   to use MPI calls inside Action::prepare()
+- colvar/CoordinationBase.cpp has been changed to make it faster. If you devised a class which inherits from here,
+  consider that CoordinationBase::pairing now needs _squared_ distance instead of distance
 
 */
