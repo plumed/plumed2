@@ -699,6 +699,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   if(fp_forces) fclose(fp_forces);
   if(fp && fp!=in)fclose(fp);
+#ifdef __PLUMED_HAS_MOLFILE
+  if(h_in) api->close_file_read(h_in);
+#endif
   if(grex_log) fclose(grex_log);
   
   return 0;
