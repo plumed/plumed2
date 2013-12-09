@@ -56,7 +56,6 @@ otherfiles=
 save_originals=
 quiet=
 
-
 for option
 do
 
