@@ -41,7 +41,9 @@ class SwitchingFunction{
   enum {spline,exponential,gaussian,smap} type;
   int nn,mm,a,b;
   double invr0,d0,dmax,c,d;
+  double invr0_2,dmax_2;
   double stretch,shift;
+  double do_rational(double rdist,double&dfunc,int nn,int mm)const;
 public:
   static void registerKeywords( Keywords& keys );
   SwitchingFunction();
@@ -49,6 +51,7 @@ public:
   void set(const std::string& definition, std::string& errormsg);
   std::string description() const ;
   double calculate(double x,double&df)const;
+  double calculateSqr(double distance2,double&dfunc)const;
   double get_d0() const;
   double get_r0() const;
 };
