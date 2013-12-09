@@ -37,8 +37,29 @@ Calculate an angle.
 
 This command can be used to compute the angle between three atoms. Alternatively
 if four atoms appear in the atom
-specification it calculates the angle between the vector joining atoms 1 and 2 and that joining
-atoms 3 and 4.
+specification it calculates the angle between
+two vectors identified by two pairs of atoms.
+
+If _three_ atoms are given, the angle is defined as:
+\f[
+\theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{23}}{
+|{\bf r}_{21}| |{\bf r}_{23}|}\right)
+\f]
+Here \f$ {\bf r}_{ij}\f$ is the distance vector among the
+i-th and the j-th listed atom.
+
+If _four_ atoms are given, the angle is defined as:
+\f[
+\theta=\arccos\left(\frac{ {\bf r}_{21}\cdot {\bf r}_{34}}{
+|{\bf r}_{21}| |{\bf r}_{34}|}\right)
+\f]
+
+Notice that angles defined in this way are non-periodic variables and
+their value is limited by definition between 0 and \f$\pi\f$.
+
+The vectors \f$ {\bf r}_{ij}\f$ are by default evaluated taking
+periodic boundary conditions into account.
+This behavior can be changed with the NOPBC flag.
 
 \par Examples
 
@@ -58,6 +79,7 @@ PRINT ARG=a FILE=COLVAR1
 PRINT ARG=b FILE=COLVAR2
 \endverbatim
 (see also \ref PRINT)
+
 
 */
 //+ENDPLUMEDOC

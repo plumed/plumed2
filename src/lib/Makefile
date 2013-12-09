@@ -52,7 +52,7 @@ PLUMED_MAIN_STATIC=$(PLUMED_LIBDIR)plumed
 PLUMED_MAIN_SHARED=$(PLUMED_LIBDIR)plumed-shared
 PLUMED_MAIN_RUNTIME=$(PLUMED_LIBDIR)plumed-runtime
 
-.PHONY: all dirs $(DIRS) all-static
+.PHONY: all dirs $(DIRS) all-static Plumed.cmake Plumed.inc
 ifdef SOEXT
 all:
 	@echo First making other dirs $(DIRS)
