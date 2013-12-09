@@ -23,7 +23,7 @@ do
    echo "- \subpage $mytag" >> automatic/codes.list
    echo "/**" >> automatic/$myengine.txt
    echo "\page $mytag $myengine" >> automatic/$myengine.txt
-   plumed patch -e $myengine -i | grep -v "PLUMED patching tool" | grep -v "PLUMED location:" | grep -v "extra files located in:" | grep -v "MD engine:" | grep -v "diff file:" | grep -v "sourcing config file:" >> automatic/$myengine.txt
+   plumed patch -e $myengine -i -q >> automatic/$myengine.txt
    echo "*/" >> automatic/$myengine.txt 
 done
 
