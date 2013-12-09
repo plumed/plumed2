@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -67,8 +67,8 @@ public:
   static void registerKeywords( Keywords& keys );
   Bridge(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j );
-/// Returns the number of coordinates of the field
+  virtual double compute();
+  void doJobsRequiredBeforeTaskList();
   void calculateWeight();
   bool isPeriodic(){ return false; }
   Vector getCentralAtom();
@@ -121,7 +121,6 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
   // And setup the ActionWithVessel
-  readVesselKeywords();
   if( getNumberOfVessels()!=0 ) error("should not have vessels for this action");
   std::string fake_input;
   addVessel( "SUM", fake_input, -1 );  // -1 here means that this value will be named getLabel()
@@ -130,31 +129,38 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
+void Bridge::doJobsRequiredBeforeTaskList(){
+  // Do jobs required by action with vessel
+  ActionWithVessel::doJobsRequiredBeforeTaskList();
+  // First step of update of three body neighbor list
+  threeBodyNeighborList( sf1 );
+}
+
 void Bridge::calculateWeight(){
-  Vector dij=getSeparation( getPosition(1), getPosition(0) );
+  Vector dij=getSeparation( getPosition(0), getPosition(1) );
   double dw, w=sf1.calculate( dij.modulo(), dw );
   setWeight( w );
 
   if( w<getTolerance() ) return; 
-  addAtomsDerivativeOfWeight( 1, -dw*dij );
-  addAtomsDerivativeOfWeight( 0, dw*dij );
+  addAtomsDerivativeOfWeight( 0, -dw*dij );
+  addAtomsDerivativeOfWeight( 1, dw*dij );
   addBoxDerivativesOfWeight( (-dw)*Tensor(dij,dij) );
 }
 
-double Bridge::compute( const unsigned& j ){
-  Vector dik=getSeparation( getPosition(1), getPosition(2) );
+double Bridge::compute(){
+  Vector dik=getSeparation( getPosition(0), getPosition(2) );
   double dw, w=sf2.calculate( dik.modulo(), dw );
 
   // And finish the calculation
-  addAtomsDerivatives( 1, -dw*dik );
+  addAtomsDerivatives( 0, -dw*dik );
   addAtomsDerivatives( 2,  dw*dik );
   addBoxDerivatives( (-dw)*Tensor(dik,dik) );
   return w;
 }
 
 Vector Bridge::getCentralAtom(){
-   addCentralAtomDerivatives( 1, Tensor::identity() );
-   return getPosition(1);
+   addCentralAtomDerivatives( 0, Tensor::identity() );
+   return getPosition(0);
 }
 
 }

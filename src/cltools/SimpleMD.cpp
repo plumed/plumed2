@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -429,6 +429,7 @@ int main(FILE* in,FILE*out,PLMD::Communicator& pc){
   int         maxneighbour;      // maximum average number of neighbours per atom
   int         ndim;              // dimensionality of the system (1, 2, or 3)
   int         idum;              // seed
+  int         plumedWantsToStop; // stop flag
   bool        wrapatoms;         // if true, atomic coordinates are written wrapped in minimal cell
   string      inputfile;         // name of file with starting configuration (xyz)
   string      outputfile;        // name of file with final configuration (xyz)
@@ -498,7 +499,7 @@ int main(FILE* in,FILE*out,PLMD::Communicator& pc){
   list.resize(listsize);
 
 // masses are hard-coded to 1
-  for(unsigned i=0;i<natoms;++i) masses[i]=1.0; 
+  for(int i=0;i<natoms;++i) masses[i]=1.0; 
 
 // energy integral initialized to 0
   engint=0.0;
@@ -564,6 +565,7 @@ int main(FILE* in,FILE*out,PLMD::Communicator& pc){
 
     if(plumed){
       int istepplusone=istep+1;
+      plumedWantsToStop=0;
       for(int i=0;i<3;i++)for(int k=0;k<3;k++) cell9[i][k]=0.0;
       for(int i=0;i<3;i++) cell9[i][i]=cell[i];
       plumed->cmd("setStep",&istepplusone);
@@ -572,7 +574,9 @@ int main(FILE* in,FILE*out,PLMD::Communicator& pc){
       plumed->cmd("setEnergy",&engconf);
       plumed->cmd("setPositions",&positions[0]);
       plumed->cmd("setBox",cell9);
+      plumed->cmd("setStopFlag",&plumedWantsToStop);
       plumed->cmd("calc");
+      if(plumedWantsToStop) nstep=istep;
     }
 // remove forces if ndim<3
    if(ndim<3)

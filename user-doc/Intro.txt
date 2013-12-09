@@ -1,6 +1,9 @@
 /**
 \mainpage Introduction
 
+\warning This is the manual for the development version of PLUMED. It might
+contain buggy code. See this page: \ref CHANGES-UNRELEASED
+
 PLUMED is a plugin that works with a large number of molecular dynamics codes.  It can be used
 to analyse features of the dynamics on-the-fly or to perform a wide variety of free energy methods.
 The original PLUMED 1 was highly successful and had over 1000 users.  PLUMED 2 \cite plumed2 constitues an 
@@ -72,7 +75,10 @@ PRINT ARG=d1 FILE=colvar STRIDE=10
 (see \ref PRINT)
 
 then PLUMED will print out the value of the distance between atoms 1 and 2 every 10 steps to the file colvar as you have told
-PLUMED to take the value calculated by the action d1 and to print it.  
+PLUMED to take the value calculated by the action d1 and to print it. You can use any character string to label your actions
+as long as it does not begin with the symbol @.  Strings beginning with @ are used by within PLUMED to reference special, 
+code-generated groups of atoms and to give labels to any Actions for which the user does not provide a label in the input. 
+
 Notice that if a word followed by a column is added at the beginning of the line (e.g. pippo:), PLUMED automatically
 removes it and adds an equivalent label (LABEL=pippo).
 Thus, a completely equivalent result can be obtained with the following shortcut:

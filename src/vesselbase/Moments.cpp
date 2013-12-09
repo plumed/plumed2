@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -19,18 +19,18 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "vesselbase/VesselRegister.h"
-#include "StoreColvarVessel.h"
-#include "vesselbase/ActionWithVessel.h"
+#include "VesselRegister.h"
+#include "StoreValueVessel.h"
+#include "ActionWithVessel.h"
 
 namespace PLMD {
-namespace multicolvar{
+namespace vesselbase{
 
 // This is the most efficient implementation 
 // The calculation of all the colvars is parallelized 
 // but the loops for calculating moments are not
 // Feel free to reimplement this if you know how
-class Moments : public StoreColvarVessel {
+class Moments : public StoreValueVessel {
 private:
   std::vector<unsigned> powers;
   std::vector<Value*> value_out;
@@ -39,15 +39,15 @@ public:
   static void reserveKeyword( Keywords& keys );
   Moments( const vesselbase::VesselOptions& da );
   std::string description();
-  void performCalculationUsingAllValues();
-  void local_resizing();
+  void resize();
+  void finish();
   bool applyForce( std::vector<double>& forces );
 };
 
 PLUMED_REGISTER_VESSEL(Moments,"MOMENTS")
 
 void Moments::registerKeywords( Keywords& keys ){
-  StoreColvarVessel::registerKeywords( keys );
+  StoreValueVessel::registerKeywords( keys );
 }
 
 void Moments::reserveKeyword( Keywords& keys ){
@@ -58,11 +58,10 @@ void Moments::reserveKeyword( Keywords& keys ){
 }
 
 Moments::Moments( const vesselbase::VesselOptions& da) :
-StoreColvarVessel(da)
+StoreValueVessel(da)
 {
    ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
    plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
-   plumed_massert(!diffweight,"cannot do weighted moments properly");
 
    std::vector<std::string> moments=Tools::getWords(getAllInput(),"\t\n ,"); 
    Tools::interpretRanges(moments); unsigned nn;
@@ -76,7 +75,8 @@ StoreColvarVessel(da)
    }
 }
 
-void Moments::local_resizing(){
+void Moments::resize(){
+   StoreDataVessel::resize();
    unsigned nder=getAction()->getNumberOfDerivatives();
    for(unsigned i=0;i<value_out.size();++i) value_out[i]->resizeDerivatives( nder );
 }
@@ -92,9 +92,11 @@ std::string Moments::description(){
    return descri;
 }
 
-void Moments::performCalculationUsingAllValues(){
+void Moments::finish(){
+  StoreDataVessel::finish();
+
   const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
-  unsigned nvals=getNumberOfStoredColvars(); 
+  unsigned nvals=getAction()->getFullNumberOfTasks(); 
 
   double mean=0; Value myvalue;
   if( getAction()->isPeriodic() ){
@@ -115,12 +117,17 @@ void Moments::performCalculationUsingAllValues(){
      for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, getValue(i) ), powers[npow] - 1 ); 
      dev1/=static_cast<double>( nvals );
 
-     double pref, tmp, moment=0; 
+     std::vector<double> pref(1); double tmp, moment=0; 
      for(unsigned i=0;i<nvals;++i){
          tmp=myvalue.difference( mean, getValue(i) );
-         pref=pow( tmp, powers[npow] - 1 ) - dev1;
+         pref[0]=pow( tmp, powers[npow] - 1 ) - dev1;
          moment+=pow( tmp, powers[npow] );
-         addDerivatives( i, pref, value_out[npow] );
+         if( usingLowMem() ){
+            recompute( i, 0 ); // Not very efficient 
+            chainRule( 0, pref, value_out[npow] );
+         } else {
+            chainRule( i, pref, value_out[npow] );
+         }
      }
      value_out[npow]->chainRule( powers[npow] / static_cast<double>( nvals ) );
      value_out[npow]->set( moment / static_cast<double>( nvals ) ); 

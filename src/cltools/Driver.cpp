@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -478,8 +478,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
           start[i+1]=start[i]+loc[i];
         }
         loc[npe-1]=natoms-start[npe-1];
-        intracomm.Bcast(&loc[0],npe,0);
-        intracomm.Bcast(&start[0],npe,0);
+        intracomm.Bcast(loc,0);
+        intracomm.Bcast(start,0);
         pd_nlocal=loc[intracomm.Get_rank()];
         pd_start=start[intracomm.Get_rank()];
         if(intracomm.Get_rank()==0){
@@ -648,8 +648,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
    p.cmd("calc");
 
 // this is necessary as only processor zero is adding to the virial:
-   intracomm.Bcast(&virial[0],9,0);
-   if(debug_pd) intracomm.Sum(&forces[0],natoms*3);
+   intracomm.Bcast(virial,0);
+   if(debug_pd) intracomm.Sum(forces);
    if(debug_dd){
      for(int i=0;i<dd_nlocal;i++){
        forces[3*dd_gatindex[i]+0]=dd_forces[3*i+0];
@@ -657,7 +657,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        forces[3*dd_gatindex[i]+2]=dd_forces[3*i+2];
      }
      dd_forces.assign(3*natoms,0.0);
-     intracomm.Sum(&forces[0],natoms*3);
+     intracomm.Sum(forces);
    }
    if(debug_grex &&step%grex_stride==0){
      p.cmd("GREX savePositions");

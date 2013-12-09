@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -69,6 +69,7 @@ class Atoms
   bool boxHasBeenSet;
   unsigned forcesHaveBeenSet;
   bool virialHasBeenSet;
+  bool massAndChargeOK;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 
@@ -194,7 +195,6 @@ public:
   bool usingNaturalUnits()const;
   void setNaturalUnits(bool n){naturalUnits=n;}
   void setMDNaturalUnits(bool n){MDnaturalUnits=n;}
-  Vector & modifyPosition(AtomNumber i){ return positions[i.index()];}
 };
 
 inline
@@ -204,7 +204,7 @@ const int & Atoms::getNatoms()const{
 
 inline
 bool Atoms::isVirtualAtom(AtomNumber i)const{
-  return i.index()>=getNatoms();
+  return i.index()>=(unsigned) getNatoms();
 }
 
 inline

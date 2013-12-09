@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -37,6 +37,8 @@ Communicator::Communicator()
 Communicator::Communicator(const Communicator&pc){
   Set_comm(pc.communicator);
 }
+
+Communicator::Status Communicator::StatusIgnore;
 
 Communicator& Communicator::operator=(const Communicator&pc){
   if (this != &pc){
@@ -121,6 +123,88 @@ void Communicator::Abort(int errorcode){
 #endif
 }
 
+void Communicator::Bcast(Data data,int root){
+#if defined(__PLUMED_MPI)
+  if(initialized()) MPI_Bcast(data.pointer,data.size,data.type,root,communicator);
+#else
+  (void) data;
+  (void) root;
+#endif
+}
+
+void Communicator::Sum(Data data){
+#if defined(__PLUMED_MPI)
+  if(initialized()) MPI_Allreduce(MPI_IN_PLACE,data.pointer,data.size,data.type,MPI_SUM,communicator);
+#else
+  (void) data;
+#endif
+}
+
+Communicator::Request Communicator::Isend(ConstData data,int source,int tag){
+  Request req;
+#ifdef __PLUMED_MPI
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
+  void*s=const_cast<void*>((const void*)data.pointer);
+  MPI_Isend(s,data.size,data.type,source,tag,communicator,&req.r);
+#else
+  (void) data;
+  (void) source;
+  (void) tag;
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
+#endif
+  return req;
+}
+
+void Communicator::Allgatherv(ConstData in,Data out,const int*recvcounts,const int*displs){
+#if defined(__PLUMED_MPI)
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
+  void*s=const_cast<void*>((const void*)in.pointer);
+  void*r=const_cast<void*>((const void*)out.pointer);
+  int*rc=const_cast<int*>(recvcounts);
+  int*di=const_cast<int*>(displs);
+  if(s==NULL)s=MPI_IN_PLACE;
+  MPI_Allgatherv(s,in.size,in.type,r,rc,di,out.type,communicator);
+#else
+  (void) in;
+  (void) out;
+  (void) recvcounts;
+  (void) displs;
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
+#endif
+}
+
+void Communicator::Allgather(ConstData in,Data out){
+#if defined(__PLUMED_MPI)
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
+  void*s=const_cast<void*>((const void*)in.pointer);
+  void*r=const_cast<void*>((const void*)out.pointer);
+  if(s==NULL)s=MPI_IN_PLACE;
+  MPI_Allgather(s,in.size,in.type,r,out.size/Get_size(),out.type,communicator);
+#else
+  (void) in;
+  (void) out;
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
+#endif
+}
+
+void Communicator::Recv(Data data,int source,int tag,Status&status){
+#ifdef __PLUMED_MPI
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
+  if(&status==&StatusIgnore) MPI_Recv(data.pointer,data.size,data.type,source,tag,communicator,MPI_STATUS_IGNORE);
+  else                       MPI_Recv(data.pointer,data.size,data.type,source,tag,communicator,&status.s);
+#else
+  (void) data;
+  (void) source;
+  (void) tag;
+  (void) status;
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
+#endif
+}
+
+
+
+
+
 void Communicator::Barrier()const{
 #ifdef __PLUMED_MPI
   if(initialized()) MPI_Barrier(communicator);
@@ -140,19 +224,11 @@ bool Communicator::initialized(){
   else return false;
 }
 
-void Communicator::Request::wait(){
-#ifdef __PLUMED_MPI
- plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
-  MPI_Wait(&r,MPI_STATUS_IGNORE);
-#else
-  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
-#endif
-}
-
 void Communicator::Request::wait(Status&s){
 #ifdef __PLUMED_MPI
  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
-  MPI_Wait(&r,&s.s);
+  if(&s==&StatusIgnore) MPI_Wait(&r,MPI_STATUS_IGNORE);
+  else MPI_Wait(&r,&s.s);
 #else
   (void) s;
   plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
@@ -166,6 +242,13 @@ template<> MPI_Datatype Communicator::getMPIType<int>()   { return MPI_INT;}
 template<> MPI_Datatype Communicator::getMPIType<char>()   { return MPI_CHAR;}
 template<> MPI_Datatype Communicator::getMPIType<unsigned>()   { return MPI_UNSIGNED;}
 template<> MPI_Datatype Communicator::getMPIType<long unsigned>()   { return MPI_UNSIGNED_LONG;}
+#else
+template<> MPI_Datatype Communicator::getMPIType<float>(){ return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<double>(){ return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<int>(){ return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<char>(){ return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<unsigned>(){ return MPI_Datatype();}
+template<> MPI_Datatype Communicator::getMPIType<long unsigned>(){ return MPI_Datatype();}
 #endif
 
 
@@ -173,8 +256,23 @@ void Communicator::Split(int color,int key,Communicator&pc)const{
 #ifdef __PLUMED_MPI
   MPI_Comm_split(communicator,color,key,&pc.communicator);
 #else
+  (void) color;
+  (void) key;
+  (void) pc;
   plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
 #endif
+}
+
+int Communicator::Status::Get_count(MPI_Datatype type)const{
+  int i;
+#ifdef __PLUMED_MPI
+  plumed_massert(initialized(),"you are trying to use an MPI function, but MPI is not initialized");
+  MPI_Get_count(const_cast<MPI_Status*>(&s),type,&i);
+#else
+  i=0;
+  plumed_merror("you are trying to use an MPI function, but PLUMED has been compiled without MPI support");
+#endif
+  return i;
 }
 
 }

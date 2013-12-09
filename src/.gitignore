@@ -9,6 +9,7 @@
 !/colvar
 !/config
 !/core
+!/crystallization
 !/function
 !/generic
 !/header.sh

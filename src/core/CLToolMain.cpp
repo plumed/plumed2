@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -128,6 +128,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       return (config::hasDlopen()?0:1);
     } else if(a=="--has-molfile"){
       return (config::hasMolfile()?0:1);
+    } else if(a=="--is-installed"){
+      return (config::isInstalled()?0:1);
     } else if(a=="--no-mpi"){
 // this is ignored, as it is parsed in main
       if(i>1){
@@ -186,6 +188,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
         "  plumed [command] -h|--help: to print help for a specific command\n"
         "Options:\n"
         "  [help|-h|--help]          : to print this help\n"
+        "  [--is-installed]          : fails if plumed is not installed\n"
         "  [--has-mpi]               : fails if plumed is running without MPI\n"
         "  [--has-matheval]          : fails if plumed is compiled without matheval\n"
         "  [--has-almost]            : fails if plumed is compiled without almost\n"

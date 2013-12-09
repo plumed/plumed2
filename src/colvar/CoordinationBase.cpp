@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -108,7 +108,6 @@ CoordinationBase::~CoordinationBase(){
 
 void CoordinationBase::prepare(){
   if(nl->getStride()>0){
-    if(getExchangeStep()) error("Neighbor lists for this collective variable are not compatible with replica exchange, sorry for that!");
     if(firsttime || (getStep()%nl->getStride()==0)){
       requestAtoms(nl->getFullAtomList());
       invalidateList=true;
@@ -118,6 +117,7 @@ void CoordinationBase::prepare(){
       invalidateList=false;
       if(getExchangeStep()) error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
     }
+    if(getExchangeStep()) firsttime=true;
   }
 }
 
@@ -164,9 +164,9 @@ void CoordinationBase::calculate()
  }
 
  if(!serial){
-   comm.Sum(&ncoord,1);
+   comm.Sum(ncoord);
    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
-   comm.Sum(&virial[0][0],9);
+   comm.Sum(virial);
  }
 
  for(unsigned i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);

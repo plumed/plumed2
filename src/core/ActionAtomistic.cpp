@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -22,6 +22,7 @@
 #include "ActionAtomistic.h"
 #include "PlumedMain.h"
 #include "ActionSet.h"
+#include "SetupMolInfo.h"
 #include <vector>
 #include <string>
 #include "ActionWithValue.h"
@@ -45,6 +46,8 @@ ActionAtomistic::ActionAtomistic(const ActionOptions&ao):
 Action(ao),
 pbc(*new(Pbc)),
 lockRequestAtoms(false),
+donotretrieve(false),
+donotforce(false),
 atoms(plumed.getAtoms())
 {
   atoms.add(this);
@@ -84,6 +87,10 @@ void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
   calculateAtomicNumericalDerivatives( a, 0 );
 }
 
+void ActionAtomistic::changeBox( const Tensor& newbox ){
+  pbc.setBox( newbox );
+}
+
 void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, const unsigned& startnum ){
   if(!a){
     a=dynamic_cast<ActionWithValue*>(this);
@@ -102,7 +109,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
     positions[i][k]=positions[i][k]+delta;
     a->calculate();
     positions[i][k]=savedPositions[i][k];
-    for(unsigned j=0;j<nval;j++){
+    for(int j=0;j<nval;j++){
       value[j*natoms+i][k]=a->getOutputQuantity(j);
     }
   }
@@ -116,12 +123,12 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
    box(i,k)=arg0;
    pbc.setBox(box);
    for(int j=0;j<natoms;j++) positions[j]=savedPositions[j];
-   for(unsigned j=0;j<nval;j++) valuebox[j](i,k)=a->getOutputQuantity(j);
+   for(int j=0;j<nval;j++) valuebox[j](i,k)=a->getOutputQuantity(j);
  }
 
   a->calculate();
   a->clearDerivatives();
-  for(unsigned j=0;j<nval;j++){
+  for(int j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
     double ref=v->get();
     if(v->hasDerivatives()){
@@ -158,6 +165,18 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
    AtomNumber atom;
    ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
    if(ok) t.push_back(atom);
+// here we check if this is a special symbol for MOLINFO
+   if( !ok && strings[i].compare(0,1,"@")==0 ){
+      std::size_t dot=strings[i].find_first_of("@"); std::string symbol=strings[i].substr(dot+1);
+      vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
+      if( moldat.size()>0 ){
+          vector<AtomNumber> atom_list; moldat[0]->interpretSymbol( symbol, atom_list );
+          if( atom_list.size()>0 ){ ok=true; t.insert(t.end(),atom_list.begin(),atom_list.end()); }
+          else { error(strings[i] + " is not a label plumed knows"); }
+      } else {
+          error("atoms specified using @ symbol but no MOLINFO was available");
+      }
+   }
 // here we check if the atom name is the name of a group
    if(!ok){
      if(atoms.groups.count(strings[i])){
@@ -178,7 +197,8 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
        }
      }
    }
-   plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
+   if(!ok) error("it was not possible to interpret atom name " + strings[i]);
+   // plumed_massert(ok,"it was not possible to interpret atom name " + strings[i]);
   }
 } 
 
@@ -186,6 +206,9 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
 void ActionAtomistic::retrieveAtoms(){
   box=atoms.box;
   pbc=atoms.pbc;
+  Colvar*cc=dynamic_cast<Colvar*>(this);
+  if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
+  if(donotretrieve) return;
   chargesWereSet=atoms.chargesWereSet();
   const vector<Vector> & p(atoms.positions);
   const vector<double> & c(atoms.charges);
@@ -193,11 +216,10 @@ void ActionAtomistic::retrieveAtoms(){
   for(unsigned j=0;j<indexes.size();j++) positions[j]=p[indexes[j].index()];
   for(unsigned j=0;j<indexes.size();j++) charges[j]=c[indexes[j].index()];
   for(unsigned j=0;j<indexes.size();j++) masses[j]=m[indexes[j].index()];
-  Colvar*cc=dynamic_cast<Colvar*>(this);
-  if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
 }
 
 void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply, unsigned ind ){
+  if(donotforce) return;
   for(unsigned i=0;i<indexes.size();++i){ 
     forces[i][0]=forcesToApply[ind]; ind++; 
     forces[i][1]=forcesToApply[ind]; ind++;
@@ -216,12 +238,20 @@ void ActionAtomistic::setForcesOnAtoms( const std::vector<double>& forcesToApply
 }
 
 void ActionAtomistic::applyForces(){
+  if(donotforce) return;
   vector<Vector>   & f(atoms.forces);
   Tensor           & v(atoms.virial);
   for(unsigned j=0;j<indexes.size();j++) f[indexes[j].index()]+=forces[j];
   v+=virial;
   atoms.forceOnEnergy+=forceOnEnergy;
 }
+
+void ActionAtomistic::clearOutputForces(){
+  if(donotforce) return;
+  for(unsigned i=0;i<forces.size();++i)forces[i].zero();
+  forceOnEnergy=0.0;
+}
+
 
 void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ){
   Colvar*cc=dynamic_cast<Colvar*>(this);

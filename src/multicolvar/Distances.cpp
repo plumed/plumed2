@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -80,7 +80,7 @@ public:
   static void registerKeywords( Keywords& keys );
   Distances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j );
+  virtual double compute();
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
   Vector getCentralAtom();
@@ -91,7 +91,7 @@ PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 void Distances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   keys.use("ATOMS"); 
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); keys.use("DHENERGY");
+  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); keys.use("DHENERGY");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
@@ -105,13 +105,11 @@ PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
-  // And setup the ActionWithVessel
-  readVesselKeywords();          
   // And check everything has been read in correctly
   checkRead();
 }
 
-double Distances::compute( const unsigned& j ){
+double Distances::compute(){
    Vector distance; 
    distance=getSeparation( getPosition(0), getPosition(1) );
    const double value=distance.modulo();

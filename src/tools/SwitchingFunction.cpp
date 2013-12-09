@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -87,6 +87,19 @@ s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)\right]^{-b/a}
 
 For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
 keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function can be assumed equal to zero. 
+In this case it is suggested to also use the STRETCH flag, which will bring the swtiching function
+smoothly to zero by stretching and shifting it. To be more clear, using
+\verbatim
+KEYWORD={RATIONAL R_0=1 D_MAX=3 STRETCH}
+\endverbatim
+the resulting switching function will be
+\f$
+s(r) = \frac{s'(r)-s'(d_{max})}{s'(0)-s'(d_{max})}
+\f$
+where
+\f$
+s'(r)=\frac{1-r^6}{1-r^{12}}
+\f$
 */
 //+ENDPLUMEDOC
 
@@ -108,6 +121,8 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   invr0=0.0;
   d0=0.0;
   dmax=std::numeric_limits<double>::max();
+  stretch=1.0;
+  shift=0.0;
   init=true;
 
   double r0;
@@ -116,6 +131,8 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   invr0=1.0/r0;
   Tools::parse(data,"D_0",d0);
   Tools::parse(data,"D_MAX",dmax);
+  bool dostretch=false;
+  Tools::parseFlag(data,"STRETCH",dostretch);
 
   if(name=="RATIONAL"){
     type=spline;
@@ -135,6 +152,14 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   if( !data.empty() ){
       errormsg="found the following rogue keywords in switching function input : ";
       for(unsigned i=0;i<data.size();++i) errormsg = errormsg + data[i] + " "; 
+  }
+
+  if(dostretch){
+    double dummy;
+    double s0=calculate(0.0,dummy);
+    double sd=calculate(dmax,dummy);
+    stretch=1.0/(s0-sd);
+    shift=-sd*stretch;
   }
 }
 
@@ -211,6 +236,10 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
 // (I think this is misleading and I would like to modify it - GB)
     dfunc/=distance;
   }
+
+  result=result*stretch+shift;
+  dfunc*=stretch;
+
   return result;
 }
 
@@ -221,7 +250,9 @@ SwitchingFunction::SwitchingFunction():
   mm(12),
   invr0(0.0),
   d0(0.0),
-  dmax(0.0)
+  dmax(0.0),
+  stretch(1.0),
+  shift(0.0)
 {
 }
 

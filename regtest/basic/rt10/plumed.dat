@@ -11,5 +11,14 @@ PRINT ...
 
 FLUSH STRIDE=100
 
+# this is to test ranges:
+# should expand to 10,12,14,16:
+t1: TORSION ATOMS=10-17:2
+# these two should give two opposite vectors
+d1:  DISTANCE ATOMS=10-15:5 COMPONENTS
+d2:  DISTANCE ATOMS=15-10:-5 COMPONENTS
+
+PRINT ARG=t1,d1.x,d2.x FILE=ranges
+
 ENDPLUMED
 

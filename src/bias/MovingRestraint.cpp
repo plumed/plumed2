@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -166,7 +166,7 @@ verse(getNumberOfArguments())
   // add the centers of the restraint as additional components that can be retrieved (useful for debug)
 
   std::string comp;
-  for(int i=0;i< getNumberOfArguments() ;i++){
+  for(unsigned i=0;i< getNumberOfArguments() ;i++){
 	comp=getPntrToArgument(i)->getName()+"_cntr"; // each spring has its own center 
         addComponent(comp); componentIsNotPeriodic(comp);
 	comp=getPntrToArgument(i)->getName()+"_work"; // each spring has its own work

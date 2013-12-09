@@ -1,0 +1,14 @@
+# NOTICE: this test will not work with neighbor lists because they are not compatible with repl ex
+c: COORDINATION GROUPA=1 GROUPB=2  NLIST NL_STRIDE=2 NL_CUTOFF=2.0 SWITCH={RATIONAL  R_0=0.5 D_0=1.5 D_MAX=2.0}
+c2: COORDINATION GROUPA=1 GROUPB=2  SWITCH={RATIONAL  R_0=0.5 D_0=1.5 D_MAX=2.0}
+
+RESTRAINT ARG=c AT=0 SLOPE=1
+
+PRINT ...
+  STRIDE=1
+  ARG=c,c2
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+ENDPLUMED
+
