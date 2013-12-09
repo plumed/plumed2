@@ -166,7 +166,7 @@ void ContactMap::calculate(){
       }
 
       double dfunc=0.;
-      coord = sfs[i].calculate(distance.modulo(), dfunc);
+      coord = sfs[i].calculateSqr(distance.modulo2(), dfunc);
       if( !dosum ) {
          Value* val=getPntrToComponent( i );
          setAtomsDerivatives( val, i0, (-dfunc)*distance );

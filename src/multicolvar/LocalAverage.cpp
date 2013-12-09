@@ -111,7 +111,7 @@ double LocalAverage::compute(){
   accumulateWeightedAverageAndDerivatives( 0, 1.0 );
   for(unsigned i=1;i<getNAtoms();++i){
      distance=getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(i) );
-     sw = switchingFunction.calculate( distance.modulo(), dfunc );
+     sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
      if( sw>=getTolerance() ){
          Tensor vir(distance,distance); 
          getValueForBaseTask( i, values ); 

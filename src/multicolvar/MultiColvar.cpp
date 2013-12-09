@@ -336,7 +336,7 @@ void MultiColvar::threeBodyNeighborList( const SwitchingFunction& sf ){
           if( (ik++)%stride!=rank ) continue;
           
           dij=getSeparation( ActionAtomistic::getPosition(ablocks[0][i]), ActionAtomistic::getPosition(ablocks[1][j]) );
-          w = sf.calculate( dij.modulo(), dw );
+          w = sf.calculateSqr( dij.modulo2(), dw );
           if( w<getNLTolerance() ){
               // Deactivate all tasks involving i and j
               for(unsigned k=0;k<getCurrentNumberOfActiveTasks();++k){

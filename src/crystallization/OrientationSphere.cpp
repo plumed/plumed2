@@ -90,7 +90,7 @@ double OrientationSphere::compute(){
    getValueForBaseTask(0, catom_orient );
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(i) );
-      sw = switchingFunction.calculate( distance.modulo(), dfunc );
+      sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
       if( sw>=getTolerance() ){    
          getValueForBaseTask( i, this_orient );
          // Calculate the dot product wrt to this position 

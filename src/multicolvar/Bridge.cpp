@@ -138,7 +138,7 @@ void Bridge::doJobsRequiredBeforeTaskList(){
 
 void Bridge::calculateWeight(){
   Vector dij=getSeparation( getPosition(0), getPosition(1) );
-  double dw, w=sf1.calculate( dij.modulo(), dw );
+  double dw, w=sf1.calculateSqr( dij.modulo2(), dw );
   setWeight( w );
 
   if( w<getTolerance() ) return; 
@@ -149,7 +149,7 @@ void Bridge::calculateWeight(){
 
 double Bridge::compute(){
   Vector dik=getSeparation( getPosition(0), getPosition(2) );
-  double dw, w=sf2.calculate( dik.modulo(), dw );
+  double dw, w=sf2.calculateSqr( dik.modulo2(), dw );
 
   // And finish the calculation
   addAtomsDerivatives( 0, -dw*dik );

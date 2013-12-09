@@ -175,8 +175,8 @@ void Angles::calculateWeight(){
   if(!use_sf){ setWeight(1.0); return; }
 
   double w1, w2, dw1, dw2, wtot;
-  w1=sf1.calculate( dij.modulo(), dw1 );
-  w2=sf2.calculate( dik.modulo(), dw2 );
+  w1=sf1.calculateSqr( dij.modulo2(), dw1 );
+  w2=sf2.calculateSqr( dik.modulo2(), dw2 );
   wtot=w1*w2; dw1*=w2; dw2*=w1; 
 
   setWeight( wtot );

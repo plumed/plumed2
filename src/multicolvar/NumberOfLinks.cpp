@@ -121,7 +121,7 @@ MultiColvarFunction(ao)
 
 void NumberOfLinks::calculateWeight(){
   Vector distance = getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(1) );
-  double dfunc, sw = switchingFunction.calculate( distance.modulo(), dfunc );
+  double dfunc, sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
   addCentralAtomsDerivatives( 0, 1, (-dfunc)*distance );
   addCentralAtomsDerivatives( 1, 1, (dfunc)*distance );
   MultiColvarBase::addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) );
