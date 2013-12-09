@@ -251,9 +251,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   string trajectory_fmt;
 
+  bool use_molfile=false; 
 #ifdef __PLUMED_HAS_MOLFILE
   molfile_plugin_t *api=NULL;      
-  bool use_molfile=false; 
   void *h_in=NULL;
   molfile_timestep_t ts_in; // this is the structure that has the timestep 
 #endif
@@ -360,21 +360,19 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      if (trajectoryFile=="-") 
        fp=in;
      else {
-#ifdef __PLUMED_HAS_MOLFILE
        if(use_molfile==true){
+#ifdef __PLUMED_HAS_MOLFILE
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
         ts_in.coords = (float *)malloc(3*natoms * sizeof(float));
+#endif
        }else{
-#endif
-       fp=fopen(trajectoryFile.c_str(),"r");
-       if(!fp){
-         string msg="ERROR: Error opening trajectory file "+trajectoryFile;
-         fprintf(stderr,"%s\n",msg.c_str());
-         return 1;
+         fp=fopen(trajectoryFile.c_str(),"r");
+         if(!fp){
+           string msg="ERROR: Error opening trajectory file "+trajectoryFile;
+           fprintf(stderr,"%s\n",msg.c_str());
+           return 1;
+         }
        }
-#ifdef __PLUMED_HAS_MOLFILE
-       }
-#endif
      }
      if(dumpforces.length()>0){
        if(Communicator::initialized() && pc.Get_size()>1){
@@ -410,8 +408,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   while(true){
     if(!noatoms){
-#ifdef __PLUMED_HAS_MOLFILE
        if(use_molfile==true){	
+#ifdef __PLUMED_HAS_MOLFILE
           int rc; 
     	  rc = api->read_next_timestep(h_in, natoms, &ts_in);
           //if(rc==MOLFILE_SUCCESS){
@@ -421,24 +419,18 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 	         printf(" read this one :eof or error \n");
 	         break;
 	  }
+#endif
        }else{ 
-#endif
-       if(!Tools::getline(fp,line)) break;
-#ifdef __PLUMED_HAS_MOLFILE
+         if(!Tools::getline(fp,line)) break;
        }
-#endif
     }
 
     bool first_step=false;
     if(!noatoms){
-#ifdef __PLUMED_HAS_MOLFILE
       if(use_molfile==false){
-#endif
-      if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
-      sscanf(line.c_str(),"%100d",&natoms);
-#ifdef __PLUMED_HAS_MOLFILE
+        if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
+        sscanf(line.c_str(),"%100d",&natoms);
       }
-#endif
     }
     if(checknatoms<0 && !noatoms){
       pd_nlocal=natoms;
@@ -531,8 +523,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     p.cmd("setStep",&step);
     p.cmd("setStopFlag",&plumedStopCondition);
     if(!noatoms){
-#ifdef __PLUMED_HAS_MOLFILE
        if(use_molfile){
+#ifdef __PLUMED_HAS_MOLFILE
     	   if(pbc_cli_given==false) {
     		   // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
     		   real cosBC=cos(ts_in.alpha*pi/180.);
@@ -559,8 +551,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     		   coordinates[i]=real(ts_in.coords[i]/10.); //convert to nm
     		   //cerr<<"COOR "<<coordinates[i]<<endl;
     	   }
-       }else{
 #endif
+       }else{
        if(trajectory_fmt=="xyz"){
          if(!Tools::getline(fp,line)) error("premature end of trajectory file");
 
@@ -631,9 +623,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
          if(words.size()>8) Tools::convert(words[8],cell[7]);
        }
 
-#ifdef __PLUMED_HAS_MOLFILE
      }
-#endif
 
        if(debug_dd){
          for(int i=0;i<dd_nlocal;++i){
