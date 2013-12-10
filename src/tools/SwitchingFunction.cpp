@@ -139,7 +139,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   Tools::parseFlag(data,"STRETCH",dostretch);
 
   if(name=="RATIONAL"){
-    type=spline;
+    type=rational;
     nn=6;
     mm=12;
     Tools::parse(data,"NN",nn);
@@ -170,7 +170,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
 std::string SwitchingFunction::description() const {
   std::ostringstream ostr;
   ostr<<1./invr0<<".  Using ";
-  if(type==spline){
+  if(type==rational){
      ostr<<"rational";
   } else if(type==exponential){
      ostr<<"exponential";
@@ -182,7 +182,7 @@ std::string SwitchingFunction::description() const {
      plumed_merror("Unknown switching function type");
   }
   ostr<<" swiching function with parameters d0="<<d0;
-  if(type==spline){
+  if(type==rational){
     ostr<<" nn="<<nn<<" mm="<<mm;
   } else if(type==smap){
     ostr<<" a="<<a<<" b="<<b;
@@ -216,7 +216,7 @@ double SwitchingFunction::do_rational(double rdist,double&dfunc,int nn,int mm)co
 }
 
 double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const{
-  if(type==spline && nn%2==0 && mm%2==0 && d0==0.0){
+  if(type==rational && nn%2==0 && mm%2==0 && d0==0.0){
     if(distance2>dmax_2){
       dfunc=0.0;
       return 0.0;
@@ -251,7 +251,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
       double sx=c*pow( rdist, a ); 
       result=pow( 1.0 + sx, d ); 
       dfunc=-b*sx/rdist*result/(1.0+sx); 
-    } else if(type==spline){
+    } else if(type==rational){
       result=do_rational(rdist,dfunc,nn,mm);
     }else if(type==exponential){
       result=exp(-rdist);
@@ -275,7 +275,7 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
 
 SwitchingFunction::SwitchingFunction():
   init(false),
-  type(spline),
+  type(rational),
   nn(6),
   mm(12),
   invr0(0.0),
@@ -290,7 +290,7 @@ SwitchingFunction::SwitchingFunction():
 
 void SwitchingFunction::set(int nn,int mm,double r0,double d0){
   init=true;
-  type=spline;
+  type=rational;
   this->nn=nn;
   this->mm=mm;
   this->invr0=1.0/r0;
