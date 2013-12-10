@@ -186,10 +186,10 @@ one update and the other.
 
 \par
 The kinetics of the transitions between basins can also be analysed on the fly as
-in \cite pratyush13prl. The flag ACCELERATION turn on accumulation of the acceleration
+in \cite PRL230602. The flag ACCELERATION turn on accumulation of the acceleration
 factor that can then be used to determine the rate. This method can be used together
 with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
-It must be used together with well-tempered metadynamics.
+It must be used together with Well-Tempered Metadynamics.
 
 */
 //+ENDPLUMEDOC
@@ -483,7 +483,7 @@ isFirstStep(true)
   addComponent("bias"); componentIsNotPeriodic("bias");
 
   if(acceleration) {
-    if(!welltemp_) error("The calculation of the acceleration works only if Welltempered metadynamics is on"); 
+    if(!welltemp_) error("The calculation of the acceleration works only if Well-Tempered Metadynamics is on"); 
     log.printf("  calculation on the fly of the acceleration factor");
     addComponent("acc"); componentIsNotPeriodic("acc");
   }
@@ -570,7 +570,7 @@ isFirstStep(true)
   if(doInt_) log<<plumed.cite(
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(acceleration) log<<plumed.cite(
-     "Pratyush and Parrinello, Phys. Rev. Lett. ... (2013)");
+     "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   log<<"\n";
 
 }
