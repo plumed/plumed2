@@ -80,8 +80,9 @@ ALPHABETA ...
 ATOMS1=@phi-3 REFERENCE=3.14
 ATOMS2=@psi-3
 ATOMS4=@phi-4
+LABEL=ab
 ... ALPHABETA 
-PRINT ARG=dih FILE=colvar STRIDE=10
+PRINT ARG=ab FILE=colvar STRIDE=10
 \endverbatim
 
 Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.  
