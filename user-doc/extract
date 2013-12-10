@@ -142,8 +142,8 @@ do
         
         # Find src files in module and add a link to the module description
         for srcfile in `ls ../src/"$file"/*cpp` ; do
-            ndocs=`grep PLUMEDOC "$srcfile" | wc -l | awk '{print $1}'`
-            for ((line=1;line<$ndocs;++line)) ; do
+            ndocs=`grep PLUMEDOC "$srcfile" | grep -v END | wc -l | awk '{print $1}'`
+            for ((line=1;line<=$ndocs;++line)) ; do
                docfile=`grep PLUMEDOC "$srcfile" | grep -v END | head -n $line | tail -n 1 | awk '{print $3}'`
                cat automatic/"$docfile".tmp |
                {
