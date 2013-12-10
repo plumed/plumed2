@@ -160,7 +160,7 @@ An alternative is to also define the environment variable PLUMED_LIBSUFFIX. E.g.
 \endverbatim
 will install plumed executable with name "plumed-v2.0". All the other files will be renamed accordingly,
 e.g. the PLUMED library will be loaded with "-lplumed-v2.0" and the PLUMED header files
-will be included with "#include <plumed-v2.0/tools/Vector.h>. This trick is useful if you
+will be included with "\#include <plumed-v2.0/tools/Vector.h>". This trick is useful if you
 do not want to set up modules, but we think using modules (see above) is more flexible.
 
 \section Patching Patching your MD code
