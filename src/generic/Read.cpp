@@ -34,7 +34,20 @@ namespace generic{
 /* 
 Read quantities from a colvar file.
 
+This Action can be used with driver to read in a colvar file that was generated during 
+an MD simulation
+
 \par Examples
+
+This input reads in data from a file called input_colvar.data that was generated
+in a calculation that involved PLUMED.  The first command reads in the data from the 
+column headed phi1 while the second reads in the data from the column headed phi2.
+
+\verbatim
+rphi1:       READ FILE=input_colvar.data  VALUES=phi1
+rphi2:       READ FILE=input_colvar.data  VALUES=phi2
+PRINT ARG=rphi1,rphi2 STRIDE=500  FILE=output_colvar.data
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -114,23 +127,27 @@ nlinesPerStep(1)
          ifile->scanFieldList( fieldnames );
          for(unsigned i=0;i<fieldnames.size();++i){
              if( fieldnames[i].substr(0,dot)==label ){
-                 readvals.push_back(new Value(this, fieldnames[i], false) );
-                 addComponent( fieldnames[i].substr(dot+1) ); componentIsNotPeriodic( fieldnames[i].substr(dot+1) );
+                 readvals.push_back(new Value(this, fieldnames[i], false) ); addComponent( fieldnames[i].substr(dot+1) ); 
+                 if( ifile->FieldExist("min_" + fieldnames[i]) ) componentIsPeriodic( fieldnames[i].substr(dot+1), "-pi","pi" );
+                 else componentIsNotPeriodic( fieldnames[i].substr(dot+1) );
              }
          }
       } else {
-         readvals.push_back(new Value(this, valread[0], false) );
-         addComponent( name ); componentIsNotPeriodic( valread[0].substr(dot+1) );
+         readvals.push_back(new Value(this, valread[0], false) ); addComponent( name ); 
+         if( ifile->FieldExist("min_" + valread[0]) ) componentIsPeriodic( valread[0].substr(dot+1), "-pi", "pi" );
+         else componentIsNotPeriodic( valread[0].substr(dot+1) );
          for(unsigned i=1;i<valread.size();++i) {
              if( valread[i].substr(0,dot)!=label ) error("all values must be from the same Action when using READ");;
-             readvals.push_back(new Value(this, valread[i], false) );
-             addComponent( valread[i].substr(dot+1) ); componentIsNotPeriodic( valread[i].substr(dot+1) );
+             readvals.push_back(new Value(this, valread[i], false) ); addComponent( valread[i].substr(dot+1) ); 
+             if( ifile->FieldExist("min_" + valread[i]) ) componentIsPeriodic( valread[i].substr(dot+1), "-pi", "pi" );
+             else componentIsNotPeriodic( valread[i].substr(dot+1) );
          }
       }
   } else {
       if( valread.size()!=1 ) error("all values must be from the same Action when using READ");
-      readvals.push_back(new Value(this, valread[0], false) );
-      addValue(); setNotPeriodic();
+      readvals.push_back(new Value(this, valread[0], false) ); addValue();
+      if( ifile->FieldExist("min_" + valread[0]) ) setPeriodic( "-pi", "pi" ); 
+      else setNotPeriodic();
       log.printf("  reading value %s and storing as %s\n",valread[0].c_str() ,getLabel().c_str() );   
   }
   checkRead();
@@ -164,12 +181,12 @@ void Read::prepare(){
 void Read::calculate(){
   std::string smin, smax;
   for(unsigned i=0;i<readvals.size();++i){
-      ifile->scanField( readvals[i] );
-      getPntrToComponent(i)->set( readvals[i]->get() ); 
-      if( readvals[i]->isPeriodic() ){
-          readvals[i]->getDomain( smin, smax );
-          getPntrToComponent(i)->setDomain( smin, smax );
-      } 
+     ifile->scanField( readvals[i] );
+     getPntrToComponent(i)->set( readvals[i]->get() );
+     if( readvals[i]->isPeriodic() ){
+         readvals[i]->getDomain( smin, smax );
+         getPntrToComponent(i)->setDomain( smin, smax );
+     } 
   }
 }
 
