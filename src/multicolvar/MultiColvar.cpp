@@ -98,9 +98,13 @@ void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){
   if( all_atoms.fullSize()>0 ){
      current_atoms.resize( natoms ); nblock=ablocks[0].size();
      for(unsigned i=0;i<nblock;++i){
-         unsigned cvcode=0, tmpc=1;
-         for(unsigned j=0;j<natoms;++j){ cvcode += i*tmpc; tmpc *= nblock; }
-         addTaskToList( cvcode );  
+         if( natoms<4 ){
+            unsigned cvcode=0, tmpc=1;
+            for(unsigned j=0;j<natoms;++j){ cvcode += i*tmpc; tmpc *= nblock; }
+            addTaskToList( cvcode );  
+         } else {
+            addTaskToList( i );
+         }
      }
   }
 }
