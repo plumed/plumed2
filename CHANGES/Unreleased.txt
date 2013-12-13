@@ -34,5 +34,9 @@ Changes from version 2.0 which are relevant for developers:
   to use MPI calls inside Action::prepare()
 - colvar/CoordinationBase.cpp has been changed to make it faster. If you devised a class which inherits from here,
   consider that CoordinationBase::pairing now needs _squared_ distance instead of distance
+- It is possible to run "make install" from subdirectories (e.g. from src/colvar)
+- There is a small script which disables/enables all optional modules (make mod-light/mod-heavy/mod-reset)
+- Added "-q" option to plumed patch
+
 
 */
