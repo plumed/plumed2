@@ -69,7 +69,14 @@ Unreleased changes
 -------------
 See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
 
-There are currently no unreleased changes.
+For users:
+- Added full reference (page/number) to published paper in doc and log.
+- Fixed a bug in file backups (only affecting Windows version - thanks to T. Giorgino).
+- Several small fixes in documentation and log file.
+
+For developers:
+- Fixed makefile dependencies in some auxiliary files in src/lib (src/lib/*cmake and src/lib/*inc).
+- Several small fixes in documentation.
 
 */
 
