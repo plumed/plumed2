@@ -5,6 +5,9 @@
 Include all fixes in branch 2.0 indicated in \ref CHANGES-2-0 .
 
 Changes from version 2.0 which are relevant for users:
+- Root-mean-square devations with align weights different from displace weights
+  are now considerably faster. This will affect \ref RMSD calculations plus
+  other variables based on RMSD.
 - Added WALKERS_MPI to \ref METAD, allowing to run multiple walkers in a mpi-based multi-replica framework.
 - Added ACCELERATION to \ref METAD, allowing to calculate on the fly the Metadynamics acceleration factor.
 - Added option PRECISION to set number of digits in \ref DUMPATOMS.
