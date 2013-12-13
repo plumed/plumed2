@@ -38,20 +38,17 @@ void FunctionOnGrid::registerKeywords( Keywords& keys ){
 FunctionOnGrid::FunctionOnGrid( const VesselOptions& da ):
 GridVesselBase(da)
 {
-  std::vector<std::string> names(dimension+1); 
-  for(unsigned i=0;i<dimension;++i) names[i]="x";  // This needs to be better
+  std::string num;
+  std::vector<std::string> names(dimension+1);  
+  for(unsigned i=0;i<dimension;++i){ Tools::convert(i+1,num); names[i]="x" + num; }  
   names[dimension]=getAction()->getLabel();
-  finishSetup( 1, names );
+  std::vector<bool> mypbc( dimension, false );
+  finishSetup( 1, mypbc, names );
 }
 
 std::string FunctionOnGrid::description(){
-  return "non interpolatable grid";
+  return getGridDescription();
 }
-
-void FunctionOnGrid::addFunctionToWholeGrid( const std::vector<double>& newf ){
-  plumed_assert( newf.size()==getNumberOfPoints() );
-  for(unsigned i=0;i<newf.size();++i) addToGridElement( i, 0, newf[i] );
-} 
 
 bool FunctionOnGrid::calculate(){
   plumed_merror("This should not be called");

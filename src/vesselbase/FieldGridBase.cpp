@@ -31,12 +31,12 @@ void FieldGridBase::registerKeywords( Keywords& keys ){
 FieldGridBase::FieldGridBase( const VesselOptions& da ):
 GridVesselBase(da)
 {
+  derlow.resize( dimension );
 }
 
 void FieldGridBase::resize(){
   GridVesselBase::resize();
   forces.resize( getAction()->getNumberOfDerivatives() );
-  derlow.resize( dimension );
 }
 
 std::string FieldGridBase::getBaseCVName( const unsigned& icv ) const {

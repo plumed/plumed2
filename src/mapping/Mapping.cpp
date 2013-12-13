@@ -196,14 +196,14 @@ void Mapping::mergeDerivatives( const unsigned& ider, const double& df ){
       Vector ader; Tensor tmpvir; tmpvir.zero();
       unsigned n=getNumberOfArguments(); 
       for(unsigned i=0;i<getNumberOfAtoms();++i){
-          ader=mymap->getAtomDerivatives( cur, i );            
+          ader=mymap->getAtomDerivatives( frameno, i );            
           accumulateDerivative( n, df*dfframes[frameno]*ader[0] ); n++;
           accumulateDerivative( n, df*dfframes[frameno]*ader[1] ); n++;
           accumulateDerivative( n, df*dfframes[frameno]*ader[2] ); n++;
           tmpvir += -1.0*Tensor( getPosition(i), ader );
       }
       Tensor vir; 
-      if( !mymap->getVirial( cur, vir ) ) vir=tmpvir;
+      if( !mymap->getVirial( frameno, vir ) ) vir=tmpvir;
       accumulateDerivative( n, df*dfframes[frameno]*vir(0,0) ); n++;
       accumulateDerivative( n, df*dfframes[frameno]*vir(0,1) ); n++;
       accumulateDerivative( n, df*dfframes[frameno]*vir(0,2) ); n++;

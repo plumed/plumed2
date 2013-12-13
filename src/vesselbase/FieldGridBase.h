@@ -36,6 +36,8 @@ private:
 /// The forces that are acting on each of the derivatives in this object
   std::vector<double> forces;
 protected:
+/// Clear the forces from the previous step
+  void clearForces();
 /// Add value to the field of values, add low-dimensional derivatives and high-dimensional derivatives
   void accumulate( const double& , const double& , const double& , const double& , const unsigned& ); 
 public:
@@ -44,7 +46,7 @@ public:
 /// The constructor
   FieldGridBase( const VesselOptions& );
 /// Resize the field
-  void resize();
+  virtual void resize();
 /// Apply some forces to the field
   bool applyForce(std::vector<double>&);
 /// Set the forces on the quantities underlying the fields
@@ -60,10 +62,14 @@ public:
 };
 
 inline
+void FieldGridBase::clearForces(){
+  wasforced=false; forces.assign( forces.size(), 0.0 );
+}
+
+inline
 void FieldGridBase::setForces( const std::vector<double>& ff ){
   plumed_dbg_assert( ff.size()==forces.size() );
-  wasforced=true;
-  for(unsigned i=0;i<ff.size();++i) forces[i]=ff[i];
+  wasforced=true; for(unsigned i=0;i<ff.size();++i) forces[i]=ff[i];
 }
 
 inline

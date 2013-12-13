@@ -31,6 +31,7 @@ namespace PLMD {
 namespace vesselbase {
 
 class GridVesselBase : public Vessel {
+friend class InterpolationBase;
 private:
 /// These two variables are used to 
 /// remember the box we were in on the previous call
@@ -39,6 +40,9 @@ private:
  unsigned npoints;
 /// Write the contents of the grid to the checkpoint file
   bool checkpoint;
+/// This is if we are interpolating function to ensure that 
+/// tables are updated if data is changed
+ bool dataHasChangedSinceInterpol;
 /// Remember the neighbors that were used last time
  std::vector<unsigned> current_neigh; 
 /// The names of the various columns in the grid file
@@ -84,10 +88,8 @@ protected:
  double getGridElement( const std::vector<unsigned>&, const unsigned& ) const ;
  void setGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
  void addToGridElement( const std::vector<unsigned>&, const unsigned&, const double& );
-/// Finish setup of grid object when it is storing the values of a function at various argument points
-  void finishSetup( const std::vector<Value*>& arguments, const std::string& funcname, const bool usederiv=true );
 /// Finish setup of grid object when it is storing the values of a more abstract quantity
-  void finishSetup( const unsigned& nelem, const std::vector<std::string>& names );
+  void finishSetup( const unsigned& nelem, const std::vector<bool>& ipbc, const std::vector<std::string>& names );
 public:
 /// keywords
   static void registerKeywords( Keywords& keys );
@@ -101,8 +103,14 @@ public:
   void getGridPointCoordinates( const unsigned& , std::vector<double>& );
 /// Write the grid on a file
   void writeToFile( OFile& , const std::string& fmt );
-/// Copy the input to a grid
-  std::string getGridInput() const ;
+/// Get the dimensionality of the function
+  unsigned getDimension() const ;
+/// Get the number of grid points for each dimension
+  std::vector<unsigned> getNbin() const ;
+/// Get the vector containing the minimum value of the grid in each dimension
+  std::vector<std::string> getMin() const ;
+/// Get the vector containing the maximum value of the grid in each dimension
+  std::vector<std::string> getMax() const ;
 /// Return the volume of one of the grid cells
   double getCellVolume() const ;
 /// Get the value of the ith grid element 
@@ -114,7 +122,7 @@ public:
 /// Read data from checkpoint file
   void readFromCheckpoint( IFile& cifile );
 /// Get the numerical index for the box that contains a particular point
- unsigned getGridElementNumber( const std::vector<double>& x );
+ unsigned getLocationOnGrid( const std::vector<double>& x, std::vector<double>& dd );
 /// Get the points neighboring a particular spline point
  void getSplineNeighbors( const unsigned& mybox, std::vector<unsigned>& mysneigh );
 /// Calculate the vector from the grid point to point x then normalize by grid spacing
@@ -131,6 +139,11 @@ inline
 double GridVesselBase::getCellVolume() const {
   double myvol=1.0; for(unsigned i=0;i<dimension;++i) myvol *= dx[i];
   return myvol;
+}
+
+inline
+unsigned GridVesselBase::getDimension() const {
+  return dimension;
 }
 
 }

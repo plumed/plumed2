@@ -40,6 +40,7 @@ public:
   static void registerKeywords( Keywords& keys );
   SketchMapField(const ActionOptions&);
   void calculate();
+  void clearDerivativesAfterTask( const unsigned& ider );
   unsigned getNumberOfFunctionsInAction();
   void performTask();
   double transformHD( const double& dist, double& df );
@@ -142,8 +143,14 @@ void SketchMapField::performTask(){
   double df, val = 1.0 - lowd.calculate( dist, df );
 
   // Put grid stuff somewhere it can be accessed by the field
-  for(unsigned i=0;i<nderivatives;++i) addElementDerivative( i, -df*dist*der[i] );
+  for(unsigned i=0;i<nderivatives;++i) addElementDerivative( i, -df*der[i] );
   setElementValue( 0, val ); setElementValue( 1, getWeight() ); 
+}
+
+void SketchMapField::clearDerivativesAfterTask( const unsigned& ider ){
+  unsigned kstart=ider*getNumberOfDerivatives();
+  thisval_wasset[ider]=false; setElementValue( ider, 0.0 );
+  for(unsigned j=0;j<getNumberOfProperties();++j) setElementDerivative( kstart+j, 0.0 );
 }
 
 double SketchMapField::transformHD( const double& dist, double& df ){

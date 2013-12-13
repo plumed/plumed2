@@ -35,8 +35,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// The constructor
   FunctionOnGrid( const VesselOptions& );
-/// Add a bit of function to all grid elements
-  void addFunctionToWholeGrid( const std::vector<double>& newf );
 ///
   std::string description();
 ///
@@ -45,7 +43,20 @@ public:
   void finish();
 ///
   bool applyForce( std::vector<double>& );
+/// Operations on one of the elements of grid point i
+ void setGridElement( const unsigned&, const double& );
+ void addToGridElement( const unsigned&, const double& );
 };
+
+inline
+void FunctionOnGrid::setGridElement( const unsigned& igrid, const double& val ){
+  GridVesselBase::setGridElement( igrid, 0, val );
+}
+
+inline
+void FunctionOnGrid::addToGridElement( const unsigned& igrid, const double& val ){
+  GridVesselBase::addToGridElement( igrid, 0, val );
+}
 
 }
 }
