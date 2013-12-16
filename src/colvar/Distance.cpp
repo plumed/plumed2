@@ -37,6 +37,9 @@ By default the distance is computed taking into account periodic
 boundary conditions. This behavior can be changed with the NOPBC flag.
 Moreover, single components (x,y, and z) can be also computed.
 
+Notice that single components will not have the proper periodicity!
+A possible hack is shown in one of the examples below.
+
 \par Examples
 
 The following input tells plumed to print the distance between atoms 3 and 5,
@@ -77,6 +80,23 @@ Just be sure that the ordered list provide to WHOLEMOLECULES has the following
 properties:
 - Consecutive atoms should be closer than half-cell throughout the entire simulation.
 - Atoms required later for the distance (e.g. 1 and 100) should be included in the list
+
+The following example shows how to take into account periodicity e.g.
+in z-component of a distance
+\verbatim
+# this is a center of mass of a large group
+c: COM ATOMS=1-100
+# this is the distance between atom 101 and the group
+d: DISTANCE ATOMS=c,101 COMPONENTS
+# this makes a new variable, dd, equal to d and periodic, with domain -10,10
+# this is the right choise if e.g. the cell is orthorombic and its size in
+# z direction is 20.
+dz: COMBINE ARG=d.z PERIODIC=-10,10
+# metadynamics on dd
+METAD ARG=dz SIGMA=0.1 HEIGHT=0.1 PACE=200
+\endverbatim
+(see also \ref COM, \ref COMBINE, and \ref METAD)
+
 
 
 
@@ -130,6 +150,7 @@ pbc(true)
     addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
     addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
     addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+    log<<"  WARNING: components will not have the proper periodicity - see manual\n";
   }
 
   requestAtoms(atoms);
