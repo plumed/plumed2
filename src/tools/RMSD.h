@@ -92,16 +92,15 @@ public:
   		                     const  std::vector<double>  & displace,
   		                     const std::vector<Vector> & positions,
   		                     const std::vector<Vector> & reference ,
-  		                     Log* &log,
-  		                     std::vector<Vector>  & derivatives, bool squared=false);
+  		                     std::vector<Vector>  & derivatives, bool squared=false)const;
 template <bool safe,bool alEqDis>
   double optimalAlignment(const  std::vector<double>  & align,
                           const  std::vector<double>  & displace,
                           const std::vector<Vector> & positions,
                           const std::vector<Vector> & reference ,
-                          std::vector<Vector>  & derivatives, bool squared=false);
+                          std::vector<Vector>  & derivatives, bool squared=false)const;
 /// Compute rmsd
-  double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false);
+  double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false)const;
 };
 
 }

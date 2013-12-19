@@ -114,14 +114,14 @@ void RMSD::setDisplace(const vector<double> & displace){
   for(unsigned i=0;i<n;i++) this->displace[i]*=inv;
 }
 
-double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared){
+double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared)const{
 
   double ret=0.;
 
   switch(alignmentMethod){
 	case SIMPLE:
 		//	do a simple alignment without rotation 
-		ret=simpleAlignment(align,displace,positions,reference,log,derivatives,squared);
+		ret=simpleAlignment(align,displace,positions,reference,derivatives,squared);
 		break;	
 	case OPTIMAL_FAST:
 		// this is calling the fastest option:
@@ -143,8 +143,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 		                     const  std::vector<double>  & displace,
 		                     const std::vector<Vector> & positions,
 		                     const std::vector<Vector> & reference ,
-		                     Log* &log,
-		                     std::vector<Vector>  & derivatives, bool squared) {
+		                     std::vector<Vector>  & derivatives, bool squared)const{
       double dist(0);
       unsigned n=reference.size();
 
@@ -185,7 +184,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
                                      const  std::vector<double>  & displace,
                                      const std::vector<Vector> & positions,
                                      const std::vector<Vector> & reference ,
-                                     std::vector<Vector>  & derivatives, bool squared) {
+                                     std::vector<Vector>  & derivatives, bool squared)const{
   double dist(0);
   const unsigned n=reference.size();
 // This is the trace of positions*positions + reference*reference
