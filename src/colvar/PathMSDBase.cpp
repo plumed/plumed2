@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -137,8 +137,8 @@ void PathMSDBase::calculate(){
     for(unsigned j=0;j<nat;j++) tmp_derivs2[i*nat+j]=tmp_derivs[j];
   }
 // reduce over all processors
-  comm.Sum(&tmp_distances[0],imgVec.size());
-  comm.Sum(&tmp_derivs2[0][0],3*imgVec.size()*nat);
+  comm.Sum(tmp_distances);
+  comm.Sum(tmp_derivs2);
 // assign imgVec[i].distance and imgVec[i].distder
   for(unsigned i=0;i<imgVec.size();i++){
     imgVec[i].distance=tmp_distances[i];

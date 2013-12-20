@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -62,11 +62,6 @@ class Pbc{
 /// depending on the sign of the scaled coordinates representing
 /// a distance vector.
   void buildShifts(std::vector<Vector> shifts[2][2][2])const;
-/// Full search (for testing)
-  void fullSearch(Vector&)const;
-/// internal version of distance, also returns the number
-/// of attempted shifts (used in Pbc::test()).
-  Vector distance(const Vector&,const Vector&,int*nshifts)const;
 public:
 /// Perform some check. Useful for debugging.
   static void test();
@@ -76,6 +71,9 @@ public:
   double distance( const bool pbc, const Vector& v1, const Vector& v2 ) const;
 /// Computes v2-v1, using minimal image convention
   Vector distance(const Vector& v1,const Vector& v2)const;
+/// version of distance which also returns the number
+/// of attempted shifts
+  Vector distance(const Vector&,const Vector&,int*nshifts)const;
 /// Set the lattice vectors.
 /// b[i][j] is the j-th component of the i-th vector
   void setBox(const Tensor&b);
@@ -92,6 +90,9 @@ public:
   Vector scaledToReal(const Vector&)const;
 /// Returns true if the box vectors are orthogonal
   bool isOrthorombic()const;
+/// Full search (for testing).
+/// Perform a full search on vector
+  void fullSearch(Vector&)const;
 };
 
 inline

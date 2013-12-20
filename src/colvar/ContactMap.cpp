@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -166,7 +166,7 @@ void ContactMap::calculate(){
       }
 
       double dfunc=0.;
-      coord = sfs[i].calculate(distance.modulo(), dfunc);
+      coord = sfs[i].calculateSqr(distance.modulo2(), dfunc);
       if( !dosum ) {
          Value* val=getPntrToComponent( i );
          setAtomsDerivatives( val, i0, (-dfunc)*distance );

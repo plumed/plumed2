@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -53,13 +53,13 @@ std::string FunctionVessel::description(){
 
 void FunctionVessel::resize(){
   nderivatives=getAction()->getNumberOfDerivatives();
-  resizeBuffer( (1+nderivatives)*getNumberOfTerms() ); 
+  resizeBuffer( (1+nderivatives)*2 ); 
   final_value->resizeDerivatives( nderivatives );
 }
 
 void FunctionVessel::mergeFinalDerivatives( const std::vector<double>& df ){
-  plumed_dbg_assert( df.size()==getNumberOfTerms() ); 
-  for(unsigned i=0;i<getNumberOfTerms();++i){
+  plumed_dbg_assert( df.size()==2 ); 
+  for(unsigned i=0;i<2;++i){
       unsigned ider=i*( nderivatives + 1 ) + 1;
       for(unsigned k=0;k<nderivatives;++k){
          final_value->addDerivative( k, df[i]*getBufferElement( ider ) ); ider++;

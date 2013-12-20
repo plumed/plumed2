@@ -39,6 +39,20 @@ could also be specified using:
 COM ATOMS=1-51:10
 \endverbatim
 
+One can also obtain a list of decreasing indexes e.g. with
+
+\verbatim
+GROUP ATOMS=51-1:-10
+# same as GROUP ATOMS=51,41,31,21,11,1
+\endverbatim
+
+Notice that most expressions are invariant with respect to a change in the order of the atoms,
+but some of them depend on that order. E.g., with \ref WHOLEMOLECULES it could be useful to
+specify atom lists in a reversed order.
+
+
+
+
 In addition, for certain colvars, pdb files can be read in using the following keywords:
 
 @TOPOLOGY@

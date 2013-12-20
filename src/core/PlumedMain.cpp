@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -353,7 +353,7 @@ void PlumedMain::init(){
   log<<"PLUMED is starting\n";
   log<<"PLUMED compiled on " __DATE__ " at " __TIME__ "\n";
   log<<"Please cite this paper when using PLUMED ";
-  log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. DOI:10.1016/j.cpc.2013.09.018 (2013)");
+  log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)");
   log<<"\n";
   log<<"For further information see the PLUMED web page at http://www.plumed-code.org\n";
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());

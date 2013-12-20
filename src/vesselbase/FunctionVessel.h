@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -33,7 +33,7 @@ namespace vesselbase{
 
 /**
 \ingroup TOOLBOX
-Objects that inherit from FunctionVessel can be used (in tandem with PLMD::ActionWithVessel) to calculate
+Objects that inherit from FunctionVessel can be used (in tandem with PLMD::vesselbase::ActionWithVessel) to calculate
 functions of the form \f$\prod_k H_k[ \sum_j \prod_i g_i(x) ]\f$.  They should take in a series of values
 and return one single value.   
 */
@@ -68,8 +68,6 @@ public:
   std::string description();
 /// The rest of the description of what we are calculating
   virtual std::string function_description()=0;
-/// Return number of terms
-  virtual unsigned getNumberOfTerms(){ return 2; }
 };
 
 inline
@@ -86,7 +84,7 @@ void FunctionVessel::addValueIgnoringTolerance( const unsigned& jval, const doub
 
 inline
 double FunctionVessel::getFinalValue(const unsigned& j){
-  plumed_dbg_assert( j<getNumberOfTerms() );
+  plumed_dbg_assert( j<2 );
   return getBufferElement( (nderivatives+1)*j );
 }
 

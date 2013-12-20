@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -28,6 +28,10 @@ namespace config{
 
 std::string getSoExt(){
   return "@SOEXT@";
+}
+
+bool isInstalled(){
+  return @ISINSTALLED@;
 }
 
 std::string getPlumedRoot(){
@@ -68,6 +72,14 @@ bool hasAlmost(){
 
 bool hasCregex(){
 #if __PLUMED_HAS_CREGEX
+      return true;
+#else
+      return false;
+#endif
+}
+
+bool hasMolfile(){
+#if __PLUMED_HAS_MOLFILE
       return true;
 #else
       return false;

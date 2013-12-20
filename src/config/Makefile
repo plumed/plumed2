@@ -7,6 +7,7 @@
 all:
 	@echo "Updating ConfigInstall.cpp"
 	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
+         sed "s/@ISINSTALLED@/true/g" | \
 	 ../maketools/update-plumedroot.sh ConfigInstall.cpp
 	$(MAKE) do-all
 
@@ -16,12 +17,14 @@ do-all: Config.o ConfigInstall.o compile_options.sh
 ConfigInstall.cpp:
 	@echo "Updating ConfigInstall.cpp"
 	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
-	 ../maketools/update-plumedroot.sh ConfigInstall.cpp
+         sed "s/@ISINSTALLED@/true/g" | \
+         ../maketools/update-plumedroot.sh ConfigInstall.cpp
 
 # file to import compilation options inside c++
 Config.cpp: Config.cpp.in Config.h
 	@echo Building Config.cpp, a object containing configuration infos
 	@sed "s/@SOEXT@/$(SOEXT)/g" $< | \
+         sed "s/@ISINSTALLED@/false/g" | \
          sed "s|@PLUMED_ROOT@|$(CURDIR:src/config=)|g" > $@
 
 links: 

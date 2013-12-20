@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -118,7 +118,8 @@ constant(0.0)
   log<<"  Bibliography "<<plumed.cite("Do, Carloni, Varani and Bussi, J. Chem. Theory Comput. 9, 1720 (2013)")<<" \n";
 }
 
-double DHEnergy::pairing(double distance,double&dfunc,unsigned i,unsigned j)const{
+double DHEnergy::pairing(double distance2,double&dfunc,unsigned i,unsigned j)const{
+  double distance=std::sqrt(distance2);
   if(getAbsoluteIndex(i)==getAbsoluteIndex(j)){
     dfunc=0.0;
     return 0.0;

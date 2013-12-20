@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -86,7 +86,9 @@ bool Between::calculate(){
   double val=getAction()->getElementValue(0);
   double dval, f = hist.calculate(val, dval);
 
-  addValueIgnoringTolerance(1,weight);
+  bool bigw=addValueUsingTolerance(1,weight);
+  if( !bigw ) return false;
+
   double contr=weight*f;
   bool addval=addValueUsingTolerance(0,contr);
   if( addval ){

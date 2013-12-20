@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -79,13 +79,13 @@ void GREX::cmd(const string&key,void*val){
     std::string s;
 // note that for PEs!=root this is automatically 0 (comm defaults to MPI_COMM_SELF)
     myreplica=intercomm.Get_rank();
-    intracomm.Sum(&myreplica,1);
+    intracomm.Sum(myreplica);
     Tools::convert(myreplica,s);
     plumedMain.setSuffix("."+s);
   }else if(key=="prepare"){
     CHECK_INIT(initialized,key);
     if(intracomm.Get_rank()==0) return;
-    intracomm.Bcast(&partner,1,0);
+    intracomm.Bcast(partner,0);
     calculate();
   }else if(key=="setPartner"){
     CHECK_INIT(initialized,key);
@@ -96,7 +96,7 @@ void GREX::cmd(const string&key,void*val){
   }else if(key=="calculate"){
     CHECK_INIT(initialized,key);
     if(intracomm.Get_rank()!=0) return;
-    intracomm.Bcast(&partner,1,0);
+    intracomm.Bcast(partner,0);
     calculate();
   }else if(key=="getLocalDeltaBias"){
     CHECK_INIT(initialized,key);
@@ -109,14 +109,14 @@ void GREX::cmd(const string&key,void*val){
     double x;
     atoms.MD2double(val,x);
     localUNow=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-    intracomm.Sum(&localUNow,1);
+    intracomm.Sum(localUNow);
   }else if(key=="cacheLocalUSwap"){
     CHECK_INIT(initialized,key);
     CHECK_NULL(val,key);
     double x;
     atoms.MD2double(val,x);
     localUSwap=x*(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-    intracomm.Sum(&localUSwap,1);
+    intracomm.Sum(localUSwap);
   }else if(key=="getForeignDeltaBias"){
     CHECK_INIT(initialized,key);
     CHECK_NULL(val,key);
@@ -127,7 +127,7 @@ void GREX::cmd(const string&key,void*val){
     if(intracomm.Get_rank()!=0) return;
     allDeltaBias.assign(intercomm.Get_size(),0.0);
     allDeltaBias[intercomm.Get_rank()]=localDeltaBias;
-    intercomm.Sum(&allDeltaBias[0],intercomm.Get_size());
+    intercomm.Sum(allDeltaBias);
   }else{
 // multi word commands
      std::vector<std::string> words=Tools::getWords(key);
@@ -165,11 +165,11 @@ void GREX::calculate(){
   vector<char> rbuf(nn);
   localDeltaBias=-plumedMain.getBias();
   if(intracomm.Get_rank()==0){
-    Communicator::Request req=intercomm.Isend(&buffer.c_str()[0],nn,partner,1066);
-    intercomm.Recv(&rbuf[0],rbuf.size(),partner,1066);
+    Communicator::Request req=intercomm.Isend(buffer,partner,1066);
+    intercomm.Recv(rbuf,partner,1066);
     req.wait();
   }
-  intracomm.Bcast(&rbuf[0],nn,0);
+  intracomm.Bcast(rbuf,0);
   istringstream i(string(&rbuf[0],rbuf.size()));
   atoms.readBinary(i);
   plumedMain.setExchangeStep(true);
@@ -179,12 +179,12 @@ void GREX::calculate(){
   localDeltaBias+=plumedMain.getBias();
   localDeltaBias+=localUSwap-localUNow;
   if(intracomm.Get_rank()==0){
-    Communicator::Request req=intercomm.Isend(&localDeltaBias,1,partner,1067);
-    intercomm.Recv(&foreignDeltaBias,1,partner,1067);
+    Communicator::Request req=intercomm.Isend(localDeltaBias,partner,1067);
+    intercomm.Recv(foreignDeltaBias,partner,1067);
     req.wait();
 //fprintf(stderr,">>> %d %d %20.12f %20.12f %20.12f %20.12f\n",intercomm.Get_rank(),partner,localDeltaBias,foreignDeltaBias,localUSwap,localUNow);
   }
-  intracomm.Bcast(&foreignDeltaBias,1,0);
+  intracomm.Bcast(foreignDeltaBias,0);
 }
 
 }

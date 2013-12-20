@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -32,6 +32,7 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <cerrno>
 
 namespace PLMD{
 
@@ -42,7 +43,7 @@ size_t OFile::llwrite(const char*ptr,size_t s){
     if(!fp) plumed_merror("writing on uninitilized File");
     r=fwrite(ptr,1,s,fp);
   }
-  if(comm) comm->Bcast(&r,1,0);
+  if(comm) comm->Bcast(r,0);
   return r;
 }
 
@@ -240,6 +241,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
      FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
      FILE* fff=NULL;
      if(ff){
+       std::fclose(ff);
        std::string backup;
        size_t found=fname.find_last_of("/\\");
        std::string directory=fname.substr(0,found+1);
@@ -251,12 +253,11 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
          backup=directory+bstring +"."+num+"."+file;
          fff=std::fopen(backup.c_str(),"r");
          if(!fff) break;
+	 else std::fclose(fff);
        }
        int check=rename(fname.c_str(),backup.c_str());
-       plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for some reason");
+       plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
      }
-     if(ff) std::fclose(ff);
-     if(fff) std::fclose(fff);
    }
 }
 

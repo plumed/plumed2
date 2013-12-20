@@ -4,7 +4,7 @@
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -59,15 +59,6 @@ verbose_output(false)
   parseFlag("VERBOSE",verbose_output);
 }
 
-void MultiColvar::addColvar( const std::vector<unsigned>& newatoms ){
-  if( verbose_output ){
-     log.printf("  Colvar %d is calculated from atoms : ", colvar_atoms.size()+1);
-     for(unsigned i=0;i<newatoms.size();++i) log.printf("%d ",all_atoms(newatoms[i]).serial() );
-     log.printf("\n");
-  }
-  MultiColvarBase::addColvar( newatoms );
-} 
-
 void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms );
   if( keywords.exists("GROUP") ) readGroupsKeyword( natoms );
@@ -79,9 +70,10 @@ void MultiColvar::readAtoms( int& natoms ){
 }
 
 void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){ 
+  plumed_assert( !usespecies );
   if( all_atoms.fullSize()>0 ) return; 
 
-  std::vector<AtomNumber> t; std::vector<unsigned> newlist;
+  std::vector<AtomNumber> t; 
   for(int i=1;;++i ){
      parseAtomList(key, i, t );
      if( t.empty() ) break;
@@ -92,21 +84,33 @@ void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){
         log.printf("\n"); 
      }
 
-     if( i==1 && natoms<0 ) natoms=t.size();
+     if( i==1 && natoms<0 ){ natoms=t.size(); ablocks.resize(natoms); }
+     else if( i==1 ) ablocks.resize(natoms);
      if( t.size()!=natoms ){
-         std::string ss; Tools::convert(i,ss); 
-         error(key + ss + " keyword has the wrong number of atoms"); 
+        std::string ss; Tools::convert(i,ss); 
+        error(key + ss + " keyword has the wrong number of atoms"); 
      }
      for(unsigned j=0;j<natoms;++j){ 
-        newlist.push_back( natoms*(i-1)+j ); 
-        all_atoms.addIndexToList( t[j] );
+        ablocks[j].push_back( natoms*(i-1)+j ); all_atoms.addIndexToList( t[j] );
      }
-     t.resize(0); addColvar( newlist );
-     newlist.clear(); 
+     t.resize(0); 
+  }
+  if( all_atoms.fullSize()>0 ){
+     current_atoms.resize( natoms ); nblock=ablocks[0].size();
+     for(unsigned i=0;i<nblock;++i){
+         if( natoms<4 ){
+            unsigned cvcode=0, tmpc=1;
+            for(unsigned j=0;j<natoms;++j){ cvcode += i*tmpc; tmpc *= nblock; }
+            addTaskToList( cvcode );  
+         } else {
+            addTaskToList( i );
+         }
+     }
   }
 }
 
 void MultiColvar::readGroupsKeyword( int& natoms ){
+  plumed_assert( !usespecies ); 
   if( all_atoms.fullSize()>0 ) return;
 
   if( natoms==2 ){
@@ -123,22 +127,20 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
   std::vector<AtomNumber> t;
   parseAtomList("GROUP",t);
   if( !t.empty() ){
+      ablocks.resize( natoms ); current_atoms.resize( natoms );
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
-      std::vector<unsigned> newlist;
       if(natoms==2){ 
+         nblock=t.size(); for(unsigned i=0;i<2;++i) ablocks[i].resize(nblock);
+         for(unsigned i=0;i<t.size();++i){ ablocks[0][i]=i; ablocks[1][i]=i; }
          for(unsigned i=1;i<t.size();++i){ 
-             for(unsigned j=0;j<i;++j){ 
-                newlist.push_back(i); newlist.push_back(j); addColvar( newlist ); newlist.clear();
-             }
+             for(unsigned j=0;j<i;++j) addTaskToList( i*nblock + j );
          }
       } else if(natoms==3){
+         nblock=t.size(); for(unsigned i=0;i<3;++i) ablocks[i].resize(nblock); 
+         for(unsigned i=0;i<t.size();++i){ ablocks[0][i]=i; ablocks[1][i]=i; ablocks[2][i]=i; }
          for(unsigned i=2;i<t.size();++i){
             for(unsigned j=1;j<i;++j){
-               for(unsigned k=0;k<j;++k){
-                   newlist.push_back(i); newlist.push_back(j);
-                   newlist.push_back(k); addColvar( newlist );
-                   newlist.clear();
-               }
+               for(unsigned k=0;k<j;++k) addTaskToList( i*nblock*nblock + j*nblock + k );
             }
          }
       }
@@ -160,16 +162,27 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
 
 void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key2 ){
   plumed_assert( all_atoms.fullSize()==0 );
+  ablocks.resize( 2 ); current_atoms.resize( 2 );
 
   std::vector<AtomNumber> t1, t2; std::vector<unsigned> newlist; 
   parseAtomList(key1,t1); parseAtomList(key2,t2);
   if( t1.empty() ) error("missing atom specification " + key1);
   if ( t2.empty() ) error("missing atom specification " + key2); 
-  for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] ); 
-  for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] ); 
+
+  if( t1.size()>t2.size() ) nblock = t1.size();
+  else nblock=t2.size();
+
+  ablocks[0].resize( t1.size() ); 
+  for(unsigned i=0;i<t1.size();++i){
+     all_atoms.addIndexToList( t1[i] ); ablocks[0][i]=i;
+  }
+  ablocks[1].resize( t2.size() ); 
+  for(unsigned i=0;i<t2.size();++i){
+     all_atoms.addIndexToList( t2[i] ); ablocks[1][i]=t1.size() + i;
+  }
   for(unsigned i=0;i<t1.size();++i){
      for(unsigned j=0;j<t2.size();++j){
-         newlist.push_back(i); newlist.push_back( t1.size() + j ); addColvar( newlist ); newlist.clear();
+         if( all_atoms(ablocks[0][i])!=all_atoms(ablocks[1][j]) ) addTaskToList( i*nblock + j );
      }
   }
   if( !verbose_output ){
@@ -185,24 +198,35 @@ void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key
 
 void MultiColvar::readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2 ){
   plumed_assert( all_atoms.fullSize()==0 );
+  ablocks.resize( 3 ); current_atoms.resize( 3 );
 
   std::vector<AtomNumber> t1, t2, t3; std::vector<unsigned> newlist;
   parseAtomList(key1,t1); parseAtomList(key2,t2);
   if( t1.empty() ) error("missing atom specification " + key1);
   if( t2.empty() ) error("missing atom specification " + key2);
-  for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] );
-  for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] );
+  ablocks[0].resize( t1.size() ); 
+  for(unsigned i=0;i<t1.size();++i){
+    all_atoms.addIndexToList( t1[i] ); ablocks[0][i]=i;
+  }
+  ablocks[1].resize( t2.size() ); 
+  for(unsigned i=0;i<t2.size();++i){
+     all_atoms.addIndexToList( t2[i] ); ablocks[1][i] = t1.size() + i;
+  }
   parseAtomList(key3,t3);
   if( t3.empty() && !allow2 ){
       error("missing atom specification " + key3);
   } else if( t3.empty() ){
+      if( t2.size()>t1.size() ) nblock=t2.size(); 
+      else nblock=t1.size();
+
+      ablocks[2].resize( t2.size() ); 
+      for(unsigned i=0;i<t2.size();++i) ablocks[2][i]=t1.size() + i;
       for(unsigned i=0;i<t1.size();++i){
         for(unsigned j=1;j<t2.size();++j){ 
            for(unsigned k=0;k<j;++k){
-                newlist.push_back( t1.size() + j );
-                newlist.push_back(i);
-                newlist.push_back( t1.size() + k );
-                addColvar( newlist ); newlist.clear();
+              if( all_atoms(ablocks[0][i])!=all_atoms(ablocks[1][j]) && 
+                  all_atoms(ablocks[0][i])!=all_atoms(ablocks[2][k]) && 
+                  all_atoms(ablocks[1][j])!=all_atoms(ablocks[2][k]) ) addTaskToList( nblock*nblock*i + nblock*j + k );
            }
         }
       }
@@ -216,14 +240,20 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
         log.printf("\n");
       }
   } else {
-      for(unsigned i=0;i<t3.size();++i) all_atoms.addIndexToList( t3[i] );
+      if( t2.size()>t1.size() ) nblock=t2.size();
+      else nblock=t1.size();
+      if( t3.size()>nblock ) nblock=t3.size();
+
+      ablocks[2].resize( t3.size() ); 
+      for(unsigned i=0;i<t3.size();++i){
+         all_atoms.addIndexToList( t3[i] ); ablocks[2][i] = t1.size() + t2.size() + i;
+      }
       for(unsigned i=0;i<t1.size();++i){
           for(unsigned j=0;j<t2.size();++j){
               for(unsigned k=0;k<t3.size();++k){
-                 newlist.push_back( t1.size() + j );
-                 newlist.push_back(i); 
-                 newlist.push_back( t1.size() + t2.size() + k );
-                 addColvar( newlist ); newlist.clear();
+                  if( all_atoms(ablocks[0][i])!=all_atoms(ablocks[1][j]) && 
+                      all_atoms(ablocks[0][i])!=all_atoms(ablocks[2][k]) && 
+                      all_atoms(ablocks[1][j])!=all_atoms(ablocks[2][k]) ) addTaskToList( nblock*nblock*i + nblock*j + k );
               }
           }
       }
@@ -243,22 +273,18 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
 }
 
 void MultiColvar::readSpeciesKeyword( int& natoms ){
+  plumed_assert( usespecies );
   if( all_atoms.fullSize()>0 ) return ;
+  ablocks.resize( natoms-1 );
 
   std::vector<AtomNumber> t;
   parseAtomList("SPECIES",t);
   if( !t.empty() ){
-      natoms=t.size();
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
-      std::vector<unsigned> newlist;
       if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ){
-          for(unsigned i=0;i<t.size();++i){
-              newlist.push_back(i);
-              for(unsigned j=0;j<t.size();++j){
-                  if(i!=j) newlist.push_back(j); 
-              }
-              addColvar( newlist ); newlist.clear();
-          }
+          plumed_assert( natoms==2 ); current_atoms.resize( t.size() );
+          for(unsigned i=0;i<t.size();++i) addTaskToList(i);
+          ablocks[0].resize( t.size() ); for(unsigned i=0;i<t.size();++i) ablocks[0][i]=i; 
           if( !verbose_output ){
               log.printf("  generating colvars from %d atoms of a particular type\n",t.size() );
               log.printf("  atoms involved : "); 
@@ -266,13 +292,13 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
               log.printf("\n");
           }
       } else if( !( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) ){
-          std::vector<unsigned> newlist; verbose_output=false; // Make sure we don't do verbose output
+          std::vector<unsigned> newlist; usespecies=false; verbose_output=false; // Make sure we don't do verbose output
           log.printf("  involving atoms : ");
+          current_atoms.resize(1); ablocks.resize(1); ablocks[0].resize( t.size() ); 
           for(unsigned i=0;i<t.size();++i){ 
-             newlist.push_back(i); addColvar( newlist ); newlist.clear();
-             log.printf(" %d",t[i].serial() ); 
+             addTaskToList(i); ablocks[0][i]=i; log.printf(" %d",t[i].serial() ); 
           }
-          log.printf("\n");  
+          log.printf("\n");
       } else {
           plumed_merror("SPECIES keyword is not for density or coordination like CV");
       }
@@ -282,17 +308,9 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
       if( !t1.empty() ){
          parseAtomList("SPECIESB",t2);
          if ( t2.empty() ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
-         natoms=1+t2.size();
-         for(unsigned i=0;i<t1.size();++i) all_atoms.addIndexToList( t1[i] );
-         for(unsigned i=0;i<t2.size();++i) all_atoms.addIndexToList( t2[i] );
-         std::vector<unsigned> newlist;
-         for(unsigned i=0;i<t1.size();++i){
-            newlist.push_back(i);
-            for(unsigned j=0;j<t2.size();++j){
-                if( t1[i]!=t2[j] ) newlist.push_back( t1.size() + j ); 
-            }
-            addColvar( newlist ); newlist.clear();
-         }
+         current_atoms.resize( 1+ t2.size() );
+         for(unsigned i=0;i<t1.size();++i){ all_atoms.addIndexToList( t1[i] ); addTaskToList(i); }
+         ablocks[0].resize( t2.size() ); for(unsigned i=0;i<t2.size();++i){ all_atoms.addIndexToList( t2[i] ); ablocks[0][i]=t1.size() + i; }
          if( !verbose_output ){
              log.printf("  generating colvars from a group of %d central atoms and %d other atoms\n",t1.size(), t2.size() );
              log.printf("  central atoms are : ");
@@ -306,28 +324,70 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
   } 
 }
 
-void MultiColvar::resizeDynamicArrays(){
-  for(unsigned i=0;i<taskList.getNumberActive();++i){
-      unsigned n=taskList[i];
-      for(unsigned j=0;j<colvar_atoms[n].getNumberActive();++j){ 
-         all_atoms.activate( colvar_atoms[n][j] );
+void MultiColvar::threeBodyNeighborList( const SwitchingFunction& sf ){
+  plumed_dbg_assert( !usespecies && ablocks.size()==3 );
+  if( !contributorsAreUnlocked ) return;
+
+  unsigned stride=comm.Get_size();
+  unsigned rank=comm.Get_rank(); 
+  if( serialCalculation() ){ stride=1; rank=0; }
+              
+  unsigned ik=0; double w, dw; Vector dij;
+  std::vector<unsigned> inactive_tasks( getCurrentNumberOfActiveTasks(), 0 );
+  for(unsigned i=0;i<ablocks[0].size();++i){
+      for(unsigned j=0;j<ablocks[1].size();++j){
+                  
+          if( (ik++)%stride!=rank ) continue;
+          
+          dij=getSeparation( ActionAtomistic::getPosition(ablocks[0][i]), ActionAtomistic::getPosition(ablocks[1][j]) );
+          w = sf.calculateSqr( dij.modulo2(), dw );
+          if( w<getNLTolerance() ){
+              // Deactivate all tasks involving i and j
+              for(unsigned k=0;k<getCurrentNumberOfActiveTasks();++k){
+                  unsigned ind=std::floor( getActiveTask(k) / decoder[0] );
+                  if( ind!=i ) continue;
+                  unsigned ind2=std::floor( (getActiveTask(k) - ind*decoder[0]) / decoder[1] );
+                  if( ind2!=j ) continue;
+                  inactive_tasks[k] = 1;
+              }
+          }
       }
+  }
+  if( !serialCalculation() ) comm.Sum( inactive_tasks );
+  std::vector<bool> activeTasks( getCurrentNumberOfActiveTasks(), false );
+  deactivateAllTasks();
+  for(unsigned i=0;i<activeTasks.size();++i){
+      if( inactive_tasks[i]==0 ) activeTasks[i]=true;
+  }       
+  activateTheseTasks( activeTasks );
+}     
+
+void MultiColvar::finishTaskListUpdate(){
+  updateCSphereArrays();  // Stuff for atom centered symmetry function nlist
+  // Get the atoms we need
+  all_atoms.deactivateAll();
+  for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
+      bool check=setupCurrentAtomList( getActiveTask(i) );
+      plumed_assert( check );
+      for(unsigned j=0;j<natomsper;++j) all_atoms.activate( current_atoms[j] );
   }
   all_atoms.updateActiveMembers(); 
   // Request the atoms
   ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+  // Resize arrays in MultiColvarBase
+  resizeLocalArrays();
 }
 
 void MultiColvar::calculate(){
+  if( checkNumericalDerivatives() ) calculationsRequiredBeforeNumericalDerivatives();
   runAllTasks();
 }
 
-double MultiColvar::doCalculation( const unsigned& j ){
-  double val=compute(j);
+void MultiColvar::updateActiveAtoms(){
+  if( atoms_with_derivatives.updateComplete() ) return;
   atoms_with_derivatives.emptyActiveMembers();
   for(unsigned i=0;i<getNAtoms();++i) atoms_with_derivatives.updateIndex( getAtomIndex(i) );
   atoms_with_derivatives.sortActiveList();
-  return val;
 }
 
 Vector MultiColvar::calculateCentralAtomPosition(){
