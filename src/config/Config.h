@@ -43,6 +43,8 @@ bool isInstalled();
 
 bool hasCregex();
 
+bool hasMolfile();
+
 }
 }
 

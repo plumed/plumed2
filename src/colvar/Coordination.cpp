@@ -106,7 +106,7 @@ CoordinationBase(ao)
 double Coordination::pairing(double distance,double&dfunc,unsigned i,unsigned j)const{
   (void) i; // avoid warnings
   (void) j; // avoid warnings
-  return switchingFunction.calculate(distance,dfunc);
+  return switchingFunction.calculateSqr(distance,dfunc);
 }
 
 }

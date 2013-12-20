@@ -32,6 +32,7 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
+#include <cerrno>
 
 namespace PLMD{
 
@@ -240,6 +241,7 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
      FILE* ff=std::fopen(const_cast<char*>(fname.c_str()),"r");
      FILE* fff=NULL;
      if(ff){
+       std::fclose(ff);
        std::string backup;
        size_t found=fname.find_last_of("/\\");
        std::string directory=fname.substr(0,found+1);
@@ -251,12 +253,11 @@ void OFile::backupFile( const std::string& bstring, const std::string& fname ){
          backup=directory+bstring +"."+num+"."+file;
          fff=std::fopen(backup.c_str(),"r");
          if(!fff) break;
+	 else std::fclose(fff);
        }
        int check=rename(fname.c_str(),backup.c_str());
-       plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for some reason");
+       plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
      }
-     if(ff) std::fclose(ff);
-     if(fff) std::fclose(fff);
    }
 }
 

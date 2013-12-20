@@ -7,7 +7,11 @@ PRINT ...
   FILE=COLVAR
 ... PRINT
 
-DUMPDERIVATIVES ARG=c,cs,csn FILE=deriv FMT=%8.4f
+DUMPDERIVATIVES ARG=c,cs FILE=deriv FMT=%8.4f
+
+# this has been used to debug derivatives
+# I don't use it in regtest since it fails doe to numerical noise (0.0 vs -0.0)
+# DUMPDERIVATIVES ARG=c,cs,csn FILE=deriv FMT=%8.4f
 
 ENDPLUMED
 

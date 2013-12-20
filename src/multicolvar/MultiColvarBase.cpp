@@ -81,11 +81,10 @@ void MultiColvarBase::copyActiveAtomsToFunction( MultiColvarBase* myfunction, co
 
 void MultiColvarBase::setupMultiColvarBase(){
   // Setup decoder array
-  if( !usespecies ){
+  if( !usespecies && ablocks.size()<4 ){
      decoder.resize( ablocks.size() ); unsigned code=1;
      for(unsigned i=0;i<ablocks.size();++i){ decoder[ablocks.size()-1-i]=code; code *= nblock; } 
-  } else if( ablocks.size()>0 ) {
-     plumed_assert( ablocks.size()==1 );
+  } else if( ablocks.size()==1 ) {
      // Setup coordination sphere
      csphere_atoms.resize( getFullNumberOfTasks() ); unsigned nflags=0;
      for(unsigned i=0;i<getFullNumberOfTasks();++i){
@@ -97,7 +96,7 @@ void MultiColvarBase::setupMultiColvarBase(){
         csphere_atoms[i].activateAll();
      } 
      csphere_flags.resize( nflags, 0 );
-  }
+  } 
   // Do an initial task list update
   finishTaskListUpdate();
   // Setup underlying ActionWithVessel
@@ -158,7 +157,7 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode ){
         }
      }
      if( natomsper==1 ) return isDensity();
-  } else {
+  } else if( current_atoms.size()<4 ){
      natomsper=current_atoms.size();
      unsigned scode = taskCode;
      for(unsigned i=0;i<ablocks.size();++i){
@@ -166,7 +165,10 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode ){
         current_atoms[i]=getBaseQuantityIndex( ablocks[i][ind] );
         scode -= ind*decoder[i]; 
      }
-  }  
+  } else {
+     natomsper=current_atoms.size(); 
+     for(unsigned i=0;i<ablocks.size();++i) current_atoms[i]=getBaseQuantityIndex( ablocks[i][taskCode] );
+  } 
   return true;
 }
 

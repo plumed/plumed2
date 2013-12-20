@@ -169,7 +169,6 @@ void ActionWithVessel::unlockContributors(){
 }
 
 void ActionWithVessel::lockContributors(){
-  if( !serial ) comm.Sum( taskFlags );
   nactive_tasks = 0;
   for(unsigned i=0;i<fullTaskList.size();++i){
       // Deactivate sets inactive tasks to number not equal to zero
@@ -292,7 +291,10 @@ bool ActionWithVessel::calculateAllVessels(){
 
 void ActionWithVessel::finishComputations(){
   // MPI Gather everything
-  if(!serial && buffer.size()>0) comm.Sum( buffer );
+  if( !serial && buffer.size()>0 ) comm.Sum( buffer );
+  // Update the elements that are makign contributions to the sum here
+  // this causes problems if we do it in prepare
+  if( !serial && contributorsAreUnlocked ) comm.Sum( taskFlags );
 
   // Set the final value of the function
   for(unsigned j=0;j<functions.size();++j) functions[j]->finish(); 

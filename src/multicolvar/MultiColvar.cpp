@@ -98,9 +98,13 @@ void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){
   if( all_atoms.fullSize()>0 ){
      current_atoms.resize( natoms ); nblock=ablocks[0].size();
      for(unsigned i=0;i<nblock;++i){
-         unsigned cvcode=0, tmpc=1;
-         for(unsigned j=0;j<natoms;++j){ cvcode += i*tmpc; tmpc *= nblock; }
-         addTaskToList( cvcode );  
+         if( natoms<4 ){
+            unsigned cvcode=0, tmpc=1;
+            for(unsigned j=0;j<natoms;++j){ cvcode += i*tmpc; tmpc *= nblock; }
+            addTaskToList( cvcode );  
+         } else {
+            addTaskToList( i );
+         }
      }
   }
 }
@@ -336,7 +340,7 @@ void MultiColvar::threeBodyNeighborList( const SwitchingFunction& sf ){
           if( (ik++)%stride!=rank ) continue;
           
           dij=getSeparation( ActionAtomistic::getPosition(ablocks[0][i]), ActionAtomistic::getPosition(ablocks[1][j]) );
-          w = sf.calculate( dij.modulo(), dw );
+          w = sf.calculateSqr( dij.modulo2(), dw );
           if( w<getNLTolerance() ){
               // Deactivate all tasks involving i and j
               for(unsigned k=0;k<getCurrentNumberOfActiveTasks();++k){

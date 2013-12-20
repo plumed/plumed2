@@ -118,7 +118,8 @@ constant(0.0)
   log<<"  Bibliography "<<plumed.cite("Do, Carloni, Varani and Bussi, J. Chem. Theory Comput. 9, 1720 (2013)")<<" \n";
 }
 
-double DHEnergy::pairing(double distance,double&dfunc,unsigned i,unsigned j)const{
+double DHEnergy::pairing(double distance2,double&dfunc,unsigned i,unsigned j)const{
+  double distance=std::sqrt(distance2);
   if(getAbsoluteIndex(i)==getAbsoluteIndex(j)){
     dfunc=0.0;
     return 0.0;

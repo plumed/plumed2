@@ -18,7 +18,13 @@ done
 # Create the list of codes that plumed works with from the set of available patches
 for file in ../patches/*.diff
 do
-   echo "- $file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///' >> automatic/codes.list
+   myengine=`echo "$file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///'`
+   mytag=`echo "$myengine" | sed -e 's/\./\_/g'`
+   echo "- \subpage $mytag" >> automatic/codes.list
+   echo "/**" >> automatic/$myengine.txt
+   echo "\page $mytag $myengine" >> automatic/$myengine.txt
+   plumed patch -e $myengine -i -q >> automatic/$myengine.txt
+   echo "*/" >> automatic/$myengine.txt 
 done
 
 ## Check for utilities that register actions with no documentation
@@ -105,53 +111,62 @@ done
 
 # Find what modules the user has installed
 # Find the list of modules
-if [ -d ../mymodules ] ;  then
-  sed -i '' -e 's/type="user" visible="no" url="mymodules.html"/type="user" visible="yes" url="mymodules.html"/' PlumedLayout.xml
-  for file in `ls ../mymodules/available-modules/`
-  do
-     # Check if module has been installed
-     if [ -d "../mymodules/$file" ] ; then
-          # Generate documentation and accreditation on modules page
-          echo "\section $file" >> automatic/mymodules.list
-          echo >> automatic/mymodules.list
-          echo "<table  align=center frame=void width=95%% celpadding=5%%>" >> automatic/mymodules.list
-          echo "<tr> <td width=70%%> </td> </tr> <td>" >> automatic/mymodules.list
-          author=`grep AUTHOR: ../mymodules/available-modules/"$file" | sed -e 's/AUTHOR://'` 
-          echo "<b> author: $author </b>" >> automatic/mymodules.list
-          echo "</td> </tr>" >> automatic/mymodules.list
-          echo "<tr> <td colspan="2">" >> automatic/mymodules.list
-          dline=`grep -n DESCRIPTION: ../mymodules/available-modules/"$file" | sed -n 's/^\([0-9]*\)[:].*/\1/p'` >> automatic/mymodules.list
-          tail -n +$(($dline+1)) ../mymodules/available-modules/"$file" >> automatic/mymodules.list
-          echo "</td> </tr> </table>" >> automatic/mymodules.list
-          echo >> automatic/mymodules.list
-          echo >> automatic/mymodules.list
-          
-          # Find src files in module and add a link to the module description
-          for srcfile in `ls ../mymodules/"$file"/src/*cpp` ; do
-              ndocs=`grep PLUMEDOC "$srcfile" | wc -l | awk '{print $1}'`
-              for ((line=1;line<$ndocs;++line)) ; do
-                 docfile=`grep PLUMEDOC "$srcfile" | grep -v END | head -n $line | tail -n 1 | awk '{print $3}'`
-                 cat automatic/"$docfile".tmp |
-                 {
-                     while read -r LINE ; do
-                        if `echo $LINE | grep "\section $docfile" 1>/dev/null 2>&1`
-                        then  
-                          echo $LINE
-                          echo "<table  align=center frame=void width=95%% celpadding=5%%>"
-                          echo "<tr> <td width=70%%> </td> <td>"
-                          echo "<b> This is part of the \ref $file module </b>"
-                          echo "</td> </tr> </table>"
-                        else 
-                          echo "$LINE"
-                        fi
-                     done
-                 } > automatic/"$docfile"1.tmp
-                 mv automatic/"$docfile"1.tmp automatic/"$docfile".tmp
-              done
-          done   
-     fi 
-  done
-fi
+# if [ -d ../mymodules ] ;  then
+#  sed -i '' -e 's/type="user" visible="no" url="mymodules.html"/type="user" visible="yes" url="mymodules.html"/' PlumedLayout.xml
+echo "<table align=center frame=void width=65%% cellpadding=5%%>" > automatic/modules.list
+echo "<tr> <td> <b> Module name </b> </td> <td> <b> Default behavior </b> </td> </tr>" >> automatic/modules.list
+for file in `ls ../src/*/module.type | sed -e 's/..\/src\///' | sed -e 's/\/module.type//'`
+do
+   dstr=`head ../src/$file/module.type`
+   if [ "$dstr" != "always" ] ; then
+         echo "<tr> <td> $file </td>" >> automatic/modules.list
+         if [ "$dstr" == "default-on" ] ; then
+            echo "<td> on </td> </tr>" >> automatic/modules.list
+         else 
+            echo "<td> off </td> </tr>" >> automatic/modules.list
+         fi
+#        # Generate documentation and accreditation on modules page
+#        echo "\section $file" >> automatic/mymodules.list
+#        echo >> automatic/mymodules.list
+#        echo "<table  align=center frame=void width=95%% celpadding=5%%>" >> automatic/mymodules.list
+#        echo "<tr> <td width=70%%> </td> </tr> <td>" >> automatic/mymodules.list
+#        author=`grep AUTHOR: ../mymodules/available-modules/"$file" | sed -e 's/AUTHOR://'` 
+#        echo "<b> author: $author </b>" >> automatic/mymodules.list
+#        echo "</td> </tr>" >> automatic/mymodules.list
+#        echo "<tr> <td colspan="2">" >> automatic/mymodules.list
+#        dline=`grep -n DESCRIPTION: ../mymodules/available-modules/"$file" | sed -n 's/^\([0-9]*\)[:].*/\1/p'` >> automatic/mymodules.list
+#        tail -n +$(($dline+1)) ../mymodules/available-modules/"$file" >> automatic/mymodules.list
+#        echo "</td> </tr> </table>" >> automatic/mymodules.list
+#        echo >> automatic/mymodules.list
+#        echo >> automatic/mymodules.list
+        
+        # Find src files in module and add a link to the module description
+        for srcfile in `ls ../src/"$file"/*cpp` ; do
+            ndocs=`grep PLUMEDOC "$srcfile" | grep -v END | wc -l | awk '{print $1}'`
+            for ((line=1;line<=$ndocs;++line)) ; do
+               docfile=`grep PLUMEDOC "$srcfile" | grep -v END | head -n $line | tail -n 1 | awk '{print $3}'`
+               cat automatic/"$docfile".tmp |
+               {
+                   while read -r LINE ; do
+                      if `echo $LINE | grep "section $docfile" 1>/dev/null 2>&1`
+                      then  
+                        echo $LINE
+                        echo "<table  align=center frame=void width=95%% celpadding=5%%>"
+                        echo "<tr> <td width=70%%> </td> <td>"
+                        echo "<b> This is part of the $file \\ref mymodules </b>"
+                        echo "</td> </tr> </table>"
+                      else 
+                        echo "$LINE"
+                      fi
+                   done
+               } > automatic/"$docfile"1.tmp
+               mv automatic/"$docfile"1.tmp automatic/"$docfile".tmp
+            done
+        done   
+   fi 
+done
+echo "</table>" >> automatic/modules.list
+# fi
 
 # Generate all the documentation from keywords
 source ../sourceme.sh
@@ -237,7 +252,7 @@ cat $file.txt |
     echo "</table>"
   elif [ "$LINE" = "@MODULES@" ]
   then
-    cat automatic/mymodules.list
+    cat automatic/modules.list
   elif [ "$LINE" = "@FUNCTION@" ]
   then
     echo "<table align=center frame=void width=95%% cellpadding=5%%>"

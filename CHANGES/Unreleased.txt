@@ -1,19 +1,20 @@
 /**
 
-@page CHANGES-2-1 Version 2.1
+@page CHANGES-UNRELEASED Unreleased changes
 
-Version 2.1.0 - unreleased
-------------------------
-
-Includes all fixes in branch 2.0 (see \ref CHANGES-2-0) up to 2.0.1.
+Include all fixes in branch 2.0 indicated in \ref CHANGES-2-0 .
 
 Changes from version 2.0 which are relevant for users:
 - New configuration system based on autoconf (use ./configure from root directory)
+- Root-mean-square devations with align weights different from displace weights
+  are now considerably faster. This will affect \ref RMSD calculations plus
+  other variables based on RMSD.
 - Added WALKERS_MPI to \ref METAD, allowing to run multiple walkers in a mpi-based multi-replica framework.
 - Added ACCELERATION to \ref METAD, allowing to calculate on the fly the Metadynamics acceleration factor.
 - Added option PRECISION to set number of digits in \ref DUMPATOMS.
 - Added NDX_FILE and NDX_GROUP to action \ref GROUP, allowing to import atom lists from ndx files.
-- Several optimizations in the following actions: \ref WHOLEMOLECULES, ...
+- Small optimization in \ref WHOLEMOLECULES
+- Small optimization in \ref COORDINATION when NN and MM are even and D_0=0
 - Faster atom scattering with domain decomposition.
 - \ref SPRINT topological collective variables.
 - \ref CH3SHIFTS collective variable.
@@ -23,6 +24,10 @@ Changes from version 2.0 which are relevant for users:
 - Added possibility to use negative strides in atom ranges (e.g. 10-1:-3).
 - Added possibility to use \ref COORDINATION or \ref DHENERGY with NLIST in replica exchange simulations.
 - Added STRETCH flag to \ref switchingfunction.
+- Added possibility to read trajectories from \ref driver using VMD molfile
+  plugin (requires VMD plugins to be compiled and installed)
+- Simplified configuration with the possibility to use an internally compiled
+  version of lapack and blas.
 
 Changes from version 2.0 which are relevant for developers:
 - Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional
@@ -31,5 +36,13 @@ Changes from version 2.0 which are relevant for developers:
 - Improved class Communicator. Many operations can now be done directly on Vectors, Tensors, std::vector and PLMD::Matrix.
 - Patches for GPL codes (QuantumEspresso and Gromacs) now also include
   original code so as to simplify their modification.
+- Fixed dependencies among actions such that it is now possible (and reliable)
+  to use MPI calls inside Action::prepare()
+- colvar/CoordinationBase.cpp has been changed to make it faster. If you devised a class which inherits from here,
+  consider that CoordinationBase::pairing now needs _squared_ distance instead of distance
+- It is possible to run "make install" from subdirectories (e.g. from src/colvar)
+- There is a small script which disables/enables all optional modules (make mod-light/mod-heavy/mod-reset)
+- Added "-q" option to plumed patch
+
 
 */

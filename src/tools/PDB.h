@@ -71,12 +71,8 @@ public:
   void getResidueRange( const std::string& chainname, unsigned& res_start, unsigned& res_end, std::string& errmsg ) const;
 /// Get the atoms in each of the chains 
   void getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomNumber& a_end, std::string& errmsg ) const;
-/// Get the atoms in the backbone of a particular residue
-  bool getBackbone( const unsigned& resnumber, const std::vector<std::string>& backnames, std::vector<AtomNumber>& backnumbers ) const ;  
 /// Get the chain ID that a particular residue is a part of
   std::string getChainID(const unsigned& resnumber) const;
-/// This allows you to give atoms a new name - this is used to rename the HB1 atoms in GLY residues CB so that alpharmsd works
-  void renameAtoms( const std::string& old_name, const std::string& new_name );
 ///use the log to dump information  
   friend Log& operator<<(Log& ostr, const PDB& pdb);
 /// return the name of a specific atom
@@ -85,6 +81,14 @@ public:
   unsigned getResidueNumber(AtomNumber a) const;
 /// return the residue name for a specific atom
   std::string getResidueName(AtomNumber a) const;
+/// get the name of the resnum'th residue
+  std::string getResidueName(const unsigned& resnum ) const;
+/// Check if any of the residues are named name
+  bool checkForResidue( const std::string& name ) const ;
+/// Check if any of the atoms are named atom
+  bool checkForAtom( const std::string& name ) const ;
+/// Return the atom named aname from residue number resnum
+  AtomNumber getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const;
 };
 
 }

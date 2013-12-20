@@ -123,7 +123,7 @@ double CoordinationNumbers::compute(){
    double sw;
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPosition(0), getPosition(i) );
-      sw = switchingFunction.calculate( distance.modulo(), dfunc );
+      sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
       if( sw>=getTolerance() ){   
          value += sw;             
          addAtomsDerivatives( 0, (-dfunc)*distance );

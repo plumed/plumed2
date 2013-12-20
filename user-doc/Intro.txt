@@ -1,19 +1,24 @@
 /**
 \mainpage Introduction
 
+\warning This is the manual for the development version of PLUMED. It might
+contain buggy code. See this page: \ref CHANGES-UNRELEASED
+
 PLUMED is a plugin that works with a large number of molecular dynamics codes.  It can be used
 to analyse features of the dynamics on-the-fly or to perform a wide variety of free energy methods.
 The original PLUMED 1 was highly successful and had over 1000 users.  PLUMED 2 \cite plumed2 constitues an 
 extensive rewrite of the original in a way that makes it more modular and thus easier to implement 
 new methods, more straightforward to add it to MD codes and hopefully simpler to use.  
 This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
-<a href="../../developer-doc/html/index.html"> developer manual </a>.  Alternatively, to look at a list of the new 
-features available in PLUMED 2 and to work out how to install PLUMED 2 in your MD code check out:
+<a href="../../developer-doc/html/index.html"> developer manual </a>.
 
-- \subpage WhatsNew
-- \subpage Installation 
+To know the difference between PLUMED 1 and PLUMED 2, and to
+follow the development of PLUMED 2, you can checkout the detailed changelog:
+- Changes for \ref CHANGES-2-0
 
-See also \ref CHANGES-2-0 and \ref CHANGES-2-1
+A short tutorial explaining how to move from PLUMED 1 to PLUMED 2 is also available (see \ref moving)
+
+To install PLUMED 2, see this page: \subpage Installation
 
 \section qintro A quick introduction
 
@@ -70,7 +75,10 @@ PRINT ARG=d1 FILE=colvar STRIDE=10
 (see \ref PRINT)
 
 then PLUMED will print out the value of the distance between atoms 1 and 2 every 10 steps to the file colvar as you have told
-PLUMED to take the value calculated by the action d1 and to print it.  
+PLUMED to take the value calculated by the action d1 and to print it. You can use any character string to label your actions
+as long as it does not begin with the symbol @.  Strings beginning with @ are used by within PLUMED to reference special, 
+code-generated groups of atoms and to give labels to any Actions for which the user does not provide a label in the input. 
+
 Notice that if a word followed by a column is added at the beginning of the line (e.g. pippo:), PLUMED automatically
 removes it and adds an equivalent label (LABEL=pippo).
 Thus, a completely equivalent result can be obtained with the following shortcut:

@@ -119,8 +119,10 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   string name=data[0];
   data.erase(data.begin());
   invr0=0.0;
+  invr0_2=0.0;
   d0=0.0;
   dmax=std::numeric_limits<double>::max();
+  dmax_2=std::numeric_limits<double>::max();
   stretch=1.0;
   shift=0.0;
   init=true;
@@ -129,13 +131,15 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   bool found_r0=Tools::parse(data,"R_0",r0);
   if(!found_r0) errormsg="R_0 is required";
   invr0=1.0/r0;
+  invr0_2=invr0*invr0;
   Tools::parse(data,"D_0",d0);
   Tools::parse(data,"D_MAX",dmax);
+  dmax_2=dmax*dmax;
   bool dostretch=false;
   Tools::parseFlag(data,"STRETCH",dostretch);
 
   if(name=="RATIONAL"){
-    type=spline;
+    type=rational;
     nn=6;
     mm=12;
     Tools::parse(data,"NN",nn);
@@ -166,7 +170,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
 std::string SwitchingFunction::description() const {
   std::ostringstream ostr;
   ostr<<1./invr0<<".  Using ";
-  if(type==spline){
+  if(type==rational){
      ostr<<"rational";
   } else if(type==exponential){
      ostr<<"exponential";
@@ -178,7 +182,7 @@ std::string SwitchingFunction::description() const {
      plumed_merror("Unknown switching function type");
   }
   ostr<<" swiching function with parameters d0="<<d0;
-  if(type==spline){
+  if(type==rational){
     ostr<<" nn="<<nn<<" mm="<<mm;
   } else if(type==smap){
     ostr<<" a="<<a<<" b="<<b;
@@ -186,23 +190,8 @@ std::string SwitchingFunction::description() const {
   return ostr.str(); 
 }
 
-double SwitchingFunction::calculate(double distance,double&dfunc)const{
-  plumed_massert(init,"you are trying to use an unset SwitchingFunction");
-  if(distance>dmax){
-    dfunc=0.0;
-    return 0.0;
-  }
-  const double rdist = (distance-d0)*invr0;
-  double result;
-  if(rdist<=0.){
-     result=1.;
-     dfunc=0.0;
-  }else{
-    if(type==smap){
-      double sx=c*pow( rdist, a ); 
-      result=pow( 1.0 + sx, d ); 
-      dfunc=-b*sx/rdist*result/(1.0+sx); 
-    } else if(type==spline){
+double SwitchingFunction::do_rational(double rdist,double&dfunc,int nn,int mm)const{
+      double result;
       if(2*nn==mm){
 // if 2*N==M, then (1.0-rdist^N)/(1.0-rdist^M) = 1.0/(1.0+rdist^N)
         double rNdist=Tools::fastpow(rdist,nn-1);
@@ -223,6 +212,47 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
            dfunc = ((-nn*rNdist*iden)+(func*(iden*mm)*rMdist));
         }
       }
+    return result;
+}
+
+double SwitchingFunction::calculateSqr(double distance2,double&dfunc)const{
+  if(type==rational && nn%2==0 && mm%2==0 && d0==0.0){
+    if(distance2>dmax_2){
+      dfunc=0.0;
+      return 0.0;
+    }
+    const double rdist_2 = distance2*invr0_2;
+    double result=do_rational(rdist_2,dfunc,nn/2,mm/2);
+// chain rule:
+    dfunc*=2*invr0_2;
+// stretch:
+    result=result*stretch+shift;
+    dfunc*=stretch;
+    return result;
+  } else {
+    double distance=std::sqrt(distance2);
+    return calculate(distance,dfunc);
+  }
+}
+
+double SwitchingFunction::calculate(double distance,double&dfunc)const{
+  plumed_massert(init,"you are trying to use an unset SwitchingFunction");
+  if(distance>dmax){
+    dfunc=0.0;
+    return 0.0;
+  }
+  const double rdist = (distance-d0)*invr0;
+  double result;
+  if(rdist<=0.){
+     result=1.;
+     dfunc=0.0;
+  }else{
+    if(type==smap){
+      double sx=c*pow( rdist, a ); 
+      result=pow( 1.0 + sx, d ); 
+      dfunc=-b*sx/rdist*result/(1.0+sx); 
+    } else if(type==rational){
+      result=do_rational(rdist,dfunc,nn,mm);
     }else if(type==exponential){
       result=exp(-rdist);
       dfunc=-result;
@@ -245,12 +275,14 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
 
 SwitchingFunction::SwitchingFunction():
   init(false),
-  type(spline),
+  type(rational),
   nn(6),
   mm(12),
   invr0(0.0),
   d0(0.0),
   dmax(0.0),
+  invr0_2(0.0),
+  dmax_2(0.0),
   stretch(1.0),
   shift(0.0)
 {
@@ -258,12 +290,14 @@ SwitchingFunction::SwitchingFunction():
 
 void SwitchingFunction::set(int nn,int mm,double r0,double d0){
   init=true;
-  type=spline;
+  type=rational;
   this->nn=nn;
   this->mm=mm;
   this->invr0=1.0/r0;
+  this->invr0_2=this->invr0*this->invr0;
   this->d0=d0;
   this->dmax=d0+r0*pow(0.00001,1./(nn-mm));
+  this->dmax_2=this->dmax*this->dmax;
 }
 
 double SwitchingFunction::get_r0() const {

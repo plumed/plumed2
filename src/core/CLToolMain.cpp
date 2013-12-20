@@ -126,6 +126,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       return (config::hasCregex()?0:1);
     } else if(a=="--has-dlopen"){
       return (config::hasDlopen()?0:1);
+    } else if(a=="--has-molfile"){
+      return (config::hasMolfile()?0:1);
     } else if(a=="--is-installed"){
       return (config::isInstalled()?0:1);
     } else if(a=="--no-mpi"){

@@ -145,7 +145,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> DIHCOR </TD>
-  <TD> <b> currently missing </b>, can be emulated with multiple \ref TORSION combined with \ref MATHEVAL</TD>
+  <TD> \ref DIHCOR </TD>
 </TR>
 <TR>
   <TD> ALPHABETA </TD>

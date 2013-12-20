@@ -70,6 +70,25 @@ LABEL=ab
 PRINT ARG=ab FILE=colvar STRIDE=10
 \endverbatim
 
+Writing out the atoms involved in all the torsions in this way can be rather tedious. Thankfully if you are working with protein you
+can avoid this by using the \ref MOLINFO command.  PLUMED uses the pdb file that you provide to this command to learn 
+about the topology of the protein molecule.  This means that you can specify torsion angles using the following syntax:
+
+\verbatim
+MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
+ALPHABETA ...
+ATOMS1=@phi-3 REFERENCE=3.14
+ATOMS2=@psi-3
+ATOMS4=@phi-4
+LABEL=ab
+... ALPHABETA 
+PRINT ARG=ab FILE=colvar STRIDE=10
+\endverbatim
+
+Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.  
+Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
+
+
 */
 //+ENDPLUMEDOC
 

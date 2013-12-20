@@ -24,6 +24,7 @@
 #include "ActionRegister.h"
 #include "ActionSet.h"
 #include "PlumedMain.h"
+#include "tools/MolDataClass.h"
 #include "tools/PDB.h"
 
 
@@ -42,6 +43,7 @@ void SetupMolInfo::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRUCTURE","a file in pdb format containing a reference structure. "
                                     "This is used to defines the atoms in the various residues, chains, etc . " 
                                     "For more details on the PDB file format visit http://www.wwpdb.org/docs.html");
+  keys.add("compulsory","MOLTYPE","protein","what kind of molecule is contained in the pdb file");
   keys.add("atoms","CHAIN","(for masochists ( mostly Davide Branduardi ) ) The atoms involved in each of the chains of interest in the structure.");
 }
 
@@ -55,6 +57,9 @@ ActionSetup(ao),
 ActionAtomistic(ao),
 pdb(*new(PDB))
 {
+  // Read what is contained in the pdb file
+  parse("MOLTYPE",mytype);
+
   std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()!=0 ) error("cannot use more than one MOLINFO action in input");
 
@@ -73,7 +78,6 @@ pdb(*new(PDB))
   if( read_backbone.size()==0 ){
     std::string reference; parse("STRUCTURE",reference);
 
-
     if( ! pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()))plumed_merror("missing input file " + reference );
 
     std::vector<std::string> chains; pdb.getChainNames( chains );
@@ -88,10 +92,13 @@ pdb(*new(PDB))
        log.printf("  chain named %s contains residues %u to %u and atoms %d to %d \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
     }
   }
-  pdb.renameAtoms("HA1","CB");  // This is a hack to make this work with GLY residues 
 }
 
-void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::vector<std::string>& atnames, std::vector< std::vector<AtomNumber> >& backbone ){
+void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::string& fortype, std::vector< std::vector<AtomNumber> >& backbone ){
+  if( fortype!=mytype ) error("cannot calculate a variable designed for " + fortype + " molecules for molecule type " + mytype );
+  if( MolDataClass::numberOfAtomsPerResidueInBackbone( mytype )==0 ) error("backbone is not defined for molecule type " + mytype );
+  bool useter=false; // This is used to deal with terminal groups in WHOLEMOLECULES
+
   if( read_backbone.size()!=0 ){
       if( restrings.size()!=1 ) error("cannot interpret anything other than all for residues when using CHAIN keywords");
       if( restrings[0]!="all" ) error("cannot interpret anything other than all for residues when using CHAIN keywords");  
@@ -102,11 +109,18 @@ void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::
       }
   } else {
       if( restrings.size()==1 ){
-          if( restrings[0]=="all" ){
+          useter=( restrings[0].find("ter")!=std::string::npos );
+          if( restrings[0].find("all")!=std::string::npos ){
               std::vector<std::string> chains; pdb.getChainNames( chains );
               for(unsigned i=0;i<chains.size();++i){
                   unsigned r_start, r_end; std::string errmsg, mm, nn;  
                   pdb.getResidueRange( chains[i], r_start, r_end, errmsg );
+                  if( !useter ){
+                      std::string resname = pdb.getResidueName( r_start ); 
+                      if( MolDataClass::isTerminalGroup( mytype, resname ) ) r_start++;
+                      resname = pdb.getResidueName( r_end );
+                      if( MolDataClass::isTerminalGroup( mytype, resname ) ) r_end--;
+                  }
                   Tools::convert(r_start,mm); Tools::convert(r_end,nn);
                   if(i==0) restrings[0] = mm + "-" + nn;
                   else restrings.push_back(  mm + "-" + nn );
@@ -132,28 +146,35 @@ void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::
 
       // And now get the backbone atoms from each segment
       backbone.resize( segments.size() ); 
-      std::vector<AtomNumber> atomnumbers( atnames.size() );
+      std::vector<std::string> atnames; std::vector<AtomNumber> atomnumbers; 
       for(unsigned i=0;i<segments.size();++i){
           for(unsigned j=0;j<segments[i].size();++j){
-              bool terminus=( j==0 || j==segments[i].size()-1 );
-              bool foundatoms=pdb.getBackbone( segments[i][j], atnames, atomnumbers );
-              if( terminus && !foundatoms ){
+              std::string resname=pdb.getResidueName( segments[i][j] );
+              if( !MolDataClass::allowedResidue(mytype, resname) ){
                   std::string num; Tools::convert( segments[i][j], num );
-                  warning("Assuming residue " + num + " is a terminal group");
-              } else if( !foundatoms ){
+                  error("residue " + num + " is not recognized for moltype " + mytype );
+              }  
+              if( !useter && MolDataClass::isTerminalGroup( mytype, resname ) ){
+                  std::string num; Tools::convert( segments[i][j], num );
+                  error("residue " + num + " appears to be a terminal group");
+              } 
+              if( resname=="GLY" ) warning("GLY residues are achiral - assuming HA1 atom is in CB position");
+              MolDataClass::getBackboneForResidue( mytype, segments[i][j], pdb, atomnumbers );
+              if( atomnumbers.size()==0 ){
                   std::string num; Tools::convert( segments[i][j], num );
                   error("Could not find required backbone atom in residue number " + num );
-              } else if( foundatoms ){
+              } else {
                   for(unsigned k=0;k<atomnumbers.size();++k) backbone[i].push_back( atomnumbers[k] );
               }
+              atomnumbers.resize(0);
           }
       }
   }
-  for(unsigned i=0;i<backbone.size();++i){
-     if( backbone[i].size()%atnames.size()!=0 ) error("number of atoms in one of the segments of backbone is not a multiple of the number of atoms in each residue");
-  }
 }
 
+void SetupMolInfo::interpretSymbol( const std::string& symbol, std::vector<AtomNumber>& atoms )const{
+  MolDataClass::specialSymbol( mytype, symbol, pdb, atoms );
+}
 
 std::string SetupMolInfo::getAtomName(AtomNumber a)const{
   return pdb.getAtomName(a);

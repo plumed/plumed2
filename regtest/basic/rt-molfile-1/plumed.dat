@@ -1,0 +1,16 @@
+rmsd0:   RMSD TYPE=OPTIMAL REFERENCE=test0.pdb
+rmsd1:   RMSD TYPE=OPTIMAL REFERENCE=test1.pdb
+
+sum: COMBINE ARG=* PERIODIC=NO
+
+RESTRAINT ARG=sum AT=20.0 KAPPA=1.0
+
+PRINT ...
+  STRIDE=1
+  ARG=*
+  FILE=COLVAR FMT=%6.3f
+... PRINT
+
+ENDPLUMED
+
+text here should be ignored

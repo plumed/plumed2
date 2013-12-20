@@ -94,9 +94,7 @@ Action(ao),
 SecondaryStructureRMSD(ao)
 {
   // read in the backbone atoms
-  std::vector<std::string> backnames(5); std::vector<unsigned> chains;
-  backnames[0]="N"; backnames[1]="CA"; backnames[2]="CB"; backnames[3]="C"; backnames[4]="O";
-  readBackboneAtoms( backnames, chains);
+  std::vector<unsigned> chains; readBackboneAtoms( "protein", chains);
 
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
   unsigned nres, nprevious=0; std::vector<unsigned> nlist(30);

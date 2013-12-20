@@ -156,7 +156,7 @@ void CoordinationBase::calculate()
   }
 
   double dfunc=0.;
-  ncoord += pairing(distance.modulo(), dfunc,i0,i1);
+  ncoord += pairing(distance.modulo2(), dfunc,i0,i1);
 
   deriv[i0] = deriv[i0] + (-dfunc)*distance ;
   deriv[i1] = deriv[i1] + dfunc*distance ;

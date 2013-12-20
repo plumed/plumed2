@@ -79,7 +79,7 @@ Notable variables there:
 - DYNAMIC_LIB : these are the libraries needed to compile the PLUMED
 library (e.g. -L/path/to/matheval -lmatheval etc). Notice that for the
 PLUMED shared library to be compiled properly these should be dynamic
-libraries. Also notice that PLUMED requires BLAS and LAPACK library;
+libraries. Also notice that PLUMED preferentially requires BLAS and LAPACK library;
 see \ref BlasAndLapack for further info. Notice that the variables 
 that you supply with `configure LIBS=something` will end up in this
 variable. This is a bit misleading but is required to keep the configuration
@@ -155,7 +155,10 @@ This is currently the only way to use a PLUMED static executable on Windows.
 We tried to keep PLUMED as independent as possible from external libraries.
 Moreover, some libraries (e.g. Almost and Matheval) providing
 extra features are optional. However, to have a properly working PLUMED
-you need to link BLAS and LAPACK libraries. Here you find some note.
+you need to link BLAS and LAPACK libraries.
+In case you cannot install proper BLAS and LAPACK libraries on your machine,
+you have the possibility of using an internally compiled (possibly slower) versionx .
+Here you find some note.
 
 First of all, the DYNAMIC_LIB variable in the configuration file
 should contain the flag necessary to load these libraries
@@ -172,6 +175,10 @@ in configuration file).
   "for_" prefix) then you should link also Fortran libraries. Indeed, PLUMED
   is written in C++ and often C++ linkers do not include by default Fortran libraries
   which are required for lapack and blas to work. Please check the documentation of your compiler.
+
+In case you cannot manage to install blas and lapack, you can use the internal
+ones. Just add to the CPPFLAGS the flags -D__PLUMED_INTERNAL_BLAS
+-D__PLUMED_INTERNAL_LAPACK
 
 
 \section Installing Installing PLUMED
@@ -234,7 +241,7 @@ An alternative is to also define the environment variable PLUMED_LIBSUFFIX. E.g.
 \endverbatim
 will install plumed executable with name "plumed-v2.0". All the other files will be renamed accordingly,
 e.g. the PLUMED library will be loaded with "-lplumed-v2.0" and the PLUMED header files
-will be included with "#include <plumed-v2.0/tools/Vector.h>. This trick is useful if you
+will be included with "\#include <plumed-v2.0/tools/Vector.h>". This trick is useful if you
 do not want to set up modules, but we think using modules (see above) is more flexible.
 
 \section Patching Patching your MD code
