@@ -129,28 +129,40 @@ AC_CHECK_FUNC(  [gettimeofday], [ ], [AC_MSG_ERROR([compulsory function not foun
 AC_CHECK_HEADER([dirent.h],     [ ], [AC_MSG_ERROR([compulsory header not found])] )
 AC_CHECK_FUNC(  [readdir],      [ ], [AC_MSG_ERROR([compulsory function not found])] )
 
+save_LIBS="$LIBS"
 # Then check for blas. This is a bit complicated because we want to allow
 # either the version with underscore or the one without
 # If they are not found in the normal search path, we repeat the search with -lblas
 blas_found=
+lapack_found=
 AC_CHECK_FUNC(  [dgemv], [blas_found=nounderscore], [
 AC_CHECK_FUNC(  [dgemv_],[blas_found=underscore],   [
 AC_CHECK_LIB(   [blas],[dgemv],  [LIBS="-lblas $LIBS"] [blas_found=nounderscore], [
-AC_CHECK_LIB(   [blas],[dgemv_], [LIBS="-lblas $LIBS"] [blas_found=underscore], [
-  AC_MSG_ERROR([blas not found - please set your LDFLAGS and LIBS so that they can be found])
-]) ]) ]) ])
+AC_CHECK_LIB(   [blas],[dgemv_], [LIBS="-lblas $LIBS"] [blas_found=underscore]
+) ]) ]) ])
 
+if test -n "$blas_found" ; then
 # Then we look for lapack using same underscoring
 case "$blas_found" in
 (underscore) search_for=dsyevr_ ;;
 (nounderscore) search_for=dsyevr ;;
 esac
-
 AC_CHECK_FUNC( [$search_for], [lapack_found=$blas_found], [
-AC_CHECK_LIB(  [lapack],[$search_for], [LIBS="-llapack $LIBS"], [
-  AC_MSG_ERROR([lapack not found - please set your LDFLAGS and LIBS so that they can be found])
+AC_CHECK_LIB(  [lapack],[$search_for], [LIBS="-llapack $LIBS"] [lapack_found=yes]
+)
 ])
-])
+fi
+
+if test -z "$lapack_found" ; then
+AC_MSG_WARN([lapack/blas not found, reverting to internal ones])
+LIBS="$save_LIBS"
+
+AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
+AC_DEFINE([__PLUMED_INTERNAL_BLAS])
+
+fi
+
+
 #### End of compulsory libraries ####
 
 

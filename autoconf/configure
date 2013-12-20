@@ -4431,10 +4431,12 @@ else
 fi
 
 
+save_LIBS="$LIBS"
 # Then check for blas. This is a bit complicated because we want to allow
 # either the version with underscore or the one without
 # If they are not found in the normal search path, we repeat the search with -lblas
 blas_found=
+lapack_found=
 ac_fn_cxx_check_func "$LINENO" "dgemv" "ac_cv_func_dgemv"
 if test "x$ac_cv_func_dgemv" = xyes; then :
   blas_found=nounderscore
@@ -4523,9 +4525,6 @@ fi
 $as_echo "$ac_cv_lib_blas_dgemv_" >&6; }
 if test "x$ac_cv_lib_blas_dgemv_" = xyes; then :
   LIBS="-lblas $LIBS" blas_found=underscore
-else
-
-  as_fn_error $? "blas not found - please set your LDFLAGS and LIBS so that they can be found" "$LINENO" 5
 
 fi
 
@@ -4536,12 +4535,12 @@ fi
 fi
 
 
+if test -n "$blas_found" ; then
 # Then we look for lapack using same underscoring
 case "$blas_found" in
 (underscore) search_for=dsyevr_ ;;
 (nounderscore) search_for=dsyevr ;;
 esac
-
 as_ac_var=`$as_echo "ac_cv_func_$search_for" | $as_tr_sh`
 ac_fn_cxx_check_func "$LINENO" "$search_for" "$as_ac_var"
 if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
@@ -4587,15 +4586,27 @@ eval ac_res=\$$as_ac_Lib
 	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
 $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_Lib"\" = x"yes"; then :
-  LIBS="-llapack $LIBS"
-else
-
-  as_fn_error $? "lapack not found - please set your LDFLAGS and LIBS so that they can be found" "$LINENO" 5
+  LIBS="-llapack $LIBS" lapack_found=yes
 
 fi
 
 
 fi
+
+fi
+
+if test -z "$lapack_found" ; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: lapack/blas not found, reverting to internal ones" >&5
+$as_echo "$as_me: WARNING: lapack/blas not found, reverting to internal ones" >&2;}
+LIBS="$save_LIBS"
+
+$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
+
+$as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
+
+
+fi
+
 
 #### End of compulsory libraries ####
 
