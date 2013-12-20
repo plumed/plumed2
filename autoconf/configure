@@ -687,6 +687,7 @@ ac_user_opts='
 enable_option_checking
 enable_debug
 enable_fussy
+enable_external_lapack
 enable_debug_glibcxx
 enable_shared
 enable_cxx_exceptions
@@ -1316,6 +1317,8 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-debug          enable debugging, default: no
   --enable-fussy          enable fussy warnings, default: no
+  --enable-external-lapack
+                          enable search for external lapack, default: yes
   --enable-debug-glibcxx  enable enable boundary check, default: no
   --enable-shared         enable shared libs, default: yes
   --enable-cxx-exceptions enable c++ exceptions, default: no
@@ -2243,6 +2246,24 @@ else
   case "no" in
              (yes) fussy=true ;;
              (no)  fussy=false ;;
+  esac
+
+fi
+
+
+
+external_lapack=
+# Check whether --enable-external-lapack was given.
+if test "${enable_external_lapack+set}" = set; then :
+  enableval=$enable_external_lapack; case "${enableval}" in
+             (yes) external_lapack=true ;;
+             (no)  external_lapack=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-external-lapack" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) external_lapack=true ;;
+             (no)  external_lapack=false ;;
   esac
 
 fi
@@ -4437,6 +4458,9 @@ save_LIBS="$LIBS"
 # If they are not found in the normal search path, we repeat the search with -lblas
 blas_found=
 lapack_found=
+
+if test "$external_lapack" == true ; then
+
 ac_fn_cxx_check_func "$LINENO" "dgemv" "ac_cv_func_dgemv"
 if test "x$ac_cv_func_dgemv" = xyes; then :
   blas_found=nounderscore
@@ -4595,9 +4619,11 @@ fi
 
 fi
 
+fi
+
 if test -z "$lapack_found" ; then
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: lapack/blas not found, reverting to internal ones" >&5
-$as_echo "$as_me: WARNING: lapack/blas not found, reverting to internal ones" >&2;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack/blas, could be inefficient" >&5
+$as_echo "$as_me: WARNING: using internal lapack/blas, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
 $as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h

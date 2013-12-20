@@ -60,6 +60,7 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
 # set enable flags for ./configure
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
+PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
@@ -135,6 +136,9 @@ save_LIBS="$LIBS"
 # If they are not found in the normal search path, we repeat the search with -lblas
 blas_found=
 lapack_found=
+
+if test "$external_lapack" == true ; then
+
 AC_CHECK_FUNC(  [dgemv], [blas_found=nounderscore], [
 AC_CHECK_FUNC(  [dgemv_],[blas_found=underscore],   [
 AC_CHECK_LIB(   [blas],[dgemv],  [LIBS="-lblas $LIBS"] [blas_found=nounderscore], [
@@ -153,8 +157,10 @@ AC_CHECK_LIB(  [lapack],[$search_for], [LIBS="-llapack $LIBS"] [lapack_found=yes
 ])
 fi
 
+fi 
+
 if test -z "$lapack_found" ; then
-AC_MSG_WARN([lapack/blas not found, reverting to internal ones])
+AC_MSG_WARN([using internal lapack/blas, could be inefficient])
 LIBS="$save_LIBS"
 
 AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
