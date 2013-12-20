@@ -42,7 +42,12 @@ Erik Lindahl, 2008-10-07.
     /*! \brief Minimum single precision value */
 #define PLUMED_GMX_FLOAT_MIN    1.17549435E-38
 
+#if defined(F77_NO_UNDERSCORE)
 #define PLUMED_BLAS_F77_FUNC(lower,upper) lower
+#else
+#define PLUMED_BLAS_F77_FUNC(lower,upper) lower ## _
+#endif
+
 #define GMX_LIBGMX_EXPORT
 
 #endif

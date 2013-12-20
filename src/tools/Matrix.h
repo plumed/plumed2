@@ -196,7 +196,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    double vl, vu, abstol=0.0;
    int* isup=new int[2*A.cl]; double *evecs=new double[A.sz];
 
-   lapack::dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
@@ -205,7 +205,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
    lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
 
-   lapack::dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
@@ -242,15 +242,15 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ){
      unsigned k=0; int n=A.rw, info;
      for(unsigned i=0;i<A.cl;++i) for(unsigned j=0;j<A.rw;++j) da[k++]=static_cast<double>( A(j,i) );
 
-     lapack::dgetrf(&n,&n,da,&n,ipiv,&info);
+     plumed_lapack_dgetrf(&n,&n,da,&n,ipiv,&info);
      if(info!=0) return info;
 
      int lwork=-1; double* work=new double[A.cl];
-     lapack::dgetri(&n,da,&n,ipiv,work,&lwork,&info);
+     plumed_lapack_dgetri(&n,da,&n,ipiv,work,&lwork,&info);
      if(info!=0) return info;
 
      lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
-     lapack::dgetri(&n,da,&n,ipiv,work,&lwork,&info);
+     plumed_lapack_dgetri(&n,da,&n,ipiv,work,&lwork,&info);
      if(info!=0) return info;
 
      if( inverse.cl!=A.cl || inverse.rw!=A.rw ){ inverse.resize(A.rw,A.cl); }
@@ -306,7 +306,7 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
    double *work=new double[M.rw]; int *iwork=new int[M.rw];
    double vl, vu, abstol=0.0;
    int* isup=new int[2*M.rw]; double *evecs=new double[M.sz];
-   lapack::dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
@@ -315,7 +315,7 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
    lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
    liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
 
-   lapack::dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;

@@ -15,23 +15,35 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
            inside=1;
            a++;
            if(a==1){
-             print "namespace PLMD{"
-             print "namespace blas{"
+             print "#include \"simple.h\""
+             print "#ifdef __PLUMED_EXTERNAL_LAPACK"
+             print "#include \"def_external.h\""
+             print "#else"
+             print "#include \"def_internal.h\""
+             print "#endif"
              print "#ifdef __PLUMED_EXTERNAL_BLAS"
              print "extern \"C\"{"
+             print "#else"
+             print "namespace PLMD{"
+             print "namespace blas{"
              print "#endif"
            }
            if(a==2){
              print "#ifdef __PLUMED_EXTERNAL_BLAS"
              print "}"
+             print "#else"
+             print "}"
+             print "}"
              print "#endif"
-             print "}"
-             print "}"
            }
          }
          if(!inside) print
          if(inside && $1=="#endif") inside=0;
        }' > blas.h
+
+grep PLUMED_BLAS_F77_FUNC blas.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' | awk '{print "#define plumed_blas_"$2" PLMD::blas::PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_internal.h
+grep PLUMED_BLAS_F77_FUNC blas.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' | awk '{print "#define plumed_blas_"$2" PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_external.h
+
 
 cat << EOF > simple.h
 #ifndef PLUMED_blas_simple_h
@@ -55,7 +67,11 @@ cat << EOF > simple.h
     /*! \brief Minimum single precision value */
 #define PLUMED_GMX_FLOAT_MIN    1.17549435E-38
 
+#if defined(F77_NO_UNDERSCORE)
 #define PLUMED_BLAS_F77_FUNC(lower,upper) lower
+#else
+#define PLUMED_BLAS_F77_FUNC(lower,upper) lower ## _
+#endif
 
 #endif
 EOF

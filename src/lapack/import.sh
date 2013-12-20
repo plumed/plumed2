@@ -19,23 +19,34 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_lapack.h |
            inside=1;
            a++;
            if(a==1){
-             print "namespace PLMD{"
-             print "namespace lapack{"
+             print "#include \"simple.h\""
+             print "#ifdef __PLUMED_EXTERNAL_LAPACK"
+             print "#include \"def_external.h\""
+             print "#else"
+             print "#include \"def_internal.h\""
+             print "#endif"
              print "#ifdef __PLUMED_EXTERNAL_LAPACK"
              print "extern \"C\"{"
+             print "#else"
+             print "namespace PLMD{"
+             print "namespace lapack{"
              print "#endif"
            }
            if(a==2){
              print "#ifdef __PLUMED_EXTERNAL_LAPACK"
              print "}"
+             print "#else"
+             print "}"
+             print "}"
              print "#endif"
-             print "}"
-             print "}"
            }
          }
          if(!inside) print
          if(inside && $1=="#endif") inside=0;
        }' > lapack.h
+
+grep PLUMED_BLAS_F77_FUNC lapack.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' | awk '{print "#define plumed_lapack_"$2" PLMD::lapack::PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_internal.h
+grep PLUMED_BLAS_F77_FUNC lapack.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' | awk '{print "#define plumed_lapack_"$2" PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_external.h
 
 cat << EOF > simple.h
 #ifndef PLUMED_lapack_simple_h
@@ -59,7 +70,12 @@ cat << EOF > simple.h
     /*! \brief Minimum single precision value */
 #define PLUMED_GMX_FLOAT_MIN    1.17549435E-38
 
+#if defined(F77_NO_UNDERSCORE)
 #define PLUMED_BLAS_F77_FUNC(lower,upper) lower
+#else
+#define PLUMED_BLAS_F77_FUNC(lower,upper) lower ## _
+#endif
+
 #define GMX_LIBGMX_EXPORT
 
 #endif

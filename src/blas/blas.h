@@ -91,10 +91,17 @@ Erik Lindahl, 2008-10-07.
  * it here.
  */
 
-namespace PLMD{
-namespace blas{
+#include "simple.h"
+#ifdef __PLUMED_EXTERNAL_LAPACK
+#include "def_external.h"
+#else
+#include "def_internal.h"
+#endif
 #ifdef __PLUMED_EXTERNAL_BLAS
 extern "C"{
+#else
+namespace PLMD{
+namespace blas{
 #endif
 #if 0
 }
@@ -237,9 +244,10 @@ int
 
 #ifdef __PLUMED_EXTERNAL_BLAS
 }
+#else
+}
+}
 #endif
-}
-}
 
 
 

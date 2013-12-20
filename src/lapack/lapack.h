@@ -91,10 +91,17 @@ Erik Lindahl, 2008-10-07.
 
 
 
-namespace PLMD{
-namespace lapack{
+#include "simple.h"
+#ifdef __PLUMED_EXTERNAL_LAPACK
+#include "def_external.h"
+#else
+#include "def_internal.h"
+#endif
 #ifdef __PLUMED_EXTERNAL_LAPACK
 extern "C"{
+#else
+namespace PLMD{
+namespace lapack{
 #endif
 #if 0
 }
@@ -891,9 +898,10 @@ void
 
 #ifdef __PLUMED_EXTERNAL_LAPACK
 }
+#else
+}
+}
 #endif
-}
-}
 
 
 
