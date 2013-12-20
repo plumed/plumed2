@@ -16,23 +16,18 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
            a++;
            if(a==1){
              print "#include \"simple.h\""
-             print "#ifdef __PLUMED_EXTERNAL_LAPACK"
-             print "#include \"def_external.h\""
-             print "#else"
+             print "#ifdef __PLUMED_INTERNAL_LAPACK"
              print "#include \"def_internal.h\""
-             print "#endif"
-             print "#ifdef __PLUMED_EXTERNAL_BLAS"
-             print "extern \"C\"{"
-             print "#else"
              print "namespace PLMD{"
              print "namespace blas{"
+             print "#else"
+             print "#include \"def_external.h\""
+             print "extern \"C\"{"
              print "#endif"
            }
            if(a==2){
-             print "#ifdef __PLUMED_EXTERNAL_BLAS"
              print "}"
-             print "#else"
-             print "}"
+             print "#ifdef __PLUMED_INTERNAL_BLAS"
              print "}"
              print "#endif"
            }
@@ -77,7 +72,7 @@ cat << EOF > simple.h
 EOF
 
 {
-echo "#ifndef __PLUMED_EXTERNAL_BLAS"
+echo "#ifdef __PLUMED_INTERNAL_BLAS"
 for file in "$GRO"/src/gmxlib/gmx_blas/*.c
 do
   awk '{

@@ -92,16 +92,13 @@ Erik Lindahl, 2008-10-07.
 
 
 #include "simple.h"
-#ifdef __PLUMED_EXTERNAL_LAPACK
-#include "def_external.h"
-#else
+#ifdef __PLUMED_INTERNAL_LAPACK
 #include "def_internal.h"
-#endif
-#ifdef __PLUMED_EXTERNAL_LAPACK
-extern "C"{
-#else
 namespace PLMD{
 namespace lapack{
+#else
+#include "def_external.h"
+extern "C"{
 #endif
 #if 0
 }
@@ -896,10 +893,8 @@ void
                               float *work, int *lwork, int *info);
 
 
-#ifdef __PLUMED_EXTERNAL_LAPACK
 }
-#else
-}
+#ifdef __PLUMED_INTERNAL_LAPACK
 }
 #endif
 

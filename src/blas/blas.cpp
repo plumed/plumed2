@@ -20,7 +20,7 @@ better idea to use the full reference implementation.
 
 Erik Lindahl, 2008-10-07.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_EXTERNAL_BLAS
+#ifdef __PLUMED_INTERNAL_BLAS
 /*
  * This file is part of the GROMACS molecular simulation package.
  *

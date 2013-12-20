@@ -92,16 +92,13 @@ Erik Lindahl, 2008-10-07.
  */
 
 #include "simple.h"
-#ifdef __PLUMED_EXTERNAL_LAPACK
-#include "def_external.h"
-#else
+#ifdef __PLUMED_INTERNAL_LAPACK
 #include "def_internal.h"
-#endif
-#ifdef __PLUMED_EXTERNAL_BLAS
-extern "C"{
-#else
 namespace PLMD{
 namespace blas{
+#else
+#include "def_external.h"
+extern "C"{
 #endif
 #if 0
 }
@@ -242,10 +239,8 @@ int
     PLUMED_BLAS_F77_FUNC(isamax, ISAMAX) (int *n, float *dx, int *incx);
 
 
-#ifdef __PLUMED_EXTERNAL_BLAS
 }
-#else
-}
+#ifdef __PLUMED_INTERNAL_BLAS
 }
 #endif
 
