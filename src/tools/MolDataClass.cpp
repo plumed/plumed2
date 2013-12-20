@@ -124,6 +124,16 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
          numbers[1]=mypdb.getNamedAtomFromResidue("CA",resnum);
          numbers[2]=mypdb.getNamedAtomFromResidue("C",resnum);
          numbers[3]=mypdb.getNamedAtomFromResidue("N",resnum+1);
+      } else if( symbol.find("omega")!=std::string::npos ){
+         std::size_t dash=symbol.find_first_of('-');
+         unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+         std::string resname = mypdb.getResidueName(resnum);
+         if( !allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
+         numbers.resize(4); 
+         numbers[0]=mypdb.getNamedAtomFromResidue("CA",resnum); 
+         numbers[1]=mypdb.getNamedAtomFromResidue("C",resnum);
+         numbers[2]=mypdb.getNamedAtomFromResidue("N",resnum+1);
+         numbers[3]=mypdb.getNamedAtomFromResidue("CA",resnum+1);
       }
   } else {
       plumed_merror(type + " is not a valid molecule type"); 
