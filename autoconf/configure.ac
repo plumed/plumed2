@@ -168,6 +168,18 @@ PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
 PLUMED_CHECK_PACKAGE([regex.h],[regcomp],[__PLUMED_HAS_CREGEX])
 PLUMED_CHECK_PACKAGE([dlfcn.h],[dlopen],[__PLUMED_HAS_DLOPEN])
 PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
+
+# molfile:
+save_LIBS="$LIBS"
+found=ko
+AC_CHECK_HEADER( [libmolfile_plugin.h],
+  AC_CHECK_HEADER(  [molfile_plugin.h],
+  AC_CHECK_LIB(  molfile_plugin,molfile_gromacsplugin_init, [LIBS="-lmolfile_plugin $LIBS"] [found=ok]
+  )))
+if test $found == ok ; then
+ AC_DEFINE([__PLUMED_HAS_MOLFILE])
+fi
+
 # check for zlib
 # PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 # this can be used to enable openmp:
