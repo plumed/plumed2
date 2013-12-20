@@ -9,6 +9,8 @@ Includes all fixes in branch 2.0 (see \ref CHANGES-2-0) up to 2.0.1.
 
 Changes from version 2.0 which are relevant for users:
 - New configuration system based on autoconf (use ./configure from root directory)
+- Added WALKERS_MPI to \ref METAD, allowing to run multiple walkers in a mpi-based multi-replica framework.
+- Added ACCELERATION to \ref METAD, allowing to calculate on the fly the Metadynamics acceleration factor.
 - Added option PRECISION to set number of digits in \ref DUMPATOMS.
 - Added NDX_FILE and NDX_GROUP to action \ref GROUP, allowing to import atom lists from ndx files.
 - Several optimizations in the following actions: \ref WHOLEMOLECULES, ...
