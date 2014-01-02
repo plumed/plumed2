@@ -1,0 +1,10 @@
+#! /bin/bash
+
+rm -f sourceme.sh Makefile.conf
+
+cd autoconf
+./configure "${@}"
+if [ -e Makefile.conf ]; then cp Makefile.conf ../; fi
+if [ -e sourceme.sh ]; then cp sourceme.sh ../; fi
+
+

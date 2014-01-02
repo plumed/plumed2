@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Exception.h"
 
-#if ! defined(__PLUMED_EXCEPTIONS)
+#if defined(__PLUMED_HAS_EXECINFO) 
 #include <execinfo.h>
 #endif
 
@@ -64,10 +64,11 @@ Exception::Exception(const std::string&msg,const std::string&file,unsigned line,
 }
 
 void Exception::abortIfExceptionsAreDisabled(){
-#if ! defined(__PLUMED_EXCEPTIONS)
+#if ! defined(__PLUMED_HAS_EXCEPTIONS)
   fprintf(stderr,"%s",what());
   fprintf(stderr,"\n");
 
+#ifdef __PLUMED_HAS_EXECINFO
   void* callstack[128];
   int i, frames = backtrace(callstack, 128);
   char** strs = backtrace_symbols(callstack, frames);
@@ -75,6 +76,7 @@ void Exception::abortIfExceptionsAreDisabled(){
      fprintf(stderr,"%s\n", strs[i]);
   }
   free(strs);
+#endif
 
   std::abort();
 #endif

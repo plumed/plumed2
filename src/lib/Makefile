@@ -234,7 +234,7 @@ else
 .PHONY: error
 error:
 	@echo No configuration available
-	@echo First run ./configure.sh in the root directory
+	@echo First run ./configure in the root directory
 endif
 
 # this target is available anyway

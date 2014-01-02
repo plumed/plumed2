@@ -5,6 +5,9 @@
 Include all fixes in branch 2.0 indicated in \ref CHANGES-2-0 .
 
 Changes from version 2.0 which are relevant for users:
+- New configuration system based on autoconf (use ./configure from root directory).
+  Optional packaged are detected at compile time and correctly
+  enabled/disabled.
 - Root-mean-square devations with align weights different from displace weights
   are now considerably faster. This will affect \ref RMSD calculations plus
   other variables based on RMSD.
@@ -24,9 +27,9 @@ Changes from version 2.0 which are relevant for users:
 - Added possibility to use \ref COORDINATION or \ref DHENERGY with NLIST in replica exchange simulations.
 - Added STRETCH flag to \ref switchingfunction.
 - Added possibility to read trajectories from \ref driver using VMD molfile
-  plugin (requires VMD plugins to be compiled and installed)
-- Simplified configuration with the possibility to use an internally compiled
-  version of lapack and blas.
+  plugin (requires VMD plugins to be compiled and installed).
+- Simplified install with the possibility to use an internally compiled
+  version of lapack and blas (automatically triggered by autoconf).
 
 Changes from version 2.0 which are relevant for developers:
 - Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional

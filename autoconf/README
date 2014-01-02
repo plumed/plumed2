@@ -1,0 +1,10 @@
+DO NOT EDIT configure FILE
+
+One should edit configure.ac and the run autoconf in this
+directory. Also the resulting "configure" is stored on the git,
+so as to allow people not to install a recent autoconf on their
+system.
+If you modify configure.ac, remember to run
+autoconf and then commit both files to the git repository.
+
+
