@@ -33,7 +33,7 @@ all:
 
 links: Makefile
 	@echo Create links to modules used in $(CURDIR) to simplify header inclusion:
-	@for dir in $(USE) ; do test -L $$dir || ln -fs ../$$dir . && echo "   " $$dir ;  done
+	@for dir in $(USE) ; do ../maketools/makelinks.sh $$dir ;  done
 	@echo Touching a file used to track links update
 	touch links
 	@echo Acting recursively
@@ -62,7 +62,7 @@ endif
 
 .PHONY: clean
 clean:
-	-for file in * ; do test -L $$file && rm -f $$file ; done
+	../maketools/cleanlinks.sh
 	rm -fr deps links
 	rm -f $(CLEANLIST)
 
