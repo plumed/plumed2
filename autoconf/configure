@@ -687,10 +687,16 @@ ac_user_opts='
 enable_option_checking
 enable_debug
 enable_fussy
-enable_external_lapack
 enable_debug_glibcxx
 enable_shared
 enable_cxx_exceptions
+enable_mpi
+enable_external_lapack
+enable_matheval
+enable_clock_gettime
+enable_cregex
+enable_dlopen
+enable_execinfo
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1317,11 +1323,17 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-debug          enable debugging, default: no
   --enable-fussy          enable fussy warnings, default: no
-  --enable-external-lapack
-                          enable search for external lapack, default: yes
   --enable-debug-glibcxx  enable enable boundary check, default: no
   --enable-shared         enable shared libs, default: yes
   --enable-cxx-exceptions enable c++ exceptions, default: no
+  --enable-mpi            enable search for mpi, default: yes
+  --enable-external-lapack
+                          enable search for external lapack, default: yes
+  --enable-matheval       enable search for matheval, default: yes
+  --enable-clock-gettime  enable search for gettime, default: yes
+  --enable-cregex         enable search for C regular expression, default: yes
+  --enable-dlopen         enable search for dlopen, default: yes
+  --enable-execinfo       enable search for execinfo, default: yes
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2252,24 +2264,6 @@ fi
 
 
 
-external_lapack=
-# Check whether --enable-external-lapack was given.
-if test "${enable_external_lapack+set}" = set; then :
-  enableval=$enable_external_lapack; case "${enableval}" in
-             (yes) external_lapack=true ;;
-             (no)  external_lapack=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-external-lapack" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) external_lapack=true ;;
-             (no)  external_lapack=false ;;
-  esac
-
-fi
-
-
-
 debug_glibcxx=
 # Check whether --enable-debug-glibcxx was given.
 if test "${enable_debug_glibcxx+set}" = set; then :
@@ -2324,6 +2318,133 @@ fi
 
 
 
+mpi=
+# Check whether --enable-mpi was given.
+if test "${enable_mpi+set}" = set; then :
+  enableval=$enable_mpi; case "${enableval}" in
+             (yes) mpi=true ;;
+             (no)  mpi=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-mpi" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) mpi=true ;;
+             (no)  mpi=false ;;
+  esac
+
+fi
+
+
+
+external_lapack=
+# Check whether --enable-external-lapack was given.
+if test "${enable_external_lapack+set}" = set; then :
+  enableval=$enable_external_lapack; case "${enableval}" in
+             (yes) external_lapack=true ;;
+             (no)  external_lapack=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-external-lapack" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) external_lapack=true ;;
+             (no)  external_lapack=false ;;
+  esac
+
+fi
+
+
+
+matheval=
+# Check whether --enable-matheval was given.
+if test "${enable_matheval+set}" = set; then :
+  enableval=$enable_matheval; case "${enableval}" in
+             (yes) matheval=true ;;
+             (no)  matheval=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-matheval" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) matheval=true ;;
+             (no)  matheval=false ;;
+  esac
+
+fi
+
+
+
+clock_gettime=
+# Check whether --enable-clock-gettime was given.
+if test "${enable_clock_gettime+set}" = set; then :
+  enableval=$enable_clock_gettime; case "${enableval}" in
+             (yes) clock_gettime=true ;;
+             (no)  clock_gettime=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-clock-gettime" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) clock_gettime=true ;;
+             (no)  clock_gettime=false ;;
+  esac
+
+fi
+
+
+
+cregex=
+# Check whether --enable-cregex was given.
+if test "${enable_cregex+set}" = set; then :
+  enableval=$enable_cregex; case "${enableval}" in
+             (yes) cregex=true ;;
+             (no)  cregex=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-cregex" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) cregex=true ;;
+             (no)  cregex=false ;;
+  esac
+
+fi
+
+
+
+dlopen=
+# Check whether --enable-dlopen was given.
+if test "${enable_dlopen+set}" = set; then :
+  enableval=$enable_dlopen; case "${enableval}" in
+             (yes) dlopen=true ;;
+             (no)  dlopen=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-dlopen" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) dlopen=true ;;
+             (no)  dlopen=false ;;
+  esac
+
+fi
+
+
+
+execinfo=
+# Check whether --enable-execinfo was given.
+if test "${enable_execinfo+set}" = set; then :
+  enableval=$enable_execinfo; case "${enableval}" in
+             (yes) execinfo=true ;;
+             (no)  execinfo=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-execinfo" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) execinfo=true ;;
+             (no)  execinfo=false ;;
+  esac
+
+fi
+
+
+
+
 # by default use -O flag
 # we override the autoconf default (-g) because in release build we do not want to
 # include symbol information (obj files are huge)
@@ -2332,7 +2453,18 @@ then
   CXXFLAGS=-O
 fi
 
-# setup C/C++ compilers
+# this is list if copied from a generated ./configure script
+# the reason why I put it here explicitly is that I want a
+# correct fallback list to be searched after preferred choices
+# (e.g. MPI) have been checked.
+compilers="g++ cxx gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+
+# if searching for MPI, try first mpi-like compilers
+if test $mpi == true ; then
+compilers="mpic++ mpicxx openmpic++ openmpicxx $compilers"
+fi
+
+# do the actual search
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -2343,7 +2475,7 @@ if test -z "$CXX"; then
     CXX=$CCC
   else
     if test -n "$ac_tool_prefix"; then
-  for ac_prog in g++ c++ gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC
+  for ac_prog in $compilers
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
 set dummy $ac_tool_prefix$ac_prog; ac_word=$2
@@ -2387,7 +2519,7 @@ fi
 fi
 if test -z "$CXX"; then
   ac_ct_CXX=$CXX
-  for ac_prog in g++ c++ gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC
+  for ac_prog in $compilers
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -2840,6 +2972,8 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+
+# for c, the standard list is used
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -4685,6 +4819,28 @@ fi
 
 
 # optional libraries follow
+if test $mpi == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
+if test "x$ac_cv_header_mpi_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "MPI_Init" "ac_cv_func_MPI_Init"
+if test "x$ac_cv_func_MPI_Init" = xyes; then :
+  found=ok
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_MPI 1" >>confdefs.h
+
+    fi
+
+fi
+if test $matheval == true ; then
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "matheval.h" "ac_cv_header_matheval_h" "$ac_includes_default"
@@ -4746,6 +4902,8 @@ fi
 
     fi
 
+fi
+if test $clock_gettime == true ; then
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "time.h" "ac_cv_header_time_h" "$ac_includes_default"
@@ -4807,25 +4965,8 @@ fi
 
     fi
 
-
-    found=ko
-    ac_fn_cxx_check_header_mongrel "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
-if test "x$ac_cv_header_mpi_h" = xyes; then :
-
-      ac_fn_cxx_check_func "$LINENO" "MPI_Init" "ac_cv_func_MPI_Init"
-if test "x$ac_cv_func_MPI_Init" = xyes; then :
-  found=ok
 fi
-
-
-fi
-
-
-    if test $found == ok ; then
-      $as_echo "#define __PLUMED_MPI 1" >>confdefs.h
-
-    fi
-
+if test $cregex == true ; then
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "regex.h" "ac_cv_header_regex_h" "$ac_includes_default"
@@ -4845,6 +4986,8 @@ fi
 
     fi
 
+fi
+if test $dlopen == true ; then
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "dlfcn.h" "ac_cv_header_dlfcn_h" "$ac_includes_default"
@@ -4864,6 +5007,8 @@ fi
 
     fi
 
+fi
+if test $execinfo == true ; then
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "execinfo.h" "ac_cv_header_execinfo_h" "$ac_includes_default"
@@ -4883,6 +5028,7 @@ fi
 
     fi
 
+fi
 
 # molfile:
 save_LIBS="$LIBS"

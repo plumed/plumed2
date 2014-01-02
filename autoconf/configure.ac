@@ -60,10 +60,17 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
 # set enable flags for ./configure
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
 PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
-PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
+PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
+PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
+PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
+PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
+PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
+PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
+PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
+
 
 # by default use -O flag
 # we override the autoconf default (-g) because in release build we do not want to
@@ -73,8 +80,21 @@ then
   CXXFLAGS=-O
 fi
 
-# setup C/C++ compilers
-AC_PROG_CXX
+# this is list if copied from a generated ./configure script
+# the reason why I put it here explicitly is that I want a
+# correct fallback list to be searched after preferred choices
+# (e.g. MPI) have been checked.
+compilers="g++ cxx gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+
+# if searching for MPI, try first mpi-like compilers
+if test $mpi == true ; then
+compilers="mpic++ mpicxx openmpic++ openmpicxx $compilers"
+fi
+
+# do the actual search
+AC_PROG_CXX([$compilers])
+
+# for c, the standard list is used
 AC_PROG_CC
 
 # also setup Fortran compiler
@@ -180,12 +200,24 @@ AC_MSG_NOTICE([Now we will check for optional headers and libraries])
 AC_CHECK_LIB([dl],dlopen, [STATIC_LIBS="-ldl $STATIC_LIBS"] [LIBS="-ldl $LIBS"])
 
 # optional libraries follow
-PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
-PLUMED_CHECK_PACKAGE([time.h],[clock_gettime],[__PLUMED_HAS_CLOCK_GETTIME],[rt])
-PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
-PLUMED_CHECK_PACKAGE([regex.h],[regcomp],[__PLUMED_HAS_CREGEX])
-PLUMED_CHECK_PACKAGE([dlfcn.h],[dlopen],[__PLUMED_HAS_DLOPEN])
-PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
+if test $mpi == true ; then
+  PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
+fi
+if test $matheval == true ; then
+  PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
+fi
+if test $clock_gettime == true ; then
+  PLUMED_CHECK_PACKAGE([time.h],[clock_gettime],[__PLUMED_HAS_CLOCK_GETTIME],[rt])
+fi
+if test $cregex == true ; then
+  PLUMED_CHECK_PACKAGE([regex.h],[regcomp],[__PLUMED_HAS_CREGEX])
+fi
+if test $dlopen == true ; then
+  PLUMED_CHECK_PACKAGE([dlfcn.h],[dlopen],[__PLUMED_HAS_DLOPEN])
+fi
+if test $execinfo == true ; then
+  PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
+fi
 
 # molfile:
 save_LIBS="$LIBS"
