@@ -19,31 +19,29 @@ OBJ=$(SRC:.cpp=.o)
 # dependency files for all c++ sources
 DEP=$(addprefix deps/,$(SRC:.cpp=.d))
 
-# default target
-.PHONY: all
+.PHONY: all links dirslinks obj lib install
 
-all:
-	@echo preparing for make
+# default target:
+# update all links then build this module
+all: dirslinks
+	@echo Preparing for make
 	$(PREMAKE)
-	@echo Verify that modules on which this one depends are active
-	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ;  done
-	make links
-	@echo Compile local objects
+	@echo "*** Compile local objects ***"
 	$(MAKE) obj
 
+# build links for this module
 links: Makefile
-	@echo Create links to modules used in $(CURDIR) to simplify header inclusion:
-	@for dir in $(USE) ; do ../maketools/makelinks.sh $$dir ;  done
-	@echo Touching a file used to track links update
-	touch links
-	@echo Acting recursively
-	@for dir in $(USE) ; do cd ../$$dir && $(MAKE) links && cd - ;  done
-	
+	@echo Verify modules and create links in $(CURDIR)
+	@for dir in $(USE) ; do ../maketools/check_module.sh $$dir ; ../maketools/makelinks.sh $$dir ;  done
 
-.PHONY: obj
+# build links for all modules
+dirslinks:
+	make -C ../lib dirslinks
+
+# buils objects in this module
 obj: $(OBJ)
 
-.PHONY: lib
+# build everything
 lib:
 	cd ../lib ; make
 
@@ -62,6 +60,7 @@ endif
 
 .PHONY: clean
 clean:
+	@echo Clean $(CURDIR)
 	../maketools/cleanlinks.sh
 	rm -fr deps links
 	rm -f $(CLEANLIST)

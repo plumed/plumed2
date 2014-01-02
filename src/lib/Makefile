@@ -4,6 +4,8 @@ KERNEL_MODULES=$(addprefix ../,$(shell ../maketools/find_modules.sh))
 # This adds modules which are built anyway and linked with some ad hoc procedure
 DIRS=$(sort ../config ../wrapper ../main  $(KERNEL_MODULES))
 
+# Targets to build links
+DIRSLINKS:=$(addsuffix .links,$(DIRS))
 
 # include the machine dependent configuration
 -include ../../Makefile.conf
@@ -52,10 +54,10 @@ PLUMED_MAIN_STATIC=$(PLUMED_LIBDIR)plumed
 PLUMED_MAIN_SHARED=$(PLUMED_LIBDIR)plumed-shared
 PLUMED_MAIN_RUNTIME=$(PLUMED_LIBDIR)plumed-runtime
 
-.PHONY: all dirs $(DIRS) all-static Plumed.cmake Plumed.inc
+.PHONY: all links $(DIRS) $(DIRSLINKS) all-static Plumed.cmake Plumed.inc
 ifdef SOEXT
 all:
-	@echo First making other dirs $(DIRS)
+	$(MAKE) dirslinks
 	$(MAKE) dirs
 	$(MAKE) lib
 else
@@ -64,9 +66,17 @@ all:
 endif
 
 all-static:
-	@echo First making other dirs $(DIRS)
+	$(MAKE) dirslinks
 	$(MAKE) dirs
 	$(MAKE) lib-static
+
+dirs:
+	@echo "*** Compiling all directories ***"
+	$(MAKE) $(DIRS)
+
+dirslinks:
+	@echo "*** Updating links to used modules in all directories ***"
+	$(MAKE) $(DIRSLINKS)
 
 
 install:
@@ -136,13 +146,12 @@ uninstall:
 	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
 	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
 
-dirs: $(DIRS)
-
 $(DIRS):
-	$(MAKE) -C $@
+	$(MAKE) -C $@ obj
 
+$(DIRSLINKS): %.links:
+	$(MAKE) -C $* links
 
-# default target
 .PHONY: lib lib-static lib-shared
 
 lib: lib-static lib-shared
