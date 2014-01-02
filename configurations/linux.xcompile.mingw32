@@ -11,7 +11,6 @@
 
 # Requirements
 #  - A recent mingw32 distribution (tested on FC17)
-#  - A cross-compiled versions of laplack and blas (tested 3.4.2)
 
 # Notes
 #  - Shared libraries are disabled. This means that the "runtime"
@@ -26,8 +25,8 @@
 
 LIBS=
 
-# TG Add the path to your cross-compiled lapack
-DYNAMIC_LIBS=-L../lapack-3.4.2/build/lib -lstdc++ -llapack -lblas -lgfortran
+# GB in this branch it is not necessary to link external lapack/blas
+DYNAMIC_LIBS=-lstdc++  -lgfortran
 DOUBLEPRECISION=-fdefault-real-8
 
 # TG - disabling DLOPEN (but can be implemented)

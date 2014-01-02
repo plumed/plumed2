@@ -1,4 +1,4 @@
-USE=core lapack
+USE=
 
 # generic makefile
 include ../maketools/make.module

@@ -17,7 +17,7 @@ Makefile.conf file. Notable variables there:
 - DYNAMIC_LIB : these are the libraries needed to compile the PLUMED
 library (e.g. -L/path/to/matheval -lmatheval etc). Notice that for the
 PLUMED shared library to be compiled properly these should be dynamic
-libraries. Also notice that PLUMED requires BLAS and LAPACK library;
+libraries. Also notice that PLUMED preferentially requires BLAS and LAPACK library;
 see \ref BlasAndLapack for further info.
 - CPPFLAGS : add here definition needed to enable specific optional functions;
 e.g. use -D__PLUMED_HAS_MATHEVAL to enable matheval library
@@ -89,7 +89,10 @@ This is currently the only way to use a PLUMED static executable on Windows.
 We tried to keep PLUMED as independent as possible from external libraries.
 Moreover, some libraries (e.g. Almost and Matheval) providing
 extra features are optional. However, to have a properly working PLUMED
-you need to link BLAS and LAPACK libraries. Here you find some note.
+you need to link BLAS and LAPACK libraries.
+In case you cannot install proper BLAS and LAPACK libraries on your machine,
+you have the possibility of using an internally compiled (possibly slower) versionx .
+Here you find some note.
 
 First of all, the DYNAMIC_LIB variable in the configuration file
 should contain the flag necessary to load these libraries
@@ -106,6 +109,10 @@ in configuration file).
   "for_" prefix) then you should link also Fortran libraries. Indeed, PLUMED
   is written in C++ and often C++ linkers do not include by default Fortran libraries
   which are required for lapack and blas to work. Please check the documentation of your compiler.
+
+In case you cannot manage to install blas and lapack, you can use the internal
+ones. Just add to the CPPFLAGS the flags -D__PLUMED_INTERNAL_BLAS
+-D__PLUMED_INTERNAL_LAPACK
 
 
 \section Installing Installing PLUMED

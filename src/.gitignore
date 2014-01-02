@@ -5,6 +5,7 @@
 !/README
 !/analysis
 !/bias
+!/blas
 !/cltools
 !/colvar
 !/config
@@ -15,6 +16,7 @@
 !/header.sh
 !/release.sh
 !/imd
+!/lapack
 !/lib
 !/main
 !/maketools

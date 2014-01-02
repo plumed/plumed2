@@ -28,25 +28,8 @@
 #include "Exception.h"
 #include "MatrixSquareBracketsAccess.h"
 #include "Log.h"
+#include "lapack/lapack.h"
 
-#if defined(F77_NO_UNDERSCORE)
-/// This is for AIX
-#define F77_FUNC(name,NAME) name
-#else
-/// Default: put the underscore
-#define F77_FUNC(name,NAME) name ## _
-/// other cases may be added as we find them...
-#endif
-
-extern "C" {
-void F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, int *n,
-                             double *a, int *lda, double *vl, double *vu, int *
-                             il, int *iu, double *abstol, int *m, double *w,
-                             double *z__, int *ldz, int *isuppz, double *work,
-                             int *lwork, int *iwork, int *liwork, int *info);
-void F77_FUNC(dgetrf,DGETRF)(int* m, int* n, double* da, int* lda, int* ipiv, int* info);
-void F77_FUNC(dgetri,DGETRI)(int* m, double* da, int* lda, int* ipiv, double* work, int* lwork, int* info);
-}
 
 namespace PLMD{
 
@@ -213,7 +196,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    double vl, vu, abstol=0.0;
    int* isup=new int[2*A.cl]; double *evecs=new double[A.sz];
 
-   F77_FUNC(dsyevr,DSYEVR)("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
@@ -222,7 +205,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
    lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
 
-   F77_FUNC(dsyevr,DSYEVR)("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
@@ -259,15 +242,15 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ){
      unsigned k=0; int n=A.rw, info;
      for(unsigned i=0;i<A.cl;++i) for(unsigned j=0;j<A.rw;++j) da[k++]=static_cast<double>( A(j,i) );
 
-     F77_FUNC(dgetrf, DGETRF)(&n,&n,da,&n,ipiv,&info);
+     plumed_lapack_dgetrf(&n,&n,da,&n,ipiv,&info);
      if(info!=0) return info;
 
      int lwork=-1; double* work=new double[A.cl];
-     F77_FUNC(dgetri, DGETRI)(&n,da,&n,ipiv,work,&lwork,&info);
+     plumed_lapack_dgetri(&n,da,&n,ipiv,work,&lwork,&info);
      if(info!=0) return info;
 
      lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
-     F77_FUNC(dgetri, DGETRI)(&n,da,&n,ipiv,work,&lwork,&info);
+     plumed_lapack_dgetri(&n,da,&n,ipiv,work,&lwork,&info);
      if(info!=0) return info;
 
      if( inverse.cl!=A.cl || inverse.rw!=A.rw ){ inverse.resize(A.rw,A.cl); }
@@ -323,7 +306,7 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
    double *work=new double[M.rw]; int *iwork=new int[M.rw];
    double vl, vu, abstol=0.0;
    int* isup=new int[2*M.rw]; double *evecs=new double[M.sz];
-   F77_FUNC(dsyevr,DSYEVR)("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
@@ -332,7 +315,7 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
    lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
    liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
 
-   F77_FUNC(dsyevr,DSYEVR)("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
