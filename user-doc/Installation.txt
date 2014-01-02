@@ -18,22 +18,34 @@ the proper arguments on the command line) and we encourage this.
 In case you have problems on your architecture, please
 report to the mailing list.
 
-You can provide hints to the configure script. In particular,
-you can state which compiler you wish to use, e.g. to use Intel compilers:
+Useful command line options for ./configure can be found typing
+\verbatim
+> ./configure --help
+\endverbatim
+Notice that some functionalities of PLUMED depend on external
+libraries which are looked for by configure. You can typically
+avoid looking for a library using the "disable" syntax, e.g.
+\verbatim
+> ./configure --disable-mpi --disable-matheval
+\endverbatim
+
+Notice that when mpi search is enabled (by default) compilers
+such as "mpic++" and "mpicxx" are searched first. On the other hand,
+if mpi search is disabled ("./configure --disable-mpi") non-mpi
+compilers are searched.
+
+You can better control which compiler is used with the
+variables CXX and CC. E.g., to use Intel compilers:
 \verbatim
 > ./configure CXX=icpc CC=icc
 \endverbatim
+Notice that in this example, since icpc is not an mpi compiler, mpi will not
+be enabled.
+
 You can also tune the compilation options
 \verbatim
 > ./configure CXXFLAGS=-O3
 \endverbatim
-
-In case you want an MPI build, just use the proper name of the MPI compiler.
-\verbatim
-> ./configure CXX=mpic++ CC=mpicc
-\endverbatim
-The configure will figure out that MPI library is available and instruct PLUMED
-to use it.
 
 In case you want to build with debug flags so as to do some checking you can use
 \verbatim
@@ -41,10 +53,6 @@ In case you want to build with debug flags so as to do some checking you can use
 \endverbatim
 This will perform some extra check during execution (possibly slowing down PLUMED a bit)
 and write full symbol table in the executable.
-Other useful command line options for ./configure can be found typing
-\verbatim
-> ./configure --help
-\endverbatim
 
 The main goal of the automatic configure is to find libraries.
 In case they are stored in unconventional places you might have to
@@ -73,6 +81,7 @@ you can just make them available to configure with
 \endverbatim
 The script is also finding out if function names have the final underscore added,
 so this should be completely transparent to the user.
+In case blas or lapack are not found, the internal versions are used.
 
 As a final resort, you may also edit the resulting Makefile.conf file.
 Notable variables there:
@@ -155,12 +164,16 @@ This is currently the only way to use a PLUMED static executable on Windows.
 We tried to keep PLUMED as independent as possible from external libraries.
 Moreover, some libraries (e.g. Almost and Matheval) providing
 extra features are optional. However, to have a properly working PLUMED
-you need to link BLAS and LAPACK libraries.
-In case you cannot install proper BLAS and LAPACK libraries on your machine,
-you have the possibility of using an internally compiled (possibly slower) versionx .
-Here you find some note.
+you need BLAS and LAPACK libraries.
+In case you cannot manage to install blas and lapack, you can use the internal
+ones. Just add to the CPPFLAGS the flags -D__PLUMED_INTERNAL_BLAS
+-D__PLUMED_INTERNAL_LAPACK.
+The automatic configure should be able to choose automatically the internal
+libraries when necessary.
 
-First of all, the DYNAMIC_LIB variable in the configuration file
+Some additional notes follow.
+
+First of all, the DYNAMIC_LIB variable in the Makefile.conf
 should contain the flag necessary to load these libraries
 (typically -llapack -lblas, but full path specification with -L
 should be necessary depending on your system configuration).
@@ -175,11 +188,6 @@ in configuration file).
   "for_" prefix) then you should link also Fortran libraries. Indeed, PLUMED
   is written in C++ and often C++ linkers do not include by default Fortran libraries
   which are required for lapack and blas to work. Please check the documentation of your compiler.
-
-In case you cannot manage to install blas and lapack, you can use the internal
-ones. Just add to the CPPFLAGS the flags -D__PLUMED_INTERNAL_BLAS
--D__PLUMED_INTERNAL_LAPACK
-
 
 \section Installing Installing PLUMED
 
