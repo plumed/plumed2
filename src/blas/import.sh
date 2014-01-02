@@ -16,7 +16,7 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
            a++;
            if(a==1){
              print "#include \"simple.h\""
-             print "#ifdef __PLUMED_INTERNAL_LAPACK"
+             print "#if defined(__PLUMED_INTERNAL_LAPACK) || defined (__PLUMED_INTERNAL_BLAS)"
              print "#include \"def_internal.h\""
              print "namespace PLMD{"
              print "namespace blas{"
@@ -27,7 +27,7 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
            }
            if(a==2){
              print "}"
-             print "#ifdef __PLUMED_INTERNAL_BLAS"
+             print "#if defined(__PLUMED_INTERNAL_LAPACK) || defined (__PLUMED_INTERNAL_BLAS)"
              print "}"
              print "#endif"
            }
@@ -72,7 +72,7 @@ cat << EOF > simple.h
 EOF
 
 {
-echo "#ifdef __PLUMED_INTERNAL_BLAS"
+echo "#if defined(__PLUMED_INTERNAL_LAPACK) || defined (__PLUMED_INTERNAL_BLAS)"
 for file in "$GRO"/src/gmxlib/gmx_blas/*.c
 do
   awk '{
