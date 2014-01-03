@@ -33,6 +33,7 @@
 #include "tools/File.h"
 #include "time.h"
 #include <iostream>
+#include <limits>
 
 #define DP2CUTOFF 6.25
 
@@ -269,12 +270,13 @@ void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
-  keys.add("compulsory","HEIGHT","the heights of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
   keys.add("compulsory","FILE","HILLS","a file in which the list of added hills is stored");
+  keys.add("optional","HEIGHT","the heights of the Gaussian hills. Compulsory unless TAU, TEMP and BIASFACTOR are given");
   keys.add("optional","FMT","specify format for HILLS files (useful for decrease the number of digits in regtests)");
   keys.add("optional","BIASFACTOR","use well tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
   keys.add("optional","TEMP","the system temperature - this is only needed if you are doing well-tempered metadynamics");
+  keys.add("optional","TAU","in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -314,7 +316,7 @@ PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
 BiasGrid_(NULL),ExtGrid_(NULL), wgridstride_(0), grid_(false), hasextgrid_(false),
 // Metadynamics basic parameters
-height0_(0.0), biasf_(1.0), temp_(0.0),
+height0_(std::numeric_limits<double>::max()), biasf_(1.0), temp_(0.0),
 stride_(0), welltemp_(false),
 // Other stuff
 dp_(NULL), adaptive_(FlexibleBin::none),
@@ -373,8 +375,8 @@ isFirstStep(true)
 
          flexbin=new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
+// note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
-  if( height0_<=0.0 ) error("error cannot add zero height or negative height hills");
   parse("PACE",stride_);
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
   string hillsfname="HILLS";
@@ -386,7 +388,18 @@ isFirstStep(true)
    if(temp_==0.0) error("if you are doing well tempered metadynamics you must specify the temperature using TEMP");
    welltemp_=true;
   }
-
+  double tau=0.0;
+  parse("TAU",tau);
+  if(tau==0.0){
+    if(height0_==std::numeric_limits<double>::max()) error("At least one between HEIGHT and TAU should be specified");
+// if tau is not set, we compute it here from the other input parameters
+    if(welltemp_) tau=(plumed.getAtoms().getKBoltzmann()*temp_*(biasf_-1.0))/height0_*getTimeStep()*stride_;
+  } else {
+    if(!welltemp_)error("TAU only makes sense in well-tempered metadynamics");
+    if(height0_!=std::numeric_limits<double>::max()) error("At most one between HEIGHT and TAU should be specified");
+    height0_=(plumed.getAtoms().getKBoltzmann()*temp_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+  }
+  
   // Grid Stuff
   vector<std::string> gmin(getNumberOfArguments());
   parseVector("GRID_MIN",gmin);
@@ -452,7 +465,10 @@ isFirstStep(true)
   log.printf("  Gaussian height %f\n",height0_);
   log.printf("  Gaussian deposition pace %d\n",stride_); 
   log.printf("  Gaussian file %s\n",hillsfname.c_str());
-  if(welltemp_){log.printf("  Well-Tempered Bias Factor %f\n",biasf_);}
+  if(welltemp_){
+    log.printf("  Well-Tempered Bias Factor %f\n",biasf_);
+    log.printf("  Hills relaxation time (tau) %f\n",tau);
+  }
   if(doInt_) log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
   if(grid_){
    log.printf("  Grid min");
