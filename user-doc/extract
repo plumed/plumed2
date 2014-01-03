@@ -67,8 +67,8 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"; dfile="automatic/DICTIONARY1.list";
       if(output!="")close(output);
       output="automatic/"$3".tmp";
       print "/**" > output
-      print "\\page "$3 > output
-      print "\\section "$3 >output
+      print "\\page "$3" "$3 > output
+#      print "\\section "$3 >output
       inside=2;
     } else if ( $2=="INTERNAL" ){
       if(output!="")close(output);
@@ -78,8 +78,8 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"; dfile="automatic/DICTIONARY1.list";
       output="automatic/"$3".txt";
       lfile="automatic/"$3".txt";
       print "/**" > output
-      print "\\page "$3 > output
-      print "\\section "$3 > output
+      print "\\page "$3" "$3 > output
+#      print "\\section "$3 >output
       inside=3;
     }
   }
@@ -148,7 +148,7 @@ do
                cat automatic/"$docfile".tmp |
                {
                    while read -r LINE ; do
-                      if `echo $LINE | grep "section $docfile" 1>/dev/null 2>&1`
+                      if `echo $LINE | grep "\\page $docfile" 1>/dev/null 2>&1`
                       then  
                         echo $LINE
                         echo "<table  align=center frame=void width=95%% celpadding=5%%>"
