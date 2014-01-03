@@ -362,7 +362,6 @@ isFirstStep(true)
          flexbin=new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
   parse("HEIGHT",height0_);
-  if( height0_<=0.0 ) error("error cannot add zero height or negative height hills");
   parse("PACE",stride_);
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
   string hillsfname="HILLS";
