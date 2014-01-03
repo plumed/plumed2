@@ -112,6 +112,10 @@ fi
 (*) echo "unknown test type" ; exit 1 ;;
 esac
 
+if type -t plumed_regtest_after 1>/dev/null ; then
+  plumed_regtest_after
+fi
+
 echo "Done. Here is the error file:"
 cat err
 
