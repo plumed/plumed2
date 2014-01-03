@@ -739,7 +739,6 @@ INPUT                  = IntroPP.txt \
                          ColvarPP.txt \
                          FunctionsPP.txt \
                          InstallationPP.txt \
-                         WhatsNew.txt \
                          GlossaryPP.txt \
                          TutorialsPP.txt \
                          ModulesPP.txt \
