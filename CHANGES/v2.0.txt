@@ -72,10 +72,14 @@ See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repo
 For users:
 - Added full reference (page/number) to published paper in doc and log.
 - Fixed a bug in file backups (only affecting Windows version - thanks to T. Giorgino).
+- Added possibility to search in the documentation.
 - Several small fixes in documentation and log file.
 
 For developers:
 - Fixed makefile dependencies in some auxiliary files in src/lib (src/lib/*cmake and src/lib/*inc).
+- Changed way modules are linked in src/.
+  E.g. src/colvar/tools/ is not anymore a symlink to src/colvar but a real directory.
+- Removed include graphs in the documentation (too large).
 - Several small fixes in documentation.
 
 */
