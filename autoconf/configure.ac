@@ -66,6 +66,7 @@ PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
+PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
@@ -218,6 +219,9 @@ fi
 if test $execinfo == true ; then
   PLUMED_CHECK_PACKAGE([execinfo.h],[backtrace],[__PLUMED_HAS_EXECINFO])
 fi
+if test $zlib == true ; then
+  PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
+fi
 
 # molfile:
 save_LIBS="$LIBS"
@@ -230,8 +234,6 @@ if test $found == ok ; then
  AC_DEFINE([__PLUMED_HAS_MOLFILE])
 fi
 
-# check for zlib
-# PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 # this can be used to enable openmp:
 # AC_OPENMP
 # CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"

@@ -693,6 +693,7 @@ enable_cxx_exceptions
 enable_mpi
 enable_external_lapack
 enable_matheval
+enable_zlib
 enable_clock_gettime
 enable_cregex
 enable_dlopen
@@ -1330,6 +1331,7 @@ Optional Features:
   --enable-external-lapack
                           enable search for external lapack, default: yes
   --enable-matheval       enable search for matheval, default: yes
+  --enable-zlib           enable search for zlib, default: yes
   --enable-clock-gettime  enable search for gettime, default: yes
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
@@ -2366,6 +2368,24 @@ else
   case "yes" in
              (yes) matheval=true ;;
              (no)  matheval=false ;;
+  esac
+
+fi
+
+
+
+zlib=
+# Check whether --enable-zlib was given.
+if test "${enable_zlib+set}" = set; then :
+  enableval=$enable_zlib; case "${enableval}" in
+             (yes) zlib=true ;;
+             (no)  zlib=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-zlib" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) zlib=true ;;
+             (no)  zlib=false ;;
   esac
 
 fi
@@ -5029,6 +5049,69 @@ fi
     fi
 
 fi
+if test $zlib == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+if test "x$ac_cv_header_zlib_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "gzopen" "ac_cv_func_gzopen"
+if test "x$ac_cv_func_gzopen" = xyes; then :
+  found=ok
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gzopen in -lz" >&5
+$as_echo_n "checking for gzopen in -lz... " >&6; }
+if ${ac_cv_lib_z_gzopen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lz  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char gzopen ();
+int
+main ()
+{
+return gzopen ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_z_gzopen=yes
+else
+  ac_cv_lib_z_gzopen=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_gzopen" >&5
+$as_echo "$ac_cv_lib_z_gzopen" >&6; }
+if test "x$ac_cv_lib_z_gzopen" = xyes; then :
+  LIBS="-lz $LIBS" && found=ok
+fi
+
+
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_ZLIB 1" >>confdefs.h
+
+    fi
+
+fi
 
 # molfile:
 save_LIBS="$LIBS"
@@ -5089,8 +5172,6 @@ if test $found == ok ; then
 
 fi
 
-# check for zlib
-# PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 # this can be used to enable openmp:
 # AC_OPENMP
 # CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
