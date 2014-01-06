@@ -62,6 +62,7 @@ void FileBase::test(){
 }
 
 FileBase& FileBase::link(FILE*fp){
+  plumed_massert(!this->fp,"cannot link an already open file");
   this->fp=fp;
   cloned=true;
   return *this;
