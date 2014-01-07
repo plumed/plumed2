@@ -211,6 +211,8 @@ void EffectiveEnergyDrift::update(){
     //is not a multiple of the bias actions stride
     for(int i=0;i<biases.size();i++) bias+=biases[i]->getOutputQuantity("bias");
 
+    bias-=plumed.getWork();
+
     plumed.comm.Sum(&eedSum,1);
     output.printf("%ld %f\n",plumed.getStep(),eedSum+bias);
   }

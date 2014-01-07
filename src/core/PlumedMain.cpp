@@ -65,6 +65,7 @@ PlumedMain::PlumedMain():
   atoms(*new Atoms(*this)),
   actionSet(*new ActionSet(*this)),
   bias(0.0),
+  work(0.0),
   exchangePatterns(*new(ExchangePatterns)),
   exchangeStep(false),
   restart(false),
@@ -611,6 +612,7 @@ void PlumedMain::justCalculate(){
   if(!active)return;
   stopwatch.start("4 Calculating (forward loop)");
   bias=0.0;
+  work=0.0;
 
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
@@ -636,6 +638,7 @@ void PlumedMain::justCalculate(){
       else (*p)->calculate();
       // This retrieves components called bias 
       if(av) bias+=av->getOutputQuantity("bias");
+      if(av) work+=av->getOutputQuantity("work");
       if(av)av->setGradientsIfNeeded();	
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(*p);
       if(avv)avv->setGradientsIfNeeded();	
@@ -734,6 +737,10 @@ void PlumedMain::load(const std::string& ss){
 
 double PlumedMain::getBias() const{
   return bias;
+}
+
+double PlumedMain::getWork() const{
+  return work;
 }
 
 FILE* PlumedMain::fopen(const char *path, const char *mode){
