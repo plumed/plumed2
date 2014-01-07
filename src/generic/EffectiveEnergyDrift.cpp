@@ -69,6 +69,8 @@ public ActionPilot{
   vector<double> dataR;
   vector<int> backmap;
 
+  double initialBias;
+  bool isFirstStep;
 
 public:
   EffectiveEnergyDrift(const ActionOptions&);
@@ -95,8 +97,11 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ){
 EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
+eed(0.0),
 atoms(plumed.getAtoms()),
-nProc(plumed.comm.Get_size()){
+nProc(plumed.comm.Get_size()),
+initialBias(0.0),
+isFirstStep(true){
   //stride must be == 1
   if(getStride()!=1) error("EFFECTIVE_ENERGY_DRIFT must have STRIDE=1 to work properly");
 
@@ -130,22 +135,22 @@ EffectiveEnergyDrift::~EffectiveEnergyDrift(){
 }
 
 void EffectiveEnergyDrift::update(){
-  //init stored data at the first step
-  if(plumed.getStep()==0){
-    pDdStep=0;
-    pGatindex = atoms.getGatindex();
-    pNLocalAtoms = pGatindex.size();
-    pPositions.resize(pNLocalAtoms,Vector(0.0,0.0,0.0));
-    pForces.resize(pNLocalAtoms,Vector(0.0,0.0,0.0));
-
-    eed=-plumed.getBias()/nProc;
-  }
-
   //retrive data of local atoms
   const vector<int>& gatindex = atoms.getGatindex();
   nLocalAtoms = gatindex.size();
   atoms.getLocalPositions(positions);
   atoms.getLocalForces(forces);
+
+  //init stored data at the first step
+  if(isFirstStep){
+    pDdStep=0;
+    pGatindex = atoms.getGatindex();
+    pNLocalAtoms = pGatindex.size();
+    pPositions=positions;
+    pForces=forces;
+    initialBias=plumed.getBias();
+    isFirstStep=false;
+  }
 
   //if the dd has changed we have to reshare the stored data
   if(pDdStep<atoms.getDdStep() && nLocalAtoms<atoms.getNatoms()){
@@ -213,10 +218,10 @@ void EffectiveEnergyDrift::update(){
     //is not a multiple of the bias actions stride
     for(int i=0;i<biases.size();i++) bias+=biases[i]->getOutputQuantity("bias");
 
-    bias-=plumed.getWork();
-
     plumed.comm.Sum(&eedSum,1);
-    output.printf("%ld %f\n",plumed.getStep(),eedSum+bias);
+    output.printField("time",getTime());
+    output.printField("effective-energy",eedSum+bias-initialBias-plumed.getWork());
+    output.printField();
   }
 
   //store the data of the current step
