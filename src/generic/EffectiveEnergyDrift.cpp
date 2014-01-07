@@ -67,6 +67,8 @@ public ActionPilot{
   vector<int> indexR;
   vector<double> dataS;
   vector<double> dataR;
+  vector<int> backmap;
+
 
 public:
   EffectiveEnergyDrift(const ActionOptions&);
@@ -120,6 +122,7 @@ nProc(plumed.comm.Get_size()){
   //resize the received buffers
   indexR.resize(atoms.getNatoms());
   dataR.resize(atoms.getNatoms()*6);
+  backmap.resize(atoms.getNatoms());
 }
 
 EffectiveEnergyDrift::~EffectiveEnergyDrift(){
@@ -179,20 +182,19 @@ void EffectiveEnergyDrift::update(){
     pPositions.resize(nLocalAtoms);
     pForces.resize(nLocalAtoms);
 
+    //compute backmap
+    for(int j=0;j<indexR.size();j++) backmap[indexR[j]]=j;
+
     //fill the vectors pGatindex, pPositions and pForces
     for(int i=0; i<nLocalAtoms; i++){
-      int glb = find(indexR.begin(),indexR.end(),gatindex[i])-indexR.begin();
-
-      if(glb<indexR.size()){
-	pGatindex[i] = indexR[glb];
-
-	pPositions[i][0] = dataR[glb*6];
-	pPositions[i][1] = dataR[glb*6+1];
-	pPositions[i][2] = dataR[glb*6+2];
-	pForces[i][0] = dataR[glb*6+3];
-	pForces[i][1] = dataR[glb*6+4];
-	pForces[i][2] = dataR[glb*6+5];
-      }
+      int glb=backmap[gatindex[i]];
+      pGatindex[i] = indexR[glb];
+      pPositions[i][0] = dataR[glb*6];
+      pPositions[i][1] = dataR[glb*6+1];
+      pPositions[i][2] = dataR[glb*6+2];
+      pForces[i][0] = dataR[glb*6+3];
+      pForces[i][1] = dataR[glb*6+4];
+      pForces[i][2] = dataR[glb*6+5];
     }
   }
 
@@ -221,8 +223,8 @@ void EffectiveEnergyDrift::update(){
   pDdStep = atoms.getDdStep();
   pGatindex = gatindex;
   pNLocalAtoms = nLocalAtoms;
-  pPositions = positions;
-  pForces = forces;
+  pPositions.swap(positions);
+  pForces.swap(forces);
 }
 
 }
