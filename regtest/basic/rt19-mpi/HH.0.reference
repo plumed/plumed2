@@ -1,0 +1,12 @@
+#! FIELDS time rmsd0 sigma_rmsd0 height biasf
+#! SET multivariate false
+                   0.05      1.502409238626139                      1                    0.1                      1
+                    0.1      1.503459263811322                      1                    0.1                      1
+                   0.15      1.501751446043877                      1                    0.1                      1
+                    0.2      1.495752022063682                      1                    0.1                      1
+#! FIELDS time rmsd0 sigma_rmsd0 height biasf
+#! SET multivariate false
+                   0.05      1.502409238626139                      1                    0.1                      1
+                    0.1      1.503459263811322                      1                    0.1                      1
+                   0.15      1.501751446043877                      1                    0.1                      1
+                    0.2      1.495752022063682                      1                    0.1                      1
