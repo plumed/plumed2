@@ -45,6 +45,8 @@ bool hasCregex();
 
 bool hasMolfile();
 
+bool hasZlib();
+
 }
 }
 

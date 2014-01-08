@@ -55,6 +55,8 @@ protected:
 
 /// file pointer
   FILE* fp;
+/// zip file pointer.
+  void* gzfp;
 /// communicator. NULL if not set
   Communicator* comm;
 /// pointer to main plumed object. NULL if not linked
@@ -75,6 +77,10 @@ protected:
   std::string path;
 /// Set to true if you want flush to be heavy (close/reopen)
   bool heavyFlush;
+/// Append suffix.
+/// It appends the desired suffix to the string. Notice that
+/// it conserves a possible ".gz" suffix.
+  static std::string appendSuffix(const std::string&path,const std::string&suffix);
 public:
 /// Link to an already open filed
   FileBase& link(FILE*);
@@ -87,7 +93,7 @@ public:
 /// Automatically links also the corresponding PlumedMain and Communicator.
   FileBase& link(Action&);
 /// Flushes the file to disk
-  FileBase& flush();
+  virtual FileBase& flush();
 /// Closes the file
 /// Should be used only for explicitely opened files.
   void        close();

@@ -31,15 +31,29 @@
 
 #include <iostream>
 #include <string>
+#ifdef __PLUMED_HAS_ZLIB
+#include <zlib.h>
+#endif
 
 namespace PLMD{
 
 size_t IFile::llread(char*ptr,size_t s){
   plumed_assert(fp);
   size_t r;
-  r=fread(ptr,1,s,fp);
-  if(feof(fp))   eof=true;
-  if(ferror(fp)) err=true;
+  if(gzfp){
+#ifdef __PLUMED_HAS_ZLIB
+    int rr=gzread(gzFile(gzfp),ptr,s);
+    if(rr==0)   eof=true;
+    if(rr<0)    err=true;
+    r=rr;
+#else
+    plumed_merror("trying to use a gz file without zlib being linked");
+#endif
+  } else {
+    r=fread(ptr,1,s,fp);
+    if(feof(fp))   eof=true;
+    if(ferror(fp)) err=true;
+  }
   return r;
 }
 
@@ -193,6 +207,9 @@ void IFile::reset(bool reset){
  eof = reset;
  err = reset;
  if(!reset) clearerr(fp);
+#ifdef __PLUMED_HAS_ZLIB
+ if(!reset && gzfp) gzclearerr(gzFile(gzfp));
+#endif
  return;
 } 
 

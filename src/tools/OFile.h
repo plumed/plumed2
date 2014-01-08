@@ -186,6 +186,8 @@ this method can be used to clean the field list.
   friend OFile& operator<<(OFile&,const T &);
 /// Rewind a file
   OFile&rewind();
+/// Flush a file
+  virtual FileBase&flush();
 };
 
 /// Write using << syntax
