@@ -57,6 +57,8 @@ public ActionPilot{
   vector<Vector> pPositions;
   vector<Vector> forces;
   vector<Vector> pForces;
+  Tensor box,pbox;
+  Tensor fbox,pfbox;
 
   const int nProc;
   vector<int> indexCnt;
@@ -135,11 +137,21 @@ EffectiveEnergyDrift::~EffectiveEnergyDrift(){
 }
 
 void EffectiveEnergyDrift::update(){
+  bool pbc=atoms.getPbc().isSet();
+
   //retrive data of local atoms
   const vector<int>& gatindex = atoms.getGatindex();
   nLocalAtoms = gatindex.size();
   atoms.getLocalPositions(positions);
   atoms.getLocalForces(forces);
+  if(pbc){
+    Tensor B=atoms.getPbc().getBox();
+    Tensor IB=atoms.getPbc().getInvBox();
+    for(int i=0;i<positions.size();++i) positions[i]=matmul(positions[i],IB);
+    for(int i=0;i<forces.size();++i)    forces[i]=matmul(B,forces[i]);
+    box=B;
+    fbox=matmul(transpose(inverse(box)),atoms.getVirial());
+  }
 
   //init stored data at the first step
   if(isFirstStep){
@@ -148,7 +160,12 @@ void EffectiveEnergyDrift::update(){
     pNLocalAtoms = pGatindex.size();
     pPositions=positions;
     pForces=forces;
+    pPositions=positions;
+    pForces=forces;
+    pbox=box;
+    pfbox=fbox;
     initialBias=plumed.getBias();
+    
     isFirstStep=false;
   }
 
@@ -204,10 +221,18 @@ void EffectiveEnergyDrift::update(){
   }
 
   //compute the effective energy drift on local atoms
+  
   for(int i=0;i<nLocalAtoms;i++){
-    Vector dst=atoms.getPbc().distance(pPositions[i],positions[i]);
+    Vector dst=delta(pPositions[i],positions[i]);
+    if(pbc) for(unsigned k=0;k<3;k++) dst[k]=Tools::pbc(dst[k]);
     eed += dotProduct(dst, forces[i]+pForces[i])*0.5;
   }
+
+  if(plumed.comm.Get_rank()==0){
+    for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++)
+    eed-=0.5*(pfbox(i,j)+fbox(i,j))*(box(i,j)-pbox(i,j));
+  }
+
 
   //print the effective energy drift on FILE with frequency PRINT_STRIDE
   if(plumed.getStep()%printStride==0){
@@ -230,6 +255,8 @@ void EffectiveEnergyDrift::update(){
   pNLocalAtoms = nLocalAtoms;
   pPositions.swap(positions);
   pForces.swap(forces);
+  pbox=box;
+  pfbox=fbox;
 }
 
 }

@@ -151,6 +151,7 @@ public:
   const Pbc& getPbc()const;
   void getLocalPositions(std::vector<Vector>&);
   void getLocalForces(std::vector<Vector>&);
+  const Tensor& getVirial()const;
 
   void setCollectEnergy(bool b){ collectEnergy=b; }
 
@@ -252,6 +253,11 @@ bool Atoms::chargesWereSet() const {
 inline
 bool Atoms::boxWasSet() const {
   return boxHasBeenSet;
+}
+
+inline
+const Tensor& Atoms::getVirial()const{
+  return virial;
 }
 
 
