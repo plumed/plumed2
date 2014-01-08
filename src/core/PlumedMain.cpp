@@ -277,7 +277,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else if(word=="setLogFile"){
        CHECK_NOTINIT(initialized,word);
        CHECK_NULL(val,word);
-       log.open(static_cast<char*>(val),"w");
+       log.open(static_cast<char*>(val));
 // other commands that should be used after initialization:
   } else if(word=="setStopFlag"){
        CHECK_INIT(initialized,word);

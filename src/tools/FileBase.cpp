@@ -97,26 +97,6 @@ FileBase& FileBase::link(Action&action){
   return *this;
 }
 
-FileBase& FileBase::open(const std::string& path,const std::string& mode){
-  plumed_massert(!cloned,"file "+path+" appears to be cloned");
-  eof=false;
-  err=false;
-  fp=NULL;
-  gzfp=NULL;
-  bool do_exist=FileExist(path);
-  fp=std::fopen(const_cast<char*>(this->path.c_str()),const_cast<char*>(mode.c_str()));
-  if(Tools::extension(this->path)=="gz"){
-#ifdef __PLUMED_HAS_ZLIB
-    gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),const_cast<char*>(mode.c_str()));
-#else
-    plumed_merror("trying to use a gz file without zlib being linked");
-#endif
-  }
-  if(plumed) plumed->insertFile(*this);
-  return *this;
-}
-
-
 bool FileBase::FileExist(const std::string& path){
   FILE *ff=NULL;
   bool do_exist=false;

@@ -105,8 +105,8 @@ public:
   operator bool () const;
 /// Set heavyFlush flag
   void setHeavyFlush(){ heavyFlush=true;}
-/// Opens the file (without auto-backup)
-  FileBase& open(const std::string&name,const std::string& mode);
+/// Opens the file
+  virtual FileBase& open(const std::string&name)=0;
 /// Check if the file exists
   bool FileExist(const std::string& path);
 /// Check if a file is open

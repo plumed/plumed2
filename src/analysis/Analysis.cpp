@@ -292,7 +292,10 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
 void Analysis::runAnalysis(){
 
   // close the restart file so it is flushed
-  if( write_chq ) rfile.close();   
+  if( write_chq ){
+    rfile.flush();
+    rfile.rewind();
+  }
 
   // Note : could add multiple walkers here - simply read in the data from all
   // other walkers here if we are writing the check points.
@@ -309,12 +312,6 @@ void Analysis::runAnalysis(){
   // Update total normalization constant
   old_norm+=norm; firstAnalysisDone=true;
 
-  // Delete the checkpoint file
-  if( write_chq ){
-     std::string filename = getName() + "_" + getLabel() + ".chkpnt";
-     // If we are running more than one calculation only reopen the restart file
-     if( !single_run ) rfile.open( filename.c_str(), "w+" ); 
-  }
 }
 
 double Analysis::getNormalization() const {
