@@ -82,6 +82,9 @@ For developers:
   E.g. src/colvar/tools/ is not anymore a symlink to src/colvar but a real directory.
 - Removed include graphs in the documentation (too large).
 - Several small fixes in documentation.
+- Patch for gromacs 4.6 now also include original code so as to simplify its modification.
+- Added option 'plumed patch --save-originals'
+
 
 */
 
