@@ -28,7 +28,7 @@ just set this variable to a blank ("SOEXT=").
 Also notice that a  new file sourceme.sh
 appears in the main PLUMED directory.
 This file should be "sourced" (presently only working for bash shell)
-if you want to use PLUMED *without installin it* (i.e. from the compilation
+if you want to use PLUMED *without installing it* (i.e. from the compilation
 directory. It is a good idea to source it now:
 \verbatim
 > source sourceme.sh

@@ -33,6 +33,12 @@ namespace colvar{
 //+PLUMEDOC COLVAR DISTANCE
 /*
 Calculate the distance between a pair of atoms.
+By default the distance is computed taking into account periodic
+boundary conditions. This behavior can be changed with the NOPBC flag.
+Moreover, single components (x,y, and z) can be also computed.
+
+Notice that single components will not have the proper periodicity!
+A possible hack is shown in one of the examples below.
 
 \par Examples
 
@@ -45,6 +51,54 @@ d2c: DISTANCE ATOMS=2,4 COMPONENTS
 PRINT ARG=d1,d2,d2c.x
 \endverbatim
 (See also \ref PRINT).
+
+The following input computes the end-to-end distance for a polymer
+of 100 atoms and keeps it at a value around 5.
+\verbatim
+WHOLEMOLECULES ENTITY0=1-100
+e2e: DISTANCE ATOMS=1,100 NOPBC
+RESTRAINT ARG=e2e KAPPA=1 AT=5
+\endverbatim
+(See also \ref WHOLEMOLECULES and \ref RESTRAINT).
+
+Notice that NOPBC is used
+to be sure that if the end-to-end distance is larger than half the simulation
+box the distance is compute properly. Also notice that, since many MD
+codes break molecules across cell boundary, it might be necessary to
+use the \ref WHOLEMOLECULES keyword (also notice that it should be
+_before_ distance). The list of atoms provided to WHOLEMOLECULES
+here contains all the atoms between 1 and 100. Strictly speaking, this
+is not necessary. If you know for sure that atoms with difference in
+the index say equal to 10 are _not_ going to be farther than half cell
+you can e.g. use
+\verbatim
+WHOLEMOLECULES ENTITY0=1,10,20,30,40,50,60,70,80,90,100
+e2e: DISTANCE ATOMS=1,100 NOPBC
+RESTRAINT ARG=e2e KAPPA=1 AT=5
+\endverbatim
+Just be sure that the ordered list provide to WHOLEMOLECULES has the following
+properties:
+- Consecutive atoms should be closer than half-cell throughout the entire simulation.
+- Atoms required later for the distance (e.g. 1 and 100) should be included in the list
+
+The following example shows how to take into account periodicity e.g.
+in z-component of a distance
+\verbatim
+# this is a center of mass of a large group
+c: COM ATOMS=1-100
+# this is the distance between atom 101 and the group
+d: DISTANCE ATOMS=c,101 COMPONENTS
+# this makes a new variable, dd, equal to d and periodic, with domain -10,10
+# this is the right choise if e.g. the cell is orthorombic and its size in
+# z direction is 20.
+dz: COMBINE ARG=d.z PERIODIC=-10,10
+# metadynamics on dd
+METAD ARG=dz SIGMA=0.1 HEIGHT=0.1 PACE=200
+\endverbatim
+(see also \ref COM, \ref COMBINE, and \ref METAD)
+
+
+
 
 */
 //+ENDPLUMEDOC
@@ -96,6 +150,7 @@ pbc(true)
     addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
     addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
     addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+    log<<"  WARNING: components will not have the proper periodicity - see manual\n";
   }
 
   requestAtoms(atoms);
