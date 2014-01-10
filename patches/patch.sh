@@ -13,6 +13,8 @@ Actions (choose one):
                     print a list of available MD engines
   -s, --save
                     save, this needs *.preplumed files (*)
+  --save-originals
+                    same as save, but save also original files
   -n NEWENGINE, --new NEWENGINE
                     create a new patch named NEWENGINE (*)
   -i, --info
@@ -64,6 +66,7 @@ do
     (--help|-h)         echo "$MANUAL" ; exit ;;
     (--patch|-p)        test -n "$action" && multiple_actions=yes ; action=patch ;;
     (--save|-s)         test -n "$action" && multiple_actions=yes ; action=save ;;
+    (--save-originals)  test -n "$action" && multiple_actions=yes ; action=save ; save_originals=yes ;;
     (--revert|-R|-r)    test -n "$action" && multiple_actions=yes ; action=revert ;;
     (--list-engines|-l) test -n "$action" && multiple_actions=yes ; action=list ;;
     (--info|-i)         test -n "$action" && multiple_actions=yes ; action=info ;;
@@ -198,7 +201,7 @@ esac
 
 case "$action" in
   (patch)
-    if [ ! -f "$diff" ] ; then
+    if [ ! -e "$diff" ] ; then
       echo "ERROR: MD engine not supported (or mispelled)"
       exit
     fi
@@ -231,7 +234,24 @@ case "$action" in
     ln -s "$PLUMED_ROOT/src/wrapper/Plumed.h"
     ln -s "$PLUMED_ROOT/src/lib/Plumed.inc.$mode" Plumed.inc
     ln -s "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" Plumed.cmake
-    bash "$diff"
+
+    if [ -d "$diff" ]; then
+      test -n "$quiet" || echo "Patching with on-the-fly diff from stored originals"
+      PREPLUMED=$(cd $diff ; find . -name "*.preplumed" | sort)
+      for bckfile in $PREPLUMED ; do
+        file="${bckfile%.preplumed}"
+        if test -e "$file" ; then
+          diff -U 5 "$diff/$bckfile" "$diff/$file" --label="$bckfile" --label="$file" |
+          patch -u -l -b -F 5 --suffix=.preplumed "$file"
+        else
+          echo "ERROR: File $file is missing"
+        fi
+      done
+    else
+      test -n "$quiet" || echo "Patching with stored diff"
+      bash "$diff"
+    fi
+    
     if type -t plumed_after_patch 1>/dev/null ; then
       test -n "$quiet" || echo "Executing plumed_after_patch function"
       plumed_after_patch
@@ -269,13 +289,42 @@ case "$action" in
     test -n "$quiet" || echo "Saving your changes to $diff"
     test -n "$quiet" || echo "Preplumed files:"
     test -n "$quiet" || echo "$PREPLUMED"
-    test -e "$diff" && rm "$diff"
+    if [ -d "$diff" ] && [ -z "$save_originals" ]; then
+      echo "This patch uses the dir format (originals are saved)"
+      echo "Are you sure you want to save the single diff?"
+      echo "Possible reasons to do it are:"
+      echo "* because of licence you do not want to store originals in plumed"
+      echo "* you do not want to do a big change on the diff files now"
+      answer=
+      PS3="Choose:"
+      select answer in single-diff originals ; do
+        if [[ -n "$answer" ]] ; then
+          break
+        else
+          echo "ERROR: choose in the list above or interrupt (^c)"
+        fi
+      done
+      if [ "$answer" = originals ] ; then
+        test -n "$quiet" || echo "saving originals"
+        save_originals=yes
+      else
+        test -n "$quiet" || echo "saving single diff file"
+      fi
+    fi
+    test -e "$diff" && rm -r "$diff"
     for bckfile in $PREPLUMED ; do
       file="${bckfile%.preplumed}"
       if test -e "$file" ; then
-        echo "patch -u -l -b -F 5 --suffix=.preplumed \"${file}\" << \\EOF_EOF" >> "$diff"
-        diff -U 5 "${bckfile}" "$file" --label="$bckfile" --label="$file" >> "$diff"
-        echo "EOF_EOF"                                                   >> "$diff"
+        if [ -n "$save_originals" ] ; then
+          xx="$diff/$file"
+          mkdir -p "${xx%/*}"
+          cp "$file" "$diff/$file"
+          cp "$bckfile" "$diff/$bckfile"
+        else
+          echo "patch -u -l -b -F 5 --suffix=.preplumed \"${file}\" << \\EOF_EOF" >> "$diff"
+          diff -U 5 "${bckfile}" "$file" --label="$bckfile" --label="$file" >> "$diff"
+          echo "EOF_EOF"                                                   >> "$diff"
+        fi
       else
         echo "ERROR: File $file is missing"
       fi
@@ -289,7 +338,7 @@ cat <<EOF
 EOF
   ;;
   (revert)
-    if [ ! -f "$diff" ] ; then
+    if [ ! -e "$diff" ] ; then
       echo "ERROR: MD engine not supported (or mispelled)"
       exit
     fi
