@@ -3,12 +3,14 @@
 -include ../../Makefile.conf
 
 # default target
-.PHONY: all
+.PHONY: all obj
 all:
 	@echo "Updating ConfigInstall.cpp"
 	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
 	 ../maketools/update-plumedroot.sh ConfigInstall.cpp
 	$(MAKE) do-all
+
+obj: all
 
 do-all: Config.o ConfigInstall.o compile_options.sh 
 	make ConfigInstall.o
