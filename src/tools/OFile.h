@@ -43,7 +43,7 @@ See the example here for a possible use:
 
 int main(){
   PLMD::OFile pof;
-  pof.open("ciao","w");
+  pof.open("ciao");
   pof.printf("%s\n","test1");
   pof.setLinePrefix("plumed: ");
   pof.printf("%s\n","test2");
@@ -79,6 +79,65 @@ keyword. Thus, everytime it is modified, all the headers are repeated in the out
 - most methods return a reference to the OFile itself, to allow chaining many calls on the same line
 (this is similar to << operator in std::ostream)
 
+\section Using correctly OFile in PLUMED
+
+When a OFile object is used in PLUMED it can be convenient to link() it
+to the Action object where it is defined, or to the PlumedMain object.
+This will save in the OFile a pointer to the linked object and will
+allow to have some extra information. E.g., if PLUMED is restarting,
+files will be appended (notice that this is the only way to
+append a OFile - there is no way to enforce it).
+
+To have all files managed consistently, it is important to use OFile in the proper way.
+This should allow multi-replica plumed, restart and backups to work in
+the expected way.
+
+\verbatim
+int main(){
+// this is a growing file, containing a full history
+// (frames are appended, as in traditional HILLS and COLVAR)
+  OFile grw;
+// this is a single-snapshopt file used e.g. for checkpointing
+// (rewritten every time)
+  OFile snp;
+
+// open both files at the beginning
+// (will go in \ref Action constructor)
+  grw.open("growing");
+  snp.open("snapshot");
+
+// trajectory loop
+  for(int i=0;i<nsteps;i++){
+
+// files should be writen in the update() method of an \ref Action
+
+// write on growing file
+    grw<<"data at step "<<i<<\n";
+
+// flushing
+// it takes time, so do it only if data is critical
+// better to leave this choice to the user with the FLUSH keyword
+//    grw.flush();
+
+// write on snapshot file
+    snp.rewind();
+    snp<<"snapshot at step "<<i<<"\n";
+    snp.flush();
+// the only difference is that snp is rewound
+// notice that it should be rewound just before writing
+// because rewind is going to move the file out of the way 
+// to have a safe copy of the file ("bck.last.filename")
+// Also notice that snapshots should be flushed
+// for this reason, it is better to write them only
+// rarely to avoid excessive slow down
+
+  }
+
+  snp.close();
+  grw.close();
+}
+
+\endverbatim
 */
 
 class OFile:
@@ -120,6 +179,8 @@ public virtual FileBase{
   std::string backstring;
 /// Find field index given name
   unsigned findField(const std::string&name)const;
+/// check if we are restarting
+  bool checkRestart()const;
 public:
 /// Constructor
   OFile();

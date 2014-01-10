@@ -284,7 +284,7 @@ OFile& OFile::open(const std::string&path){
   if(plumed){
     this->path=appendSuffix(path,plumed->getSuffix());
   }
-  if(plumed && plumed->getRestart()){
+  if(checkRestart()){
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"a");
      if(Tools::extension(this->path)=="gz"){
 #ifdef __PLUMED_HAS_ZLIB
@@ -312,17 +312,28 @@ OFile& OFile::open(const std::string&path){
 OFile& OFile::rewind(){
 // we use here "hard" rewind, which means close/reopen
 // the reason is that normal rewind does not work when in append mode
+// moreover, we can take a backup of the file
   plumed_assert(fp);
   clearFields();
   if(gzfp){
 #ifdef __PLUMED_HAS_ZLIB
     gzclose((gzFile)gzfp);
+#endif
+  } else fclose(fp);
+  if(!comm || comm->Get_rank()==0){
+    std::string fname=this->path;
+    size_t found=fname.find_last_of("/\\");
+    std::string directory=fname.substr(0,found+1);
+    std::string file=fname.substr(found+1);
+    std::string backup=directory+backstring +".last."+file;
+    int check=rename(fname.c_str(),backup.c_str());
+    plumed_massert(check==0,"renaming "+fname+" into "+backup+" failed for reason: "+strerror(errno));
+  }
+  if(gzfp){
+#ifdef __PLUMED_HAS_ZLIB
     gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");
 #endif
-  } else {
-    fclose(fp);
-    fp=std::fopen(const_cast<char*>(path.c_str()),"w");
-  }
+  } else fp=std::fopen(const_cast<char*>(path.c_str()),"w");
   return *this;
 }
 
@@ -347,6 +358,11 @@ FileBase& OFile::flush(){
 #endif
   }
   return *this;
+}
+
+bool OFile::checkRestart()const{
+  if(plumed && plumed->getRestart()) return true;
+  else return false;
 }
 
 }

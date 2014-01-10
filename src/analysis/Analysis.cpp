@@ -238,9 +238,12 @@ void Analysis::calculate(){
   }
   // Write data to checkpoint file
   if( write_chq ) {
+  // close the restart file so it is flushed
+      rfile.rewind();
       rfile.printField("time",getTime()); rfile.printField("old_normalization",old_norm);
       for(unsigned i=0;i<getNumberOfArguments();++i) rfile.printField( getPntrToArgument(i), getArgument(i) );
       rfile.printField("log_weight",logweights[idata]); rfile.printField();
+      rfile.flush();
   }
   // Increment data counter
   idata++;
@@ -290,12 +293,6 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
 }
 
 void Analysis::runAnalysis(){
-
-  // close the restart file so it is flushed
-  if( write_chq ){
-    rfile.flush();
-    rfile.rewind();
-  }
 
   // Note : could add multiple walkers here - simply read in the data from all
   // other walkers here if we are writing the check points.
