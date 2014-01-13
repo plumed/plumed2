@@ -93,6 +93,17 @@
 #include "types/iteratedconstraints.h"
 #include "nbnxn_cuda_data_mgmt.h"
 
+/* PLUMED */
+#include "../../Plumed.h"
+extern int    plumedswitch;
+extern plumed plumedmain;
+/* END PLUMED */
+
+/* PLUMED HREX */
+extern int plumed_hrex;
+/* END PLUMED HREX */
+
+
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
 #endif
@@ -181,7 +192,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
     t_mdebin         *mdebin = NULL;
-    df_history_t      df_history;
     t_state          *state    = NULL;
     rvec             *f_global = NULL;
     int               n_xtc    = -1;
@@ -236,6 +246,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     pme_load_balancing_t pme_loadbal = NULL;
     double               cycles_pmes;
     gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
+
+/* PLUMED */
+    int plumedNeedsEnergy;
+/* END PLUMED */
 
 #ifdef GMX_FAHCORE
     /* Temporary addition for FAHCORE checkpointing */
@@ -329,14 +343,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         snew(f, top_global->natoms);
     }
-
-    /* lambda Monte carlo random number generator  */
-    if (ir->bExpanded)
-    {
-        mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
-    }
-    /* copy the state into df_history */
-    copy_df_history(&df_history, &state_global->dfhist);
 
     /* Kinetic energy data */
     snew(ekind, 1);
@@ -432,7 +438,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             make_local_shells(cr, mdatoms, shellfc);
         }
 
-        init_bonded_thread_force_reduction(fr, &top->idef);
+        setup_bonded_threading(fr, &top->idef);
 
         if (ir->pull && PAR(cr))
         {
@@ -460,6 +466,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     else
     {
         bStateFromCP = FALSE;
+    }
+
+    if (ir->bExpanded)
+    {
+        init_expanded_ensemble(bStateFromCP,ir,&mcrng,&state->dfhist);
     }
 
     if (MASTER(cr))
@@ -717,6 +728,46 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         fprintf(fplog, "\n");
     }
 
+    /* PLUMED */
+    if(plumedswitch){
+      if(cr->ms && cr->ms->nsim>1) {
+        if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
+        if(PAR(cr)){
+          if(DOMAINDECOMP(cr)) {
+            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
+          }else{
+            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
+          }
+        }
+        plumed_cmd(plumedmain,"GREX init",NULL);
+      }
+      if(PAR(cr)){
+        if(DOMAINDECOMP(cr)) {
+          plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
+        }else{
+          plumed_cmd(plumedmain,"setMPIComm",&cr->mpi_comm_mysim);
+        }
+      }
+      plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
+      plumed_cmd(plumedmain,"setMDEngine","gromacs");
+      plumed_cmd(plumedmain,"setLog",fplog);
+      real real_delta_t;
+      real_delta_t=ir->delta_t;
+      plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
+      plumed_cmd(plumedmain,"init",NULL);
+
+      if(PAR(cr)){
+        if(DOMAINDECOMP(cr)) {
+          plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
+          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
+        }else{
+          plumed_cmd(plumedmain,"setAtomsNlocal",&mdatoms->homenr);
+          plumed_cmd(plumedmain,"setAtomsContiguous",&mdatoms->start);
+        }
+      }
+    }
+    /* END PLUMED */
+
     /* Set and write start time */
     runtime_start(runtime);
     print_date_and_time(fplog, cr->nodeid, "Started mdrun", runtime);
@@ -858,7 +909,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             set_current_lambdas(step, ir->fepvals, bRerunMD, &rerun_fr, state_global, state, lam0);
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = (do_per_step(step, nstfep) && (ir->efep != efepNO));
-            bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded) && (step > 0));
+            bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
+                            && (ir->bExpanded) && (step > 0) && (!bStartingFromCpt));
         }
 
         if (bSimAnn)
@@ -1033,6 +1085,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                     do_verbose && !bPMETuneRunning);
                 wallcycle_stop(wcycle, ewcDOMDEC);
                 /* If using an iterative integrator, reallocate space to match the decomposition */
+
+                /* PLUMED */
+                if(plumedswitch){
+                  plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
+                  plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
+                }
+                /* END PLUMED */
             }
         }
 
@@ -1081,6 +1140,94 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         GMX_MPE_LOG(ev_timestep2);
+
+
+        gmx_bool bHREX;
+        bHREX= repl_ex_nst > 0 && (step>0) && !bLastStep && do_per_step(step,repl_ex_nst) && plumed_hrex;
+
+/* Hamiltonian Replica Exchange */
+        if(plumedswitch) if(bHREX){
+          gmx_enerdata_t *hrex_enerd;
+          snew(hrex_enerd,1);
+          init_enerdata(top_global->groups.grps[egcENER].nr,ir->fepvals->n_lambda,hrex_enerd);
+          int repl=-1;
+          int nrepl=-1;
+          if(MASTER(cr)){
+            repl=replica_exchange_get_repl(repl_ex);
+            nrepl=replica_exchange_get_nrepl(repl_ex);
+          }
+          if (PAR(cr)) {
+            if (DOMAINDECOMP(cr))
+              dd_collect_state(cr->dd,state,state_global);
+            else
+              pd_collect_state(cr,state_global);
+          }
+          if(MASTER(cr)){
+            if(repl%2==step/repl_ex_nst%2){
+              if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
+            }else{
+              if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
+            }
+          }
+          if(PAR(cr)){
+            if (DOMAINDECOMP(cr)) {
+              dd_partition_system(fplog,step,cr,TRUE,1,
+                              state_global,top_global,ir,
+                              state,&f,mdatoms,top,fr,vsite,shellfc,constr,
+                              nrnb,wcycle,FALSE);
+            } else {
+              bcast_state(cr,state,FALSE);
+            }
+          }
+          do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
+                     state->box, state->x, &state->hist,
+                     f, force_vir, mdatoms, hrex_enerd, fcd,
+                     state->lambda, graph,
+                     fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
+                    GMX_FORCE_STATECHANGED |
+                       ((DYNAMIC_BOX(*ir) || bRerunMD) ? GMX_FORCE_DYNAMICBOX : 0) |
+                       GMX_FORCE_ALLFORCES |
+                       GMX_FORCE_SEPLRF |
+                       GMX_FORCE_VIRIAL |
+                       GMX_FORCE_ENERGY |
+                       GMX_FORCE_DHDL |
+                       GMX_FORCE_NS);
+          plumed_cmd(plumedmain,"GREX cacheLocalUSwap",&hrex_enerd->term[F_EPOT]);
+          sfree(hrex_enerd);
+
+/* exchange back */
+          if (PAR(cr)) {
+            if (DOMAINDECOMP(cr))
+              dd_collect_state(cr->dd,state,state_global);
+            else
+              pd_collect_state(cr,state_global);
+          }
+          if(MASTER(cr)){
+            if(repl%2==step/repl_ex_nst%2){
+              if(repl-1>=0) exchange_state(cr->ms,repl-1,state_global);
+            }else{
+              if(repl+1<nrepl) exchange_state(cr->ms,repl+1,state_global);
+            }
+          }
+          if(PAR(cr)){
+            if (DOMAINDECOMP(cr)) {
+              dd_partition_system(fplog,step,cr,TRUE,1,
+                              state_global,top_global,ir,
+                              state,&f,mdatoms,top,fr,vsite,shellfc,constr,
+                              nrnb,wcycle,FALSE);
+              if(plumedswitch){
+                plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
+                plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
+              }
+            } else {
+              bcast_state(cr,state,FALSE);
+            }
+          }
+
+        }
+/* END Hamiltonian Replica Exchange */
+
+
 
         /* We write a checkpoint at this MD step when:
          * either at an NS step when we signalled through gs,
@@ -1178,12 +1325,38 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
+ 
+            /* PLUMED */
+            plumedNeedsEnergy=0;
+            if(plumedswitch){
+              long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
+              plumed_cmd(plumedmain,"setPositions",&state->x[mdatoms->start][0]);
+              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[mdatoms->start]);
+              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
+              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
+              plumed_cmd(plumedmain,"prepareCalc",NULL);
+              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+            }
+            /* END PLUMED */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
-                     (bNS ? GMX_FORCE_NS : 0) | force_flags);
+                     (plumedNeedsEnergy? GMX_FORCE_ENERGY : 0) |(bNS ? GMX_FORCE_NS : 0) | force_flags);
+            /* PLUMED */
+            if(plumedswitch){
+              if(plumedNeedsEnergy) plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
+              plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
+              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
+              plumed_cmd(plumedmain,"performCalc",NULL);
+              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
+                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
+              if(bHREX)
+                 plumed_cmd(plumedmain,"GREX cacheLocalUNow",&enerd->term[F_EPOT]);
+
+            }
+            /* END PLUMED */
         }
 
         GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -1415,7 +1588,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
 
-            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, &df_history, step, mcrng, state->v, mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, &state->dfhist, step, mcrng, state->v, mdatoms);
+            /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
+            copy_df_history(&state_global->dfhist,&state->dfhist);
         }
         /* ################## START TRAJECTORY OUTPUT ################# */
 
@@ -1494,14 +1669,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         state_global->ekinstate.bUpToDate = TRUE;
                     }
                     update_energyhistory(&state_global->enerhist, mdebin);
-                    if (ir->efep != efepNO || ir->bSimTemp)
-                    {
-                        state_global->fep_state = state->fep_state; /* MRS: seems kludgy. The code should be
-                                                                       structured so this isn't necessary.
-                                                                       Note this reassignment is only necessary
-                                                                       for single threads.*/
-                        copy_df_history(&state_global->dfhist, &df_history);
-                    }
                 }
             }
             write_traj(fplog, cr, outf, mdof_flags, top_global,
@@ -2004,7 +2171,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : NULL,
-                                          &df_history, state->fep_state, ir->nstlog, step);
+                                          &state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
             if (!(bStartingFromCpt && (EI_VV(ir->eI))))
             {
@@ -2043,13 +2210,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         if (bDoExpanded)
         {
-            /* Have to do this part after outputting the logfile and the edr file */
+            /* Have to do this part _after_ outputting the logfile and the edr file */
+            /* Gets written into the state at the beginning of next loop*/
             state->fep_state = lamnew;
-            for (i = 0; i < efptNR; i++)
-            {
-                state_global->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
-            }
         }
+
         /* Remaining runtime */
         if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && !bPMETuneRunning)
         {
