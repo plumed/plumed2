@@ -53,6 +53,12 @@
 #include "domdec.h"
 #include "partdec.h"
 
+/* PLUMED */
+#include "../../Plumed.h"
+extern int    plumedswitch;
+extern plumed plumedmain;
+/* END PLUMED */
+
 #define PROBABILITYCUTOFF 100
 /* we don't bother evaluating if events are more rare than exp(-100) = 3.7x10^-44 */
 
@@ -113,14 +119,16 @@ static gmx_bool repl_quantity(FILE *fplog, const gmx_multisim_t *ms,
     qall[re->repl] = q;
     gmx_sum_sim(ms->nsim, qall, ms);
 
-    bDiff = FALSE;
-    for (s = 1; s < ms->nsim; s++)
-    {
-        if (qall[s] != qall[0])
-        {
+    /* PLUMED */
+    //bDiff = FALSE;
+    //for (s = 1; s < ms->nsim; s++)
+    //{
+    //    if (qall[s] != qall[0])
+    //    {
             bDiff = TRUE;
-        }
-    }
+    //    }
+    //}
+    /* END PLUMED */
 
     if (bDiff)
     {
@@ -257,6 +265,10 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         re->ind[i] = i;
     }
 
+    /* PLUMED */
+    // plumed2: check if we want alternative patterns (i.e. for bias-exchange metaD)
+    // in those cases replicas can share the same temperature.
+    /*
     if (re->type < ereENDSINGLE)
     {
 
@@ -277,6 +289,8 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
             }
         }
     }
+    */
+    /* END PLUMED */
 
     /* keep track of all the swaps, starting with the initial placement. */
     snew(re->allswaps, re->nrepl);
@@ -978,6 +992,10 @@ test_for_replica_exchange(FILE                 *fplog,
         pind[i] = re->ind[i];
     }
 
+    /* PLUMED */
+    int plumed_test_exchange_pattern=0;
+    /* END PLUMED */
+
     if (bMultiEx)
     {
         /* multiple random switch exchange */
@@ -1047,6 +1065,31 @@ test_for_replica_exchange(FILE                 *fplog,
     {
         /* standard nearest neighbor replica exchange */
         m = (step / re->nst) % 2;
+        /* PLUMED */
+        if(plumedswitch){
+          int partner=re->repl;
+          plumed_cmd(plumedmain,"getExchangesFlag",&plumed_test_exchange_pattern);
+          if(plumed_test_exchange_pattern>0){
+            int *list;
+            snew(list,re->nrepl);
+            plumed_cmd(plumedmain,"setNumberOfReplicas",&(re->nrepl));
+            plumed_cmd(plumedmain,"getExchangesList",list);
+            for(i=0; i<re->nrepl; i++) re->ind[i]=list[i];
+            sfree(list);
+          }
+
+          for(i=1; i<re->nrepl; i++) {
+            if (i % 2 != m) continue;
+            a = re->ind[i-1];
+            b = re->ind[i];
+            if(re->repl==a) partner=b;
+            if(re->repl==b) partner=a;
+          }
+          plumed_cmd(plumedmain,"GREX setPartner",&partner);
+          plumed_cmd(plumedmain,"GREX calculate",NULL);
+          plumed_cmd(plumedmain,"GREX shareAllDeltaBias",NULL);
+        }
+        /* END PLUMED */
         for (i = 1; i < re->nrepl; i++)
         {
             a = re->ind[i-1];
@@ -1056,6 +1099,18 @@ test_for_replica_exchange(FILE                 *fplog,
             if (i % 2 == m)
             {
                 delta = calc_delta(fplog, bPrint, re, a, b, a, b);
+                /* PLUMED */
+                if(plumedswitch){
+                  real adb,bdb,dplumed;
+                  char buf[300];
+                  sprintf(buf,"GREX getDeltaBias %d",a); plumed_cmd(plumedmain,buf,&adb);
+                  sprintf(buf,"GREX getDeltaBias %d",b); plumed_cmd(plumedmain,buf,&bdb);
+                  dplumed=adb*re->beta[a]+bdb*re->beta[b];
+                  delta+=dplumed;
+                  if (bPrint)
+                    fprintf(fplog,"dplumed = %10.3e  dE_Term = %10.3e (kT)\n",dplumed,delta);
+                }
+                /* END PLUMED */
                 if (delta <= 0)
                 {
                     /* accepted */
@@ -1079,11 +1134,22 @@ test_for_replica_exchange(FILE                 *fplog,
 
                 if (bEx[i])
                 {
+                  /* PLUMED */
+                  if(!plumed_test_exchange_pattern) {
+                    /* standard neighbour swapping */
                     /* swap these two */
                     tmp       = pind[i-1];
                     pind[i-1] = pind[i];
                     pind[i]   = tmp;
                     re->nexchange[i]++;  /* statistics for back compatibility */
+                  } else {
+                    /* alternative swapping patterns */
+                    tmp       = pind[a];
+                    pind[a]   = pind[b];
+                    pind[b]   = tmp;
+                    re->nexchange[i]++;  /* statistics for back compatibility */
+                  }
+                  /* END PLUMED */
                 }
             }
             else
@@ -1098,6 +1164,15 @@ test_for_replica_exchange(FILE                 *fplog,
         fprintf(fplog, "\n");
         re->nattempt[m]++;
     }
+
+    /* PLUMED */
+    if(plumed_test_exchange_pattern>0) {
+      for (i = 0; i < re->nrepl; i++)
+      {
+          re->ind[i] = i;
+      }
+    }
+    /* END PLUMED */
 
     /* record which moves were made and accepted */
     for (i = 0; i < re->nrepl; i++)
@@ -1308,6 +1383,10 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
     /* The order in which multiple exchanges will occur. */
     gmx_bool bThisReplicaExchanged = FALSE;
 
+    /* PLUMED */
+    if(plumedswitch)plumed_cmd(plumedmain,"GREX prepare",NULL);
+    /* END PLUMED */
+
     if (MASTER(cr))
     {
         replica_id  = re->repl;
@@ -1343,6 +1422,10 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
                 pd_collect_state(cr, state);
             }
         }
+        else
+        {
+            copy_state_nonatomdata(state_local, state);
+        }
 
         if (MASTER(cr))
         {
@@ -1357,10 +1440,10 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
                 if (exchange_partner != replica_id)
                 {
                     /* Exchange the global states between the master nodes */
-                    if (debug)
-                    {
-                        fprintf(debug, "Exchanging %d with %d\n", replica_id, exchange_partner);
-                    }
+                    //if (debug)
+                    //{
+                        fprintf(fplog, "Exchanging %d with %d\n", replica_id, exchange_partner);
+                    //}
                     exchange_state(cr->ms, exchange_partner, state);
                 }
             }

@@ -71,6 +71,7 @@ See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repo
 
 For users:
 - Fixed bug with \ref READ and periodic variables.
+- Gromacs patch updated to 4.6.5
 - Added full reference (page/number) to published paper in doc and log.
 - Fixed a bug in file backups (only affecting Windows version - thanks to T. Giorgino).
 - Added possibility to search in the documentation.
