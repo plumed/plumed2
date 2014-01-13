@@ -58,6 +58,12 @@
 /* afm stuf */
 #include "pull.h"
 
+/* PLUMED */
+#include "../../Plumed.h"
+extern int    plumedswitch;
+extern plumed plumedmain; extern void(*plumedcmd)(plumed,const char*,const void*);
+/* END PLUMED */
+
 int cmain(int argc, char *argv[])
 {
     const char   *desc[] = {
@@ -121,15 +127,20 @@ int cmain(int argc, char *argv[])
         "[PAR]",
         "With GPUs (only supported with the Verlet cut-off scheme), the number",
         "of GPUs should match the number of MPI processes or MPI threads,",
-        "excluding PME-only processes/threads. With thread-MPI the number",
+        "excluding PME-only processes/threads. With thread-MPI, unless set on the command line, the number",
         "of MPI threads will automatically be set to the number of GPUs detected.",
-        "When you want to use a subset of the available GPUs, you can use",
-        "the [TT]-gpu_id[tt] option, where GPU id's are passed as a string,",
-        "e.g. 02 for using GPUs 0 and 2. When you want different GPU id's",
-        "on different nodes of a compute cluster, use the GMX_GPU_ID environment",
-        "variable instead. The format for GMX_GPU_ID is identical to ",
-        "[TT]-gpu_id[tt], but an environment variable can have different values",
-        "on different nodes of a cluster.",
+        "To use a subset of the available GPUs, or to manually provide a mapping of",
+        "GPUs to PP ranks, you can use the [TT]-gpu_id[tt] option. The argument of [TT]-gpu_id[tt] is",
+        "a string of digits (without delimiter) representing device id-s of the GPUs to be used.",
+        "For example, \"[TT]02[tt]\" specifies using GPUs 0 and 2 in the first and second PP ranks per compute node",
+        "respectively. To select different sets of GPU-s",
+        "on different nodes of a compute cluster, use the [TT]GMX_GPU_ID[tt] environment",
+        "variable instead. The format for [TT]GMX_GPU_ID[tt] is identical to ",
+        "[TT]-gpu_id[tt], with the difference that an environment variable can have",
+        "different values on different compute nodes. Multiple MPI ranks on each node",
+        "can share GPUs. This is accomplished by specifying the id(s) of the GPU(s)",
+        "multiple times, e.g. \"[TT]0011[tt]\" for four ranks sharing two GPUs in this node.",
+        "This works within a single simulation, or a multi-simulation, with any form of MPI.",
         "[PAR]",
         "When using PME with separate PME nodes or with a GPU, the two major",
         "compute tasks, the non-bonded force calculation and the PME calculation",
@@ -401,6 +412,7 @@ int cmain(int argc, char *argv[])
         { efMTX, "-mtx",    "nm",       ffOPTWR },
         { efNDX, "-dn",     "dipole",   ffOPTWR },
         { efRND, "-multidir", NULL,      ffOPTRDMULT},
+        { efDAT, "-plumed", "plumed",   ffOPTRD },   /* PLUMED */
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
         { efNDX, "-mn",     "membed",   ffOPTRD }
@@ -451,7 +463,12 @@ int cmain(int argc, char *argv[])
     output_env_t  oenv                  = NULL;
     const char   *deviceOptions         = "";
 
-    gmx_hw_opt_t  hw_opt = {0, 0, 0, 0, threadaffSEL, 0, 0, NULL};
+    /* Non transparent initialization of a complex gmx_hw_opt_t struct.
+     * But unfortunately we are not allowed to call a function here,
+     * since declarations follow below.
+     */
+    gmx_hw_opt_t  hw_opt = { 0, 0, 0, 0, threadaffSEL, 0, 0,
+                             { NULL, FALSE, 0, NULL } };
 
     t_pargs       pa[] = {
 
@@ -477,8 +494,8 @@ int cmain(int argc, char *argv[])
           "The starting logical core number for pinning to cores; used to avoid pinning threads from different mdrun instances to the same core" },
         { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
           "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
-        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_id},
-          "List of GPU id's to use" },
+        { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_opt.gpu_id},
+          "List of GPU device id-s to use, specifies the per-node PP rank to GPU mapping" },
         { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
           "Check for all bonded interactions with DD" },
         { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
@@ -733,6 +750,31 @@ int cmain(int argc, char *argv[])
     ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
+    /* PLUMED */
+    plumedswitch=0;
+    if (opt2bSet("-plumed",NFILE,fnm)) plumedswitch=1;
+    if(plumedswitch){ plumedcmd=plumed_cmd;
+      int plumed_is_there=0;
+      int real_precision=sizeof(real);
+      real energyUnits=1.0;
+      real lengthUnits=1.0;
+      real timeUnits=1.0;
+  
+  
+      if(!plumed_installed()){
+        gmx_fatal(FARGS,"Plumed is not available. Check your PLUMED_KERNEL variable.");
+      }
+      plumedmain=plumed_create();
+      plumed_cmd(plumedmain,"setRealPrecision",&real_precision);
+      // this is not necessary for gromacs units:
+      plumed_cmd(plumedmain,"setMDEnergyUnits",&energyUnits);
+      plumed_cmd(plumedmain,"setMDLengthUnits",&lengthUnits);
+      plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);
+      //
+      plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,NFILE,fnm));
+      plumedswitch=1;
+    }
+    /* END PLUMED */
 
     rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
                   nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
@@ -742,6 +784,12 @@ int cmain(int argc, char *argv[])
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                   pforce, cpt_period, max_hours, deviceOptions, Flags);
 
+    /* PLUMED */
+    if(plumedswitch){
+      plumed_finalize(plumedmain);
+    }
+    /* END PLUMED */
+  
     gmx_finalize_par();
 
     if (MULTIMASTER(cr))
