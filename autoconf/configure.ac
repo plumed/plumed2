@@ -1,7 +1,7 @@
 # we require a recent version
 # notice that autoconf is not necessary on user's machine, but only
 # if one has to update configure.ac
-AC_PREREQ([2.69])
+AC_PREREQ([2.68])
 AC_INIT([PLUMED], [2])
 
 ##################################################################
@@ -224,15 +224,7 @@ if test $zlib == true ; then
 fi
 
 # molfile:
-save_LIBS="$LIBS"
-found=ko
-AC_CHECK_HEADER( [libmolfile_plugin.h],
-  AC_CHECK_HEADER(  [molfile_plugin.h],
-  AC_CHECK_LIB(  molfile_plugin,molfile_gromacsplugin_init, [LIBS="-lmolfile_plugin $LIBS"] [found=ok]
-  )))
-if test $found == ok ; then
- AC_DEFINE([__PLUMED_HAS_MOLFILE])
-fi
+AC_DEFINE([__PLUMED_HAS_MOLFILE])
 
 # this can be used to enable openmp:
 # AC_OPENMP
