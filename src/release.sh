@@ -30,6 +30,19 @@ ls src README 1>/dev/null 2>/dev/null ||  {
   exit 1
 }
 
+shortversion=$(echo "$version" | sed  's/^\([0-9][0-9]*\).*/\1/' )
+
 echo "Version: 2.$version"
+echo "Short version: 2.$shortversion"
+
+VERSION="
+LONG: v2.$version
+SHORT: v2.$shortversion
+"
 
 git archive -o plumed-2.$version.tgz --prefix plumed-2.$version/ v2.$version
+tar xzf plumed-2.$version.tgz
+echo "$VERSION" > plumed-2.$version/VERSION
+tar czf plumed-2.$version.tgz plumed-2.$version
+
+

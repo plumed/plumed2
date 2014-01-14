@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "Config.h"
+#include "version.h"
 #include <cstring>
 
 namespace PLMD{
@@ -36,6 +37,14 @@ bool isInstalled(){
 
 std::string getPlumedRoot(){
   return "@PLUMED_ROOT@";
+}
+
+std::string getVersion(){
+  return PLUMED_VERSION_SHORT;
+}
+
+std::string getVersionLong(){
+  return PLUMED_VERSION_LONG;
 }
 
 std::string getMakefile(){
