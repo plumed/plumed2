@@ -72,6 +72,13 @@ link it with
 This rule is true for all the libraries, so that you will always be able to link
 a specific version of a library by adding it to the LIBS variable.
 
+\warning On Linux you might have problems using the LDFLAGS option. In particular,
+if you have problems in linking file 'src/lib/plumed-shared', try to set correctly
+the runtime path with e.g.
+\verbatim
+> ./configure LDFLAGS="-L/opt/local/lib -Wl,-rpath,/opt/local/lib" CPPFLAGS=-I/opt/local/include LIBS=-lmymatheval
+\endverbatim
+
 Notice that PLUMED needs blas and lapack. The configure script
 is first looking for them in the standard path, then with option "-lblas" and
 "-llapack", respectively. Thus, if you want to use a specific version of them
