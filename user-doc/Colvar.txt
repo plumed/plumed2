@@ -98,8 +98,9 @@ an angle or distance many times and to make it easier to implement very complex 
 these sort of collective variables using so-called MultiColvars.  MultiColvars are named in this way because a single
 PLUMED action can be used to calculate a number of different collective variables.  For instance the \ref DISTANCES
 action can be used to calculate the minimum distance, the number of distances less than a certain value, the number of
-distances within a certain range...  Descriptions as to how to use PLUMED to calculate these kinds of CVs are given
-below:
+distances within a certain range... A more detailed introduction to multicolvars is provided in this 
+<a href="http://www.youtube.com/watch?v=iDvZmbWE5ps">10-minute video</a>. Descriptions of the various multicolvars
+that are implemented in PLUMED 2 are given below: 
 
 @MCOLVAR@   
 
