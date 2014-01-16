@@ -34,8 +34,14 @@
 
 // when using molfile plugin
 #ifdef __PLUMED_HAS_MOLFILE
+#ifdef __PLUMED_INTERNAL_MOLFILE_PLUGINS
+// Use the internal ones
+#include "molfile/libmolfile_plugin.h"
+#include "molfile/molfile_plugin.h"
+#else
 #include "libmolfile_plugin.h"
 #include "molfile_plugin.h"
+#endif
 #endif
 
 using namespace std;
