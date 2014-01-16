@@ -65,6 +65,7 @@ PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
+PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[use external molfile_plugins],[no])
 PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
@@ -190,6 +191,23 @@ AC_DEFINE([__PLUMED_INTERNAL_BLAS])
 fi
 
 
+# Check for molfile_plugins and use internal fallback if not found. TG
+
+# We always have molfile, now
+AC_DEFINE([__PLUMED_HAS_MOLFILE])
+
+if test "$external_molfile_plugins" == true ; then
+	AC_CHECK_FUNC(  [molfile_dcdplugin_init], [ ], [
+		AC_MSG_ERROR([static molfile_dcdplugin_init function not found])
+	] )
+else
+	AC_MSG_WARN([using internal molfile_plugins, will only support dcd and xtc/trr/trj])
+	AC_DEFINE([__PLUMED_INTERNAL_MOLFILE_PLUGINS])
+fi
+
+
+
+
 #### End of compulsory libraries ####
 
 
@@ -223,8 +241,6 @@ if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 fi
 
-# molfile:
-AC_DEFINE([__PLUMED_HAS_MOLFILE])
 
 # this can be used to enable openmp:
 # AC_OPENMP

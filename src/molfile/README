@@ -9,8 +9,6 @@ If you wish to link PLUMED2 with the full molfile_plugins
 distribution, consider downloading VMD and adjusting
 include and link flags to configure as appropriate.
 
-Code current as of October 2013.
-
  
-
+# ./configure --host=i686-w64-mingw32 --disable-shared LDFLAGS="-static"
 

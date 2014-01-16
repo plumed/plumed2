@@ -672,6 +672,7 @@ enable_shared
 enable_cxx_exceptions
 enable_mpi
 enable_external_lapack
+enable_external_molfile_plugins
 enable_matheval
 enable_zlib
 enable_clock_gettime
@@ -1312,6 +1313,8 @@ Optional Features:
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
+  --enable-external-molfile-plugins
+                          enable use external molfile_plugins, default: no
   --enable-matheval       enable search for matheval, default: yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-clock-gettime  enable search for gettime, default: yes
@@ -2332,6 +2335,24 @@ else
   case "yes" in
              (yes) external_lapack=true ;;
              (no)  external_lapack=false ;;
+  esac
+
+fi
+
+
+
+external_molfile_plugins=
+# Check whether --enable-external-molfile-plugins was given.
+if test "${enable_external_molfile_plugins+set}" = set; then :
+  enableval=$enable_external_molfile_plugins; case "${enableval}" in
+             (yes) external_molfile_plugins=true ;;
+             (no)  external_molfile_plugins=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-external-molfile-plugins" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) external_molfile_plugins=true ;;
+             (no)  external_molfile_plugins=false ;;
   esac
 
 fi
@@ -4766,6 +4787,32 @@ $as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
 fi
 
 
+# Check for molfile_plugins and use internal fallback if not found. TG
+
+# We always have molfile, now
+$as_echo "#define __PLUMED_HAS_MOLFILE 1" >>confdefs.h
+
+
+if test "$external_molfile_plugins" == true ; then
+	ac_fn_cxx_check_func "$LINENO" "molfile_dcdplugin_init" "ac_cv_func_molfile_dcdplugin_init"
+if test "x$ac_cv_func_molfile_dcdplugin_init" = xyes; then :
+
+else
+
+		as_fn_error $? "static molfile_dcdplugin_init function not found" "$LINENO" 5
+
+fi
+
+else
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, will only support dcd and xtc/trr/trj" >&5
+$as_echo "$as_me: WARNING: using internal molfile_plugins, will only support dcd and xtc/trr/trj" >&2;}
+	$as_echo "#define __PLUMED_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
+
+fi
+
+
+
+
 #### End of compulsory libraries ####
 
 
@@ -5090,9 +5137,6 @@ fi
     fi
 
 fi
-
-# molfile:
-$as_echo "#define __PLUMED_HAS_MOLFILE 1" >>confdefs.h
 
 
 # this can be used to enable openmp:
