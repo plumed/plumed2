@@ -197,11 +197,12 @@ fi
 AC_DEFINE([__PLUMED_HAS_MOLFILE])
 
 if test "$external_molfile_plugins" == true ; then
-	AC_CHECK_FUNC(  [molfile_dcdplugin_init], [ ], [
-		true # AC_MSG_ERROR([static molfile_dcdplugin_init function not found])
-	] )
+	AC_CHECK_LIB([molfile_plugin],[molfile_dcdplugin_init], ,
+		[ AC_MSG_ERROR([Static molfile library not found. Check LDFLAGS. ]) ])
+        AC_CHECK_HEADER([libmolfile_plugin.h], , 
+		[ AC_MSG_ERROR([libmolfile_plugin.h header not found. Check CPPFLAGS. ]) ])
 else
-	AC_MSG_WARN([using internal molfile_plugins, will only support dcd and xtc/trr/trj])
+	AC_MSG_WARN([using internal molfile_plugins, which only support dcd and xtc/trr/trj])
 	AC_DEFINE([__PLUMED_INTERNAL_MOLFILE_PLUGINS])
 fi
 

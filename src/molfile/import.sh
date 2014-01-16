@@ -12,11 +12,24 @@ EOF
   exit 1
 fi
 
+
+
 function mycp {
 	f=$1 
 	t=$2
 	echo "Copying $f into $t  ..."
 }
+
+function mycp_wrap {
+	i=$1
+	f=$2 
+	t=$3
+	echo "Copying $f into $t (wrapping into #ifdef $i) ..."
+	(echo "#ifdef $i";
+         cat $f;
+	 echo "#endif";) > $t
+}
+
 
 
 #      <plugins_dir> should be the one containing dcdplugin.cpp
@@ -25,6 +38,7 @@ function mycp {
 #		    usually .../plugins/include
 
 PD="$1"
+IFDEF=__PLUMED_INTERNAL_MOLFILE_PLUGINS
 
 # List of files always imported
 for i in endianswap.h fastio.h Gromacs.h largefiles.h; do
@@ -38,8 +52,8 @@ done
 mycp $PD/molfile_plugin/LICENSE .
 
 # List of "known-good" plugins. Some renaming is necessary
-mycp $PD/molfile_plugin/src/dcdplugin.c dcdplugin.cpp
-mycp $PD/molfile_plugin/src/gromacsplugin.C gromacsplugin.cpp
+mycp_wrap $IFDEF $PD/molfile_plugin/src/dcdplugin.c dcdplugin.cpp
+mycp_wrap $IFDEF $PD/molfile_plugin/src/gromacsplugin.C gromacsplugin.cpp
 
 # Generate static header
 plugins="dcdplugin gromacsplugin"

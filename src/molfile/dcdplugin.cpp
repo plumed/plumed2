@@ -1,3 +1,4 @@
+#ifdef __PLUMED_INTERNAL_MOLFILE_PLUGINS
 /***************************************************************************
  *cr                                                                       
  *cr            (C) Copyright 1995-2009 The Board of Trustees of the           
@@ -1242,3 +1243,4 @@ int main(int argc, char *argv[]) {
       
 #endif
 
+#endif
