@@ -4799,7 +4799,7 @@ if test "x$ac_cv_func_molfile_dcdplugin_init" = xyes; then :
 
 else
 
-		as_fn_error $? "static molfile_dcdplugin_init function not found" "$LINENO" 5
+		true # AC_MSG_ERROR([static molfile_dcdplugin_init function not found])
 
 fi
 

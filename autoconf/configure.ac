@@ -198,7 +198,7 @@ AC_DEFINE([__PLUMED_HAS_MOLFILE])
 
 if test "$external_molfile_plugins" == true ; then
 	AC_CHECK_FUNC(  [molfile_dcdplugin_init], [ ], [
-		AC_MSG_ERROR([static molfile_dcdplugin_init function not found])
+		true # AC_MSG_ERROR([static molfile_dcdplugin_init function not found])
 	] )
 else
 	AC_MSG_WARN([using internal molfile_plugins, will only support dcd and xtc/trr/trj])
