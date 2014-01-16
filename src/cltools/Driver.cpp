@@ -35,7 +35,10 @@
 // when using molfile plugin
 #ifdef __PLUMED_HAS_MOLFILE
 #ifdef __PLUMED_INTERNAL_MOLFILE_PLUGINS
-// Use the internal ones
+/* Use the internal ones. Alternatively:
+ *    ifneq (,$(findstring __PLUMED_INTERNAL_MOLFILE_PLUGINS,$(CPPFLAGS)))
+ *    CPPFLAGS+=-I../molfile  
+ */
 #include "molfile/libmolfile_plugin.h"
 #include "molfile/molfile_plugin.h"
 #else
