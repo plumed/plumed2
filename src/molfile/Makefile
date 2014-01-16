@@ -12,11 +12,8 @@ OBJS=gromacsplugin.o dcdplugin.o
 
 CFLAGS+=-DSTATIC_PLUGIN
 
-default: $(OBJS) libmolfile_plugin.h
+default: $(OBJS) 
 
-libmolfile_plugin.h: $(OBJS)
-	rm $@
-	./create_static_header.sh MOLFILE molfile $@ $(patsubst %.o,%,$^)
 
 
 %.o: %.c
