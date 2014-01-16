@@ -71,7 +71,8 @@ See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repo
 
 For users:
 - Fixed bug with \ref READ and periodic variables.
-- Gromacs patch updated to 4.6.5
+- Fixed bug with \ref HISTOGRAM (option USE_ALL_DATA was not working properly).
+- Gromacs patch updated to 4.6.5.
 - Added option 'plumed info --long-version'. Notice that --version and --long-version
   are automatically updated from git repositories.
 - Added full reference (page/number) to published paper in doc and log.
@@ -84,8 +85,8 @@ For developers:
 - Changed way modules are linked in src/.
   E.g. src/colvar/tools/ is not anymore a symlink to src/colvar but a real directory.
 - Patch for gromacs 4.6 now also include original code so as to simplify its modification.
-- Added option 'plumed patch --save-originals'
-- Fixed regtest regtest/secondarystructure/rt32 to avoid problems with NUMERICAL_DERIVATIVES
+- Added option 'plumed patch --save-originals'.
+- Fixed regtest regtest/secondarystructure/rt32 to avoid problems with NUMERICAL_DERIVATIVES.
 - Removed include graphs in the documentation (too large).
 - Several small fixes in documentation.
 
