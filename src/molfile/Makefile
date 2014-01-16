@@ -10,6 +10,8 @@ include ../maketools/make.module
 
 OBJS=gromacsplugin.o dcdplugin.o
 
+CFLAGS+=-DSTATIC_PLUGIN
+
 default: $(OBJS) libmolfile_plugin.h
 
 libmolfile_plugin.h: $(OBJS)
