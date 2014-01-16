@@ -1345,7 +1345,7 @@ Optional Features:
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-almost         enable search for almost, default: no
-  --enable-gsl            enable search for gsl, default: yes
+  --enable-gsl            enable search for gsl, default: no
   --disable-gsltest       Do not try to compile and run a test GSL program
 
 Optional Packages:
@@ -2508,7 +2508,7 @@ if test "${enable_gsl+set}" = set; then :
              (*)   as_fn_error $? "wrong argument to --enable-gsl" "$LINENO" 5 ;;
   esac
 else
-  case "yes" in
+  case "no" in
              (yes) gsl=true ;;
              (no)  gsl=false ;;
   esac
