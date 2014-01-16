@@ -1,0 +1,16 @@
+This directory contains is a tiny subset of VMD's molfile 
+plugins, converted into a PLUMED2 module for distribution
+convenience.
+
+The code is copyrighted by its authors and is redistributed
+according to the provisions in its LICENSE file (see).
+
+If you wish to link PLUMED2 with the full molfile_plugins
+distribution, consider downloading VMD and adjusting
+include and link flags to configure as appropriate.
+
+Code current as of October 2013.
+
+ 
+
+
