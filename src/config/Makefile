@@ -8,6 +8,8 @@ all:
 	@echo "Updating ConfigInstall.cpp"
 	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
 	 ../maketools/update-plumedroot.sh ConfigInstall.cpp
+	@echo "Updating version file"
+	@ ../maketools/update-version.sh version.h
 	$(MAKE) do-all
 
 obj: all
@@ -19,6 +21,8 @@ ConfigInstall.cpp:
 	@echo "Updating ConfigInstall.cpp"
 	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
 	 ../maketools/update-plumedroot.sh ConfigInstall.cpp
+	@echo "Updating version file"
+	@ ../maketools/update-version.sh version.h
 
 # file to import compilation options inside c++
 Config.cpp: Config.cpp.in Config.h
@@ -28,10 +32,10 @@ Config.cpp: Config.cpp.in Config.h
 
 links: 
 	@echo Nothing to do in $(CURDIR)
-	
 
-Config.o: Config.cpp Makefile.conf.xxd
-ConfigInstall.o: ConfigInstall.cpp Makefile.conf.xxd
+
+Config.o: Config.cpp Makefile.conf.xxd version.h
+ConfigInstall.o: ConfigInstall.cpp Makefile.conf.xxd version.h
 
 Makefile.conf.xxd: ../../Makefile.conf
 	cat ../../Makefile.conf | xxd -i > Makefile.conf.xxd
@@ -45,7 +49,7 @@ compile_options.sh:
 
 .PHONY: clean
 clean:
-	rm -f Config.cpp compile_options.sh Makefile_conf
+	rm -f Config.cpp compile_options.sh Makefile_conf version.h
 	rm -fr deps 
 	rm -f Config.cpp ConfigInstall.cpp compile_options.sh install.conf
 	rm -f $(CLEANLIST)
