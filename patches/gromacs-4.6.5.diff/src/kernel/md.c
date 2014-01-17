@@ -1242,6 +1242,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
               plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
               plumed_cmd(plumedmain,"prepareCalc",NULL);
+              plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
+              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
               plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
             }
             /* END PLUMED */
@@ -1253,10 +1255,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      (plumedNeedsEnergy? GMX_FORCE_ENERGY : 0) |(bNS ? GMX_FORCE_NS : 0) | force_flags);
             /* PLUMED */
             if(plumedswitch){
-              if(plumedNeedsEnergy) plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-              plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
-              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
-              plumed_cmd(plumedmain,"performCalc",NULL);
+              if(plumedNeedsEnergy){
+                plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
+                plumed_cmd(plumedmain,"performCalc",NULL);
+              }
               if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
                  do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
             }
