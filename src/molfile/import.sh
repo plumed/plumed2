@@ -49,7 +49,7 @@ for i in molfile_plugin.h vmdplugin.h; do
 	mycp $PD/include/$i .
 done
 
-mycp $PD/molfile_plugin/LICENSE .
+mycp $PD/molfile_plugin/LICENSE COPYRIGHT
 
 # List of "known-good" plugins. Some renaming is necessary
 mycp_wrap $IFDEF $PD/molfile_plugin/src/dcdplugin.c dcdplugin.cpp
@@ -61,5 +61,7 @@ echo "Generating libmolfile_plugin.h: $plugins"
 rm libmolfile_plugin.h
 ./create_static_header.sh MOLFILE molfile libmolfile_plugin.h $plugins
 
+# Add copyright notice at top
+../header.sh
 
 
