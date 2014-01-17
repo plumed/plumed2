@@ -73,6 +73,8 @@ For users:
 - Fixed bug with \ref READ and periodic variables.
 - Fixed bug with \ref HISTOGRAM (option USE_ALL_DATA was not working properly).
 - Gromacs patch updated to 4.6.5.
+- Gromacs patch for 4.6 has been modified to allow for better load balancing when
+  using GPUs.
 - Added option 'plumed info --long-version'. Notice that --version and --long-version
   are automatically updated from git repositories.
 - Added full reference (page/number) to published paper in doc and log.
