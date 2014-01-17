@@ -65,7 +65,8 @@ PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
-PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[use external molfile_plugins],[no])
+PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
+PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
@@ -190,30 +191,41 @@ AC_DEFINE([__PLUMED_INTERNAL_BLAS])
 
 fi
 
+#### End of compulsory libraries ####
+
+#### Optional libraries ####
+AC_MSG_NOTICE([Now we will check for optional headers and libraries])
+
+#############################################################
+# I add the possibility to completely remove molfile_plugins
+# I would like to be 100% that the molfile module compiles
+# correctly on all machines
+# In case of problem, it is sufficient to configure with
+# ./configure --disable-molfile-plugins
+# GB
+#############################################################
+
+if test $molfile_plugins == true ; then
 
 # Check for molfile_plugins and use internal fallback if not found. TG
 
 # We always have molfile, now
 AC_DEFINE([__PLUMED_HAS_MOLFILE])
 
+found=ko
 if test "$external_molfile_plugins" == true ; then
-	AC_CHECK_LIB([molfile_plugin],[molfile_dcdplugin_init], ,
-		[ AC_MSG_ERROR([Static molfile library not found. Check LDFLAGS. ]) ])
-        AC_CHECK_HEADER([libmolfile_plugin.h], , 
-		[ AC_MSG_ERROR([libmolfile_plugin.h header not found. Check CPPFLAGS. ]) ])
-else
+	AC_CHECK_LIB([molfile_plugin],[molfile_dcdplugin_init],
+        	[ AC_CHECK_HEADER([libmolfile_plugin.h], [LIBS="-lmolfile_plugin $LIBS"] [found=ok] ) ])
+fi
+if test $found == ko ; then
 	AC_MSG_WARN([using internal molfile_plugins, which only support dcd and xtc/trr/trj])
 	AC_DEFINE([__PLUMED_INTERNAL_MOLFILE_PLUGINS])
 fi
 
+fi
 
 
 
-#### End of compulsory libraries ####
-
-
-#### Optional libraries ####
-AC_MSG_NOTICE([Now we will check for optional headers and libraries])
 # this is special and is also attached to STATIC_LIBS
 # this flag should be used also when linking MD engines to allow plumed
 # to be loaded later
