@@ -62,6 +62,7 @@ rm libmolfile_plugin.h
 ./create_static_header.sh MOLFILE molfile libmolfile_plugin.h $plugins
 
 # Add copyright notice at top
-../header.sh
+echo "Adding COPYRIGHT headers"
+(cd ..; ./header.sh)
 
 
