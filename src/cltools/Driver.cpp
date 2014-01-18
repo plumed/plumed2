@@ -82,26 +82,30 @@ had we run the calculation we are running with driver when the MD simulation was
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz --trajectory-stride 100 --timestep 0.001
 \endverbatim
 
-Additionally, when you recompile with the  -D__PLUMED_HAS_MOLFILE you have access to all the types of file read 
-by vmd. In order to do so, you should add  
-\verbatim
-DYNAMIC_LIBS= [all the usual libs] \\
-	-lmolfile_plugin -ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl
-CPPFLAGS= [all the usual flags] \\
-	-D__PLUMED_HAS_MOLFILE -I/mypathtolibmolfile_plugin.h/ -I/mypathtomolfile_plugin.h/
-\endverbatim
-
-The easy way to get this is to download the SOURCE of VMD and you find a plugins directory. Just adapt build.sh and 
-compile it. At the end, you should get the molfile plugin compiled. Just locate libmolfile_plugin.a ibmolfile_plugin.h 
-and molfile_plugin.h.
-When you succeed you can use the following
+By default you have access to a subset of the trajectory file formats
+supported by VMD, e.g. xtc and dcd:
 
 \verbatim
 plumed driver --plumed plumed.dat --pdb diala.pdb --mf_xtc traj.xtc --trajectory-stride 100 --timestep 0.001
 \endverbatim
 
-where the prefix --mf_ stands for the molfile plugin format accepted. There are many available. Check them in VMD. 
-Limitations therein applies.
+where --mf_ prefixes the extension of one of the accepted molfile
+plugin format.
+
+To have support of all of VMD's plugins you need to recompile
+PLUMED. The easy way to get this is to download the SOURCE of VMD and
+you find a plugins directory. Just adapt build.sh and compile it. At
+the end, you should get the molfile plugins compiled as a static
+library. Just locate libmolfile_plugin.a and libmolfile_plugin.h .
+Then you can use the following:
+
+\verbatim
+configure [...] LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" 
+                CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
+\endverbatim
+
+and rebuild. Check the available molfile plugins and limitations in
+VMD's manual.
 
 */
 //+ENDPLUMEDOC
