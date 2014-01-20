@@ -47,7 +47,7 @@ for i in endianswap.h fastio.h Gromacs.h largefiles.h periodic_table.h readpdb.h
 done
 
 # List of files to import from include/
-for i in molfile_plugin.h vmdplugin.h  ; do
+for i in molfile_plugin.h vmdplugin.h; do
 	mycp $PD/include/$i .
 done
 

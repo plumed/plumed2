@@ -1,5 +1,6 @@
-All the source code included in this package is meant to be covered
-under the GNU LESSER GENERAL PUBLIC LICENSE (see ./COPYING.LESSER).
+PLUMED2 is covered under the GNU LESSER GENERAL PUBLIC LICENSE (see ./COPYING.LESSER).
+This license applies to all the source code in this tree, except from where
+explicitly indicated.
 
 Authors of this software are:
 
@@ -8,4 +9,9 @@ Davide Branduardi
 Giovanni Bussi
 Carlo Camilloni
 Gareth Tribello
+
+Notice that some of the PLUMED modules are released under different
+licenses. In each module with this exception, you should find a file
+named COPYRIGHT stating the exact licence. Look for files
+in the form src/*/COPYRIGHT
 
