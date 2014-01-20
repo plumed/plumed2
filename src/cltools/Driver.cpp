@@ -93,19 +93,18 @@ where --mf_ prefixes the extension of one of the accepted molfile
 plugin format.
 
 To have support of all of VMD's plugins you need to recompile
-PLUMED. The easy way to get this is to download the SOURCE of VMD and
-you find a plugins directory. Just adapt build.sh and compile it. At
+PLUMED. You need to download the SOURCE of VMD, which contains
+a plugins directory. Adapt build.sh and compile it. At
 the end, you should get the molfile plugins compiled as a static
-library. Just locate libmolfile_plugin.a and libmolfile_plugin.h .
-Then you can use the following:
+library libmolfile_plugin.a. Locate said file and libmolfile_plugin.h, 
+and customize the configure command with something along
+the lines of:
 
 \verbatim
-configure [...] LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" 
-                CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
+configure [...] LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
 \endverbatim
 
-and rebuild. Check the available molfile plugins and limitations in
-VMD's manual.
+and rebuild. Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
 
 */
 //+ENDPLUMEDOC
