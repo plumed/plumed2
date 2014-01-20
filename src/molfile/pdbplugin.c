@@ -35,7 +35,6 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS WITH THE SOFTWARE.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifdef __PLUMED_INTERNAL_MOLFILE_PLUGINS
-extern "C" {
 /***************************************************************************
  *cr
  *cr            (C) Copyright 1995-2009 The Board of Trustees of the
@@ -640,5 +639,4 @@ VMDPLUGIN_API int VMDPLUGIN_fini() {
   return VMDPLUGIN_SUCCESS;
 }
 
-}
 #endif
