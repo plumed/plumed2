@@ -34,6 +34,7 @@ void GridVesselBase::registerKeywords( Keywords& keys ){
 
 GridVesselBase::GridVesselBase( const VesselOptions& da ):
 Vessel(da),
+interpolating(false),
 bold(0),
 checkpoint(false),
 dataHasChangedSinceInterpol(true),

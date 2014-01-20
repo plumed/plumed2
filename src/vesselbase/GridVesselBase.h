@@ -32,7 +32,10 @@ namespace vesselbase {
 
 class GridVesselBase : public Vessel {
 friend class InterpolationBase;
+friend class PrintGrid;
 private:
+/// Are we interpolating this grid
+ bool interpolating;
 /// These two variables are used to 
 /// remember the box we were in on the previous call
  unsigned bold;
@@ -73,8 +76,6 @@ protected:
  unsigned currentGridPoint;
 /// Get a description of the grid to output to the log
  std::string getGridDescription() const ;
-/// Return a description of the quantity stored in a particular column of the grid
- std::string getQuantityDescription(const unsigned& ) const;
 /// Get the indices fof a point
  void getIndices( const unsigned& index, std::vector<unsigned>& indices ) const ;
 /// Get the indices at which a particular point resides
@@ -101,6 +102,8 @@ public:
   unsigned getNumberOfPoints() const;
 /// Get the coordinates for a point in the grid
   void getGridPointCoordinates( const unsigned& , std::vector<double>& );
+/// Return a description of the quantity stored in a particular column of the grid
+ std::string getQuantityDescription(const unsigned& ) const;
 /// Write the grid on a file
   void writeToFile( OFile& , const std::string& fmt );
 /// Get the dimensionality of the function
@@ -128,6 +131,8 @@ public:
 /// Calculate the vector from the grid point to point x then normalize by grid spacing
 /// This is useful for interpolation
  void getFractionFromGridPoint( const unsigned& igrid, const std::vector<double>& x, std::vector<double>& dd );
+/// Will the grid be interpolated
+  bool gridWillBeInterpolated() const;
 };
 
 inline
@@ -144,6 +149,11 @@ double GridVesselBase::getCellVolume() const {
 inline
 unsigned GridVesselBase::getDimension() const {
   return dimension;
+}
+
+inline
+bool GridVesselBase::gridWillBeInterpolated() const {
+  return interpolating;
 }
 
 }
