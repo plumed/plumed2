@@ -64,7 +64,15 @@ the system is moving towards the desired arrival point and which damps the
 fluctuations when the system attempts to move in the opposite direction. As in the
 case of the ratchet and pawl system, propelled by thermal motion of the solvent
 molecules, the biasing potential does not exert work on the system. \f$\eta(t)\f$ is
-an additional white noise acting on the minimum position of the bias.
+an additional white noise acting on the minimum position of the bias. 
+
+\par Components
+
+This action has three components:
+
+<b> .bias</b>	where the total bias on the arguments at time t is stored. <br>
+<b> .force2</b>	where the module of the total force at time t is stored. <br>
+<b> .min_#</b>	where \f$\rho_m(t)\f$ for ARG=# is stored. 
 
 \par Examples
 The following input sets up two biases, one on the distance between atoms 3 and 5
@@ -74,7 +82,7 @@ using TO and the two strength using KAPPA. The total energy of the bias is print
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 ABMD ARG=d1,d2 TO=1.0,1.5 KAPPA=5.0,5.0 LABEL=abmd
-PRINT ARG=abmd.bias
+PRINT ARG=abmd.bias,abmd.min_1,abmd.min_2
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
 
@@ -154,15 +162,22 @@ void ABMD::calculate(){
     const double cv=difference(i,to[i],getArgument(i));
     const double cv2=cv*cv;
     const double k=kappa[i];
+    double noise=0.;
     double diff=temp[i];
-    if(cv2<=diff) { diff=0.; temp[i]=0.; }
-    double noise = 2.*random[i].Gaussian()*diff;
+    if(diff>0) { 
+      noise = 2.*random[i].Gaussian()*diff;
+      if(cv2<=diff) { diff=0.; temp[i]=0.; }
+    }
 
     // min < 0 means that the variable has not been used in the input file, so the current position of the CV is used
     // cv2 < min means that the collective variable is nearer to the target value than at any other previous time so
     // min is set to the CV value
-    if(min[i]<0.||cv2<min[i]) min[i] = cv2; 
-    else {
+    if(min[i]<0.||cv2<min[i]) { 
+      min[i] = cv2; 
+      char str_min[6]; 
+      sprintf(str_min,"min_%u",i+1); 
+      getPntrToComponent(str_min)->set(min[i]);
+    } else {
       // otherwise a noise is added to the minimum value
       min[i] += noise;  
       const double f = -2.*k*(cv2-min[i])*cv;
@@ -170,10 +185,7 @@ void ABMD::calculate(){
       ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
       totf2+=f*f;
     }
-    char str_min[6]; 
-    sprintf(str_min,"min_%u",i+1); 
-    getPntrToComponent(str_min)->set(min[i]);
-  };
+  }
   getPntrToComponent("bias")->set(ene);
   getPntrToComponent("force2")->set(totf2);
 }
