@@ -43,12 +43,13 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR CH3SHIFTS 
 /*
-This collective variable calculates a scoring function based on the comparison of backcalculated and
-experimental methyl groups chemical shifts for a protein (ALA:HB; ILE:HD,HG2; LEU:HD1,HD2; THR:HG2;
-VAL:HG1,HG2).
+This collective variable calculates a scoring function based on the comparison of calculated and
+experimental methyl chemical shifts. 
 
-CH3Shift \cite Sahakyan:2011bn is employed to back calculate the chemical shifts that are then compared
-with a set of experimental values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
+
+CH3Shift \cite Sahakyan:2011bn is employed to back calculate the chemical shifts of methyl groups
+(ALA:HB; ILE:HD,HG2; LEU:HD1,HD2; THR:HG2; VAL:HG1,HG2) that are then compared with a set of experimental 
+values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
 
 It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
 to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
