@@ -148,6 +148,7 @@ random(getNumberOfArguments())
      sprintf(str_min,"min_%u",i+1); 
      addComponent(str_min); 
      componentIsNotPeriodic(str_min);
+     if(min[i]>0.) getPntrToComponent(str_min)->set(min[i]);
   }
   for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(-seed[i]);}
   addComponent("bias"); componentIsNotPeriodic("bias");
