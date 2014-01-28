@@ -87,6 +87,12 @@ void Piecewise::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
   keys.reset_style("POINT","compulsory");
+  ActionWithValue::useCustomisableComponents(keys);
+//  componentsAreNotOptional(keys);
+//  keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity will be referenceable elsewhere "
+//                                             "in the input file.  These quantities will be named with the arguments of the "
+//                                             "function followed by the character string _pfunc.  These quantities tell the "
+//                                             "user the values of the piecewise functions of each of the arguments.");
 }
 
 Piecewise::Piecewise(const ActionOptions&ao):
@@ -112,6 +118,7 @@ Function(ao)
     for(int i=0;i<getNumberOfArguments();i++){
       string s; Tools::convert(i+1,s);
       addComponentWithDerivatives(s); 
+//      addComponentWithDerivatives( getPntrToArgument(i)->getName()+"_pfunc" );
       getPntrToComponent(i)->setNotPeriodic();
     }
   }

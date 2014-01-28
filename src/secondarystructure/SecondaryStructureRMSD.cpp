@@ -58,6 +58,12 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
   keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
                                   "that contributed less than TOL at the previous neighbor list update step are ignored.");
   ActionWithVessel::registerKeywords( keys );
+  keys.setComponentsIntroduction("By default this Action calculates the number of structural units that are within a certain "
+                                 "distance of a idealised secondary structure element. This quantity can then be referenced "
+                                 "elsewhere in the input by using the label of the action. However, thes Action can also be used to "
+                                 "calculate the following quantities by using the keywords as described below.  The quantities then "
+                                 "calculated can be referened using the label of the action followed by a dot and then the name "
+                                 "from the table below."); 
   keys.use("LESS_THAN"); keys.use("MIN"); 
 }
 

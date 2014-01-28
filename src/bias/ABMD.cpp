@@ -104,6 +104,11 @@ void ABMD::registerKeywords(Keywords& keys){
   keys.add("optional","MIN","Array of starting values for the bias (set rho_m(t), otherwise it is set using the current value of ARG)");
   keys.add("optional","NOISE","Array of white noise intensities (add a temperature to the ABMD)");
   keys.add("optional","SEED","Array of seeds for the white noise (add a temperature to the ABMD)");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+//  keys.addOutputComponent("_min","default","");
+  keys.addOutputComponent("min_","default","");
 }
 
 ABMD::ABMD(const ActionOptions&ao):
@@ -138,6 +143,7 @@ random(getNumberOfArguments())
   for(unsigned i=0;i<getNumberOfArguments();i++) {
      char str_min[6]; 
      sprintf(str_min,"min_%u",i+1); 
+//     std::string str_min=getPntrToArgument(i)->getName()+"_min";
      addComponent(str_min); 
      componentIsNotPeriodic(str_min);
   }
@@ -172,6 +178,7 @@ void ABMD::calculate(){
     }
     char str_min[6]; 
     sprintf(str_min,"min_%u",i+1); 
+//    std::string str_min=getPntrToArgument(i)->getName()+"_min";
     getPntrToComponent(str_min)->set(min[i]);
   };
   getPntrToComponent("bias")->set(ene);
