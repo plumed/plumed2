@@ -69,6 +69,7 @@ ActionPilot(ao)
 
   mygrid = dynamic_cast<GridVesselBase*>( action->getVesselWithName("GRID") );
   if(!mygrid ) error(mylab + " is not an action that calculates a grid");
+  mygrid->interpolating=true;
 
   parse("FILE",filen); parse("FMT",fmt);
   if( filen.length()==0 ) error("file name for output has no characters");

@@ -44,6 +44,7 @@ public:
   unsigned getNumberOfFunctionsInAction();
   void performTask();
   double transformHD( const double& dist, double& df );
+  double transformLD( const double& dist, double& df );
 };
 
 PLUMED_REGISTER_ACTION(SketchMapField,"SMAP-FIELD")
@@ -116,7 +117,7 @@ void SketchMapField::calculate(){
   // Lock contributors
   lockContributors(); active_frames.updateActiveMembers();
   // Loop over all frames is now performed by ActionWithVessel
-  runAllTasks();
+  if( grid->gridWillBeInterpolated() ) runAllTasks();
 
   // Now store the frames that have changed
   for(unsigned i=0;i<active_frames.getNumberActive();++i) storeDistanceFunction( active_frames[i] );
@@ -157,6 +158,12 @@ double SketchMapField::transformHD( const double& dist, double& df ){
   double val = 1.0 -  highd.calculate( dist, df ); df=-dist*df;
   return val;
 }
+
+double SketchMapField::transformLD( const double& dist, double& df ){
+  double val = 1.0 -  lowd.calculate( dist, df ); df=-df;
+  return val;
+}
+
 
 }
 }

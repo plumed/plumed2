@@ -37,6 +37,7 @@ public:
   void calculate();
   void performTask();
   double transformHD( const double& dist, double& df );
+  double transformLD( const double& dist, double& df );
 };
 
 }

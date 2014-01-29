@@ -33,6 +33,7 @@ tablesAreSet(false),
 dimension(gg->dimension),
 mygrid(gg)
 {
+  mygrid->interpolating=true;
   data = dstart*(dimension + 1); ddx.resize( dimension );
   FunctionOnGrid* noint = dynamic_cast<FunctionOnGrid*>( gg );
   plumed_massert( !noint, "Cannot interpolate grid without derivatives");

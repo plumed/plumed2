@@ -68,5 +68,11 @@ double PathBase::transformHD( const double& dist, double& df ){
   return val;
 }
 
+double PathBase::transformLD( const double& dist, double& df ){
+  plumed_error();
+  df = 1.0;  return dist;
+}
+
+
 }
 }

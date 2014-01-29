@@ -48,6 +48,10 @@ private:
   PointWiseMapping* mymap;
 /// The forces on each of the derivatives (used in apply)
   std::vector<double> forcesToApply;
+/// Which frames were calculated
+  std::vector<bool> frameWasCalculated;
+/// Stores all the distances
+  std::vector<double> distances;
 protected:
 /// The (transformed) distance from each frame
   std::vector<double> fframes;
@@ -76,6 +80,8 @@ public:
   virtual double getLambda();
 /// This does the transformation of the distance by whatever function is required
   virtual double transformHD( const double& dist, double& df )=0;
+/// This doe sthe transformation of the low dimensional distance
+  virtual double transformLD( const double& dist, double& df )=0;
 /// Get the number of properties we are projecting onto
   unsigned getNumberOfProperties() const ;
 /// Get the name of the ith property we are projecting
@@ -94,6 +100,10 @@ public:
   void prepare();
 /// Apply the forces 
   void apply();
+/// Find the projection of the point closests to this one in the high dimensional space
+  void findClosestPoint( std::vector<double>& pp ) const ;
+/// Calculate the value of the stress at a given point and the derivatives.
+  double calculateStress( const std::vector<double>& pp, std::vector<double>& der );
 };
 
 inline
