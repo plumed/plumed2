@@ -247,12 +247,12 @@ visit http://www.cplusplus.com/reference/
 
 When you run a calculation with plumed the code calculates a number of CVs.  The bias and the forces
 due to the bias are then calculated and in the final step these forces are propegated back onto the 
-atoms using the chain rule.  For example PLMD::ColvarDistance
-contains the function that calculates a distance between atoms, while PLMD::BiasMeTaD contains
+atoms using the chain rule.  For example PLMD::colvar::Distance
+contains the function that calculates a distance between atoms, while PLMD::bias::MetaD contains
 the function for doing metadynamics.  What may thus seem remarkable to the programmer unfamiliar with
 C++ is that the class that calls the functions that calculate the CVs, biases and so on only uses 
 PLMD::Action.  To make that clear it looks like the code can calculate the distances between
-atoms without ever calling any of the routines from PLMD::ColvarDistance!      
+atoms without ever calling any of the routines from PLMD::colvar::Distance!      
 
 We can program in this way because we take advantage of dynamic polymorhpism.  If you look at the
 documenation for PLMD::Action you will see that the method PLMD::Action::calculate is declare inside
