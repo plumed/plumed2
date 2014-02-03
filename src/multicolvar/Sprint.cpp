@@ -103,6 +103,10 @@ PLUMED_REGISTER_ACTION(Sprint,"SPRINT")
 
 void Sprint::registerKeywords( Keywords& keys ){
   AdjacencyMatrixAction::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("coord_","default","all \f$n\f$ sprint coordinates are calculated and then stored in increasing order. "
+                                             "the smallest sprint coordinate will be labelled <em>label</em>.coord_1, "
+                                             "the second smallest will be labelleled <em>label</em>.coord_1 and so on");
 }
 
 Sprint::Sprint(const ActionOptions&ao):
@@ -122,8 +126,8 @@ eigenvecs( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() )
    sqrtn = sqrt( static_cast<double>( getFullNumberOfBaseTasks() ) );
    for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
       std::string num; Tools::convert(i,num);
-      addComponentWithDerivatives("aa"+num);
-      componentIsNotPeriodic("aa"+num);
+      addComponentWithDerivatives("coord_"+num);
+      componentIsNotPeriodic("coord_"+num);
       getPntrToComponent(i)->resizeDerivatives( getNumberOfDerivatives() );
    }
 }
