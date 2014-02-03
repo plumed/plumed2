@@ -65,8 +65,8 @@ For developers:
 - cmd("setStopFlag") should now be called after PLUMED initialization.
 - Several small fixes in documentation.
 
-Unreleased changes
--------------
+Unreleased changes (will be included in 2.0.2)
+-----------------------------------------
 See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
 
 For users:
@@ -75,8 +75,7 @@ For users:
 - Gromacs patch updated to 4.6.5.
 - Gromacs patch for 4.6 has been modified to allow for better load balancing when
   using GPUs.
-- Added option 'plumed info --long-version'. Notice that --version and --long-version
-  are automatically updated from git repositories.
+- Added option 'plumed info --long-version' and 'plumed info --git-version'.
 - Added full reference (page/number) to published paper in doc and log.
 - Fixed a bug in file backups (only affecting Windows version - thanks to T. Giorgino).
 - Added possibility to search in the documentation.
