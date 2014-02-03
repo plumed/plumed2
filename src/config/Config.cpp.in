@@ -43,6 +43,10 @@ std::string getVersionLong(){
   return PLUMED_VERSION_LONG;
 }
 
+std::string getVersionGit(){
+  return PLUMED_VERSION_GIT;
+}
+
 std::string getMakefile(){
   static const char conf [] ={
 #include "Makefile.conf.xxd"
