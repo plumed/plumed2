@@ -149,6 +149,9 @@ void CoordinationBase::calculate()
   Vector distance;
   unsigned i0=nl->getClosePair(i).first;
   unsigned i1=nl->getClosePair(i).second;
+
+  if(getAbsoluteIndex(i0)==getAbsoluteIndex(i1)) continue;
+
   if(pbc){
    distance=pbcDistance(getPosition(i0),getPosition(i1));
   } else {
