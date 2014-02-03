@@ -66,14 +66,6 @@ case of the ratchet and pawl system, propelled by thermal motion of the solvent
 molecules, the biasing potential does not exert work on the system. \f$\eta(t)\f$ is
 an additional white noise acting on the minimum position of the bias. 
 
-\par Components
-
-This action has three components:
-
-<b> .bias</b>	where the total bias on the arguments at time t is stored. <br>
-<b> .force2</b>	where the module of the total force at time t is stored. <br>
-<b> .min_#</b>	where \f$\rho_m(t)\f$ for ARG=# is stored. 
-
 \par Examples
 The following input sets up two biases, one on the distance between atoms 3 and 5
 and another on the distance between atoms 2 and 4. The two target values are defined
@@ -82,7 +74,7 @@ using TO and the two strength using KAPPA. The total energy of the bias is print
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 ABMD ARG=d1,d2 TO=1.0,1.5 KAPPA=5.0,5.0 LABEL=abmd
-PRINT ARG=abmd.bias,abmd.min_1,abmd.min_2
+PRINT ARG=abmd.bias,abmd.d1_min,abmd.d2_min
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
 
@@ -115,7 +107,9 @@ void ABMD::registerKeywords(Keywords& keys){
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-  keys.addOutputComponent("_min","default","");
+  keys.addOutputComponent("_min","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                                 " These quantities will be named with the arguments of the bias followed by "
+                                 "the character string _min. These quantities tell the user the minimum value assumed by rho_m(t).");
 }
 
 ABMD::ABMD(const ActionOptions&ao):
@@ -150,7 +144,7 @@ random(getNumberOfArguments())
   for(unsigned i=0;i<getNumberOfArguments();i++) {
      std::string str_min=getPntrToArgument(i)->getName()+"_min";
      addComponent(str_min); componentIsNotPeriodic(str_min);
-     if(min[i]>0.) getPntrToComponent(str_min)->set(min[i]);
+     if(min[i]!=-1.0) getPntrToComponent(str_min)->set(min[i]);
   }
   for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(-seed[i]);}
   addComponent("bias"); componentIsNotPeriodic("bias");
