@@ -74,7 +74,7 @@ using TO and the two strength using KAPPA. The total energy of the bias is print
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 ABMD ARG=d1,d2 TO=1.0,1.5 KAPPA=5.0,5.0 LABEL=abmd
-PRINT ARG=abmd.bias
+PRINT ARG=abmd.bias,abmd.min_1,abmd.min_2
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
 
@@ -108,7 +108,9 @@ void ABMD::registerKeywords(Keywords& keys){
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
 //  keys.addOutputComponent("_min","default","");
-  keys.addOutputComponent("min_","default","");
+  keys.addOutputComponent("min_","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                                            "These quantities will be named as min_# and the number of the argument to which they refer."
+                                            "These quantities tell the user the minimum value assumed by rho_m(t).");
 }
 
 ABMD::ABMD(const ActionOptions&ao):
