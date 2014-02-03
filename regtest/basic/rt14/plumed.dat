@@ -4,7 +4,7 @@ ABMD ARG=rmsd KAPPA=20 TO=10.0 SEED=12 NOISE=0.2 LABEL=abmd
 
 PRINT ...
   STRIDE=1
-  ARG=rmsd,abmd.bias,abmd.min_1 
+  ARG=rmsd,abmd.bias,abmd.rmsd_min 
   FILE=COLVAR FMT=%6.3f
 ... PRINT
 

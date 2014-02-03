@@ -1,4 +1,4 @@
-#! FIELDS time rmsd abmd.bias abmd.min_1
+#! FIELDS time rmsd abmd.bias abmd.rmsd_min
  0.000000  2.235  0.000 60.302
  0.050000  2.233  3.522 59.732
  0.100000  2.231  7.402 59.493

@@ -115,8 +115,7 @@ void ABMD::registerKeywords(Keywords& keys){
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-//  keys.addOutputComponent("_min","default","");
-  keys.addOutputComponent("min_","default","");
+  keys.addOutputComponent("_min","default","");
 }
 
 ABMD::ABMD(const ActionOptions&ao):
@@ -149,11 +148,8 @@ random(getNumberOfArguments())
   log.printf("\n");
 
   for(unsigned i=0;i<getNumberOfArguments();i++) {
-     char str_min[6]; 
-     sprintf(str_min,"min_%u",i+1); 
-//     std::string str_min=getPntrToArgument(i)->getName()+"_min";
-     addComponent(str_min); 
-     componentIsNotPeriodic(str_min);
+     std::string str_min=getPntrToArgument(i)->getName()+"_min";
+     addComponent(str_min); componentIsNotPeriodic(str_min);
      if(min[i]>0.) getPntrToComponent(str_min)->set(min[i]);
   }
   for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(-seed[i]);}
@@ -181,9 +177,6 @@ void ABMD::calculate(){
     // min is set to the CV value
     if(min[i]<0.||cv2<min[i]) { 
       min[i] = cv2; 
-      char str_min[6]; 
-      sprintf(str_min,"min_%u",i+1); 
-      getPntrToComponent(str_min)->set(min[i]);
     } else {
       // otherwise a noise is added to the minimum value
       min[i] += noise;  
@@ -192,9 +185,7 @@ void ABMD::calculate(){
       ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
       totf2+=f*f;
     }
-    char str_min[6]; 
-    sprintf(str_min,"min_%u",i+1); 
-//    std::string str_min=getPntrToArgument(i)->getName()+"_min";
+    std::string str_min=getPntrToArgument(i)->getName()+"_min";
     getPntrToComponent(str_min)->set(min[i]);
   }
   getPntrToComponent("bias")->set(ene);
