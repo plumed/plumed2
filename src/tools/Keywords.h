@@ -72,6 +72,14 @@ private:
   std::map<std::string,std::string> numdefs;
 /// The tags for atoms - we use this so the manual can differentiate between different ways of specifying atoms
   std::map<std::string,std::string> atomtags;
+/// The string that should be printed out to describe how the components work for this particular action
+  std::string cstring;
+/// The names of all the possible components for an action
+  std::vector<std::string> cnames;
+/// The keyword that turns on a particular component
+  std::map<std::string,std::string> ckey;
+/// The documentation for a particular component
+  std::map<std::string,std::string> cdocs;
 /// Print the documentation for the jth keyword in html
   void print_html_item( const std::string& ) const;
 /// Print a particular keyword
@@ -126,9 +134,16 @@ public:
 /// Copy the keywords data
   void copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am,
                          std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
-                         std::map<std::string,std::string>& atags ) const ;
+                         std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
+                         std::map<std::string,std::string>& cd ) const ;
 /// Clear everything from the keywords object
   void destroyData();
+/// Set the text that introduces how the components for this action are introduced
+  void setComponentsIntroduction( const std::string& instr );
+/// Add a potential component which can be output by this particular action
+  void addOutputComponent( const std::string& name, const std::string& key, const std::string& descr );
+/// Has a component with this name been added?
+  bool outputComponentExists( const std::string& name, const bool& custom ) const ;
 };
 
 }

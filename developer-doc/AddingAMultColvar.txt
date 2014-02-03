@@ -7,13 +7,13 @@ As you are no doubt aware within plumed 2 you can calculate multiple
 instances of a collective coorinate from a single line in the input file.
 One can then calculate functions such as the minimum, number less than,...
 from the resulting distribution of collective variables.  To create these kinds
-of collective variables we use the functionality implmented in PLMD::MultiColvar.
-In fact in writing a single PLMD::MultiColvar you actually write many CVs at once
+of collective variables we use the functionality implmented in PLMD::multicolvar::MultiColvar.
+In fact in writing a single PLMD::multicolvar::MultiColvar you actually write many CVs at once
 as the minimum of a distribution, the number less than and so on come with no 
 additional effort on your part.
 
 To better understand how to go about writing a new MultiColvar examine the interior
-of one of the existing MultiColvars, e.g. MultiColvarDistance.cpp or MultiColvarCoordination.cpp.
+of one of the existing MultiColvars, e.g. PLMD::multicolvar::Distances or PLMD::multicolvar::CoordinationNumbers.
 In fact a good way to start is to copy one of these files as certain features (e.g. the fact that you
 have to include MultiColvar.h and ActionRegister.h and that all your code should be inside the namespace
 PLMD) never change. 
@@ -117,8 +117,7 @@ for all the keywords in the first cell of the particular record that you want to
 The most optimal way to parallelize your CV will depend on what it is your CV calculates.  In fact it will probably even
 depend on what the user puts in the input file.  If you know what you are doing feel free to parallelize your CV 
 however you feel is best. However, the simplest way to parallize a long list of CVs (a multi-colvar) and functions thereof
-is to parallelize over CVs.  Even if you are unsure of what you are doing with MPI you can turn this form of parallelism on
-by calling PLMD::ActionWithDistribution::autoParallelize from within your registerKeywords functions.     
+is to parallelize over CVs.  This is done automatically if you use multicolvars.  
 
 \section label4 The constructor
 

@@ -119,6 +119,9 @@ void FuncPathMSD::registerKeywords(Keywords& keys){
   keys.add("compulsory","LAMBDA","all compulsory keywords should be added like this with a description here");
   keys.add("optional","NEIGH_SIZE","all optional keywords that have input should be added like a description here");
   keys.add("optional","NEIGH_STRIDE","all optional keywords that have input should be added like a description here");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("s","default","the position on the path");
+  keys.addOutputComponent("z","default","the distance from the path");
 }
 FuncPathMSD::FuncPathMSD(const ActionOptions&ao):
 Action(ao),

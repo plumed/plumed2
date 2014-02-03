@@ -120,6 +120,9 @@ void Distance::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords( keys );
   keys.add("atoms","ATOMS","the pair of atom that we are calculating the distance between");
   keys.addFlag("COMPONENTS",false,"calculate the x, y and z components of the distance separately and store them as label.x, label.y and label.z");  
+  keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
+  keys.addOutputComponent("y","COMPONENTS","the y-component of the vector connecting the two atoms");
+  keys.addOutputComponent("z","COMPONENTS","the z-component of the vector connecting the two atoms");
 }
 
 Distance::Distance(const ActionOptions&ao):

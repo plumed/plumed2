@@ -3,7 +3,8 @@
 
 \page AddingAColvar How to add a new collective variable
 
-To implement a CV one you need to create a single cpp file called ColvarNAME.cpp. If you use the following template for this file then the manual and the calls to the CV will be looked after automatically.
+To implement a CV one you need to create a single cpp file called <i>ColvarName</i>.cpp in the directory src/colvar. 
+If you use the following template for this file then the manual and the calls to the CV will be looked after automatically.
 
 \verbatim
 #include "Colvar.h"
@@ -16,6 +17,7 @@ To implement a CV one you need to create a single cpp file called ColvarNAME.cpp
 using namespace std;
 
 namespace PLMD{
+namespace colvar{
 
 //+PLUMEDOC COLVAR NAME
 /*
@@ -55,19 +57,19 @@ public:
 PLUMED_REGISTER_ACTION(ColvarNAME,"KEYWORD")
 
  /----- The following routine creates the documentation for the keyowrds used by your CV
-void ColvarNAME::registerKeywords( Keywords& keys ){
+void ColvarName::registerKeywords( Keywords& keys ){
   Colvar::registerKeywords(keys);
 \endverbatim
 
-In here you should add all your descriptions of the keywords used by your colvar. Descriptions as to how to
-do this can be found here: \ref usingDoxygen
+In here you should add all your descriptions of the keywords used by your colvar as well as descriptions of any components
+that you can use this colvar to calculate. Descriptions as to how to do this can be found here: \ref usingDoxygen
 
 \verbatim
 }
 
  /---- We now write the actual readin (constructor) and calculations routines for the colvar
 
-ColvarNAME::ColvarNAME(const ActionOptions&ao):
+ColvarName::ColvarName(const ActionOptions&ao):
  /------ This line sets up various things in the plumed core which colvars rely on.
 PLUMED_COLVAR_INIT(ao)
 {
@@ -93,7 +95,7 @@ Insert code here to read the arguments of the CV here using plumed's parsing fun
    getValue("")->setDomain(min,max);     // This routine is only required if the function is periodic.  It sets the minimum and maximum values of the colvar.
 }
 
-void ColvarNAME::calculate(){
+void ColvarName::calculate(){
 /--- These are the things you must calculate for any cv ---/
   double cv_val;              /--- The value of the cv ----/
   Tensor boxDerivatives;      /--- The derivative of the cv with respect to the box vectors ----/

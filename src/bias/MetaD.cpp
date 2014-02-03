@@ -268,6 +268,8 @@ PLUMED_REGISTER_ACTION(MetaD,"METAD")
 
 void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");

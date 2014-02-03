@@ -31,6 +31,14 @@ void ActionVolume::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithVessel::registerKeywords( keys );
+  keys.setComponentsIntroduction("This Action can be used to calculate the following quantities by employing the keywords listed below. "
+                                 "You must select which from amongst these quantities you wish to calculate - this command cannot be run "
+                                 "unless one of the quantities below is being calculated."
+                                 "These quantities can then be referenced elsewhere in the input file by using this Action's label "
+                                 "followed by a dot and the name of the quantity. Some amongst them can be calculated multiple times "
+                                 "with different parameters.  In this case the quantities calculated can be referenced elsewhere in the "
+                                 "input by using the name of the quantity followed by a numerical identifier "
+                                 "e.g. <em>label</em>.less_than-1, <em>label</em>.less_than-2 etc.");
   keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); 
   keys.add("compulsory","ARG","the label of the action that calculates the multicolvar we are interested in"); 
