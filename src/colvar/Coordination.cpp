@@ -44,6 +44,9 @@ s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\
 To make your calculation faster you can use a neighbor list, which makes it that only a
 relevant subset of the pairwise distance are calculated at every step.
 
+If GROUPB is empty, it will sum the N*(N-1)/2 pairs in GROUPA. This avoids computing 
+twice permuted indexes (e.g. pair (i,j) and (j,i)) thus running at twice the speed.
+
 Notice that if there are common atoms between GROUPA and GROUPB the switching function should be
 equal to one. These "self interactions" are discarded by plumed (since version 2.1).
 
@@ -62,6 +65,18 @@ same calculation should return 1.
 c: COORDINATION GROUPA=1 GROUPB=1 R_0=0.3
 PRINT ARG=c STRIDE=10
 \endverbatim
+
+\verbatim
+c1: COORDINATION GROUPA=1-10 GROUPB=1-10 R_0=0.3
+x: COORDINATION GROUPA=1-10 R_0=0.3
+c2: COMBINE ARG=x COEFFICIENTS=2
+# the two variables c1 and c2 should be identical, but the calculation of c2 is twice faster
+# since it runs on half of the pairs. Notice that to get the same result you
+# should double it
+PRINT ARG=c1,c2 STRIDE=10
+\endverbatim
+See also \ref PRINT and \ref COMBINE
+
 
 
 */

@@ -18,9 +18,11 @@ Changes from version 2.0 which are relevant for users:
   - \ref LOCAL_AVERAGE.
   - \ref NLINKS.
   - Crystallation module, including \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, and \ref AVERAGE_VECTOR.
-- New flags for existing actions:
+- New features for existing actions:
   - \ref METAD : WALKERS_MPI flag (multiple walkers in a mpi-based multi-replica framework)
     and ACCELERATION flag (calculate on the fly the Metadynamics acceleration factor).
+  - \ref COORDINATION : if a single group is provided, it avoids permuted atom indexes and runs
+    at twice the speed.
   - \ref DUMPATOMS : PRECISION option to set number of digits in output file.
   - \ref GROUP : NDX_FILE and NDX_GROUP options to import atom lists from ndx (gromacs) files.
   - In many multicolvars, MIN and MAX options can be used.
