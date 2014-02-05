@@ -48,7 +48,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> INTERVAL </TD>
-  <TD> <b> \ref METAD with INTERVAL  </b> </TD>
+  <TD> \ref METAD with INTERVAL  </TD>
 </TR>
 <TR>
   <TD> INVERT </TD>
@@ -109,7 +109,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> POSITION </TD>
-  <TD> <b> currently missing</b> </TD>
+  <TD> <b> currently missing </b> </TD>
 </TR>
 <TR>
   <TD> MINDIST </TD>
@@ -176,7 +176,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
   <TD> \ref PATHMSD, s component </TD>
 </TR>
 <TR>
-  <TD> S_PATH </TD>
+  <TD> Z_PATH </TD>
   <TD> \ref PATHMSD, z component </TD>
 </TR>
 <TR>
