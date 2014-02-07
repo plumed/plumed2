@@ -677,6 +677,12 @@ void MetaD::addGaussian(const Gaussian& hill)
 
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
+// in this case, we updated the entire grid to avoid problems
+// it could be optimized reverting to the normal case whenever a hill
+// is far enouch from the boundaries
+ if(doInt_){
+   return BiasGrid_->getNbin();
+ }
  vector<unsigned> nneigh;
  // traditional or flexible hill? 
  if(hill.multivariate){
