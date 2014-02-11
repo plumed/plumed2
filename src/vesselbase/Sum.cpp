@@ -45,6 +45,7 @@ void Sum::registerKeywords( Keywords& keys ){
 
 void Sum::reserveKeyword( Keywords& keys ){
   keys.reserveFlag("SUM",false,"calculate the sum of all the quantities.",true);
+  keys.addOutputComponent("sum","SUM","the sum of values");
 }
 
 Sum::Sum( const VesselOptions& da ) :

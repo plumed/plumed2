@@ -42,8 +42,8 @@ The static atribute allows one to use the registerKeywords routine when no insta
 This is essential as keywordRegistration in plumed is done before the list of PLMD::Action is created.  This means
 that when the keywords are created plumed has no understanding of the hierachy of inherited Actions.  Hence, before
 adding your own Keywords you must ensure that the keywords for the class from which your new class inherits have been
-added.  In pracise this is done by calling PLMD::Colvar::registerKeywords, PLMD::Function::registerKeywords or 
-PLMD::Bias::registerKeywords for a new PLMD::Colvar, PLMD::Function or PLMD::Bias respectively.  To be clear these
+added.  In pracise this is done by calling PLMD::Colvar::registerKeywords, PLMD::function::Function::registerKeywords or 
+PLMD::Bias::registerKeywords for a new PLMD::Colvar, PLMD::function::Function or PLMD::bias::Bias respectively.  To be clear these
 functions will ensure that generic keywords such as LABEL, NUMERICAL_DERIVATIVES or ARG are registered and explained in the
 manual. If your method requires the derivatives of some value and you have no way of implementing the analytical derivatives
 you should also call PLMD::ActionWithValue::noAnalyticalDerivatives.  This routine will ensure that plumed's numerical
@@ -97,10 +97,103 @@ compulsory keyword and do not specify a default value then the code will automat
 In addition, if the vector you pass to PLMD::Action::parseVector and PLMD::Action::parseNumberedVector has a
 size greater than 0 plumed will assume that the input should contain a vector of this size and will complain if it finds a different sized vector.
 
+\section components Registering components
+
+In plumed 2.1 we will also begin registering all the components that are calculated by your action.
+In plumed 2.2 registering components will become compulsory and your features will not work if this is not done.
+This registering of components means that in the registerKeywords method for commands such as:
+
+\verbatim
+d1: DISTANCE COMPONENTS
+\endverbatim
+
+which calculates quantities that can be referenced in the input as d1.x, d1.y and d1.z, you will have to provide
+documentation for the manual that describes what information is stored in the x, y and z components. As an example
+for the distances components this documenation takes the following form:
+
+\verbatim
+keys.addOutputComponent("x","COMPONENTS","the x-component of the vector connecting the two atoms");
+keys.addOutputComponent("y","COMPONENTS","the y-component of the vector connecting the two atoms");
+keys.addOutputComponent("z","COMPONENTS","the z-component of the vector connecting the two atoms");
+\endverbatim
+
+As you can see this new feature works in a similar manner to the feature by which the keywords are registered.  Both
+these features serve to keep the manual up to date with only a relatively small amount of effort on the part of the
+developer.
+
+All components registered by plumed should be added using a variant of the addOutputComponent method of PLMD::Keywords.
+This command has the following syntax:
+
+\verbatim
+keys.addOutputComponent( name, keyword, explanation )
+\endverbatim
+
+where <i> name </i> is the name the component will be given i.e. the quantity will be referencable in input as <i> label.name </i>.
+<i> keyword </i> is the name of any keyword that must be added to the input for the action in order to calculate this quantity
+and <i> explanation </i> is an explanation of the quantity that will appear in the manual.
+
+If your Action always generates a particular set of components then the form of this command changes slightly. That is to say
+if it makes no sense to use reference the isolated label for your command then this command should read:
+
+\verbatim
+componentsAreNotOptional(keys);
+keys.addOutputComponent( name, "default", explanation )
+\endverbatim
+
+So for example in RESTRAINT, which always generates a component called bias and a component called force2, the components are registered
+using the following code:
+
+\verbatim
+componentsAreNotOptional(keys);
+keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+\endverbatim
+
+Lastly, if you have some method that takes in arguments and gives back one component per argument then these components should be
+labelled <i>argument-name</i>_<i>description</i>.  The MOVINGRESTRAINT command below gives an example of how this is done in practise.
+
+\verbatim
+DISTANCE ATOMS=1,2 LABEL=d1
+DISTANCE ATOMS=3,4 LABEL=d2
+MOVINGRESTRAINT ARG=d1,d2 AT0=2,2 AT1=6,6 STEP0=0 STEP1=100 KAPPA=1
+\endverbatim
+
+This command has components called d1_steer, d2_steer, d1_cntr and d2_cntr.  These components describe the work done in moving the 
+system along the d1 and d2 axis and the instantaneous positions of the harmonic potential on the d1 and d2 axis respectively.
+
+The various components in MOVINGRESTRAINT are registered using:
+
+\verbatim
+componentsAreNotOptional(keys);
+keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+keys.addOutputComponent("_cntr","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                                          "these quantities will named with  the arguments of the bias followed by "
+                                          "the character string _cntr. These quantities give the instantaneous position "
+                                          "of the center of the harmonic potential.");
+keys.addOutputComponent("_work","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                                          "These quantities will named with the arguments of the bias followed by "
+                                          "the character string _work. These quantities tell the user how much work has "
+                                          "been done by the potential in dragging the system along the various colvar axis.");
+\endverbatim
+
+Appropriately labelled components can be created using the following command:
+
+\verbatim
+comp=getPntrToArgument(i)->getName()+"_cntr";
+addComponent(comp); componentIsNotPeriodic(comp);
+\endverbatim
+
+They can then be set by using something like:
+
+\verbatim
+getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(val[i]);
+\endverbatim
+
 \section reserved Reserved Keywords
 
 To maintain some consistency for end users of the code certain keywords (e.g. ARG, PERIODIC) are reserved.
-The reserved keywords for PLMD::Colvar, PLMD::Function and PLMD::Bias are explained inside the documentation for
+The reserved keywords for PLMD::Colvar, PLMD::function::Function and PLMD::bias::Bias are explained inside the documentation for
 these actions.  To use one of the registered keywords you shold insert the following command into the registerKeywords
 method of your new function.
 
@@ -109,7 +202,22 @@ keys.use( keyword );
 \endverbatim
 
 where <i> keyword </i> is a string that tells the method which reserved keyword you wish to use.  To be clear
-when you use a reserved keyword all the parsing and registering for it is looked after automatically.
+when you use a reserved keyword all the parsing and registering for it is looked after automatically. In addition,
+if new components are generated in the output of the action when the keyword is present the registering of those
+components is also looked after elsewhere.  So, for example, if you do something like:
+
+\verbatim
+keys.use("MIN")
+\endverbatim
+
+In a new PLMD::multicolvar::MultiColvar then there is no need to add the command:
+
+\verbatim
+keys.addOutputComponent("min","MIN","the minimum value. This is calculated using the formula described in the description of the "
+                                    "keyword so as to make it continuous.");
+\endverbatim 
+
+As this documentation will already have been created for you elsewhere in the code.
 
 \section errors Generating errors
 

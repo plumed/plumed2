@@ -124,6 +124,17 @@ void MovingRestraint::registerKeywords( Keywords& keys ){
   keys.reset_style("AT","compulsory"); 
   keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("KAPPA","compulsory");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+  keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
+  keys.addOutputComponent("_cntr","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                                            "these quantities will named with  the arguments of the bias followed by "
+                                            "the character string _cntr. These quantities give the instantaneous position "
+                                            "of the center of the harmonic potential.");
+  keys.addOutputComponent("_work","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                                            "These quantities will named with the arguments of the bias followed by "
+                                            "the character string _work. These quantities tell the user how much work has "
+                                            "been done by the potential in dragging the system along the various colvar axis.");
 }
 
 MovingRestraint::MovingRestraint(const ActionOptions&ao):

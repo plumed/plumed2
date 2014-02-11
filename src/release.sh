@@ -41,8 +41,5 @@ SHORT: v2.$shortversion
 "
 
 git archive -o plumed-2.$version.tgz --prefix plumed-2.$version/ v2.$version
-tar xzf plumed-2.$version.tgz
-echo "$VERSION" > plumed-2.$version/VERSION
-tar czf plumed-2.$version.tgz plumed-2.$version
 
 

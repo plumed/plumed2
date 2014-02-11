@@ -54,6 +54,9 @@ void Between::reserveKeyword( Keywords& keys ){
   keys.reserve("numbered","BETWEEN","calculate the number of values that are within a certain range. "
                                     "These quantities are calculated using kernel density estimation as described on "
                                     "\\ref histogrambead.",true); 
+  keys.addOutputComponent("between","BETWEEN","the number/fraction of values within a certain range. This is calculated using one of the "
+                                              "formula described in the description of the keyword so as to make it continuous. "
+                                              "You can calculate this quantity multiple times using different parameters."); 
 }
 
 Between::Between( const VesselOptions& da ) :

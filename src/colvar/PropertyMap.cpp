@@ -90,6 +90,8 @@ PLUMED_REGISTER_ACTION(PropertyMap,"PROPERTYMAP")
 void PropertyMap::registerKeywords(Keywords& keys){
   PathMSDBase::registerKeywords(keys);
   keys.add("compulsory","PROPERTY","the property to be used in the indexing: this goes in the REMARK field of the reference");
+  ActionWithValue::useCustomisableComponents(keys);
+  keys.addOutputComponent("zzz","default","the minimum distance from the reference points");
 }
 
 PropertyMap::PropertyMap(const ActionOptions&ao):

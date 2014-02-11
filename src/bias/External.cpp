@@ -73,11 +73,11 @@ The header in the file bias.dat for this calculation would read:
 #! SET min_t1 -pi
 #! SET max_t1 +pi
 #! SET nbins_t1 100
-#! SET peirodic_t1 true
+#! SET periodic_t1 true
 #! SET min_t2 -pi
 #! SET max_t2 +pi
 #! SET nbins_t2 100
-#! SET peirodic_t2 true
+#! SET periodic_t2 true
 \endverbatim
 
 This would be then followed by 100 blocks of data.  In the first block of data the
@@ -113,6 +113,8 @@ void External::registerKeywords(Keywords& keys){
   keys.add("compulsory","FILE","the name of the file containing the external potential.");
   keys.addFlag("NOSPLINE",false,"specifies that no spline interpolation is to be used when calculating the energy and forces due to the external potential");
   keys.addFlag("SPARSE",false,"specifies that the external potential uses a sparse grid");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
 }
 
 External::~External(){

@@ -35,6 +35,11 @@ namespace function{
 /*
 This function can be used to sort colvars according to their magnitudes.
 
+\par Description of components
+
+This function sorts its arguments according to their magnitudes. The largest argument will be 
+labelled <em>label</em>.1, the second largest will be labelled <em>label</em>.2 and so on.  
+
 \par Examples
 The following input tells plumed to print the distance of the closest and of
 the farthest atoms to atom 1, chosen among atoms from 2 to 5
@@ -67,6 +72,7 @@ PLUMED_REGISTER_ACTION(Sort,"SORT")
 void Sort::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
+  ActionWithValue::useCustomisableComponents(keys);
 }
 
 Sort::Sort(const ActionOptions&ao):

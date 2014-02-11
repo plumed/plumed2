@@ -84,6 +84,16 @@ void Cell::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("ax","default","the ax component of the cell matrix");
+  keys.addOutputComponent("ay","default","the ay component of the cell matrix");
+  keys.addOutputComponent("az","default","the az component of the cell matrix");
+  keys.addOutputComponent("bx","default","the bx component of the cell matrix");
+  keys.addOutputComponent("by","default","the by component of the cell matrix");
+  keys.addOutputComponent("bz","default","the bz component of the cell matrix");
+  keys.addOutputComponent("cx","default","the cx component of the cell matrix");
+  keys.addOutputComponent("cy","default","the cy component of the cell matrix");
+  keys.addOutputComponent("cz","default","the cz component of the cell matrix");
 }
 
 

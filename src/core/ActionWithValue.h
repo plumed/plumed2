@@ -114,6 +114,10 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Insist that numerical derivatives should always be used for an action and make this fact appear in the manual
   static void noAnalyticalDerivatives(Keywords& keys);
+/// Puts a message into the manual that the components always output
+  static void componentsAreNotOptional(Keywords& keys);
+/// The components in the action will depend on the user
+  static void useCustomisableComponents(Keywords& keys);
 /// Get the value of one of the components of the PLMD::Action
   double getOutputQuantity( const unsigned j ) const ;
 /// Get the value with a specific name (N.B. if there is no such value this returns zero)
