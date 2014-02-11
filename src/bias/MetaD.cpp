@@ -452,7 +452,6 @@ isFirstStep(true)
     if(getNumberOfArguments()!=1) error("INTERVAL limits correction works only for monodimensional metadynamics!");
     if(uppI_<lowI_) error("The Upper limit must be greater than the Lower limit!");
     doInt_=true;
-    spline=false;
   }
 
   acceleration=false;
@@ -724,6 +723,12 @@ void MetaD::addGaussian(const Gaussian& hill)
 
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
+// in this case, we updated the entire grid to avoid problems
+// it could be optimized reverting to the normal case whenever a hill
+// is far enouch from the boundaries
+ if(doInt_){
+   return BiasGrid_->getNbin();
+ }
  vector<unsigned> nneigh;
  // traditional or flexible hill? 
  if(hill.multivariate){
@@ -785,10 +790,7 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
   if(der){
    vector<double> vder(getNumberOfArguments());
    bias=BiasGrid_->getValueAndDerivatives(cv,vder);
-
-   if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) { // because interval can be used only with monodimensional metaD
-     for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]=vder[i];}
-   }
+   for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]=vder[i];}
   }else{
    bias=BiasGrid_->getValue(cv);
   }
@@ -797,9 +799,7 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 	  if(der){
 	   vector<double> vder(getNumberOfArguments());
 	   bias+=ExtGrid_->getValueAndDerivatives(cv,vder);
-	   if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) { // because interval can be used only with monodimensional metaD
-	     for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]+=vder[i];}
-	   }
+	   for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]+=vder[i];}
 	  }else{
 	   bias+=ExtGrid_->getValue(cv);
 	  }
@@ -812,6 +812,19 @@ double MetaD::evaluateGaussian
 {
  double dp2=0.0;
  double bias=0.0;
+// I use a pointer here because cv is const (and should be const)
+// but when using doInt it is easier to locally replace cv[0] with
+// the upper/lower limit in case it is out of range
+ const double *pcv=NULL; // pointer to cv
+ double tmpcv[1]; // tmp array with cv (to be used with doInt_)
+ if(cv.size()>0) pcv=&cv[0];
+ if(doInt_){
+   plumed_assert(cv.size()==1);
+   pcv=&(tmpcv[0]);
+   tmpcv[0]=cv[0];
+   if(cv[0]<lowI_) tmpcv[0]=lowI_;
+   if(cv[0]>uppI_) tmpcv[0]=uppI_;
+ }
  if(hill.multivariate){ 
     unsigned k=0;
     unsigned ncv=cv.size(); 
@@ -825,19 +838,18 @@ double MetaD::evaluateGaussian
     }
 
     for(unsigned i=0;i<cv.size();++i){
-	double dp_i=difference(i,hill.center[i],cv[i]);
+	double dp_i=difference(i,hill.center[i],pcv[i]);
         dp_[i]=dp_i;
     	for(unsigned j=i;j<cv.size();++j){
                   if(i==j){ 
               	  	 dp2+=dp_i*dp_i*mymatrix(i,j)*0.5; 
                   }else{ 
-   		 	 double dp_j=difference(j,hill.center[j],cv[j]);
+   		 	 double dp_j=difference(j,hill.center[j],pcv[j]);
               	  	 dp2+=dp_i*dp_j*mymatrix(i,j) ;
                   }
         }
     } 
     if(dp2<DP2CUTOFF){
-     if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) {
        bias=hill.height*exp(-dp2);
        if(der){
         for(unsigned i=0;i<cv.size();++i){
@@ -849,24 +861,24 @@ double MetaD::evaluateGaussian
                         der[i]-=tmp;
                 }   
        }
-     }
     }
  }else{
     for(unsigned i=0;i<cv.size();++i){
-     double dp=difference(i,hill.center[i],cv[i])*hill.invsigma[i];
+     double dp=difference(i,hill.center[i],pcv[i])*hill.invsigma[i];
      dp2+=dp*dp;
      dp_[i]=dp;
     }
     dp2*=0.5;
     if(dp2<DP2CUTOFF){
-     if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) {
        bias=hill.height*exp(-dp2);
        if(der){
         for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp_[i]*hill.invsigma[i];}
        }
-     }
     }
  }
+ if(doInt_){
+   if((cv[0]<lowI_ || cv[0]>uppI_) && der ) for(unsigned i=0;i<cv.size();++i)der[i]=0;
+  }
  return bias;
 }
 
