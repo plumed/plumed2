@@ -87,7 +87,8 @@ V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta
 \right),
 \f]
 
-This method ensures that the bias converges more smoothly.
+This method ensures that the bias converges more smoothly. It should be noted that, in the case of well-tempered metadynamics, in
+the output printed the Gaussian height is re-scaled using the bias factor.
 
 Note that you can use here also the flexible gaussian approach  \cite Branduardi:2012dl
 in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
@@ -106,6 +107,7 @@ s < sw only from the latter. This approach allows obtaining a history-dependent 
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the 
 boundaries. Note that:
 - It works only for one-dimensional biases;
+- It works both with and without GRID;
 - The interval limit sw in a region where the free energy derivative is not large;
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
   be used together with a soft wall at sw
@@ -728,7 +730,7 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
 // in this case, we updated the entire grid to avoid problems
 // it could be optimized reverting to the normal case whenever a hill
-// is far enouch from the boundaries
+// is far enough from the boundaries
  if(doInt_){
    return BiasGrid_->getNbin();
  }
