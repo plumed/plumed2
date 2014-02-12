@@ -86,7 +86,8 @@ V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta
 \right),
 \f]
 
-This method ensures that the bias converges more smoothly.
+This method ensures that the bias converges more smoothly. It should be noted that, in the case of well-tempered metadynamics, in
+the output printed the Gaussian height is re-scaled using the bias factor.
 
 Note that you can use here also the flexible gaussian approach  \cite Branduardi:2012dl
 in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
