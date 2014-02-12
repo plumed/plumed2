@@ -19,8 +19,9 @@ Changes from version 2.0 which are relevant for users:
   - \ref NLINKS.
   - Crystallation module, including \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, and \ref AVERAGE_VECTOR.
 - New features for existing actions:
-  - \ref METAD : WALKERS_MPI flag (multiple walkers in a mpi-based multi-replica framework)
-    and ACCELERATION flag (calculate on the fly the Metadynamics acceleration factor).
+  - \ref METAD : WALKERS_MPI flag (multiple walkers in a mpi-based multi-replica framework),
+    ACCELERATION flag (calculate on the fly the Metadynamics acceleration factor), and
+    TAU option (alternative way to set Gaussian height in well-tempered metadynamics).
   - \ref COORDINATION : if a single group is provided, it avoids permuted atom indexes and runs
     at twice the speed.
   - \ref DUMPATOMS : PRECISION option to set number of digits in output file.
