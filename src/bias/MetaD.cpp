@@ -105,6 +105,7 @@ s < sw only from the latter. This approach allows obtaining a history-dependent 
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the 
 boundaries. Note that:
 - It works only for one-dimensional biases;
+- It works both with and without GRID;
 - The interval limit sw in a region where the free energy derivative is not large;
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
   be used together with a soft wall at sw
@@ -684,7 +685,7 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
 // in this case, we updated the entire grid to avoid problems
 // it could be optimized reverting to the normal case whenever a hill
-// is far enouch from the boundaries
+// is far enough from the boundaries
  if(doInt_){
    return BiasGrid_->getNbin();
  }
