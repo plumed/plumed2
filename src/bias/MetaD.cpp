@@ -105,10 +105,13 @@ s < sw only from the latter. This approach allows obtaining a history-dependent 
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the 
 boundaries. Note that:
 - It works only for one-dimensional biases;
-- It works with GRID but automatically turn off the SPLINES so set a higher number of BINS;
 - The interval limit sw in a region where the free energy derivative is not large;
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
   be used together with a soft wall at sw
+
+As a final note, since version 2.0.2 when the system is outside of the selected interval the force
+is set to zero and the bias value to the value at the corresponding boundary. This allows acceptances
+for replica exchange methods to be computed correctly.
 
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
@@ -282,7 +285,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not fell the bias (when used together with grid SPLINES are automatically deactivated)");
+  keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
