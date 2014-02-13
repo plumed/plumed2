@@ -92,10 +92,19 @@ void MDAtomsTyped<T>::getBox(Tensor&box)const{
 
 template <class T>
 void MDAtomsTyped<T>::getPositions(const vector<int>&index,vector<Vector>&positions)const{
-  for(unsigned i=0;i<index.size();++i){
-    positions[index[i]][0]=px[stride*i]*scalep;
-    positions[index[i]][1]=py[stride*i]*scalep;
-    positions[index[i]][2]=pz[stride*i]*scalep;
+  if(positions.size()==index.size()){
+#pragma omp parallel for
+    for(unsigned i=0;i<index.size();++i){
+      positions[index[i]][0]=px[stride*i]*scalep;
+      positions[index[i]][1]=py[stride*i]*scalep;
+      positions[index[i]][2]=pz[stride*i]*scalep;
+    }
+  } else {
+    for(unsigned i=0;i<index.size();++i){
+      positions[index[i]][0]=px[stride*i]*scalep;
+      positions[index[i]][1]=py[stride*i]*scalep;
+      positions[index[i]][2]=pz[stride*i]*scalep;
+    }
   }
 }
 
@@ -118,6 +127,7 @@ void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const{
 
 template <class T>
 void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&forces){
+#pragma omp parallel for
   for(unsigned i=0;i<index.size();++i){
     fx[stride*i]+=T(scalef*forces[index[i]][0]);
     fy[stride*i]+=T(scalef*forces[index[i]][1]);
@@ -128,6 +138,7 @@ void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&
 template <class T>
 void MDAtomsTyped<T>::rescaleForces(const vector<int>&index,double factor){
   if(virial) for(unsigned i=0;i<3;i++)for(unsigned j=0;j<3;j++) virial[3*i+j]*=T(factor);
+#pragma omp parallel for
   for(unsigned i=0;i<index.size();++i){
     fx[stride*i]*=T(factor);
     fy[stride*i]*=T(factor);

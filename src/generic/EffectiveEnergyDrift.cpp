@@ -147,8 +147,11 @@ void EffectiveEnergyDrift::update(){
   if(pbc){
     Tensor B=atoms.getPbc().getBox();
     Tensor IB=atoms.getPbc().getInvBox();
-    for(int i=0;i<positions.size();++i) positions[i]=matmul(positions[i],IB);
-    for(int i=0;i<forces.size();++i)    forces[i]=matmul(B,forces[i]);
+#pragma omp parallel for
+    for(int i=0;i<positions.size();++i){
+      positions[i]=matmul(positions[i],IB);
+      forces[i]=matmul(B,forces[i]);
+    }
     box=B;
     fbox=matmul(transpose(inverse(box)),atoms.getVirial());
   }
@@ -222,11 +225,15 @@ void EffectiveEnergyDrift::update(){
 
   //compute the effective energy drift on local atoms
   
+  double eed_tmp=eed;
+#pragma omp parallel for reduction(+:eed_tmp)
   for(int i=0;i<nLocalAtoms;i++){
     Vector dst=delta(pPositions[i],positions[i]);
     if(pbc) for(unsigned k=0;k<3;k++) dst[k]=Tools::pbc(dst[k]);
-    eed += dotProduct(dst, forces[i]+pForces[i])*0.5;
+    eed_tmp += dotProduct(dst, forces[i]+pForces[i])*0.5;
   }
+
+  eed=eed_tmp;
 
   if(plumed.comm.Get_rank()==0){
     for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++)
