@@ -107,5 +107,8 @@ See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repo
 For users:
 - Several small fixes in documentation and log file.
 
+For developers:
+- Split cltools/Driver.cpp to make parallel compilation faster.
+
 */
 

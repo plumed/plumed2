@@ -572,13 +572,5 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   return 0;
 }
 
-typedef Driver<double> DriverDouble;
-typedef Driver<float> DriverFloat;
-PLUMED_REGISTER_CLTOOL(DriverDouble,"driver")
-PLUMED_REGISTER_CLTOOL(DriverFloat,"driver-float")
-
-
-
-
 }
 }
