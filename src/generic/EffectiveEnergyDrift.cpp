@@ -251,7 +251,6 @@ void EffectiveEnergyDrift::update(){
 
   //store the data of the current step
   pDdStep = atoms.getDdStep();
-  pGatindex = gatindex;
   pNLocalAtoms = nLocalAtoms;
   pPositions.swap(positions);
   pForces.swap(forces);
