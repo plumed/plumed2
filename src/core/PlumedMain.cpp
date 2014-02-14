@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedMain.h"
 #include "tools/Tools.h"
+#include "tools/OpenMP.h"
 #include <cstring>
 #include "ActionPilot.h"
 #include "ActionWithValue.h"
@@ -467,6 +468,8 @@ void PlumedMain::init(){
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
+  log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
+  log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   log.printf("Number of atoms: %d\n",atoms.getNatoms());
   if(grex) log.printf("GROMACS-like replica exchange is on\n");
   log.printf("File suffix: %s\n",getSuffix().c_str());

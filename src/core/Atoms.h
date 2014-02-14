@@ -95,6 +95,9 @@ class Atoms
   std::vector<const ActionAtomistic*> actions;
   std::vector<int>    gatindex;
 
+  bool asyncSent;
+  bool atomsNeeded;
+
   class DomainDecomposition:
     public Communicator
   {

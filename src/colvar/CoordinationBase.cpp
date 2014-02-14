@@ -22,6 +22,7 @@
 #include "CoordinationBase.h"
 #include "tools/NeighborList.h"
 #include "tools/Communicator.h"
+#include "tools/OpenMP.h"
 
 #include <string>
 
@@ -149,7 +150,14 @@ void CoordinationBase::calculate()
    rank=comm.Get_rank();
  }
 
- for(unsigned int i=rank;i<nl->size();i+=stride) {                   // sum over close pairs
+#pragma omp parallel num_threads(OpenMP::getNumThreads())
+{
+ const unsigned nn=nl->size();
+ std::vector<Vector> omp_deriv(getPositions().size());
+ Tensor omp_virial;
+
+#pragma omp for reduction(+:ncoord) nowait
+ for(unsigned int i=rank;i<nn;i+=stride) {   
  
   Vector distance;
   unsigned i0=nl->getClosePair(i).first;
@@ -166,10 +174,16 @@ void CoordinationBase::calculate()
   double dfunc=0.;
   ncoord += pairing(distance.modulo2(), dfunc,i0,i1);
 
-  deriv[i0] = deriv[i0] + (-dfunc)*distance ;
-  deriv[i1] = deriv[i1] + dfunc*distance ;
-  virial=virial+(-dfunc)*Tensor(distance,distance);
+  omp_deriv[i0] = omp_deriv[i0] + (-dfunc)*distance ;
+  omp_deriv[i1] = omp_deriv[i1] + dfunc*distance ;
+  omp_virial=omp_virial+(-dfunc)*Tensor(distance,distance);
  }
+#pragma omp critical
+ {
+  for(int i=0;i<getPositions().size();i++) deriv[i]+=omp_deriv[i];
+  virial+=omp_virial;
+}
+}
 
  if(!serial){
    comm.Sum(ncoord);

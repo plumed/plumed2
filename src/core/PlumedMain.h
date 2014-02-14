@@ -153,6 +153,17 @@ public:
 /// word list command
   std::map<std::string, int> word_map;
 
+/// Get number of threads that can be used by openmp
+  unsigned getNumThreads()const;
+
+/// Get a reasonable number of threads so as to access to an array of size s located at x
+  template<typename T>
+  unsigned getGoodNumThreads(const T*x,unsigned s)const;
+
+/// Get a reasonable number of threads so as to access to vector v;
+  template<typename T>
+  unsigned getGoodNumThreads(const std::vector<T> & v)const;
+
 public:
   PlumedMain();
 // this is to access to WithCmd versions of cmd (allowing overloading of a virtual method)
