@@ -392,8 +392,8 @@ void MultiColvarBase::addCentralAtomDerivativeToFunction( const unsigned& iatom,
   }
 }
 
-void MultiColvarBase::getValueForTask( const unsigned& iatom, std::vector<double>& vals ) const {
-  plumed_dbg_assert( myvalues && vals.size() );
+void MultiColvarBase::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){
+  plumed_dbg_assert( myvalues && vals.size()==1 );
   vals[0]=myvalues->getValue( iatom );
 }
 

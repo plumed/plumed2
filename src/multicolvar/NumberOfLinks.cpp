@@ -150,8 +150,8 @@ void NumberOfLinks::calculateWeight(){
 }
 
 double NumberOfLinks::compute(){
-   getValueForBaseTask( 0, orient0 ); 
-   getValueForBaseTask( 1, orient1 );
+   getVectorForBaseTask( 0, orient0 ); 
+   getVectorForBaseTask( 1, orient1 );
 
    double dot=0;
    for(unsigned k=0;k<orient0.size();++k){

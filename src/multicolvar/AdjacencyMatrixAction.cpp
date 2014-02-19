@@ -90,9 +90,7 @@ tmpdf(1)
   resizeFunctions();
 
   // One component for regular multicolvar and nelements for vectormulticolvar
-  unsigned ncomp;
-  if( getBaseMultiColvar(0)->getNumberOfQuantities()==5 ){ ncomp = 1; }
-  else { ncomp = getBaseMultiColvar(0)->getNumberOfQuantities() - 5; }
+  unsigned ncomp=getBaseMultiColvar(0)->getNumberOfQuantities() - 5;;
   orient0.resize( ncomp ); orient1.resize( ncomp );
 
   // And check everything has been read in correctly
@@ -118,8 +116,8 @@ void AdjacencyMatrixAction::calculateWeight(){
 double AdjacencyMatrixAction::compute(){
   active_elements.activate( getCurrentPositionInTaskList() );
 
-  getValueForBaseTask( 0, orient0 );
-  getValueForBaseTask( 1, orient1 );   
+  getVectorForBaseTask( 0, orient0 );
+  getVectorForBaseTask( 1, orient1 );   
 
   double f_dot, dot_df, dot; dot=0;
   for(unsigned k=0;k<orient0.size();++k) dot+=orient0[k]*orient1[k];

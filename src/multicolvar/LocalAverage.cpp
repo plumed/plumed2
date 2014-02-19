@@ -150,7 +150,7 @@ double LocalAverage::compute(){
 
   Vector distance; double sw, dfunc, nbond=1;
 
-  getValueForBaseTask( 0, values );
+  getVectorForBaseTask( 0, values );
   for(unsigned j=0;j<values.size();++j) addElementValue( jstart + j, values[j] );
 
   accumulateWeightedAverageAndDerivatives( 0, 1.0 );
@@ -159,7 +159,7 @@ double LocalAverage::compute(){
      sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
      if( sw>=getTolerance() ){
          Tensor vir(distance,distance); 
-         getValueForBaseTask( i, values ); 
+         getVectorForBaseTask( i, values ); 
          accumulateWeightedAverageAndDerivatives( i, sw );
          for(unsigned j=0;j<values.size();++j){
              addElementValue( jstart + j, sw*values[j] );

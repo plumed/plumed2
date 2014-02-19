@@ -48,6 +48,7 @@ MultiColvarBase(ao)
       // Check all base multicolvars are of same type
       if( i==0 ){ 
           mname = mycolv->getName();
+          tvals.resize( mycolv->getNumberOfQuantities()-4 );
           if( mycolv->isPeriodic() ) error("multicolvar functions don't work with this multicolvar");
       } else {
           if( mname!=mycolv->getName() ) error("All input multicolvars must be of same type"); 

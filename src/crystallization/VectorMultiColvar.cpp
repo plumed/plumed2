@@ -104,12 +104,18 @@ double VectorMultiColvar::doCalculation(){
 }
 
 void VectorMultiColvar::useInMultiColvarFunction( const bool store_director ){
-  if( setupCentralAtomVessel() ) return;
+  // Store the values
+  MultiColvarBase::useInMultiColvarFunction( store_director );
+  
+  // And make sure we set up the vector storage correctly
   vecs->usedInFunction( store_director );
+  vv1.resize( 1 ); vv2.resize( getNumberOfQuantities() - 5 );
 }
 
-void VectorMultiColvar::getValueForTask( const unsigned& iatom, std::vector<double>& vals ) const {
-  vecs->getVector( iatom, vals );
+void VectorMultiColvar::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){
+  plumed_dbg_assert( vecs && vals.size()==(getNumberOfQuantities-4) ); 
+  MultiColvarBase::getValueForTask( iatom, vv1 ); vecs->getVector( iatom, vv2 );
+  vals[0]=vv1[0]; for(unsigned i=0;i<vv2.size();++i) vals[i+1]=vv2[i];
 }
 
 void VectorMultiColvar::addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, multicolvar::MultiColvarFunction* func ){

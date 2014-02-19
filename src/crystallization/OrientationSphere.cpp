@@ -87,12 +87,12 @@ double OrientationSphere::compute(){
    weightHasDerivatives=true;   // The weight has no derivatives really
    double sw, value=0, denom=0, dot, f_dot, dot_df, dfunc; Vector distance;
 
-   getValueForBaseTask(0, catom_orient );
+   getVectorForBaseTask(0, catom_orient );
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(i) );
       sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
       if( sw>=getTolerance() ){    
-         getValueForBaseTask( i, this_orient );
+         getVectorForBaseTask( i, this_orient );
          // Calculate the dot product wrt to this position 
          dot=0; for(unsigned k=0;k<catom_orient.size();++k) dot+=catom_orient[k]*this_orient[k];  
          f_dot = transformDotProduct( dot, dot_df ); 

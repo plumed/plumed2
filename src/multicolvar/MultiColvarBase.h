@@ -169,7 +169,7 @@ public:
 /// Add central atom derivatives to a multicolvar function
   void addCentralAtomDerivativeToFunction( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& der, MultiColvarFunction* func ); 
 /// Get the value for this task
-  virtual void getValueForTask( const unsigned& iatom, std::vector<double>& vals ) const ;
+  virtual void getValueForTask( const unsigned& iatom, std::vector<double>& vals ); 
 /// Used to accumulate values
   virtual void addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, MultiColvarFunction* func );
 /// Used for calculating weighted averages

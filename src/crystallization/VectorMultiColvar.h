@@ -45,6 +45,8 @@ private:
   StoreVectorsVessel* vecs;
 /// This is a tempory vector that is used to store derivatives
   std::vector<double> dervec;
+/// These are tempory vectors that are used to store values and directors
+  std::vector<double> vv1, vv2;
 protected:
 /// Set the dimensionality of the vector
   void setVectorDimensionality( const unsigned&, const bool&, const int& );
@@ -99,7 +101,7 @@ public:
 /// Store bits and bobs so they can be used in a function
   void useInMultiColvarFunction( const bool store_director );
 /// Get the vector
-  void getValueForTask( const unsigned& iatom, std::vector<double>& vals ) const ;
+  void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
 /// Used to accumulate values
   void addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, multicolvar::MultiColvarFunction* func );
 /// Used for calculating weighted averages
