@@ -351,7 +351,7 @@ void PlumedMain::init(){
   atoms.init();
   if(!log.isOpen()) log.link(stdout);
   log<<"PLUMED is starting\n";
-  log<<"PLUMED compiled on " __DATE__ " at " __TIME__ "\n";
+  log<<"Version: "<<config::getVersionLong()<<" (git: "<<config::getVersionGit()<<") compiled on " __DATE__ " at " __TIME__ "\n";
   log<<"Please cite this paper when using PLUMED ";
   log<<cite("Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)");
   log<<"\n";
