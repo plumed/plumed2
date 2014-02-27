@@ -89,6 +89,9 @@ V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta
 
 This method ensures that the bias converges more smoothly. It should be noted that, in the case of well-tempered metadynamics, in
 the output printed the Gaussian height is re-scaled using the bias factor.
+Also notice that with well-tempered metadynamics the HILLS file does not contain the bias,
+but the negative of the free-energy estimate. This choice has the advantage that
+one can restart a simulation using a different value for the \f$\Delta T\f$. The applied bias will be scaled accordingly.
 
 Note that you can use here also the flexible gaussian approach  \cite Branduardi:2012dl
 in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or

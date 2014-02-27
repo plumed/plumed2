@@ -105,6 +105,7 @@ Unreleased changes (will be included in 2.0.3)
 See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
 
 For users:
+- Now compiles on Blue Gene Q with IBM compilers.
 - Several small fixes in documentation and log file.
 
 For developers:

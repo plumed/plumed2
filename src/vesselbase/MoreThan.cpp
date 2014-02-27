@@ -67,7 +67,7 @@ df(2)
 }
 
 std::string MoreThan::function_description(){
-  return "the number of values less than " + sf.description();
+  return "the number of values more than " + sf.description();
 }
 
 bool MoreThan::calculate(){
