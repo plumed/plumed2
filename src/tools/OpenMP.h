@@ -28,15 +28,6 @@ namespace PLMD{
 
 class OpenMP{
 
-/// Number of threads that can be used by openmp
-static unsigned numThreads;
-/// Empirical cacheline size (to be used to estimate correct number of threads)
-static unsigned cachelineSize;
-
-static bool initialized;
-
-static void init();
-
 public:
 
 /// Get number of threads that can be used by openMP
@@ -55,25 +46,13 @@ static unsigned getGoodNumThreads(const std::vector<T> & v);
 
 };
 
-inline
-unsigned OpenMP::getCachelineSize(){
-  if(!initialized) init();
-  return cachelineSize;
-}
-
-inline
-unsigned OpenMP::getNumThreads(){
-  if(!initialized) init();
-  return numThreads;
-}
-
 template<typename T>
 unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n){
-  if(!initialized) init();
   unsigned long p=(unsigned long) x;
 // a factor two is necessary since there is no guarantee that x is aligned
 // to cache line boundary
-  unsigned m=n/(2*cachelineSize*sizeof(T));
+  unsigned m=n/(2*getCachelineSize()*sizeof(T));
+  unsigned numThreads=getNumThreads();
   if(m>numThreads) m=numThreads;
   if(m==0) m=1;
   return m;
@@ -82,7 +61,6 @@ unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n){
 
 template<typename T>
 unsigned OpenMP::getGoodNumThreads(const std::vector<T> & v){
-  if(!initialized) init();
   if(v.size()==0) return 0;
   else return getGoodNumThreads(&v[0],v.size());
 }
