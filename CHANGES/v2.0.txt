@@ -106,6 +106,7 @@ See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repo
 
 For users:
 - Now compiles on Blue Gene Q with IBM compilers.
+- Fixed bug in \ref CENTER where default WEIGHTS were missing. 
 - Several small fixes in documentation and log file.
 
 For developers:
