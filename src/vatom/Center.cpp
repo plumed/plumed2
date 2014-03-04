@@ -90,6 +90,10 @@ Center::Center(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) error("at least one atom should be specified");
   parseVector("WEIGHTS",weights);
+  if( weights.size()==0) {
+    weights.resize( atoms.size() );
+    for(unsigned i=0;i<atoms.size();i++) weights[i] = 1.;
+  }
   parseFlag("MASS",weight_mass);
   checkRead();
   log.printf("  of atoms");
