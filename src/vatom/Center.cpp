@@ -31,7 +31,7 @@ namespace vatom{
 
 //+PLUMEDOC VATOM CENTER
 /*
-Calculate the center for a group of atoms, with arbitraty weights.
+Calculate the center for a group of atoms, with arbitrary weights.
 
 The computed
 center is stored as a virtual atom that can be accessed in
@@ -90,10 +90,6 @@ Center::Center(const ActionOptions&ao):
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) error("at least one atom should be specified");
   parseVector("WEIGHTS",weights);
-  if( weights.size()==0) {
-    weights.resize( atoms.size() );
-    for(unsigned i=0;i<atoms.size();i++) weights[i] = 1.;
-  }
   parseFlag("MASS",weight_mass);
   checkRead();
   log.printf("  of atoms");
@@ -102,6 +98,10 @@ Center::Center(const ActionOptions&ao):
     log<<"  mass weighted\n";
     if(weights.size()!=0) error("WEIGHTS and MASS keywords should not be used simultaneously");
   } else {
+    if( weights.size()==0) {
+      weights.resize( atoms.size() );
+      for(unsigned i=0;i<atoms.size();i++) weights[i] = 1.;
+    }
     log<<" with weights";
     if( weights.size()!=atoms.size() ) error("number of elements in weight vector does not match the number of atoms");
     for(unsigned i=0;i<weights.size();++i) log.printf(" %f",weights[i]);
