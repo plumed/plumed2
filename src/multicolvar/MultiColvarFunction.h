@@ -61,7 +61,7 @@ protected:
 /// Add derivatives to the orientation
   void addOrientationDerivatives( const unsigned& iatom, const std::vector<double>& der );
 /// Build colvars for atoms as if they were symmetry functions
-  void buildSymmetryFunctionLists( const bool store_director );
+  void buildSymmetryFunctionLists();
 /// Build a colvar for each pair of atoms
   void buildAtomListWithPairs( const bool& allow_intra_group );
 /// Get the number of base multicolvars 

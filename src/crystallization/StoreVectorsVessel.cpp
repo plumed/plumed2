@@ -34,7 +34,7 @@ void StoreVectorsVessel::registerKeywords( Keywords& keys ){
 
 StoreVectorsVessel::StoreVectorsVessel( const vesselbase::VesselOptions& da ):
 StoreDataVessel(da),
-store_director(false)
+store_director(true)
 {
   vecs=dynamic_cast<VectorMultiColvar*>( getAction() );
   plumed_assert( vecs );

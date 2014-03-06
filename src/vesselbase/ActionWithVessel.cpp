@@ -23,6 +23,7 @@
 #include "ActionWithVessel.h"
 #include "Vessel.h"
 #include "ShortcutVessel.h"
+#include "StoreDataVessel.h"
 #include "VesselRegister.h"
 #include "BridgeVessel.h"
 
@@ -95,6 +96,14 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   functions.push_back( dynamic_cast<Vessel*>(bv) );
   resizeFunctions();
   return bv; 
+}
+
+StoreDataVessel* ActionWithVessel::buildDataStashes(){
+  for(unsigned i=0;i<functions.size();++i){
+      StoreDataVessel* vsv=dynamic_cast<StoreDataVessel*>( functions[i] );
+      if( vsv ) return vsv;
+  }
+  return NULL;
 }
 
 void ActionWithVessel::addTaskToList( const unsigned& taskCode ){

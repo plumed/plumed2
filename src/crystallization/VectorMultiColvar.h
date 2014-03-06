@@ -98,8 +98,8 @@ public:
   unsigned getNumberOfComponentsInVector() const ;
 /// Get the number of quantities we are calculating per step
   unsigned getNumberOfQuantities();
-/// Store bits and bobs so they can be used in a function
-  void useInMultiColvarFunction( const bool store_director );
+/// Create places to store the data
+  vesselbase::StoreDataVessel* buildDataStashes();
 /// Get the vector
   void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
 /// Used to accumulate values
@@ -111,6 +111,8 @@ public:
                                         const std::vector<double>& der, multicolvar::MultiColvarFunction* func );
 /// Can we differentiate the orientation - yes we can the multicolvar is a vector
   bool hasDifferentiableOrientation() const { return true; }
+///  This makes sure we are not calculating the director when we do LocalAverage
+  virtual void doNotCalculateDirector();
 };
 
 inline

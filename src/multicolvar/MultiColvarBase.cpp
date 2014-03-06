@@ -193,12 +193,6 @@ void MultiColvarBase::performTask(){
   // Retrieve the atom list
   if( !setupCurrentAtomList( getCurrentTask() ) ) return;
 
-  // Do nothing if there are no active atoms in the colvar
-//  if( colvar_atoms[current].getNumberActive()==0 ){  
-//     setElementValue(1,0.0);
-//     return;                      
-//  }   Add retrieve atoms here
-
   // Do a quick check on the size of this contribution  
   calculateWeight();
   if( getElementValue(1)<getTolerance() ){
@@ -365,27 +359,28 @@ void MultiColvarBase::apply(){
   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
 }
 
-bool MultiColvarBase::setupCentralAtomVessel(){
-  if( mycatoms ) return true;
+vesselbase::StoreDataVessel* MultiColvarBase::buildDataStashes(){
+  // Check if vessels have already been setup
+  for(unsigned i=0;i<getNumberOfVessels();++i){
+     StoreColvarVessel* ssc=dynamic_cast<StoreColvarVessel*>( getPntrToVessel(i) );
+     if(ssc) return ssc;
+  }
+ 
+  // Setup central atoms
   vesselbase::VesselOptions da("","",0,"",this);
   mycatoms=new StoreCentralAtomsVessel(da);
   addVessel(mycatoms);
-  return false;
-}
 
-void MultiColvarBase::useInMultiColvarFunction( const bool store_director ){
-  // Create the store central atoms vessel
-  if( setupCentralAtomVessel() ) return;
-
-  // Create the store values vessel
+  // Setup store values vessel
   vesselbase::VesselOptions ta("","",0,"",this);
   myvalues=new StoreColvarVessel(ta);   // Currently ignoring weights - good thing?
-  addVessel(myvalues); 
+  addVessel(myvalues);
 
   // Make sure resizing of vessels is done
-  resizeFunctions();  
-  return;
+  resizeFunctions();
+  return myvalues;
 }
+
 
 Vector MultiColvarBase::getCentralAtomPosition( const unsigned& iatom ) const {
   plumed_dbg_assert( mycatoms );

@@ -34,8 +34,6 @@ inum(0)
 }
 
 void BridgeVessel::resize(){
-  forces.resize( myOutputAction->getNumberOfDerivatives() );
-  myOutputAction->resizeFunctions();
   if( myOutputAction->checkNumericalDerivatives() ){
       mynumerical_values.resize( getAction()->getNumberOfDerivatives()*myOutputValues->getNumberOfComponents() );
       inum=0;

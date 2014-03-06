@@ -69,11 +69,11 @@ MultiColvarBase(ao)
   log.printf("\n");
 }
 
-void MultiColvarFunction::buildSymmetryFunctionLists( const bool store_director ){
+void MultiColvarFunction::buildSymmetryFunctionLists(){
   if( mybasemulticolvars.size()>2 ) error("Found too many multicolvars in ARG specification. You can use either 1 or 2");
 
   // Make sure information is stored in the required multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->useInMultiColvarFunction( store_director );
+  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes();
 
   usespecies=true; ablocks.resize( 1 );
   for(unsigned i=0;i<mybasemulticolvars[0]->getFullNumberOfTasks();++i) addTaskToList( i );
@@ -100,7 +100,7 @@ void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group 
   if( !allow_intra_group && mybasemulticolvars.size()>2 ) error("only two input multicolvars allowed with this function"); 
 
   // Make sure information is stored in the required multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->useInMultiColvarFunction( true );
+  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes();
   
   usespecies=false; ablocks.resize(2); current_atoms.resize( 2 );
   if( !allow_intra_group && mybasemulticolvars.size()==2 ){

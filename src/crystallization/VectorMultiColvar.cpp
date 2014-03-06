@@ -56,6 +56,10 @@ void VectorMultiColvar::setVectorDimensionality( const unsigned& ncomp, const bo
   // Resize a holder for the derivatives of the norm of the vector
 }
 
+void VectorMultiColvar::doNotCalculateDirector(){
+  vecs->store_director=false;
+}
+
 double VectorMultiColvar::doCalculation(){
   // Now calculate the vector
   calculateVector();
@@ -104,13 +108,15 @@ double VectorMultiColvar::doCalculation(){
   return norm;
 }
 
-void VectorMultiColvar::useInMultiColvarFunction( const bool store_director ){
-  // Store the values
-  MultiColvarBase::useInMultiColvarFunction( store_director );
-  
+vesselbase::StoreDataVessel* VectorMultiColvar::buildDataStashes(){
+  // Build everyting for the multicolvar
+  vesselbase::StoreDataVessel* vsv=MultiColvarBase::buildDataStashes();
+  // Resize the variable
+  vecs->resize();
   // And make sure we set up the vector storage correctly
-  vecs->usedInFunction( store_director );
   vv1.resize( 1 ); vv2.resize( getNumberOfQuantities() - 5 );
+  // And return
+  return vsv;
 }
 
 void VectorMultiColvar::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){

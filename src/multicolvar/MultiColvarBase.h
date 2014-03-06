@@ -111,8 +111,6 @@ protected:
   void getCentralAtomIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ) const ;
 /// This sets up the list of atoms that are involved in this colvar
   bool setupCurrentAtomList( const unsigned& taskCode );
-/// This is used internally to setup central atom stuff
-  bool setupCentralAtomVessel();
 public:
   MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(){}
@@ -155,7 +153,7 @@ public:
 /// Is this a density?
   virtual bool isDensity(){ return false; }
 /// Store central atoms so that this can be used in a function
-  virtual void useInMultiColvarFunction( const bool store_director );
+  virtual vesselbase::StoreDataVessel* buildDataStashes();
 /// Copy the list of atoms involved to a second MultiColvarBase (used by functions)
   void copyAtomListToFunction( MultiColvarBase* myfunction );
 /// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
@@ -181,6 +179,8 @@ public:
                                                 const std::vector<double>& weight, MultiColvarFunction* func );
 /// This is true if multicolvar is calculating a vector or if the multicolvar is the density
   virtual bool hasDifferentiableOrientation() const { return false; }
+/// This makes sure we are not calculating the director when we do LocalAverage
+  virtual void doNotCalculateDirector(){}
 };
 
 inline

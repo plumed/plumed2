@@ -31,6 +31,7 @@
 #include "core/SetupMolInfo.h"
 #include "core/ActionSet.h"
 #include "MultiColvarBase.h"
+#include "vesselbase/ActionWithInputVessel.h"
 
 using namespace std;
 
@@ -49,7 +50,8 @@ Dump atom positions and multicolvar on a file.
 //+ENDPLUMEDOC
 
 class DumpMultiColvar:
-  public ActionPilot
+  public ActionPilot,
+  public vesselbase::ActionWithInputVessel
 {
   OFile of;
   double lenunit;
@@ -69,7 +71,7 @@ PLUMED_REGISTER_ACTION(DumpMultiColvar,"DUMPMULTICOLVAR")
 void DumpMultiColvar::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  keys.add("compulsory","ARG","the multicolvar that is being output");
+  ActionWithInputVessel::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which the atoms should be output");
   keys.add("compulsory", "FILE", "file on which to output coordinates");
   keys.add("compulsory", "UNITS","PLUMED","the units in which to print out the coordinates. PLUMED means internal PLUMED units");
@@ -78,16 +80,14 @@ void DumpMultiColvar::registerKeywords( Keywords& keys ){
 
 DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
   Action(ao),
-  ActionPilot(ao)
+  ActionPilot(ao),
+  ActionWithInputVessel(ao)
 {
-  std::string mlab; parse("ARG",mlab);
-  log.printf("  printing colvars calculated by action %s \n",mlab.c_str() );
-  mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
-  if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
-  // Add the dependency 
-  addDependency(mycolv);
-  // And make sure we are storing things for eventual output
-  mycolv->useInMultiColvarFunction( true );
+  readArgument("store");
+  mycolv = dynamic_cast<MultiColvarBase*>( getDependencies()[0] );
+  plumed_assert( getDependencies().size()==1 ); 
+  if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar");
+  log.printf("  printing colvars calculated by action %s \n",mycolv->getLabel().c_str() );
 
   string file; parse("FILE",file);
   if(file.length()==0) error("name out output file was not specified");

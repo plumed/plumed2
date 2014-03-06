@@ -35,6 +35,7 @@ namespace vesselbase{
 
 class Vessel;
 class BridgeVessel;
+class StoreDataVessel;
 
 /**
 \ingroup MULTIINHERIT
@@ -48,6 +49,7 @@ friend class ShortcutVessel;
 friend class FunctionVessel;
 friend class StoreDataVessel;
 friend class BridgeVessel;
+friend class ActionWithInputVessel;
 private:
 /// Do all calculations in serial
   bool serial;
@@ -195,6 +197,8 @@ public:
   double getElementValue( const unsigned& ival ) const ;
 /// Retrieve the derivative of the quantity in the sum wrt to a numbered element
   double getElementDerivative( const unsigned& ) const ;
+/// Ensure that data required in other vessels is stored
+  virtual StoreDataVessel* buildDataStashes();
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 /// These are overwritten in MultiColvarFunction
