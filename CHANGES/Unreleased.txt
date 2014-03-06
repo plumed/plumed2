@@ -17,6 +17,7 @@ Changes from version 2.0 which are relevant for users:
   - \ref COMMITTOR analysis.
   - \ref LOCAL_AVERAGE.
   - \ref NLINKS.
+  - \ref DIHCOR.
   - Crystallation module, including \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, and \ref AVERAGE_VECTOR.
 - New features for existing actions:
   - \ref METAD : WALKERS_MPI flag (multiple walkers in a mpi-based multi-replica framework),
