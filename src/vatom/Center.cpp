@@ -31,7 +31,7 @@ namespace vatom{
 
 //+PLUMEDOC VATOM CENTER
 /*
-Calculate the center for a group of atoms, with arbitraty weights.
+Calculate the center for a group of atoms, with arbitrary weights.
 
 The computed
 center is stored as a virtual atom that can be accessed in
