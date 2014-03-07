@@ -39,7 +39,6 @@ it is created in a different Action however.  At the moment this is used for reg
 
 class BridgeVessel : public Vessel {
 private:
-  std::vector<double> forces;
   unsigned inum;
   std::vector<double> mynumerical_values;
   ActionWithVessel* myOutputAction;

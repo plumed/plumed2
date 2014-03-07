@@ -178,7 +178,7 @@ void MultiColvarFunction::getValueForBaseTask( const unsigned& iatom, std::vecto
 
 inline
 void MultiColvarFunction::getVectorForBaseTask( const unsigned& iatom, std::vector<double>& vec ){
-  plumed_dbg_assert( vec.size()==getNumberOfQuantites()-5 && tvals.size()>1 );
+  plumed_dbg_assert( vec.size()==mybasemulticolvars[0]->getNumberOfQuantites()-5 && tvals.size()>1 );
   getValueForBaseTask( iatom, tvals ); for(unsigned i=0;i<vec.size();++i) vec[i]=tvals[i+1];
 }
 

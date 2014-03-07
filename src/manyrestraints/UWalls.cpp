@@ -25,98 +25,54 @@
 namespace PLMD {
 namespace manyrestraints {
 
-class Sphere : public ManyRestraintsBase {
+class UWalls : public ManyRestraintsBase {
 private:
   double at;
   double kappa;
   double exp;
   double eps;
   double offset;
-  bool nopbc;
-  Vector com;
-  std::vector<double> com_deriv;
 public:
   static void registerKeywords( Keywords& keys );
-  Sphere( const ActionOptions& );
-  bool isPeriodic(){ return false; }
+  UWalls( const ActionOptions& );
   void performTask();
-  void calculate();
 };
 
-PLUMED_REGISTER_ACTION(Sphere,"SPHERICAL_RESTRAINT")
+PLUMED_REGISTER_ACTION(UWalls,"UWALLS")
 
-void Sphere::registerKeywords( Keywords& keys ){
+void UWalls::registerKeywords( Keywords& keys ){
   ManyRestraintsBase::registerKeywords( keys );
-  keys.add("atoms","ATOMS","the atoms that are being confined to the sphere");
-  keys.add("compulsory","RADIUS","the radius of the sphere");
+  keys.add("compulsory","AT","the radius of the sphere");
   keys.add("compulsory","KAPPA","the force constant for the wall.  The k_i in the expression for a wall.");
   keys.add("compulsory","OFFSET","0.0","the offset for the start of the wall.  The o_i in the expression for a wall.");
   keys.add("compulsory","EXP","2.0","the powers for the walls.  The e_i in the expression for a wall.");
   keys.add("compulsory","EPS","1.0","the values for s_i in the expression for a wall");
-  keys.addFlag("NOPBC",false,"turn off periodic boundary conditions");
 }
 
-Sphere::Sphere(const ActionOptions& ao):
+UWalls::UWalls(const ActionOptions& ao):
 Action(ao),
 ManyRestraintsBase(ao)
 {
-  std::vector<AtomNumber> atoms;
-  parseAtomList("ATOMS",atoms);
-  com_deriv.resize( atoms.size() );
-
-  parse("RADIUS",at);
+  parse("AT",at);
   parse("OFFSET",offset);
   parse("EPS",eps);
   parse("EXP",exp);
   parse("KAPPA",kappa);
-  parseFlag("NOPBC",nopbc);
   checkRead();
-
-  requestAtoms( atoms ); 
-  createRestraints( atoms.size() );
 }
 
-void Sphere::calculate(){
-  // Calculate position of the center of mass
-  double mass=0; com.zero();
-  for(unsigned i=0;i<getNumberOfAtoms();i++) mass+=getMass(i);
-
-  for(unsigned i=0;i<getNumberOfAtoms();i++){
-    com+=(getMass(i)/mass)*getPosition(i);
-    com_deriv[i]=(getMass(i)/mass);
-  }
- 
-  // Now run the full set of tasks
-  runAllTasks();
-}
-
-void Sphere::performTask(){
-  Vector distance;
-
-  if(!nopbc){
-    distance=pbcDistance(com,getPosition( getCurrentTask() ));
-  } else {
-    distance=delta(com,getPosition( getCurrentTask() ));
-  }
-
-  double value=distance.modulo();
+void UWalls::performTask(){
+  double value=getValue(); 
   double uscale = (value - at + offset)/eps;
   if( uscale > 0. ){
-     double invvalue= 1.0 / value ;
+     double invvalue= 1.0 / value;
      double power = pow( uscale, exp );
-     double f = invvalue * ( kappa / eps ) * exp * power / uscale;
+     double f = ( kappa / eps ) * exp * power / uscale;
 
-     setElementValue( 0, kappa*power ); setElementValue( 1, 1.0 );
-     // Add derivatives for com
-     for(unsigned i=0;i<getNumberOfAtoms();++i) addAtomsDerivatives( i, -com_deriv[i]*f*distance );
-
-     // Add derivatives for other atom 
-     addAtomsDerivatives( getCurrentTask(), f*distance );
-
-     // Add derivatives for virial
-     addBoxDerivatives( -f*Tensor(distance,distance) );
-
-     // We need to accumulate derivatives
+     setElementValue( 0, kappa*power ); setElementValue( 1, getWeight() );
+     // Add derivatives 
+     applyChainRuleForDerivatives( f );
+    
      return;
   }
 

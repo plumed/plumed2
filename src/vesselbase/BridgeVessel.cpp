@@ -142,8 +142,9 @@ void BridgeVessel::completeNumericalDerivatives(){
 
 bool BridgeVessel::applyForce( std::vector<double>& outforces ){
   bool hasforce=false; outforces.assign(outforces.size(),0.0);
-  unsigned nextra = myOutputAction->getNumberOfDerivatives() - getAction()->getNumberOfDerivatives();
-  std::vector<double> eforces( nextra, 0.0 );
+  unsigned ndertot = myOutputAction->getNumberOfDerivatives();
+  unsigned nextra = ndertot - getAction()->getNumberOfDerivatives();
+  std::vector<double> forces( ndertot ), eforces( nextra, 0.0 );
   for(unsigned i=0;i<myOutputAction->getNumberOfVessels();++i){
      if( ( myOutputAction->getPntrToVessel(i) )->applyForce( forces ) ){
          hasforce=true;

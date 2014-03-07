@@ -172,7 +172,7 @@ double StoreDataVessel::chainRule( const unsigned& ival, const unsigned& ider, c
 }
 
 void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>& df ){
-  plumed_dbg_assert( getAction->derivativesAreRequired() && df.size()==vecsize );
+  plumed_dbg_assert( getAction()->derivativesAreRequired() && df.size()==vecsize );
   // Clear final derivatives array
   final_derivatives.assign( final_derivatives.size(), 0.0 );
 

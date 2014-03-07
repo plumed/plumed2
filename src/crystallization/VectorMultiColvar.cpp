@@ -120,7 +120,7 @@ vesselbase::StoreDataVessel* VectorMultiColvar::buildDataStashes(){
 }
 
 void VectorMultiColvar::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){
-  plumed_dbg_assert( vecs && vals.size()==(getNumberOfQuantities-4) ); 
+  plumed_dbg_assert( vecs && vals.size()==(getNumberOfQuantities()-4) ); 
   MultiColvarBase::getValueForTask( iatom, vv1 ); vecs->getVector( iatom, vv2 );
   vals[0]=vv1[0]; for(unsigned i=0;i<vv2.size();++i) vals[i+1]=vv2[i];
 }
