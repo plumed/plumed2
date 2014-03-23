@@ -74,31 +74,32 @@ double VectorMultiColvar::doCalculation(){
      for(unsigned i=0;i<ncomponents;++i) dervec[i] = inorm*getComponent(i); 
   }
 
-  if( usingLowMem() ){
-     vecs->storeDerivativesLowMem( 0 );
-     vecs->chainRule( 0, dervec );
-  } else {
-     vecs->storeDerivativesHighMem( getCurrentPositionInTaskList() );
-     vecs->chainRule( getCurrentPositionInTaskList(), dervec );
-  }
+  if( !doNotCalculateDerivatives() ){
+      if( usingLowMem() ){
+         vecs->storeDerivativesLowMem( 0 );
+         vecs->chainRule( 0, dervec );
+      } else {
+         vecs->storeDerivativesHighMem( getCurrentPositionInTaskList() );
+         vecs->chainRule( getCurrentPositionInTaskList(), dervec );
+      }
 
-  // Add derivatives to base multicolvars
-  Vector tmpd;
-  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
-       unsigned k=atoms_with_derivatives[i];
-       tmpd[0]=vecs->getFinalDerivative(3*i+0); 
-       tmpd[1]=vecs->getFinalDerivative(3*i+1); 
-       tmpd[2]=vecs->getFinalDerivative(3*i+2); 
-       MultiColvarBase::addAtomsDerivatives( 0, k, tmpd );
-  }   
-  unsigned vvbase=3*atoms_with_derivatives.getNumberActive(); Tensor tmpv;
-  for(unsigned i=0;i<3;++i){
-      for(unsigned j=0;j<3;++j){
-          tmpv(i,j) = vecs->getFinalDerivative( vvbase+3*i+j ); 
+      // Add derivatives to base multicolvars
+      Vector tmpd;
+      for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
+           unsigned k=atoms_with_derivatives[i];
+           tmpd[0]=vecs->getFinalDerivative(3*i+0); 
+           tmpd[1]=vecs->getFinalDerivative(3*i+1); 
+           tmpd[2]=vecs->getFinalDerivative(3*i+2); 
+           MultiColvarBase::addAtomsDerivatives( 0, k, tmpd );
       }   
-  }   
-  MultiColvarBase::addBoxDerivatives( 0, tmpv );
-
+      unsigned vvbase=3*atoms_with_derivatives.getNumberActive(); Tensor tmpv;
+      for(unsigned i=0;i<3;++i){
+          for(unsigned j=0;j<3;++j){
+              tmpv(i,j) = vecs->getFinalDerivative( vvbase+3*i+j ); 
+          }   
+      }   
+      MultiColvarBase::addBoxDerivatives( 0, tmpv );
+  }
   
   return norm;
 }

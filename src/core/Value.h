@@ -211,7 +211,7 @@ double Value::getDerivative(const unsigned n) const {
 
 inline
 bool Value::hasDerivatives() const {
-  return (!derivatives.empty());
+  return hasDeriv; // (!derivatives.empty());
 }
 
 inline

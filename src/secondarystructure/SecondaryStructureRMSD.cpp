@@ -105,6 +105,11 @@ SecondaryStructureRMSD::~SecondaryStructureRMSD(){
   for(unsigned i=0;i<secondary_drmsd.size();++i) delete secondary_drmsd[i];
 }
 
+void SecondaryStructureRMSD::turnOnDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  needsDerivatives();
+}
+
 void SecondaryStructureRMSD::setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 ){
   align_atom_1=atom1; align_atom_2=atom2; 
 }

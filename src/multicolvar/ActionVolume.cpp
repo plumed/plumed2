@@ -103,9 +103,14 @@ updateFreq(0)
   finishTaskListUpdate();
 }
 
+void ActionVolume::turnOnDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  needsDerivatives();
+} 
+
 void ActionVolume::requestAtoms( const std::vector<AtomNumber>& atoms ){
   ActionAtomistic::requestAtoms(atoms); bridgeVariable=3*atoms.size();
-  addDependency( mycolv ); mycolv->resizeFunctions();
+  addDependency( mycolv ); 
   tmpforces.resize( 3*atoms.size()+9 );
 }
 
@@ -226,25 +231,27 @@ void ActionVolume::mergeDerivatives( const unsigned& ider, const double& df ){
 
 void ActionVolume::clearDerivativesAfterTask( const unsigned& ider ){
   unsigned vstart=getNumberOfDerivatives()*ider;
-  // Clear atom derivatives
-  for(unsigned i=0;i<activeAtoms.getNumberActive();++i){
-     unsigned iatom=vstart+3*activeAtoms[i];
-     setElementDerivative( iatom, 0.0 ); iatom++;
-     setElementDerivative( iatom, 0.0 ); iatom++;
-     setElementDerivative( iatom, 0.0 );
+  if( derivativesAreRequired() ){
+     // Clear atom derivatives
+     for(unsigned i=0;i<activeAtoms.getNumberActive();++i){
+        unsigned iatom=vstart+3*activeAtoms[i];
+        setElementDerivative( iatom, 0.0 ); iatom++;
+        setElementDerivative( iatom, 0.0 ); iatom++;
+        setElementDerivative( iatom, 0.0 );
+     }
+     // Clear virial contribution
+     unsigned nvir=vstart+3*mycolv->getNumberOfAtoms();
+     for(unsigned j=0;j<9;++j){
+        setElementDerivative( nvir, 0.0 ); nvir++;
+     }
+     // Clear derivatives of local atoms
+     for(unsigned j=0;j<getNumberOfAtoms();++j){
+        setElementDerivative( nvir, 0.0 ); nvir++;
+        setElementDerivative( nvir, 0.0 ); nvir++;
+        setElementDerivative( nvir, 0.0 ); nvir++;
+     }
+     plumed_dbg_assert( (nvir-vstart)==getNumberOfDerivatives() );
   }
-  // Clear virial contribution
-  unsigned nvir=vstart+3*mycolv->getNumberOfAtoms();
-  for(unsigned j=0;j<9;++j){
-     setElementDerivative( nvir, 0.0 ); nvir++;
-  }
-  // Clear derivatives of local atoms
-  for(unsigned j=0;j<getNumberOfAtoms();++j){
-     setElementDerivative( nvir, 0.0 ); nvir++;
-     setElementDerivative( nvir, 0.0 ); nvir++;
-     setElementDerivative( nvir, 0.0 ); nvir++;
-  }
-  plumed_dbg_assert( (nvir-vstart)==getNumberOfDerivatives() );
   // Clear values
   thisval_wasset[ider]=false; setElementValue( ider, 0.0 ); thisval_wasset[ider]=false;
 }

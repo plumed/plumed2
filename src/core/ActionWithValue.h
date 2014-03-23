@@ -68,6 +68,8 @@ class ActionWithValue :
 private:
 /// An array containing the values for this action
   std::vector<Value*> values;
+/// Are we skipping the calculation of the derivatives
+  bool noderiv;
 /// Are we using numerical derivatives to differentiate
   bool numericalDerivatives;
 /// Return the index for the component named name
@@ -118,6 +120,8 @@ public:
   static void componentsAreNotOptional(Keywords& keys);
 /// The components in the action will depend on the user
   static void useCustomisableComponents(Keywords& keys);
+/// Are we not calculating derivatives
+  bool doNotCalculateDerivatives() const ;
 /// Get the value of one of the components of the PLMD::Action
   double getOutputQuantity( const unsigned j ) const ;
 /// Get the value with a specific name (N.B. if there is no such value this returns zero)
@@ -160,8 +164,9 @@ public:
   void useNumericalDerivatives();
 // These are things for using vectors of values as fields
   virtual void checkFieldsAllowed(){ error("cannot use this action as a field"); }
-  virtual unsigned getNumberOfDerivatives();
-  virtual void mergeFieldDerivatives( const std::vector<double>& derivatives, Value* val_out );
+  virtual unsigned getNumberOfDerivatives()=0;  
+/// Activate the calculation of derivatives
+  virtual void turnOnDerivatives();
 };
 
 inline
@@ -202,9 +207,8 @@ bool ActionWithValue::checkNumericalDerivatives() const {
 }
 
 inline
-unsigned ActionWithValue::getNumberOfDerivatives(){
-  plumed_assert( !values.empty() );
-  return values[0]->getNumberOfDerivatives(); 
+bool ActionWithValue::doNotCalculateDerivatives() const {
+  return noderiv;
 } 
 
 

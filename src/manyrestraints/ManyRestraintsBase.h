@@ -47,6 +47,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   ManyRestraintsBase(const ActionOptions&);
+  void turnOnDerivatives();
   unsigned getNumberOfDerivatives();
 /// Deactivate task now does nothing
   void deactivate_task(){}

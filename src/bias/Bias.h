@@ -50,6 +50,8 @@ public:
   static void registerKeywords(Keywords&);
   Bias(const ActionOptions&ao);
   void apply();
+  unsigned getNumberOfDerivatives();
+  void turnOnDerivatives();
 };
 
 inline
@@ -60,6 +62,11 @@ void Bias::setOutputForce(int i,double f){
 inline
 void Bias::resetOutputForces(){
   for(unsigned i=0;i<outputForces.size();++i) outputForces[i]=0.0;
+}
+
+inline
+unsigned Bias::getNumberOfDerivatives(){
+  return getNumberOfArguments();
 }
 
 }

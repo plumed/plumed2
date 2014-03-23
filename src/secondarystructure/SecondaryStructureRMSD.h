@@ -87,6 +87,7 @@ public:
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();
+  void turnOnDerivatives();
   void prepare();
   void finishTaskListUpdate();
   void calculate();

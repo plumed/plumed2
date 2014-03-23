@@ -46,6 +46,8 @@ private:
   ActionWithValue* myOutputValues;
 public:
   BridgeVessel( const VesselOptions& );
+/// Does this have derivatives
+  bool hasDerivatives();
 /// Resize the quantities in the vessel
   void resize();
 /// Setup the action we are outputting to

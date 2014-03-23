@@ -44,6 +44,10 @@ ActionWithVessel(ao)
 {
 }
 
+void ManyRestraintsBase::turnOnDerivatives(){
+  error("restraints cannot be used as collective variables");
+}
+
 void ManyRestraintsBase::createRestraints( const unsigned& nrestraints ){
   std::string fake_input; 
   for(unsigned i=0;i<nrestraints;++i) addTaskToList(i);

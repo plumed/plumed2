@@ -147,17 +147,22 @@ Vector MultiColvarFunction::getPositionOfCentralAtom( const unsigned& iatom ) co
 
 inline
 void MultiColvarFunction::addCentralAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const Vector& der ){
+  if( doNotCalculateDerivatives() ) return ;
+
   plumed_dbg_assert( iatom<natomsper ); unsigned mmc = colvar_label[ current_atoms[iatom] ]; 
   mybasemulticolvars[mmc]->addCentralAtomDerivativeToFunction( convertToLocalIndex(current_atoms[iatom],mmc), jout, mmc, der, this );
 }
 
 inline
 void MultiColvarFunction::atomHasDerivative( const unsigned& iatom ){
+  plumed_dbg_assert( !doNotCalculateDerivatives() );
   atoms_with_derivatives.activate( iatom );
 }
 
 inline
 void MultiColvarFunction::addDerivativeOfCentralAtomPos( const unsigned& iatom, const Tensor& der ){
+  if( doNotCalculateDerivatives() ) return;
+
   plumed_dbg_assert( iatom<natomsper ); unsigned mmc = colvar_label[ current_atoms[iatom] ]; Vector tmpder;
   for(unsigned i=0;i<3;++i){
       for(unsigned j=0;j<3;++j) tmpder[j]=der(i,j);
@@ -179,12 +184,16 @@ void MultiColvarFunction::getVectorForBaseTask( const unsigned& iatom, std::vect
 
 inline
 void MultiColvarFunction::accumulateWeightedAverageAndDerivatives( const unsigned& iatom, const double& weight ){
+  if( doNotCalculateDerivatives() ) return;
+
   plumed_dbg_assert( iatom<natomsper ); unsigned mmc = colvar_label[ current_atoms[iatom] ];
   mybasemulticolvars[mmc]->addWeightedValueDerivatives( convertToLocalIndex(current_atoms[iatom],mmc), mmc, weight, this );
 }
 
 inline
 void MultiColvarFunction::addOrientationDerivatives( const unsigned& iatom , const std::vector<double>& der ){
+  if( doNotCalculateDerivatives() ) return;
+
   plumed_dbg_assert( iatom<natomsper ); unsigned mmc = colvar_label[ current_atoms[iatom] ];
   unsigned jout=2; if( usespecies && iatom==0 ) jout=1;
   mybasemulticolvars[mmc]->addOrientationDerivativesToBase( convertToLocalIndex(current_atoms[iatom],mmc), jout, mmc, der, this );

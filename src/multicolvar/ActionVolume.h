@@ -93,6 +93,8 @@ public:
   void finishTaskListUpdate();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+/// Turn on the derivatives
+  void turnOnDerivatives();
 /// Is the output quantity periodic
   bool isPeriodic();
 /// Jobs to be done when the action is activated

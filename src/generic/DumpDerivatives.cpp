@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionPilot.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 #include "tools/File.h"
@@ -96,9 +97,11 @@ fmt("%15.10f")
   log.printf("  with format %s\n",fmt.c_str());
   unsigned nargs=getNumberOfArguments();
   if( nargs==0 ) error("no arguments specified");
+  (getPntrToArgument(0)->getPntrToAction())->turnOnDerivatives();
   unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
   if( npar==0 ) error("one or more arguments has no derivatives");
   for(unsigned i=1;i<nargs;i++){
+      (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
       if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
   }
   checkRead();

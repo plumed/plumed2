@@ -127,7 +127,7 @@ double AdjacencyMatrixAction::compute(){
   // Retrieve the weight of the connection
   double weight = getElementValue(1); 
 
-  if( dertime ){
+  if( dertime && !doNotCalculateDerivatives() ){
      // Add contribution due to separation between atoms
      Vector distance = getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(1) );
      double dfunc, sw = switchingFunction( getBaseColvarNumber(0), getBaseColvarNumber(1) ).calculate( distance.modulo(), dfunc ); 

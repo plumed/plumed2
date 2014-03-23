@@ -75,6 +75,7 @@ public:
   void clearDerivatives(){}
   void doJobsRequiredBeforeTaskList();
   unsigned getNumberOfDerivatives();
+  void turnOnDerivatives();
   void performTask();
   void finishComputations();
   void calculate(){}
@@ -126,6 +127,11 @@ void VectorAverage::doJobsRequiredBeforeTaskList(){
   ActionWithValue::clearDerivatives(); 
   values.assign( values.size(), 0.0 );
   derivatives.assign( derivatives.size(), 0.0 );
+}
+
+void VectorAverage::turnOnDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  needsDerivatives();
 }
 
 unsigned VectorAverage::getNumberOfDerivatives(){

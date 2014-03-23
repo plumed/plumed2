@@ -27,7 +27,6 @@ namespace vesselbase{
 
 void FunctionVessel::registerKeywords( Keywords& keys ){
   Vessel::registerKeywords( keys );
-  plumed_assert( keys.size()==0 );
 }
 
 FunctionVessel::FunctionVessel( const VesselOptions& da ):
@@ -38,10 +37,12 @@ Vessel(da)
   int numval = getNumericalLabel();
   if( numval<0 ){   // This allows us to make multicolvars pretend to be colvars - this is used in AlphaRMSD etc
      plumed_massert( a->getNumberOfComponents()==0,"you can't multiple values with the action label");
-     a->addValueWithDerivatives();  a->setNotPeriodic();
+     a->addValueWithDerivatives(); 
+     a->setNotPeriodic();
   } else {
      plumed_massert( !a->exists(getAction()->getLabel() + "." + getLabel() ), "you can't create the name multiple times");
-     a->addComponentWithDerivatives( getLabel() ); a->componentIsNotPeriodic( getLabel() );
+     a->addComponentWithDerivatives( getLabel() ); 
+     a->componentIsNotPeriodic( getLabel() );
   }
   final_value=a->copyOutput( a->getNumberOfComponents()-1 );
   diffweight=getAction()->weightHasDerivatives;
@@ -52,18 +53,23 @@ std::string FunctionVessel::description(){
 }
 
 void FunctionVessel::resize(){
-  nderivatives=getAction()->getNumberOfDerivatives();
-  resizeBuffer( (1+nderivatives)*2 ); 
-  final_value->resizeDerivatives( nderivatives );
+  if( getAction()->derivativesAreRequired() ){
+     nderivatives=getAction()->getNumberOfDerivatives();
+     resizeBuffer( (1+nderivatives)*2 ); 
+     final_value->resizeDerivatives( nderivatives );
+  } else {
+     nderivatives=0;
+     resizeBuffer(2);
+  }
 }
 
 void FunctionVessel::mergeFinalDerivatives( const std::vector<double>& df ){
+  if( !getAction()->derivativesAreRequired() ) return;
+
   plumed_dbg_assert( df.size()==2 ); 
-  for(unsigned i=0;i<2;++i){
-      unsigned ider=i*( nderivatives + 1 ) + 1;
-      for(unsigned k=0;k<nderivatives;++k){
-         final_value->addDerivative( k, df[i]*getBufferElement( ider ) ); ider++;
-      }
+  unsigned ider=1;
+  for(unsigned k=0;k<nderivatives;++k){
+     final_value->addDerivative( k, df[0]*getBufferElement( ider ) + df[1]*getBufferElement( ider + 1 + nderivatives) ); ider++;
   }
 }
 

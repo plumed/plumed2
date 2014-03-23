@@ -131,7 +131,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
   for(int j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
     double ref=v->get();
-    if(v->hasDerivatives()){
+    if(v->getNumberOfDerivatives()>0){
       for(int i=0;i<natoms;i++) for(int k=0;k<3;k++) {
         double d=(value[j*natoms+i][k]-ref)/delta;
         v->addDerivative(startnum+3*i+k,d);

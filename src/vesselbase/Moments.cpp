@@ -80,8 +80,9 @@ StoreValueVessel(da)
 
 void Moments::resize(){
    StoreDataVessel::resize();
-   unsigned nder=getAction()->getNumberOfDerivatives();
-   for(unsigned i=0;i<value_out.size();++i) value_out[i]->resizeDerivatives( nder );
+   if( value_out[0]->getNumberOfDerivatives()>0 ){
+      unsigned nder=getAction()->getNumberOfDerivatives();
+   }
 }
 
 std::string Moments::description(){
@@ -117,22 +118,26 @@ void Moments::finish(){
 
   for(unsigned npow=0;npow<powers.size();++npow){
      double dev1=0; 
-     for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, getValue(i) ), powers[npow] - 1 ); 
-     dev1/=static_cast<double>( nvals );
+     if( value_out[0]->getNumberOfDerivatives()>0 ){
+         for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, getValue(i) ), powers[npow] - 1 ); 
+         dev1/=static_cast<double>( nvals );
+     }
 
      std::vector<double> pref(1); double tmp, moment=0; 
      for(unsigned i=0;i<nvals;++i){
          tmp=myvalue.difference( mean, getValue(i) );
-         pref[0]=pow( tmp, powers[npow] - 1 ) - dev1;
          moment+=pow( tmp, powers[npow] );
-         if( usingLowMem() ){
-            recompute( i, 0 ); // Not very efficient 
-            chainRule( 0, pref, value_out[npow] );
-         } else {
-            chainRule( i, pref, value_out[npow] );
+         if( value_out[npow]->getNumberOfDerivatives() ){
+             pref[0]=pow( tmp, powers[npow] - 1 ) - dev1;
+             if( usingLowMem() ){
+                recompute( i, 0 ); // Not very efficient 
+                chainRule( 0, pref, value_out[npow] );
+             } else {
+                chainRule( i, pref, value_out[npow] );
+             }
          }
      }
-     value_out[npow]->chainRule( powers[npow] / static_cast<double>( nvals ) );
+     if( value_out[npow]->getNumberOfDerivatives()>0 ) value_out[npow]->chainRule( powers[npow] / static_cast<double>( nvals ) );
      value_out[npow]->set( moment / static_cast<double>( nvals ) ); 
   }
 }

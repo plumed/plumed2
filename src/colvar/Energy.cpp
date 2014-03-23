@@ -55,6 +55,7 @@ public:
 // active methods:
   void prepare();
   virtual void calculate();
+  unsigned getNumberOfDerivatives();
   static void registerKeywords( Keywords& keys );
 };
 
@@ -83,6 +84,10 @@ void Energy::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   keys.remove("NUMERICAL_DERIVATIVES"); 
+}
+
+unsigned Energy::getNumberOfDerivatives(){
+  return 1;
 }
 
 void Energy::prepare(){

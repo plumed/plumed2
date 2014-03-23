@@ -122,6 +122,8 @@ public:
   virtual unsigned getBaseQuantityIndex( const unsigned& code )=0;
 /// Are two indexes corresponding to the same thing
   virtual bool same_index( const unsigned&, const unsigned& )=0;
+/// Turn on the derivatives 
+  void turnOnDerivatives();
 /// Prepare for the calculation
   void prepare();
 //  virtual void resizeDynamicArrays()=0;

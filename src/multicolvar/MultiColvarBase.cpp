@@ -111,6 +111,10 @@ void MultiColvarBase::setupMultiColvarBase(){
   readVesselKeywords();
 }
 
+void MultiColvarBase::turnOnDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  needsDerivatives();
+} 
 
 void MultiColvarBase::prepare(){
   if( contributorsAreUnlocked ) lockContributors();
@@ -148,7 +152,8 @@ void MultiColvarBase::resizeLocalArrays(){
   for(unsigned i=0;i<getNumberOfAtoms();++i) atomsWithCatomDer.addIndexToList( i );
   atomsWithCatomDer.deactivateAll();
   // Resize tempory forces array
-  forcesToApply.resize( getNumberOfDerivatives() );
+  if( !doNotCalculateDerivatives() ) forcesToApply.resize( getNumberOfDerivatives() );
+  else forcesToApply.resize( 0 );
 }
 
 bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode ){
@@ -263,6 +268,7 @@ unsigned MultiColvarBase::getInternalIndex( const AtomNumber& iatom ) const {
 }
 
 void MultiColvarBase::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
+  plumed_dbg_assert( !doNotCalculateDerivatives() );
   indices[jstore]=3*atoms_with_derivatives.getNumberActive() + 9;
   if( indices[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");
 
@@ -276,6 +282,8 @@ void MultiColvarBase::getIndexList( const unsigned& ntotal, const unsigned& jsto
 }   
 
 void MultiColvarBase::getCentralAtomIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ) const {
+  plumed_dbg_assert( !doNotCalculateDerivatives() );
+
   indices[jstore]=3*atomsWithCatomDer.getNumberActive();
   if( indices[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");
 
@@ -299,15 +307,17 @@ void MultiColvarBase::quotientRule( const unsigned& uder, const unsigned& vder, 
   unsigned vstart=vder*getNumberOfDerivatives();
   unsigned istart=iout*getNumberOfDerivatives();
   double weight = getElementValue( vder ), pref = getElementValue( uder ) / (weight*weight);
-  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
-      unsigned n=3*atoms_with_derivatives[i], nx=n, ny=n+1, nz=n+2;
-      setElementDerivative( istart + nx, getElementDerivative(ustart+nx) / weight - pref*getElementDerivative(vstart+nx) );
-      setElementDerivative( istart + ny, getElementDerivative(ustart+ny) / weight - pref*getElementDerivative(vstart+ny) );
-      setElementDerivative( istart + nz, getElementDerivative(ustart+nz) / weight - pref*getElementDerivative(vstart+nz) );
-  }
-  unsigned vbase=3*getNumberOfAtoms();
-  for(unsigned i=0;i<9;++i){ 
-      setElementDerivative( istart + vbase + i, getElementDerivative(ustart+vbase+i) / weight - pref*getElementDerivative(vstart+vbase+i) );
+  if( !doNotCalculateDerivatives() ){
+      for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
+          unsigned n=3*atoms_with_derivatives[i], nx=n, ny=n+1, nz=n+2;
+          setElementDerivative( istart + nx, getElementDerivative(ustart+nx) / weight - pref*getElementDerivative(vstart+nx) );
+          setElementDerivative( istart + ny, getElementDerivative(ustart+ny) / weight - pref*getElementDerivative(vstart+ny) );
+          setElementDerivative( istart + nz, getElementDerivative(ustart+nz) / weight - pref*getElementDerivative(vstart+nz) );
+      }
+      unsigned vbase=3*getNumberOfAtoms();
+      for(unsigned i=0;i<9;++i){ 
+          setElementDerivative( istart + vbase + i, getElementDerivative(ustart+vbase+i) / weight - pref*getElementDerivative(vstart+vbase+i) );
+      }
   }
   thisval_wasset[iout]=false; setElementValue( iout, getElementValue(uder) / weight );
 }
@@ -330,14 +340,14 @@ void MultiColvarBase::clearDerivativesAfterTask( const unsigned& ider ){
   unsigned vstart=getNumberOfDerivatives()*ider;
   thisval_wasset[ider]=false; setElementValue( ider, 0.0 );
   thisval_wasset[ider]=false;
-  if( ider>1 && ider<5 ){
+  if( ider>1 && ider<5 && derivativesAreRequired() ){
      for(unsigned i=0;i<atomsWithCatomDer.getNumberActive();++i){
         unsigned iatom=vstart+3*atomsWithCatomDer[i];
         setElementDerivative( iatom, 0.0 ); iatom++;
         setElementDerivative( iatom, 0.0 ); iatom++;
         setElementDerivative( iatom, 0.0 );
      }  
-  } else {
+  } else if( derivativesAreRequired() ) {
      for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
         unsigned iatom=vstart+3*atoms_with_derivatives[i];
         setElementDerivative( iatom, 0.0 ); iatom++;

@@ -38,6 +38,8 @@ StoreDataVessel(da)
 
 void StoreColvarVessel::chainRuleForComponent( const unsigned& icolv, const unsigned& jout, const unsigned& base_cv_no, 
                                                const double& weight, MultiColvarFunction* funcout ){
+  plumed_dbg_assert( getAction()->derivativesAreRequired() );  
+
   if( usingLowMem() ){
      unsigned ibuf = icolv*getAction()->getNumberOfDerivatives();
      for(unsigned ider=0;ider<getNumberOfDerivatives(icolv);++ider){

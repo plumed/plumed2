@@ -53,6 +53,8 @@ private:
   bool serial;
 /// Lower memory requirements
   bool lowmem;
+/// Are we skipping the calculation of the derivatives
+  bool noderiv;
 /// The maximum number of derivatives we can use before we need to invoke lowmem
   unsigned maxderivatives;
 /// The tolerance on the accumulators 
@@ -93,12 +95,14 @@ protected:
 /// Set the maximum number of derivatives
   void setMaximumNumberOfDerivatives( const unsigned& );
 /// Add a vessel to the list of vessels
-  void addVessel( const std::string& name, const std::string& input, const int numlab=0, const std::string thislab="" );
+  void addVessel( const std::string& name, const std::string& input, const int numlab=0 );
   void addVessel( Vessel* vv );
 /// Add a bridging vessel to the list of vessels
   BridgeVessel* addBridgingVessel( ActionWithVessel* tome );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void readVesselKeywords();
+/// Turn on the derivatives in the vessel
+  void needsDerivatives();
 /// Return the value of the tolerance
   double getTolerance() const ;
 /// Return the value for the neighbor list tolerance
@@ -155,6 +159,8 @@ public:
   void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , Vessel* );
   virtual void mergeDerivatives( const unsigned& ider, const double& df );
   virtual void clearDerivativesAfterTask( const unsigned& );
+/// Are derivatives required for this quantity
+  bool derivativesAreRequired() const ;
 /// Finish running all the calculations
   virtual void finishComputations();
 /// Are the base quantities periodic
@@ -177,8 +183,6 @@ public:
 //  unsigned getIndexForTask( const unsigned& itask ) const ;
 /// Calculate one of the functions in the distribution
   virtual void performTask()=0;
-/// Return a pointer to the field 
-  Vessel* getVessel( const std::string& name );
 /// Set the derivative of the jth element wrt to a numbered element
   void setElementDerivative( const unsigned&, const double& );
 ///  Add some derivative of the quantity in the sum wrt to a numbered element
@@ -321,6 +325,11 @@ unsigned ActionWithVessel::getCurrentTask() const {
 inline
 unsigned ActionWithVessel::getCurrentPositionInTaskList() const {
   return task_index; 
+}
+
+inline
+bool ActionWithVessel::derivativesAreRequired() const {
+  return !noderiv;
 }
 
 } 
