@@ -167,7 +167,9 @@ void ActionWithVessel::resizeFunctions(){
 
 void ActionWithVessel::needsDerivatives(){
   // Turn on the derivatives and resize
-  noderiv=false; resizeFunctions();
+  noderiv=false; resizeFunctions(); 
+  // Setting contributors unlocked here ensures that link cells are ignored
+  contributorsAreUnlocked=true; finishTaskListUpdate(); contributorsAreUnlocked=false;
   // And turn on the derivatives in all actions on which we are dependent
   for(unsigned i=0;i<getDependencies().size();++i){
       ActionWithVessel* vv=dynamic_cast<ActionWithVessel*>( getDependencies()[i] );
@@ -197,8 +199,8 @@ void ActionWithVessel::lockContributors(){
           nactive_tasks++; 
       } 
   }
-  finishTaskListUpdate();
   contributorsAreUnlocked=false;
+  finishTaskListUpdate();
   resizeFunctions();
 }
 

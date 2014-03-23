@@ -109,6 +109,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  coordination of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
+  // Set the link cell cutoff
+  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
 
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
@@ -129,8 +131,6 @@ double CoordinationNumbers::compute(){
          addAtomsDerivatives( 0, (-dfunc)*distance );
          addAtomsDerivatives( i,  (dfunc)*distance );
          addBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
-      } else {
-         removeAtomRequest( i, sw );   
       }
    }
 

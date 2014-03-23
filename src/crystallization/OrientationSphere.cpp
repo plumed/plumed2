@@ -66,6 +66,8 @@ MultiColvarFunction(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  degree of overlap in orientation between central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
+  // Set the link cell cutoff
+  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
 
   // Finish the setup of the object
   buildSymmetryFunctionLists();
@@ -113,8 +115,6 @@ double OrientationSphere::compute(){
          addCentralAtomsDerivatives( i, 1, (dfunc)*distance );
          addBoxDerivativesOfWeight( (-dfunc)*Tensor(distance,distance) );
          denom += sw;
-      } else {
-         removeAtomRequest( i, sw );   
       }
    }
    

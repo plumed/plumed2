@@ -80,8 +80,8 @@ public:
   void atomHasDerivative( const unsigned& iatom );
 /// Used to get atom numbers
   unsigned getBaseQuantityIndex( const unsigned& code );
-/// Are two indexes the same
-  bool same_index( const unsigned& code1, const unsigned& code2 );
+/// Is a task currently being peformed
+  bool isCurrentlyActive( const unsigned& code );
 /// Finish task list update
   void finishTaskListUpdate();
 /// Resize the dynamic arrays 
@@ -98,6 +98,8 @@ public:
   virtual Vector getCentralAtom()=0;
 /// Add derivatives from storage vessels in MultiColvarBase
   void addStoredDerivative( const unsigned&, const unsigned&, const unsigned&, const double& );
+/// This is used in MultiColvarBase only - it is used to setup the link cells
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom );
 };
 
 inline
@@ -106,8 +108,8 @@ unsigned MultiColvarFunction::getBaseQuantityIndex( const unsigned& code ){
 }
 
 inline
-bool MultiColvarFunction::same_index( const unsigned& code1, const unsigned& code2 ){
-  return ( code1==code2 );
+bool MultiColvarFunction::isCurrentlyActive( const unsigned& code ){
+  return true; // Tasks are all active because of store data vessel
 }
 
 inline
@@ -137,6 +139,12 @@ unsigned MultiColvarFunction::convertToLocalIndex( const unsigned& index, const 
 inline
 unsigned MultiColvarFunction::getBaseColvarNumber( const unsigned& iatom ) const {
   return colvar_label[ current_atoms[iatom] ];
+}
+
+inline
+Vector MultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ){
+  plumed_dbg_assert( iatom<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ iatom ];
+  return mybasemulticolvars[mmc]->getCentralAtomPosition( convertToLocalIndex(iatom,mmc) );
 }
 
 inline
@@ -178,7 +186,7 @@ void MultiColvarFunction::getValueForBaseTask( const unsigned& iatom, std::vecto
 
 inline
 void MultiColvarFunction::getVectorForBaseTask( const unsigned& iatom, std::vector<double>& vec ){
-  plumed_dbg_assert( vec.size()==mybasemulticolvars[0]->getNumberOfQuantites()-5 && tvals.size()>1 );
+  plumed_dbg_assert( vec.size()==mybasemulticolvars[0]->getNumberOfQuantities()-5 && tvals.size()>1 );
   getValueForBaseTask( iatom, tvals ); for(unsigned i=0;i<vec.size();++i) vec[i]=tvals[i+1];
 }
 

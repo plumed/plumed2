@@ -142,7 +142,7 @@ double VectorMultiColvar::getComponent( const unsigned& icomp ) const {
 inline
 void VectorMultiColvar::addAtomsDerivative( const unsigned& icomp, const unsigned& jatom, const Vector& der ){
   plumed_dbg_assert( icomp<ncomponents && jatom<getNAtoms() );
-  MultiColvarBase::addAtomsDerivatives( 5 + icomp, getAtomIndex(jatom), der );
+  MultiColvarBase::addAtomsDerivatives( 5 + icomp, current_atoms[jatom], der );
 }
 
 inline
@@ -172,7 +172,7 @@ double VectorMultiColvar::getImaginaryComponent( const unsigned& icomp ) const {
 inline
 void VectorMultiColvar::addImaginaryAtomsDerivative( const unsigned& icomp, const unsigned& jatom, const Vector& der){
   plumed_dbg_assert( icomp<ncomponents && complexvec && jatom<getNAtoms() );
-  MultiColvarBase::addAtomsDerivatives( 5 + ncomponents + icomp, getAtomIndex(jatom), der );
+  MultiColvarBase::addAtomsDerivatives( 5 + ncomponents + icomp, current_atoms[jatom], der );
 }
 
 inline

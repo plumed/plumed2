@@ -64,19 +64,12 @@ protected:
   void addAtomsDerivativeOfWeight( const unsigned& i, const Vector& wder );
 /// Add derivatives to the central atom position
   void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
-/// Get the index of an atom
-   unsigned getAtomIndex( const unsigned& iatom ) const ;
 public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){}
   static void registerKeywords( Keywords& keys );
-/// Resize all the dynamic arrays (used at neighbor list update time and during setup)
-//  virtual void resizeDynamicArrays();
 /// Get the position of atom iatom
   const Vector & getPosition(unsigned) const;
-/// This is used in VectorMultiColvar.  In there we use a MultiColvar as if it is 
-/// a MultiColvarFunction so we can calculate functions of vectors that output functions
-  virtual void calculationsRequiredBeforeNumericalDerivatives(){}
 /// Finish the update of the task list
   void finishTaskListUpdate();
 /// Calculate the multicolvar
@@ -95,8 +88,10 @@ public:
   AtomNumber getAbsoluteIndex(unsigned) const ;
 /// Get base quantity index
   unsigned getBaseQuantityIndex( const unsigned& code );
-/// Return true if two indexes are the same
-  bool same_index( const unsigned&, const unsigned& );
+/// Is this atom currently being copied 
+  bool isCurrentlyActive( const unsigned& );
+/// This is used in MultiColvarBase only - it is used to setup the link cells
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom );
 };
 
 inline
@@ -105,50 +100,48 @@ unsigned MultiColvar::getBaseQuantityIndex( const unsigned& code ){
 }
 
 inline
-bool MultiColvar::same_index( const unsigned& code1, const unsigned& code2 ){
-  return ( all_atoms(code1)==all_atoms(code2) );
+bool MultiColvar::isCurrentlyActive( const unsigned& code ){
+  return all_atoms.isActive(code);
 }
 
 inline
-unsigned MultiColvar::getAtomIndex( const unsigned& iatom ) const {
-  plumed_dbg_assert( iatom<natomsper );
-  return current_atoms[iatom];
-//  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
+Vector MultiColvar::getPositionOfAtomForLinkCells( const unsigned& iatom ){
+  return ActionAtomistic::getPosition( iatom );
 }
 
 inline
 const Vector & MultiColvar::getPosition( unsigned iatom ) const {
-  return ActionAtomistic::getPosition( getAtomIndex(iatom) );
+  return ActionAtomistic::getPosition( current_atoms[iatom] );
 }
 
 inline
 double MultiColvar::getMass(unsigned iatom ) const {
-  return ActionAtomistic::getMass( getAtomIndex(iatom) );
+  return ActionAtomistic::getMass( current_atoms[iatom] );
 }
 
 inline
 double MultiColvar::getCharge(unsigned iatom ) const {
-  return ActionAtomistic::getCharge( getAtomIndex(iatom) );
+  return ActionAtomistic::getCharge( current_atoms[iatom] );
 }
 
 inline
 AtomNumber MultiColvar::getAbsoluteIndex(unsigned iatom) const {
-  return ActionAtomistic::getAbsoluteIndex( getAtomIndex(iatom) );
+  return ActionAtomistic::getAbsoluteIndex( current_atoms[iatom] );
 }
 
 inline
 void MultiColvar::addAtomsDerivatives(const int& iatom, const Vector& der){
-  MultiColvarBase::addAtomsDerivatives( 0, getAtomIndex(iatom), der );
+  MultiColvarBase::addAtomsDerivatives( 0, current_atoms[iatom], der );
 }
 
 inline
 void MultiColvar::addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& wder ){
-  MultiColvarBase::addAtomsDerivatives( 1, getAtomIndex(iatom), wder );
+  MultiColvarBase::addAtomsDerivatives( 1, current_atoms[iatom], wder );
 }
 
 inline
 void MultiColvar::addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der ){
-  MultiColvarBase::addCentralAtomDerivatives( getAtomIndex(iatom), der );
+  MultiColvarBase::addCentralAtomDerivatives( current_atoms[iatom], der );
 }
 
 }

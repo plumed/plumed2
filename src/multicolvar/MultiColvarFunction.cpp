@@ -129,21 +129,27 @@ void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group 
 }
 
 void MultiColvarFunction::finishTaskListUpdate(){
-  updateCSphereArrays();  // Stuff for atom centered symmetry function nlist
-  // Make a list of the tasks required 
-  std::vector< std::vector<bool> > additionalTasks( mybasemulticolvars.size() ); 
-  for(unsigned i=0;i<mybasemulticolvars.size();++i){
-      additionalTasks[i].resize(mybasemulticolvars[i]->getFullNumberOfTasks(), false );
-  }
+  std::vector< std::vector<bool> > additionalTasks( mybasemulticolvars.size() );
+  if( !contributorsAreUnlocked ){
+      // Make a list of the tasks required 
+      for(unsigned i=0;i<mybasemulticolvars.size();++i){
+          additionalTasks[i].resize(mybasemulticolvars[i]->getFullNumberOfTasks(), false );
+      }
 
-  // Find what we are required to calculate from base multcolvar
-  for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
-      bool check=setupCurrentAtomList( getActiveTask(i) );
-      plumed_assert( check );
-      for(unsigned j=0;j<natomsper;++j){
-         unsigned mmc = colvar_label[current_atoms[j]];
-         unsigned tl = convertToLocalIndex( current_atoms[j], mmc );
-         additionalTasks[mmc][tl] = true;
+      // Find what we are required to calculate from base multcolvar
+      for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
+          bool check=setupCurrentAtomList( getActiveTask(i) );
+          plumed_assert( check );
+          for(unsigned j=0;j<natomsper;++j){
+             unsigned mmc = colvar_label[current_atoms[j]];
+             unsigned tl = convertToLocalIndex( current_atoms[j], mmc );
+             additionalTasks[mmc][tl] = true;
+          }
+      }
+  } else {
+      // Make a list of the tasks required 
+      for(unsigned i=0;i<mybasemulticolvars.size();++i){
+          additionalTasks[i].resize(mybasemulticolvars[i]->getFullNumberOfTasks(), true );
       }
   }
 
@@ -182,7 +188,7 @@ void MultiColvarFunction::calculate(){
      unsigned maxb=mybasemulticolvars.size() - 1;
      changeBox( mybasemulticolvars[maxb]->getBox() );
   }
-  runAllTasks();
+  setupLinkCells(); runAllTasks();
 }
 
 void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){

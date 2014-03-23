@@ -55,6 +55,8 @@ VectorMultiColvar(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  Steinhardt parameter of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
+  // Set the link cell cutoff
+  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
 }
 
 void Steinhardt::setAngularMomentum( const unsigned& ang ){
@@ -76,8 +78,8 @@ void Steinhardt::calculateVector(){
          double dlen3 = dlen*dlen*dlen;
 
          // Store derivatives of weight
-         MultiColvarBase::addAtomsDerivatives( 0, getAtomIndex(0), (-dfunc)*distance );
-         MultiColvarBase::addAtomsDerivatives( 0, getAtomIndex(i), (+dfunc)*distance );
+         MultiColvarBase::addAtomsDerivatives( 0, current_atoms[0], (-dfunc)*distance );
+         MultiColvarBase::addAtomsDerivatives( 0, current_atoms[i], (+dfunc)*distance );
          MultiColvarBase::addBoxDerivatives( 0, (-dfunc)*Tensor( distance,distance ) ); 
 
          // Do stuff for m=0
@@ -147,8 +149,6 @@ void Steinhardt::calculateVector(){
              addImaginaryAtomsDerivative( tmom-m, i, -pref*myimagvec );
              addImaginaryBoxDerivatives( tmom-m, pref*Tensor( myimagvec,distance ) );
          }
-     } else {
-         removeAtomRequest( i, sw );
      }
   } 
 

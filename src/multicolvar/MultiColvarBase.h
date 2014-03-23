@@ -25,6 +25,7 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithValue.h"
 #include "tools/DynamicList.h"
+#include "tools/LinkCells.h"
 #include "vesselbase/ActionWithVessel.h"
 #include "StoreColvarVessel.h"
 #include "StoreCentralAtomsVessel.h"
@@ -56,16 +57,12 @@ private:
   DynamicList<unsigned> atomsWithCatomDer;
 /// The forces we are going to apply to things
   std::vector<double> forcesToApply;
-/// Neighbor lists for coordination numbers
-  unsigned csphere_start;
-  std::vector<unsigned> csphere_flags;
-  std::vector<DynamicList<unsigned> > csphere_atoms;
+/// Stuff for link cells - this is used to make coordination number like variables faster
+  LinkCells linkcells;
 /// A copy of the vessel containing the catoms
   StoreCentralAtomsVessel* mycatoms;
 /// A copy of the vessel containg the values of each colvar
   StoreColvarVessel* myvalues;
-/// This does neighbor list update for atom centered symmetry functions
-  void updateCSphereArrays();
 /// This resizes the local arrays after neighbor list updates and during initialization
   void resizeLocalArrays();
 protected:
@@ -85,6 +82,10 @@ protected:
   std::vector<unsigned> current_atoms;
 /// Finish setting up the multicolvar base
   void setupMultiColvarBase();
+/// Set the value of the cutoff for the link cells
+  void setLinkCellCutoff( const double& lcut );
+/// Setup link cells in order to make this calculation faster
+  void setupLinkCells();
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
 /// Do we use pbc to calculate this quantity
@@ -103,8 +104,6 @@ protected:
   void addBoxDerivativesOfWeight( const Tensor& vir );
 /// Get the number of atoms in this particular colvar
   unsigned getNAtoms() const;
-/// Update the list of atoms after the neighbor list step
-  void removeAtomRequest( const unsigned& aa, const double& weight );
 /// Add derivative of central atom position wrt to position of iatom'th atom
   void addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der );
 /// Get the indices for the central atom
@@ -118,15 +117,16 @@ public:
 /// Used in setupCurrentAtomList to get atom numbers 
 /// Base quantities are different in MultiColvar and MultiColvarFunction
   virtual unsigned getBaseQuantityIndex( const unsigned& code )=0;
-/// Are two indexes corresponding to the same thing
-  virtual bool same_index( const unsigned&, const unsigned& )=0;
+/// Checks if an task is being performed at the present time
+  virtual bool isCurrentlyActive( const unsigned& code )=0;
 /// Turn on the derivatives 
   void turnOnDerivatives();
 /// Prepare for the calculation
   void prepare();
-//  virtual void resizeDynamicArrays()=0;
 /// Perform one of the tasks
   void performTask();
+/// This gets the position of an atom for the link cell setup
+  virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom )=0;
 /// And a virtual function which actually computes the colvar
   virtual double doCalculation();  
 /// Update the atoms that have derivatives
@@ -186,14 +186,6 @@ public:
 inline
 unsigned MultiColvarBase::getNumberOfDerivatives(){
   return 3*getNumberOfAtoms()+9;
-}
-
-inline
-void MultiColvarBase::removeAtomRequest( const unsigned& i, const double& weight ){
-  plumed_dbg_assert( usespecies );
-  if( !contributorsAreUnlocked ) return;
-  plumed_dbg_assert( weight<getTolerance() );
-  if( weight<getNLTolerance() ) csphere_flags[ csphere_start + i ] = 1;
 }
 
 inline

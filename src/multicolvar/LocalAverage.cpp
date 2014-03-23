@@ -134,7 +134,7 @@ MultiColvarFunction(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  averaging over central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
-  buildSymmetryFunctionLists();
+  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) ); buildSymmetryFunctionLists();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i) getBaseMultiColvar(i)->doNotCalculateDirector();
 
   // One component for regular multicolvar and nelements for vectormulticolvar
@@ -172,8 +172,6 @@ double LocalAverage::compute(){
          addCentralAtomsDerivatives( 0, 1, (-dfunc)*distance );
          addCentralAtomsDerivatives( i, 1, (+dfunc)*distance );
          MultiColvarBase::addBoxDerivatives( 1, (-dfunc)*vir );
-     } else {
-         removeAtomRequest( i, sw );
      }
   }
 

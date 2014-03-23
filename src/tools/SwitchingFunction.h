@@ -88,6 +88,8 @@ public:
 /// The advantage is that in some case the expensive square root can be avoided
 /// (namely for rational functions, if nn and mm are even and d0 is zero)
   double calculateSqr(double distance2,double&dfunc)const;
+/// Calculate the x value for a given y value
+  double inverse( const double& val ) const ;
 /// Returns d0
   double get_d0() const;
 /// Returns r0

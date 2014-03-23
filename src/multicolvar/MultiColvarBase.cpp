@@ -57,6 +57,7 @@ ActionWithValue(ao),
 ActionWithVessel(ao),
 usepbc(false),
 updateFreq(0),
+linkcells(comm),
 mycatoms(NULL),        // This will be destroyed by ActionWithVesel
 myvalues(NULL),        // This will be destroyed by ActionWithVesel 
 usespecies(false)
@@ -92,21 +93,13 @@ void MultiColvarBase::setupMultiColvarBase(){
   if( !usespecies && ablocks.size()<4 ){
      decoder.resize( ablocks.size() ); unsigned code=1;
      for(unsigned i=0;i<ablocks.size();++i){ decoder[ablocks.size()-1-i]=code; code *= nblock; } 
-  } else if( ablocks.size()==1 ) {
-     // Setup coordination sphere
-     csphere_atoms.resize( getFullNumberOfTasks() ); unsigned nflags=0;
-     for(unsigned i=0;i<getFullNumberOfTasks();++i){
-        for(unsigned j=0;j<ablocks[0].size();++j){
-           if( !same_index( getActiveTask(i), ablocks[0][j] ) ){
-               csphere_atoms[i].addIndexToList( ablocks[0][j] ); nflags++;
-           }
-        }
-        csphere_atoms[i].activateAll();
-     } 
-     csphere_flags.resize( nflags, 0 );
   } 
-  // Do an initial task list update
+
+  // Activate all atoms
+  contributorsAreUnlocked=true;
   finishTaskListUpdate();
+  contributorsAreUnlocked=false;
+
   // Setup underlying ActionWithVessel
   readVesselKeywords();
 }
@@ -123,24 +116,35 @@ void MultiColvarBase::prepare(){
   }
 }
 
-void MultiColvarBase::updateCSphereArrays(){
-  if( !usespecies || isDensity() ) return ;
+void MultiColvarBase::setLinkCellCutoff( const double& lcut ){
+  linkcells.setCutoff( lcut );
+}
 
-  if( contributorsAreUnlocked ){
-     if( !serialCalculation() ) comm.Sum( csphere_flags );
-     unsigned istart=0;
-     for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
-         csphere_atoms[i].deactivateAll();
-         for(unsigned j=0;j<csphere_atoms[i].fullSize();++j){
-             if( csphere_flags[istart+j]==0 ) csphere_atoms[i].activate(j);
-         }
-         csphere_atoms[i].updateActiveMembers();
-         istart += csphere_atoms[i].fullSize();
+void MultiColvarBase::setupLinkCells(){
+  if( !usespecies || isDensity() ) return ;
+  // Cutoff must have been set and ablocks size must be one
+  plumed_assert( ablocks.size()==1 );
+
+  // Count number of currently active atoms
+  unsigned nactive_atoms=0;
+  for(unsigned i=0;i<ablocks[0].size();++i){
+      if( isCurrentlyActive( ablocks[0][i] ) ) nactive_atoms++;
+  }
+
+  std::vector<Vector> ltmp_pos( nactive_atoms );
+  std::vector<unsigned> ltmp_ind( nactive_atoms );
+
+  nactive_atoms=0;
+  for(unsigned i=0;i<ablocks[0].size();++i){
+     if( isCurrentlyActive( ablocks[0][i] ) ){
+        ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( getBaseQuantityIndex( ablocks[0][i] ) );
+        ltmp_ind[nactive_atoms]=getBaseQuantityIndex( ablocks[0][i] );
+        nactive_atoms++;
      }
-     plumed_assert( istart==csphere_flags.size() );
-  } else {
-     for(unsigned i=0;i<csphere_flags.size();++i) csphere_flags[i]=0;
-  } 
+  }
+
+  // Build the lists for the link cells
+  linkcells.buildCellLists( ltmp_pos, ltmp_ind, getPbc() );
 }
 
 void MultiColvarBase::resizeLocalArrays(){
@@ -159,17 +163,10 @@ void MultiColvarBase::resizeLocalArrays(){
 bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode ){
   if( usespecies ){
      natomsper=1;
+     if( isDensity() ) return true;
      current_atoms[0]=getBaseQuantityIndex( taskCode );
-     if( contributorsAreUnlocked ){
-        csphere_start=0; for(unsigned i=0;i<taskCode;++i) csphere_start+=csphere_atoms[i].fullSize();
-     }
-     for(unsigned j=0;j<ablocks.size();++j){
-        for(unsigned i=0;i<csphere_atoms[taskCode].getNumberActive();++i){
-           current_atoms[natomsper]=getBaseQuantityIndex( csphere_atoms[taskCode][i] );
-           natomsper++; 
-        }
-     }
-     if( natomsper==1 ) return isDensity();
+     linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells(current_atoms[0]), natomsper, current_atoms );
+     return natomsper>1;
   } else if( current_atoms.size()<4 ){
      natomsper=current_atoms.size();
      unsigned scode = taskCode;
