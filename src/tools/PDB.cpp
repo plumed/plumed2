@@ -28,6 +28,14 @@ using namespace std;
 
 namespace PLMD{
 
+unsigned PDB::getNumberOfAtomBlocks()const{
+  return block_ends.size();
+}
+
+const std::vector<unsigned> & PDB::getAtomBlockEnds()const{
+  return block_ends;
+}
+
 const std::vector<Vector> & PDB::getPositions()const{
   return positions;
 }
@@ -95,9 +103,9 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
     string occ=line.substr(54,6);
     string bet=line.substr(60,6);
     Tools::trim(record);
-    if(record=="TER"){file_is_alive=true; break;}
-    if(record=="END"){file_is_alive=true;  break;}
-    if(record=="ENDMDL"){file_is_alive=true;  break;}
+    if(record=="TER"){ block_ends.push_back( positions.size() ); }
+    if(record=="END"){ file_is_alive=true;  break;}
+    if(record=="ENDMDL"){ file_is_alive=true;  break;}
     if(record=="REMARK"){
          vector<string> v1;  v1=Tools::getWords(line.substr(6));  
          remark.insert(remark.begin(),v1.begin(),v1.end()); 
@@ -128,6 +136,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
       residuenames.push_back(residuename);
     }
   }
+  block_ends.push_back( positions.size() );
   return file_is_alive;
 }
 
