@@ -48,7 +48,7 @@ public:
 
 using namespace std;
 
-//+PLUMEDOC COLVAR RMSD
+//+PLUMEDOC DCOLVAR RMSD
 /*
 Calculate the RMSD with respect to a reference structure.  
 

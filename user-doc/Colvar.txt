@@ -99,9 +99,30 @@ using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be acchieved usi
 
 \section cvavail CV Documentation
 
-The following list contains all the colvars that are currently implemented in PLUMED 2.
+The following list contains descriptions of a number of the colvars that are currently implemented in PLUMED 2.
 
 @COLVAR@
+
+\section dists Distances from reference configurations
+
+One colvar that has been shown to be very sucessful in studying protein folding is the distance between the instantaneous configuration
+and a reference configuration - often the structure of the folded state.  When the free energy of a protein is shown as a function
+of this collective variable there is a minima for low values of the CV, which is due to the folded state of the protein.  There is 
+then a second minima at higher values of the CV, which is the minima corresponding to the unfolded state.
+
+A slight problem with this sort of collective variable is that there are many different ways of calculating the distance from a 
+particular reference structure.  The simplest - adding together the distances by which each of the atoms has been translated in
+going from the reference configuration to the instantanous configuration - is not particularly sensible.  A distance calculated
+in this way does not neglect translation of the center of mass of the molecule and rotation of the frame of reference.  A common practise
+is thus to remove these components by calculating the \ref RMSD distance between the reference and instantaneous configurations.
+This is not the only way to calculate the distance, however.  One could also calculate the total ammount by which a large number 
+of collective variables change in moving from the reference to the instaneous configurations.  One could even combine RMSD distances
+with the ammount the collective variables change.  A full list of the ways distances can be measured in PLUMED is given below:
+
+@DCOLVAR@
+
+These options for calculating distances are re-used in a number of places in the code.  For instance they are used in some of the 
+analysis algorithms that are implemented in PLUMED and in \ref PATH collective variables. 
 
 \section mcolv MultiColvar Documentation
 

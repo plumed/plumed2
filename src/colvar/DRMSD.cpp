@@ -31,7 +31,7 @@ using namespace std;
 namespace PLMD{
 namespace colvar{
 
-//+PLUMEDOC COLVAR DRMSD
+//+PLUMEDOC DCOLVAR DRMSD
 /*
 Calculate the distance RMSD with respect to a reference structure. 
 
