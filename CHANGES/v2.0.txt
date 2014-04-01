@@ -110,6 +110,8 @@ For users:
 - Several small fixes in documentation and log file.
 
 For developers:
+- Small fix in tools/Random.cpp that allows Random objects to be
+  declared as static.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
 */
