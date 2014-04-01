@@ -1,0 +1,11 @@
+/**
+\page belfast-5 Belfast tutorial: Steered MD
+
+
+*/
+
+link: @subpage belfast-5
+
+description: How to run a steered MD simulations and how to estimate the free energy
+
+

@@ -1,0 +1,10 @@
+/**
+\page belfast-3 Belfast tutorial: Adaptive variables II
+
+*/
+
+link: @subpage belfast-3
+
+description: Dimensionality reduction and sketch maps
+
+

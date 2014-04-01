@@ -1,0 +1,10 @@
+/**
+\page belfast-7 Belfast tutorial: Replica exchange I
+
+*/
+
+link: @subpage belfast-7
+
+description: Parallel tempering and Metadynamics, Welltempered ensemble
+
+

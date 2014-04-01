@@ -1,0 +1,33 @@
+/**
+\page belfast-4 Belfast tutorial: Umbrella sampling
+
+Once you deﬁne a bunch of collective variables of your interests PLUMED
+has a number of ways in which you may aﬀect their behavior. The fact
+that you can actually inﬂuence their value depends on the fact that
+each of the collective variables implemented in PLUMED has analytical
+derivatives and, by biasing the value of a single CV one turns to aﬀect
+the time evolution of the system itself. The simplest way in which one
+might inﬂuence a CV is by forcing the system to stay close to a chosen
+value during the simulation. This is achieved with umbrella potential
+that plumed provides via the directive \ref RESTRAINT.
+Very often it may happen that one wants that a given CV just stay
+within a given range of values. This is achieved in plumed through the
+directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
+limit the exploration within given ranges.
+Another useful strategy is the \ref MOVINGRESTRAINT directive. It allows to
+perform a series of programmed steered runs and can be helpful in
+performing adaptive umbrella sampling or multievent reaction within
+a single simulation.
+
+(THIS IS A SAMPLE FIGURE)
+
+\image html belfast-4-meta.png
+
+
+*/
+
+link: @subpage belfast-4
+
+description: Umbrella sampling, reweighting, and weighted histogram
+
+

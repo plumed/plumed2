@@ -1,0 +1,10 @@
+/**
+\page belfast-6 Belfast tutorial: Metadynamics
+
+*/
+
+link: @subpage belfast-6
+
+description: How to run a metadynamics simulation
+
+

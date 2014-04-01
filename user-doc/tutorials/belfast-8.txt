@@ -1,0 +1,10 @@
+/**
+\page belfast-8 Belfast tutorial: Replica exchange II and Multiple walkers
+
+*/
+
+link: @subpage belfast-8
+
+description: Bias exchange and multiple walkers
+
+

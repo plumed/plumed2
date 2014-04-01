@@ -1,0 +1,10 @@
+/**
+\page belfast-9 Belfast tutorial: NMR constraints
+
+*/
+
+link: @subpage belfast-9
+
+description: NMR constraints
+
+
