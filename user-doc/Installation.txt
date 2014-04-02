@@ -93,8 +93,8 @@ you need to link BLAS and LAPACK libraries. Here you find some note.
 
 First of all, the DYNAMIC_LIB variable in the configuration file
 should contain the flag necessary to load these libraries
-(typically -llapack -lblas, but full path specification with -L
-should be necessary depending on your system configuration).
+(typically -llapack -lblas, in some case followed by -lgfortran 
+but full path specification with -L should be necessary depending on your system configuration).
 
 Even though you can incur in some problem.
 - If the linker complains and suggest to recompiled lapack with -fPIC, it means that you have static lapack libraries. Either install dynamic lapack libraries

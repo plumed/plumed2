@@ -133,7 +133,7 @@ ofmt("%f")
           parse("RUN",freq );
           log.printf("  running analysis every %u steps\n",freq);
           if( freq%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
-          ndata=std::floor(freq/getStride() );
+          ndata=freq/getStride();
           data.resize( ndata );
           for(unsigned i=0;i<ndata;++i){ data[i].resize( getNumberOfArguments() ); }
           logweights.resize( ndata );

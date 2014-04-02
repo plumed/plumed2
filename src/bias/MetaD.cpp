@@ -86,7 +86,11 @@ V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta
 \right),
 \f]
 
-This method ensures that the bias converges more smoothly.
+This method ensures that the bias converges more smoothly. It should be noted that, in the case of well-tempered metadynamics, in
+the output printed the Gaussian height is re-scaled using the bias factor.
+Also notice that with well-tempered metadynamics the HILLS file does not contain the bias,
+but the negative of the free-energy estimate. This choice has the advantage that
+one can restart a simulation using a different value for the \f$\Delta T\f$. The applied bias will be scaled accordingly.
 
 Note that you can use here also the flexible gaussian approach  \cite Branduardi:2012dl
 in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
@@ -105,10 +109,14 @@ s < sw only from the latter. This approach allows obtaining a history-dependent 
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the 
 boundaries. Note that:
 - It works only for one-dimensional biases;
-- It works with GRID but automatically turn off the SPLINES so set a higher number of BINS;
+- It works both with and without GRID;
 - The interval limit sw in a region where the free energy derivative is not large;
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
   be used together with a soft wall at sw
+
+As a final note, since version 2.0.2 when the system is outside of the selected interval the force
+is set to zero and the bias value to the value at the corresponding boundary. This allows acceptances
+for replica exchange methods to be computed correctly.
 
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
@@ -282,7 +290,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not fell the bias (when used together with grid SPLINES are automatically deactivated)");
+  keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
@@ -681,7 +689,7 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
 // in this case, we updated the entire grid to avoid problems
 // it could be optimized reverting to the normal case whenever a hill
-// is far enouch from the boundaries
+// is far enough from the boundaries
  if(doInt_){
    return BiasGrid_->getNbin();
  }

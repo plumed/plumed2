@@ -111,10 +111,6 @@ CLTool(co)
 template<typename real>
 string Driver<real>::description()const{ return "analyze trajectories with plumed"; }
 
-template<>
-string Driver<float>::description()const{ return "analyze trajectories with plumed (single precision version)"; }
-
-
 template<typename real>
 int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
@@ -571,14 +567,6 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   
   return 0;
 }
-
-typedef Driver<double> DriverDouble;
-typedef Driver<float> DriverFloat;
-PLUMED_REGISTER_CLTOOL(DriverDouble,"driver")
-PLUMED_REGISTER_CLTOOL(DriverFloat,"driver-float")
-
-
-
 
 }
 }

@@ -36,7 +36,12 @@ const std::string Random::noname="noname";
 Random::Random(const std::string & name):
   switchGaussian(false),
   saveGaussian(0.0),
-  name(name)
+// this is required because if a Random object is created during
+// initialization than Random::noname could still be initialized.
+// In practice: without this it is not possible to declare
+// a static Random object without enforcing the order of the
+// static constructors.
+  name(&name!=&noname?name:"noname")
 {
 	iy=0;
 	iv[0]=0;

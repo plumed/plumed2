@@ -52,6 +52,7 @@ MATHEVAL ...
   ARG=d1.x,d1.y,d1.z,d2.x,d2.y,d2.z
   VAR=ax,ay,az,bx,by,bz
   FUNC=acos((ax*bx+ay*by+az*bz)/sqrt((ax*ax+ay*ay+az*az)*(bx*bx+by*by+bz*bz))
+  PERIODIC=NO
 ... MATHEVAL
 PRINT ARG=theta
 \endverbatim
