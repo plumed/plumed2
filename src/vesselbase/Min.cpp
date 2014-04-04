@@ -51,6 +51,8 @@ void Min::reserveKeyword( Keywords& keys ){
                                 "To make this quantity continuous the minimum is calculated using "
                                 "\\f$ \\textrm{min} = \\frac{\\beta}{ \\log \\sum_i \\exp\\left( \\frac{\\beta}{s_i} \\right) } \\f$ "
                                 "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)",true);
+  keys.addOutputComponent("min","MIN","the minimum value. This is calculated using the formula described in the description of the "
+                                      "keyword so as to make it continuous.");
 }
 
 Min::Min( const VesselOptions& da ) :

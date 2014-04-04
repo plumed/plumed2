@@ -59,12 +59,13 @@ void Keywords::KeyType::setStyle( const std::string& type ){
 }
 
 void Keywords::add( const Keywords& newkeys ){
-  newkeys.copyData( keys, reserved_keys, types, allowmultiple, documentation, booldefs, numdefs, atomtags  ); 
+  newkeys.copyData( keys, reserved_keys, types, allowmultiple, documentation, booldefs, numdefs, atomtags, cnames, ckey, cdocs  ); 
 }
 
 void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>& rk, std::map<std::string,KeyType>& tt, std::map<std::string,bool>& am, 
                          std::map<std::string,std::string>& docs, std::map<std::string,bool>& bools, std::map<std::string,std::string>& nums,
-                         std::map<std::string,std::string>& atags ) const {
+                         std::map<std::string,std::string>& atags, std::vector<std::string>& cnam, std::map<std::string,std::string>& ck,
+                         std::map<std::string,std::string>& cd ) const {
   for(unsigned i=0;i<keys.size();++i){
      std::string thiskey=keys[i];
      for(unsigned j=0;j<kk.size();++j) plumed_massert( thiskey!=kk[j], "keyword " + thiskey + " is in twice" );
@@ -95,6 +96,15 @@ void Keywords::copyData( std::vector<std::string>& kk, std::vector<std::string>&
      if( booldefs.count( thiskey ) ) bools.insert( std::pair<std::string,bool>( thiskey,booldefs.find(thiskey)->second) ); 
      if( numdefs.count( thiskey ) ) nums.insert( std::pair<std::string,std::string>( thiskey,numdefs.find(thiskey)->second) );
   }
+  for(unsigned i=0;i<cnames.size();++i){
+     std::string thisnam=cnames[i];
+     for(unsigned j=0;j<cnam.size();++j) plumed_massert( thisnam!=cnam[j], "component " + thisnam + " is in twice" );
+     cnam.push_back( thisnam );
+     plumed_massert( ckey.count( thisnam ), "no keyword data on component " + thisnam + " to copy" );
+     ck.insert( std::pair<std::string,std::string>( thisnam, ckey.find(thisnam)->second) );
+     plumed_massert( cdocs.count( thisnam ), "no documentation on component " + thisnam + " to copy" );
+     cd.insert( std::pair<std::string,std::string>( thisnam, cdocs.find(thisnam)->second) );     
+  }
 }   
 
 void Keywords::reserve( const std::string & t, const std::string & k, const std::string & d, const bool isvessel ){
@@ -115,7 +125,7 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
      types.insert( std::pair<std::string,KeyType>(k,KeyType("optional")) );
   } else {
      if(isvessel){
-        fd = " The final value can be referenced using  <em>label</em>." + lowkey + ".";
+        fd = d + " The final value can be referenced using  <em>label</em>." + lowkey + ".";
      } else {
         fd = d;
      }
@@ -282,6 +292,46 @@ void Keywords::print_template(const std::string& actionname, bool include_option
 }
 
 void Keywords::print_html( const bool isaction ) const {
+
+// This is the part that outputs the details of the components
+  if( cnames.size()>0 ){
+      if( ckey.find(cnames[0])->second=="default" ){
+         std::cout<<"\\par Description of components\n\n";
+         std::cout<<cstring<<"\n\n";
+         std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
+         printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
+         for(unsigned i=0;i<cnames.size();++i){
+            plumed_assert( ckey.find(cnames[i])->second=="default" );
+            printf("<tr>\n");
+            printf("<td width=15%%> <b> %s </b></td>\n",cnames[i].c_str() );
+            printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+            printf("</tr>\n");
+         }
+         std::cout<<"</table>\n\n";
+      } else {
+         unsigned nregs=0;
+         for(unsigned i=0;i<cnames.size();++i){
+            if( exists(ckey.find(cnames[i])->second) ) nregs++;
+         }
+         if( nregs>0 ){
+            std::cout<<"\\par Description of components\n\n";
+            std::cout<<cstring<<"\n\n";
+            std::cout<<" <table align=center frame=void width=60%% cellpadding=5%%> \n";
+            printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
+            for(unsigned i=0;i<cnames.size();++i){
+               if( exists(ckey.find(cnames[i])->second) ){
+                  printf("<tr>\n");
+                  printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
+                    cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
+                  printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+                  printf("</tr>\n");
+               }
+            }
+            std::cout<<"</table>\n\n";
+         }
+      }
+  }
+
   unsigned nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
      if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
@@ -505,6 +555,26 @@ void Keywords::destroyData(){
    keys.clear(); reserved_keys.clear(); types.clear();
    allowmultiple.clear(); documentation.clear(); 
    booldefs.clear(); numdefs.clear(); atomtags.clear();
+   ckey.clear(); cdocs.clear(); ckey.clear();
 }
+
+void Keywords::setComponentsIntroduction( const std::string& instr ){
+  cstring = instr;
+}
+
+void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ){
+  plumed_assert( !outputComponentExists( name, false ) );
+  ckey.insert( std::pair<std::string,std::string>(name,key) );
+  cdocs.insert( std::pair<std::string,std::string>(name,descr) );
+  cnames.push_back(name);
+}
+
+bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
+  if( custom && cstring.find("customizable")!=std::string::npos ) return true;
+  for(unsigned i=0;i<cnames.size();++i){
+      if( name.find(cnames[i])!=std::string::npos ) return true;
+  } 
+  return false;
+} 
 
 }

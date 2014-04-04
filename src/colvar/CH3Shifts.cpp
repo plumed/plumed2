@@ -43,12 +43,13 @@ namespace PLMD{
 
 //+PLUMEDOC COLVAR CH3SHIFTS 
 /*
-This collective variable calculates a scoring function based on the comparison of backcalculated and
-experimental methyl groups chemical shifts for a protein (ALA:HB; ILE:HD,HG2; LEU:HD1,HD2; THR:HG2;
-VAL:HG1,HG2).
+This collective variable calculates a scoring function based on the comparison of calculated and
+experimental methyl chemical shifts. 
 
-CH3Shift \cite Sahakyan:2011bn is employed to back calculate the chemical shifts that are then compared
-with a set of experimental values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
+
+CH3Shift \cite Sahakyan:2011bn is employed to back calculate the chemical shifts of methyl groups
+(ALA:HB; ILE:HD,HG2; LEU:HD1,HD2; THR:HG2; VAL:HG1,HG2) that are then compared with a set of experimental 
+values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
 
 It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
 to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
@@ -67,32 +68,28 @@ make
 
 Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
 
-PLUMED 2 must then be compiled by linking ALMOST: 
+PLUMED 2 must then be compiled with ALMOST enabled: 
 
 \verbatim
-in DYNAMIC_LIBS the following paths should be added: 
-
--L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm \
--L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 \
--L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl \
--L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx
-
-and in CPPFLAGS
-
--I/ALMOST_BASE_PATH/almost/branches/almost-2.1/include \
--I/ALMOST_BASE_PATH/almost/branches/almost-2.1/include/almost \
--I/ALMOST_BASE_PATH/almost/branches/almost-2.1/lib/sqlite-3.6.23.1 -D__PLUMED_HAS_ALMOST
+./configure --enable-almost CPPFLAGS="-I/ALMOST_BASE_PATH/branches/almost-2.1/include -I/ALMOST_BASE_PATH/branches/almost-2.1/include/almost" LDFLAGS="-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm -L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 -L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl -L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx"
 
 with ALMOST_BASE_PATH the full path to the ALMOST folder
 \endverbatim
 
 HOW TO USE IT
 
-To use CH3Shift takes from a text file the experimental chemical shifts:
+CH3Shift reads from a text file the experimental chemical shifts:
 
 \verbatim
 CH3shifts.dat:
-
+1.596 28
+0.956 46
+0.576 3 HG2
+0.536 3 HD1
+0.836 13 HG2
+0.666 13 HD1
+0.716 23 HG2
+0.506 23 HD1
 \endverbatim
 
 A template.pdb file is needed to the generate a topology of the protein within ALMOST. For histidines in protonation 

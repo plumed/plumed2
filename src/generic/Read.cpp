@@ -37,6 +37,15 @@ Read quantities from a colvar file.
 This Action can be used with driver to read in a colvar file that was generated during 
 an MD simulation
 
+\par Description of components
+
+The READ command will read those fields that are labelled with the text string given to the
+VALUE keyword.  It will also read in any fields that are labelleled with the text string 
+given to the VALUE keyword followed by a dot and a further string. If a single Value is read in
+this value can be referenced using the label of the Action.  Alternatively, if multiple quanties
+are read in, they can be referenced elsewhere in the input by using the label for the Action
+followed by a dot and the character string that appeared after the dot in the title of the field.
+
 \par Examples
 
 This input reads in data from a file called input_colvar.data that was generated
@@ -85,6 +94,7 @@ void Read::registerKeywords(Keywords& keys){
   keys.add("compulsory","VALUES","the values to read from the file");
   keys.add("compulsory","FILE","the name of the file from which to read these quantities");
   keys.remove("NUMERICAL_DERIVATIVES");
+  ActionWithValue::useCustomisableComponents(keys);
 }
 
 Read::Read(const ActionOptions&ao):

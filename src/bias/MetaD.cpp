@@ -87,7 +87,11 @@ V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta
 \right),
 \f]
 
-This method ensures that the bias converges more smoothly.
+This method ensures that the bias converges more smoothly. It should be noted that, in the case of well-tempered metadynamics, in
+the output printed the Gaussian height is re-scaled using the bias factor.
+Also notice that with well-tempered metadynamics the HILLS file does not contain the bias,
+but the negative of the free-energy estimate. This choice has the advantage that
+one can restart a simulation using a different value for the \f$\Delta T\f$. The applied bias will be scaled accordingly.
 
 Note that you can use here also the flexible gaussian approach  \cite Branduardi:2012dl
 in which you can adapt the gaussian to the extent of Cartesian space covered by a variable or
@@ -106,10 +110,14 @@ s < sw only from the latter. This approach allows obtaining a history-dependent 
 fluctuates around a stable estimator, equal to the negative of the free energy far enough from the 
 boundaries. Note that:
 - It works only for one-dimensional biases;
-- It works with GRID but automatically turn off the SPLINES so set a higher number of BINS;
+- It works both with and without GRID;
 - The interval limit sw in a region where the free energy derivative is not large;
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
   be used together with a soft wall at sw
+
+As a final note, since version 2.0.2 when the system is outside of the selected interval the force
+is set to zero and the bias value to the value at the corresponding boundary. This allows acceptances
+for replica exchange methods to be computed correctly.
 
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
@@ -268,6 +276,8 @@ PLUMED_REGISTER_ACTION(MetaD,"METAD")
 
 void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
@@ -290,7 +300,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","WALKERS_N", "number of walkers");
   keys.add("optional","WALKERS_DIR", "shared directory with the hills files from all the walkers");
   keys.add("optional","WALKERS_RSTRIDE","stride for reading hills files");
-  keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not fell the bias (when used together with grid SPLINES are automatically deactivated)");
+  keys.add("optional","INTERVAL","monodimensional lower and upper limits, outside the limits the system will not feel the biasing force.");
   keys.add("optional","GRID_RFILE","a grid file from which the bias should be read at the initial step of the simulation");
   keys.add("optional","SIGMA_MAX","the upper bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
@@ -450,7 +460,6 @@ isFirstStep(true)
     if(getNumberOfArguments()!=1) error("INTERVAL limits correction works only for monodimensional metadynamics!");
     if(uppI_<lowI_) error("The Upper limit must be greater than the Lower limit!");
     doInt_=true;
-    spline=false;
   }
 
   acceleration=false;
@@ -722,6 +731,12 @@ void MetaD::addGaussian(const Gaussian& hill)
 
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
+// in this case, we updated the entire grid to avoid problems
+// it could be optimized reverting to the normal case whenever a hill
+// is far enough from the boundaries
+ if(doInt_){
+   return BiasGrid_->getNbin();
+ }
  vector<unsigned> nneigh;
  // traditional or flexible hill? 
  if(hill.multivariate){
@@ -783,10 +798,7 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
   if(der){
    vector<double> vder(getNumberOfArguments());
    bias=BiasGrid_->getValueAndDerivatives(cv,vder);
-
-   if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) { // because interval can be used only with monodimensional metaD
-     for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]=vder[i];}
-   }
+   for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]=vder[i];}
   }else{
    bias=BiasGrid_->getValue(cv);
   }
@@ -795,9 +807,7 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 	  if(der){
 	   vector<double> vder(getNumberOfArguments());
 	   bias+=ExtGrid_->getValueAndDerivatives(cv,vder);
-	   if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) { // because interval can be used only with monodimensional metaD
-	     for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]+=vder[i];}
-	   }
+	   for(unsigned i=0;i<getNumberOfArguments();++i) {der[i]+=vder[i];}
 	  }else{
 	   bias+=ExtGrid_->getValue(cv);
 	  }
@@ -810,6 +820,19 @@ double MetaD::evaluateGaussian
 {
  double dp2=0.0;
  double bias=0.0;
+// I use a pointer here because cv is const (and should be const)
+// but when using doInt it is easier to locally replace cv[0] with
+// the upper/lower limit in case it is out of range
+ const double *pcv=NULL; // pointer to cv
+ double tmpcv[1]; // tmp array with cv (to be used with doInt_)
+ if(cv.size()>0) pcv=&cv[0];
+ if(doInt_){
+   plumed_assert(cv.size()==1);
+   pcv=&(tmpcv[0]);
+   tmpcv[0]=cv[0];
+   if(cv[0]<lowI_) tmpcv[0]=lowI_;
+   if(cv[0]>uppI_) tmpcv[0]=uppI_;
+ }
  if(hill.multivariate){ 
     unsigned k=0;
     unsigned ncv=cv.size(); 
@@ -823,19 +846,18 @@ double MetaD::evaluateGaussian
     }
 
     for(unsigned i=0;i<cv.size();++i){
-	double dp_i=difference(i,hill.center[i],cv[i]);
+	double dp_i=difference(i,hill.center[i],pcv[i]);
         dp_[i]=dp_i;
     	for(unsigned j=i;j<cv.size();++j){
                   if(i==j){ 
               	  	 dp2+=dp_i*dp_i*mymatrix(i,j)*0.5; 
                   }else{ 
-   		 	 double dp_j=difference(j,hill.center[j],cv[j]);
+   		 	 double dp_j=difference(j,hill.center[j],pcv[j]);
               	  	 dp2+=dp_i*dp_j*mymatrix(i,j) ;
                   }
         }
     } 
     if(dp2<DP2CUTOFF){
-     if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) {
        bias=hill.height*exp(-dp2);
        if(der){
         for(unsigned i=0;i<cv.size();++i){
@@ -847,24 +869,24 @@ double MetaD::evaluateGaussian
                         der[i]-=tmp;
                 }   
        }
-     }
     }
  }else{
     for(unsigned i=0;i<cv.size();++i){
-     double dp=difference(i,hill.center[i],cv[i])*hill.invsigma[i];
+     double dp=difference(i,hill.center[i],pcv[i])*hill.invsigma[i];
      dp2+=dp*dp;
      dp_[i]=dp;
     }
     dp2*=0.5;
     if(dp2<DP2CUTOFF){
-     if( ( doInt_ && cv[0] > lowI_ && cv[0] < uppI_) || (!doInt_) ) {
        bias=hill.height*exp(-dp2);
        if(der){
         for(unsigned i=0;i<cv.size();++i){der[i]+=-bias*dp_[i]*hill.invsigma[i];}
        }
-     }
     }
  }
+ if(doInt_){
+   if((cv[0]<lowI_ || cv[0]>uppI_) && der ) for(unsigned i=0;i<cv.size();++i)der[i]=0;
+  }
  return bias;
 }
 

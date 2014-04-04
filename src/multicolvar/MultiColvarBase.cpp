@@ -40,6 +40,14 @@ void MultiColvarBase::registerKeywords( Keywords& keys ){
   keys.use("NL_TOL");
   keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
                                 "that contributed less than TOL at the previous neighbor list update step are ignored.");
+  keys.setComponentsIntroduction("This Action can be used to calculate the following quantities by employing the keywords listed below. "
+                                 "You must select which from amongst these quantities you wish to calculate - this command cannot be run "
+                                 "unless one of the quantities below is being calculated."
+                                 "These quantities can then be referenced elsewhere in the input file by using this Action's label "
+                                 "followed by a dot and the name of the quantity. Some amongst them can be calculated multiple times "
+                                 "with different parameters.  In this case the quantities calculated can be referenced elsewhere in the "
+                                 "input by using the name of the quantity followed by a numerical identifier "
+                                 "e.g. <em>label</em>.less_than-1, <em>label</em>.less_than-2 etc.");
 } 
 
 MultiColvarBase::MultiColvarBase(const ActionOptions&ao):

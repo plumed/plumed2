@@ -26,12 +26,29 @@ using namespace std;
 namespace PLMD{
 
 void ActionWithValue::registerKeywords(Keywords& keys){
+  keys.setComponentsIntroduction("By default the value of the calculated quantity can be referenced elsewhere in the "
+                                 "input file by using the label of the action.  Alternatively this Action can be used "
+                                 "to be used to calculate the following quantities by employing the keywords listed "
+                                 "below.  These quanties can be referenced elsewhere in the input by using this Action's " 
+                                 "label followed by a dot and the name of the quantity required from the list below.");
   keys.addFlag("NUMERICAL_DERIVATIVES", false, "calculate the derivatives for these quantities numerically");
 }
 
 void ActionWithValue::noAnalyticalDerivatives(Keywords& keys){
    keys.remove("NUMERICAL_DERIVATIVES");
    keys.addFlag("NUMERICAL_DERIVATIVES",true,"analytical derivatives are not implemented for this keyword so numerical derivatives are always used");
+}
+
+void ActionWithValue::componentsAreNotOptional(Keywords& keys){
+   keys.setComponentsIntroduction("By default this Action calculates the following quantities. These quanties can "
+                                  "be referenced elsewhere in the input by using this Action's label followed by a "
+                                  "dot and the name of the quantity required from the list below.");
+}
+
+void ActionWithValue::useCustomisableComponents(Keywords& keys){
+   keys.setComponentsIntroduction("The names of the components in this action can be customized by the user in the "
+                                  "actions input file.  However, in addition to these customizable components the "
+                                  "following quantities will always be output"); 
 }
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
@@ -109,6 +126,11 @@ Value* ActionWithValue::getPntrToValue(){
 // -- HERE WE HAVE THE STUFF FOR NAMED VALUES / COMPONENTS -- //
 
 void ActionWithValue::addComponent( const std::string& name ){
+//  plumed_massert( keywords.outputComponentExists(name,true), "a description of component " + name + " has not been added to the manual");
+  if( !keywords.outputComponentExists(name,true) ){
+     warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
+             "registerKeywords as described in the developer docs. In version 2.2 this warning will turn into an error i.e. component registration will be compulsory"); 
+  }
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0;i<values.size();++i){
      plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");
@@ -120,6 +142,11 @@ void ActionWithValue::addComponent( const std::string& name ){
 }
 
 void ActionWithValue::addComponentWithDerivatives( const std::string& name ){
+//  plumed_massert( keywords.outputComponentExists(name,true), "a description of component " + name + " has not been added to the manual");
+  if( !keywords.outputComponentExists(name,true) ){ 
+     warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
+             "registerKeywords as described in the developer doc. In version 2.2 this warning will turn into an error i.e. component registration will be compulsory");
+  }
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0;i<values.size();++i){
      plumed_massert(values[i]->name!=getLabel(),"Cannot mix single values with components");

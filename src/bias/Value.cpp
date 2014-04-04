@@ -91,6 +91,12 @@ PLUMED_REGISTER_ACTION(BiasValue,"BIASVALUE")
 void BiasValue::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
+  componentsAreNotOptional(keys);
+  // Should be _bias below
+  keys.addOutputComponent("_bias","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                                            "these quantities will named with  the arguments of the bias followed by "
+                                            "the character string _bias. These quantities tell the user how much the bias is "
+                                            "due to each of the colvars.");
 }
 
 BiasValue::BiasValue(const ActionOptions&ao):
@@ -101,8 +107,7 @@ PLUMED_BIAS_INIT(ao)
  // addComponent("bias");
   for(unsigned i=0;i<getNumberOfArguments();++i){ 
 	//log<<getPntrToArgument(i)->getName()<<"\n";
-        string ss;
-        ss="bias."+getPntrToArgument(i)->getName();
+        string ss=getPntrToArgument(i)->getName()+"_bias";
 	addComponent(ss); componentIsNotPeriodic(ss);
   }
 }

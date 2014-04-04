@@ -66,21 +66,10 @@ make
 
 Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
 
-PLUMED 2 must then be compiled by linking ALMOST: 
+PLUMED 2 must then be configured with ALMOST enabled: 
 
 \verbatim
-in DYNAMIC_LIBS the following paths should be added: 
-
--L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm \
--L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 \
--L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl \
--L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx
-
-and in CPPFLAGS
-
--I/ALMOST_BASE_PATH/almost/branches/almost-2.1/include \
--I/ALMOST_BASE_PATH/almost/branches/almost-2.1/include/almost \
--I/ALMOST_BASE_PATH/almost/branches/almost-2.1/lib/sqlite-3.6.23.1 -D__PLUMED_HAS_ALMOST
+./configure --enable-almost CPPFLAGS="-I/ALMOST_BASE_PATH/branches/almost-2.1/include -I/ALMOST_BASE_PATH/branches/almost-2.1/include/almost" LDFLAGS="-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm -L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 -L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl -L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx"
 
 with ALMOST_BASE_PATH the full path to the ALMOST folder
 \endverbatim
@@ -370,6 +359,7 @@ void CS2Backbone::calculate()
 
   forces.clear();
   for(int i=0; i<numResidues; i++) for(unsigned j=0; j<6; j++) sh[i][j]=0.;
+  if(getExchangeStep()) cam_list[0].set_box_count(0);
 
   for (int i = 0; i < N; i++) {
      int ipos = 4 * i;

@@ -60,8 +60,8 @@
 
 /* PLUMED */
 #include "../../Plumed.h"
-int    plumedswitch;
-plumed plumedmain;
+extern int    plumedswitch;
+extern plumed plumedmain; extern void(*plumedcmd)(plumed,const char*,const void*);
 /* END PLUMED */
 
 int cmain(int argc, char *argv[])
@@ -753,7 +753,7 @@ int cmain(int argc, char *argv[])
     /* PLUMED */
     plumedswitch=0;
     if (opt2bSet("-plumed",NFILE,fnm)) plumedswitch=1;
-    if(plumedswitch){
+    if(plumedswitch){ plumedcmd=plumed_cmd;
       int plumed_is_there=0;
       int real_precision=sizeof(real);
       real energyUnits=1.0;

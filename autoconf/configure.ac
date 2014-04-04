@@ -73,6 +73,8 @@ PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
+PLUMED_CONFIG_ENABLE([almost],[almost],[search for almost],[no])
+PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[no])
 
 
 # by default use -O flag
@@ -252,6 +254,23 @@ if test $execinfo == true ; then
 fi
 if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
+fi
+if test $almost == true ; then
+  found=ko
+  AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lbz2 -lnbimpl -lshx]))
+  if test $found == ok; then
+    AC_DEFINE([__PLUMED_HAS_ALMOST]) 
+    LIBS="-lsqlite3 -lz -lbz2 -lnbimpl -lshx $LIBS"
+  fi
+fi
+if test $gsl == true ; then
+  found=ko
+  AM_PATH_GSL(1.10, found=ok, [AC_MSG_ERROR(could not find required version of GSL)])
+  if test $found == ok ; then
+    AC_DEFINE([__PLUMED_HAS_GSL])
+    LIBS="$GSL_LIBS $LIBS"
+    CPPFLAGS="$GSL_CFLAGS $CPPFLAGS"
+  fi
 fi
 
 

@@ -70,6 +70,8 @@ void Info::registerKeywords( Keywords& keys ){
   keys.addFlag("--user-doc",false,"print the location of user manual (html)");
   keys.addFlag("--developer-doc",false,"print the location of user manual (html)");
   keys.addFlag("--version",false,"print the version number");
+  keys.addFlag("--long-version",false,"print the version number (long version)");
+  keys.addFlag("--git-version",false,"print the version number (git version, if available)");
 }
 
 Info::Info(const CLToolOptions& co ):
@@ -85,14 +87,17 @@ int Info::main(FILE* in, FILE*out,Communicator& pc){
  bool printuserdoc; parseFlag("--user-doc",printuserdoc);
  bool printdeveloperdoc; parseFlag("--developer-doc",printdeveloperdoc);
  bool printversion; parseFlag("--version",printversion);
+ bool printlongversion; parseFlag("--long-version",printlongversion);
+ bool printgitversion; parseFlag("--git-version",printgitversion);
  if(printroot) fprintf(out,"%s\n",config::getPlumedRoot().c_str());
  if(printconfiguration) fprintf(out,"%s",config::getMakefile().c_str());
  std::string userdoc=config::getPlumedRoot()+"user-doc/html/index.html";
  std::string developerdoc=config::getPlumedRoot()+"developer-doc/html/index.html";
  if(printuserdoc) fprintf(out,"%s\n",userdoc.c_str());
  if(printdeveloperdoc) fprintf(out,"%s\n",developerdoc.c_str());
- std::string versionname="v2.0b1";
- if(printversion) fprintf(out,"%s\n",versionname.c_str());
+ if(printversion) fprintf(out,"%s\n",config::getVersion().c_str());
+ if(printlongversion) fprintf(out,"%s\n",config::getVersionLong().c_str());
+ if(printgitversion) fprintf(out,"%s\n",config::getVersionGit().c_str());
 
  return 0;
 }

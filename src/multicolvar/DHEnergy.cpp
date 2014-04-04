@@ -61,6 +61,8 @@ void DHEnergy::reserveKeyword( Keywords& keys ){
                                      "function of set of distances between the atoms in the two groups. "
                                      "The input for this keyword should read "
                                      "DHENERGY={I=\\f$I\\f$ TEMP=\\f$T\\f$ EPSILON=\\f$\\epsilon\\f$}.");
+  keys.addOutputComponent("dhenergy","DHENERGY","the Debye-Huckel interaction energy. You can calculate "
+                                                "this quantity multiple times using different parameters");
 }
 
 DHEnergy::DHEnergy( const vesselbase::VesselOptions& da ) :

@@ -33,6 +33,12 @@ std::string getPlumedRoot();
 
 std::string getMakefile();
 
+std::string getVersion();
+
+std::string getVersionLong();
+
+std::string getVersionGit();
+
 bool hasMatheval();
 
 bool hasDlopen();
