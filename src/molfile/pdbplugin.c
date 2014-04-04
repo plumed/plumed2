@@ -115,7 +115,7 @@ static void *open_pdb_read(const char *filepath, const char *filetype,
       int len=strlen(pdbstr);
       int newlen = len + pdb->meta->remarklen;
 
-      char *newstr=(char*)realloc(pdb->meta->remarks, newlen + 1);
+      char *newstr=realloc(pdb->meta->remarks, newlen + 1);
       if (newstr != NULL) {
         pdb->meta->remarks = newstr;
         pdb->meta->remarks[pdb->meta->remarklen] = '\0';
