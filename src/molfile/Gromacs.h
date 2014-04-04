@@ -47,7 +47,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  * RCS INFORMATION:
  *      $RCSfile: Gromacs.h,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.32 $       $Date: 2013/05/23 21:35:59 $
+ *      $Revision: 1.31 $       $Date: 2013/04/13 03:34:58 $
  ***************************************************************************/
 
 /*
@@ -1869,11 +1869,6 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 	}
 	buf[0] = buf[1] = buf[2] = 0;
 
-	if ( !sizesmall[0] || !sizesmall[1] || !sizesmall[2] ) {
-		printf("XTC Corrupted (case 1)\n");
-		return -1;
-	}
-
 	xtc_int(mf, &(minint[0]));
 	xtc_int(mf, &(minint[1]));
 	xtc_int(mf, &(minint[2]));
@@ -1964,12 +1959,6 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 					*lfp++ = prevcoord[0] * inv_precision;
 					*lfp++ = prevcoord[1] * inv_precision;
 					*lfp++ = prevcoord[2] * inv_precision;
-
-					if ( !sizesmall[0] || !sizesmall[1] || !sizesmall[2] ) {
-						printf("XTC Corrupted (case 2)\n");
-						return -1;
-					}
-
 				} else {
 					prevcoord[0] = thiscoord[0];
 					prevcoord[1] = thiscoord[1];
