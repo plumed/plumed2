@@ -17,7 +17,7 @@ OBJ=dcdplugin.o gromacsplugin.o pdbplugin.o
 obj: $(OBJ)
 
 # Local rules for molfile plugins - replacement is delayed 
-CPPFLAGS+=-DSTATIC_PLUGIN  -DVMDPLUGIN=molfile_$(patsubst %.o,%,$@) -fPIC
+CPPFLAGS+=-DSTATIC_PLUGIN  -DVMDPLUGIN=molfile_$(patsubst %.o,%,$@)
 
 # -fpermissive works around a missing cast in pdbplugin 
 #          char *newstr=realloc(pdb->meta->remarks, newlen + 1);

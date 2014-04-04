@@ -55,9 +55,9 @@ done
 mycp $PD/molfile_plugin/LICENSE COPYRIGHT
 
 # List of "known-good" plugins. Some renaming is necessary
-mycp_wrap $IFDEF $PD/molfile_plugin/src/dcdplugin.c dcdplugin.c
+mycp_wrap $IFDEF $PD/molfile_plugin/src/dcdplugin.c dcdplugin.cpp
 mycp_wrap $IFDEF $PD/molfile_plugin/src/gromacsplugin.C gromacsplugin.cpp
-mycp_wrap $IFDEF $PD/molfile_plugin/src/pdbplugin.c pdbplugin.c
+mycp_wrap $IFDEF $PD/molfile_plugin/src/pdbplugin.c pdbplugin.cpp
 
 
 # Generate static header
