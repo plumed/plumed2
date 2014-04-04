@@ -94,6 +94,9 @@ For developers:
 - Fixed makefile dependencies in some auxiliary files in src/lib (src/lib/*cmake and src/lib/*inc).
 - Changed way modules are linked in src/.
   E.g. src/colvar/tools/ is not anymore a symlink to src/colvar but a real directory.
+  (Notice that this introduces a regression: when using plumed as an external library
+  some include files could not work - this only applies when plumed is installed;
+  also notice that this is fixed in 2.0.3)
 - Patch for gromacs 4.6 now also include original code so as to simplify its modification.
 - Added option 'plumed patch --save-originals'.
 - Fixed regtest regtest/secondarystructure/rt32 to avoid problems with NUMERICAL_DERIVATIVES.
@@ -110,6 +113,10 @@ For users:
 - Several small fixes in documentation and log file.
 
 For developers:
+- Fixed a regression in 2.0.2 concerning include files from installed plumed
+  (see commit 562d5ea9dfc3).
+- Small fix in tools/Random.cpp that allows Random objects to be
+  declared as static.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
 */
