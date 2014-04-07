@@ -26,7 +26,7 @@ $(SUBDIRSCLEAN): %.clean:
 
 .PHONY: cppcheck
 cppcheck:
-	cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 -q --enable=all */*.{h,cpp}
+	cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 -q --enable=all --force */*.{h,cpp}
 
 .PHONY: mod-light mod-heavy mod-reset
 mod-light:
