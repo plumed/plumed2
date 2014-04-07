@@ -109,6 +109,7 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
 				}
 		};
 		regfree(preg);
+		free(preg);
 		free(pmatch);
 #else
 		plumed_merror("Regexp support not compiled!");
