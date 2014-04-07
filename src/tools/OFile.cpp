@@ -62,7 +62,8 @@ size_t OFile::llwrite(const char*ptr,size_t s){
 OFile::OFile():
   linked(NULL),
   fieldChanged(false),
-  backstring("bck")
+  backstring("bck"),
+  enforceRestart_(false)
 {
   fmtField();
   buflen=1;
@@ -361,8 +362,13 @@ FileBase& OFile::flush(){
 }
 
 bool OFile::checkRestart()const{
-  if(plumed && plumed->getRestart()) return true;
+  if(enforceRestart_ || (plumed && plumed->getRestart() ) ) return true;
   else return false;
+}
+
+OFile& OFile::enforceRestart(){
+  enforceRestart_=true;
+  return *this;
 }
 
 }

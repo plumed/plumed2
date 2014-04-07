@@ -85,8 +85,8 @@ When a OFile object is used in PLUMED it can be convenient to link() it
 to the Action object where it is defined, or to the PlumedMain object.
 This will save in the OFile a pointer to the linked object and will
 allow to have some extra information. E.g., if PLUMED is restarting,
-files will be appended (notice that this is the only way to
-append a OFile - there is no way to enforce it).
+files will be appended. Notice that one can enforce this behavior using
+the enforceRestart() method before opening a file.
 
 To have all files managed consistently, it is important to use OFile in the proper way.
 This should allow multi-replica plumed, restart and backups to work in
@@ -181,6 +181,8 @@ public virtual FileBase{
   unsigned findField(const std::string&name)const;
 /// check if we are restarting
   bool checkRestart()const;
+/// True if restart behavior should be forced
+  bool enforceRestart_;
 public:
 /// Constructor
   OFile();
@@ -249,6 +251,9 @@ this method can be used to clean the field list.
   OFile&rewind();
 /// Flush a file
   virtual FileBase&flush();
+/// Enforce restart, also if the attached plume object is not restarting.
+/// Useful for tests
+  OFile&enforceRestart();
 };
 
 /// Write using << syntax
