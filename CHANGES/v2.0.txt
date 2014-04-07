@@ -117,6 +117,7 @@ For developers:
   (see commit 562d5ea9dfc3).
 - Small fix in tools/Random.cpp that allows Random objects to be
   declared as static.
+- Fixed non-ansi syntax in a few points and a non-important memory leakage.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
 */
