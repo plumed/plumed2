@@ -14,14 +14,16 @@ Very often it may happen that one wants that a given CV just stay
 within a given range of values. This is achieved in plumed through the
 directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
 limit the exploration within given ranges.
-Another useful strategy is the \ref MOVINGRESTRAINT directive. It allows to
-perform a series of programmed steered runs and can be helpful in
-performing adaptive umbrella sampling or multievent reaction within
-a single simulation.
 
 (THIS IS A SAMPLE FIGURE)
 
 \image html belfast-4-meta.png
+
+\section belfast-4-US How to run an umbrella sampling calculation
+
+\section belfast-4-reweighting Reweighting the results
+
+\section belfast-4-wham Combining multiple restraints
 
 
 */

@@ -1,6 +1,19 @@
 /**
 \page belfast-5 Belfast tutorial: Steered MD
 
+Steered molecular dynamics can be performed in PLUMED on any
+collective variable by means of the \ref MOVINGRESTRAINT directive.
+This directive is very flexible and allows for a programmed series
+of steerings and can be used also to sample multiple events
+within a single simulation.
+
+\section belfast-5-SMD Steered MD
+
+\section belfast-5-FE Estimating the free energy - Jarzynski equality
+
+\section belfast-5-FE Reweighting
+
+
 
 */
 
