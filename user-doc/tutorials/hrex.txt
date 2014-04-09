@@ -126,7 +126,9 @@ Suggested checks:
 
 Warnings:
 - Topologies should have the same number of atoms, same masses and same constraint topology
-- Choose neighbor list update that divides replex
+- Acceptance is not computed correctly if rcoulomb!=rvdw.
+- Choose neighbor list update (nstlist) that divides replex. Notice that running with GPUs
+  GROMACS is going to change nstlist automatically, be sure that it still divides replex.
 - Option -hrex requires also option -plumed. If you do not care about plumed, just provide an empty
   plumed.dat file.
 - It should work correctly if replicas have different force-field, temperature, lambda, pressure,
