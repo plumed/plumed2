@@ -205,6 +205,10 @@ public:
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 /// These are overwritten in MultiColvarFunction
   virtual void activateIndexes( const unsigned&, const unsigned&, const std::vector<unsigned>& ){}
+/// Write out the data inside all the vessels to the checkpoint file
+  void dumpCheckPointFile( OFile& cfile );
+/// Read data in from check point files
+  void restartFromCheckPointFile( IFile& cifile );
 /// Return a particular named vessel
   Vessel* getVesselWithName( const std::string& mynam );
 };

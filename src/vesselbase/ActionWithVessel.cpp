@@ -26,6 +26,7 @@
 #include "StoreDataVessel.h"
 #include "VesselRegister.h"
 #include "BridgeVessel.h"
+#include "GridVesselBase.h"
 
 using namespace std;
 namespace PLMD{
@@ -378,6 +379,39 @@ Vessel* ActionWithVessel::getVesselWithName( const std::string& mynam ){
      }  
   }
   return functions[target];
+}
+
+void ActionWithVessel::dumpCheckPointFile( OFile& cfile ){
+  cfile.printf("BEGIN ACTION: TYPE=%s LABEL=%s \n",getName().c_str(),getLabel().c_str() );
+  for(unsigned i=0;i<functions.size();++i){
+     GridVesselBase* gv = dynamic_cast<GridVesselBase*>( functions[i] );
+     if(gv) gv->writeToCheckpoint( cfile );
+  }
+  cfile.printf("END ACTION: TYPE=%s LABEL=%s \n",getName().c_str(),getLabel().c_str() );
+}
+
+void ActionWithVessel::restartFromCheckPointFile( IFile& cifile ){
+  // Check first line
+  std::vector<std::string> words; Tools::getParsedLine(cifile,words);
+  if( words[0]!="BEGIN" && words[1]!="ACTION:" ) error("failed to read in checkpoint file correctly");
+  std::string atype; Tools::parse(words, "TYPE" , atype );
+  if( atype!=getName() ) error("mismatch for action type in checkpoint file");
+  std::string alab; Tools::parse(words, "LABEL", alab );
+  if( alab!=getLabel() ) error("mismatch for action label in checkpoint file");
+
+  for(unsigned i=0;i<functions.size();++i){
+     GridVesselBase* gv = dynamic_cast<GridVesselBase*>( functions[i] );
+     if(gv) gv->readFromCheckpoint( cifile );
+  }
+
+  // Check last line
+  Tools::getParsedLine(cifile,words);
+  if( words[0]!="END" && words[1]!="ACTION:" ) error("bad data in checkpoint file");
+  Tools::parse(words, "TYPE" , atype );
+  if( atype!=getName() ) error("mismatch for action type in finish of checkpoint file");
+  Tools::parse(words, "NAME", alab );
+  if( alab!=getLabel() ) error("mismatch for action name in finish of checkpoint file");
+
 }
 
 }

@@ -95,7 +95,7 @@ myfield(NULL)
   Keywords mykeys; vesselbase::FunctionOnGrid::registerKeywords( mykeys );
   vesselbase::VesselOptions ba( da, mykeys );  
   mybias = new vesselbase::FunctionOnGrid( ba ); 
-  addVessel( mybias );
+  addVessel( mybias ); mybias->storeInCheckpoint();
 
   // And resize the grid
   resizeFunctions();

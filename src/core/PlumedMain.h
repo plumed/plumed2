@@ -23,6 +23,7 @@
 #define __PLUMED_core_PlumedMain_h
 
 #include "WithCmd.h"
+#include "tools/OFile.h"
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -135,6 +136,10 @@ private:
   int* stopFlag;
   bool stopNow;
 
+/// Stuff for checkpoint files
+  OFile cfile;
+  bool firstcheckdone;
+
 public:
 /// Flag to switch off virial calculation (for debug and MD codes with no barostat)
   bool novirial;
@@ -225,6 +230,12 @@ public:
   makes sures they are done
 */
   void runJobsAtEndOfCalculation();
+
+/**
+  Write data on history dependent potentials to the checkpoint file
+*/
+  void writeCheckPointFile(); 
+
 /// Reference to atoms object
   Atoms& getAtoms();
 /// Reference to the list of Action's

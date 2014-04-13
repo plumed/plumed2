@@ -254,6 +254,11 @@ public:
 
 /// Cite a paper see PlumedMain::cite
   std::string cite(const std::string&s);
+
+/// Output restart information to plumed checkpoint file
+  virtual void dumpCheckPointFile( OFile& cfile ){}
+/// Read in the checkpoint file during restart
+  virtual void restartFromCheckPointFile( IFile& cifile ){}
 };
 
 /////////////////////

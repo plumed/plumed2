@@ -283,6 +283,9 @@ void PlumedMain::cmd(const std::string & word,void*val){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
        stopFlag=static_cast<int*>(val);
+  } else if(word=="writeCheckPointFile"){
+       CHECK_INIT(initialized,word);
+       writeCheckPointFile();
   } else if(word=="getExchangesFlag"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
@@ -367,6 +370,18 @@ void PlumedMain::init(){
     readInputFile(plumedDat);
     plumedDat="";
   }
+  // Setup checkpoint file
+  cfile.link(*this); cfile.open("plumed_state.itp"); firstcheckdone=false;
+  // Read in checkpoint file for restart
+  if( getRestart() ){
+      IFile cifile; cifile.link(*this); cifile.open("plumed_state.itp");
+      for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
+          (*p)->restartFromCheckPointFile( cifile );
+      }
+      cifile.close();
+      firstcheckdone=true; // This ensures old restart file is backed up
+  }
+
   atoms.updateUnits();
   log.printf("Timestep: %f\n",atoms.getTimeStep());
   log<<"Relevant bibliography:\n";
@@ -385,8 +400,7 @@ void PlumedMain::readInputFile(std::string str){
   exchangePatterns.setFlag(exchangePatterns.NONE);
   while(Tools::getParsedLine(ifile,words) && words[0]!="ENDPLUMED") readInputWords(words);
   log.printf("END FILE: %s\n",str.c_str());
-  log.flush();	
-
+  log.flush();
   pilots=actionSet.select<ActionPilot*>();
 }
 
@@ -675,6 +689,19 @@ void PlumedMain::runJobsAtEndOfCalculation(){
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
       (*p)->runFinalJobs();
   }
+}
+
+void PlumedMain::writeCheckPointFile(){
+  // Rewind auomatically backs up previous check point files
+  if(firstcheckdone) cfile.rewind();
+
+  // Write everything to checkpoint file
+  for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
+      (*p)->dumpCheckPointFile( cfile ); 
+  }
+  firstcheckdone=true;
+  // Flush the checkpoint file
+  cfile.flush();
 } 
 
 }

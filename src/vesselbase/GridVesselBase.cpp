@@ -271,6 +271,47 @@ void GridVesselBase::writeToFile( OFile& ofile, const std::string& fmt ){
  }
 }
 
+void GridVesselBase::storeInCheckpoint(){
+  checkpoint=true;
+}
+
+void GridVesselBase::writeToCheckpoint( OFile& cfile ){
+  if(!checkpoint) return;
+  cfile.printf("BEGIN VESSEL: TYPE=%s NAME=%s BUFSIZE=%d \n",getName().c_str(),getLabel().c_str(), getSizeOfBuffer() );
+  for(unsigned i=0;i<getSizeOfBuffer();++i) cfile.printf("%f \n", getBufferElement(i) );
+  cfile.printf("END VESSEL: TYPE=%s NAME=%s \n",getName().c_str(),getLabel().c_str() );
+}
+
+void GridVesselBase::readFromCheckpoint( IFile& cifile ){
+  if(!checkpoint) return;
+  // Check first line
+  std::vector<std::string> words; Tools::getParsedLine(cifile,words);
+  if( words[0]!="BEGIN" && words[1]!="VESSEL:" ) getAction()->error("failed to read in checkpoint file correctly");
+  
+  // Checks on first line
+  std::string vtype; Tools::parse(words, "TYPE" , vtype );
+  if( vtype!=getName() ) getAction()->error("mismatch for vessel type in checkpoint file");
+  std::string vlab; Tools::parse(words, "NAME", vlab );
+  if( vlab!=getLabel() ) getAction()->error("mismatch for vessel name in checkpoint file");
+  unsigned bsize; Tools::parse(words, "BUFSIZE", bsize );
+  if( bsize!=getSizeOfBuffer() ) getAction()->error("mismatch for size of buffer in checkpoint file");
+  
+  // Now read the buffer
+  double num; 
+  for(unsigned i=0;i<getSizeOfBuffer();++i){
+     Tools::getParsedLine(cifile,words); Tools::convert( words[0], num );
+     setBufferElement(i, num );
+  }
+
+  // Check last line
+  Tools::getParsedLine(cifile,words);
+  if( words[0]!="END" && words[1]!="VESSEL:" ) getAction()->error("bad data in checkpoint file");
+  Tools::parse(words, "TYPE" , vtype );
+  if( vtype!=getName() ) getAction()->error("mismatch for vessel type in finish of checkpoint file");
+  Tools::parse(words, "NAME", vlab );
+  if( vlab!=getLabel() ) getAction()->error("mismatch for vessel name in finish of checkpoint file");
+}
+
 }
 }
 
