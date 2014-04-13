@@ -68,7 +68,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   if( tolerance>epsilon){
      if( keywords.exists("NL_TOL") ) parse("NL_TOL",nl_tolerance);
      if( nl_tolerance>tolerance ) error("NL_TOL must be smaller than TOL"); 
-     log.printf(" Ignoring contributions less than %lf",tolerance);
+     log.printf("  ignoring contributions less than %lf",tolerance);
      if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %lf inbetween neighbor list update steps\n",nl_tolerance);
      else log.printf("\n");
   }
@@ -232,7 +232,7 @@ void ActionWithVessel::deactivate_task(){
 }
 
 void ActionWithVessel::deactivateTasksInRange( const unsigned& lower, const unsigned& upper ){
-  plumed_dbg_assert( contributorsAreUnlocked && lower<upper && upper<taskFlags.size() );
+  plumed_dbg_assert( contributorsAreUnlocked && lower<upper && upper<=taskFlags.size() );
   for(unsigned i=lower;i<upper;++i) taskFlags[i]=1;
 }
 

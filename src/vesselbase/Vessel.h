@@ -120,6 +120,8 @@ protected:
   double getNLTolerance() const ;
 /// Set the size of the data buffer
   void resizeBuffer( const unsigned& n );
+/// Return bufsize
+  unsigned getSizeOfBuffer() const ;
 /// Set the value of the ith element in the buffer
   void setBufferElement( const unsigned& i, const double& val);
 /// Get the value in the ith element of the buffer
@@ -212,6 +214,11 @@ int Vessel::getNumericalLabel() const {
 inline
 void Vessel::resizeBuffer( const unsigned& n ){
   bufsize=n;   
+}
+
+inline
+unsigned Vessel::getSizeOfBuffer() const {
+  return bufsize;
 }
 
 inline
