@@ -36,8 +36,10 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_blas.h |
          if(inside && $1=="#endif") inside=0;
        }' > blas.h
 
-grep PLUMED_BLAS_F77_FUNC blas.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' | awk '{print "#define plumed_blas_"$2" PLMD::blas::PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_internal.h
-grep PLUMED_BLAS_F77_FUNC blas.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' | awk '{print "#define plumed_blas_"$2" PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_external.h
+grep PLUMED_BLAS_F77_FUNC blas.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' |
+  awk '{print "/** \\ingroup internal-blas */"; print "#define plumed_blas_"$2" PLMD::blas::PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_internal.h
+grep PLUMED_BLAS_F77_FUNC blas.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' |
+  awk '{print "#define plumed_blas_"$2" PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_external.h
 
 
 cat << EOF > simple.h
