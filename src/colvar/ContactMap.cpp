@@ -103,6 +103,7 @@ void ContactMap::registerKeywords( Keywords& keys ){
   keys.reset_style("SWITCH","compulsory"); 
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
   keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
+  keys.addOutputComponent("contact","COMPONENTS","By not using SUM or CMDIST each contact will be stored in a component");
 }
 
 ContactMap::ContactMap(const ActionOptions&ao):
