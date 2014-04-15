@@ -31,7 +31,7 @@ LABEL=c
 
 PRINT ...
   ARG=a,b,c.contact1,c.contact5
-  FILE=COLVAR
+  FILE=colvar
 ... PRINT
 
 DUMPDERIVATIVES ARG=a,b FILE=deriv FMT=%8.6f
