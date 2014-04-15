@@ -40,7 +40,7 @@ in definitions of CVs or virtual atoms.
 
 Notice that this command just creates a shortcut, and does not imply any real calculation.
 It is just convenient to better organize input files. Might be used in combination with
-the \ref INCLUDE command so as to store long group definitions in a separate files.
+the \ref INCLUDE command so as to store long group definitions in a separate file.
 
 Finally, lists can be imported from ndx files (GROMACS format). Use NDX_FILE to set the name of 
 the index file and NDX_GROUP to set the name of the group to be imported (default is first one).
@@ -54,18 +54,29 @@ o: GROUP ATOMS=1,4,7,11,14
 h: GROUP ATOMS=2,3,5,6,8,9,12,13
 # compute the coordination among the two groups
 c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
-
 # same could have been obtained without GROUP, just writing:
 # c: COORDINATION GROUPA=1,4,7,11,14 GROUPB=2,3,5,6,8,9,12,13
-\endverbatim
-(see also \ref COORDINATION)
 
-Groups can be conveniently stored in a separate file
+# print the coordination on file 'colvar'
+PRINT ARG=c FILE=colvar
+\endverbatim
+(see also \ref COORDINATION and \ref PRINT)
+
+Groups can be conveniently stored in a separate file.
+E.g. one could create a file named 'groups.dat' which reads
+\verbatim
+o: GROUP ATOMS=1,4,7,11,14
+h: GROUP ATOMS=2,3,5,6,8,9,12,13
+\endverbatim
+and then include it in the main 'plumed.dat' file
 \verbatim
 INCLUDE groups.dat
+# compute the coordination among the two groups
 c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
+# print the coordination on file 'colvar'
+PRINT ARG=c FILE=colvar
 \endverbatim
-(see also \ref INCLUDE and \ref COORDINATION).
+(see also \ref INCLUDE, \ref COORDINATION, and \ref PRINT).
 The groups.dat file could be very long and include lists of thousand atoms without cluttering the main plumed.dat file.
 
 A GROMACS index file can also be imported

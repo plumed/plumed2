@@ -111,6 +111,8 @@ For users:
 - Now compiles on Blue Gene Q with IBM compilers.
 - Fixed bug in \ref CENTER where default WEIGHTS were missing. 
 - Several small fixes in documentation and log file.
+- Fixed broken CONTACTMAP with SUM
+- Added CMDIST in CONTACTMAP to emulate plumed1 CMAP.
 
 For developers:
 - Fixed cmd("getBias") to retrieve bias. It was not working with
