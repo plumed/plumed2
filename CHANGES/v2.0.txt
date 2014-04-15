@@ -113,6 +113,8 @@ For users:
 - Several small fixes in documentation and log file.
 
 For developers:
+- Fixed cmd("getBias") to retrieve bias. It was not working with
+  single precision codes and it was not converting units properly.
 - Fixed a regression in 2.0.2 concerning include files from installed plumed
   (see commit 562d5ea9dfc3).
 - Small fix in tools/Random.cpp that allows Random objects to be
