@@ -134,6 +134,25 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
          numbers[1]=mypdb.getNamedAtomFromResidue("C",resnum);
          numbers[2]=mypdb.getNamedAtomFromResidue("N",resnum+1);
          numbers[3]=mypdb.getNamedAtomFromResidue("CA",resnum+1);
+      } else if( symbol.find("chi1")!=std::string::npos ){
+         std::size_t dash=symbol.find_first_of('-');
+         unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+         std::string resname = mypdb.getResidueName(resnum);
+         if( !allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
+         if ( resname=="GLY" || resname=="ALA" ) plumed_merror("chi-1 is not defined for Alanine and Glycine");
+         numbers.resize(4); 
+         numbers[0]=mypdb.getNamedAtomFromResidue("N",resnum); 
+         numbers[1]=mypdb.getNamedAtomFromResidue("CA",resnum);
+         numbers[2]=mypdb.getNamedAtomFromResidue("CB",resnum);
+         if(resname=="ILE"||resname=="VAL") 
+           numbers[3]=mypdb.getNamedAtomFromResidue("CG1",resnum);
+         else if(resname=="CYS") 
+           numbers[3]=mypdb.getNamedAtomFromResidue("SG",resnum);
+         else if(resname=="THR") 
+           numbers[3]=mypdb.getNamedAtomFromResidue("OG1",resnum);
+         else if(resname=="SER") 
+           numbers[3]=mypdb.getNamedAtomFromResidue("OG",resnum);
+         else  numbers[3]=mypdb.getNamedAtomFromResidue("CG",resnum);
       }
   } else {
       plumed_merror(type + " is not a valid molecule type"); 
