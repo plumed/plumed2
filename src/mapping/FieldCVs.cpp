@@ -91,7 +91,7 @@ myfield(NULL)
   std::string mylab; parse("ARG",mylab); 
   field_action=plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mylab);
   if(!field_action) error(mylab + " action does not exist");
-  addDependency(field_action); field_action->turnOnDerivatives();
+  addDependency(field_action); field_action->needsDerivatives();
 
   vesselbase::Vessel* myvessel = field_action->getVesselWithName("GRID");
   myf=dynamic_cast<vesselbase::FieldGridBase*>( myvessel );

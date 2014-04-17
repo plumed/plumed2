@@ -103,8 +103,6 @@ protected:
   BridgeVessel* addBridgingVessel( ActionWithVessel* tome );
 /// Complete the setup of this object (this routine must be called after construction of ActionWithValue)
   void readVesselKeywords();
-/// Turn on the derivatives in the vessel
-  void needsDerivatives();
 /// Return the value of the tolerance
   double getTolerance() const ;
 /// Return the value for the neighbor list tolerance
@@ -163,6 +161,8 @@ public:
   void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , Vessel* );
   virtual void mergeDerivatives( const unsigned& ider, const double& df );
   virtual void clearDerivativesAfterTask( const unsigned& );
+/// Turn on the derivatives in the vessel
+  void needsDerivatives();
 /// Are derivatives required for this quantity
   bool derivativesAreRequired() const ;
 /// Finish running all the calculations
