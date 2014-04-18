@@ -102,7 +102,7 @@ The problem when it comes to applying this idea to the data that we have in the 
 these points. We have not been told that this trajectory represents the transition between two interesting points in phase space  and thus we cannot apply the
 logic of paths.  Hence, to seek out a low dimensional representation we are going to try and find a representation of this data we are going to seek out an
 isometry between the space containing the \f$3N\f$-dimensional vectors of atom positions and some lower-dimensional space.  This idea is explained in more
-detail in the following video.
+detail in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be"> video </a>.
 
 Let's now generate our isometric embedding.  You will need to create a plumed input file that contains the following instructions:
 
