@@ -21,6 +21,7 @@
 !/main
 !/maketools
 !/manyrestraints
+!/molfile
 !/multicolvar
 !/reference
 !/secondarystructure

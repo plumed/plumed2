@@ -27,9 +27,19 @@
 #include <cmath>
 #include "Exception.h"
 #include "MatrixSquareBracketsAccess.h"
+#include "Tools.h"
 #include "Log.h"
 #include "lapack/lapack.h"
 
+#if ! defined(__PLUMED_INTERNAL_LAPACK) 
+// this is a hack to allow the dgesvd routine
+// this routine is not available within the internal, gromacs-imported lapacks
+#define plumed_lapack_dgesvd PLUMED_BLAS_F77_FUNC(dgesvd,DGESVD)
+void
+   PLUMED_BLAS_F77_FUNC(dgesvd, DGESVD)(const char *jobu, const char *jobvt, int *m, int *n, double *a,
+                              int *lda, double *s, double *u, int *ldu, double *vt, int *ldvt, double *work,
+                              int *lwork, int *info );
+#endif
 
 namespace PLMD{
 
@@ -51,6 +61,8 @@ template <typename T>
 class Matrix:
   public MatrixSquareBracketsAccess<Matrix<T>,T>
   {
+   /// Multiply matrix by scalar
+   template <typename U> friend Matrix<U> operator*(U&, const Matrix<U>& );
    /// Matrix matrix multiply
    template <typename U> friend void mult( const Matrix<U>& , const Matrix<U>& , Matrix<U>& );
    /// Matrix times a std::vector 
@@ -65,6 +77,8 @@ class Matrix:
    template <typename U> friend void matrixOut( Log&, const Matrix<U>& );
    /// Diagonalize a symmetric matrix - returns zero if diagonalization worked
    template <typename U> friend int diagMat( const Matrix<U>& , std::vector<double>& , Matrix<double>& );
+   /// Calculate the Moore-Penrose Pseudoinverse of a matrix
+   template <typename U> friend int pseudoInvert( const Matrix<U>& , Matrix<double>& ); 
    /// Calculate the logarithm of the determinant of a symmetric matrix - returns zero if succesfull
    template <typename U> friend int logdet( const Matrix<U>& , double& );
    /// Invert a matrix (works for both symmetric and assymetric matrices) - returns zero if sucesfull
@@ -119,6 +133,11 @@ public:
      for(unsigned i=0;i<sz;++i){ data[i]+=v; }
      return *this; 
    }
+   /// Multiply all elements by v
+   Matrix<T> operator*=(const T& v){
+     for(unsigned i=0;i<sz;++i){ data[i]*=v; }
+     return *this; 
+   }
    /// Matrix addition
    Matrix<T>& operator+=(const Matrix<T>& m){ 
     plumed_dbg_assert( m.rw==rw && m.cl==cl );
@@ -144,6 +163,13 @@ public:
      return sym;
   }
 };
+
+/// Multiply matrix by scalar
+template <typename T> Matrix<T> operator*(T& v, const Matrix<T>& m ){
+  Matrix<T> new_m(m);
+  new_m*=v;
+  return new_m; 
+}
 
 template <typename T> void mult( const Matrix<T>& A , const Matrix<T>& B , Matrix<T>& C ){
   plumed_assert(A.cl==B.rw);
@@ -224,6 +250,59 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    // Deallocate all the memory used by the various arrays
    delete[] da; delete [] work; delete [] evals; delete[] evecs; delete [] iwork; delete [] isup;
    return 0;
+}
+
+template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseudoinverse ){
+  double *da=new double[A.sz]; unsigned k=0; 
+  // Transfer the matrix to the local array
+  for (unsigned i=0; i<A.cl; ++i) for (unsigned j=0; j<A.rw; ++j) da[k++]=static_cast<double>( A(j,i) );
+
+  int nsv, info, nrows=A.rw, ncols=A.cl;   
+  if(A.rw>A.cl){nsv=A.cl;}else{nsv=A.rw;}
+
+  // Create some containers for stuff from single value decomposition
+  double *S=new double[nsv]; double *U=new double[nrows*nrows];
+  double *VT=new double[ncols*ncols];
+
+  // This optimizes the size of the work array used in lapack singular value decomposition
+  int lwork=-1; double* work=new double[1];
+#if defined(__PLUMED_INTERNAL_LAPACK)
+  plumed_merror("This feature is unavailable with internal lapack");
+#else 
+  plumed_lapack_dgesvd( "A", "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, &info );
+#endif
+  if(info!=0) return info;
+
+  // Retrieve correct sizes for work and rellocate
+  lwork=(int) work[0]; delete [] work; work=new double[lwork];
+
+  // This does the singular value decomposition
+#if defined(__PLUMED_INTERNAL_LAPACK)
+  plumed_merror("This feature is unavailable with internal lapack");
+#else
+  plumed_lapack_dgesvd( "A", "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, &info );
+  if(info!=0) return info; 
+#endif
+
+  // Compute the tolerance on the singular values ( machine epsilon * number of singular values * maximum singular value )
+  double tol; tol=S[0]; for(unsigned i=1;i<nsv;++i){ if( S[i]>tol ){ tol=S[i]; } } tol*=nsv*epsilon;
+
+  // Get the inverses of the singlular values
+  Matrix<double> Si( ncols, nrows ); Si=0.0;
+  for(unsigned i=0;i<nsv;++i){ if( S[i]>tol ){ Si(i,i)=1./S[i]; }else{ Si(i,i)=0.0; } }
+
+  // Now extract matrices for pseudoinverse
+  Matrix<double> V( ncols, ncols ), UT( nrows, nrows ), tmp( ncols, nrows ); 
+  k=0; for(unsigned i=0;i<nrows;++i){ for(unsigned j=0;j<nrows;++j){ UT(i,j)=U[k++]; } }
+  k=0; for(unsigned i=0;i<ncols;++i){ for(unsigned j=0;j<ncols;++j){ V(i,j)=VT[k++]; } }
+
+  // And do matrix algebra to construct the pseudoinverse
+  if( pseudoinverse.rw!=ncols || pseudoinverse.cl!=nrows ) pseudoinverse.resize( ncols, nrows );
+  mult( V, Si, tmp ); mult( tmp, UT, pseudoinverse );
+
+  // Deallocate all the memory
+  delete S; delete U; delete VT; delete work; delete da;
+  return 0;
 }
 
 template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ){

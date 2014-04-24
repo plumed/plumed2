@@ -310,7 +310,8 @@ void PlumedMain::cmd(const std::string & word,void*val){
   } else if(word=="getBias"){
        CHECK_INIT(initialized,word);
        CHECK_NULL(val,word);
-       *(static_cast<double*>(val))=getBias(); 
+       double x=getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+       atoms.double2MD(x,val);
   } else {
 // multi word commands
 

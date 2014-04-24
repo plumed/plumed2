@@ -359,6 +359,7 @@ void CS2Backbone::calculate()
 
   forces.clear();
   for(int i=0; i<numResidues; i++) for(unsigned j=0; j<6; j++) sh[i][j]=0.;
+  if(getExchangeStep()) cam_list[0].set_box_count(0);
 
   for (int i = 0; i < N; i++) {
      int ipos = 4 * i;
