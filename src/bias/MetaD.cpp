@@ -76,6 +76,13 @@ calculation increases with the length of the simulation as one has to, at every 
 the values of a larger and larger number of Gaussians. To avoid this issue you can in plumed 2.0 
 store the bias on a grid.  This approach is similar to that proposed in \cite babi+08jcp but has the 
 advantage that the grid spacing is independent on the Gaussian width.
+Notice that you should
+provide either the number of bins for every collective variable (GRID_BIN) or
+the desired grid spacing (GRID_SPACING). In case you provide both PLUMED will use
+the most conservative choice (highest number of bins) for each dimension.
+In case you do not provide any information about bin size (neither GRID_BIN nor GRID_SPACING)
+and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
+This default choice should be reasonable for most applications.
 
 Another option that is available in plumed 2.0 is well-tempered metadynamics \cite Barducci:2008. In this
 varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
@@ -290,6 +297,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
@@ -418,9 +426,37 @@ isFirstStep(true)
   parseVector("GRID_MAX",gmax);
   if(gmax.size()!=getNumberOfArguments() && gmax.size()!=0) error("not enough values for GRID_MAX");
   vector<unsigned> gbin(getNumberOfArguments());
+  vector<double>   gspacing;
   parseVector("GRID_BIN",gbin);
   if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("not enough values for GRID_BIN");
-  if( gmin.size()!=gmax.size() || gmin.size()!=gbin.size() ) error("GRID MIN was specified without either GRID_MAX or GRID_BIN");
+  parseVector("GRID_SPACING",gspacing);
+  if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) error("not enough values for GRID_SPACING");
+  if(gmin.size()!=gmax.size()) error("GRID_MAX and GRID_MIN should be either present or absent");
+  if(gspacing.size()!=0 && gmin.size()==0) error("If GRID_SPACING is present also GRID_MIN should be present");
+  if(gbin.size()!=0     && gmin.size()==0) error("If GRID_SPACING is present also GRID_MIN should be present");
+  if(gmin.size()!=0){
+    if(gbin.size()==0 && gspacing.size()==0){
+      if(adaptive_==FlexibleBin::none){
+        log<<"  Binsize not spacified, 1/5 of sigma will be be used\n";
+        plumed_assert(sigma0_.size()==getNumberOfArguments());
+        gspacing.resize(getNumberOfArguments());
+        for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
+      } else error("At least one among GRID_BIN and GRID_SPACING should be used");
+    } else if(gspacing.size()!=0 && gbin.size()==0){
+      log<<"  The number of bins will be estimated from GRID_SPACING\n";
+    } else if(gspacing.size()!=0 && gbin.size()!=0){
+      log<<"  You specified both GRID_BIN and GRID_SPACING\n";
+      log<<"  The more conservative (highest) number of bins will be used for each variable\n";
+    }
+    if(gbin.size()==0) gbin.assign(getNumberOfArguments(),1);
+    if(gspacing.size()!=0) for(unsigned i=0;i<getNumberOfArguments();i++){
+      double a,b;
+      Tools::convert(gmin[i],a);
+      Tools::convert(gmax[i],b);
+      unsigned n=((b-a)/gspacing[i])+1;
+      if(gbin[i]<n) gbin[i]=n;
+    }
+  }
   bool sparsegrid=false;
   parseFlag("GRID_SPARSE",sparsegrid);
   bool nospline=false;
