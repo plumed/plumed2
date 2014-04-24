@@ -21,8 +21,11 @@ Changes from version 2.0 which are relevant for users:
   - Crystallation module, including \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, and \ref AVERAGE_VECTOR.
 - New features for existing actions:
   - \ref METAD : WALKERS_MPI flag (multiple walkers in a mpi-based multi-replica framework),
-    ACCELERATION flag (calculate on the fly the Metadynamics acceleration factor), and
-    TAU option (alternative way to set Gaussian height in well-tempered metadynamics).
+    ACCELERATION flag (calculate on the fly the Metadynamics acceleration factor),
+    TAU option (alternative way to set Gaussian height in well-tempered metadynamics),
+    GRID_SPACING (alternative to GRID_BIN to set grid spacing).
+    Notice that now one can also omit GRID_BIN and GRID_SPACING when using
+    fixed size Gaussian, and the grid spacing will be automatically set.
   - \ref COORDINATION : if a single group is provided, it avoids permuted atom indexes and runs
     at twice the speed.
   - \ref DUMPATOMS : PRECISION option to set number of digits in output file.
