@@ -29,9 +29,29 @@
 
 //+PLUMEDOC MCOLVARF AVERAGE_VECTOR
 /*
-Calculate an average vector
+Calculate the average vector by averaging each component of the vector separately
+
+This colvar takes a set of atom centered vectors and calculates the average vector.  Unlike
+the average calculated by using the following command:
+
+\verbatim
+Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN LABEL=q6
+\endverbatim
+
+which calculates the average value for the norm of the Q6 vectors, the AVERAGE_VECTOR command takes
+the average by averaging each component of the vector in turn.  This sort of thing has is sometimes 
+used to measure the average Q4 parameter in a cluster. 
 
 \par Examples
+
+The following command calculates the average Q6 vector for a 75 atom cluster of Lennard Jones.  The
+average is then printed to a file called colvar.
+
+\verbatim
+Q6 SPECIES=1-75 SWITCH={GAUSSIAN D_0=1.391 R_0=0.01} LABEL=q6
+AVERAGE_VECTOR DATA=q6 LABEL=a6a
+PRINT ARG=a6a FILE=colvar
+\endverbatim
 
 */
 //+ENDPLUMEDOC
