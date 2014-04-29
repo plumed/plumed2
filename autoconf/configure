@@ -695,6 +695,8 @@ enable_shared
 enable_cxx_exceptions
 enable_mpi
 enable_external_lapack
+enable_molfile_plugins
+enable_external_molfile_plugins
 enable_matheval
 enable_zlib
 enable_clock_gettime
@@ -1338,6 +1340,11 @@ Optional Features:
   --enable-mpi            enable search for mpi, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
+  --enable-molfile-plugins
+                          enable use molfile_plugins, default: yes
+  --enable-external-molfile-plugins
+                          enable search for external molfile_plugins, default:
+                          yes
   --enable-matheval       enable search for matheval, default: yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-clock-gettime  enable search for gettime, default: yes
@@ -2367,6 +2374,42 @@ else
   case "yes" in
              (yes) external_lapack=true ;;
              (no)  external_lapack=false ;;
+  esac
+
+fi
+
+
+
+molfile_plugins=
+# Check whether --enable-molfile-plugins was given.
+if test "${enable_molfile_plugins+set}" = set; then :
+  enableval=$enable_molfile_plugins; case "${enableval}" in
+             (yes) molfile_plugins=true ;;
+             (no)  molfile_plugins=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-molfile-plugins" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) molfile_plugins=true ;;
+             (no)  molfile_plugins=false ;;
+  esac
+
+fi
+
+
+
+external_molfile_plugins=
+# Check whether --enable-external-molfile-plugins was given.
+if test "${enable_external_molfile_plugins+set}" = set; then :
+  enableval=$enable_external_molfile_plugins; case "${enableval}" in
+             (yes) external_molfile_plugins=true ;;
+             (no)  external_molfile_plugins=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-external-molfile-plugins" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) external_molfile_plugins=true ;;
+             (no)  external_molfile_plugins=false ;;
   esac
 
 fi
@@ -4840,13 +4883,88 @@ $as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
 
 fi
 
-
 #### End of compulsory libraries ####
-
 
 #### Optional libraries ####
 { $as_echo "$as_me:${as_lineno-$LINENO}: Now we will check for optional headers and libraries" >&5
 $as_echo "$as_me: Now we will check for optional headers and libraries" >&6;}
+
+#############################################################
+# I add the possibility to completely remove molfile_plugins
+# I would like to be 100% that the molfile module compiles
+# correctly on all machines
+# In case of problem, it is sufficient to configure with
+# ./configure --disable-molfile-plugins
+# GB
+#############################################################
+
+if test $molfile_plugins == true ; then
+
+# Check for molfile_plugins and use internal fallback if not found. TG
+
+# We always have molfile, now
+$as_echo "#define __PLUMED_HAS_MOLFILE 1" >>confdefs.h
+
+
+found=ko
+if test "$external_molfile_plugins" == true ; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for molfile_dcdplugin_init in -lmolfile_plugin" >&5
+$as_echo_n "checking for molfile_dcdplugin_init in -lmolfile_plugin... " >&6; }
+if ${ac_cv_lib_molfile_plugin_molfile_dcdplugin_init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lmolfile_plugin  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char molfile_dcdplugin_init ();
+int
+main ()
+{
+return molfile_dcdplugin_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_molfile_plugin_molfile_dcdplugin_init=yes
+else
+  ac_cv_lib_molfile_plugin_molfile_dcdplugin_init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_molfile_plugin_molfile_dcdplugin_init" >&5
+$as_echo "$ac_cv_lib_molfile_plugin_molfile_dcdplugin_init" >&6; }
+if test "x$ac_cv_lib_molfile_plugin_molfile_dcdplugin_init" = xyes; then :
+   ac_fn_cxx_check_header_mongrel "$LINENO" "libmolfile_plugin.h" "ac_cv_header_libmolfile_plugin_h" "$ac_includes_default"
+if test "x$ac_cv_header_libmolfile_plugin_h" = xyes; then :
+  LIBS="-lmolfile_plugin $LIBS" found=ok
+fi
+
+
+fi
+
+fi
+if test $found == ko ; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, which only support dcd and xtc/trr/trj" >&5
+$as_echo "$as_me: WARNING: using internal molfile_plugins, which only support dcd and xtc/trr/trj" >&2;}
+	$as_echo "#define __PLUMED_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
+
+fi
+
+fi
+
+
+
 # this is special and is also attached to STATIC_LIBS
 # this flag should be used also when linking MD engines to allow plumed
 # to be loaded later
@@ -5492,64 +5610,6 @@ rm -f core conftest.err conftest.$ac_objext \
   fi
 fi
 
-# molfile:
-save_LIBS="$LIBS"
-found=ko
-ac_fn_cxx_check_header_mongrel "$LINENO" "libmolfile_plugin.h" "ac_cv_header_libmolfile_plugin_h" "$ac_includes_default"
-if test "x$ac_cv_header_libmolfile_plugin_h" = xyes; then :
-  ac_fn_cxx_check_header_mongrel "$LINENO" "molfile_plugin.h" "ac_cv_header_molfile_plugin_h" "$ac_includes_default"
-if test "x$ac_cv_header_molfile_plugin_h" = xyes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for molfile_gromacsplugin_init in -lmolfile_plugin" >&5
-$as_echo_n "checking for molfile_gromacsplugin_init in -lmolfile_plugin... " >&6; }
-if ${ac_cv_lib_molfile_plugin_molfile_gromacsplugin_init+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmolfile_plugin  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char molfile_gromacsplugin_init ();
-int
-main ()
-{
-return molfile_gromacsplugin_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_lib_molfile_plugin_molfile_gromacsplugin_init=yes
-else
-  ac_cv_lib_molfile_plugin_molfile_gromacsplugin_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_molfile_plugin_molfile_gromacsplugin_init" >&5
-$as_echo "$ac_cv_lib_molfile_plugin_molfile_gromacsplugin_init" >&6; }
-if test "x$ac_cv_lib_molfile_plugin_molfile_gromacsplugin_init" = xyes; then :
-  LIBS="-lmolfile_plugin $LIBS" found=ok
-
-fi
-
-fi
-
-
-fi
-
-
-if test $found == ok ; then
- $as_echo "#define __PLUMED_HAS_MOLFILE 1" >>confdefs.h
-
-fi
 
 # this can be used to enable openmp:
 # AC_OPENMP

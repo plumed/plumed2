@@ -40,8 +40,10 @@ sed 's|"types/simple.h"|"simple.h"|' "$GRO"/include/gmx_lapack.h |
          if(inside && $1=="#endif") inside=0;
        }' > lapack.h
 
-grep PLUMED_BLAS_F77_FUNC lapack.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' | awk '{print "#define plumed_lapack_"$2" PLMD::lapack::PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_internal.h
-grep PLUMED_BLAS_F77_FUNC lapack.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' | awk '{print "#define plumed_lapack_"$2" PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_external.h
+grep PLUMED_BLAS_F77_FUNC lapack.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' |
+  awk '{print "/** \\ingroup internal-lapack */"; print "#define plumed_lapack_"$2" PLMD::lapack::PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_internal.h
+grep PLUMED_BLAS_F77_FUNC lapack.h  | sed 's/(/ /' | sed 's/,/ /' | sed 's/)/ /' |
+  awk '{print "#define plumed_lapack_"$2" PLUMED_BLAS_F77_FUNC("$2","$3")"}' > def_external.h
 
 cat << EOF > simple.h
 #ifndef PLUMED_lapack_simple_h
