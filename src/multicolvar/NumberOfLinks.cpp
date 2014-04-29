@@ -34,9 +34,30 @@ In its simplest guise this coordinate calculates a coordination number.  Each pa
 of atoms is assumed "linked" if they are within some cutoff of each other.  In more 
 complex applications each entity is a vector and this quantity measures whether
 pairs of vectors are (a) within a certain cutoff and (b) if the two vectors have 
-similar orientations
+similar orientations.  The vectors on individual atoms could be Steinhardt parameters
+(see \ref Q3, \ref Q4 and \ref Q6) or they could describe some internal vector in a molecule.
 
 \par Examples
+
+The following calculates how many bonds there are in a system containing 64 atoms and outputs
+this quantity to a file.
+
+\verbatim
+DENSITY SPECIES=1-64 LABEL=d1
+NLINKS ARG=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
+PRINT ARG=dd FILE=colvar
+\endverbatim
+
+The following calculates how many pairs of neighbouring atoms in a system containg 64 atoms have
+similar dispositions for the atoms in their coordination sphere.  This calculation uses the 
+dot product of the Q6 vectors on adjacent atoms to measure whether or not two atoms have the same
+``orientation"
+
+\verbatim
+Q6 SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=q6
+NLINKS ARG=q6 SWITCH={RATIONAL D_0=1.3 R_0=0.2} LABEL=dd
+PRINT ARG=dd FILE=colvar
+\endverbatim 
 
 */
 //+ENDPLUMEDOC
