@@ -69,7 +69,7 @@ Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
 PLUMED 2 must then be configured with ALMOST enabled: 
 
 \verbatim
-./configure --enable-almost CPPFLAGS="-I/ALMOST_BASE_PATH/branches/almost-2.1/include -I/ALMOST_BASE_PATH/branches/almost-2.1/include/almost" LDFLAGS="-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm -L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 -L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl -L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx"
+./configure --enable-almost CPPFLAGS="-I/ALMOST_BASE_PATH/branches/almost-2.1/include -I/ALMOST_BASE_PATH/branches/almost-2.1/include/almost -I/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1" LDFLAGS="-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm -L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 -L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl -L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx"
 
 with ALMOST_BASE_PATH the full path to the ALMOST folder
 \endverbatim
