@@ -56,8 +56,9 @@ which is why the temperature in the above file is apparently so low.
 
 Use simplemd to run 50000 step calculations at 0.2, 0.8 and 1.2 \f$\frac{k_B T}{\epsilon}\f$. (N.B. You will need
 an empty file called plumed.dat in order to run these calculations.)  Visualise the trajectory output by each of your simulations 
-using VMD.  At what temperatures did the simulations melt?  What then is the melting
-point of the Lennard-Jones potential at this density?
+using VMD.  Please be aware that simplemd does not wrap the atoms into the cell box automatically.  If you are at the tutorial 
+we have resolved this problem by making it so that if you press w when you load all the atoms they will be wrapped into the box.
+At what temperatures did the simulations melt?  What then is the melting point of the Lennard-Jones potential at this density?
 
 \subsection cvs Coordination Numbers
 
