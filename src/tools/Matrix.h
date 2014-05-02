@@ -301,7 +301,7 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   mult( V, Si, tmp ); mult( tmp, UT, pseudoinverse );
 
   // Deallocate all the memory
-  delete S; delete U; delete VT; delete work; delete da;
+  delete [] S; delete [] U; delete [] VT; delete [] work; delete [] da;
   return 0;
 }
 
