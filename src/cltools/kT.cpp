@@ -82,7 +82,8 @@ int kt::main(FILE* in, FILE*out,Communicator& pc){
  std::string unitname; parse("--units",unitname);
  Units units; units.setEnergy( unitname );
  double temp; parse("--temp",temp);
- std::cout<<"When the temperature is "<<temp<<" kelvin kT is equal to "<<(kBoltzmann*temp)/units.getEnergy()<<" "<<unitname<<std::endl;  
+ double kk=(kBoltzmann*temp)/units.getEnergy();
+ std::fprintf(out,"When the temperature is %f kelvin kT is equal to %f %s\n",temp,kk,unitname.c_str());
  return 0;
 }
 
