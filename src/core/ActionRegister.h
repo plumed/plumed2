@@ -93,6 +93,13 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 
 }
 
+#define PLUMED_CONCATENATE_DIRECT(s1, s2) s1##s2
+#define PLUMED_CONCATENATE(s1, s2) PLUMED_CONCATENATE_DIRECT(s1, s2)
+#ifdef _MSC_VER // Necessary for edit & continue in MS Visual C++.
+# define PLUMED_UNIQUENAME(str) PLUMED_CONCATENATE(str, __COUNTER__)
+#else
+# define PLUMED_UNIQUENAME(str) PLUMED_CONCATENATE(str, __LINE__)
+#endif
 
 /// Shortcut for Action registration
 /// \relates PLMD::ActionRegister
@@ -101,12 +108,12 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 /// \param directive a string containing the corresponding directive
 /// This macro should be used in the .cpp file of the corresponding class
 #define PLUMED_REGISTER_ACTION(classname,directive) \
-  static class classname##RegisterMe{ \
+  static class  PLUMED_UNIQUENAME(classname##RegisterMe){ \
     static PLMD::Action* create(const PLMD::ActionOptions&ao){return new classname(ao);} \
   public: \
-    classname##RegisterMe(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);} \
-    ~classname##RegisterMe(){PLMD::actionRegister().remove(create);} \
-  } classname##RegisterMeObject;
+    PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().add(directive,create,classname::registerKeywords);} \
+    ~PLUMED_UNIQUENAME(classname##RegisterMe)(){PLMD::actionRegister().remove(create);} \
+  } PLUMED_UNIQUENAME(classname##RegisterMe);
 
 
 #endif
