@@ -85,7 +85,8 @@ each other, in a liquid the spread of bond angles is considerably larger.  To de
 is a coordinate that is able to recognise whether or not the geometry in the coordination spheres around each of the atoms 
 in the system are the same or different.  If these geometries are the same the system is in a solid-like configuration, whereas if they are
 different the system is liquid-like. The Steinhardt parameters \ref Q3, \ref Q4 and \ref Q6 are coordinates that allow us to examine the 
-coordination spheres of atoms in precisely this way. The way in which these coordinates are able to do this is explained in the video.
+coordination spheres of atoms in precisely this way. The way in which these coordinates are able to do this is explained in the 
+<a href="https://www.youtube.com/watch?v=ou0uKgK35lE"> video </a>.
 
 Repeat the calculations from the end of the previous section but edit the plumed.dat file so that the average \ref Q6 parameter is calculated
 and printed as well as the average \ref COORDINATIONNUMBER.  In the Steinhardt parameter implementation in plumed the set of atoms in the
@@ -122,7 +123,8 @@ it from having a very-ordered, solid-like coordination environment. As such in t
 for the Q6 parameter.  Consequently, an ordred coordination environment does not always differentiate solid-like atoms from liquid-like atoms.  The major
 difference is the liquid the ordered atoms will always be isolated.  That is to say in the liquid atoms with an ordered coordination will always be surrounded 
 by atoms with a disordered coordination sphere. By contrast in the solid each ordered atom will be surrounded by further ordered atoms.  This observation 
-forms the basis of the local Steinhardt parameters and the locally averaged Steinhardt parameters that are explained in this video. 
+forms the basis of the local Steinhardt parameters and the locally averaged Steinhardt parameters that are explained in this 
+<a href="https://www.youtube.com/watch?v=JBtIs5qYIPE&feature=youtu.be"> video </a>. 
 
 Lets use plumed to calculate the distribution of \ref LOCAL_Q6 parameters in the solid and liquid phases.  Repeat the calculations from the previous section but now
 use the HISTOGRAM keyword to calculate the distribution of \ref LOCAL_Q6 parameters.  For the switching function in the \ref LOCAL_Q6 parameter instruction use a
