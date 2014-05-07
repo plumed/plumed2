@@ -40,7 +40,7 @@ Each NOE is defined by two groups containing the same number of atoms and by a r
 are calculated in pairs.
 
 \f[
-NOE() = \sum_i^{noes}((\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))^{\frac{1}{6}} - d_i^{exp})^2 
+NOE() = \sum_i^{noes}((\frac{1}{N_{eq}}\sum_j^{N_{eq}} (\frac{1}{r_j^6}))^{\frac{-1}{6}} - d_i^{exp})^2 
 \f]
 
 Reference distances can also be considered as upper limits only, in this case the sum is over a half
@@ -226,17 +226,17 @@ void NOE::calculate(){
       double tmpir6=aver/r6;
       double tmpir8=aver/r8;
       noe[i] += tmpir6;
-      deriv[i0] = +tmpir8*distance;
-      deriv[i1] = -tmpir8*distance;
+      deriv[i0] = -tmpir8*distance;
+      deriv[i1] = +tmpir8*distance;
       index++;
     }
     for(unsigned k=i+1;k<i+stride;k++) index += nga[k];
     if(!ensemble) {
-      double diff = pow(noe[i],(1./6.)) - noedist[i];
+      double diff = pow(noe[i],(-1./6.)) - noedist[i];
       bool doscore = (isupper&&diff>0.) || (!isupper); 
       if(doscore) {
         score += diff*diff;
-        dnoe[i] = 2.*diff*pow(noe[i],(-5./6.));
+        dnoe[i] = 2.*diff/pow(noe[i],(7./6.));
       }
     }
   }
@@ -256,11 +256,11 @@ void NOE::calculate(){
     // inside each replica
     comm.Sum(&noe[0], nga.size() );
     for(unsigned i=rank;i<nga.size();i+=stride) {
-      double diff = pow(noe[i],(1./6.)) - noedist[i];
+      double diff = pow(noe[i],(-1./6.)) - noedist[i];
       bool doscore = (isupper&&diff>0.) || (!isupper); 
       if(doscore) {
         score += diff*diff;
-        dnoe[i] = 2.*diff*pow(noe[i],(-5./6.));
+        dnoe[i] = 2.*diff/pow(noe[i],(7./6.));
       }
     }
   }
