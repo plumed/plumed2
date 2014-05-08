@@ -25,6 +25,7 @@
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "vesselbase/ActionWithInputVessel.h"
 #include "vesselbase/FunctionOnGrid.h"
 #include "vesselbase/FieldGridBase.h"
 #include "vesselbase/InterpolationBase.h"
@@ -36,7 +37,8 @@ namespace mapping {
 class FieldCVs : 
   public ActionWithValue,
   public ActionPilot,
-  public vesselbase::ActionWithVessel
+  public vesselbase::ActionWithVessel,
+  public vesselbase::ActionWithInputVessel
 {
 private:
   bool isFirstStep;
@@ -68,8 +70,10 @@ void FieldCVs::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   vesselbase::ActionWithVessel::registerKeywords( keys );
+  vesselbase::ActionWithInputVessel::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  keys.add("compulsory","ARG","The name of the action that calculates the field that you are using to define the bias");
+  keys.remove("DATA"); keys.use("FUNC");
+//  keys.add("compulsory","ARG","The name of the action that calculates the field that you are using to define the bias");
   keys.add("compulsory","SIGMA","The sigma parameter");
   keys.add("compulsory","PACE","the frequency for hill addition");
   keys.add("compulsory","HEIGHT","the heights of the hills");
@@ -85,18 +89,25 @@ Action(ao),
 ActionWithValue(ao),
 ActionPilot(ao),
 ActionWithVessel(ao),
+ActionWithInputVessel(ao),
 myf(NULL),
 myfield(NULL)
 {
-  std::string mylab; parse("ARG",mylab); 
-  field_action=plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mylab);
-  if(!field_action) error(mylab + " action does not exist");
-  addDependency(field_action); field_action->needsDerivatives();
+//  std::string mylab; parse("ARG",mylab); 
+//  field_action=plumed.getActionSet().selectWithLabel<vesselbase::ActionWithVessel*>(mylab);
+//  if(!field_action) error(mylab + " action does not exist");
+//  addDependency(field_action); field_action->needsDerivatives();
 
-  vesselbase::Vessel* myvessel = field_action->getVesselWithName("GRID");
-  myf=dynamic_cast<vesselbase::FieldGridBase*>( myvessel );
-  if(!myf) error(mylab + " is not an action that calculates a field"); 
+//  vesselbase::Vessel* myvessel = field_action->getVesselWithName("GRID");
+  readArgument("func");
+  myf=dynamic_cast<vesselbase::FieldGridBase*>( getPntrToArgument() );
+  if(!myf) error("Input action does not calculate a field"); 
   
+  // Retrieve the base action
+  plumed_assert( getDependencies().size()==1 );
+  field_action = dynamic_cast<vesselbase::ActionWithVessel*>( getDependencies()[0] );
+  field_action->needsDerivatives(); needsDerivatives();
+
   // Create interpolators for fields
   std::string interpols; parse("INTERPOLATION",interpols);
   std::vector<unsigned> ngrid; parseVector("NGRIDPOINTS",ngrid);

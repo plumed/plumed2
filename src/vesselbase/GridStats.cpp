@@ -25,6 +25,7 @@
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
 #include "ActionWithVessel.h"
+#include "ActionWithInputVessel.h"
 #include "FunctionOnGrid.h"
 #include "GridVesselBase.h"
 #include "InterpolationBase.h"
@@ -34,7 +35,8 @@ namespace PLMD {
 namespace vesselbase {
 
 class GridStats : 
-  public ActionWithValue
+  public ActionWithValue,
+  public ActionWithInputVessel
 {
 private:
   bool noskew, serial;
@@ -59,7 +61,9 @@ PLUMED_REGISTER_ACTION(GridStats,"GRIDSTATS")
 void GridStats::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
-  keys.add("compulsory","ARG","The name of the action that calculates the field that you are using to define the bias");
+  ActionWithInputVessel::registerKeywords( keys );
+  keys.remove("DATA"); keys.use("FUNC");
+//  keys.add("compulsory","ARG","The name of the action that calculates the field that you are using to define the bias");
   keys.add("compulsory","SIGMA","The sigma parameter");
   keys.add("compulsory","NGRIDPOINTS","the number of gridpoints to use for the integration");
   keys.add("compulsory","INTERPOLATION","cubic","what algorithm should be used for interpolation");
@@ -70,18 +74,21 @@ void GridStats::registerKeywords( Keywords& keys ){
 GridStats::GridStats(const ActionOptions& ao):
 Action(ao),
 ActionWithValue(ao),
+ActionWithInputVessel(ao),
 myf(NULL),
 myfield(NULL)
 {
-  std::string mylab; parse("ARG",mylab); 
-  ActionWithVessel* field_action=plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mylab);
-  if(!field_action) error(mylab + " action does not exist");
-  addDependency(field_action);
+  // std::string mylab; parse("ARG",mylab); 
+  // ActionWithVessel* field_action=plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mylab);
+  // if(!field_action) error(mylab + " action does not exist");
+  // addDependency(field_action);
 
-  Vessel* myvessel = field_action->getVesselWithName("GRID");
-  myf=dynamic_cast<GridVesselBase*>( myvessel );
-  if(!myf) error(mylab + " is not an action that calculates a grid"); 
-  
+  // Vessel* myvessel = field_action->getVesselWithName("GRID");
+  // myf=dynamic_cast<GridVesselBase*>( myvessel );
+  // if(!myf) error(mylab + " is not an action that calculates a grid"); 
+  readArgument( "func" );
+  myf = dynamic_cast<GridVesselBase*>( getPntrToArgument() );   
+
   // Create interpolators for fields
   std::string interpols; parse("INTERPOLATION",interpols);
   FunctionOnGrid* testf=dynamic_cast<FunctionOnGrid*>( myf );

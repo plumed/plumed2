@@ -24,13 +24,15 @@
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
 #include "ActionWithVessel.h"
+#include "ActionWithInputVessel.h"
 #include "GridVesselBase.h"
 
 namespace PLMD {
 namespace vesselbase {
 
 class PrintGrid :
-  public ActionPilot
+  public ActionPilot,
+  public ActionWithInputVessel
 {
 private:
 /// Pointer to the grid we are printing
@@ -52,24 +54,29 @@ PLUMED_REGISTER_ACTION(PrintGrid,"PRINT_GRID")
 void PrintGrid::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
+  ActionWithInputVessel::registerKeywords( keys ); 
+  keys.remove("DATA"); keys.use("FUNC");
   keys.add("compulsory","STRIDE","1","the frequency with which the grid should be output");
-  keys.add("compulsory","ARG","The name of the action that calculates the grid you would like to print");
+//  keys.add("compulsory","ARG","The name of the action that calculates the grid you would like to print");
   keys.add("compulsory","FILE","the name of the file on which to output the grid");
   keys.add("compulsory","FMT","%f","the format that should be used to output real numbers");
 }
 
 PrintGrid::PrintGrid(const ActionOptions& ao):
 Action(ao),
-ActionPilot(ao)
+ActionPilot(ao),
+ActionWithInputVessel(ao)
 {
-  std::string mylab; parse("ARG",mylab);
-  ActionWithVessel* action=plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mylab);
-  if(!action) error(mylab + " action does not exist");
-  addDependency(action);
+  readArgument("func");
+  mygrid = dynamic_cast<GridVesselBase*>( getPntrToArgument() );
+//  std::string mylab; parse("ARG",mylab);
+//  ActionWithVessel* action=plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mylab);
+//  if(!action) error(mylab + " action does not exist");
+//  addDependency(action);
 
-  mygrid = dynamic_cast<GridVesselBase*>( action->getVesselWithName("GRID") );
-  if(!mygrid ) error(mylab + " is not an action that calculates a grid");
-  mygrid->interpolating=true;
+//  mygrid = dynamic_cast<GridVesselBase*>( action->getVesselWithName("GRID") );
+//  if(!mygrid ) error(mylab + " is not an action that calculates a grid");
+//  mygrid->interpolating=true;
 
   parse("FILE",filen); parse("FMT",fmt);
   if( filen.length()==0 ) error("file name for output has no characters");

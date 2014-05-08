@@ -24,13 +24,15 @@
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
 #include "tools/ConjugateGradient.h"
+#include "vesselbase/ActionWithInputVessel.h"
 #include "Mapping.h"
 
 namespace PLMD {
 namespace mapping {
 
 class ProjectOnMap :
-  public ActionWithValue
+  public ActionWithValue,
+  public vesselbase::ActionWithInputVessel
 {
 private:
   Mapping* mymap;
@@ -49,20 +51,25 @@ PLUMED_REGISTER_ACTION(ProjectOnMap,"FINDPROJECTION")
 void ProjectOnMap::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
-  keys.add("compulsory","ARG","The name of the action that describes the mapping from the low to the high dimensional space");
+  vesselbase::ActionWithInputVessel::registerKeywords( keys );
+  keys.remove("DATA"); keys.use("FUNC");
+//  keys.add("compulsory","ARG","The name of the action that describes the mapping from the low to the high dimensional space");
   keys.add("compulsory","TOL","1E-6","The tolerance for the conjugate gradient optimization algorithm");
 }
 
 ProjectOnMap::ProjectOnMap(const ActionOptions& ao):
 Action(ao),
 ActionWithValue(ao),
+ActionWithInputVessel(ao),
 mymap(NULL)
 {
   // Find the mapping object
-  std::string mylab; parse("ARG",mylab);
-  mymap=plumed.getActionSet().selectWithLabel<Mapping*>(mylab);
-  if(!mymap) error(mylab + " mapping does not exist");
-  addDependency(mymap);
+  readArgument( "func" ); plumed_assert( getDependencies().size()==1 );
+  mymap=dynamic_cast<Mapping*>( getDependencies()[0] );
+//  std::string mylab; parse("ARG",mylab);
+//  mymap=plumed.getActionSet().selectWithLabel<Mapping*>(mylab);
+//  if(!mymap) error(mylab + " mapping does not exist");
+//  addDependency(mymap);
 
   // Read in the tolerance for the CG minimisation
   parse("TOL",tolerance);

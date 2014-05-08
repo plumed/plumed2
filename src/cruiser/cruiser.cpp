@@ -110,7 +110,7 @@ public:
      if(plumed){
        int s=sizeof(double);
        plumed->cmd("setRealPrecision",&s);
-       plumed->cmd("setMPIComm",&pc.Get_comm());
+       if(Communicator::initialized()) plumed->cmd("setMPIComm",&pc.Get_comm());
      }
 
      if(plumed){

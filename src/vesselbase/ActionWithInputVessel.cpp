@@ -22,6 +22,7 @@
 #include "ActionWithInputVessel.h"
 #include "StoreDataVessel.h"
 #include "BridgeVessel.h"
+#include "GridVesselBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -32,6 +33,8 @@ void ActionWithInputVessel::registerKeywords(Keywords& keys){
   keys.add("compulsory","DATA","certain actions in plumed work by calculating a list of variables and summing over them. "
                                "This particular action can be used to calculate functions of these base variables or prints "
                                "them to a file. This keyword thus takes the label of one of those such variables as input.");
+  keys.reserve("compulsory","FUNC","this action takes in a function that is defined in another action as input.  This function "
+                                   "will be calculated in that action at various points on a grid");
 }
 
 ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
@@ -39,30 +42,43 @@ ActionWithInputVessel::ActionWithInputVessel(const ActionOptions&ao):
   arguments(NULL),
   myBridgeVessel(NULL)
 {
+  if( keywords.exists("DATA") ) plumed_assert( !keywords.exists("FUNC") );
+  if( keywords.exists("FUNC") ) plumed_assert( !keywords.exists("DATA") );
 }
 
 void ActionWithInputVessel::readArgument( const std::string& type ){
-  std::string mlab; parse("DATA",mlab);
-  ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
-  if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
-  addDependency(mves);
+  if( keywords.exists("DATA") ){
+      std::string mlab; parse("DATA",mlab);
+      ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mlab);
+      if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
+      addDependency(mves);
 
-  ActionWithValue* aval=dynamic_cast<ActionWithValue*>( this );
-  if(aval){
-      if( aval->checkNumericalDerivatives() ){
-          ActionWithValue* aval2=dynamic_cast<ActionWithValue*>( mves );
-          plumed_assert( aval2 ); aval2->useNumericalDerivatives();
-      } 
-  }
+      if( type=="bridge" ){
+         ActionWithVessel* aves=dynamic_cast<ActionWithVessel*>( this );
+         plumed_assert(aves); myBridgeVessel = mves->addBridgingVessel( aves ); 
+         arguments = dynamic_cast<Vessel*>( myBridgeVessel );
+      } else  if( type=="store" ){ 
+         arguments = dynamic_cast<Vessel*>( mves->buildDataStashes() );  
+      } else {
+         plumed_error();
+      }
 
-  if( type=="bridge" ){
-     ActionWithVessel* aves=dynamic_cast<ActionWithVessel*>( this );
-     plumed_assert(aves); myBridgeVessel = mves->addBridgingVessel( aves ); 
-     arguments = dynamic_cast<Vessel*>( myBridgeVessel );
-  } else  if( type=="store" ){ 
-     arguments = dynamic_cast<Vessel*>( mves->buildDataStashes() );  
+      ActionWithValue* aval=dynamic_cast<ActionWithValue*>( this );
+      if(aval){
+          if( aval->checkNumericalDerivatives() ){
+              ActionWithValue* aval2=dynamic_cast<ActionWithValue*>( getDependencies()[0] );
+              plumed_assert( aval2 ); aval2->useNumericalDerivatives();
+          }
+      }
   } else {
-     plumed_error();
+      plumed_assert( type=="func" ); std::string glab; parse("FUNC",glab);
+      ActionWithVessel* mves= plumed.getActionSet().selectWithLabel<ActionWithVessel*>(glab);
+      if(!mves) error("action labelled " +  glab + " does not exist or does not have vessels");
+      addDependency(mves);
+
+      GridVesselBase* gg = dynamic_cast<GridVesselBase*>( mves->getVesselWithName("GRID") );
+      if( !gg ) error(glab + " is not an action that calculates a function on a grid");
+      arguments = dynamic_cast<Vessel*>( gg );
   }
 }
 
