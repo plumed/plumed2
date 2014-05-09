@@ -145,7 +145,7 @@ double Minimise1DBrent<FCLASS>::minimise( eng_pointer eng ){
       if( fabs(e) > tol1 ){
           r=(x-w)*(fx-fv);
           q=(x-v)*(fx-fw);
-          q=(x-v)*q-(x-w)*r;
+          p=(x-v)*q-(x-w)*r;
           q=2.0*(q-r);
           if( q > 0.0 ) p = -p;
           q=fabs(q);
