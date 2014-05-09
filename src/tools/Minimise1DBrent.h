@@ -133,12 +133,12 @@ double Minimise1DBrent<FCLASS>::minimise( eng_pointer eng ){
    double e=0.0;
 
    a=(ax < cx ? ax : cx );
-   b=(ax > cx ? ax : cx );
+   b=(ax >= cx ? ax : cx );
    x=w=v=bx;
    fw=fv=fx=(myclass_func.*eng)(x);
    for(unsigned iter=0;iter<ITMAX;++iter){
       xm=0.5*(a+b);
-      tol2=2.0*(tol1=tol*abs(x)+ZEPS);
+      tol2=2.0*(tol1=tol*fabs(x)+ZEPS);
       if( fabs(x-xm) <= (tol2-0.5*(b-a))) {
           fmin=fx; minimised=true; return x;
       }
@@ -151,7 +151,7 @@ double Minimise1DBrent<FCLASS>::minimise( eng_pointer eng ){
           q=fabs(q);
           etemp=e; 
           e=d;
-          if( fabs(p) >= abs(0.5*q*etemp) || p <= q*(a-x) || p >= q*(b-x) ){
+          if( fabs(p) >= fabs(0.5*q*etemp) || p <= q*(a-x) || p >= q*(b-x) ){
              d = CGOLD*(e=(x >= xm ? a-x : b-x ));
           } else {
              d=p/q; u=x+d;
