@@ -30,7 +30,7 @@ The tarball for this project contains the following files:
 
 \subsection vis-traj Visualising the trajectory
 
-The aim of this tutorial is to understand the data contained in the trajectory called trajectory-short.pdb.  This file some
+The aim of this tutorial is to understand the data contained in the trajectory called trajectory-short.pdb.  This file contains some
 frames from a simulation from a 16 residue protein.  As a start point then let load this trajectory with vmd and have a look
 at it.  Type the following command into the command line:
 
@@ -100,9 +100,9 @@ projections of these high-dimensional configurations.  The numbers 1 through 4 a
 
 The problem when it comes to applying this idea to the data that we have in the trajectory-short trajectory is that we have no information on the ``order" of
 these points. We have not been told that this trajectory represents the transition between two interesting points in phase space  and thus we cannot apply the
-logic of paths.  Hence, to seek out a low dimensional representation we are going to try and find a representation of this data we are going to seek out an
-isometry between the space containing the \f$3N\f$-dimensional vectors of atom positions and some lower-dimensional space.  This idea is explained in more
-detail in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be"> video </a>.
+logic of paths.  Hence, to seek out a low dimensional representation we are going to try and find a representation of this data we are going to seek out 
+<a href="http://en.wikipedia.org/wiki/Isometry"> an isometry </a> between the space containing the \f$3N\f$-dimensional vectors of atom positions 
+and some lower-dimensional space.  This idea is explained in more detail in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be"> video </a>.
 
 Let's now generate our isometric embedding.  You will need to create a plumed input file that contains the following instructions:
 
