@@ -110,9 +110,10 @@ See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repo
 For users:
 - Now compiles on Blue Gene Q with IBM compilers.
 - Fixed bug in \ref CENTER where default WEIGHTS were missing. 
-- Several small fixes in documentation and log file.
 - Fixed broken \ref CONTACTMAP with SUM
+- Fixed \ref DUMPATOMS with gro file and more than 100k atoms.
 - Added CMDIST in \ref CONTACTMAP to emulate plumed1 CMAP.
+- Several small fixes in documentation and log file.
 
 For developers:
 - Fixed cmd("getBias") to retrieve bias. It was not working with
