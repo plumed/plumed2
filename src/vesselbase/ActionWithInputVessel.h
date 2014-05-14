@@ -43,8 +43,6 @@ protected:
   void readArgument( const std::string& type );
 /// Return a pointer to specific argument
   Vessel* getPntrToArgument();
-/// Add forces to arguments (used in apply)
-  void addForcesOnArguments( const std::vector<double>& forces );
 public:
 /// Registers the list of keywords
   static void registerKeywords( Keywords& keys );

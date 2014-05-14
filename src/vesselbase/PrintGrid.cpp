@@ -69,6 +69,7 @@ ActionWithInputVessel(ao)
 {
   readArgument("func");
   mygrid = dynamic_cast<GridVesselBase*>( getPntrToArgument() );
+  mygrid->interpolating = true;
 //  std::string mylab; parse("ARG",mylab);
 //  ActionWithVessel* action=plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mylab);
 //  if(!action) error(mylab + " action does not exist");
