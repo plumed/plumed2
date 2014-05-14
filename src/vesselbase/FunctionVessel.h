@@ -57,11 +57,15 @@ protected:
   double getFinalValue( const unsigned& j );
 /// This does a combination of the product and chain rules
   void mergeFinalDerivatives( const std::vector<double>& df );
+/// Resize the vector containing the derivatives
+  void setNumberOfDerivatives( const unsigned& nder );
+/// Return a pointer to the final value
+  void addDerivativeToFinalValue( const unsigned& j, const double& der  );
 public:
   static void registerKeywords( Keywords& keys );
   FunctionVessel( const VesselOptions& );
 /// This does the resizing of the buffer
-  void resize();
+  virtual void resize();
 /// This applies all the forces
   bool applyForce( std::vector<double>& forces );
 /// The description for the log
@@ -91,6 +95,12 @@ double FunctionVessel::getFinalValue(const unsigned& j){
 inline
 void FunctionVessel::setOutputValue( const double& val ){
   final_value->set( val );
+}
+
+inline
+void FunctionVessel::addDerivativeToFinalValue( const unsigned& j, const double& der ){
+  plumed_dbg_assert( j<nderivatives );
+  final_value->addDerivative( j, der );
 }
 
 }

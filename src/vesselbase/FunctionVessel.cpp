@@ -63,6 +63,11 @@ void FunctionVessel::resize(){
   }
 }
 
+void FunctionVessel::setNumberOfDerivatives( const unsigned& nder ){
+  nderivatives=nder;
+  final_value->resizeDerivatives( nder );
+}
+
 void FunctionVessel::mergeFinalDerivatives( const std::vector<double>& df ){
   if( !getAction()->derivativesAreRequired() ) return;
 
