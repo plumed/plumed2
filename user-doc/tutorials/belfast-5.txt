@@ -1,0 +1,89 @@
+/**
+\page belfast-5 Belfast tutorial: Steered MD
+
+Steered molecular dynamics can be performed in PLUMED on any
+collective variable by means of the \ref MOVINGRESTRAINT directive.
+This directive is very flexible and allows for a programmed series
+of steerings and can be used also to sample multiple events
+within a single simulation.
+
+\section belfast-5-TMD Targeted MD
+
+Steered MD is often  used to drag the system from an initial configuration
+to a final one by pulling one or more CVs. Most of time the aim of such simulations
+is to prepare the system in a particular state or produce nice snapshots for a cool movie.
+All the PLUMED CVs can be used in steered MD.
+Targeted MD can be seen as a special case of steered MD where the RMSD from
+a reference structure is used as a collective variable.
+It can be used for example
+if one wants to prepare the system so that the coordinates of selected
+atoms are as close as possible to a target pdb structure.
+
+\verbatim
+# set up two variables for Phi and Psi dihedral angles
+# these variables will be just monitored to see what happens
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+# creates a CV that measures the RMSD from a reference pdb structure
+# the RMSD is measured after OPTIMAL alignment with the target structure
+rmsd: RMSD REFERENCE=ref.pdb TYPE=OPTIMAL
+
+# Steer the CV to a value of 0.0
+# For long expression, it is convenient to split the command
+# on multiple lines
+restraint: ...
+  MOVINGRESTRAINT
+  ARG=rmsd
+  AT0=0.0 STEP0=0 KAPPA0=0
+          STEP1=10000 KAPPA1=10000
+...
+
+# monitor the two variables and the rmsd
+PRINT STRIDE=10 ARG=phi,psi,rmsd FILE=COLVAR
+
+\endverbatim
+(see \ref TORSION, \ref RMSD, \ref MOVINGRESTRAINT, and \ref PRINT).
+
+Note that \ref RMSD should be provided a reference structure in pdb format.
+The \ref MOVINGRESTRAINT bias potential here acts on the rmsd, and the other two
+variables (phi and psi) are untouched. Notice that whereas the force from the restraint
+should be applied at every step (thus rmsd is computed at every step) the two torsions
+are computed only every 10 steps. PLUMED automatically detect which variables are used
+at every step, leading to better performance when complicated and computationally
+expensive variables are monitored - this is not the case here, since the two torsions
+are very fast to compute.
+The desired position of the restraint at the beginning of the simulation is specified with
+the keyword AT0. S
+, and the target one with the keyword AT1.
+The keyword KAPPA0 specifies the initial spring stiffness (no spring in this example),
+and KAPPA1 the final one. AT0 is the position of the restraint at the beginning of the simulation,
+and is set so as to target the conformation at zero RMSD from the reference structure.
+Since the keyword AT1 is not used, PLUMED implicitly sets it as equal to AT0. Thus,
+the restraint is not moving here but just "growing". 
+The keyword STEP0 specifies at which step the parameters AT0 and KAPPA0 should be used
+(here at the beginning of the simulation)
+and STEP1 specifies at which step the parameters AT1 (implicitly equal to AT0 here) and KAPPA1 should 
+be used (here at the end of the simulation).
+One can follow the evolution through gnuplot by visualizing the instantaneous value of the CV by the simple command
+\verbatim
+p "./COLVAR" u 1:2
+\endverbatim
+ and obtain a plot like the one reported in XXX.
+
+\section belfast-5-FE Estimating the free energy - Jarzynski equality
+The reason behind the limited usefulness of such simulations is that they are "out-of-equilibrium" simulations
+and they are not representative of equilibrium ensemble that is generally of interest for simulations.
+
+\section belfast-5-FE Reweighting
+
+
+
+
+*/
+
+link: @subpage belfast-5
+
+description: How to run a steered MD simulations and how to estimate the free energy
+
+
