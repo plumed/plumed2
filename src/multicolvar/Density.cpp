@@ -63,6 +63,8 @@ public:
   void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
                                         const std::vector<double>& weight, MultiColvarFunction* func ){}
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
+  unsigned getNumberOfQuantities();
+  void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
 };
 
 PLUMED_REGISTER_ACTION(Density,"DENSITY")
@@ -91,6 +93,14 @@ Vector Density::getCentralAtom(){
 
 void Density::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
    indices[jstore]=0; 
+}
+
+unsigned Density::getNumberOfQuantities(){
+   return 6;
+}
+
+void Density::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){
+   plumed_dbg_assert( vals.size()==2 ); vals[0]=vals[1]=1.0;
 }
 
 }

@@ -22,7 +22,8 @@
 #include "Function.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
-#include "core/TargetDist.h"
+#include "reference/MetricRegister.h"
+#include "reference/ArgumentOnlyDistance.h"
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
 
@@ -31,7 +32,7 @@ using namespace std;
 namespace PLMD {
 namespace function{
 
-//+PLUMEDOC FUNCTION TARGET
+//+PLUMEDOC DCOLVAR TARGET
 /*
 This function measures the pythagorean distance from a particular structure measured in the space defined by some 
 set of collective variables.
@@ -44,10 +45,10 @@ set of collective variables.
 
 class Target : public Function {
 private:
-  TargetDist target;
-  std::vector<double> derivs;
+  PLMD::ArgumentOnlyDistance* target;
 public:
   Target(const ActionOptions&);
+  ~Target();
   virtual void calculate();
   static void registerKeywords(Keywords& keys );
 };
@@ -55,43 +56,52 @@ public:
 PLUMED_REGISTER_ACTION(Target,"TARGET")
 
 void Target::registerKeywords(Keywords& keys){
-  Function::registerKeywords(keys);
-  keys.use("ARG");
+  Function::registerKeywords(keys); 
+  keys.add("compulsory","TYPE","EUCLIDEAN","the manner in which the distance should be calculated");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure. In the PDB file the atomic "
                                     "coordinates and box lengths should be in Angstroms unless you are working with natural units. "
                                     "If you are working with natural units then the coordinates should be in your natural length unit. "
                                     "The charges and masses of the atoms (if required) should be inserted in the beta and occupancy "
                                     "columns respectively. For more details on the PDB file format visit http://www.wwpdb.org/docs.html"); 
-  keys.add("optional","REFERENCE_VEC","the vector of values for the CVs at the reference point (if you use this you don't need REFERENCE)");
 }
 
 Target::Target(const ActionOptions&ao):
 Action(ao),
-Function(ao),
-target(log)
+Function(ao)
 {
-  std::vector<double> targ;
-  parseVector("REFERENCE_VEC",targ);
-  if( targ.size()!=0 ){
-    target.read( targ, getArguments() );
-  } else {
-    string reference;
-    parse("REFERENCE",reference);
-    PDB pdb; 
-    if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
-          error("missing input file " + reference);
-    printf("Read pdb file with %d atoms inside\n",pdb.size());
-    target.read( pdb, getArguments() );
-  }
-  checkRead();
-  derivs.resize( getNumberOfArguments() );
+  std::string type; parse("TYPE",type);
+  std::string reference; parse("REFERENCE",reference); 
+  checkRead(); PDB pdb; 
+  if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()) )
+      error("missing input file " + reference);
+  
+  // Use the base ActionWithArguments to expand things like a1.*
+  expandArgKeywordInPDB( pdb );
+
+  // Generate the reference structure
+  target=metricRegister().create<ArgumentOnlyDistance>( type, pdb );
+
+  // Get the argument names
+  std::vector<std::string> args_to_retrieve;
+  target->getArgumentRequests( args_to_retrieve, false );
+  target->setNumberOfArguments( args_to_retrieve.size() );
+
+  // Get the arguments
+  std::vector<Value*> myargs;
+  interpretArgumentList( args_to_retrieve, myargs );
+  requestArguments( myargs );
+
+  // Create the value
   addValueWithDerivatives(); setNotPeriodic();
+}
+ 
+Target::~Target(){
+  delete target;
 }
 
 void Target::calculate(){
-  double r=target.calculate( derivs );
-  setValue(r);
-  for(unsigned i=0;i<derivs.size();i++) setDerivative(i,derivs[i]);
+  double r=target->calculate( getArguments(), false ); setValue(r);
+  for(unsigned i=0;i<getNumberOfArguments();i++) setDerivative( i, target->getArgumentDerivative(i) );
 }
 
 }

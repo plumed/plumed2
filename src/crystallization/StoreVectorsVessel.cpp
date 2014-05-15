@@ -34,7 +34,7 @@ void StoreVectorsVessel::registerKeywords( Keywords& keys ){
 
 StoreVectorsVessel::StoreVectorsVessel( const vesselbase::VesselOptions& da ):
 StoreDataVessel(da),
-store_director(false)
+store_director(true)
 {
   vecs=dynamic_cast<VectorMultiColvar*>( getAction() );
   plumed_assert( vecs );
@@ -49,7 +49,7 @@ void StoreVectorsVessel::usedInFunction( const bool& store ){
 }
 
 void StoreVectorsVessel::recompute( const unsigned& ivec, const unsigned& jstore ){
-  plumed_dbg_assert( usingLowMem() ); 
+  plumed_dbg_assert( vecs->derivativesAreRequired() && usingLowMem() ); 
   // Set the task we want to reperform
   setTaskToRecompute( ivec );
   // Reperform the task
@@ -91,7 +91,7 @@ void StoreVectorsVessel::normalizeVector( const int& jstore ){
   }
   double norm3=norm2*norm, weight = 1.0 / norm, wdf = -1.0 / norm3;
 
-  if( !lowmemory ) {
+  if( !lowmemory && vecs->derivativesAreRequired() ) {
       plumed_dbg_assert( jstore<getAction()->getFullNumberOfTasks() );
       for(unsigned ider=0;ider<getNumberOfDerivatives(myelem);++ider){
           double comp2=0.0; unsigned ibuf = myelem * ncomponents * getNumberOfDerivativeSpacesPerComponent() + 1 + ider;
@@ -105,7 +105,7 @@ void StoreVectorsVessel::normalizeVector( const int& jstore ){
              ibuf += getNumberOfDerivativeSpacesPerComponent();
           }
       }
-  } else if( jstore>0 ) {
+  } else if( jstore>0 && vecs->derivativesAreRequired() ) {
       unsigned maxder = vecs->getNumberOfDerivatives();
       for(unsigned ider=0;ider<getNumberOfDerivatives(jstore);++ider){
           double comp2=0.0; unsigned ibuf = jstore * ncomponents * maxder + ider;
@@ -124,6 +124,8 @@ void StoreVectorsVessel::normalizeVector( const int& jstore ){
 
 void StoreVectorsVessel::chainRuleForComponent( const unsigned& icolv, const unsigned& jin, const unsigned& jout, const unsigned& base_cv_no, 
                                                 const double& weight, multicolvar::MultiColvarFunction* funcout ){
+  plumed_dbg_assert( vecs->derivativesAreRequired() );
+
   if( usingLowMem() ){
      unsigned ibuf = ( icolv*ncomponents + jin ) * getAction()->getNumberOfDerivatives();
      for(unsigned ider=0;ider<getNumberOfDerivatives(icolv);++ider){
@@ -139,6 +141,8 @@ void StoreVectorsVessel::chainRuleForComponent( const unsigned& icolv, const uns
 
 void StoreVectorsVessel::chainRuleForVector( const unsigned& icolv, const unsigned& jout, const unsigned& base_cv_no, 
                                              const std::vector<double>& df, multicolvar::MultiColvarFunction* funcout ){ 
+   plumed_dbg_assert( vecs->derivativesAreRequired() );
+
    chainRule( icolv, df );
    for(unsigned ider=0;ider<getNumberOfDerivatives(icolv);++ider){
        funcout->addStoredDerivative( jout, base_cv_no, getStoredIndex( icolv, ider ), getFinalDerivative(ider) );

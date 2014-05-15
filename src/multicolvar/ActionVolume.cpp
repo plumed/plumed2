@@ -31,6 +31,7 @@ void ActionVolume::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithVessel::registerKeywords( keys );
+  ActionWithInputVessel::registerKeywords( keys );
   keys.setComponentsIntroduction("This Action can be used to calculate the following quantities by employing the keywords listed below. "
                                  "You must select which from amongst these quantities you wish to calculate - this command cannot be run "
                                  "unless one of the quantities below is being calculated."
@@ -41,7 +42,6 @@ void ActionVolume::registerKeywords( Keywords& keys ){
                                  "e.g. <em>label</em>.less_than-1, <em>label</em>.less_than-2 etc.");
   keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); 
-  keys.add("compulsory","ARG","the label of the action that calculates the multicolvar we are interested in"); 
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.addFlag("OUTSIDE",false,"calculate quantities for colvars that are on atoms outside the region of interest");
@@ -55,21 +55,17 @@ Action(ao),
 ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
+ActionWithInputVessel(ao),
 updateFreq(0)
 {
-  std::string mlab; parse("ARG",mlab);
-  mycolv = plumed.getActionSet().selectWithLabel<multicolvar::MultiColvarBase*>(mlab);
-  if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
+  readArgument("bridge");
+  mycolv = dynamic_cast<MultiColvarBase*>( getDependencies()[0] ); 
+  plumed_assert( getDependencies().size()==1 );
+  if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar"); 
+
   std::string functype=mycolv->getName();
   std::transform( functype.begin(), functype.end(), functype.begin(), tolower );
   log.printf("  calculating %s inside region of insterest\n",functype.c_str() ); 
- 
-  if( checkNumericalDerivatives() ){
-      // If we use numerical derivatives we have to force the base
-      // multicolvar to also use numerical derivatives
-      ActionWithValue* vv=dynamic_cast<ActionWithValue*>( mycolv );
-      plumed_assert( vv ); vv->useNumericalDerivatives();
-  }
 
   // Neighbor list readin
   parse("NL_STRIDE",updateFreq);
@@ -96,16 +92,18 @@ updateFreq(0)
   } else {
      readVesselKeywords();
   }
-
-  // Now set up the bridging vessel (has to be done this way for internal arrays to be resized properly)
-  addDependency(mycolv); myBridgeVessel = mycolv->addBridgingVessel( this );
   // And resize atoms
   finishTaskListUpdate();
 }
 
+void ActionVolume::turnOnDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  needsDerivatives();
+} 
+
 void ActionVolume::requestAtoms( const std::vector<AtomNumber>& atoms ){
   ActionAtomistic::requestAtoms(atoms); bridgeVariable=3*atoms.size();
-  addDependency( mycolv ); mycolv->resizeFunctions();
+  addDependency( mycolv ); 
   tmpforces.resize( 3*atoms.size()+9 );
 }
 
@@ -226,31 +224,33 @@ void ActionVolume::mergeDerivatives( const unsigned& ider, const double& df ){
 
 void ActionVolume::clearDerivativesAfterTask( const unsigned& ider ){
   unsigned vstart=getNumberOfDerivatives()*ider;
-  // Clear atom derivatives
-  for(unsigned i=0;i<activeAtoms.getNumberActive();++i){
-     unsigned iatom=vstart+3*activeAtoms[i];
-     setElementDerivative( iatom, 0.0 ); iatom++;
-     setElementDerivative( iatom, 0.0 ); iatom++;
-     setElementDerivative( iatom, 0.0 );
+  if( derivativesAreRequired() ){
+     // Clear atom derivatives
+     for(unsigned i=0;i<activeAtoms.getNumberActive();++i){
+        unsigned iatom=vstart+3*activeAtoms[i];
+        setElementDerivative( iatom, 0.0 ); iatom++;
+        setElementDerivative( iatom, 0.0 ); iatom++;
+        setElementDerivative( iatom, 0.0 );
+     }
+     // Clear virial contribution
+     unsigned nvir=vstart+3*mycolv->getNumberOfAtoms();
+     for(unsigned j=0;j<9;++j){
+        setElementDerivative( nvir, 0.0 ); nvir++;
+     }
+     // Clear derivatives of local atoms
+     for(unsigned j=0;j<getNumberOfAtoms();++j){
+        setElementDerivative( nvir, 0.0 ); nvir++;
+        setElementDerivative( nvir, 0.0 ); nvir++;
+        setElementDerivative( nvir, 0.0 ); nvir++;
+     }
+     plumed_dbg_assert( (nvir-vstart)==getNumberOfDerivatives() );
   }
-  // Clear virial contribution
-  unsigned nvir=vstart+3*mycolv->getNumberOfAtoms();
-  for(unsigned j=0;j<9;++j){
-     setElementDerivative( nvir, 0.0 ); nvir++;
-  }
-  // Clear derivatives of local atoms
-  for(unsigned j=0;j<getNumberOfAtoms();++j){
-     setElementDerivative( nvir, 0.0 ); nvir++;
-     setElementDerivative( nvir, 0.0 ); nvir++;
-     setElementDerivative( nvir, 0.0 ); nvir++;
-  }
-  plumed_dbg_assert( (nvir-vstart)==getNumberOfDerivatives() );
   // Clear values
   thisval_wasset[ider]=false; setElementValue( ider, 0.0 ); thisval_wasset[ider]=false;
 }
 
 void ActionVolume::calculateNumericalDerivatives( ActionWithValue* a ){
-  myBridgeVessel->completeNumericalDerivatives();
+  ActionWithInputVessel::calculateNumericalDerivatives(a);
 }
 
 bool ActionVolume::isPeriodic(){
@@ -261,7 +261,7 @@ void ActionVolume::deactivate_task(){
   plumed_merror("This should never be called");
 }
 
-void ActionVolume::applyBridgeForces( const std::vector<double>& bb ){ 
+void ActionVolume::addBridgeForces( const std::vector<double>& bb ){ 
   plumed_dbg_assert( bb.size()==tmpforces.size()-9 );
   // Forces on local atoms
   for(unsigned i=0;i<bb.size();++i) tmpforces[i]=bb[i];

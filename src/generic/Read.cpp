@@ -81,6 +81,8 @@ public:
   void update();
   std::string getFilename() const;
   IFile* getFile();
+  unsigned getNumberOfDerivatives();
+  void turnOnDerivatives();
 };
 
 PLUMED_REGISTER_ACTION(Read,"READ")
@@ -174,6 +176,14 @@ std::string Read::getFilename() const {
 
 IFile* Read::getFile(){
   return ifile;
+}
+
+unsigned Read::getNumberOfDerivatives(){
+  return 0;
+}
+
+void Read::turnOnDerivatives(){
+  error("cannot calculate derivatives for colvars that are read in from a file");
 }
 
 void Read::prepare(){

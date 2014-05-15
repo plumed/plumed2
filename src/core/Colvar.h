@@ -69,6 +69,7 @@ public:
   Colvar(const ActionOptions&);
   ~Colvar(){}
   static void registerKeywords( Keywords& keys );
+  virtual unsigned getNumberOfDerivatives();
 };
 
 inline
@@ -106,6 +107,11 @@ void Colvar::setBoxDerivatives(const Tensor&d){
 inline
 void Colvar::setBoxDerivativesNoPbc(){
   setBoxDerivativesNoPbc(getPntrToValue());
+}
+
+inline
+unsigned Colvar::getNumberOfDerivatives(){
+  return 3*getNumberOfAtoms() + 9;
 }
 
 

@@ -34,8 +34,6 @@ inum(0)
 }
 
 void BridgeVessel::resize(){
-  forces.resize( myOutputAction->getNumberOfDerivatives() );
-  myOutputAction->resizeFunctions();
   if( myOutputAction->checkNumericalDerivatives() ){
       mynumerical_values.resize( getAction()->getNumberOfDerivatives()*myOutputValues->getNumberOfComponents() );
       inum=0;
@@ -43,9 +41,12 @@ void BridgeVessel::resize(){
 }
 
 void BridgeVessel::setOutputAction( ActionWithVessel* myact ){
+  ActionWithValue* checkme=dynamic_cast<ActionWithValue*>( getAction() );
+  plumed_massert( checkme, "vessel in bridge must inherit from ActionWithValue");
+
   myOutputAction=myact;
   myOutputValues=dynamic_cast<ActionWithValue*>( myact );
-  plumed_assert( myOutputValues );
+  plumed_massert( myOutputValues, "bridging vessel must inherit from ActionWithValue");
 }
 
 std::string BridgeVessel::description(){
@@ -105,7 +106,7 @@ void BridgeVessel::completeNumericalDerivatives(){
       unsigned natoms=aa->getNumberOfAtoms();
       for(unsigned j=0;j<nvals;++j){
           double ref=( myOutputValues->copyOutput(j) )->get();
-          if( ( myOutputValues->copyOutput(j) )->hasDerivatives() ){
+          if( ( myOutputValues->copyOutput(j) )->getNumberOfDerivatives()>0 ){
               for(unsigned i=0;i<3*natoms;++i){
                   double d=( mynumerical_values[i*nvals+j] - ref)/delta;
                   ( myOutputValues->copyOutput(j) )->addDerivative(i,d);
@@ -123,7 +124,6 @@ void BridgeVessel::completeNumericalDerivatives(){
 //      unsigned nder=myOutputAction->getNumberOfDerivatives();
 //      for(unsigned j=0;j<nvals;++j){
 //          double ref=( myOutputValues->copyOutput(j) )->get();
-//          if( ( myOutputValues->copyOutput(j) )->hasDerivatives() ){
 //              for(unsigned i=0;i<nder;++i){
 //                  double d=( mynumerical_values[i*nvals+j] - ref)/delta;
 //                  ( myOutputValues->copyOutput(j) )->addDerivative(i,d);
@@ -142,8 +142,9 @@ void BridgeVessel::completeNumericalDerivatives(){
 
 bool BridgeVessel::applyForce( std::vector<double>& outforces ){
   bool hasforce=false; outforces.assign(outforces.size(),0.0);
-  unsigned nextra = myOutputAction->getNumberOfDerivatives() - getAction()->getNumberOfDerivatives();
-  std::vector<double> eforces( nextra, 0.0 );
+  unsigned ndertot = myOutputAction->getNumberOfDerivatives();
+  unsigned nextra = ndertot - getAction()->getNumberOfDerivatives();
+  std::vector<double> forces( ndertot ), eforces( nextra, 0.0 );
   for(unsigned i=0;i<myOutputAction->getNumberOfVessels();++i){
      if( ( myOutputAction->getPntrToVessel(i) )->applyForce( forces ) ){
          hasforce=true;

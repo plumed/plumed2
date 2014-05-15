@@ -25,13 +25,34 @@
 #include "core/ActionSet.h"
 #include "vesselbase/BridgeVessel.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "vesselbase/ActionWithInputVessel.h"
 #include "VectorMultiColvar.h"
 
 //+PLUMEDOC MCOLVARF AVERAGE_VECTOR
 /*
-Calculate an average vector
+Calculate the average vector by averaging each component of the vector separately
+
+This colvar takes a set of atom centered vectors and calculates the average vector.  Unlike
+the average calculated by using the following command:
+
+\verbatim
+Q6 SPECIES=1-64 D_0=1.3 R_0=0.2 MEAN LABEL=q6
+\endverbatim
+
+which calculates the average value for the norm of the Q6 vectors, the AVERAGE_VECTOR command takes
+the average by averaging each component of the vector in turn.  This sort of thing has is sometimes 
+used to measure the average Q4 parameter in a cluster. 
 
 \par Examples
+
+The following command calculates the average Q6 vector for a 75 atom cluster of Lennard Jones.  The
+average is then printed to a file called colvar.
+
+\verbatim
+Q6 SPECIES=1-75 SWITCH={GAUSSIAN D_0=1.391 R_0=0.01} LABEL=q6
+AVERAGE_VECTOR DATA=q6 LABEL=a6a
+PRINT ARG=a6a FILE=colvar
+\endverbatim
 
 */
 //+ENDPLUMEDOC
@@ -41,7 +62,8 @@ namespace crystallization {
 
 class VectorAverage : 
   public PLMD::ActionWithValue,
-  public vesselbase::ActionWithVessel
+  public vesselbase::ActionWithVessel,
+  public vesselbase::ActionWithInputVessel
 {
 private:
   vesselbase::BridgeVessel* myBridgeVessel;
@@ -55,11 +77,11 @@ public:
   void clearDerivatives(){}
   void doJobsRequiredBeforeTaskList();
   unsigned getNumberOfDerivatives();
+  void turnOnDerivatives();
   void performTask();
   void finishComputations();
   void calculate(){}
   void apply();
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   bool isPeriodic();
   void deactivate_task();
 };
@@ -70,29 +92,22 @@ void VectorAverage::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
   ActionWithVessel::registerKeywords( keys );
-  keys.add("compulsory","ARG","the label of the action that calculates the vectors we are interested in averaging");
+  ActionWithInputVessel::registerKeywords( keys );
 }
 
 VectorAverage::VectorAverage(const ActionOptions&ao):
 Action(ao),
 ActionWithValue(ao),
-ActionWithVessel(ao)
+ActionWithVessel(ao),
+ActionWithInputVessel(ao)
 {
-  std::string mlab; parse("ARG",mlab);
-  mycolv = plumed.getActionSet().selectWithLabel<crystallization::VectorMultiColvar*>(mlab);
-  if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
+  readArgument("bridge");
+  mycolv = dynamic_cast<crystallization::VectorMultiColvar*>( getDependencies()[0] );
+  plumed_assert( getDependencies().size()==1 );
+  if(!mycolv) error("action labeled " + mycolv->getLabel() + " does not exist or is not a multicolvar");
   std::string functype=mycolv->getName();
   log.printf("  calculating average %s vector\n",functype.c_str() );
 
-  if( checkNumericalDerivatives() ){
-      // If we use numerical derivatives we have to force the base
-      // multicolvar to also use numerical derivatives
-      ActionWithValue* vv=dynamic_cast<ActionWithValue*>( mycolv );
-      plumed_assert( vv ); vv->useNumericalDerivatives();
-  }
-
-  // Now set up the bridging vessel (has to be done this way for internal arrays to be resized properly)
-  addDependency(mycolv); myBridgeVessel = mycolv->addBridgingVessel( this );
   // And create value
   addValueWithDerivatives(); setNotPeriodic(); 
   // Resize everything
@@ -106,6 +121,11 @@ void VectorAverage::doJobsRequiredBeforeTaskList(){
   ActionWithValue::clearDerivatives(); 
   values.assign( values.size(), 0.0 );
   derivatives.assign( derivatives.size(), 0.0 );
+}
+
+void VectorAverage::turnOnDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  needsDerivatives();
 }
 
 unsigned VectorAverage::getNumberOfDerivatives(){
@@ -142,10 +162,6 @@ void VectorAverage::apply(){
   Value* val=getPntrToComponent(0); 
   std::vector<double> tforces( mycolv->getNumberOfDerivatives(), 0 );
   if( val->applyForce( tforces ) ) mycolv->addForcesOnAtoms( tforces );
-}
-
-void VectorAverage::calculateNumericalDerivatives( ActionWithValue* a ){
-  myBridgeVessel->completeNumericalDerivatives();
 }
 
 bool VectorAverage::isPeriodic(){

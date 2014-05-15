@@ -261,7 +261,7 @@ void ActionWithArguments::calculateNumericalDerivatives( ActionWithValue* a ){
   a->clearDerivatives();
   for(int j=0;j<nval;j++){
     Value* v=a->copyOutput(j);
-    if( v->hasDerivatives() ) for(int i=0;i<npar;i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/sqrt(epsilon));
+    if( v->getNumberOfDerivatives()>0 ) for(int i=0;i<npar;i++) v->addDerivative(i,(value[i*nval+j]-a->getOutputQuantity(j))/sqrt(epsilon));
   }
 }
 

@@ -56,6 +56,10 @@ void VectorMultiColvar::setVectorDimensionality( const unsigned& ncomp, const bo
   // Resize a holder for the derivatives of the norm of the vector
 }
 
+void VectorMultiColvar::doNotCalculateDirector(){
+  vecs->store_director=false;
+}
+
 double VectorMultiColvar::doCalculation(){
   // Now calculate the vector
   calculateVector();
@@ -74,42 +78,51 @@ double VectorMultiColvar::doCalculation(){
      for(unsigned i=0;i<ncomponents;++i) dervec[i] = inorm*getComponent(i); 
   }
 
-  if( usingLowMem() ){
-     vecs->storeDerivativesLowMem( 0 );
-     vecs->chainRule( 0, dervec );
-  } else {
-     vecs->storeDerivativesHighMem( getCurrentPositionInTaskList() );
-     vecs->chainRule( getCurrentPositionInTaskList(), dervec );
-  }
+  if( !doNotCalculateDerivatives() ){
+      if( usingLowMem() ){
+         vecs->storeDerivativesLowMem( 0 );
+         vecs->chainRule( 0, dervec );
+      } else {
+         vecs->storeDerivativesHighMem( getCurrentPositionInTaskList() );
+         vecs->chainRule( getCurrentPositionInTaskList(), dervec );
+      }
 
-  // Add derivatives to base multicolvars
-  Vector tmpd;
-  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
-       unsigned k=atoms_with_derivatives[i];
-       tmpd[0]=vecs->getFinalDerivative(3*i+0); 
-       tmpd[1]=vecs->getFinalDerivative(3*i+1); 
-       tmpd[2]=vecs->getFinalDerivative(3*i+2); 
-       MultiColvarBase::addAtomsDerivatives( 0, k, tmpd );
-  }   
-  unsigned vvbase=3*atoms_with_derivatives.getNumberActive(); Tensor tmpv;
-  for(unsigned i=0;i<3;++i){
-      for(unsigned j=0;j<3;++j){
-          tmpv(i,j) = vecs->getFinalDerivative( vvbase+3*i+j ); 
+      // Add derivatives to base multicolvars
+      Vector tmpd;
+      for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
+           unsigned k=atoms_with_derivatives[i];
+           tmpd[0]=vecs->getFinalDerivative(3*i+0); 
+           tmpd[1]=vecs->getFinalDerivative(3*i+1); 
+           tmpd[2]=vecs->getFinalDerivative(3*i+2); 
+           MultiColvarBase::addAtomsDerivatives( 0, k, tmpd );
       }   
-  }   
-  MultiColvarBase::addBoxDerivatives( 0, tmpv );
-
+      unsigned vvbase=3*atoms_with_derivatives.getNumberActive(); Tensor tmpv;
+      for(unsigned i=0;i<3;++i){
+          for(unsigned j=0;j<3;++j){
+              tmpv(i,j) = vecs->getFinalDerivative( vvbase+3*i+j ); 
+          }   
+      }   
+      MultiColvarBase::addBoxDerivatives( 0, tmpv );
+  }
   
   return norm;
 }
 
-void VectorMultiColvar::useInMultiColvarFunction( const bool store_director ){
-  if( setupCentralAtomVessel() ) return;
-  vecs->usedInFunction( store_director );
+vesselbase::StoreDataVessel* VectorMultiColvar::buildDataStashes(){
+  // Build everyting for the multicolvar
+  vesselbase::StoreDataVessel* vsv=MultiColvarBase::buildDataStashes();
+  // Resize the variable
+  vecs->resize();
+  // And make sure we set up the vector storage correctly
+  vv1.resize( 1 ); vv2.resize( getNumberOfQuantities() - 5 );
+  // And return
+  return vsv;
 }
 
-void VectorMultiColvar::getValueForTask( const unsigned& iatom, std::vector<double>& vals ) const {
-  vecs->getVector( iatom, vals );
+void VectorMultiColvar::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){
+  plumed_dbg_assert( vecs && vals.size()==(getNumberOfQuantities()-4) ); 
+  MultiColvarBase::getValueForTask( iatom, vv1 ); vecs->getVector( iatom, vv2 );
+  vals[0]=vv1[0]; for(unsigned i=0;i<vv2.size();++i) vals[i+1]=vv2[i];
 }
 
 void VectorMultiColvar::addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, multicolvar::MultiColvarFunction* func ){

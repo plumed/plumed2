@@ -28,8 +28,8 @@ namespace manyrestraints {
 void ManyRestraintsBase::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithValue::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
   ActionWithVessel::registerKeywords( keys );
+  ActionWithInputVessel::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
   keys.remove("TOL");
@@ -37,26 +37,47 @@ void ManyRestraintsBase::registerKeywords( Keywords& keys ){
 
 ManyRestraintsBase::ManyRestraintsBase(const ActionOptions& ao):
 Action(ao),
-ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionPilot(ao),
-ActionWithVessel(ao)
+ActionWithVessel(ao),
+ActionWithInputVessel(ao)
 {
+  // Read in the vessel we are action on
+  readArgument("bridge");
+  aves=dynamic_cast<ActionWithVessel*>( getDependencies()[0] );
+  plumed_assert( getDependencies().size()==1 && aves );
+  log.printf("  adding restraints on variables calculated by %s action with label %s\n",
+         aves->getName().c_str(),aves->getLabel().c_str());
+
+  // And turn on the derivatives (note problems here because of ActionWithValue)
+  turnOnDerivatives(); needsDerivatives();
+
+  // Now create the vessel
+  std::string fake_input="LABEL=bias";
+  addVessel( "SUM", fake_input, 0 ); 
+  readVesselKeywords();
 }
 
-void ManyRestraintsBase::createRestraints( const unsigned& nrestraints ){
-  std::string fake_input; 
-  for(unsigned i=0;i<nrestraints;++i) addTaskToList(i);
-  addVessel( "SUM", fake_input, 0, "bias" );
-  readVesselKeywords();
-  forcesToApply.resize( getNumberOfDerivatives() );
+void ManyRestraintsBase::doJobsRequiredBeforeTaskList(){
+  ActionWithVessel::doJobsRequiredBeforeTaskList();
+  ActionWithValue::clearDerivatives();
+}
+
+void ManyRestraintsBase::applyChainRuleForDerivatives( const double& df ){
+   // Value (this could be optimized more -- GAT)
+   for(unsigned i=0;i<aves->getNumberOfDerivatives();++i){
+       setElementDerivative( i, df*aves->getElementDerivative(i) );   
+   }
+   // And weights
+   unsigned nder=aves->getNumberOfDerivatives();
+   for(unsigned i=0;i<aves->getNumberOfDerivatives();++i){
+       setElementDerivative( nder+i, aves->getElementDerivative(nder+i) );
+   }
 }
 
 void ManyRestraintsBase::apply(){
   plumed_dbg_assert( getNumberOfComponents()==1 );
-  getPntrToComponent(0)->addForce(-1.0);
-  bool wasforced=getForcesFromVessels( forcesToApply );
-  plumed_assert( wasforced ); setForcesOnAtoms( forcesToApply );
+  getPntrToComponent(0)->addForce( -1.0*getStride() );
 }
 
 }

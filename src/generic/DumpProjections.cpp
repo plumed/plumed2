@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionPilot.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 #include "tools/File.h"
@@ -79,6 +80,10 @@ fmt("%15.10f")
   log.printf("  on file %s\n",file.c_str());
   log.printf("  with format %s\n",fmt.c_str());
   checkRead();
+
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
+  }
 }
 
 

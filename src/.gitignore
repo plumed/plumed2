@@ -20,6 +20,7 @@
 !/lib
 !/main
 !/maketools
+!/mapping
 !/manyrestraints
 !/molfile
 !/multicolvar

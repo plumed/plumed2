@@ -27,6 +27,7 @@
 #include "tools/Pbc.h"
 #include "core/ActionWithValue.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "vesselbase/ActionWithInputVessel.h"
 #include "vesselbase/BridgeVessel.h"
 #include "MultiColvarBase.h"
 
@@ -43,7 +44,8 @@ coordination number inside that part of the cell.
 class ActionVolume :
   public ActionAtomistic,
   public ActionWithValue,
-  public vesselbase::ActionWithVessel
+  public vesselbase::ActionWithVessel,
+  public vesselbase::ActionWithInputVessel
   {
 friend class Region;
 private:
@@ -93,6 +95,8 @@ public:
   void finishTaskListUpdate();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+/// Turn on the derivatives
+  void turnOnDerivatives();
 /// Is the output quantity periodic
   bool isPeriodic();
 /// Jobs to be done when the action is activated
@@ -109,7 +113,7 @@ public:
   virtual void setupRegion()=0;
   virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
 /// Forces here are applied through the bridge
-  void applyBridgeForces( const std::vector<double>& bb );
+  void addBridgeForces( const std::vector<double>& bb );
   void apply(){};
 /// These routines replace the virtual routines in ActionWithVessel for 
 /// code optimization

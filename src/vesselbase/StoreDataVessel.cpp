@@ -25,7 +25,7 @@ namespace PLMD {
 namespace vesselbase {
 
 void StoreDataVessel::registerKeywords( Keywords& keys ){
-  Vessel::registerKeywords(keys);
+  Vessel::registerKeywords(keys); keys.remove("LABEL");
 }
 
 StoreDataVessel::StoreDataVessel( const VesselOptions& da ):
@@ -33,6 +33,9 @@ Vessel(da),
 max_lowmem_stash(3),
 vecsize(0)
 {
+  ActionWithValue* myval=dynamic_cast<ActionWithValue*>( getAction() );
+  if( !myval ) hasderiv=false;
+  else hasderiv=!myval->doNotCalculateDerivatives();
 }
 
 void StoreDataVessel::completeSetup( const unsigned& dstart, const unsigned& nvec ){
@@ -42,8 +45,9 @@ void StoreDataVessel::completeSetup( const unsigned& dstart, const unsigned& nve
 
 void StoreDataVessel::resize(){
   plumed_dbg_assert( vecsize>0 );
-  final_derivatives.resize( getAction()->getNumberOfDerivatives() );
-  if( getAction()->lowmem ){
+  if( getAction()->derivativesAreRequired() ) final_derivatives.resize( getAction()->getNumberOfDerivatives() );
+
+  if( getAction()->lowmem || !getAction()->derivativesAreRequired() ){
      nspace = 1;
      active_der.resize( max_lowmem_stash * ( 1 + getAction()->getNumberOfDerivatives() ) );
      local_derivatives.resize( max_lowmem_stash * vecsize * getAction()->getNumberOfDerivatives() );
@@ -69,7 +73,7 @@ void StoreDataVessel::setTaskToRecompute( const unsigned& ivec ){
 }
 
 void StoreDataVessel::recompute( const unsigned& ivec, const unsigned& jstore ){
-  plumed_dbg_assert( getAction()->lowmem && jstore<max_lowmem_stash );
+  plumed_dbg_assert( getAction()->derivativesAreRequired() && getAction()->lowmem && jstore<max_lowmem_stash );
   // Set the task we want to reperform
   setTaskToRecompute( ivec );
   // Reperform the task
@@ -90,7 +94,7 @@ void StoreDataVessel::storeValues( const unsigned& myelem ){
 }
 
 void StoreDataVessel::storeDerivativesHighMem( const unsigned& myelem ){
-  plumed_dbg_assert( myelem<getAction()->getFullNumberOfTasks() );
+  plumed_dbg_assert( getAction()->derivativesAreRequired() && myelem<getAction()->getFullNumberOfTasks() );
   ActionWithVessel* act=getAction();
   getIndexList( act->getFullNumberOfTasks(), myelem, nspace-1, active_der );
 
@@ -107,6 +111,7 @@ void StoreDataVessel::storeDerivativesHighMem( const unsigned& myelem ){
 }
 
 void StoreDataVessel::storeDerivativesLowMem( const unsigned& jstore ){
+  plumed_dbg_assert( getAction()->derivativesAreRequired() );
   // Store the indexes that have derivatives
   ActionWithVessel* act=getAction();
   unsigned nder = act->getNumberOfDerivatives();
@@ -132,17 +137,17 @@ bool StoreDataVessel::calculate(){
   storeValues( myelem );
 
   // Store the derivatives if we are not using low memory
-  if( !(getAction()->lowmem) ) storeDerivativesHighMem( myelem );  
+  if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivativesHighMem( myelem );  
 
   return true;
 }
 
 void StoreDataVessel::finish(){
-  if(!getAction()->lowmem) comm.Sum( &active_der[0], active_der.size() );
+  if(!getAction()->lowmem && getAction()->derivativesAreRequired() ) comm.Sum( &active_der[0], active_der.size() );
 }
 
 double StoreDataVessel::chainRule( const unsigned& ival, const unsigned& ider, const std::vector<double>& df ){
-  plumed_dbg_assert( df.size()==vecsize );
+  plumed_dbg_assert( getAction()->derivativesAreRequired() && df.size()==vecsize );
   // Clear final derivatives array
   final_derivatives.assign( final_derivatives.size(), 0.0 );
 
@@ -167,7 +172,7 @@ double StoreDataVessel::chainRule( const unsigned& ival, const unsigned& ider, c
 }
 
 void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>& df ){
-  plumed_dbg_assert( df.size()==vecsize );
+  plumed_dbg_assert( getAction()->derivativesAreRequired() && df.size()==vecsize );
   // Clear final derivatives array
   final_derivatives.assign( final_derivatives.size(), 0.0 );
 
@@ -196,7 +201,7 @@ void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>
 }
 
 void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>& df, Value* val ){
-  plumed_dbg_assert( val->getNumberOfDerivatives()==final_derivatives.size() );
+  plumed_dbg_assert( getAction()->derivativesAreRequired() && val->getNumberOfDerivatives()==final_derivatives.size() );
   chainRule( ival, df ); 
 
   unsigned kder;

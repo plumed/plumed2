@@ -45,6 +45,8 @@ private:
   StoreVectorsVessel* vecs;
 /// This is a tempory vector that is used to store derivatives
   std::vector<double> dervec;
+/// These are tempory vectors that are used to store values and directors
+  std::vector<double> vv1, vv2;
 protected:
 /// Set the dimensionality of the vector
   void setVectorDimensionality( const unsigned&, const bool&, const int& );
@@ -96,10 +98,10 @@ public:
   unsigned getNumberOfComponentsInVector() const ;
 /// Get the number of quantities we are calculating per step
   unsigned getNumberOfQuantities();
-/// Store bits and bobs so they can be used in a function
-  void useInMultiColvarFunction( const bool store_director );
+/// Create places to store the data
+  vesselbase::StoreDataVessel* buildDataStashes();
 /// Get the vector
-  void getValueForTask( const unsigned& iatom, std::vector<double>& vals ) const ;
+  void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
 /// Used to accumulate values
   void addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, multicolvar::MultiColvarFunction* func );
 /// Used for calculating weighted averages
@@ -109,6 +111,8 @@ public:
                                         const std::vector<double>& der, multicolvar::MultiColvarFunction* func );
 /// Can we differentiate the orientation - yes we can the multicolvar is a vector
   bool hasDifferentiableOrientation() const { return true; }
+///  This makes sure we are not calculating the director when we do LocalAverage
+  virtual void doNotCalculateDirector();
 };
 
 inline
@@ -138,7 +142,7 @@ double VectorMultiColvar::getComponent( const unsigned& icomp ) const {
 inline
 void VectorMultiColvar::addAtomsDerivative( const unsigned& icomp, const unsigned& jatom, const Vector& der ){
   plumed_dbg_assert( icomp<ncomponents && jatom<getNAtoms() );
-  MultiColvarBase::addAtomsDerivatives( 5 + icomp, getAtomIndex(jatom), der );
+  MultiColvarBase::addAtomsDerivatives( 5 + icomp, current_atoms[jatom], der );
 }
 
 inline
@@ -168,7 +172,7 @@ double VectorMultiColvar::getImaginaryComponent( const unsigned& icomp ) const {
 inline
 void VectorMultiColvar::addImaginaryAtomsDerivative( const unsigned& icomp, const unsigned& jatom, const Vector& der){
   plumed_dbg_assert( icomp<ncomponents && complexvec && jatom<getNAtoms() );
-  MultiColvarBase::addAtomsDerivatives( 5 + ncomponents + icomp, getAtomIndex(jatom), der );
+  MultiColvarBase::addAtomsDerivatives( 5 + ncomponents + icomp, current_atoms[jatom], der );
 }
 
 inline

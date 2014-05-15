@@ -36,6 +36,7 @@ namespace PLMD{
 /// Contain positions, atomic indexes, occupancy and beta.
 /// We should also add other info (e.g. residue name etc).
 class PDB{
+  std::vector<unsigned> block_ends;
   std::vector<std::string> atomsymb, chain;
   std::vector<unsigned> residue;
   std::vector<Vector> positions;
@@ -89,6 +90,10 @@ public:
   bool checkForAtom( const std::string& name ) const ;
 /// Return the atom named aname from residue number resnum
   AtomNumber getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const;
+/// Get the extents of the blocks containing the atoms
+  const std::vector<unsigned> & getAtomBlockEnds() const ;
+/// Get the number of blocks of atoms in the pdb
+  unsigned getNumberOfAtomBlocks() const ;
 };
 
 }

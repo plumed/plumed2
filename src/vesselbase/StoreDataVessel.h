@@ -40,6 +40,8 @@ second step.
 
 class StoreDataVessel : public Vessel {
 private:
+/// Do the quantities being stored in here need derivatives
+  bool hasderiv;
 /// What is the maximum number of vectors we are going to 
 /// have to store when using lowmem option 
   unsigned max_lowmem_stash;

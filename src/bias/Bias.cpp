@@ -33,6 +33,9 @@ ActionWithArguments(ao),
 outputForces(getNumberOfArguments(),0.0)
 {
   if(getStride()>1) error("Using bias with stride!=1 is not currently supported");
+  for(unsigned i=0;i<getNumberOfArguments();++i){
+     (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
+  }
 }
 
 void Bias::registerKeywords( Keywords& keys ){
@@ -41,6 +44,10 @@ void Bias::registerKeywords( Keywords& keys ){
   ActionWithValue::registerKeywords(keys);
   ActionWithArguments::registerKeywords(keys);
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
+}
+
+void Bias::turnOnDerivatives(){
+  error("a bias cannot be used as a collective variable");
 }
 
 void Bias::apply(){

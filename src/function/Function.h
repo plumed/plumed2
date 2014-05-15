@@ -48,6 +48,7 @@ public:
   virtual ~Function(){}
   void apply();
   static void registerKeywords(Keywords&);
+  unsigned getNumberOfDerivatives();
 };
 
 inline
@@ -58,6 +59,11 @@ void Function::setDerivative(Value*v,int i,double d){
 inline
 void Function::setDerivative(int i,double d){
   setDerivative(getPntrToValue(),i,d);
+}
+
+inline
+unsigned Function::getNumberOfDerivatives(){
+  return getNumberOfArguments();
 }
 
 }

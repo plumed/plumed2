@@ -69,7 +69,7 @@ Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
 PLUMED 2 must then be configured with ALMOST enabled: 
 
 \verbatim
-./configure --enable-almost CPPFLAGS="-I/ALMOST_BASE_PATH/branches/almost-2.1/include -I/ALMOST_BASE_PATH/branches/almost-2.1/include/almost" LDFLAGS="-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm -L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 -L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl -L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx"
+./configure --enable-almost CPPFLAGS="-I/ALMOST_BASE_PATH/branches/almost-2.1/include -I/ALMOST_BASE_PATH/branches/almost-2.1/include/almost -I/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1" LDFLAGS="-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm -L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 -L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl -L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx"
 
 with ALMOST_BASE_PATH the full path to the ALMOST folder
 \endverbatim
@@ -275,7 +275,9 @@ PLUMED_COLVAR_INIT(ao)
   /* this is a workaround for those chemical shifts that can result in too large forces */
   a.remove_problematic("GLN", "CB");
   a.remove_problematic("ILE", "CB");
-  a.remove_problematic("PRO", "N");  a.remove_problematic("PRO", "H");
+  a.remove_problematic("PRO", "N");  
+  a.remove_problematic("PRO", "H");
+  a.remove_problematic("PRO", "CB");
   a.remove_problematic("GLY", "HA"); a.remove_problematic("GLY", "CB");
   /* this is a workaround for those chemical shifts that are not parameterized */
   a.remove_problematic("HIE", "HA"); a.remove_problematic("HIP", "HA"); a.remove_problematic("HSP", "HA");

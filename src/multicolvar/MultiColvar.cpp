@@ -308,9 +308,19 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
       if( !t1.empty() ){
          parseAtomList("SPECIESB",t2);
          if ( t2.empty() ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
-         current_atoms.resize( 1+ t2.size() );
+         current_atoms.resize( 1 + t2.size() );
          for(unsigned i=0;i<t1.size();++i){ all_atoms.addIndexToList( t1[i] ); addTaskToList(i); }
-         ablocks[0].resize( t2.size() ); for(unsigned i=0;i<t2.size();++i){ all_atoms.addIndexToList( t2[i] ); ablocks[0][i]=t1.size() + i; }
+         ablocks[0].resize( t2.size() ); 
+         unsigned k=0;
+         for(unsigned i=0;i<t2.size();++i){ 
+            bool found=false; unsigned inum;
+            for(unsigned j=0;j<t1.size();++j){
+                if( t1[j]==t2[i] ){ found=true; inum=j; break; }
+            }
+            // This prevents mistakes being made in colvar setup
+            if( found ){ ablocks[0][i]=inum; } 
+            else { all_atoms.addIndexToList( t2[i] ); ablocks[0][i]=t1.size() + k; k++; }
+         }
          if( !verbose_output ){
              log.printf("  generating colvars from a group of %d central atoms and %d other atoms\n",t1.size(), t2.size() );
              log.printf("  central atoms are : ");
@@ -363,15 +373,18 @@ void MultiColvar::threeBodyNeighborList( const SwitchingFunction& sf ){
 }     
 
 void MultiColvar::finishTaskListUpdate(){
-  updateCSphereArrays();  // Stuff for atom centered symmetry function nlist
-  // Get the atoms we need
-  all_atoms.deactivateAll();
-  for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
-      bool check=setupCurrentAtomList( getActiveTask(i) );
-      plumed_assert( check );
-      for(unsigned j=0;j<natomsper;++j) all_atoms.activate( current_atoms[j] );
+  if( !contributorsAreUnlocked ){
+      // Get the atoms we need
+      all_atoms.deactivateAll();
+      for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
+          bool check=setupCurrentAtomList( getActiveTask(i) );
+          plumed_assert( check );
+          for(unsigned j=0;j<natomsper;++j) all_atoms.activate( current_atoms[j] );
+      }
+      all_atoms.updateActiveMembers();
+  } else {
+      all_atoms.activateAll();
   }
-  all_atoms.updateActiveMembers(); 
   // Request the atoms
   ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
   // Resize arrays in MultiColvarBase
@@ -379,21 +392,21 @@ void MultiColvar::finishTaskListUpdate(){
 }
 
 void MultiColvar::calculate(){
-  if( checkNumericalDerivatives() ) calculationsRequiredBeforeNumericalDerivatives();
+  setupLinkCells(); 
   runAllTasks();
 }
 
 void MultiColvar::updateActiveAtoms(){
   if( atoms_with_derivatives.updateComplete() ) return;
   atoms_with_derivatives.emptyActiveMembers();
-  for(unsigned i=0;i<getNAtoms();++i) atoms_with_derivatives.updateIndex( getAtomIndex(i) );
+  for(unsigned i=0;i<getNAtoms();++i) atoms_with_derivatives.updateIndex( current_atoms[i] );
   atoms_with_derivatives.sortActiveList();
 }
 
 Vector MultiColvar::calculateCentralAtomPosition(){
   Vector catom=getCentralAtom();
   atomsWithCatomDer.emptyActiveMembers();
-  for(unsigned i=0;i<getNAtoms();++i) atomsWithCatomDer.updateIndex( getAtomIndex(i) );
+  for(unsigned i=0;i<getNAtoms();++i) atomsWithCatomDer.updateIndex( current_atoms[i] );
   atomsWithCatomDer.sortActiveList();
   return catom;
 }

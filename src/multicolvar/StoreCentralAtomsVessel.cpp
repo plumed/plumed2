@@ -38,6 +38,8 @@ tmpdf(3)
 }
 
 void StoreCentralAtomsVessel::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& aindexes ){
+  plumed_dbg_assert( mycolv->derivativesAreRequired() );
+
   aindexes[jstore]=3*mycolv->atomsWithCatomDer.getNumberActive();
   if( aindexes[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");
   unsigned kder = ntotal + jstore*maxder;
@@ -66,6 +68,8 @@ void StoreCentralAtomsVessel::finishTask( const unsigned& itask ){
 
 void StoreCentralAtomsVessel::addAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, 
                                                    const Vector& df, MultiColvarFunction* funcout ){
+  plumed_dbg_assert( mycolv->derivativesAreRequired() );
+
   for(unsigned ider=0;ider<getNumberOfDerivatives(iatom);ider+=3){
      for(unsigned i=0;i<3;++i) tmpdf[i]=df[0];
      funcout->addStoredDerivative( jout, base_cv_no, getStoredIndex( iatom, ider+0 ), chainRule(iatom, ider+0, tmpdf)  ); 

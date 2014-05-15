@@ -23,6 +23,7 @@
 #include "ActionWithVessel.h"
 #include "Vessel.h"
 #include "ShortcutVessel.h"
+#include "StoreDataVessel.h"
 #include "VesselRegister.h"
 #include "BridgeVessel.h"
 
@@ -50,6 +51,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   Action(ao),
   serial(false),
   lowmem(false),
+  noderiv(true),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false)
 {
@@ -76,15 +78,15 @@ ActionWithVessel::~ActionWithVessel(){
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
 }
 
-void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab, const std::string thislab ){
-  VesselOptions da(name,thislab,numlab,input,this);
-  Vessel* vv=vesselRegister().create(name,da); vv->checkRead();
+void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ){
+  VesselOptions da(name,"",numlab,input,this);
+  Vessel* vv=vesselRegister().create(name,da); 
   addVessel(vv);
 }
 
 void ActionWithVessel::addVessel( Vessel* vv ){
   ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
-  if(!sv){ functions.push_back(vv); }
+  if(!sv){ vv->checkRead(); functions.push_back(vv); }
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
@@ -96,8 +98,15 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   return bv; 
 }
 
+StoreDataVessel* ActionWithVessel::buildDataStashes(){
+  for(unsigned i=0;i<functions.size();++i){
+      StoreDataVessel* vsv=dynamic_cast<StoreDataVessel*>( functions[i] );
+      if( vsv ) return vsv;
+  }
+  return NULL;
+}
+
 void ActionWithVessel::addTaskToList( const unsigned& taskCode ){
-  plumed_assert( functions.size()==0 );  // We cannot add more tasks after vessels added
   indexOfTaskInFullList.push_back( fullTaskList.size() );
   fullTaskList.push_back( taskCode ); partialTaskList.push_back( taskCode ); 
   taskFlags.push_back(0); nactive_tasks = fullTaskList.size();
@@ -153,7 +162,18 @@ void ActionWithVessel::resizeFunctions(){
   thisval.resize( getNumberOfQuantities() ); thisval_wasset.resize( getNumberOfQuantities(), false );
   derivatives.resize( getNumberOfQuantities()*getNumberOfDerivatives(), 0.0 );
   buffer.resize( bufsize );
-  tmpforces.resize( getNumberOfDerivatives() );
+}
+
+void ActionWithVessel::needsDerivatives(){
+  // Turn on the derivatives and resize
+  noderiv=false; resizeFunctions(); 
+  // Setting contributors unlocked here ensures that link cells are ignored
+  contributorsAreUnlocked=true; finishTaskListUpdate(); contributorsAreUnlocked=false;
+  // And turn on the derivatives in all actions on which we are dependent
+  for(unsigned i=0;i<getDependencies().size();++i){
+      ActionWithVessel* vv=dynamic_cast<ActionWithVessel*>( getDependencies()[i] );
+      if(vv) vv->needsDerivatives();
+  }
 }
 
 void ActionWithVessel::unlockContributors(){
@@ -178,8 +198,8 @@ void ActionWithVessel::lockContributors(){
           nactive_tasks++; 
       } 
   }
-  finishTaskListUpdate();
   contributorsAreUnlocked=false;
+  finishTaskListUpdate();
   resizeFunctions();
 }
 
@@ -209,6 +229,11 @@ void ActionWithVessel::activateTheseTasks( std::vector<bool>& additionalTasks ){
 void ActionWithVessel::deactivate_task(){
   plumed_dbg_assert( contributorsAreUnlocked );
   taskFlags[task_index]=1;
+}
+
+void ActionWithVessel::deactivateTasksInRange( const unsigned& lower, const unsigned& upper ){
+  plumed_dbg_assert( contributorsAreUnlocked && lower<upper && upper<taskFlags.size() );
+  for(unsigned i=lower;i<upper;++i) taskFlags[i]=1;
 }
 
 void ActionWithVessel::doJobsRequiredBeforeTaskList(){
@@ -267,15 +292,15 @@ void ActionWithVessel::getIndexList( const unsigned& ntotal, const unsigned& jst
 
 void ActionWithVessel::clearAfterTask(){
   // Clear the derivatives from this step
-  for(unsigned k=0;k<thisval.size();++k){
-     clearDerivativesAfterTask(k);
-  }
+  for(unsigned k=0;k<thisval.size();++k) clearDerivativesAfterTask(k);
 }
 
 void ActionWithVessel::clearDerivativesAfterTask( const unsigned& ider ){
-  unsigned kstart=ider*getNumberOfDerivatives();
   thisval[ider]=0.0; thisval_wasset[ider]=false;
-  for(unsigned j=0;j<getNumberOfDerivatives();++j) derivatives[ kstart+j ]=0.0;
+  if( !noderiv ){
+     unsigned kstart=ider*getNumberOfDerivatives();
+     for(unsigned j=0;j<getNumberOfDerivatives();++j) derivatives[ kstart+j ]=0.0;
+  }
 }
 
 bool ActionWithVessel::calculateAllVessels(){
@@ -301,6 +326,7 @@ void ActionWithVessel::finishComputations(){
 }
 
 void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const double& df, Vessel* valout ){
+  if( noderiv ) return;
   current_buffer_stride=1;
   current_buffer_start=valout->bufstart + (getNumberOfDerivatives()+1)*iout + 1;
   mergeDerivatives( ider, df );
@@ -308,6 +334,7 @@ void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, con
 
 void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& iout, const unsigned& ider, const unsigned& stride, 
                                                        const unsigned& off, const double& df, Vessel* valout ){
+  if( noderiv ) return;
   plumed_dbg_assert( off<stride );
   current_buffer_stride=stride;
   current_buffer_start=valout->bufstart + stride*(getNumberOfDerivatives()+1)*iout + stride + off;
@@ -322,7 +349,11 @@ void ActionWithVessel::mergeDerivatives( const unsigned& ider, const double& df 
 }
 
 bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply ){
-  plumed_dbg_assert( forcesToApply.size()==getNumberOfDerivatives() );
+#ifndef DNDEBUG
+  if( forcesToApply.size()>0 ) plumed_dbg_assert( forcesToApply.size()==getNumberOfDerivatives() );
+#endif
+  if(tmpforces.size()!=forcesToApply.size() ) tmpforces.resize( forcesToApply.size() );
+
   forcesToApply.assign( forcesToApply.size(),0.0 );
   bool wasforced=false;
   for(unsigned i=0;i<getNumberOfVessels();++i){
@@ -336,6 +367,17 @@ bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply 
 
 void ActionWithVessel::retrieveDomain( std::string& min, std::string& max ){
   plumed_merror("If your function is periodic you need to add a retrieveDomain function so that ActionWithVessel can retrieve the domain");
+}
+
+Vessel* ActionWithVessel::getVesselWithName( const std::string& mynam ){
+  int target=-1;
+  for(unsigned i=0;i<functions.size();++i){
+     if( functions[i]->getName().find(mynam)!=std::string::npos ){
+        if( target<0 ) target=i; 
+        else error("found more than one " + mynam + " object in action");
+     }  
+  }
+  return functions[target];
 }
 
 }
