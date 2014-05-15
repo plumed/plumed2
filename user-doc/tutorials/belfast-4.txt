@@ -1,26 +1,53 @@
 /**
 \page belfast-4 Belfast tutorial: Umbrella sampling
 
-Once you deﬁne a bunch of collective variables of your interests PLUMED
-has a number of ways in which you may aﬀect their behavior. The fact
-that you can actually inﬂuence their value depends on the fact that
-each of the collective variables implemented in PLUMED has analytical
-derivatives and, by biasing the value of a single CV one turns to aﬀect
-the time evolution of the system itself. The simplest way in which one
+\section belfast-4-aims Aims
+
+In the previous lectures we learned how to compute collective variables (CVs)
+from atomic positions. We will now learn how one can add a bias potential
+to enforce the exploration of a particular region of the space.
+We will also see how it is possible to bias CVs
+so as to enhance the sampling of events hindered by
+large free-energy barriers and how to analyze this kind of simulation.
+This technique is known as "umbrella sampling" and can be used
+in combination with the weighted-histogram analysis method to compute
+free-energy landscapes.
+In this tutorial we will use simple
+collective variables, but the very same approach can be used with 
+any kind of collective variable.
+
+\section belfast-4-learning-outcomes Learning Outcomes
+
+Once this tutorial is completed students will:
+
+- Know how to setup simulations with restraints
+- Know how to use multiple-restraint umbrella sampling simulations
+  to enhance the transition across a free-energy barrier.
+- Analyze the results.
+
+\section belfast-4-resources Resources
+
+TO DO
+
+\section belfast-4-instructions Instructions
+
+\subsection belfast-4-system The model system
+
+We here use a a model system
+alanine dipeptide with AMBER99SB-ILDN all atom force field already seen in the previous section.
+Here you can see its free-energy landscape depicted as function of the two dihedral angles \f$phi\f$ and
+\f$\psi\f$ (also called "Ramachandan plot").
+
+FIG TO DO
+
+GROMACS INPUT
+
+\subsection belfast-4-restrained-simulations Restrained simulations
+
+The simplest way in which one
 might inﬂuence a CV is by forcing the system to stay close to a chosen
-value during the simulation. This is achieved with umbrella potential
-that plumed provides via the directive \ref RESTRAINT.
-Very often it may happen that one wants that a given CV just stay
-within a given range of values. This is achieved in plumed through the
-directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
-limit the exploration within given ranges.
-
-(THIS IS A SAMPLE FIGURE)
-
-\image html belfast-4-meta.png
-
-\section belfast-4-US How to run an umbrella sampling calculation
-
+value during the simulation. This is achieved with a restraining potential
+that PLUMED provides via the directive \ref RESTRAINT.
 In the umbrella sampling method a bias potential is added so as
 to favor the exploration of some regions of the conformational space
 and to disfavor the exploration of other regions \cite torrie-valleau . A properly
@@ -73,11 +100,38 @@ in the second the value of \f$\phi\f$, in the third the value of \f$\psi\f$,
 in the fourth the the additional potential introduced by the restraint on \f$\phi\f$ and in
 the fifth the additional potential introduced by the restraint on \f$\psi\f$.
 
-\section belfast-4-reweighting Reweighting the results
+It may happen that one wants that a given CV just stay
+within a given range of values. This is achieved in plumed through the
+directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
+limit the exploration within given ranges.
 
-\section belfast-4-wham Combining multiple restraints
+TO DO
 
-\section belfast-4-walls Soft walls
+\subsection belfast-4-reweighting Reweighting the results
+
+\subsection belfast-4-wham Combining multiple restraints
+
+\section belfast-4-comments Comments
+
+\subsection belfast-4-comments-1 How does PLUMED work
+
+The fact that when you add a force on the collective variable
+PLUMED can force the atoms to do something depends on the fact that
+the collective variables implemented in PLUMED has analytical
+derivatives. By biasing the value of a single CV one turns to aﬀect
+the time evolution of the system itself. Notice that some of the collective
+variables could be implemented without derivatives (either because the
+developers were lazy or because the CVs cannot be derived).
+In this case you might want to have a look at the NUMERICAL_DERIVATIVES
+option.
+
+\section belfast-4-further-reading Further Reading
+
+TO DO
+
+(THIS IS A SAMPLE FIGURE JUST TO REMEMBER THAT IT IS POSSIBLE TO INCLUDE A FIGURE)
+
+\image html belfast-4-meta.png
 
 
 */
