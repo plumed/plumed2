@@ -1,10 +1,140 @@
 /**
 \page belfast-2 Belfast tutorial: Adaptive variables I
 
+
+\section Aim
+
+In this section we want to introduce the concept of adaptive collective variables. 
+These are special variables that are knowledge-based in that are built from a pre-existing
+notion of the mechanism of the transition under study
+
+\section patchv-why What happens when in a complex reaction?
+
+When you deal with a complex conformational transition that you want to analyze (or bias), very often you cannot
+just describe it with a single order parameter.
+
+As an example in Figure \ref belfast-2-cdk I consider a large conformational transition like those involved in activating the kinase via open-close transition of the activation loop. 
+In sticks you see the part involved in the large conformational change, the rest is either keeping the structure and just moving a bit or is a badly resolved region in the X-ray structure.
+This is a complex transition and it is hard to tell which is the order parameter that best describes the transition. 
+
+\anchor belfast-2-cdk
+\image html belfast-2-cdk.png "CDK2 conformational change, PDB code 2C5X and 2C5Y. The upper loop is radically different. Which torsion or distance is important?"	
+
+One could identify a distance that can distinguish open from close but
+- the plasicity of the loop is such that the same distance can correspond to an almost closed loop and almost open loop. One would like to completely divide these two situations with 
+something which is discriminating what intuitively one would think as open and closed
+- the transition state is an important point where one would like to see a certain crucial interaction forming/breaking so to better explain what is really happening. If you capture then hypothetically you would be able to say what is dictating the rate of this conformational transition. A generic distance is a very hybrid measure that is unlikely to capture a salt-bridge formation and a concerted change of many dihedral change or desolvation contribution which are happening while the transition is happening. All these things are potentially important in such transition but none of them is explaining the whole thing.  
+
+So basically in these cases you have to deal with an intrinsic multidimensional collective variable where you would need many dimensions. 
+How would you visualize a 10 dimensional CV where you use many distances, coordinations and dihedrals (ouch, they're periodic too!) ?
+
+Another typical case is the docking of a small molecule in a protein cleft or gorge, which is the mechanism of drug action. This involves specific conformational transition from both the small molecule and the protein as the small molecule approaches the protein cavity. This also might imply a specific desolvation pattern.  
+
+Other typical examples are chemical reactions. Nucleophiloic attacks typically happen  with a role from the solvent (see some nice paper from Nobel-prize winner Arieh Warshel) 
+and sizeable geometric distortions of the neighboring groups.
+
+\section pcvs Path collective variables
+
+One possibility to describe many different thing that happen in a single reaction is to use a dimensional reduction technique and in plumed the simplest example  that may show its usefulness can be considered that of the path collective variables. 
+
+In a nutshell, your reaction might be very complex and happening in many degree of freedom but intuitively is a sort of  track along which the reaction proceeds. So what we need is a coordinate that, given a conformation, just tells which point along the "reactive track" is closest.
+
+\anchor belfast-2-ab
+\image html belfast-2-ab.png "Given the reactant and the product, tell if another state is closer to any of the two with a continuous parameter" 
+
+For example, in Fig. \ref belfast-2-ab, you see a typical chemical reaction (hydrolisys of methylphosphate) with the two end-points denoted by A and B. 
+If you are given a third point, just by looking at it, you might find that this is more resemblant to the reactant than the product, so, hypothetically, if you would intuitively 
+give a parameter that would be 1 for a configuration in the A state and 2 for a configuration in the B state, you probably would give it something like 1.3, right? 
+
+Path collective variables are the extension to this concept in the case you have many conformation that describe your path, and therefore, instead of an index that goes from 1 to 2 you have an index that goes from 1 to \f$N\f$ , where  \f$N\f$ is the number of conformation that you use in input to describe your path.
+
+From a mathematical point of view, that's rather simple. The progress along the path is calculated with the following equation:
+
+\anchor eq_s
+\f[
+S(X)=\frac{\sum_{i=1}^{N} i\ \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }
+\f]
+
+where in \ref eq_s the \f$ \vert X-X_i \vert \f$ represents a distance between one configuration \f$ X \f$ which is analyzed and another from the set that compose the path 
+\f$ X_i \f$. The parameter \f$ \lambda \f$ is a positive value that is tuned in a way explaned later.
+here are a number of things to note to make you think that this is exactely what you want.
+- The negative exponential function is something that is 1 whenever the value at the exponent is zero, and is progressively smaller when the value is larger than zero (trivially, the case with the value at the exponent larger than zero never occurs since lambda is a positive quantity and the distance is by definition positive).
+- Whenever you sit exactly on a specific images \f$ X_j \f$ then all the other terms in the sum disappear (if \f$ \lambda \f$ is large enough) and only the value \f$ j \f$ survives returning exactely \f$ S(X)=j \f$. 
+
+In order to provide a value which is continuous, the parameter \f$ \lambda \f$ should be correclty tuned. 
+As a rule of thumb I use the following formula 
+
+\f[
+\lambda=\frac{2.3 (N-1) }{\sum_{i=1}^{N-1} \vert X_i-X_{i+1} \vert }
+\f]
+
+which imply that one should calculate the average distance between consecutive frames composing the path.
+Note also that this distance should be more or less similar between the frames. Generally I tolerate fluctuation of the order of 10/15 percent tops. If you have larger, then it is better to have a smaller value of \f$ \lambda \f$.
+
+It is important to note that in principle one could even have a specific \f$ \lambda \f$ value associated to each frame of the path but this would provide some distortion in the diffucion coefficient which could potentially harm a straightforward interpretation of the free energy landscape. 
+
+So, at this point is better to understand what is meant with "distance" since a distance between two conformations can be calculated in very many ways.
+The way we refer here is by using mean square deviation after optimal alignment.
+This means that at each step in which the analisys is performed, a number N of optimal alignments is performed. Namely what is calculated is \f$ \vert X-X_i \vert = d(X,X_i)^2 \f$ where \f$  d(X,X_i) \f$ is the RMSD as defined in what you see here \ref RMSD.
+
+Using the MSD instead of RMSD is sometimes more convenient and more stable (you do not have a denominator that gies to zero in the derivatives when biasing.
+
+Anyway this is a matter of choice. Potentially one could equally employ other metrics like a set of coordinations (this was done in the past), and then you would avoid the problem of rototranslations (well, which is not a problem since you have it already in plumed) but for some applications that might become appealing.
+So in path collective variables (and in all the dimensional reduction based collective variables) the problem is converted from the side of choosing the collective variable in choosing the right way to calculate distances, also called "metrics".
+
+The discussion of this issue is well beyond the topic of this tutorial, so we can move forward in how to tell plumed to calculate the progress along the path whenever the MSD after optimal alignment is used as distance. 
+
+\verbatim
+p1: PATHMSD REFERENCE=all.pdb LAMBDA=50.0
+PRINT ARG=p1.sss,p1.zzz STRIDE=100 FILE=colvar FMT=%8.4f
+\endverbatim
+
+Note that reference contains a set of PDB, appended one after the other, with a END field. Note that there is no need to place all the atoms of the system in the PDB reference file you provide. Just put the atoms that you think might be needed. You can leave out big domains, solvent and ions if you think that is not important for your use.
+
+Additionally, note that the measure units of LAMBDA are in the units of the code. In gromacs they are in nm^2 while NAMD is Ang^2. 
+\ref PATHMSD produces two arguments that can be printed or used in other ActionWithArguments. 
+One is the progress along the path of \ref eq_s, the other is the distance from the closest point along the path, which is denoted with the zzz component.
+This is defined as
+
+\anchor eq_s
+\f[
+Z(X)=-\frac{1}{\lambda}\log (\sum_{i=1}^{N} \ \exp^{-\lambda \vert X-X_i \vert })
+\f]
+
+It is easy to understand that in case of perfect match of \f$  X=X_i \f$ this equation gives back the value of \f$  \vert X-X_i \vert \f$ provided that the lambda is adjusted correctly.
+
+This variable is important because ....
+
+In bias variables (or postprocessing countinuous trajectories as SMD) one can use the neighbor list...
+
+An example. Analyze a trajectory on a wrong path
+
+
+An example. Analyze a trajectory on a right path
+
+Introduce the fact that one of the good value is that in biased dynamics is good.
+
+Introduce the fact that the use of an index is arbitrary.
+
+
+
+The intermediate layer of the "representation" is really important and hides the reason why it might happen that PCVs are not representatvive enough.
+Very often it is possible to find and alternative "representation" of the path that allows to recover the path-like description.
+
+Of course this concept here explained only applies whenever the reaction can be represented as a path. Whenever the topology of the free-energy landscape (i.e. the geometric arrangment of the reactive conformations) is not "tube-like", but rather shows an intricate network of interconnection, then other more appropriate dimensional reduction techniques should be employed. For example, a free energy landscape of folding of a large protein could be represented as a network of interconnected valleys, some shallow and high energy and deeper toward the native state, just like the map of alps that go from the Gotthard pass to Lugano. 
+
+
+
+
+
+
+
+
+
+
 */
 
 link: @subpage belfast-2
 
 description: How to use path CVs
-
 
