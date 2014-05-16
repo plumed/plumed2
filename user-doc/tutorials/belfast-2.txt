@@ -2,13 +2,13 @@
 \page belfast-2 Belfast tutorial: Adaptive variables I
 
 
-\section Aim
+\section pcvs-aim Aim
 
 In this section we want to introduce the concept of adaptive collective variables. 
 These are special variables that are knowledge-based in that are built from a pre-existing
 notion of the mechanism of the transition under study
 
-\section patchv-why What happens when in a complex reaction?
+\section pcvs-why What happens when in a complex reaction?
 
 When you deal with a complex conformational transition that you want to analyze (or bias), very often you cannot
 just describe it with a single order parameter.
@@ -33,7 +33,7 @@ Another typical case is the docking of a small molecule in a protein cleft or go
 Other typical examples are chemical reactions. Nucleophiloic attacks typically happen  with a role from the solvent (see some nice paper from Nobel-prize winner Arieh Warshel) 
 and sizeable geometric distortions of the neighboring groups.
 
-\section pcvs Path collective variables
+\section pcvs-general Path collective variables
 
 One possibility to describe many different thing that happen in a single reaction is to use a dimensional reduction technique and in plumed the simplest example  that may show its usefulness can be considered that of the path collective variables. 
 
@@ -103,9 +103,41 @@ Z(X)=-\frac{1}{\lambda}\log (\sum_{i=1}^{N} \ \exp^{-\lambda \vert X-X_i \vert }
 
 It is easy to understand that in case of perfect match of \f$  X=X_i \f$ this equation gives back the value of \f$  \vert X-X_i \vert \f$ provided that the lambda is adjusted correctly.
 
-This variable is important because ....
+So, the two variables, put together can be visualized as 
+\anchor belfast-2-ab-sz
+\image html belfast-2-ab-sz.png "The S variable can be thought as the length of the red segment, while the Z variable is the length of the green one."
+
+This variable is important because whenever your simulation is running close to the path (low Z values), 
+then you know that you are reproducing reliably the path you provided in input but if by chance you find 
+some other path that goes, say, from \f$ S=1, Z=0 \f$ to \f$ S=N, Z=0 \f$ via large Z values, then it might well be that you have just discovered a good alternative pathway.
+If your path indeed is going from \f$ S=1, Z=large \f$ to \f$ S=N, Z=large \f$ then it might well be that you do not have your reaction accomplished, since your reaction, by definition should go from the reactant which is located at \f$ S=1, Z=0 \f$ to the product, which is located at \f$ S=1, Z=N \f$ so you should pay attention.
+This case is exemplified in Fig. \ref belfast-2-ab-sz-nowhere
+
+\anchor belfast-2-ab-sz-nowhere
+\image html belfast-2-ab-sz-nowhere.png "The conformation is moving in a small amount and this corresponds to a radical change in S if the distance from the path is large"
+
+\section pcvs-topo A note on the path topology
+
+A truly important point is that if you get a trajectory from some form of accelerated dynamics (e.g. simply by heating) this cannot simply be converted into a path. 
+Since it is likely that your trajectory is going stochastically back and forth (not in the case of SMD or US, discussed later), your trajectory might be not topologically 
+suitable. To understand that, suppose you simply collect a reactive trajectory of 100 ps into the reference path you give to the \ref PATHMSD and simply you 
+assign the frame of 1 ps to index 1 (first frame occurring in the reference file provided to \ref PATHMSD), the 
+frame of 2 ps to index 2 and so on : it might be that you have two points which are really similar but one is associated to step, 
+say 5 and the other is associated with frame 12. When you analyse the same trajectory, when you are sitting on any of those points then the 
+calculation of S will be an average like \f$ S(X)=(5+12)/2=8.5  \f$ which is an average of the two indexes and is completely misleading sinec it let you think that you are moving 
+between point 8 and 9, which is not the case. So this evidences that your reference frames should be "topologically consecutive". This means that frame 1 should be the closest to frame 2 and all the other frames  should be farther apart. Similarly frame 2 should be equally close (in an \ref RMSD sense) to 1 and 3 while all the others should be farther apart. 
+Same for frame 3: this should be closest to frame 2 and 4 and farther apart from all the others and so on. This is equivalent to calculate an "RMSD matrix" which can be conveniently done in vmd (this is a good exercise for a number of reasons) with RMSD Trajectory tools, by choosing different reference system along the set of reference frames. 
+
+Make two examples
+
+\section pcvs-howmany How many frames do I need ?
+
+
+\section pcvs-trics Some tricks of the trade.
 
 In bias variables (or postprocessing countinuous trajectories as SMD) one can use the neighbor list...
+
+\section Examples
 
 An example. Analyze a trajectory on a wrong path
 
@@ -122,12 +154,6 @@ The intermediate layer of the "representation" is really important and hides the
 Very often it is possible to find and alternative "representation" of the path that allows to recover the path-like description.
 
 Of course this concept here explained only applies whenever the reaction can be represented as a path. Whenever the topology of the free-energy landscape (i.e. the geometric arrangment of the reactive conformations) is not "tube-like", but rather shows an intricate network of interconnection, then other more appropriate dimensional reduction techniques should be employed. For example, a free energy landscape of folding of a large protein could be represented as a network of interconnected valleys, some shallow and high energy and deeper toward the native state, just like the map of alps that go from the Gotthard pass to Lugano. 
-
-
-
-
-
-
 
 
 
