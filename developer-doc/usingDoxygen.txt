@@ -27,6 +27,14 @@ you have finished creating your new documentation they should be incorporated au
 time you make the manual.  Furthermore, a number of checks of your manual are performed when you make the manual
 so any errors should be straightforward to find. 
 
+The plumed manual does not only contain descriptions of the various actions that have been implemented and their 
+keywords. There are also pages that place these actions in context and which attempt to explain the interplay 
+between colvars, functions, biases, analysis methods and so on.  More importantly, the plumed manual contains
+instructive examples that explain to users how to use particular features of the code.  We would encourage all
+users of the code to submit these sort of things to the plumed repository particularly if they have found it difficult to 
+start using a particular method.  Instructions as to how to go about writing a material that will appear in the How-tos 
+section of the manual can be found \ref tutorials here
+
 \section registerkeys Registering Keywords
 
 When you implement any new PLMD::Action in plumed you must first create the documentation for the keywords that you
@@ -244,7 +252,11 @@ should be one of the following:
 <tr> 
 <td width=5%%> <b> COLVAR </b> </td> <td> This is used if your PLMD::Action is the calculation of a CV </td>
 </tr> <tr>
-<td width=5%%> <b> MCOLVAR </b> </td> <td> This is used if your PLMD::Action calculates some Function of a distribution of CVs </td>
+<td width=5%%> <b> DCOLVAR </b> </td> <td> This is used if your PLMD::Action is a colvar that measures the distance from a reference frame in some metric </td>
+</tr> <tr>
+<td width=5%%> <b> MCOLVAR </b> </td> <td> This is used if your PLMD::Action calculates some Function of a distribution of CVs. (Action inherits from PLMD::multicolvar::MultiColvar)  </td>
+</tr> <tr>
+<td width=5%%> <b> MCOLVARF </b> </td> <td> This is used if your PLMD::Action calculates a paricularly complicated function of a distribution of CVs. (Action inherits from PLMD::multicolvar::MultiColvarFunction) </td>
 </tr> <tr>
 <td width=5%%> <b> FUNCTION </b> </td> <td> This is used if your PLMD::Action calculates some Function of a set of CVs </td>
 </tr> <tr>
@@ -252,7 +264,9 @@ should be one of the following:
 </tr> <tr>
 <td width=5%%> <b> ANALYSIS </b> </td> <td> This is used if your PLMD::Action does some analysis of the trajectory </td>
 </tr> <tr>
-<td width=5%%> <b> BIAS </b> </td> <td> This is used if your PLMD::Action is a bias that adds supplemental forces to the potential in order to enhance sampling </td>
+<td width=5%%> <b> BIAS </b> </td> <td> This is used if your PLMD::Action is a bias that adds supplemental forces to the potential in order to enhance sampling </td> 
+</tr> <tr>
+<td width=5%%> <b> TOPOLOGY </b> </td> <td> PLMD::setup::MolInfo has documentation of this type.  This command is used to provide information about the chemistry of the system under study.  For MolInfo this is what constitute the backbone atoms of the protin, what the residues are etc. </td>
 </tr> <tr>
 <td width=5%%> <b> GENERIC </b> </td> <td> This should be used if you want to specify manually where in the manual your documentation should appear.  If you feel this really is the correct way to incorporate your new feature please contact the core developers so as to discuss it. </td>
 </tr> 
@@ -263,7 +277,7 @@ appear beside the link to your more detailed manual page in the general pages of
 line in input to create this brief description.  You can then write a longer description of your PLMD::Action to appear at the start of its
 particular page in the manual.  As described below this description can incorporate equations and bibliographic information.
 
-\par Creating latex formulae
+\subsection Equations
 
 You can add formulae in latex using:
 
@@ -297,7 +311,7 @@ And this is an equation array:
  g &=& \frac{2}{3}
 \f} 
 
-\par Creating lists
+\subsection Lists
 
 You can create lists of data using: 
 
@@ -311,7 +325,7 @@ which becomes:
 - First item in list
 - Second item in list
 
-\par Formatting your documentation
+\subsection Formatting 
 
 You can create a new section in your documentation using:
 
@@ -327,7 +341,7 @@ In fact I used this very command earlier in writing this page.  I can therefore 
 
 You can also reference external webpages by typing web addresses directly in the documentation.
 
-\par Adding citations
+\subsection Citations
 
 You can create citations using:
 
@@ -340,12 +354,12 @@ the user-doc directory you will find a bibtex file called bibliography.bib that 
 the references that are included in the user documentation for plumed.  To add your reference
 you should add bibliographic data for the article you want to cite in this file.
 
-\par Creating some examples
+\subsection Examples
 
 Your manual entry <b>must</b> contain some examples as to how your PLMD::Action.  These should be included as follows:
 
 \verbatim
-\par Examples
+\par Example
 
 The following input tells plumed to print the distance between atoms 3 and 5,
 the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
@@ -358,7 +372,7 @@ PRINT ARG=d1,d2,d2.x
 
 In the manual this will be converted to:
 
-\par Examples
+\par Example
 
 The following input tells plumed to print the distance between atoms 3 and 5,
 the distance between atoms 2 and 4 and the x component of the distance between atoms 2 and 4.
@@ -371,5 +385,85 @@ PRINT ARG=d1,d2,d2.x
 Please be aware of the blank line between after the title of the paragraph.  If this line is not present your manual will look ugly.  
 Also be aware that your Examples section <b> must </b> be called Examples and not Example because of a perculiarity in the 
 script that generates the manual.
+
+\section tutorials Writing how-to instructions
+
+On every page of the plumed user manaul there are three tabs: Main-page, Glossary and How-tos.  Here we are going to describe how to
+go about writing something that will appear on the How-tos page.  On that page you will find that there are two kinds of resources.  
+The first set of resources are a set of links to shortist descriptions of how to particular things with plumed.  The second set of 
+resources are links to a set of external websites that we think might be of interest to users of plumed.
+
+\subsection websites Adding a link to your website 
+
+If you have a website that you think it would be useful for us to link from the plumed How-tos page please send us a file that contains
+the following information in the following format:
+
+\verbatim
+link: http://en.wikipedia.org/wiki/Metadynamics
+
+description: A wikipedia article on metadynamics
+\endverbatim 
+
+In case it isn't abundantly clear the line that starts "link:" contains the hyperlink to your page, while the second line (the one starting "description:")
+contains the description of the page that will appear beside the link on the how-tos page.  If this file is placed in the user-doc/tutorials directory of the
+plumed source and if it is given a name that ends in .site then the link will appear on the how-tos page.
+
+\subsection tute Writing a how-to
+
+Lets say you now want to write a set of how-to instructions.  You will first need to create an additional file in the user-doc/tutorials directory of the plumed
+source.  Much like the rest of plumed manual this file is written in Doxygen so you should read the instructions about how to go about using \ref Equations, \ref Lists, 
+\ref Formatting, \ref Citations and \ref Examples.  You will also need to ensure that the text that you want to appear on the your page is contained between
+the special doxygen comment symbols as shown below:
+
+\verbatim
+This will not appear on the final how-to page.
+
+/**
+This will appear on the final how-to page.
+*/
+
+This will also not appear on the final how-to page.
+\endverbatim 
+
+To ensure that a link is created on the main How-tos page you need to include the following instructions after the closing doxygen comment as shown below:
+
+\verbatim
+/**
+\page filename My explanation of something in plumed
+
+Text of how-to page
+
+*/
+link: @subpage filename
+
+description: The description of what is described on your page
+\endverbatim
+
+For this particular example the above should be contained in a file inside the user-doc/tutorials directory called filename.txt.  If the user comes to the 
+How-tos page they will see a link with the text "My explanation of something in plumed," which they can click on to get to your page.  Beside that link the 
+description "The description of what is described on your page" will appear.
+
+One final thing, if your How-to is a tutorial - that is to say if you have a set of exercises for users to work through - then it may be useful to 
+provide them with some example files that they can download.  This is possible you add the files to our repository and you can put a link to download them
+somewhere on your page. To keep things manageable there should only be one file for each how-to page.  As such if you need to provide users with multiple files
+please put them in a zipped tar ball. This tar-ball should then be placed in the user-doc/tutorials directory and ideally given a name so that it can be identified
+with your corresponding *.txt file.  You can then download it by including the following into your *.txt file.
+
+\verbatim
+/**
+\page mytute A tutorial that helps users learn to do something with plumed
+
+Please download the following <a href="tutorial-resources/mytute.tar.gz" download="mytute.tar.gz"> file </a>.
+
+*/
+
+link: @subpage mytute
+
+description: A tutorial for users to work through
+
+additional-files: mytute.tar.gz
+\endverbatim 
+
+In this case the tar ball you add is called mytute.tar.gz.  The user can download this file by clicking on the word file.
 
 */
