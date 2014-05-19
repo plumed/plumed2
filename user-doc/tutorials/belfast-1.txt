@@ -1,6 +1,105 @@
 /**
 \page belfast-1 Belfast tutorial: Analyzing CVs
 
+\section Aims
+
+\section belfast-1-lo Learning Outcomes
+
+Once this tutorial is completed students will:
+
+\section Resources
+
+The tarball for this project contains the following files:
+
+\section Instructions
+
+PLUMED2 is a library that can be accessed by multiple codes adding a relatively simple and well documented interface.
+Once PLUMED is installed you can run a plumed executable that can be used for multiple purposes:
+
+\verbatim
+plumed --help 
+\endverbatim
+
+some of the listed options report about the plumed available functionalities, other can be used to tell plumed to do something:
+from analysing a trajectory to patch the source code of a MD code and so on. All the commands have further options that can
+be seen using plumed command --help, i.e.:
+
+\verbatim
+plumed driver --help
+\endverbatim
+
+In the following we are going to see how to write an input file for plumed2 that can be used to analyse a trajectory.
+
+\subsection Introduction to PLUMED input file
+
+A typical input file for PLUMED input is composed by specification of one or more CVs, the printout frequency and a termination line.
+
+\verbatim
+#my first plumed input:
+DISTANCE ATOMS=1,15 LABEL=cvdist
+
+#printout frequency
+PRINT ARG=cvdist STRIDE=1 FILE=COLVAR 
+
+#endofinput 
+ENDPLUMED
+here I can write what I want it won't be read.
+\endverbatim
+
+In PLUMED2 the actions defined in the input files are executed in the same order in which they are written: this means that the
+following input file is wrong:
+
+\verbatim
+#printout frequency
+PRINT ARG=cvdist STRIDE=1 FILE=COLVAR 
+#my first plumed input:
+DISTANCE ATOMS=1,15 LABEL=cvdist
+#endofinput 
+ENDPLUMED
+here I can write what I want it won't be read.
+\endverbatim
+
+
+
+Now we can use this simple input file to analyse the trajectory included in the RESOURCES:
+
+\verbatim
+plumed driver --plumed plumed.dat --ixyz trajectory-short.xyz --pdb template.pdb --length-units 0.1
+\endverbatim
+
+
+#! FIELDS time cvdist
+ 0.000000 2.5613161
+
+
+LOOK AT COLVAR AND GNUPLOT
+
+LABELS and PRINTING OPTIONS (MULTIPLE FILES, FORMAT)
+
+
+\verbatim
+#my first plumed input:
+DISTANCE ATOMS=1,15 LABEL=cvdist
+
+#printout frequency
+PRINT ARG=cvdist STRIDE=1 FILE=COLVAR 
+
+#endofinput 
+ENDPLUMED
+here I can write what I want it won't be read.
+\endverbatim
+
+CENTRE OF MASSES -> DISTANCE, TORSION, ANGLE
+
+GROUP OF ATOMS -> GYRATION
+
+
+
+MULTICOLVAR (DISTANCE
+
+
+
+
 */
 
 link: @subpage belfast-1
