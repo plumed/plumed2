@@ -158,8 +158,9 @@ ENDPLUMED
 \endverbatim
 
 The above CV don't look smart to learn something about the system we are looking at. In principle CV are used to reduce the complexity
-of a system and look at a small number of properties that are enough to rationalise its behaviour. Now try to write a collective
-variable that measures the Radius of Gyration of the system: \ref GYRATION.
+of a system by looking at a small number of properties that could be enough to rationalise its behaviour. 
+
+Now try to write a collective variable that measures the Radius of Gyration of the system: \ref GYRATION.
 
 NOTE: if what you need for one or more variables is a long list of atoms and not a virtual atoms one can use the keyword \ref GROUP.
 
@@ -171,10 +172,100 @@ Now 'ca' is not a virtual atom but a simple list of atoms.
 
 \subsection multicol MULTICOLVAR
 
-Many collective variables are often a 
+Sometimes it can be usefull to calculate properties of multiple collective variables at the same time, for example one can be interested
+in calculating the properties of the distances between a group of atoms, or properties linked to the distribution of the dihedral angles
+of a chain and so on. In PLUMED2 this kind of collective variables fall under the name of MULTICOLVAR (cf. \subpage mcolv.)
+Here we are going to analyse the distances between CA carbons along the chain:
 
+\verbatim
+ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
+dd: DISTANCES GROUP=ca MEAN MIN={BETA=50} MAX={BETA=0.02} MOMENTS=2
+
+PRINT ARG=dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR 
+
+ENDPLUMED
+\endverbatim
+
+The above input tells PLUMED to calculate all the distances between CA carbons and then look
+for the mean distance, the minimum distance, the maximum distance and the variance. In this way
+we have defined four collective variables that are calculated using the distances. These four
+collective variables are stored as components of the defined action 'dd': dd.mean, dd.min, dd.max,
+dd.moment-2.
+
+The infrastracture of multicolvar has been used to develop many PLUMED2 collective variables as
+for example the set of Secondary Structure CVs (\ref ANTIBETARMSD, \ref PARABETARMSD and \ref ALPHARMSD).
+
+\verbatim
+MOLINFO STRUCTURE=template.pdb
+abeta: ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12}
+
+PRINT ARG=abeta.less_than STRIDE=1 FILE=COLVAR 
+
+ENDPLUMED
+\endverbatim
+
+We have now seen how to write the input some of the many CVs available in PLUMED. More complex CVs
+will be discussed in the next workshop, \ref belfast-2.
+ 
 \subsection analysis Analysis of Collective Variables
 
+Collective variables are usually used to visualize the Free Energy of a system. Given a system evolving
+at fixed temperature, fixed number of particles and fixed volume, it will explore different conformations
+with a probability 
+
+\f[
+  P(q)\propto e^{-\frac{U(q)}{kb_BT}}
+\f].
+where \f$ q \f$ are the microscopic coordinates and \f$ k_B \f$ is the Boltzmann constant.
+
+It is possible to analyse the above probabilty as a function of one or more collective variable \f$ s(q)\f$:
+
+\f[
+  P(s)\propto \int dq  e^{-\frac{U(q)}{kb_BT}} \delta(s-s(q))
+\f]
+
+where the \f$ \delta \f$ function means that to for a given value \f$ s\f$ of the collective variable are counted
+only those conformations for which the CV is \f$ s\f$. The probability can be recast to a free energy by
+taking its logarithm: 
+\f[
+  F(s)=-k_B T \log P(s)
+\f].
+
+This means that by estimating the probability distribution of a CV it is possible to know the free energy of a
+system along that CV. Estimating the probability distribution of the conformations of a system is what is called
+'sampling'.
+
+In order to estimate a probability distribution one needs to make \ref HISTOGRAM from the calculated CVs.
+PLUMED2 includes the possibility of histogramming data both on the fly as well as a posteriori as we
+are going to do now.
+
+\verbatim
+MOLINFO STRUCTURE=template.pdb
+abeta: ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12}
+ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
+DISTANCES ...
+GROUP=ca MEAN MIN={BETA=50} MAX={BETA=0.02} MOMENTS=2 LABEL=dd
+... DISTANCES 
+
+PRINT ARG=abeta.less_than,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR 
+
+HISTOGRAM ...
+ARG=abeta.less_than,dd.mean
+USE_ALL_DATA
+GRID_MIN=0,0.8
+GRID_MAX=4,1.2
+GRID_BIN=40,40
+BANDWIDTH=0.2,0.02
+GRID_WFILE=histo
+... HISTOGRAM
+
+ENDPLUMED
+\endverbatim
+
+NOTE: HISTOGRAM ... means that what follow is part of the HISTOGRAM function, the same can be done for any action
+in PLUMED.
+
+The above input tells PLUMED
 
 
 */
