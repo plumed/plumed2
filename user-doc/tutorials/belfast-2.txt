@@ -128,34 +128,91 @@ calculation of S will be an average like \f$ S(X)=(5+12)/2=8.5  \f$ which is an 
 between point 8 and 9, which is not the case. So this evidences that your reference frames should be "topologically consecutive". This means that frame 1 should be the closest to frame 2 and all the other frames  should be farther apart. Similarly frame 2 should be equally close (in an \ref RMSD sense) to 1 and 3 while all the others should be farther apart. 
 Same for frame 3: this should be closest to frame 2 and 4 and farther apart from all the others and so on. This is equivalent to calculate an "RMSD matrix" which can be conveniently done in vmd (this is a good exercise for a number of reasons) with RMSD Trajectory tools, by choosing different reference system along the set of reference frames. 
 
-Make two examples
+\anchor belfast-2-good-matrix
+\image html belfast-2-good-matrix.png "A good matrix for path variables has a gullwing shape, which means that each frame is closest to its neighbor and all the other are far apart"
 
-\section pcvs-howmany How many frames do I need ?
+This is shown in \ref belfast-2-good-matrix where the matrix has a typical gullwing shape.
+
+On the contrary, whenever you extract the frames from a pdb that you produced via free MD or some biased methods (SMD or Targeted MD for example)
+then your frame-to-frame distance is rather inhomogeneous and looks something like
+
+\anchor belfast-2-bad-matrix
+\image html belfast-2-bad-matrix.png "A bad matrix for path variables is rather irregular and shows that some non neighbor frames are closer than the neighbor frames."
+
+Aside from the general shape, which is important to keep the conformation-to-index relation (this, as we will see in the next part is crucial in the multidimensional scaling) 
+the crucial thing is the distance between neighbors.
+
+\anchor belfast-2-good-vs-bad
+\image html belfast-2-good-vs-bad.png "Comparison of neighbor distance: the bad case has a nearest neighbor fluctuation of 0.8 units which is much more than the good case where the distance is much more uniform"
+
+As a matter of fact, this is not much important in the analysis but is truly crucial in the bias.
+When biasing a simulation, you generally want to introduce a force that push your system somewhere. 
+In particular, when you add a bias which is based on a path collective variable, most likely you want that your system goes back and forth along your path.
+The bias is generally applied by an additional term in the hamiltonian, this can be a spring term for Umbrella Sampling, a Gaussian function for Metadynamics or whatever term which 
+is a function of the collective variable \f$ s \f$.
+Therefore the Hamiltonian \f$ H (X) \f$ where \f$ X \f$ is the point of in the configurational phase space where your system is takes the following form
+\f[
+H'(X)=H(X)+U(S(X))
+\f]
+where \f$ U(S(X)) \f$ is the force term which depends on the collective variable that ultimately is a function of the \f$ X \f$. 
+Now, when you use biased dynamics you need to evolve according the forces that this term produces (this only holds for MD, while not in MC)
+and therefore you need
+\f[
+F_i=-\frac{d H'(X) }{d x_i} = -\frac{d H'(X) }{d x_i} -\frac{\partial U(S(X)) }{ \partial S}\frac{\partial S(X)}{\partial x_i}
+\f]
+
+This underlines the fact that, whenever \f$ \frac{\partial S(X)}{\partial x_i}  \f$ is zero, then you have no force on the system.
+Now the derivative of the progress along the path is 
+\f[
+\frac{\partial S(X) }{\partial x_i} =\frac{\sum_{i=1}^{N} -\lambda\ i\ \frac{\partial \vert X-X_i \vert}{ \partial x_i}  \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } } - \frac{ (\sum_{i=1}^{N} i\ \exp^{-\lambda \vert X-X_i \vert } ) (\sum_{j=1}^{N} -\lambda \frac{\partial \vert X-X_j \vert}{ \partial x_i} \exp^{-\lambda \vert X-X_j \vert } )  }{ ( \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } )^2} = \frac{\sum_{i=1}^{N} -\lambda\ i\ \frac{\partial \vert X-X_i \vert}{ \partial x_i}  \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } } -s(X) \frac{ (\sum_{j=1}^{N} -\lambda \frac{\partial \vert X-X_j \vert}{ \partial x_i} \exp^{-\lambda \vert X-X_j \vert } ) } {\sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }  
+\f]
+which can be rewritten as 
+\f[
+\frac{\partial S(X) }{\partial x_i} = \lambda \frac{\sum_{i=1}^{N} \frac{\partial \vert X-X_i \vert}{ \partial x_i} \exp^{-\lambda \vert X-X_i \vert } [ s(X) - i  ] } { \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }
+\f]
+
+It is interesting to note that whenever the \f$ \lambda \f$ is too small the force will vanish. Additionally, when \f$ \lambda \f$ is too large, then it one single exponential term will dominate over the other on a large part of phase space while the other will vanish. This means that the \f$ S(X) \f$ will assume almost discrete values  that produce zero force. 
+
+\section pcvs-howmany How many frames do I need?
+
+A very common question that comes is the following: "I have my reaction or a model of it. how many frames do I need to properly define a path collective variable?" 
+This is a very important point that requires a bit of thinking. It all depends on the limiting scale in your reaction. For example, if in your process you have a torsion, as the smallest event that 
+you want to capture with path collective variable, then it is important that you mimick that torsion in the path and that this does not contain simply the initial and final point but also some intermediate. Similarly, if you have a concerted bond breaking, it might be that all takes place in the range of an Angstrom or so. In this case you should have intermediate frames that cover the sub-Angstrom scale. If you have both in the same path, then the smallest dominates and you have to mimick also the torsion with sub-Angstrom accuracy.
 
 
-\section pcvs-trics Some tricks of the trade.
+\section pcvs-trics Some tricks of the trade: the neighbor lists.
 
-In bias variables (or postprocessing countinuous trajectories as SMD) one can use the neighbor list...
+If it happens that you have a very complex and detailed path to use, say that it contains 100 frames with 200 atoms each, then the calculation of a 100 alignment is required every time 
+you need the CV. This can be quite expensive but you can use a trick. If your trajectory is continuous and you are sure that your trajectory does not show jumps where your system suddedly move from the reactant to the product, then you can use a so-called neighbor list. The plumed input shown before then becomes 
+
+\verbatim
+p1: PATHMSD REFERENCE=all.pdb LAMBDA=50.0 NEIGH_STRIDE=100 NEIGH_SIZE=10 
+PRINT ARG=p1.sss,p1.zzz STRIDE=100 FILE=colvar FMT=%8.4f
+\endverbatim
+
+and in this case only the closest 10 frames from the path will be used for the CV. Then the list of the frames to use is updated every 100 steps. 
+If you are using a biased dynamics this may introduce sudden change in the derivatives, therefore it is better to check the stability of the setup before running production-quality calculations. 
 
 \section Examples
 
 An example. Analyze a trajectory on a wrong path
 
-
 An example. Analyze a trajectory on a right path
-
-Introduce the fact that one of the good value is that in biased dynamics is good.
 
 Introduce the fact that the use of an index is arbitrary.
 
+\section pcvs-format How to format my input?
 
-
-The intermediate layer of the "representation" is really important and hides the reason why it might happen that PCVs are not representatvive enough.
-Very often it is possible to find and alternative "representation" of the path that allows to recover the path-like description.
-
-Of course this concept here explained only applies whenever the reaction can be represented as a path. Whenever the topology of the free-energy landscape (i.e. the geometric arrangment of the reactive conformations) is not "tube-like", but rather shows an intricate network of interconnection, then other more appropriate dimensional reduction techniques should be employed. For example, a free energy landscape of folding of a large protein could be represented as a network of interconnected valleys, some shallow and high energy and deeper toward the native state, just like the map of alps that go from the Gotthard pass to Lugano. 
-
-
+Very often it is asked how to format a set of pdb to be suitably used with path collective variables. Here are some tricks.
+- When you dump the files with vmd or (for gromacs users, using trjcat), the pdb you obtain is reindexed from 1. This is also the case 
+when you select a subensemble of atoms of the path (e.g. the heavy atoms only or the backbone atoms). This is rather unfortunate and you have to 
+fix is someway. My preference is to dump the whole pdb but water (when I do not need it) and use some awk script to select the atoms I am interested in.
+- Pay attention to the last two column. These are occupancy and beta. With the first (occupancy) you set the atoms which are used to perform the alignment. The atoms
+which have zero occupancy will not be used in the alignment. The second column is beta and controls which atoms are used for the calculation of the distance after having
+performed the alignment on the set of atoms which have nonzero occupancy column. In this way you can align all your system by using a part of the system and calculate the
+distance respect to another set. This is handy in case of protein-ligand. You set the alignment of the protein and you calculate the distance based on the ligand and the part of the protein which is in contact with the protein. This is done for example in <a href="http://pubs.acs.org/doi/abs/10.1021/jp911689r">this article</a>. 
+- Note that all the atoms contained in the REFERENCE must be the same. You cannot have a variable number of atoms in each pdb contained in the reference. 
+- The reference is composed as a set of concatenated PDBs that are interrupted by a TER/END/ENDMDL card. Both HETATM and ATOM cards denote the atoms of the set. 
 
 
 */
