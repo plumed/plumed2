@@ -126,21 +126,21 @@ easier - aren't we kind?  Well no not really, we have to use this code too.  Any
 as this makes this: 
 
 \verbatim
-DISTANCE ATOMS1=1,300 ATOMS2=1,400 ATOMS3=1,500
+DISTANCES ATOMS1=1,300 ATOMS2=1,400 ATOMS3=1,500
 \endverbatim
-(see \ref DISTANCE)
+(see \ref DISTANCES)
 
 equivalent to this:
 
 \verbatim
-DISTANCE ...
+DISTANCES ...
 # we can also insert comments here
   ATOMS1=1,300
 # multiple kewords per line are allowed
   ATOMS2=1,400 ATOMS3=1,500
 #empty lines are also allowed
 
-... DISTANCE
+... DISTANCES
 \endverbatim
 
 \section includes Including other files in the PLUMED input
