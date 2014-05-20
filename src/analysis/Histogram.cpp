@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Analysis.h"
+#include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
 #include "tools/Grid.h"
 #include "tools/KernelFunctions.h"
@@ -92,7 +93,9 @@ private:
   std::vector<double> point, bw;
   std::vector<unsigned> gbin;
   std::string gridfname;
-  std::string kerneltype; 
+  std::string kerneltype;
+  bool frequency; 
+  bool fenergy; 
 public:
   static void registerKeywords( Keywords& keys );
   Histogram(const ActionOptions&ao);
@@ -109,15 +112,20 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
-  keys.add("compulsory","BANDWIDTH","the bandwdith for kernel density estimation");
+  keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. Use none/NONE if you don't want to use any kernel. \
+                                             More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
+  keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
+  keys.addFlag("FREQUENCY",false,"Set to TRUE if you want a frequency instead of a probabilty density.");
+  keys.addFlag("FREE-ENERGY",false,"Set to TRUE if you want a FREE ENERGY instead of a probabilty density (you need to set TEMP).");
   keys.add("compulsory","GRID_WFILE","histogram","the file on which to write the grid");
   keys.use("NOMEMORY");
 }
 
 Histogram::Histogram(const ActionOptions&ao):
 PLUMED_ANALYSIS_INIT(ao),
-point(getNumberOfArguments())
+point(getNumberOfArguments()),
+frequency(false),
+fenergy(false)
 {
   // Read stuff for Grid
   parseVector("GRID_MIN",gmin);
@@ -147,11 +155,18 @@ point(getNumberOfArguments())
   }
   parseOutputFile("GRID_WFILE",gridfname); 
 
-  // Read stuff for window functions
-  parseVector("BANDWIDTH",bw);
-  if(bw.size()!=getNumberOfArguments()) plumed_merror("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
   // Read the type of kernel we are using
   parse("KERNEL",kerneltype);
+  if(kerneltype=="NONE") kerneltype="none";
+  // Read stuff for window functions
+  parseVector("BANDWIDTH",bw);
+  if(bw.size()!=getNumberOfArguments()&&kerneltype!="none") 
+    plumed_merror("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
+
+  parseFlag("FREQUENCY",frequency);
+  parseFlag("FREE-ENERGY",fenergy);
+  if(fenergy) frequency=true;
+  if(getTemp()<=0&&fenergy) plumed_merror("Set the temperature (TEMP) if you want a free energy.");
   checkRead();
 
   log.printf("  Using %s kernel functions\n",kerneltype.c_str() );
@@ -192,14 +207,22 @@ void Histogram::performAnalysis(){
 
   // Now build the histogram
   double weight; std::vector<double> point( getNumberOfArguments() );
-  for(unsigned i=0;i<getNumberOfDataPoints();++i){
+  if(kerneltype!="none") {
+    for(unsigned i=0;i<getNumberOfDataPoints();++i){
       getDataPoint( i, point, weight );
       KernelFunctions kernel( point, bw, kerneltype, false, weight, true);
-      gg->addKernel( kernel ); 
-       
-  } 
+      gg->addKernel( kernel );
+    }
+  } else {
+    for(unsigned i=0;i<getNumberOfDataPoints();++i){
+      getDataPoint( i, point, weight );
+      gg->addValue(gg->getIndex(point), weight);
+    }  
+  }
+
   // Normalize the histogram
-  gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
+  if(!frequency) gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
+  if(fenergy) gg->logAllValuesAndDerivatives( -getTemp() * plumed.getAtoms().getKBoltzmann() );
 
   // Write the grid to a file
   OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");

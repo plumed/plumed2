@@ -506,6 +506,17 @@ void Grid::scaleAllValuesAndDerivatives( const double& scalef ){
   }
 }
 
+void Grid::logAllValuesAndDerivatives( const double& scalef ){
+  if(usederiv_){
+     for(unsigned i=0;i<grid_.size();++i){
+         grid_[i] = scalef*log(grid_[i]);
+         for(unsigned j=0;j<dimension_;++j) der_[i][j] = scalef/der_[i][j];
+     }
+  } else {
+     for(unsigned i=0;i<grid_.size();++i) grid_[i] = scalef*log(grid_[i]);
+  }
+}
+
 void Grid::applyFunctionAllValuesAndDerivatives( double (*func)(double val), double (*funcder)(double valder) ){
   if(usederiv_){
      for(unsigned i=0;i<grid_.size();++i){
