@@ -165,7 +165,6 @@ fenergy(false)
 
   parseFlag("FREQUENCY",frequency);
   parseFlag("FREE-ENERGY",fenergy);
-  if(fenergy) frequency=true;
   if(getTemp()<=0&&fenergy) plumed_merror("Set the temperature (TEMP) if you want a free energy.");
   checkRead();
 
@@ -222,7 +221,10 @@ void Histogram::performAnalysis(){
 
   // Normalize the histogram
   if(!frequency) gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
-  if(fenergy) gg->logAllValuesAndDerivatives( -getTemp() * plumed.getAtoms().getKBoltzmann() );
+  if(fenergy) {
+    gg->logAllValuesAndDerivatives( -getTemp() * plumed.getAtoms().getKBoltzmann() );
+    gg->setMinToZero();
+  }
 
   // Write the grid to a file
   OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
