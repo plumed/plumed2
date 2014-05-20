@@ -225,7 +225,7 @@ with a probability
 
 \f[
   P(q)\propto e^{-\frac{U(q)}{kb_BT}}
-\f].
+\f]
 where \f$ q \f$ are the microscopic coordinates and \f$ k_B \f$ is the Boltzmann constant.
 
 It is possible to analyse the above probabilty as a function of one or more collective variable \f$ s(q)\f$:
@@ -239,7 +239,7 @@ only those conformations for which the CV is \f$ s\f$. The probability can be re
 taking its logarithm: 
 \f[
   F(s)=-k_B T \log P(s)
-\f].
+\f]
 
 This means that by estimating the probability distribution of a CV it is possible to know the free energy of a
 system along that CV. Estimating the probability distribution of the conformations of a system is what is called
@@ -293,8 +293,8 @@ USE_ALL_DATA
 FREQUENCY
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
-GRID_SPACING=0.1,0.01
-BANDWIDTH=0.2,0.02
+GRID_SPACING=0.04,0.004
+BANDWIDTH=0.08,0.008
 GRID_WFILE=histo
 ... HISTOGRAM
 
