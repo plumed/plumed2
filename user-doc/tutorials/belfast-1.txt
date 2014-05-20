@@ -3,13 +3,23 @@
 
 \section Aims
 
+The aim of this tutorial is to introduce the users to the plumed syntax. We will go through the writing of
+simple collective variable and we will use them to analyse a trajectory in terms of probabilty distributions
+and free energy.
+
 \section belfast-1-lo Learning Outcomes
 
 Once this tutorial is completed students will:
 
+- Know how to write a simple plumed input file 
+- Know how to analyse a trajectory using plumed
+
 \section Resources
 
-The tarball for this project contains the following files:
+The <a href="tutorial-resources/belfast-1.tar.gz" download="belfast-1.tar.gz"> tarball </a> for this project contains the following files:
+
+- trajectory-short.xyz : a (short) trajectory for a 16 residue protein in xyz format. All calculations with plumed driver use this trajectory.
+- template.pdb : a single frame from the trajectory that can be used in conjuction with the \ref MOLINFO command
 
 \section Instructions
 
@@ -129,8 +139,6 @@ ranges of atoms can be defined with a stride which can also be negative:
 3. ATOMS=from,to:by (i.e.: 251-256:2)
 4. ATOMS=to,from:-by (i.e.: 256-251:-2)
 
-additional ways of writing atoms include the combination of the above and the possibility of reading GROMACS index files.
-
 Now by plotting the content of the COLVAR file we can compare the behaviour in this trajectory of both the terminal carbons
 as well as of the centre of masses of the terminal residues.
 
@@ -163,6 +171,8 @@ of a system by looking at a small number of properties that could be enough to r
 Now try to write a collective variable that measures the Radius of Gyration of the system: \ref GYRATION.
 
 NOTE: if what you need for one or more variables is a long list of atoms and not a virtual atoms one can use the keyword \ref GROUP.
+A GROUP can be defined using ATOMS in the same way we saw before, in addition it is also possible to define a GROUP by reading a 
+GROMACS index files.
 
 \verbatim
 ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
@@ -252,9 +262,38 @@ PRINT ARG=abeta.less_than,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR
 HISTOGRAM ...
 ARG=abeta.less_than,dd.mean
 USE_ALL_DATA
+FREQUENCY
+KERNEL=NONE
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
 GRID_BIN=40,40
+GRID_WFILE=histo
+... HISTOGRAM
+
+ENDPLUMED
+\endverbatim
+
+NOTE: HISTOGRAM ... means that what follow is part of the \ref HISTOGRAM function, the same can be done for any action
+in PLUMED.
+
+The above input tells PLUMED to accumulate the two collective variables on a GRID. Histogram can be accumulated
+to obtain a probability density instead of the frequence by removing the keyword FREQUENCY. In addition the 
+frequency can be converted to a free-energy using the flag FREE-ENERGY and setting the temperature using TEMP (i.e. 300K).
+Histogram can be accumulated in a smoother way by using a KERNEL function, a kernel is a normalised function, 
+for example a normalised gaussian is the default kernel in PLUMED, that is added to the histogram centered in the position of the data. 
+Estimating a probability density using kernels can in principle give more accurate results, on the other hand in 
+addition to the choice of the binning one has to choose a parameter that is the WIDTH of the kernel function. 
+As a rule of thumb: the grid spacing should be smaller (i.e. one half or less) than the BANDWIDTH
+and the BANDWIDTH should be smaller (i.e. one order of magnitude) than the variance observed/expected for the variable. 
+
+\verbatim
+HISTOGRAM ...
+ARG=abeta.less_than,dd.mean
+USE_ALL_DATA
+FREQUENCY
+GRID_MIN=0,0.8
+GRID_MAX=4,1.2
+GRID_SPACING=0.1,0.01
 BANDWIDTH=0.2,0.02
 GRID_WFILE=histo
 ... HISTOGRAM
@@ -262,16 +301,8 @@ GRID_WFILE=histo
 ENDPLUMED
 \endverbatim
 
-NOTE: HISTOGRAM ... means that what follow is part of the HISTOGRAM function, the same can be done for any action
-in PLUMED.
-
-The above input tells PLUMED to accumulate the two collective variables on a GRID. Often histogram are accumulated
-by counting the number of times in which a value is in a bin, but in PLUMED we use KERNEL, this means that instead
-of adding a single count we add a normalised function (i.e. a gaussian). In this way the resulting histogram is
-smoother. On the other hand in addition to the choice of the binning one has to choose a parameter that is the WIDTH
-of the kernel function. As a rule of thumb: the grid spacing should be smaller (i.e. one half or less) than the BANDWIDTH
-and the BANDWIDTH should be smaller (i.e. one order of magnitude) than the variance observed/expected for the variable. 
-
+If you have time less at the end of the session read the manual and look for alternative collective variables to analyse the
+trajectory. Furthemore try to play with the \ref HISTOGRAM parameters to see the effect of using KERNEL in analysing data.
 
 */
 
@@ -279,4 +310,4 @@ link: @subpage belfast-1
 
 description: This tutorial explains how to use plumed to analyze CVs
 
-
+additional-files: belfast-1.tar.gz
