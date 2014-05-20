@@ -57,8 +57,8 @@ PRINT ARG=d1.lt0.1
 The following input tells plumed to calculate all the distances between atoms 1, 2 and 3 (i.e. the distances between atoms
 1 and 2, atoms 1 and 3 and atoms 2 and 3).  The average of these distances is then calculated.
 \verbatim
-DISTANCES GROUP=1-3 AVERAGE LABEL=d1
-PRINT ARG=d1.average
+DISTANCES GROUP=1-3 MEAN LABEL=d1
+PRINT ARG=d1.mean
 \endverbatim
 (See also \ref PRINT)
 

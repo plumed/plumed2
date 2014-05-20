@@ -1,0 +1,89 @@
+/**
+\page belfast-4 Belfast tutorial: Umbrella sampling
+
+Once you deﬁne a bunch of collective variables of your interests PLUMED
+has a number of ways in which you may aﬀect their behavior. The fact
+that you can actually inﬂuence their value depends on the fact that
+each of the collective variables implemented in PLUMED has analytical
+derivatives and, by biasing the value of a single CV one turns to aﬀect
+the time evolution of the system itself. The simplest way in which one
+might inﬂuence a CV is by forcing the system to stay close to a chosen
+value during the simulation. This is achieved with umbrella potential
+that plumed provides via the directive \ref RESTRAINT.
+Very often it may happen that one wants that a given CV just stay
+within a given range of values. This is achieved in plumed through the
+directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
+limit the exploration within given ranges.
+
+(THIS IS A SAMPLE FIGURE)
+
+\image html belfast-4-meta.png
+
+\section belfast-4-US How to run an umbrella sampling calculation
+
+In the umbrella sampling method a bias potential is added so as
+to favor the exploration of some regions of the conformational space
+and to disfavor the exploration of other regions \cite torrie-valleau . A properly
+chosen bias potential could allow for example to favor
+the transition state sampling thus enhancing the transition state
+for a conformational transition. However, choosing such a potential
+is not trivial. In a later section we will see how metadynamics
+can be used to this aim. The simplest way to use umbrella sampling
+is that to apply harmonic constraints to one or more CVs.
+
+As first example we perform an umbrella sampling calculation of the free energy landscape of
+alanine dipeptide with AMBER99SB-ILDN all atom force field already seen in the previous section.
+depicted as function of the two dihedral angles \f$phi\f$ and 
+\f$\psi\f$ (also called "Ramachandan plot").
+We will now see how to enforce the exploration of a the neighborhood of a selected point
+the CV space using a \ref RESTRAINT potential.
+
+\verbatim
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Impose an umbrella potential on CV 1 and CV 2
+# with a spring constant of 500 kjoule/mol
+# at fixed points on the Ramachandran plot
+#
+restraint-phi: RESTRAINT ARG=phi KAPPA=500 AT=pi
+restraint-psi: RESTRAINT ARG=psi KAPPA=500 AT=-pi
+
+# monitor the two variables and the bias potential from the two restraints
+PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias,restraint-psi.bias FILE=COLVAR
+
+\endverbatim
+(see \ref TORSION, \ref RESTRAINT, and \ref PRINT).
+
+The syntax for the command \ref RESTRAINT is rather trivial.
+The directive is followed by a keyword ARG followed by the label of the CV
+on which the umbrella potential has to act.
+The keyword KAPPA determines the hardness of the spring constant and its units are
+[Energy units]/[Units of the CV ]. The additional potential introduced by the UMBRELLA takes the form of
+a simple Hooke’s law:
+\f[
+  U(s)=\frac{k}{2} (x-x_0)^2
+\f].
+
+where \f$ x_0 \f$  is the value specified following the AT keyword.
+The CVs as well as the sum of the two bias potentials are shown in the COLVAR file.
+For this specific input the COLVAR file has in first column the time,
+in the second the value of \f$\phi\f$, in the third the value of \f$\psi\f$,
+in the fourth the the additional potential introduced by the restraint on \f$\phi\f$ and in
+the fifth the additional potential introduced by the restraint on \f$\psi\f$.
+
+\section belfast-4-reweighting Reweighting the results
+
+\section belfast-4-wham Combining multiple restraints
+
+\section belfast-4-walls Soft walls
+
+
+*/
+
+link: @subpage belfast-4
+
+description: Umbrella sampling, reweighting, and weighted histogram
+
+

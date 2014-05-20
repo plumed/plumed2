@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
 #include "MultiColvarFunction.h"
+#include "ActionVolume.h"
 #include "vesselbase/Vessel.h"
 #include "tools/Pbc.h"
 #include <vector>
@@ -402,6 +403,39 @@ void MultiColvarBase::addCentralAtomDerivativeToFunction( const unsigned& iatom,
 void MultiColvarBase::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){
   plumed_dbg_assert( myvalues && vals.size()==1 );
   vals[0]=myvalues->getValue( iatom );
+}
+
+void MultiColvarBase::copyElementsToBridgedColvar( const double& weight, ActionVolume* func ){
+  func->setElementValue( 0, getElementValue(0) ); 
+  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
+     unsigned n=atoms_with_derivatives[i], nx=3*n;
+     func->activeAtoms.activate(n);
+     func->addElementDerivative( nx+0, getElementDerivative(nx+0) );
+     func->addElementDerivative( nx+1, getElementDerivative(nx+1) );
+     func->addElementDerivative( nx+2, getElementDerivative(nx+2) ); 
+  }
+  unsigned nvir=3*getNumberOfAtoms();
+  for(unsigned i=0;i<9;++i){ 
+     func->addElementDerivative( nvir, getElementDerivative(nvir) ); nvir++;
+  }
+  func->setElementValue( 1, getElementValue(1) );
+
+  unsigned nder=getNumberOfDerivatives();
+  unsigned nderv=func->getNumberOfDerivatives();
+  // Add derivatives of weight if we have a weight
+  if( weightHasDerivatives ){
+     for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
+        unsigned n=atoms_with_derivatives[i], nx=nder + 3*n, ny=nderv + 3*n;
+        func->activeAtoms.activate(n); 
+        func->addElementDerivative( ny+0, weight*getElementDerivative(nx+0) ); 
+        func->addElementDerivative( ny+1, weight*getElementDerivative(nx+1) ); 
+        func->addElementDerivative( ny+2, weight*getElementDerivative(nx+2) );
+     } 
+     unsigned nwvir=nder + 3*getNumberOfAtoms(), nwvir2=nderv + 3*getNumberOfAtoms();
+     for(unsigned i=0;i<9;++i){
+        func->addElementDerivative( nwvir2, getElementDerivative(nwvir) ); nwvir++; nwvir2++; 
+     }
+  }
 }
 
 void MultiColvarBase::addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, MultiColvarFunction* func ){

@@ -173,6 +173,8 @@ public:
  virtual void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
 /// Scale all grid values and derivatives by a constant factor
  virtual void scaleAllValuesAndDerivatives( const double& scalef );
+/// Takes the scalef times the logarithm of all grid values and derivatives 
+ virtual void logAllValuesAndDerivatives( const double& scalef );
 /// apply function: takes  pointer to  function that accepts a double and apply 
  virtual void applyFunctionAllValuesAndDerivatives( double (*func)(double val), double (*funcder)(double valder) );
 /// add a kernel function to the grid

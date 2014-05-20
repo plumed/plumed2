@@ -31,16 +31,6 @@
 #include "Log.h"
 #include "lapack/lapack.h"
 
-#if ! defined(__PLUMED_INTERNAL_LAPACK) 
-// this is a hack to allow the dgesvd routine
-// this routine is not available within the internal, gromacs-imported lapacks
-#define plumed_lapack_dgesvd PLUMED_BLAS_F77_FUNC(dgesvd,DGESVD)
-void
-   PLUMED_BLAS_F77_FUNC(dgesvd, DGESVD)(const char *jobu, const char *jobvt, int *m, int *n, double *a,
-                              int *lda, double *s, double *u, int *ldu, double *vt, int *ldvt, double *work,
-                              int *lwork, int *info );
-#endif
-
 namespace PLMD{
 
 /// Calculate the dot product between two vectors 
@@ -262,27 +252,19 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
 
   // Create some containers for stuff from single value decomposition
   double *S=new double[nsv]; double *U=new double[nrows*nrows];
-  double *VT=new double[ncols*ncols];
+  double *VT=new double[ncols*ncols]; int *iwork=new int[8*nsv];
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1; double* work=new double[1];
-#if defined(__PLUMED_INTERNAL_LAPACK)
-  plumed_merror("This feature is unavailable with internal lapack");
-#else 
-  plumed_lapack_dgesvd( "A", "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, &info );
-#endif
+  plumed_lapack_dgesdd( "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, iwork, &info );
   if(info!=0) return info;
 
   // Retrieve correct sizes for work and rellocate
   lwork=(int) work[0]; delete [] work; work=new double[lwork];
 
   // This does the singular value decomposition
-#if defined(__PLUMED_INTERNAL_LAPACK)
-  plumed_merror("This feature is unavailable with internal lapack");
-#else
-  plumed_lapack_dgesvd( "A", "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, &info );
+  plumed_lapack_dgesdd( "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, iwork, &info );
   if(info!=0) return info; 
-#endif
 
   // Compute the tolerance on the singular values ( machine epsilon * number of singular values * maximum singular value )
   double tol; tol=S[0]; for(unsigned i=1;i<nsv;++i){ if( S[i]>tol ){ tol=S[i]; } } tol*=nsv*epsilon;
@@ -301,7 +283,7 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   mult( V, Si, tmp ); mult( tmp, UT, pseudoinverse );
 
   // Deallocate all the memory
-  delete [] S; delete [] U; delete [] VT; delete [] work; delete [] da;
+  delete [] S; delete [] U; delete [] VT; delete [] work; delete [] iwork; delete [] da;
   return 0;
 }
 

@@ -1,0 +1,10 @@
+/**
+\page belfast-2 Belfast tutorial: Adaptive variables I
+
+*/
+
+link: @subpage belfast-2
+
+description: How to use path CVs
+
+

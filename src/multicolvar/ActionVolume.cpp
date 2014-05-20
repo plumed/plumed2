@@ -42,6 +42,7 @@ void ActionVolume::registerKeywords( Keywords& keys ){
                                  "e.g. <em>label</em>.less_than-1, <em>label</em>.less_than-2 etc.");
   keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); 
+  if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   keys.add("compulsory","SIGMA","the width of the function to be used for kernel density estimation");
   keys.add("compulsory","KERNEL","gaussian","the type of kernel function to be used");
   keys.addFlag("OUTSIDE",false,"calculate quantities for colvars that are on atoms outside the region of interest");
@@ -155,39 +156,11 @@ void ActionVolume::performTask(){
      }
   } else {
      // Copy derivatives of the colvar and the value of the colvar
-     double colv=mycolv->getElementValue(0); setElementValue( 0, colv );
-     for(unsigned i=0;i<mycolv->atoms_with_derivatives.getNumberActive();++i){
-        unsigned n=mycolv->atoms_with_derivatives[i], nx=3*n;
-        activeAtoms.activate(n);
-        addElementDerivative( nx+0, mycolv->getElementDerivative(nx+0) );
-        addElementDerivative( nx+1, mycolv->getElementDerivative(nx+1) );
-        addElementDerivative( nx+2, mycolv->getElementDerivative(nx+2) ); 
-     }
-     unsigned nvir=3*mycolv->getNumberOfAtoms();
-     for(unsigned i=0;i<9;++i){ 
-       addElementDerivative( nvir, mycolv->getElementDerivative(nvir) ); nvir++;
-     }
-
-     double ww=mycolv->getElementValue(1);
-     setElementValue( 1, ww*weight ); 
-     unsigned nder=getNumberOfDerivatives();
-
-     // Add derivatives of weight if we have a weight
-     if( mycolv->weightHasDerivatives ){
-        for(unsigned i=0;i<mycolv->atoms_with_derivatives.getNumberActive();++i){
-           unsigned n=mycolv->atoms_with_derivatives[i], nx=nder + 3*n;
-           activeAtoms.activate(n); 
-           addElementDerivative( nx+0, weight*mycolv->getElementDerivative(nx+0) ); 
-           addElementDerivative( nx+1, weight*mycolv->getElementDerivative(nx+1) ); 
-           addElementDerivative( nx+2, weight*mycolv->getElementDerivative(nx+2) );
-        } 
-        unsigned nwvir=3*mycolv->getNumberOfAtoms();
-        for(unsigned i=0;i<9;++i){
-           addElementDerivative( nwvir, mycolv->getElementDerivative(nwvir) ); nwvir++; 
-        }
-     }
-
+     mycolv->copyElementsToBridgedColvar( weight, this );
      // Add derivatives of central atoms
+     double ww=mycolv->getElementValue(1);
+     setElementValue( 1, ww*weight );
+     unsigned nder=getNumberOfDerivatives(); 
      for(unsigned i=0;i<mycolv->atomsWithCatomDer.getNumberActive();++i){
          unsigned n=mycolv->atomsWithCatomDer[i], nx=nder+3*n;
          activeAtoms.activate(n); 

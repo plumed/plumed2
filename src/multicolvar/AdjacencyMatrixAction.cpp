@@ -121,7 +121,7 @@ double AdjacencyMatrixAction::compute(){
 
   double f_dot, dot_df, dot; dot=0;
   for(unsigned k=0;k<orient0.size();++k) dot+=orient0[k]*orient1[k];
-  f_dot=dot; dot_df=1.0;
+  f_dot=0.5*( 1 + dot ); dot_df=0.5;
   // Add smac stuff here if required
 
   // Retrieve the weight of the connection

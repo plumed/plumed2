@@ -49,8 +49,11 @@ void Max::registerKeywords( Keywords& keys ){
 void Max::reserveKeyword( Keywords& keys ){
   keys.reserve("optional","MAX","calculate the maximum value. "
                                 "To make this quantity continuous the maximum is calculated using "
-                                "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) } \\f$ "
+                                "\\f$ \\textrm{max} = \\beta \\log \\sum_i \\exp\\left( \\frac{s_i}{\\beta}\\right) \\f$ "
                                 "The value of \\f$\\beta\\f$ in this function is specified using (BETA=\\f$\\beta\\f$)",true);
+  keys.addOutputComponent("max","MAX","the maximum value. This is calculated using the formula described in the description of the "
+                                      "keyword so as to make it continuous.");
+
 }
 
 Max::Max( const VesselOptions& da ) :

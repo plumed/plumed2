@@ -39,6 +39,18 @@ using this command you can find the backbone atoms in your structure automatical
 Please be aware that the pdb parser in plumed is far from perfect. You should thus check the log file
 and examine what plumed is actually doing whenenver you use the MOLINFO action.
 
+Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special
+symbol. Current registered keywords are:
+
+\verbatim
+@phi-#
+@psi-#
+@omega-#
+@chi1-#
+\endverbatim
+
+that select the appropriate atoms that define each dihedral angle for residue #.
+
 \bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
 may not be true - GLY is problematic for secondary structure residues as it is achiral. 
 

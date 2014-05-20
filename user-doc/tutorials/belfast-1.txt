@@ -1,0 +1,10 @@
+/**
+\page belfast-1 Belfast tutorial: Analyzing CVs
+
+*/
+
+link: @subpage belfast-1
+
+description: This tutorial explains how to use plumed to analyze CVs
+
+

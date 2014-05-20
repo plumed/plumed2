@@ -36,14 +36,19 @@ namespace generic{
 //+PLUMEDOC GENERIC GROUP
 /*
 Define a group of atoms so that a particular list of atoms can be referenced with a single label
-in definitions of CVs or virtual atoms.
+in definitions of CVs or virtual atoms. 
+
+Atoms can be listed as comma separated numbers (i.e. 1,2,3,10,45,7,9,..) , simple positive ranges
+(i.e. 20-40), ranges with a stride either positive or negative (i.e. 20-40:2 or 80-50:-2) or as
+combinations of all the former methods (1,2,4,5,10-20,21-40:2,80-50:-2). 
+
+Finally, lists can be imported from ndx files (GROMACS format). Use NDX_FILE to set the name of 
+the index file and NDX_GROUP to set the name of the group to be imported (default is first one).
 
 Notice that this command just creates a shortcut, and does not imply any real calculation.
 It is just convenient to better organize input files. Might be used in combination with
 the \ref INCLUDE command so as to store long group definitions in a separate file.
 
-Finally, lists can be imported from ndx files (GROMACS format). Use NDX_FILE to set the name of 
-the index file and NDX_GROUP to set the name of the group to be imported (default is first one).
 
 \par Examples
 
