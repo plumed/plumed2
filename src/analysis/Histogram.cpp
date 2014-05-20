@@ -107,7 +107,8 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.remove("ATOMS"); keys.reset_style("ARG","compulsory");
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
-  keys.add("compulsory","GRID_BIN","the number of bins for the grid");
+  keys.add("optional","GRID_BIN","the number of bins for the grid");
+  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
   keys.add("compulsory","BANDWIDTH","the bandwdith for kernel density estimation");
   keys.add("compulsory","GRID_WFILE","histogram","the file on which to write the grid");
@@ -124,8 +125,29 @@ gbin(getNumberOfArguments())
 {
   // Read stuff for Grid
   parseVector("GRID_MIN",gmin);
+  if(gmin.size()!=getNumberOfArguments()) error("not enough values for GRID_MIN");
   parseVector("GRID_MAX",gmax);
+  if(gmax.size()!=getNumberOfArguments()) error("not enough values for GRID_MAX");
   parseVector("GRID_BIN",gbin);
+  if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("not enough values for GRID_BIN");
+  std::vector<double>  gspacing;
+  parseVector("GRID_SPACING",gspacing);
+  if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) error("not enough values for GRID_SPACING");
+  if(gbin.size()==0 && gspacing.size()==0)  { error("At least one among GRID_BIN and GRID_SPACING should be used");
+  } else if(gspacing.size()!=0 && gbin.size()==0) {
+    log<<"  The number of bins will be estimated from GRID_SPACING\n";
+  } else if(gspacing.size()!=0 && gbin.size()!=0) {
+    log<<"  You specified both GRID_BIN and GRID_SPACING\n";
+    log<<"  The more conservative (highest) number of bins will be used for each variable\n";
+  }
+  if(gbin.size()==0) gbin.assign(getNumberOfArguments(),1);
+  if(gspacing.size()!=0) for(unsigned i=0;i<getNumberOfArguments();i++){
+      double a,b;
+      Tools::convert(gmin[i],a);
+      Tools::convert(gmax[i],b);
+      unsigned n=((b-a)/gspacing[i])+1;
+      if(gbin[i]<n) gbin[i]=n;
+  }
   parseOutputFile("GRID_WFILE",gridfname); 
 
   // Read stuff for window functions
@@ -177,7 +199,7 @@ void Histogram::performAnalysis(){
       KernelFunctions kernel( point, bw, kerneltype, false, weight, true);
       gg->addKernel( kernel ); 
        
-  }
+  } 
   // Normalize the histogram
   gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
 
