@@ -37,6 +37,7 @@ void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb ){
      indices.push_back( pdb.getAtomNumbers()[i] ); reference_atoms.push_back( pdb.getPositions()[i] );
      align.push_back( pdb.getOccupancy()[i] ); displace.push_back( pdb.getBeta()[i] );
   }
+  der_index.resize( reference_atoms.size() );
 }
 
 void ReferenceAtoms::setAtomNumbers( const std::vector<AtomNumber>& numbers ){
