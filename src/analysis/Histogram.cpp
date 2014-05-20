@@ -117,23 +117,20 @@ void Histogram::registerKeywords( Keywords& keys ){
 
 Histogram::Histogram(const ActionOptions&ao):
 PLUMED_ANALYSIS_INIT(ao),
-gmin(getNumberOfArguments()),
-gmax(getNumberOfArguments()),
-point(getNumberOfArguments()),
-bw(getNumberOfArguments()),
-gbin(getNumberOfArguments())
+point(getNumberOfArguments())
 {
   // Read stuff for Grid
   parseVector("GRID_MIN",gmin);
-  if(gmin.size()!=getNumberOfArguments()) error("not enough values for GRID_MIN");
+  if(gmin.size()!=getNumberOfArguments()) plumed_merror("Wrong number of values for GRID_MIN: they should be equal to the number of arguments");
   parseVector("GRID_MAX",gmax);
-  if(gmax.size()!=getNumberOfArguments()) error("not enough values for GRID_MAX");
+  if(gmax.size()!=getNumberOfArguments()) plumed_merror("Wrong number of values for GRID_MAX: they should be equal to the number of arguments");
   parseVector("GRID_BIN",gbin);
-  if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("not enough values for GRID_BIN");
+  if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) plumed_merror("Wrong number of values for GRID_BIN: they should be equal to the number of arguments");
   std::vector<double>  gspacing;
   parseVector("GRID_SPACING",gspacing);
-  if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) error("not enough values for GRID_SPACING");
-  if(gbin.size()==0 && gspacing.size()==0)  { error("At least one among GRID_BIN and GRID_SPACING should be used");
+  if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) 
+    plumed_merror("Wrong number of for GRID_SPACING: they should be equal to the number of arguments");
+  if(gbin.size()==0 && gspacing.size()==0)  { plumed_merror("At least one among GRID_BIN and GRID_SPACING should be used");
   } else if(gspacing.size()!=0 && gbin.size()==0) {
     log<<"  The number of bins will be estimated from GRID_SPACING\n";
   } else if(gspacing.size()!=0 && gbin.size()!=0) {
@@ -152,6 +149,7 @@ gbin(getNumberOfArguments())
 
   // Read stuff for window functions
   parseVector("BANDWIDTH",bw);
+  if(bw.size()!=getNumberOfArguments()) plumed_merror("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
   // Read the type of kernel we are using
   parse("KERNEL",kerneltype);
   checkRead();
@@ -172,7 +170,7 @@ void Histogram::performTask(){ plumed_error(); }
 
 void Histogram::performAnalysis(){
   // Back up old histogram files
-//  std::string oldfname=saveResultsFromPreviousAnalyses( gridfname );
+  //  std::string oldfname=saveResultsFromPreviousAnalyses( gridfname );
 
   // Get pbc stuff for grid
   std::vector<bool> pbc; std::string dmin,dmax;
