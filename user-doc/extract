@@ -1,4 +1,14 @@
 #! /bin/bash
+
+if ! plumed ; then
+  echo "plumed executable not found, I try to source ../sourceme.sh"
+  source ../sourceme.sh
+  if ! plumed ; then
+    echo "Compile plumed first!"
+    exit 1
+  fi
+fi
+
 rm -rf automatic
 mkdir automatic
 
