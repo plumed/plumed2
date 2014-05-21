@@ -206,6 +206,7 @@ void CLToolSumHills::registerKeywords( Keywords& keys ){
   keys.add("optional","--min","the lower bounds for the grid");
   keys.add("optional","--max","the upper bounds for the grid");
   keys.add("optional","--bin","the number of bins for the grid");
+  keys.add("optional","--spacing","grid spacing, alternative to the number of bins");
   keys.add("optional","--idw","specify the variables to be integrated (default is all)");
   keys.add("optional","--outfile","specify the outputfile for sumhills");
   keys.add("optional","--outhisto","specify the outputfile for the histogram");
@@ -213,6 +214,7 @@ void CLToolSumHills::registerKeywords( Keywords& keys ){
   keys.add("optional","--sigma"," a vector that specify the sigma for binning (only needed when doing histogram ");
   keys.addFlag("--negbias",false," print the negative bias instead of the free energy (only needed with welltempered runs and flexible hills) ");
   keys.addFlag("--nohistory",false," to be used with --stride:  it splits the bias/histogram in pieces without previous history ");
+  keys.addFlag("--mintozero",false," it translate all the minimum value in bias/histogram to zero (usefull to compare results) ");
   keys.add("optional","--fmt","specify the output format");
 }
 
@@ -300,6 +302,12 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   if(parseVector("--bin",gbin)){
        if(gbin.size()!=cvs.size() && gbin.size()!=0) plumed_merror("not enough values for --bin");
        grid_has_bin=true;
+  }
+  vector<std::string> gspacing(cvs.size());
+  bool grid_has_spacing; grid_has_spacing=false;	
+  if(parseVector("--spacing",gspacing)){
+       if(gspacing.size()!=cvs.size() && gspacing.size()!=0) plumed_merror("not enough values for --spacing");
+       grid_has_spacing=true;
   }
   // allowed: no grids only bin
   // not allowed: partial grid definition 
@@ -453,10 +461,10 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   if(grid_has_bin){
      addme="GRID_BIN="; for(unsigned i=0;i<(ncv-1);i++)addme+=gbin[i]+","; addme+=gbin[ncv-1];
      actioninput.push_back(addme);
-//  }else{
-//	  //automatic bin: 50 per dimension;
-//	  addme="GRID_BIN="; for(unsigned i=0;i<(ncv-1);i++)addme+="50,"; addme+="50";
-//	  actioninput.push_back(addme);
+  }
+  if(grid_has_spacing){
+     addme="GRID_SPACING="; for(unsigned i=0;i<(ncv-1);i++)addme+=gspacing[i]+","; addme+=gspacing[ncv-1];
+     actioninput.push_back(addme);
   }
   std::string  stride; stride="";
   if(parse("--stride",stride)){
@@ -466,6 +474,11 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
     if(nohistory){
        actioninput.push_back("NOHISTORY");
     }
+  }
+  bool  mintozero; 
+  parseFlag("--mintozero",mintozero);
+  if(mintozero){
+     actioninput.push_back("MINTOZERO");
   }
   if(idw.size()!=0){ 
      addme="PROJ=";

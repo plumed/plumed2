@@ -146,7 +146,7 @@ bool FilesHandler::scanOneHill(BiasRepresentation *br, IFile *ifile ){
 	double dummy;
 	if(ifile->scanField("time",dummy)){
 	        //(*log)<<"   scanning one hill: "<<dummy<<" \n";
-	        ifile->scanField("biasf",dummy);
+	        if(ifile->FieldExist("biasf")) ifile->scanField("biasf",dummy);
 	        if(ifile->FieldExist("clock")) ifile->scanField("clock",dummy);
                 // keep this intermediate function in case you need to parse more data in the future
                 br->pushKernel(ifile);
@@ -179,6 +179,7 @@ class FuncSumHills :
   bool iscltool,integratehills,integratehisto,parallelread;
   bool negativebias;
   bool nohistory;
+  bool minTOzero;
   double beta;
   string outhills,outhisto,fmt;
   BiasRepresentation *biasrep;
@@ -204,6 +205,7 @@ void FuncSumHills::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_MIN","the lower bounds for the grid");
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid"); 
+  keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
   keys.add("optional","OUTHILLS"," output file for hills ");
   keys.add("optional","OUTHISTO"," output file for histogram ");
   keys.add("optional","INITSTRIDE"," stride if you want an initial dump ");
@@ -212,6 +214,7 @@ void FuncSumHills::registerKeywords(Keywords& keys){
   keys.addFlag("PARALLELREAD",false,"read parallel HILLS file");
   keys.addFlag("NEGBIAS",false,"dump  negative bias ( -bias )   instead of the free energy: needed in welltempered with flexible hills ");
   keys.addFlag("NOHISTORY",false,"to be used with INITSTRIDE:  it splits the bias/histogram in pieces without previous history  ");
+  keys.addFlag("MINTOZERO",false,"translate the resulting bias/histogram to have the minimum to zero  ");
   keys.add("optional","FMT","the format that should be used to output real numbers");
 }
 
@@ -225,6 +228,7 @@ integratehisto(false),
 parallelread(false),
 negativebias(false),
 nohistory(false),
+minTOzero(false),
 beta(-1.),
 fmt("%14.9f")
 {
@@ -243,10 +247,27 @@ fmt("%14.9f")
   if(gmax.size()!=getNumberOfArguments() && gmax.size()!=0) error("not enough values for GRID_MAX");
   plumed_massert(gmax.size()==getNumberOfArguments() || gmax.size()==0,"need GRID_MAX argument for this") ;
   vector<unsigned> gbin;
+  vector<double>   gspacing;
   parseVector("GRID_BIN",gbin);
-  plumed_massert(gbin.size()==getNumberOfArguments() || gbin.size()==0,"need GRID_BIN argument for this"); 
+  plumed_massert(gbin.size()==getNumberOfArguments() || gbin.size()==0,"need GRID_BIN argument for this") ;
   if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("not enough values for GRID_BIN");
-  //plumed_assert(getNumberOfArguments()==gbin.size());
+  parseVector("GRID_SPACING",gspacing);
+  plumed_massert(gspacing.size()==getNumberOfArguments() || gspacing.size()==0,"need GRID_SPACING argument for this") ;
+  if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) error("not enough values for GRID_SPACING");
+  if(gspacing.size()!=0 && gbin.size()==0){
+    log<<"  The number of bins will be estimated from GRID_SPACING\n";
+  } else if(gspacing.size()!=0 && gbin.size()!=0){
+    log<<"  You specified both GRID_BIN and GRID_SPACING\n";
+    log<<"  The more conservative (highest) number of bins will be used for each variable\n";
+  }
+  if(gspacing.size()!=0) for(unsigned i=0;i<getNumberOfArguments();i++){
+    if(gbin.size()==0) gbin.assign(getNumberOfArguments(),1);
+    double a,b;
+    Tools::convert(gmin[i],a);
+    Tools::convert(gmax[i],b);
+    unsigned n=((b-a)/gspacing[i])+1;
+    if(gbin[i]<n) gbin[i]=n;
+  }
 
   // hills file: 
   parseVector("HILLSFILES",hillsFiles);
@@ -351,7 +372,8 @@ fmt("%14.9f")
         parseFlag("NOHISTORY",nohistory); 
         if(nohistory)log<<"  nohistory: each stride block has no memory of the previous block\n";
   }
-
+  parseFlag("MINTOZERO",minTOzero);
+  if(minTOzero)log<<"  mintozero: bias/histogram will be translated to have the minimum value equal to zero\n";
   //what might it be this? 
   // here start 
   // want something right now?? do it and return
@@ -477,7 +499,8 @@ fmt("%14.9f")
 			if(initstride>0){ myout=outhills+ostr.str()+".dat" ;}else{myout=outhills;}
 	                log<<"  Writing full grid on file "<<myout<<" \n";
 	                gridfile.open(myout);	
-	
+
+			if(minTOzero) biasGrid.setMinToZero();	
         		biasGrid.setOutputFmt(fmt); 
 	                biasGrid.writeToFile(gridfile);
 	                gridfile.close();
@@ -496,7 +519,8 @@ fmt("%14.9f")
 			if(initstride>0){ myout=outhisto+ostr.str()+".dat" ;}else{myout=outhisto;}
 	                log<<"  Writing full grid on file "<<myout<<" \n";
 	                gridfile.open(myout);	
-	
+
+                        if(minTOzero) histoGrid.setMinToZero();	
         		histoGrid.setOutputFmt(fmt); 
 	                histoGrid.writeToFile(gridfile);
 	                gridfile.close();
