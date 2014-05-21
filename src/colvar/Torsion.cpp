@@ -50,7 +50,7 @@ t: TORSION ATOMS=1,2,3,4
 PRINT ARG=t FILE=COLVAR
 \endverbatim
 
-If you are working with a protein you can specify the special named torsion angles \f$\phi\f$ and \f$\psi\f$
+If you are working with a protein you can specify the special named torsion angles \f$\phi\f$, \f$\psi\f$, \f$\omega\f$ and \f$\chi_1\f$
 by using TORSION in combination with the \ref MOLINFO command.  This can be done by using the following 
 syntax.
 

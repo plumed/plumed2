@@ -384,6 +384,10 @@ double Analysis::getNormalization() const {
   return ( 1. + norm/old_norm );
 }
 
+double Analysis::getTemp() const {
+  return simtemp;
+}
+
 void Analysis::update(){
   if( !single_run ){
     if( getStep()>0 && getStep()%freq==0 ) runAnalysis(); 

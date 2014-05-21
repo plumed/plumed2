@@ -113,6 +113,8 @@ public:
   bool hasDifferentiableOrientation() const { return true; }
 ///  This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector();
+/// Used by ActionVolume
+  void copyElementsToBridgedColvar( const double& weight, multicolvar::ActionVolume* func );
 };
 
 inline
