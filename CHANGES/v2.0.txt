@@ -122,6 +122,8 @@ For developers:
   (see commit 562d5ea9dfc3).
 - Small fix in tools/Random.cpp that allows Random objects to be
   declared as static.
+- Small fix in user-doc compilation, so that if plumed is not found
+  the sourceme.sh file is sourced
 - Fixed non-ansi syntax in a few points and a non-important memory leakage.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
