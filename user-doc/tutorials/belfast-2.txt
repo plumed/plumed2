@@ -171,7 +171,7 @@ which can be rewritten as
 \frac{\partial S(X) }{\partial x_i} = \lambda \frac{\sum_{i=1}^{N} \frac{\partial \vert X-X_i \vert}{ \partial x_i} \exp^{-\lambda \vert X-X_i \vert } [ s(X) - i  ] } { \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }
 \f]
 
-It is interesting to note that whenever the \f$ \lambda \f$ is too small the force will vanish. Additionally, when \f$ \lambda \f$ is too large, then it one single exponential term will dominate over the other on a large part of phase space while the other will vanish. This means that the \f$ S(X) \f$ will assume almost discrete values  that produce zero force. 
+It is interesting to note that whenever the \f$ \lambda \f$ is too small the force will vanish. Additionally, when \f$ \lambda \f$ is too large, then it one single exponential term will dominate over the other on a large part of phase space while the other will vanish. This means that the \f$ S(X) \f$ will assume almost discrete values  that produce zero force. Funny, isn't it? 
 
 \section pcvs-howmany How many frames do I need?
 
@@ -193,13 +193,142 @@ PRINT ARG=p1.sss,p1.zzz STRIDE=100 FILE=colvar FMT=%8.4f
 and in this case only the closest 10 frames from the path will be used for the CV. Then the list of the frames to use is updated every 100 steps. 
 If you are using a biased dynamics this may introduce sudden change in the derivatives, therefore it is better to check the stability of the setup before running production-quality calculations. 
 
+\section ala The molecule of the day: alanine dipeptide 
+
+Here and probably in other parts of the tutorial a simple molecule is used as a test case. This is alanine dipeptide in vacuum.
+This rather simple molecule is useful to make many benchmark that are around for data analysis and free energy methods. It is a rather nice example 
+since it presents two states separated by a high (free) energy barrier.
+
+In Fig. \ref belfast-2-ala its structure is shown.
+
+\anchor belfast-2-ala
+\image html belfast-2-ala.png "The molecule of the day: alanine dipeptide."
+
+The two main metastable states are called \f$ C_7eq \f$ and \f$ C_7ax \f$.
+
+\anchor belfast-2-transition
+\image html belfast-2-transition.png  "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
+
+Here metastable states are intended as states which have a relatively low free energy compared to adjacent conformation. At this stage it is not really useful
+to know what is the free energy, just think in term of internal energy. This is almost the same for such a small system whith so few degrees of freedom.
+
+It is conventional use to show the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$ in Fig. \ref belfast-2-transition .
+
+\anchor belfast-2-rama
+\image html belfast-2-rama.png  "The Free energy landscape of alanine dipeptide in Ramachandran angles in the CHARMM27 force field."
+
+
 \section Examples
 
-An example. Analyze a trajectory on a wrong path
+Now as a simple example, I want to show you that plotting some free dynamics trajectories shoot from the saddle point, you get a different plot in the path collective variables if you use the right path or if you use the wrong path.
 
-An example. Analyze a trajectory on a right path
+In Fig. \ref belfast-2-good-bad-path I show you two example of possible path that join the \f$ C_7eq \f$ and \f$ C_7ax \f$ metastable states in alanine dipeptide.
+You might clearly expect that real (rare) trajectories that move from one basin to the other would rather move along the black line than on the red line. 
 
-Introduce the fact that the use of an index is arbitrary.
+\anchor belfast-2-good-bad-path
+\image html belfast-2-good-bad-path.png "Example of good and bad path:  one sits confortably in the minimum free energy path connecting the two metastable states, while the other makes a direct connection via   high energy states"
+
+So, in this example we do a sort of "commmittor analysis" where we start shooting a number of free molecular dynamics from the saddle point located at \f$ \Phi=0 \f$ and \f$ \Psi=-1 \f$ and we want to see which way do they go. Intuitively, by assigning random velocities every time we should find part of the trajectories that move woward \f$ C_7eq \f$ and part that move towards \f$ C_7ax \f$. 
+
+I provided you with two directories, each containing a bash script script.sh  whose core (it is a bit more complicated in practice...) consists in:
+
+\verbatim
+#
+# set how many runs you want to do
+#
+ntests=50
+for i in `seq 1 $ntests`
+do
+	#
+	# assign a random velocity at each timestep by initializing the
+	#
+        sed s/SEED/$RANDOM/ md.mdp >newmd.mdp
+        #
+        # do the topology: this should write a topol.tpr
+        #
+        $GROMPP -c start.gro -p topol.top -f newmd.mdp
+        $GROMACS_BIN/$MDRUN -plumed plumed.dat
+        mv colvar colvar_$i
+done
+\endverbatim
+
+This runs 50 short MD runs (few hundreds steps) and just saves the colvar file into a labeled colvar file.
+In each mdrun plumed is used to plot the collective variables and it is something that reads like the follwing:
+\verbatim
+# Phi
+t1: TORSION ATOMS=5,7,9,15
+# Psi
+t2: TORSION ATOMS=7,9,15,17
+# The right path
+p1: PATHMSD REFERENCE=right_path.dat LAMBDA=15100.
+# The wrong path
+p2: PATHMSD REFERENCE=wrong_path.dat  LAMBDA=8244.4
+# Just a printout of all the stuff calculated so far
+PRINT ARG=* STRIDE=2 FILE=colvar FMT=%12.8f
+\endverbatim
+
+where I just want to plot  \f$ \Phi \f$ , \f$ \Psi \f$  and the two path collective variables.
+Note that each path has a different LAMBDA parameters. Here the Ramachandran angles are plotted so you can realize which path is the system walking in a more confortable projection. This is of course fine in such a small system but whenever you have to deal with larger systems and control hundreds of CVs at the same time, I think that path collective variables produce a more intuituve description for what you want to do.
+
+If you run the script simply with
+
+\verbatim
+pd@plumed:~> ./script.sh
+\endverbatim
+
+then after a minute or so, you should have a directory which is full of colvar files.
+Let's revise together how the colvar file is formatted:
+
+\verbatim
+#! FIELDS time t1 t2 p1.sss p1.zzz p2.sss p2.zzz
+#! SET min_t1 -pi
+#! SET max_t1 pi
+#! SET min_t2 -pi
+#! SET max_t2 pi
+ 0.000000  -0.17752998  -1.01329788  13.87216908   0.00005492  12.00532256   0.00233905
+ 0.004000  -0.13370142  -1.10611136  13.87613508   0.00004823  12.03390658   0.00255806
+ 0.008000  -0.15633049  -1.14298481  13.88290617   0.00004511  12.07203319   0.00273764
+ 0.012000  -0.23856451  -1.12343958  13.89969608   0.00004267  12.12872544   0.00284883
+...
+\endverbatim
+
+In first column you have the time, then t1 (\f$ \Phi \f$) , then t2 ( \f$ \Psi \f$ ) and the path collective variables p1 and p2. 
+Note that the action PATHMSD calculates both the progress along the path (p1.sss) and the distance from it (p1.zzz) . In PLUMED jargon, these are called "components".
+So a single Action (a line in plumed input) can calculate many components at the same time. This is not always the case: sometimes by default you have one component but specific 
+flags may enable more components to be calculated (see \ref DISTANCE for example).
+Note that the header (all the part of a colvar file that contains \# as first character) is telling already what it inside the file and eventually also tells you if a variable is contained in boundaries (for example torsions, are periodic and their codomain is defined in -Pi and Pi ).
+
+At the end of the script, you also have two additional scripts. One is named script_rama.gplt and the other is named script_path.gplt.
+They contain some gnuplot commands that are very handy to visualize all the colvar files without making you load one by one, that would be a pain.
+
+Now, let's visualize the result from the wrong path directory.
+In order to do so, after having run the calculation, then do 
+
+\verbatim
+pd@plumed:~>gnuplot 
+gnuplot> load "script_rama.gplt"
+\endverbatim
+
+what you see is that all the trajectories join the reactant and the product state along the low free energy path depicted before. 
+
+Now if you try to load the same bunch of trajectories as a function of the progress along the path and the distance from the path in the case of the wrong path then simply do
+
+\verbatim
+gnuplot> load "script_path_wrong.gplt"
+\endverbatim
+
+What do you see? A number of trajectories move from the middle towards the right bottom side at low distance from the path.
+In the middle of the progress along the path,  you have higher distance. This is expected since the distance zero corresponds to a unlikely, highly-energetic path which is unlikely to 
+occur.
+Differently, if you now do 
+
+\verbatim
+gnuplot> load "script_path_right.gplt"
+\endverbatim
+
+You see that the path, compared to what happened before, run much closer to small distance from the path. This means that the provided path is highlt resemblant and representative of what hapens in the reactive path.
+
+Note that going at high distances can be also beneficial. It might help you to explore alternative paths that you have not explored before. But beware, the more you get far from the path, the more states are accessible, in a similar way as the fact that the surface of a sphere increase with its radius. The surface ramps up much faster than the radius therefore you have a lots of states there. This means also high entropy, so many systems actually tend to drift to high distances while, on the contrary, zero distance is never reached in practice (zero entropy system is impossible to reach at finite temperature). So you can see by yourself that this can be a big can of worms. In particular, my experience with path collective variables and biological systems tells me that most of time is hopeless to go to high distances to find new path in many cases (for example, in folding). While this is worth whenever you think that the paths are not too many (alternative routes in chemical reaction or enzymatic catalysis). 
 
 \section pcvs-format How to format my input?
 
@@ -213,6 +342,7 @@ performed the alignment on the set of atoms which have nonzero occupancy column.
 distance respect to another set. This is handy in case of protein-ligand. You set the alignment of the protein and you calculate the distance based on the ligand and the part of the protein which is in contact with the protein. This is done for example in <a href="http://pubs.acs.org/doi/abs/10.1021/jp911689r">this article</a>. 
 - Note that all the atoms contained in the REFERENCE must be the same. You cannot have a variable number of atoms in each pdb contained in the reference. 
 - The reference is composed as a set of concatenated PDBs that are interrupted by a TER/END/ENDMDL card. Both HETATM and ATOM cards denote the atoms of the set. 
+- Include in the reference frames only the needed atoms. For example, if you have a methyl group involved in a conformational transition, it might be that you do not want to include the hydrogen atoms of the methyl since these rotate fast and probably they do not play ant relevant role.
 
 
 */
