@@ -46,6 +46,8 @@ public:
 /// Operations on one of the elements of grid point i
  void setGridElement( const unsigned&, const double& );
  void addToGridElement( const unsigned&, const double& );
+///
+  static FunctionOnGrid* spawn( const GridVesselBase* myg, const std::vector<std::string>& args, const std::vector<unsigned>& nbins, ActionWithVessel* aa );
 };
 
 inline

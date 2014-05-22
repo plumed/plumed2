@@ -133,21 +133,10 @@ myfield(NULL)
      error(interpols + " is not a valid interpolation algorithm");
   }
 
-  // Create the input for the bias grid 
-  std::vector<std::string> gmin( myf->getMin() ), gmax( myf->getMax() );
-  std::string grid_input="MIN=" + gmin[0];
-  for(unsigned i=1;i<gmin.size();++i) grid_input += "," + gmin[i];
-  grid_input += " MAX=" + gmax[0];
-  for(unsigned i=1;i<gmax.size();++i) grid_input += "," + gmax[i]; 
-  std::string num; Tools::convert( ngrid[0], num );
-  grid_input += " NBIN=" + num;
-  for(unsigned i=1;i<ngrid.size();++i){ Tools::convert( ngrid[i], num ); grid_input += "," + num; }
-
-  // Create somewhere to store the grid
-  vesselbase::VesselOptions da( "GRID_NOSPLINE", "", 0, grid_input, this );
-  Keywords mykeys; vesselbase::FunctionOnGrid::registerKeywords( mykeys );
-  vesselbase::VesselOptions ba( da, mykeys );  
-  mybias = new vesselbase::FunctionOnGrid( ba ); 
+  // Create somewhere to store the bias
+  std::vector<std::string> args( myf->getDimension() );
+  for(unsigned i=0;i<args.size();++i) args[i] = myf->getQuantityDescription(i);
+  mybias = vesselbase::FunctionOnGrid::spawn( myf, args, ngrid, this );
   addVessel( mybias ); mybias->storeInCheckpoint();
   log.printf("  integrating over grid of %s \n", mybias->description().c_str());
 

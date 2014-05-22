@@ -1,12 +1,12 @@
-#! FIELDS x1 x2 interpol
-#! SET min_x1 -10
-#! SET max_x1 10
-#! SET nbins_x1  251
-#! SET periodic_x1 false
-#! SET min_x2 -10
-#! SET max_x2 10
-#! SET nbins_x2  251
-#! SET periodic_x2 false
+#! FIELDS smap1 smap2 interpol
+#! SET min_smap1 -10
+#! SET max_smap1 10
+#! SET nbins_smap1  251
+#! SET periodic_smap1 false
+#! SET min_smap2 -10
+#! SET max_smap2 10
+#! SET nbins_smap2  251
+#! SET periodic_smap2 false
  -10.0000 -10.0000   0.1175
   -9.9200 -10.0000   0.1175
   -9.8400 -10.0000   0.1175

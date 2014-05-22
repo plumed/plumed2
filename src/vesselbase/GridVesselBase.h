@@ -33,6 +33,8 @@ namespace vesselbase {
 class GridVesselBase : public Vessel {
 friend class InterpolationBase;
 friend class PrintGrid;
+friend class ReduceGridDimension;
+friend class FunctionOnGrid;
 private:
 /// Are we interpolating this grid
  bool interpolating;
