@@ -56,7 +56,7 @@ HOW TO COMPILE IT
 
 In general the system for which chemical shifts are to be calculated must be completly included in
 ATOMS. It should also be made WHOLE before the the backcalculation. CamShift is included in the
-free package ALMOST v.2.1 that can be dowload via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
+free package ALMOST v.2.1 that can be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
 ALMOST 2.1 can be found in branches/almost-2.1/ and it can be compiled:
 
 \verbatim
@@ -358,7 +358,6 @@ void CS2Backbone::calculate()
 {
   double energy=0.;
   Tensor virial;
-  vector<Vector> deriv(getNumberOfAtoms());
   unsigned N = getNumberOfAtoms();
 
   for(unsigned i=0;i<numResidues;i++) for(unsigned j=0;j<6;j++) sh[i][j]=0.;
@@ -410,11 +409,12 @@ void CS2Backbone::calculate()
   {
     unsigned ipos=4*i;
     double ff=fact*for_pl2alm;
-    deriv[i][0] = ff*csforces.coor[ipos];
-    deriv[i][1] = ff*csforces.coor[ipos+1];
-    deriv[i][2] = ff*csforces.coor[ipos+2];
-    setAtomsDerivatives(i,deriv[i]);
-    virial=virial+(-1.*Tensor(getPosition(i),deriv[i]));
+    Vector For;
+    For[0] = ff*csforces.coor[ipos];
+    For[1] = ff*csforces.coor[ipos+1];
+    For[2] = ff*csforces.coor[ipos+2];
+    setAtomsDerivatives(i,For);
+    virial=virial+(-1.*Tensor(getPosition(i),For));
   }
 
   setValue           (ene_pl2alm*energy);
