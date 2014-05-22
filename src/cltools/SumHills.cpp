@@ -210,7 +210,7 @@ void CLToolSumHills::registerKeywords( Keywords& keys ){
   keys.add("optional","--idw","specify the variables to be integrated (default is all)");
   keys.add("optional","--outfile","specify the outputfile for sumhills");
   keys.add("optional","--outhisto","specify the outputfile for the histogram");
-  keys.add("optional","--kt","specify temperature for integrating out variables");
+  keys.add("optional","--kt","specify temperature in energy units for integrating out variables");
   keys.add("optional","--sigma"," a vector that specify the sigma for binning (only needed when doing histogram ");
   keys.addFlag("--negbias",false," print the negative bias instead of the free energy (only needed with welltempered runs and flexible hills) ");
   keys.addFlag("--nohistory",false," to be used with --stride:  it splits the bias/histogram in pieces without previous history ");
