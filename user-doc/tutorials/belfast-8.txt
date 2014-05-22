@@ -8,7 +8,7 @@ the input files for BEMETA for a simple case of three alanines and we will use M
 the results of WT-BEMETA and STANDARD-BEMETA with four independent runs on the four Collective Variables. Finally we will
 use a simplified version of BEMETA that is Multiple Walkers Metadynamics.
 
-\section belfast-1-lo Learning Outcomes
+\section belfast-8-lo Learning Outcomes
 
 Once this tutorial is completed students will:
 
@@ -65,7 +65,7 @@ In the following example, a bias-exchange simulation is performed on a Val-Ile-L
 Four replicas of the system are employed, each one biased on a different CV,
 thus four similar Plumed input files are prepared as follows:
 
-- a common input file in which all the collective variables are define:
+- a common input file in which all the collective variables are defined:
 
 \verbatim
 MOLINFO STRUCTURE=VIL.pdb
@@ -78,9 +78,9 @@ cv4: TORSION ATOMS=@phi-3
 \endverbatim
 
 NOTE:
-1. By using \ref MOLINFO we can use shortcut to select atoms for dihedral angles (currently @phi, @psi, @omega and @chi1 are
+1. By using \ref MOLINFO we can use shortcut to select atoms for dihedral angles (currently \@phi, \@psi, \@omega and \@chi1 are
 available).
-2. We use cv# as label in order to make the output compatible with METAGUI.
+2. We use cv# as labels in order to make the output compatible with METAGUI.
 3. \ref RANDOM_EXCHANGES generates random exchanges list that are sent back to GROMACS.
 
 - four additional input files that \ref INCLUDE the common input and define the four \ref METAD along the four CVs, respectively.
@@ -95,7 +95,6 @@ NOTE:
 1. in COLVAR we \ref PRINT only the four collective variables, always in the same order in such a way that COLVARs are compatible
 with METAGUI
 2. if you want to print additional information, like the \ref METAD bias it is possibile to use additional \ref PRINT keyword
-3. Originally Bias-Exchange has been used without Well-Tempered Metadynamics but nothing prevents its use.
 
 \verbatim
 PRINT ARG=cv1,be.bias STRIDE=xxx FILE=BIAS
