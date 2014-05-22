@@ -517,6 +517,12 @@ void Grid::logAllValuesAndDerivatives( const double& scalef ){
   }
 }
 
+void Grid::setMinToZero(){
+  double min=grid_[0];
+  for(unsigned i=1;i<grid_.size();++i) if(grid_[i]<min) min=grid_[i];
+  for(unsigned i=0;i<grid_.size();++i) grid_[i] -= min; 
+}
+
 void Grid::applyFunctionAllValuesAndDerivatives( double (*func)(double val), double (*funcder)(double valder) ){
   if(usederiv_){
      for(unsigned i=0;i<grid_.size();++i){

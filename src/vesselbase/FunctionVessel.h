@@ -88,7 +88,6 @@ void FunctionVessel::addValueIgnoringTolerance( const unsigned& jval, const doub
 
 inline
 double FunctionVessel::getFinalValue(const unsigned& j){
-  plumed_dbg_assert( j<2 );
   return getBufferElement( (nderivatives+1)*j );
 }
 
