@@ -59,26 +59,59 @@ Each trajectory evolves through the high dimensional free energy landscape in th
 different metadynamics potentials acting on one CV at each time. 
 The results of the simulation are N one-dimensional projections of the free energy.
 
-In the following example, a bias-exchange simulation is performed on a Ala-Ala-Ala peptide (zwitterionic form, in vacuum with 
+In the following example, a bias-exchange simulation is performed on a Val-Ile-Leu peptide (zwitterionic form, in vacuum with 
 \f$ \epsilon=80 \f$, force field amber03), using the four backbone dihedral angles as CVs. 
 
 Four replicas of the system are employed, each one biased on a different CV,
 thus four similar Plumed input files are prepared as follows:
 
-\verbatim
+- a common input file in which all the collective variables are define:
 
+\verbatim
+MOLINFO STRUCTURE=VIL.pdb
+RANDOM_EXCHANGES
+
+cv1: TORSION ATOMS=@psi-1
+cv2: TORSION ATOMS=@phi-2
+cv3: TORSION ATOMS=@psi-2
+cv4: TORSION ATOMS=@phi-3
+\endverbatim
+
+NOTE:
+1. By using \ref MOLINFO we can use shortcut to select atoms for dihedral angles (currently @phi, @psi, @omega and @chi1 are
+available).
+2. We use cv# as label in order to make the output compatible with METAGUI.
+3. \ref RANDOM_EXCHANGES generates random exchanges list that are sent back to GROMACS.
+
+- four additional input files that \ref INCLUDE the common input and define the four \ref METAD along the four CVs, respectively.
+
+\verbatim
+INCLUDE FILE=plumed-common.dat
+be: METAD ARG=cv1 HEIGHT=0.2 SIGMA=0.2 PACE=100 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=200 
+PRINT ARG=cv1,cv2,cv3,cv4 STRIDE=1000 FILE=COLVAR
+\endverbatim
+
+NOTE:
+1. in COLVAR we \ref PRINT only the four collective variables, always in the same order in such a way that COLVARs are compatible
+with METAGUI
+2. if you want to print additional information, like the \ref METAD bias it is possibile to use additional \ref PRINT keyword
+3. Originally Bias-Exchange has been used without Well-Tempered Metadynamics but nothing prevents its use.
+
+\verbatim
+PRINT ARG=cv1,be.bias STRIDE=xxx FILE=BIAS
 \endverbatim
 
 The four replicas start from the same GROMACS topology file replicated four times: topol0.tpr, topol1.tpr, topol2.tpr, topol3.tpr.
 Finally, GROMACS is launched as a parallel run on 4 cores, with one replica per core, with the command 
 
 \verbatim
-mpirun -np 4 mdrun -plumed plumed -multi 4 -replex 10000
+mpirun -np 4 mdrun_mpi -s topol -plumed plumed -multi 4 -replex 1000 >& log &
 \endverbatim
 
-where -replex 10000 indicates that every 10000 molecular-dynamics steps
+where -replex 1000 indicates that every 1000 molecular-dynamics steps
 all replicas are randomly paired (e.g. 0-2 and 1-3) and exchanges are attempted
 between each pair (as printed in the GROMACS *.log files).
+
 
 */
 
