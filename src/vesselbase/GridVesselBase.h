@@ -135,11 +135,18 @@ public:
  void getFractionFromGridPoint( const unsigned& igrid, const std::vector<double>& x, std::vector<double>& dd );
 /// Will the grid be interpolated
   bool gridWillBeInterpolated() const;
+/// Get the spacing between grid points
+  const std::vector<double>& getGridSpacing() const ;
 };
 
 inline
 unsigned GridVesselBase::getNumberOfPoints() const {
   return npoints;
+}
+
+inline
+const std::vector<double>& GridVesselBase::getGridSpacing() const {
+  return dx;
 }
 
 inline
