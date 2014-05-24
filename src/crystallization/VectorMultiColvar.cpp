@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "multicolvar/MultiColvarFunction.h"
-#include "multicolvar/ActionVolume.h"
+#include "multicolvar/VolumeGradientBase.h"
 #include "VectorMultiColvar.h"
 
 namespace PLMD {
@@ -203,13 +203,13 @@ void VectorMultiColvar::addForcesOnAtoms( const std::vector<double>& inforces ){
   setForcesOnAtoms( oldforces );
 }
 
-void VectorMultiColvar::copyElementsToBridgedColvar( const double& weight, multicolvar::ActionVolume* func ){
-  MultiColvarBase::copyElementsToBridgedColvar( weight, func );
+void VectorMultiColvar::copyElementsToBridgedColvar( multicolvar::VolumeGradientBase* func ){
+  MultiColvarBase::copyElementsToBridgedColvar( func );
 
   for(unsigned icomp=5;icomp<getNumberOfQuantities();++icomp){
-      func->setElementValue( icomp, getElementValue(icomp) );
+      func->setElementValue( icomp-4, getElementValue(icomp) );
       unsigned nbase =  icomp * getNumberOfDerivatives();
-      unsigned nbasev = icomp * func->getNumberOfDerivatives();
+      unsigned nbasev = (icomp-4) * func->getNumberOfDerivatives();
       for(unsigned jatom=0;jatom<atoms_with_derivatives.getNumberActive();++jatom){
           unsigned n=atoms_with_derivatives[jatom], nx=nbase + 3*n, ny=nbasev + 3*n;
           func->addElementDerivative( ny+0, getElementDerivative(nx+0) );

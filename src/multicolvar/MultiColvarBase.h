@@ -34,7 +34,7 @@
 namespace PLMD {
 namespace multicolvar {
 
-class ActionVolume;
+class VolumeGradientBase;
 
 class MultiColvarBase :
   public ActionAtomistic,
@@ -43,7 +43,7 @@ class MultiColvarBase :
   {
 friend class StoreCentralAtomsVessel;
 friend class MultiColvarFunction;
-friend class ActionVolume;
+friend class VolumeGradientBase;
 friend class MultiColvar;
 private:
 /// Use periodic boundary conditions
@@ -173,8 +173,8 @@ public:
   void addCentralAtomDerivativeToFunction( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& der, MultiColvarFunction* func ); 
 /// Get the value for this task
   virtual void getValueForTask( const unsigned& iatom, std::vector<double>& vals ); 
-//// Used in ActionVolume
-  virtual void copyElementsToBridgedColvar( const double& weight, ActionVolume* );
+//// Used in ActionVolume and Gradient
+  virtual void copyElementsToBridgedColvar( VolumeGradientBase* );
 /// Used to accumulate values
   virtual void addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, MultiColvarFunction* func );
 /// Used for calculating weighted averages

@@ -261,16 +261,16 @@ void ActionWithVessel::runAllTasks(){
       // Calculate the stuff in the loop for this action
       performTask();
       // Weight should be between zero and one
-      plumed_dbg_assert( thisval[1]>=0 && thisval[1]<=1.0 );
+      plumed_dbg_assert( getValueForTolerance()>=0 && getValueForTolerance()<=1.0 );
 
       // Check for conditions that allow us to just to skip the calculation
       // the condition is that the weight of the contribution is low 
       // N.B. Here weights are assumed to be between zero and one
-      if( thisval[1]<tolerance ){
+      if( getValueForTolerance()<tolerance ){
          // Clear the derivatives
          clearAfterTask();  
          // Deactivate task if it is less than the neighbor list tolerance
-         if( thisval[1]<nl_tolerance && contributorsAreUnlocked ) deactivate_task();
+         if( getValueForTolerance()<nl_tolerance && contributorsAreUnlocked ) deactivate_task();
          continue;
       }
 

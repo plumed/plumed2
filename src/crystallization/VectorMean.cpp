@@ -22,13 +22,15 @@
 #include "vesselbase/VesselRegister.h"
 #include "vesselbase/FunctionVessel.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "multicolvar/ActionVolume.h"
+#include "VectorMultiColvar.h"
 
 namespace PLMD {
 namespace crystallization {
 
 class VectorMean : public vesselbase::FunctionVessel {
 private:
-  unsigned ncomp;
+  unsigned ncomp, vstart, wnum;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
@@ -54,8 +56,15 @@ void VectorMean::reserveKeyword( Keywords& keys ){
 VectorMean::VectorMean( const vesselbase::VesselOptions& da ) :
 FunctionVessel(da)
 {
-  ncomp = getAction()->getNumberOfQuantities() - 5; 
-  if( ncomp<1 ) error("trying to calculate vector average but you don't seem to be calculating vectors in base class");
+   multicolvar::ActionVolume* vg=dynamic_cast<multicolvar::ActionVolume*>( getAction() );
+   if( vg ){
+       ncomp = getAction()->getNumberOfQuantities() - 2;
+       vstart=1; wnum=ncomp+1;
+   } else { 
+       VectorMultiColvar* vv=dynamic_cast<VectorMultiColvar*>( getAction() );
+       plumed_assert( vv ); vstart=5; wnum=1; 
+       ncomp = getAction()->getNumberOfQuantities() - 5;
+   }
 }
 
 std::string VectorMean::function_description(){
@@ -74,17 +83,15 @@ void VectorMean::resize(){
 }
 
 bool VectorMean::calculate(){
-  double weight=getAction()->getElementValue(1);
+  double weight=getAction()->getElementValue(wnum);
   plumed_dbg_assert( weight>=getTolerance() );
   bool addval = addValueUsingTolerance( 0, weight );
-  if( addval ){
-     if( diffweight ) getAction()->chainRuleForElementDerivatives( 0, 1, 1.0, this );
-     for(unsigned i=0;i<ncomp;++i){
-         double colvar=getAction()->getElementValue( 5 + i );
-         addValueIgnoringTolerance( 1 + i, weight*colvar );
-         getAction()->chainRuleForElementDerivatives( 1+i, 5+i, weight, this );
-         if( diffweight ) getAction()->chainRuleForElementDerivatives( 1+i, 1, colvar, this );
-     }
+  if( diffweight ) getAction()->chainRuleForElementDerivatives( 0, wnum, 1.0, this );
+  for(unsigned i=0;i<ncomp;++i){
+      double colvar=getAction()->getElementValue( vstart  + i );
+      addValueIgnoringTolerance( 1 + i, weight*colvar );
+      getAction()->chainRuleForElementDerivatives( 1+i, vstart+i, weight, this );
+      if( diffweight ) getAction()->chainRuleForElementDerivatives( 1+i, wnum, colvar, this );
   }
   return addval;
 }

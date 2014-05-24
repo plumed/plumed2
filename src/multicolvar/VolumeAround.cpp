@@ -77,7 +77,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   VolumeAround(const ActionOptions& ao);
-  void setupRegion();
+  void setupRegions();
   double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives );
 }; 
 
@@ -114,7 +114,7 @@ ActionVolume(ao)
   checkRead(); requestAtoms(atom); 
 }
 
-void VolumeAround::setupRegion(){ }
+void VolumeAround::setupRegions(){ }
 
 double VolumeAround::calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives ){
   // Calculate position of atom wrt to origin

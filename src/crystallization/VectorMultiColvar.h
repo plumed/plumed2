@@ -32,7 +32,7 @@ namespace crystallization {
 class VectorMultiColvar : public multicolvar::MultiColvar {
 friend class StoreVectorsVessel;
 friend class OrientationSphere;
-friend class VectorAverage;
+friend class VolumeGradientBase;
 private:
 /// Are the vectors complex
   bool complexvec;
@@ -114,7 +114,7 @@ public:
 ///  This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector();
 /// Used by ActionVolume
-  void copyElementsToBridgedColvar( const double& weight, multicolvar::ActionVolume* func );
+  void copyElementsToBridgedColvar( multicolvar::VolumeGradientBase* func );
 };
 
 inline

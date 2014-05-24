@@ -179,6 +179,10 @@ public:
   virtual void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 /// Switch on additional tasks
   void activateTheseTasks( std::vector<bool>& addtionalTasks );
+/// This returns the value on which we apply the tolerance - by default this is element 1 - the weight
+  virtual double getValueForTolerance();
+/// Get the index of the element in which we are storing the weight
+  virtual unsigned getIndexOfWeight();
 /// Do any jobs that are required before the task list is undertaken
   virtual void doJobsRequiredBeforeTaskList();
 /// Get the full size of the taskList dynamic list
@@ -338,6 +342,16 @@ unsigned ActionWithVessel::getCurrentPositionInTaskList() const {
 inline
 bool ActionWithVessel::derivativesAreRequired() const {
   return !noderiv;
+}
+
+inline
+double ActionWithVessel::getValueForTolerance(){
+  return thisval[1];
+}
+
+inline
+unsigned ActionWithVessel::getIndexOfWeight(){
+  return 1;
 }
 
 } 

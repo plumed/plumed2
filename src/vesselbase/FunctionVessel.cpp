@@ -49,6 +49,7 @@ Vessel(da)
 }
 
 std::string FunctionVessel::description(){
+  if( final_value->getName()==getAction()->getLabel() ) return "value " + getAction()->getLabel() + " contains " + function_description();
   return "value " + getAction()->getLabel() + "." + getLabel() + " contains " + function_description();
 }
 

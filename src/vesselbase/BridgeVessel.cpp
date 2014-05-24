@@ -59,9 +59,9 @@ void BridgeVessel::prepare(){
 
 bool BridgeVessel::calculate(){
   myOutputAction->performTask();
-  if( myOutputAction->thisval[1]<myOutputAction->getTolerance() ){
+  if( myOutputAction->getValueForTolerance()<myOutputAction->getTolerance() ){
       myOutputAction->clearAfterTask();
-      return ( !myOutputAction->contributorsAreUnlocked || myOutputAction->thisval[1]>=myOutputAction->getNLTolerance() );
+      return ( !myOutputAction->contributorsAreUnlocked || myOutputAction->getValueForTolerance()>=myOutputAction->getNLTolerance() );
   }
   bool keep=myOutputAction->calculateAllVessels();
   return ( !myOutputAction->contributorsAreUnlocked || keep );

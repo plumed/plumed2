@@ -80,8 +80,6 @@ class Sprint : public AdjacencyMatrixAction {
 private:
 /// Square root of number of atoms
   double sqrtn;
-/// Largest eigenvalue
-  double lambda;
 /// Vector that stores eigenvalues
   std::vector<double> eigvals;
 /// Vector that stores max eigenvector
