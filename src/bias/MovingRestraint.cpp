@@ -103,6 +103,8 @@ class MovingRestraint : public Bias{
   std::vector<std::vector<double> > kappa;
   std::vector<long int> step;
   std::vector<double> oldaa;
+  std::vector<double> oldk;
+  std::vector<double> olddpotdk;
   std::vector<double> oldf;
   std::vector<string> verse;
   std::vector<double> work;
@@ -197,11 +199,13 @@ void MovingRestraint::calculate(){
   double totf2=0.0;
   unsigned narg=getNumberOfArguments();
   long int now=getStep();
-  std::vector<double> kk(narg),aa(narg),f(narg);
+  std::vector<double> kk(narg),aa(narg),f(narg),dpotdk(narg);
   if(now<=step[0]){
     kk=kappa[0];
     aa=at[0];
     oldaa=at[0];
+    oldk=kappa[0];
+    olddpotdk.resize(narg);	
     oldf.resize(narg);
   } else if(now>=step[step.size()-1]){
     kk=kappa[step.size()-1];
@@ -222,7 +226,8 @@ void MovingRestraint::calculate(){
     if(verse[i]=="U" && cv<0) continue;
     if(verse[i]=="L" && cv>0) continue;
     plumed_assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
-    if(oldaa.size()==aa.size() && oldf.size()==f.size()) work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]);
+    dpotdk[i]=0.5*cv*cv;
+    if(oldaa.size()==aa.size() && oldf.size()==f.size()) work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]) + 0.5*( dpotdk[i]+olddpotdk[i] )*(kk[i]-oldk[i]);
     getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]); 
     ene+=0.5*k*cv*cv;
     setOutputForce(i,f[i]);
@@ -230,6 +235,8 @@ void MovingRestraint::calculate(){
   };
   oldf=f;
   oldaa=aa;
+  oldk=kk;
+  olddpotdk=dpotdk;
   getPntrToComponent("bias")->set(ene);
   getPntrToComponent("force2")->set(totf2);
 }
