@@ -2,22 +2,22 @@
 \page belfast-2 Belfast tutorial: Adaptive variables I
 
 
-\section pcvs-aim Aim
+\section belfast-2-aim Aim
 
 In this section we want to introduce the concept of adaptive collective variables. 
 These are special variables that are knowledge-based in that are built from a pre-existing
 notion of the mechanism of the transition under study
 
-\section pcvs-why What happens when in a complex reaction?
+\section belfast-2-problem  What happens when in a complex reaction?
 
 When you deal with a complex conformational transition that you want to analyze (or bias), very often you cannot
 just describe it with a single order parameter.
 
-As an example in Figure \ref belfast-2-cdk I consider a large conformational transition like those involved in activating the kinase via open-close transition of the activation loop. 
+As an example in Figure \ref belfast-2-cdk-fig I consider a large conformational transition like those involved in activating the kinase via open-close transition of the activation loop. 
 In sticks you see the part involved in the large conformational change, the rest is either keeping the structure and just moving a bit or is a badly resolved region in the X-ray structure.
 This is a complex transition and it is hard to tell which is the order parameter that best describes the transition. 
 
-\anchor belfast-2-cdk
+\anchor belfast-2-cdk-fig
 \image html belfast-2-cdk.png "CDK2 conformational change, PDB code 2C5X and 2C5Y. The upper loop is radically different. Which torsion or distance is important?"	
 
 One could identify a distance that can distinguish open from close but
@@ -33,16 +33,16 @@ Another typical case is the docking of a small molecule in a protein cleft or go
 Other typical examples are chemical reactions. Nucleophiloic attacks typically happen  with a role from the solvent (see some nice paper from Nobel-prize winner Arieh Warshel) 
 and sizeable geometric distortions of the neighboring groups.
 
-\section pcvs-general Path collective variables
+\section belfast-2-pcvs-general Path collective variables
 
 One possibility to describe many different thing that happen in a single reaction is to use a dimensional reduction technique and in plumed the simplest example  that may show its usefulness can be considered that of the path collective variables. 
 
 In a nutshell, your reaction might be very complex and happening in many degree of freedom but intuitively is a sort of  track along which the reaction proceeds. So what we need is a coordinate that, given a conformation, just tells which point along the "reactive track" is closest.
 
-\anchor belfast-2-ab
+\anchor belfast-2-ab-fig
 \image html belfast-2-ab.png "Given the reactant and the product, tell if another state is closer to any of the two with a continuous parameter" 
 
-For example, in Fig. \ref belfast-2-ab, you see a typical chemical reaction (hydrolisys of methylphosphate) with the two end-points denoted by A and B. 
+For example, in Fig. \ref belfast-2-ab-fig, you see a typical chemical reaction (hydrolisys of methylphosphate) with the two end-points denoted by A and B. 
 If you are given a third point, just by looking at it, you might find that this is more resemblant to the reactant than the product, so, hypothetically, if you would intuitively 
 give a parameter that would be 1 for a configuration in the A state and 2 for a configuration in the B state, you probably would give it something like 1.3, right? 
 
@@ -50,12 +50,12 @@ Path collective variables are the extension to this concept in the case you have
 
 From a mathematical point of view, that's rather simple. The progress along the path is calculated with the following equation:
 
-\anchor eq_s
+\anchor belfast-2-s-eq
 \f[
 S(X)=\frac{\sum_{i=1}^{N} i\ \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }
 \f]
 
-where in \ref eq_s the \f$ \vert X-X_i \vert \f$ represents a distance between one configuration \f$ X \f$ which is analyzed and another from the set that compose the path 
+where in \ref belfast-2-s-eq the \f$ \vert X-X_i \vert \f$ represents a distance between one configuration \f$ X \f$ which is analyzed and another from the set that compose the path 
 \f$ X_i \f$. The parameter \f$ \lambda \f$ is a positive value that is tuned in a way explaned later.
 here are a number of things to note to make you think that this is exactely what you want.
 - The negative exponential function is something that is 1 whenever the value at the exponent is zero, and is progressively smaller when the value is larger than zero (trivially, the case with the value at the exponent larger than zero never occurs since lambda is a positive quantity and the distance is by definition positive).
@@ -93,10 +93,10 @@ Note that reference contains a set of PDB, appended one after the other, with a 
 
 Additionally, note that the measure units of LAMBDA are in the units of the code. In gromacs they are in nm^2 while NAMD is Ang^2. 
 \ref PATHMSD produces two arguments that can be printed or used in other ActionWithArguments. 
-One is the progress along the path of \ref eq_s, the other is the distance from the closest point along the path, which is denoted with the zzz component.
+One is the progress along the path of \ref belfast-2-s-eq, the other is the distance from the closest point along the path, which is denoted with the zzz component.
 This is defined as
 
-\anchor eq_s
+\anchor belfast-2-s-eq
 \f[
 Z(X)=-\frac{1}{\lambda}\log (\sum_{i=1}^{N} \ \exp^{-\lambda \vert X-X_i \vert })
 \f]
@@ -104,16 +104,16 @@ Z(X)=-\frac{1}{\lambda}\log (\sum_{i=1}^{N} \ \exp^{-\lambda \vert X-X_i \vert }
 It is easy to understand that in case of perfect match of \f$  X=X_i \f$ this equation gives back the value of \f$  \vert X-X_i \vert \f$ provided that the lambda is adjusted correctly.
 
 So, the two variables, put together can be visualized as 
-\anchor belfast-2-ab-sz
+\anchor belfast-2-ab-sz-fig
 \image html belfast-2-ab-sz.png "The S variable can be thought as the length of the red segment, while the Z variable is the length of the green one."
 
 This variable is important because whenever your simulation is running close to the path (low Z values), 
 then you know that you are reproducing reliably the path you provided in input but if by chance you find 
 some other path that goes, say, from \f$ S=1, Z=0 \f$ to \f$ S=N, Z=0 \f$ via large Z values, then it might well be that you have just discovered a good alternative pathway.
 If your path indeed is going from \f$ S=1, Z=large \f$ to \f$ S=N, Z=large \f$ then it might well be that you do not have your reaction accomplished, since your reaction, by definition should go from the reactant which is located at \f$ S=1, Z=0 \f$ to the product, which is located at \f$ S=1, Z=N \f$ so you should pay attention.
-This case is exemplified in Fig. \ref belfast-2-ab-sz-nowhere
+This case is exemplified in Fig. \ref belfast-2-ab-sz-nowhere-fig
 
-\anchor belfast-2-ab-sz-nowhere
+\anchor belfast-2-ab-sz-nowhere-fig
 \image html belfast-2-ab-sz-nowhere.png "The conformation is moving in a small amount and this corresponds to a radical change in S if the distance from the path is large"
 
 \section pcvs-topo A note on the path topology
@@ -128,21 +128,21 @@ calculation of S will be an average like \f$ S(X)=(5+12)/2=8.5  \f$ which is an 
 between point 8 and 9, which is not the case. So this evidences that your reference frames should be "topologically consecutive". This means that frame 1 should be the closest to frame 2 and all the other frames  should be farther apart. Similarly frame 2 should be equally close (in an \ref RMSD sense) to 1 and 3 while all the others should be farther apart. 
 Same for frame 3: this should be closest to frame 2 and 4 and farther apart from all the others and so on. This is equivalent to calculate an "RMSD matrix" which can be conveniently done in vmd (this is a good exercise for a number of reasons) with RMSD Trajectory tools, by choosing different reference system along the set of reference frames. 
 
-\anchor belfast-2-good-matrix
+\anchor belfast-2-good-matrix-fig
 \image html belfast-2-good-matrix.png "A good matrix for path variables has a gullwing shape, which means that each frame is closest to its neighbor and all the other are far apart"
 
-This is shown in \ref belfast-2-good-matrix where the matrix has a typical gullwing shape.
+This is shown in Fig. \ref belfast-2-good-matrix-fig where the matrix has a typical gullwing shape.
 
 On the contrary, whenever you extract the frames from a pdb that you produced via free MD or some biased methods (SMD or Targeted MD for example)
 then your frame-to-frame distance is rather inhomogeneous and looks something like
 
-\anchor belfast-2-bad-matrix
+\anchor belfast-2-bad-matrix-fig
 \image html belfast-2-bad-matrix.png "A bad matrix for path variables is rather irregular and shows that some non neighbor frames are closer than the neighbor frames."
 
 Aside from the general shape, which is important to keep the conformation-to-index relation (this, as we will see in the next part is crucial in the multidimensional scaling) 
 the crucial thing is the distance between neighbors.
 
-\anchor belfast-2-good-vs-bad
+\anchor belfast-2-good-vs-bad-fig
 \image html belfast-2-good-vs-bad.png "Comparison of neighbor distance: the bad case has a nearest neighbor fluctuation of 0.8 units which is much more than the good case where the distance is much more uniform"
 
 As a matter of fact, this is not much important in the analysis but is truly crucial in the bias.
@@ -173,14 +173,14 @@ which can be rewritten as
 
 It is interesting to note that whenever the \f$ \lambda \f$ is too small the force will vanish. Additionally, when \f$ \lambda \f$ is too large, then it one single exponential term will dominate over the other on a large part of phase space while the other will vanish. This means that the \f$ S(X) \f$ will assume almost discrete values  that produce zero force. Funny, isn't it? 
 
-\section pcvs-howmany How many frames do I need?
+\section belfast-2-howmany How many frames do I need?
 
 A very common question that comes is the following: "I have my reaction or a model of it. how many frames do I need to properly define a path collective variable?" 
 This is a very important point that requires a bit of thinking. It all depends on the limiting scale in your reaction. For example, if in your process you have a torsion, as the smallest event that 
 you want to capture with path collective variable, then it is important that you mimick that torsion in the path and that this does not contain simply the initial and final point but also some intermediate. Similarly, if you have a concerted bond breaking, it might be that all takes place in the range of an Angstrom or so. In this case you should have intermediate frames that cover the sub-Angstrom scale. If you have both in the same path, then the smallest dominates and you have to mimick also the torsion with sub-Angstrom accuracy.
 
 
-\section pcvs-trics Some tricks of the trade: the neighbor lists.
+\section belfast-2-pcvs-tricks Some tricks of the trade: the neighbors list.
 
 If it happens that you have a very complex and detailed path to use, say that it contains 100 frames with 200 atoms each, then the calculation of a 100 alignment is required every time 
 you need the CV. This can be quite expensive but you can use a trick. If your trajectory is continuous and you are sure that your trajectory does not show jumps where your system suddedly move from the reactant to the product, then you can use a so-called neighbor list. The plumed input shown before then becomes 
@@ -193,39 +193,39 @@ PRINT ARG=p1.sss,p1.zzz STRIDE=100 FILE=colvar FMT=%8.4f
 and in this case only the closest 10 frames from the path will be used for the CV. Then the list of the frames to use is updated every 100 steps. 
 If you are using a biased dynamics this may introduce sudden change in the derivatives, therefore it is better to check the stability of the setup before running production-quality calculations. 
 
-\section ala The molecule of the day: alanine dipeptide 
+\section belfast-2-ala The molecule of the day: alanine dipeptide 
 
 Here and probably in other parts of the tutorial a simple molecule is used as a test case. This is alanine dipeptide in vacuum.
 This rather simple molecule is useful to make many benchmark that are around for data analysis and free energy methods. It is a rather nice example 
 since it presents two states separated by a high (free) energy barrier.
 
-In Fig. \ref belfast-2-ala its structure is shown.
+In Fig. \ref belfast-2-ala-fig its structure is shown.
 
-\anchor belfast-2-ala
+\anchor belfast-2-ala-fig
 \image html belfast-2-ala.png "The molecule of the day: alanine dipeptide."
 
 The two main metastable states are called \f$ C_7eq \f$ and \f$ C_7ax \f$.
 
-\anchor belfast-2-transition
+\anchor belfast-2-transition-fig
 \image html belfast-2-transition.png  "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
 Here metastable states are intended as states which have a relatively low free energy compared to adjacent conformation. At this stage it is not really useful
 to know what is the free energy, just think in term of internal energy. This is almost the same for such a small system whith so few degrees of freedom.
 
-It is conventional use to show the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$ in Fig. \ref belfast-2-transition .
+It is conventional use to show the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$ in Fig. \ref belfast-2-transition-fig .
 
-\anchor belfast-2-rama
+\anchor belfast-2-rama-fig
 \image html belfast-2-rama.png  "The Free energy landscape of alanine dipeptide in Ramachandran angles in the CHARMM27 force field."
 
 
-\section Examples
+\section belfast-2-examples Examples
 
 Now as a simple example, I want to show you that plotting some free dynamics trajectories shoot from the saddle point, you get a different plot in the path collective variables if you use the right path or if you use the wrong path.
 
-In Fig. \ref belfast-2-good-bad-path I show you two example of possible path that join the \f$ C_7eq \f$ and \f$ C_7ax \f$ metastable states in alanine dipeptide.
+In Fig. \ref belfast-2-good-bad-path-fig I show you two example of possible path that join the \f$ C_7eq \f$ and \f$ C_7ax \f$ metastable states in alanine dipeptide.
 You might clearly expect that real (rare) trajectories that move from one basin to the other would rather move along the black line than on the red line. 
 
-\anchor belfast-2-good-bad-path
+\anchor belfast-2-good-bad-path-fig
 \image html belfast-2-good-bad-path.png "Example of good and bad path:  one sits confortably in the minimum free energy path connecting the two metastable states, while the other makes a direct connection via   high energy states"
 
 So, in this example we do a sort of "commmittor analysis" where we start shooting a number of free molecular dynamics from the saddle point located at \f$ \Phi=0 \f$ and \f$ \Psi=-1 \f$ and we want to see which way do they go. Intuitively, by assigning random velocities every time we should find part of the trajectories that move woward \f$ C_7eq \f$ and part that move towards \f$ C_7ax \f$. 
@@ -330,7 +330,7 @@ You see that the path, compared to what happened before, run much closer to smal
 
 Note that going at high distances can be also beneficial. It might help you to explore alternative paths that you have not explored before. But beware, the more you get far from the path, the more states are accessible, in a similar way as the fact that the surface of a sphere increase with its radius. The surface ramps up much faster than the radius therefore you have a lots of states there. This means also high entropy, so many systems actually tend to drift to high distances while, on the contrary, zero distance is never reached in practice (zero entropy system is impossible to reach at finite temperature). So you can see by yourself that this can be a big can of worms. In particular, my experience with path collective variables and biological systems tells me that most of time is hopeless to go to high distances to find new path in many cases (for example, in folding). While this is worth whenever you think that the paths are not too many (alternative routes in chemical reaction or enzymatic catalysis). 
 
-\section pcvs-format How to format my input?
+\section belfast-2-pcvs-format How to format my input?
 
 Very often it is asked how to format a set of pdb to be suitably used with path collective variables. Here are some tricks.
 - When you dump the files with vmd or (for gromacs users, using trjcat), the pdb you obtain is reindexed from 1. This is also the case 
