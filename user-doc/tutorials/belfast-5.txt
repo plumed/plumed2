@@ -191,7 +191,7 @@ Let's assume that we can do this by using a restrained MD in a point (say at \f$
 
 In the directory JARZ/MAKE_ENSEMBLE you find the script to run. After you generate the constrained ensemble this needs to be translated from xtc format to something that GROMACS is able to read in input, typically a more convenient gro file. To do so just to 
 \verbatim 
-pd@plumed:~> trjconv_mpi_d -f traj.xtc -s topol.tpr -o all.gro
+pd@plumed:~> echo 0 | trjconv_mpi-dp-pl -f traj.xtc -s topol.tpr -o all.gro
 pd@plumed:~> awk 'BEGIN{i=1}{if($1=="Generated"){outfile=sprintf("start_%d.gro",i);i++}print >>outfile; if(NF==3){close(outfile)}}' all.gro
 \endverbatim
 
