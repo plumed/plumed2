@@ -167,6 +167,7 @@ Now the derivative of the progress along the path is
 \frac{\partial S(X) }{\partial x_i} =\frac{\sum_{i=1}^{N} -\lambda\ i\ \frac{\partial \vert X-X_i \vert}{ \partial x_i}  \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } } - \frac{ (\sum_{i=1}^{N} i\ \exp^{-\lambda \vert X-X_i \vert } ) (\sum_{j=1}^{N} -\lambda \frac{\partial \vert X-X_j \vert}{ \partial x_i} \exp^{-\lambda \vert X-X_j \vert } )  }{ ( \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } )^2} = \frac{\sum_{i=1}^{N} -\lambda\ i\ \frac{\partial \vert X-X_i \vert}{ \partial x_i}  \exp^{-\lambda \vert X-X_i \vert }}{ \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } } -s(X) \frac{ (\sum_{j=1}^{N} -\lambda \frac{\partial \vert X-X_j \vert}{ \partial x_i} \exp^{-\lambda \vert X-X_j \vert } ) } {\sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }  
 \f]
 which can be rewritten as 
+\anchor belfast-2-sder-eq
 \f[
 \frac{\partial S(X) }{\partial x_i} = \lambda \frac{\sum_{i=1}^{N} \frac{\partial \vert X-X_i \vert}{ \partial x_i} \exp^{-\lambda \vert X-X_i \vert } [ s(X) - i  ] } { \sum_{i=1}^{N} \exp^{-\lambda \vert X-X_i \vert } }
 \f]
@@ -344,6 +345,101 @@ distance respect to another set. This is handy in case of protein-ligand. You se
 - Note that all the atoms contained in the REFERENCE must be the same. You cannot have a variable number of atoms in each pdb contained in the reference. 
 - The reference is composed as a set of concatenated PDBs that are interrupted by a TER/END/ENDMDL card. Both HETATM and ATOM cards denote the atoms of the set. 
 - Include in the reference frames only the needed atoms. For example, if you have a methyl group involved in a conformational transition, it might be that you do not want to include the hydrogen atoms of the methyl since these rotate fast and probably they do not play ant relevant role.
+
+\section belfast-2-pcvs-metad-on-path Fast forward: metadynamics on the path
+
+This section is actually set a bit foward but I included here for completeness now. It is recommended to be read after you have an introduction on Metadynamics and to well-tempered Metadynamics in particular.
+Here I want to show a couple of concept together.
+- Path collective variables can be used for exploring alternative routes. It is effective in highly structure molecules, while it is tricky on complex molecules whenever you have many competing routes 
+- Path collective variables suffer from problems at the endpoints (as the higly popular coordinates \ref COORDINATION for example) that can be cured with flexible hills and an appropriate reweighting procedure within the well-tempered Metadynamics scheme.
+
+Let's go to the last problem. All comes from the derivative \ref belfast-2-sder-eq. Whenever you have a point of phase space which is similar to one of the endpoint than one of the points in the center then you get a \f$ s(X) \f$ which is 1 or N (where N is the number of frames composing the path collective variable). In this case that exponential will dominate the others and you are left with a constant (since the derivative of RMSD is a constant since it is linear in space). This means that, no matter what happens here, you have small force. Additionally you have small motion in the CV space. You can move a lot in configuration space but if the closest point is one of the endpoint, your CV value will always be one of the endpoint itself. So, if you use a fixed width of your CV which you retrieve from a middle point in your path, this is not suitable at all at the endpoints where your CV flucutates much less. On the contrary if you pick the hills width by making a free dynamics on the end states you might pick some sigmas that are smaller than what you might use in the middle of the path. This might give a rough free energy profile and definitely more time to converge.
+A possible solution is to use the adaptive gaussian width scheme. In this scheme you adapt the hills to their fluctuation in time. You find more details in \cite Branduardi:2012dl Additionally you also adopt a non spherical shape taking into account variable correlation. So in this scheme you do not have to fix one sigma per variable sigma, but just the time in which you calculate this correlation (another possibility is to calculate it from the compression of phase space but will not be covered here). 
+The input of metadynamics might become something like this
+
+\verbatim
+t1: TORSION ATOMS=5,7,9,15
+t2: TORSION ATOMS=7,9,15,17
+p1: PATHMSD REFERENCE=right_path.dat LAMBDA=15100.
+p2: PATHMSD REFERENCE=wrong_path.dat  LAMBDA=8244.4
+#
+# do a metadynamics on the right path, use adaptive hills whose decay time is 125 steps (250 fs)
+# and rather standard WT parameters
+#
+meta: METAD ARG=p1.sss,p1.zzz  ADAPTIVE=DIFF SIGMA=125 HEIGHT=2.4 TEMP=300 BIASFACTOR=12 PACE=125
+PRINT ARG=* STRIDE=10 FILE=colvar FMT=%12.8f
+\endverbatim
+
+You can find this example in the directory BIASED_DYNAMICS.
+After you run for a while it is interesting to have a feeling for the change in shape of the hills.
+That you can do with
+
+\verbatim
+pd@plumed:~> gnuplot 
+gnuplot>  p "<head -400 HILLS" u 2:3:4:5 w xyer 
+\endverbatim
+
+that plots the hills  in the  progress along the path and the distance from the path and add an error bar which reflects the diagonal width of the flexible hills for the first 400 hills (Hey note the funny trick in gnuplot in which you can manipulate the data like in a bash script directly in gnuplot. That's very handy!).
+
+\anchor belfast-2-metadpath-fig
+\image html belfast-2-metadpath.png "The hills width as error bar as function of progress and distance from the path." 
+
+
+There are a number of things to observe: first that the path explores high distance since the metadynamics is working also in the distance from the path thus accessing the paths that were not 
+explored before, namely the one that goes from the upper left corner of the ramachandran plot and the one that passes through the lower left corner. So in this way one can also explore other paths. Additionally you can see that the hills are changing size rather considerably. This helps the system to travel faster since at each time you use something that has a nonzero gradient and your forces act on your system in an effective way. Another point is that you can see broad hills covering places which you have not visited in practice. For example you see that hills extend so wide to cover point that have negative progress along the path, which is impossible by using the present definition of the progress along the path.
+This introduced a problem in calculating the free energy. You actually have to correct for the point that you visited in reality.
+
+You can actually use \ref sum_hills to this purpose in a two-step procedure.
+First you calculate the negative bias on a given range:
+
+\verbatim
+pd@plumed:~> plumed sum_hills --hills HILLS --negbias  --outfile negative_bias.dat --bin 100,100 --min -5,-0.005 --max 25,0.05
+\endverbatim
+
+and then calculate the correction. You can use the same hills file for that purpose. The initial transient time should not matter if your simulation is long enough to see many recrossing and, secondly, you should check that the hills heigh in the welltempered are small compared to the beginning.
+
+\verbatim
+pd@plumed:~> plumed sum_hills --histo HILLS --bin 100,100 --min -5,-0.005 --max 25,0.05 --kt 2.5 --sigma 0.5,0.001 --outhisto correction.dat
+\endverbatim
+
+Note that in the correction you should assign a sigma, that is a "trust radius" in which you think that whenever you have a point somewhere, there in the neighborhood you assign a bin (it is done with Gaussian in reality, but this does not matter much). This is the important point that compenstates for the issues you might encounter putting excessive large hills in places that you have not visited.
+It is nice to have a look to the correction and compare with the hills in the same range.
+
+\verbatim
+gnuplot> set pm3d
+gnuplot> spl "correction.dat" u 1:2:3 w l
+gnuplot> set contour
+gnuplot> set cntrp lev incremental -20,4.,1000.
+gnuplot> set view map
+gnuplot> unset clabel 
+gnuplot> replot 
+\endverbatim
+
+You might notice that there are no contour in the unrealistic range, this means that the free energy correction is impossible to calculate since it is too high (see Fig. \ref belfast-2-metadpath-correction-fig ).  
+
+\anchor belfast-2-metadpath-correction-fig
+\image html belfast-2-metadpath-correction.png "Comparison of the free energy correction with the first 400 deposited hills. The excessive range has too high energy and is cut out from the correction. Isolines are every 4 kJ/mol." 
+
+Now the last thing that one has to do to have the most plausible free energy landscape is to sum both the correction and the negative bias produced. 
+This can be easily done in gnuplot as follows:
+
+\verbatim
+gnuplot> set pm3d
+gnuplot> spl "<paste negative_bias.dat correction.dat " u 1:2:($3+$8) w pm3d
+gnuplot> set view map
+gnuplot> unset key
+gnuplot> set xr [-2:23]
+gnuplot> set contour
+gnuplot> unset clabel
+gnuplot> set cbrange [-140:-30] 
+gnuplot> set cntrp lev incr -140,6,-30
+\endverbatim
+
+\anchor belfast-2-metadpath-free-fig
+\image html belfast-2-metadpath-free.png "Final free energy obtained by the sum of the negative bias and the correction. Isolines are every 6 kJ/mol."
+
+So now we can comment a bit on the free energy surface obtained and note that there is a free energy path that connects the two endpoints and runs very close to zero distance from the path.
+This means that our input path is actually resemblant of what is really happening in the system. Additionally you can see that there are many comparable routes different from the straight path. Can you make a sense of it just by looking at the free energy on the Ramachandran plot?
 
 
 */

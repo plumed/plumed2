@@ -1,5 +1,5 @@
 /**
-\page belfast-5 Belfast tutorial: Out of equilibrium dynamics via MOVINGRESTRAINT
+\page belfast-5 Belfast tutorial: Out of equilibrium dynamics  
 
 In plumed you can bring a system in a specific state in a collective variable
 by means of the \ref MOVINGRESTRAINT directive.
