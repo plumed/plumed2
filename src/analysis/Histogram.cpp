@@ -215,6 +215,12 @@ void Histogram::performAnalysis(){
   } else {
     for(unsigned i=0;i<getNumberOfDataPoints();++i){
       getDataPoint( i, point, weight );
+      // Without KERNEL the point are assigned with a lower approximation (floor)
+      // in order to have a correct assigmnet points must be translated of half
+      // the mesh
+      std::vector<double> dx_;
+      dx_ = gg->getDx();
+      for(unsigned j=0;j<point.size();j++) point[j]+=0.5*dx_[j];
       gg->addValue(gg->getIndex(point), weight);
     }  
   }
