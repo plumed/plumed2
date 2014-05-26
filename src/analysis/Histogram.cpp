@@ -32,12 +32,16 @@ namespace analysis{
 
 //+PLUMEDOC ANALYSIS HISTOGRAM
 /* 
-Calculate the probability density as a function of a few CVs using kernel density estimation
-
+Calculate the probability density as a function of a few CVs either using kernel density estimation, or a discrete
+histogram estimation. In case a kernel density estimation is used the probability density is estimated as a
+continuos function on the grid with a BANDWIDTH defined by the user. In this case the normalisation is such that
+the INTEGRAL over the grid is 1. In case a discrete density estimation is used the probabilty density is estimated
+as a discrete function on the grid. In this case the normalisation is such that the SUM of over the grid is 1.
+ 
 \par Examples
 
 The following input monitors two torsional angles during a simulation
-and outputs a histogram as a function of them at the end of the simulation.
+and outputs a continuos histogram as a function of them at the end of the simulation.
 \verbatim
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
@@ -48,6 +52,22 @@ HISTOGRAM ...
   GRID_MAX=3.14,3.14 
   GRID_BIN=200,200
   BANDWIDTH=0.05,0.05 
+  GRID_WFILE=histo
+... HISTOGRAM
+\endverbatim
+
+The following input monitors two torsional angles during a simulation
+and outputs a discrete histogram as a function of them at the end of the simulation.
+\verbatim
+TORSION ATOMS=1,2,3,4 LABEL=r1
+TORSION ATOMS=2,3,4,5 LABEL=r2
+HISTOGRAM ...
+  ARG=r1,r2 
+  USE_ALL_DATA
+  KERNEL=discrete 
+  GRID_MIN=-3.14,-3.14 
+  GRID_MAX=3.14,3.14 
+  GRID_BIN=200,200
   GRID_WFILE=histo
 ... HISTOGRAM
 \endverbatim
@@ -112,7 +132,7 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. Use none/NONE if you don't want to use any kernel. \
+  keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. Use discrete/DISCRETE if you want to accumulate a discrete histogram. \
                                              More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
   keys.addFlag("FREQUENCY",false,"Set to TRUE if you want a frequency instead of a probabilty density.");
@@ -157,10 +177,10 @@ fenergy(false)
 
   // Read the type of kernel we are using
   parse("KERNEL",kerneltype);
-  if(kerneltype=="NONE") kerneltype="none";
+  if(kerneltype=="DISCRETE") kerneltype="discrete";
   // Read stuff for window functions
   parseVector("BANDWIDTH",bw);
-  if(bw.size()!=getNumberOfArguments()&&kerneltype!="none") 
+  if(bw.size()!=getNumberOfArguments()&&kerneltype!="discrete") 
     plumed_merror("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
 
   parseFlag("FREQUENCY",frequency);
@@ -206,7 +226,7 @@ void Histogram::performAnalysis(){
 
   // Now build the histogram
   double weight; std::vector<double> point( getNumberOfArguments() );
-  if(kerneltype!="none") {
+  if(kerneltype!="discrete") {
     for(unsigned i=0;i<getNumberOfDataPoints();++i){
       getDataPoint( i, point, weight );
       KernelFunctions kernel( point, bw, kerneltype, false, weight, true);
