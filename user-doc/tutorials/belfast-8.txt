@@ -270,6 +270,14 @@ gnuplot> plot [0:40]'FES' u 2:3
 \endverbatim
 
 plots the microstate error in the free energy estimate as a function of the microstates free energy.
+Finally in the folder metagui/FES there is script to integrate the multidimensional free energy contained in the MICROSTATES files
+to a 2D FES as a function of two of the used CV. To use it is enough to copy the MICROSTATES file in FES:
+
+\verbatim
+cp MICROSTATES FES/FES.4D
+\endverbatim
+
+and edit the script to select the two columns of MICROSTATES on which show the integrated FES.
 
 \Reference
 
