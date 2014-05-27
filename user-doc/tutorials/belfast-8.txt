@@ -18,7 +18,7 @@ Once this tutorial is completed students will:
 
 \section Resources
 
-The <a href="tutorial-resources/belfast-8.tgz" download="belfast-8.tgz"> tarball </a> for this project contains the following files:
+The <a href="https://dl.dropboxusercontent.com/u/1349402/belfast-8.tgz" download="belfast-8.tgz"> tarball </a> for this project contains the following files:
 
 - system folder: a starting structure for Val-Ile-Leu system
 - WTBX: a run of Well-Tempered Bias-Exchange Metadynamics ready for the analysis
@@ -123,9 +123,12 @@ scripts also generate two measures of the evolution of the profiles in time:
 2. KL.HILLS.0: where it is stored the average deviation between profiles correctly weigheted for the free energy of the profiles themselves (Symmetrized Kullback-Lieber divergence) 
 
 From both plots one can deduce that after 8 ns the profiles don't change significantly thus suggesting that averaging over the range 8-40ns should result in
-a accurate profile (we will test this using metagui).
+a accurate profile (we will test this using metagui). Another test is that of looking at the fluctuations of the profiles in a time window instead of looking
+at successive profiles:
 
- 
+\anchor belfast-8-convergence-fig
+\image html belfast-8-convergence.png "Superposition of FE profiles in different time windows" 
+
 \subsection metagui Bias-Exchange Analysis with METAGUI
 In principle Bias-Exchange Metadynamics can give as a results only N 1D free energy profiles. But the information
 contained in all the replicas can be used to recover multidensional free energy surfaces in >=N dimensions. A simple
@@ -306,9 +309,9 @@ and the simulation can be run in a similar way without doing exchanges:
 mpirun -np 4 mdrun_mpi -s topol -plumed plumed -multi 4  >& log &
 \endverbatim
 
-alternatively Multiple Walkers can be run as independent simulations sharing via the file system their own biasing potential,
-this is usefull because it provides a parallelisation that do not needs a parallel code. In this case the walkers read with
-a given frequency the gaussian deposited by the others and add them to their own.
+alternatively Multiple Walkers can be run as independent simulations sharing via the file system the biasing potential,
+this is usefull because it provides a parallelisation that does not need a parallel code. In this case the walkers read with
+a given frequency the gaussians deposited by the others and add them to their own \ref METAD.
 
 \Reference
 
@@ -325,6 +328,4 @@ More materials can be found in
 link: @subpage belfast-8
 
 description: Bias exchange and multiple walkers
-
-additional-files: belfast-8.tgz 
 
