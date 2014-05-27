@@ -285,6 +285,7 @@ void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+  keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
   keys.add("compulsory","PACE","the frequency for hill addition");
@@ -535,10 +536,13 @@ isFirstStep(true)
 
 
   if(mw_n_>1){
+   if(walkers_mpi) error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
    log.printf("  %d multiple walkers active\n",mw_n_);
    log.printf("  walker id %d\n",mw_id_);
    log.printf("  reading stride %d\n",mw_rstride_);
    log.printf("  directory with hills files %s\n",mw_dir_.c_str());
+  } else {
+   if(walkers_mpi) log.printf("  Multiple walkers active using MPI communnication\n"); 
   }
 
   addComponent("bias"); componentIsNotPeriodic("bias");
@@ -584,7 +588,6 @@ isFirstStep(true)
    }
   }
 
-  if(walkers_mpi && mw_n_>1) error("MPI version of multiple walkers is not compatible with filesystem version of multiple walkers");
 
 // creating vector of ifile* for hills reading 
 // open all files at the beginning and read Gaussians if restarting
@@ -624,7 +627,7 @@ isFirstStep(true)
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
-  if(mw_n_>1) log<<plumed.cite(
+  if(mw_n_>1||walkers_mpi) log<<plumed.cite(
     "Raiteri, Laio, Gervasio, Micheletti, and Parrinello, J. Phys. Chem. B 110, 3533 (2006)");
   if(adaptive_!=FlexibleBin::none) log<<plumed.cite(
     "Branduardi, Bussi, and Parrinello, J. Chem. Theory Comput. 8, 2247 (2012)");
