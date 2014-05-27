@@ -170,9 +170,9 @@ of a system by looking at a small number of properties that could be enough to r
 
 Now try to write a collective variable that measures the Radius of Gyration of the system: \ref GYRATION.
 
-NOTE: if what you need for one or more variables is a long list of atoms and not a virtual atoms one can use the keyword \ref GROUP.
+NOTE: if what you need for one or more variables is a long list of atoms and not a virtual atom one can use the keyword \ref GROUP.
 A GROUP can be defined using ATOMS in the same way we saw before, in addition it is also possible to define a GROUP by reading a 
-GROMACS index files.
+GROMACS index file.
 
 \verbatim
 ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
@@ -182,7 +182,7 @@ Now 'ca' is not a virtual atom but a simple list of atoms.
 
 \subsection multicol MULTICOLVAR
 
-Sometimes it can be usefull to calculate properties of multiple collective variables at the same time, for example one can be interested
+Sometimes it can be useful to calculate properties of many similar collective variables at the same time, for example one can be interested
 in calculating the properties of the distances between a group of atoms, or properties linked to the distribution of the dihedral angles
 of a chain and so on. In PLUMED2 this kind of collective variables fall under the name of MULTICOLVAR (cf. \subpage mcolv.)
 Here we are going to analyse the distances between CA carbons along the chain:
