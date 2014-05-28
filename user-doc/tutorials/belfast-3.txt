@@ -20,7 +20,7 @@ by seeking out an isometry between a high-dimensional and low-dimensional space
 
 \section Resources
 
-The tarball for this project contains the following files:
+The <a href="tutorial-resources/belfast-3.tar.gz" download="belfast-3.tar.gz"> tarball </a> for this project contains the following files:
 
 - trajectory-short.xyz : a (short) trajectory for a 16 residue protein in xyz format. All calculations with plumed driver use this trajectory.
 - trajectory-short.pdb : the same trajectory in pdb format, this can be loaded with VMD 
@@ -155,5 +155,7 @@ are:
 link: @subpage belfast-3
 
 description: Dimensionality reduction and sketch maps
+
+additional-files: belfast-3.tar.gz
 
 

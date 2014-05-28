@@ -36,7 +36,7 @@ q_{3m}(i) = \frac{\sum_j \sigma( r_{ij} ) Y_{3m}(\mathbf{r}_{ij}) }{\sum_j \sigm
 \f]
 
 where \f$Y_{3m}\f$ is one of the 3rd order spherical harmonics so \f$m\f$ is a number that runs from \f$-3\f$ to
-\f$+3\f$.  The function \f$\sigma( r_{ij} )\f$ is a \ref switching function that acts on the distance between 
+\f$+3\f$.  The function \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between 
 atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set so that it the function is equal to one
 when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.  
 
@@ -53,7 +53,7 @@ that is investigated.
 
 Other measures of order can be taken by averaging the components of the individual \f$q_3\f$ vectors individually or by taking dot products of 
 the \f$q_{3}\f$ vectors on adjacent atoms.  More information on these variables can be found in the documentation for \ref LOCAL_Q3,
-\ref LOCAL_AVERAGE, \ref AVERAGE_VECTOR and \ref NLINKS.
+\ref LOCAL_AVERAGE and \ref NLINKS.
 
 \par Examples
 

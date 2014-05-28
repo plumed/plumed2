@@ -34,6 +34,7 @@ namespace colvar {
 //+PLUMEDOC COLVAR NOE 
 /*
 Calculates the deviation of current distances from experimental NOE derived distances.
+
 NOE distances are calculated between couple of atoms, averaging over equivalent couples, and compared with a set of reference distances. 
 Distances can also be averaged over multiple replicas to perform replica-averaged simulations.
 Each NOE is defined by two groups containing the same number of atoms and by a reference distance, distances

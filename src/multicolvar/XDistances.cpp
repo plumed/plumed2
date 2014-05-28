@@ -30,48 +30,83 @@ using namespace std;
 namespace PLMD{
 namespace multicolvar{
 
-//+PLUMEDOC MCOLVAR DISTANCES
+//+PLUMEDOC MCOLVAR XDISTANCES
 /*
-Calculate the distances between one or many pairs of atoms.  You can then calculate functions of the distribution of
-distances such as the minimum, the number less than a certain quantity and so on. 
+Calculate the x components of the vectors connecting one or many pairs of atoms.  
+You can then calculate functions of the distribution of
+values such as the minimum, the number less than a certain quantity and so on. 
 
 \par Examples
 
-The following input tells plumed to calculate the distances between atoms 3 and 5 and between atoms 1 and 2 and to 
-print the minimum for these two distances.
+The following input tells plumed to calculate the x-component of the vector connecting atom 3 to atom 5 and 
+the x-component of the vector connecting atom 1 to atom 2.  The minimum of these two quantities is then 
+printed 
 \verbatim
-DISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
+XDISTANCES ATOMS1=3,5 ATOMS2=1,2 MIN={BETA=0.1} LABEL=d1
 PRINT ARG=d1.min
 \endverbatim
 (See also \ref PRINT).
 
-The following input tells plumed to calculate the distances between atoms 3 and 5 and between atoms 1 and 2
-and then to calculate the number of these distances that are less than 0.1 nm.  The number of distances
+
+The following input tells plumed to calculate the x-component of the vector connecting atom 3 to atom 5 and 
+the x-component of the vector connecting atom 1 to atom 2.  The number of values that are 
 less than 0.1nm is then printed to a file.
 \verbatim
-DISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
+XDISTANCES ATOMS1=3,5 ATOMS2=1,2 LABEL=d1 LESS_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.lt0.1
 \endverbatim
 (See also \ref PRINT \ref switchingfunction).
 
-The following input tells plumed to calculate all the distances between atoms 1, 2 and 3 (i.e. the distances between atoms
-1 and 2, atoms 1 and 3 and atoms 2 and 3).  The average of these distances is then calculated.
+The following input tells plumed to calculate the x-components of all the distinct vectors that can be created 
+between atoms 1, 2 and 3 (i.e. the vectors between atoms 1 and 2, atoms 1 and 3 and atoms 2 and 3).  
+The average of these quantities is then calculated.
 \verbatim
-DISTANCES GROUP=1-3 AVERAGE LABEL=d1
+XDISTANCES GROUP=1-3 AVERAGE LABEL=d1
 PRINT ARG=d1.average
 \endverbatim
 (See also \ref PRINT)
 
-The following input tells plumed to calculate all the distances between the atoms in GROUPA and the atoms in GROUPB.
-In other words the distances between atoms 1 and 2 and the distance between atoms 1 and 3.  The number of distances
+The following input tells plumed to calculate all the vectors connecting the the atoms in GROUPA to the atoms in GROUPB.
+In other words the vector between atoms 1 and 2 and the vector between atoms 1 and 3.  The number of values 
 more than 0.1 is then printed to a file.
 \verbatim
-DISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
+XDISTANCES GROUPA=1 GROUPB=2,3 MORE_THAN={RATIONAL R_0=0.1}
 PRINT ARG=d1.gt0.1 
 \endverbatim
 (See also \ref PRINT \ref switchingfunction)
 */
 //+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR YDISTANCES
+/*
+Calculate the x components of the vectors connecting one or many pairs of atoms.  
+You can then calculate functions of the distribution of
+values such as the minimum, the number less than a certain quantity and so on.
+
+\par Examples
+
+See documentation for \ref XDISTANCES for examples of how to use this command.
+You just need to substitute YDISTANCES for XDISTANCES to investigate the y component
+rather than the x component.
+
+*/
+//+ENDPLUMEDOC
+
+//+PLUMEDOC MCOLVAR ZDISTANCES
+/*
+Calculate the x components of the vectors connecting one or many pairs of atoms.  
+You can then calculate functions of the distribution of
+values such as the minimum, the number less than a certain quantity and so on.
+
+\par Examples
+
+See documentation for \ref XDISTANCES for examples of how to use this command.
+You just need to substitute ZDISTANCES for XDISTANCES to investigate the z component
+rather than the x component.
+
+*/
+//+ENDPLUMEDOC
+
 
 class XDistances : public MultiColvar {
 private:

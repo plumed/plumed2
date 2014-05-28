@@ -1,5 +1,25 @@
 #!/bin/bash
 
+cd html
+
+if [ ! -e tutorial-resources ] ; then
+  mkdir tutorial-resources
+fi
+cd ../
+
+
+for file in ./tutorials/*.txt ; do
+
+   check=`grep additional-files: $file | wc -l`
+   if [ $check -gt 1 ] ; then
+        echo Input files for tutorials should all be given in a single tarball. $file contains $check files >> errors
+   elif [ $check -gt 0 ] ; then
+      resource=`grep additional-files: $file | sed -e 's/additional-files: //'`
+      cp tutorials/$resource html/tutorial-resources
+   fi
+
+done
+
 nerrors=`wc -l errors | awk '{print NF}'`
 if [ $nerrors -eq 0 ] ; then
   rm errors

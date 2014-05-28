@@ -571,8 +571,13 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 
 bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
   if( custom && cstring.find("customizable")!=std::string::npos ) return true;
+
+  std::string sname; std::size_t num=name.find_first_of("0123456789");
+  if( num!=std::string::npos ) sname=name.substr(0,num-1);
+  else sname=name;
+
   for(unsigned i=0;i<cnames.size();++i){
-      if( name.find(cnames[i])!=std::string::npos ) return true;
+     if( sname==cnames[i] ) return true;
   } 
   return false;
 } 

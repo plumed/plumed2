@@ -1,26 +1,175 @@
 /**
 \page belfast-4 Belfast tutorial: Umbrella sampling
 
-Once you deﬁne a bunch of collective variables of your interests PLUMED
-has a number of ways in which you may aﬀect their behavior. The fact
-that you can actually inﬂuence their value depends on the fact that
-each of the collective variables implemented in PLUMED has analytical
-derivatives and, by biasing the value of a single CV one turns to aﬀect
-the time evolution of the system itself. The simplest way in which one
+\section belfast-4-aims Aims
+
+In the previous lectures we learned how to compute collective variables (CVs)
+from atomic positions. We will now learn how one can add a bias potential
+to enforce the exploration of a particular region of the space.
+We will also see how it is possible to bias CVs
+so as to enhance the sampling of events hindered by
+large free-energy barriers and how to analyze this kind of simulation.
+This technique is known as "umbrella sampling" and can be used
+in combination with the weighted-histogram analysis method to compute
+free-energy landscapes.
+In this tutorial we will use simple
+collective variables, but the very same approach can be used with 
+any kind of collective variable.
+
+\section belfast-4-theory Summary of theory
+
+\subsection belfast-4-biased-sampling Biased sampling
+
+A system at temperature \f$ T\f$ samples 
+conformations from the canonical ensemble:
+\f[
+  P(q)\propto e^{-\frac{U(q)}{kb_BT}}
+\f].
+Here \f$ q \f$ are the microscopic coordinates and \f$ k_B \f$ is the Boltzmann constant.
+Since \f$ q \f$ is a highly dimensional vector, it is often convenient to analyze it
+in terms of a few collective variables (see \ref belfast-1 , \ref belfast-2 , and \ref belfast-3 ).
+The probability distribution for a CV \f$ s\f$ is 
+\f[
+  P(s)\propto \int dq  e^{-\frac{U(q)}{kb_BT}} \delta(s-s(q))
+\f]
+This probability can be expressed in energy units as a free energy landscape \f$ F(s) \f$:
+\f[
+  F(s)=-k_B T \log P(s)
+\f].
+
+Now we would like to modify the potential by adding a term that depends on the CV only.
+That is, instead of using \f$ U(q) \f$, we use \f$ U(q)+V(s(q))\f$.
+There are several reasons why one would like to introduce this potential. One is to
+avoid that the system samples some un-desired portion of the conformational space.
+As an example, imagine  that you want to study dissociation of a complex of two molecules.
+If you perform a very long simulation you will be able to see association and dissociation.
+However, the typical time required for association will depend on the size of the simulation
+box. It could be thus convenient to limit the exploration to conformations where the 
+distance between the two molecules is lower than a given threshold. This could be done
+by adding a bias potential on the distance between the two molecules.
+Another example
+is the simulation of a portion of a large molecule taken out from its initial context.
+The fragment alone could be unstable, and one might want to add additional
+potentials to keep the fragment in place. This could be done by adding
+a bias potential on some measure of the distance from the experimental structure
+(e.g. on root-mean-square deviation).
+
+Whatever CV we decide to bias, it is very important to recognize which is the
+effect of this bias and, if necessary, remove it a posteriori.
+The biased distribution  of the CV will be
+\f[
+  P'(s)\propto \int dq  e^{-\frac{U(q)+V(s(q))}{k_BT}} \delta(s-s(q))\propto e^{-\frac{V(s(q))}{kb_BT}}P(s)
+\f]
+and the biased free energy landscape
+\f[
+  F'(s)=-k_B T \log P'(s)=F(s)+V(s)+C
+\f]
+Thus, the effect of a bias potential on the free energy is additive. Also notice the presence
+of an undetermined constant \f$ C \f$. This constant is irrelevant for what concerns free-energy differences
+and barriers, but will be important later when we will learn the weighted-histogram method.
+Obviously the last equation can be inverted so as to obtain the original, unbiased free-energy 
+landscape from the biased one just subtracting the bias potential
+\f[
+  F(s)=F'(s)-V(s)+C
+\f]
+
+Additionally, one might be interested in recovering the distribution of an arbitrary
+observable. E.g., one could add a bias on the distance between two molecules and be willing to
+compute the unbiased distribution of some torsional angle. In this case
+there is no straightforward relationship that can be used, and one has to go back to
+the relationship between the microscopic probabilities:
+\f[
+  P(q)\propto P'(q) e^{\frac{V(s(q))}{k_BT}}
+\f]
+The consequence of this expression is that one can obtained any kind of unbiased
+information from a biased simulation just by weighting every sampled conformation
+with \f$e^{\frac{V(s(q))}{k_BT}}\f$. That is, frames that have been explored
+in spite of a high (disfavoring) bias potential \f$ V \f$ will be counted more
+than frames that has been explored with a less disfavoring bias potential.
+
+\subsection belfast-4-us Umbrella sampling
+
+Often in interesting cases the free-energy landscape has several local minima. If these
+minima have free-energy differences that are on the order of a few times \f$k_BT\f$
+they might all be relevant. However, if they are separated by a high saddle point
+in the free-energy landscape (i.e. a low probability region) than the transition
+between one and the other will take a lot of time and these minima will correspond
+to metastable states. The transition between one minimum and the other could require
+a time scale which is out of reach for molecular dynamics. In these situations,
+one could take inspiration from catalysis and try to favor in a controlled manner
+the conformations corresponding to the transition state.
+
+Imagine that you know since the beginning the shape of the free-energy landscape
+\f$ F(s) \f$ as a function of one CV \f$ s \f$. If you perform a molecular dynamics
+simulation using a bias potential which is exactly equal to \f$ -V(s) \f$,
+the biased free-energy landscape will be flat and barrierless.
+This potential acts as an "umbrella" that helps you to safely cross
+the transition state in spite of its high free energy.
+
+
+SAMPLE FIGURE NEEDED HERE
+
+It is however difficult to have an a priori guess of the free-energy landscape.
+We will see later how adaptive techniques such as metadynamics (\ref belfast-6) can be used
+to this aim. Because of this reason, umbrella sampling is often used
+in a slightly different  manner.
+
+Imagine that you do not know the exact height of the free-energy barrier
+but you have an idea of where the barrier is located. You could try to just
+favor the sampling of the transition state by adding a harmonic restraint 
+on the CV, e.g. in the form
+\f[
+  V(s)=\frac{k}{2} (s-s_0)^2
+\f].
+The sampled distribution will be 
+\f[
+  P'(q)\propto P(q) e^{\frac{-k(s(q)-s_0)^2}{2k_BT}}
+\f]
+For large values of \f$ k \f$, only points close to \f$ s_0 \f$ will be explored. It is thus clear
+how one can force the system to explore only a predefined region of the space adding such a restraint.
+By combining simulations performed with different values of \f$ s_0 \f$, one could
+obtain a continuous set of simulations going from one minimum to the other crossing the transition state.
+In the next section we will see how to combine the information from these simulations.
+
+\subsection belfast-4-wham Weighted histogram analysis method
+
+Let's now consider multiple simulations performed with restraints located in different positions.
+
+
+
+
+\section belfast-4-learning-outcomes Learning Outcomes
+
+Once this tutorial is completed students will know how to:
+
+- Setup simulations with restraints
+- Use multiple-restraint umbrella sampling simulations
+  to enhance the transition across a free-energy barrier.
+- Analyze the results.
+
+\section belfast-4-resources Resources
+
+TO DO
+
+\section belfast-4-instructions Instructions
+
+\subsection belfast-4-system The model system
+
+We here use a a model system
+alanine dipeptide with AMBER99SB-ILDN all atom force field already seen in the previous section.
+Here you can see its free-energy landscape depicted as function of the two dihedral angles \f$phi\f$ and
+\f$\psi\f$ (also called "Ramachandan plot").
+
+FIG TO DO
+
+GROMACS INPUT
+
+\subsection belfast-4-restrained-simulations Restrained simulations
+
+The simplest way in which one
 might inﬂuence a CV is by forcing the system to stay close to a chosen
-value during the simulation. This is achieved with umbrella potential
-that plumed provides via the directive \ref RESTRAINT.
-Very often it may happen that one wants that a given CV just stay
-within a given range of values. This is achieved in plumed through the
-directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
-limit the exploration within given ranges.
-
-(THIS IS A SAMPLE FIGURE)
-
-\image html belfast-4-meta.png
-
-\section belfast-4-US How to run an umbrella sampling calculation
-
+value during the simulation. This is achieved with a restraining potential
+that PLUMED provides via the directive \ref RESTRAINT.
 In the umbrella sampling method a bias potential is added so as
 to favor the exploration of some regions of the conformational space
 and to disfavor the exploration of other regions \cite torrie-valleau . A properly
@@ -73,12 +222,36 @@ in the second the value of \f$\phi\f$, in the third the value of \f$\psi\f$,
 in the fourth the the additional potential introduced by the restraint on \f$\phi\f$ and in
 the fifth the additional potential introduced by the restraint on \f$\psi\f$.
 
-\section belfast-4-reweighting Reweighting the results
+It may happen that one wants that a given CV just stay
+within a given range of values. This is achieved in plumed through the
+directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
+limit the exploration within given ranges.
 
-\section belfast-4-wham Combining multiple restraints
+TO DO
 
-\section belfast-4-walls Soft walls
+\subsection belfast-4-reweighting Reweighting the results
 
+\subsection belfast-4-wham Combining multiple restraints
+
+\section belfast-4-comments Comments
+
+\subsection belfast-4-comments-1 How does PLUMED work
+
+The fact that when you add a force on the collective variable
+PLUMED can force the atoms to do something depends on the fact that
+the collective variables implemented in PLUMED has analytical
+derivatives. By biasing the value of a single CV one turns to aﬀect
+the time evolution of the system itself. Notice that some of the collective
+variables could be implemented without derivatives (either because the
+developers were lazy or because the CVs cannot be derived).
+In this case you might want to have a look at the NUMERICAL_DERIVATIVES
+option.
+
+\section belfast-4-further-reading Further Reading
+
+Umbrella sampling method is a widely used technique. You can find several resources on the web, e.g.:
+
+- http://en.wikipedia.org/wiki/Umbrella_sampling
 
 */
 

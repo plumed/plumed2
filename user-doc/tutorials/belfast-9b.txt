@@ -20,7 +20,7 @@ know how to calculate such quantities using plumed.
 
 \section Resources
 
-The tarball for this project contains the following files:
+The <a href="tutorial-resources/belfast-9b.tar.gz" download="belfast-9b.tar.gz"> tarball </a> for this project contains the following files:
 
 - in : An input file for the simplemd code that forms part of plumed
 - input.xyz : A configuration file for Lennard-Jones solid with an fcc solid structure
@@ -147,4 +147,4 @@ link: @subpage belfast-10
 
 description: Steinhardt Parameters
 
-
+additional-files: belfast-9b.tar.gz
