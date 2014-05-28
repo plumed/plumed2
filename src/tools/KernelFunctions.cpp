@@ -100,7 +100,10 @@ width(sig)
       ktype=uniform;
   } else if(type=="TRIANGULAR" || type=="triangular"){
       ktype=triangular;
+  } else {
+      plumed_merror(type+" is an invalid kernel type\n");
   }
+  
 
   if( norm ){
     double det;
