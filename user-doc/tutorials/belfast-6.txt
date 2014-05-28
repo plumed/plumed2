@@ -1,10 +1,40 @@
 /**
 \page belfast-6 Belfast tutorial: Metadynamics
 
+\section Aims
+
+The aim of this tutorial is to introduce the users to running a metadynamics calculation using plumed. We will set up
+a simple calculation on alanine dipeptide in vacuum, analize the output, and calculate free energies
+from the simulation. We will also learn how to spot issues related to a bad choice of collective variables
+and how to run a well-tempered metadynamics simulation.
+
+\section belfast-6-lo Learning Outcomes
+
+Once this tutorial is completed students will:
+
+- Know how to run a metadynamics calculation using plumed 
+- Know how to analyse the output of the simulation
+- Know how to restart a metadynamics calculation
+- Know how to calculate free energies from a metadynamics calculation
+- Know how to detect issues with the choice of the collective variables
+- Know how to run a well-tempered metadynamics calculation using plumed 
+
+\section Resources
+
+The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-6.tar.gz" download="belfast-6.tar.gz"> tarball </a> for this project contains the following directories:
+
+- TOPO: it contains the gromacs topology and configuration files to simulate the alanine dipeptide in vacuum  
+- Exercise_1_2: plumed.dat is the input file to run a metadynamics simulation with 2 CVs
+- Exercise_3: plumed.dat is the input file to restart a metadynamics simulation
+- Exercise_4: analize_FES.sh is a bash script to calculate the free-energy difference between two basins as a function of simulation time
+- Exercise_5: plumed.dat is the input file to run a metadynamics simulation with 1 CV
+- Exercise_6: plumed.dat is the input file to run a well-tempered metadynamics simulation with 2 CVs
+
+\section Instructions
+
 */
 
 link: @subpage belfast-6
 
 description: How to run a metadynamics simulation
-
 
