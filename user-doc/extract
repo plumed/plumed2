@@ -85,8 +85,8 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"; dfile="automatic/DICTIONARY1.list";
 
       printf "<tr> <td width=%s> \\subpage %s </td><td> %s </td><td>","5%",$3, $2 > dfile
 
-      output="automatic/"$3".txt";
-      lfile="automatic/"$3".txt";
+      output="automatic/"$3".tmp";
+      lfile="automatic/"$3".tmp";
       print "/**" > output
       print "\\page "$3" "$3 > output
 #      print "\\section "$3 >output
@@ -182,30 +182,35 @@ echo "</table>" >> automatic/modules.list
 source ../sourceme.sh
 for file in automatic/*.tmp
 do
-  foundexample=`grep "\par Examples" $file | wc -l | awk '{print $1}'`
+  foundinternal=`grep '//+PLUMEDOC INTERNAL' $file | wc -l | awk '{print $1}'`
   flag=`echo $file | sed -e 's/.tmp//g' | sed -e 's/automatic\///g'`
-  ../src/lib/plumed manual --action=$flag > automatic/$flag.man 2> shit
-  rm shit 
-  check=`wc -l automatic/$flag.man | awk '{print $1}'`
-  if [ $check -eq 0 ] ; then 
-     echo Full manual for action $flag will not be generated as you are building the manual from a code where this action was not compiled >> errors
-  elif [ $foundexample -eq 0 ] 
-  then
-    echo There are no examples inside documentation for action: $flag >> errors
-  fi
-  cat automatic/$flag.tmp |
-    { 
-     while read -r LINE ;
-      do
-        if [ "$LINE" = "\par Examples" ]
-        then
-          cat automatic/$flag.man 
-          echo -E "$LINE"
-        else
-          echo -E "$LINE"
-        fi
-      done
-    } > automatic/$flag.txt
+  if [ $foundinternal -eq 0 ] ; then
+     foundexample=`grep "\par Examples" $file | wc -l | awk '{print $1}'`
+     ../src/lib/plumed manual --action=$flag > automatic/$flag.man 2> shit
+     rm shit 
+     check=`wc -l automatic/$flag.man | awk '{print $1}'`
+     if [ $check -eq 0 ] ; then 
+        echo Full manual for action $flag will not be generated as you are building the manual from a code where this action was not compiled >> errors
+     elif [ $foundexample -eq 0 ] 
+     then
+       echo There are no examples inside documentation for action: $flag >> errors
+     fi
+     cat automatic/$flag.tmp |
+       { 
+        while read -r LINE ;
+         do
+           if [ "$LINE" = "\par Examples" ]
+           then
+             cat automatic/$flag.man 
+             echo -E "$LINE"
+           else
+             echo -E "$LINE"
+           fi
+         done
+       } > automatic/$flag.txt
+   else 
+       cp $file automatic/$flag.txt
+   fi
 done
 
 for file in Bias Colvar Functions Installation Intro Analysis Glossary Tutorials Modules Regex

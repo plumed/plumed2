@@ -43,7 +43,7 @@ contained in trajectories.  Using this procedure we can take trajectory at tempe
 extract probabilities at a different temperature, \f$T_2\f$, using:
 
 \f[
-P(s',t) = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +( \left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }{ \sum_t'^t \exp\left( +\left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }
+P(s',t) = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +( \left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }{ \sum_{t'}^t \exp\left( +\left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }
 \f]
 
 where \f$U(x,t')\f$ is the potential energy of the system.  Alternatively, if a static or pseudo-static bias \f$V(x,t')\f$ is acting on 
