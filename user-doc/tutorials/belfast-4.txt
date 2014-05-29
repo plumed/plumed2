@@ -252,7 +252,7 @@ Now consider a simulation performed restraining the variable \f$\phi \f$:
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 restraint-phi: RESTRAINT ARG=phi KAPPA=10.0 AT=-2
-PRINT STRIDE=10 ARG=phi,restraint-phi.bias FILE=COLVAR10
+PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=COLVAR10
 
 \endverbatim
 
@@ -262,7 +262,7 @@ phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 # we use a "dummy" restraint with strength zero here
 restraint-phi: RESTRAINT ARG=phi KAPPA=0.0 AT=-2
-PRINT STRIDE=10 ARG=phi,restraint-phi.bias FILE=COLVAR0
+PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=COLVAR0
 \endverbatim
 
 Plot the time dependence of \f$\phi \f$ in the two cases and try to understand the
