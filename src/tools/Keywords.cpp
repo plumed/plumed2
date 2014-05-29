@@ -295,19 +295,42 @@ void Keywords::print_html( const bool isaction ) const {
 
 // This is the part that outputs the details of the components
   if( cnames.size()>0 ){
-      if( ckey.find(cnames[0])->second=="default" ){
+      unsigned ndef=0; 
+      for(unsigned i=0;i<cnames.size();++i){
+         if(ckey.find(cnames[i])->second=="default") ndef++;
+      }
+
+      if( ndef>0 ){
          std::cout<<"\\par Description of components\n\n";
          std::cout<<cstring<<"\n\n";
          std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
          printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
+         unsigned nndef=0;
          for(unsigned i=0;i<cnames.size();++i){
-            plumed_assert( ckey.find(cnames[i])->second=="default" );
+            //plumed_assert( ckey.find(cnames[i])->second=="default" );
+            if( ckey.find(cnames[i])->second!="default" ){ nndef++; continue; }
             printf("<tr>\n");
             printf("<td width=15%%> <b> %s </b></td>\n",cnames[i].c_str() );
             printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
             printf("</tr>\n");
          }
          std::cout<<"</table>\n\n";
+         if( nndef>0 ){
+             std::cout<<"In addition the following quantities can be calculated by employing the keywords listed below"<<std::endl;
+             std::cout<<"\n\n";
+             std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
+             printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
+             for(unsigned i=0;i<cnames.size();++i){
+                if( ckey.find(cnames[i])->second!="default"){
+                    printf("<tr>\n");
+                    printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
+                      cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
+                    printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+                    printf("</tr>\n");
+                }
+             }
+             std::cout<<"</table>\n\n"; 
+         }
       } else {
          unsigned nregs=0;
          for(unsigned i=0;i<cnames.size();++i){
@@ -316,7 +339,7 @@ void Keywords::print_html( const bool isaction ) const {
          if( nregs>0 ){
             std::cout<<"\\par Description of components\n\n";
             std::cout<<cstring<<"\n\n";
-            std::cout<<" <table align=center frame=void width=60%% cellpadding=5%%> \n";
+            std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
             printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
             for(unsigned i=0;i<cnames.size();++i){
                if( exists(ckey.find(cnames[i])->second) ){
@@ -572,8 +595,8 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
   if( custom && cstring.find("customizable")!=std::string::npos ) return true;
 
-  std::string sname; std::size_t num=name.find_first_of("0123456789");
-  if( num!=std::string::npos ) sname=name.substr(0,num-1);
+  std::string sname; std::size_t num=name.find_first_of("-");
+  if( num!=std::string::npos ) sname=name.substr(0,num);
   else sname=name;
 
   for(unsigned i=0;i<cnames.size();++i){
