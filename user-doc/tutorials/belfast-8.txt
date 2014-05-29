@@ -324,7 +324,7 @@ alternatively Multiple Walkers can be run as independent simulations sharing via
 this is usefull because it provides a parallelisation that does not need a parallel code. In this case the walkers read with
 a given frequency the gaussians deposited by the others and add them to their own \ref METAD.
 
-\Reference
+\section refer Reference
 
 This tutorial is freely inspired to the work of Biarnes et al.
 
@@ -334,6 +334,7 @@ More materials can be found in
 2. Biarnés, X., Pietrucci, F., Marinelli, F. & Laio, A. METAGUI. A VMD interface for analyzing metadynamics and molecular dynamics simulations. Comput. Phys. Commun. 183, 203–211 (2012).
 3. Baftizadeh, F., Cossio, P., Pietrucci, F. & Laio, A. Protein folding and ligand-enzyme binding from bias-exchange metadynamics simulations. Current Physical Chemistry 2, 79–91 (2012).
 4. Granata, D., Camilloni, C., Vendruscolo, M. & Laio, A. Characterization of the free-energy landscapes of proteins by NMR-guided metadynamics. Proc. Natl. Acad. Sci. U.S.A. 110, 6817–6822 (2013).
+5. Raiteri, P., Laio, A., Gervasio, F. L., Micheletti, C. & Parrinello, M. Efficient reconstruction of complex free energy landscapes by multiple walkers metadynamics. J. Phys. Chem. B 110, 3533–3539 (2006).
 
 
 */
