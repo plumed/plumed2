@@ -4,7 +4,7 @@
 \section Aims
 
 The aim of this tutorial is to introduce the users to running a metadynamics calculation using plumed. We will set up
-a simple calculation on alanine dipeptide in vacuum, analize the output, and calculate free energies
+a simple calculation on alanine dipeptide in vacuum, analyse the output, and calculate free energies
 from the simulation. We will also learn how to run a well-tempered metadynamics simulation and 
 detect issues related to a bad choice of collective variables.
 
@@ -24,13 +24,11 @@ Once this tutorial is completed students will:
 The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-6.tar.gz" download="belfast-6.tar.gz"> tarball </a> for this project contains the following directories:
 
 - TOPO: it contains the gromacs topology and configuration files to simulate the alanine dipeptide in vacuum  
-- Exercise_1_2: run a metadynamics simulation with 2 CVs, dihedral phi and psi
+- Exercise_1_2: run a metadynamics simulation with 2 CVs, dihedrals phi and psi, and analyse the output 
 - Exercise_3: restart a metadynamics simulation
-- Exercise_4: calculate free energies from a metadynamics simulation and monitor the convergence
-- Exercise_5: run a well-tempered metadynamics simulation with 2 CVs, dihedral phi and psi
+- Exercise_4: calculate free energies from a metadynamics simulation and monitor convergence
+- Exercise_5: run a well-tempered metadynamics simulation with 2 CVs, dihedrals phi and psi
 - Exercise_6: run a well-tempered metadynamics simulation with 1 CV, dihedral psi
-
-\section Instructions
 
 */
 
