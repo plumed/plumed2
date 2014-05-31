@@ -77,6 +77,12 @@ public:
 /// Get modifiable position of i-th atom (access by absolute AtomNumber).
 /// Should be used by action that need to modify the stored atomic coordinates
   Vector & modifyPosition(AtomNumber);
+/// Get total number of atoms, including virtual ones.
+/// Can be used to make a loop on modifyPosition or getPosition(AtomNumber)
+  unsigned getTotAtoms()const;
+/// Get modifiable force of i-th atom (access by absolute AtomNumber).
+/// Should be used by action that need to modify the stored atomic forces
+  Vector & modifyForce(AtomNumber);
 /// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
@@ -165,6 +171,11 @@ Vector & ActionAtomistic::modifyPosition(AtomNumber i){
 }
 
 inline
+Vector & ActionAtomistic::modifyForce(AtomNumber i){
+  return atoms.forces[i.index()];
+}
+
+inline
 double ActionAtomistic::getMass(int i)const{
   return masses[i];
 }
@@ -234,6 +245,12 @@ inline
 const std::set<AtomNumber> & ActionAtomistic::getUnique()const{
   return unique;
 }
+
+inline
+unsigned ActionAtomistic::getTotAtoms()const{
+  return atoms.positions.size();
+}
+
 
 
 }
