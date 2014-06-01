@@ -114,7 +114,6 @@ private:
   std::vector<unsigned> gbin;
   std::string gridfname;
   std::string kerneltype;
-  bool frequency; 
   bool fenergy; 
 public:
   static void registerKeywords( Keywords& keys );
@@ -135,7 +134,6 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. Use discrete/DISCRETE if you want to accumulate a discrete histogram. \
                                              More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
-  keys.addFlag("FREQUENCY",false,"Set to TRUE if you want a frequency instead of a probabilty density.");
   keys.addFlag("FREE-ENERGY",false,"Set to TRUE if you want a FREE ENERGY instead of a probabilty density (you need to set TEMP).");
   keys.add("compulsory","GRID_WFILE","histogram","the file on which to write the grid");
   keys.use("NOMEMORY");
@@ -144,7 +142,6 @@ void Histogram::registerKeywords( Keywords& keys ){
 Histogram::Histogram(const ActionOptions&ao):
 PLUMED_ANALYSIS_INIT(ao),
 point(getNumberOfArguments()),
-frequency(false),
 fenergy(false)
 {
   // Read stuff for Grid
@@ -183,7 +180,6 @@ fenergy(false)
   if(bw.size()!=getNumberOfArguments()&&kerneltype!="discrete") 
     plumed_merror("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
 
-  parseFlag("FREQUENCY",frequency);
   parseFlag("FREE-ENERGY",fenergy);
   if(getTemp()<=0&&fenergy) plumed_merror("Set the temperature (TEMP) if you want a free energy.");
   checkRead();
@@ -246,7 +242,7 @@ void Histogram::performAnalysis(){
   }
 
   // Normalize the histogram
-  if(!frequency) gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
+  gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
   if(fenergy) {
     gg->logAllValuesAndDerivatives( -getTemp() * plumed.getAtoms().getKBoltzmann() );
     gg->setMinToZero();

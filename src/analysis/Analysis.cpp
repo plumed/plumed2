@@ -69,7 +69,7 @@ void Analysis::registerKeywords( Keywords& keys ){
   keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA");
   keys.add("optional","FMT","the format that should be used in analysis output files");
   keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics. For more information see \\ref reweighting.");
-  keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting.");
+  keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting or doing free energies.");
   keys.add("optional","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability "
                                       "distribution at a second temperature. For more information see \\ref reweighting. "
                                       "This is not possible during postprocessing.");
