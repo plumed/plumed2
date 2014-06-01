@@ -379,7 +379,7 @@ isFirstStep(true)
 	 // if adaptive then the number must be an integer
  	 if(adaptive_==FlexibleBin::diffusion){
 		if(int(sigma0_[0])-sigma0_[0]>1.e-9 || int(sigma0_[0])-sigma0_[0] <-1.e-9 || int(sigma0_[0])<1 ){
-		 	plumed_merror("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of timesteps\n");	
+		 	error("In case of adaptive hills with diffusion, the sigma must be an integer which is the number of timesteps\n");	
 		} 
 	 } 
 	 // here evtl parse the sigma min and max values
@@ -620,6 +620,10 @@ isFirstStep(true)
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
+  if(doInt_) {
+    hillsOfile_.addConstantField("lower_int").printField("lower_int",lowI_);
+    hillsOfile_.addConstantField("upper_int").printField("upper_int",uppI_);
+  }
   hillsOfile_.setHeavyFlush();
 // output periodicities of variables
   for(unsigned i=0;i<getNumberOfArguments();++i) hillsOfile_.setupPrintValue( getPntrToArgument(i) );
