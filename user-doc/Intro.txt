@@ -32,10 +32,10 @@ is provided in this <a href="http://www.youtube.com/watch?v=PxJP16qNCYs"> 10-min
 More information on the input syntax as well as details on the the various trajectory
 analsyis tools that come with PLUMED are given in: 
 
-- \subpage Colvar
-- \subpage Function
-- \subpage Analysis
-- \subpage Bias
+- \subpage Colvar tells you about the functions of the positions atoms that PLUMED can calculate.
+- \subpage Function tells you about the functions of collective variables that PLUMED can calculate.
+- \subpage Analysis tells you about the various forms of analysis you can run on trajectories using PLUMED.
+- \subpage Bias tells you about the methods that you can use to bias molecular dynamics simulations with PLUMED.
 
 PLUMED can be used in one of two ways.  It can be incorporated into any one of the MD codes listed on the
 \ref Installation page and used to analyse or bias a molecular dynamics run on the fly.  Alternatively, one
