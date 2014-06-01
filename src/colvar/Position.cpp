@@ -1,0 +1,124 @@
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   Copyright (c) 2013 The plumed team
+   (see the PEOPLE file at the root of the distribution for a list of names)
+
+   See http://www.plumed-code.org for more information.
+
+   This file is part of plumed, version 2.
+
+   plumed is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Lesser General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   plumed is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with plumed.  If not, see <http://www.gnu.org/licenses/>.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+#include "Colvar.h"
+#include "ActionRegister.h"
+
+#include <string>
+#include <cmath>
+
+using namespace std;
+
+namespace PLMD{
+namespace colvar{
+
+//+PLUMEDOC COLVAR POSITION
+/*
+Calculate the components of the position of an atom.
+
+Notice that single components will not have the proper periodicity!
+See \ref DISTANCE for a possible hack.
+Also notice that by default the minimal image distance from the
+origin is considered (can be changed with NOPBC).
+
+*/
+//+ENDPLUMEDOC
+   
+class Position : public Colvar {
+  bool components;
+  bool pbc;
+
+public:
+  static void registerKeywords( Keywords& keys );
+  Position(const ActionOptions&);
+// active methods:
+  virtual void calculate();
+};
+
+PLUMED_REGISTER_ACTION(Position,"POSITION")
+
+void Position::registerKeywords( Keywords& keys ){
+  Colvar::registerKeywords( keys );
+  componentsAreNotOptional(keys);
+  keys.add("atoms","ATOM","the atom number");
+  keys.addOutputComponent("x","default","the x-component of the atom position");
+  keys.addOutputComponent("y","default","the y-component of the atom position");
+  keys.addOutputComponent("z","default","the z-component of the atom position");
+}
+
+Position::Position(const ActionOptions&ao):
+PLUMED_COLVAR_INIT(ao),
+pbc(true)
+{
+  vector<AtomNumber> atoms;
+  parseAtomList("ATOM",atoms);
+  if(atoms.size()!=1)
+    error("Number of specified atoms should be 2");
+  bool nopbc=!pbc;
+  parseFlag("NOPBC",nopbc);
+  pbc=!nopbc;
+  checkRead();
+
+  log.printf("  between atoms %d %d\n",atoms[0].serial());
+  if(pbc) log.printf("  using periodic boundary conditions\n");
+  else    log.printf("  without periodic boundary conditions\n");
+
+  addComponentWithDerivatives("x"); componentIsNotPeriodic("x");
+  addComponentWithDerivatives("y"); componentIsNotPeriodic("y");
+  addComponentWithDerivatives("z"); componentIsNotPeriodic("z");
+  log<<"  WARNING: components will not have the proper periodicity - see manual\n";
+
+  requestAtoms(atoms);
+}
+
+
+// calculator
+void Position::calculate(){
+
+  Vector distance;
+  if(pbc){
+    distance=pbcDistance(Vector(0.0,0.0,0.0),getPosition(0));
+  } else {
+    distance=delta(Vector(0.0,0.0,0.0),getPosition(0));
+  }
+
+  Value* valuex=getPntrToComponent("x");
+  Value* valuey=getPntrToComponent("y");
+  Value* valuez=getPntrToComponent("z");
+
+  setAtomsDerivatives (valuex,0,Vector(+1,0,0));
+  setBoxDerivatives   (valuex,Tensor(distance,Vector(-1,0,0)));
+  valuex->set(distance[0]);
+
+  setAtomsDerivatives (valuey,0,Vector(0,+1,0));
+  setBoxDerivatives   (valuey,Tensor(distance,Vector(0,-1,0)));
+  valuey->set(distance[1]);
+
+  setAtomsDerivatives (valuez,0,Vector(0,0,+1));
+  setBoxDerivatives   (valuez,Tensor(distance,Vector(0,0,-1)));
+  valuez->set(distance[2]);
+}
+
+}
+}
+
+
+
