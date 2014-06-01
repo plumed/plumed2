@@ -35,6 +35,7 @@ namespace colvar {
 //+PLUMEDOC COLVAR CONTACTMAP
 /*
 Calculate the distances between a number of pairs of atoms and transform each distance by a switching function.
+
 The transformed distance can be compared with a set of reference values in order to calculate the squared distance
 between two contact maps.
 

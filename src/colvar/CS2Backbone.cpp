@@ -25,11 +25,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "tools/Communicator.h"
-
-#include <string>
-#include <cmath>
-#include <cassert>
 
 #include <almost/mdb.h>
 #include <almost/pdb.h>
@@ -211,7 +206,7 @@ PLUMED_COLVAR_INIT(ao)
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
   if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
     else ens_dim=multi_sim_comm.Get_size(); 
   } else ens_dim=0; 
   if(ensemble) comm.Sum(&ens_dim, 1);
@@ -231,7 +226,7 @@ PLUMED_COLVAR_INIT(ao)
   if(stringa_mol.length()>0) {
     unsigned num_chains = pdb[0].size();
     vector<string> data=Tools::getWords(stringa_mol,",");
-    if(data.size()!=2*num_chains) plumed_merror("You have to define both the NTerm and the CTerm for each chain of your system!\n");
+    if(data.size()!=2*num_chains) error("You have to define both the NTerm and the CTerm for each chain of your system!\n");
     for(unsigned i=0;i<data.size();i++) termini.push_back(data[i]);
   } else {
     unsigned num_chains = pdb[0].size();
