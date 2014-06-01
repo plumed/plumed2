@@ -20,13 +20,14 @@ Changes from version 2.0 which are relevant for users:
   - \ref NLINKS.
   - \ref DIHCOR.
   - \ref NOE.
-  - \ref RDC.
+  - \ref RDC. 
   - \ref CLASSICAL_MDS
   - \ref XDISTANCES
   - \ref YDISTANCES 
   - \ref ZDISTANCES
   - \ref DUMPMULTICOLVAR
   - Crystallation module, including \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, \ref SIMPLECUBIC, \ref TETRAHEDRAL and \ref FCCUBIC.
+  - \ref ENSEMBLE to perform Replica-Averaging on any collective variable.
 - New features for existing actions:
   - \ref METAD : WALKERS_MPI flag (multiple walkers in a mpi-based multi-replica framework),
     ACCELERATION flag (calculate on the fly the Metadynamics acceleration factor),
@@ -40,8 +41,8 @@ Changes from version 2.0 which are relevant for users:
   - \ref GROUP : NDX_FILE and NDX_GROUP options to import atom lists from ndx (gromacs) files.
   - In many multicolvars, MIN and MAX options can be used.
   - \ref HISTOGRAM : GRID_SPACING (alternative to GRID_BIN to set grid spacing),
-    FREQUENCY and FREE-ENERGY flags in addition to standard probability density,
-    additional option for KERNEL=NONE to accumulate standard histograms. 
+    FREE-ENERGY flags in addition to standard probability density,
+    additional option for KERNEL=DISCRETE to accumulate standard histograms. 
   - \ref sum_hills : added options --spacing (alternative to --bin to set grid spacing)
     and --setmintozero to translate the minimum of the output files to zero.
 - New features in MD patches (require repatch):
