@@ -120,7 +120,7 @@ boundaries. Note that:
 - It works both with and without GRID;
 - The interval limit sw in a region where the free energy derivative is not large;
 - If in the region outside the limit sw the system has a free energy minimum, the INTERVAL keyword should 
-  be used together with a soft wall at sw
+  be used together with a \ref UPPER_WALLS or \ref LOWER_WALLS at sw.
 
 As a final note, since version 2.0.2 when the system is outside of the selected interval the force
 is set to zero and the bias value to the value at the corresponding boundary. This allows acceptances
@@ -221,7 +221,8 @@ private:
    vector<double> invsigma;
    Gaussian(const vector<double> & center,const vector<double> & sigma,double height, bool multivariate ):
      center(center),sigma(sigma),height(height),multivariate(multivariate),invsigma(sigma){
-       for(unsigned i=0;i<invsigma.size();++i)abs(invsigma[i])>1.e-20?invsigma[i]=1.0/invsigma[i]:0.; // to avoid troubles from zero element in flexible hills
+       // to avoid troubles from zero element in flexible hills
+       for(unsigned i=0;i<invsigma.size();++i)abs(invsigma[i])>1.e-20?invsigma[i]=1.0/invsigma[i]:0.; 
      }
   };
   vector<double> sigma0_;
@@ -368,11 +369,11 @@ isFirstStep(true)
 
   parse("FMT",fmt);
 
-  // if you use normal sigma you need one sigma per argument 
   if (adaptive_==FlexibleBin::none){
+         // if you use normal sigma you need one sigma per argument 
          if( sigma0_.size()!=getNumberOfArguments() ) error("number of arguments does not match number of SIGMA parameters");
   }else{
-  // if you use flexible hills you need one sigma  
+         // if you use flexible hills you need one sigma  
          if(sigma0_.size()!=1){
         	 error("If you choose ADAPTIVE you need only one sigma according to your choice of type (GEOM/DIFF)");
          } 
@@ -385,16 +386,24 @@ isFirstStep(true)
 	 // here evtl parse the sigma min and max values
 	 
 	 parseVector("SIGMA_MIN",sigma0min_);
-	 if(sigma0min_.size()>0 && sigma0min_.size()<getNumberOfArguments()){error("the number of SIGMA_MIN values be at least the number of the arguments"); }
-	 else if(sigma0min_.size()==0) { sigma0min_.resize(getNumberOfArguments());for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	} 
+	 if(sigma0min_.size()>0 && sigma0min_.size()<getNumberOfArguments()) {
+           error("the number of SIGMA_MIN values be at least the number of the arguments");
+	 } else if(sigma0min_.size()==0) { 
+           sigma0min_.resize(getNumberOfArguments());
+           for(unsigned i=0;i<getNumberOfArguments();i++){sigma0min_[i]=-1.;}	
+         } 
 
 	 parseVector("SIGMA_MAX",sigma0max_);
-	 if(sigma0max_.size()>0 && sigma0max_.size()<getNumberOfArguments()){error("the number of SIGMA_MAX values be at least the number of the arguments"); }
-	 else if(sigma0max_.size()==0) { sigma0max_.resize(getNumberOfArguments());for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	} 
+	 if(sigma0max_.size()>0 && sigma0max_.size()<getNumberOfArguments()) {
+           error("the number of SIGMA_MAX values be at least the number of the arguments"); 
+         } else if(sigma0max_.size()==0) { 
+           sigma0max_.resize(getNumberOfArguments());
+           for(unsigned i=0;i<getNumberOfArguments();i++){sigma0max_[i]=-1.;}	
+         } 
 
          flexbin=new FlexibleBin(adaptive_,this,sigma0_[0],sigma0min_,sigma0max_);
   }
-// note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
+  // note: HEIGHT is not compulsory, since one could use the TAU keyword, see below
   parse("HEIGHT",height0_);
   parse("PACE",stride_);
   if(stride_<=0 ) error("frequency for hill addition is nonsensical");
@@ -404,14 +413,14 @@ isFirstStep(true)
   if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
   parse("TEMP",temp_);
   if(biasf_>1.0){
-   if(temp_==0.0) error("if you are doing well tempered metadynamics you must specify the temperature using TEMP");
-   welltemp_=true;
+    if(temp_==0.0) error("if you are doing well tempered metadynamics you must specify the temperature using TEMP");
+    welltemp_=true;
   }
   double tau=0.0;
   parse("TAU",tau);
   if(tau==0.0){
     if(height0_==std::numeric_limits<double>::max()) error("At least one between HEIGHT and TAU should be specified");
-// if tau is not set, we compute it here from the other input parameters
+    // if tau is not set, we compute it here from the other input parameters
     if(welltemp_) tau=(plumed.getAtoms().getKBoltzmann()*temp_*(biasf_-1.0))/height0_*getTimeStep()*stride_;
   } else {
     if(!welltemp_)error("TAU only makes sense in well-tempered metadynamics");
@@ -442,7 +451,15 @@ isFirstStep(true)
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
-      } else error("At least one among GRID_BIN and GRID_SPACING should be used");
+      } else {
+        // with adaptive hills and grid a sigma min must be specified
+        if(sigma0min_.size()==0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
+        log<<"  Binsize not spacified, 1/5 of sigma_min will be be used\n";
+        plumed_assert(sigma0_.size()==getNumberOfArguments());
+        gspacing.resize(getNumberOfArguments());
+        for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0min_[i];
+        //error("At least one among GRID_BIN and GRID_SPACING should be used");
+      }
     } else if(gspacing.size()!=0 && gbin.size()==0){
       log<<"  The number of bins will be estimated from GRID_SPACING\n";
     } else if(gspacing.size()!=0 && gbin.size()!=0){
@@ -556,8 +573,18 @@ isFirstStep(true)
 // for performance
   dp_ = new double[getNumberOfArguments()];
 
-// initializing grid
+// initializing and checking grid
   if(grid_){
+   // check for adaptive and sigma_min
+   if(sigma0min_.size()==0&&adaptive_!=FlexibleBin::none) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
+   // check for mesh and sigma size
+   for(unsigned i=0;i<getNumberOfArguments();i++) {
+     double a,b;
+     Tools::convert(gmin[i],a);
+     Tools::convert(gmax[i],b);
+     double mesh=(b-a)/((double)gbin[i]);
+     if(mesh>0.5*sigma0_[i]) log<<"  WARNING: Using a METAD with a Grid Spacing larger than half of the Gaussians width can produce artifacts\n";
+   }
    std::string funcl=getLabel() + ".bias";
    if(!sparsegrid){BiasGrid_=new Grid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
    else{BiasGrid_=new SparseGrid(funcl,getArguments(),gmin,gmax,gbin,spline,true);}
