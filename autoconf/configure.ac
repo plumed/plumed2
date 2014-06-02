@@ -263,15 +263,15 @@ if test $almost == true ; then
     LIBS="-lsqlite3 -lz -lbz2 -lnbimpl -lshx $LIBS"
   fi
 fi
-if test $gsl == true ; then
-  found=ko
-  AM_PATH_GSL(1.10, found=ok, [AC_MSG_ERROR(could not find required version of GSL)])
-  if test $found == ok ; then
-    AC_DEFINE([__PLUMED_HAS_GSL])
-    LIBS="$GSL_LIBS $LIBS"
-    CPPFLAGS="$GSL_CFLAGS $CPPFLAGS"
-  fi
-fi
+## if test $gsl == true ; then
+##   found=ko
+##   AM_PATH_GSL(1.10, found=ok, [AC_MSG_ERROR(could not find required version of GSL)])
+##   if test $found == ok ; then
+##     AC_DEFINE([__PLUMED_HAS_GSL])
+##     LIBS="$GSL_LIBS $LIBS"
+##     CPPFLAGS="$GSL_CFLAGS $CPPFLAGS"
+##   fi
+## fi
 
 
 # this can be used to enable openmp:
