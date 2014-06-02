@@ -207,7 +207,7 @@ void CLToolSumHills::registerKeywords( Keywords& keys ){
   keys.add("optional","--max","the upper bounds for the grid");
   keys.add("optional","--bin","the number of bins for the grid");
   keys.add("optional","--spacing","grid spacing, alternative to the number of bins");
-  keys.add("optional","--idw","specify the variables to be integrated (default is all)");
+  keys.add("optional","--idw","specify the variables to be used for the free-energy/histogram (default is all). With --hills the other variables will be integrated out, with --histo the other variables won't be considered");
   keys.add("optional","--outfile","specify the outputfile for sumhills");
   keys.add("optional","--outhisto","specify the outputfile for the histogram");
   keys.add("optional","--kt","specify temperature in energy units for integrating out variables");
