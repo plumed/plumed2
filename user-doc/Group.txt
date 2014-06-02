@@ -1,0 +1,67 @@
+/**
+
+\page Group Groups and Virtual Atoms 
+
+\section atomSpecs Specifying Atoms
+
+The vast majority of the CVs implemented in PLUMED are calculated from a list of atom positions.  Within PLUMED
+atoms are always specified according to their numerical indices in the molecular dynamics input file. 
+
+In PLUMED lists of atoms can be either provided directly inside the definition of each collective variable, or
+predefined as \ref GROUP that can be reused multiple times. Atoms' list can be defined as:
+
+- comma separated list of numbers (GROUP ATOMS=10,11,15,20 LABEL=g1)
+- atoms ranges (i.e. GROUP ATOMS=10-100 LABEL=g2)
+- atoms ranges with a stride (i.e. GROUP ATOMS=10-100:10 LABEL=g3)
+- atoms ranges with a negative stride (i.e. GROUP ATOMS=100-10:-10 LABEL=g4)
+- all the above methods together (i.e. GROUP ATOMS=1,2,10-20,40-60:5,100-70:-2 LABEL=g5).
+
+Note that some collective variable can only accept a fixed number of atoms, for example a \ref DISTANCE is calculated
+using two atoms only.
+
+Notice that most expressions are invariant with respect to a change in the order of the atoms,
+but some of them depend on that order. E.g., with \ref WHOLEMOLECULES it could be useful to
+specify atom lists in a reversed order.
+
+In addition, for certain colvars, pdb files can be read in using the following keywords:
+
+@TOPOLOGY@
+
+The read in pdb files are used by PLUMED to define things like residues, the backbone atoms and so on.  These can then be
+used within the input to colvars to make inputting the lists of atoms involved more straightforward.  Documentation for 
+how these shortcuts can be used can be found in the documentation for the various CVs.
+
+\section vatoms Virtual Atoms
+
+Sometimes, when calculating a colvar, you may not want to use the positions of a number of atoms directly.  Instead
+ you may wish to use the position of a virtual atom whose position is generated based on the positions of a collection 
+of other atoms.  For example you might want to use the center of mass of a group of atoms.  Plumed has a number of routines
+for calculating the positions of these virtual atoms from lists of atoms:
+
+@VATOM@
+
+To specify to a colvar that you want to use the position of a virtual atom to calculate a colvar rather than one of the atoms
+in your system you simply use the label for your virtual atom in place of the usual numerical index.  Virtual
+atoms and normal atoms can be mixed together in the input to colvars as shown below:
+
+\verbatim
+COM ATOMS=1,10 LABEL=com1
+DISTANCE ATOMS=11,com1
+\endverbatim 
+
+If you don't want to calculate CVs from the virtual atom.  That is to say you just want to monitor the position of a virtual atom 
+(or any set of atoms) over the course of your trajectory you can do this using \ref DUMPATOMS.
+
+\section mols Molecules
+
+PLUMED is designed so that for the majority of the CVs implemented the periodic boundary conditions are treated 
+in the same manner as they would be treated in the host code.  In some codes this can be problematic when the colvars
+you are using involve some property of a molecule.  These codes allow the atoms in the molecules to become separated by 
+periodic boundaries, a fact which PLUMED could only deal with were the topology passed from the MD code to PLUMED.  Making this
+work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
+in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
+in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In PLUMED 1 this was done
+using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be acchieved using the \subpage WHOLEMOLECULES command.
+
+*/
+
