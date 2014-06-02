@@ -213,7 +213,7 @@ do
    fi
 done
 
-for file in Bias Colvar Functions Group Installation Intro Analysis Glossary Tutorials Modules Regex
+for file in Bias Syntax Colvar Functions Group Installation Intro Analysis Glossary Tutorials Modules Regex
 do
 
 cat $file.txt |
