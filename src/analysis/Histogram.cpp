@@ -33,7 +33,9 @@ namespace analysis{
 //+PLUMEDOC ANALYSIS HISTOGRAM
 /* 
 Calculate the probability density as a function of a few CVs either using kernel density estimation, or a discrete
-histogram estimation. In case a kernel density estimation is used the probability density is estimated as a
+histogram estimation. 
+
+In case a kernel density estimation is used the probability density is estimated as a
 continuos function on the grid with a BANDWIDTH defined by the user. In this case the normalisation is such that
 the INTEGRAL over the grid is 1. In case a discrete density estimation is used the probabilty density is estimated
 as a discrete function on the grid. In this case the normalisation is such that the SUM of over the grid is 1.
