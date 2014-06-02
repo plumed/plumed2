@@ -18,7 +18,7 @@ follow the development of PLUMED 2, you can checkout the detailed changelog:
 
 A short tutorial explaining how to move from PLUMED 1 to PLUMED 2 is also available (see \ref moving)
 
-To install PLUMED 2, see this page: \subpage Installation
+To install PLUMED 2, see this page: \ref Installation
 
 \section qintro A quick introduction
 
@@ -32,10 +32,10 @@ is provided in this <a href="http://www.youtube.com/watch?v=PxJP16qNCYs"> 10-min
 More information on the input syntax as well as details on the the various trajectory
 analsyis tools that come with PLUMED are given in: 
 
-- \subpage Colvar tells you about the functions of the positions atoms that PLUMED can calculate.
-- \subpage Function tells you about the functions of collective variables that PLUMED can calculate.
-- \subpage Analysis tells you about the various forms of analysis you can run on trajectories using PLUMED.
-- \subpage Bias tells you about the methods that you can use to bias molecular dynamics simulations with PLUMED.
+- \ref Colvar tells you about the functions of the positions atoms that PLUMED can calculate.
+- \ref Function tells you about the functions of collective variables that PLUMED can calculate.
+- \ref Analysis tells you about the various forms of analysis you can run on trajectories using PLUMED.
+- \ref Bias tells you about the methods that you can use to bias molecular dynamics simulations with PLUMED.
 
 PLUMED can be used in one of two ways.  It can be incorporated into any one of the MD codes listed on the
 \ref Installation page and used to analyse or bias a molecular dynamics run on the fly.  Alternatively, one
@@ -103,7 +103,7 @@ By default the PLUMED inputs and outputs quantities in the following units:
 - Time - picoseconds
 
 Unlike PLUMED 1 the units used are independent of the MD engine you are using.  If you want to change these units you can do this using the 
-\subpage UNITS keyword. 
+\ref UNITS keyword. 
 
 Those are the essentials but there are a few other tricks that we didn't know where else to put in the manual so we stuck them here.
 
@@ -151,7 +151,7 @@ DISTANCES ...
 
 \section includes Including other files in the PLUMED input
 
-If, for some reason, you want to spread your PLUMED input over a number of files you can use \subpage INCLUDE as shown below:
+If, for some reason, you want to spread your PLUMED input over a number of files you can use \ref INCLUDE as shown below:
 
 \verbatim
 INCLUDE FILE=filename
@@ -191,7 +191,7 @@ RESTRAINT ARG=dist
 You can introduce new functionality into PLUMED by placing it directly into the src directory and recompiling the 
 PLUMED libraries.  Alternatively, if you want to keep your code independent from the rest of PLUMED (perhaps
 so you can release it independely - we won't be offended), then you can create your own dynamic library.  To use this 
-in conjuction with PLUMED you can then load it at runtime by using the \subpage LOAD keyword as shown below:
+in conjuction with PLUMED you can then load it at runtime by using the \ref LOAD keyword as shown below:
 
 \verbatim
 LOAD FILE=library.so
@@ -202,7 +202,7 @@ automatically adjust the suffix accordingly.
 
 \section degub Debugging the code
 
-The \subpage DEBUG action provides some functionality for debugging the code that may be useful if you are doing 
+The \ref DEBUG action provides some functionality for debugging the code that may be useful if you are doing 
 very intensive development of the code of if you are running on a computer with a strange architecture.
 
 */
