@@ -17,19 +17,64 @@ predefined as \ref GROUP that can be reused multiple times. Atoms' list can be d
 - all the above methods together (i.e. GROUP ATOMS=1,2,10-20,40-60:5,100-70:-2 LABEL=g5).
 
 Note that some collective variable can only accept a fixed number of atoms, for example a \ref DISTANCE is calculated
-using two atoms only.
+using two atoms only, an \ref ANGLE is calcuated using either 3 or 4 atoms and \ref TORSION is calculated using 4 atoms.
+
+\subsection mols Molecules
+
+In addition, for certain colvars, pdb files can be read in using the following keywords and used to select ATOMS:
+
+@TOPOLOGY@
+
+The information on the molecules in your system can either be provided in the form of a pdb file or as a set of lists of 
+atoms that describe the various chains in your system using \ref MOLINFO. If a pdb file is used plumed the MOLINFO command will endeavor to 
+recognize the various chains and residues that make up the molecules in your system using the chainIDs and resnumbers from 
+the pdb file. You can then use this information in later commands to specify atom lists in terms residues. For example using 
+this command you can find the backbone atoms in your structure automatically, or you can select automatically the torsion
+angles of a protein.
+
+The following example shows how to use \ref MOLINFO with \ref TORSION:
+
+\verbatim
+MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
+t1: TORSION ATOMS=@phi-3
+t2: TORSION ATOMS=@psi-4
+PRINT ARG=t1,t2 FILE=colvar STRIDE=10
+\endverbatim
+
+\subsection pbc Broken Molecules and PBC 
+
+PLUMED is designed so that for the majority of the CVs implemented the periodic boundary conditions are treated 
+in the same manner as they would be treated in the host code.  In some codes this can be problematic when the colvars
+you are using involve some property of a molecule.  These codes allow the atoms in the molecules to become separated by 
+periodic boundaries, a fact which PLUMED could only deal with were the topology passed from the MD code to PLUMED.  Making this
+work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
+in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
+in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In PLUMED 1 this was done
+using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be acchieved using the \subpage WHOLEMOLECULES command.
+
+The following input computes the end-to-end distance for a polymer of 100 atoms and keeps it at a value around 5.
+
+\verbatim
+WHOLEMOLECULES ENTITY0=1-100
+e2e: DISTANCE ATOMS=1,100 NOPBC
+RESTRAINT ARG=e2e KAPPA=1 AT=5
+\endverbatim
+
+Notice that NOPBC is used to be sure in \ref DISTANCE that if the end-to-end distance is larger than half the simulation box the distance 
+is compute properly. Also notice that, since many MD codes break molecules across cell boundary, it might be necessary to use the 
+\ref WHOLEMOLECULES keyword (also notice that it should be before distance).
 
 Notice that most expressions are invariant with respect to a change in the order of the atoms,
 but some of them depend on that order. E.g., with \ref WHOLEMOLECULES it could be useful to
 specify atom lists in a reversed order.
 
-In addition, for certain colvars, pdb files can be read in using the following keywords:
+\verbatim
+# to see the effect, one could dump the atoms as they were before molecule reconstruction:
+# DUMPATOMS FILE=dump-broken.xyz ATOMS=1-20
+WHOLEMOLECULES STRIDE=1 ENTITY0=1-20
+DUMPATOMS FILE=dump.xyz ATOMS=1-20
+\endverbatim
 
-@TOPOLOGY@
-
-The read in pdb files are used by PLUMED to define things like residues, the backbone atoms and so on.  These can then be
-used within the input to colvars to make inputting the lists of atoms involved more straightforward.  Documentation for 
-how these shortcuts can be used can be found in the documentation for the various CVs.
 
 \section vatoms Virtual Atoms
 
@@ -52,16 +97,6 @@ DISTANCE ATOMS=11,com1
 If you don't want to calculate CVs from the virtual atom.  That is to say you just want to monitor the position of a virtual atom 
 (or any set of atoms) over the course of your trajectory you can do this using \ref DUMPATOMS.
 
-\section mols Molecules
-
-PLUMED is designed so that for the majority of the CVs implemented the periodic boundary conditions are treated 
-in the same manner as they would be treated in the host code.  In some codes this can be problematic when the colvars
-you are using involve some property of a molecule.  These codes allow the atoms in the molecules to become separated by 
-periodic boundaries, a fact which PLUMED could only deal with were the topology passed from the MD code to PLUMED.  Making this
-work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
-in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
-in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In PLUMED 1 this was done
-using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be acchieved using the \subpage WHOLEMOLECULES command.
 
 */
 
