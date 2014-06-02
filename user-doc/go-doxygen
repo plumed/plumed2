@@ -1,0 +1,7 @@
+#! /bin/bash
+
+{
+  cat Doxyfile
+  echo "PROJECT_NUMBER = \"$(plumed info --version)\""
+  echo "INPUT+=" *PP.txt
+} | doxygen -
