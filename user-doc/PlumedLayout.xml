@@ -2,15 +2,21 @@
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
-    <tab type="user" visible="no" url="mymodules.html" title="Modules"/>
     <tab type="user" visible="yes" url="_installation.html" title="Installation"/>
-    <tab type="user" visible="yes" url="tutorials.html" title="Tutorials"/>
-    <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
-    <tab type="user" visible="yes" url="_colvar.html" title="Collective Variables"/>
-    <tab type="user" visible="yes" url="_function.html" title="Functions"/>
+    <tab type="usergroup" title="Basics">
+      <tab type="user" visible="yes" url="_syntax.html" title="Input File"/>
+      <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
+    </tab>
+    <tab type="usergroup" title="Collective variables">
+      <tab type="user" visible="yes" url="_colvar.html" title="Collective Variables"/>
+      <tab type="user" visible="yes" url="_function.html" title="Functions"/>
+    </tab>
     <tab type="user" visible="yes" url="_analysis.html" title="Analysis"/>
     <tab type="user" visible="yes" url="_bias.html" title="Bias"/>
-    <tab type="user" visible="yes" url="glossary.html" title="Glossary"/>
+    <tab type="user" visible="yes" url="tools.html" title="Tools"/>
+    <tab type="user" visible="yes" url="misc.html" title="Misc"/>
+    <tab type="user" visible="yes" url="tutorials.html" title="Tutorials"/>
+    <tab type="user" visible="yes" url="glossary.html" title="Index"/>
     <tab type="pages" visible="no" title="" intro=""/>
     <tab type="modules" visible="yes" title="" intro=""/>
     <tab type="namespaces" visible="yes" title="">

@@ -40,17 +40,6 @@ analsyis tools that come with PLUMED are given in:
 PLUMED can be used in one of two ways.  It can be incorporated into any one of the MD codes listed on the
 \ref Installation page and used to analyse or bias a molecular dynamics run on the fly.  Alternatively, one
 can use it as a standalone tool for postprocessing the results from molecular dynamics or enhanced sampling calculations.
-To use PLUMED in this second way you will issue a command something like:
-
-\verbatim
-plumed <toolname> <list of input flags for that tool>
-\endverbatim
-
-The following is a list of the various standalone tools that PLUMED contains.
-
-@TOOLS@
-
-For all these tools and to use PLUMED as a plugin in an MD calculation you will need an input file.
 
 
 */
