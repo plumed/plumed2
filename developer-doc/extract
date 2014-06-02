@@ -1,8 +1,5 @@
 #!/bin/bash
 
-sed s:@SRCDIR@:"$(echo ../src/*/ ../src/*/*/)": Doxyfile.in|
-sed s:@MAYBE@:NO: > Doxyfile
-
 cat ../src/*/*cpp |
 awk '
   /PLUMED_REGISTER_ACTION/{print}
