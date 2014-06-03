@@ -317,7 +317,7 @@ fmt("%14.9f")
           for(unsigned i=0;i<getNumberOfArguments();i++) {
             std::string ss = getPntrToArgument(i)->getName(); 
             for(unsigned j=0;j<proj.size();j++) {
-              if(proj[i]==ss) tmphistovalues.push_back( getPntrToArgument(i) );
+              if(proj[j]==ss) tmphistovalues.push_back( getPntrToArgument(i) );
             }
           } 
         }
@@ -414,7 +414,7 @@ fmt("%14.9f")
       for(unsigned i=0;i<getNumberOfArguments();i++) {
         std::string ss = getPntrToArgument(i)->getName(); 
         for(unsigned j=0;j<proj.size();j++) {
-          if(proj[i]==ss) tmphistovalues.push_back( getPntrToArgument(i) );
+          if(proj[j]==ss) tmphistovalues.push_back( getPntrToArgument(i) );
         }
       } 
     }
