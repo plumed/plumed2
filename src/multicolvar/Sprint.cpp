@@ -117,6 +117,8 @@ maxeig( getFullNumberOfBaseTasks() ),
 mymatrix( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() ),
 eigenvecs( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() )
 {
+   // Check on setup
+   if( getNumberOfVessels()!=1 ) error("there should be no vessel keywords");
    // Check for bad colvar input
    for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
       if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );

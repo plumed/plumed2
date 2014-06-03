@@ -35,18 +35,24 @@ private:
   unsigned nrows;
 /// Pointer to underlying action
   AdjacencyMatrixAction* function;
+/// Has the vessel been finished
+  bool finished;
 /// Tempory vector for chain rule
   std::vector<double> tmpdf;
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
+/// Ensures that finish is set properly
+  void prepare();
 /// This does nothing
   std::string description(){ return ""; }
 /// This recomputes the colvar
   void recompute( const unsigned& ivec, const unsigned& jstore );
 /// Get the i,j th element of the matrix
   double getElement( const unsigned& ivec ); 
+/// Set the finished flag true
+  void setFinishedTrue();
 /// Finish the calculation
   void finish();
 };

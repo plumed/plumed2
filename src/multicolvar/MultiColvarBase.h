@@ -123,7 +123,7 @@ public:
 /// Checks if an task is being performed at the present time
   virtual bool isCurrentlyActive( const unsigned& code )=0;
 /// Turn on the derivatives 
-  void turnOnDerivatives();
+  virtual void turnOnDerivatives();
 /// Prepare for the calculation
   void prepare();
 /// Perform one of the tasks

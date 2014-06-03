@@ -91,7 +91,7 @@ public:
 /// Do all resizing of data
   virtual void resize();
 /// Clear certain data before start of main loop
-  void prepare();
+  virtual void prepare();
 /// Get the number of derivatives for the ith value
   unsigned getNumberOfDerivatives( const unsigned& );
 /// Get one of the stored indexes

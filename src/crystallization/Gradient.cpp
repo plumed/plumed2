@@ -80,7 +80,7 @@ nbins(3)
   // Find number of quantities
   if( getPntrToMultiColvar()->isDensity() ) vend=1;
   else if( getPntrToMultiColvar()->getNumberOfQuantities()==5 ) vend=1;
-  else vend= 1 + getPntrToMultiColvar()->getNumberOfQuantities()-5;
+  else vend= 1 + getPntrToMultiColvar()->getNumberOfQuantities()-5; // +1 is for weight 
   nquantities = vend + nbins[0] + nbins[1] + nbins[2];
 
   // Output some nice information
