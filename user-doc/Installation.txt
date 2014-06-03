@@ -20,8 +20,18 @@ existing trajectories or to play with the included Lennard-Jones code.
 Since PLUMED is mostly used to bias on the fly simulations
 performed with serious molecular dynamics packages, 
 below you can find instructions about how to
-\link Patching link PLUMED \endlink
-to your favorite MD code.
+\link Patching patch \endlink
+your favorite MD code so that it can be combined with PLUMED.
+Again, for the impatients, something like this could do the job:
+\verbatim
+> source /plumed/root/dir/sourceme.sh
+> cd /md/root/dir
+> plumed patch -p
+\endverbatim
+Then compile your MD code.
+For some MD software these instructions are not sufficient,
+and you are invited to read well the instructions
+at the end of this page.
 Notice that MD codes could in principle be "PLUMED ready"
 in their official distribution. In this case, probably
 you have to compile PLUMED first as a library then check their manual to
@@ -257,7 +267,7 @@ You can force plumed to run anyway using the option --standalone-executable:
 Anyway, many features will not be available in this way.
 This is currently the only way to use a PLUMED static executable on Windows.
 
-\section Installing Installing PLUMED
+\section InstallingPlumed Installing PLUMED
 
 It might be convenient to install PLUMED in a predefined location.
 This will allow you to remove the original compilation directory,
