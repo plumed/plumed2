@@ -34,6 +34,9 @@ Calculates the replica averaging of a collective variable over multiple replicas
 
 Each collective variable is averaged separately and stored in a component labelled <em>label</em>.cvlabel.  
 
+Note that in case of variables such as \ref CS2BACKBONE, \ref CH3SHIFTS, \ref NOE and \ref RDC it is possible
+to perform the replica-averaging inside the variable, in fact in those cases are the single experimental
+values that averaged before calculating the collective variable.
 
 \par Examples
 The following input tells plumed to calculate the distance between atoms 3 and 5
