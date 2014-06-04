@@ -1,19 +1,26 @@
 #! /bin/bash
 
-if ! plumed ; then
-  echo "plumed executable not found, I try to source ../sourceme.sh"
-  source ../sourceme.sh
-  if ! plumed ; then
-    echo "Compile plumed first!"
+# Making sure that plumed executable is available
+echo -n "Searching for plumed ..."
+if plumed 2>/dev/null 1>/dev/null ; then
+  echo " found"
+else
+  echo " not found"
+  echo -n "Sourcing sourceme.sh and searching again ..."
+  if source ../sourceme.sh && plumed 2>/dev/null 1>/dev/null ; then
+    echo " found"
+  else
+    echo "ERROR: you should compile plumed first!"
     exit 1
   fi
 fi
 
+# initial cleanup
+rm -f errors
 rm -rf automatic
 mkdir automatic
 
 # Check for files that register actions with no documentation
-rm errors
 for file in ../src/*/*.cpp
 do
   nreg=`grep "PLUMED_REGISTER_ACTION" $file | wc -l | awk '{print $1}'`
@@ -37,18 +44,9 @@ do
    echo "*/" >> automatic/$myengine.txt 
 done
 
-## Check for utilities that register actions with no documentation
-#for file in ../utilities/*.cpp
-#do
-#  ndoc=`grep PLUMEDOC $file | grep TOOL | wc -l | awk '{print $1}'`
-#  if [ $ndoc -eq 0 ] ; then
-#     echo The following utility has been provided without documentation: $file >> errors
-#  fi
-#done
-
 # Generate all the documentation pages from comments
 cat ../*/*/*cpp |
-awk 'BEGIN{gfile="automatic/GLOSSARY1.list"; dfile="automatic/DICTIONARY1.list"; }{
+awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }{
   if($1=="//+ENDPLUMEDOC"){
      inside=0;
      print "*/" >output
@@ -96,8 +94,11 @@ awk 'BEGIN{gfile="automatic/GLOSSARY1.list"; dfile="automatic/DICTIONARY1.list";
 }'
 
 # Now put the glossary in alphabetical order
-sort automatic/GLOSSARY1.list > automatic/GLOSSARY.list 
-sort automatic/DICTIONARY1.list > automatic/DICTIONARY.list
+sort automatic/GLOSSARY.list > automatic/GLOSSARY1.list 
+mv automatic/GLOSSARY1.list automatic/GLOSSARY.list
+
+sort automatic/DICTIONARY.list > automatic/DICTIONARY1.list
+mv automatic/DICTIONARY1.list automatic/DICTIONARY.list
 
 # Generate links to tutorial pages
 for file in ./tutorials/*.txt ; do
@@ -151,156 +152,82 @@ do
 #        echo >> automatic/mymodules.list
         
         # Find src files in module and add a link to the module description
-        for srcfile in `ls ../src/"$file"/*cpp` ; do
-            ndocs=`grep PLUMEDOC "$srcfile" | grep -v END | wc -l | awk '{print $1}'`
-            for ((line=1;line<=$ndocs;++line)) ; do
-               docfile=`grep PLUMEDOC "$srcfile" | grep -v END | head -n $line | tail -n 1 | awk '{print $3}'`
-               cat automatic/"$docfile".tmp |
-               {
-                   while read -r LINE ; do
-                      if `echo $LINE | grep "\\page $docfile" 1>/dev/null 2>&1`
-                      then  
-                        echo $LINE
-                        echo "<table  align=center frame=void width=95%% celpadding=5%%>"
-                        echo "<tr> <td width=70%%> </td> <td>"
-                        echo "<b> This is part of the $file \\ref mymodules </b>"
-                        echo "</td> </tr> </table>"
-                      else 
-                        echo "$LINE"
-                      fi
-                   done
-               } > automatic/"$docfile"1.tmp
-               mv automatic/"$docfile"1.tmp automatic/"$docfile".tmp
-            done
-        done   
+        docfiles=$(cat ../src/"$file"/*cpp | grep PLUMEDOC | grep -v END | awk '{print $3;}')
+        for docfile in $docfiles ; do
+          cat automatic/"$docfile".tmp |
+          awk '{ print }
+          /\\page '$docfile'/{
+            print "<table  align=center frame=void width=95%% celpadding=5%%>"
+            print "<tr> <td width=70%%> </td> <td>"
+            print "<b> This is part of the '$file' \\ref mymodules </b>"
+            print "</td> </tr> </table>"
+          }' > automatic/"$docfile"1.tmp
+          mv automatic/"$docfile"1.tmp automatic/"$docfile".tmp
+        done
    fi 
 done
 echo "</table>" >> automatic/modules.list
 # fi
 
 # Generate all the documentation from keywords
-source ../sourceme.sh
 for file in automatic/*.tmp
 do
-  foundinternal=`grep '//+PLUMEDOC INTERNAL' $file | wc -l | awk '{print $1}'`
-  flag=`echo $file | sed -e 's/.tmp//g' | sed -e 's/automatic\///g'`
-  if [ $foundinternal -eq 0 ] ; then
-     foundexample=`grep "\par Examples" $file | wc -l | awk '{print $1}'`
-     ../src/lib/plumed manual --action=$flag > automatic/$flag.man 2> shit
-     rm shit 
-     check=`wc -l automatic/$flag.man | awk '{print $1}'`
-     if [ $check -eq 0 ] ; then 
+  flag=${file#automatic/}
+  flag=${flag/.tmp}
+  if grep -q '//+PLUMEDOC INTERNAL' $file 1>/dev/null 2>/dev/null ; then
+       cp $file automatic/$flag.txt
+  else
+     if ! plumed manual --action=$flag > automatic/$flag.man 2> /dev/null ; then 
         echo Full manual for action $flag will not be generated as you are building the manual from a code where this action was not compiled >> errors
-     elif [ $foundexample -eq 0 ] 
+     elif ! grep -q "\par Examples" $file 1>/dev/null 2>/dev/null
      then
        echo There are no examples inside documentation for action: $flag >> errors
      fi
-     cat automatic/$flag.tmp |
        { 
-        while read -r LINE ;
-         do
-           if [ "$LINE" = "\par Examples" ]
-           then
-             cat automatic/$flag.man 
-             echo -E "$LINE"
-           else
-             echo -E "$LINE"
-           fi
-         done
+        awk '/\\par Examples/{xx=1}{if(xx==0) printf("%s\n",$0)}' automatic/$flag.tmp
+        cat automatic/$flag.man
+        awk '/\\par Examples/{xx=1}{if(xx==1) printf("%s\n",$0)}' automatic/$flag.tmp
        } > automatic/$flag.txt
-   else 
-       cp $file automatic/$flag.txt
    fi
 done
+
+for file in COLVAR MCOLVAR DCOLVAR MCOLVARF ANALYSIS BIAS GLOSSARY \
+            DICTIONARY TUTORIALS WEBSITES FUNCTION TOPOLOGY VATOM \
+            TOOLS
+do
+  mv automatic/$file.list automatic/$file.1.list
+  {
+    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
+    cat automatic/$file.1.list
+    echo "</table>"
+  } > automatic/$file.list
+  rm automatic/$file.1.list
+done
+
 
 for file in Bias Syntax Colvar Functions Group Installation Intro Analysis Glossary Tutorials Modules Regex  Misc Tools
 do
 
+# first replace with the content of the files
+# then grep out the special strings
+
 cat $file.txt |
-{
- while read -r LINE ;
-  do
-  if [ "$LINE" = "@COLVAR@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/COLVAR.list
-    echo "</table>"
-  elif [ "$LINE" = "@MCOLVAR@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/MCOLVAR.list
-    echo "</table>"
-  elif [ "$LINE" = "@DCOLVAR@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/DCOLVAR.list
-    echo "</table>"
-  elif [ "$LINE" = "@MCOLVARF@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/MCOLVARF.list
-    echo "</table>"
-  elif [ "$LINE" = "@ANALYSIS@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/ANALYSIS.list
-    echo "</table>"
-  elif [ "$LINE" = "@BIAS@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/BIAS.list
-    echo "</table>"
-  elif [ "$LINE" = "@GLOSSARY@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/GLOSSARY.list
-    echo "</table>"
-  elif [ "$LINE" = "@DICTIONARY@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/DICTIONARY.list
-    echo "</table>"
-  elif [ "$LINE" = "@TUTORIALS@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/TUTORIALS.list
-    echo "</table>"
-  elif [ "$LINE" = "@WEBSITES@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/WEBSITES.list
-    echo "</table>"
-  elif [ "$LINE" = "@MODULES@" ]
-  then
-    cat automatic/modules.list
-  elif [ "$LINE" = "@FUNCTION@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/FUNCTION.list
-    echo "</table>"
-  elif [ "$LINE" = "@TOPOLOGY@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/TOPOLOGY.list
-    echo "</table>"
-  elif [ "$LINE" = "@VATOM@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/VATOM.list
-    echo "</table>"
-  elif [ "$LINE" = "@TOOLS@" ]
-  then
-    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/TOOLS.list
-    echo "</table>" 
-  elif [ "$LINE" = "@CODES@" ]
-  then
-#    echo "<table align=center frame=void width=95%% cellpadding=5%%>"
-    cat automatic/codes.list
-#    echo "</table>"
-  else
-    echo -E "$LINE"
-  fi
-   done
-} > ${file}PP.txt
+  sed "
+    /^ *@COLVAR@ *$/r     automatic/COLVAR.list
+    /^ *@MCOLVAR@ *$/r    automatic/MCOLVAR.list
+    /^ *@DCOLVAR@ *$/r    automatic/DCOLVAR.list
+    /^ *@MCOLVARF@ *$/r   automatic/MCOLVARF.list
+    /^ *@ANALYSIS@ *$/r   automatic/ANALYSIS.list
+    /^ *@BIAS@ *$/r       automatic/BIAS.list
+    /^ *@GLOSSARY@ *$/r   automatic/GLOSSARY.list
+    /^ *@DICTIONARY@ *$/r automatic/DICTIONARY.list
+    /^ *@TUTORIALS@ *$/r  automatic/TUTORIALS.list
+    /^ *@WEBSITES@ *$/r   automatic/WEBSITES.list
+    /^ *@FUNCTION@ *$/r   automatic/FUNCTION.list
+    /^ *@TOPOLOGY@ *$/r   automatic/TOPOLOGY.list
+    /^ *@VATOM@ *$/r      automatic/VATOM.list
+    /^ *@TOOLS@ *$/r      automatic/TOOLS.list
+    /^ *@MODULES@ *$/r    automatic/modules.list
+    /^ *@CODES@ *$/r      automatic/codes.list
+" | grep -Ev '^ *"@[A-Z]*@" *$' > ${file}PP.txt
 done
