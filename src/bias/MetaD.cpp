@@ -128,6 +128,12 @@ for replica exchange methods to be computed correctly.
 
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
+Additional material and examples can be also found in the tutorials: 
+
+- \ref belfast-6
+- \ref belfast-7
+- \ref belfast-8
+
 \par Examples
 The following input is for a standard metadynamics calculation using as
 collective variables the distance between atoms 3 and 5

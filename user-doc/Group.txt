@@ -19,6 +19,8 @@ predefined as \ref GROUP that can be reused multiple times. Atoms' list can be d
 Note that some collective variable can only accept a fixed number of atoms, for example a \ref DISTANCE is calculated
 using two atoms only, an \ref ANGLE is calcuated using either 3 or 4 atoms and \ref TORSION is calculated using 4 atoms.
 
+Additional material and examples can be also found in the tutorial \ref belfast-1. 
+
 \subsection mols Molecules
 
 In addition, for certain colvars, pdb files can be read in using the following keywords and used to select ATOMS:

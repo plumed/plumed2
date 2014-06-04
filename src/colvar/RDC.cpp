@@ -84,6 +84,8 @@ a set of function from the GNU Scientific Library (GSL). (With SVD forces are no
 
 Replica-Averaged restrained simulations can be performed with this CV using the ENSEMBLE flag.
 
+Additional material and examples can be also found in the tutorial \ref belfast-9
+
 \par Examples
 In the following example five N-H RDCs are defined and their correlation with
 respect to a set of experimental data is calculated.  

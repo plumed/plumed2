@@ -94,6 +94,8 @@ both these files can be copied from almost/branches/almost-2.1/toppar.
 
 All the above files must be in a single folder that must be specified with the keyword DATA. 
 
+Additional material and examples can be also found in the tutorial \ref belfast-9 
+
 \par Examples
 
 case 1:

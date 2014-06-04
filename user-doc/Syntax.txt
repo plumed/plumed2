@@ -8,6 +8,8 @@ one or more collective variables, perhaps calculating a function of these CVs
 some free energy method. A very brief introduction to the syntax used in the PLUMED input file
 is provided in this <a href="http://www.youtube.com/watch?v=PxJP16qNCYs"> 10-minute video </a>.
 
+Additional material and examples can be also found in the tutorial \ref belfast-1. 
+
 Within this input file every line is an instruction for PLUMED to perform some particular action.  This could be
  the calculation of a colvar, an occasional analysis of the trajectory or a biassing of the dynamics.  The first
 word in these lines specify what particular action is to be performed.  This is then followed by a number of keywords
