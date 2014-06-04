@@ -229,5 +229,5 @@ cat $file.txt |
     /^ *@TOOLS@ *$/r      automatic/TOOLS.list
     /^ *@MODULES@ *$/r    automatic/modules.list
     /^ *@CODES@ *$/r      automatic/codes.list
-" | grep -Ev '^ *"@[A-Z]*@" *$' > ${file}PP.txt
+" | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.txt
 done
