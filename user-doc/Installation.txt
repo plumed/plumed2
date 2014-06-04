@@ -378,5 +378,29 @@ it. Refer to the <a href="../../developer-doc/html/index.html"> developer
 manual </a>.
 
 
+\section installingalmost Installing PLUMED with ALMOST
+
+In order to used some of the NMR based collective variables (\ref CS2BACKBONE and \ref CH3SHIFTS) PLUMED needs to be linked with ALMOST.
+
+The free package ALMOST v.2.1 that MUST be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
+ALMOST 2.1 can be found in branches/almost-2.1/ and it can be compiled:
+
+\warning ALMOST needs SQLITE3, GZIP and BZIP2 installed on your computer.
+
+\verbatim
+./configure --prefix="wherever you want it" 
+make
+make install
+\endverbatim
+
+PLUMED will not use the RDCs module of ALMOST so you can ignore the warning about the LAPACK.
+
+Once ALMOST is installeed, PLUMED 2 can then be configured with ALMOST enabled: 
+
+\verbatim
+./configure --enable-almost CPPFLAGS="-I/ALMOST_INSTALL_PATH/include -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib"
+\endverbatim
+with ALMOST_INSTALL_PATH the full path to the ALMOST installation folder.
+ 
 */
 

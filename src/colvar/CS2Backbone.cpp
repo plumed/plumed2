@@ -44,30 +44,15 @@ experimental backbone chemical shifts for a protein (CA, CB, C', H, HA, N).
 CamShift \cite Kohlhoff:2009us is employed to back calculate the chemical shifts that are then compared
 with a set of experimental values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
 
-It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
+It is also possible to back-calculate the chemical shifts from multiple replicas and then average them
 to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
+
+In general the system for which chemical shifts are to be calculated must be completly included in
+ATOMS. It should also be made whole \ref WHOLEMOLECULES before the the back-calculation. 
 
 HOW TO COMPILE IT
 
-In general the system for which chemical shifts are to be calculated must be completly included in
-ATOMS. It should also be made WHOLE before the the backcalculation. CamShift is included in the
-free package ALMOST v.2.1 that can be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
-ALMOST 2.1 can be found in branches/almost-2.1/ and it can be compiled:
-
-\verbatim
-./configure 
-make
-\endverbatim
-
-Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
-
-PLUMED 2 must then be configured with ALMOST enabled: 
-
-\verbatim
-./configure --enable-almost CPPFLAGS="-I/ALMOST_BASE_PATH/branches/almost-2.1/include -I/ALMOST_BASE_PATH/branches/almost-2.1/include/almost -I/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1" LDFLAGS="-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm -L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 -L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl -L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx"
-
-with ALMOST_BASE_PATH the full path to the ALMOST folder
-\endverbatim
+\ref installingalmost on how to compile PLUMED with ALMOST.
 
 HOW TO USE IT
 
