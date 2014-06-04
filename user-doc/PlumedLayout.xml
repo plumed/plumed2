@@ -16,6 +16,7 @@
     <tab type="user" visible="yes" url="tools.html" title="Tools"/>
     <tab type="user" visible="yes" url="misc.html" title="Misc"/>
     <tab type="user" visible="yes" url="tutorials.html" title="Tutorials"/>
+    <tab type="user" visible="yes" url="citelist.html" title="Bibliography"/>
     <tab type="user" visible="yes" url="glossary.html" title="Index"/>
     <tab type="pages" visible="no" title="" intro=""/>
     <tab type="modules" visible="yes" title="" intro=""/>
