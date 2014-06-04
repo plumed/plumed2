@@ -28,11 +28,16 @@ In addition, for certain colvars, pdb files can be read in using the following k
 The information on the molecules in your system can either be provided in the form of a pdb file or as a set of lists of 
 atoms that describe the various chains in your system using \ref MOLINFO. If a pdb file is used plumed the MOLINFO command will endeavor to 
 recognize the various chains and residues that make up the molecules in your system using the chainIDs and resnumbers from 
-the pdb file. You can then use this information in later commands to specify atom lists in terms residues. For example using 
-this command you can find the backbone atoms in your structure automatically, or you can select automatically the torsion
-angles of a protein.
+the pdb file. You can then use this information in later commands to specify atom lists in terms residues (only in collective variables
+where this has been implemented). For example using this command you can find the backbone atoms in your structure automatically (i.e. 
+\ref ALPHARMSD, \ref ANTIBETARMSD and \ref PARABETARMSD).
+Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special symbol. Current registered keywords for
+protein molecules are: \@phi-#, \@psi-#, \@omega-# and \@chi1-#; these keyword can be used everywhere ATOMS are requested in input, but are useful
+in particular with Collective Variables based on torsion angles (i.e. \ref TORSION, \ref ALPHABETA, \ref DIHCOR). 
+In the future more shortcut will be added for proteins and nucleic acid.
 
-The following example shows how to use \ref MOLINFO with \ref TORSION :
+The following example shows how to use \ref MOLINFO with \ref TORSION to calculate the torsion angles phi and psi for the first and fourth residue
+of the protein, respectively.:
 
 \verbatim
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb

@@ -8,15 +8,6 @@ one or more collective variables, perhaps calculating a function of these CVs
 some free energy method. A very brief introduction to the syntax used in the PLUMED input file
 is provided in this <a href="http://www.youtube.com/watch?v=PxJP16qNCYs"> 10-minute video </a>.
 
-More information on the input syntax as well as details on the the various trajectory
-analsyis tools that come with PLUMED are given in: 
-
-- \ref Colvar tells you about the functions of the positions atoms that PLUMED can calculate.
-- \ref Function tells you about the functions of collective variables that PLUMED can calculate.
-- \ref Analysis tells you about the various forms of analysis you can run on trajectories using PLUMED.
-- \ref Bias tells you about the methods that you can use to bias molecular dynamics simulations with PLUMED.
-
-
 Within this input file every line is an instruction for PLUMED to perform some particular action.  This could be
  the calculation of a colvar, an occasional analysis of the trajectory or a biassing of the dynamics.  The first
 word in these lines specify what particular action is to be performed.  This is then followed by a number of keywords
