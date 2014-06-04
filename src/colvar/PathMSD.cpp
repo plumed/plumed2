@@ -51,6 +51,8 @@ note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (option
 recommended for performance) and states that the neighbor list will be calculated every 4
 timesteps and consider only the closest 8 member to the actual md snapshots.
 
+In the REFERENCE PDB file the frames must be separated either using END or ENDMDL.
+
 \note
 The implementation of this collective variable and of \ref PROPERTYMAP
 is shared, as well as most input options.
