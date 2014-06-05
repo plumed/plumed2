@@ -338,13 +338,10 @@ CS2Backbone::~CS2Backbone()
 
 void CS2Backbone::calculate()
 {
-  double energy=0.;
-  Tensor virial;
-  unsigned N = getNumberOfAtoms();
-
   for(unsigned i=0;i<numResidues;i++) for(unsigned j=0;j<6;j++) sh[i][j]=0.;
   if(getExchangeStep()) cam_list[0].set_box_count(0);
 
+  unsigned N = getNumberOfAtoms();
   for (unsigned i=0;i<N;i++) {
      unsigned ipos = 4*i;
      Vector Pos = getPosition(i);
@@ -383,15 +380,17 @@ void CS2Backbone::calculate()
   }
 
   csforces.clear();
+  double energy;
   energy = cam_list[0].ens_energy_force(coor, csforces, sh);
   if(!serial) comm.Sum(&csforces[0][0], N*4);
 
+  Tensor virial;
   virial.zero();
+  double ff=fact*for_pl2alm;
+  Vector For;
   for(unsigned i=0;i<N;i++)
   {
     unsigned ipos=4*i;
-    double ff=fact*for_pl2alm;
-    Vector For;
     For[0] = ff*csforces.coor[ipos];
     For[1] = ff*csforces.coor[ipos+1];
     For[2] = ff*csforces.coor[ipos+2];
