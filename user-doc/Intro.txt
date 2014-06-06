@@ -4,9 +4,10 @@
 \warning This is the manual for the development version of PLUMED. It might
 contain buggy code. See this page: \ref CHANGES-UNRELEASED
 
-PLUMED \cite plumed1 is a plugin that works with a large number of molecular dynamics codes.  It can be used
+PLUMED is a plugin that works with a large number of molecular dynamics codes.  It can be used
 to analyse features of the dynamics on-the-fly or to perform a wide variety of free energy methods.
-The original PLUMED 1 was highly successful and had over 1000 users.  PLUMED 2 \cite plumed2 constitues an 
+The original PLUMED 1 \cite plumed1
+was highly successful and had over 1000 users.  PLUMED 2 \cite plumed2 constitues an 
 extensive rewrite of the original in a way that makes it more modular and thus easier to implement 
 new methods, more straightforward to add it to MD codes and hopefully simpler to use.  
 This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
