@@ -62,7 +62,7 @@ nframes(0)
     bool do_read=true;
     while (do_read){
          PDB mypdb; 
-         RMSD mymsd(log); 
+         RMSD mymsd; 
          do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
          if(do_read){
             unsigned nat=0;
