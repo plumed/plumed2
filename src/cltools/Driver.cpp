@@ -138,7 +138,7 @@ public:
 
 template<typename real>
 void Driver<real>::registerKeywords( Keywords& keys ){
-  CLTool::registerKeywords( keys );
+  CLTool::registerKeywords( keys ); keys.isDriver();
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");

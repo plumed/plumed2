@@ -129,6 +129,7 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
      } else {
         fd = d;
      }
+     if( t=="atoms" && isaction ) fd = d + ".  For more information on how to specify lists of atoms see \\ref Group";
      allowmultiple.insert( std::pair<std::string,bool>(k,false) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
      if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,t) );
@@ -177,6 +178,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
      if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,t) );
   }
+  if( t=="atoms" && isaction ) fd = d + ".  For more information on how to specify lists of atoms see \\ref Group";
   documentation.insert( std::pair<std::string,std::string>(k,fd) );
   keys.push_back(k);  
 }
@@ -291,7 +293,7 @@ void Keywords::print_template(const std::string& actionname, bool include_option
   printf("\n");
 }
 
-void Keywords::print_html( const bool isaction ) const {
+void Keywords::print_html() const {
 
 // This is the part that outputs the details of the components
   if( cnames.size()>0 ){

@@ -56,6 +56,8 @@ class Keywords{
   };
 friend class Action;
 private:
+/// Is this an action or driver (this bool affects what style==atoms does in print)
+  bool isaction;
 /// The names of the allowed keywords
   std::vector<std::string> keys;
 /// The names of the reserved keywords
@@ -87,6 +89,10 @@ private:
 /// Print a particular keyword (copy of the above that works with files)
   void printKeyword( const std::string& j, FILE* out ) const ;
 public:
+/// Constructor
+  Keywords() : isaction(true) {}
+///
+  void isDriver(){ isaction=false; }
 /// find out whether flag key is on or off by default.
   bool getLogicalDefault( std::string key, bool& def ) const ;
 /// Get the value of the default for the keyword named key
@@ -124,7 +130,7 @@ public:
 /// Check if the keyword with name k has style t
   bool style( const std::string & k, const std::string & t ) const ;
 /// Print an html version of the documentation
-  void print_html( const bool isaction ) const ;
+  void print_html() const ;
 /// Print the template version for the documenation
   void print_template( const std::string& actionname, bool include_optional) const ;
 /// Change the style of a keyword

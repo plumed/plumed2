@@ -3,11 +3,17 @@
   <navindex>
     <tab type="mainpage" visible="yes" title=""/>
     <tab type="user" visible="yes" url="_installation.html" title="Installation"/>
+    <!-- 
+    <tab type="usergroup" title="Installation">
+      <tab type="user" visible="yes" url="_installation.html" title="Installation"/>
+      <tab type="user" visible="yes" url="_configuring_plumed.html" title="Configuration"/>
+    </tab>
+    --> 
     <tab type="usergroup" title="Basics">
       <tab type="user" visible="yes" url="_syntax.html" title="Input File"/>
-      <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
     </tab>
     <tab type="usergroup" title="Collective variables">
+      <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
       <tab type="user" visible="yes" url="_colvar.html" title="Collective Variables"/>
       <tab type="user" visible="yes" url="_function.html" title="Functions"/>
     </tab>

@@ -5,10 +5,10 @@
 Chemical systems contain an enormous number atoms, which, in most cases makes it simply impossible for
 us to understand anything by monitoring the atom postions directly.  Consquentially,
 we introduce Collective variables (CVs) that describe the chemical processes we are 
-interested in and monitor these simpler quantities instead.  These CVs are used in all of the methods 
-implemented in PLUMED - they're values can be monitored using \ref PRINT, \ref Function of them can be calculated
+interested in and monitor these simpler quantities instead.  These CVs are used in many of the methods 
+implemented in PLUMED - there values can be monitored using \ref PRINT, \ref Function of them can be calculated
 or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in PLUMED.  
-Before doing any of these things however we first have to inform PLUMED how to calculate them.    
+Before doing any of these things however we first have to tell PLUMED how to calculate them.    
  
 \section cvavail CV Documentation
 
@@ -85,8 +85,12 @@ accuracy with which you are computing the quantity of interest.
 Once you have specified the base quanties that are to be calculated from the atoms involved and any parameters
 you need to specify what function of these base quanties is to be calculated.  For most multicolvars you can calculate 
 the minimum, the number less than a target value, the number within a certain range, the number more than a target
-value and the average value directly.  In addition, the following more complex functions of the distribution of values 
-can be computed: 
+value and the average value directly.  
+
+\section multicolvarfunction MultiColvar functions
+
+As well as the relatively simple quantities described above more complex functions of the distribution of values for the  
+base colvars can be computed by employing multicolvars in conjuction with the following actions: 
 
 @MCOLVARF@ 
 

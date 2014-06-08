@@ -12,8 +12,8 @@ new methods, more straightforward to add it to MD codes and hopefully simpler to
 This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
 <a href="../../developer-doc/html/index.html"> developer manual </a>.
 
-To know the difference between PLUMED 1 and PLUMED 2, and to
-follow the development of PLUMED 2, you can checkout the detailed changelog:
+To understand the difference between PLUMED 1 and PLUMED 2, and to
+follow the development of PLUMED 2, you can look at the detailed changelog:
 - Changes for \ref CHANGES-2-0
 
 A short tutorial explaining how to move from PLUMED 1 to PLUMED 2 is also available (see \ref moving)

@@ -2,13 +2,12 @@
 
 \page Bias Bias
 
-Once you have calculated a number of collective variables PLUMED allows you to
-run a number of enhanced sampling algorithms.
-The list of available enhanced sampling algorithms contains: 
+PLUMED allows you to run a number of enhanced sampling algorithms.
+The list of enhanced sampling algorithms contained in PLUMED is as follows: 
 
 @BIAS@
 
-Methods, such as \ref METAD, that introduce a history dependent bias can be restarted 
+Methods, such as \ref METAD, that work by introducing a history dependent bias can be restarted 
 using the \subpage RESTART keyword
 
 You can also use PLUMED in conjunction with VMD's interactive MD module by taking

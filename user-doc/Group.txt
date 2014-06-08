@@ -5,18 +5,18 @@
 \section atomSpecs Specifying Atoms
 
 The vast majority of the CVs implemented in PLUMED are calculated from a list of atom positions.  Within PLUMED
-atoms are always specified according to their numerical indices in the molecular dynamics input file. 
+atoms are specified using their numerical indices in the molecular dynamics input file. 
 
 In PLUMED lists of atoms can be either provided directly inside the definition of each collective variable, or
-predefined as \ref GROUP that can be reused multiple times. Atoms' list can be defined as:
+predefined as a \ref GROUP that can be reused multiple times. Lists of atoms can be written as:
 
-- comma separated list of numbers (GROUP ATOMS=10,11,15,20 LABEL=g1)
-- atoms ranges (i.e. GROUP ATOMS=10-100 LABEL=g2)
-- atoms ranges with a stride (i.e. GROUP ATOMS=10-100:10 LABEL=g3)
-- atoms ranges with a negative stride (i.e. GROUP ATOMS=100-10:-10 LABEL=g4)
-- all the above methods together (i.e. GROUP ATOMS=1,2,10-20,40-60:5,100-70:-2 LABEL=g5).
+- comma separated lists of numbers (GROUP ATOMS=10,11,15,20 LABEL=g1)
+- numerical ranges.  So GROUP ATOMS=10-20 LABEL=g2 is equivalent to GROUP ATOMS=10,11,12,13,14,15,16,17,18,19,20 LABEL=g2
+- numerical ranges with a stride. So GROUP ATOMS=10-100:10 LABEL=g3 is equivalent to GROUP ATOMS=10,20,30,40,50,60,70,80,90,100 LABEL=g3
+- atoms ranges with a negative stride. So GROUP ATOMS=100-10:-10 LABEL=g4 is equivalent to GROUP ATOMS=100,90,80,70,60,50,40,30,20,10 LABEL=g4
+- all the above methods together. For example  GROUP ATOMS=1,2,10-20,40-60:5,100-70:-2 LABEL=g5.
 
-Note that some collective variable can only accept a fixed number of atoms, for example a \ref DISTANCE is calculated
+Some collective variable must accept a fixed number of atoms, for example a \ref DISTANCE is calculated
 using two atoms only, an \ref ANGLE is calcuated using either 3 or 4 atoms and \ref TORSION is calculated using 4 atoms.
 
 Additional material and examples can be also found in the tutorial \ref belfast-1. 
@@ -30,16 +30,31 @@ In addition, for certain colvars, pdb files can be read in using the following k
 The information on the molecules in your system can either be provided in the form of a pdb file or as a set of lists of 
 atoms that describe the various chains in your system using \ref MOLINFO. If a pdb file is used plumed the MOLINFO command will endeavor to 
 recognize the various chains and residues that make up the molecules in your system using the chainIDs and resnumbers from 
-the pdb file. You can then use this information in later commands to specify atom lists in terms residues (only in collective variables
-where this has been implemented). For example using this command you can find the backbone atoms in your structure automatically (i.e. 
-\ref ALPHARMSD, \ref ANTIBETARMSD and \ref PARABETARMSD).
-Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special symbol. Current registered keywords for
-protein molecules are: \@phi-#, \@psi-#, \@omega-# and \@chi1-#; these keyword can be used everywhere ATOMS are requested in input, but are useful
-in particular with Collective Variables based on torsion angles (i.e. \ref TORSION, \ref ALPHABETA, \ref DIHCOR). 
-In the future more shortcut will be added for proteins and nucleic acid.
+the pdb file. You can then use this information in commands where this has been implemented to specify atom lists. One place where this is 
+particularly useful is when using the commands \ref ALPHARMSD, \ref ANTIBETARMSD and \ref PARABETARMSD.
+
+MOLINFO also introduces special groups that can be used in atom selection. These special groups always begin with a \@ symbol.  The 
+following special groups are currently available in PLUMED:
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr> <td width=10%> <b> Symbol </b> </td> <td> <b> Topology type </b> </td> <td> <b> Despription </b> </td> </tr>
+<tr> <td> \@phi-# </td> <td> protein </td> <td> 
+The torsional angle defined by the C, CA, N and C atoms of the protein backbone in the #th residue. See http://en.wikipedia.org/wiki/Ramachandran_plot
+</td> </tr>
+<tr> <td> \@psi-# </td> <td> protein </td> <td>
+The torsional angle defined by the N, C, CA and N atoms of the protein backbone in the #th residue. See http://en.wikipedia.org/wiki/Ramachandran_plot
+</td> </tr>
+<tr> <td> \@omega-# </td> <td> protein </td> <td>
+The torsional angle defined by the CA, N, C and CA atoms of the protein backbone in the #th residue. See http://en.wikipedia.org/wiki/Ramachandran_plot
+</td> </tr>
+<tr> <td> \@chi1-# </td> <td> protein </td> <td>
+The first torsional angle of the sidechain of the #th residue.  Be aware that this angle is not defined for GLY or ALA residues.  
+See http://en.wikipedia.org/wiki/Ramachandran_plot
+</td> </tr>
+</table>
 
 The following example shows how to use \ref MOLINFO with \ref TORSION to calculate the torsion angles phi and psi for the first and fourth residue
-of the protein, respectively.:
+of the protein:
 
 \verbatim
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
