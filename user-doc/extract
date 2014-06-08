@@ -60,7 +60,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
   if(inside==1 && $1!="/*" && $1!="*/") print $0 >output
   if(inside>=2 && $1!="/*" && $1!="*/" ){
      print $0 > output
-     print $0 > lfile
+     printf "%s", $0 > lfile
      if(inside==2){ printf "%s", $0 > gfile; }
      if(inside==3){ printf "%s", $0 > dfile; }
   }
@@ -68,7 +68,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
     if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MCOLVARF" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
       lfile="automatic/"$2".list"
       
-      print "<tr> <td width=5%> \\subpage ", $3,"</td> <td>" > lfile
+      printf "<tr> <td width=5%> \\subpage %s </td> <td>", $3 > lfile
 #       printf "<tr> <td width=5%> \\ref %s </td><td> %s </td><td>",$3, $2 > gfile
       printf "<tr> <td width=%s> \\ref %s </td><td> %s </td><td>","5%",$3, $2 > gfile
 
@@ -93,12 +93,13 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
   }
 }'
 
-# Now put the glossary in alphabetical order
-sort automatic/GLOSSARY.list > automatic/GLOSSARY1.list 
-mv automatic/GLOSSARY1.list automatic/GLOSSARY.list
+# Now put all list files in alphabetical order
+for file in automatic/*.list ; do
 
-sort automatic/DICTIONARY.list > automatic/DICTIONARY1.list
-mv automatic/DICTIONARY1.list automatic/DICTIONARY.list
+  sort $file > $file-1
+  mv $file-1 $file
+done
+
 
 # Generate links to tutorial pages
 for file in ./tutorials/*.txt ; do
