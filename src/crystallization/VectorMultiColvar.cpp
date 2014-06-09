@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "multicolvar/MultiColvarFunction.h"
-#include "multicolvar/VolumeGradientBase.h"
+#include "multicolvar/BridgedMultiColvarFunction.h"
 #include "VectorMultiColvar.h"
 
 namespace PLMD {
@@ -203,7 +203,7 @@ void VectorMultiColvar::addForcesOnAtoms( const std::vector<double>& inforces ){
   setForcesOnAtoms( oldforces );
 }
 
-void VectorMultiColvar::copyElementsToBridgedColvar( multicolvar::VolumeGradientBase* func ){
+void VectorMultiColvar::copyElementsToBridgedColvar( multicolvar::BridgedMultiColvarFunction* func ){
   MultiColvarBase::copyElementsToBridgedColvar( func );
 
   for(unsigned icomp=5;icomp<getNumberOfQuantities();++icomp){

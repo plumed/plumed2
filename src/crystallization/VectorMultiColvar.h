@@ -114,7 +114,7 @@ public:
 ///  This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector();
 /// Used by ActionVolume
-  void copyElementsToBridgedColvar( multicolvar::VolumeGradientBase* func );
+  void copyElementsToBridgedColvar( multicolvar::BridgedMultiColvarFunction* func );
 };
 
 inline

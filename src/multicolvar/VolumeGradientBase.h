@@ -22,37 +22,16 @@
 #ifndef __PLUMED_multicolvar_VolumeGradientBase_h
 #define __PLUMED_multicolvar_VolumeGradientBase_h
 
-#include "core/ActionAtomistic.h"
-#include "tools/HistogramBead.h"
-#include "tools/Pbc.h"
-#include "core/ActionWithValue.h"
-#include "vesselbase/ActionWithVessel.h"
-#include "vesselbase/ActionWithInputVessel.h"
-#include "vesselbase/BridgeVessel.h"
-#include "MultiColvarBase.h"
+#include "BridgedMultiColvarFunction.h"
 
 namespace PLMD {
 namespace multicolvar {
 
-class VolumeGradientBase :
-  public ActionAtomistic,
-  public ActionWithValue,
-  public vesselbase::ActionWithVessel,
-  public vesselbase::ActionWithInputVessel
-  {
+class VolumeGradientBase : public BridgedMultiColvarFunction {
 friend class MultiColvarBase;   
 private:
 /// This is used for storing positions properly
   Vector tmp_p;
-/// The action that is calculating the colvars of interest
-  MultiColvarBase* mycolv;
-/// The vessel that bridges
-  vesselbase::BridgeVessel* myBridgeVessel;
-/// Everything for controlling the updating of neighbor lists
-  bool firsttime;
-  int updateFreq;
-/// Fast merging of derivatives (automatic skips of zero contributions)
-  DynamicList<unsigned> activeAtoms;
 /// This is used to store forces temporarily in apply
   std::vector<double> tmpforces;
 protected:
@@ -66,7 +45,6 @@ protected:
   const Vector & getPosition( int iatom );
 /// Request the atoms 
   void requestAtoms( const std::vector<AtomNumber>& atoms );
-  MultiColvarBase* getPntrToMultiColvar();
 /// Set the number in the volume
   void setNumberInVolume( const unsigned& ivol, const double& weight, const Vector& wdf );
 /// Add derivatinve to one of the reference atoms here
@@ -76,54 +54,31 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   VolumeGradientBase(const ActionOptions&);
-/// Don't actually clear the derivatives when this is called from plumed main.  
-/// They are calculated inside another action and clearing them would be bad  
-  void clearDerivatives(){}
-// This is used during neighbor list update step
-  void finishTaskListUpdate();
-/// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
-/// Turn on the derivatives
-  void turnOnDerivatives();
-/// Is the output quantity periodic
-  bool isPeriodic();
-/// Jobs to be done when the action is activated
-  void prepare();
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
-/// Routines that have to be defined so as not to have problems with virtual methods 
-  void deactivate_task();
-  void calculate(){}
 /// Actually do what we are asked
- void performTask();
+  void performTask();
 /// Calculate what is in the volumes
   virtual void calculateAllVolumes()=0;
-/// We need our own calculate numerical derivatives here
-  void calculateNumericalDerivatives( ActionWithValue* a=NULL );
 /// Setup the regions that this is based on 
   virtual void setupRegions()=0;
 /// Forces here are applied through the bridge
   void addBridgeForces( const std::vector<double>& bb );
-  void apply(){};
-/// These routines replace the virtual routines in ActionWithVessel for 
-/// code optimization
-  void mergeDerivatives( const unsigned& ider, const double& df );
-  void clearDerivativesAfterTask( const unsigned& ider );
 };
 
 inline
 const Tensor & VolumeGradientBase::getBox()const{
-  return mycolv->getBox();
+  return getPntrToMultiColvar()->getBox();
 } 
 
 inline
 const Pbc & VolumeGradientBase::getPbc() const {
- return mycolv->getPbc();
+ return getPntrToMultiColvar()->getPbc();
 }
 
 inline
 Vector VolumeGradientBase::pbcDistance( const Vector& v1, const Vector& v2) const {
- return mycolv->pbcDistance(v1,v2);
+ return getPntrToMultiColvar()->pbcDistance(v1,v2);
 }
 
 inline
@@ -141,21 +96,11 @@ const Vector & VolumeGradientBase::getPosition( int iatom ){
 } 
 
 inline
-MultiColvarBase* VolumeGradientBase::getPntrToMultiColvar(){
-  return mycolv;
-}
-
-inline
-unsigned VolumeGradientBase::getNumberOfDerivatives(){
-  return mycolv->getNumberOfDerivatives() + 3*getNumberOfAtoms();
-}
-
-inline
 void VolumeGradientBase::addReferenceAtomDerivatives( const unsigned& jvol, const unsigned& iatom, const Vector& der ){
   // This is used for storing the derivatives wrt to the 
   // positions of any additional reference atoms
-  double pref=mycolv->getElementValue(1); 
-  unsigned nstart = jvol*getNumberOfDerivatives() + mycolv->getNumberOfDerivatives() + 3*iatom;
+  double pref=getPntrToMultiColvar()->getElementValue(1); 
+  unsigned nstart = jvol*getNumberOfDerivatives() + getPntrToMultiColvar()->getNumberOfDerivatives() + 3*iatom;
   addElementDerivative( nstart + 0, pref*der[0] );
   addElementDerivative( nstart + 1, pref*der[1] );
   addElementDerivative( nstart + 2, pref*der[2] );
@@ -163,8 +108,8 @@ void VolumeGradientBase::addReferenceAtomDerivatives( const unsigned& jvol, cons
 
 inline
 void VolumeGradientBase::addBoxDerivatives( const unsigned& jvol, const Tensor& vir ){
-  double pref=mycolv->getElementValue(1);
-  unsigned nstart = jvol*getNumberOfDerivatives() + mycolv->getNumberOfDerivatives() - 9;
+  double pref=getPntrToMultiColvar()->getElementValue(1);
+  unsigned nstart = jvol*getNumberOfDerivatives() + getPntrToMultiColvar()->getNumberOfDerivatives() - 9;
   addElementDerivative( nstart + 0, pref*vir(0,0) );  
   addElementDerivative( nstart + 1, pref*vir(0,1) ); 
   addElementDerivative( nstart + 2, pref*vir(0,2) ); 

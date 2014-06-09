@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
 #include "MultiColvarFunction.h"
-#include "VolumeGradientBase.h"
+#include "BridgedMultiColvarFunction.h"
 #include "vesselbase/Vessel.h"
 #include "tools/Pbc.h"
 #include <vector>
@@ -408,7 +408,7 @@ void MultiColvarBase::getValueForTask( const unsigned& iatom, std::vector<double
   vals[0]=myvalues->getValue( iatom );
 }
 
-void MultiColvarBase::copyElementsToBridgedColvar( VolumeGradientBase* func ){
+void MultiColvarBase::copyElementsToBridgedColvar( BridgedMultiColvarFunction* func ){
   func->setElementValue( 0, getElementValue(0) ); 
   for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
      unsigned n=atoms_with_derivatives[i], nx=3*n;
