@@ -174,7 +174,7 @@ double Mapping::calculateDistanceFunction( const unsigned& ifunc, const bool& sq
 }
 
 void Mapping::calculateNumericalDerivatives( ActionWithValue* a ){
-  if( getNumberOfAtoms()>0 ){
+  if( getNumberOfArguments()>0 ){
      ActionWithArguments::calculateNumericalDerivatives( a );
   }
   if( getNumberOfAtoms()>0 ){

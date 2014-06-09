@@ -58,6 +58,7 @@ PLUMED_REGISTER_ACTION(PropertyMap,"GPROPERTYMAP")
 
 void PropertyMap::registerKeywords( Keywords& keys ){
   PathBase::registerKeywords( keys );
+  ActionWithValue::useCustomisableComponents( keys );
   keys.addFlag("NOMAPPING",false,"do not calculate the position on the manifold");
 }
 

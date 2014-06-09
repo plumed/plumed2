@@ -298,6 +298,9 @@ Analysis::~Analysis(){
 std::vector<double> Analysis::getMetric() const {
   // Add more exotic metrics in here -- FlexibleHill for instance
   std::vector<double> empty;
+  if( metricname=="EUCLIDEAN" ){
+      empty.resize( getNumberOfArguments(), 1.0 );
+  }
   return empty;
 }
 
