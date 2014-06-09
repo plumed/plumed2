@@ -492,6 +492,7 @@ fmt("%14.9f")
                         if(initstride>0){ myout=outhills+ostr.str()+".dat" ;}else{myout=outhills;}
               		log<<"  Bias: Writing subgrid on file "<<myout<<" \n";
               		gridfile.open(myout);	
+                        if(minTOzero) smallGrid.setMinToZero();	
         		smallGrid.setOutputFmt(fmt); 
    	      		smallGrid.writeToFile(gridfile);
               		gridfile.close();
