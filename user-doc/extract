@@ -68,7 +68,7 @@ awk 'BEGIN{gfile="automatic/GLOSSARY.list"; dfile="automatic/DICTIONARY.list"; }
     if( $2=="TOPOLOGY" || $2=="COLVAR" || $2=="MCOLVAR" || $2=="DCOLVAR"|| $2=="MCOLVARF" || $2=="FUNCTION" || $2=="ANALYSIS" || $2=="BIAS" || $2=="GENERIC" || $2=="VATOM" || $2=="TOOLS" ){
       lfile="automatic/"$2".list"
       
-      printf "<tr> <td width=5%> \\subpage %s </td> <td>", $3 > lfile
+      printf "<tr> <td width=%s> \\subpage %s </td> <td>","5%", $3 > lfile
 #       printf "<tr> <td width=5%> \\ref %s </td><td> %s </td><td>",$3, $2 > gfile
       printf "<tr> <td width=%s> \\ref %s </td><td> %s </td><td>","5%",$3, $2 > gfile
 
