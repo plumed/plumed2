@@ -38,7 +38,7 @@ namespace PLMD{
 /*
 Calculates the Residual Dipolar Coupling between two atoms. 
 
-The RDC between two atomic nuclei depends on the &theta; angle between 
+The RDC between two atomic nuclei depends on the \f$\theta\f$ angle between 
 the inter-nuclear vector and the external magnetic field. In isotropic media RDCs average to zero because of the orientational 
 averaging, but when the rotational symmetry is broken, either through the introduction of an alignment medium or for molecules 
 with highly anisotropic paramagnetic susceptibility, RDCs become measurable.
@@ -53,8 +53,8 @@ where
 D_{max}=-\mu_0\gamma_1\gamma_2h/(8\pi^3r^3)
 \f]
 
-that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio &gamma;. 
-&mu; is the magnetic constant and h is the Planck constant. 
+that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio \f$\gamma\f$. 
+\f$\mu\f$ is the magnetic constant and h is the Planck constant. 
 
 Common Gyromagnetic Ratios (C.G.S)
 - H(1) 26.7513
