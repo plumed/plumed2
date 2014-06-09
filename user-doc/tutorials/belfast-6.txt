@@ -23,8 +23,8 @@ V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
 This potential forces the system away from the kinetic traps in the potential energy surface
 and out into the unexplored parts of the energy landscape. Information on the Gaussian
 functions from which this potential is composed is output to a file called HILLS, which 
-is used both the restart the calculation and to reconstruct the free energy as a function of the CVs. 
-The free energy can be reconstructed from a metadynamics calculation because the final bias is given
+is used both the restart the simulation and to reconstruct the free energy as a function of the CVs. 
+The free energy can be reconstructed from a metadynamics simulation because the final bias is given
 by: 
 
 \f[
@@ -54,11 +54,11 @@ Additional information can be found in the several review papers on metadynamics
 
 Once this tutorial is completed students will know how to:
 
-- run a metadynamics calculation using PLUMED 
+- run a metadynamics simulation using PLUMED 
 - analyse the output of the simulation
-- restart a metadynamics calculation
-- calculate free energies from a metadynamics calculation
-- run a well-tempered metadynamics calculation using PLUMED
+- restart a metadynamics simulation 
+- calculate free energies from a metadynamics simulation 
+- run a well-tempered metadynamics simulation using PLUMED
 - detect issues with the choice of the collective variables
 
 \section belfast-6-resources Resources
@@ -151,7 +151,7 @@ the bias potential fills the underlying free-energy landscape, and the system is
 entire phase space.
 
 If we use the PLUMED input file described above, the expense of a metadynamics
-calculation increases with the length of the simulation as one has to evaluate
+simulation increases with the length of the simulation as one has to evaluate
 the values of a larger and larger number of Gaussians at every step. To avoid this issue you can
 store the bias on a grid. In order to use grids, we have to add some additional information to the line of the \ref METAD
 directive, as follows.
@@ -196,7 +196,94 @@ This default choice should be reasonable for most applications.
 
 \subsection belfast-6-exercise-2 Exercise 2. Restart a metadynamics simulation 
 
+If we try to run again a metadynamics simulation using the script above in a directory where
+a COLVAR and HILLS files are already present, PLUMED will create a backup copy of the old files,
+and run a new simulation. Instead, if we want to restart a previous simulation, we have to add
+the keyword RESTART to the input file, as follows.
+
+\verbatim
+# restart previous simulation
+RESTART
+
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Activate metadynamics in phi and psi
+# depositing a Gaussian every 500 time steps,
+# with height equal to 1.2 kJoule/mol,
+# and width 0.35 rad for both CVs. 
+#
+metad: METAD ARG=phi,psi PACE=500 HEIGHT=1.2 SIGMA=0.35,0.35 FILE=HILLS 
+
+# monitor the two variables and the metadynamics bias potential
+PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
+
+\endverbatim
+(see \ref RESTART, \ref TORSION, \ref METAD, and \ref PRINT).
+
+In this way, PLUMED will read the old Gaussians from the HILLS file and append the new information
+to both COLVAR and HILLS files.
+
 \subsection belfast-6-exercise-3 Exercise 3. Calculate free-energies and monitor convergence
+
+One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
+bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussians
+deposited during the simulations and stored in the HILLS file.  
+
+To calculate the two-dimensional free energy as a function of phi and psi, it is sufficient to use the 
+following command line:
+
+\verbatim
+plumed sum_hills --hills HILLS
+\endverbatim
+
+The command above generates a file called fes.dat in which the free-energy surface as function
+of phi and psi is calculated on a regular grid. One can modify the default name for the free energy file,
+as well as the boundaries and bin size of the grid, by using the following options of sum_hills:
+
+\verbatim
+--min - the lower bounds for the grid
+--max - the upper bounds for the grid
+--bin - the number of bins for the grid
+--spacing - grid spacing, alternative to the number of bins
+\endverbatim 
+
+It is also possible to calculate one-dimensional free energies from the two-dimensional metadynamics simulation. 
+For example, if one is interested in the free energy as a function of the phi dihedral alone, the following
+command line should be used:
+
+\verbatim
+plumed sum_hills --hills HILLS --idw phi --kt 2.5
+\endverbatim
+
+The result should look like this:
+
+\anchor belfast-7-phifes-fig
+\image html belfast-7-phifes.png "Estimate of the free energy as a function of the dihedral phi from a 5ns-long metadynamics simulation using 2 CVs, the dihedrals phi and psi."
+
+To assess the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
+of simulation time. At convergence, the reconstructed profiles should be similar, apart from a constant offset.
+The option --stride should be used to give an estimate of the free energy every N Gaussians deposited, and
+the option --mintozero can be used to align the profiles by setting the global minimum to zero.
+If we use the following command line:
+
+\verbatim
+plumed sum_hills --hills HILLS --idw phi --kt 2.5 --stride 500 --mintozero
+\endverbatim
+
+one free energy is calculated every 500 Gaussians deposited, and the global minimum is set to zero in all profiles.
+The resulting plot should look like the following:
+
+\anchor belfast-8-phifest-fig
+\image html belfast-8-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 500 Gaussians deposited along a 5ns-long metadynamics simulation using 2 CVs."
+
+To assess the convergence of the simulation more quantitatively, we can calculate the free energy difference between the two
+local minima in the one-dimensional free energy along phi as a function of simulation time.
+
+
+This analysis along with the observation of the diffusive behavior in the CVs space suggest that the simulation is converged.
+
 
 \subsection belfast-6-exercise-4 Exercise 4. Setup and run a well-tempered metadynamics simulation, part I
 
