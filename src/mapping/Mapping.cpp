@@ -122,6 +122,11 @@ void Mapping::turnOnDerivatives(){
   needsDerivatives();
 } 
 
+void Mapping::needsDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  ActionWithVessel::needsDerivatives(); 
+}
+
 Mapping::~Mapping(){
   delete mymap;
 }

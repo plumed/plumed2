@@ -99,6 +99,7 @@ public:
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Turn on the derivatives
   void turnOnDerivatives();
+  void needsDerivatives();
 /// Is the output quantity periodic
   bool isPeriodic();
 /// Jobs to be done when the action is activated

@@ -124,6 +124,7 @@ public:
   virtual bool isCurrentlyActive( const unsigned& code )=0;
 /// Turn on the derivatives 
   void turnOnDerivatives();
+  void needsDerivatives();
 /// Prepare for the calculation
   void prepare();
 /// Perform one of the tasks

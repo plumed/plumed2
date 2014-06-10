@@ -106,7 +106,7 @@ myfield(NULL)
   // Retrieve the base action
   plumed_assert( getDependencies().size()==1 );
   field_action = dynamic_cast<vesselbase::ActionWithVessel*>( getDependencies()[0] );
-  field_action->needsDerivatives(); needsDerivatives();
+  field_action->needsDerivatives(); needsDerivatives(); turnOnDerivatives();
 
   // Create interpolators for fields
   std::string interpols; parse("INTERPOLATION",interpols);

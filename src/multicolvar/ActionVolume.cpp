@@ -102,6 +102,11 @@ void ActionVolume::turnOnDerivatives(){
   needsDerivatives();
 } 
 
+void ActionVolume::needsDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  ActionWithVessel::needsDerivatives(); 
+}
+
 void ActionVolume::requestAtoms( const std::vector<AtomNumber>& atoms ){
   ActionAtomistic::requestAtoms(atoms); bridgeVariable=3*atoms.size();
   addDependency( mycolv ); 

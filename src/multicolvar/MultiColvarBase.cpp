@@ -115,6 +115,11 @@ void MultiColvarBase::turnOnDerivatives(){
   needsDerivatives();
 } 
 
+void MultiColvarBase::needsDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  ActionWithVessel::needsDerivatives();
+}
+
 void MultiColvarBase::prepare(){
   if( contributorsAreUnlocked ) lockContributors();
   if( updateFreq>0 ){
