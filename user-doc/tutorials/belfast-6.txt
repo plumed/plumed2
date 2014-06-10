@@ -3,48 +3,64 @@
 
 \section Aims
 
-The aim of this tutorial is to introduce the users to running a metadynamics calculation using PLUMED. We will set up
+The aim of this tutorial is to introduce the users to running a metadynamics calculation with PLUMED. We will set up
 a simple calculation on alanine dipeptide in vacuum, analyse the output, and calculate free energies
 from the simulation. We will also learn how to run a well-tempered metadynamics simulation and 
 detect issues related to a bad choice of collective variables.
 
 \section belfast-6-theory Summary of theory
 
-In a metadynamics simulations a history dependent bias composed of 
-intermittently added Gaussian functions is added to the potential \cite metad.
+In metadynamics, an external history-dependent bias potential is constructed in the space of 
+a few selected degrees of freedom \f$ \vec{s}({q}) \f$, generally called collective variables (CVs) \cite metad.
+This potential is built as a sum of Gaussians deposited along the trajectory in the CVs space:
 
 \f[
 V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
 \exp\left(
--\sum_{i=1}^{d} \frac{(s_i-s_i^{(0)}(k \tau))^2}{2\sigma_i^2}
+-\sum_{i=1}^{d} \frac{(s_i-s_i({q}(k \tau)))^2}{2\sigma_i^2}
 \right).
 \f]
 
-This potential forces the system away from the kinetic traps in the potential energy surface
-and out into the unexplored parts of the energy landscape. Information on the Gaussian
-functions from which this potential is composed is output to a file called HILLS, which 
-is used both the restart the simulation and to reconstruct the free energy as a function of the CVs. 
-The free energy can be reconstructed from a metadynamics simulation because the final bias is given
-by: 
+where \f$ \tau \f$ is the Gaussian deposition stride, 
+\f$ \sigma_i \f$ the width of the Gaussian for the ith CV, and \f$ W(k \tau) \f$ the
+height of the Gaussian. The effect of the metadynamics bias potential is to push the system away 
+from local minima into visiting new regions of the phase space. Furthermore, in the long
+time limit, the bias potential converges to minus the free energy as a function of the CVs:
 
 \f[
-V(\vec{s}) = -F(\vec(s))
+V(\vec{s},t\rightarrow \infty) = -F(\vec{s}) + C.
 \f]
 
-During post processing the free energy can be calculated in this way using the \ref sum_hills
-utility.
-
-Another option that is available in PLUMED 2.0 is well-tempered metadynamics \cite Barducci:2008. In this
-varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
-given by:
+In standard metadynamics, Gaussian of constant height are added for the entire course of a 
+simulation. As a result, the system is eventually pushed to explore high free-energy regions
+and the estimate of the free energy calculated from the bias potential oscillates around
+the real free energy.
+In well-tempered metadynamics \cite Barducci:2008, the height of the Gaussian 
+is decreased with simulation time according to:
 
 \f[
-V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta T} \exp\left(
--\sum_{i=1}^{d} \frac{(s_i({q})-s_i({q}(t'))^2}{2\sigma_i^2}
-\right),
+ W (k \tau ) = W_0 \exp \left( -\frac{V(\vec{s}({q}(k \tau)),k \tau)}{k_B\Delta T} \right ),
 \f]
 
-This method ensures that the bias converges more smoothly. 
+where \f$ W_0 \f$ is an initial Gaussian height, \f$ \Delta T \f$ an input parameter 
+with the dimension of a temperature, and \f$ k_B \f$ the Boltzmann constant. 
+In this version of metadynamics, the bias potential smoothly converges to the underlying free-
+energy landscape, and the parameter \f$ \Delta T \f$ can be chosen to regulate the extent of free-energy exploration.
+ \f$ \Delta T = 0\f$ corresponds to standard molecular dynamics, \f$ \Delta T \rightarrow \infty \f$ to standard
+metadynamics. In well-tempered metadynamics literature and in PLUMED, you will often encounter
+the term "biasfactor" which is the ratio between the temperature of the CVs (\f$ T+\Delta T \f$) 
+and the system temperature (\f$ T \f$):
+
+\f[
+\gamma = \frac{T+\Delta T}{T}.
+\f]
+
+In well-tempered metadynamics, the bias potential does not fully compensate the underlying free energy, 
+but it converges to:
+
+\f[
+V(\vec{s},t\rightarrow \infty) = -\frac{\Delta T}{T+\Delta T}F(\vec{s}) + C.
+\f]
 
 Additional information can be found in the several review papers on metadynamics 
 \cite gerv-laio09review \cite WCMS:WCMS31 \cite WCMS:WCMS1103.
@@ -76,7 +92,7 @@ The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-6.tar.gz" down
 
 \subsection belfast-6-system The model system
 
-We here use as model system alanine dipeptide with AMBER99SB-ILDN all atom force field.
+We here use as model system alanine dipeptide with AMBER99SB-ILDN all-atom force field.
 
 \subsection belfast-6-exercise-1 Exercise 1. Setup and run a metadynamics simulation 
 
@@ -186,7 +202,7 @@ PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
 
 \endverbatim
 
-The bias potential will be stored on a grid, whose boundaries are specified by the keyword GRID_MIN and GRID_MAX.
+The bias potential will be stored on a grid, whose boundaries are specified by the keywords GRID_MIN and GRID_MAX.
 Notice that you should provide either the number of bins for every collective variable (GRID_BIN) or
 the desired grid spacing (GRID_SPACING). In case you provide both PLUMED will use
 the most conservative choice (highest number of bins) for each dimension.
@@ -243,6 +259,7 @@ of phi and psi is calculated on a regular grid. One can modify the default name 
 as well as the boundaries and bin size of the grid, by using the following options of sum_hills:
 
 \verbatim
+--outfile - specify the outputfile for sumhills
 --min - the lower bounds for the grid
 --max - the upper bounds for the grid
 --bin - the number of bins for the grid
@@ -278,9 +295,9 @@ The resulting plot should look like the following:
 \anchor belfast-6-phifest-fig
 \image html belfast-6-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 500 Gaussians deposited along a 5ns-long metadynamics simulation using 2 CVs."
 
-To assess the convergence of the simulation more quantitatively, we can calculate the free energy difference between the two
+To assess the convergence of the simulation more quantitatively, we can calculate the free-energy difference between the two
 local minima in the one-dimensional free energy along phi as a function of simulation time.
-We can use the bash script analize_FES.sh to integrate the multiple free energy profiles in the two basins defined 
+We can use the bash script analize_FES.sh to integrate the multiple free-energy profiles in the two basins defined 
 by the following intervals in phi space: basin A, -3<phi<-1, basin B, 0.5<phi<1.5.
 
 \verbatim
