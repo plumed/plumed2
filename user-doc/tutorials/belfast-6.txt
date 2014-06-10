@@ -92,7 +92,7 @@ The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-6.tar.gz" down
 
 \subsection belfast-6-system The model system
 
-We here use as model system alanine dipeptide with AMBER99SB-ILDN all-atom force field.
+Here we use as model system alanine dipeptide with AMBER99SB-ILDN all-atom force field.
 
 \subsection belfast-6-exercise-1 Exercise 1. Setup and run a metadynamics simulation 
 
@@ -158,7 +158,7 @@ We will use the HILLS file later to calculate free-energies from the metadynamic
 For the moment, we can plot the behavior of the CVs during the simulation.
 
 \anchor belfast-6-metad-fig
-\image html belfast-6-metad.png "Time evolution of the CVs during the first nanosecond of a metadynamics simulation of alanine dipeptide in vacuum."
+\image html belfast-6-metad.png "Time evolution of the CVs during the first 1.5 ns of a metadynamics simulation of alanine dipeptide in vacuum."
 
 By inspecting Figure \ref belfast-6-metad-fig, we can see that the system is initialized in one of the two metastable
 states of alanine dipeptide. After a while (t=0.3 ns), the system is pushed
@@ -315,7 +315,95 @@ This analysis, along with the observation of the diffusive behavior in the CVs s
 
 \subsection belfast-6-exercise-4 Exercise 4. Setup and run a well-tempered metadynamics simulation, part I
 
+In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, 
+using as CVs the two backbone dihedral angles phi and psi. 
+To activate well-tempered metadynamics, we need to add two keywords to the line of \ref METAD, which
+specifies the biasfactor and temperature of the simulation. For the first example,
+we will try a biasfactor equal to 6.
+
+\verbatim
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Activate metadynamics in phi and psi
+# depositing a Gaussian every 500 time steps,
+# with height equal to 1.2 kJoule/mol,
+# and width 0.35 rad for both CVs.
+# Well-tempered metadynamics is activated,
+# and the bias factor is set to 6.0
+#
+metad: METAD ARG=phi,psi PACE=500 HEIGHT=1.2 SIGMA=0.35,0.35 FILE=HILLS BIASFACTOR=6.0 TEMP=300.0
+
+# monitor the two variables and the metadynamics bias potential
+PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
+
+\endverbatim
+(see \ref TORSION, \ref METAD, and \ref PRINT).
+
+After running the simulation using the instruction described above, we can have a look at the HILLS
+file. At variance with standard metadynamics, the last two columns of the HILLS file report more
+useful information. The last column contains the value of the biasfactor used, while
+the last but one the height of the Gaussian, which is rescaled during the simulation following
+the well-tempered recipe.
+
+\verbatim
+#! FIELDS time phi psi sigma_phi sigma_psi height biasf
+#! SET multivariate false
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+      1.0000     -1.3100    0.0525          0.35            0.35      1.4400      6
+      2.0000     -1.4054    1.9742          0.35            0.35      1.4400      6
+      3.0000     -1.9997    2.5177          0.35            0.35      1.4302      6
+      4.0000     -2.2256    2.1929          0.35            0.35      1.3622      6
+\endverbatim 
+
+If we carefully look at the height column, we will notice that in the beginning the value
+reported is higher than the initial height specified in the input file, which should be 1.2 kJoule/mol.
+In fact, this column reports the height of the Gaussian rescaled by the pre-factor that 
+in well-tempered metadynamics relates the bias potential to the free energy. In this way, when
+we will use sum_hills, the sum of the Gaussians deposited will directly provide the free-energy,
+without further rescaling needed.
+
+We can plot the time evolution of the CVs along with the height of the Gaussian.
+
+\anchor belfast-6-wtb6-fig
+\image html belfast-6-wtb6.pdf "Time evolution of the CVs and Gaussian height during the first 2.5 ns of a well-tempered metadynamics simulation with bias factor equal to 6."
+
+The system is initialized in one of the local minimum where it starts accumulating bias.
+As the simulation progresses and the bias added grows, the Gaussian height is progressively reduced.
+After a while (t=0.8 ns), the system is able to escape the local minimum and 
+explore a new region of the phase space. As soon as this happens, the Gaussian heights is restored
+to the initial value and starts to decrease again. In the long time, the Gaussian height
+becomes smaller and smaller while the system diffuses in the entire CVs space.
+
+We can now try a different biasfactor and see the effect on the simulation.
+If we choose a biasfactor equal to 1.5, we can notice a faster decrease of the Gaussian height
+with simulation time, as expected by the well-tempered recipe. We will also conclude from the plot below that 
+this biasfactor is not large enough to allow for the system to escape from the initial local minimum
+in the time scale of this simulation.
+
+\anchor belfast-6-wtb15-fig
+\image html belfast-6-wtb15.pdf "Time evolution of the CVs and Gaussian height in a 5 ns long well-tempered metadynamics simulation with bias factor equal to 1.5."
+
+Following the procedure described in the previous examples for standard metadynamics,
+we can estimate the free energy as a function of time and monitor the convergence of the
+simulations using the analize_FES.sh script. We will do this for the case of
+biasfactor equal to 6.0. In this case we will notice that the oscillations
+observed for standard metadynamics are here damped, and the bias potential converges more
+smoothly to the underlying free-energy landscape, provided that the biasfactor is
+sufficiently high for the free-energy barriers of the system under study to be crossed.
+
+\anchor belfast-6-wtdifft-fig
+\image html belfast-6-wtdifft.png "Free-energy difference between basin A and B as a function of simulation time in a well-tempered metadynamics simulation."
+ 
+
 \subsection belfast-6-exercise-5 Exercise 5. Setup and run a well-tempered metadynamics simulation, part II 
+
+In this exercise, we will study the effect of neglecting a relavant degrees of freedom in the choice
+of metadynamics CVs.
 
 */
 
