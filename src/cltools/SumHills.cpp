@@ -194,7 +194,7 @@ public:
   string description()const;
 /// find a list of variables present, if they are periodic and which is the period
 /// return false if the file does not exist 
-  static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate);
+  static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, string &lowI_, string &uppI_);
 };
 
 void CLToolSumHills::registerKeywords( Keywords& keys ){
@@ -243,9 +243,10 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   vector<string> vpmin;
   vector<string> vpmax;
   bool vmultivariate;
+  string lowI_, uppI_;
   if(dohills){
        // parse it as it was a restart
-       findCvsAndPeriodic(hillsFiles[0], vcvs, vpmin, vpmax, vmultivariate);
+       findCvsAndPeriodic(hillsFiles[0], vcvs, vpmin, vpmax, vmultivariate, lowI_, uppI_);
   }
 
   vector< vector<string> > hcvs;
@@ -255,10 +256,11 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
  
   vector<std::string> sigma; 
   if(dohisto){
-       findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate);
+       findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate, lowI_, uppI_);
        // here need also the vector of sigmas
        parseVector("--sigma",sigma);
        if(sigma.size()==0)plumed_merror("you should define --sigma vector when using histogram");
+       lowI_=uppI_="-1.";  // Interval is not use for histograms
   }
 
   if(dohisto && dohills){
@@ -514,6 +516,10 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
  	actioninput.push_back("NEGBIAS");
   }
 
+  if(lowI_!=uppI_) {
+    addme="INTERVAL="; addme+=lowI_+","; addme+=uppI_;
+    actioninput.push_back(addme);
+  }
 
   std::string fmt;fmt="";
   parse("--fmt",fmt);
@@ -528,7 +534,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   return 0;
 }
 
-bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate){
+bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, string &lowI_, string &uppI_){
        IFile ifile;
        ifile.allowIgnoredFields();
        std::vector<std::string> fields;
@@ -595,6 +601,14 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
          	 ifile.scanField("multivariate",sss);
          	 if(sss=="true"){ multivariate=true;}
          	 else if(sss=="false"){ multivariate=false;}
+          }
+          // do interval?
+          if(ifile.FieldExist("lower_int")) {
+	    ifile.scanField("lower_int",lowI_);
+            ifile.scanField("upper_int",uppI_);
+          } else {
+            lowI_="-1.";
+            uppI_="-1.";
           }
           ifile.scanField();
           ifile.close();

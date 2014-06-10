@@ -43,12 +43,16 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 } 
 /// overload the constructor: add the grid at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin ):hasgrid(false), rescaledToBias(false), mycomm(cc){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, 
+                                       vector<unsigned> nbin, bool doInt, double lowI, double uppI ):hasgrid(false), rescaledToBias(false), mycomm(cc){
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
          names.push_back(values[i]->getName());
-    } 
+    }
+    doInt_=doInt;
+    lowI_=lowI;
+    uppI_=uppI;
     // initialize the grid 
     addGrid(gmin,gmax,nbin);
 } 
@@ -144,6 +148,7 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
  	//cerr<<"now with "<<hills.size()<<endl;
         if(hasgrid){
                  vector<unsigned> nneighb=kk->getSupport(BiasGrid_->getDx());
+                 if(doInt_) nneighb=BiasGrid_->getNbin();
                  vector<unsigned> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
                  vector<double> der(ndim);
                  vector<double> xx(ndim);
@@ -153,8 +158,10 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
                    for(int j=0;j<ndim;++j){der[j]=0.0;}
                    BiasGrid_->getPoint(ineigh,xx);   
                    // assign xx to a new vector of values
-                   for(int j=0;j<ndim;++j){values[j]->set(xx[j]);}	 
-                   double bias=kk->evaluate(values,der,true);
+                   for(int j=0;j<ndim;++j){values[j]->set(xx[j]);}
+                   double bias;	 
+                   if(doInt_) bias=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
+                   else bias=kk->evaluate(values,der,true);
 		   if(rescaledToBias){
 			double f=(biasf.back()-1.)/(biasf.back());
 			bias*=f;
@@ -172,7 +179,8 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
                    unsigned ineigh=neighbors[i];
                    BiasGrid_->getPoint(ineigh,xx);
                    for(int j=0;j<ndim;++j){values[j]->set(xx[j]);}	 
-                   allbias[i]=kk->evaluate(values,tmpder,true);
+                   if(doInt_) allbias[i]=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
+                   else allbias[i]=kk->evaluate(values,der,true);
 		   if(rescaledToBias){
 			double f=(biasf.back()-1.)/(biasf.back());
 			allbias[i]*=f;
