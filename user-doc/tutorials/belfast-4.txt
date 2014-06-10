@@ -18,7 +18,7 @@ any kind of collective variable.
 
 \section belfast-4-theory Summary of theory
 
-\subsection belfast-4-biased-sampling Biased sampling
+\subsection belfast-4-theory-biased-sampling Biased sampling
 
 A system at temperature \f$ T\f$ samples 
 conformations from the canonical ensemble:
@@ -87,7 +87,7 @@ with \f$e^{\frac{V(s(q))}{k_BT}}\f$. That is, frames that have been explored
 in spite of a high (disfavoring) bias potential \f$ V \f$ will be counted more
 than frames that has been explored with a less disfavoring bias potential.
 
-\subsection belfast-4-us Umbrella sampling
+\subsection belfast-4-theory-us Umbrella sampling
 
 Often in interesting cases the free-energy landscape has several local minima. If these
 minima have free-energy differences that are on the order of a few times \f$k_BT\f$
@@ -105,9 +105,6 @@ simulation using a bias potential which is exactly equal to \f$ -V(s) \f$,
 the biased free-energy landscape will be flat and barrierless.
 This potential acts as an "umbrella" that helps you to safely cross
 the transition state in spite of its high free energy.
-
-
-SAMPLE FIGURE NEEDED HERE
 
 It is however difficult to have an a priori guess of the free-energy landscape.
 We will see later how adaptive techniques such as metadynamics (\ref belfast-6) can be used
@@ -131,10 +128,24 @@ By combining simulations performed with different values of \f$ s_0 \f$, one cou
 obtain a continuous set of simulations going from one minimum to the other crossing the transition state.
 In the next section we will see how to combine the information from these simulations.
 
-\subsection belfast-4-wham Weighted histogram analysis method
+\subsection belfast-4-theory-wham Weighted histogram analysis method
 
 Let's now consider multiple simulations performed with restraints located in different positions.
+In particular, we will consider the \f$i\f$-th bias potential as \f$V_i\f$.
 
+It can be shown that the proper weight to be assigned to the snapshot at time \f$ t \f$
+as obtained from the \f$i\f$-th simulation is
+
+\f[
+w_i(t)\propto \frac{1}{\sum_j\int dt\frac{e^{-\beta V_{j}({\bf s}_i(t))}}{Z_{j}} }
+\f]
+
+where \f$ Z_i \f$ are factors that should be obtained self-consistently as
+
+\f[
+Z_i=\frac{\sum_j \int dt e^{-\beta V_i({\bf s}_j(t))} w_j(t)}{
+\sum_j \int dt w_j(t)}
+\f]
 
 
 
@@ -142,27 +153,30 @@ Let's now consider multiple simulations performed with restraints located in dif
 
 Once this tutorial is completed students will know how to:
 
-- Setup simulations with restraints
+- Setup simulations with restraints.
 - Use multiple-restraint umbrella sampling simulations
   to enhance the transition across a free-energy barrier.
-- Analyze the results.
+- Analyze the results and compute weighted averages and free-energy profiles.
 
 \section belfast-4-resources Resources
 
-TO DO
+The <a href="tutorial-resources/belfast-4.tar.gz" download="belfast-4.tar.gz"> tarball </a> for this project contains the following files:
+- A gromacs topology (topol.top), configuration (conf.gro), and control file (grompp.mdp). They should not be needed.
+- A gromacs binary file (topol.tpr). This is enough for running this system.
+- A small C++ program that computes WHAM (wham.cpp) and a script that can be used to feed it (wham.sh)
+
+By working in the directory where the topol.tpr file is stored, one can launch gromacs
+with the command
+\verbatim
+mdrun_mpi -plumed plumed.dat -nsteps 100000
+\endverbatim
+(notice that the -nsteps flag allows the number of steps to be changed).
 
 \section belfast-4-instructions Instructions
 
 \subsection belfast-4-system The model system
 
-We here use a a model system
-alanine dipeptide with AMBER99SB-ILDN all atom force field already seen in the previous section.
-Here you can see its free-energy landscape depicted as function of the two dihedral angles \f$phi\f$ and
-\f$\psi\f$ (also called "Ramachandan plot").
-
-FIG TO DO
-
-GROMACS INPUT
+We here use a a model system alanine dipeptide with CHARM27 all atom force field already seen in the previous section.
 
 \subsection belfast-4-restrained-simulations Restrained simulations
 
@@ -180,10 +194,6 @@ is not trivial. In a later section we will see how metadynamics
 can be used to this aim. The simplest way to use umbrella sampling
 is that to apply harmonic constraints to one or more CVs.
 
-As first example we perform an umbrella sampling calculation of the free energy landscape of
-alanine dipeptide with AMBER99SB-ILDN all atom force field already seen in the previous section.
-depicted as function of the two dihedral angles \f$phi\f$ and 
-\f$\psi\f$ (also called "Ramachandan plot").
 We will now see how to enforce the exploration of a the neighborhood of a selected point
 the CV space using a \ref RESTRAINT potential.
 
@@ -196,8 +206,8 @@ psi: TORSION ATOMS=7,9,15,17
 # with a spring constant of 500 kjoule/mol
 # at fixed points on the Ramachandran plot
 #
-restraint-phi: RESTRAINT ARG=phi KAPPA=500 AT=pi
-restraint-psi: RESTRAINT ARG=psi KAPPA=500 AT=-pi
+restraint-phi: RESTRAINT ARG=phi KAPPA=500 AT=-0.3
+restraint-psi: RESTRAINT ARG=psi KAPPA=500 AT=+0.3
 
 # monitor the two variables and the bias potential from the two restraints
 PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias,restraint-psi.bias FILE=COLVAR
@@ -216,22 +226,214 @@ a simple Hooke’s law:
 \f].
 
 where \f$ x_0 \f$  is the value specified following the AT keyword.
-The CVs as well as the sum of the two bias potentials are shown in the COLVAR file.
+The choice of AT (\f$ x_0 \f$) is obviously depending on the specific case.
+KAPPA (\f$ k \f$) is typically chosen not to affect too much the
+intrinsic fluctuations of the system. A typical recipe is
+\f$ k \approx \frac{k_BT}{\sigma^2} \f$, where \f$ \sigma^2 \f$ is the variance
+of the CV in a free simulation). In real applications, one must be careful with
+values of \f$ k \f$ larger than \f$ \frac{k_BT}{\sigma^2} \f$ because they
+could break down the molecular dynamics integrator.
+
+The CVs as well as the two bias potentials are shown in the COLVAR file.
 For this specific input the COLVAR file has in first column the time,
 in the second the value of \f$\phi\f$, in the third the value of \f$\psi\f$,
 in the fourth the the additional potential introduced by the restraint on \f$\phi\f$ and in
 the fifth the additional potential introduced by the restraint on \f$\psi\f$.
 
-It may happen that one wants that a given CV just stay
+It may happen that one wants that a given CV just stays
 within a given range of values. This is achieved in plumed through the
 directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
 limit the exploration within given ranges.
 
-TO DO
-
 \subsection belfast-4-reweighting Reweighting the results
 
+Now consider a simulation performed restraining the variable \f$\phi \f$:
+\verbatim
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+restraint-phi: RESTRAINT ARG=phi KAPPA=10.0 AT=-2
+PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=COLVAR10
+
+\endverbatim
+
+and compare the result with the one from a single simulation with no restraint
+\verbatim
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+# we use a "dummy" restraint with strength zero here
+restraint-phi: RESTRAINT ARG=phi KAPPA=0.0 AT=-2
+PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=COLVAR0
+\endverbatim
+
+Plot the time dependence of \f$\phi \f$ in the two cases and try to understand the
+difference.
+
+Now let's try to compute the probability that \f$\psi \f$ falls within a given range, say between 1 and 2.
+This can be done e.g. with this shell script
+\verbatim
+> grep -v \# COLVAR0 | tail -n 80000 |
+  awk '{if($3>1 && $3<2)a++; else b++;}END{print a/(a+b)}'
+\endverbatim
+Notice that we here considered only the last 80000 frames in the average. Look at the time series for \f$\psi \f$ 
+and guess why. Also notice that the script is removing the initial comments. After this trivial preprocessing,
+the script is just counting how many times the third column (\f$ \psi \f$) lies between 1 and 2 and 
+how many times it doesn't. At the end it prints the number of times the variable is between 1 and 2
+divided by the total count. The result should be something around 0.40. Now try to do it on
+trajectories generated with different values of AT. Does the result depend on AT?
+
+We can now try to reweight the result so as to get rid of the bias introduced by the restraint.
+Since the reweighting factor is just \f$\exp(\frac{V}{k_BT} \f$
+the script should be modified as
+\verbatim
+> grep -v \# COLVAR0 | tail -n 80000 |
+awk '{w=exp($4/2.5); if($3>1 && $3<2)a+=w; else b+=w;}END{print a/(a+b)}'
+\endverbatim
+Notice that 2.5 is just \f$k_BT\f$ in kj/mol units.
+
+Repeat this calculation for different values of AT. Does the result depend on AT?
+
+\subsection belfast-4-fes A free-energy landscape
+
+One can also count the probability of an angle to be in a precise
+bin. The logarithm of this quantity, in kbT units, is the free-energy
+associated to that bin. There are several ways to compute
+histograms, either with PLUMED or with external programs. Here I decided to
+use awk.
+
+\verbatim
+grep -v \# COLVAR0 | tail -n 80000 |
+awk 'BEGIN{
+  min1=-3.14159265358979
+  max1=+3.14159265358979
+  min2=-3.14159265358979
+  max2=+3.14159265358979
+  nb1=100;
+  nb2=100;
+  for(i1=0;i1<nb1;i1++) for(i2=0;i2<nb2;i2++) f[i1,i2]=0.0;
+}{
+  i1=int(($2-min1)*nb1/(max1-min1));
+  i2=int(($3-min2)*nb2/(max2-min2));
+# we assume the potential is in the last column, and kbT=2.5 kj/mol
+  w=exp($NF/2.5);
+  f[i1,i2]+=w;
+}
+END{
+  for(i1=0;i1<nb1;i1++){
+  for(i2=0;i2<nb2;i2++) print min1+i1/100.0*(max1-min1), min2+i2/100.0*(max2-min2), -2.5*log(f[i1,i2]);
+  print "";
+}}' > plotme
+\endverbatim
+
+You can then plot the "plotme" file with
+\verbatim
+gnuplot> set pm3d map
+gnuplot> splot "plotme"
+\endverbatim
+
 \subsection belfast-4-wham Combining multiple restraints
+
+In the last paragraph you have seen how to reweight simulations done with restraints
+in different positions to obtain virtually the same result.
+Let's now see how to combine data from multiple restraint simulations.
+A possible choice is to download and use the WHAM software
+<a href="http://membrane.urmc.rochester.edu/content/wham">here</a>,
+which is well documented.
+This is probably the best idea for analyzing a real simulation.
+
+For the sake of learning a bit, we will use a different approach here,
+namely we will use a short C++ program that implements the weight calculation.
+Notice that whereas people typically use harmonic restraints in this framework,
+PLUMED offers a very large variety of bias potentials. For this reason
+we will keep things as general as possible and use an approach that can be in principle
+used also to combine simulation with restraint on different variables or with complicated
+bias potential.
+
+The first step is to generate several simulations with different positions of the restraint,
+gradually going from say -2 to +2.
+You can obtain them using e.g. the following script:
+\verbatim
+for AT in -2.0 -1.5 -1.0 -0.5 +0.0 +0.5 +1.0 +1.5 +2.0
+do
+
+cat >plumed.dat << EOF
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Impose an umbrella potential on CV 1 and CV 2
+# with a spring constant of 500 kjoule/mol
+# at fixed points on the Ramachandran plot
+#
+restraint-phi: RESTRAINT ARG=phi KAPPA=40.0 AT=$AT
+# monitor the two variables and the bias potential from the two restraints
+PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=COLVAR$AT
+EOF
+
+mdrun_mpi -plumed plumed.dat -nsteps 100000 -x traj$AT.xtc
+
+done
+
+\endverbatim
+
+Notice that we are here saving separate trajectories for the separate simulation,
+as well as separate colvar files. In each simulation
+the restraint is located in a different position. Have a look at the
+plot of (phi,psi) for the different simulations to understand what is happening.
+
+An often misunderstood fact about WHAM is that data of the different trajectories
+can be mixed and it is not necessary to keep track of which restraint was used to produce
+every single frame. Let's get the concatenated trajectory
+
+\verbatim
+trjcat -cat -f traj*.xtc -o alltraj.xtc
+\endverbatim
+
+Now we should compute the value of each of the bias potentials on the entire (concatenated) trajectory
+\verbatim
+for AT in -2.0 -1.5 -1.0 -0.5 +0.0 +0.5 +1.0 +1.5 +2.0
+do
+
+cat >plumed.dat << EOF
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+restraint-phi: RESTRAINT ARG=phi KAPPA=40.0 AT=$AT
+
+# monitor the two variables and the bias potential from the two restraints
+PRINT STRIDE=10 ARG=phi,psi,restraint-phi.bias FILE=ALLCOLVAR$AT
+EOF
+
+plumed driver --mf_xtc alltraj.xtc --trajectory-stride=10 --plumed plumed.dat
+
+done
+\endverbatim
+
+It is very important that this script is consistent with the one used to generate the multiple simulations above.
+Now, single files named ALLCOLVARXX will contain on the fourth column the value of the bias
+centered in XX computed on the entire concatenated trajectory.
+
+Next step is to compile the C++ program that computes weights self-consistently solving the WHAM
+equations.
+This is named wham.cpp and can be compiled with
+\verbatim
+g++ -O3 wham.cpp -o wham.x
+\endverbatim
+and can be then used through a wrapper script wham.sh as
+\verbatim
+./wham.sh ALLCOLVAR* > colvar
+\endverbatim
+The resulting colvar file will contain 3 columns: time, phi, and psi, plus the weights obtained from WHAM
+written in logarithmic scale. That is, the file will contain \f$k_BT \log w \f$.
+
+Try now to use this file to compute the unbiased free-energy landscape as a function of phi and psi.
+You can use the script that you used earlier to compute histogram.
+
+
+
+
+
+
+
+
+
 
 \section belfast-4-comments Comments
 
@@ -258,5 +460,8 @@ Umbrella sampling method is a widely used technique. You can find several resour
 link: @subpage belfast-4
 
 description: Umbrella sampling, reweighting, and weighted histogram
+
+additional-files: belfast-4.tar.gz
+
 
 

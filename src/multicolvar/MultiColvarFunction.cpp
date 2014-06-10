@@ -30,7 +30,7 @@ namespace multicolvar {
 
 void MultiColvarFunction::registerKeywords( Keywords& keys ){
   MultiColvarBase::registerKeywords( keys );
-  keys.add("compulsory","ARG","the labels of the action that calculates the multicolvars we are interested in");
+  keys.add("compulsory","DATA","the labels of the action that calculates the multicolvars we are interested in");
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
@@ -39,7 +39,7 @@ Action(ao),
 MultiColvarBase(ao)
 {
   // Read in the arguments
-  std::string mname; std::vector<std::string> mlabs; parseVector("ARG",mlabs);
+  std::string mname; std::vector<std::string> mlabs; parseVector("DATA",mlabs);
   log.printf("  using colvars calculated by actions ");
   for(unsigned i=0;i<mlabs.size();++i){
       log.printf("%s ",mlabs[i].c_str() );
@@ -70,7 +70,7 @@ MultiColvarBase(ao)
 }
 
 void MultiColvarFunction::buildSymmetryFunctionLists(){
-  if( mybasemulticolvars.size()>2 ) error("Found too many multicolvars in ARG specification. You can use either 1 or 2");
+  if( mybasemulticolvars.size()>2 ) error("Found too many multicolvars in DATA specification. You can use either 1 or 2");
 
   // Make sure information is stored in the required multicolvars
   for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes();

@@ -1,0 +1,14 @@
+/**
+
+\page misc Miscellaneus
+
+@DICTIONARY@
+<TABLE ALIGN="center" FRAME="void" WIDTH="95%%" CELLPADDING="5%%">
+<TR>
+<TD WIDTH="5%"> 
+\ref Regex </TD><TD> </TD><TD> POSIX regular expressions can be used to select multiple actions when using ARG (i.e. \ref PRINT).
+</TD>
+</TR>
+</TABLE>
+
+*/

@@ -126,7 +126,7 @@ quantity for each of the atoms in the system:
  
 where \f$q_{6m}(i)\f$ and \f$q_{6m}(j)\f$ are the 6th order Steinhardt vectors calculated for atom \f$i\f$ and atom \f$j\f$ respectively and the asterix denotes 
 complex conjugation.  The function
-\f$\sigma( r_{ij} )\f$ is a \ref switching function that acts on the distance between atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set 
+\f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set 
 so that it the function is equal to one when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.  The sum in the numerator
 of this expression is the dot product of the Steinhardt parameters for atoms \f$i\f$ and \f$j\f$ and thus measures the degree to which the orientations of these
 adjacent atoms is correlated.

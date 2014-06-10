@@ -79,7 +79,7 @@ PRINT ARG=d1.gt0.1
 
 //+PLUMEDOC MCOLVAR YDISTANCES
 /*
-Calculate the x components of the vectors connecting one or many pairs of atoms.  
+Calculate the y components of the vectors connecting one or many pairs of atoms.  
 You can then calculate functions of the distribution of
 values such as the minimum, the number less than a certain quantity and so on.
 
@@ -94,7 +94,7 @@ rather than the x component.
 
 //+PLUMEDOC MCOLVAR ZDISTANCES
 /*
-Calculate the x components of the vectors connecting one or many pairs of atoms.  
+Calculate the z components of the vectors connecting one or many pairs of atoms.  
 You can then calculate functions of the distribution of
 values such as the minimum, the number less than a certain quantity and so on.
 

@@ -25,11 +25,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "tools/Communicator.h"
-
-#include <string>
-#include <cmath>
-#include <cassert>
 
 #include <almost/mdb.h>
 #include <almost/pdb.h>
@@ -49,30 +44,15 @@ experimental backbone chemical shifts for a protein (CA, CB, C', H, HA, N).
 CamShift \cite Kohlhoff:2009us is employed to back calculate the chemical shifts that are then compared
 with a set of experimental values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
 
-It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
+It is also possible to back-calculate the chemical shifts from multiple replicas and then average them
 to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
+
+In general the system for which chemical shifts are to be calculated must be completly included in
+ATOMS. It should also be made whole \ref WHOLEMOLECULES before the the back-calculation. 
 
 HOW TO COMPILE IT
 
-In general the system for which chemical shifts are to be calculated must be completly included in
-ATOMS. It should also be made WHOLE before the the backcalculation. CamShift is included in the
-free package ALMOST v.2.1 that can be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
-ALMOST 2.1 can be found in branches/almost-2.1/ and it can be compiled:
-
-\verbatim
-./configure 
-make
-\endverbatim
-
-Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
-
-PLUMED 2 must then be configured with ALMOST enabled: 
-
-\verbatim
-./configure --enable-almost CPPFLAGS="-I/ALMOST_BASE_PATH/branches/almost-2.1/include -I/ALMOST_BASE_PATH/branches/almost-2.1/include/almost -I/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1" LDFLAGS="-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm -L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 -L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl -L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx"
-
-with ALMOST_BASE_PATH the full path to the ALMOST folder
-\endverbatim
+\ref installingalmost on how to compile PLUMED with ALMOST.
 
 HOW TO USE IT
 
@@ -113,6 +93,8 @@ the MD code, (a03_cs2_gromacs.mdb for the amber family or all22_gromacs.mdb for 
 both these files can be copied from almost/branches/almost-2.1/toppar.
 
 All the above files must be in a single folder that must be specified with the keyword DATA. 
+
+Additional material and examples can be also found in the tutorial \ref belfast-9 
 
 \par Examples
 
@@ -211,7 +193,7 @@ PLUMED_COLVAR_INIT(ao)
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
   if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
     else ens_dim=multi_sim_comm.Get_size(); 
   } else ens_dim=0; 
   if(ensemble) comm.Sum(&ens_dim, 1);
@@ -231,7 +213,7 @@ PLUMED_COLVAR_INIT(ao)
   if(stringa_mol.length()>0) {
     unsigned num_chains = pdb[0].size();
     vector<string> data=Tools::getWords(stringa_mol,",");
-    if(data.size()!=2*num_chains) plumed_merror("You have to define both the NTerm and the CTerm for each chain of your system!\n");
+    if(data.size()!=2*num_chains) error("You have to define both the NTerm and the CTerm for each chain of your system!\n");
     for(unsigned i=0;i<data.size();i++) termini.push_back(data[i]);
   } else {
     unsigned num_chains = pdb[0].size();
@@ -356,13 +338,10 @@ CS2Backbone::~CS2Backbone()
 
 void CS2Backbone::calculate()
 {
-  double energy=0.;
-  Tensor virial;
-  unsigned N = getNumberOfAtoms();
-
   for(unsigned i=0;i<numResidues;i++) for(unsigned j=0;j<6;j++) sh[i][j]=0.;
   if(getExchangeStep()) cam_list[0].set_box_count(0);
 
+  unsigned N = getNumberOfAtoms();
   for (unsigned i=0;i<N;i++) {
      unsigned ipos = 4*i;
      Vector Pos = getPosition(i);
@@ -401,15 +380,17 @@ void CS2Backbone::calculate()
   }
 
   csforces.clear();
+  double energy;
   energy = cam_list[0].ens_energy_force(coor, csforces, sh);
   if(!serial) comm.Sum(&csforces[0][0], N*4);
 
+  Tensor virial;
   virial.zero();
+  double ff=fact*for_pl2alm;
+  Vector For;
   for(unsigned i=0;i<N;i++)
   {
     unsigned ipos=4*i;
-    double ff=fact*for_pl2alm;
-    Vector For;
     For[0] = ff*csforces.coor[ipos];
     For[1] = ff*csforces.coor[ipos+1];
     For[2] = ff*csforces.coor[ipos+2];

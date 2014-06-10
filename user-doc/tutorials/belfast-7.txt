@@ -1,10 +1,38 @@
 /**
 \page belfast-7 Belfast tutorial: Replica exchange I
 
+\section Aims
+
+The aim of this tutorial is to introduce the users to running a parallel tempering (PT) calculation using plumed. 
+We will set up a simple calculation on alanine dipeptide in vacuum, analyze the output, calculate free energies
+from the simulation, and detect problems. We will also learn how to run a combined Parallel Tempering metadynamics simulation (PTMetaD) and 
+introduce the users to the well-tempered ensemble (WTE).
+
+\section belfast-7-lo Learning Outcomes
+
+Once this tutorial is completed students will:
+
+- Know how to run a PT simulation 
+- Know how to analyse the output of the PT simulation and detect problems
+- Know how to run a PTMetaD simulation 
+- Know how to run a PT and PTMetaD in WTE 
+
+\section Resources
+
+The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-7.tar.gz" download="belfast-7.tar.gz"> tarball </a> for this project contains the following directories:
+
+- Exercise_1_2: run a PT simulation using 2 replicas and analyze the output  
+- Exercise_3: run a PT simulation using 4 replicas and analyze the output
+- Exercise_4: run a PTMetaD simulation
+- Exercise_5: run a PT-WTE and PTMetaD-WTE simulations
+
+Every directories contain the following subdirectories:
+- TOPO: topology files for Gromacs
+- RESULTS: pre-calculated results
+
 */
 
 link: @subpage belfast-7
 
 description: Parallel tempering and Metadynamics, Welltempered ensemble
-
 

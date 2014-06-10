@@ -33,10 +33,14 @@ namespace analysis{
 //+PLUMEDOC ANALYSIS HISTOGRAM
 /* 
 Calculate the probability density as a function of a few CVs either using kernel density estimation, or a discrete
-histogram estimation. In case a kernel density estimation is used the probability density is estimated as a
+histogram estimation. 
+
+In case a kernel density estimation is used the probability density is estimated as a
 continuos function on the grid with a BANDWIDTH defined by the user. In this case the normalisation is such that
 the INTEGRAL over the grid is 1. In case a discrete density estimation is used the probabilty density is estimated
 as a discrete function on the grid. In this case the normalisation is such that the SUM of over the grid is 1.
+
+Additional material and examples can be also found in the tutorial \ref belfast-1. 
  
 \par Examples
 
@@ -114,7 +118,6 @@ private:
   std::vector<unsigned> gbin;
   std::string gridfname;
   std::string kerneltype;
-  bool frequency; 
   bool fenergy; 
 public:
   static void registerKeywords( Keywords& keys );
@@ -135,7 +138,6 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using. Use discrete/DISCRETE if you want to accumulate a discrete histogram. \
                                              More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
-  keys.addFlag("FREQUENCY",false,"Set to TRUE if you want a frequency instead of a probabilty density.");
   keys.addFlag("FREE-ENERGY",false,"Set to TRUE if you want a FREE ENERGY instead of a probabilty density (you need to set TEMP).");
   keys.add("compulsory","GRID_WFILE","histogram","the file on which to write the grid");
   keys.use("NOMEMORY");
@@ -144,21 +146,20 @@ void Histogram::registerKeywords( Keywords& keys ){
 Histogram::Histogram(const ActionOptions&ao):
 PLUMED_ANALYSIS_INIT(ao),
 point(getNumberOfArguments()),
-frequency(false),
 fenergy(false)
 {
   // Read stuff for Grid
   parseVector("GRID_MIN",gmin);
-  if(gmin.size()!=getNumberOfArguments()) plumed_merror("Wrong number of values for GRID_MIN: they should be equal to the number of arguments");
+  if(gmin.size()!=getNumberOfArguments()) error("Wrong number of values for GRID_MIN: they should be equal to the number of arguments");
   parseVector("GRID_MAX",gmax);
-  if(gmax.size()!=getNumberOfArguments()) plumed_merror("Wrong number of values for GRID_MAX: they should be equal to the number of arguments");
+  if(gmax.size()!=getNumberOfArguments()) error("Wrong number of values for GRID_MAX: they should be equal to the number of arguments");
   parseVector("GRID_BIN",gbin);
-  if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) plumed_merror("Wrong number of values for GRID_BIN: they should be equal to the number of arguments");
+  if(gbin.size()!=getNumberOfArguments() && gbin.size()!=0) error("Wrong number of values for GRID_BIN: they should be equal to the number of arguments");
   std::vector<double>  gspacing;
   parseVector("GRID_SPACING",gspacing);
   if(gspacing.size()!=getNumberOfArguments() && gspacing.size()!=0) 
-    plumed_merror("Wrong number of for GRID_SPACING: they should be equal to the number of arguments");
-  if(gbin.size()==0 && gspacing.size()==0)  { plumed_merror("At least one among GRID_BIN and GRID_SPACING should be used");
+    error("Wrong number of for GRID_SPACING: they should be equal to the number of arguments");
+  if(gbin.size()==0 && gspacing.size()==0)  { error("At least one among GRID_BIN and GRID_SPACING should be used");
   } else if(gspacing.size()!=0 && gbin.size()==0) {
     log<<"  The number of bins will be estimated from GRID_SPACING\n";
   } else if(gspacing.size()!=0 && gbin.size()!=0) {
@@ -181,11 +182,10 @@ fenergy(false)
   // Read stuff for window functions
   parseVector("BANDWIDTH",bw);
   if(bw.size()!=getNumberOfArguments()&&kerneltype!="discrete") 
-    plumed_merror("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
+    error("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
 
-  parseFlag("FREQUENCY",frequency);
   parseFlag("FREE-ENERGY",fenergy);
-  if(getTemp()<=0&&fenergy) plumed_merror("Set the temperature (TEMP) if you want a free energy.");
+  if(getTemp()<=0&&fenergy) error("Set the temperature (TEMP) if you want a free energy.");
   checkRead();
 
   log.printf("  Using %s kernel functions\n",kerneltype.c_str() );
@@ -246,7 +246,7 @@ void Histogram::performAnalysis(){
   }
 
   // Normalize the histogram
-  if(!frequency) gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
+  gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
   if(fenergy) {
     gg->logAllValuesAndDerivatives( -getTemp() * plumed.getAtoms().getKBoltzmann() );
     gg->setMinToZero();

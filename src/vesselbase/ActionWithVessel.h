@@ -142,7 +142,7 @@ protected:
   unsigned getCurrentTask() const ;
 /// Deactivate all the tasks in the task list
   void deactivateAllTasks();
-/// Deactivate all tasks with i in lower \le  i < upper
+/// Deactivate all tasks with i in lower \f$\le\f$  i < upper
   void deactivateTasksInRange( const unsigned& lower, const unsigned& upper );
 /// Add a task to the full list
   void addTaskToList( const unsigned& taskCode );

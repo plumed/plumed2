@@ -1,3 +1,11 @@
+# DO NOT EDIT ./configure FILE
+# One should edit configure.ac and the run autoconf in this
+# directory. Also the resulting "configure" is stored on the git,
+# so as to allow people not to install a recent autoconf on their
+# system.
+# If you modify configure.ac, remember to run
+# autoconf and then commit both files to the git repository.
+
 # we require a recent version
 # notice that autoconf is not necessary on user's machine, but only
 # if one has to update configure.ac
@@ -265,11 +273,10 @@ if test $almost == true ; then
 fi
 if test $gsl == true ; then
   found=ko
-  AM_PATH_GSL(1.10, found=ok, [AC_MSG_ERROR(could not find required version of GSL)])
+  AC_CHECK_LIB([gsl],[main],[found=ok],[found=ko],[-lgslcblas])
   if test $found == ok ; then
     AC_DEFINE([__PLUMED_HAS_GSL])
-    LIBS="$GSL_LIBS $LIBS"
-    CPPFLAGS="$GSL_CFLAGS $CPPFLAGS"
+    LIBS="-lgsl -lgslcblas $LIBS"
   fi
 fi
 
@@ -453,7 +460,7 @@ AC_MSG_NOTICE([**** To add a suffix to this name, set PLUMED_LIBSUFFIX environme
 
 
 AC_SUBST(build_dir)
-build_dir=`cd ../; pwd`
+build_dir=`pwd`
 
 # This is to replace tags in Makefile.conf.in
 # saving the result to Makefile.conf

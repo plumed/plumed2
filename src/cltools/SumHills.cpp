@@ -119,7 +119,7 @@ plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6
 in this case you need a --kt to do the reweighting and then you
 need also some width (with the --sigma keyword) for the histogram calculation (actually will be done with 
 gaussians, so it will be a continuous histogram)
-Here the default output will be correction.dat.
+Here the default output will be histo.dat.
 Note that also here you can have multiple input files separated by a comma.
 
 Additionally, if you want to do histogram and hills from the same file you can do as this   
@@ -169,19 +169,19 @@ plumed sum_hills --hills PATHTOMYHILLSFILE  --outfile myfes_ --stride 100
 
 will produce myfes_0.dat,  myfes_1.dat, myfes_2.dat etc.
 
-The same is true for the output coming from histogram corrections 
+The same is true for the output coming from histogram  
 \verbatim
-plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto mycorrection.dat
+plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto myhisto.dat
 \endverbatim
 
-is producing a file mycorrection.dat
+is producing a file myhisto.dat
 while, when using stride, this is the suffix 
 
 \verbatim
-plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto mycorrection_ --stride 100 
+plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto myhisto_ --stride 100 
 \endverbatim
 
-that gives  mycorrection_0.dat,  mycorrection_1.dat,  mycorrection_3.dat etc..
+that gives  myhisto_0.dat,  myhisto_1.dat,  myhisto_3.dat etc..
 
 */
 //+ENDPLUMEDOC
@@ -207,7 +207,7 @@ void CLToolSumHills::registerKeywords( Keywords& keys ){
   keys.add("optional","--max","the upper bounds for the grid");
   keys.add("optional","--bin","the number of bins for the grid");
   keys.add("optional","--spacing","grid spacing, alternative to the number of bins");
-  keys.add("optional","--idw","specify the variables to be integrated (default is all)");
+  keys.add("optional","--idw","specify the variables to be used for the free-energy/histogram (default is all). With --hills the other variables will be integrated out, with --histo the other variables won't be considered");
   keys.add("optional","--outfile","specify the outputfile for sumhills");
   keys.add("optional","--outhisto","specify the outputfile for the histogram");
   keys.add("optional","--kt","specify temperature in energy units for integrating out variables");
@@ -258,7 +258,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
        findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate);
        // here need also the vector of sigmas
        parseVector("--sigma",sigma);
-       if(sigma.size()!=hcvs.size())plumed_merror("you should define --sigma vector when using histogram");
+       if(sigma.size()==0)plumed_merror("you should define --sigma vector when using histogram");
   }
 
   if(dohisto && dohills){
@@ -486,6 +486,15 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
      addme+=idw.back();  
      actioninput.push_back(addme);
   }
+
+  if(dohisto) {
+    if(idw.size()==0) {
+      if(sigma.size()!=hcvs.size()) plumed_merror("you should define as many --sigma vector as the number of collective variable used for the histogram ");
+    } else {
+      if(idw.size()!=sigma.size()) plumed_merror("you should define as many --sigma vector as the number of collective variable used for the histogram ");
+    }
+  }
+
   if(idw.size()!=0 || dohisto){
      actioninput.push_back("KT="+kt);
   } 

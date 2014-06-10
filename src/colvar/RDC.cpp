@@ -23,9 +23,6 @@
 #include "Colvar.h"
 #include "ActionRegister.h"
 
-#include <string>
-#include <cmath>
-#include <cassert>
 #ifdef __PLUMED_HAS_GSL
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
@@ -41,7 +38,7 @@ namespace PLMD{
 /*
 Calculates the Residual Dipolar Coupling between two atoms. 
 
-The RDC between two atomic nuclei depends on the &theta; angle between 
+The RDC between two atomic nuclei depends on the \f$\theta\f$ angle between 
 the inter-nuclear vector and the external magnetic field. In isotropic media RDCs average to zero because of the orientational 
 averaging, but when the rotational symmetry is broken, either through the introduction of an alignment medium or for molecules 
 with highly anisotropic paramagnetic susceptibility, RDCs become measurable.
@@ -56,8 +53,8 @@ where
 D_{max}=-\mu_0\gamma_1\gamma_2h/(8\pi^3r^3)
 \f]
 
-that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio &gamma;. 
-&mu; is the magnetic constant and h is the Planck constant. 
+that is the maximal value of the dipolar coupling for the two nuclear spins with gyromagnetic ratio \f$\gamma\f$. 
+\f$\mu\f$ is the magnetic constant and h is the Planck constant. 
 
 Common Gyromagnetic Ratios (C.G.S)
 - H(1) 26.7513
@@ -86,6 +83,8 @@ RDCs can also be calculated using a Single Value Decomposition approach, in this
 a set of function from the GNU Scientific Library (GSL). (With SVD forces are not currently implemented).
 
 Replica-Averaged restrained simulations can be performed with this CV using the ENSEMBLE flag.
+
+Additional material and examples can be also found in the tutorial \ref belfast-9
 
 \par Examples
 In the following example five N-H RDCs are defined and their correlation with
@@ -120,7 +119,6 @@ private:
   vector<double> mu_s;
   vector<double> scale;
   vector<double> bond_d;
-  vector<double> d_e;
   int  ens_dim;
   int  pperiod;
   bool ensemble;
@@ -146,7 +144,6 @@ void RDC::registerKeywords( Keywords& keys ){
   keys.add("numbered","COUPLING","Add an experimental value for each coupling. ");
   keys.add("numbered","GYROM","Add the product of the gyromagnetic constants for each bond. ");
   keys.add("numbered","SCALE","Add a scaling factor to take into account concentration and other effects. ");
-  keys.add("numbered","ERROR","Add a scaling factor to take into account concentration and other effects. ");
   keys.add("numbered","BONDLENGTH","Set a fixed length for for the bonds distances.");  
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");  
   keys.addFlag("CORRELATION",false,"Set to TRUE if you want to kept constant the bonds distances.");  
@@ -208,19 +205,6 @@ firstTime(true)
       for(unsigned i=1;i<coupl.size();++i) scale[i]=scale[0];
   } else if( ntarget!=coupl.size() ) error("found wrong number of SCALE values");
 
-  // Read in RDC errors 
-  d_e.resize( coupl.size() ); 
-  for(unsigned i=0;i<coupl.size();++i) d_e[i]=1.0;
-  ntarget=0;
-  for(unsigned i=0;i<coupl.size();++i){
-     if( !parseNumbered( "ERROR", i+1, d_e[i] ) ) break;
-     ntarget++; 
-  }
-  if( ntarget==0 ){
-      parse("ERROR",d_e[0]);
-      for(unsigned i=1;i<coupl.size();++i) d_e[i]=d_e[0];
-  } else if( ntarget!=coupl.size() ) error("found wrong number of ERROR values");
-
   // Read in Bond Lengths 
   fixdist=false;
   bond_d.resize( coupl.size() ); 
@@ -239,7 +223,7 @@ firstTime(true)
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
   if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
     else ens_dim=multi_sim_comm.Get_size(); 
   } else ens_dim=0; 
   if(ensemble) comm.Sum(&ens_dim, 1);
@@ -250,7 +234,7 @@ firstTime(true)
   svd=false;
   parseFlag("SVD",svd);
 #ifndef __PLUMED_HAS_GSL
-  if(svd) plumed_merror("You CANNOT use SVD without GSL. Recompile PLUMED with GSL!\n");
+  if(svd) error("You CANNOT use SVD without GSL. Recompile PLUMED with GSL!\n");
 #endif
 
   serial=false;
@@ -386,7 +370,7 @@ void RDC::calculate()
         double dmax = id3*max;
         double cos_theta = distance[2]/d;
         rdc[index] = 0.5*dmax*(3.*cos_theta*cos_theta-1.);
-        norm  += coupl[index]*coupl[index]*d_e[index]*d_e[index];
+        norm  += coupl[index]*coupl[index];
         double x2=distance[0]*distance[0];
         double y2=distance[1]*distance[1];
         double z2=distance[2]*distance[2];
@@ -426,7 +410,7 @@ void RDC::calculate()
         double max  = -Const*scale[index]*mu_s[index];
         double dmax = bond_d[index]*max;
         rdc[index] = 0.5*dmax*(3.*cos_theta*cos_theta-1.);
-        norm  += coupl[index]*coupl[index]*d_e[index]*d_e[index];
+        norm  += coupl[index]*coupl[index];
         double x2=distance[0]*distance[0];
         double y2=distance[1]*distance[1];
         double z2=distance[2]*distance[2];

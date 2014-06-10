@@ -44,6 +44,8 @@ class ReferenceArguments :
   virtual public ReferenceConfiguration
 {
 private:
+/// The weights for normed euclidean distance
+  std::vector<double> weights;
 /// The N X N matrix we are using to calculate our Malanobius distance
   Matrix<double> metric;
   std::vector<double> trig_metric;
@@ -54,6 +56,8 @@ private:
 /// The indices for setting derivatives
   std::vector<unsigned> der_index;
 protected:
+/// Are we reading weights from input
+  bool hasweights;
 /// Are we calculating a Malanobius distance 
   bool hasmetric;
 /// Read in the atoms from the pdb file

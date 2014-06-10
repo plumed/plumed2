@@ -1,5 +1,8 @@
 #! /bin/bash
 
+echo "WARNING: The configure.sh system will be removed soon."
+echo "         Please try ./configure instead."
+
 
 rm -f sourceme.sh Makefile.conf
 

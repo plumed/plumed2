@@ -94,7 +94,7 @@ std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar){
 
 bool CLToolRegister::printManual( const std::string& cltool ){
   if ( check(cltool) ){
-     mk[cltool].print_html(false);
+     mk[cltool].print_html();
      return true;
   } else {
      return false;

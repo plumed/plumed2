@@ -275,8 +275,6 @@ signal of approaching a minimum like before. Nevertheless consider what you we a
 conformation and this is completely unnatural for a system at 300 kelvin so, even for this small system adopting a specific conformation in
 which all the heavy atoms are in a precise position is rather unrealistic. This means that this state is an high free energy state. 
 
-\section belfast-5-FE Reweighting
-
 
 */
 

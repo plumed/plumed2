@@ -26,13 +26,6 @@
 
 namespace PLMD {
 
-//+PLUMEDOC INTERNAL BiasRepresentation 
-/*
-An internal tool in plumed that is used to represent a bias
-
-*/
-//+ENDPLUMEDOC
-
 /// the constructor here
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),mycomm(cc){
     ndim=tmpvalues.size();

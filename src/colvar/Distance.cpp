@@ -33,6 +33,7 @@ namespace colvar{
 //+PLUMEDOC COLVAR DISTANCE
 /*
 Calculate the distance between a pair of atoms.
+
 By default the distance is computed taking into account periodic
 boundary conditions. This behavior can be changed with the NOPBC flag.
 Moreover, single components (x,y, and z) can be also computed.

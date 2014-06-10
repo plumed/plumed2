@@ -2,8 +2,9 @@
 
 \page Analysis Analysis
 
-Once you have calculated a number of collective variables PLUMED allows you to either analyse
-your trajectory.  The list of available on-the-fly analysis tools contains:
+PLUMED can be used to analyse trajectories either on the fly during an MD run or via
+postprocessing a trajectory using \ref driver.  The following is a list of the various
+methods for analysing trajectories contained in PLUMED.
 
 @ANALYSIS@
 

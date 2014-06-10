@@ -16,3 +16,6 @@ makefile.dep
 /sourceme.sh
 /tmp
 /codes
+/config.*
+/autom4*
+

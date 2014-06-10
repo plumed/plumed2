@@ -18,7 +18,7 @@ Once this tutorial is completed students will:
 
 \section Resources
 
-The <a href="https://dl.dropboxusercontent.com/u/1349402/belfast-8.tgz" download="belfast-8.tgz"> tarball </a> for this project contains the following files:
+The <a href="belfast-8.tgz" download="belfast-8.tgz"> tarball </a> for this project contains the following files:
 
 - system folder: a starting structure for Val-Ile-Leu system
 - WTBX: a run of Well-Tempered Bias-Exchange Metadynamics ready for the analysis
@@ -194,8 +194,10 @@ HILLS.#:
 \endverbatim
 
 The above notes hold for the HILLS files as well. In the folder metagui the script check_for_metagui.sh checks if the header of your file is compatible
-with METAGUI, but remember that this is not enough! Synchronisation of COLVAR and trajctory files is also needed. HILLS files can be written with a
-different frequency but times must be consistent.
+with METAGUI, but remember that this is not enough! Synchronisation of COLVAR and trajectory files is also needed. HILLS files can be written with a
+different frequency but times must be consistent. 
+
+NOTE: It is important to copy HILLS files in the metagui folder.
 
 \verbatim
 ./check_for_metagui.sh ../COLVAR.0
@@ -209,15 +211,15 @@ In the metagui folder there is a metagui.input file:
 WHAM_EXE 	wham_bemeta.x
 BASINS_EXE 	kinetic_basins.x
 KT 2.4900
-HILLS_FILE   ../HILLS.0  
-HILLS_FILE   ../HILLS.1  
-HILLS_FILE   ../HILLS.2  
-HILLS_FILE   ../HILLS.3  
+HILLS_FILE   HILLS.0  
+HILLS_FILE   HILLS.1  
+HILLS_FILE   HILLS.2  
+HILLS_FILE   HILLS.3  
 GRO_FILE     VIL.pdb 
-COLVAR_FILE ../COLVAR.0 ../traj0.xtc "psi-1"
-COLVAR_FILE ../COLVAR.1 ../traj1.xtc "phi-2"
-COLVAR_FILE ../COLVAR.2 ../traj2.xtc "psi-2"
-COLVAR_FILE ../COLVAR.3 ../traj3.xtc "phi-3"
+COLVAR_FILE COLVAR.0 ../traj0.xtc "psi-1"
+COLVAR_FILE COLVAR.1 ../traj1.xtc "phi-2"
+COLVAR_FILE COLVAR.2 ../traj2.xtc "psi-2"
+COLVAR_FILE COLVAR.3 ../traj3.xtc "phi-3"
 TRAJ_SKIP 10
 CVGRID 1  -3.1415 3.1415 15 PERIODIC
 CVGRID 2  -3.1415 3.1415 15 PERIODIC
@@ -246,7 +248,7 @@ in Extensions->Analysis.
 
 One or more microstates can be visualised by selecting them and clicking show.
 
-You can sort the microstate using the column name tabs, for example by clicking on size the microstates will be ordered from the larger
+You can sort the microstates using the column name tabs, for example by clicking on size the microstates will be ordered from the larger
 to the smaller. If you look at the largest one it is possible to observe that by using the four selected collective variables the backbone
 conformation of the peptide is well defined while the sidechains can populate different rotameric states.
 
@@ -296,7 +298,16 @@ plumed.dat.#
 INCLUDE FILE=plumed-common.dat
 
 METAD ...
-ARG=cv2,cv3 SIGMA=0.3,0.3 HEIGHT=0.2 PACE=100 LABEL=mw GRID_MIN=-pi,-pi GRID_MAX=pi,pi GRID_BIN=200,200
+LABEL=mw 
+ARG=cv2,cv3 
+SIGMA=0.3,0.3 
+HEIGHT=0.2 
+PACE=100
+BIASFACTOR=8
+TEMP=300 
+GRID_MIN=-pi,-pi 
+GRID_MAX=pi,pi 
+GRID_BIN=200,200
 WALKERS_MPI
 ... METAD
 
@@ -313,7 +324,7 @@ alternatively Multiple Walkers can be run as independent simulations sharing via
 this is usefull because it provides a parallelisation that does not need a parallel code. In this case the walkers read with
 a given frequency the gaussians deposited by the others and add them to their own \ref METAD.
 
-\Reference
+\section refer Reference
 
 This tutorial is freely inspired to the work of Biarnes et al.
 
@@ -322,6 +333,9 @@ More materials can be found in
 1. Marinelli, F., Pietrucci, F., Laio, A. & Piana, S. A kinetic model of trp-cage folding from multiple biased molecular dynamics simulations. PLoS Comput. Biol. 5, e1000452 (2009).
 2. Biarnés, X., Pietrucci, F., Marinelli, F. & Laio, A. METAGUI. A VMD interface for analyzing metadynamics and molecular dynamics simulations. Comput. Phys. Commun. 183, 203–211 (2012).
 3. Baftizadeh, F., Cossio, P., Pietrucci, F. & Laio, A. Protein folding and ligand-enzyme binding from bias-exchange metadynamics simulations. Current Physical Chemistry 2, 79–91 (2012).
+4. Granata, D., Camilloni, C., Vendruscolo, M. & Laio, A. Characterization of the free-energy landscapes of proteins by NMR-guided metadynamics. Proc. Natl. Acad. Sci. U.S.A. 110, 6817–6822 (2013).
+5. Raiteri, P., Laio, A., Gervasio, F. L., Micheletti, C. & Parrinello, M. Efficient reconstruction of complex free energy landscapes by multiple walkers metadynamics. J. Phys. Chem. B 110, 3533–3539 (2006).
+
 
 */
 

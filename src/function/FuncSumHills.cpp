@@ -288,8 +288,20 @@ fmt("%14.9f")
   vector<double> histoSigma;
   if(integratehisto){
   	parseVector("HISTOSIGMA",histoSigma);
-	plumed_massert(histoSigma.size()==getNumberOfArguments()," The number of sigmas must be the same of the number of arguments ");
         for(unsigned i=0;i<histoSigma.size();i++) log<<"  histosigma  : "<<histoSigma[i]<<"\n";
+  }
+
+  // needs a projection? 
+  proj.clear();
+  parseVector("PROJ",proj);
+  if(integratehills) {
+    plumed_massert(proj.size()<getNumberOfArguments()," The number of projection must be less than the full list of arguments ");
+  }
+  if(integratehisto) {
+    plumed_massert(proj.size()<=getNumberOfArguments()," The number of projection must be less or equal to the full list of arguments ");
+  }
+  if(integratehisto&&proj.size()==0) {
+    for(unsigned i=0;i<getNumberOfArguments();i++) proj.push_back(getPntrToArgument(i)->getName()); 
   }
 
   // add some automatic hills width: not in case stride is defined  
@@ -297,14 +309,25 @@ fmt("%14.9f")
   if(gmin.size()==0 || gmax.size()==0){
 	log<<"   \n"; 
 	log<<"  No boundaries defined: need to do a prescreening of hills \n"; 
-        std::vector<Value*> tmpvalues; 
-        for(unsigned i=0;i<getNumberOfArguments();i++)tmpvalues.push_back( getPntrToArgument(i) );
+        std::vector<Value*> tmphillsvalues, tmphistovalues;
+        if(integratehills) { 
+          for(unsigned i=0;i<getNumberOfArguments();i++)tmphillsvalues.push_back( getPntrToArgument(i) );
+        }
+        if(integratehisto) {
+          for(unsigned i=0;i<getNumberOfArguments();i++) {
+            std::string ss = getPntrToArgument(i)->getName(); 
+            for(unsigned j=0;j<proj.size();j++) {
+              if(proj[j]==ss) tmphistovalues.push_back( getPntrToArgument(i) );
+            }
+          } 
+        }
+
         if(integratehills) {
         	FilesHandler *hillsHandler;
         	hillsHandler=new FilesHandler(hillsFiles,parallelread,*this, log);
 		vector<double> vmin,vmax;
         	vector<unsigned> vbin;  
-        	hillsHandler->getMinMaxBin(tmpvalues,comm,vmin,vmax,vbin);
+        	hillsHandler->getMinMaxBin(tmphillsvalues,comm,vmin,vmax,vbin);
 		log<<"  found boundaries from hillsfile: \n";
 		gmin.resize(vmin.size());
 		gmax.resize(vmax.size());
@@ -325,7 +348,7 @@ fmt("%14.9f")
 	        histoHandler=new FilesHandler(histoFiles,parallelread,*this, log);
 		vector<double> vmin,vmax;
         	vector<unsigned> vbin;  
-        	histoHandler->getMinMaxBin(tmpvalues,comm,vmin,vmax,vbin,histoSigma);
+        	histoHandler->getMinMaxBin(tmphistovalues,comm,vmin,vmax,vbin,histoSigma);
 		log<<"  found boundaries from histofile: \n";
 		gmin.resize(vmin.size());
 		gmax.resize(vmax.size());
@@ -334,24 +357,21 @@ fmt("%14.9f")
                 }else{
 			log<<"  found nbins in input, this overrides the automatic choice \n"; 
 		}
-		for(unsigned i=0;i<getNumberOfArguments();i++){
+		for(unsigned i=0;i<proj.size();i++){
 		 	Tools::convert(vmin[i],gmin[i]);
 		 	Tools::convert(vmax[i],gmax[i]);
-			log<<"  variable "<< getPntrToArgument(i)->getName()<<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
+			log<<"  variable "<< proj[i] <<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
 		}
         }
 	log<<"  done!\n"; 
 	log<<"   \n"; 
   }
 
-  // needs a projection? 
-  proj.clear();
-  parseVector("PROJ",proj);
-  plumed_massert(proj.size()<getNumberOfArguments()," The number of projection must be less than the full list of arguments ");
 
   if( proj.size() != 0 || integratehisto==true  ) {
     parse("KT",beta);
     for(unsigned i=0;i<proj.size();i++) log<<"  projection "<<i<<" : "<<proj[i]<<"\n";
+    // this should be only for projection or free energy from histograms
     plumed_massert(beta>0.,"if you make a projection or a histogram correction then you need KT flag!"); 
     beta=1./beta; 
     log<<"  beta is "<<beta<<"\n"; 
@@ -366,8 +386,8 @@ fmt("%14.9f")
   parse("INITSTRIDE",initstride);
   // output suffix or names
   if(initstride<0){ log<<"  Doing only one integration: no stride \n";
-  	 outhills="fes.dat";outhisto="correction.dat";}
-  else{outhills="fes_";outhisto="correction_";
+  	 outhills="fes.dat";outhisto="histo.dat";}
+  else{outhills="fes_";outhisto="histo_";
 	log<<"  Doing integration slices every "<<initstride<<" kernels\n";
         parseFlag("NOHISTORY",nohistory); 
         if(nohistory)log<<"  nohistory: each stride block has no memory of the previous block\n";
@@ -382,16 +402,27 @@ fmt("%14.9f")
   // create a bias representation for this
   if(iscltool){
 
-     std::vector<Value*> tmpvalues; 
-    for(unsigned i=0;i<getNumberOfArguments();i++){
+    std::vector<Value*> tmphillsvalues, tmphistovalues; 
+    if(integratehills) {
+      for(unsigned i=0;i<getNumberOfArguments();i++){
         // allocate a new value from the old one: no deriv here
-	tmpvalues.push_back( getPntrToArgument(i) );
+        // if we are summing hills then all the arguments are needed
+	tmphillsvalues.push_back( getPntrToArgument(i) );
+      }
+    }
+    if(integratehisto) {
+      for(unsigned i=0;i<getNumberOfArguments();i++) {
+        std::string ss = getPntrToArgument(i)->getName(); 
+        for(unsigned j=0;j<proj.size();j++) {
+          if(proj[j]==ss) tmphistovalues.push_back( getPntrToArgument(i) );
+        }
+      } 
     }
 
     // check if the files exists 
     if(integratehills){
          checkFilesAreExisting(hillsFiles); 
-         biasrep=new BiasRepresentation(tmpvalues,comm, gmin, gmax, gbin);
+         biasrep=new BiasRepresentation(tmphillsvalues,comm, gmin, gmax, gbin);
 	 if(negativebias){
 		biasrep->setRescaledToBias(true);
 	        log<<"  required the -bias instead of the free energy \n";
@@ -402,17 +433,19 @@ fmt("%14.9f")
 
     parse("OUTHILLS",outhills);
     parse("OUTHISTO",outhisto);
-    if(integratehills)log<<"  output file for fes/bias   is :  "<<outhills<<"\n";   
-    if(integratehisto)log<<"  output file for correction is :  "<<outhisto<<"\n";   
+    if(integratehills)log<<"  output file for fes/bias  is :  "<<outhills<<"\n";   
+    if(integratehisto)log<<"  output file for histogram is :  "<<outhisto<<"\n";   
     checkRead();
 
     log<<"\n";
     log<<"  Now calculating...\n";
     log<<"\n";
 
+    // here it defines the column to be histogrammed, tmpvalues should be only
+    // the list of the collective variable one want to consider
     if(integratehisto){
          checkFilesAreExisting(histoFiles); 
-         historep=new BiasRepresentation(tmpvalues,comm,gmin,gmax,gbin,histoSigma);
+         historep=new BiasRepresentation(tmphistovalues,comm,gmin,gmax,gbin,histoSigma);
     }
 
     // decide how to source hills ( serial/parallel )
@@ -459,18 +492,20 @@ fmt("%14.9f")
                         if(initstride>0){ myout=outhills+ostr.str()+".dat" ;}else{myout=outhills;}
               		log<<"  Bias: Writing subgrid on file "<<myout<<" \n";
               		gridfile.open(myout);	
+                        if(minTOzero) smallGrid.setMinToZero();	
         		smallGrid.setOutputFmt(fmt); 
    	      		smallGrid.writeToFile(gridfile);
               		gridfile.close();
                         if(!ibias)integratehills=false;// once you get to the final bunch just give up 
 
 		}
+                // this should be removed
 		if(integratehisto){
 
     	      		log<<"  Histo: Projecting on subgrid... \n";
-                        ProbWeight *Pw=new ProbWeight(beta);
+                        //ProbWeight *Pw=new ProbWeight(beta);
              		Grid histoGrid=*(historep->getGridPtr());
-   	      		Grid smallGrid=histoGrid.project(proj,Pw);
+   	      		//Grid smallGrid=histoGrid.project(proj,Pw);
 
               		OFile gridfile; gridfile.link(*this);
 	      		std::ostringstream ostr;ostr<<nfiles;
@@ -479,8 +514,13 @@ fmt("%14.9f")
               		log<<"  Histo: Writing subgrid on file "<<myout<<" \n";
               		gridfile.open(myout);	
          
-        		smallGrid.setOutputFmt(fmt); 
-   	      		smallGrid.writeToFile(gridfile);
+        		//smallGrid.setOutputFmt(fmt); 
+   	      		//smallGrid.writeToFile(gridfile);
+                        histoGrid.applyFunctionAllValuesAndDerivatives(&mylog,&mylogder);
+                        histoGrid.scaleAllValuesAndDerivatives(-1./beta);	
+                        if(minTOzero) histoGrid.setMinToZero();	
+        		histoGrid.setOutputFmt(fmt); 
+   	      		histoGrid.writeToFile(gridfile);
               		gridfile.close();
 
                         if(!ihisto)integratehisto=false;// once you get to the final bunch just give up 
@@ -510,6 +550,7 @@ fmt("%14.9f")
 		if(integratehisto){
 
 	                Grid histoGrid=*(historep->getGridPtr());
+                        // do this if you want a free energy from a grid, otherwise do not
                         histoGrid.applyFunctionAllValuesAndDerivatives(&mylog,&mylogder);
                         histoGrid.scaleAllValuesAndDerivatives(-1./beta);	
 
@@ -520,12 +561,13 @@ fmt("%14.9f")
 	                log<<"  Writing full grid on file "<<myout<<" \n";
 	                gridfile.open(myout);	
 
+                        // also this is usefull only for free energy
                         if(minTOzero) histoGrid.setMinToZero();	
         		histoGrid.setOutputFmt(fmt); 
 	                histoGrid.writeToFile(gridfile);
 	                gridfile.close();
 
-                        if(!ihisto)integratehisto=false;// once you get to the final bunch just give up 
+                        if(!ihisto)integratehisto=false; // once you get to the final bunch just give up 
                 } 
 	} 	
         if ( !ibias && !ihisto) break; //when both are over then just quit 

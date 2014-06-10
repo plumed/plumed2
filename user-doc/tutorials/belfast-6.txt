@@ -1,10 +1,308 @@
 /**
 \page belfast-6 Belfast tutorial: Metadynamics
 
+\section Aims
+
+The aim of this tutorial is to introduce the users to running a metadynamics calculation using PLUMED. We will set up
+a simple calculation on alanine dipeptide in vacuum, analyse the output, and calculate free energies
+from the simulation. We will also learn how to run a well-tempered metadynamics simulation and 
+detect issues related to a bad choice of collective variables.
+
+\section belfast-6-theory Summary of theory
+
+In a metadynamics simulations a history dependent bias composed of 
+intermittently added Gaussian functions is added to the potential \cite metad.
+
+\f[
+V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
+\exp\left(
+-\sum_{i=1}^{d} \frac{(s_i-s_i^{(0)}(k \tau))^2}{2\sigma_i^2}
+\right).
+\f]
+
+This potential forces the system away from the kinetic traps in the potential energy surface
+and out into the unexplored parts of the energy landscape. Information on the Gaussian
+functions from which this potential is composed is output to a file called HILLS, which 
+is used both the restart the simulation and to reconstruct the free energy as a function of the CVs. 
+The free energy can be reconstructed from a metadynamics simulation because the final bias is given
+by: 
+
+\f[
+V(\vec{s}) = -F(\vec(s))
+\f]
+
+During post processing the free energy can be calculated in this way using the \ref sum_hills
+utility.
+
+Another option that is available in PLUMED 2.0 is well-tempered metadynamics \cite Barducci:2008. In this
+varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
+given by:
+
+\f[
+V({s},t)= \sum_{t'=0,\tau_G,2\tau_G,\dots}^{t'<t} W e^{-V({s}({q}(t'),t')/\Delta T} \exp\left(
+-\sum_{i=1}^{d} \frac{(s_i({q})-s_i({q}(t'))^2}{2\sigma_i^2}
+\right),
+\f]
+
+This method ensures that the bias converges more smoothly. 
+
+Additional information can be found in the several review papers on metadynamics 
+\cite gerv-laio09review \cite WCMS:WCMS31 \cite WCMS:WCMS1103.
+
+
+\section belfast-6-learning-outcomes Learning Outcomes
+
+Once this tutorial is completed students will know how to:
+
+- run a metadynamics simulation using PLUMED 
+- analyse the output of the simulation
+- restart a metadynamics simulation 
+- calculate free energies from a metadynamics simulation 
+- run a well-tempered metadynamics simulation using PLUMED
+- detect issues with the choice of the collective variables
+
+\section belfast-6-resources Resources
+
+The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-6.tar.gz" download="belfast-6.tar.gz"> tarball </a> for this project contains the following directories:
+
+- TOPO: it contains the gromacs topology and configuration files to simulate alanine dipeptide in vacuum  
+- Exercise_1: run a metadynamics simulation with 2 CVs, dihedrals phi and psi, and analyse the output 
+- Exercise_2: restart a metadynamics simulation
+- Exercise_3: calculate free energies from a metadynamics simulation and monitor convergence
+- Exercise_4: run a well-tempered metadynamics simulation with 2 CVs, dihedrals phi and psi
+- Exercise_5: run a well-tempered metadynamics simulation with 1 CV, dihedral psi
+
+\section belfast-6-instructions Instructions
+
+\subsection belfast-6-system The model system
+
+We here use as model system alanine dipeptide with AMBER99SB-ILDN all atom force field.
+
+\subsection belfast-6-exercise-1 Exercise 1. Setup and run a metadynamics simulation 
+
+In this exercise, we will run a metadynamics simulation on alanine dipeptide in vacuum, using as CVs the
+two backbone dihedral angles phi and psi. 
+In order to run this simulations we need to prepare the PLUMED input file as follows.
+
+\verbatim
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Activate metadynamics in phi and psi
+# depositing a Gaussian every 500 time steps,
+# with height equal to 1.2 kJoule/mol,
+# and width 0.35 rad for both CVs. 
+#
+metad: METAD ARG=phi,psi PACE=500 HEIGHT=1.2 SIGMA=0.35,0.35 FILE=HILLS 
+
+# monitor the two variables and the metadynamics bias potential
+PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
+
+\endverbatim
+(see \ref TORSION, \ref METAD, and \ref PRINT).
+
+The syntax for the command \ref METAD is rather trivial.
+The directive is followed by a keyword ARG followed by the labels of the CVs
+on which the metadynamics potential will act.
+The keyword PACE determines the stride of Gaussian deposition in number of time steps,
+while the keyword HEIGHT specifies the height of the Gaussian in kJoule/mol. For each CVs, one has
+to specified the width of the Gaussian by using the keyword SIGMA. Gaussian will be written
+to the file indicated by the keyword FILE. 
+
+Once the PLUMED input file is prepared, one has to run Gromacs with the option to activate PLUMED and
+read the input file (plumed.dat):
+
+\verbatim
+mdrun_mpi -plumed plumed.dat
+\endverbatim
+
+During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
+The COLVAR file contains all the information specified by the PRINT command, in this case
+the value of the CVs every 10 steps of simulation, along with the current value of the metadynamics
+bias potential. The HILLS file contains a list of the Gaussian deposited along the simulation.
+If we give a look at the header of this file, we can find relevant information about its content:
+
+\verbatim
+#! FIELDS time phi psi sigma_phi sigma_psi height biasf
+#! SET multivariate false
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+\endverbatim 
+
+The line starting with FIELDS tells us what is displayed in the various columns of the HILLS file:
+the time of the simulation, the value of phi and psi, the width of the Gaussian in phi and psi, and
+the height of the Gaussian. The last column contains the so-called bias-factor, which is the ratio
+of the CV temperature and the temperature of the simulation. This quantity is relevant only for
+well-tempered metadynamics simulation (see \ref belfast-6-exercise-4) and it is equal to 1 in standard
+metadynamics simulations.
+We will use the HILLS file later to calculate free-energies from the metadynamics simulation and assess its convergence.
+For the moment, we can plot the behavior of the CVs during the simulation.
+
+\anchor belfast-6-metad-fig
+\image html belfast-6-metad.png "Time evolution of the CVs during the first nanosecond of a metadynamics simulation of alanine dipeptide in vacuum."
+
+By inspecting Figure \ref belfast-6-metad-fig, we can see that the system is initialized in one of the two metastable
+states of alanine dipeptide. After a while (t=0.3 ns), the system is pushed
+by the metadynamics bias potential to visit the other local minimum. As the simulation continues,
+the bias potential fills the underlying free-energy landscape, and the system is able to diffuse in the
+entire phase space.
+
+If we use the PLUMED input file described above, the expense of a metadynamics
+simulation increases with the length of the simulation as one has to evaluate
+the values of a larger and larger number of Gaussians at every step. To avoid this issue you can
+store the bias on a grid. In order to use grids, we have to add some additional information to the line of the \ref METAD
+directive, as follows.
+
+\verbatim
+# set up two variables for Phi and Psi dihedral angles
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Activate metadynamics in phi and psi
+# depositing a Gaussian every 500 time steps,
+# with height equal to 1.2 kJoule/mol,
+# and width 0.35 rad for both CVs.
+# The bias potential will be stored on a grid
+# with bin size equal to 0.1 rad for both CVs. 
+# The boundaries of the grid are -pi and pi, for both CVs.
+#
+METAD ...
+LABEL=metad
+ARG=phi,psi 
+PACE=500
+HEIGHT=1.2
+SIGMA=0.35,0.35
+FILE=HILLS
+GRID_MIN=-pi,-pi
+GRID_MAX=pi,pi
+GRID_SPACING=0.1,0.1 
+... METAD
+
+# monitor the two variables and the metadynamics bias potential
+PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
+
+\endverbatim
+
+The bias potential will be stored on a grid, whose boundaries are specified by the keyword GRID_MIN and GRID_MAX.
+Notice that you should provide either the number of bins for every collective variable (GRID_BIN) or
+the desired grid spacing (GRID_SPACING). In case you provide both PLUMED will use
+the most conservative choice (highest number of bins) for each dimension.
+In case you do not provide any information about bin size (neither GRID_BIN nor GRID_SPACING)
+and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
+This default choice should be reasonable for most applications.
+
+\subsection belfast-6-exercise-2 Exercise 2. Restart a metadynamics simulation 
+
+If we try to run again a metadynamics simulation using the script above in a directory where
+a COLVAR and HILLS files are already present, PLUMED will create a backup copy of the old files,
+and run a new simulation. Instead, if we want to restart a previous simulation, we have to add
+the keyword RESTART to the input file, as follows.
+
+\verbatim
+# restart previous simulation
+RESTART
+
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Activate metadynamics in phi and psi
+# depositing a Gaussian every 500 time steps,
+# with height equal to 1.2 kJoule/mol,
+# and width 0.35 rad for both CVs. 
+#
+metad: METAD ARG=phi,psi PACE=500 HEIGHT=1.2 SIGMA=0.35,0.35 FILE=HILLS 
+
+# monitor the two variables and the metadynamics bias potential
+PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
+
+\endverbatim
+(see \ref RESTART, \ref TORSION, \ref METAD, and \ref PRINT).
+
+In this way, PLUMED will read the old Gaussians from the HILLS file and append the new information
+to both COLVAR and HILLS files.
+
+\subsection belfast-6-exercise-3 Exercise 3. Calculate free-energies and monitor convergence
+
+One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
+bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussians
+deposited during the simulations and stored in the HILLS file.  
+
+To calculate the two-dimensional free energy as a function of phi and psi, it is sufficient to use the 
+following command line:
+
+\verbatim
+plumed sum_hills --hills HILLS
+\endverbatim
+
+The command above generates a file called fes.dat in which the free-energy surface as function
+of phi and psi is calculated on a regular grid. One can modify the default name for the free energy file,
+as well as the boundaries and bin size of the grid, by using the following options of sum_hills:
+
+\verbatim
+--min - the lower bounds for the grid
+--max - the upper bounds for the grid
+--bin - the number of bins for the grid
+--spacing - grid spacing, alternative to the number of bins
+\endverbatim 
+
+It is also possible to calculate one-dimensional free energies from the two-dimensional metadynamics simulation. 
+For example, if one is interested in the free energy as a function of the phi dihedral alone, the following
+command line should be used:
+
+\verbatim
+plumed sum_hills --hills HILLS --idw phi --kt 2.5
+\endverbatim
+
+The result should look like this:
+
+\anchor belfast-6-phifes-fig
+\image html belfast-6-phifes.png "Estimate of the free energy as a function of the dihedral phi from a 5ns-long metadynamics simulation using 2 CVs, the dihedrals phi and psi."
+
+To assess the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
+of simulation time. At convergence, the reconstructed profiles should be similar, apart from a constant offset.
+The option --stride should be used to give an estimate of the free energy every N Gaussians deposited, and
+the option --mintozero can be used to align the profiles by setting the global minimum to zero.
+If we use the following command line:
+
+\verbatim
+plumed sum_hills --hills HILLS --idw phi --kt 2.5 --stride 500 --mintozero
+\endverbatim
+
+one free energy is calculated every 500 Gaussians deposited, and the global minimum is set to zero in all profiles.
+The resulting plot should look like the following:
+
+\anchor belfast-6-phifest-fig
+\image html belfast-6-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 500 Gaussians deposited along a 5ns-long metadynamics simulation using 2 CVs."
+
+To assess the convergence of the simulation more quantitatively, we can calculate the free energy difference between the two
+local minima in the one-dimensional free energy along phi as a function of simulation time.
+We can use the bash script analize_FES.sh to integrate the multiple free energy profiles in the two basins defined 
+by the following intervals in phi space: basin A, -3<phi<-1, basin B, 0.5<phi<1.5.
+
+\verbatim
+./analize_FES.sh NFES -3.0 -1.0 0.5 1.5 KBT 
+\endverbatim
+
+where NFES is the number of profiles (free-energy estimates at different times of the simulation) generated by the option --stride of sum_hills,
+and KBT is the temperature in energy units (in this case KBT=2.5).
+
+\anchor belfast-6-difft-fig
+\image html belfast-6-difft.png "Free-energy difference between basin A and B as a function of simulation time."
+
+This analysis, along with the observation of the diffusive behavior in the CVs space, suggest that the simulation is converged.
+
+
+\subsection belfast-6-exercise-4 Exercise 4. Setup and run a well-tempered metadynamics simulation, part I
+
+\subsection belfast-6-exercise-5 Exercise 5. Setup and run a well-tempered metadynamics simulation, part II 
+
 */
 
 link: @subpage belfast-6
 
 description: How to run a metadynamics simulation
-
 
