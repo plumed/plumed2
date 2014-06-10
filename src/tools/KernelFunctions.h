@@ -55,8 +55,8 @@ public:
   std::vector<unsigned> getSupport( const std::vector<double>& dx ) const; 
 /// get it in continuous form
   std::vector<double> getContinuousSupport( ) const; 
-/// Evaluate the kernel function  
-  double evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv=true ) const;
+/// Evaluate the kernel function with constant intervals 
+  double evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv=true, bool doInt=false, double lowI_=-1, double uppI_=-1 ) const;
 /// Read a kernel function from a file
   static KernelFunctions* read( IFile* ifile, const std::vector<std::string>& valnames );
 };

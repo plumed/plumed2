@@ -181,12 +181,16 @@ std::vector<unsigned> KernelFunctions::getSupport( const std::vector<double>& dx
   return support;
 }
 
-double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv ) const {
+double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<double>& derivatives, bool usederiv, bool doInt, double lowI_, double uppI_) const {
   plumed_dbg_assert( pos.size()==ndim() && derivatives.size()==ndim() );
 #ifndef NDEBUG
   if( usederiv ) plumed_massert( ktype!=uniform, "step function can not be differentiated" ); 
 #endif
-
+  if(doInt){
+    plumed_dbg_assert(center.size()==1);
+    if(pos[0]->get()<lowI_) pos[0]->set(lowI_);
+    if(pos[0]->get()>uppI_) pos[0]->set(uppI_);
+  }
   double r2=0;
   if(diagonal){ 
      for(unsigned i=0;i<ndim();++i){
@@ -229,6 +233,9 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
      kderiv*=height / r ;
   }  
   for(unsigned i=0;i<ndim();++i) derivatives[i]*=kderiv;
+  if(doInt){
+    if((pos[0]->get() <= lowI_ || pos[0]->get() >= uppI_) && usederiv ) for(unsigned i=0;i<ndim();++i)derivatives[i]=0;
+  }
   return kval;
 }
 
