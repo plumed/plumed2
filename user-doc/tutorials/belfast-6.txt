@@ -31,10 +31,10 @@ time limit, the bias potential converges to minus the free energy as a function 
 V(\vec{s},t\rightarrow \infty) = -F(\vec{s}) + C.
 \f]
 
-In standard metadynamics, Gaussian of constant height are added for the entire course of a 
+In standard metadynamics, Gaussians of constant height are added for the entire course of a 
 simulation. As a result, the system is eventually pushed to explore high free-energy regions
 and the estimate of the free energy calculated from the bias potential oscillates around
-the real free energy.
+the real value. 
 In well-tempered metadynamics \cite Barducci:2008, the height of the Gaussian 
 is decreased with simulation time according to:
 
@@ -44,8 +44,17 @@ is decreased with simulation time according to:
 
 where \f$ W_0 \f$ is an initial Gaussian height, \f$ \Delta T \f$ an input parameter 
 with the dimension of a temperature, and \f$ k_B \f$ the Boltzmann constant. 
-In this version of metadynamics, the bias potential smoothly converges to the underlying free-
-energy landscape, and the parameter \f$ \Delta T \f$ can be chosen to regulate the extent of free-energy exploration.
+With this rescaling of the Gaussian height, the bias potential smoothly converges in the long time limit,
+but it does not fully compensate the underlying free energy:
+
+\f[
+V(\vec{s},t\rightarrow \infty) = -\frac{\Delta T}{T+\Delta T}F(\vec{s}) + C.
+\f]
+
+where \f$ T \f$ is the temperature of the system.
+In the long time limit, the CVs thus sample an ensemble
+at a temperature \f$ T+\Delta T \f$ which is higher than the system temperature \f$ T \f$.
+The parameter \f$ \Delta T \f$ can be chosen to regulate the extent of free-energy exploration:
  \f$ \Delta T = 0\f$ corresponds to standard molecular dynamics, \f$ \Delta T \rightarrow \infty \f$ to standard
 metadynamics. In well-tempered metadynamics literature and in PLUMED, you will often encounter
 the term "biasfactor" which is the ratio between the temperature of the CVs (\f$ T+\Delta T \f$) 
@@ -55,13 +64,9 @@ and the system temperature (\f$ T \f$):
 \gamma = \frac{T+\Delta T}{T}.
 \f]
 
-In well-tempered metadynamics, the bias potential does not fully compensate the underlying free energy, 
-but it converges to:
-
-\f[
-V(\vec{s},t\rightarrow \infty) = -\frac{\Delta T}{T+\Delta T}F(\vec{s}) + C.
-\f]
-
+The biasfactor should thus be carefully chosen in order for the relevant free-energy barriers to be crossed
+efficiently in the time scale of the simulation.
+ 
 Additional information can be found in the several review papers on metadynamics 
 \cite gerv-laio09review \cite WCMS:WCMS31 \cite WCMS:WCMS1103.
 
@@ -98,7 +103,7 @@ Here we use as model system alanine dipeptide with AMBER99SB-ILDN all-atom force
 
 In this exercise, we will run a metadynamics simulation on alanine dipeptide in vacuum, using as CVs the
 two backbone dihedral angles phi and psi. 
-In order to run this simulations we need to prepare the PLUMED input file as follows.
+In order to run this simulation we need to prepare the PLUMED input file as follows.
 
 \verbatim
 # set up two variables for Phi and Psi dihedral angles 
@@ -118,7 +123,7 @@ PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
 \endverbatim
 (see \ref TORSION, \ref METAD, and \ref PRINT).
 
-The syntax for the command \ref METAD is rather trivial.
+The syntax for the command \ref METAD is simple. 
 The directive is followed by a keyword ARG followed by the labels of the CVs
 on which the metadynamics potential will act.
 The keyword PACE determines the stride of Gaussian deposition in number of time steps,
@@ -136,7 +141,7 @@ mdrun_mpi -plumed plumed.dat
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
 The COLVAR file contains all the information specified by the PRINT command, in this case
 the value of the CVs every 10 steps of simulation, along with the current value of the metadynamics
-bias potential. The HILLS file contains a list of the Gaussian deposited along the simulation.
+bias potential. The HILLS file contains a list of the Gaussians deposited along the simulation.
 If we give a look at the header of this file, we can find relevant information about its content:
 
 \verbatim
@@ -149,9 +154,9 @@ If we give a look at the header of this file, we can find relevant information a
 \endverbatim 
 
 The line starting with FIELDS tells us what is displayed in the various columns of the HILLS file:
-the time of the simulation, the value of phi and psi, the width of the Gaussian in phi and psi, and
-the height of the Gaussian. The last column contains the so-called bias-factor, which is the ratio
-of the CV temperature and the temperature of the simulation. This quantity is relevant only for
+the time of the simulation, the value of phi and psi, the width of the Gaussian in phi and psi,
+the height of the Gaussian, and  the biasfactor.
+This quantity is relevant only for
 well-tempered metadynamics simulation (see \ref belfast-6-exercise-4) and it is equal to 1 in standard
 metadynamics simulations.
 We will use the HILLS file later to calculate free-energies from the metadynamics simulation and assess its convergence.
@@ -245,7 +250,7 @@ to both COLVAR and HILLS files.
 
 One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
 bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussians
-deposited during the simulations and stored in the HILLS file.  
+deposited during the simulation and stored in the HILLS file.  
 
 To calculate the two-dimensional free energy as a function of phi and psi, it is sufficient to use the 
 following command line:
@@ -256,7 +261,7 @@ plumed sum_hills --hills HILLS
 
 The command above generates a file called fes.dat in which the free-energy surface as function
 of phi and psi is calculated on a regular grid. One can modify the default name for the free energy file,
-as well as the boundaries and bin size of the grid, by using the following options of sum_hills:
+as well as the boundaries and bin size of the grid, by using the following options of \ref sum_hills:
 
 \verbatim
 --outfile - specify the outputfile for sumhills
@@ -304,7 +309,7 @@ by the following intervals in phi space: basin A, -3<phi<-1, basin B, 0.5<phi<1.
 ./analize_FES.sh NFES -3.0 -1.0 0.5 1.5 KBT 
 \endverbatim
 
-where NFES is the number of profiles (free-energy estimates at different times of the simulation) generated by the option --stride of sum_hills,
+where NFES is the number of profiles (free-energy estimates at different times of the simulation) generated by the option --stride of \ref sum_hills,
 and KBT is the temperature in energy units (in this case KBT=2.5).
 
 \anchor belfast-6-difft-fig
@@ -331,7 +336,7 @@ psi: TORSION ATOMS=7,9,15,17
 # with height equal to 1.2 kJoule/mol,
 # and width 0.35 rad for both CVs.
 # Well-tempered metadynamics is activated,
-# and the bias factor is set to 6.0
+# and the biasfactor is set to 6.0
 #
 metad: METAD ARG=phi,psi PACE=500 HEIGHT=1.2 SIGMA=0.35,0.35 FILE=HILLS BIASFACTOR=6.0 TEMP=300.0
 
@@ -364,18 +369,18 @@ If we carefully look at the height column, we will notice that in the beginning 
 reported is higher than the initial height specified in the input file, which should be 1.2 kJoule/mol.
 In fact, this column reports the height of the Gaussian rescaled by the pre-factor that 
 in well-tempered metadynamics relates the bias potential to the free energy. In this way, when
-we will use sum_hills, the sum of the Gaussians deposited will directly provide the free-energy,
+we will use \ref sum_hills, the sum of the Gaussians deposited will directly provide the free-energy,
 without further rescaling needed.
 
 We can plot the time evolution of the CVs along with the height of the Gaussian.
 
 \anchor belfast-6-wtb6-fig
-\image html belfast-6-wtb6.pdf "Time evolution of the CVs and Gaussian height during the first 2.5 ns of a well-tempered metadynamics simulation with bias factor equal to 6."
+\image html belfast-6-wtb6.pdf "Time evolution of the CVs and Gaussian height during the first 2.5 ns of a well-tempered metadynamics simulation with biasfactor equal to 6."
 
 The system is initialized in one of the local minimum where it starts accumulating bias.
 As the simulation progresses and the bias added grows, the Gaussian height is progressively reduced.
 After a while (t=0.8 ns), the system is able to escape the local minimum and 
-explore a new region of the phase space. As soon as this happens, the Gaussian heights is restored
+explore a new region of the phase space. As soon as this happens, the Gaussian height is restored
 to the initial value and starts to decrease again. In the long time, the Gaussian height
 becomes smaller and smaller while the system diffuses in the entire CVs space.
 
@@ -386,13 +391,13 @@ this biasfactor is not large enough to allow for the system to escape from the i
 in the time scale of this simulation.
 
 \anchor belfast-6-wtb15-fig
-\image html belfast-6-wtb15.pdf "Time evolution of the CVs and Gaussian height in a 5 ns long well-tempered metadynamics simulation with bias factor equal to 1.5."
+\image html belfast-6-wtb15.pdf "Time evolution of the CVs and Gaussian height in a 5 ns long well-tempered metadynamics simulation with biasfactor equal to 1.5."
 
-Following the procedure described in the previous examples for standard metadynamics,
+Following the procedure described for standard metadynamics in the previous example, 
 we can estimate the free energy as a function of time and monitor the convergence of the
-simulations using the analize_FES.sh script. We will do this for the case of
-biasfactor equal to 6.0. In this case we will notice that the oscillations
-observed for standard metadynamics are here damped, and the bias potential converges more
+simulations using the analize_FES.sh script. We will do this for the simulation in which
+the biasfactor was set to 6.0. In this case we will notice that the oscillations
+observed in standard metadynamics are here damped, and the bias potential converges more
 smoothly to the underlying free-energy landscape, provided that the biasfactor is
 sufficiently high for the free-energy barriers of the system under study to be crossed.
 
