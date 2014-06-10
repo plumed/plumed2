@@ -140,7 +140,7 @@ public:
   void mergeDerivatives( const unsigned& ider, const double& df );
   void clearDerivativesAfterTask( const unsigned& ider );
 /// Apply the forces from this action
-  void apply();
+  virtual void apply();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Get the number of quantities that are calculated each time
