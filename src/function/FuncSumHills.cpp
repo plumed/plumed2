@@ -180,6 +180,9 @@ class FuncSumHills :
   bool negativebias;
   bool nohistory;
   bool minTOzero;
+  bool doInt;
+  double lowI_;
+  double uppI_;
   double beta;
   string outhills,outhisto,fmt;
   BiasRepresentation *biasrep;
@@ -206,6 +209,7 @@ void FuncSumHills::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid"); 
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
+  keys.add("optional","INTERVAL","set monodimensional INTERVAL");
   keys.add("optional","OUTHILLS"," output file for hills ");
   keys.add("optional","OUTHISTO"," output file for histogram ");
   keys.add("optional","INITSTRIDE"," stride if you want an initial dump ");
@@ -229,6 +233,9 @@ parallelread(false),
 negativebias(false),
 nohistory(false),
 minTOzero(false),
+doInt(false),
+lowI_(-1.),
+uppI_(-1.),
 beta(-1.),
 fmt("%14.9f")
 {
@@ -268,6 +275,20 @@ fmt("%14.9f")
     unsigned n=((b-a)/gspacing[i])+1;
     if(gbin[i]<n) gbin[i]=n;
   }
+
+  // Inteval keyword
+  vector<double> tmpI(2);
+  parseVector("INTERVAL",tmpI);
+  if(tmpI.size()!=2&&tmpI.size()!=0) error("both a lower and an upper limits must be provided with INTERVAL");
+  else if(tmpI.size()==2) {
+    lowI_=tmpI.at(0);
+    uppI_=tmpI.at(1);
+    if(getNumberOfArguments()!=1) error("INTERVAL limits correction works only for monodimensional metadynamics!");
+    if(uppI_<lowI_) error("The Upper limit must be greater than the Lower limit!");
+    doInt=true;
+  }
+  if(doInt) log << "  Upper and Lower limits boundaries for the bias are activated at " << lowI_ << " - " << uppI_<<"\n";
+ 
 
   // hills file: 
   parseVector("HILLSFILES",hillsFiles);
@@ -422,7 +443,7 @@ fmt("%14.9f")
     // check if the files exists 
     if(integratehills){
          checkFilesAreExisting(hillsFiles); 
-         biasrep=new BiasRepresentation(tmphillsvalues,comm, gmin, gmax, gbin);
+         biasrep=new BiasRepresentation(tmphillsvalues,comm, gmin, gmax, gbin, doInt, lowI_, uppI_);
 	 if(negativebias){
 		biasrep->setRescaledToBias(true);
 	        log<<"  required the -bias instead of the free energy \n";
@@ -503,9 +524,7 @@ fmt("%14.9f")
 		if(integratehisto){
 
     	      		log<<"  Histo: Projecting on subgrid... \n";
-                        //ProbWeight *Pw=new ProbWeight(beta);
              		Grid histoGrid=*(historep->getGridPtr());
-   	      		//Grid smallGrid=histoGrid.project(proj,Pw);
 
               		OFile gridfile; gridfile.link(*this);
 	      		std::ostringstream ostr;ostr<<nfiles;
@@ -514,8 +533,6 @@ fmt("%14.9f")
               		log<<"  Histo: Writing subgrid on file "<<myout<<" \n";
               		gridfile.open(myout);	
          
-        		//smallGrid.setOutputFmt(fmt); 
-   	      		//smallGrid.writeToFile(gridfile);
                         histoGrid.applyFunctionAllValuesAndDerivatives(&mylog,&mylogder);
                         histoGrid.scaleAllValuesAndDerivatives(-1./beta);	
                         if(minTOzero) histoGrid.setMinToZero();	
