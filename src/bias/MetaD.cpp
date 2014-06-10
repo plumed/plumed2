@@ -903,7 +903,7 @@ double MetaD::evaluateGaussian
  double tmpcv[1]; // tmp array with cv (to be used with doInt_)
  if(cv.size()>0) pcv=&cv[0];
  if(doInt_){
-   plumed_assert(cv.size()==1);
+   plumed_dbg_assert(cv.size()==1);
    pcv=&(tmpcv[0]);
    tmpcv[0]=cv[0];
    if(cv[0]<lowI_) tmpcv[0]=lowI_;
@@ -1215,6 +1215,8 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
      ifile->scanField("height",height);
      ifile->scanField("biasf",dummy);
      if(ifile->FieldExist("clock")) ifile->scanField("clock",dummy);
+     if(ifile->FieldExist("lower_int")) ifile->scanField("lower_int",dummy);
+     if(ifile->FieldExist("upper_int")) ifile->scanField("upper_int",dummy);
      ifile->scanField();
      return true;
   }else{ 
