@@ -807,13 +807,18 @@ void MetaD::addGaussian(const Gaussian& hill)
 
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
-// in this case, we updated the entire grid to avoid problems
-// it could be optimized reverting to the normal case whenever a hill
-// is far enough from the boundaries
- if(doInt_){
-   return BiasGrid_->getNbin();
- }
  vector<unsigned> nneigh;
+ if(doInt_){
+   double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
+   if(hill.center[0]+cutoff > uppI_ || hill.center[0]-cutoff < lowI_) { 
+     // in this case, we updated the entire grid to avoid problems
+     return BiasGrid_->getNbin();
+   } else {
+     nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[0])) );
+     return nneigh;
+   }
+ }
+
  // traditional or flexible hill? 
  if(hill.multivariate){
 	unsigned ncv=getNumberOfArguments();
@@ -826,14 +831,9 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 			k++;
 		}
 	}
-        //
         // Reinvert so to have the ellipses 
-        //
 	Matrix<double> myinv(ncv,ncv);
 	Invert(mymatrix,myinv);
-	//log<<"INVERSE \n"; 
-        //matrixOut(log,myinv);	
-        // diagonalizes it
 	Matrix<double> myautovec(ncv,ncv);
 	vector<double> myautoval(ncv); //should I take this or their square root? 
 	diagMat(myinv,myautoval,myautovec);
