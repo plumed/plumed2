@@ -97,7 +97,7 @@ The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-6.tar.gz" down
 
 \subsection belfast-6-system The model system
 
-Here we use as model system alanine dipeptide with AMBER99SB-ILDN all-atom force field.
+Here we use as model system alanine dipeptide in vacuum with AMBER99SB-ILDN all-atom force field.
 
 \subsection belfast-6-exercise-1 Exercise 1. Setup and run a metadynamics simulation 
 

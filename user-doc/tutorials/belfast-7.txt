@@ -3,36 +3,113 @@
 
 \section Aims
 
-The aim of this tutorial is to introduce the users to running a parallel tempering (PT) calculation using plumed. 
-We will set up a simple calculation on alanine dipeptide in vacuum, analyze the output, calculate free energies
-from the simulation, and detect problems. We will also learn how to run a combined Parallel Tempering metadynamics simulation (PTMetaD) and 
-introduce the users to the well-tempered ensemble (WTE).
+The aim of this tutorial is to introduce the users to running a parallel tempering (PT) calculation using PLUMED. 
+We will set up a simple simulation of alanine dipeptide in vacuum, analyze the output, calculate free energies
+from the simulation, and detect problems. We will also learn how to run a combined PT-metadynamics simulation (PTMetaD) and 
+introduce the users to the Well-Tempered Ensemble (WTE).
+
+\section belfast-7-theory Summary of theory
+
+In Replica Exchange Methods \cite sugi-okam99cpl (REM), sampling is accelerated by modifying the original 
+Hamiltonian of the system. This goal is achieved by simulating N non-interacting 
+replicas of the system, each evolving in parallel according to a different Hamiltonian. 
+At fixed intervals, an exchange of configurations between two replicas is attempted. 
+One popular case of REM is PT, 
+in which replicas are simulated using the same potential energy function, 
+but different temperatures. By accessing high temperatures, 
+replicas are prevented from being trapped in local minima. 
+In PT, exchanges are usually attempted between adjacent temperatures 
+with the following acceptance probability:
+
+\f[
+p(i \rightarrow j) = min \{ 1,\Delta_{i,j}^{PT} \},
+\f]
+
+with
+
+\f[
+\Delta_{i,j}^{PT} = \left ( \frac{1}{k_B T_i}-\frac{1}{k_B T_j} \right ) \left(  U(R_i) - U(R_j) \right ),
+\f]
+
+where \f$ R_i \f$ and \f$ R_j \f$ are the configurations at temperature 
+\f$ T_i \f$ and \f$ T_j \f$, respectively. 
+The equation above suggests that the acceptance probability is ultimately determined 
+by the overlap between the energy distributions of two replicas.
+The efficiency of the algorithm depends on the benefits provided by sampling at high-temperature.
+Therefore, an efficient diffusion in temperature space is required and configurational sampling 
+is still limited by entropic barriers. 
+Finally, PT scales poorly with system size. In fact, a sufficient overlap between the potential energy 
+distributions of neighboring temperatures is required in order to obtain a significant diffusion in temperature. 
+Therefore, the number of temperatures needed to cover a given temperature range scales as the square 
+root of the number of degrees of freedom, making this approach prohibitively expensive for large systems. 
+
+PT can be easily combined with metadynamics \cite bussi_xc. 
+In the resulting PTMetaD algorithm (16), N replicas performed in parallel a metadynamics simulation 
+at different temperatures, using the same set of CVs. The PT acceptance probability 
+must be modified in order to account for the presence of a bias potential: 
+
+\f[
+\Delta_{i,j}^{PTMetaD} = \Delta_{i,j}^{PT} + \frac{1}{k_B T_i} \left [  V_G^{i}(s(R_i),t) - V_G^{i}(s(R_j),t) \right ] + 
+											 \frac{1}{k_B T_j} \left [  V_G^{j}(s(R_j),t) - V_G^{j}(s(R_i),t) \right ],
+\f]
+
+where \f$ V_G^{i} \f$ and \f$ V_G^{j} \f$ are the bias potentials acting on the i-th and j-th replicas, respectively.
+
+PTMetaD is particularly effective because it compensates for some of the weaknesses of each method alone.
+The  effect of neglecting a slow degree of freedom in the choice of the metadynamics CVs is alleviated by PT, 
+which allows the system to cross moderately high free-energy barriers on all degrees of freedom.
+On the other hand, the metadynamics bias potential allows crossing higher barriers on a few selected CVs, 
+in such a way that the sampling efficiency of PTMetaD is greater than that of PT alone.
+
+PTMetaD still suffers from the poor scaling of computational resources with system size.
+This issue may be circumvented by including the potential energy of the system among the set of 
+well-tempered metadynamics CVs.
+The well-tempered metadynamics bias leads to the sampling of a well-defined distribution called Well-Tempered Ensemble (WTE)
+ \cite Bonomi:2009p17935.
+In this ensemble, the average energy remains close to the canonical value 
+but its fluctuations are enhanced in a tunable way, thus improving sampling.  
+In the so-called PTMetaD-WTE scheme \cite ct300297t, each replica diffusion in temperature space is enhanced by 
+the increased energy fluctuations at all temperatures.
 
 \section belfast-7-lo Learning Outcomes
 
-Once this tutorial is completed students will:
+Once this tutorial is completed students will know how to:
 
-- Know how to run a PT simulation 
-- Know how to analyse the output of the PT simulation and detect problems
-- Know how to run a PTMetaD simulation 
-- Know how to run a PT and PTMetaD in WTE 
+- run a PT simulation 
+- analyse the output of the PT simulation and detect problems
+- run a PTMetaD simulation 
+- run a PT and PTMetaD in the WTE 
 
-\section Resources
+\section belfast-7-resources Resources
 
 The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-7.tar.gz" download="belfast-7.tar.gz"> tarball </a> for this project contains the following directories:
 
-- Exercise_1_2: run a PT simulation using 2 replicas and analyze the output  
-- Exercise_3: run a PT simulation using 4 replicas and analyze the output
-- Exercise_4: run a PTMetaD simulation
-- Exercise_5: run a PT-WTE and PTMetaD-WTE simulations
+- Exercise_1: run a PT simulation using 2 replicas and analyze the output  
+- Exercise_2: run a PT simulation using 4 replicas and analyze the output
+- Exercise_3: run a PTMetaD simulation
+- Exercise_4: run a PT-WTE and PTMetaD-WTE simulations
 
-Every directories contain the following subdirectories:
-- TOPO: topology files for Gromacs
-- RESULTS: pre-calculated results
+Each directory contains a TOPO subdirectory where topology and configuration files for Gromacs are stored.
+
+
+\section belfast-7-instructions Instructions
+
+\subsection belfast-7-system The model system
+
+Here we use as model system alanine dipeptide in vacuum and water with AMBER99SB-ILDN all-atom force field.
+
+\subsection belfast-7-exercise-1 Exercise 1. Setup and run a PT simulation, part I 
+
+\subsection belfast-7-exercise-2 Exercise 2. Setup and run a PT simulation, part II 
+
+\subsection belfast-7-exercise-3 Exercise 3. Setup and run a PTMetaD simulation 
+
+\subsection belfast-7-exercise-4 Exercise 4. The Well-Tempered Ensemble 
+
 
 */
 
 link: @subpage belfast-7
 
-description: Parallel tempering and Metadynamics, Welltempered ensemble
+description: Parallel tempering and Metadynamics, Well-tempered ensemble
 
