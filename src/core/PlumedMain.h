@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <map>
 
 
 // !!!!!!!!!!!!!!!!!!!!!!    DANGER   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -144,6 +145,9 @@ public:
 
 /// Add a citation, returning a string containing the reference number, something like "[10]"
   std::string cite(const std::string&);
+
+/// word list command
+  std::map<std::string, int> word_map;
 
 public:
   PlumedMain();
