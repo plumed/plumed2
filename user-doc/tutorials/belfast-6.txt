@@ -3,8 +3,8 @@
 
 \section Aims
 
-The aim of this tutorial is to introduce the users to running a metadynamics calculation with PLUMED. We will set up
-a simple calculation on alanine dipeptide in vacuum, analyse the output, and calculate free energies
+The aim of this tutorial is to introduce the users to running a metadynamics simulation with PLUMED. We will set up
+a simple simulation of alanine dipeptide in vacuum, analyse the output, and estimate free energies
 from the simulation. We will also learn how to run a well-tempered metadynamics simulation and 
 detect issues related to a bad choice of collective variables.
 
@@ -402,14 +402,64 @@ smoothly to the underlying free-energy landscape, provided that the biasfactor i
 sufficiently high for the free-energy barriers of the system under study to be crossed.
 
 \anchor belfast-6-wtdifft-fig
-\image html belfast-6-wtdifft.png "Free-energy difference between basin A and B as a function of simulation time in a well-tempered metadynamics simulation."
+\image html belfast-6-wtdifft.png "Free-energy difference between basin A and B as a function of simulation time."
  
 
 \subsection belfast-6-exercise-5 Exercise 5. Setup and run a well-tempered metadynamics simulation, part II 
 
-In this exercise, we will study the effect of neglecting a relavant degrees of freedom in the choice
-of metadynamics CVs.
+In this exercise, we will study the effect of neglecting a relavant degree of freedom in the choice
+of metadynamics CVs. We are going to run a well-tempered metadynamics simulation with the psi dihedral
+alone as CV, using the following script:
 
+\verbatim
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Activate metadynamics in psi
+# depositing a Gaussian every 500 time steps,
+# with height equal to 1.2 kJoule/mol,
+# and width 0.35 rad.
+# Well-tempered metadynamics is activated,
+# and the biasfactor is set to 10.0
+#
+metad: METAD ARG=psi PACE=500 HEIGHT=1.2 SIGMA=0.35 FILE=HILLS BIASFACTOR=10.0 TEMP=300.0
+
+# monitor the two variables and the metadynamics bias potential
+PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
+
+\endverbatim
+(see \ref TORSION, \ref METAD, and \ref PRINT).
+
+Let's look at the HILLS file, in particular at the time serie of the CV psi and of the
+Gaussian height.
+
+\anchor belfast-6-phialone-fig
+\image html belfast-6-phialone.pdf "Time evolution of psi and Gaussian height in a well-tempered metadynamics simulation using psi alone as CV."
+
+From this plot, we observe a nice diffusive behavior of the CV psi when the Gaussian height is already
+quite small. This happens until t=3 ns, when the CV seems to be stuck for a while in a small region
+of the CV space. This behavior is typical of a situation in which a slow variable is not included
+in the set of CV. When something happens in this hidden degree of freedom, the biased CVs typically
+cannot access anymore regions of the phase space previously visited. 
+To understand this behavior, we need to visualize the time evolution of both phi and psi stored
+in the COLVAR file.
+
+\anchor belfast-6-hidden-fig
+\image html belfast-6-hidden.png "Time evolution of phi and psi in a well-tempered metadynamics simulation using psi alone as CV."
+
+It is clear from the plot above that what happened around t=3 ns is a jump of the neglected, slow degree
+of freedom phi from one free-energy basin to another. The dynamics of phi is not biased by any potential,
+so we need to equilibrate this degree of freedom, i.e. to observe multiple transitions from the two basins,
+before declaring convergence of our simulation. Or alternatively we can add phi to the set of CVs.
+This example demonstrates how to declare convergence of a well-tempered
+metadynamics simulation it is necessary but not sufficient to observe: 1) Gaussians with very small height, 2)
+a diffusive behavior in the CV space (as in the first 3 ns of this example).  
+What we should do is repeating the simulation multiple times starting from different initial conformations.
+If in all simulations, we observe a diffusive behavior in the biased CV when the Gaussian height is very small,
+and we obtain very similar free-energy surfaces, then we can be quite confident that our simulations are
+converged to the right value. If this is not the case, a manual inspection of the runs can help us
+ identifying the missing slow degrees of freedom to add to the set of biased CVs.
 */
 
 link: @subpage belfast-6
