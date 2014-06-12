@@ -84,7 +84,7 @@ Once this tutorial is completed students will know how to:
 
 \section belfast-6-resources Resources
 
-The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-6.tar.gz" download="belfast-6.tar.gz"> tarball </a> for this project contains the following directories:
+The <a href="tutorial-resources/belfast-6.tar.gz" download="belfast-6.tar.gz"> tarball </a> for this project contains the following directories:
 
 - TOPO: it contains the gromacs topology and configuration files to simulate alanine dipeptide in vacuum  
 - Exercise_1: run a metadynamics simulation with 2 CVs, dihedrals phi and psi, and analyze the output 
@@ -465,4 +465,7 @@ converged to the right value. If this is not the case, a manual inspection of th
 link: @subpage belfast-6
 
 description: How to run a metadynamics simulation
+
+additional-files: belfast-6.tar.gz
+
 
