@@ -3,7 +3,7 @@
 
 \section Aims
 
-The aim of this tutorial is to introduce the users to running a parallel tempering (PT) calculation using PLUMED. 
+The aim of this tutorial is to introduce the users to running a parallel tempering (PT) simulation using PLUMED. 
 We will set up a simple simulation of alanine dipeptide in vacuum, analyze the output, calculate free energies
 from the simulation, and detect problems. We will also learn how to run a combined PT-metadynamics simulation (PTMetaD) and 
 introduce the users to the Well-Tempered Ensemble (WTE).
@@ -76,7 +76,7 @@ the increased energy fluctuations at all temperatures.
 Once this tutorial is completed students will know how to:
 
 - run a PT simulation 
-- analyse the output of the PT simulation and detect problems
+- analyze the output of the PT simulation and detect problems
 - run a PTMetaD simulation 
 - run a PT and PTMetaD in the WTE 
 
@@ -96,9 +96,134 @@ Each directory contains a TOPO subdirectory where topology and configuration fil
 
 \subsection belfast-7-system The model system
 
-Here we use as model system alanine dipeptide in vacuum and water with AMBER99SB-ILDN all-atom force field.
+Here we use as model systems alanine dipeptide in vacuum and water with AMBER99SB-ILDN all-atom force field.
 
 \subsection belfast-7-exercise-1 Exercise 1. Setup and run a PT simulation, part I 
+
+In this exercise, we will run a PT simulation of alanine dipeptide in vacuum, using
+only two replicas, one at 300K, the other at 305K. During this simulation, we will monitor
+the time evolution of the two dihedral angles phi and psi. In order to do that, we need
+the following PLUMED input file.
+
+\verbatim
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+# monitor the two variables
+PRINT STRIDE=10 ARG=phi,psi FILE=COLVAR
+
+\endverbatim
+(see \ref TORSION, and \ref PRINT).
+
+To submit this simulation with Gromacs, we need the following command line.
+
+\verbatim
+mpirun -np 2 mdrun_mpi -s TOPO/topol -plumed -multi 2 -replex 100
+\endverbatim
+
+This command will execute two MPI processess in parallel, using the topology files
+topol0.tpr and topol1.tpr stored in the TOPO subdirectory. These two binary files
+have been created using the usual Gromacs procedure (see Gromacs manual for further details)
+and setting the temperature of the two simulations at 300K and 305K in the configuration files.
+An exchange between the configurations of the two simulations will be attempted every 100 steps.
+
+When Gromacs is executed using the -multi option and PLUMED is activated, the output files
+produced by PLUMED will be renamed and a suffix indicating the replica id will be appended.
+We will start inspecting the output file COLVAR.0, which reports the time evolution of the CVs at 300K.
+
+\anchor belfast-7-pt-fig
+\image html belfast-7-pt.png "Configurations sampled at 300K during a PT simulation, projected into the CVs space."
+
+The plot above suggests that during the PT simulation the system is capable to access both the relevant basins
+in the free-energy surface. This seems to suggest that our simulation is converged. 
+We can use the COLVAR.0 and COLVAR.1 along with the tool \ref sum_hills to estimate the free energy as a function of the CV phi.
+We will do this a function of simulation time to assess convergence more quantitatively, using the following command line:
+
+\verbatim
+plumed sum_hills --histo COLVAR.0 --idw phi --sigma 0.2 --kt 2.5 --outhisto fes_ --stride 1000.
+\endverbatim
+
+As we did in our previous tutorial, we can now use the script analyze_FES.sh to calculate the free-energy
+difference between basin A (-3.0<phi<-1.0) and basin B (0.5<phi<1.5), as a function of simulation time.
+
+\anchor belfast-7-ptfes-fig
+\image html belfast-7-ptfes.png "Free-energy difference between basin A and B as a function of simulation time."
+
+The estimate of the free-energy difference between these two basins seems to be converged. This consideration,
+along with the observation that the system is exploring all the relevant free-energy basins, might lead us to declare
+convergence and to state that the difference in free energy between basin A and B is roughly 0 kJoule/mol. 
+Unfortunately, in doing so we would make a big mistake. 
+
+In PT simulations we have to be a little bit more careful, and examine the time evolution of each replica 
+diffusing in temperature space, before concluding that our simulation is converged.
+In order to do that, we need to reconstruct the continuos trajectories of the replicas in temperature
+from the two files (typically traj0.trr and traj1.trr) which contain the discontinuous trajectories
+of the system at 300K and 305K.
+To demux the trajectories, we need to use the following command line:
+
+\verbatim
+demux.pl md0.log
+\endverbatim
+
+which will create two files, called replica_temp.xvg and replica_index.xvg.
+We can plot the first file, which reports the temperature index of each configuration at
+a given time of the simulation. This file is extremely useful, because it allows us monitoring
+the replicas diffusion in temperature. As we discussed in \ref belfast-7-theory,
+in order for the PT algorithm to be effective, we need an efficient diffusion of the replicas
+in temperature space. In this case, both replicas are rapidly accessing the highest temperature,
+so there seems not to be any problem on this side.
+
+We can use the second file to reconstruct the continuous trajectories of each replica in temperature:
+
+\verbatim
+trjcat_mpi -f traj0.trr traj1.trr -demux replica_index.xvg.
+\endverbatim
+
+and the following PLUMED input file to recalculate the value of the CVs on the demuxed trajectories,
+typically called 0_trajout.xtc and 1_trajout.xtc.
+
+\verbatim
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+# monitor the two variables
+PRINT STRIDE=1 ARG=phi,psi FILE=COLVAR_DEMUX
+
+\endverbatim
+(see \ref TORSION, and \ref PRINT).
+
+For the analysis of the demuxed trajectories, we can use the -rerun option of Gromacs, as follows:
+
+\verbatim
+# rerun Gromacs on replica 0 trajectory
+mdrun_mpi -s TOPO/topol0.tpr -plumed -rerun 0_trajout.xtc
+# rename the output
+mv COLVAR_DEMUX COLVAR_DEMUX.0
+# rerun Gromacs on replica 1 trajectory
+mdrun_mpi -s TOPO/topol1.tpr -plumed -rerun 1_trajout.xtc
+# rename the output
+mv COLVAR_DEMUX COLVAR_DEMUX.1
+\endverbatim
+
+We can now plot the time evolution of the two CVs in the two demuxed trajectories.
+
+\anchor belfast-7-ptmdemux-fig
+\image html belfast-7-ptdemux.png "Demuxed trajectories of the two replicas, projected into the CVs space."
+
+This plot shows clearly that each replica is sampling only one of the two  basins of
+the free-energy landscape, and it is never able to cross the high barrier that separates them.
+This means that what we considered an exhaustive exploration of the free energy landscape 
+at 300K (Figure \ref belfast-7-pt-fig), is rather caused by an efficient exchange of configurations
+between replicas that are trapped in different free-energy basins. The results of the present simulation
+is influenced by the initial conformations of the two replicas. If we had initialized both of them
+in the same basin, we would have never observed transitions to the other basin.
+
+To declare convergence of a PT simulation, it is thus mandatory to examine the behavior of the
+replicas diffusing in temperature and check that these are exploring all the relevant
+basins. Another good practice is repeating the PT simulation starting from different initial conformations,
+and check that the results are consistent.
 
 \subsection belfast-7-exercise-2 Exercise 2. Setup and run a PT simulation, part II 
 
@@ -111,5 +236,5 @@ Here we use as model system alanine dipeptide in vacuum and water with AMBER99SB
 
 link: @subpage belfast-7
 
-description: Parallel tempering and Metadynamics, Well-tempered ensemble
+description: Parallel tempering and Metadynamics, Well-Tempered Ensemble
 
