@@ -45,6 +45,7 @@ friend class StoreCentralAtomsVessel;
 friend class MultiColvarFunction;
 friend class BridgedMultiColvarFunction;
 friend class VolumeGradientBase;
+friend class MultiColvarFilter;
 friend class MultiColvar;
 private:
 /// Use periodic boundary conditions

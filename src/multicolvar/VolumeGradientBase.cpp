@@ -19,8 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "core/PlumedMain.h"
-#include "core/ActionSet.h"
 #include "VolumeGradientBase.h"
 
 namespace PLMD {
@@ -83,19 +81,17 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const double& 
           addElementDerivative( nx+1, ww*mcolv->getCentralAtomDerivative(n, 1, wdf ) );
           addElementDerivative( nx+2, ww*mcolv->getCentralAtomDerivative(n, 2, wdf ) );
      }
-     if( mcolv->weightHasDerivatives ){
-         unsigned nder=mcolv->getNumberOfDerivatives(); 
-         for(unsigned i=0;i<mcolv->atoms_with_derivatives.getNumberActive();++i){
-            unsigned n=mcolv->atoms_with_derivatives[i], nx=nder + 3*n, ny=nstart + 3*n;
-            atoms_with_derivatives.activate(n);
-            addElementDerivative( ny+0, weight*mcolv->getElementDerivative(nx+0) );
-            addElementDerivative( ny+1, weight*mcolv->getElementDerivative(nx+1) );
-            addElementDerivative( ny+2, weight*mcolv->getElementDerivative(nx+2) );
-         }
-         unsigned nwvir=mcolv->getNumberOfDerivatives()-9, nwvir2=nstart + 3*mcolv->getNumberOfAtoms();
-         for(unsigned i=0;i<9;++i){
-            addElementDerivative( nwvir2, weight*mcolv->getElementDerivative(nwvir) ); nwvir++; nwvir2++;
-         }
+     unsigned nder=mcolv->getNumberOfDerivatives(); 
+     for(unsigned i=0;i<mcolv->atoms_with_derivatives.getNumberActive();++i){
+        unsigned n=mcolv->atoms_with_derivatives[i], nx=nder + 3*n, ny=nstart + 3*n;
+        atoms_with_derivatives.activate(n);
+        addElementDerivative( ny+0, weight*mcolv->getElementDerivative(nx+0) );
+        addElementDerivative( ny+1, weight*mcolv->getElementDerivative(nx+1) );
+        addElementDerivative( ny+2, weight*mcolv->getElementDerivative(nx+2) );
+     }
+     unsigned nwvir=mcolv->getNumberOfDerivatives()-9, nwvir2=nstart + 3*mcolv->getNumberOfAtoms();
+     for(unsigned i=0;i<9;++i){
+        addElementDerivative( nwvir2, weight*mcolv->getElementDerivative(nwvir) ); nwvir++; nwvir2++;
      }
   }
 }
