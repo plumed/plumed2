@@ -209,16 +209,16 @@ mv COLVAR_DEMUX COLVAR_DEMUX.1
 
 We can now plot the time evolution of the two CVs in the two demuxed trajectories.
 
-\anchor belfast-7-ptmdemux-fig
+\anchor belfast-7-ptdemux-fig
 \image html belfast-7-ptdemux.png "Demuxed trajectories of the two replicas, projected into the CVs space."
 
 This plot shows clearly that each replica is sampling only one of the two  basins of
 the free-energy landscape, and it is never able to cross the high barrier that separates them.
 This means that what we considered an exhaustive exploration of the free energy landscape 
-at 300K (Figure \ref belfast-7-pt-fig), is rather caused by an efficient exchange of configurations
-between replicas that are trapped in different free-energy basins. The results of the present simulation
-is influenced by the initial conformations of the two replicas. If we had initialized both of them
-in the same basin, we would have never observed transitions to the other basin.
+at 300K (Figure \ref belfast-7-pt-fig), was instead caused by an efficient exchange of configurations
+between replicas that were trapped in different free-energy basins. The results of the present simulation
+were then influenced by the initial conformations of the two replicas. If we had initialized both of them
+in the same basin, we would have never observed "transitions" to the other basin at 300K.
 
 To declare convergence of a PT simulation, it is thus mandatory to examine the behavior of the
 replicas diffusing in temperature and check that these are exploring all the relevant
@@ -226,6 +226,55 @@ basins. Another good practice is repeating the PT simulation starting from diffe
 and check that the results are consistent.
 
 \subsection belfast-7-exercise-2 Exercise 2. Setup and run a PT simulation, part II 
+
+We will now repeat the previous exercise, but with a different setup.
+The problem with the previous exercise was that replicas were never able to interconvert
+between the two metastable states of alanine dipeptide in vacuum. The reason was that the
+highest temperature used (305K) was too low to accelerate barrier crossing in the time scale
+of the simulation. We will now use 4 replicas at the following temperatures: 300K, 400K, 600K, and 1000K.
+
+We can use the same PLUMED input file described above, and execute Gromacs using the following command line:
+
+\verbatim
+ mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed -multi 4 -replex 100
+\endverbatim
+
+At the end of the simulation, we first monitor the diffusion in temperature space of each replica.
+We need to create the replica_temp.xvg and replica_index.xvg:
+
+\verbatim
+demux.pl md0.log
+\endverbatim
+
+and plot the content of replica_temp.xvg. Here how it should look for replica 0:
+
+\anchor belfast-7-pt2temp-fig
+\image html belfast-7-pt2temp.png "Temperature index of the first replica as a function of simulation time."
+
+From this analysis, we can conclude that replicas are diffusing effectively in temperature.
+Now, we need to monitor the space sampled by each replica while diffusing in temperature space
+and verify that they are interconverting between the different basins of the free-energy landscape.
+The demux is carried out as in the previous example:
+
+\verbatim
+trjcat_mpi -f traj0.trr traj1.trr traj2.trr traj3.trr -demux replica_index.xvg.
+\endverbatim
+
+and so is the analysis of the demuxed trajectories using the -rerun option of Gromacs.
+Here is the space sampled by two of the four replicas:
+
+\anchor belfast-7-pt2demux-fig
+\image html belfast-7-pt2demux.png "Demuxed trajectories of two replicas, projected into the CVs space."
+
+It is clear that in this case replicas are able to interconvert between the two metastable states,
+while efficiently diffusing in temperature. We can then calculate the free-energy difference between
+basin A and B as a function of simulation time at 300K:
+
+\anchor belfast-7-pt2fes-fig
+\image html belfast-7-pt2fes.png "Free-energy difference between basin A and B as a function of simulation time."
+
+
+and conclude that in this case the PT simulation is converged.
 
 \subsection belfast-7-exercise-3 Exercise 3. Setup and run a PTMetaD simulation 
 
