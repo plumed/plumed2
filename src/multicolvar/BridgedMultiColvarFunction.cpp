@@ -27,84 +27,35 @@ namespace PLMD {
 namespace multicolvar {
 
 void BridgedMultiColvarFunction::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
-  ActionWithValue::registerKeywords( keys );
-  ActionWithVessel::registerKeywords( keys );
-  ActionWithInputVessel::registerKeywords( keys );
-  keys.setComponentsIntroduction("This Action can be used to calculate the following quantities by employing the keywords listed below. "
-                                 "You must select which from amongst these quantities you wish to calculate - this command cannot be run "
-                                 "unless one of the quantities below is being calculated."
-                                 "These quantities can then be referenced elsewhere in the input file by using this Action's label "
-                                 "followed by a dot and the name of the quantity. Some amongst them can be calculated multiple times "
-                                 "with different parameters.  In this case the quantities calculated can be referenced elsewhere in the "
-                                 "input by using the name of the quantity followed by a numerical identifier "
-                                 "e.g. <em>label</em>.less_than-1, <em>label</em>.less_than-2 etc.");
-  keys.use("NL_TOL");
-  keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
-                                "that contributed less than TOL at the previous neighbor list update step are ignored.");
+  MultiColvarBase::registerKeywords( keys );
+  keys.add("compulsory","DATA","The multicolvar that calculates the set of base quantities that we are interested in");
 }
 
 BridgedMultiColvarFunction::BridgedMultiColvarFunction(const ActionOptions&ao):
 Action(ao),
-ActionAtomistic(ao),
-ActionWithValue(ao),
-ActionWithVessel(ao),
-ActionWithInputVessel(ao),
-updateFreq(0)
+MultiColvarBase(ao)
 {
-  readArgument("bridge");
-  mycolv = dynamic_cast<MultiColvarBase*>( getDependencies()[0] ); 
-  plumed_assert( getDependencies().size()==1 );
-  if(!mycolv) error("action labeled " + mycolv->getLabel() + " is not a multicolvar"); 
-
-  // Neighbor list readin
-  parse("NL_STRIDE",updateFreq);
-  if(updateFreq>0){
-     if( !mycolv->isDensity() && updateFreq%mycolv->updateFreq!=0 ){ 
-        error("update frequency must be a multiple of update frequency for base multicolvar");  
-     }
-     firsttime=true;
-     log.printf("  Updating contributors every %d steps.\n",updateFreq);
-  } else {
-     firsttime=false; contributorsAreUnlocked=true; // This will lock during first prepare step
-     log.printf("  Updating contributors every step.\n");
+  std::string mlab; parse("DATA",mlab);
+  mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
+  if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
+  myBridgeVessel = mycolv->addBridgingVessel( this ); addDependency(mycolv);
+  // Checks for neighbor list
+  if( mycolv->updateFreq>0 && updateFreq>0 ){
+      if( updateFreq%mycolv->updateFreq!=0 ) error("update frequency must be a multiple of the update frequency in the base colvar");
   }
   weightHasDerivatives=true;
 }
 
-void BridgedMultiColvarFunction::turnOnDerivatives(){
-  ActionWithValue::turnOnDerivatives();
-  needsDerivatives();
-} 
-
-void BridgedMultiColvarFunction::prepare(){
-  bool updatetime=false;
-  if( contributorsAreUnlocked ){ updatetime=true; lockContributors(); }
-  if( updateFreq>0 ){
-      if( firsttime || getStep()%updateFreq==0 ){
-         if( !mycolv->isDensity() ){
-             mycolv->unlockContributors(); 
-         } else {
-             plumed_massert( mycolv->contributorsAreUnlocked, "contributors are not unlocked in base multicolvar" );
-         }
-         unlockContributors(); 
-         firsttime=false;
-      }
-  }
-}
-
 void BridgedMultiColvarFunction::finishTaskListUpdate(){
-  activeAtoms.clear();
-  for(unsigned i=0;i<mycolv->getNumberOfAtoms();++i) activeAtoms.addIndexToList(i);
-  activeAtoms.deactivateAll();
+  plumed_assert( all_atoms.fullSize()==0 );
+  resizeLocalArrays();
 }
 
 void BridgedMultiColvarFunction::mergeDerivatives( const unsigned& ider, const double& df ){
   unsigned vstart=getNumberOfDerivatives()*ider;
   // Merge atom derivatives
-  for(unsigned i=0;i<activeAtoms.getNumberActive();++i){
-     unsigned iatom=3*activeAtoms[i];
+  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
+     unsigned iatom=3*atoms_with_derivatives[i];
      accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
      accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
      accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) );
@@ -127,8 +78,8 @@ void BridgedMultiColvarFunction::clearDerivativesAfterTask( const unsigned& ider
   unsigned vstart=getNumberOfDerivatives()*ider;
   if( derivativesAreRequired() ){
      // Clear atom derivatives
-     for(unsigned i=0;i<activeAtoms.getNumberActive();++i){
-        unsigned iatom=vstart+3*activeAtoms[i];
+     for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
+        unsigned iatom=vstart+3*atoms_with_derivatives[i];
         setElementDerivative( iatom, 0.0 ); iatom++;
         setElementDerivative( iatom, 0.0 ); iatom++;
         setElementDerivative( iatom, 0.0 );
@@ -151,7 +102,15 @@ void BridgedMultiColvarFunction::clearDerivativesAfterTask( const unsigned& ider
 }
 
 void BridgedMultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
-  ActionWithInputVessel::calculateNumericalDerivatives(a);
+  if(!a){
+    a=dynamic_cast<ActionWithValue*>(this);
+    plumed_massert(a,"cannot compute numerical derivatives for an action without values");
+  }
+  if( myBridgeVessel ){
+     myBridgeVessel->completeNumericalDerivatives();
+  } else {
+     error("numerical derivatives are not implemented");
+  }
 }
 
 bool BridgedMultiColvarFunction::isPeriodic(){

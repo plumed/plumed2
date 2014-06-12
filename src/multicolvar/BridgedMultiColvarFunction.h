@@ -22,24 +22,13 @@
 #ifndef __PLUMED_multicolvar_BridgedMultiColvarFunction_h
 #define __PLUMED_multicolvar_BridgedMultiColvarFunction_h
 
-#include "core/ActionAtomistic.h"
-#include "tools/HistogramBead.h"
-#include "tools/Pbc.h"
-#include "core/ActionWithValue.h"
-#include "vesselbase/ActionWithVessel.h"
-#include "vesselbase/ActionWithInputVessel.h"
 #include "vesselbase/BridgeVessel.h"
 #include "MultiColvarBase.h"
 
 namespace PLMD {
 namespace multicolvar {
 
-class BridgedMultiColvarFunction :
-  public ActionAtomistic,
-  public ActionWithValue,
-  public vesselbase::ActionWithVessel,
-  public vesselbase::ActionWithInputVessel
-  {
+class BridgedMultiColvarFunction : public MultiColvarBase {
 friend class MultiColvarBase;   
 private:
 /// This is used for storing positions properly
@@ -51,8 +40,6 @@ private:
 /// Everything for controlling the updating of neighbor lists
   bool firsttime;
   int updateFreq;
-/// Fast merging of derivatives (automatic skips of zero contributions)
-  DynamicList<unsigned> activeAtoms;
 protected:
 /// Get a pointer to the base multicolvar
   MultiColvarBase* getPntrToMultiColvar() const ;
@@ -60,24 +47,20 @@ protected:
   void deactivateAllAtoms();
 /// Activate the nth atom in the list
   void setAtomActive( const unsigned& n );
-/// And complete the list of active atoms
-  void updateActiveAtoms();
 public:
   static void registerKeywords( Keywords& keys );
   BridgedMultiColvarFunction(const ActionOptions&);
+/// Make sure arrays are set to correct sizes
+  void finishTaskListUpdate();
 /// Don't actually clear the derivatives when this is called from plumed main.  
 /// They are calculated inside another action and clearing them would be bad  
   void clearDerivatives(){}
-// This is used during neighbor list update step
-  void finishTaskListUpdate();
 /// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
-/// Turn on the derivatives
-  void turnOnDerivatives();
+  unsigned getNumberOfDerivatives(); 
+/// Get the size of the atoms with derivatives array
+  unsigned getSizeOfAtomsWithDerivatives();
 /// Is the output quantity periodic
   bool isPeriodic();
-/// Jobs to be done when the action is activated
-  void prepare();
 /// Routines that have to be defined so as not to have problems with virtual methods 
   void deactivate_task();
   void calculate(){}
@@ -88,6 +71,14 @@ public:
 /// code optimization
   void mergeDerivatives( const unsigned& ider, const double& df );
   void clearDerivativesAfterTask( const unsigned& ider );
+/// Is this atom currently being copied 
+  bool isCurrentlyActive( const unsigned& );
+/// This should not be called
+  unsigned getBaseQuantityIndex( const unsigned& code ){ plumed_error(); }
+  Vector calculateCentralAtomPosition(){ plumed_error(); }
+  double compute(){ plumed_error(); }
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ){ plumed_error(); }
+  void updateActiveAtoms(){ plumed_error(); }
 };
 
 inline
@@ -101,18 +92,13 @@ unsigned BridgedMultiColvarFunction::getNumberOfDerivatives(){
 }
 
 inline
-void BridgedMultiColvarFunction::deactivateAllAtoms(){
-  activeAtoms.deactivateAll();
+bool BridgedMultiColvarFunction::isCurrentlyActive( const unsigned& code ){
+  return mycolv->isCurrentlyActive( code );
 }
 
 inline
-void BridgedMultiColvarFunction::setAtomActive( const unsigned& n ){
-  activeAtoms.activate(n);
-}
-
-inline
-void BridgedMultiColvarFunction::updateActiveAtoms(){
-  activeAtoms.updateActiveMembers();
+unsigned BridgedMultiColvarFunction::getSizeOfAtomsWithDerivatives(){
+  return mycolv->getNumberOfAtoms();
 }
 
 }

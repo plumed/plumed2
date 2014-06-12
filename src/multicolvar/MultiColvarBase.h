@@ -128,7 +128,7 @@ public:
 /// Prepare for the calculation
   void prepare();
 /// Perform one of the tasks
-  void performTask();
+  virtual void performTask();
 /// This gets the position of an atom for the link cell setup
   virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom )=0;
 /// And a virtual function which actually computes the colvar
@@ -138,12 +138,14 @@ public:
 /// This is replaced once we have a function to calculate the cv
   virtual double compute()=0;
 /// These replace the functions in ActionWithVessel to make the code faster
-  void mergeDerivatives( const unsigned& ider, const double& df );
-  void clearDerivativesAfterTask( const unsigned& ider );
+  virtual void mergeDerivatives( const unsigned& ider, const double& df );
+  virtual void clearDerivativesAfterTask( const unsigned& ider );
 /// Apply the forces from this action
   virtual void apply();
 /// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+  virtual unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+/// Get number size of atoms with derivatives array
+  virtual unsigned getSizeOfAtomsWithDerivatives();
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
 /// Retrieve the position of the central atom
@@ -240,6 +242,11 @@ void MultiColvarBase::setWeight( const double& weight ){
 inline
 void MultiColvarBase::addBoxDerivativesOfWeight( const Tensor& vir ){
   addBoxDerivatives( 1, vir );
+}
+
+inline
+unsigned MultiColvarBase::getSizeOfAtomsWithDerivatives(){
+  return getNumberOfAtoms();
 }
 
 }

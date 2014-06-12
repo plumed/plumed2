@@ -22,6 +22,7 @@
 #ifndef __PLUMED_multicolvar_ActionVolume_h
 #define __PLUMED_multicolvar_ActionVolume_h
 
+#include "tools/HistogramBead.h"
 #include "VolumeGradientBase.h"
 
 namespace PLMD {

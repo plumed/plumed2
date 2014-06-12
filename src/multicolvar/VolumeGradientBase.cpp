@@ -49,8 +49,7 @@ void VolumeGradientBase::doJobsRequiredBeforeTaskList(){
 }
 
 void VolumeGradientBase::performTask(){
-//  activeAtoms.deactivateAll(); // Currently no atoms are active so deactivate them all
-  deactivateAllAtoms();
+  atoms_with_derivatives.deactivateAll();
 
   if( getPntrToMultiColvar()->isDensity() ){ 
      setElementValue( 0, 1.0 );
@@ -59,8 +58,7 @@ void VolumeGradientBase::performTask(){
      getPntrToMultiColvar()->copyElementsToBridgedColvar( this );
   }
   calculateAllVolumes(); 
-  updateActiveAtoms();
-//  activeAtoms.updateActiveMembers();
+  atoms_with_derivatives.updateActiveMembers();
 }
 
 void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const double& weight, const Vector& wdf ){
@@ -70,8 +68,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const double& 
       setElementValue( ivol, weight ); 
       for(unsigned i=0;i<mcolv->atomsWithCatomDer.getNumberActive();++i){
          unsigned n=mcolv->atomsWithCatomDer[i], nx=nstart + 3*n;
-//         activeAtoms.activate(n);
-         setAtomActive(n);
+         atoms_with_derivatives.activate(n);
          addElementDerivative( nx+0, mcolv->getCentralAtomDerivative(n, 0, wdf ) );
          addElementDerivative( nx+1, mcolv->getCentralAtomDerivative(n, 1, wdf ) );
          addElementDerivative( nx+2, mcolv->getCentralAtomDerivative(n, 2, wdf ) );
@@ -81,8 +78,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const double& 
       double ww=mcolv->getElementValue(1); setElementValue( ivol, ww*weight );
       for(unsigned i=0;i<mcolv->atomsWithCatomDer.getNumberActive();++i){
           unsigned n=mcolv->atomsWithCatomDer[i], nx=nstart + 3*n;
-//          activeAtoms.activate(n); 
-          setAtomActive(n);
+          atoms_with_derivatives.activate(n);
           addElementDerivative( nx+0, ww*mcolv->getCentralAtomDerivative(n, 0, wdf ) );
           addElementDerivative( nx+1, ww*mcolv->getCentralAtomDerivative(n, 1, wdf ) );
           addElementDerivative( nx+2, ww*mcolv->getCentralAtomDerivative(n, 2, wdf ) );
@@ -91,8 +87,7 @@ void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const double& 
          unsigned nder=mcolv->getNumberOfDerivatives(); 
          for(unsigned i=0;i<mcolv->atoms_with_derivatives.getNumberActive();++i){
             unsigned n=mcolv->atoms_with_derivatives[i], nx=nder + 3*n, ny=nstart + 3*n;
-//            activeAtoms.activate(n);
-            setAtomActive(n);
+            atoms_with_derivatives.activate(n);
             addElementDerivative( ny+0, weight*mcolv->getElementDerivative(nx+0) );
             addElementDerivative( ny+1, weight*mcolv->getElementDerivative(nx+1) );
             addElementDerivative( ny+2, weight*mcolv->getElementDerivative(nx+2) );

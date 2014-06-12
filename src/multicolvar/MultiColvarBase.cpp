@@ -158,11 +158,11 @@ void MultiColvarBase::setupLinkCells(){
 
 void MultiColvarBase::resizeLocalArrays(){
   atoms_with_derivatives.clear(); 
-  for(unsigned i=0;i<getNumberOfAtoms();++i) atoms_with_derivatives.addIndexToList( i );
+  for(unsigned i=0;i<getSizeOfAtomsWithDerivatives();++i) atoms_with_derivatives.addIndexToList( i );
   atoms_with_derivatives.deactivateAll();
   // Set up stuff for central atoms
   atomsWithCatomDer.clear();
-  for(unsigned i=0;i<getNumberOfAtoms();++i) atomsWithCatomDer.addIndexToList( i );
+  for(unsigned i=0;i<getSizeOfAtomsWithDerivatives();++i) atomsWithCatomDer.addIndexToList( i );
   atomsWithCatomDer.deactivateAll();
   // Resize tempory forces array
   if( !doNotCalculateDerivatives() ) forcesToApply.resize( getNumberOfDerivatives() );
@@ -412,7 +412,7 @@ void MultiColvarBase::copyElementsToBridgedColvar( BridgedMultiColvarFunction* f
   func->setElementValue( 0, getElementValue(0) ); 
   for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
      unsigned n=atoms_with_derivatives[i], nx=3*n;
-     func->activeAtoms.activate(n);
+     func->atoms_with_derivatives.activate(n);
      func->addElementDerivative( nx+0, getElementDerivative(nx+0) );
      func->addElementDerivative( nx+1, getElementDerivative(nx+1) );
      func->addElementDerivative( nx+2, getElementDerivative(nx+2) ); 
