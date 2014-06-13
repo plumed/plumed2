@@ -69,14 +69,15 @@ PRINT ARG=noes FILE=colvar
 
 class NOE : public Colvar {   
 private:
-  bool pbc;
-  vector<double> noedist;
-  vector<int> nga, ngb;
-  NeighborList *nl;
-  bool isupper;
-  int  ens_dim;
-  bool ensemble;
-  bool serial;
+  bool             pbc;
+  vector<double>   noedist;
+  vector<unsigned> nga, ngb;
+  NeighborList     *nl;
+  unsigned         ens_dim;
+  unsigned         pperiod;
+  bool             isupper;
+  bool             ensemble;
+  bool             serial;
 public:
   static void registerKeywords( Keywords& keys );
   NOE(const ActionOptions&);
@@ -100,6 +101,7 @@ void NOE::registerKeywords( Keywords& keys ){
                                 "You can either specify a global reference value using NOEDIST or one "
                                 "reference value for each contact.");
   keys.addFlag("UPPER_LIMITS",false,"Set to TRUE if you want to consider the reference distances as upper limits.");
+  keys.add("compulsory","WRITE_NOE","0","Write the back-calculated chemical shifts every # steps.");
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
 }
@@ -152,6 +154,10 @@ serial(false)
 
   parseFlag("UPPER_LIMITS",isupper);
 
+  unsigned w_period=0;
+  parse("WRITE_NOE", w_period);
+  pperiod=w_period;
+
   parseFlag("ENSEMBLE",ensemble);
   if(ensemble&&comm.Get_rank()==0) {
     if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
@@ -172,7 +178,7 @@ serial(false)
   if(isupper)  log.printf("  NOEs reference distances are considered as upper limits only\n");
   if(!serial)  log.printf("  The NOEs are calculated in parallel\n");
   else         log.printf("  The NOEs are calculated in serial\n");
-  if(ensemble) log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim);
+  if(ensemble) log.printf("  ENSEMBLE averaging over %u replicas\n", ens_dim);
   if(pbc)      log.printf("  using periodic boundary conditions\n");
   else         log.printf("  without periodic boundary conditions\n");
 
@@ -204,7 +210,7 @@ void NOE::calculate(){
     rank=comm.Get_rank();
   }
  
-  for(unsigned i=0;i<nga.size();i++) noe[i]=0.;
+  for(unsigned i=0;i<nga.size();i++) { noe[i]=0.; dnoe[i]=0.;}
 
   unsigned index=0; for(unsigned k=0;k<rank;k++) index += nga[k];
 
@@ -240,6 +246,27 @@ void NOE::calculate(){
         dnoe[i] = 2.*diff/pow(noe[i],(7./6.));
       }
     }
+  }
+
+  bool printout=false;
+  if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
+  if(printout) {
+    string csfile;
+    char tmps1[21], tmps2[21];
+    // add to the name the label of the cv in such a way to have different files
+    // when there is more than one defined variable
+    sprintf(tmps1, "%li", getStep());
+    if(ensemble) {
+      sprintf(tmps2, "%i", multi_sim_comm.Get_rank());
+      csfile = string("noe")+tmps2+"-"+tmps1+string(".dat");
+    } else csfile = string("noe")+tmps1+string(".dat");
+    // now print it!!
+    FILE *outfile = fopen(csfile.c_str(), "w");
+    fprintf(outfile, "#index calc exp\n");
+    for(unsigned i=0;i<nga.size();i++) { 
+      fprintf(outfile," %4i %10.6lf %10.6lf\n", i, pow(noe[i],(-1./6.)), noedist[i]);
+    }
+    fclose(outfile);
   }
 
   // Ensemble averaging
