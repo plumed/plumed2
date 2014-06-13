@@ -64,6 +64,9 @@ public:
   void turnOnDerivatives();
 /// Do the matrix calculation
   void completeCalculation();
+/// Derivatives of elements of adjacency matrix are unimportant.  We thus
+/// overwrite this routine as this makes the code faster
+  void updateActiveAtoms(){}
 };
 
 PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
@@ -76,7 +79,7 @@ void DFSClustering::registerKeywords( Keywords& keys ){
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   if( keys.reserved("VSUM") ) keys.use("VSUM");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); 
-  keys.use("MIN"); keys.use("MAX"); keys.use("SUM");
+  keys.use("MIN"); keys.use("MAX"); keys.use("SUM"); keys.remove("LOWMEM"); keys.use("HIGHMEM");
 }
 
 DFSClustering::DFSClustering(const ActionOptions&ao):
@@ -117,6 +120,11 @@ void DFSClustering::turnOnDerivatives(){
 void DFSClustering::completeCalculation(){
    // Get the adjacency matrix
    retrieveAdjacencyLists( nneigh, adj_list ); 
+//   for(unsigned i=0;i<nneigh.size();++i){
+//       printf("ADJACENCY LIST FOR %d HAS %d MEMBERS : ",i,nneigh[i]);
+//       for(unsigned j=0;j<nneigh[i];++j) printf("%d ",adj_list(i,j) );
+//       printf("\n"); 
+//   }
 
    // All the clusters have zero size initially
    for(unsigned i=0;i<cluster_sizes.size();++i){ cluster_sizes[i].first=0; cluster_sizes[i].second=i;}
@@ -129,6 +137,7 @@ void DFSClustering::completeCalculation(){
 
    // Order the clusters in the system by size (this returns ascending order )
    std::sort( cluster_sizes.begin(), cluster_sizes.end() );
+//   for(unsigned i=0;i<cluster_sizes.size();++i) printf("HELLO CLUSTER %d %d \n",i,cluster_sizes[i].first );
    // Now calculate properties of the largest cluster 
    ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
    // Get rid of bogus derivatives

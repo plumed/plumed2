@@ -59,11 +59,18 @@ public:
   unsigned getNumberOfDerivatives(); 
 /// Get the size of the atoms with derivatives array
   unsigned getSizeOfAtomsWithDerivatives();
+/// Copy list of atoms across
+  void copyAtomListToFunction( MultiColvarBase* myfunction );
 /// Is the output quantity periodic
   bool isPeriodic();
 /// Routines that have to be defined so as not to have problems with virtual methods 
   void deactivate_task();
   void calculate(){}
+/// This does the task
+  void performTask();
+  virtual void completeTask()=0;
+/// Get the central atom position
+  Vector retrieveCentralAtomPos();
 /// We need our own calculate numerical derivatives here
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void apply(){};
@@ -79,6 +86,8 @@ public:
   double compute(){ plumed_error(); }
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ){ plumed_error(); }
   void updateActiveAtoms(){ plumed_error(); }
+  void copyActiveAtomsToFunction( MultiColvarBase* myfunction, const unsigned& start );
+  void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 };
 
 inline

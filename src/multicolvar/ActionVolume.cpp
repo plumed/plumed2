@@ -39,9 +39,9 @@ Action(ao),
 VolumeGradientBase(ao)
 {
   // Find number of quantities
-  if( getPntrToMultiColvar()->isDensity() ) nquantities=2;
-  else if( getPntrToMultiColvar()->getNumberOfQuantities()==5 ) nquantities=2;
-  else nquantities=1 + getPntrToMultiColvar()->getNumberOfQuantities()-5 + 1;  // Norm + vector + weight 
+  if( getPntrToMultiColvar()->isDensity() ) nquantities=5;                           // Value + catom + weight 
+  else if( getPntrToMultiColvar()->getNumberOfQuantities()==5 ) nquantities=5;       // Value + catom + weight
+  else nquantities = 1 + 3 + getPntrToMultiColvar()->getNumberOfQuantities()-5 + 1;  // Norm + catom + vector + weight 
 
   // Output some nice information
   std::string functype=getPntrToMultiColvar()->getName();

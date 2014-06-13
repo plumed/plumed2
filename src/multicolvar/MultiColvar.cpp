@@ -375,7 +375,7 @@ void MultiColvar::threeBodyNeighborList( const SwitchingFunction& sf ){
 void MultiColvar::finishTaskListUpdate(){
   if( !contributorsAreUnlocked ){
       // Get the atoms we need
-      all_atoms.deactivateAll();
+      all_atoms.deactivateAll(); all_atoms.resetTranslator();
       for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
           bool check=setupCurrentAtomList( getActiveTask(i) );
           plumed_assert( check );

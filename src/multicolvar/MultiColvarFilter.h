@@ -40,20 +40,13 @@ public:
   MultiColvarFilter(const ActionOptions&);
 /// Do everything required to setup the derivatives
   void doJobsRequiredBeforeTaskList();
-/// Get the number of quantities
-  unsigned getNumberOfQuantities();
 /// Actually do what we are asked
-  void performTask();
+  void completeTask();
 /// Do the filtering
   virtual double applyFilter( const double& val, double& df )=0;
 /// Just checks there are no bridging forces
   void addBridgeForces( const std::vector<double>& bb );
 };
-
-inline
-unsigned MultiColvarFilter::getNumberOfQuantities(){
-  return 2;
-} 
 
 }
 }

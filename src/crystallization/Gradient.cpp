@@ -100,6 +100,10 @@ nbins(3)
   finishTaskListUpdate();
 }
 
+unsigned Gradient::getCentralAtomElementIndex(){
+  plumed_error();
+}
+
 void Gradient::setupRegions(){
 //  if( !getPbc().isOrthorombic() ) error("cell must be orthorhombic when using gradient");
 }

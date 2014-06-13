@@ -44,11 +44,67 @@ MultiColvarBase(ao)
       if( updateFreq%mycolv->updateFreq!=0 ) error("update frequency must be a multiple of the update frequency in the base colvar");
   }
   weightHasDerivatives=true;
+  // Number of tasks is the same as the number in the underlying MultiColvar
+  for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList( mycolv->getTaskCode(i) );
+}
+
+void BridgedMultiColvarFunction::copyAtomListToFunction( MultiColvarBase* myfunction ){
+  mycolv->copyAtomListToFunction( myfunction );
+}
+
+void BridgedMultiColvarFunction::copyActiveAtomsToFunction( MultiColvarBase* myfunction, const unsigned& start ){
+  mycolv->copyActiveAtomsToFunction( myfunction, start );
+}
+
+void BridgedMultiColvarFunction::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
+  mycolv->getIndexList( ntotal, jstore, maxder, indices );
 }
 
 void BridgedMultiColvarFunction::finishTaskListUpdate(){
   plumed_assert( all_atoms.fullSize()==0 );
+  std::vector<bool> additionalTasks( mycolv->getFullNumberOfTasks(), false );
+  for(unsigned i=0;i<mycolv->getCurrentNumberOfActiveTasks();++i) additionalTasks[mycolv->getPositionInFullTaskList(i)]=true;
+  activateTheseTasks( additionalTasks );
   resizeLocalArrays();
+}
+
+void BridgedMultiColvarFunction::performTask(){
+  atoms_with_derivatives.deactivateAll();
+
+  if( !myBridgeVessel->prerequisitsCalculated() ){
+      mycolv->setTaskIndexToCompute( getCurrentPositionInTaskList() );
+      mycolv->performTask();
+  } else {
+
+  }
+
+  completeTask();
+  atoms_with_derivatives.updateActiveMembers();
+}
+
+Vector BridgedMultiColvarFunction::retrieveCentralAtomPos(){
+  if( atomsWithCatomDer.getNumberActive()==0 ){
+      Vector cvec = mycolv->retrieveCentralAtomPos();
+
+      // Copy the value and derivatives from the MultiColvar
+      atomsWithCatomDer.emptyActiveMembers();
+      for(unsigned i=0;i<3;++i){
+         setElementValue( getCentralAtomElementIndex() + i, mycolv->getElementValue( mycolv->getCentralAtomElementIndex() + i ) );
+         unsigned nbase = ( getCentralAtomElementIndex() + i)*getNumberOfDerivatives();
+         unsigned nbas2 = ( mycolv->getCentralAtomElementIndex() + i )*mycolv->getNumberOfDerivatives();
+         for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j){
+             unsigned n=mycolv->atomsWithCatomDer[j], nx=3*n; atomsWithCatomDer.activate(n);
+             addElementDerivative(nbase + nx + 0, mycolv->getElementDerivative(nbas2 + nx + 0) );
+             addElementDerivative(nbase + nx + 1, mycolv->getElementDerivative(nbas2 + nx + 1) );
+             addElementDerivative(nbase + nx + 2, mycolv->getElementDerivative(nbas2 + nx + 2) ); 
+         } 
+      }
+      atomsWithCatomDer.updateActiveMembers();  // This can perhaps be faster
+      return cvec;
+  }
+  Vector cvec;
+  for(unsigned i=0;i<3;++i) cvec[i]=getElementValue(1+i);
+  return cvec;
 }
 
 void BridgedMultiColvarFunction::mergeDerivatives( const unsigned& ider, const double& df ){

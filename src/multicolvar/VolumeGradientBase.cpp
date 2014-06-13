@@ -46,9 +46,7 @@ void VolumeGradientBase::doJobsRequiredBeforeTaskList(){
   ActionWithVessel::doJobsRequiredBeforeTaskList();
 }
 
-void VolumeGradientBase::performTask(){
-  atoms_with_derivatives.deactivateAll();
-
+void VolumeGradientBase::completeTask(){
   if( getPntrToMultiColvar()->isDensity() ){ 
      setElementValue( 0, 1.0 );
   } else {
@@ -56,7 +54,6 @@ void VolumeGradientBase::performTask(){
      getPntrToMultiColvar()->copyElementsToBridgedColvar( this );
   }
   calculateAllVolumes(); 
-  atoms_with_derivatives.updateActiveMembers();
 }
 
 void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const double& weight, const Vector& wdf ){

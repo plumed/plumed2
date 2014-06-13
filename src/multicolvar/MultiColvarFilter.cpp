@@ -43,8 +43,7 @@ void MultiColvarFilter::doJobsRequiredBeforeTaskList(){
   ActionWithVessel::doJobsRequiredBeforeTaskList();
 }
 
-void MultiColvarFilter::performTask(){
-  atoms_with_derivatives.deactivateAll();
+void MultiColvarFilter::completeTask(){
   MultiColvarBase* mcolv=getPntrToMultiColvar(); 
   // Copy the derivatives across
   mcolv->copyElementsToBridgedColvar( this );
@@ -78,7 +77,6 @@ void MultiColvarFilter::performTask(){
          addElementDerivative( nstart+i, weight*mcolv->getElementDerivative(nstart+i) + ww*df*getElementDerivative(i) );
      }
   }
-  atoms_with_derivatives.updateActiveMembers();
 }
 
 void MultiColvarFilter::addBridgeForces( const std::vector<double>& bb ){ 

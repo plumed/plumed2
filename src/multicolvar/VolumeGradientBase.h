@@ -57,7 +57,7 @@ public:
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
 /// Actually do what we are asked
-  void performTask();
+  void completeTask();
 /// Calculate what is in the volumes
   virtual void calculateAllVolumes()=0;
 /// Setup the regions that this is based on 

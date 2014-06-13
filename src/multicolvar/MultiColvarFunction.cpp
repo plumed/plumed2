@@ -170,7 +170,8 @@ void MultiColvarFunction::finishTaskListUpdate(){
   }
 
   // Deactivate all atoms
-  all_atoms.deactivateAll(); unsigned start=0;
+  all_atoms.deactivateAll(); all_atoms.resetTranslator(); 
+  unsigned start=0;
   for(unsigned i=0;i<mybasemulticolvars.size();++i){ 
      // Add these requirements in the base colvar
      mybasemulticolvars[i]->activateTheseTasks( additionalTasks[i] );
@@ -208,10 +209,12 @@ void MultiColvarFunction::calculate(){
 
   if( !usespecies ){
      // Now set up tasks for this step
-     std::vector<bool> activeTasks( getCurrentNumberOfActiveTasks(), true ); 
+     std::vector<bool> activeTasks( getFullNumberOfTasks(), true ); 
      for(unsigned i=0;i<activeTasks.size();++i){
-         setupCurrentAtomList( getActiveTask(i) ); bool inactive=false;
-         for(unsigned i=0;i<current_atoms.size();++i) inactive=!isCurrentlyActive( current_atoms[i] );
+         setupCurrentAtomList( getTaskCode(i) ); bool inactive=false;
+         for(unsigned i=0;i<current_atoms.size();++i){
+            if( !isCurrentlyActive( current_atoms[i] ) ) inactive=true;
+         }
          if( inactive ) activeTasks[i]=false; 
      }
      contributorsAreUnlocked=true; 
@@ -255,7 +258,7 @@ void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
 void MultiColvarFunction::addStoredDerivative( const unsigned& jout, const unsigned& base_cv_no, const unsigned& base_index, const double& der ){
   plumed_dbg_assert( jout<getNumberOfQuantities() && base_cv_no<mybasemulticolvars.size() && base_index<mybasemulticolvars[base_cv_no]->getNumberOfDerivatives() );
 
-  unsigned mbase = 3*mybasemulticolvars[base_cv_no]->getNumberOfAtoms(), tbase = 3*getNumberOfAtoms();
+  unsigned mbase = 3*mybasemulticolvars[base_cv_no]->getSizeOfAtomsWithDerivatives(), tbase = 3*getNumberOfAtoms();
   if( base_index>=mbase ){
       // Add virial element
       unsigned jindex = base_index - mbase + tbase;
@@ -273,9 +276,7 @@ void MultiColvarFunction::addStoredDerivative( const unsigned& jout, const unsig
 
 void MultiColvarFunction::updateActiveAtoms(){
   if( atoms_with_derivatives.updateComplete() ) return;
-  atoms_with_derivatives.emptyActiveMembers();
-  for(unsigned i=0;i<getNumberOfAtoms();++i) atoms_with_derivatives.updateIndex(i);
-  atoms_with_derivatives.sortActiveList();
+  atoms_with_derivatives.updateActiveMembers();
 }
 
 Vector MultiColvarFunction::calculateCentralAtomPosition(){

@@ -149,26 +149,28 @@ public:
   virtual unsigned getSizeOfAtomsWithDerivatives();
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
+/// Get the index where the central atom is stored
+  virtual unsigned getCentralAtomElementIndex();
 /// Retrieve the position of the central atom
-  Vector retrieveCentralAtomPos();
+  virtual Vector retrieveCentralAtomPos();
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual void calculateWeight();
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
   virtual Vector calculateCentralAtomPosition()=0; 
 /// Get the list of indices that have derivatives
- void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
+ virtual void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 /// Is this a density?
   virtual bool isDensity(){ return false; }
 /// Store central atoms so that this can be used in a function
   virtual vesselbase::StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
 /// Copy the list of atoms involved to a second MultiColvarBase (used by functions)
-  void copyAtomListToFunction( MultiColvarBase* myfunction );
+  virtual void copyAtomListToFunction( MultiColvarBase* myfunction );
 /// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
   void quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout );
 /// Return the number of the colvar in which iatom is the first atom
   unsigned getInternalIndex( const AtomNumber& iatom ) const ;
 /// Make sure the same list of atoms is active in a function
-  void copyActiveAtomsToFunction( MultiColvarBase* myfunction, const unsigned& start );
+  virtual void copyActiveAtomsToFunction( MultiColvarBase* myfunction, const unsigned& start );
 /// Activate the atoms that have derivatives from a storeDataVessel
   void activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ); 
 /// Get the position of the iatom th central atom (used in multicolvarfunction)
@@ -207,6 +209,11 @@ bool MultiColvarBase::usesPbc() const {
 inline
 unsigned MultiColvarBase::getNumberOfQuantities(){
   return 5;
+}
+
+inline
+unsigned MultiColvarBase::getCentralAtomElementIndex(){
+  return 2;
 }
 
 inline

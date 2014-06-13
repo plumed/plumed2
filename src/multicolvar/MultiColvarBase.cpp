@@ -219,11 +219,9 @@ double MultiColvarBase::doCalculation(){
 }
 
 Vector MultiColvarBase::retrieveCentralAtomPos(){
-  ibox=getPbc().getInvBox().transpose();
-
   if( atomsWithCatomDer.getNumberActive()==0 ){
       Vector cvec = calculateCentralAtomPosition();
-      for(unsigned i=0;i<3;++i) setElementValue( 2+i, cvec[i] );
+      for(unsigned i=0;i<3;++i) setElementValue( getCentralAtomElementIndex()+i, cvec[i] );
       return cvec;
   }
   Vector cvec; 
@@ -237,7 +235,7 @@ void MultiColvarBase::addCentralAtomDerivatives( const unsigned& iatom, const Te
   unsigned nder = 3*getNumberOfAtoms() + 9;
   for(unsigned i=0;i<3;++i){ 
     for(unsigned j=0;j<3;++j){
-        addElementDerivative( (2+j)*nder + 3*iatom + i, der(j,i) );         
+        addElementDerivative( (getCentralAtomElementIndex()+j)*nder + 3*iatom + i, der(j,i) );
      }
   }
 }
@@ -245,9 +243,9 @@ void MultiColvarBase::addCentralAtomDerivatives( const unsigned& iatom, const Te
 double MultiColvarBase::getCentralAtomDerivative( const unsigned& iatom, const unsigned& jcomp, const Vector& df ){
   plumed_dbg_assert( atomsWithCatomDer.isActive(iatom) && jcomp<3 );
   unsigned nder = 3*getNumberOfAtoms() + 9;
-  return df[0]*getElementDerivative( 2*nder + 3*iatom + jcomp ) + 
-         df[1]*getElementDerivative( 3*nder + 3*iatom + jcomp ) + 
-         df[2]*getElementDerivative( 4*nder + 3*iatom + jcomp ); 
+  return df[0]*getElementDerivative( (getCentralAtomElementIndex()+0)*nder + 3*iatom + jcomp ) +
+         df[1]*getElementDerivative( (getCentralAtomElementIndex()+1)*nder + 3*iatom + jcomp ) +
+         df[2]*getElementDerivative( (getCentralAtomElementIndex()+2)*nder + 3*iatom + jcomp ); 
 }
 
 Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) const {

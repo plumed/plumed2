@@ -152,8 +152,7 @@ double AdjacencyMatrixAction::compute(){
 }
 
 void AdjacencyMatrixAction::setMatrixIndexesForTask( const unsigned& ii ){
-  unsigned icolv = active_elements[ii];
-  unsigned tcode = getActiveTask( icolv );
+  unsigned icolv = active_elements[ii], tcode = getTaskCode( icolv );
   bool check = MultiColvarBase::setupCurrentAtomList( tcode );
   plumed_assert( check );
 }

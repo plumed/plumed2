@@ -93,7 +93,7 @@ public:
 /// Resize the dynamic arrays 
   void resizeDynamicArrays();
 /// Update the atoms that are active
-  void updateActiveAtoms();
+  virtual void updateActiveAtoms();
 /// Regular calculate
   void calculate();
 /// Calculate the numerical derivatives for this action

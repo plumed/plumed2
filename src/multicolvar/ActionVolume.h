@@ -59,6 +59,7 @@ public:
   virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
   double getValueForTolerance();
   unsigned getIndexOfWeight();
+  unsigned getCentralAtomElementIndex();
 };
 
 inline
@@ -91,6 +92,11 @@ double ActionVolume::getValueForTolerance(){
 inline
 unsigned ActionVolume::getIndexOfWeight(){
   return nquantities-1;
+}
+
+inline
+unsigned ActionVolume::getCentralAtomElementIndex(){
+ return 1;
 }
 
 }

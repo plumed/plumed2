@@ -142,6 +142,8 @@ protected:
   unsigned getCurrentPositionInTaskList() const ;
 /// Return the number that provides instructions for the current task
   unsigned getCurrentTask() const ;
+/// Return the ith element of the full task list
+  unsigned getTaskCode( const unsigned& itask ) const ;
 /// Deactivate all the tasks in the task list
   void deactivateAllTasks();
 /// Deactivate all tasks with i in lower \f$\le\f$  i < upper
@@ -189,6 +191,8 @@ public:
   unsigned getFullNumberOfTasks() const ;
 /// Get the index for a particular numbered task
 //  unsigned getIndexForTask( const unsigned& itask ) const ;
+/// Set the indices for computing a task
+  void setTaskIndexToCompute( const unsigned& itask );
 /// Calculate one of the functions in the distribution
   virtual void performTask()=0;
 /// Set the derivative of the jth element wrt to a numbered element
@@ -352,6 +356,16 @@ double ActionWithVessel::getValueForTolerance(){
 inline
 unsigned ActionWithVessel::getIndexOfWeight(){
   return 1;
+}
+
+inline
+void ActionWithVessel::setTaskIndexToCompute( const unsigned& itask ){
+  current=fullTaskList[itask]; task_index=itask;
+}
+
+inline
+unsigned ActionWithVessel::getTaskCode( const unsigned& itask ) const {
+  return fullTaskList[itask];
 }
 
 } 
