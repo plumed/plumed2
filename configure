@@ -5339,7 +5339,7 @@ fi
   if test $found == ok; then
     $as_echo "#define __PLUMED_HAS_ALMOST 1" >>confdefs.h
 
-    LIBS="-lsqlite3 -lz -lbz2 -lnbimpl -lshx $LIBS"
+    LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
   fi
 fi
 if test $gsl == true ; then

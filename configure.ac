@@ -268,7 +268,7 @@ if test $almost == true ; then
   AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lbz2 -lnbimpl -lshx]))
   if test $found == ok; then
     AC_DEFINE([__PLUMED_HAS_ALMOST]) 
-    LIBS="-lsqlite3 -lz -lbz2 -lnbimpl -lshx $LIBS"
+    LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
   fi
 fi
 if test $gsl == true ; then
