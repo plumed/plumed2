@@ -64,11 +64,19 @@ void StoreVectorsVessel::recompute( const unsigned& ivec, const unsigned& jstore
 }
 
 bool StoreVectorsVessel::calculate(){
-  storeValues( vecs->getCurrentPositionInTaskList() );  // Store the values of the components of the vector
-
-  if(!store_director) return true;
-  if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList() );
-  else normalizeVector( -1 );  // Ensures vector components are normalized 
+  if( !hard_cut ){
+      storeValues( vecs->getCurrentPositionInTaskList() );  // Store the values of the components of the vector
+      if(!store_director) return true;
+      if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList() );
+      else normalizeVector( -1 );  // Ensures vector components are normalized 
+  } else {
+     if( getAction()->getElementValue(getAction()->getIndexOfWeight())>wtol ){
+         storeValues( vecs->getCurrentPositionInTaskList() );
+         if(!store_director) return true;
+         if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList() );
+         else normalizeVector( -1 );  // Ensures vector components are normalized 
+     }
+  }
   return true;
 }
 

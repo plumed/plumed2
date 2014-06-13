@@ -31,16 +31,18 @@ namespace multicolvar {
 void MultiColvarFunction::registerKeywords( Keywords& keys ){
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the labels of the action that calculates the multicolvars we are interested in");
+  keys.reserve("compulsory","WTOL","if the base multicolvars have weights then you must define a hard cutoff on those you want to consider explicitally");
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 MultiColvarFunction::MultiColvarFunction(const ActionOptions& ao):
 Action(ao),
-MultiColvarBase(ao)
+MultiColvarBase(ao),
+wtolerance(0.0)
 {
   // Read in the arguments
   std::string mname; std::vector<std::string> mlabs; parseVector("DATA",mlabs);
-  log.printf("  using colvars calculated by actions ");
+  log.printf("  using colvars calculated by actions "); bool useweights=false;
   for(unsigned i=0;i<mlabs.size();++i){
       log.printf("%s ",mlabs[i].c_str() );
       MultiColvarBase* mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlabs[i]); 
@@ -61,19 +63,29 @@ MultiColvarBase(ao)
       }
       // Add the dependency
       addDependency(mycolv);
+      // Ensure weights are considered
+      if( mycolv->weightHasDerivatives ) useweights=true;
       // And store the multicolvar base
       mybasemulticolvars.push_back( mycolv );
       // And track which variable stores each colvar
       for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) colvar_label.push_back( i );
   }
   log.printf("\n");
+  if( keywords.exists("WTOL") && useweights ){
+      parse("WTOL",wtolerance);
+      log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
+  }
 }
 
 void MultiColvarFunction::buildSymmetryFunctionLists(){
   if( mybasemulticolvars.size()>2 ) error("Found too many multicolvars in DATA specification. You can use either 1 or 2");
 
   // Make sure information is stored in the required multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes();
+  if( keywords.exists("WTOL") ){
+      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( true, wtolerance );
+  } else {
+      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( false, 0.0 ); 
+  }
 
   usespecies=true; ablocks.resize( 1 );
   for(unsigned i=0;i<mybasemulticolvars[0]->getFullNumberOfTasks();++i) addTaskToList( i );
@@ -100,7 +112,11 @@ void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group 
   if( !allow_intra_group && mybasemulticolvars.size()>2 ) error("only two input multicolvars allowed with this function"); 
 
   // Make sure information is stored in the required multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes();
+  if( keywords.exists("WTOL") ){
+      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( true, wtolerance );
+  } else {
+      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( false, 0.0 );
+  }
   
   usespecies=false; ablocks.resize(2); current_atoms.resize( 2 );
   if( !allow_intra_group && mybasemulticolvars.size()==2 ){
@@ -188,7 +204,23 @@ void MultiColvarFunction::calculate(){
      unsigned maxb=mybasemulticolvars.size() - 1;
      changeBox( mybasemulticolvars[maxb]->getBox() );
   }
-  setupLinkCells(); runAllTasks();
+  setupLinkCells(); 
+
+  if( !usespecies ){
+     // Now set up tasks for this step
+     std::vector<bool> activeTasks( getCurrentNumberOfActiveTasks(), true ); 
+     for(unsigned i=0;i<activeTasks.size();++i){
+         setupCurrentAtomList( getActiveTask(i) ); bool inactive=false;
+         for(unsigned i=0;i<current_atoms.size();++i) inactive=!isCurrentlyActive( current_atoms[i] );
+         if( inactive ) activeTasks[i]=false; 
+     }
+     contributorsAreUnlocked=true; 
+     deactivateAllTasks(); activateTheseTasks( activeTasks ); 
+     contributorsAreUnlocked=false;
+  }
+  
+  // And run all tasks
+  runAllTasks();
 }
 
 void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){

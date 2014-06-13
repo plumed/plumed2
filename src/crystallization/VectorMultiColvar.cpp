@@ -109,9 +109,10 @@ double VectorMultiColvar::doCalculation(){
   return norm;
 }
 
-vesselbase::StoreDataVessel* VectorMultiColvar::buildDataStashes(){
+vesselbase::StoreDataVessel* VectorMultiColvar::buildDataStashes( const bool& allow_wcutoff, const double& wtol ){
   // Build everyting for the multicolvar
-  vesselbase::StoreDataVessel* vsv=MultiColvarBase::buildDataStashes();
+  vesselbase::StoreDataVessel* vsv=MultiColvarBase::buildDataStashes( allow_wcutoff, wtol );
+  if( allow_wcutoff ) vsv->setHardCutoffOnWeight( wtol );
   // Resize the variable
   vecs->resize();
   // And make sure we set up the vector storage correctly

@@ -365,21 +365,27 @@ void MultiColvarBase::apply(){
   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
 }
 
-vesselbase::StoreDataVessel* MultiColvarBase::buildDataStashes(){
+vesselbase::StoreDataVessel* MultiColvarBase::buildDataStashes( const bool& allow_wcutoff, const double& wtol ){
   // Check if vessels have already been setup
   for(unsigned i=0;i<getNumberOfVessels();++i){
      StoreColvarVessel* ssc=dynamic_cast<StoreColvarVessel*>( getPntrToVessel(i) );
-     if(ssc) return ssc;
+     if(ssc){
+        if( allow_wcutoff && !ssc->weightCutoffIsOn() ) error("Cannot have more than one data stash with different properties");
+        if( !allow_wcutoff && ssc->weightCutoffIsOn() ) error("Cannot have more than one data stash with different properties");
+        return ssc;
+     }
   }
  
   // Setup central atoms
   vesselbase::VesselOptions da("","",0,"",this);
   mycatoms=new StoreCentralAtomsVessel(da);
-  addVessel(mycatoms);
+  if( allow_wcutoff ) mycatoms->setHardCutoffOnWeight( wtol );
+  addVessel(mycatoms); 
 
   // Setup store values vessel
   vesselbase::VesselOptions ta("","",0,"",this);
-  myvalues=new StoreColvarVessel(ta);   // Currently ignoring weights - good thing?
+  myvalues=new StoreColvarVessel(ta);   
+  if( allow_wcutoff ) myvalues->setHardCutoffOnWeight( wtol );
   addVessel(myvalues);
 
   // Make sure resizing of vessels is done
@@ -431,6 +437,10 @@ void MultiColvarBase::addWeightedValueDerivatives( const unsigned& iatom, const 
   } else {
      myvalues->chainRuleForComponent( iatom, 0, base_cv_no, weight, func );
   }
+}
+
+bool MultiColvarBase::storedValueIsActive( const unsigned& iatom ){
+  return myvalues->storedValueIsActive( iatom );
 }
 
 void MultiColvarBase::finishWeightedAverageCalculation( MultiColvarFunction* func ){

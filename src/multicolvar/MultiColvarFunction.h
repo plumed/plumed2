@@ -31,6 +31,8 @@ namespace multicolvar {
 
 class MultiColvarFunction : public MultiColvarBase {
 private:
+/// Tolerance used for weights of elements
+  double wtolerance;
 /// The multicolvar from which we construct these quantities
   std::vector<multicolvar::MultiColvarBase*> mybasemulticolvars;
 /// This is used to keep track of what is calculated where
@@ -113,7 +115,8 @@ unsigned MultiColvarFunction::getBaseQuantityIndex( const unsigned& code ){
 
 inline
 bool MultiColvarFunction::isCurrentlyActive( const unsigned& code ){
-  return true; // Tasks are all active because of store data vessel
+  plumed_dbg_assert( code<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[code];
+  return mybasemulticolvars[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) );
 }
 
 inline

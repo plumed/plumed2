@@ -204,7 +204,7 @@ public:
 /// Retrieve the derivative of the quantity in the sum wrt to a numbered element
   double getElementDerivative( const unsigned& ) const ;
 /// Ensure that data required in other vessels is stored
-  virtual StoreDataVessel* buildDataStashes();
+  virtual StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 /// These are overwritten in MultiColvarFunction

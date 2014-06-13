@@ -99,7 +99,7 @@ public:
 /// Get the number of quantities we are calculating per step
   unsigned getNumberOfQuantities();
 /// Create places to store the data
-  vesselbase::StoreDataVessel* buildDataStashes();
+  vesselbase::StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
 /// Get the vector
   void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
 /// Used to accumulate values

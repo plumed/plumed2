@@ -160,7 +160,7 @@ public:
 /// Is this a density?
   virtual bool isDensity(){ return false; }
 /// Store central atoms so that this can be used in a function
-  virtual vesselbase::StoreDataVessel* buildDataStashes();
+  virtual vesselbase::StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
 /// Copy the list of atoms involved to a second MultiColvarBase (used by functions)
   void copyAtomListToFunction( MultiColvarBase* myfunction );
 /// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
@@ -186,6 +186,8 @@ public:
 /// Add derivatives to the orientations
   virtual void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
                                                 const std::vector<double>& weight, MultiColvarFunction* func );
+/// Is the iatom'th stored value currently active
+  bool storedValueIsActive( const unsigned& iatom );
 /// This is true if multicolvar is calculating a vector or if the multicolvar is the density
   virtual bool hasDifferentiableOrientation() const { return false; }
 /// This makes sure we are not calculating the director when we do LocalAverage

@@ -31,11 +31,20 @@ void StoreDataVessel::registerKeywords( Keywords& keys ){
 StoreDataVessel::StoreDataVessel( const VesselOptions& da ):
 Vessel(da),
 max_lowmem_stash(3),
-vecsize(0)
+vecsize(0),
+hard_cut(false)
 {
   ActionWithValue* myval=dynamic_cast<ActionWithValue*>( getAction() );
   if( !myval ) hasderiv=false;
   else hasderiv=!myval->doNotCalculateDerivatives();
+}
+
+void StoreDataVessel::setHardCutoffOnWeight( const double& mytol ){
+  hard_cut=true; wtol=mytol;
+}
+
+bool StoreDataVessel::weightCutoffIsOn() const {
+  return hard_cut;
 }
 
 void StoreDataVessel::completeSetup( const unsigned& dstart, const unsigned& nvec ){
@@ -55,12 +64,14 @@ void StoreDataVessel::resize(){
      nspace = 1 + getAction()->maxderivatives;
      active_der.resize( getAction()->getFullNumberOfTasks() * ( 1 + getAction()->maxderivatives ) );
   }
+  active_val.resize( getAction()->getFullNumberOfTasks() );
   resizeBuffer( getAction()->getFullNumberOfTasks()*vecsize*nspace );
 }
 
 void StoreDataVessel::prepare(){
 // Clear bookeeping arrays  
   active_der.assign(active_der.size(),0);
+  active_val.assign(active_val.size(),0);
 }
 
 void StoreDataVessel::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
@@ -86,7 +97,7 @@ void StoreDataVessel::recompute( const unsigned& ivec, const unsigned& jstore ){
 }
 
 void StoreDataVessel::storeValues( const unsigned& myelem ){
-  ActionWithVessel* act = getAction();
+  ActionWithVessel* act = getAction(); active_val[myelem]=1; // Keeps track of which values are stashed
   unsigned ibuf = myelem * vecsize * nspace;
   for(unsigned icomp=data_start;icomp<data_start + vecsize;++icomp){
      setBufferElement( ibuf, act->getElementValue( icomp ) ); ibuf+=nspace;  
@@ -134,15 +145,26 @@ bool StoreDataVessel::calculate(){
   finishTask( myelem );
 
   // Store the values 
-  storeValues( myelem );
-
-  // Store the derivatives if we are not using low memory
-  if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivativesHighMem( myelem );  
+  if( !hard_cut ){
+     storeValues( myelem );
+     // Store the derivatives if we are not using low memory
+     if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivativesHighMem( myelem );  
+  } else {
+     if( getAction()->getElementValue(getAction()->getIndexOfWeight())>wtol ){ 
+         storeValues( myelem );
+         // Store the derivatives if we are not using low memory
+         if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivativesHighMem( myelem );
+     }
+  }
 
   return true;
 }
 
 void StoreDataVessel::finish(){
+  // Update what variables we need
+  comm.Sum( &active_val[0], active_val.size() );
+
+  // Get the active derivatives
   if(!getAction()->lowmem && getAction()->derivativesAreRequired() ) comm.Sum( &active_der[0], active_der.size() );
 }
 
@@ -202,7 +224,7 @@ void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>
 
 void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>& df, Value* val ){
   plumed_dbg_assert( getAction()->derivativesAreRequired() && val->getNumberOfDerivatives()==final_derivatives.size() );
-  chainRule( ival, df ); 
+  chainRule( ival, df );
 
   unsigned kder;
   if( getAction()->lowmem ) kder = max_lowmem_stash + ival*getAction()->getNumberOfDerivatives();

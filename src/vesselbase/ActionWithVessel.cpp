@@ -98,7 +98,7 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   return bv; 
 }
 
-StoreDataVessel* ActionWithVessel::buildDataStashes(){
+StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol ){
   for(unsigned i=0;i<functions.size();++i){
       StoreDataVessel* vsv=dynamic_cast<StoreDataVessel*>( functions[i] );
       if( vsv ) return vsv;
