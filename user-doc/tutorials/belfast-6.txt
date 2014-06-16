@@ -103,7 +103,7 @@ Here we use as model system alanine dipeptide in vacuum with AMBER99SB-ILDN all-
 
 In this exercise, we will run a metadynamics simulation on alanine dipeptide in vacuum, using as CVs the
 two backbone dihedral angles phi and psi. 
-In order to run this simulation we need to prepare the PLUMED input file as follows.
+In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
 
 \verbatim
 # set up two variables for Phi and Psi dihedral angles 
@@ -132,10 +132,10 @@ to specified the width of the Gaussian by using the keyword SIGMA. Gaussian will
 to the file indicated by the keyword FILE. 
 
 Once the PLUMED input file is prepared, one has to run Gromacs with the option to activate PLUMED and
-read the input file (plumed.dat):
+read the input file:
 
 \verbatim
-mdrun_mpi -plumed plumed.dat
+mdrun_mpi -plumed
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -220,7 +220,7 @@ This default choice should be reasonable for most applications.
 If we try to run again a metadynamics simulation using the script above in a directory where
 a COLVAR and HILLS files are already present, PLUMED will create a backup copy of the old files,
 and run a new simulation. Instead, if we want to restart a previous simulation, we have to add
-the keyword RESTART to the input file, as follows.
+the keyword RESTART to the PLUMED input file (plumed.dat), as follows.
 
 \verbatim
 # restart previous simulation
@@ -324,7 +324,7 @@ In this exercise, we will run a well-tempered metadynamics simulation on alanine
 using as CVs the two backbone dihedral angles phi and psi. 
 To activate well-tempered metadynamics, we need to add two keywords to the line of \ref METAD, which
 specifies the biasfactor and temperature of the simulation. For the first example,
-we will try a biasfactor equal to 6.
+we will try a biasfactor equal to 6. Here how the PLUMED input file (plumed.dat) should look like:
 
 \verbatim
 # set up two variables for Phi and Psi dihedral angles 
@@ -409,7 +409,7 @@ sufficiently high for the free-energy barriers of the system under study to be c
 
 In this exercise, we will study the effect of neglecting a relavant degree of freedom in the choice
 of metadynamics CVs. We are going to run a well-tempered metadynamics simulation with the psi dihedral
-alone as CV, using the following script:
+alone as CV, using the following PLUMED input file (plumed.dat):
 
 \verbatim
 # set up two variables for Phi and Psi dihedral angles 

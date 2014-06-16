@@ -82,12 +82,12 @@ Once this tutorial is completed students will know how to:
 
 \section belfast-7-resources Resources
 
-The <a href="https://dl.dropboxusercontent.com/u/23916760/belfast-7.tar.gz" download="belfast-7.tar.gz"> tarball </a> for this project contains the following directories:
+The <a href="tutorial-resources/belfast-7.tar.gz" download="belfast-7.tar.gz"> tarball </a> for this project contains the following directories:
 
 - Exercise_1: run a PT simulation using 2 replicas and analyze the output  
 - Exercise_2: run a PT simulation using 4 replicas and analyze the output
 - Exercise_3: run a PTMetaD simulation
-- Exercise_4: run a PT-WTE and PTMetaD-WTE simulations
+- Exercise_4: run a PT, PT-WTE and PTMetaD-WTE simulations
 
 Each directory contains a TOPO subdirectory where topology and configuration files for Gromacs are stored.
 
@@ -103,7 +103,7 @@ Here we use as model systems alanine dipeptide in vacuum and water with AMBER99S
 In this exercise, we will run a PT simulation of alanine dipeptide in vacuum, using
 only two replicas, one at 300K, the other at 305K. During this simulation, we will monitor
 the time evolution of the two dihedral angles phi and psi. In order to do that, we need
-the following PLUMED input file.
+the following PLUMED input file (plumed.dat).
 
 \verbatim
 # set up two variables for Phi and Psi dihedral angles 
@@ -141,7 +141,7 @@ We can use the COLVAR.0 and COLVAR.1 along with the tool \ref sum_hills to estim
 We will do this a function of simulation time to assess convergence more quantitatively, using the following command line:
 
 \verbatim
-plumed sum_hills --histo COLVAR.0 --idw phi --sigma 0.2 --kt 2.5 --outhisto fes_ --stride 1000.
+plumed sum_hills --histo COLVAR.0 --idw phi --sigma 0.2 --kt 2.5 --outhisto fes_ --stride 1000
 \endverbatim
 
 As we did in our previous tutorial, we can now use the script analyze_FES.sh to calculate the free-energy
@@ -177,10 +177,10 @@ so there seems not to be any problem on this side.
 We can use the second file to reconstruct the continuous trajectories of each replica in temperature:
 
 \verbatim
-trjcat_mpi -f traj0.trr traj1.trr -demux replica_index.xvg.
+trjcat_mpi -f traj0.trr traj1.trr -demux replica_index.xvg
 \endverbatim
 
-and the following PLUMED input file to recalculate the value of the CVs on the demuxed trajectories,
+and the following PLUMED input file (plumed_demux.dat) to recalculate the value of the CVs on the demuxed trajectories,
 typically called 0_trajout.xtc and 1_trajout.xtc.
 
 \verbatim
@@ -198,11 +198,11 @@ For the analysis of the demuxed trajectories, we can use the -rerun option of Gr
 
 \verbatim
 # rerun Gromacs on replica 0 trajectory
-mdrun_mpi -s TOPO/topol0.tpr -plumed -rerun 0_trajout.xtc
+mdrun_mpi -s TOPO/topol0.tpr -plumed plumed_demux.dat -rerun 0_trajout.xtc
 # rename the output
 mv COLVAR_DEMUX COLVAR_DEMUX.0
 # rerun Gromacs on replica 1 trajectory
-mdrun_mpi -s TOPO/topol1.tpr -plumed -rerun 1_trajout.xtc
+mdrun_mpi -s TOPO/topol1.tpr -plumed plumed_demux.dat -rerun 1_trajout.xtc
 # rename the output
 mv COLVAR_DEMUX COLVAR_DEMUX.1
 \endverbatim
@@ -233,7 +233,7 @@ between the two metastable states of alanine dipeptide in vacuum. The reason was
 highest temperature used (305K) was too low to accelerate barrier crossing in the time scale
 of the simulation. We will now use 4 replicas at the following temperatures: 300K, 400K, 600K, and 1000K.
 
-We can use the same PLUMED input file described above, and execute Gromacs using the following command line:
+We can use the same PLUMED input file described above (plumed.dat), and execute Gromacs using the following command line:
 
 \verbatim
  mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed -multi 4 -replex 100
@@ -257,10 +257,11 @@ and verify that they are interconverting between the different basins of the fre
 The demux is carried out as in the previous example:
 
 \verbatim
-trjcat_mpi -f traj0.trr traj1.trr traj2.trr traj3.trr -demux replica_index.xvg.
+trjcat_mpi -f traj0.trr traj1.trr traj2.trr traj3.trr -demux replica_index.xvg
 \endverbatim
 
-and so is the analysis of the demuxed trajectories using the -rerun option of Gromacs.
+and so is the analysis of the demuxed trajectories using the -rerun option of Gromacs
+and the plumed_demux.dat input file.
 Here is the space sampled by two of the four replicas:
 
 \anchor belfast-7-pt2demux-fig
@@ -515,4 +516,6 @@ The simulation is carried out using the usual procedure:
 link: @subpage belfast-7
 
 description: Parallel tempering and Metadynamics, Well-Tempered Ensemble
+
+additional-files: belfast-7.tar.gz
 
