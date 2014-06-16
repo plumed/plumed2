@@ -343,12 +343,174 @@ will be accelerated. This simple exercise demonstrates how PTMetaD can be used t
 and the neglecting of slow degrees of freedom.
 
 
-
-
 \subsection belfast-7-exercise-4 Exercise 4. The Well-Tempered Ensemble 
+
+In this exercise we will learn how to run a PT-WTE and PTMetaD-WTE simulations of alanine
+dipeptide in water. We will start by running a short PT simulation using 4 replicas
+in the temperature range between 300K and 400K. We will use a geometric distribution
+of temperatures, which is valid under the assumption that the specific heat of the system
+is constant across temperatures. Replicas will thus be simulated at T=300, 330.2, 363.4, and 400K.
+In this simulation, we will just monitor the two dihedral angles and the total energy of the system,
+by preparing the following PLUMED input file (plumed_PT.dat):
+
+\verbatim
+# set up three variables for Phi and Psi dihedral angles
+# and total energy
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+ene: ENERGY
+
+# monitor the three variables
+PRINT STRIDE=10 ARG=phi,psi,ene FILE=COLVAR_PT
+
+\endverbatim
+(see \ref TORSION, \ref ENERGY, and \ref PRINT).
+
+As usual, the simulation is run for 400ps using the following command:
+
+\verbatim
+ mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed plumed_PT.dat -multi 4 -replex 100
+\endverbatim
+
+At the end of the run, we want to analyze the acceptance rate between exchanges.
+This quantity is reported at the end of the Gromacs output file, typically called md.log,
+and it can be extracted using the following bash command line:
+
+\verbatim
+grep -A2 "Repl  average probabilities" md0.log
+\endverbatim
+
+From the line above, we will find out that none of the attempted exchanges has been accepted.
+The reason is that the current setup (4 replicas to cover the temperature range 300-400K) 
+resulted in a poor overlap of the energy distributions at different temperatures.
+We can easily realize this by plotting the time series of the total energy in the different
+replicas:
+
+\anchor belfast-7-ptalaw-fig
+\image html belfast-7-ptalaw.png "Time series of total energy at the different temperatures of a PT simulation of alanine dipeptide in water."
+
+To improve the overlap of the potential energy distributions at different temperatures, we
+enlarge the fluctuations of the energy by sampling the Well-Tempered Ensemble (WTE).
+In order to do that, we need to setup a well-tempered metadynamics simulation using energy
+as CV. In WTE, fluctuations - the standard deviation of the energy time serie measured above -
+will be enhanced by a factor equal to the square root of the biasfactor. In this exercise,
+we will enhance fluctuations of a factor of 4, thus we will set the biasfactor equal to 16.
+We need to prepare 4 PLUMED input files (plumed_PTWTE.dat.0, plumed_PTWTE.dat.1,...),
+which will be identical to the following but for the temperature specified in the line of the \ref METAD directive:
+
+\verbatim
+# set up three variables for Phi and Psi dihedral angles
+# and total energy
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+ene: ENERGY
+
+# Activate metadynamics in ene
+# depositing a Gaussian every 250 time steps,
+# with height equal to 1.2 kJoule/mol,
+# and width 140 kJoule/mol.
+# Well-tempered metadynamics is activated,
+# and the biasfactor is set to 16.0
+#
+wte: METAD ARG=ene PACE=250 HEIGHT=1.2 SIGMA=140.0 FILE=HILLS_PTWTE BIASFACTOR=16.0 TEMP=300.0
+
+# monitor the three variables and the metadynamics bias potential
+PRINT STRIDE=10 ARG=phi,psi,ene,wte.bias FILE=COLVAR_PTWTE
+
+\endverbatim
+(see \ref TORSION, \ref ENERGY, \ref METAD, and \ref PRINT).
+
+Here, we use  a Gaussian width larger than usual, and of the order of the fluctuations of the
+potential energy at 300K, as calculated from the preliminary PT run.
+
+We run the simulation following the usual procedure:
+
+\verbatim
+ mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed plumed_PTWTE.dat -multi 4 -replex 100
+\endverbatim
+
+If we analyze the average acceptance probability in this run:
+
+\verbatim
+grep -A2 "Repl  average probabilities" md0.log
+\endverbatim
+
+we will notice that now on average 18% of the exchanges are accepted. To monitor the
+diffusion of each replica in temperature, we can examine the file replica_temp.xvg
+created by the following command line:
+
+\verbatim
+demux.pl md0.log
+\endverbatim
+
+This analysis assures us that the system is efficiently diffusing in the entire temperature range 
+and no bottlenecks are present.
+
+\anchor belfast-7-ptwtediff-fig
+\image html belfast-7-ptwtediff.png "Replica diffusion in temperature space during a PT-WTE simulation."
+
+Finally, as done in the previous run, we can visualize the time serie of the energy CV at all temperatures:
+
+\anchor belfast-7-ptwteene-fig
+\image html belfast-7-ptwteene.png "Time series of total energy at the different temperatures of a PT-WTE simulation of alanine dipeptide in water."
+
+If we compare this plot with the one obtained in the PT run, we can notice that now the enlarged fluctuations
+caused by the use of WTE lead to a good overlap between energy distributions at different temperatures,
+thus increasing the exchange acceptance probability. 
+At this point, we can extend our PT-WTE simulation and for example converge the free energy as a function
+of the dihedral angles phi and psi.
+Alternatively, we can accelerate sampling of the phi and psi dihedrals by combining PT-WTE with a metadynamics
+simulation using phi and psi as CVs (PTMetaD-WTE \cite ct300297t). This can be achieved by preparing
+4 PLUMED input files (plumed_PTMetaDWTE.dat.0, plumed_PTMetaDWTE.dat.1,...),
+which will be identical to the following but for the temperature specified in the two lines
+containing the \ref METAD directives:
+
+\verbatim
+# reload WTE bias
+RESTART
+
+# set up three variables for Phi and Psi dihedral angles
+# and total energy
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+ene: ENERGY
+
+# Activate metadynamics in ene
+# Old Gaussians will be reloaded to perform
+# the second metadynamics run in WTE.
+#
+wte: METAD ARG=ene PACE=99999999 HEIGHT=1.2 SIGMA=140.0 FILE=HILLS_PTWTE BIASFACTOR=16.0 TEMP=300.0
+
+# Activate metadynamics in phi and psi
+# depositing a Gaussian every 500 time steps,
+# with height equal to 1.2 kJoule/mol,
+# and width 0.35 rad for both CVs.
+# Well-tempered metadynamics is activated,
+# and the biasfactor is set to 6.0
+#
+metad: METAD ARG=phi,psi PACE=500 HEIGHT=1.2 SIGMA=0.35,0.35 FILE=HILLS_PTMetaDWTE BIASFACTOR=6.0 TEMP=300.0
+
+# monitor the three variables, the wte and metadynamics bias potentials
+PRINT STRIDE=10 ARG=phi,psi,ene,wte.bias,metad.bias FILE=COLVAR_PTMetaDWTE
+
+\endverbatim
+(see \ref TORSION, \ref ENERGY, \ref METAD, and \ref PRINT).
+
+These scripts activate two metadynamics simulations. One will use the energy as CV and will reload
+the Gaussians deposited during the preliminary PT-WTE run. No additional Gaussians on this variable
+will be deposited during the PTMetaD-WTE simulation, due to the large deposition stride.
+A second metadynamics simulation will be activated on the dihedral angles. Please note the different
+parameters and biasfactors in the two metadynamics runs.
+
+The simulation is carried out using the usual procedure:
+
+\verbatim
+ mpirun -np 4 mdrun_mpi -s TOPO/topol -plumed plumed_PTMetaDWTE.dat -multi 4 -replex 100
+\endverbatim
 
 
 */
+
 
 link: @subpage belfast-7
 
