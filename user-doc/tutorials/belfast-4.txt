@@ -83,7 +83,11 @@ the relationship between the microscopic probabilities:
 \f]
 The consequence of this expression is that one can obtained any kind of unbiased
 information from a biased simulation just by weighting every sampled conformation
-with \f$e^{\frac{V(s(q))}{k_BT}}\f$. That is, frames that have been explored
+with a weight
+\f[
+  w\propto e^{\frac{V(s(q))}{k_BT}}
+\f]
+That is, frames that have been explored
 in spite of a high (disfavoring) bias potential \f$ V \f$ will be counted more
 than frames that has been explored with a less disfavoring bias potential.
 
@@ -132,22 +136,59 @@ In the next section we will see how to combine the information from these simula
 
 Let's now consider multiple simulations performed with restraints located in different positions.
 In particular, we will consider the \f$i\f$-th bias potential as \f$V_i\f$.
+The probability to observe a given value of the collective variable \f$s\f$ is:
+\f[
+P_i({s})=\frac{P({s})e^{-\frac{V_i({s})}{k_BT}}}{\int ds' P({s}') e^{-\frac{V_i({s}')}{k_BT}}}=
+\frac{P({s})e^{-\frac{V_i({s})}{k_BT}}}{Z_i}
+\f]
+where
+\f[
+Z_i=\sum_{q}e^{-\left(U(q)+V_i(q)\right)}
+\f]
+The likelyhood for the observation of a sequence of snapshots \f$q_i(t)\f$ (where \f$i\f$ is
+the index of the trajectory and \f$t\f$ is time) is just the product of the probability
+of each of the snapshots. We use here the minus-logarithm of the likelihood (so that
+the product is converted to a sum) that can be written as
+\f[
+\mathcal{L}=-\sum_i \int dt \log P_i({s}_i(t))=
+\sum_i \int dt
+\left(
+-\log P({s}_i(t))
++\frac{V_i({s}_i(t))}{k_BT}
++\log Z_i
+\right)
+\f]
+One can then maximize the likelyhood by setting \f$\frac{\delta \mathcal{L}}{\delta P({\bf s})}=0\f$.
+After some boring algebra the following expression can be obtained
+\f[
+0=\sum_{i}\int dt\left(-\frac{\delta_{{\bf s}_{i}(t),{\bf s}}}{P({\bf s})}+\frac{e^{-\frac{V_{i}({\bf s})}{k_{B}T}}}{Z_{i}}\right)
+\f]
+In this equation we aim at finding \f$P(s)\f$. However, also the list of normalization factors \f$Z_i\f$ is unknown, and they should 
+be found selfconsistently. Thus one can find the solution as
+\f[
+P({\bf s})\propto \frac{N({\bf s})}{\sum_i\int dt\frac{e^{-\frac{V_{i}({\bf s})}{k_{B}T}}}{Z_{i}} }
+\f]
+where \f$Z\f$ is selfconsistently determined as 
+\f[
+Z_i\propto\int ds' P({\bf s}') e^{-\frac{V_i({\bf s}')}{k_BT}}
+\f]
 
-It can be shown that the proper weight to be assigned to the snapshot at time \f$ t \f$
-as obtained from the \f$i\f$-th simulation is
-
+These are the WHAM equations that are traditionally solved to derive the unbiased probability \f$P(s)\f$ by the combination
+of multiple restrained simulations. To make a slightly more general implementation, one can compute
+the weights that should be assigned to each snapshot, that turn out to be:
 \f[
 w_i(t)\propto \frac{1}{\sum_j\int dt\frac{e^{-\beta V_{j}({\bf s}_i(t))}}{Z_{j}} }
 \f]
-
-where \f$ Z_i \f$ are factors that should be obtained self-consistently as
-
+The normalization factors can in turn be found from the weights as
 \f[
-Z_i=\frac{\sum_j \int dt e^{-\beta V_i({\bf s}_j(t))} w_j(t)}{
+Z_i\propto\frac{\sum_j \int dt e^{-\beta V_i({\bf s}_j(t))} w_j(t)}{
 \sum_j \int dt w_j(t)}
 \f]
 
-
+This allows to straighforwardly compute averages related
+to other, non-biased degrees of freedom, and it is thus a bit more flexible.
+It is sufficient to precompute this factors \f$w\f$ and use them to weight
+every single frame in the trajectory.
 
 \section belfast-4-learning-outcomes Learning Outcomes
 
@@ -160,7 +201,7 @@ Once this tutorial is completed students will know how to:
 
 \section belfast-4-resources Resources
 
-The <a href="tutorial-resources/belfast-4.tar.gz" download="belfast-4.tar.gz"> tarball </a> for this project contains the following files:
+The <a href="tutorial-resources/belfast-4.tar.gz" download="belfast-4.tar.gz">tarball</a> for this project contains the following files:
 - A gromacs topology (topol.top), configuration (conf.gro), and control file (grompp.mdp). They should not be needed.
 - A gromacs binary file (topol.tpr). This is enough for running this system.
 - A small C++ program that computes WHAM (wham.cpp) and a script that can be used to feed it (wham.sh)
