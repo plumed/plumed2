@@ -38,6 +38,14 @@ namespace colvar{
 /*
 Calculate Debye-Huckel interaction energy among GROUPA and GROUPB.
 
+This variable calculates the electrostatic interaction among GROUPA and GROUPB
+using a Debye-Huckel approximation defined as
+\f[
+\frac{1}{4\pi\epsilon_r\epsilon_0}
+\sum_{i\in A} \sum_{j \in B} q_i q_j
+\frac{e^{-\kappa |{\bf r}_{ij}|}}{|{\bf r}_{ij}|}
+\f]
+
 This collective variable can be used to analyze or induce electrostatically driven reactions \cite do13jctc.
 The two atom groups should be disjointed. Notice that the value of the DHENERGY is returned in plumed units (see \ref UNITS).
 
