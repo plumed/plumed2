@@ -47,7 +47,13 @@ using a Debye-Huckel approximation defined as
 \f]
 
 This collective variable can be used to analyze or induce electrostatically driven reactions \cite do13jctc.
-The two atom groups should be disjointed. Notice that the value of the DHENERGY is returned in plumed units (see \ref UNITS).
+Notice that the value of the DHENERGY is returned in plumed units (see \ref UNITS).
+
+If GROUPB is empty, it will sum the N*(N-1)/2 pairs in GROUPA. This avoids computing 
+twice permuted indexes (e.g. pair (i,j) and (j,i)) thus running at twice the speed.
+
+Notice that if there are common atoms between GROUPA and GROUPB their interaction is discarded.
+
 
 \par Examples
 \verbatim

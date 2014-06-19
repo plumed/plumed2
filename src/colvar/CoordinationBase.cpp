@@ -38,7 +38,7 @@ void CoordinationBase::registerKeywords( Keywords& keys ){
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbour list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbour list");
   keys.add("atoms","GROUPA","First list of atoms");
-  keys.add("atoms","GROUPB","Second list of atoms");
+  keys.add("atoms","GROUPB","Second list of atoms (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
 }
 
 CoordinationBase::CoordinationBase(const ActionOptions&ao):

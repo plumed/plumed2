@@ -51,11 +51,12 @@ but it can be changed using the optional SWITCH option.
 To make your calculation faster you can use a neighbor list, which makes it that only a
 relevant subset of the pairwise distance are calculated at every step.
 
-If GROUPB is empty, it will sum the N*(N-1)/2 pairs in GROUPA. This avoids computing 
+If GROUPB is empty, it will sum the \f$\frac{N(N-1)}{2}\f$ pairs in GROUPA. This avoids computing 
 twice permuted indexes (e.g. pair (i,j) and (j,i)) thus running at twice the speed.
 
 Notice that if there are common atoms between GROUPA and GROUPB the switching function should be
-equal to one. These "self interactions" are discarded by plumed (since version 2.1).
+equal to one. These "self contacts" are discarded by plumed (since version 2.1),
+so that they actually count as "zero".
 
 
 \par Examples
