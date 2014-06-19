@@ -34,12 +34,19 @@ namespace colvar{
 /*
 Calculate coordination numbers.
 
-This keyword can be used to calculate the coordination numbers for atoms in your system. 
-We use the following switching function to make the coordination number differentiable:
-
+This keyword can be used to calculate the number of contacts between two groups of atoms
+and is defined as
 \f[
-s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\right)^m }
+\sum_{i\in A} \sum_{i\in B} s_{ij}
 \f]
+where \f$s_{ij}\f$ is 1 if the contact between atoms \f$i\f$ and \f$j\f$ is formed,
+zero otherwise.
+In practise, \f$s_{ij}\f$ is replaced with a switching function to make it differentiable.
+The default switching function is:
+\f[
+s_{ij} = \frac{ 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^n } { 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^m }
+\f]
+but it can be changed using the optional SWITCH option.
 
 To make your calculation faster you can use a neighbor list, which makes it that only a
 relevant subset of the pairwise distance are calculated at every step.
