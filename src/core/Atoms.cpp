@@ -55,7 +55,8 @@ Atoms::Atoms(PlumedMain&plumed):
   plumed(plumed),
   naturalUnits(false),
   timestep(0.0),
-  forceOnEnergy(0.0)
+  forceOnEnergy(0.0),
+  kbT(0.0)
 {
   mdatoms=MDAtomsBase::create(sizeof(double));
 }
@@ -355,6 +356,15 @@ void Atoms::setTimeStep(void*p){
 double Atoms::getTimeStep()const{
   return timestep/units.getTime()*MDUnits.getTime();
 }
+
+void Atoms::setKbT(void*p){
+  MD2double(p,kbT);
+}
+
+double Atoms::getKbT()const{
+  return kbT/units.getEnergy()*MDUnits.getEnergy();
+}
+
 
 void Atoms::createFullList(int*n){
   vector<AtomNumber> fullListTmp;

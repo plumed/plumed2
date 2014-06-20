@@ -46,7 +46,7 @@
 
 using namespace std;
 
-enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS };
+enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT };
 
 namespace PLMD{
 
@@ -130,6 +130,7 @@ PlumedMain::PlumedMain():
   word_map["runFinalJobs"]=RUNFINALJOBS;
   word_map["isEnergyNeeded"]=ISENERGYNEEDED;
   word_map["getBias"]=GETBIAS;
+  word_map["setKbT"]=SETKBT;
 }
 
 PlumedMain::~PlumedMain(){
@@ -292,7 +293,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case GETAPIVERSION:
         CHECK_NULL(val,word);
-        *(static_cast<int*>(val))=1;
+        *(static_cast<int*>(val))=2;
         break;
       // commands which can be used only before initialization:
       case INIT:
@@ -361,6 +362,11 @@ void PlumedMain::cmd(const std::string & word,void*val){
         CHECK_NOTINIT(initialized,word);
         CHECK_NULL(val,word);
         atoms.setTimeStep(val);
+        break;
+      case SETKBT: /* ADDED WITH API==2 */
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setKbT(val);
         break;
       case SETMDENGINE:
         CHECK_NOTINIT(initialized,word);
@@ -469,6 +475,12 @@ void PlumedMain::init(){
   }
   atoms.updateUnits();
   log.printf("Timestep: %f\n",atoms.getTimeStep());
+  if(atoms.getKbT()>0.0)
+    log.printf("KbT: %f\n",atoms.getKbT());
+  else {
+    log.printf("KbT has not been set by the MD engine\n");
+    log.printf("It should be set by hand where needed\n");
+  }
   log<<"Relevant bibliography:\n";
   log<<citations;
   log<<"Please read and cite where appropriate!\n";
