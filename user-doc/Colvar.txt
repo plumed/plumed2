@@ -9,14 +9,23 @@ interested in and monitor these simpler quantities instead.  These CVs are used 
 implemented in PLUMED - there values can be monitored using \ref PRINT, \ref Function of them can be calculated
 or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in PLUMED.  
 Before doing any of these things however we first have to tell PLUMED how to calculate them.    
- 
+
+On this page we list the simplest collective variables that are implemented in PLUMED 2. These colvars all take in a 
+set of atomic positions and output one or multiple scalar CV values.  Many other collective variables are available in PLUMED.  
+In particular, the page on \dists describes the various ways that you can calculate the distance from a particular reference
+configuration.  Meanwhile, the page on \ref Function describes the various functions of collective variables that can be used in the
+code.  Lastly the page on \mcolv describes MultiColvars.  MultiColvars allow you to use many different colvars and allow us to 
+implement all these collective variables without implementing having an unmanigiably large ammount of code.  For some things (e.g.
+\ref DISTANCES GROUPA=1 GROUPB=2-100 LESS_THAN={RATIONAL R_0=3}) there are more computationally efficient options available in plumed 
+(e.g. \ref COORDIATION).  However, MultiColvars are worth investigating as they provide a flexible syntax for many quite-complex CVs.
+
 \section cvavail CV Documentation
 
 The following list contains descriptions of a number of the colvars that are currently implemented in PLUMED 2.
 
 @COLVAR@
 
-\section dists Distances from reference configurations
+\page dists Distances from reference configurations
 
 One colvar that has been shown to be very sucessful in studying protein folding is the distance between the instantaneous configuration
 and a reference configuration - often the structure of the folded state.  When the free energy of a protein is shown as a function
@@ -37,9 +46,9 @@ with the ammount the collective variables change.  A full list of the ways dista
 These options for calculating distances are re-used in a number of places in the code.  For instance they are used in some of the 
 analysis algorithms that are implemented in PLUMED and in \ref PATH collective variables. 
 
-\section mcolv MultiColvar Documentation
+\page mcolv MultiColvar Documentation
 
-Often you do not need one of the collective variables described in the previous section.  What you want instead is a 
+Oftentimes, when you do not need one of the collective variables described elsewhere in the manual, what you want instead is a 
 function of a distribution of collective variables of a particular type.  For instance you might need to calculate a 
 minimum distance or the number of coordination numbers greater than a 3.0.  To avoid dupilcating the code to calculate
 an angle or distance many times and to make it easier to implement very complex collective variables PLUMED provides
@@ -93,6 +102,29 @@ As well as the relatively simple quantities described above more complex functio
 base colvars can be computed by employing multicolvars in conjuction with the following actions: 
 
 @MCOLVARF@ 
+
+\section multicolvarbias MultiColvar bias
+
+There may be occasitions when you want add restraints on many collective variables. For instance if you are studying a cluster
+you might want to add a wall on the distances between each of the atoms and the center of mass of the cluster in order to
+prevent the cluster subliming.  Alternatively, you may wish to insist that a particular set of atoms in your system all have a 
+coordination number greater than 2.  You can add these sorts of restraints by employing the following biases, which all act 
+on the set of collective variable values calculated by a multicolvar.  So for example the following set of commands:
+
+\verbatim
+COM ATOMS=1-20 LABEL=c1
+DISTANCES GROUPA=c1 GROUPB=1-20 LABEL=d1
+UWALLS DATA=d1 AT=2.5 KAPPA=0.2 LABEL=sr
+\endverbatim
+
+creates the aforementioned set of restraints on the distances between the 20 atoms in a cluster and the center of mass of the cluster.
+
+The list of biases of this type are as follows:
+
+@MCOLVARB@
+
+Notice that (in theory) you could also use this functionality to add additional terms to your forcefield or to implement your 
+forcefield.
 
 */
 

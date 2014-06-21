@@ -25,6 +25,40 @@
 namespace PLMD {
 namespace manyrestraints {
 
+//+PLUMEDOC MCOLVARB UWALLS 
+/*
+Add \ref UWALL restraints on all the multicolvar values
+
+This action takes the set of values calculated by the colvar specified by label in the DATA
+keyword and places a restraint on each quantity, \f$x\f$, with the following functional form:
+
+\f$
+  k((x-a+o)/s)^e
+\f$
+
+\f$k\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s\f$ (EPS) a rescaling factor and 
+\f$e\f$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFF = 0.
+
+\par Examples
+
+The following set of commands can be used to stop a cluster composed of 20 atoms subliming.  The position of 
+the centre of mass of the cluster is calculated by the \ref COM command labelled c1.  The \ref DISTANCES 
+command labelled d1 is then used to calculate the distance between each of the 20 atoms in the cluster 
+and the center of mass of the cluster.  These distances are then passed to the UWALLS command, which adds
+a \ref UWALL restraint on each of them and thereby prevents each of them from moving very far from the centre
+of mass of the cluster.
+
+\verbatim
+COM ATOMS=1-20 LABEL=c1
+DISTANCES GROUPA=c1 GROUPB=1-20 LABEL=d1
+UWALLS DATA=d1 AT=2.5 KAPPA=0.2 LABEL=sr
+\endverbatim
+ 
+
+*/
+//+ENDPLUMEDOC
+
+
 class UWalls : public ManyRestraintsBase {
 private:
   double at;
