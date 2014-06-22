@@ -258,7 +258,7 @@ void Histogram::performAnalysis(){
   // Normalize the histogram
   gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
   if(fenergy) {
-    gg->logAllValuesAndDerivatives( -getTemp() * plumed.getAtoms().getKBoltzmann() );
+    gg->logAllValuesAndDerivatives( -getTemp() );
     gg->setMinToZero();
   }
 

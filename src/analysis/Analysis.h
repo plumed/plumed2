@@ -121,7 +121,7 @@ protected:
   bool getPeriodicityInformation(const unsigned& i, std::string& dmin, std::string& dmax);
 /// Return the normalization constant
   double getNormalization() const;
-/// Return the set temperature
+/// Return the set temperature (N.B. k_B T is what is returned by this function)
   double getTemp () const;
 /// Are we analyzing each data block separately (if we are not this also returns the old normalization )
   bool usingMemory() const; 
