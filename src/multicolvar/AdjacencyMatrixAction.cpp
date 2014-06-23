@@ -77,6 +77,7 @@ tmpdf(1)
   buildAtomListWithPairs( true );
   // Build active elements array
   for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
+  active_elements.setupMPICommunication( comm );
 
   if( getNumberOfVessels()!=0 ) error("there should be no vessel keywords");
   // Create the storeAdjacencyMatrixVessel

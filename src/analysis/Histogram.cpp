@@ -207,10 +207,17 @@ void Histogram::performAnalysis(){
   //  std::string oldfname=saveResultsFromPreviousAnalyses( gridfname );
 
   // Get pbc stuff for grid
-  std::vector<bool> pbc; std::string dmin,dmax;
+  std::vector<bool> pbc; std::string dmin,dmax; std::vector<double> pmin,pmax;
+  pmin.resize(getNumberOfArguments());
+  pmax.resize(getNumberOfArguments());
   for(unsigned i=0;i<getNumberOfArguments();++i){
      pbc.push_back( getPeriodicityInformation(i,dmin,dmax) );
-     if(pbc[i]){ Tools::convert(dmin,gmin[i]); Tools::convert(dmax,gmax[i]); }
+     if(pbc[i]){ 
+       Tools::convert(dmin,gmin[i]); 
+       Tools::convert(dmax,gmax[i]);
+       Tools::convert(dmin,pmin[i]);
+       Tools::convert(dmax,pmax[i]);
+     }
   }
 
   Grid* gg; IFile oldf; oldf.link(*this); 
@@ -240,7 +247,10 @@ void Histogram::performAnalysis(){
       // the mesh
       std::vector<double> dx_;
       dx_ = gg->getDx();
-      for(unsigned j=0;j<point.size();j++) point[j]+=0.5*dx_[j];
+      for(unsigned j=0;j<point.size();j++) { 
+         point[j]+=0.5*dx_[j];
+         if(pbc[j]&&point[j]>pmax[j]) point[j] -= (pmax[j]-pmin[j]);
+      }
       gg->addValue(gg->getIndex(point), weight);
     }  
   }
@@ -248,7 +258,7 @@ void Histogram::performAnalysis(){
   // Normalize the histogram
   gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
   if(fenergy) {
-    gg->logAllValuesAndDerivatives( -getTemp() * plumed.getAtoms().getKBoltzmann() );
+    gg->logAllValuesAndDerivatives( -getTemp() );
     gg->setMinToZero();
   }
 

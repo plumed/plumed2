@@ -34,21 +34,29 @@ namespace colvar{
 /*
 Calculate coordination numbers.
 
-This keyword can be used to calculate the coordination numbers for atoms in your system. 
-We use the following switching function to make the coordination number differentiable:
-
+This keyword can be used to calculate the number of contacts between two groups of atoms
+and is defined as
 \f[
-s = \frac{ 1 - \left(\frac{r-d_0}{r_0}\right)^n } { 1 - \left(\frac{r-d_0}{r_0}\right)^m }
+\sum_{i\in A} \sum_{i\in B} s_{ij}
 \f]
+where \f$s_{ij}\f$ is 1 if the contact between atoms \f$i\f$ and \f$j\f$ is formed,
+zero otherwise.
+In practise, \f$s_{ij}\f$ is replaced with a switching function to make it differentiable.
+The default switching function is:
+\f[
+s_{ij} = \frac{ 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^n } { 1 - \left(\frac{{\bf r}_{ij}-d_0}{r_0}\right)^m }
+\f]
+but it can be changed using the optional SWITCH option.
 
 To make your calculation faster you can use a neighbor list, which makes it that only a
 relevant subset of the pairwise distance are calculated at every step.
 
-If GROUPB is empty, it will sum the N*(N-1)/2 pairs in GROUPA. This avoids computing 
+If GROUPB is empty, it will sum the \f$\frac{N(N-1)}{2}\f$ pairs in GROUPA. This avoids computing 
 twice permuted indexes (e.g. pair (i,j) and (j,i)) thus running at twice the speed.
 
 Notice that if there are common atoms between GROUPA and GROUPB the switching function should be
-equal to one. These "self interactions" are discarded by plumed (since version 2.1).
+equal to one. These "self contacts" are discarded by plumed (since version 2.1),
+so that they actually count as "zero".
 
 
 \par Examples

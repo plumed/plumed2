@@ -245,7 +245,7 @@ private:
   bool grid_,hasextgrid_;
   double height0_;
   double biasf_;
-  double temp_;
+  double kbt_;
   int stride_;
   bool welltemp_;
   double* dp_;
@@ -342,7 +342,7 @@ PLUMED_BIAS_INIT(ao),
 // Grid stuff initialization
 BiasGrid_(NULL),ExtGrid_(NULL), wgridstride_(0), grid_(false), hasextgrid_(false),
 // Metadynamics basic parameters
-height0_(std::numeric_limits<double>::max()), biasf_(1.0), temp_(0.0),
+height0_(std::numeric_limits<double>::max()), biasf_(1.0), kbt_(0.0),
 stride_(0), welltemp_(false),
 // Other stuff
 dp_(NULL), adaptive_(FlexibleBin::none),
@@ -417,9 +417,12 @@ isFirstStep(true)
   parse("FILE",hillsfname);
   parse("BIASFACTOR",biasf_);
   if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
-  parse("TEMP",temp_);
+  double temp;
+  parse("TEMP",temp);
+  if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
+  else kbt_=plumed.getAtoms().getKbT();
   if(biasf_>1.0){
-    if(temp_==0.0) error("if you are doing well tempered metadynamics you must specify the temperature using TEMP");
+    if(kbt_==0.0) error("Unless the MD engine passes the temperature to plumed, with well-tempered metad you must specify it using TEMP");
     welltemp_=true;
   }
   double tau=0.0;
@@ -427,11 +430,11 @@ isFirstStep(true)
   if(tau==0.0){
     if(height0_==std::numeric_limits<double>::max()) error("At least one between HEIGHT and TAU should be specified");
     // if tau is not set, we compute it here from the other input parameters
-    if(welltemp_) tau=(plumed.getAtoms().getKBoltzmann()*temp_*(biasf_-1.0))/height0_*getTimeStep()*stride_;
+    if(welltemp_) tau=(kbt_*(biasf_-1.0))/height0_*getTimeStep()*stride_;
   } else {
     if(!welltemp_)error("TAU only makes sense in well-tempered metadynamics");
     if(height0_!=std::numeric_limits<double>::max()) error("At most one between HEIGHT and TAU should be specified");
-    height0_=(plumed.getAtoms().getKBoltzmann()*temp_*(biasf_-1.0))/tau*getTimeStep()*stride_;
+    height0_=(kbt_*(biasf_-1.0))/tau*getTimeStep()*stride_;
   }
   
   // Grid Stuff
@@ -537,6 +540,7 @@ isFirstStep(true)
   if(welltemp_){
     log.printf("  Well-Tempered Bias Factor %f\n",biasf_);
     log.printf("  Hills relaxation time (tau) %f\n",tau);
+    log.printf("  KbT %f\n",kbt_);
   }
   if(doInt_) log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
   if(grid_){
@@ -807,13 +811,18 @@ void MetaD::addGaussian(const Gaussian& hill)
 
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 {
-// in this case, we updated the entire grid to avoid problems
-// it could be optimized reverting to the normal case whenever a hill
-// is far enough from the boundaries
- if(doInt_){
-   return BiasGrid_->getNbin();
- }
  vector<unsigned> nneigh;
+ if(doInt_){
+   double cutoff=sqrt(2.0*DP2CUTOFF)*hill.sigma[0];
+   if(hill.center[0]+cutoff > uppI_ || hill.center[0]-cutoff < lowI_) { 
+     // in this case, we updated the entire grid to avoid problems
+     return BiasGrid_->getNbin();
+   } else {
+     nneigh.push_back( static_cast<unsigned>(ceil(cutoff/BiasGrid_->getDx()[0])) );
+     return nneigh;
+   }
+ }
+
  // traditional or flexible hill? 
  if(hill.multivariate){
 	unsigned ncv=getNumberOfArguments();
@@ -826,14 +835,9 @@ vector<unsigned> MetaD::getGaussianSupport(const Gaussian& hill)
 			k++;
 		}
 	}
-        //
         // Reinvert so to have the ellipses 
-        //
 	Matrix<double> myinv(ncv,ncv);
 	Invert(mymatrix,myinv);
-	//log<<"INVERSE \n"; 
-        //matrixOut(log,myinv);	
-        // diagonalizes it
 	Matrix<double> myautovec(ncv,ncv);
 	vector<double> myautoval(ncv); //should I take this or their square root? 
 	diagMat(myinv,myautoval,myautovec);
@@ -971,7 +975,7 @@ double MetaD::getHeight(const vector<double>& cv)
  double height=height0_;
  if(welltemp_){
     double vbias=getBiasAndDerivatives(cv);
-    height=height0_*exp(-vbias/(plumed.getAtoms().getKBoltzmann()*temp_*(biasf_-1.0)));
+    height=height0_*exp(-vbias/(kbt_*(biasf_-1.0)));
  } 
  return height;
 }
@@ -993,7 +997,7 @@ void MetaD::calculate()
   getPntrToComponent("bias")->set(ene);
 // calculate the acceleration factor
   if(acceleration&&!isFirstStep) {
-    acc += exp(ene/(plumed.getAtoms().getKBoltzmann()*temp_));
+    acc += exp(ene/(kbt_));
     double mean_acc = acc/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
   }
