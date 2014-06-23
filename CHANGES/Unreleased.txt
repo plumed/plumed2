@@ -35,6 +35,7 @@ Changes from version 2.0 which are relevant for users:
     GRID_SPACING (alternative to GRID_BIN to set grid spacing).
     Notice that now one can also omit GRID_BIN and GRID_SPACING when using
     fixed size Gaussian, and the grid spacing will be automatically set.
+  - \ref DISTANCE : added SCALED_COMPONENTS
   - \ref COORDINATION : if a single group is provided, it avoids permuted atom indexes and runs
     at twice the speed.
   - \ref DUMPATOMS : PRECISION option to set number of digits in output file.
