@@ -137,29 +137,36 @@ void DFSClustering::completeCalculation(){
 
    // Order the clusters in the system by size (this returns ascending order )
    std::sort( cluster_sizes.begin(), cluster_sizes.end() );
+   // Work out which atoms are in the largest cluster
+   unsigned n=0; std::vector<unsigned> myatoms( cluster_sizes[cluster_sizes.size() - clustr].first );
+   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
+      if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clustr].second ){ myatoms[n]=i; n++; }
+   }
+   unsigned size=comm.Get_size(), rank=comm.Get_rank();
+
 //   for(unsigned i=0;i<cluster_sizes.size();++i) printf("HELLO CLUSTER %d %d \n",i,cluster_sizes[i].first );
    // Now calculate properties of the largest cluster 
    ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
    // Get rid of bogus derivatives
-   clearDerivatives(); getAdjacencyVessel()->setFinishedTrue();
-   for(unsigned i=0;i<getFullNumberOfBaseTasks();++i){
-       if( which_cluster[i]==cluster_sizes[cluster_sizes.size() - clustr].second ){
-           // Need to copy values from base action
-           extractValueForBaseTask( i, myvals );
-           //  getValueForBaseTask( i, myvals );
-           setElementValue(0, myvals[0] ); setElementValue(1, 1.0 );
-           for(unsigned i=0;i<myvals.size()-1;++i) setElementValue(2+i, myvals[1+i] );
-           // Prepare dynamic lists
-           atoms_with_derivatives.deactivateAll();
-           // Copy derivatives from base action
-           extractWeightedAverageAndDerivatives( i, 1.0 ); 
-           // Update all dynamic lists
-           atoms_with_derivatives.updateActiveMembers();
-           // Run calculate all vessels
-           calculateAllVessels();
-           // Must clear element values and derivatives
-           clearAfterTask();
-       }
+   clearDerivatives(); getAdjacencyVessel()->setFinishedTrue(); 
+   for(unsigned j=rank;j<myatoms.size();j+=size){
+       // Note loop above over array containing atoms so this is load balanced
+       unsigned i=myatoms[j];
+       // Need to copy values from base action
+       extractValueForBaseTask( i, myvals );
+       //  getValueForBaseTask( i, myvals );
+       setElementValue(0, myvals[0] ); setElementValue(1, 1.0 );
+       for(unsigned i=0;i<myvals.size()-1;++i) setElementValue(2+i, myvals[1+i] );
+       // Prepare dynamic lists
+       atoms_with_derivatives.deactivateAll();
+       // Copy derivatives from base action
+       extractWeightedAverageAndDerivatives( i, 1.0 ); 
+       // Update all dynamic lists
+       atoms_with_derivatives.updateActiveMembers();
+       // Run calculate all vessels
+       calculateAllVessels();
+       // Must clear element values and derivatives
+       clearAfterTask();
    }
    finishComputations();
 }
