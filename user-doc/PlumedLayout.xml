@@ -15,7 +15,9 @@
     <tab type="usergroup" title="Collective variables">
       <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
       <tab type="user" visible="yes" url="_colvar.html" title="Collective Variables"/>
+      <tab type="user" visible="yes" url="dists.html" title="Distances from reference configurations"/>
       <tab type="user" visible="yes" url="_function.html" title="Functions"/>
+      <tab type="user" visible="yes" url="mcolv.html" title="MultiColvar documentation"/>
     </tab>
     <tab type="user" visible="yes" url="_analysis.html" title="Analysis"/>
     <tab type="user" visible="yes" url="_bias.html" title="Bias"/>

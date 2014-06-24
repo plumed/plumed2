@@ -80,7 +80,7 @@ tmpdf(1)
   buildAtomListWithPairs( true );
   // Build active elements array
   for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
-  active_elements.setupMPICommunication( comm ); 
+  active_elements.setupMPICommunication( comm );
 
   // Create the storeAdjacencyMatrixVessel
   std::string param; vesselbase::VesselOptions da("","",0,param,this);

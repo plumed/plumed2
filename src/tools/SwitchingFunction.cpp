@@ -95,7 +95,7 @@ s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{r - r_1}{r_0-r_1}
 
 For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
 keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function can be assumed equal to zero. 
-In this case it is suggested to also use the STRETCH flag, which will bring the swtiching function
+In this case it is suggested to also use the STRETCH flag, which will bring the switching function
 smoothly to zero by stretching and shifting it. To be more clear, using
 \verbatim
 KEYWORD={RATIONAL R_0=1 D_MAX=3 STRETCH}
@@ -108,6 +108,7 @@ where
 \f$
 s'(r)=\frac{1-r^6}{1-r^{12}}
 \f$
+Since PLUMED 2.2 this will become the default.
 */
 //+ENDPLUMEDOC
 
@@ -322,11 +323,11 @@ double SwitchingFunction::inverse( const double& val ) const {
 SwitchingFunction::SwitchingFunction():
   init(false),
   type(rational),
-  nn(6),
-  mm(12),
   invr0(0.0),
   d0(0.0),
   dmax(0.0),
+  nn(6),
+  mm(12),
   invr0_2(0.0),
   dmax_2(0.0),
   stretch(1.0),

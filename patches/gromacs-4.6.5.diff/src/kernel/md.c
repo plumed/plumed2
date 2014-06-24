@@ -726,6 +726,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* PLUMED */
     if(plumedswitch){
+/* detect plumed API version */
+      int pversion=0;
+      plumed_cmd(plumedmain,"getApiVersion",&pversion);
+/* setting kbT is only implemented with api>1) */
+      real kbT=ir->opts.ref_t[0]*BOLTZ;
+      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
+
       if(cr->ms && cr->ms->nsim>1) {
         if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
         if(PAR(cr)){

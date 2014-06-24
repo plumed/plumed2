@@ -424,7 +424,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 	  //       printf(" read this one :success \n");
 	  //}
 	  if(rc==MOLFILE_EOF){
-	         printf(" read this one :eof or error \n");
+	         //printf(" read this one :eof or error \n");
 	         break;
 	  }
 #endif

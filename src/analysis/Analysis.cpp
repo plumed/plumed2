@@ -150,14 +150,19 @@ argument_names(getNumberOfArguments())
          }
       }
 
-      simtemp=0.; parse("TEMP",simtemp);
-      if( simtemp==0 && !biases.empty() ) error("to reweight you must specify a temperature use TEMP");
-      rtemp=0; 
+      rtemp=0;      
       if( keywords.exists("REWEIGHT_TEMP") ) parse("REWEIGHT_TEMP",rtemp);
       if( rtemp!=0 ){
-          if( simtemp==0 ) error("to reweight you must specify a temperature use TEMP");
-          needeng=true;
-          log.printf("  reweighting simulation at %f to probabilities at temperature %f\n",simtemp,rtemp);
+         needeng=true;
+         log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
+         rtemp*=plumed.getAtoms().getKBoltzmann(); 
+      } 
+      simtemp=0.; parse("TEMP",simtemp);
+      if( rtemp>0 || !biases.empty() ){
+         if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
+         else simtemp*=plumed.getAtoms().getKbT();
+
+         if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
       }
 
       parseFlag("USE_ALL_DATA",single_run); 
@@ -260,10 +265,10 @@ void Analysis::calculate(){
   if(needeng){
      double energy=plumed.getAtoms().getEnergy()+bias;
      // Reweighting because of temperature difference
-     ww=-( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias) / plumed.getAtoms().getKBoltzmann();
+     ww=-( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias);
   }
   // Reweighting because of biases
-  if( !biases.empty() ) ww += bias/( plumed.getAtoms().getKBoltzmann()*simtemp );
+  if( !biases.empty() ) ww += bias/ simtemp;
 
   // Get the arguments ready to transfer to reference configuration
   for(unsigned i=0;i<getNumberOfArguments();++i) current_args[i]=getArgument(i);

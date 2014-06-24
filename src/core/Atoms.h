@@ -90,6 +90,8 @@ class Atoms
   double timestep;
   double forceOnEnergy;
 
+  double kbT;
+
   std::vector<const ActionAtomistic*> actions;
   std::vector<int>    gatindex;
 
@@ -136,6 +138,9 @@ public:
 
   void setTimeStep(void*);
   double getTimeStep()const;
+
+  void setKbT(void*);
+  double getKbT()const;
 
   void setNatoms(int);
   const int & getNatoms()const;
