@@ -297,11 +297,11 @@ double SwitchingFunction::inverse( const double& val ) const {
 SwitchingFunction::SwitchingFunction():
   init(false),
   type(rational),
-  nn(6),
-  mm(12),
   invr0(0.0),
   d0(0.0),
   dmax(0.0),
+  nn(6),
+  mm(12),
   invr0_2(0.0),
   dmax_2(0.0),
   stretch(1.0),

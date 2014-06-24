@@ -99,7 +99,6 @@ void UWalls::performTask(){
   double value=getValue(); 
   double uscale = (value - at + offset)/eps;
   if( uscale > 0. ){
-     double invvalue= 1.0 / value;
      double power = pow( uscale, exp );
      double f = ( kappa / eps ) * exp * power / uscale;
 
