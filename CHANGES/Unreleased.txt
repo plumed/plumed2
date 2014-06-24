@@ -28,7 +28,7 @@ Changes from version 2.0 which are relevant for users:
   - \ref YDISTANCES 
   - \ref ZDISTANCES
   - \ref DUMPMULTICOLVAR
-  - Crystallation module, including \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, \ref SIMPLECUBIC, \ref TETRAHEDRAL and \ref FCCUBIC.
+  - Crystallization module, including \ref Q3, \ref LOCAL_Q3, \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, \ref SIMPLECUBIC, \ref TETRAHEDRAL and \ref FCCUBIC.
   - \ref ENSEMBLE to perform Replica-Averaging on any collective variable.
 - New features for existing actions:
   - \ref METAD : WALKERS_MPI flag (multiple walkers in a mpi-based multi-replica framework),
@@ -37,6 +37,7 @@ Changes from version 2.0 which are relevant for users:
     GRID_SPACING (alternative to GRID_BIN to set grid spacing).
     Notice that now one can also omit GRID_BIN and GRID_SPACING when using
     fixed size Gaussian, and the grid spacing will be automatically set.
+  - \ref DISTANCE : added SCALED_COMPONENTS
   - \ref COORDINATION : if a single group is provided, it avoids permuted atom indexes and runs
     at twice the speed.
   - \ref DUMPATOMS : PRECISION option to set number of digits in output file.
@@ -48,8 +49,13 @@ Changes from version 2.0 which are relevant for users:
   - \ref sum_hills : added options --spacing (alternative to --bin to set grid spacing)
     and --setmintozero to translate the minimum of the output files to zero.
 - New features in MD patches (require repatch):
-  - Gromacs 4.6.5 support \ref COMMITTOR analysis.
-  - Gromacs 4.6.5 can be now be used to perform energy minimization.
+  - Gromacs 4.6.5 supports \ref COMMITTOR analysis; can be now be used to perform energy minimization;
+     now passes temperature to PLUMED (this allows temperature to be omitted in some actions,
+     namely \ref METAD and analysis actions).
+  .
+  Notice that if you use runtime binding it is not compulsory to repatch,
+  and that all combinations should work correctly
+  (new/old PLUMED with repatched/non-repatched MD code).
 - Other new features:
   - \ref driver can now read trajectories in many formats using VMD molfile plugin
     (requires VMD plugins to be compiled and installed). In case VMD plugins are not installed,
@@ -58,6 +64,7 @@ Changes from version 2.0 which are relevant for users:
   - \ref switchingfunction : added STRETCH flag.
   - Negative strides in atom ranges (e.g. 10-1:-3).
   - \ref COORDINATION and \ref DHENERGY with NLIST now work correctly in replica exchange simulations.
+  - Multicolvars with neighbor lists now work correctly in replica exchange simulations.
   - Improved multicolvar neighbor lists.
 - Optimizations:
   - Root-mean-square devations with align weights different from displace weights
@@ -65,14 +72,14 @@ Changes from version 2.0 which are relevant for users:
     other variables based on RMSD.
   - \ref WHOLEMOLECULES is slighlty faster.
   - \ref COORDINATION is slighlty faster when NN and MM are even and D_0=0.
-  - Atom scattering with domain decomposition is slightly faster
-  - Link cells are now exploited in some multicolvars
-  - Derivatves are not calculated unless they are specifically required, because for instance you are adding
+  - Atom scattering with domain decomposition is slightly faster.
+  - Link cells are now exploited in some multicolvars.
+  - Derivatives are not calculated unless they are specifically required, because for instance you are adding
     a bias.
 -Documentation
   - All tutorial material from the recent plumed meeting in Belfast is now in the manual
-  - Restructured manual that is hopefully easier to navigate
   - Improvements to documentation, including lists of referenceable quantities outputted by each action
+  - Manual has been re-organized following suggestions recevied at the plumed meeting.
 
 Changes from version 2.0 which are relevant for developers:
 - Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional

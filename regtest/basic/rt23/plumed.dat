@@ -1,0 +1,18 @@
+dc: DISTANCE ATOMS=1,2 COMPONENTS
+ds: DISTANCE ATOMS=1,2 SCALED_COMPONENTS
+
+cc: CELL
+
+# recompute xyz components from cell and scaled components
+dsx: MATHEVAL ARG=ds.a,ds.b,ds.c,cc.ax,cc.bx,cc.cx VAR=sa,sb,sc,ca,cb,cc FUNC=sa*ca+sb*cb+sc*cc PERIODIC=NO
+dsy: MATHEVAL ARG=ds.a,ds.b,ds.c,cc.ay,cc.by,cc.cy VAR=sa,sb,sc,ca,cb,cc FUNC=sa*ca+sb*cb+sc*cc PERIODIC=NO
+dsz: MATHEVAL ARG=ds.a,ds.b,ds.c,cc.az,cc.bz,cc.cz VAR=sa,sb,sc,ca,cb,cc FUNC=sa*ca+sb*cb+sc*cc PERIODIC=NO
+
+PRINT FILE=colvar ARG=dsx,dsy,dsz
+
+# this is to test forces
+RESTRAINT ARG=dc.x AT=0 KAPPA=0 SLOPE=1
+# this should be equivalent
+#RESTRAINT ARG=dsx AT=0 KAPPA=0 SLOPE=1
+
+
