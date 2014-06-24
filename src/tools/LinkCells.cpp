@@ -66,6 +66,8 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   }
   // Clear nlcells
   for(unsigned i=0;i<ncellstot;++i) lcell_tots[i]=0;
+  // Clear allcells
+  allcells.assign( allcells.size(), 0 );
 
   // Find out what cell everyone is in
   unsigned rank=comm.Get_rank(), size=comm.Get_size();
