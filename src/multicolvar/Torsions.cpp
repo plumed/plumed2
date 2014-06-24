@@ -55,12 +55,12 @@ about the topology of the protein molecule.  This means that you can specify tor
 
 \verbatim
 MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
-ALPHABETA ...
-ATOMS1=@phi-3 REFERENCE=3.14
+TORSIONS ...
+ATOMS1=@phi-3
 ATOMS2=@psi-3
-ATOMS4=@phi-4
+ATOMS3=@phi-4
 LABEL=ab
-... ALPHABETA 
+... TORSIONS 
 PRINT ARG=ab FILE=colvar STRIDE=10
 \endverbatim
 
