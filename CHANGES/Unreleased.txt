@@ -12,6 +12,8 @@ Changes from version 2.0 which are relevant for users:
   enabled or disabled. An internal version of lapack and blas will be used
   if these libraries are not installed.
 - The command SPHERE has been replaced by \ref UWALLS
+- Labels of quantities calaculated by BIASVALUE have changed from <label>.bias.<argname> to <label>.<argname>_bias, which is more consistent with steered MD
+- Labels of quantities calculated by ABMD have change from <label>.min_<argname> to <label>.<argname>_min, which is more consistent with steered MD
 - New actions:
   - \ref SPRINT topological collective variables.
   - \ref CH3SHIFTS collective variable.
@@ -69,6 +71,8 @@ Changes from version 2.0 which are relevant for users:
     a bias.
 -Documentation
   - All tutorial material from the recent plumed meeting in Belfast is now in the manual
+  - Restructured manual that is hopefully easier to navigate
+  - Improvements to documentation, including lists of referenceable quantities outputted by each action
 
 Changes from version 2.0 which are relevant for developers:
 - Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional
