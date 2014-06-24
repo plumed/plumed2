@@ -80,7 +80,9 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
 				for(unsigned  k=0;k<ss.size();++k){
 					thisargument=ss[k];	
 					unsigned ll=strlen(ss[k].c_str())+1;
-					char str[ll];strcpy(str,ss[k].c_str());
+					char*str;
+					str=new char [ll];
+					strcpy(str,ss[k].c_str());
 					char *ppstr=str;
 		                	if(!regexec(preg, ppstr , preg->re_nsub, pmatch, 0)) {
 						log.printf("  Something matched with \"%s\" : ",ss[k].c_str());
@@ -103,9 +105,11 @@ void ActionWithArguments::interpretArgumentList(const std::vector<std::string>& 
 								ppstr += pmatch[0].rm_eo;	/* Restart from last match */
 						} while(!regexec(preg,ppstr,preg->re_nsub,pmatch,0));
 					}		
+					delete [] str;
 				}
 		};
 		regfree(preg);
+		free(preg);
 		free(pmatch);
 #else
 		plumed_merror("Regexp support not compiled!");

@@ -201,7 +201,7 @@ void DumpAtoms::update(){
       if(residueNumbers.size()>0) residueNumber=residueNumbers[i];
       std::string resname="";
       if(residueNames.size()>0) resname=residueNames[i];
-      of.printf("%5u%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f\n",residueNumber,resname.c_str(),name,getAbsoluteIndex(i).serial(),
+      of.printf("%5u%-5s%5s%5d%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f\n",residueNumber%100000,resname.c_str(),name,getAbsoluteIndex(i).serial()%100000,
          lenunit*getPosition(i)(0),lenunit*getPosition(i)(1),lenunit*getPosition(i)(2),0.0,0.0,0.0);
     }
     of.printf("%12.7f %12.7f %12.7f %12.7f %12.7f %12.7f %12.7f %12.7f %12.7f\n",

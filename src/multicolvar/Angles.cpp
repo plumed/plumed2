@@ -58,7 +58,7 @@ The following example instructs plumed to find the average of two angles and to
 print it to a file
 
 \verbatim
-ANGLES ATOMS=1,2,3 ATOMS=4,5,6 MEAN LABEL=a1
+ANGLES ATOMS1=1,2,3 ATOMS2=4,5,6 MEAN LABEL=a1
 PRINT ARG=a1.mean FILE=colvar 
 \endverbatim
 
@@ -76,7 +76,7 @@ This final example instructs plumed to calculate all the angles in the first coo
 spheres of the atoms. A discretized-normalized histogram of the distribution is then output
 
 \verbatim
-ANGLE GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWTICH={GAUSSIAN R_0=1.0} LABEL=a1
+ANGLES GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
 PRINT ARG=a1.* FILE=colvar
 \endverbatim
 
