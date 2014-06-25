@@ -12,9 +12,9 @@ Before doing any of these things however we first have to tell PLUMED how to cal
 
 On this page we list the simplest collective variables that are implemented in PLUMED 2. These colvars all take in a 
 set of atomic positions and output one or multiple scalar CV values.  Many other collective variables are available in PLUMED.  
-In particular, the page on \dists describes the various ways that you can calculate the distance from a particular reference
+In particular, the page on \ref dists describes the various ways that you can calculate the distance from a particular reference
 configuration.  Meanwhile, the page on \ref Function describes the various functions of collective variables that can be used in the
-code.  Lastly the page on \mcolv describes MultiColvars.  MultiColvars allow you to use many different colvars and allow us to 
+code.  Lastly the page on \ref mcolv describes MultiColvars.  MultiColvars allow you to use many different colvars and allow us to 
 implement all these collective variables without implementing having an unmanigiably large ammount of code.  For some things (e.g.
 \ref DISTANCES GROUPA=1 GROUPB=2-100 LESS_THAN={RATIONAL R_0=3}) there are more computationally efficient options available in plumed 
 (e.g. \ref COORDINATION).  However, MultiColvars are worth investigating as they provide a flexible syntax for many quite-complex CVs.
