@@ -1,25 +1,31 @@
 /**
 
-\page Colvar Collective Variables
+\page colvarintro Collective variables
 
 Chemical systems contain an enormous number atoms, which, in most cases makes it simply impossible for
 us to understand anything by monitoring the atom postions directly.  Consquentially,
-we introduce Collective variables (CVs) that describe the chemical processes we are 
-interested in and monitor these simpler quantities instead.  These CVs are used in many of the methods 
+we introduce Collective variables (CVs) that describe the chemical processes we are
+interested in and monitor these simpler quantities instead.  These CVs are used in many of the methods
 implemented in PLUMED - there values can be monitored using \ref PRINT, \ref Function of them can be calculated
-or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in PLUMED.  
-Before doing any of these things however we first have to tell PLUMED how to calculate them.    
+or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in PLUMED.
+Before doing any of these things however we first have to tell PLUMED how to calculate them.
 
-On this page we list the simplest collective variables that are implemented in PLUMED 2. These colvars all take in a 
-set of atomic positions and output one or multiple scalar CV values.  Many other collective variables are available in PLUMED.  
+The simplest collective variables that are implemented in PLUMED 2 take in a
+set of atomic positions and output one or multiple scalar CV values.  Information on these variables is given here while 
+information as to how sets of atoms can be selected
+can be found in the pages on \ref Group.  Please be aware that PLUMED contains implementations of many other collective variables 
+are available in PLUMED but that the input for these variables may be less transparent when it is first encourntered.
 In particular, the page on \dists describes the various ways that you can calculate the distance from a particular reference
-configuration.  Meanwhile, the page on \ref Function describes the various functions of collective variables that can be used in the
-code.  Lastly the page on \mcolv describes MultiColvars.  MultiColvars allow you to use many different colvars and allow us to 
+configuration.  So you will find instructions on how to calculate the RMSD distance from the folded state of a protein here.
+Meanwhile, the page on \ref Function describes the various functions of collective variables that can be used in the
+code.  This is a very powerful feature of PLUMED as you can use the \ref Function commands to calculate any function or 
+combination of the simple collective variables listed on the page \ref Colvar.  Lastly the page on \mcolv describes MultiColvars.  
+MultiColvars allow you to use many different colvars and allow us to
 implement all these collective variables without implementing having an unmanigiably large ammount of code.  For some things (e.g.
-\ref DISTANCES GROUPA=1 GROUPB=2-100 LESS_THAN={RATIONAL R_0=3}) there are more computationally efficient options available in plumed 
-(e.g. \ref COORDIATION).  However, MultiColvars are worth investigating as they provide a flexible syntax for many quite-complex CVs.
+\ref DISTANCES GROUPA=1 GROUPB=2-100 LESS_THAN={RATIONAL R_0=3}) there are more computationally efficient options available in plumed
+(e.g. \ref COORDINATION).  However, MultiColvars are worth investigating as they provide a flexible syntax for many quite-complex CVs.
 
-\section cvavail CV Documentation
+\section Colvar CV Documentation
 
 The following list contains descriptions of a number of the colvars that are currently implemented in PLUMED 2.
 
