@@ -9,14 +9,14 @@
       <tab type="user" visible="yes" url="_configuring_plumed.html" title="Configuration"/>
     </tab>
     --> 
-    <tab type="user" visible="yes" url="_syntax.html" title="Getting Started"/>
-    <tab type="usergroup" title="Collective variables" >
-      <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
-      <tab type="user" visible="yes" url="colvarintro.html" title="Collective Variables"/>
-      <tab type="user" visible="yes" url="dists.html" title="Distances from reference configurations"/>
-      <tab type="user" visible="yes" url="_function.html" title="Functions"/>
-      <tab type="user" visible="yes" url="mcolv.html" title="MultiColvar documentation"/>
-    </tab>
+    <tab type="user" visible="yes" url="_syntax.html" title="Getting started"/>
+    <tab type="usergroup" title="Collective variables" url="colvarintro.html">
+     <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
+     <tab type="user" visible="yes" url="_colvar.html" title="CV documentation"/>
+     <tab type="user" visible="yes" url="dists.html" title="Distances from reference configurations"/>
+     <tab type="user" visible="yes" url="_function.html" title="Functions"/>
+     <tab type="user" visible="yes" url="mcolv.html" title="MultiColvar documentation"/>
+   </tab>
     <tab type="user" visible="yes" url="_analysis.html" title="Analysis"/>
     <tab type="user" visible="yes" url="_bias.html" title="Bias"/>
     <tab type="user" visible="yes" url="tools.html" title="Tools"/>

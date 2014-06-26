@@ -1,5 +1,5 @@
 /**
-\page Syntax Quick Introduction
+\page Syntax Getting started 
 
 To run PLUMED 2 you need to provide one input file.  In this file you specify what it
 is that PLUMED should do during the course of the run.  Typically this will involve calculating 
