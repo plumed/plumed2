@@ -9,7 +9,7 @@
       <tab type="user" visible="yes" url="_configuring_plumed.html" title="Configuration"/>
     </tab>
     --> 
-    <tab type="user" visible="yes" url="_syntax.html" title="Quick Introduction"/>
+    <tab type="user" visible="yes" url="_syntax.html" title="Getting Started"/>
     <tab type="usergroup" title="Collective variables" >
       <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
       <tab type="user" visible="yes" url="colvarintro.html" title="Collective Variables"/>
