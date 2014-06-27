@@ -37,7 +37,7 @@ for file in ../patches/*.diff
 do
    myengine=`echo "$file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///'`
    mytag=`echo "$myengine" | sed -e 's/\./\_/g'`
-   echo "- \subpage $mytag" >> automatic/codes.list
+   echo "- \ref $mytag" >> automatic/codes.list
    echo "/**" >> automatic/$myengine.txt
    echo "\page $mytag $myengine" >> automatic/$myengine.txt
    plumed patch -e $myengine -i -q >> automatic/$myengine.txt
