@@ -79,7 +79,7 @@ D_{ij}^2 = \sum_{\alpha} (X^i_\alpha - X^j_\alpha)^2 = \sum_\alpha (X^i_\alpha)^
 \f]
 
 We can use this expression and matrix algebra to calculate multiple distances at once.  For instance if we have three points, 
-$\mathbf{X}$, we can write distances between them as:
+\f$\mathbf{X}\f$, we can write distances between them as:
 
 \f{eqnarray*}{
 D^2(\mathbf{X}) &=& \left[ \begin{array}{ccc}

@@ -99,8 +99,7 @@ Here we discuss the switch we implemented so far.
          you are working with natural units.  If you are working with natural units then the coordinates 
          should be in your natural length unit.  For more details on the PDB file format visit http://www.wwpdb.org/docs.html
          .
-       - If you use TYPE=OPTIMAL you just the root mean square deviation after reset of the geometric center  
- and performing an optimal alignment that reads:
+       - If you use TYPE=OPTIMAL you just the root mean square deviation after reset of the geometric center and performing an optimal alignment that reads:
         \f[
          d(X,X_r) = \sqrt{ \sum_i \sum_\alpha^{x,y,z}  \frac{w_i}{\sum_j w_j}[ X_{i,\alpha}-com_\alpha(X)- \sum_\beta M(X,X',w')_{\alpha,\beta}({X'}_{i,\beta}-com_\beta(X')) ]^2 } 
         \f]

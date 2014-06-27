@@ -12,8 +12,8 @@ Changes from version 2.0 which are relevant for users:
   enabled or disabled. An internal version of lapack and blas will be used
   if these libraries are not installed.
 - The command SPHERE has been replaced by \ref UWALLS
-- Labels of quantities calaculated by BIASVALUE have changed from <label>.bias.<argname> to <label>.<argname>_bias, which is more consistent with steered MD
-- Labels of quantities calculated by ABMD have change from <label>.min_<argname> to <label>.<argname>_min, which is more consistent with steered MD
+- Labels of quantities calaculated by BIASVALUE have changed from <i>label</i>.bias.<i>argname</i> to <i>label</i>.<i>argname</i>_bias, which is more consistent with steered MD
+- Labels of quantities calculated by ABMD have change from <i>label</i>.min_<i>argname</i> to <i>label</i>.<i>argname</i>_min, which is more consistent with steered MD
 - New actions:
   - \ref SPRINT topological collective variables.
   - \ref CH3SHIFTS collective variable.

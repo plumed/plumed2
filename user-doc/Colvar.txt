@@ -15,7 +15,7 @@ set of atomic positions and output one or multiple scalar CV values.  Informatio
 \ref Colvar while information as to how sets of atoms can be selected
 can be found in the pages on \ref Group.  Please be aware that PLUMED contains implementations of many other collective variables 
 but that the input for these variables may be less transparent when it is first encourntered.
-In particular, the page on \dists describes the various ways that you can calculate the distance from a particular reference
+In particular, the page on \ref dists describes the various ways that you can calculate the distance from a particular reference
 configuration.  So you will find instructions on how to calculate the RMSD distance from the folded state of a protein here.
 Meanwhile, the page on \ref Function describes the various functions of collective variables that can be used in the
 code.  This is a very powerful feature of PLUMED as you can use the \ref Function commands to calculate any function or 
