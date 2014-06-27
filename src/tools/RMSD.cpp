@@ -32,9 +32,7 @@
 using namespace std;
 namespace PLMD{
 
-RMSD::RMSD(Log & log ):
-  alignmentMethod(SIMPLE),
-  log(&log){}
+RMSD::RMSD() : alignmentMethod(SIMPLE) {}
 
 void RMSD::set(const PDB&pdb, string mytype ){
 
@@ -49,15 +47,12 @@ void RMSD::setType(string mytype){
 	alignmentMethod=SIMPLE; // initialize with the simplest case: no rotation
 	if (mytype=="SIMPLE"){
 		alignmentMethod=SIMPLE;
-		log->printf("RMSD IS DONE WITH SIMPLE METHOD(NO ROTATION)\n");
 	}
 	else if (mytype=="OPTIMAL"){
 		alignmentMethod=OPTIMAL;
-		log->printf("RMSD IS DONE WITH OPTIMAL ALIGNMENT METHOD\n");
 	}
 	else if (mytype=="OPTIMAL-FAST"){
 		alignmentMethod=OPTIMAL_FAST;
-		log->printf("RMSD IS DONE WITH OPTIMAL-FAST ALIGNMENT METHOD (fast version, numerically less stable, only valid with align==displace)\n");
 	}
 	else plumed_merror("unknown RMSD type" + mytype);
 

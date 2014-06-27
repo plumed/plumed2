@@ -68,11 +68,9 @@ class RMSD
   std::vector<double> align;
 // Weights for deviation
   std::vector<double> displace;
-// Logfile
-  Log *log;
 public:
 /// Constructor
-  RMSD(Log & log );
+  RMSD();
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure
