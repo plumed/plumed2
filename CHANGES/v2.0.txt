@@ -103,9 +103,8 @@ For developers:
 - Removed include graphs in the documentation (too large).
 - Several small fixes in documentation.
 
-Unreleased changes (will be included in 2.0.3)
-----------------------------------------------
-See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
+Version 2.0.3 (June 30, 2014)
+----------------------------
 
 For users:
 - Now compiles on Blue Gene Q with IBM compilers.
@@ -127,5 +126,14 @@ For developers:
 - Fixed non-ansi syntax in a few points and a non-important memory leakage.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
+Unreleased changes (will be included in 2.0.4)
+----------------------------------------------
+See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
+
+Anything yet.
+
 */
+
+
+
 
