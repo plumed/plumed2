@@ -86,6 +86,7 @@ Changes from version 2.0 which are relevant for developers:
   flag (--is-installed) to probe if running from a compilation directory or from a fully installed copy
   (this is needed for regtests to work properly).
 - Improved class Communicator. Many operations can now be done directly on Vectors, Tensors, std::vector and PLMD::Matrix.
+- Modified class RMSD.
 - Patches for GPL codes (QuantumEspresso and Gromacs) now also include
   original code so as to simplify their modification.
 - Fixed dependencies among actions such that it is now possible (and reliable)
