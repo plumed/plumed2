@@ -1,9 +1,6 @@
 /**
 \mainpage Introduction
 
-\warning This is the manual for the development version of PLUMED. It might
-contain buggy code. See this page: \ref CHANGES-UNRELEASED
-
 PLUMED is a plugin that works with a large number of molecular dynamics codes.  It can be used
 to analyse features of the dynamics on-the-fly or to perform a wide variety of free energy methods.
 The original PLUMED 1 \cite plumed1
@@ -16,6 +13,7 @@ This is the user manual -  if you want to modify PLUMED or to understand how it 
 To understand the difference between PLUMED 1 and PLUMED 2, and to
 follow the development of PLUMED 2, you can look at the detailed changelog:
 - Changes for \ref CHANGES-2-0
+- Changes for \ref CHANGES-2-1
 
 A short tutorial explaining how to move from PLUMED 1 to PLUMED 2 is also available (see \ref moving)
 
