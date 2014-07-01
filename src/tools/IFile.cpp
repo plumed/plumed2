@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -31,15 +31,29 @@
 
 #include <iostream>
 #include <string>
+#ifdef __PLUMED_HAS_ZLIB
+#include <zlib.h>
+#endif
 
 namespace PLMD{
 
 size_t IFile::llread(char*ptr,size_t s){
   plumed_assert(fp);
   size_t r;
-  r=fread(ptr,1,s,fp);
-  if(feof(fp))   eof=true;
-  if(ferror(fp)) err=true;
+  if(gzfp){
+#ifdef __PLUMED_HAS_ZLIB
+    int rr=gzread(gzFile(gzfp),ptr,s);
+    if(rr==0)   eof=true;
+    if(rr<0)    err=true;
+    r=rr;
+#else
+    plumed_merror("trying to use a gz file without zlib being linked");
+#endif
+  } else {
+    r=fread(ptr,1,s,fp);
+    if(feof(fp))   eof=true;
+    if(ferror(fp)) err=true;
+  }
   return r;
 }
 
@@ -87,8 +101,23 @@ IFile& IFile::advanceField(){
   return *this;
 }
 
-IFile& IFile::open(const std::string&name){
-  FileBase::open(name,"r");
+IFile& IFile::open(const std::string&path){
+  plumed_massert(!cloned,"file "+path+" appears to be cloned");
+  eof=false;
+  err=false;
+  fp=NULL;
+  gzfp=NULL;
+  bool do_exist=FileExist(path);
+  plumed_massert(do_exist,"file " + path + "cannot be found");
+  fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+  if(Tools::extension(this->path)=="gz"){
+#ifdef __PLUMED_HAS_ZLIB
+    gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"r");
+#else
+    plumed_merror("trying to use a gz file without zlib being linked");
+#endif
+  }
+  if(plumed) plumed->insertFile(*this);
   return *this;
 }
 
@@ -193,6 +222,9 @@ void IFile::reset(bool reset){
  eof = reset;
  err = reset;
  if(!reset) clearerr(fp);
+#ifdef __PLUMED_HAS_ZLIB
+ if(!reset && gzfp) gzclearerr(gzFile(gzfp));
+#endif
  return;
 } 
 

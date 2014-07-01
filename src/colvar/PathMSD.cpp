@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -50,6 +50,8 @@ PRINT ARG=p1.sss,p1.zzz STRIDE=1 FILE=colvar FMT=%8.4f
 note that NEIGH_STRIDE=4 NEIGH_SIZE=8 control the neighborlist parameter (optional but
 recommended for performance) and states that the neighbor list will be calculated every 4
 timesteps and consider only the closest 8 member to the actual md snapshots.
+
+In the REFERENCE PDB file the frames must be separated either using END or ENDMDL.
 
 \note
 The implementation of this collective variable and of \ref PROPERTYMAP

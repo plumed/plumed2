@@ -6,14 +6,15 @@
 !/function
 !/analysis
 !/basic
+!/crystallization
+!/mapping
 !/multicolvar
 !/secondarystructure
 !/trajectories
 !/scripts
 !/manyrestraints
+!/molfile_plugin
 !/has-almost
-
 # These files we just want to ignore completely
 tmp
 report.txt
-crystallization

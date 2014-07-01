@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -57,8 +57,8 @@ PRINT ARG=d1.lt0.1
 The following input tells plumed to calculate all the distances between atoms 1, 2 and 3 (i.e. the distances between atoms
 1 and 2, atoms 1 and 3 and atoms 2 and 3).  The average of these distances is then calculated.
 \verbatim
-DISTANCES GROUP=1-3 AVERAGE LABEL=d1
-PRINT ARG=d1.average
+DISTANCES GROUP=1-3 MEAN LABEL=d1
+PRINT ARG=d1.mean
 \endverbatim
 (See also \ref PRINT)
 
@@ -80,7 +80,7 @@ public:
   static void registerKeywords( Keywords& keys );
   Distances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j );
+  virtual double compute();
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
   Vector getCentralAtom();
@@ -91,7 +91,7 @@ PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 void Distances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   keys.use("ATOMS"); 
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); keys.use("DHENERGY");
+  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); keys.use("DHENERGY");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
@@ -105,13 +105,11 @@ PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
-  // And setup the ActionWithVessel
-  readVesselKeywords();          
   // And check everything has been read in correctly
   checkRead();
 }
 
-double Distances::compute( const unsigned& j ){
+double Distances::compute(){
    Vector distance; 
    distance=getSeparation( getPosition(0), getPosition(1) );
    const double value=distance.modulo();

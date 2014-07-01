@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -52,6 +52,7 @@ parameters(da.parameters)
 
 void Vessel::registerKeywords( Keywords& keys ){
   plumed_assert( keys.size()==0 );
+  keys.add("optional","LABEL","the label used to reference this particular quantity");
 }
 
 Vessel::Vessel( const VesselOptions& da ):
@@ -64,12 +65,16 @@ comm(da.action->comm),
 log((da.action)->log)
 {
   line=Tools::getWords( da.parameters );
-  if( da.mylabel.length()==0 && numlab>=0 ){
-      mylabel=myname; std::string nn; 
-      std::transform( mylabel.begin(), mylabel.end(), mylabel.begin(), tolower );
-      if(numlab>0){ Tools::convert( numlab, nn ); mylabel = mylabel + "-" + nn; }
-  } else if( numlab==0 ) {
+  if( da.mylabel.length()>0){
       mylabel=da.mylabel;
+  } else {
+      if( keywords.exists("LABEL") ) parse("LABEL",mylabel);
+      if( mylabel.length()==0 && numlab>=0 ){
+          mylabel=myname; std::string nn; 
+          std::transform( mylabel.begin(), mylabel.end(), mylabel.begin(), tolower );
+          if(numlab>0){ Tools::convert( numlab, nn ); mylabel =  mylabel + "-" + nn; }
+          else { mylabel = mylabel; }
+      } 
   }
 }
 
@@ -123,16 +128,6 @@ void Vessel::error( const std::string& msg ){
   action->log.printf("ERROR for keyword %s in action %s with label %s : %s \n \n",myname.c_str(), (action->getName()).c_str(), (action->getLabel()).c_str(), msg.c_str() );
   if(finished_read) keywords.print( log );
   plumed_merror("ERROR for keyword " + myname + " in action "  + action->getName() + " with label " + action->getLabel() + " : " + msg );
-}
-
-void Vessel::stashBuffers(){
-  unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
-  unsigned n=0; for(unsigned i=rank;i<bufsize;i+=stride){ stash[n]=getBufferElement(i); n++; }
-}
-
-void Vessel::setBufferFromStash(){
-  unsigned stride=comm.Get_size(); unsigned rank=comm.Get_rank();
-  unsigned n=0; for(unsigned i=rank;i<bufsize;i+=stride){ addToBufferElement( i, stash[n]); n++; }
 }
 
 }

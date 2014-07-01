@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -87,12 +87,11 @@ void Piecewise::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("numbered","POINT","This keyword is used to specify the various points in the function above.");
   keys.reset_style("POINT","compulsory");
-  ActionWithValue::useCustomisableComponents(keys);
-//  componentsAreNotOptional(keys);
-//  keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity will be referenceable elsewhere "
-//                                             "in the input file.  These quantities will be named with the arguments of the "
-//                                             "function followed by the character string _pfunc.  These quantities tell the "
-//                                             "user the values of the piecewise functions of each of the arguments.");
+  componentsAreNotOptional(keys);
+  keys.addOutputComponent("_pfunc","default","one or multiple instances of this quantity will be referenceable elsewhere "
+                                             "in the input file.  These quantities will be named with the arguments of the "
+                                             "function followed by the character string _pfunc.  These quantities tell the "
+                                             "user the values of the piecewise functions of each of the arguments.");
 }
 
 Piecewise::Piecewise(const ActionOptions&ao):
@@ -107,7 +106,7 @@ Function(ao)
      if(i>0 && points[i].first<=points[i-1].first) error("points abscissas should be monotonously increasing");
   }
 
-  for(int i=0;i<getNumberOfArguments();i++)
+  for(unsigned i=0;i<getNumberOfArguments();i++)
     if(getPntrToArgument(i)->isPeriodic())
     error("Cannot use PIECEWISE on periodic arguments");
 
@@ -115,10 +114,8 @@ Function(ao)
     addValueWithDerivatives(); 
     setNotPeriodic();
   }else{
-    for(int i=0;i<getNumberOfArguments();i++){
-      string s; Tools::convert(i+1,s);
-      addComponentWithDerivatives(s); 
-//      addComponentWithDerivatives( getPntrToArgument(i)->getName()+"_pfunc" );
+    for(unsigned i=0;i<getNumberOfArguments();i++){
+      addComponentWithDerivatives( getPntrToArgument(i)->getName()+"_pfunc" );
       getPntrToComponent(i)->setNotPeriodic();
     }
   }
@@ -130,9 +127,9 @@ Function(ao)
 }
 
 void Piecewise::calculate(){
-  for(int i=0;i<getNumberOfArguments();i++){
+  for(unsigned i=0;i<getNumberOfArguments();i++){
     double val=getArgument(i);
-    int p=0;
+    unsigned p=0;
     for(;p<points.size();p++){
       if(val<points[p].first) break;
     }

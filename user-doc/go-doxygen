@@ -1,0 +1,22 @@
+#! /bin/bash
+
+# Making sure that plumed executable is available
+echo -n "Searching for plumed ..."
+if plumed 2>/dev/null 1>/dev/null ; then
+  echo " found"
+else
+  echo " not found"
+  echo -n "Sourcing sourceme.sh and searching again ..."
+  if source ../sourceme.sh && plumed 2>/dev/null 1>/dev/null ; then
+    echo " found"
+  else
+    echo "ERROR: you should compile plumed first!"
+    exit 1
+  fi
+fi
+
+{
+  cat Doxyfile
+  echo "PROJECT_NUMBER = \"$(plumed info --version)\""
+  echo "INPUT+=" *PP.txt
+} | doxygen -

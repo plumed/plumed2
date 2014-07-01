@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -94,9 +94,7 @@ Action(ao),
 SecondaryStructureRMSD(ao)
 {
   // read in the backbone atoms
-  std::vector<std::string> backnames(5); std::vector<unsigned> chains;
-  backnames[0]="N"; backnames[1]="CA"; backnames[2]="CB"; backnames[3]="C"; backnames[4]="O";
-  readBackboneAtoms( backnames, chains);
+  std::vector<unsigned> chains; readBackboneAtoms( "protein", chains);
 
   // This constructs all conceivable sections of alpha helix in the backbone of the chains
   unsigned nres, nprevious=0; std::vector<unsigned> nlist(30);

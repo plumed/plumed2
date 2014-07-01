@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +23,7 @@
 #include "core/PlumedMain.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
-#include "tools/DRMSD.h"
+#include "reference/DRMSD.h"
 #include "core/Atoms.h"
 
 using namespace std;
@@ -31,7 +31,7 @@ using namespace std;
 namespace PLMD{
 namespace colvar{
 
-//+PLUMEDOC COLVAR DRMSD
+//+PLUMEDOC DCOLVAR DRMSD
 /*
 Calculate the distance RMSD with respect to a reference structure. 
 
@@ -76,12 +76,12 @@ DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
    
 class DRMSD : public Colvar {
 	
-  vector<Vector> derivs_;
-  PLMD::DRMSD drmsd_;
+  PLMD::DRMSD* drmsd_;
   bool pbc_;
 
 public:
   DRMSD(const ActionOptions&);
+  ~DRMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -118,35 +118,38 @@ PLUMED_COLVAR_INIT(ao), pbc_(true)
       error("missing input file " + reference );
 
   // store target_ distance
-  drmsd_.setFromPDB(pdb, lcutoff, ucutoff);
+  ReferenceConfigurationOptions ro( "DRMSD" );
+  drmsd_= new PLMD::DRMSD( ro );
+  drmsd_->setBoundsOnDistances( !nopbc, lcutoff, ucutoff );
+  drmsd_->set( pdb );
 
-  requestAtoms(pdb.getAtomNumbers());
-  derivs_.resize(getNumberOfAtoms());
+  std::vector<AtomNumber> atoms; 
+  drmsd_->getAtomRequests( atoms );
+  drmsd_->setNumberOfAtoms( atoms.size() );
+  requestAtoms( atoms );
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
 
 }
 
+DRMSD::~DRMSD(){
+  delete drmsd_;
+}
+
 // calculator
 void DRMSD::calculate(){
 
-// set derivatives to zero
- for(unsigned i=0;i<derivs_.size();++i) {derivs_[i].zero();}
+ double drmsd; Tensor virial;
 
- double drmsd;
- Tensor virial;
-
- if(pbc_){drmsd=drmsd_.calculate(getPositions(),getPbc(),derivs_,virial);}
- else{    drmsd=drmsd_.calculate(getPositions(),         derivs_,virial);}
+ drmsd=drmsd_->calculate(getPositions(), getPbc(), false);
 
  setValue(drmsd);
-
- for(unsigned i=0;i<derivs_.size();++i) {setAtomsDerivatives(i,derivs_[i]);}
+ for(unsigned i=0;i<getNumberOfAtoms();++i) { setAtomsDerivatives( i, drmsd_->getAtomDerivative(i) ); }
  
- setBoxDerivatives(virial);
+ drmsd_->getVirial( virial ); setBoxDerivatives(virial);
 
- }
+}
 
 }
 }

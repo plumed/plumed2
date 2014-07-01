@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Exception.h"
 
-#if ! defined(__PLUMED_EXCEPTIONS)
+#if defined(__PLUMED_HAS_EXECINFO) 
 #include <execinfo.h>
 #endif
 
@@ -64,17 +64,22 @@ Exception::Exception(const std::string&msg,const std::string&file,unsigned line,
 }
 
 void Exception::abortIfExceptionsAreDisabled(){
-#if ! defined(__PLUMED_EXCEPTIONS)
-  fprintf(stderr,"%s",what());
-  fprintf(stderr,"\n");
+#if ! defined(__PLUMED_HAS_EXCEPTIONS)
 
+#ifdef __PLUMED_HAS_EXECINFO
+  fprintf(stderr,"\n\n********** STACK DUMP **********\n");
   void* callstack[128];
   int i, frames = backtrace(callstack, 128);
   char** strs = backtrace_symbols(callstack, frames);
   for (i = 0; i < frames; ++i) {
      fprintf(stderr,"%s\n", strs[i]);
   }
+  fprintf(stderr,"******** END STACK DUMP ********\n");
   free(strs);
+#endif
+
+  fprintf(stderr,"%s",what());
+  fprintf(stderr,"\n");
 
   std::abort();
 #endif

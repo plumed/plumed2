@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -27,6 +27,14 @@
 using namespace std;
 
 namespace PLMD{
+
+unsigned PDB::getNumberOfAtomBlocks()const{
+  return block_ends.size();
+}
+
+const std::vector<unsigned> & PDB::getAtomBlockEnds()const{
+  return block_ends;
+}
 
 const std::vector<Vector> & PDB::getPositions()const{
   return positions;
@@ -95,9 +103,9 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
     string occ=line.substr(54,6);
     string bet=line.substr(60,6);
     Tools::trim(record);
-    if(record=="TER"){file_is_alive=true; break;}
-    if(record=="END"){file_is_alive=true;  break;}
-    if(record=="ENDMDL"){file_is_alive=true;  break;}
+    if(record=="TER"){ block_ends.push_back( positions.size() ); }
+    if(record=="END"){ file_is_alive=true;  break;}
+    if(record=="ENDMDL"){ file_is_alive=true;  break;}
     if(record=="REMARK"){
          vector<string> v1;  v1=Tools::getWords(line.substr(6));  
          remark.insert(remark.begin(),v1.begin(),v1.end()); 
@@ -128,6 +136,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
       residuenames.push_back(residuename);
     }
   }
+  block_ends.push_back( positions.size() );
   return file_is_alive;
 }
 
@@ -191,22 +200,20 @@ void PDB::getAtomRange( const std::string& chainname, AtomNumber& a_start, AtomN
   if(inres) a_end=numbers[size()-1];
 } 
 
-bool PDB::getBackbone( const unsigned& resnumber, const std::vector<std::string>& backnames, std::vector<AtomNumber>& backnumbers ) const {
-  if( backnames.size()!=backnumbers.size() ) plumed_merror("mismatch between number of backbone names and number of backbone numbers"); 
-  bool foundresidue=false; std::vector<bool> found( backnames.size(), false );
+std::string PDB::getResidueName( const unsigned& resnum ) const {
   for(unsigned i=0;i<size();++i){
-     if( residue[i]==resnumber ){
-         foundresidue=true;
-         for(unsigned bno=0;bno<backnames.size();++bno){
-            if( backnames[bno]==atomsymb[i] ){ backnumbers[bno]=numbers[i]; found[bno]=true; } 
-         }
-     }
+     if( residue[i]==resnum ) return residuenames[i];
   }
-  if(!foundresidue){ return false; }
-  for(unsigned i=0;i<found.size();++i){
-      if( !found[i] ) return false;
+  return "";
+}
+
+AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const {
+  for(unsigned i=0;i<size();++i){
+     if( residue[i]==resnum && atomsymb[i]==aname ) return numbers[i];
   }
-  return true;
+  std::string num; Tools::convert( resnum, num );
+  plumed_merror("residue " + num + " does not contain an atom named " + aname );
+  return numbers[0]; // This is to stop compiler errors
 }
 
 std::string PDB::getChainID(const unsigned& resnumber) const {
@@ -216,10 +223,18 @@ std::string PDB::getChainID(const unsigned& resnumber) const {
   plumed_merror("Not enough residues in pdb input file");
 }
 
-void PDB::renameAtoms( const std::string& old_name, const std::string& new_name ){
+bool PDB::checkForResidue( const std::string& name ) const {
   for(unsigned i=0;i<size();++i){
-      if( atomsymb[i]==old_name ) atomsymb[i]=new_name;
-  } 
+      if( residuenames[i]==name ) return true;
+  }
+  return false;
+}
+
+bool PDB::checkForAtom( const std::string& name ) const {
+  for(unsigned i=0;i<size();++i){
+     if( atomsymb[i]==name ) return true;
+  }
+  return false;
 }
 
 Log& operator<<(Log& ostr, const PDB&  pdb){

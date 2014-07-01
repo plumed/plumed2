@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +23,8 @@
 #include "core/PlumedMain.h"
 #include "ActionRegister.h"
 #include "tools/PDB.h"
-#include "tools/RMSD.h"
+#include "reference/RMSDBase.h"
+#include "reference/MetricRegister.h"
 #include "core/Atoms.h"
 
 
@@ -34,14 +35,12 @@ namespace colvar{
    
 class RMSD : public Colvar {
 	
-  PLMD::RMSD rmsd;
-	
+  PLMD::RMSDBase* rmsd;
   bool squared; 
-
-  vector<Vector> derivs;
 
 public:
   RMSD(const ActionOptions&);
+  ~RMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };
@@ -49,66 +48,82 @@ public:
 
 using namespace std;
 
-//+PLUMEDOC COLVAR RMSD
+//+PLUMEDOC DCOLVAR RMSD
 /*
 Calculate the RMSD with respect to a reference structure.  
 
-To calculate the root-mean-square deviation between the atoms in two configurations
-you must first superimpose the two structures in some ways.  Obviously, it is the internal vibrational 
-motions of the structure - i.e. not the translations and rotations - that are interesting.  It is 
-possible to align two structures (i.e. remove the translational and rotational motions of the 
-system).
-In general the aim of this colvar is to calculate something like:
+The aim with this colvar it to calculate something like:
 
 \f[
-d(X,X_r) = \vert X-X' \vert 
+d(X,X') = \vert X-X' \vert 
 \f]
 
-where \f$ X \f$ is the molecular dynamics snapshot and   
-\f$ X' \f$ is a reference structure you provide as input.
-Here the symbols \f$ \vert \dots \vert \f$ represent some sort of norm of choice that is selected through the OPTIMAL switch (see below for examples).
+where \f$ X \f$ is the instantaneous position of all the atoms in the system and   
+\f$ X' \f$ is the positions of the atoms in some reference structure provided as input.
+\f$ d(X,X') \f$ thus measures the distance all the atoms have moved away from this reference configuration.
+Oftentimes, it is only the internal motions of the structure - i.e. not the translations of the center of 
+mass or the rotations of the reference frame - that are interesting.  Hence, when calculating the
+the root-mean-square deviation between the atoms in two configurations
+you must first superimpose the two structures in some way. At present PLUMED provides two distinct ways
+of performing this superposition.  The first method is applied when you use TYPE=SIMPLE in the input 
+line.  This instruction tells PLUMED that the root mean square deviation is to be calculated after the
+positions of the geometric centers in the reference and instantaneous configurations are aligned.  In
+other words \f$d(X,x')\f$ is to be calculated using: 
 
-Here we discuss the switch we implemented so far.
+\f[
+ d(X,X') = \sqrt{ \sum_i \sum_\alpha^{x,y,z}  \frac{w_i}{\sum_j w_j}( X_{i,\alpha}-com_\alpha(X)-{X'}_{i,\alpha}+com_\alpha(X') )^2 } 
+\f]
+with 
+\f[
+com_\alpha(X)= \sum_i  \frac{w'_{i}}{\sum_j w'_j}X_{i,\alpha}
+\f]
+and
+\f[
+com_\alpha(X')= \sum_i  \frac{w'_{i}}{\sum_j w'_j}X'_{i,\alpha}
+\f]
+Obviously, \f$ com_\alpha(X) \f$ and  \f$ com_\alpha(X') \f$  represent the positions of the center of mass in the reference
+and instantaneous configurations if the weights $w'$ are set equal to the atomic masses.  If the weights are all set equal to
+one, however, \f$com_\alpha(X) \f$ and  \f$ com_\alpha(X') \f$ are the positions of the geometric centers.
+Notice that there are sets of weights:  \f$ w' \f$ and  \f$ w \f$. The first is used to calculate the position of the center of mass 
+(so it determines how the atoms are \e aligned).  Meanwhile, the second is used when calculating how far the atoms have actually been
+\e displaced.  These weights are assigned in the reference configuration that you provide as input (i.e. the appear in the input file
+to this action that you set using REFERENCE=whatever.pdb).  This input reference configuration consists of a simple pdb file 
+containing the set of atoms for which you want to calculate the RMSD displacement and their positions in the reference configuration. 
+It is important to note that the indices in this pdb need to be set correctly.  The indices in this file determine the indices of the 
+instantaneous atomic positions that are used by PLUMED when calculating this colvar.  As such if you want to calculate the RMSD distance
+moved by the 1st, 4th, 6th and 28th atoms in the MD codes input file then the indices of the corresponding refernece positions in this pdb
+file should be set equal to 1, 4, 6 and 28.  
 
-       - If you use TYPE=SIMPLE you just calculate the root mean square deviation after reset of the geometric center  
-         that reads:
-         \f[
-         d(X,X_r) = \sqrt{ \sum_i \sum_\alpha^{x,y,z}  \frac{w_i}{\sum_j w_j}( X_{i,\alpha}-com_\alpha(X)-{X'}_{i,\alpha}+com_\alpha(X') )^2 } 
-         \f]
-         with 
-         \f[
-         com_\alpha(X)= \sum_i  \frac{w'_{i}}{\sum_j w'_j}X_{i,\alpha}
-         \f]
-         and
-         \f[
-         com_\alpha(X')= \sum_i  \frac{w'_{i}}{\sum_j w'_j}X'_{i,\alpha}
-         \f]
-         where  \f$ com_\alpha(X) \f$ and  \f$ com_\alpha(X') \f$  are the center of mass
-         whenever the weights $w'$ are assigned proportional to the atomic masses, otherwise are the geometric centers of the 
-         running MD snapshot and the reference frame respectively whenever they are all set to one.
-         Note that two set of weights exist:  \f$ w' \f$ and  \f$ w \f$. The first is used to calculate the center of mass (so it determines the \e alignment) 
-         and the second is used to calculate the actual \e displacement.
-         These are assigned in the reference (that you set with e.g.: REFERENCE=whatever.pdb) 
-         frame which is, for this case, a simple pdb file containing the atoms
-         on which you want to calculate the distance. 
-         Note that in this pdb you need to set correctly the index of the atom STARTING FROM 1 (i.e. +1 shift respect 
-         to VMD numbering) so that the program knows which atom needs to be compared with.
-         The OCCUPANCY column (the first after the coordinates) set the \f$ w'  \f$ used for the center of mass calculation and the BETA column (the second
-         after the Cartesian coordinates) set the \f$ w \f$ which is responsible of the calculation of the displacement. 
-         Users can also use fractional values for beta and the occupancy values. We recommend you only do this when you really know what you are doing however as the results can be rather strange. 
-         In PDB files the atomic coordinates and box lengths should be in Angstroms unless 
-         you are working with natural units.  If you are working with natural units then the coordinates 
-         should be in your natural length unit.  For more details on the PDB file format visit http://www.wwpdb.org/docs.html
-         .
-       - If you use TYPE=OPTIMAL you just the root mean square deviation after reset of the geometric center  
- and performing an optimal alignment that reads:
-        \f[
-         d(X,X_r) = \sqrt{ \sum_i \sum_\alpha^{x,y,z}  \frac{w_i}{\sum_j w_j}[ X_{i,\alpha}-com_\alpha(X)- \sum_\beta M(X,X',w')_{\alpha,\beta}({X'}_{i,\beta}-com_\beta(X')) ]^2 } 
-        \f]
-        where \f$ M(X,X',w') \f$ is the optimal alignment matrix which is calculated through the Kearsley \cite kearsley algorithm and the set of 
-	weights used for the alignment of the center of mass is also used to perform the optimal alignment.
- 	Note that the flexibility of setting only certain atoms to calculate the center of mass and optimal alignment which may be different from the one used in the \e displacemnt  calculation is useful whenever for example you want to calculate the motion of a ligand in a protein cavity and you want to clearly use the protein as reference system.  
-        When this form of RMSD is used to calculate the secondary structure variables (\ref ALPHARMSD, \ref ANTIBETARMSD and \ref PARABETARMSD) all the atoms in the segment are assumed to be part of both the alignment and displacement sets.
+The pdb input file should also contain the values of \f$w\f$ and \f$w'\f$. In particular, the OCCUPANCY column (the first column after the coordinates) 
+is used provides the values of \f$ w'\f$ that are used to calculate the position of the centre of mass.  The BETA column (the second column
+after the Cartesian coordinates) is used to provide the \f$ w \f$ values which are used in the the calculation of the displacement. 
+Please note that it is possible to use fractional values for beta and for the occupancy. However, we recommend you only do this when 
+you really know what you are doing however as the results can be rather strange. 
+
+In PDB files the atomic coordinates and box lengths should be in Angstroms unless 
+you are working with natural units.  If you are working with natural units then the coordinates 
+should be in your natural length unit.  For more details on the PDB file format visit http://www.wwpdb.org/docs.html.
+
+A different method is used to calculate the RMSD distance when you use TYPE=OPTIMAL on the input line.  In this case  the root mean square 
+deviation is calculated after the positions of geometric centers in the reference and instantaneous configurations are aligned AND after
+an optimal alignment of the two frames is performed so that motion due to rotation of the reference frame between the two structures is
+removed.  The equation for \f$d(X,X')\f$ in this case reads:
+
+\f[
+d(X,X') = \sqrt{ \sum_i \sum_\alpha^{x,y,z}  \frac{w_i}{\sum_j w_j}[ X_{i,\alpha}-com_\alpha(X)- \sum_\beta M(X,X',w')_{\alpha,\beta}({X'}_{i,\beta}-com_\beta(X')) ]^2 } 
+\f]
+
+where \f$ M(X,X',w') \f$ is the optimal alignment matrix which is calculated using the Kearsley \cite kearsley algorithm.  Again different sets of 
+weights are used for the alignment (\f$w'\f$) and for the displacement calcuations (\f$w\f$).
+This gives a great deal of flexibility as it allows you to use a different sets of atoms (which may or may not overlap) for the alignment and displacement 
+parts of the calculation. This may be very useful when you want to calculate how a ligand moves about in a protein cavity as you can use the protein as a reference
+system and do no alignment of the ligand.  
+
+(Note: when this form of RMSD is used to calculate the secondary structure variables (\ref ALPHARMSD, \ref ANTIBETARMSD and \ref PARABETARMSD 
+all the atoms in the segment are assumed to be part of both the alignment and displacement sets and all weights are set equal to one)
+
+Please note that there are a number of other methods for calculating the distance between the instantaneous configuration and a reference configuration
+that are available in plumed.  More information on these various methods can be found in the section of the manual on \ref dists.
 
 \par Examples
 
@@ -135,7 +150,7 @@ void RMSD::registerKeywords(Keywords& keys){
 }
 
 RMSD::RMSD(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),rmsd(log),squared(false)
+PLUMED_COLVAR_INIT(ao),squared(false)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -154,25 +169,32 @@ PLUMED_COLVAR_INIT(ao),rmsd(log),squared(false)
   if( !pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength()) )
       error("missing input file " + reference );
 
-  rmsd.set(pdb,type);
+  rmsd = metricRegister().create<RMSDBase>(type,pdb);
+  
+  std::vector<AtomNumber> atoms;
+  rmsd->getAtomRequests( atoms );
+  rmsd->setNumberOfAtoms( atoms.size() );
+  requestAtoms( atoms );
 
-  requestAtoms(pdb.getAtomNumbers());
-
-  derivs.resize(getNumberOfAtoms());
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
-  log.printf("  method for alignment : %s \n",rmsd.getMethod().c_str() );
+  log.printf("  method for alignment : %s \n",type.c_str() );
   if(squared)log.printf("  chosen to use SQUARED option for MSD instead of RMSD\n");
+}
 
+RMSD::~RMSD(){
+  delete rmsd;
 }
 
 
 // calculator
 void RMSD::calculate(){
-  double r=rmsd.calculate(getPositions(),derivs,squared);
-  setValue(r);
-  for(unsigned i=0;i<derivs.size();i++) setAtomsDerivatives(i,derivs[i]);
-  Tensor virial;
+  double r=rmsd->calculate( getPositions(), squared );
+
+  setValue(r); 
+  for(unsigned i=0;i<getNumberOfAtoms();i++) setAtomsDerivatives( i, rmsd->getAtomDerivative(i) );
+
+  Tensor virial; plumed_dbg_assert( !rmsd->getVirial(virial) );
   setBoxDerivativesNoPbc();
 }
 

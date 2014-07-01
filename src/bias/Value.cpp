@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -93,7 +93,7 @@ void BiasValue::registerKeywords(Keywords& keys){
   keys.use("ARG");
   componentsAreNotOptional(keys);
   // Should be _bias below
-  keys.addOutputComponent("bias.","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+  keys.addOutputComponent("_bias","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
                                             "these quantities will named with  the arguments of the bias followed by "
                                             "the character string _bias. These quantities tell the user how much the bias is "
                                             "due to each of the colvars.");
@@ -107,9 +107,7 @@ PLUMED_BIAS_INIT(ao)
  // addComponent("bias");
   for(unsigned i=0;i<getNumberOfArguments();++i){ 
 	//log<<getPntrToArgument(i)->getName()<<"\n";
-        string ss;
-        ss="bias."+getPntrToArgument(i)->getName();
-//        ss=getPntrToArgument(i)->getName()+"_bias";
+        string ss=getPntrToArgument(i)->getName()+"_bias";
 	addComponent(ss); componentIsNotPeriodic(ss);
   }
 }

@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -38,7 +38,7 @@ void CoordinationBase::registerKeywords( Keywords& keys ){
   keys.add("optional","NL_CUTOFF","The cutoff for the neighbour list");
   keys.add("optional","NL_STRIDE","The frequency with which we are updating the atoms in the neighbour list");
   keys.add("atoms","GROUPA","First list of atoms");
-  keys.add("atoms","GROUPB","Second list of atoms");
+  keys.add("atoms","GROUPB","Second list of atoms (if empty, N*(N-1)/2 pairs in GROUPA are counted)");
 }
 
 CoordinationBase::CoordinationBase(const ActionOptions&ao):
@@ -76,8 +76,13 @@ firsttime(true)
   }
   
   addValueWithDerivatives(); setNotPeriodic();
-  if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st);
-  else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
+  if(gb_lista.size()>0){
+    if(doneigh)  nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc(),nl_cut,nl_st);
+    else         nl= new NeighborList(ga_lista,gb_lista,dopair,pbc,getPbc());
+  } else {
+    if(doneigh)  nl= new NeighborList(ga_lista,pbc,getPbc(),nl_cut,nl_st);
+    else         nl= new NeighborList(ga_lista,pbc,getPbc());
+  }
   
   requestAtoms(nl->getFullAtomList());
  
@@ -108,7 +113,6 @@ CoordinationBase::~CoordinationBase(){
 
 void CoordinationBase::prepare(){
   if(nl->getStride()>0){
-    if(getExchangeStep()) error("Neighbor lists for this collective variable are not compatible with replica exchange, sorry for that!");
     if(firsttime || (getStep()%nl->getStride()==0)){
       requestAtoms(nl->getFullAtomList());
       invalidateList=true;
@@ -118,6 +122,7 @@ void CoordinationBase::prepare(){
       invalidateList=false;
       if(getExchangeStep()) error("Neighbor lists should be updated on exchange steps - choose a NL_STRIDE which divides the exchange stride!");
     }
+    if(getExchangeStep()) firsttime=true;
   }
 }
 
@@ -149,6 +154,9 @@ void CoordinationBase::calculate()
   Vector distance;
   unsigned i0=nl->getClosePair(i).first;
   unsigned i1=nl->getClosePair(i).second;
+
+  if(getAbsoluteIndex(i0)==getAbsoluteIndex(i1)) continue;
+
   if(pbc){
    distance=pbcDistance(getPosition(i0),getPosition(i1));
   } else {
@@ -156,7 +164,7 @@ void CoordinationBase::calculate()
   }
 
   double dfunc=0.;
-  ncoord += pairing(distance.modulo(), dfunc,i0,i1);
+  ncoord += pairing(distance.modulo2(), dfunc,i0,i1);
 
   deriv[i0] = deriv[i0] + (-dfunc)*distance ;
   deriv[i1] = deriv[i1] + dfunc*distance ;
@@ -164,9 +172,9 @@ void CoordinationBase::calculate()
  }
 
  if(!serial){
-   comm.Sum(&ncoord,1);
+   comm.Sum(ncoord);
    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
-   comm.Sum(&virial[0][0],9);
+   comm.Sum(virial);
  }
 
  for(unsigned i=0;i<deriv.size();++i) setAtomsDerivatives(i,deriv[i]);

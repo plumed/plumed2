@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -31,6 +31,10 @@
 
 #include <iostream>
 #include <string>
+
+#ifdef __PLUMED_HAS_ZLIB
+#include <zlib.h>
+#endif
 
 namespace PLMD{
 
@@ -62,17 +66,14 @@ void FileBase::test(){
 }
 
 FileBase& FileBase::link(FILE*fp){
+  plumed_massert(!this->fp,"cannot link an already open file");
   this->fp=fp;
   cloned=true;
   return *this;
 }
 
 FileBase& FileBase::flush(){
-  fflush(fp);
-  if(heavyFlush){
-    fclose(fp);
-    fp=std::fopen(const_cast<char*>(path.c_str()),"a");
-  }
+  if(fp) fflush(fp);
   return *this;
 }
 
@@ -96,30 +97,11 @@ FileBase& FileBase::link(Action&action){
   return *this;
 }
 
-FileBase& FileBase::open(const std::string& path,const std::string& mode){
-  plumed_massert(!cloned,"file "+path+" appears to be cloned");
-  eof=false;
-  err=false;
-  fp=NULL;
-  if(plumed){
-    this->path=path+plumed->getSuffix();
-    fp=std::fopen(const_cast<char*>(this->path.c_str()),const_cast<char*>(mode.c_str()));
-  }
-  if(!fp){
-    this->path=path;
-    fp=std::fopen(const_cast<char*>(this->path.c_str()),const_cast<char*>(mode.c_str()));
-  }
-  if(plumed) plumed->insertFile(*this);
-  plumed_massert(fp,"file " + path + "cannot be found");
-  return *this;
-}
-
-
 bool FileBase::FileExist(const std::string& path){
   FILE *ff=NULL;
   bool do_exist=false;
   if(plumed){
-    this->path=path+plumed->getSuffix();
+    this->path=appendSuffix(path,plumed->getSuffix());
     ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
   }
   if(!ff){
@@ -141,12 +123,17 @@ void        FileBase::close(){
   plumed_assert(!cloned);
   eof=false;
   err=false;
-  std::fclose(fp);
+  if(fp)   std::fclose(fp);
+#ifdef __PLUMED_HAS_ZLIB
+  if(gzfp) gzclose(gzFile(gzfp));
+#endif
   fp=NULL;
+  gzfp=NULL;
 }
 
 FileBase::FileBase():
   fp(NULL),
+  gzfp(NULL),
   comm(NULL),
   plumed(NULL),
   action(NULL),
@@ -160,11 +147,30 @@ FileBase::FileBase():
 FileBase::~FileBase()
 {
   if(plumed) plumed->eraseFile(*this);
-  if(!cloned && fp) fclose(fp);
+  if(!cloned && fp)   fclose(fp);
+#ifdef __PLUMED_HAS_ZLIB
+  if(!cloned && gzfp) gzclose(gzFile(gzfp));
+#endif
 }
 
 FileBase::operator bool()const{
   return !eof;
 }
+
+std::string FileBase::appendSuffix(const std::string&path,const std::string&suffix){
+  std::string ret=path;
+  std::string ext=Tools::extension(path);
+  if(ext=="gz"){
+    int l=path.length()-3;
+    plumed_assert(l>=0);
+    ret=ret.substr(0,l);
+  }
+  ret+=suffix;
+  if(ext=="gz")ret+=".gz";
+  return ret;
+}
+
+
+
 
 }

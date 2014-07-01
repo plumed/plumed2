@@ -1,10 +1,10 @@
 -include Makefile.conf
 
 
-SRCDIRS = src test
-SUBDIRS = $(SRCDIRS) user-doc developer-doc regtest
+SRCDIRS := src test
+SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest
 
-SUBDIRSCLEAN=$(addsuffix .clean,$(SUBDIRS))
+SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
 .PHONY: all lib clean $(SRCDIRS) doc docclean check
@@ -57,6 +57,10 @@ fullclean:
 	make clean
 	rm -f Makefile.conf
 	rm -f sourceme.sh
+	rm -fr autoconf/auto*
+	rm -f autoconf/Makefile.conf
+	rm -f autoconf/sourceme.sh
+	rm -f autoconf/config.*
 
 
 docclean:

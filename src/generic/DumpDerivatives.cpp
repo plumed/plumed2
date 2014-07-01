@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/ActionPilot.h"
+#include "core/ActionWithValue.h"
 #include "core/ActionWithArguments.h"
 #include "core/ActionRegister.h"
 #include "tools/File.h"
@@ -96,9 +97,11 @@ fmt("%15.10f")
   log.printf("  with format %s\n",fmt.c_str());
   unsigned nargs=getNumberOfArguments();
   if( nargs==0 ) error("no arguments specified");
+  (getPntrToArgument(0)->getPntrToAction())->turnOnDerivatives();
   unsigned npar=getPntrToArgument(0)->getNumberOfDerivatives();
   if( npar==0 ) error("one or more arguments has no derivatives");
   for(unsigned i=1;i<nargs;i++){
+      (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
       if( npar!=getPntrToArgument(i)->getNumberOfDerivatives() ) error("the number of derivatives must be the same in all values being dumped");
   }
   checkRead();

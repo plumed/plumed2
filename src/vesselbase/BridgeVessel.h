@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -39,13 +39,14 @@ it is created in a different Action however.  At the moment this is used for reg
 
 class BridgeVessel : public Vessel {
 private:
-  std::vector<double> forces;
   unsigned inum;
   std::vector<double> mynumerical_values;
   ActionWithVessel* myOutputAction;
   ActionWithValue* myOutputValues;
 public:
   BridgeVessel( const VesselOptions& );
+/// Does this have derivatives
+  bool hasDerivatives();
 /// Resize the quantities in the vessel
   void resize();
 /// Setup the action we are outputting to
@@ -54,8 +55,6 @@ public:
   bool applyForce( std::vector<double>& forces );
 /// Should not be called
   std::string description();
-/// Want to get rid of this function
-  unsigned getNumberOfTerms(){ return 2; }
 /// Jobs to do before the task list starts
   void prepare();
 /// Actually do the calculation

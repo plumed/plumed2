@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -23,6 +23,10 @@
 #include "core/ActionRegister.h"
 #include "core/ActionAtomistic.h"
 #include "core/Atoms.h"
+#include "tools/IFile.h"
+#include "tools/Tools.h"
+#include <string>
+#include <vector>
 
 using namespace std;
 
@@ -32,11 +36,19 @@ namespace generic{
 //+PLUMEDOC GENERIC GROUP
 /*
 Define a group of atoms so that a particular list of atoms can be referenced with a single label
-in definitions of CVs or virtual atoms.
+in definitions of CVs or virtual atoms. 
+
+Atoms can be listed as comma separated numbers (i.e. 1,2,3,10,45,7,9,..) , simple positive ranges
+(i.e. 20-40), ranges with a stride either positive or negative (i.e. 20-40:2 or 80-50:-2) or as
+combinations of all the former methods (1,2,4,5,10-20,21-40:2,80-50:-2). 
+
+Finally, lists can be imported from ndx files (GROMACS format). Use NDX_FILE to set the name of 
+the index file and NDX_GROUP to set the name of the group to be imported (default is first one).
 
 Notice that this command just creates a shortcut, and does not imply any real calculation.
 It is just convenient to better organize input files. Might be used in combination with
 the \ref INCLUDE command so as to store long group definitions in a separate file.
+
 
 \par Examples
 
@@ -72,6 +84,15 @@ PRINT ARG=c FILE=colvar
 (see also \ref INCLUDE, \ref COORDINATION, and \ref PRINT).
 The groups.dat file could be very long and include lists of thousand atoms without cluttering the main plumed.dat file.
 
+A GROMACS index file can also be imported
+\verbatim
+# import group named 'protein' from file index.ndx
+pro: GROUP NDX_FILE=index.ndx NDX_GROUP=protein
+# dump all the atoms of the protein on a trajectory file
+DUMPATOMS ATOMS=pro FILE=traj.gro
+\endverbatim
+(see also \ref DUMPATOMS)
+
 */
 //+ENDPLUMEDOC
 
@@ -95,6 +116,39 @@ Group::Group(const ActionOptions&ao):
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
+  std::string ndxfile,ndxgroup;
+  parse("NDX_FILE",ndxfile);
+  parse("NDX_GROUP",ndxgroup);
+  if(ndxfile.length()>0 && atoms.size()>0) error("either use explicit atom list or import from index file");
+  if(ndxfile.length()==0 && ndxgroup.size()>0) error("NDX_GROUP can be only used is NDX_FILE is also used");
+
+  if(ndxfile.length()>0){
+    if(ndxgroup.size()>0) log<<"  importing group '"+ndxgroup+"'";
+    else                  log<<"  importing first group";
+    log<<" from index file "<<ndxfile<<"\n";
+    
+    IFile ifile;
+    ifile.open(ndxfile);
+    std::string line;
+    std::string groupname;
+    bool firstgroup=true;
+    bool groupfound=false;
+    while(ifile.getline(line)){
+      std::vector<std::string> words=Tools::getWords(line);
+      if(words.size()>=3 && words[0]=="[" && words[2]=="]"){
+        if(groupname.length()>0) firstgroup=false;
+        groupname=words[1];
+        if(groupname==ndxgroup || ndxgroup.length()==0) groupfound=true;
+      } else if(groupname==ndxgroup || (firstgroup && ndxgroup.length()==0)){
+        for(unsigned i=0;i<words.size();i++){
+          AtomNumber at; Tools::convert(words[i],at);
+          atoms.push_back(at);
+        }
+      }
+    }
+    if(!groupfound) error("group has not been found in index file");
+  }
+
   this->atoms.insertGroup(getLabel(),atoms);
   log.printf("  of atoms ");
   for(unsigned i=0;i<atoms.size();i++) log.printf(" %d",atoms[i].serial());
@@ -105,6 +159,8 @@ void Group::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("atoms", "ATOMS", "the numerical indexes for the set of atoms in the group");
+  keys.add("optional", "NDX_FILE", "the name of index file (gromacs syntax)");
+  keys.add("optional", "NDX_GROUP", "the name of the group to be imported (gromacs syntax) - first group found is used by default");
 }
 
 Group::~Group(){

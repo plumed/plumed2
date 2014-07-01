@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -30,7 +30,6 @@ namespace PLMD{
 
 class Log;
 class PDB;
-class OptimalAlignment;
 
 /** \ingroup TOOLBOX
 A class that implements RMSD calculations
@@ -63,20 +62,15 @@ class RMSD
 {
   enum AlignmentMethod {SIMPLE, OPTIMAL, OPTIMAL_FAST};
   AlignmentMethod alignmentMethod;
+// Reference coordinates
   std::vector<Vector> reference;
+// Weights for alignment
   std::vector<double> align;
+// Weights for deviation
   std::vector<double> displace;
-  OptimalAlignment *myoptimalalignment;
-  Log *log;
 public:
 /// Constructor
-  RMSD(Log & log );
-/// a copy constructor
-  RMSD(const RMSD &);
-/// assignment
-  RMSD& operator=(const RMSD& );
-/// the destructor needs to delete the myalignment object eventually
-  ~RMSD();
+  RMSD();
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure
@@ -96,16 +90,15 @@ public:
   		                     const  std::vector<double>  & displace,
   		                     const std::vector<Vector> & positions,
   		                     const std::vector<Vector> & reference ,
-  		                     Log* &log,
-  		                     std::vector<Vector>  & derivatives, bool squared=false);
-template <bool safe>
+  		                     std::vector<Vector>  & derivatives, bool squared=false)const;
+template <bool safe,bool alEqDis>
   double optimalAlignment(const  std::vector<double>  & align,
                           const  std::vector<double>  & displace,
                           const std::vector<Vector> & positions,
                           const std::vector<Vector> & reference ,
-                          std::vector<Vector>  & derivatives, bool squared=false);
+                          std::vector<Vector>  & derivatives, bool squared=false)const;
 /// Compute rmsd
-  double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false);
+  double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false)const;
 };
 
 }

@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -30,8 +30,6 @@
 namespace PLMD {
 
 class SingleDomainRMSD;
-class DRMSD;
-class RMSD;
 
 namespace secondarystructure {
 
@@ -43,8 +41,6 @@ class SecondaryStructureRMSD :
   public vesselbase::ActionWithVessel
 {
 private:
-/// Are we using pbc
-  bool pbcon;
 /// Tempory integer to say which refernce configuration is the closest
   unsigned closest;
 /// The type of rmsd we are calculating
@@ -53,16 +49,11 @@ private:
   DynamicList<AtomNumber> all_atoms;
 /// The atoms involved in each of the secondary structure segments
   std::vector< std::vector<unsigned> > colvar_atoms;
-/// The reference configurations
-  std::vector<RMSD*> secondary_rmsd;
-  std::vector<DRMSD*> secondary_drmsd;
-/// Stuff for derivatives
-  std::vector< std::vector<Vector> > der;
-  std::vector<Tensor> vir;
+/// The list of reference configurations
+  std::vector<SingleDomainRMSD*> references;
 /// Everything for controlling the updating of neighbor lists
   int updateFreq;
-  unsigned lastUpdate;
-  bool reduceAtNextStep;
+  bool firsttime;
 /// Variables for strands cutoff
   bool align_strands;
   double s_cutoff;
@@ -75,7 +66,7 @@ private:
   unsigned getAtomIndex( const unsigned& iatom );
 protected:
 /// Get the atoms in the backbone
-  void readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths );
+  void readBackboneAtoms( const std::string& backnames, std::vector<unsigned>& chain_lengths );
 /// Add a set of atoms to calculat ethe rmsd from
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Set a reference configuration
@@ -88,10 +79,12 @@ public:
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();
+  void turnOnDerivatives();
   void prepare();
+  void finishTaskListUpdate();
   void calculate();
-  void performTask( const unsigned& j );
-  void clearDerivativesAfterTask( const unsigned& ){}
+  void performTask();
+  void clearDerivativesAfterTask( const unsigned& );
   void apply();
   void mergeDerivatives( const unsigned& , const double& );
   bool isPeriodic(){ return false; }
@@ -109,7 +102,7 @@ unsigned SecondaryStructureRMSD::getNumberOfDerivatives(){
 
 inline
 unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& iatom ){
-  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
+  return all_atoms.linkIndex( colvar_atoms[getCurrentTask()][iatom] );
 }
 
 }

@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -23,11 +23,16 @@
 #define __PLUMED_analysis_Analysis_h
 
 #include "core/ActionPilot.h"
+#include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
+#include "vesselbase/ActionWithVessel.h"
 
 #define PLUMED_ANALYSIS_INIT(ao) Action(ao),Analysis(ao)
 
 namespace PLMD {
+
+class ReferenceConfiguration;
+
 namespace analysis {
 
 /**
@@ -39,7 +44,9 @@ is information as to how to go about implementing a new analysis method.
 
 class Analysis :
   public ActionPilot,
-  public ActionWithArguments
+  public ActionAtomistic,
+  public ActionWithArguments,
+  public vesselbase::ActionWithVessel
   {
 private:
 /// Are we running only once for the whole trajectory
@@ -68,18 +75,20 @@ private:
   std::vector<Value*> biases;
 /// The piece of data we are inserting
   unsigned idata;
-/// Tempory vector to store values of arguments
-  std::vector<double> args;
-/// The data we are going to analyze
-  std::vector<std::vector<double> > data;
 /// The weights of all the data points
-  std::vector<double> logweights, weights;
+  std::vector<double> logweights;
 /// Have we analyzed the data for the first time
   bool firstAnalysisDone;
 /// The value of the old normalization constant
   double norm, old_norm;
 /// The format to use in output files
   std::string ofmt;
+/// Tempory vector to store values of arguments
+  std::vector<double> current_args;
+/// List of argument names 
+  std::vector<std::string> argument_names;
+/// The type of metric we are using to measure distances
+  std::string metricname;
 /// The checkpoint file
   OFile rfile;
 /// Read in data from a file
@@ -89,21 +98,31 @@ private:
 /// another. You should never need to use it.  If you think you need it
 /// you probably need getNormalization()
   double retrieveNorm() const ;
+/// Get the metric if we are using malonobius distance and flexible hill
+  std::vector<double> getMetric() const ;
 protected:
 /// This is used to read in output file names for analysis methods.  When
 /// this method is used and the calculation is not restarted old analysis
 /// files are backed up.
   void parseOutputFile( const std::string& key, std::string& filename );
+/// The data we are going to analyze
+  std::vector<ReferenceConfiguration*> data;
+/// Get the name of the metric we are using to measure distances
+  std::string getMetricName() const ;
 /// Return the number of arguments (this overwrites the one in ActionWithArguments)
   unsigned getNumberOfArguments() const;
 /// Return the number of data points
   unsigned getNumberOfDataPoints() const;
+/// Return the weight of the ith point
+  double getWeight( const unsigned& idata ) const ;
 /// Retrieve the ith point
   void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Returns true if argument i is periodic together with the domain 
   bool getPeriodicityInformation(const unsigned& i, std::string& dmin, std::string& dmax);
 /// Return the normalization constant
   double getNormalization() const;
+/// Return the set temperature (N.B. k_B T is what is returned by this function)
+  double getTemp () const;
 /// Are we analyzing each data block separately (if we are not this also returns the old normalization )
   bool usingMemory() const; 
 /// Convert the stored log weights to proper weights
@@ -124,7 +143,29 @@ public:
   void apply(){}
   void runFinalJobs();
   void runAnalysis();
+  void lockRequests();
+  void unlockRequests();
+  void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
+  bool isPeriodic(){ plumed_error(); return false; }
+  unsigned getNumberOfDerivatives(){ plumed_error(); return 0; }
 };
+
+inline
+std::string Analysis::getMetricName() const {
+  return metricname;
+}
+
+inline 
+void Analysis::lockRequests(){
+  ActionAtomistic::lockRequests();
+  ActionWithArguments::lockRequests();
+} 
+
+inline
+void Analysis::unlockRequests(){ 
+  ActionAtomistic::unlockRequests();
+  ActionWithArguments::unlockRequests();
+}
 
 inline
 unsigned Analysis::getNumberOfDataPoints() const {
@@ -133,17 +174,6 @@ unsigned Analysis::getNumberOfDataPoints() const {
      return data.size();
   } else {
      return mydatastash->getNumberOfDataPoints();
-  }
-}
-
-inline
-void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
-  if( !reusing_data ){
-      plumed_dbg_assert( idata<weights.size() &&  point.size()==getNumberOfArguments() );
-      for(unsigned i=0;i<point.size();++i) point[i]=data[idata][i];
-      weight=weights[idata];
-  } else {
-      return mydatastash->getDataPoint( idata, point, weight );
   }
 }
 

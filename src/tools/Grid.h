@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -173,6 +173,10 @@ public:
  virtual void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
 /// Scale all grid values and derivatives by a constant factor
  virtual void scaleAllValuesAndDerivatives( const double& scalef );
+/// Takes the scalef times the logarithm of all grid values and derivatives 
+ virtual void logAllValuesAndDerivatives( const double& scalef );
+/// Set the minimum value of the grid to zero and translates accordingly
+ virtual void setMinToZero();
 /// apply function: takes  pointer to  function that accepts a double and apply 
  virtual void applyFunctionAllValuesAndDerivatives( double (*func)(double val), double (*funcder)(double valder) );
 /// add a kernel function to the grid

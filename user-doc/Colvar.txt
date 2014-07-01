@@ -1,97 +1,60 @@
 /**
 
-\page Colvar Collective Variables
+\page colvarintro Collective variables
 
 Chemical systems contain an enormous number atoms, which, in most cases makes it simply impossible for
 us to understand anything by monitoring the atom postions directly.  Consquentially,
-we introduce Collective variables (CVs) that describe the chemical processes we are 
-interested in and monitor these simpler quantities instead.  These CVs are used in all of the methods 
-implemented in PLUMED - they're values can be monitored using \ref PRINT, \ref Function of them can be calculated
-or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in PLUMED.  
-Before doing any of these things however we first have to inform PLUMED how to calculate them.    
- 
-\section atomSpecs Specifying Atoms
+we introduce Collective variables (CVs) that describe the chemical processes we are
+interested in and monitor these simpler quantities instead.  These CVs are used in many of the methods
+implemented in PLUMED - there values can be monitored using \ref PRINT, \ref Function of them can be calculated
+or they can be analyzed or biased using the \ref Analysis and \ref Bias "Biasing" methods implemented in PLUMED.
+Before doing any of these things however we first have to tell PLUMED how to calculate them.
 
-The vast majority of the CVs implemented in PLUMED are calculated from a list of atom positions.  Within PLUMED
-atoms are always specified according to their numerical indices in the molecular dynamics input file.  This can
-be done either using a comma separated list of numbers or, if a long list atom of contiguous atoms is required, 
-by using the shortcut 10-100, which specifies all the atom indexes between 10 and 100 (including 10 and 100).  So for example:
+The simplest collective variables that are implemented in PLUMED 2 take in a
+set of atomic positions and output one or multiple scalar CV values.  Information on these variables is given on the page entitled 
+\ref Colvar while information as to how sets of atoms can be selected
+can be found in the pages on \ref Group.  Please be aware that PLUMED contains implementations of many other collective variables 
+but that the input for these variables may be less transparent when it is first encourntered.
+In particular, the page on \ref dists describes the various ways that you can calculate the distance from a particular reference
+configuration.  So you will find instructions on how to calculate the RMSD distance from the folded state of a protein here.
+Meanwhile, the page on \ref Function describes the various functions of collective variables that can be used in the
+code.  This is a very powerful feature of PLUMED as you can use the \ref Function commands to calculate any function or 
+combination of the simple collective variables listed on the page \ref Colvar.  Lastly the page on \ref mcolv describes MultiColvars.  
+MultiColvars allow you to use many different colvars and allow us to
+implement all these collective variables without implementing having an unmanigiably large ammount of code.  For some things (e.g.
+\ref DISTANCES GROUPA=1 GROUPB=2-100 LESS_THAN={RATIONAL R_0=3}) there are more computationally efficient options available in plumed
+(e.g. \ref COORDINATION).  However, MultiColvars are worth investigating as they provide a flexible syntax for many quite-complex CVs.
 
-\verbatim
-TORSION ATOMS=1,2,3,4
-\endverbatim
+\page Colvar CV Documentation
 
-could also be specified using:
-
-\verbatim
-TORIONS ATOMS=1-4
-\endverbatim
-
-Ranges of atom can also be defined with a stride. For example:
-
-\verbatim
-COM ATOMS=1,11,21,31,41,51
-\endverbatim
-
-could also be specified using:
-
-\verbatim
-COM ATOMS=1-51:10
-\endverbatim
-
-In addition, for certain colvars, pdb files can be read in using the following keywords:
-
-@TOPOLOGY@
-
-The read in pdb files are used by PLUMED to define things like residues, the backbone atoms and so on.  These can then be
-used within the input to colvars to make inputting the lists of atoms involved more straightforward.  Documentation for 
-how these shortcuts can be used can be found in the documentation for the various CVs.
-
-Lastly, if you have a list of colvar that is particularly laborious to write out that you need to use multiple times in the 
-input you can create a static group of atoms and then use the label of the group to specify the correpsonding list of 
-atoms in your various colvars.  For more details see \subpage GROUP.
-
-\section vatoms Virtual Atoms
-
-Sometimes, when calculating a colvar, you may not want to use the positions of a number of atoms directly.  Instead
- you may wish to use the position of a virtual atom whose position is generated based on the positions of a collection 
-of other atoms.  For example you might want to use the center of mass of a group of atoms.  Plumed has a number of routines
-for calculating the positions of these virtual atoms from lists of atoms:
-
-@VATOM@
-
-To specify to a colvar that you want to use the position of a virtual atom to calculate a colvar rather than one of the atoms
-in your system you simply use the label for your virtual atom in place of the usual numerical index.  Virtual
-atoms and normal atoms can be mixed together in the input to colvars as shown below:
-
-\verbatim
-COM ATOMS=1,10 LABEL=com1
-DISTANCE ATOMS=11,com1
-\endverbatim 
-
-If you don't want to calculate CVs from the virtual atom.  That is to say you just want to monitor the position of a virtual atom 
-(or any set of atoms) over the course of your trajectory you can do this using \ref DUMPATOMS.
-
-\section mols Molecules
-
-PLUMED is designed so that for the majority of the CVs implemented the periodic boundary conditions are treated 
-in the same manner as they would be treated in the host code.  In some codes this can be problematic when the colvars
-you are using involve some property of a molecule.  These codes allow the atoms in the molecules to become separated by 
-periodic boundaries, a fact which PLUMED could only deal with were the topology passed from the MD code to PLUMED.  Making this
-work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
-in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
-in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In PLUMED 1 this was done
-using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be acchieved using the \subpage WHOLEMOLECULES command.
-
-\section cvavail CV Documentation
-
-The following list contains all the colvars that are currently implemented in PLUMED 2.
+The following list contains descriptions of a number of the colvars that are currently implemented in PLUMED 2.
 
 @COLVAR@
 
-\section mcolv MultiColvar Documentation
+\page dists Distances from reference configurations
 
-Often you do not need one of the collective variables described in the previous section.  What you want instead is a 
+One colvar that has been shown to be very sucessful in studying protein folding is the distance between the instantaneous configuration
+and a reference configuration - often the structure of the folded state.  When the free energy of a protein is shown as a function
+of this collective variable there is a minima for low values of the CV, which is due to the folded state of the protein.  There is 
+then a second minima at higher values of the CV, which is the minima corresponding to the unfolded state.
+
+A slight problem with this sort of collective variable is that there are many different ways of calculating the distance from a 
+particular reference structure.  The simplest - adding together the distances by which each of the atoms has been translated in
+going from the reference configuration to the instantanous configuration - is not particularly sensible.  A distance calculated
+in this way does not neglect translation of the center of mass of the molecule and rotation of the frame of reference.  A common practise
+is thus to remove these components by calculating the \ref RMSD distance between the reference and instantaneous configurations.
+This is not the only way to calculate the distance, however.  One could also calculate the total ammount by which a large number 
+of collective variables change in moving from the reference to the instaneous configurations.  One could even combine RMSD distances
+with the ammount the collective variables change.  A full list of the ways distances can be measured in PLUMED is given below:
+
+@DCOLVAR@
+
+These options for calculating distances are re-used in a number of places in the code.  For instance they are used in some of the 
+analysis algorithms that are implemented in PLUMED and in \ref PATH collective variables. 
+
+\page mcolv MultiColvar Documentation
+
+Oftentimes, when you do not need one of the collective variables described elsewhere in the manual, what you want instead is a 
 function of a distribution of collective variables of a particular type.  For instance you might need to calculate a 
 minimum distance or the number of coordination numbers greater than a 3.0.  To avoid dupilcating the code to calculate
 an angle or distance many times and to make it easier to implement very complex collective variables PLUMED provides
@@ -137,10 +100,37 @@ accuracy with which you are computing the quantity of interest.
 Once you have specified the base quanties that are to be calculated from the atoms involved and any parameters
 you need to specify what function of these base quanties is to be calculated.  For most multicolvars you can calculate 
 the minimum, the number less than a target value, the number within a certain range, the number more than a target
-value and the average value directly.  In addition, the following more complex functions of the distribution of values 
-can be computed: 
+value and the average value directly.  
+
+\section multicolvarfunction MultiColvar functions
+
+As well as the relatively simple quantities described above more complex functions of the distribution of values for the  
+base colvars can be computed by employing multicolvars in conjuction with the following actions: 
 
 @MCOLVARF@ 
+
+\section multicolvarbias MultiColvar bias
+
+There may be occasitions when you want add restraints on many collective variables. For instance if you are studying a cluster
+you might want to add a wall on the distances between each of the atoms and the center of mass of the cluster in order to
+prevent the cluster subliming.  Alternatively, you may wish to insist that a particular set of atoms in your system all have a 
+coordination number greater than 2.  You can add these sorts of restraints by employing the following biases, which all act 
+on the set of collective variable values calculated by a multicolvar.  So for example the following set of commands:
+
+\verbatim
+COM ATOMS=1-20 LABEL=c1
+DISTANCES GROUPA=c1 GROUPB=1-20 LABEL=d1
+UWALLS DATA=d1 AT=2.5 KAPPA=0.2 LABEL=sr
+\endverbatim
+
+creates the aforementioned set of restraints on the distances between the 20 atoms in a cluster and the center of mass of the cluster.
+
+The list of biases of this type are as follows:
+
+@MCOLVARB@
+
+Notice that (in theory) you could also use this functionality to add additional terms to your forcefield or to implement your 
+forcefield.
 
 */
 

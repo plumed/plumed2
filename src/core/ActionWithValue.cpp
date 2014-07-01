@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -53,6 +53,7 @@ void ActionWithValue::useCustomisableComponents(Keywords& keys){
 
 ActionWithValue::ActionWithValue(const ActionOptions&ao):
   Action(ao),
+  noderiv(true),
   numericalDerivatives(false)
 {
   if( keywords.exists("NUMERICAL_DERIVATIVES") ) parseFlag("NUMERICAL_DERIVATIVES",numericalDerivatives);
@@ -202,6 +203,18 @@ void ActionWithValue::componentIsPeriodic( const std::string& name, const std::s
   values[kk]->setDomain(min,max);
 }
 
+void ActionWithValue::turnOnDerivatives(){
+  // Turn on the derivatives
+  noderiv=false;
+  // Resize the derivatives 
+  for(unsigned i=0;i<values.size();++i) values[i]->resizeDerivatives( getNumberOfDerivatives() );
+  // And turn on the derivatives in all actions on which we are dependent
+  for(unsigned i=0;i<getDependencies().size();++i){
+      ActionWithValue* vv=dynamic_cast<ActionWithValue*>( getDependencies()[i] );
+      if(vv) vv->turnOnDerivatives();
+  }
+}
+
 Value* ActionWithValue::getPntrToComponent( const std::string& name ){
   int kk=getComponent(name);
   return values[kk]; 
@@ -212,12 +225,4 @@ Value* ActionWithValue::getPntrToComponent( int n ){
   return values[n];
 }
 
-void ActionWithValue::mergeFieldDerivatives( const std::vector<double>& derivatives, Value* val_out ){
-  plumed_assert( derivatives.size()==getNumberOfComponents() );
-  for(unsigned i=0;i<derivatives.size();++i){
-      for(unsigned j=0;j<getPntrToComponent(i)->getNumberOfDerivatives();++j){
-          val_out->addDerivative( j, derivatives[i]*getPntrToComponent(i)->getDerivative(j) );
-      }
-  }    
-}
 }

@@ -248,7 +248,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool             bPMETuneTry = FALSE, bPMETuneRunning = FALSE;
 
 /* PLUMED */
-    int plumedNeedsEnergy;
+    int plumedNeedsEnergy=0;
+    int plumedWantsToStop=0;
 /* END PLUMED */
 
 #ifdef GMX_FAHCORE
@@ -730,6 +731,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* PLUMED */
     if(plumedswitch){
+/* detect plumed API version */
+      int pversion=0;
+      plumed_cmd(plumedmain,"getApiVersion",&pversion);
+/* setting kbT is only implemented with api>1) */
+      real kbT=ir->opts.ref_t[0]*BOLTZ;
+      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
+
       if(cr->ms && cr->ms->nsim>1) {
         if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
         if(PAR(cr)){
@@ -1335,6 +1343,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
               plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
               plumed_cmd(plumedmain,"prepareCalc",NULL);
+              plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
               plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
               plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
               plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
@@ -1354,9 +1363,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               }
               if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
                  do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
+              if(plumedWantsToStop) ir->nsteps=step_rel+1;
               if(bHREX)
                  plumed_cmd(plumedmain,"GREX cacheLocalUNow",&enerd->term[F_EPOT]);
-
             }
             /* END PLUMED */
         }

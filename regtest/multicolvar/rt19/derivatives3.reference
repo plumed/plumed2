@@ -1,4 +1,4 @@
-#! FIELDS time parameter d3.between-1 d3.between-2 d3n.between-1 d3n.between-2
+#! FIELDS time parameter d3.b1 d3.b2 d3n.b1 d3n.b2
  0.000000 0  0.67792 -0.31961  0.67792 -0.31961
  0.000000 1 -0.00874  0.00412 -0.00874  0.00412
  0.000000 2  0.59788 -0.28188  0.59788 -0.28188

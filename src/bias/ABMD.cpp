@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -64,7 +64,7 @@ the system is moving towards the desired arrival point and which damps the
 fluctuations when the system attempts to move in the opposite direction. As in the
 case of the ratchet and pawl system, propelled by thermal motion of the solvent
 molecules, the biasing potential does not exert work on the system. \f$\eta(t)\f$ is
-an additional white noise acting on the minimum position of the bias.
+an additional white noise acting on the minimum position of the bias. 
 
 \par Examples
 The following input sets up two biases, one on the distance between atoms 3 and 5
@@ -74,7 +74,7 @@ using TO and the two strength using KAPPA. The total energy of the bias is print
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
 ABMD ARG=d1,d2 TO=1.0,1.5 KAPPA=5.0,5.0 LABEL=abmd
-PRINT ARG=abmd.bias,abmd.min_1,abmd.min_2
+PRINT ARG=abmd.bias,abmd.d1_min,abmd.d2_min
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
 
@@ -107,10 +107,9 @@ void ABMD::registerKeywords(Keywords& keys){
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("force2","default","the instantaneous value of the squared force due to this bias potential");
-//  keys.addOutputComponent("_min","default","");
-  keys.addOutputComponent("min_","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
-                                            "These quantities will be named as min_# and the number of the argument to which they refer."
-                                            "These quantities tell the user the minimum value assumed by rho_m(t).");
+  keys.addOutputComponent("_min","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                                 " These quantities will be named with the arguments of the bias followed by "
+                                 "the character string _min. These quantities tell the user the minimum value assumed by rho_m(t).");
 }
 
 ABMD::ABMD(const ActionOptions&ao):
@@ -143,11 +142,9 @@ random(getNumberOfArguments())
   log.printf("\n");
 
   for(unsigned i=0;i<getNumberOfArguments();i++) {
-     char str_min[6]; 
-     sprintf(str_min,"min_%u",i+1); 
-//     std::string str_min=getPntrToArgument(i)->getName()+"_min";
-     addComponent(str_min); 
-     componentIsNotPeriodic(str_min);
+     std::string str_min=getPntrToArgument(i)->getName()+"_min";
+     addComponent(str_min); componentIsNotPeriodic(str_min);
+     if(min[i]!=-1.0) getPntrToComponent(str_min)->set(min[i]);
   }
   for(unsigned i=0;i<getNumberOfArguments();i++) {random[i].setSeed(-seed[i]);}
   addComponent("bias"); componentIsNotPeriodic("bias");
@@ -162,15 +159,19 @@ void ABMD::calculate(){
     const double cv=difference(i,to[i],getArgument(i));
     const double cv2=cv*cv;
     const double k=kappa[i];
+    double noise=0.;
     double diff=temp[i];
-    if(cv2<=diff) { diff=0.; temp[i]=0.; }
-    double noise = 2.*random[i].Gaussian()*diff;
+    if(diff>0) { 
+      noise = 2.*random[i].Gaussian()*diff;
+      if(cv2<=diff) { diff=0.; temp[i]=0.; }
+    }
 
     // min < 0 means that the variable has not been used in the input file, so the current position of the CV is used
     // cv2 < min means that the collective variable is nearer to the target value than at any other previous time so
     // min is set to the CV value
-    if(min[i]<0.||cv2<min[i]) min[i] = cv2; 
-    else {
+    if(min[i]<0.||cv2<min[i]) { 
+      min[i] = cv2; 
+    } else {
       // otherwise a noise is added to the minimum value
       min[i] += noise;  
       const double f = -2.*k*(cv2-min[i])*cv;
@@ -178,11 +179,9 @@ void ABMD::calculate(){
       ene += 0.5*k*(cv2-min[i])*(cv2-min[i]);
       totf2+=f*f;
     }
-    char str_min[6]; 
-    sprintf(str_min,"min_%u",i+1); 
-//    std::string str_min=getPntrToArgument(i)->getName()+"_min";
+    std::string str_min=getPntrToArgument(i)->getName()+"_min";
     getPntrToComponent(str_min)->set(min[i]);
-  };
+  }
   getPntrToComponent("bias")->set(ene);
   getPntrToComponent("force2")->set(totf2);
 }

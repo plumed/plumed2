@@ -7,7 +7,7 @@ PEOPLE          : list of authors
 README          : this file
 README.git      : quick reference for git
 configurations/ : template configuration files
-configure.sh    : configuration script
+configure       : configuration script
 developer-doc   : developer documentation
 patches         : set of diff and patch scripts, needed to embed plumed in MD programs
 regtest         : extensive set of regression tests, including reference results
@@ -34,7 +34,7 @@ Needed software:
 
 Quick compilation instructions:
 * configure for your system:
-> ./configure.sh
+> ./configure
 * if necessary, edit Makefile.conf
 * configure your environment
 > source ./sourceme.sh

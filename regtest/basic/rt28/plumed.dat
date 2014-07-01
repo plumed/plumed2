@@ -30,7 +30,7 @@ LABEL=c
 ... CONTACTMAP
 
 PRINT ...
-  ARG=a,b,c.contact1,c.contact5
+  ARG=a,b,c.contact_1,c.contact_5
   FILE=colvar
 ... PRINT
 

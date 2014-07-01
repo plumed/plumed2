@@ -17,4 +17,9 @@ imdapi.tar.gz:
 clean:
 	rm -fr imdapi.tar.gz *.c *.h *.$(SOEXT) *.o
 
+obj: all
+
+links:
+	# do nothing
+
 

@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -35,6 +35,7 @@ namespace colvar {
 //+PLUMEDOC COLVAR CONTACTMAP
 /*
 Calculate the distances between a number of pairs of atoms and transform each distance by a switching function.
+
 The transformed distance can be compared with a set of reference values in order to calculate the squared distance
 between two contact maps.
 
@@ -103,7 +104,7 @@ void ContactMap::registerKeywords( Keywords& keys ){
   keys.reset_style("SWITCH","compulsory"); 
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
   keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
-  keys.addOutputComponent("contact","COMPONENTS","By not using SUM or CMDIST each contact will be stored in a component");
+  keys.addOutputComponent("contact_","default","By not using SUM or CMDIST each contact will be stored in a component");
 }
 
 ContactMap::ContactMap(const ActionOptions&ao):
@@ -134,7 +135,7 @@ docmdist(false)
 
      // Add a value for this contact
      std::string num; Tools::convert(i,num);
-     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact"+num); componentIsNotPeriodic("contact"+num);}
+     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact_"+num); componentIsNotPeriodic("contact_"+num);}
   }
   // Create neighbour lists
   nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
@@ -214,7 +215,7 @@ void ContactMap::calculate(){
       }
 
       double dfunc=0.;
-      coord = sfs[i].calculate(distance.modulo(), dfunc) - reference[i];
+      coord = sfs[i].calculateSqr(distance.modulo2(), dfunc) - reference[i];
       if( dosum ) {
          deriv[i0] = deriv[i0] + (-dfunc)*distance ;
          deriv[i1] = deriv[i1] + dfunc*distance ;

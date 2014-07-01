@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -27,6 +27,7 @@
 #include "tools/Pbc.h"
 #include "core/ActionWithValue.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "vesselbase/ActionWithInputVessel.h"
 #include "vesselbase/BridgeVessel.h"
 #include "MultiColvarBase.h"
 
@@ -43,9 +44,10 @@ coordination number inside that part of the cell.
 class ActionVolume :
   public ActionAtomistic,
   public ActionWithValue,
-  public vesselbase::ActionWithVessel
+  public vesselbase::ActionWithVessel,
+  public vesselbase::ActionWithInputVessel
   {
-friend class Region;
+friend class MultiColvarBase;   
 private:
 /// The value of sigma
   double sigma;
@@ -60,14 +62,12 @@ private:
 /// The vessel that bridges
   vesselbase::BridgeVessel* myBridgeVessel;
 /// Everything for controlling the updating of neighbor lists
+  bool firsttime;
   int updateFreq;
-  unsigned lastUpdate;
 /// Fast merging of derivatives (automatic skips of zero contributions)
   DynamicList<unsigned> activeAtoms;
 /// This is used to store forces temporarily in apply
   std::vector<double> tmpforces;
-/// This sets up array above
-  void resizeLocalArrays();
 protected:
   double getSigma() const ;
 /// Get the cell box
@@ -91,8 +91,14 @@ public:
 /// Don't actually clear the derivatives when this is called from plumed main.  
 /// They are calculated inside another action and clearing them would be bad  
   void clearDerivatives(){}
+// This is used during neighbor list update step
+  void finishTaskListUpdate();
+/// Get the number of quantities that are calculated each time
+  virtual unsigned getNumberOfQuantities();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+/// Turn on the derivatives
+  void turnOnDerivatives();
 /// Is the output quantity periodic
   bool isPeriodic();
 /// Jobs to be done when the action is activated
@@ -100,7 +106,7 @@ public:
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
 /// This calculates all the vessels and is called from within a bridge vessel
-  void performTask(const unsigned& i );
+  void performTask();
 /// Routines that have to be defined so as not to have problems with virtual methods 
   void deactivate_task();
   void calculate(){}
@@ -109,13 +115,18 @@ public:
   virtual void setupRegion()=0;
   virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
 /// Forces here are applied through the bridge
-  void applyBridgeForces( const std::vector<double>& bb );
+  void addBridgeForces( const std::vector<double>& bb );
   void apply(){};
 /// These routines replace the virtual routines in ActionWithVessel for 
 /// code optimization
   void mergeDerivatives( const unsigned& ider, const double& df );
   void clearDerivativesAfterTask( const unsigned& ider );
 };
+
+inline
+unsigned ActionVolume::getNumberOfQuantities(){
+  return mycolv->getNumberOfQuantities();
+} 
 
 inline
 const Tensor & ActionVolume::getBox()const{

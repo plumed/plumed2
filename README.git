@@ -73,6 +73,9 @@ $git push
 Checkout a remote branch and switch to it on your local repo 
 $git checkout -b experimental origin/experimental
 
+Compare list of commits on two different branches (here branches are named master and experimental)
+git log master..experimental
+
 #####
 
 All these things can be done with a GUI:

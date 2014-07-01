@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -25,8 +25,8 @@
 #include "core/SetupMolInfo.h"
 #include "core/Atoms.h"
 #include "vesselbase/Vessel.h"
-#include "tools/DRMSD.h"
-#include "tools/RMSD.h"
+#include "reference/MetricRegister.h"
+#include "reference/SingleDomainRMSD.h"
 
 namespace PLMD {
 namespace secondarystructure{
@@ -53,18 +53,17 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
                                        "of the actual RMSD is skipped as the structure is very far from being beta-sheet like. "
                                        "This keyword speeds up the calculation enormously when you are using the LESS_THAN option. "
                                        "However, if you are using some other option, then this cannot be used");
-  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
   keys.addFlag("VERBOSE",false,"write a more detailed output");
   keys.add("hidden","NL_STRIDE","the frequency with which the neighbor list should be updated. Between neighbour list update steps all quantities "
                                   "that contributed less than TOL at the previous neighbor list update step are ignored.");
   ActionWithVessel::registerKeywords( keys );
+  keys.use("LESS_THAN"); keys.use("MIN"); keys.use("NL_TOL");
   keys.setComponentsIntroduction("By default this Action calculates the number of structural units that are within a certain "
                                  "distance of a idealised secondary structure element. This quantity can then be referenced "
                                  "elsewhere in the input by using the label of the action. However, thes Action can also be used to "
                                  "calculate the following quantities by using the keywords as described below.  The quantities then "
                                  "calculated can be referened using the label of the action followed by a dot and then the name "
                                  "from the table below."); 
-  keys.use("LESS_THAN"); keys.use("MIN"); 
 }
 
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
@@ -73,8 +72,6 @@ ActionAtomistic(ao),
 ActionWithValue(ao),
 ActionWithVessel(ao),
 updateFreq(0),
-lastUpdate(0),
-reduceAtNextStep(false),
 align_strands(false),
 s_cutoff(0),
 align_atom_1(0),
@@ -84,12 +81,15 @@ align_atom_2(0)
   log.printf("  distances from secondary structure elements are calculated using %s algorithm\n",alignType.c_str() );
   log<<"  Bibliography "<<plumed.cite("Pietrucci and Laio, J. Chem. Theory Comput. 5, 2197 (2009)"); log<<"\n";
 
-  bool nopbc; parseFlag("NOPBC",nopbc); pbcon=!nopbc;
-
   parseFlag("VERBOSE",verbose_output);
   if( keywords.exists("NL_STRIDE") ) parse("NL_STRIDE",updateFreq);
-  if(updateFreq>0) log.printf("  Updating contributors every %d steps.\n",updateFreq);
-  else log.printf("  Updating contributors every step.\n");
+  if(updateFreq>0){ 
+     firsttime=true; 
+     log.printf("  Updating contributors every %d steps.\n",updateFreq);
+  } else {
+     firsttime=false; contributorsAreUnlocked=true;   // This will lock during first prepare step methinks
+     log.printf("  Updating contributors every step.\n");
+  }
 
   if( keywords.exists("STRANDS_CUTOFF") ){
     parse("STRANDS_CUTOFF",s_cutoff); align_strands=true;
@@ -98,15 +98,19 @@ align_atom_2(0)
 }
 
 SecondaryStructureRMSD::~SecondaryStructureRMSD(){
-  for(unsigned i=0;i<secondary_rmsd.size();++i) delete secondary_rmsd[i];
-  for(unsigned i=0;i<secondary_drmsd.size();++i) delete secondary_drmsd[i];
+  for(unsigned i=0;i<references.size();++i) delete references[i];
+}
+
+void SecondaryStructureRMSD::turnOnDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  needsDerivatives();
 }
 
 void SecondaryStructureRMSD::setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 ){
   align_atom_1=atom1; align_atom_2=atom2; 
 }
 
-void SecondaryStructureRMSD::readBackboneAtoms( const std::vector<std::string>& backnames, std::vector<unsigned>& chain_lengths ){
+void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std::vector<unsigned>& chain_lengths ){
   std::vector<SetupMolInfo*> moldat=plumed.getActionSet().select<SetupMolInfo*>();
   if( moldat.size()==0 ) error("Unable to find MOLINFO in input");
 
@@ -121,7 +125,7 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::vector<std::string>& 
       }
   }
   std::vector< std::vector<AtomNumber> > backatoms;
-  moldat[0]->getBackbone( resstrings, backnames, backatoms );
+  moldat[0]->getBackbone( resstrings, moltype, backatoms );
 
   chain_lengths.resize( backatoms.size() );
   for(unsigned i=0;i<backatoms.size();++i){
@@ -137,7 +141,7 @@ void SecondaryStructureRMSD::addColvar( const std::vector<unsigned>& newatoms ){
      for(unsigned i=0;i<newatoms.size();++i) log.printf("%d ",all_atoms(newatoms[i]).serial() );
      log.printf("\n");
   }
-  taskList.addIndexToList( colvar_atoms.size() );
+  addTaskToList( colvar_atoms.size() );
   colvar_atoms.push_back( newatoms );
 }
 
@@ -153,14 +157,9 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
      structure[i][0]*=units; structure[i][1]*=units; structure[i][2]*=units;
   }
 
-  if( secondary_rmsd.size()==0 && secondary_drmsd.size()==0 ){ 
-     pos.resize( structure.size() ); taskList.activateAll();
-     for(unsigned i=0;i<taskList.getNumberActive();++i){
-        for(unsigned j=0;j<colvar_atoms[i].size();++j) all_atoms.activate( colvar_atoms[i][j] );
-     }
-     all_atoms.updateActiveMembers();
-     ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-     forcesToApply.resize( getNumberOfDerivatives() );
+  if( references.size()==0 ){
+     pos.resize( structure.size() ); 
+     finishTaskListUpdate();
 
      readVesselKeywords();
      if( getNumberOfVessels()==0 ){
@@ -174,54 +173,36 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   // Set the reference structure
-  std::vector<Vector> tmp( structure.size() ); der.push_back( tmp );
-  vir.push_back( Tensor() );
-  if( alignType=="DRMSD" ){
-    secondary_drmsd.push_back( new DRMSD() ); 
-    secondary_drmsd[secondary_drmsd.size()-1]->setReference( structure, bondlength );
-  } else {
-    std::vector<double> align( structure.size(), 1.0 );
-    secondary_rmsd.push_back( new RMSD(log) );
-    secondary_rmsd[secondary_rmsd.size()-1]->setType( alignType );
-    secondary_rmsd[secondary_rmsd.size()-1]->setReference( structure );
-    secondary_rmsd[secondary_rmsd.size()-1]->setAlign( align );
-    secondary_rmsd[secondary_rmsd.size()-1]->setDisplace( align );
-  }
-//   references.push_back( PLMD::SingleDomainRMSD::create( this, alignType ) ); 
-//   unsigned nn=references.size()-1;
-//   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
-//   references[nn]->setBoundsOnDistances( true , bondlength );  // We always use pbc
-//   references[nn]->setReference( structure, align, displace );
-//   references[nn]->setNumberOfAtoms( structure.size() );
+  references.push_back( metricRegister().create<SingleDomainRMSD>( alignType ) ); 
+  unsigned nn=references.size()-1;
+  std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
+  references[nn]->setBoundsOnDistances( true , bondlength );  // We always use pbc
+  references[nn]->setReferenceAtoms( structure, align, displace );
+  references[nn]->setNumberOfAtoms( structure.size() );
 }
 
 void SecondaryStructureRMSD::prepare(){
-  bool updatetime=false;
-  if( reduceAtNextStep ){
-      taskList.mpi_gatherActiveMembers( comm );
-      reduceAtNextStep=false; updatetime=true;
+  if( contributorsAreUnlocked ) lockContributors();
+  if( updateFreq>0 ){
+      if( firsttime || getStep()%updateFreq==0 ){ firsttime=false; unlockContributors(); }
   }
-  if( updateFreq>0 && (getStep()-lastUpdate)>=updateFreq ){
-      taskList.activateAll();
-      reduceAtNextStep=true; updatetime=true; 
-      lastUpdate=getStep();
+}
+
+void SecondaryStructureRMSD::finishTaskListUpdate(){
+  all_atoms.deactivateAll();
+  for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
+      for(unsigned j=0;j<colvar_atoms[getActiveTask(i)].size();++j) all_atoms.activate( colvar_atoms[getActiveTask(i)][j] );
   }
-  if(updatetime){
-     for(unsigned i=0;i<taskList.getNumberActive();++i){
-        for(unsigned j=0;j<colvar_atoms[i].size();++j) all_atoms.activate( colvar_atoms[i][j] ); 
-     }
-     all_atoms.updateActiveMembers(); 
-     ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() ); 
-     forcesToApply.resize( getNumberOfDerivatives() );
-     resizeFunctions();
-  }
+  all_atoms.updateActiveMembers();
+  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
+  forcesToApply.resize( getNumberOfDerivatives() );
 }
 
 void SecondaryStructureRMSD::calculate(){
   runAllTasks();
 }
 
-void SecondaryStructureRMSD::performTask( const unsigned& j ){
+void SecondaryStructureRMSD::performTask(){
   // Retrieve the positions
   for(unsigned i=0;i<pos.size();++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(i) );
 
@@ -244,57 +225,53 @@ void SecondaryStructureRMSD::performTask( const unsigned& j ){
   } 
 
   // And now calculate the RMSD
-  closest=0; double r, nr;
-  if( secondary_drmsd.size()>0 ){
-    if( pbcon ) r=secondary_drmsd[0]->calculate( pos, getPbc(), der[0], vir[0] );
-    else r=secondary_drmsd[0]->calculate( pos, der[0], vir[0] );
-    for(unsigned i=1;i<secondary_drmsd.size();++i){
-        if( pbcon ) nr=secondary_drmsd[i]->calculate( pos, getPbc(), der[i], vir[i] );
-        else nr=secondary_drmsd[i]->calculate( pos, der[i], vir[i] );
-        if(nr<r){ closest=i; r=nr; }
-    }
-  } else {
-     r=secondary_rmsd[0]->calculate( pos, der[0] );
-     for(unsigned i=1;i<secondary_rmsd.size();++i){
-         nr=secondary_rmsd[i]->calculate( pos, der[i] );
-         if( nr<r ){ closest=i; r=nr; }
-     }
+  double r,nr; const Pbc& pbc=getPbc(); 
+  closest=0; r=references[0]->calculate( pos, pbc, false );
+  for(unsigned i=1;i<references.size();++i){
+      nr=references[i]->calculate( pos, pbc, false );
+      if( nr<r ){ closest=i; r=nr; }
   }
-  setElementValue(1,1.0); setElementValue(0,r);
+  setElementValue(1,1.0); 
+  setElementValue(0,r);
   return;
 }
 
 void SecondaryStructureRMSD::mergeDerivatives( const unsigned& ider, const double& df ){
   plumed_dbg_assert( ider==0 );
-  for(unsigned i=0;i<colvar_atoms[current].size();++i){
+  for(unsigned i=0;i<colvar_atoms[getCurrentTask()].size();++i){
      unsigned thisatom=getAtomIndex(i), thispos=3*thisatom; 
-     Vector ader=der[closest][i];
+     Vector ader=references[closest]->getAtomDerivative(i);
      accumulateDerivative( thispos, df*ader[0] ); thispos++;
      accumulateDerivative( thispos, df*ader[1] ); thispos++;
      accumulateDerivative( thispos, df*ader[2] ); 
   }
-  if( alignType!="DRMSD" ){ 
-     vir[closest].zero();
-     for(unsigned i=0;i<colvar_atoms[current].size();++i){
-         vir[closest]+=(-1.0*Tensor( pos[i], der[closest][i] ));
+  Tensor virial;
+  if( !references[closest]->getVirial( virial ) ){ 
+     virial.zero();
+     for(unsigned i=0;i<colvar_atoms[getCurrentTask()].size();++i){
+         virial+=(-1.0*Tensor( pos[i], references[closest]->getAtomDerivative(i) ));
      }
   } 
 
   // Easy to merge the virial
   unsigned outnat=3*getNumberOfAtoms();
-  accumulateDerivative( outnat, df*vir[closest](0,0) ); outnat++;
-  accumulateDerivative( outnat, df*vir[closest](0,1) ); outnat++;
-  accumulateDerivative( outnat, df*vir[closest](0,2) ); outnat++;
-  accumulateDerivative( outnat, df*vir[closest](1,0) ); outnat++;
-  accumulateDerivative( outnat, df*vir[closest](1,1) ); outnat++;
-  accumulateDerivative( outnat, df*vir[closest](1,2) ); outnat++;
-  accumulateDerivative( outnat, df*vir[closest](2,0) ); outnat++;
-  accumulateDerivative( outnat, df*vir[closest](2,1) ); outnat++;
-  accumulateDerivative( outnat, df*vir[closest](2,2) );
+  accumulateDerivative( outnat, df*virial(0,0) ); outnat++;
+  accumulateDerivative( outnat, df*virial(0,1) ); outnat++;
+  accumulateDerivative( outnat, df*virial(0,2) ); outnat++;
+  accumulateDerivative( outnat, df*virial(1,0) ); outnat++;
+  accumulateDerivative( outnat, df*virial(1,1) ); outnat++;
+  accumulateDerivative( outnat, df*virial(1,2) ); outnat++;
+  accumulateDerivative( outnat, df*virial(2,0) ); outnat++;
+  accumulateDerivative( outnat, df*virial(2,1) ); outnat++;
+  accumulateDerivative( outnat, df*virial(2,2) );
 }
 
 void SecondaryStructureRMSD::apply(){
   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
+}
+
+void SecondaryStructureRMSD::clearDerivativesAfterTask( const unsigned& ival ){
+  thisval_wasset[ival]=false; setElementValue( ival, 0.0 ); thisval_wasset[ival]=false;
 }
 
 }

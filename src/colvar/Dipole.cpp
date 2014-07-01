@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -32,7 +32,7 @@ namespace colvar{
 
 //+PLUMEDOC COLVAR DIPOLE 
 /*
-Calcualte the dipole moment for a group of atoms.
+Calculate the dipole moment for a group of atoms.
 
 \par Examples
 The following tells plumed to calculate the dipole of the group of atoms containing
@@ -87,35 +87,32 @@ PLUMED_COLVAR_INIT(ao)
 void Dipole::calculate()
 {
  double dipole=0.;
- vector<Vector> deriv(getNumberOfAtoms());
+ double ctot=0.;
+ unsigned N=getNumberOfAtoms();
+ vector<Vector> deriv(N);
+ vector<double> charges(N);
  Vector dipje;
- vector<double> charges(getNumberOfAtoms());
 
- double ctot(0.0);
- for(unsigned i=0;i<charges.size();++i){
+ for(unsigned i=0;i<N;++i){
    charges[i]=getCharge(i);
    ctot+=charges[i];
  }
+ ctot/=(double)N;
 
- ctot/=charges.size();
-
- for(unsigned i=0;i<charges.size();++i) charges[i]-=ctot;
-
-// deriv.resize(getPositions().size());
-// deriv.resize(getNumberOfAtoms());
- for(unsigned int i=0;i<ga_lista.size();i++) {
+ for(unsigned i=0;i<N;++i) {
+   charges[i]-=ctot;
    dipje += charges[i]*getPosition(i);
  }
  dipole = dipje.modulo();
+ double idip = 1./dipole;
 
- for(unsigned int i=0;i<ga_lista.size();i++) {
-   double dfunc=charges[i]/dipole;
-   deriv[i] = deriv[i] + (dfunc)*dipje;
+ for(unsigned i=0;i<N;i++) {
+   double dfunc=charges[i]*idip;
+   deriv[i] += dfunc*dipje;
+   setAtomsDerivatives(i,deriv[i]);
  }
 
-// for(unsigned i=0;i<getPositions().size();++i) setAtomsDerivatives(i,deriv[i]);
- for(unsigned i=0;i<getNumberOfAtoms();++i) setAtomsDerivatives(i,deriv[i]);
- setValue           (dipole);
+ setValue(dipole);
  setBoxDerivativesNoPbc();
 }
 

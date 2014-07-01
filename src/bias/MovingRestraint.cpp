@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -46,6 +46,8 @@ The time dependence of \f$\kappa\f$ and \f$\vec{s}_0\f$ are specified by a list 
 STEP, KAPPA and AT keywords.  These keywords tell plumed what values \f$\kappa\f$ and \f$\vec{s}_0\f$
 should have at the time specified by the corresponding STEP keyword.  Inbetween these times
 the values of \f$\kappa\f$ and \f$\vec{s}_0\f$ are linearly interpolated.
+
+Additional material and examples can be also found in the tutorial \ref belfast-5 
 
 \par Examples
 The following input is dragging the distance between atoms 2 and 4
@@ -103,6 +105,8 @@ class MovingRestraint : public Bias{
   std::vector<std::vector<double> > kappa;
   std::vector<long int> step;
   std::vector<double> oldaa;
+  std::vector<double> oldk;
+  std::vector<double> olddpotdk;
   std::vector<double> oldf;
   std::vector<string> verse;
   std::vector<double> work;
@@ -178,7 +182,7 @@ verse(getNumberOfArguments())
   // add the centers of the restraint as additional components that can be retrieved (useful for debug)
 
   std::string comp;
-  for(int i=0;i< getNumberOfArguments() ;i++){
+  for(unsigned i=0;i< getNumberOfArguments() ;i++){
 	comp=getPntrToArgument(i)->getName()+"_cntr"; // each spring has its own center 
         addComponent(comp); componentIsNotPeriodic(comp);
 	comp=getPntrToArgument(i)->getName()+"_work"; // each spring has its own work
@@ -197,11 +201,13 @@ void MovingRestraint::calculate(){
   double totf2=0.0;
   unsigned narg=getNumberOfArguments();
   long int now=getStep();
-  std::vector<double> kk(narg),aa(narg),f(narg);
+  std::vector<double> kk(narg),aa(narg),f(narg),dpotdk(narg);
   if(now<=step[0]){
     kk=kappa[0];
     aa=at[0];
     oldaa=at[0];
+    oldk=kappa[0];
+    olddpotdk.resize(narg);	
     oldf.resize(narg);
   } else if(now>=step[step.size()-1]){
     kk=kappa[step.size()-1];
@@ -222,7 +228,8 @@ void MovingRestraint::calculate(){
     if(verse[i]=="U" && cv<0) continue;
     if(verse[i]=="L" && cv>0) continue;
     plumed_assert(verse[i]=="U" || verse[i]=="L" || verse[i]=="B");
-    if(oldaa.size()==aa.size() && oldf.size()==f.size()) work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]);
+    dpotdk[i]=0.5*cv*cv;
+    if(oldaa.size()==aa.size() && oldf.size()==f.size()) work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]) + 0.5*( dpotdk[i]+olddpotdk[i] )*(kk[i]-oldk[i]);
     getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]); 
     ene+=0.5*k*cv*cv;
     setOutputForce(i,f[i]);
@@ -230,6 +237,8 @@ void MovingRestraint::calculate(){
   };
   oldf=f;
   oldaa=aa;
+  oldk=kk;
+  olddpotdk=dpotdk;
   getPntrToComponent("bias")->set(ene);
   getPntrToComponent("force2")->set(totf2);
 }

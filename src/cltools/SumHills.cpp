@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -119,7 +119,7 @@ plumed sum_hills --histo PATHTOMYCOLVARORHILLSFILE  --sigma 0.2,0.2 --kt 0.6
 in this case you need a --kt to do the reweighting and then you
 need also some width (with the --sigma keyword) for the histogram calculation (actually will be done with 
 gaussians, so it will be a continuous histogram)
-Here the default output will be correction.dat.
+Here the default output will be histo.dat.
 Note that also here you can have multiple input files separated by a comma.
 
 Additionally, if you want to do histogram and hills from the same file you can do as this   
@@ -169,19 +169,19 @@ plumed sum_hills --hills PATHTOMYHILLSFILE  --outfile myfes_ --stride 100
 
 will produce myfes_0.dat,  myfes_1.dat, myfes_2.dat etc.
 
-The same is true for the output coming from histogram corrections 
+The same is true for the output coming from histogram  
 \verbatim
-plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto mycorrection.dat
+plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto myhisto.dat
 \endverbatim
 
-is producing a file mycorrection.dat
+is producing a file myhisto.dat
 while, when using stride, this is the suffix 
 
 \verbatim
-plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto mycorrection_ --stride 100 
+plumed sum_hills --histo HILLS --kt 2.5 --sigma 0.01 --outhisto myhisto_ --stride 100 
 \endverbatim
 
-that gives  mycorrection_0.dat,  mycorrection_1.dat,  mycorrection_3.dat etc..
+that gives  myhisto_0.dat,  myhisto_1.dat,  myhisto_3.dat etc..
 
 */
 //+ENDPLUMEDOC
@@ -194,7 +194,7 @@ public:
   string description()const;
 /// find a list of variables present, if they are periodic and which is the period
 /// return false if the file does not exist 
-  static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate);
+  static bool findCvsAndPeriodic(std::string filename, std::vector< std::vector <std::string> > &cvs,std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, string &lowI_, string &uppI_);
 };
 
 void CLToolSumHills::registerKeywords( Keywords& keys ){
@@ -206,13 +206,15 @@ void CLToolSumHills::registerKeywords( Keywords& keys ){
   keys.add("optional","--min","the lower bounds for the grid");
   keys.add("optional","--max","the upper bounds for the grid");
   keys.add("optional","--bin","the number of bins for the grid");
-  keys.add("optional","--idw","specify the variables to be integrated (default is all)");
+  keys.add("optional","--spacing","grid spacing, alternative to the number of bins");
+  keys.add("optional","--idw","specify the variables to be used for the free-energy/histogram (default is all). With --hills the other variables will be integrated out, with --histo the other variables won't be considered");
   keys.add("optional","--outfile","specify the outputfile for sumhills");
   keys.add("optional","--outhisto","specify the outputfile for the histogram");
-  keys.add("optional","--kt","specify temperature for integrating out variables");
+  keys.add("optional","--kt","specify temperature in energy units for integrating out variables");
   keys.add("optional","--sigma"," a vector that specify the sigma for binning (only needed when doing histogram ");
   keys.addFlag("--negbias",false," print the negative bias instead of the free energy (only needed with welltempered runs and flexible hills) ");
   keys.addFlag("--nohistory",false," to be used with --stride:  it splits the bias/histogram in pieces without previous history ");
+  keys.addFlag("--mintozero",false," it translate all the minimum value in bias/histogram to zero (usefull to compare results) ");
   keys.add("optional","--fmt","specify the output format");
 }
 
@@ -241,9 +243,10 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   vector<string> vpmin;
   vector<string> vpmax;
   bool vmultivariate;
+  string lowI_, uppI_;
   if(dohills){
        // parse it as it was a restart
-       findCvsAndPeriodic(hillsFiles[0], vcvs, vpmin, vpmax, vmultivariate);
+       findCvsAndPeriodic(hillsFiles[0], vcvs, vpmin, vpmax, vmultivariate, lowI_, uppI_);
   }
 
   vector< vector<string> > hcvs;
@@ -253,10 +256,11 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
  
   vector<std::string> sigma; 
   if(dohisto){
-       findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate);
+       findCvsAndPeriodic(histoFiles[0], hcvs, hpmin, hpmax, hmultivariate, lowI_, uppI_);
        // here need also the vector of sigmas
        parseVector("--sigma",sigma);
-       if(sigma.size()!=hcvs.size())plumed_merror("you should define --sigma vector when using histogram");
+       if(sigma.size()==0)plumed_merror("you should define --sigma vector when using histogram");
+       lowI_=uppI_="-1.";  // Interval is not use for histograms
   }
 
   if(dohisto && dohills){
@@ -301,6 +305,12 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
        if(gbin.size()!=cvs.size() && gbin.size()!=0) plumed_merror("not enough values for --bin");
        grid_has_bin=true;
   }
+  vector<std::string> gspacing(cvs.size());
+  bool grid_has_spacing; grid_has_spacing=false;	
+  if(parseVector("--spacing",gspacing)){
+       if(gspacing.size()!=cvs.size() && gspacing.size()!=0) plumed_merror("not enough values for --spacing");
+       grid_has_spacing=true;
+  }
   // allowed: no grids only bin
   // not allowed: partial grid definition 
   plumed_massert( gmin.size()==gmax.size() && (gmin.size()==0 ||  gmin.size()==cvs.size() ) ,"you should specify --min and --max together with same number of components");
@@ -315,7 +325,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   if(Communicator::initialized())  plumed.cmd("setMPIComm",&pc.Get_comm()); 
   plumed.cmd("init",&nn);  
   vector <bool> isdone(cvs.size(),false);  
-  for(int i=0;i<cvs.size();i++){
+  for(unsigned i=0;i<cvs.size();i++){
      if(!isdone[i]){
        isdone[i]=true;	
        std::vector<std::string> actioninput; 
@@ -453,10 +463,10 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   if(grid_has_bin){
      addme="GRID_BIN="; for(unsigned i=0;i<(ncv-1);i++)addme+=gbin[i]+","; addme+=gbin[ncv-1];
      actioninput.push_back(addme);
-//  }else{
-//	  //automatic bin: 50 per dimension;
-//	  addme="GRID_BIN="; for(unsigned i=0;i<(ncv-1);i++)addme+="50,"; addme+="50";
-//	  actioninput.push_back(addme);
+  }
+  if(grid_has_spacing){
+     addme="GRID_SPACING="; for(unsigned i=0;i<(ncv-1);i++)addme+=gspacing[i]+","; addme+=gspacing[ncv-1];
+     actioninput.push_back(addme);
   }
   std::string  stride; stride="";
   if(parse("--stride",stride)){
@@ -467,12 +477,26 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
        actioninput.push_back("NOHISTORY");
     }
   }
+  bool  mintozero; 
+  parseFlag("--mintozero",mintozero);
+  if(mintozero){
+     actioninput.push_back("MINTOZERO");
+  }
   if(idw.size()!=0){ 
      addme="PROJ=";
      for(unsigned i=0;i<idw.size()-1;i++){addme+=idw[i]+",";}
      addme+=idw.back();  
      actioninput.push_back(addme);
   }
+
+  if(dohisto) {
+    if(idw.size()==0) {
+      if(sigma.size()!=hcvs.size()) plumed_merror("you should define as many --sigma vector as the number of collective variable used for the histogram ");
+    } else {
+      if(idw.size()!=sigma.size()) plumed_merror("you should define as many --sigma vector as the number of collective variable used for the histogram ");
+    }
+  }
+
   if(idw.size()!=0 || dohisto){
      actioninput.push_back("KT="+kt);
   } 
@@ -492,6 +516,10 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
  	actioninput.push_back("NEGBIAS");
   }
 
+  if(lowI_!=uppI_) {
+    addme="INTERVAL="; addme+=lowI_+","; addme+=uppI_;
+    actioninput.push_back(addme);
+  }
 
   std::string fmt;fmt="";
   parse("--fmt",fmt);
@@ -506,7 +534,7 @@ int CLToolSumHills::main(FILE* in,FILE*out,Communicator& pc){
   return 0;
 }
 
-bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate){
+bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::vector<std::string>  > &cvs, std::vector<std::string> &pmin,std::vector<std::string> &pmax, bool &multivariate, string &lowI_, string &uppI_){
        IFile ifile;
        ifile.allowIgnoredFields();
        std::vector<std::string> fields;
@@ -516,7 +544,7 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
           ifile.scanFieldList(fields);
           size_t founds,foundm,foundp;
           bool before_sigma=true;
-          for(int i=0;i<fields.size();i++){
+          for(unsigned i=0;i<fields.size();i++){
               size_t pos = 0;
               //found=(fields[i].find("sigma_", pos) || fields[i].find("min_", pos) || fields[i].find("max_", pos) ) ;
               founds=fields[i].find("sigma_", pos)  ;
@@ -573,6 +601,14 @@ bool CLToolSumHills::findCvsAndPeriodic(std::string filename, std::vector< std::
          	 ifile.scanField("multivariate",sss);
          	 if(sss=="true"){ multivariate=true;}
          	 else if(sss=="false"){ multivariate=false;}
+          }
+          // do interval?
+          if(ifile.FieldExist("lower_int")) {
+	    ifile.scanField("lower_int",lowI_);
+            ifile.scanField("upper_int",uppI_);
+          } else {
+            lowI_="-1.";
+            uppI_="-1.";
           }
           ifile.scanField();
           ifile.close();

@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -50,6 +50,19 @@ t: TORSION ATOMS=1,2,3,4
 PRINT ARG=t FILE=COLVAR
 \endverbatim
 
+If you are working with a protein you can specify the special named torsion angles \f$\phi\f$, \f$\psi\f$, \f$\omega\f$ and \f$\chi_1\f$
+by using TORSION in combination with the \ref MOLINFO command.  This can be done by using the following 
+syntax.
+
+\verbatim
+MOLINFO MOLTYPE=protein STRUCTURE=myprotein.pdb
+t1: TORSION ATOMS=@phi-3
+t2: TORSION ATOMS=@psi-4
+PRINT ARG=t1,t2 FILE=colvar STRIDE=10
+\endverbatim
+
+Here, \@phi-3 tells plumed that you would like to calculate the \f$\phi\f$ angle in the third residue of the protein.
+Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle of the 4th residue of the protein.
 */
 //+ENDPLUMEDOC
    

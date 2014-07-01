@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -26,7 +26,7 @@ namespace PLMD{
 namespace vesselbase{
 
 void ShortcutVessel::registerKeywords( Keywords& keys ){
-  Vessel::registerKeywords( keys );
+  Vessel::registerKeywords( keys ); keys.remove("LABEL");
   plumed_assert( keys.size()==0 );
 }
 

@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -70,7 +70,7 @@ public:
   static void registerKeywords( Keywords& keys );
   CoordinationNumbers(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& j ); 
+  virtual double compute(); 
   Vector getCentralAtom();
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
@@ -89,7 +89,7 @@ void CoordinationNumbers::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   // Use actionWithDistributionKeywords
-  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
+  keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
 }
 
@@ -109,35 +109,28 @@ PLUMED_MULTICOLVAR_INIT(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  coordination of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
+  // Set the link cell cutoff
+  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
 
   // Read in the atoms
-  int natoms; readAtoms( natoms );
+  int natoms=2; readAtoms( natoms );
   // And setup the ActionWithVessel
-  readVesselKeywords();
-
-  // Create the groups for the neighbor list
-  std::vector<AtomNumber> ga_lista, gb_lista; AtomNumber aa;
-  aa.setIndex(0); ga_lista.push_back(aa);
-  for(unsigned i=1;i<natoms;++i){ aa.setIndex(i); gb_lista.push_back(aa); }
-  // And check everything has been read in correctly
   checkRead();
 }
 
-double CoordinationNumbers::compute( const unsigned& j ){
+double CoordinationNumbers::compute(){
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number
    double sw;
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPosition(0), getPosition(i) );
-      sw = switchingFunction.calculate( distance.modulo(), dfunc );
-      if( sw>=getTolerance() ){    //  nl_cut<0 ){
-         value += sw;             // switchingFunction.calculate( distance.modulo(), dfunc );
+      sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
+      if( sw>=getTolerance() ){   
+         value += sw;             
          addAtomsDerivatives( 0, (-dfunc)*distance );
          addAtomsDerivatives( i,  (dfunc)*distance );
          addBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
-      } else {
-         removeAtomRequest( i, sw );   
       }
    }
 

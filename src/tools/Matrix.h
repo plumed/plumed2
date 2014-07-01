@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -27,26 +27,9 @@
 #include <cmath>
 #include "Exception.h"
 #include "MatrixSquareBracketsAccess.h"
+#include "Tools.h"
 #include "Log.h"
-
-#if defined(F77_NO_UNDERSCORE)
-/// This is for AIX
-#define F77_FUNC(name,NAME) name
-#else
-/// Default: put the underscore
-#define F77_FUNC(name,NAME) name ## _
-/// other cases may be added as we find them...
-#endif
-
-extern "C" {
-void F77_FUNC(dsyevr,DSYEVR)(const char *jobz, const char *range, const char *uplo, int *n,
-                             double *a, int *lda, double *vl, double *vu, int *
-                             il, int *iu, double *abstol, int *m, double *w,
-                             double *z__, int *ldz, int *isuppz, double *work,
-                             int *lwork, int *iwork, int *liwork, int *info);
-void F77_FUNC(dgetrf,DGETRF)(int* m, int* n, double* da, int* lda, int* ipiv, int* info);
-void F77_FUNC(dgetri,DGETRI)(int* m, double* da, int* lda, int* ipiv, double* work, int* lwork, int* info);
-}
+#include "lapack/lapack.h"
 
 namespace PLMD{
 
@@ -68,6 +51,8 @@ template <typename T>
 class Matrix:
   public MatrixSquareBracketsAccess<Matrix<T>,T>
   {
+   /// Multiply matrix by scalar
+   template <typename U> friend Matrix<U> operator*(U&, const Matrix<U>& );
    /// Matrix matrix multiply
    template <typename U> friend void mult( const Matrix<U>& , const Matrix<U>& , Matrix<U>& );
    /// Matrix times a std::vector 
@@ -82,6 +67,8 @@ class Matrix:
    template <typename U> friend void matrixOut( Log&, const Matrix<U>& );
    /// Diagonalize a symmetric matrix - returns zero if diagonalization worked
    template <typename U> friend int diagMat( const Matrix<U>& , std::vector<double>& , Matrix<double>& );
+   /// Calculate the Moore-Penrose Pseudoinverse of a matrix
+   template <typename U> friend int pseudoInvert( const Matrix<U>& , Matrix<double>& ); 
    /// Calculate the logarithm of the determinant of a symmetric matrix - returns zero if succesfull
    template <typename U> friend int logdet( const Matrix<U>& , double& );
    /// Invert a matrix (works for both symmetric and assymetric matrices) - returns zero if sucesfull
@@ -136,6 +123,11 @@ public:
      for(unsigned i=0;i<sz;++i){ data[i]+=v; }
      return *this; 
    }
+   /// Multiply all elements by v
+   Matrix<T> operator*=(const T& v){
+     for(unsigned i=0;i<sz;++i){ data[i]*=v; }
+     return *this; 
+   }
    /// Matrix addition
    Matrix<T>& operator+=(const Matrix<T>& m){ 
     plumed_dbg_assert( m.rw==rw && m.cl==cl );
@@ -161,6 +153,13 @@ public:
      return sym;
   }
 };
+
+/// Multiply matrix by scalar
+template <typename T> Matrix<T> operator*(T& v, const Matrix<T>& m ){
+  Matrix<T> new_m(m);
+  new_m*=v;
+  return new_m; 
+}
 
 template <typename T> void mult( const Matrix<T>& A , const Matrix<T>& B , Matrix<T>& C ){
   plumed_assert(A.cl==B.rw);
@@ -213,7 +212,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    double vl, vu, abstol=0.0;
    int* isup=new int[2*A.cl]; double *evecs=new double[A.sz];
 
-   F77_FUNC(dsyevr,DSYEVR)("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
@@ -222,7 +221,7 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
    lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
 
-   F77_FUNC(dsyevr,DSYEVR)("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("V", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
@@ -243,6 +242,51 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
    return 0;
 }
 
+template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseudoinverse ){
+  double *da=new double[A.sz]; unsigned k=0; 
+  // Transfer the matrix to the local array
+  for (unsigned i=0; i<A.cl; ++i) for (unsigned j=0; j<A.rw; ++j) da[k++]=static_cast<double>( A(j,i) );
+
+  int nsv, info, nrows=A.rw, ncols=A.cl;   
+  if(A.rw>A.cl){nsv=A.cl;}else{nsv=A.rw;}
+
+  // Create some containers for stuff from single value decomposition
+  double *S=new double[nsv]; double *U=new double[nrows*nrows];
+  double *VT=new double[ncols*ncols]; int *iwork=new int[8*nsv];
+
+  // This optimizes the size of the work array used in lapack singular value decomposition
+  int lwork=-1; double* work=new double[1];
+  plumed_lapack_dgesdd( "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, iwork, &info );
+  if(info!=0) return info;
+
+  // Retrieve correct sizes for work and rellocate
+  lwork=(int) work[0]; delete [] work; work=new double[lwork];
+
+  // This does the singular value decomposition
+  plumed_lapack_dgesdd( "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, iwork, &info );
+  if(info!=0) return info; 
+
+  // Compute the tolerance on the singular values ( machine epsilon * number of singular values * maximum singular value )
+  double tol; tol=S[0]; for(unsigned i=1;i<nsv;++i){ if( S[i]>tol ){ tol=S[i]; } } tol*=nsv*epsilon;
+
+  // Get the inverses of the singlular values
+  Matrix<double> Si( ncols, nrows ); Si=0.0;
+  for(unsigned i=0;i<nsv;++i){ if( S[i]>tol ){ Si(i,i)=1./S[i]; }else{ Si(i,i)=0.0; } }
+
+  // Now extract matrices for pseudoinverse
+  Matrix<double> V( ncols, ncols ), UT( nrows, nrows ), tmp( ncols, nrows ); 
+  k=0; for(unsigned i=0;i<nrows;++i){ for(unsigned j=0;j<nrows;++j){ UT(i,j)=U[k++]; } }
+  k=0; for(unsigned i=0;i<ncols;++i){ for(unsigned j=0;j<ncols;++j){ V(i,j)=VT[k++]; } }
+
+  // And do matrix algebra to construct the pseudoinverse
+  if( pseudoinverse.rw!=ncols || pseudoinverse.cl!=nrows ) pseudoinverse.resize( ncols, nrows );
+  mult( V, Si, tmp ); mult( tmp, UT, pseudoinverse );
+
+  // Deallocate all the memory
+  delete [] S; delete [] U; delete [] VT; delete [] work; delete [] iwork; delete [] da;
+  return 0;
+}
+
 template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ){
 
   if( A.isSymmetric()==1 ){
@@ -259,15 +303,15 @@ template <typename T> int Invert( const Matrix<T>& A, Matrix<double>& inverse ){
      unsigned k=0; int n=A.rw, info;
      for(unsigned i=0;i<A.cl;++i) for(unsigned j=0;j<A.rw;++j) da[k++]=static_cast<double>( A(j,i) );
 
-     F77_FUNC(dgetrf, DGETRF)(&n,&n,da,&n,ipiv,&info);
+     plumed_lapack_dgetrf(&n,&n,da,&n,ipiv,&info);
      if(info!=0) return info;
 
      int lwork=-1; double* work=new double[A.cl];
-     F77_FUNC(dgetri, DGETRI)(&n,da,&n,ipiv,work,&lwork,&info);
+     plumed_lapack_dgetri(&n,da,&n,ipiv,work,&lwork,&info);
      if(info!=0) return info;
 
      lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
-     F77_FUNC(dgetri, DGETRI)(&n,da,&n,ipiv,work,&lwork,&info);
+     plumed_lapack_dgetri(&n,da,&n,ipiv,work,&lwork,&info);
      if(info!=0) return info;
 
      if( inverse.cl!=A.cl || inverse.rw!=A.rw ){ inverse.resize(A.rw,A.cl); }
@@ -323,7 +367,7 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
    double *work=new double[M.rw]; int *iwork=new int[M.rw];
    double vl, vu, abstol=0.0;
    int* isup=new int[2*M.rw]; double *evecs=new double[M.sz];
-   F77_FUNC(dsyevr,DSYEVR)("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;
@@ -332,7 +376,7 @@ template <typename T> int logdet( const Matrix<T>& M, double& ldet ){
    lwork=static_cast<int>( work[0] ); delete [] work; work=new double[lwork];
    liwork=iwork[0]; delete [] iwork; iwork=new int[liwork];
 
-   F77_FUNC(dsyevr,DSYEVR)("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
+   plumed_lapack_dsyevr("N", "I", "U", &n, da, &n, &vl, &vu, &one, &n ,
                             &abstol, &m, evals, evecs, &n,
                             isup, work, &lwork, iwork, &liwork, &info);
    if (info!=0) return info;

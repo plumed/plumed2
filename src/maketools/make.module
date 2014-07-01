@@ -45,6 +45,10 @@ obj: $(OBJ)
 lib:
 	cd ../lib ; make
 
+.PHONY: install
+install:
+	cd ../lib ; make install
+
 -include $(DEP)
 
 # if machine dependent configuration has not been found:
@@ -53,7 +57,7 @@ else
 .PHONY: error
 error:
 	@echo No configuration available
-	@echo First run ./configure.sh in the root directory
+	@echo First run ./configure in the root directory
 endif
 
 # this target is available anyway

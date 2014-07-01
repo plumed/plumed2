@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -129,6 +129,7 @@ void Keywords::reserve( const std::string & t, const std::string & k, const std:
      } else {
         fd = d;
      }
+     if( t=="atoms" && isaction ) fd = d + ".  For more information on how to specify lists of atoms see \\ref Group";
      allowmultiple.insert( std::pair<std::string,bool>(k,false) );
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
      if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,t) );
@@ -177,6 +178,7 @@ void Keywords::add( const std::string & t, const std::string & k, const std::str
      types.insert( std::pair<std::string,KeyType>(k,KeyType(t)) );
      if( (types.find(k)->second).isAtomList() ) atomtags.insert( std::pair<std::string,std::string>(k,t) );
   }
+  if( t=="atoms" && isaction ) fd = d + ".  For more information on how to specify lists of atoms see \\ref Group";
   documentation.insert( std::pair<std::string,std::string>(k,fd) );
   keys.push_back(k);  
 }
@@ -291,23 +293,46 @@ void Keywords::print_template(const std::string& actionname, bool include_option
   printf("\n");
 }
 
-void Keywords::print_html( const bool isaction ) const {
+void Keywords::print_html() const {
 
 // This is the part that outputs the details of the components
   if( cnames.size()>0 ){
-      if( ckey.find(cnames[0])->second=="default" ){
+      unsigned ndef=0; 
+      for(unsigned i=0;i<cnames.size();++i){
+         if(ckey.find(cnames[i])->second=="default") ndef++;
+      }
+
+      if( ndef>0 ){
          std::cout<<"\\par Description of components\n\n";
          std::cout<<cstring<<"\n\n";
          std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
          printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Description </b> </td> </tr>\n");
+         unsigned nndef=0;
          for(unsigned i=0;i<cnames.size();++i){
-            plumed_assert( ckey.find(cnames[i])->second=="default" );
+            //plumed_assert( ckey.find(cnames[i])->second=="default" );
+            if( ckey.find(cnames[i])->second!="default" ){ nndef++; continue; }
             printf("<tr>\n");
             printf("<td width=15%%> <b> %s </b></td>\n",cnames[i].c_str() );
             printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
             printf("</tr>\n");
          }
          std::cout<<"</table>\n\n";
+         if( nndef>0 ){
+             std::cout<<"In addition the following quantities can be calculated by employing the keywords listed below"<<std::endl;
+             std::cout<<"\n\n";
+             std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
+             printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
+             for(unsigned i=0;i<cnames.size();++i){
+                if( ckey.find(cnames[i])->second!="default"){
+                    printf("<tr>\n");
+                    printf("<td width=5%%> <b> %s </b></td> <td width=10%%> <b> %s </b> </td> \n",
+                      cnames[i].c_str(),(ckey.find(cnames[i])->second).c_str() );
+                    printf("<td> %s </td>\n",(cdocs.find(cnames[i])->second).c_str() );
+                    printf("</tr>\n");
+                }
+             }
+             std::cout<<"</table>\n\n"; 
+         }
       } else {
          unsigned nregs=0;
          for(unsigned i=0;i<cnames.size();++i){
@@ -316,7 +341,7 @@ void Keywords::print_html( const bool isaction ) const {
          if( nregs>0 ){
             std::cout<<"\\par Description of components\n\n";
             std::cout<<cstring<<"\n\n";
-            std::cout<<" <table align=center frame=void width=60%% cellpadding=5%%> \n";
+            std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
             printf("<tr> <td width=5%%> <b> Quantity </b> </td> <td> <b> Keyword </b> </td> <td> <b> Description </b> </td> </tr>\n");
             for(unsigned i=0;i<cnames.size();++i){
                if( exists(ckey.find(cnames[i])->second) ){
@@ -571,8 +596,13 @@ void Keywords::addOutputComponent( const std::string& name, const std::string& k
 
 bool Keywords::outputComponentExists( const std::string& name, const bool& custom ) const {
   if( custom && cstring.find("customizable")!=std::string::npos ) return true;
+
+  std::string sname; std::size_t num=name.find_first_of("-");
+  if( num!=std::string::npos ) sname=name.substr(0,num);
+  else sname=name;
+
   for(unsigned i=0;i<cnames.size();++i){
-    if( name==cnames[i] ) return true;
+     if( sname==cnames[i] ) return true;
   } 
   return false;
 } 

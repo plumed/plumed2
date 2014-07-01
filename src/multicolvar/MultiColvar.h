@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -23,6 +23,7 @@
 #define __PLUMED_multicolvar_MultiColvar_h
 
 #include "MultiColvarBase.h"
+#include "tools/SwitchingFunction.h"
 #include <vector>
 
 #define PLUMED_MULTICOLVAR_INIT(ao) Action(ao),MultiColvar(ao)
@@ -38,14 +39,12 @@ thereof, whtin it there is \ref AddingAMultiColvar "information" as to how to go
 
 class MultiColvar : public MultiColvarBase {
 private:
-/// Have atoms been read in
+/// Do we want lots of details in the output
   bool verbose_output;
 /// Read in the various GROUP keywords
   void readGroupsKeyword( int& natoms );
 /// Read in the various SPECIES keywords
   void readSpeciesKeyword( int& natoms );
-/// Update the atoms request
-  void requestAtoms();
 protected:
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
@@ -55,6 +54,8 @@ protected:
   void readTwoGroups( const std::string& key1, const std::string& key2 );
 /// Read three groups
   void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2 );
+/// This is used to make neighbor list update fast when three atoms are involved in the colvar (e.g. ANGLES, WATERBRIDGE)
+  void threeBodyNeighborList( const SwitchingFunction& sf );
 /// Add a collective variable
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Add some derivatives for an atom 
@@ -67,16 +68,14 @@ public:
   MultiColvar(const ActionOptions&);
   ~MultiColvar(){}
   static void registerKeywords( Keywords& keys );
-/// Resize all the dynamic arrays (used at neighbor list update time and during setup)
-  void resizeDynamicArrays();
 /// Get the position of atom iatom
   const Vector & getPosition(unsigned) const;
+/// Finish the update of the task list
+  void finishTaskListUpdate();
 /// Calculate the multicolvar
   virtual void calculate();
-/// Do the calculation
-  double doCalculation( const unsigned& j );
-/// Actually compute the colvar
-  virtual double compute( const unsigned& j )=0;
+/// Update the atoms that have derivatives
+  void updateActiveAtoms();
 /// Calculate the position of the central atom
   Vector calculateCentralAtomPosition();
 /// Get the position of the central atom
@@ -87,41 +86,62 @@ public:
   double getCharge(unsigned) const ;
 /// Get the absolute index of atom iatom
   AtomNumber getAbsoluteIndex(unsigned) const ;
+/// Get base quantity index
+  unsigned getBaseQuantityIndex( const unsigned& code );
+/// Is this atom currently being copied 
+  bool isCurrentlyActive( const unsigned& );
+/// This is used in MultiColvarBase only - it is used to setup the link cells
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom );
 };
 
 inline
+unsigned MultiColvar::getBaseQuantityIndex( const unsigned& code ){
+  return all_atoms.linkIndex( code );
+}
+
+inline
+bool MultiColvar::isCurrentlyActive( const unsigned& code ){
+  return all_atoms.isActive(code);
+}
+
+inline
+Vector MultiColvar::getPositionOfAtomForLinkCells( const unsigned& iatom ){
+  return ActionAtomistic::getPosition( iatom );
+}
+
+inline
 const Vector & MultiColvar::getPosition( unsigned iatom ) const {
-  return ActionAtomistic::getPosition( getAtomIndex(iatom) );
+  return ActionAtomistic::getPosition( current_atoms[iatom] );
 }
 
 inline
 double MultiColvar::getMass(unsigned iatom ) const {
-  return ActionAtomistic::getMass( getAtomIndex(iatom) );
+  return ActionAtomistic::getMass( current_atoms[iatom] );
 }
 
 inline
 double MultiColvar::getCharge(unsigned iatom ) const {
-  return ActionAtomistic::getCharge( getAtomIndex(iatom) );
+  return ActionAtomistic::getCharge( current_atoms[iatom] );
 }
 
 inline
 AtomNumber MultiColvar::getAbsoluteIndex(unsigned iatom) const {
-  return ActionAtomistic::getAbsoluteIndex( getAtomIndex(iatom) );
+  return ActionAtomistic::getAbsoluteIndex( current_atoms[iatom] );
 }
 
 inline
 void MultiColvar::addAtomsDerivatives(const int& iatom, const Vector& der){
-  MultiColvarBase::addAtomsDerivatives( getAtomIndex(iatom), der );
+  MultiColvarBase::addAtomsDerivatives( 0, current_atoms[iatom], der );
 }
 
 inline
 void MultiColvar::addAtomsDerivativeOfWeight( const unsigned& iatom, const Vector& wder ){
-  MultiColvarBase::addAtomsDerivativeOfWeight( getAtomIndex(iatom), wder );
+  MultiColvarBase::addAtomsDerivatives( 1, current_atoms[iatom], wder );
 }
 
 inline
 void MultiColvar::addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der ){
-  MultiColvarBase::addCentralAtomDerivatives( getAtomIndex(iatom), der );
+  MultiColvarBase::addCentralAtomDerivatives( current_atoms[iatom], der );
 }
 
 }

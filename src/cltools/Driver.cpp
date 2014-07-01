@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -28,8 +28,24 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
+#include <map>
 #include "tools/Units.h"
 #include "tools/PDB.h"
+
+// when using molfile plugin
+#ifdef __PLUMED_HAS_MOLFILE
+#ifdef __PLUMED_INTERNAL_MOLFILE_PLUGINS
+/* Use the internal ones. Alternatively:
+ *    ifneq (,$(findstring __PLUMED_INTERNAL_MOLFILE_PLUGINS,$(CPPFLAGS)))
+ *    CPPFLAGS+=-I../molfile  
+ */
+#include "molfile/libmolfile_plugin.h"
+#include "molfile/molfile_plugin.h"
+#else
+#include "libmolfile_plugin.h"
+#include "molfile_plugin.h"
+#endif
+#endif
 
 using namespace std;
 
@@ -66,8 +82,50 @@ had we run the calculation we are running with driver when the MD simulation was
 plumed driver --plumed plumed.dat --ixyz trajectory.xyz --trajectory-stride 100 --timestep 0.001
 \endverbatim
 
+By default you have access to a subset of the trajectory file formats
+supported by VMD, e.g. xtc and dcd:
+
+\verbatim
+plumed driver --plumed plumed.dat --pdb diala.pdb --mf_xtc traj.xtc --trajectory-stride 100 --timestep 0.001
+\endverbatim
+
+where --mf_ prefixes the extension of one of the accepted molfile
+plugin format.
+
+To have support of all of VMD's plugins you need to recompile
+PLUMED. You need to download the SOURCE of VMD, which contains
+a plugins directory. Adapt build.sh and compile it. At
+the end, you should get the molfile plugins compiled as a static
+library libmolfile_plugin.a. Locate said file and libmolfile_plugin.h, 
+and customize the configure command with something along
+the lines of:
+
+\verbatim
+configure [...] LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
+\endverbatim
+
+and rebuild. Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
+
 */
 //+ENDPLUMEDOC
+//
+
+#ifdef __PLUMED_HAS_MOLFILE
+static vector<molfile_plugin_t *> plugins;
+static map <string, unsigned> pluginmap;
+static int register_cb(void *v, vmdplugin_t *p){
+  //const char *key = p->name;
+  std::pair<std::map<string,unsigned>::iterator,bool> ret; 
+  ret = pluginmap.insert ( std::pair<string,unsigned>(string(p->name),plugins.size()) );
+  if (ret.second==false) { 
+	//cerr<<"MOLFILE: found duplicate plugin for "<<key<<" : not inserted "<<endl; 
+  }else{
+	//cerr<<"MOLFILE: loading plugin "<<key<<" number "<<plugins.size()-1<<endl;
+  	plugins.push_back((molfile_plugin_t *)p);
+  } 
+  return VMDPLUGIN_SUCCESS;
+}
+#endif
 
 template<typename real>
 class Driver : public CLTool {
@@ -80,7 +138,7 @@ public:
 
 template<typename real>
 void Driver<real>::registerKeywords( Keywords& keys ){
-  CLTool::registerKeywords( keys );
+  CLTool::registerKeywords( keys ); keys.isDriver();
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
@@ -99,15 +157,23 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("hidden","--debug-pd","use a fake particle decomposition");
   keys.add("hidden","--debug-grex","use a fake gromacs-like replica exchange, specify exchange stride");
   keys.add("hidden","--debug-grex-log","log file for debug=grex");
+#ifdef __PLUMED_HAS_MOLFILE
+  MOLFILE_INIT_ALL
+  MOLFILE_REGISTER_ALL(NULL, register_cb)
+  for(int i=0;i<plugins.size();i++){
+	string kk="--mf_"+string(plugins[i]->name);
+	string mm=" molfile: the trajectory in "+string(plugins[i]->name)+" format " ;
+	//cerr<<"REGISTERING "<<kk<<mm<<endl;
+  	keys.add("atoms",kk,mm);
+  }
+#endif
 }
-
 template<typename real>
 Driver<real>::Driver(const CLToolOptions& co ):
 CLTool(co)
 {
  inputdata=commandline;
 }
-
 template<typename real>
 string Driver<real>::description()const{ return "analyze trajectories with plumed"; }
 
@@ -193,12 +259,33 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   string trajectory_fmt;
 
+  bool use_molfile=false; 
+#ifdef __PLUMED_HAS_MOLFILE
+  molfile_plugin_t *api=NULL;      
+  void *h_in=NULL;
+  molfile_timestep_t ts_in; // this is the structure that has the timestep 
+#endif
+
 // Read in an xyz file
   string trajectoryFile(""), pdbfile("");
   bool pbc_cli_given=false; vector<double> pbc_cli_box(9,0.0);
   if(!noatoms){
      std::string traj_xyz; parse("--ixyz",traj_xyz);
      std::string traj_gro; parse("--igro",traj_gro);
+#ifdef __PLUMED_HAS_MOLFILE 
+     for(int i=0;i<plugins.size();i++){ 	
+	string molfile_key="--mf_"+string(plugins[i]->name);
+	string traj_molfile;
+	parse(molfile_key,traj_molfile);
+	if(traj_molfile.length()>0){
+		fprintf(out,"\nDRIVER: Found molfile format trajectory %s with name %s\n",plugins[i]->name,traj_molfile.c_str());
+		trajectoryFile=traj_molfile;
+		trajectory_fmt=string(plugins[i]->name);
+		use_molfile=true;
+		api = plugins[i];
+	}
+     } 
+#endif
      if(traj_xyz.length()>0 && traj_gro.length()>0){
        fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
        if(grex_log)fclose(grex_log);
@@ -273,19 +360,28 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     trajectoryFile+="."+n;
   }
 
+
+  int natoms;
+
   FILE* fp=NULL; FILE* fp_forces=NULL;
   if(!noatoms){
      if (trajectoryFile=="-") 
        fp=in;
      else {
-       fp=fopen(trajectoryFile.c_str(),"r");
-       if(!fp){
-         string msg="ERROR: Error opening XYZ file "+trajectoryFile;
-         fprintf(stderr,"%s\n",msg.c_str());
-         return 1;
+       if(use_molfile==true){
+#ifdef __PLUMED_HAS_MOLFILE
+        h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
+        ts_in.coords = (float *)malloc(3*natoms * sizeof(float));
+#endif
+       }else{
+         fp=fopen(trajectoryFile.c_str(),"r");
+         if(!fp){
+           string msg="ERROR: Error opening trajectory file "+trajectoryFile;
+           fprintf(stderr,"%s\n",msg.c_str());
+           return 1;
+         }
        }
      }
-
      if(dumpforces.length()>0){
        if(Communicator::initialized() && pc.Get_size()>1){
          string n;
@@ -320,14 +416,29 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   while(true){
     if(!noatoms){
-       if(!Tools::getline(fp,line)) break;
+       if(use_molfile==true){	
+#ifdef __PLUMED_HAS_MOLFILE
+          int rc; 
+    	  rc = api->read_next_timestep(h_in, natoms, &ts_in);
+          //if(rc==MOLFILE_SUCCESS){
+	  //       printf(" read this one :success \n");
+	  //}
+	  if(rc==MOLFILE_EOF){
+	         //printf(" read this one :eof or error \n");
+	         break;
+	  }
+#endif
+       }else{ 
+         if(!Tools::getline(fp,line)) break;
+       }
     }
 
-    int natoms;
     bool first_step=false;
     if(!noatoms){
-      if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
-      sscanf(line.c_str(),"%100d",&natoms);
+      if(use_molfile==false){
+        if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
+        sscanf(line.c_str(),"%100d",&natoms);
+      }
     }
     if(checknatoms<0 && !noatoms){
       pd_nlocal=natoms;
@@ -335,6 +446,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
       first_step=true;
       masses.assign(natoms,real(1.0));
       charges.assign(natoms,real(0.0));
+//case pdb: structure
       if(pdbfile.length()>0){
         for(unsigned i=0;i<pdb.size();++i){
           AtomNumber an=pdb.getAtomNumbers()[i];
@@ -374,8 +486,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
           start[i+1]=start[i]+loc[i];
         }
         loc[npe-1]=natoms-start[npe-1];
-        intracomm.Bcast(&loc[0],npe,0);
-        intracomm.Bcast(&start[0],npe,0);
+        intracomm.Bcast(loc,0);
+        intracomm.Bcast(start,0);
         pd_nlocal=loc[intracomm.Get_rank()];
         pd_start=start[intracomm.Get_rank()];
         if(intracomm.Get_rank()==0){
@@ -419,6 +531,36 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     p.cmd("setStep",&step);
     p.cmd("setStopFlag",&plumedStopCondition);
     if(!noatoms){
+       if(use_molfile){
+#ifdef __PLUMED_HAS_MOLFILE
+    	   if(pbc_cli_given==false) {
+    		   // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
+    		   real cosBC=cos(ts_in.alpha*pi/180.);
+    		   //double sinBC=sin(ts_in.alpha*pi/180.);
+    		   real cosAC=cos(ts_in.beta*pi/180.);
+    		   real cosAB=cos(ts_in.gamma*pi/180.);
+    		   real sinAB=sin(ts_in.gamma*pi/180.);
+    		   real Ax=ts_in.A;
+    		   real Bx=ts_in.B*cosAB;
+    		   real By=ts_in.B*sinAB;
+                   real Cx=ts_in.C*cosAC;
+                   real Cy=(ts_in.C*ts_in.B*cosBC-Cx*Bx)/By;
+                   real Cz=sqrt(ts_in.C*ts_in.C-Cx*Cx-Cy*Cy);
+    		   cell[0]=Ax/10.;cell[1]=0.;cell[2]=0.;
+    		   cell[3]=Bx/10.;cell[4]=By/10.;cell[5]=0.;
+    		   cell[6]=Cx/10.;cell[7]=Cy/10.;cell[8]=Cz/10.;
+    		   //cerr<<"CELL "<<cell[0]<<" "<<cell[1]<<" "<<cell[2]<<" "<<cell[3]<<" "<<cell[4]<<" "<<cell[5]<<" "<<cell[6]<<" "<<cell[7]<<" "<<cell[8]<<endl;
+    	   }else{
+    		   for(unsigned i=0;i<9;i++)cell[i]=pbc_cli_box[i];
+    	   }
+    	   // info on coords
+    	   // the order is xyzxyz...
+    	   for(unsigned i=0;i<3*natoms;i++){
+    		   coordinates[i]=real(ts_in.coords[i]/10.); //convert to nm
+    		   //cerr<<"COOR "<<coordinates[i]<<endl;
+    	   }
+#endif
+       }else{
        if(trajectory_fmt=="xyz"){
          if(!Tools::getline(fp,line)) error("premature end of trajectory file");
 
@@ -489,6 +631,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
          if(words.size()>8) Tools::convert(words[8],cell[7]);
        }
 
+     }
+
        if(debug_dd){
          for(int i=0;i<dd_nlocal;++i){
            int kk=dd_gatindex[i];
@@ -512,8 +656,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
    p.cmd("calc");
 
 // this is necessary as only processor zero is adding to the virial:
-   intracomm.Bcast(&virial[0],9,0);
-   if(debug_pd) intracomm.Sum(&forces[0],natoms*3);
+   intracomm.Bcast(virial,0);
+   if(debug_pd) intracomm.Sum(forces);
    if(debug_dd){
      for(int i=0;i<dd_nlocal;i++){
        forces[3*dd_gatindex[i]+0]=dd_forces[3*i+0];
@@ -521,7 +665,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        forces[3*dd_gatindex[i]+2]=dd_forces[3*i+2];
      }
      dd_forces.assign(3*natoms,0.0);
-     intracomm.Sum(&forces[0],natoms*3);
+     intracomm.Sum(forces);
    }
    if(debug_grex &&step%grex_stride==0){
      p.cmd("GREX savePositions");
@@ -563,6 +707,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   if(fp_forces) fclose(fp_forces);
   if(fp && fp!=in)fclose(fp);
+#ifdef __PLUMED_HAS_MOLFILE
+  if(h_in) api->close_file_read(h_in);
+#endif
   if(grex_log) fclose(grex_log);
   
   return 0;

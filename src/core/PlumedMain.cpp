@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -46,6 +46,8 @@
 
 using namespace std;
 
+enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT };
+
 namespace PLMD{
 
 PlumedMain::PlumedMain():
@@ -75,6 +77,60 @@ PlumedMain::PlumedMain():
   log.setLinePrefix("PLUMED: ");
   stopwatch.start();
   stopwatch.pause();
+  word_map["setBox"]=SETBOX;
+  word_map["setPositions"]=SETPOSITIONS;
+  word_map["setMasses"]=SETMASSES;
+  word_map["setCharges"]=SETCHARGES;
+  word_map["setPositionsX"]=SETPOSITIONSX;
+  word_map["setPositionsY"]=SETPOSITIONSY;
+  word_map["setPositionsZ"]=SETPOSITIONSZ;
+  word_map["setVirial"]=SETVIRIAL;
+  word_map["setEnergy"]=SETENERGY;
+  word_map["setForces"]=SETFORCES;
+  word_map["setForcesX"]=SETFORCESX;
+  word_map["setForcesY"]=SETFORCESY;
+  word_map["setForcesZ"]=SETFORCESZ;
+  word_map["calc"]=CALC;
+  word_map["prepareDependencies"]=PREPAREDEPENDENCIES;
+  word_map["shareData"]=SHAREDATA;
+  word_map["prepareCalc"]=PREPARECALC;
+  word_map["performCalc"]=PERFORMCALC;
+  word_map["setStep"]=SETSTEP;
+  word_map["setStepLong"]=SETSTEPLONG;
+  word_map["setAtomsNlocal"]=SETATOMSNLOCAL;
+  word_map["setAtomsGatindex"]=SETATOMSGATINDEX;
+  word_map["setAtomsContiguous"]=SETATOMSCONTIGUOUS;
+  word_map["createFullList"]=CREATEFULLLIST;
+  word_map["getFullList"]=GETFULLLIST;
+  word_map["clearFullList"]=CLEARFULLLIST;
+  word_map["read"]=READ;
+  word_map["clear"]=CLEAR;
+  word_map["getApiVersion"]=GETAPIVERSION;
+  word_map["init"]=INIT;
+  word_map["setRealPrecision"]=SETREALPRECISION;
+  word_map["setMDLengthUnits"]=SETMDLENGTHUNITS;
+  word_map["setMDEnergyUnits"]=SETMDENERGYUNITS;
+  word_map["setMDTimeUnits"]=SETMDTIMEUNITS;
+  word_map["setNaturalUnits"]=SETNATURALUNITS;
+  word_map["setNoVirial"]=SETNOVIRIAL;
+  word_map["setPlumedDat"]=SETPLUMEDDAT;
+  word_map["setMPIComm"]=SETMPICOMM;
+  word_map["setMPIFComm"]=SETMPIFCOMM;
+  word_map["setMPImultiSimComm"]=SETMPIMULTISIMCOMM;
+  word_map["setNatoms"]=SETNATOMS;
+  word_map["setTimestep"]=SETTIMESTEP;
+  word_map["setMDEngine"]=SETMDENGINE;
+  word_map["setLog"]=SETLOG;
+  word_map["setLogFile"]=SETLOGFILE;
+  word_map["setStopFlag"]=SETSTOPFLAG;
+  word_map["getExchangesFlag"]=GETEXCHANGESFLAG;
+  word_map["setExchangesSeed"]=SETEXCHANGESSEED;
+  word_map["setNumberOfReplicas"]=SETNUMBEROFREPLICAS;
+  word_map["getExchangesList"]=GETEXCHANGESLIST;
+  word_map["runFinalJobs"]=RUNFINALJOBS;
+  word_map["isEnergyNeeded"]=ISENERGYNEEDED;
+  word_map["getBias"]=GETBIAS;
+  word_map["setKbT"]=SETKBT;
 }
 
 PlumedMain::~PlumedMain(){
@@ -105,245 +161,295 @@ void PlumedMain::cmd(const std::string & word,void*val){
 
   stopwatch.start();
 
-  if(false){
-// for efficiency, words frequently used are checked first
-
-// words used at every MD steps:
-  } else if(word=="setBox") {
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.setBox(val);
-  } else if(word=="setPositions") {
-       CHECK_INIT(initialized,word);
-       atoms.setPositions(val);
-  } else if(word=="setMasses") {
-       CHECK_INIT(initialized,word);
-       atoms.setMasses(val);
-  } else if(word=="setCharges") {
-       CHECK_INIT(initialized,word);
-       atoms.setCharges(val);
-  } else if(word=="setPositionsX") {
-       CHECK_INIT(initialized,word);
-       atoms.setPositions(val,0);
-  } else if(word=="setPositionsY") {
-       CHECK_INIT(initialized,word);
-       atoms.setPositions(val,1);
-  } else if(word=="setPositionsZ") {
-       CHECK_INIT(initialized,word);
-       atoms.setPositions(val,2);
-  } else if(word=="setVirial") {
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.setVirial(val);
-  } else if(word=="setEnergy") {
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.setEnergy(val);
-  } else if(word=="setForces") {
-       CHECK_INIT(initialized,word);
-       atoms.setForces(val);
-  } else if(word=="setForcesX") {
-       CHECK_INIT(initialized,word);
-       atoms.setForces(val,0);
-  } else if(word=="setForcesY") {
-       CHECK_INIT(initialized,word);
-       atoms.setForces(val,1);
-  } else if(word=="setForcesZ") {
-       CHECK_INIT(initialized,word);
-       atoms.setForces(val,2);
-  } else if(word=="calc") {
-       CHECK_INIT(initialized,word);
-       calc();
-  } else if(word=="prepareDependencies") {
-       CHECK_INIT(initialized,word);
-       prepareDependencies();
-  } else if(word=="shareData") {
-       CHECK_INIT(initialized,word);
-       shareData();
-  } else if(word=="prepareCalc") {
-       CHECK_INIT(initialized,word);
-       prepareCalc();
-  } else if(word=="performCalc") {
-       CHECK_INIT(initialized,word);
-       performCalc();
-  } else if(word=="setStep") {
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       step=(*static_cast<int*>(val));
-       atoms.startStep();
- } else if(word=="setStepLong") {
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       step=(*static_cast<long int*>(val));
-       atoms.startStep();
-// words used less frequently:
-  } else if(word=="setAtomsNlocal"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.setAtomsNlocal(*static_cast<int*>(val));
-  } else if(word=="setAtomsGatindex"){
-       CHECK_INIT(initialized,word);
-       atoms.setAtomsGatindex(static_cast<int*>(val));
-  } else if(word=="setAtomsContiguous"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.setAtomsContiguous(*static_cast<int*>(val));
-  } else if(word=="createFullList"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.createFullList(static_cast<int*>(val));
-  } else if(word=="getFullList"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.getFullList(static_cast<int**>(val));
-  } else if(word=="clearFullList"){
-       CHECK_INIT(initialized,word);
-       atoms.clearFullList();
-  } else if(word=="read"){
-       CHECK_INIT(initialized,word);
-       if(val)readInputFile(static_cast<char*>(val));
-       else   readInputFile("plumed.dat");
-  } else if(word=="clear"){
-       CHECK_INIT(initialized,word);
-       actionSet.clearDelete();
-  } else if(word=="getApiVersion"){
-       CHECK_NULL(val,word);
-       *(static_cast<int*>(val))=1;
-// commands which can be used only before initialization:
-  } else if(word=="init"){
-       CHECK_NOTINIT(initialized,word);
-       init();
-  } else if(word=="setRealPrecision"){
-       CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.setRealPrecision(*static_cast<int*>(val));
-  } else if(word=="setMDLengthUnits"){
-       CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
-       double d;
-       atoms.MD2double(val,d);
-       atoms.setMDLengthUnits(d);
-  } else if(word=="setMDEnergyUnits"){
-       CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
-       double d;
-       atoms.MD2double(val,d);
-       atoms.setMDEnergyUnits(d);
-  } else if(word=="setMDTimeUnits"){
-       CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
-       double d;
-       atoms.MD2double(val,d);
-       atoms.setMDTimeUnits(d);
-  } else if(word=="setNaturalUnits"){
-// set the boltzman constant for MD in natural units (kb=1)
-// only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
-// use as cmd("setNaturalUnits")
-       CHECK_NOTINIT(initialized,word);
-       atoms.setMDNaturalUnits(true);
-  } else if(word=="setNoVirial"){
-       CHECK_NOTINIT(initialized,word);
-       novirial=true;
-  } else if(word=="setPlumedDat"){
-       CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
-       plumedDat=static_cast<char*>(val);
-  } else if(word=="setMPIComm"){
-       CHECK_NOTINIT(initialized,word);
-       comm.Set_comm(val);
-       atoms.setDomainDecomposition(comm);
-  } else if(word=="setMPIFComm"){
-       CHECK_NOTINIT(initialized,word);
-       comm.Set_fcomm(val);
-       atoms.setDomainDecomposition(comm);
-  } else if(word=="setMPImultiSimComm"){
-       CHECK_NOTINIT(initialized,word);
-       multi_sim_comm.Set_comm(val);
-  } else if(word=="setNatoms"){
-       CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.setNatoms(*static_cast<int*>(val));
-  } else if(word=="setTimestep"){
-       CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
-       atoms.setTimeStep(val);
-  } else if(word=="setMDEngine"){
-       CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
-       MDEngine=static_cast<char*>(val);
-  } else if(word=="setLog"){
-       CHECK_NOTINIT(initialized,word);
-       log.link(static_cast<FILE*>(val));
-  } else if(word=="setLogFile"){
-       CHECK_NOTINIT(initialized,word);
-       CHECK_NULL(val,word);
-       log.open(static_cast<char*>(val),"w");
-// other commands that should be used after initialization:
-  } else if(word=="setStopFlag"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       stopFlag=static_cast<int*>(val);
-  } else if(word=="getExchangesFlag"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       exchangePatterns.getFlag((*static_cast<int*>(val)));
-  } else if(word=="setExchangesSeed"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       exchangePatterns.setSeed((*static_cast<int*>(val)));
-  } else if(word=="setNumberOfReplicas"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       exchangePatterns.setNofR((*static_cast<int*>(val)));
-  } else if(word=="getExchangesList"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       exchangePatterns.getList((static_cast<int*>(val)));
-  } else if(word=="runFinalJobs"){  
-       CHECK_INIT(initialized,word);
-       runJobsAtEndOfCalculation();
-  } else if(word=="isEnergyNeeded"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
-       else                       *(static_cast<int*>(val))=0;
-  } else if(word=="getBias"){
-       CHECK_INIT(initialized,word);
-       CHECK_NULL(val,word);
-       double x=getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
-       atoms.double2MD(x,val);
-  } else {
-// multi word commands
-
-     std::vector<std::string> words=Tools::getWords(word);
-     int nw=words.size();
-   
-     if(false){
-     } else if(nw==2 && words[0]=="checkAction"){
-       int check=0;
-       if(actionRegister().check(words[1])) check=1;
-       *(static_cast<int*>(val))=check;
-     } else if(nw>1 && words[0]=="GREX"){
-       if(!grex) grex=new GREX(*this);
-       plumed_massert(grex,"error allocating grex");
-       std::string kk=words[1];
-       for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
-       grex->cmd(kk.c_str(),val);
-     } else if(nw>1 && words[0]=="CLTool"){
-       CHECK_NOTINIT(initialized,word);
-       if(!cltool) cltool=new CLToolMain;
-       std::string kk=words[1];
-       for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
-       cltool->cmd(kk.c_str(),val);
-     } else{
-       plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
-     };
+  std::vector<std::string> words=Tools::getWords(word);
+  unsigned nw=words.size();
+  if(nw==1) {
+    switch(word_map[word]) {
+      double d;
+      case SETBOX:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setBox(val);
+        break;
+      case SETPOSITIONS:
+        CHECK_INIT(initialized,word);
+        atoms.setPositions(val);
+        break;
+      case SETMASSES:
+        CHECK_INIT(initialized,word);
+        atoms.setMasses(val);
+        break;
+      case SETCHARGES:
+        CHECK_INIT(initialized,word);
+        atoms.setCharges(val);
+        break;
+      case SETPOSITIONSX:
+        CHECK_INIT(initialized,word);
+        atoms.setPositions(val,0);
+        break;
+      case SETPOSITIONSY:
+        CHECK_INIT(initialized,word);
+        atoms.setPositions(val,1);
+        break;
+      case SETPOSITIONSZ:
+        CHECK_INIT(initialized,word);
+        atoms.setPositions(val,2);
+        break;
+      case SETVIRIAL:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setVirial(val);
+        break;
+      case SETENERGY:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setEnergy(val);
+        break;
+      case SETFORCES:
+        CHECK_INIT(initialized,word);
+        atoms.setForces(val);
+        break;
+      case SETFORCESX:
+        CHECK_INIT(initialized,word);
+        atoms.setForces(val,0);
+        break;
+      case SETFORCESY:
+        CHECK_INIT(initialized,word);
+        atoms.setForces(val,1);
+        break;
+      case SETFORCESZ:
+        CHECK_INIT(initialized,word);
+        atoms.setForces(val,2);
+        break;
+      case CALC:
+        CHECK_INIT(initialized,word);
+        calc();
+        break;
+      case PREPAREDEPENDENCIES:
+        CHECK_INIT(initialized,word);
+        prepareDependencies();
+        break;
+      case SHAREDATA:
+        CHECK_INIT(initialized,word);
+        shareData();
+        break;
+      case PREPARECALC:
+        CHECK_INIT(initialized,word);
+        prepareCalc();
+        break;
+      case PERFORMCALC:
+        CHECK_INIT(initialized,word);
+        performCalc();
+        break;
+      case SETSTEP:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        step=(*static_cast<int*>(val));
+        atoms.startStep();
+        break;
+      case SETSTEPLONG:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        step=(*static_cast<long int*>(val));
+        atoms.startStep();
+        break;
+      // words used less frequently:
+      case SETATOMSNLOCAL:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setAtomsNlocal(*static_cast<int*>(val));
+        break;
+      case SETATOMSGATINDEX:
+        CHECK_INIT(initialized,word);
+        atoms.setAtomsGatindex(static_cast<int*>(val));
+        break;
+      case SETATOMSCONTIGUOUS:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setAtomsContiguous(*static_cast<int*>(val));
+        break;
+      case CREATEFULLLIST:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.createFullList(static_cast<int*>(val));
+        break;
+      case GETFULLLIST:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.getFullList(static_cast<int**>(val));
+        break;
+      case CLEARFULLLIST:
+        CHECK_INIT(initialized,word);
+        atoms.clearFullList();
+        break;
+      case READ:
+        CHECK_INIT(initialized,word);
+        if(val)readInputFile(static_cast<char*>(val));
+        else   readInputFile("plumed.dat");
+        break;
+      case CLEAR:
+        CHECK_INIT(initialized,word);
+        actionSet.clearDelete();
+        break;
+      case GETAPIVERSION:
+        CHECK_NULL(val,word);
+        *(static_cast<int*>(val))=2;
+        break;
+      // commands which can be used only before initialization:
+      case INIT:
+        CHECK_NOTINIT(initialized,word);
+        init();
+        break;
+      case SETREALPRECISION:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setRealPrecision(*static_cast<int*>(val));
+        break;
+      case SETMDLENGTHUNITS:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.MD2double(val,d);
+        atoms.setMDLengthUnits(d);
+        break;
+      case SETMDENERGYUNITS:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.MD2double(val,d);
+        atoms.setMDEnergyUnits(d);
+        break;
+      case SETMDTIMEUNITS:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.MD2double(val,d);
+        atoms.setMDTimeUnits(d);
+        break;
+      case SETNATURALUNITS:
+      // set the boltzman constant for MD in natural units (kb=1)
+      // only needed in LJ codes if the MD is passing temperatures to plumed (so, not yet...)
+      // use as cmd("setNaturalUnits")
+        CHECK_NOTINIT(initialized,word);
+        atoms.setMDNaturalUnits(true);
+        break;
+      case SETNOVIRIAL:
+        CHECK_NOTINIT(initialized,word);
+        novirial=true;
+        break;
+      case SETPLUMEDDAT:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        plumedDat=static_cast<char*>(val);
+        break;
+      case SETMPICOMM:
+        CHECK_NOTINIT(initialized,word);
+        comm.Set_comm(val);
+        atoms.setDomainDecomposition(comm);
+        break;
+      case SETMPIFCOMM:
+        CHECK_NOTINIT(initialized,word);
+        comm.Set_fcomm(val);
+        atoms.setDomainDecomposition(comm);
+        break;
+      case SETMPIMULTISIMCOMM:
+        CHECK_NOTINIT(initialized,word);
+        multi_sim_comm.Set_comm(val);
+        break;
+      case SETNATOMS:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setNatoms(*static_cast<int*>(val));
+        break;
+      case SETTIMESTEP:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setTimeStep(val);
+        break;
+      case SETKBT: /* ADDED WITH API==2 */
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        atoms.setKbT(val);
+        break;
+      case SETMDENGINE:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        MDEngine=static_cast<char*>(val);
+        break;
+      case SETLOG:
+        CHECK_NOTINIT(initialized,word);
+        log.link(static_cast<FILE*>(val));
+        break;
+      case SETLOGFILE:
+        CHECK_NOTINIT(initialized,word);
+        CHECK_NULL(val,word);
+        log.open(static_cast<char*>(val));
+        break;
+      // other commands that should be used after initialization:
+      case SETSTOPFLAG:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        stopFlag=static_cast<int*>(val);
+        break;
+      case GETEXCHANGESFLAG:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        exchangePatterns.getFlag((*static_cast<int*>(val)));
+        break;
+      case SETEXCHANGESSEED:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        exchangePatterns.setSeed((*static_cast<int*>(val)));
+        break;
+      case SETNUMBEROFREPLICAS:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        exchangePatterns.setNofR((*static_cast<int*>(val)));
+        break;
+      case GETEXCHANGESLIST:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        exchangePatterns.getList((static_cast<int*>(val)));
+        break;
+      case RUNFINALJOBS:
+        CHECK_INIT(initialized,word);
+        runJobsAtEndOfCalculation();
+        break;
+      case ISENERGYNEEDED:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        if(atoms.isEnergyNeeded()) *(static_cast<int*>(val))=1;
+        else                       *(static_cast<int*>(val))=0;
+        break;
+      case GETBIAS:
+        CHECK_INIT(initialized,word);
+        CHECK_NULL(val,word);
+        d=getBias()/(atoms.getMDUnits().getEnergy()/atoms.getUnits().getEnergy());
+        atoms.double2MD(d,val);
+        break;
+      default:
+        plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
+        break;
+    }
+  } else if(nw==2 && words[0]=="checkAction"){
+    int check=0;
+    if(actionRegister().check(words[1])) check=1;
+    *(static_cast<int*>(val))=check;
+  } else if(nw>1 && words[0]=="GREX"){
+    if(!grex) grex=new GREX(*this);
+    plumed_massert(grex,"error allocating grex");
+    std::string kk=words[1];
+    for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
+    grex->cmd(kk.c_str(),val);
+  } else if(nw>1 && words[0]=="CLTool"){
+    CHECK_NOTINIT(initialized,word);
+    if(!cltool) cltool=new CLToolMain;
+    std::string kk=words[1];
+    for(unsigned i=2;i<words.size();i++) kk+=" "+words[i];
+    cltool->cmd(kk.c_str(),val);
+  } else{
+    plumed_merror("cannot interpret cmd(\"" + word + "\"). check plumed developers manual to see the available commands.");
   };
-
  stopwatch.pause();
 }
 
-/////
 ////////////////////////////////////////////////////////////////////////
 
 void PlumedMain::init(){
@@ -369,6 +475,12 @@ void PlumedMain::init(){
   }
   atoms.updateUnits();
   log.printf("Timestep: %f\n",atoms.getTimeStep());
+  if(atoms.getKbT()>0.0)
+    log.printf("KbT: %f\n",atoms.getKbT());
+  else {
+    log.printf("KbT has not been set by the MD engine\n");
+    log.printf("It should be set by hand where needed\n");
+  }
   log<<"Relevant bibliography:\n";
   log<<citations;
   log<<"Please read and cite where appropriate!\n";
@@ -415,8 +527,6 @@ void PlumedMain::readInputWords(const std::vector<std::string> & words){
   pilots=actionSet.select<ActionPilot*>();
 }
 
-
-
 ////////////////////////////////////////////////////////////////////////
 
 void PlumedMain::exit(int c){
@@ -427,10 +537,6 @@ Log& PlumedMain::getLog(){
   return log;
 }
 
-
-
-
-
 void PlumedMain::calc(){
   prepareCalc();
   performCalc();
@@ -440,7 +546,6 @@ void PlumedMain::prepareCalc(){
   prepareDependencies();
   shareData();
 }
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // here we have the main steps in "calc()"
@@ -455,7 +560,6 @@ void PlumedMain::prepareDependencies(){
 // before doing that, the prepare() method is called to see if there is some
 // new/changed dependency (up to now, only useful for dependences on virtual atoms,
 // which can be dynamically changed).
-//
 
 // First switch off all actions
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
@@ -480,7 +584,6 @@ void PlumedMain::prepareDependencies(){
   }
 
   stopwatch.stop("1 Prepare dependencies");
-
 }
 
 void PlumedMain::shareData(){
@@ -503,7 +606,6 @@ void PlumedMain::waitData(){
   if(atoms.getNatoms()>0) atoms.wait();
   stopwatch.stop("3 Waiting for data");
 }
-
 
 void PlumedMain::justCalculate(){
   if(!active)return;
@@ -679,8 +781,4 @@ void PlumedMain::runJobsAtEndOfCalculation(){
 
 }
 
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-

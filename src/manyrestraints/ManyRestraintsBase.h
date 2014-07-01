@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -26,58 +26,59 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionPilot.h"
 #include "vesselbase/ActionWithVessel.h"
+#include "vesselbase/ActionWithInputVessel.h"
 
 namespace PLMD {
 namespace manyrestraints {
 
 class ManyRestraintsBase :
- public ActionAtomistic,
  public ActionWithValue,
  public ActionPilot,
- public vesselbase::ActionWithVessel
+ public vesselbase::ActionWithVessel,
+ public vesselbase::ActionWithInputVessel
 {
 private:
-  std::vector<double> forcesToApply;
+/// Pointer to underlying action with vessel
+  vesselbase::ActionWithVessel* aves;
 protected:
-  void createRestraints( const unsigned& nrestraints );
-/// Add some derivatives to a particular atom
-  void addAtomsDerivatives(const int&,const Vector&);
-/// Add some derivatives to the virial
-  void addBoxDerivatives(const Tensor&);
+/// Get the value of the current cv
+  double getValue();
+/// Get the weight of the current cv
+  double getWeight();
+/// Apply the chain rule to calculate the derivatives
+  void applyChainRuleForDerivatives( const double& df );
 public:
   static void registerKeywords( Keywords& keys );
   ManyRestraintsBase(const ActionOptions&);
+  bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives();
+/// Routines that have to be defined so as not to have problems with virtual methods
+  void deactivate_task(){};
+/// Don't actually clear the derivatives when this is called from plumed main.  
+/// They are calculated inside another action and clearing them would be bad  
+  void clearDerivatives(){}
+/// Do jobs required before tasks are undertaken
+  void doJobsRequiredBeforeTaskList();
+// Calculate does nothing
+  void calculate(){};
 /// Deactivate task now does nothing
-  void deactivate_task(){}
   void apply();
+  void applyBridgeForces( const std::vector<double>& bb ){ plumed_assert( bb.size()==0 ); }
 };
 
 inline
 unsigned ManyRestraintsBase::getNumberOfDerivatives(){
-  return 3*getNumberOfAtoms() + 9;
+  return aves->getNumberOfDerivatives();
 }
 
 inline
-void ManyRestraintsBase::addAtomsDerivatives(const int& iatom, const Vector& der){
-  plumed_dbg_assert( iatom<getNumberOfAtoms() );
-  addElementDerivative( 3*iatom+0, der[0] );
-  addElementDerivative( 3*iatom+1, der[1] );
-  addElementDerivative( 3*iatom+2, der[2] );
+double ManyRestraintsBase::getValue(){
+  return aves->getElementValue(0);
 }
-  
+
 inline
-void ManyRestraintsBase::addBoxDerivatives(const Tensor& vir){
-  int natoms=getNumberOfAtoms();
-  addElementDerivative( 3*natoms+0, vir(0,0) );
-  addElementDerivative( 3*natoms+1, vir(0,1) );
-  addElementDerivative( 3*natoms+2, vir(0,2) );
-  addElementDerivative( 3*natoms+3, vir(1,0) );
-  addElementDerivative( 3*natoms+4, vir(1,1) );
-  addElementDerivative( 3*natoms+5, vir(1,2) );
-  addElementDerivative( 3*natoms+6, vir(2,0) );
-  addElementDerivative( 3*natoms+7, vir(2,1) );
-  addElementDerivative( 3*natoms+8, vir(2,2) );
+double ManyRestraintsBase::getWeight(){
+  return aves->getElementValue(1);
 }
 
 }

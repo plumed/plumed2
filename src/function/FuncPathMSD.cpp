@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -220,7 +220,7 @@ void FuncPathMSD::prepare(){
                 // resize the effective list
                 neighpair.resize(neigh_size);
 		log.printf("  NEIGH LIST NOW INCLUDE INDEXES: ");
-		for(unsigned i=0;i<neigh_size;++i)log.printf(" %f ",indexmap[neighpair[i].first]);log.printf(" \n");
+		for(int i=0;i<neigh_size;++i)log.printf(" %f ",indexmap[neighpair[i].first]);log.printf(" \n");
      }else{
         if( int(getStep())%int(neigh_stride/getTimeStep())==0 ){
                  log.printf(" Time %f : recalculating full neighlist \n",getStep()*getTimeStep());
@@ -252,7 +252,7 @@ void FuncPathMSD::prepare(){
  requestArguments(argstocall);
  //now resize the derivatives as well
  //for each value in this action
- for(unsigned i=0;i< getNumberOfComponents();i++){
+ for(int i=0;i< getNumberOfComponents();i++){
  	//resize the derivative to the number   the 
 	getPntrToComponent(i)->clearDerivatives();
 	getPntrToComponent(i)->resizeDerivatives(getNumberOfArguments());

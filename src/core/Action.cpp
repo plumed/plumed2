@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -106,7 +106,7 @@ void Action::parseFlag(const std::string&key,bool & t){
   plumed_massert(keywords.exists(key), "keyword " + key + " has not been registered");
   // Check keyword is a flag
   if(!keywords.style(key,"nohtml")){
-     plumed_massert(keywords.style(key,"flag"), "keyword " + key + " is not a flag");
+     plumed_massert(keywords.style(key,"flag") || keywords.style(key,"hidden"), "keyword " + key + " is not a flag");
   }
 
   // Read in the flag otherwise get the default value from the keywords object
@@ -121,7 +121,7 @@ void Action::parseFlag(const std::string&key,bool & t){
 }
 
 void Action::addDependency(Action*action){
-  after.insert(action);
+  after.push_back(action);
 }
 
 void Action::activate(){

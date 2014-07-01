@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -26,13 +26,6 @@
 
 namespace PLMD {
 
-//+PLUMEDOC INTERNAL BiasRepresentation 
-/*
-An internal tool in plumed that is used to represent a bias
-
-*/
-//+ENDPLUMEDOC
-
 /// the constructor here
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),mycomm(cc){
     ndim=tmpvalues.size();
@@ -50,12 +43,16 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 } 
 /// overload the constructor: add the grid at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin ):hasgrid(false), rescaledToBias(false), mycomm(cc){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, 
+                                       vector<unsigned> nbin, bool doInt, double lowI, double uppI ):hasgrid(false), rescaledToBias(false), mycomm(cc){
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
          names.push_back(values[i]->getName());
-    } 
+    }
+    doInt_=doInt;
+    lowI_=lowI;
+    uppI_=uppI;
     // initialize the grid 
     addGrid(gmin,gmax,nbin);
 } 
@@ -137,7 +134,7 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
 	biasf.push_back(dummyd);
         // the domain does not pertain to the kernel but to the values here defined 
 	string	mins,maxs,minv,maxv,mini,maxi;mins="min_";maxs="max_";
-        for(unsigned i=0 ; i<ndim; i++){
+        for(int i=0 ; i<ndim; i++){
             if(values[i]->isPeriodic()){		
 	      ifile->scanField(mins+names[i],minv);		
 	      ifile->scanField(maxs+names[i],maxv);		
@@ -150,53 +147,58 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
         // if grid is defined then it should be added on the grid    
  	//cerr<<"now with "<<hills.size()<<endl;
         if(hasgrid){
-                 vector<unsigned> nneighb=kk->getSupport(BiasGrid_->getDx());
+                 vector<unsigned> nneighb;
+                 if(doInt_) nneighb=BiasGrid_->getNbin();
+                 else nneighb=kk->getSupport(BiasGrid_->getDx());
                  vector<unsigned> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
                  vector<double> der(ndim);
                  vector<double> xx(ndim);
                  if(mycomm.Get_size()==1){
-                  for(int i=0;i<neighbors.size();++i){
-                   unsigned ineigh=neighbors[i];
-                   for(int j=0;j<ndim;++j){der[j]=0.0;}
-                   BiasGrid_->getPoint(ineigh,xx);   
-                   // assign xx to a new vector of values
-                   for(int j=0;j<ndim;++j){values[j]->set(xx[j]);}	 
-                   double bias=kk->evaluate(values,der,true);
-		   if(rescaledToBias){
+                   for(unsigned i=0;i<neighbors.size();++i){
+                     unsigned ineigh=neighbors[i];
+                     for(int j=0;j<ndim;++j){der[j]=0.0;}
+                     BiasGrid_->getPoint(ineigh,xx);   
+                     // assign xx to a new vector of values
+                     for(int j=0;j<ndim;++j){values[j]->set(xx[j]);}
+                     double bias;	 
+                     if(doInt_) bias=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
+                     else bias=kk->evaluate(values,der,true);
+		     if(rescaledToBias){
 			double f=(biasf.back()-1.)/(biasf.back());
 			bias*=f;
 			for(int j=0;j<ndim;++j){der[j]*=f;}
-                   }
-                   BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
-                  } 
+                     }
+                     BiasGrid_->addValueAndDerivatives(ineigh,bias,der);
+                   } 
                  } else {
-                  unsigned stride=mycomm.Get_size();
-                  unsigned rank=mycomm.Get_rank();
-                  vector<double> allder(ndim*neighbors.size(),0.0);
-                  vector<double> allbias(neighbors.size(),0.0);
-	          vector<double> tmpder(ndim); 
-                  for(unsigned i=rank;i<neighbors.size();i+=stride){
-                   unsigned ineigh=neighbors[i];
-                   BiasGrid_->getPoint(ineigh,xx);
-                   for(int j=0;j<ndim;++j){values[j]->set(xx[j]);}	 
-                   allbias[i]=kk->evaluate(values,tmpder,true);
-		   if(rescaledToBias){
+                   unsigned stride=mycomm.Get_size();
+                   unsigned rank=mycomm.Get_rank();
+                   vector<double> allder(ndim*neighbors.size(),0.0);
+                   vector<double> allbias(neighbors.size(),0.0);
+	           vector<double> tmpder(ndim); 
+                   for(unsigned i=rank;i<neighbors.size();i+=stride){
+                     unsigned ineigh=neighbors[i];
+                     BiasGrid_->getPoint(ineigh,xx);
+                     for(int j=0;j<ndim;++j){values[j]->set(xx[j]);}	 
+                     if(doInt_) allbias[i]=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
+                     else allbias[i]=kk->evaluate(values,der,true);
+		     if(rescaledToBias){
 			double f=(biasf.back()-1.)/(biasf.back());
 			allbias[i]*=f;
 			for(int j=0;j<ndim;++j){tmpder[j]*=f;}
+                     }
+ 	             // this solution with the temporary vector is rather bad, probably better to take 		
+		     // a pointer of double as it was in old gaussian 
+                     for(int j=0;j<ndim;++j){ allder[ndim*i+j]=tmpder[j]; tmpder[j]=0.;}
                    }
- 	           // this solution with the temporary vector is rather bad, probably better to take 		
-		   // a pointer of double as it was in old gaussian 
-                   for(int j=0;j<ndim;++j){ allder[ndim*i+j]=tmpder[j];tmpder[j]=0.;}
-                  }
-                  mycomm.Sum(&allbias[0],allbias.size());
-                  mycomm.Sum(&allder[0],allder.size());
-                  for(unsigned i=0;i<neighbors.size();++i){
-                   unsigned ineigh=neighbors[i];
-                   for(unsigned j=0;j<ndim;++j){der[j]=allder[ndim*i+j];}
-                   BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
-                  }
-                }
+                   mycomm.Sum(allbias);
+                   mycomm.Sum(allder);
+                   for(unsigned i=0;i<neighbors.size();++i){
+                     unsigned ineigh=neighbors[i];
+                     for(int j=0;j<ndim;++j){der[j]=allder[ndim*i+j];}
+                     BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
+                   }
+                 }
         }
 }
 int BiasRepresentation::getNumberOfKernels(){
@@ -220,7 +222,7 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 			ss=hills[i]->getContinuousSupport();	
 		}
 		cc=hills[i]->getCenter();
-		for(unsigned j=0;j<ndim;j++){
+		for(int j=0;j<ndim;j++){
 			double dmin=cc[j]-ss[j];
 			double dmax=cc[j]+ss[j];
 			double ddiv=ss[j]/double(ndiv);
@@ -229,7 +231,7 @@ void BiasRepresentation::getMinMaxBin(vector<double> &vmin, vector<double> &vmax
 			if(ddiv<binsize[j])binsize[j]=ddiv;		
 		}
 	}
-	for(unsigned j=0;j<ndim;j++){
+	for(int j=0;j<ndim;j++){
 		// reset to periodicity
 		if(values[j]->isPeriodic()){
 			double minv,maxv;
