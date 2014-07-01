@@ -108,6 +108,8 @@ CoordinationBase(ao)
   }
   
   checkRead();
+
+  log<<"  contacts are counted with cutoff "<<switchingFunction.description()<<"\n";
 }
 
 double Coordination::pairing(double distance,double&dfunc,unsigned i,unsigned j)const{
