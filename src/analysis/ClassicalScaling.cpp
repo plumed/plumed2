@@ -46,6 +46,15 @@ void ClassicalScaling::run( PointWiseMapping* mymap ){
    std::vector<double> eigval(n); Matrix<double> eigvec(n,n);
    diagMat( distances, eigval, eigvec );
 
+   // This change eigenvectors so that the sum of the elements is positive
+   // We can do it because the phase is arbitrary, and helps making
+   // the result reproducible
+   for(unsigned i=0;i<n;++i){
+     double s=0.0;
+     for(unsigned j=0;j<n;++j) s+=eigvec[i][j];
+     if(s<0.0) for(unsigned j=0;j<n;++j) eigvec[i][j]*=-1;
+   }
+
    // Pass final projections to map object
    for(unsigned i=0;i<n;++i){
       for(unsigned j=0;j<mymap->getNumberOfProperties();++j) mymap->setProjectionCoordinate( i, j, sqrt(eigval[n-1-j])*eigvec(n-1-j,i) ); 
