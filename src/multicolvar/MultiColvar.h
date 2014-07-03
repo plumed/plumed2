@@ -54,8 +54,6 @@ protected:
   void readTwoGroups( const std::string& key1, const std::string& key2 );
 /// Read three groups
   void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2 );
-/// This is used to make neighbor list update fast when three atoms are involved in the colvar (e.g. ANGLES, WATERBRIDGE)
-  void threeBodyNeighborList( const SwitchingFunction& sf );
 /// Add a collective variable
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Add some derivatives for an atom 
@@ -70,8 +68,6 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Get the position of atom iatom
   const Vector & getPosition(unsigned) const;
-/// Finish the update of the task list
-  void finishTaskListUpdate();
 /// Calculate the multicolvar
   virtual void calculate();
 /// Update the atoms that have derivatives

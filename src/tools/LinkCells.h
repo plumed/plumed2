@@ -61,6 +61,8 @@ private:
 public:
 ///
   LinkCells( Communicator& comm );
+/// Have the link cells been enabled
+  bool enabled() const ;
 /// Set the value of the cutoff
   void setCutoff( const double& lcut );
 /// Build the link cell lists
@@ -68,6 +70,11 @@ public:
 /// Find a list of relevant atoms
   void retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ); 
 };
+
+inline
+bool LinkCells::enabled() const {
+  return cutoffwasset;
+}
 
 }
 

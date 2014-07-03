@@ -68,7 +68,6 @@ public:
   Bridge(const ActionOptions&);
 // active methods:
   virtual double compute();
-  void doJobsRequiredBeforeTaskList();
   void calculateWeight();
   bool isPeriodic(){ return false; }
   Vector getCentralAtom();
@@ -120,6 +119,9 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  distance between bridging atoms and atoms in GROUPA must be less than %s\n",sf1.description().c_str());
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
+  // Setup link cells
+  setLinkCellCutoff( 2.*sf1.inverse( getTolerance() ) );
+
   // And setup the ActionWithVessel
   if( getNumberOfVessels()!=0 ) error("should not have vessels for this action");
   std::string fake_input;
@@ -129,31 +131,25 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-void Bridge::doJobsRequiredBeforeTaskList(){
-  // Do jobs required by action with vessel
-  ActionWithVessel::doJobsRequiredBeforeTaskList();
-  // First step of update of three body neighbor list
-  threeBodyNeighborList( sf1 );
-}
-
 void Bridge::calculateWeight(){
-  Vector dij=getSeparation( getPosition(0), getPosition(1) );
-  double dw, w=sf1.calculateSqr( dij.modulo2(), dw );
+  Vector dij=getSeparation( getPosition(0), getPosition(2) );
+  double dw, w=sf2.calculateSqr( dij.modulo2(), dw );
+  // printf("HELLO STUFF %f %f \n", dij.modulo2(), w );
   setWeight( w );
 
   if( w<getTolerance() ) return; 
   addAtomsDerivativeOfWeight( 0, -dw*dij );
-  addAtomsDerivativeOfWeight( 1, dw*dij );
+  addAtomsDerivativeOfWeight( 2, dw*dij );
   addBoxDerivativesOfWeight( (-dw)*Tensor(dij,dij) );
 }
 
 double Bridge::compute(){
-  Vector dik=getSeparation( getPosition(0), getPosition(2) );
-  double dw, w=sf2.calculateSqr( dik.modulo2(), dw );
+  Vector dik=getSeparation( getPosition(0), getPosition(1) );
+  double dw, w=sf1.calculateSqr( dik.modulo2(), dw );
 
   // And finish the calculation
   addAtomsDerivatives( 0, -dw*dik );
-  addAtomsDerivatives( 2,  dw*dik );
+  addAtomsDerivatives( 1,  dw*dik );
   addBoxDerivatives( (-dw)*Tensor(dik,dik) );
   return w;
 }

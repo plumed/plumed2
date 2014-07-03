@@ -71,9 +71,9 @@ updateFreq(0)
   // Neighbor list readin
   parse("NL_STRIDE",updateFreq);
   if(updateFreq>0){
-     if( !mycolv->isDensity() && updateFreq%mycolv->updateFreq!=0 ){ 
-        error("update frequency must be a multiple of update frequency for base multicolvar");  
-     }
+     // if( !mycolv->isDensity() && updateFreq%mycolv->updateFreq!=0 ){ 
+     //    error("update frequency must be a multiple of update frequency for base multicolvar");  
+     // }
      firsttime=true;
      log.printf("  Updating contributors every %d steps.\n",updateFreq);
   } else {

@@ -277,6 +277,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
 double SwitchingFunction::inverse( const double& val ) const {
   double ival;  
 
+  if( dmax<numeric_limits<double>::max() ) return dmax;
+
   if( type==smap ){
   } else if(type==rational){
       ival=1.1;

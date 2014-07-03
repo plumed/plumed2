@@ -79,6 +79,17 @@ tmpdf(1)
   for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
   active_elements.setupMPICommunication( comm );
 
+  // Find the largest sf cutoff
+  double sfmax=switchingFunction(0,0).inverse( getTolerance() );
+  for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
+      for(unsigned j=0;j<<getNumberOfBaseMultiColvars();++j){
+          double tsf=switchingFunction(i,j).inverse( getTolerance() );
+          if( tsf>sfmax ) sfmax=tsf;
+      }
+  }
+  // And set the link cell cutoff
+  setLinkCellCutoff( 2*sfmax );
+
   if( getNumberOfVessels()!=0 ) error("there should be no vessel keywords");
   // Create the storeAdjacencyMatrixVessel
   std::string param; vesselbase::VesselOptions da("","",0,param,this);

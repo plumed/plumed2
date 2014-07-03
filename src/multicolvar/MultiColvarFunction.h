@@ -73,9 +73,6 @@ protected:
 public:
   MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-/// Used to make sure we are calculating everything during neighbor list update step
-  void unlockContributors();
-  void lockContributors();
 /// Active element in atoms_with_derivatives
   void atomHasDerivative( const unsigned& iatom );
 /// Used to get atom numbers
@@ -83,7 +80,7 @@ public:
 /// Is a task currently being peformed
   bool isCurrentlyActive( const unsigned& code );
 /// Finish task list update
-  void finishTaskListUpdate();
+//  void finishTaskListUpdate();
 /// Resize the dynamic arrays 
   void resizeDynamicArrays();
 /// Update the atoms that are active

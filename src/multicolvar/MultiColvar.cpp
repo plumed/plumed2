@@ -65,6 +65,10 @@ void MultiColvar::readAtoms( int& natoms ){
   if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms );
 
   if( all_atoms.fullSize()==0 ) error("No atoms have been read in");
+  // Activate all atoms
+  all_atoms.activateAll();
+  // Request all atoms from ActionAtomistic
+  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() ); 
   // Setup the multicolvar base
   setupMultiColvarBase();
 }
@@ -96,12 +100,16 @@ void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){
      t.resize(0); 
   }
   if( all_atoms.fullSize()>0 ){
-     current_atoms.resize( natoms ); nblock=ablocks[0].size();
+     current_atoms.resize( natoms ); nblock=ablocks[0].size(); 
+     if( natoms<4 ) resizeBookeepingArray( nblock, nblock ); 
+
      for(unsigned i=0;i<nblock;++i){
          if( natoms<4 ){
-            unsigned cvcode=0, tmpc=1;
+            unsigned cvcode=0, tmpc=1; 
             for(unsigned j=0;j<natoms;++j){ cvcode += i*tmpc; tmpc *= nblock; }
-            addTaskToList( cvcode );  
+            bookeeping(i,i).first=getFullNumberOfTasks();
+            addTaskToList( cvcode ); 
+            bookeeping(i,i).second=getFullNumberOfTasks();
          } else {
             addTaskToList( i );
          }
@@ -131,16 +139,24 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
       for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
       if(natoms==2){ 
          nblock=t.size(); for(unsigned i=0;i<2;++i) ablocks[i].resize(nblock);
+         resizeBookeepingArray( nblock, nblock );
          for(unsigned i=0;i<t.size();++i){ ablocks[0][i]=i; ablocks[1][i]=i; }
          for(unsigned i=1;i<t.size();++i){ 
-             for(unsigned j=0;j<i;++j) addTaskToList( i*nblock + j );
+             for(unsigned j=0;j<i;++j){ 
+                bookeeping(i,j).first=getFullNumberOfTasks(); 
+                addTaskToList( i*nblock + j ); 
+                bookeeping(i,j).second=getFullNumberOfTasks(); 
+             }
          }
       } else if(natoms==3){
          nblock=t.size(); for(unsigned i=0;i<3;++i) ablocks[i].resize(nblock); 
+         resizeBookeepingArray( nblock, nblock ); 
          for(unsigned i=0;i<t.size();++i){ ablocks[0][i]=i; ablocks[1][i]=i; ablocks[2][i]=i; }
          for(unsigned i=2;i<t.size();++i){
             for(unsigned j=1;j<i;++j){
+               bookeeping(i,j).first=getFullNumberOfTasks();
                for(unsigned k=0;k<j;++k) addTaskToList( i*nblock*nblock + j*nblock + k );
+               bookeeping(i,j).second=getFullNumberOfTasks();
             }
          }
       }
@@ -180,9 +196,12 @@ void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key
   for(unsigned i=0;i<t2.size();++i){
      all_atoms.addIndexToList( t2[i] ); ablocks[1][i]=t1.size() + i;
   }
+  resizeBookeepingArray( t1.size(), t2.size() ); 
   for(unsigned i=0;i<t1.size();++i){
      for(unsigned j=0;j<t2.size();++j){
+         bookeeping(i,j).first=getFullNumberOfTasks(); 
          if( all_atoms(ablocks[0][i])!=all_atoms(ablocks[1][j]) ) addTaskToList( i*nblock + j );
+         bookeeping(i,j).second=getFullNumberOfTasks();
      }
   }
   if( !verbose_output ){
@@ -212,7 +231,7 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
   for(unsigned i=0;i<t2.size();++i){
      all_atoms.addIndexToList( t2[i] ); ablocks[1][i] = t1.size() + i;
   }
-  parseAtomList(key3,t3);
+  resizeBookeepingArray( t1.size(), t2.size() ); parseAtomList(key3,t3);
   if( t3.empty() && !allow2 ){
       error("missing atom specification " + key3);
   } else if( t3.empty() ){
@@ -223,11 +242,13 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
       for(unsigned i=0;i<t2.size();++i) ablocks[2][i]=t1.size() + i;
       for(unsigned i=0;i<t1.size();++i){
         for(unsigned j=1;j<t2.size();++j){ 
+           bookeeping(i,j).first=getFullNumberOfTasks(); 
            for(unsigned k=0;k<j;++k){
               if( all_atoms(ablocks[0][i])!=all_atoms(ablocks[1][j]) && 
                   all_atoms(ablocks[0][i])!=all_atoms(ablocks[2][k]) && 
                   all_atoms(ablocks[1][j])!=all_atoms(ablocks[2][k]) ) addTaskToList( nblock*nblock*i + nblock*j + k );
            }
+           bookeeping(i,j).second=getFullNumberOfTasks();
         }
       }
       if( !verbose_output ){
@@ -250,11 +271,13 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
       }
       for(unsigned i=0;i<t1.size();++i){
           for(unsigned j=0;j<t2.size();++j){
+              bookeeping(i,j).first=getFullNumberOfTasks();
               for(unsigned k=0;k<t3.size();++k){
                   if( all_atoms(ablocks[0][i])!=all_atoms(ablocks[1][j]) && 
                       all_atoms(ablocks[0][i])!=all_atoms(ablocks[2][k]) && 
                       all_atoms(ablocks[1][j])!=all_atoms(ablocks[2][k]) ) addTaskToList( nblock*nblock*i + nblock*j + k );
               }
+              bookeeping(i,j).second=getFullNumberOfTasks();
           }
       }
       if( !verbose_output ){
@@ -332,63 +355,6 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
          }
       }
   } 
-}
-
-void MultiColvar::threeBodyNeighborList( const SwitchingFunction& sf ){
-  plumed_dbg_assert( !usespecies && ablocks.size()==3 );
-  if( !contributorsAreUnlocked ) return;
-
-  unsigned stride=comm.Get_size();
-  unsigned rank=comm.Get_rank(); 
-  if( serialCalculation() ){ stride=1; rank=0; }
-              
-  unsigned ik=0; double w, dw; Vector dij;
-  std::vector<unsigned> inactive_tasks( getCurrentNumberOfActiveTasks(), 0 );
-  for(unsigned i=0;i<ablocks[0].size();++i){
-      for(unsigned j=0;j<ablocks[1].size();++j){
-                  
-          if( (ik++)%stride!=rank ) continue;
-          
-          dij=getSeparation( ActionAtomistic::getPosition(ablocks[0][i]), ActionAtomistic::getPosition(ablocks[1][j]) );
-          w = sf.calculateSqr( dij.modulo2(), dw );
-          if( w<getNLTolerance() ){
-              // Deactivate all tasks involving i and j
-              for(unsigned k=0;k<getCurrentNumberOfActiveTasks();++k){
-                  unsigned ind=std::floor( getActiveTask(k) / decoder[0] );
-                  if( ind!=i ) continue;
-                  unsigned ind2=std::floor( (getActiveTask(k) - ind*decoder[0]) / decoder[1] );
-                  if( ind2!=j ) continue;
-                  inactive_tasks[k] = 1;
-              }
-          }
-      }
-  }
-  if( !serialCalculation() ) comm.Sum( inactive_tasks );
-  std::vector<bool> activeTasks( getCurrentNumberOfActiveTasks(), false );
-  deactivateAllTasks();
-  for(unsigned i=0;i<activeTasks.size();++i){
-      if( inactive_tasks[i]==0 ) activeTasks[i]=true;
-  }       
-  activateTheseTasks( activeTasks );
-}     
-
-void MultiColvar::finishTaskListUpdate(){
-  if( !contributorsAreUnlocked ){
-      // Get the atoms we need
-      all_atoms.deactivateAll();
-      for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
-          bool check=setupCurrentAtomList( getActiveTask(i) );
-          plumed_assert( check );
-          for(unsigned j=0;j<natomsper;++j) all_atoms.activate( current_atoms[j] );
-      }
-      all_atoms.updateActiveMembers();
-  } else {
-      all_atoms.activateAll();
-  }
-  // Request the atoms
-  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-  // Resize arrays in MultiColvarBase
-  resizeLocalArrays();
 }
 
 void MultiColvar::calculate(){

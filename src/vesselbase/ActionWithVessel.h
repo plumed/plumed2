@@ -178,11 +178,13 @@ public:
 /// Get the list of indices that have derivatives
   virtual void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 /// Switch on additional tasks
-  void activateTheseTasks( std::vector<bool>& addtionalTasks );
+  void activateTheseTasks( std::vector<unsigned>& addtionalTasks );
 /// Do any jobs that are required before the task list is undertaken
   virtual void doJobsRequiredBeforeTaskList();
 /// Get the full size of the taskList dynamic list
   unsigned getFullNumberOfTasks() const ;
+/// Get the code for the ii th task in the list
+  unsigned getTaskCode( const unsigned& ii ) const ;
 /// Get the index for a particular numbered task
 //  unsigned getIndexForTask( const unsigned& itask ) const ;
 /// Calculate one of the functions in the distribution
@@ -286,6 +288,12 @@ void ActionWithVessel::accumulateDerivative( const unsigned& ider, const double&
 inline
 unsigned ActionWithVessel::getFullNumberOfTasks() const {
   return fullTaskList.size();
+}
+
+inline
+unsigned ActionWithVessel::getTaskCode( const unsigned& ii ) const {
+  plumed_dbg_assert( ii<fullTaskList.size() );
+  return fullTaskList[ii];
 }
 
 inline

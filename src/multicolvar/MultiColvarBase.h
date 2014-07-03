@@ -48,9 +48,6 @@ friend class MultiColvar;
 private:
 /// Use periodic boundary conditions
   bool usepbc;
-/// Everything for controlling the updating of neighbor lists
-  int updateFreq;
-  bool firsttime;
 /// The list of all the atoms involved in the colvar
   DynamicList<AtomNumber> all_atoms;
 /// Variables used for central atoms
@@ -60,12 +57,16 @@ private:
   std::vector<double> forcesToApply;
 /// Stuff for link cells - this is used to make coordination number like variables faster
   LinkCells linkcells;
+/// This remembers where the boundaries are for the tasks. It makes link cells work fast
+  Matrix<std::pair<unsigned,unsigned> > bookeeping;
 /// A copy of the vessel containing the catoms
   StoreCentralAtomsVessel* mycatoms;
 /// A copy of the vessel containg the values of each colvar
   StoreColvarVessel* myvalues;
 /// This resizes the local arrays after neighbor list updates and during initialization
   void resizeLocalArrays();
+/// This resizes the arrays that are used for link cell update
+  void resizeBookeepingArray( const unsigned& num1, const unsigned& num2 );
 protected:
 /// A dynamic list containing those atoms with derivatives
   DynamicList<unsigned> atoms_with_derivatives;
@@ -124,8 +125,6 @@ public:
   virtual bool isCurrentlyActive( const unsigned& code )=0;
 /// Turn on the derivatives 
   void turnOnDerivatives();
-/// Prepare for the calculation
-  void prepare();
 /// Perform one of the tasks
   void performTask();
 /// This gets the position of an atom for the link cell setup
