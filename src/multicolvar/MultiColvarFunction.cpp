@@ -65,6 +65,21 @@ MultiColvarBase(ao)
   log.printf("\n");
 }
 
+void MultiColvarFunction::setupAtomLists(){
+  // Copy lists of atoms involved from base multicolvars 
+  std::vector<AtomNumber> all_atoms, tmp_atoms;
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+      tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
+      for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
+  }   
+  
+  // Now make sure we get all the atom positions 
+  ActionAtomistic::requestAtoms( all_atoms );
+  for(unsigned i=0;i<mybasemulticolvars.size();++i) addDependency(mybasemulticolvars[i]);
+  // Do all setup stuff in MultiColvarBase
+  setupMultiColvarBase();
+}
+
 void MultiColvarFunction::buildSymmetryFunctionLists(){
   if( mybasemulticolvars.size()>2 ) error("Found too many multicolvars in DATA specification. You can use either 1 or 2");
 
@@ -86,14 +101,7 @@ void MultiColvarFunction::buildSymmetryFunctionLists(){
       }
       start += mybasemulticolvars[i]->getFullNumberOfTasks();
   }  
-  // Copy lists of atoms involved from base multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->copyAtomListToFunction( this ); 
-
-  // Now make sure we get all the atom positions 
-  all_atoms.activateAll(); ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) addDependency(mybasemulticolvars[i]); 
-  // Do all setup stuff in MultiColvarBase
-  setupMultiColvarBase();
+  setupAtomLists();
 }
 
 void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group ){
@@ -131,14 +139,7 @@ void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group 
         }
      }
   }
-  // Copy lists of atoms involved from base multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->copyAtomListToFunction( this );
-
-  // Now make sure we get all the atom positions 
-  all_atoms.activateAll(); ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) addDependency(mybasemulticolvars[i]);
-  // Do all setup stuff in MultiColvarBase
-  setupMultiColvarBase();
+  setupAtomLists(); 
 }
 
 void MultiColvarFunction::calculate(){

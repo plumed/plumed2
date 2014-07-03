@@ -73,9 +73,13 @@ MoleculeOrientation::MoleculeOrientation( const ActionOptions& ao ):
 Action(ao),
 VectorMultiColvar(ao)
 {
-  int natoms=-1; 
-  readAtomsLikeKeyword("MOL",natoms); 
+  int natoms=-1; std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword("MOL",natoms,all_atoms); 
   if( natoms!=2 && natoms!=3 ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
+
+  if( all_atoms.size()==0 ) error("No atoms were specified");
+  ActionAtomistic::requestAtoms( all_atoms );
+
   setVectorDimensionality( 3, false, natoms );
 }
 

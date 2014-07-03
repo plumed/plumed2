@@ -60,22 +60,22 @@ verbose_output(false)
 }
 
 void MultiColvar::readAtoms( int& natoms ){
-  if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms );
-  if( keywords.exists("GROUP") ) readGroupsKeyword( natoms );
-  if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms );
+  std::vector<AtomNumber> all_atoms;
 
-  if( all_atoms.fullSize()==0 ) error("No atoms have been read in");
-  // Activate all atoms
-  all_atoms.activateAll();
+  if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
+  if( keywords.exists("GROUP") ) readGroupsKeyword( natoms, all_atoms );
+  if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms, all_atoms );
+
+  if( all_atoms.size()==0 ) error("No atoms have been read in");
   // Request all atoms from ActionAtomistic
-  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() ); 
+  ActionAtomistic::requestAtoms( all_atoms ); 
   // Setup the multicolvar base
   setupMultiColvarBase();
 }
 
-void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){ 
+void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms, std::vector<AtomNumber>& all_atoms ){ 
   plumed_assert( !usespecies );
-  if( all_atoms.fullSize()>0 ) return; 
+  if( all_atoms.size()>0 ) return; 
 
   std::vector<AtomNumber> t; 
   for(int i=1;;++i ){
@@ -95,11 +95,11 @@ void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){
         error(key + ss + " keyword has the wrong number of atoms"); 
      }
      for(unsigned j=0;j<natoms;++j){ 
-        ablocks[j].push_back( natoms*(i-1)+j ); all_atoms.addIndexToList( t[j] );
+        ablocks[j].push_back( natoms*(i-1)+j ); all_atoms.push_back( t[j] );
      }
      t.resize(0); 
   }
-  if( all_atoms.fullSize()>0 ){
+  if( all_atoms.size()>0 ){
      current_atoms.resize( natoms ); nblock=ablocks[0].size(); 
      if( natoms<4 ) resizeBookeepingArray( nblock, nblock ); 
 
@@ -117,9 +117,9 @@ void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms ){
   }
 }
 
-void MultiColvar::readGroupsKeyword( int& natoms ){
+void MultiColvar::readGroupsKeyword( int& natoms, std::vector<AtomNumber>& all_atoms ){
   plumed_assert( !usespecies ); 
-  if( all_atoms.fullSize()>0 ) return;
+  if( all_atoms.size()>0 ) return;
 
   if( natoms==2 ){
      if( !keywords.exists("GROUPA") ) error("use GROUPA and GROUPB keywords as well as GROUP");
@@ -136,7 +136,7 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
   parseAtomList("GROUP",t);
   if( !t.empty() ){
       ablocks.resize( natoms ); current_atoms.resize( natoms );
-      for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
+      for(unsigned i=0;i<t.size();++i) all_atoms.push_back( t[i] );
       if(natoms==2){ 
          nblock=t.size(); for(unsigned i=0;i<2;++i) ablocks[i].resize(nblock);
          resizeBookeepingArray( nblock, nblock );
@@ -167,17 +167,17 @@ void MultiColvar::readGroupsKeyword( int& natoms ){
       }
   } else {
       if(natoms==2){
-         readTwoGroups("GROUPA","GROUPB");
+         readTwoGroups( "GROUPA", "GROUPB", all_atoms );
       } else if(natoms==3){
-         readThreeGroups("GROUPA","GROUPB","GROUPC",true);
+         readThreeGroups( "GROUPA", "GROUPB", "GROUPC", true, all_atoms);
       } else {
          plumed_merror("can only use groups for colvars involving 2 or 3 atoms");
       }
   }
 }
 
-void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key2 ){
-  plumed_assert( all_atoms.fullSize()==0 );
+void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key2, std::vector<AtomNumber>& all_atoms ){
+  plumed_assert( all_atoms.size()==0 );
   ablocks.resize( 2 ); current_atoms.resize( 2 );
 
   std::vector<AtomNumber> t1, t2; std::vector<unsigned> newlist; 
@@ -190,17 +190,17 @@ void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key
 
   ablocks[0].resize( t1.size() ); 
   for(unsigned i=0;i<t1.size();++i){
-     all_atoms.addIndexToList( t1[i] ); ablocks[0][i]=i;
+     all_atoms.push_back( t1[i] ); ablocks[0][i]=i;
   }
   ablocks[1].resize( t2.size() ); 
   for(unsigned i=0;i<t2.size();++i){
-     all_atoms.addIndexToList( t2[i] ); ablocks[1][i]=t1.size() + i;
+     all_atoms.push_back( t2[i] ); ablocks[1][i]=t1.size() + i;
   }
   resizeBookeepingArray( t1.size(), t2.size() ); 
   for(unsigned i=0;i<t1.size();++i){
      for(unsigned j=0;j<t2.size();++j){
          bookeeping(i,j).first=getFullNumberOfTasks(); 
-         if( all_atoms(ablocks[0][i])!=all_atoms(ablocks[1][j]) ) addTaskToList( i*nblock + j );
+         if( all_atoms[ablocks[0][i]]!=all_atoms[ablocks[1][j]] ) addTaskToList( i*nblock + j );
          bookeeping(i,j).second=getFullNumberOfTasks();
      }
   }
@@ -215,8 +215,8 @@ void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key
   }
 }
 
-void MultiColvar::readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2 ){
-  plumed_assert( all_atoms.fullSize()==0 );
+void MultiColvar::readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2, std::vector<AtomNumber>& all_atoms ){
+  plumed_assert( all_atoms.size()==0 );
   ablocks.resize( 3 ); current_atoms.resize( 3 );
 
   std::vector<AtomNumber> t1, t2, t3; std::vector<unsigned> newlist;
@@ -225,11 +225,11 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
   if( t2.empty() ) error("missing atom specification " + key2);
   ablocks[0].resize( t1.size() ); 
   for(unsigned i=0;i<t1.size();++i){
-    all_atoms.addIndexToList( t1[i] ); ablocks[0][i]=i;
+    all_atoms.push_back( t1[i] ); ablocks[0][i]=i;
   }
   ablocks[1].resize( t2.size() ); 
   for(unsigned i=0;i<t2.size();++i){
-     all_atoms.addIndexToList( t2[i] ); ablocks[1][i] = t1.size() + i;
+     all_atoms.push_back( t2[i] ); ablocks[1][i] = t1.size() + i;
   }
   resizeBookeepingArray( t1.size(), t2.size() ); parseAtomList(key3,t3);
   if( t3.empty() && !allow2 ){
@@ -244,9 +244,9 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
         for(unsigned j=1;j<t2.size();++j){ 
            bookeeping(i,j).first=getFullNumberOfTasks(); 
            for(unsigned k=0;k<j;++k){
-              if( all_atoms(ablocks[0][i])!=all_atoms(ablocks[1][j]) && 
-                  all_atoms(ablocks[0][i])!=all_atoms(ablocks[2][k]) && 
-                  all_atoms(ablocks[1][j])!=all_atoms(ablocks[2][k]) ) addTaskToList( nblock*nblock*i + nblock*j + k );
+              if( all_atoms[ablocks[0][i]]!=all_atoms[ablocks[1][j]] && 
+                  all_atoms[ablocks[0][i]]!=all_atoms[ablocks[2][k]] && 
+                  all_atoms[ablocks[1][j]]!=all_atoms[ablocks[2][k]] ) addTaskToList( nblock*nblock*i + nblock*j + k );
            }
            bookeeping(i,j).second=getFullNumberOfTasks();
         }
@@ -267,15 +267,15 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
 
       ablocks[2].resize( t3.size() ); 
       for(unsigned i=0;i<t3.size();++i){
-         all_atoms.addIndexToList( t3[i] ); ablocks[2][i] = t1.size() + t2.size() + i;
+         all_atoms.push_back( t3[i] ); ablocks[2][i] = t1.size() + t2.size() + i;
       }
       for(unsigned i=0;i<t1.size();++i){
           for(unsigned j=0;j<t2.size();++j){
               bookeeping(i,j).first=getFullNumberOfTasks();
               for(unsigned k=0;k<t3.size();++k){
-                  if( all_atoms(ablocks[0][i])!=all_atoms(ablocks[1][j]) && 
-                      all_atoms(ablocks[0][i])!=all_atoms(ablocks[2][k]) && 
-                      all_atoms(ablocks[1][j])!=all_atoms(ablocks[2][k]) ) addTaskToList( nblock*nblock*i + nblock*j + k );
+                  if( all_atoms[ablocks[0][i]]!=all_atoms[ablocks[1][j]] && 
+                      all_atoms[ablocks[0][i]]!=all_atoms[ablocks[2][k]] && 
+                      all_atoms[ablocks[1][j]]!=all_atoms[ablocks[2][k]] ) addTaskToList( nblock*nblock*i + nblock*j + k );
               }
               bookeeping(i,j).second=getFullNumberOfTasks();
           }
@@ -295,15 +295,15 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
   }
 }
 
-void MultiColvar::readSpeciesKeyword( int& natoms ){
+void MultiColvar::readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_atoms ){
   plumed_assert( usespecies );
-  if( all_atoms.fullSize()>0 ) return ;
+  if( all_atoms.size()>0 ) return ;
   ablocks.resize( natoms-1 );
 
   std::vector<AtomNumber> t;
   parseAtomList("SPECIES",t);
   if( !t.empty() ){
-      for(unsigned i=0;i<t.size();++i) all_atoms.addIndexToList( t[i] );
+      for(unsigned i=0;i<t.size();++i) all_atoms.push_back( t[i] );
       if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ){
           plumed_assert( natoms==2 ); current_atoms.resize( t.size() );
           for(unsigned i=0;i<t.size();++i) addTaskToList(i);
@@ -332,7 +332,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
          parseAtomList("SPECIESB",t2);
          if ( t2.empty() ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
          current_atoms.resize( 1 + t2.size() );
-         for(unsigned i=0;i<t1.size();++i){ all_atoms.addIndexToList( t1[i] ); addTaskToList(i); }
+         for(unsigned i=0;i<t1.size();++i){ all_atoms.push_back( t1[i] ); addTaskToList(i); }
          ablocks[0].resize( t2.size() ); 
          unsigned k=0;
          for(unsigned i=0;i<t2.size();++i){ 
@@ -342,7 +342,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms ){
             }
             // This prevents mistakes being made in colvar setup
             if( found ){ ablocks[0][i]=inum; } 
-            else { all_atoms.addIndexToList( t2[i] ); ablocks[0][i]=t1.size() + k; k++; }
+            else { all_atoms.push_back( t2[i] ); ablocks[0][i]=t1.size() + k; k++; }
          }
          if( !verbose_output ){
              log.printf("  generating colvars from a group of %d central atoms and %d other atoms\n",t1.size(), t2.size() );

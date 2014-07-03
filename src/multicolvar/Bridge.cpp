@@ -93,9 +93,12 @@ Bridge::Bridge(const ActionOptions&ao):
 PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
-  weightHasDerivatives=true;
-  readThreeGroups("BRIDGING_ATOMS","GROUPA","GROUPB",false);
-  int natoms=3; readAtoms( natoms );
+  weightHasDerivatives=true; std::vector<AtomNumber> all_atoms;
+  readThreeGroups("BRIDGING_ATOMS","GROUPA","GROUPB",false, all_atoms);
+  if( all_atoms.size()>0 ) ActionAtomistic::requestAtoms( all_atoms );
+  // Setup the multicolvar base
+  setupMultiColvarBase();
+
   std::string sfinput,errors; parse("SWITCH",sfinput);
   if( sfinput.length()>0 ){
       sf1.set(sfinput,errors);

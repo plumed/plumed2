@@ -42,18 +42,18 @@ private:
 /// Do we want lots of details in the output
   bool verbose_output;
 /// Read in the various GROUP keywords
-  void readGroupsKeyword( int& natoms );
+  void readGroupsKeyword( int& natoms, std::vector<AtomNumber>& all_atoms );
 /// Read in the various SPECIES keywords
-  void readSpeciesKeyword( int& natoms );
+  void readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_atoms );
 protected:
 /// Read in all the keywords that can be used to define atoms
   void readAtoms( int& natoms );
 /// Read in ATOMS keyword
-  void readAtomsLikeKeyword( const std::string & key, int& natoms );
+  void readAtomsLikeKeyword( const std::string & key, int& natoms, std::vector<AtomNumber>& all_atoms );
 /// Read two group keywords
-  void readTwoGroups( const std::string& key1, const std::string& key2 );
+  void readTwoGroups( const std::string& key1, const std::string& key2, std::vector<AtomNumber>& all_atoms );
 /// Read three groups
-  void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2 );
+  void readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2, std::vector<AtomNumber>& all_atoms );
 /// Add a collective variable
   void addColvar( const std::vector<unsigned>& newatoms );
 /// Add some derivatives for an atom 
@@ -82,23 +82,11 @@ public:
   double getCharge(unsigned) const ;
 /// Get the absolute index of atom iatom
   AtomNumber getAbsoluteIndex(unsigned) const ;
-/// Get base quantity index
-  unsigned getBaseQuantityIndex( const unsigned& code );
-/// Is this atom currently being copied 
-  bool isCurrentlyActive( const unsigned& );
 /// This is used in MultiColvarBase only - it is used to setup the link cells
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom );
+/// Atoms are always active
+  bool isCurrentlyActive( const unsigned& code ){ return true; }
 };
-
-inline
-unsigned MultiColvar::getBaseQuantityIndex( const unsigned& code ){
-  return all_atoms.linkIndex( code );
-}
-
-inline
-bool MultiColvar::isCurrentlyActive( const unsigned& code ){
-  return all_atoms.isActive(code);
-}
 
 inline
 Vector MultiColvar::getPositionOfAtomForLinkCells( const unsigned& iatom ){
