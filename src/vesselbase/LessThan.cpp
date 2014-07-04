@@ -19,26 +19,11 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
 #include "VesselRegister.h"
-#include "FunctionVessel.h"
-#include "tools/SwitchingFunction.h"
-#include "ActionWithVessel.h"
+#include "LessThan.h"
 
 namespace PLMD {
 namespace vesselbase{
-
-class LessThan : public FunctionVessel {
-private:
-  SwitchingFunction sf;
-public:
-  static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys ); 
-  LessThan( const VesselOptions& da );
-  std::string function_description();
-  bool calculate();
-  void finish();
-};
 
 PLUMED_REGISTER_VESSEL(LessThan,"LESS_THAN")
 
@@ -87,6 +72,10 @@ void LessThan::finish(){
   setOutputValue( getFinalValue(0) ); 
   std::vector<double> df(2); df[0]=1.0; df[1]=0.0;
   mergeFinalDerivatives( df );
+}
+
+double LessThan::getCutoff( const double& tol ){
+  return sf.inverse( tol );
 }
 
 }
