@@ -46,7 +46,7 @@ MultiColvarBase(ao)
   // Number of tasks is the same as the number in the underlying MultiColvar
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList( mycolv->getTaskCode(i) );
   // Do all setup stuff in MultiColvarBase
-  setupMultiColvarBase();
+  resizeLocalArrays();
 }
 
 void BridgedMultiColvarFunction::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
