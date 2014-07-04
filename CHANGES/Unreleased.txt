@@ -4,4 +4,10 @@
 
 Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
 
+Changes from version 2.1 which are relevant for users:
+- Link cells are now used in all multicolvars that involve \ref SwitchingFunctions.  The link cell cutoff is
+  set equal to 2.*\f$d_{\textrm{max}}\f$.  Where \f$d_{\textrm{max}}\f$ is the (user-specified) point at which
+  the switching function goes to zero. Users should always set this parameter when using a switching function
+  in order to achieve optimal performance. 
+
 */
