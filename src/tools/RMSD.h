@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -68,11 +68,9 @@ class RMSD
   std::vector<double> align;
 // Weights for deviation
   std::vector<double> displace;
-// Logfile
-  Log *log;
 public:
 /// Constructor
-  RMSD(Log & log );
+  RMSD();
 /// clear the structure
   void clear();
 /// set reference, align and displace from input pdb structure

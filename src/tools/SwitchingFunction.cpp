@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -297,6 +297,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
 
 double SwitchingFunction::inverse( const double& val ) const {
   double ival;  
+
+  if( dmax<numeric_limits<double>::max() ) return dmax;
 
   if( type==smap ){
   } else if(type==rational){

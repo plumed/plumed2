@@ -9,20 +9,25 @@
       <tab type="user" visible="yes" url="_configuring_plumed.html" title="Configuration"/>
     </tab>
     --> 
-    <tab type="usergroup" title="Basics">
-      <tab type="user" visible="yes" url="_syntax.html" title="Input File"/>
-    </tab>
-    <tab type="usergroup" title="Collective variables">
-      <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
-      <tab type="user" visible="yes" url="_colvar.html" title="Collective Variables"/>
-      <tab type="user" visible="yes" url="dists.html" title="Distances from reference configurations"/>
-      <tab type="user" visible="yes" url="_function.html" title="Functions"/>
-      <tab type="user" visible="yes" url="mcolv.html" title="MultiColvar documentation"/>
-    </tab>
+    <tab type="user" visible="yes" url="_syntax.html" title="Getting started"/>
+    <tab type="usergroup" title="Collective variables" url="colvarintro.html">
+     <tab type="user" visible="yes" url="_group.html" title="Groups and Atoms"/>
+     <tab type="user" visible="yes" url="_colvar.html" title="CV documentation"/>
+     <tab type="user" visible="yes" url="dists.html" title="Distances from reference configurations"/>
+     <tab type="user" visible="yes" url="_function.html" title="Functions"/>
+     <tab type="user" visible="yes" url="mcolv.html" title="MultiColvar documentation"/>
+   </tab>
     <tab type="user" visible="yes" url="_analysis.html" title="Analysis"/>
     <tab type="user" visible="yes" url="_bias.html" title="Bias"/>
     <tab type="user" visible="yes" url="tools.html" title="Tools"/>
-    <tab type="user" visible="yes" url="misc.html" title="Misc"/>
+    <tab type="usergroup" title="Miscelaneous">
+      <tab type="user" visible="yes" url="comments.html" title="Adding comments to the input"/>
+      <tab type="user" visible="yes" url="_continuation_lines.html" title="Splitting commands over multiple lines"/>
+      <tab type="user" visible="yes" url="includes.html" title="Including files"/>
+      <tab type="user" visible="yes" url="load.html" title="Loading shared libraries"/> 
+      <tab type="user" visible="yes" url="degub.html" title="Debugging the code"/>
+      <tab type="user" visible="yes" url="misc.html" title="Frequently used tools"/>
+    </tab> 
     <tab type="user" visible="yes" url="tutorials.html" title="Tutorials"/>
     <tab type="user" visible="yes" url="citelist.html" title="Bibliography"/>
     <tab type="user" visible="yes" url="glossary.html" title="Index"/>

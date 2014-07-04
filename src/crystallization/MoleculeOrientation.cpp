@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -73,9 +73,13 @@ MoleculeOrientation::MoleculeOrientation( const ActionOptions& ao ):
 Action(ao),
 VectorMultiColvar(ao)
 {
-  int natoms=-1; 
-  readAtomsLikeKeyword("MOL",natoms); 
+  int natoms=-1; std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword("MOL",natoms,all_atoms); 
   if( natoms!=2 && natoms!=3 ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
+
+  if( all_atoms.size()==0 ) error("No atoms were specified");
+  ActionAtomistic::requestAtoms( all_atoms );
+
   setVectorDimensionality( 3, false, natoms );
 }
 

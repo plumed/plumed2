@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -21,27 +21,10 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 #include "VesselRegister.h"
-#include "FunctionVessel.h"
-#include "tools/HistogramBead.h"
-#include "ActionWithVessel.h"
+#include "Between.h"
 
 namespace PLMD {
 namespace vesselbase {
-
-class Between : public FunctionVessel {
-private:
-  unsigned wnum;
-  bool norm;
-  std::vector<double> df;
-  HistogramBead hist;
-public:
-  static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys );
-  Between( const VesselOptions& da );
-  std::string function_description();
-  bool calculate();
-  void finish();
-};
 
 PLUMED_REGISTER_VESSEL(Between,"BETWEEN")
 
@@ -122,6 +105,10 @@ void Between::finish(){
      mergeFinalDerivatives( df );
   }
 }
+
+double Between::getCutoff( const double& tol ){
+  return std::numeric_limits<double>::max();
+} 
 
 }
 }

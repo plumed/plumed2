@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -212,19 +212,18 @@ void ActionWithVessel::lockContributors(){
 }
 
 void ActionWithVessel::deactivateAllTasks(){
-  plumed_assert( contributorsAreUnlocked );
-  nactive_tasks = 0;
+  contributorsAreUnlocked=true; nactive_tasks = 0;
 }
 
-void ActionWithVessel::activateTheseTasks( std::vector<bool>& additionalTasks ){
+void ActionWithVessel::activateTheseTasks( std::vector<unsigned>& additionalTasks ){
   plumed_dbg_assert( additionalTasks.size()==fullTaskList.size() );
   // Activate tasks that are already active locally
-  for(unsigned i=0;i<nactive_tasks;++i) additionalTasks[ indexOfTaskInFullList[i] ] = true;
+  for(unsigned i=0;i<nactive_tasks;++i) additionalTasks[ indexOfTaskInFullList[i] ] = 1;
 
   nactive_tasks = 0;
   for(unsigned i=0;i<fullTaskList.size();++i){
       // Deactivate sets inactive tasks to number not equal to zero
-      if( additionalTasks[i] ){
+      if( additionalTasks[i]>0 ){
           partialTaskList[nactive_tasks] = fullTaskList[i]; 
           indexOfTaskInFullList[nactive_tasks]=i;
           nactive_tasks++;
@@ -232,6 +231,7 @@ void ActionWithVessel::activateTheseTasks( std::vector<bool>& additionalTasks ){
           taskFlags[i]=1;
       }
   }
+  contributorsAreUnlocked=false;
 }
 
 void ActionWithVessel::deactivate_task(){

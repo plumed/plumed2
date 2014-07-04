@@ -1,5 +1,5 @@
 /**
-\page Syntax Syntax 
+\page Syntax Getting started 
 
 To run PLUMED 2 you need to provide one input file.  In this file you specify what it
 is that PLUMED should do during the course of the run.  Typically this will involve calculating 
@@ -18,7 +18,8 @@ which provide PLUMED with more details as to how the action is to be performed. 
 bounadry conditions when calculating a particular colvar) or they can be words followed by an equals sign and a comma separated 
 list - WITH NO SPACES - of numbers or characters (so for example ATOMS=1,2,3,4 tells PLUMED to use atom numbers 1,2,3 and 4 in 
 the calculation of a particular colvar). Space separated lists can be used instead of commma separated list if the entire list
-is enclosed in curly braces (e.g. ATOMS={1 2 3 4}).
+is enclosed in curly braces (e.g. ATOMS={1 2 3 4}).  Please note that you can split commands over multiple lines by using
+\ref ContinuationLines. 
 
 The most important of these keywords is the label keyword as it is only by using these labels that we can pass data 
 from one action to another.  As an example if you do:
@@ -38,7 +39,7 @@ PRINT ARG=d1 FILE=colvar STRIDE=10
 
 then PLUMED will print out the value of the distance between atoms 1 and 2 every 10 steps to the file colvar as you have told
 PLUMED to take the value calculated by the action d1 and to print it. You can use any character string to label your actions
-as long as it does not begin with the symbol @.  Strings beginning with @ are used by within PLUMED to reference special, 
+as long as it does not begin with the symbol \@.  Strings beginning with \@ are used by within PLUMED to reference special, 
 code-generated groups of atoms and to give labels to any Actions for which the user does not provide a label in the input. 
 
 Notice that if a word followed by a column is added at the beginning of the line (e.g. pippo:), PLUMED automatically
@@ -52,9 +53,11 @@ PRINT ARG=d1 FILE=colvar STRIDE=10
 Also notice that all the actions can be labeled, and that many actions besides normal collective variables can define
 one or more value, which can be then referred using the corresponding label.
 
-Actions can be referred also with POSIX regular expressions (see \ref Regex). For this you need to compile PLUMED with the appropriate flag.  
+Actions can be referred also with POSIX regular expressions (see \ref Regex) if PLUMED is compiled with the appropriate flag.  
+You can also add \ref comments to the input or set up your input over multiple files and then create a composite input by
+\ref includes.
 
-\section Units A note on units
+\section units Plumed units
 By default the PLUMED inputs and outputs quantities in the following units:
 
 - Energy - kJ/mol
@@ -64,9 +67,7 @@ By default the PLUMED inputs and outputs quantities in the following units:
 Unlike PLUMED 1 the units used are independent of the MD engine you are using.  If you want to change these units you can do this using the 
 \ref UNITS keyword. 
 
-Those are the essentials but there are a few other tricks that we didn't know where else to put in the manual so we stuck them here.
-
-\section comments Comments
+\page comments Comments
 
 If you are an organised sort of person who likes to remember what the hell you were trying to do when you ran a 
 particular simulation you might find it useful to put comments in your input file.  In PLUMED you can do this as 
@@ -83,7 +84,7 @@ UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth
 An alternative to including comments in this way is to use line starting ENDPLUMED.  Everything in the PLUMED input after this
 keyword will be ignored.
 
-\section ContinuationLines Continuation lines
+\page ContinuationLines Continuation lines
 
 If your input lines get very long then editing them using vi and other such text editors becomes a massive pain in the arse.  
 We at PLUMED are aware of this fact and thus have provided a way of doing line continuations so as to make your life that much 
@@ -108,7 +109,7 @@ DISTANCES ...
 ... DISTANCES
 \endverbatim
 
-\section includes Including other files in the PLUMED input
+\page includes Including other files 
 
 If, for some reason, you want to spread your PLUMED input over a number of files you can use \ref INCLUDE as shown below:
 
@@ -145,7 +146,7 @@ DISTANCE INCLUDE FILE=options.dat
 RESTRAINT ARG=dist
 \endverbatim
 
-\section load Loading shared libraries
+\page load Loading shared libraries
 
 You can introduce new functionality into PLUMED by placing it directly into the src directory and recompiling the 
 PLUMED libraries.  Alternatively, if you want to keep your code independent from the rest of PLUMED (perhaps
@@ -159,7 +160,7 @@ LOAD FILE=library.so
 N.B.  If your system uses a different suffix for dynamic libraries (e.g. macs use .dylib) then PLUMED will try to 
 automatically adjust the suffix accordingly.
 
-\section degub Debugging the code
+\page degub Debugging the code
 
 The \ref DEBUG action provides some functionality for debugging the code that may be useful if you are doing 
 very intensive development of the code of if you are running on a computer with a strange architecture.

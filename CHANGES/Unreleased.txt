@@ -2,102 +2,12 @@
 
 @page CHANGES-UNRELEASED Unreleased changes
 
-Include all fixes in branch 2.0 indicated in \ref CHANGES-2-0 .
+Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
 
-Changes from version 2.0 which are relevant for users:
-- Changes leading to incompatible behavior:
-  - \ref COORDINATION now skips pairs of one atom with itself.
-- New configuration system based on autoconf (use ./configure from root directory).
-  Optional packages are detected at compile time and correctly
-  enabled or disabled. An internal version of lapack and blas will be used
-  if these libraries are not installed.
-- The command SPHERE has been replaced by \ref UWALLS
-- Labels of quantities calaculated by BIASVALUE have changed from <label>.bias.<argname> to <label>.<argname>_bias, which is more consistent with steered MD
-- Labels of quantities calculated by ABMD have change from <label>.min_<argname> to <label>.<argname>_min, which is more consistent with steered MD
-- New actions:
-  - \ref SPRINT topological collective variables.
-  - \ref CH3SHIFTS collective variable.
-  - \ref COMMITTOR analysis.
-  - \ref LOCAL_AVERAGE.
-  - \ref NLINKS.
-  - \ref DIHCOR.
-  - \ref NOE.
-  - \ref RDC. 
-  - \ref CLASSICAL_MDS
-  - \ref XDISTANCES
-  - \ref YDISTANCES 
-  - \ref ZDISTANCES
-  - \ref DUMPMULTICOLVAR
-  - Crystallization module, including \ref Q3, \ref LOCAL_Q3, \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, \ref SIMPLECUBIC, \ref TETRAHEDRAL and \ref FCCUBIC.
-  - \ref ENSEMBLE to perform Replica-Averaging on any collective variable.
-- New features for existing actions:
-  - \ref METAD : WALKERS_MPI flag (multiple walkers in a mpi-based multi-replica framework),
-    ACCELERATION flag (calculate on the fly the Metadynamics acceleration factor),
-    TAU option (alternative way to set Gaussian height in well-tempered metadynamics),
-    GRID_SPACING (alternative to GRID_BIN to set grid spacing).
-    Notice that now one can also omit GRID_BIN and GRID_SPACING when using
-    fixed size Gaussian, and the grid spacing will be automatically set.
-  - \ref DISTANCE : added SCALED_COMPONENTS
-  - \ref COORDINATION : if a single group is provided, it avoids permuted atom indexes and runs
-    at twice the speed.
-  - \ref DUMPATOMS : PRECISION option to set number of digits in output file.
-  - \ref GROUP : NDX_FILE and NDX_GROUP options to import atom lists from ndx (gromacs) files.
-  - In many multicolvars, MIN and MAX options can be used.
-  - \ref HISTOGRAM : GRID_SPACING (alternative to GRID_BIN to set grid spacing),
-    FREE-ENERGY flags in addition to standard probability density,
-    additional option for KERNEL=DISCRETE to accumulate standard histograms. 
-  - \ref sum_hills : added options --spacing (alternative to --bin to set grid spacing)
-    and --setmintozero to translate the minimum of the output files to zero.
-- New features in MD patches (require repatch):
-  - Gromacs 4.6.5 supports \ref COMMITTOR analysis; can be now be used to perform energy minimization;
-     now passes temperature to PLUMED (this allows temperature to be omitted in some actions,
-     namely \ref METAD and analysis actions).
-  .
-  Notice that if you use runtime binding it is not compulsory to repatch,
-  and that all combinations should work correctly
-  (new/old PLUMED with repatched/non-repatched MD code).
-- Other new features:
-  - \ref driver can now read trajectories in many formats using VMD molfile plugin
-    (requires VMD plugins to be compiled and installed). In case VMD plugins are not installed,
-    the configuration system falls back to an internal version which implements a minimal list
-    of plugins (gromacs and dcd) (kindly provided by T. Giorgino).
-  - \ref switchingfunction : added STRETCH flag.
-  - Negative strides in atom ranges (e.g. 10-1:-3).
-  - \ref COORDINATION and \ref DHENERGY with NLIST now work correctly in replica exchange simulations.
-  - Multicolvars with neighbor lists now work correctly in replica exchange simulations.
-  - Improved multicolvar neighbor lists.
-- Optimizations:
-  - Root-mean-square devations with align weights different from displace weights
-    are now considerably faster. This will affect \ref RMSD calculations plus
-    other variables based on RMSD.
-  - \ref WHOLEMOLECULES is slighlty faster.
-  - \ref COORDINATION is slighlty faster when NN and MM are even and D_0=0.
-  - Atom scattering with domain decomposition is slightly faster.
-  - Link cells are now exploited in some multicolvars.
-  - Derivatives are not calculated unless they are specifically required, because for instance you are adding
-    a bias.
--Documentation
-  - All tutorial material from the recent plumed meeting in Belfast is now in the manual
-  - Improvements to documentation, including lists of referenceable quantities outputted by each action
-  - Manual has been re-organized following suggestions recevied at the plumed meeting.
-
-Changes from version 2.0 which are relevant for developers:
-- Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional
-  flag (--is-installed) to probe if running from a compilation directory or from a fully installed copy
-  (this is needed for regtests to work properly).
-- Improved class Communicator. Many operations can now be done directly on Vectors, Tensors, std::vector and PLMD::Matrix.
-- Patches for GPL codes (QuantumEspresso and Gromacs) now also include
-  original code so as to simplify their modification.
-- Fixed dependencies among actions such that it is now possible (and reliable)
-  to use MPI calls inside Action::prepare()
-- colvar/CoordinationBase.cpp has been changed to make it faster. If you devised a class which inherits from here,
-  consider that CoordinationBase::pairing now needs _squared_ distance instead of distance
-- It is possible to run "make install" from subdirectories (e.g. from src/colvar)
-- There is a small script which disables/enables all optional modules (make mod-light/mod-heavy/mod-reset)
-- Added "-q" option to plumed patch
-- You can now create new metrics to measure distances from a reference configurations. If you do so such
-  metrics can then be used in paths straightforwardly
-- You can now use multicolvars in tandem with manyrestraints in order to add a large numbers of restraints.
-- Can now do multicolvar like things in which each colvar is a vector rather than a scalar.
+Changes from version 2.1 which are relevant for users:
+- Link cells are now used in all multicolvars that involve \ref SwitchingFunctions.  The link cell cutoff is
+  set equal to 2.*\f$d_{\textrm{max}}\f$.  Where \f$d_{\textrm{max}}\f$ is the (user-specified) point at which
+  the switching function goes to zero. Users should always set this parameter when using a switching function
+  in order to achieve optimal performance. 
 
 */

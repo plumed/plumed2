@@ -38,34 +38,19 @@ MultiColvarBase(ao)
   std::string mlab; parse("DATA",mlab);
   mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlab);
   if(!mycolv) error("action labeled " + mlab + " does not exist or is not a multicolvar");
+  BridgedMultiColvarFunction* check = dynamic_cast<BridgedMultiColvarFunction*>( mycolv );
+  if(check) error("cannot create a bridge of a bridge");
+
   myBridgeVessel = mycolv->addBridgingVessel( this ); addDependency(mycolv);
-  // Checks for neighbor list
-  if( mycolv->updateFreq>0 && updateFreq>0 ){
-      if( updateFreq%mycolv->updateFreq!=0 ) error("update frequency must be a multiple of the update frequency in the base colvar");
-  }
   weightHasDerivatives=true;
   // Number of tasks is the same as the number in the underlying MultiColvar
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList( mycolv->getTaskCode(i) );
-}
-
-void BridgedMultiColvarFunction::copyAtomListToFunction( MultiColvarBase* myfunction ){
-  mycolv->copyAtomListToFunction( myfunction );
-}
-
-void BridgedMultiColvarFunction::copyActiveAtomsToFunction( MultiColvarBase* myfunction, const unsigned& start ){
-  mycolv->copyActiveAtomsToFunction( myfunction, start );
+  // Do all setup stuff in MultiColvarBase
+  setupMultiColvarBase();
 }
 
 void BridgedMultiColvarFunction::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
   mycolv->getIndexList( ntotal, jstore, maxder, indices );
-}
-
-void BridgedMultiColvarFunction::finishTaskListUpdate(){
-  plumed_assert( all_atoms.fullSize()==0 );
-  std::vector<bool> additionalTasks( mycolv->getFullNumberOfTasks(), false );
-  for(unsigned i=0;i<mycolv->getCurrentNumberOfActiveTasks();++i) additionalTasks[mycolv->getPositionInFullTaskList(i)]=true;
-  activateTheseTasks( additionalTasks );
-  resizeLocalArrays();
 }
 
 void BridgedMultiColvarFunction::performTask(){

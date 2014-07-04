@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -50,11 +50,6 @@ friend class MultiColvar;
 private:
 /// Use periodic boundary conditions
   bool usepbc;
-/// Everything for controlling the updating of neighbor lists
-  int updateFreq;
-  bool firsttime;
-/// The list of all the atoms involved in the colvar
-  DynamicList<AtomNumber> all_atoms;
 /// Variables used for central atoms
   Tensor ibox;
   DynamicList<unsigned> atomsWithCatomDer;
@@ -62,12 +57,16 @@ private:
   std::vector<double> forcesToApply;
 /// Stuff for link cells - this is used to make coordination number like variables faster
   LinkCells linkcells;
+/// This remembers where the boundaries are for the tasks. It makes link cells work fast
+  Matrix<std::pair<unsigned,unsigned> > bookeeping;
 /// A copy of the vessel containing the catoms
   StoreCentralAtomsVessel* mycatoms;
 /// A copy of the vessel containg the values of each colvar
   StoreColvarVessel* myvalues;
 /// This resizes the local arrays after neighbor list updates and during initialization
   void resizeLocalArrays();
+/// This resizes the arrays that are used for link cell update
+  void resizeBookeepingArray( const unsigned& num1, const unsigned& num2 );
 protected:
 /// A dynamic list containing those atoms with derivatives
   DynamicList<unsigned> atoms_with_derivatives;
@@ -121,13 +120,9 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Used in setupCurrentAtomList to get atom numbers 
 /// Base quantities are different in MultiColvar and MultiColvarFunction
-  virtual unsigned getBaseQuantityIndex( const unsigned& code )=0;
-/// Checks if an task is being performed at the present time
-  virtual bool isCurrentlyActive( const unsigned& code )=0;
 /// Turn on the derivatives 
   virtual void turnOnDerivatives();
 /// Prepare for the calculation
-  void prepare();
 /// Perform one of the tasks
   virtual void performTask();
 /// This gets the position of an atom for the link cell setup
@@ -147,6 +142,8 @@ public:
   virtual unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Get number size of atoms with derivatives array
   virtual unsigned getSizeOfAtomsWithDerivatives();
+/// Checks if an task is being performed at the present time
+  virtual bool isCurrentlyActive( const unsigned& code )=0;
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
 /// Get the index where the central atom is stored
@@ -163,14 +160,8 @@ public:
   virtual bool isDensity(){ return false; }
 /// Store central atoms so that this can be used in a function
   virtual vesselbase::StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
-/// Copy the list of atoms involved to a second MultiColvarBase (used by functions)
-  virtual void copyAtomListToFunction( MultiColvarBase* myfunction );
 /// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
   void quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout );
-/// Return the number of the colvar in which iatom is the first atom
-  unsigned getInternalIndex( const AtomNumber& iatom ) const ;
-/// Make sure the same list of atoms is active in a function
-  virtual void copyActiveAtomsToFunction( MultiColvarBase* myfunction, const unsigned& start );
 /// Activate the atoms that have derivatives from a storeDataVessel
   void activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ); 
 /// Get the position of the iatom th central atom (used in multicolvarfunction)

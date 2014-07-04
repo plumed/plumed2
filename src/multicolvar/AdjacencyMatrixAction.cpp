@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -81,6 +81,17 @@ tmpdf(1)
   // Build active elements array
   for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
   active_elements.setupMPICommunication( comm );
+
+  // Find the largest sf cutoff
+  double sfmax=switchingFunction(0,0).inverse( getTolerance() );
+  for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
+      for(unsigned j=0;j<<getNumberOfBaseMultiColvars();++j){
+          double tsf=switchingFunction(i,j).inverse( getTolerance() );
+          if( tsf>sfmax ) sfmax=tsf;
+      }
+  }
+  // And set the link cell cutoff
+  setLinkCellCutoff( 2*sfmax );
 
   // Create the storeAdjacencyMatrixVessel
   std::string param; vesselbase::VesselOptions da("","",0,param,this);

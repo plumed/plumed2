@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -62,7 +62,7 @@ nframes(0)
     bool do_read=true;
     while (do_read){
          PDB mypdb; 
-         RMSD mymsd(log); 
+         RMSD mymsd; 
          do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
          if(do_read){
             unsigned nat=0;

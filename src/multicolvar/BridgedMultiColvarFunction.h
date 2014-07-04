@@ -29,7 +29,8 @@ namespace PLMD {
 namespace multicolvar {
 
 class BridgedMultiColvarFunction : public MultiColvarBase {
-friend class MultiColvarBase;   
+friend class MultiColvarBase;  
+friend class MultiColvarFunction; 
 private:
 /// This is used for storing positions properly
   Vector tmp_p;
@@ -50,8 +51,6 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   BridgedMultiColvarFunction(const ActionOptions&);
-/// Make sure arrays are set to correct sizes
-  void finishTaskListUpdate();
 /// Don't actually clear the derivatives when this is called from plumed main.  
 /// They are calculated inside another action and clearing them would be bad  
   void clearDerivatives(){}
@@ -59,8 +58,6 @@ public:
   unsigned getNumberOfDerivatives(); 
 /// Get the size of the atoms with derivatives array
   unsigned getSizeOfAtomsWithDerivatives();
-/// Copy list of atoms across
-  void copyAtomListToFunction( MultiColvarBase* myfunction );
 /// Is the output quantity periodic
   bool isPeriodic();
 /// Routines that have to be defined so as not to have problems with virtual methods 
@@ -81,12 +78,10 @@ public:
 /// Is this atom currently being copied 
   bool isCurrentlyActive( const unsigned& );
 /// This should not be called
-  unsigned getBaseQuantityIndex( const unsigned& code ){ plumed_error(); }
   Vector calculateCentralAtomPosition(){ plumed_error(); }
   double compute(){ plumed_error(); }
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ){ plumed_error(); }
   void updateActiveAtoms(){ plumed_error(); }
-  void copyActiveAtomsToFunction( MultiColvarBase* myfunction, const unsigned& start );
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 };
 

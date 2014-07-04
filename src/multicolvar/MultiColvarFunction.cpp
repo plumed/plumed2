@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -24,6 +24,7 @@
 #include "core/ActionSet.h"
 #include "tools/Pbc.h"
 #include "MultiColvarBase.h"
+#include "BridgedMultiColvarFunction.h"
 
 namespace PLMD {
 namespace multicolvar { 
@@ -57,10 +58,6 @@ wtolerance(0.0)
       }
       // Make sure we use low memory option in base colvar
       mycolv->setLowMemOption( usingLowMem() );
-      // Checks for neighbor list
-      if( mycolv->updateFreq>0 && updateFreq>0 ){
-          if( updateFreq%mycolv->updateFreq!=0 ) error("update frequency must be a multiple of the update frequency in the base colvar");
-      }
       // Add the dependency
       addDependency(mycolv);
       // Ensure weights are considered
@@ -75,6 +72,23 @@ wtolerance(0.0)
       parse("WTOL",wtolerance);
       log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
   }
+}
+
+void MultiColvarFunction::setupAtomLists(){
+  // Copy lists of atoms involved from base multicolvars 
+  std::vector<AtomNumber> all_atoms, tmp_atoms;
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+      BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+      if( mybr ) tmp_atoms=(mybr->mycolv)->getAbsoluteIndexes();
+      else tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
+      for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
+  }   
+  
+  // Now make sure we get all the atom positions 
+  ActionAtomistic::requestAtoms( all_atoms );
+  for(unsigned i=0;i<mybasemulticolvars.size();++i) addDependency(mybasemulticolvars[i]);
+  // Do all setup stuff in MultiColvarBase
+  setupMultiColvarBase();
 }
 
 void MultiColvarFunction::buildSymmetryFunctionLists(){
@@ -102,10 +116,7 @@ void MultiColvarFunction::buildSymmetryFunctionLists(){
       }
       start += mybasemulticolvars[i]->getFullNumberOfTasks();
   }  
-  // Copy lists of atoms involved from base multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->copyAtomListToFunction( this ); 
-  // Do all setup stuff in MultiColvarBase
-  setupMultiColvarBase();
+  setupAtomLists();
 }
 
 void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group ){
@@ -127,71 +138,27 @@ void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group 
      for(unsigned i=0;i<mybasemulticolvars[0]->getFullNumberOfTasks();++i) ablocks[0][i] = i;
      ablocks[1].resize( mybasemulticolvars[1]->getFullNumberOfTasks() ); unsigned istart = ablocks[0].size();
      for(unsigned i=0;i<mybasemulticolvars[1]->getFullNumberOfTasks();++i) ablocks[1][i] = istart + i;
+     resizeBookeepingArray( ablocks[0].size(), ablocks[1].size() );
      for(unsigned i=0;i<ablocks[0].size();++i){
-         for(unsigned j=0;j<ablocks[1].size();++j) addTaskToList( i*nblock + j );
+         for(unsigned j=0;j<ablocks[1].size();++j){
+            bookeeping(i,j).first=getFullNumberOfTasks();
+            addTaskToList( i*nblock + j );
+            bookeeping(i,j).second=getFullNumberOfTasks();
+         }
      }
   } else {
      nblock = 0; for(unsigned i=0;i<mybasemulticolvars.size();++i) nblock += mybasemulticolvars[i]->getFullNumberOfTasks();
-     ablocks[0].resize( nblock ); ablocks[1].resize( nblock );
+     ablocks[0].resize( nblock ); ablocks[1].resize( nblock ); resizeBookeepingArray( nblock, nblock );
      for(unsigned i=0;i<nblock;++i){ ablocks[0][i] = i; ablocks[1][i] = i; }
      for(unsigned i=1;i<nblock;++i){
-        for(unsigned j=0;j<i;++j) addTaskToList( i*nblock + j );
+        for(unsigned j=0;j<i;++j){
+           bookeeping(i,j).first=getFullNumberOfTasks();
+           addTaskToList( i*nblock + j );
+           bookeeping(i,j).second=getFullNumberOfTasks();
+        }
      }
   }
-  // Copy lists of atoms involved from base multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->copyAtomListToFunction( this );
-  // Do all setup stuff in MultiColvarBase
-  setupMultiColvarBase();
-}
-
-void MultiColvarFunction::finishTaskListUpdate(){
-  std::vector< std::vector<bool> > additionalTasks( mybasemulticolvars.size() );
-  if( !contributorsAreUnlocked ){
-      // Make a list of the tasks required 
-      for(unsigned i=0;i<mybasemulticolvars.size();++i){
-          additionalTasks[i].resize(mybasemulticolvars[i]->getFullNumberOfTasks(), false );
-      }
-
-      // Find what we are required to calculate from base multcolvar
-      for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
-          bool check=setupCurrentAtomList( getActiveTask(i) );
-          plumed_assert( check );
-          for(unsigned j=0;j<natomsper;++j){
-             unsigned mmc = colvar_label[current_atoms[j]];
-             unsigned tl = convertToLocalIndex( current_atoms[j], mmc );
-             additionalTasks[mmc][tl] = true;
-          }
-      }
-  } else {
-      // Make a list of the tasks required 
-      for(unsigned i=0;i<mybasemulticolvars.size();++i){
-          additionalTasks[i].resize(mybasemulticolvars[i]->getFullNumberOfTasks(), true );
-      }
-  }
-
-  // Deactivate all atoms
-  all_atoms.deactivateAll(); all_atoms.resetTranslator(); 
-  unsigned start=0;
-  for(unsigned i=0;i<mybasemulticolvars.size();++i){ 
-     // Add these requirements in the base colvar
-     mybasemulticolvars[i]->activateTheseTasks( additionalTasks[i] );
-     // Redo preparation step for base colvar
-     mybasemulticolvars[i]->prepare();
-     // Copy the active atoms here
-     mybasemulticolvars[i]->copyActiveAtomsToFunction( this, start );
-     // Make sure we are updating the correct atoms
-     start += mybasemulticolvars[i]->all_atoms.fullSize();
-  }
-  // Update all atoms array
-  all_atoms.updateActiveMembers();
-  // Request the atoms
-  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-  // Re-add all the dependencies
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) addDependency(mybasemulticolvars[i]);
-  // Resize arrays in MultiColvarBase
-  resizeLocalArrays();
-  // Make numerical derivatives work
-  if( checkNumericalDerivatives() ) numder_store.resize( getNumberOfComponents(), getNumberOfDerivatives() );
+  setupAtomLists(); 
 }
 
 void MultiColvarFunction::calculate(){
@@ -206,22 +173,6 @@ void MultiColvarFunction::calculate(){
      changeBox( mybasemulticolvars[maxb]->getBox() );
   }
   setupLinkCells(); 
-
-  if( !usespecies ){
-     // Now set up tasks for this step
-     std::vector<bool> activeTasks( getFullNumberOfTasks(), true ); 
-     for(unsigned i=0;i<activeTasks.size();++i){
-         setupCurrentAtomList( getTaskCode(i) ); bool inactive=false;
-         for(unsigned i=0;i<current_atoms.size();++i){
-            if( !isCurrentlyActive( current_atoms[i] ) ) inactive=true;
-         }
-         if( inactive ) activeTasks[i]=false; 
-     }
-     contributorsAreUnlocked=true; 
-     deactivateAllTasks(); activateTheseTasks( activeTasks ); 
-     contributorsAreUnlocked=false;
-  }
-  
   // And run all tasks
   runAllTasks();
 }
