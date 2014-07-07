@@ -50,7 +50,8 @@ Changes from version 2.0 which are relevant for users:
     and --setmintozero to translate the minimum of the output files to zero.
   - \ref CONTACTMAP: parallelised and added weights.
 - New features in MD patches (require repatch):
-  - Gromacs 4.6.5 supports \ref COMMITTOR analysis; can be now be used to perform energy minimization;
+  - Gromacs 4.6.X patch updated to 4.6.6
+  - Gromacs 4.6.6 supports \ref COMMITTOR analysis; can be now be used to perform energy minimization;
      now passes temperature to PLUMED (this allows temperature to be omitted in some actions,
      namely \ref METAD and analysis actions).
   .
