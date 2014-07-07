@@ -48,6 +48,7 @@ Changes from version 2.0 which are relevant for users:
     additional option for KERNEL=DISCRETE to accumulate standard histograms. 
   - \ref sum_hills : added options --spacing (alternative to --bin to set grid spacing)
     and --setmintozero to translate the minimum of the output files to zero.
+  - \ref CONTACTMAP: parallelised and added weights.
 - New features in MD patches (require repatch):
   - Gromacs 4.6.5 supports \ref COMMITTOR analysis; can be now be used to perform energy minimization;
      now passes temperature to PLUMED (this allows temperature to be omitted in some actions,
