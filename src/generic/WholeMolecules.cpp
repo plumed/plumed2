@@ -84,7 +84,7 @@ This command instructs plumed to reconstruct the chain of backbone atoms in a
 protein
 
 \verbatim
-MOLINFO REFERENCE=helix.pdb
+MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES STRIDE=1 RESIDUES=all MOLTYPE=protein 
 \endverbatim
 (See also \ref MOLINFO)
