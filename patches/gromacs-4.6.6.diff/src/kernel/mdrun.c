@@ -58,6 +58,12 @@
 /* afm stuf */
 #include "pull.h"
 
+/* PLUMED */
+#include "../../Plumed.h"
+extern int    plumedswitch;
+extern plumed plumedmain; extern void(*plumedcmd)(plumed,const char*,const void*);
+/* END PLUMED */
+
 int cmain(int argc, char *argv[])
 {
     const char   *desc[] = {
@@ -100,10 +106,16 @@ int cmain(int argc, char *argv[])
         "With thread-MPI there are additional options [TT]-nt[tt], which sets",
         "the total number of threads, and [TT]-ntmpi[tt], which sets the number",
         "of thread-MPI threads.",
-        "Note that using combined MPI+OpenMP parallelization is almost always",
-        "slower than single parallelization, except at the scaling limit, where",
-        "especially OpenMP parallelization of PME reduces the communication cost.",
-        "OpenMP-only parallelization is much faster than MPI-only parallelization",
+        "The number of OpenMP threads used by [TT]mdrun[tt] can also be set with",
+        "the standard environment variable, [TT]OMP_NUM_THREADS[tt].",
+        "The [TT]GMX_PME_NUM_THREADS[tt] environment variable can be used to specify",
+        "the number of threads used by the PME-only processes.[PAR]",
+        "Note that combined MPI+OpenMP parallelization is in many cases",
+        "slower than either on its own. However, at high parallelization, using the",
+        "combination is often beneficial as it reduces the number of domains and/or",
+        "the number of MPI ranks. (Less and larger domains can improve scaling,",
+        "with separate PME processes fewer MPI ranks reduces communication cost.)",
+        "OpenMP-only parallelization is typically faster than MPI-only parallelization",
         "on a single CPU(-die). Since we currently don't have proper hardware",
         "topology detection, [TT]mdrun[tt] compiled with thread-MPI will only",
         "automatically use OpenMP-only parallelization when you use up to 4",
@@ -193,13 +205,16 @@ int cmain(int argc, char *argv[])
         "[PAR]",
         "When PME is used with domain decomposition, separate nodes can",
         "be assigned to do only the PME mesh calculation;",
-        "this is computationally more efficient starting at about 12 nodes.",
+        "this is computationally more efficient starting at about 12 nodes",
+        "or even fewer when OpenMP parallelization is used.",
         "The number of PME nodes is set with option [TT]-npme[tt],",
         "this can not be more than half of the nodes.",
         "By default [TT]mdrun[tt] makes a guess for the number of PME",
-        "nodes when the number of nodes is larger than 11 or performance wise",
-        "not compatible with the PME grid x dimension.",
-        "But the user should optimize npme. Performance statistics on this issue",
+        "nodes when the number of nodes is larger than 16. With GPUs,",
+        "PME nodes are not selected automatically, since the optimal setup",
+        "depends very much on the details of the hardware.",
+        "In all cases you might gain performance by optimizing [TT]-npme[tt].",
+        "Performance statistics on this issue",
         "are written at the end of the log file.",
         "For good load balancing at high parallelization, the PME grid x and y",
         "dimensions should be divisible by the number of PME nodes",
@@ -406,6 +421,7 @@ int cmain(int argc, char *argv[])
         { efMTX, "-mtx",    "nm",       ffOPTWR },
         { efNDX, "-dn",     "dipole",   ffOPTWR },
         { efRND, "-multidir", NULL,      ffOPTRDMULT},
+        { efDAT, "-plumed", "plumed",   ffOPTRD },   /* PLUMED */
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
         { efNDX, "-mn",     "membed",   ffOPTRD }
@@ -743,6 +759,31 @@ int cmain(int argc, char *argv[])
     ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
     ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
+    /* PLUMED */
+    plumedswitch=0;
+    if (opt2bSet("-plumed",NFILE,fnm)) plumedswitch=1;
+    if(plumedswitch){ plumedcmd=plumed_cmd;
+      int plumed_is_there=0;
+      int real_precision=sizeof(real);
+      real energyUnits=1.0;
+      real lengthUnits=1.0;
+      real timeUnits=1.0;
+  
+  
+      if(!plumed_installed()){
+        gmx_fatal(FARGS,"Plumed is not available. Check your PLUMED_KERNEL variable.");
+      }
+      plumedmain=plumed_create();
+      plumed_cmd(plumedmain,"setRealPrecision",&real_precision);
+      // this is not necessary for gromacs units:
+      plumed_cmd(plumedmain,"setMDEnergyUnits",&energyUnits);
+      plumed_cmd(plumedmain,"setMDLengthUnits",&lengthUnits);
+      plumed_cmd(plumedmain,"setMDTimeUnits",&timeUnits);
+      //
+      plumed_cmd(plumedmain,"setPlumedDat",ftp2fn(efDAT,NFILE,fnm));
+      plumedswitch=1;
+    }
+    /* END PLUMED */
 
     rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
                   nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
@@ -752,6 +793,12 @@ int cmain(int argc, char *argv[])
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                   pforce, cpt_period, max_hours, deviceOptions, Flags);
 
+    /* PLUMED */
+    if(plumedswitch){
+      plumed_finalize(plumedmain);
+    }
+    /* END PLUMED */
+  
     gmx_finalize_par();
 
     if (MULTIMASTER(cr))
