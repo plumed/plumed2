@@ -264,7 +264,9 @@ private:
   double lowI_;
   bool doInt_;
   bool isFirstStep;
-  
+  double reweight_factor;
+  std::vector<unsigned> nintegrate; 
+ 
   void   readGaussians(IFile*);
   bool   readChunkOfGaussians(IFile *ifile, unsigned n);
   void   writeGaussian(const Gaussian&,OFile&);
@@ -273,6 +275,7 @@ private:
   double getBiasAndDerivatives(const vector<double>&,double* der=NULL);
   double evaluateGaussian(const vector<double>&, const Gaussian&,double* der=NULL);
   void   finiteDifferenceGaussian(const vector<double>&, const Gaussian&);
+  double getGaussianNormalization( const Gaussian& );
   vector<unsigned> getGaussianSupport(const Gaussian&);
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate  );
   std::string fmt;
@@ -292,6 +295,7 @@ void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+  keys.addOutputComponent("rbias","default","the value of the bias to use in reweighting. This is calculated using the method of Tiwary and Parrinello.");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
@@ -306,6 +310,8 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
+  keys.add("optional","NINTEGRATE","calculate the bias for reweiting using the method of Tiwary and Parrinello. Here you should specify the number of grid points required in each dimension. " 
+                                   "This method is not compatible with metadynamics not on a grid.");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
@@ -353,7 +359,7 @@ walkers_mpi(false),
 acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
-isFirstStep(true)
+isFirstStep(true), reweight_factor(0.0)
 {
   // parse the flexible hills
   string adaptiveoption;
@@ -503,6 +509,17 @@ isFirstStep(true)
 
   parse("GRID_RFILE",gridreadfilename_);
 
+  if(grid_){ 
+     parseVector("NINTEGRATE",nintegrate); 
+     if( nintegrate.size()>0 && nintegrate.size()!=getNumberOfArguments() ){
+         error("size mismatch for NINTEGRATE keyword");
+     } else if( nintegrate.size()==getNumberOfArguments() ){
+         for(unsigned j=0;j<getNumberOfArguments();++j){
+            if( !getPntrToArgument(j)->isPeriodic() ) nintegrate[j] += 1; 
+         }
+     }
+  }
+
   // Multiple walkers
   parse("WALKERS_N",mw_n_);
   parse("WALKERS_ID",mw_id_);
@@ -573,6 +590,7 @@ isFirstStep(true)
   }
 
   addComponent("bias"); componentIsNotPeriodic("bias");
+  if( nintegrate.size()>0 ){ addComponent("rbias"); componentIsNotPeriodic("rbias"); }
 
   if(acceleration) {
     if(!welltemp_) error("The calculation of the acceleration works only if Well-Tempered Metadynamics is on"); 
@@ -771,8 +789,48 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file){
   file.printField();
 }
 
-void MetaD::addGaussian(const Gaussian& hill)
-{
+void MetaD::addGaussian(const Gaussian& hill){
+
+// Recompute Tiwary-Parrinello reweighting factor
+ if( nintegrate.size()>0 ){
+   if( !welltemp_ ) error("cannot compute Tiwary-Parrinello reweighting factors for metadynamics when not well-tempered");
+
+   // Recover the minimum values for the grid
+   unsigned ncv=getNumberOfArguments();
+   double grid_size=1.0; unsigned ntotgrid=1;
+   std::vector<double> dmin( ncv ),dmax( ncv ), grid_spacing( ncv ), vals( ncv ); 
+   for(unsigned j=0;j<ncv;++j){
+      Tools::convert( BiasGrid_->getMin()[j], dmin[j] );
+      Tools::convert( BiasGrid_->getMax()[j], dmax[j] );
+      grid_spacing[j] = ( dmax[j] - dmin[j] ) / static_cast<double>( nintegrate[j] );
+      grid_size *= grid_spacing[j]; 
+      if( !getPntrToArgument(j)->isPeriodic() ) dmax[j] += grid_spacing[j]; 
+      ntotgrid *= nintegrate[j];
+   }
+   
+       
+   // Now sum over whole grid
+   reweight_factor=0.0; double* der=new double[ncv]; std::vector<unsigned> t_index( ncv );
+   unsigned rank=comm.Get_rank(), stride=comm.Get_size(); double afactor = biasf_ / (kbt_*(biasf_-1.0));
+   for(unsigned i=rank;i<ntotgrid;i+=stride){
+       t_index[0]=(i%nintegrate[0]);
+       unsigned kk=i;
+       for(unsigned j=1;j<ncv-1;++j){ kk=(kk-t_index[j-1])/nintegrate[i-1]; t_index[j]=(kk%nintegrate[i]); }
+       if( ncv>=2 ) t_index[ncv-1]=((kk-t_index[ncv-1])/nintegrate[ncv-2]);
+       
+       for(unsigned j=0;j<ncv;++j) vals[j]=dmin[j] + t_index[j]*grid_spacing[j]; 
+ 
+       double newgauss=evaluateGaussian(vals,hill,der);
+       double oldb=getBiasAndDerivatives(vals,der);
+ 
+       reweight_factor += exp( afactor*(newgauss + oldb) ) - exp( afactor*oldb );
+   }
+   comm.Sum( reweight_factor ); 
+   reweight_factor *= grid_size /( afactor*height0_*stride_*getTimeStep()*getGaussianNormalization(hill) ); 
+   reweight_factor = std::log( reweight_factor );
+   delete [] der;
+ }
+
  if(!grid_){hills_.push_back(hill);} 
  else{
   unsigned ncv=getNumberOfArguments();
@@ -895,6 +953,28 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
  return bias;
 }
 
+double MetaD::getGaussianNormalization( const Gaussian& hill ){
+  double norm=1; unsigned ncv=hill.center.size();
+
+  if(hill.multivariate){
+  // recompose the full sigma from the upper diag cholesky 
+    unsigned k=0; 
+    Matrix<double> mymatrix(ncv,ncv);
+    for(unsigned i=0;i<ncv;i++){
+        for(unsigned j=i;j<ncv;j++){
+            mymatrix(i,j)=mymatrix(j,i)=hill.sigma[k]; // recompose the full inverse matrix
+            k++;
+        }
+        double ldet; logdet( mymatrix, ldet );
+        norm = exp( ldet );  // Not sure here if mymatrix is sigma or inverse
+    }
+  } else {
+    for(unsigned i=0;i<hill.sigma.size();++i) norm*=hill.sigma[i]; 
+  }
+
+  return norm*pow(2*pi,static_cast<double>(ncv)/2.0);
+}
+
 double MetaD::evaluateGaussian
  (const vector<double>& cv, const Gaussian& hill, double* der)
 {
@@ -995,6 +1075,7 @@ void MetaD::calculate()
   for(unsigned i=0;i<ncv;++i){der[i]=0.0;}
   double ene=getBiasAndDerivatives(cv,der);
   getPntrToComponent("bias")->set(ene);
+  if( nintegrate.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
 // calculate the acceleration factor
   if(acceleration&&!isFirstStep) {
     acc += exp(ene/(kbt_));
