@@ -60,6 +60,8 @@ public:
 /// This is used to set the keyword ARG - this is so we
 /// we can use a1.* in the input for reference configurations 
   void setArgKeyword( const std::string& new_args );
+/// Add information to the remark
+  void addRemark( const std::vector<std::string>& v1 );
 /// Access to the lines of REMARK 
   const std::vector<std::string>     & getRemark()const;
 /// Access to the indexes

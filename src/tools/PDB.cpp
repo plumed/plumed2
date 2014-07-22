@@ -52,6 +52,10 @@ const std::vector<std::string> & PDB::getRemark()const{
   return remark;
 }
 
+void PDB::addRemark( const std::vector<std::string>& v1 ){
+  remark.insert(remark.begin(),v1.begin(),v1.end());
+}
+
 const std::vector<AtomNumber> & PDB::getAtomNumbers()const{
   return numbers;
 }
@@ -108,7 +112,7 @@ bool PDB::readFromFilepointer(FILE *fp,bool naturalUnits,double scale){
     if(record=="ENDMDL"){ file_is_alive=true;  break;}
     if(record=="REMARK"){
          vector<string> v1;  v1=Tools::getWords(line.substr(6));  
-         remark.insert(remark.begin(),v1.begin(),v1.end()); 
+         addRemark( v1 );
     }
     if(record=="ATOM" || record=="HETATM"){
       AtomNumber a; unsigned resno;

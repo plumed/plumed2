@@ -60,25 +60,10 @@ void PointWiseMapping::resizeRestOfFrame(){
   plumed_dbg_assert( low_dim.size()==getNumberOfReferenceFrames() );
 }
 
-void PointWiseMapping::getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args ){
-  plumed_assert( atoms.size()==0 && args.size()==0 );
-  for(unsigned i=0;i<frames.size();++i){
-      frames[i]->getAtomRequests( atoms ); 
-      frames[i]->getArgumentRequests( args );
-  }
-}
-
 void PointWiseMapping::duplicateFrameList(){
   unsigned nframes=frames.size();
   for(unsigned i=0;i<nframes;++i){
      frames.push_back( new FakeFrame( ReferenceConfigurationOptions("fake") ) );
-  }
-}
-
-void PointWiseMapping::setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs ){
-  for(unsigned i=0;i<frames.size();++i){
-      frames[i]->setNumberOfAtoms( natoms );
-      frames[i]->setNumberOfArguments( nargs );
   }
 }
 

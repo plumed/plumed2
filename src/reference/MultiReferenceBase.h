@@ -50,6 +50,10 @@ public:
   virtual void clearRestOfData(){};
 /// Read a frame from the input
   void readFrame( PDB& pdb ); 
+/// Find what is required of us from the reference frames
+  void getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args );
+/// Finish setup of frames
+  void setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs );
 /// Do additional reading required by derived class
   virtual void readRestOfFrame(){}
 /// Do additional resizing required by derived class
