@@ -9,6 +9,11 @@
 \ref Regex </TD><TD> </TD><TD> POSIX regular expressions can be used to select multiple actions when using ARG (i.e. \ref PRINT).
 </TD>
 </TR>
+<TR>
+<TD WIDTH="5%"> 
+\ref Openmp </TD><TD> </TD><TD> Multi-thread parallelization.
+</TD>
+</TR>
 </TABLE>
 
 */
