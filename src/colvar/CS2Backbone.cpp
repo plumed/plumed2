@@ -362,8 +362,8 @@ void CS2Backbone::calculate()
     sprintf(tmps1, "%li", getStep());
     if(ensemble) {
       sprintf(tmps2, "%i", multi_sim_comm.Get_rank());
-      csfile = string("cs")+tmps2+"-"+tmps1+string(".dat");
-    } else csfile = string("cs")+tmps1+string(".dat");
+      csfile = string("cs-")+getLabel()+"-"+tmps2+"-"+tmps1+string(".dat");
+    } else csfile = string("cs-")+getLabel()+"-"+tmps1+string(".dat");
     cam_list[0].printout_chemical_shifts(csfile.c_str());
   }
 
