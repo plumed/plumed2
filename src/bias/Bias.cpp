@@ -34,8 +34,9 @@ outputForces(getNumberOfArguments(),0.0)
 {
   if(getStride()>1){
     log<<"  WARNING: you are turning on multiple timestep here\n";
-    log<<"           this bias will be applied every "<<getStride()<<" steps\n";
-    log<<"           use this feature only if you know what you are doing\n";
+    log<<"           this bias will be applied every "<<getStride()<<" steps.\n";
+    log<<"           Ask the authors a preprint of this paper ";
+    log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, submitted (2014)")<<"\n";
   }
   for(unsigned i=0;i<getNumberOfArguments();++i){
      (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
