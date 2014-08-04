@@ -20,6 +20,11 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
+/* 
+ This class was originally written by Marco Jacopo Ferrarotti
+ (marco.ferrarotti@gmail.com) and Giovanni Bussi
+*/
+
 #include "core/Action.h"
 #include "core/ActionPilot.h"
 #include "core/ActionWithValue.h"
