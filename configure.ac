@@ -72,6 +72,7 @@ PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
+PLUMED_CONFIG_ENABLE([openmp],[openmp],[search for openmp],[no])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
@@ -245,6 +246,10 @@ AC_CHECK_LIB([dl],dlopen, [STATIC_LIBS="-ldl $STATIC_LIBS"] [LIBS="-ldl $LIBS"])
 if test $mpi == true ; then
   PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
 fi
+if test $openmp == true ; then
+  AC_OPENMP
+  CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+fi
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
 fi
@@ -279,12 +284,6 @@ if test $gsl == true ; then
     LIBS="-lgsl -lgslcblas $LIBS"
   fi
 fi
-
-
-# this can be used to enable openmp:
-# AC_OPENMP
-# CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
-#### End of optional libraries ####
 
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
