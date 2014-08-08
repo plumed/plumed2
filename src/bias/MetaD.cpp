@@ -827,7 +827,7 @@ void MetaD::addGaussian(const Gaussian& hill){
    }
    comm.Sum( reweight_factor ); 
    reweight_factor *= grid_size /( afactor*height0_*stride_*getTimeStep()*getGaussianNormalization(hill) ); 
-   reweight_factor = std::log( reweight_factor );
+   reweight_factor = kbt_ * std::log( reweight_factor );
    delete [] der;
  }
 
