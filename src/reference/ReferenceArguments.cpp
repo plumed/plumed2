@@ -34,7 +34,9 @@ hasweights(false)
 }
 
 void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ){
-  parseVector( "ARG", arg_names );
+  ReferenceAtoms* aref=dynamic_cast<ReferenceAtoms*>( this );
+  if( !aref ) parseVector( "ARG", arg_names );
+  else parseVector( "ARG", arg_names, true );
 
   reference_args.resize( arg_names.size() );
   for(unsigned i=0;i<arg_names.size();++i) parse( arg_names[i], reference_args[i] );
