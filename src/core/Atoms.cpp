@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -55,7 +55,8 @@ Atoms::Atoms(PlumedMain&plumed):
   plumed(plumed),
   naturalUnits(false),
   timestep(0.0),
-  forceOnEnergy(0.0)
+  forceOnEnergy(0.0),
+  kbT(0.0)
 {
   mdatoms=MDAtomsBase::create(sizeof(double));
 }
@@ -355,6 +356,15 @@ void Atoms::setTimeStep(void*p){
 double Atoms::getTimeStep()const{
   return timestep/units.getTime()*MDUnits.getTime();
 }
+
+void Atoms::setKbT(void*p){
+  MD2double(p,kbT);
+}
+
+double Atoms::getKbT()const{
+  return kbT/units.getEnergy()*MDUnits.getEnergy();
+}
+
 
 void Atoms::createFullList(int*n){
   vector<AtomNumber> fullListTmp;

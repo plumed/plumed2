@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -87,7 +87,7 @@ s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)\right]^{-b/a}
 
 For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
 keyword D_MAX to assert that for \f$r>d_{\textrm{max}}\f$ the switching function can be assumed equal to zero. 
-In this case it is suggested to also use the STRETCH flag, which will bring the swtiching function
+In this case it is suggested to also use the STRETCH flag, which will bring the switching function
 smoothly to zero by stretching and shifting it. To be more clear, using
 \verbatim
 KEYWORD={RATIONAL R_0=1 D_MAX=3 STRETCH}
@@ -100,6 +100,7 @@ where
 \f$
 s'(r)=\frac{1-r^6}{1-r^{12}}
 \f$
+Since PLUMED 2.2 this will become the default.
 */
 //+ENDPLUMEDOC
 
@@ -276,6 +277,8 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
 double SwitchingFunction::inverse( const double& val ) const {
   double ival;  
 
+  if( dmax<numeric_limits<double>::max() ) return dmax;
+
   if( type==smap ){
   } else if(type==rational){
       ival=1.1;
@@ -296,11 +299,11 @@ double SwitchingFunction::inverse( const double& val ) const {
 SwitchingFunction::SwitchingFunction():
   init(false),
   type(rational),
-  nn(6),
-  mm(12),
   invr0(0.0),
   d0(0.0),
   dmax(0.0),
+  nn(6),
+  mm(12),
   invr0_2(0.0),
   dmax_2(0.0),
   stretch(1.0),

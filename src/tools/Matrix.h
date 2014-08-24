@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -30,16 +30,6 @@
 #include "Tools.h"
 #include "Log.h"
 #include "lapack/lapack.h"
-
-#if ! defined(__PLUMED_INTERNAL_LAPACK) 
-// this is a hack to allow the dgesvd routine
-// this routine is not available within the internal, gromacs-imported lapacks
-#define plumed_lapack_dgesvd PLUMED_BLAS_F77_FUNC(dgesvd,DGESVD)
-void
-   PLUMED_BLAS_F77_FUNC(dgesvd, DGESVD)(const char *jobu, const char *jobvt, int *m, int *n, double *a,
-                              int *lda, double *s, double *u, int *ldu, double *vt, int *ldvt, double *work,
-                              int *lwork, int *info );
-#endif
 
 namespace PLMD{
 
@@ -247,6 +237,15 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
       for(unsigned j=0;j<A.rw;++j){ eigenvecs(i,j)=evecs[k++]; }
    }
 
+   // This changes eigenvectors so that the sum of the elements is positive
+   // We can do it because the phase is arbitrary, and helps making
+   // the result reproducible
+   for(unsigned i=0;i<n;++i){
+     double s=0.0;
+     for(unsigned j=0;j<n;++j) s+=eigenvecs(i,j);
+     if(s<0.0) for(unsigned j=0;j<n;++j) eigenvecs(i,j)*=-1;
+   }
+
    // Deallocate all the memory used by the various arrays
    delete[] da; delete [] work; delete [] evals; delete[] evecs; delete [] iwork; delete [] isup;
    return 0;
@@ -262,27 +261,19 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
 
   // Create some containers for stuff from single value decomposition
   double *S=new double[nsv]; double *U=new double[nrows*nrows];
-  double *VT=new double[ncols*ncols];
+  double *VT=new double[ncols*ncols]; int *iwork=new int[8*nsv];
 
   // This optimizes the size of the work array used in lapack singular value decomposition
   int lwork=-1; double* work=new double[1];
-#if defined(__PLUMED_INTERNAL_LAPACK)
-  plumed_merror("This feature is unavailable with internal lapack");
-#else 
-  plumed_lapack_dgesvd( "A", "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, &info );
-#endif
+  plumed_lapack_dgesdd( "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, iwork, &info );
   if(info!=0) return info;
 
   // Retrieve correct sizes for work and rellocate
   lwork=(int) work[0]; delete [] work; work=new double[lwork];
 
   // This does the singular value decomposition
-#if defined(__PLUMED_INTERNAL_LAPACK)
-  plumed_merror("This feature is unavailable with internal lapack");
-#else
-  plumed_lapack_dgesvd( "A", "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, &info );
+  plumed_lapack_dgesdd( "A", &nrows, &ncols, da, &nrows, S, U, &nrows, VT, &ncols, work, &lwork, iwork, &info );
   if(info!=0) return info; 
-#endif
 
   // Compute the tolerance on the singular values ( machine epsilon * number of singular values * maximum singular value )
   double tol; tol=S[0]; for(unsigned i=1;i<nsv;++i){ if( S[i]>tol ){ tol=S[i]; } } tol*=nsv*epsilon;
@@ -301,7 +292,7 @@ template <typename T> int pseudoInvert( const Matrix<T>& A, Matrix<double>& pseu
   mult( V, Si, tmp ); mult( tmp, UT, pseudoinverse );
 
   // Deallocate all the memory
-  delete [] S; delete [] U; delete [] VT; delete [] work; delete [] da;
+  delete [] S; delete [] U; delete [] VT; delete [] work; delete [] iwork; delete [] da;
   return 0;
 }
 

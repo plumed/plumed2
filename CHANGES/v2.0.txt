@@ -103,16 +103,16 @@ For developers:
 - Removed include graphs in the documentation (too large).
 - Several small fixes in documentation.
 
-Unreleased changes (will be included in 2.0.3)
-----------------------------------------------
-See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
+Version 2.0.3 (June 30, 2014)
+----------------------------
 
 For users:
 - Now compiles on Blue Gene Q with IBM compilers.
 - Fixed bug in \ref CENTER where default WEIGHTS were missing. 
-- Several small fixes in documentation and log file.
 - Fixed broken \ref CONTACTMAP with SUM
+- Fixed \ref DUMPATOMS with gro file and more than 100k atoms.
 - Added CMDIST in \ref CONTACTMAP to emulate plumed1 CMAP.
+- Several small fixes in documentation and log file.
 
 For developers:
 - Fixed cmd("getBias") to retrieve bias. It was not working with
@@ -121,8 +121,19 @@ For developers:
   (see commit 562d5ea9dfc3).
 - Small fix in tools/Random.cpp that allows Random objects to be
   declared as static.
+- Small fix in user-doc compilation, so that if plumed is not found
+  the sourceme.sh file is sourced
 - Fixed non-ansi syntax in a few points and a non-important memory leakage.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
+Unreleased changes (will be included in 2.0.4)
+----------------------------------------------
+See <a href="http://github.com/plumed/plumed2/tree/v2.0">branch v2.0 on git repository</a>.
+
+Anything yet.
+
 */
+
+
+
 

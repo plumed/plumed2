@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -77,6 +77,18 @@ tmpdf(1)
   buildAtomListWithPairs( true );
   // Build active elements array
   for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
+  active_elements.setupMPICommunication( comm );
+
+  // Find the largest sf cutoff
+  double sfmax=switchingFunction(0,0).inverse( getTolerance() );
+  for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
+      for(unsigned j=0;j<<getNumberOfBaseMultiColvars();++j){
+          double tsf=switchingFunction(i,j).inverse( getTolerance() );
+          if( tsf>sfmax ) sfmax=tsf;
+      }
+  }
+  // And set the link cell cutoff
+  setLinkCellCutoff( 2*sfmax );
 
   if( getNumberOfVessels()!=0 ) error("there should be no vessel keywords");
   // Create the storeAdjacencyMatrixVessel
@@ -121,7 +133,7 @@ double AdjacencyMatrixAction::compute(){
 
   double f_dot, dot_df, dot; dot=0;
   for(unsigned k=0;k<orient0.size();++k) dot+=orient0[k]*orient1[k];
-  f_dot=dot; dot_df=1.0;
+  f_dot=0.5*( 1 + dot ); dot_df=0.5;
   // Add smac stuff here if required
 
   // Retrieve the weight of the connection

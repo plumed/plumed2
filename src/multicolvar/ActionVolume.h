@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -47,7 +47,7 @@ class ActionVolume :
   public vesselbase::ActionWithVessel,
   public vesselbase::ActionWithInputVessel
   {
-friend class Region;
+friend class MultiColvarBase;   
 private:
 /// The value of sigma
   double sigma;
@@ -93,6 +93,8 @@ public:
   void clearDerivatives(){}
 // This is used during neighbor list update step
   void finishTaskListUpdate();
+/// Get the number of quantities that are calculated each time
+  virtual unsigned getNumberOfQuantities();
 /// Get the number of derivatives for this action
   unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Turn on the derivatives
@@ -120,6 +122,11 @@ public:
   void mergeDerivatives( const unsigned& ider, const double& df );
   void clearDerivativesAfterTask( const unsigned& ider );
 };
+
+inline
+unsigned ActionVolume::getNumberOfQuantities(){
+  return mycolv->getNumberOfQuantities();
+} 
 
 inline
 const Tensor & ActionVolume::getBox()const{

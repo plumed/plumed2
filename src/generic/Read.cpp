@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -66,6 +66,7 @@ public ActionPilot,
 public ActionWithValue
 {
 private:
+  bool ignore_time;
   bool cloned_file;
   unsigned nlinesPerStep;
   std::string filename;
@@ -95,6 +96,8 @@ void Read::registerKeywords(Keywords& keys){
   keys.add("compulsory","EVERY","1","only read every ith line of the colvar file. This should be used if the colvar was written more frequently than the trajectory.");
   keys.add("compulsory","VALUES","the values to read from the file");
   keys.add("compulsory","FILE","the name of the file from which to read these quantities");
+  keys.addFlag("IGNORE_TIME",false,"ignore the time in the colvar file. When this flag is not present read will be quite strict "
+                                   "about the start time of the simulation and the stride between frames");
   keys.remove("NUMERICAL_DERIVATIVES");
   ActionWithValue::useCustomisableComponents(keys);
 }
@@ -103,10 +106,13 @@ Read::Read(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithValue(ao),
+ignore_time(false),
 nlinesPerStep(1)
 {
   // Read the file name from the input line
   parse("FILE",filename);
+  // Check if time is to be ignored
+  parseFlag("IGNORE_TIME",ignore_time);
   // Open the file if it is not already opened
   cloned_file=false;
   std::vector<Read*> other_reads=plumed.getActionSet().select<Read*>();
@@ -191,9 +197,9 @@ void Read::prepare(){
       double du_time; 
       if( !ifile->scanField("time",du_time) ){
            error("Reached end of file " + filename + " before end of trajectory");
-      } else if( fabs( du_time-getTime() )>plumed.getAtoms().getTimeStep() ){
+      } else if( fabs( du_time-getTime() )>plumed.getAtoms().getTimeStep() && !ignore_time ){
           std::string str_dutime,str_ptime; Tools::convert(du_time,str_dutime); Tools::convert(getTime(),str_ptime);
-          error("mismatched times in colvar files : colvar time=" + str_dutime + " plumed time=" + str_ptime );
+          error("mismatched times in colvar files : colvar time=" + str_dutime + " plumed time=" + str_ptime + ". Add IGNORE_TIME to ignore error.");
       }
   }  
 }

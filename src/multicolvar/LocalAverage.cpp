@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -29,7 +29,7 @@ Calculate averages over spherical regions centered on atoms
 
 As is explained in <a href="http://www.youtube.com/watch?v=iDvZmbWE5ps"> this video </a> certain multicolvars
 calculate one scalar quantity or one vector for each of the atoms in the system.  For example 
-\ref COORDINATIONNUMBERS measures the coordination number of each of the atoms in the system and \ref Q4 measures
+\ref COORDINATIONNUMBER measures the coordination number of each of the atoms in the system and \ref Q4 measures
 the 4th order Steinhardt parameter for each of the atoms in the system.  These quantities provide tell us something about
 the disposition of the atoms in the first coordination sphere of each of the atoms of interest.  Lechner and Dellago \cite dellago-q6
 have suggested that one can probe local order in a system by taking the average value of such symmetry functions over
@@ -44,7 +44,7 @@ s_i = \frac{ c_i + \sum_j \sigma(r_{ij})c_j }{ 1 + \sum_j \sigma(r_{ij}) }
 \f]
 
 where the \f$c_i\f$ and \f$c_j\f$ values can be for any one of the symmetry functions that can be calculated using plumed 
-multicolvars.  The function \f$\sigma( r_{ij} )\f$ is a \ref switching function that acts on the distance between 
+multicolvars.  The function \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between 
 atoms \f$i\f$ and \f$j\f$.  Lechner and Dellago suggest that the parameters of this function should be set so that it the function is equal to one
 when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.  
 
@@ -59,7 +59,7 @@ This example input calculates the coordination numbers for all the atoms in the 
 spherical regions.  The number of averaged coordination numbers that are greater than 4 is then output to a file.
 
 \verbatim
-COORDINATIONNUMBERS SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=d1
+COORDINATIONNUMBER SPECIES=1-64 D_0=1.3 R_0=0.2 LABEL=d1
 LOCAL_AVERAGE ARG=d1 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=4} LABEL=la
 PRINT ARG=la.* FILE=colvar 
 \endverbatim

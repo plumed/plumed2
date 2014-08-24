@@ -14,7 +14,7 @@ else
 
 all:
 	./extract
-	doxygen
+	./go-doxygen
 	cp Octocat.png html/
 	./report_errors
 

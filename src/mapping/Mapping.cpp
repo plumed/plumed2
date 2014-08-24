@@ -1,21 +1,21 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-  
+
    plumed is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU Lesser General Public License for more details.
-                                    
+
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -38,7 +38,9 @@ void Mapping::registerKeywords( Keywords& keys ){
   vesselbase::ActionWithVessel::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
-  keys.add("compulsory","TYPE","OPTIMAL","the manner in which distances are calculated");
+  keys.add("compulsory","TYPE","OPTIMAL","the manner in which distances are calculated. More information on the different "
+                                         "metrics that are available in PLUMED can be found in the section of the manual on "
+                                         "\\ref dists");
   keys.addFlag("DISABLE_CHECKS",false,"disable checks on reference input structures.");
 }
 

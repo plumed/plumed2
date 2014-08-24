@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -43,7 +43,7 @@ contained in trajectories.  Using this procedure we can take trajectory at tempe
 extract probabilities at a different temperature, \f$T_2\f$, using:
 
 \f[
-P(s',t) = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +( \left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }{ \sum_t'^t \exp\left( +\left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }
+P(s',t) = \frac{ \sum_{t'}^t \delta( s(x) - s' ) \exp\left( +( \left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }{ \sum_{t'}^t \exp\left( +\left[\frac{1}{T_1} - \frac{1}{T_2}\right] \frac{U(x,t')}{k_B} \right) }
 \f]
 
 where \f$U(x,t')\f$ is the potential energy of the system.  Alternatively, if a static or pseudo-static bias \f$V(x,t')\f$ is acting on 
@@ -69,7 +69,7 @@ void Analysis::registerKeywords( Keywords& keys ){
   keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA");
   keys.add("optional","FMT","the format that should be used in analysis output files");
   keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics. For more information see \\ref reweighting.");
-  keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting.");
+  keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting or doing free energies.");
   keys.add("optional","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability "
                                       "distribution at a second temperature. For more information see \\ref reweighting. "
                                       "This is not possible during postprocessing.");
@@ -150,14 +150,19 @@ argument_names(getNumberOfArguments())
          }
       }
 
-      simtemp=0.; parse("TEMP",simtemp);
-      if( simtemp==0 && !biases.empty() ) error("to reweight you must specify a temperature use TEMP");
-      rtemp=0; 
+      rtemp=0;      
       if( keywords.exists("REWEIGHT_TEMP") ) parse("REWEIGHT_TEMP",rtemp);
       if( rtemp!=0 ){
-          if( simtemp==0 ) error("to reweight you must specify a temperature use TEMP");
-          needeng=true;
-          log.printf("  reweighting simulation at %f to probabilities at temperature %f\n",simtemp,rtemp);
+         needeng=true;
+         log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
+         rtemp*=plumed.getAtoms().getKBoltzmann(); 
+      } 
+      simtemp=0.; parse("TEMP",simtemp);
+      if( rtemp>0 || !biases.empty() ){
+         if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
+         else simtemp*=plumed.getAtoms().getKbT();
+
+         if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
       }
 
       parseFlag("USE_ALL_DATA",single_run); 
@@ -260,10 +265,10 @@ void Analysis::calculate(){
   if(needeng){
      double energy=plumed.getAtoms().getEnergy()+bias;
      // Reweighting because of temperature difference
-     ww=-( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias) / plumed.getAtoms().getKBoltzmann();
+     ww=-( (1.0/rtemp) - (1.0/simtemp) )*(energy+bias);
   }
   // Reweighting because of biases
-  if( !biases.empty() ) ww += bias/( plumed.getAtoms().getKBoltzmann()*simtemp );
+  if( !biases.empty() ) ww += bias/ simtemp;
 
   // Get the arguments ready to transfer to reference configuration
   for(unsigned i=0;i<getNumberOfArguments();++i) current_args[i]=getArgument(i);
@@ -298,6 +303,9 @@ Analysis::~Analysis(){
 std::vector<double> Analysis::getMetric() const {
   // Add more exotic metrics in here -- FlexibleHill for instance
   std::vector<double> empty;
+  if( metricname=="EUCLIDEAN" ){
+      empty.resize( getNumberOfArguments(), 1.0 );
+  }
   return empty;
 }
 
@@ -382,6 +390,10 @@ void Analysis::runAnalysis(){
 double Analysis::getNormalization() const {
   if( nomemory || !firstAnalysisDone ) return norm;
   return ( 1. + norm/old_norm );
+}
+
+double Analysis::getTemp() const {
+  return simtemp;
 }
 
 void Analysis::update(){

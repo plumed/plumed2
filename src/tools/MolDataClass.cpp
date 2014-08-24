@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -55,7 +55,16 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
       else if(residuename=="VAL") return true;     
 // Terminal groups
       else if(residuename=="ACE") return true;
-      else if(residuename=="NME") return true;   
+      else if(residuename=="NME") return true;
+// Alternative residue names in common force fiels   
+      else if(residuename=="GLH") return true; // neutral GLU
+      else if(residuename=="ASH") return true; // neutral ASP
+      else if(residuename=="HID") return true; // neutral HIS-D amber
+      else if(residuename=="HSD") return true; // neutral HIS-D charmm
+      else if(residuename=="HIE") return true; // neutral HIS-E amber
+      else if(residuename=="HSE") return true; // neutral HIS-E charmm
+      else if(residuename=="HIP") return true; // neutral HIS-P amber
+      else if(residuename=="HSP") return true; // neutral HIS-P charmm
       else return false; 
   } 
   return false;

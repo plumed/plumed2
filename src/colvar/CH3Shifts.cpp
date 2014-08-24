@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -25,11 +25,6 @@
 #include "ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
-#include "tools/Communicator.h"
-
-#include <string>
-#include <cmath>
-#include <cassert>
 
 #include <almost/mdb.h>
 #include <almost/pdb.h>
@@ -54,27 +49,12 @@ values to generate a score \cite Robustelli:2010dn \cite Granata:2013dk.
 It is also possible to backcalculate the chemical shifts from multiple replicas and then average them
 to perform Replica-Averaged Restrained MD simulations \cite Camilloni:2012je \cite Camilloni:2013hs.
 
+In general the system for which chemical shifts are to be calculated must be completly included in
+ATOMS. It should also be made whole \ref WHOLEMOLECULES before the the back-calculation. 
+
 HOW TO COMPILE IT
 
-In general the system for which chemical shifts are to be calculated must be completly included in
-ATOMS. It should also be made WHOLE before the the backcalculation. CH3Shift is included in the
-free package ALMOST v.2.1 that can be dowload via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
-ALMOST 2.1 can be found in branches/almost-2.1/ and it can be compiled:
-
-\verbatim
-./configure 
-make
-\endverbatim
-
-Once the code is compiled you should see the ALMOST library libAlm.a in src/lib/
-
-PLUMED 2 must then be compiled with ALMOST enabled: 
-
-\verbatim
-./configure --enable-almost CPPFLAGS="-I/ALMOST_BASE_PATH/branches/almost-2.1/include -I/ALMOST_BASE_PATH/branches/almost-2.1/include/almost -I/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1" LDFLAGS="-L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib -lAlm -L/ALMOST_BASE_PATH/branches/almost-2.1/lib/sqlite-3.6.23.1 -lsqlite3 -lz -lbz2 -L/ALMOST_BASE_PATH/branches/almost-2.1/src/forcefield -lnbimpl -L/ALMOST_BASE_PATH/branches/almost-2.1/src/lib/modules -lshx"
-
-with ALMOST_BASE_PATH the full path to the ALMOST folder
-\endverbatim
+\ref installingalmost on how to compile PLUMED with ALMOST.
 
 HOW TO USE IT
 
@@ -201,7 +181,7 @@ PLUMED_COLVAR_INIT(ao)
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
   if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) plumed_merror("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
     else ens_dim=multi_sim_comm.Get_size(); 
   } else ens_dim=0; 
   if(ensemble) comm.Sum(&ens_dim, 1);
@@ -221,7 +201,7 @@ PLUMED_COLVAR_INIT(ao)
   if(stringa_mol.length()>0) {
     unsigned num_chains = pdb[0].size();
     vector<string> data=Tools::getWords(stringa_mol,",");
-    if(data.size()!=2*num_chains) plumed_merror("You have to define both the NTerm and the CTerm for each chain of your system!\n");
+    if(data.size()!=2*num_chains) error("You have to define both the NTerm and the CTerm for each chain of your system!\n");
     for(unsigned i=0;i<data.size();i++) termini.push_back(data[i]);
   } else {
     unsigned num_chains = pdb[0].size();

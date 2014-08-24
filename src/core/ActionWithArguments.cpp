@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -34,7 +34,16 @@ using namespace std;
 namespace PLMD{
 
 void ActionWithArguments::registerKeywords(Keywords& keys){
-  keys.reserve("compulsory","ARG","the input for this action is the output from one or more other actions. The particular output that you used is referenced using that action of interests label. If the label appears on its own then the value of the relevant Action is taken.  If * or *.* appears the information from all arguments is taken.  Some actions have multi-component outputs, each component of the output has a specific label so for instance an action labelled dist may have three componets x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*");
+  keys.reserve("compulsory","ARG","the input for this action is the scalar output from one or more other actions. The particular scalars that you will use "
+                                  "are referenced using the label of the action. If the label appears on its own then it is assumed that the Action calculates "
+                                  "a single scalar value.  The value of this scalar is thus used as the input to this new action.  If * or *.* appears the "
+                                  "scalars calculated by all the proceding actions in the input file are taken.  Some actions have multi-component outputs and "
+                                  "each component of the output has a specific label.  For example a \\ref DISTANCE action labelled dist may have three componets "
+                                  "x, y and z.  To take just the x component you should use dist.x, if you wish to take all three components then use dist.*."
+                                  "More information on the referencing of Actions can be found in the section of the manual on the PLUMED \\ref Syntax.  "
+                                  "Scalar values can also be "
+                                  "referenced using POSIX regular expressions as detailed in the section on \\ref Regex. To use this feature you you must compile "
+                                  "PLUMED with the appropriate flag.");
 }
 
 void ActionWithArguments::parseArgumentList(const std::string&key,std::vector<Value*>&arg){

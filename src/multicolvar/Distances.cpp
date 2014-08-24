@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvar.h"
 #include "core/ActionRegister.h"
+#include "vesselbase/LessThan.h"
+#include "vesselbase/Between.h"
 
 #include <string>
 #include <cmath>
@@ -57,8 +59,8 @@ PRINT ARG=d1.lt0.1
 The following input tells plumed to calculate all the distances between atoms 1, 2 and 3 (i.e. the distances between atoms
 1 and 2, atoms 1 and 3 and atoms 2 and 3).  The average of these distances is then calculated.
 \verbatim
-DISTANCES GROUP=1-3 AVERAGE LABEL=d1
-PRINT ARG=d1.average
+DISTANCES GROUP=1-3 MEAN LABEL=d1
+PRINT ARG=d1.mean
 \endverbatim
 (See also \ref PRINT)
 
@@ -107,6 +109,34 @@ PLUMED_MULTICOLVAR_INIT(ao)
   int natoms=2; readAtoms( natoms );
   // And check everything has been read in correctly
   checkRead();
+
+  // Now check if we can use link cells
+  bool use_link=false; double rcut;
+  if( getNumberOfVessels()>0 ){
+     vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
+     if( lt ){
+         use_link=true; rcut=lt->getCutoff( getTolerance() );
+     } else {
+         vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
+         if( bt ) use_link=true; rcut=bt->getCutoff( getTolerance() );
+     }
+     if( use_link ){
+         for(unsigned i=1;i<getNumberOfVessels();++i){
+            vesselbase::LessThan* lt2=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(i) );
+            vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
+            if( lt2 ){
+                double tcut=lt2->getCutoff( getTolerance() );
+                if( tcut>rcut ) rcut=tcut;
+            } else if( bt ){
+                double tcut=bt->getCutoff( getTolerance() );
+                if( tcut>rcut ) rcut=tcut;
+            } else {
+               use_link=false;
+            }
+         }
+     }
+     if( use_link ) setLinkCellCutoff( 2.*rcut );
+  }
 }
 
 double Distances::compute(){

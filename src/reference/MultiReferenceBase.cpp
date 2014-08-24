@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -53,6 +53,21 @@ void MultiReferenceBase::readFrame( PDB& mypdb ){
   readRestOfFrame();
   // Check readin was succesfull
   mymsd->checkRead();
+}
+
+void MultiReferenceBase::getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args ){
+  plumed_assert( atoms.size()==0 && args.size()==0 );
+  for(unsigned i=0;i<frames.size();++i){
+      frames[i]->getAtomRequests( atoms );
+      frames[i]->getArgumentRequests( args );
+  }
+}
+
+void MultiReferenceBase::setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs ){
+  for(unsigned i=0;i<frames.size();++i){
+      frames[i]->setNumberOfAtoms( natoms );
+      frames[i]->setNumberOfArguments( nargs );
+  }
 }
 
 void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ){

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -84,7 +84,7 @@ This command instructs plumed to reconstruct the chain of backbone atoms in a
 protein
 
 \verbatim
-MOLINFO REFERENCE=helix.pdb
+MOLINFO STRUCTURE=helix.pdb
 WHOLEMOLECULES STRIDE=1 RESIDUES=all MOLTYPE=protein 
 \endverbatim
 (See also \ref MOLINFO)

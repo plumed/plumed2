@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -48,8 +48,6 @@ public:
   void readRestOfFrame();
 /// Resize everything else from a file
   void resizeRestOfFrame();
-/// Find what is required of us from the reference frames
-  void getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args );
 /// Make a second copy of the frame list 
   void duplicateFrameList();
 /// Get the number of points we are mapping into the lower dimensional space
@@ -62,8 +60,6 @@ public:
   unsigned getPropertyIndex( const std::string& name ) const ;
 /// Get the value of the ith property for th jth frame
   double getPropertyValue( const unsigned& iframe, const unsigned& jprop ) const ;
-/// Finish setup of frames
-  void setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs );
 /// Get the derivatives wrt to the position of an atom
   Vector getAtomDerivatives( const unsigned& iframe, const unsigned& jatom );
 /// Get the derivatives wrt to the box

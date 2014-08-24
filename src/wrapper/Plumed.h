@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -315,12 +315,12 @@ class Plumed{
   plumed main;
 /**
    keeps track if the object was created from scratch using 
-   the defaults destructor (cloned=false) or if it was imported
-   from C or FORTRAN (cloned-true). In the latter case, the
+   the defaults destructor (reference=false) or if it was imported
+   from C or FORTRAN (reference=true). In the latter case, the
    plumed_finalize() method is not called when destructing the object,
    since it is expected to be finalized in the C/FORTRAN code
 */
-  bool cloned;
+  bool reference;
 public:
 /**
    Check if plumed is installed (for runtime binding)
@@ -426,19 +426,19 @@ bool Plumed::installed(){
 inline
 Plumed::Plumed():
   main(plumed_create()),
-  cloned(false)
+  reference(false)
 {}
 
 inline
 Plumed::Plumed(const char*c):
   main(plumed_f2c(c)),
-  cloned(true)
+  reference(true)
 {}
 
 inline
 Plumed::Plumed(plumed p):
   main(p),
-  cloned(true)
+  reference(true)
 {}
 
 inline
@@ -458,7 +458,7 @@ void Plumed::cmd(const char*key,const void*val){
 
 inline
 Plumed::~Plumed(){
-  if(!cloned)plumed_finalize(main);
+  if(!reference)plumed_finalize(main);
 }
 
 inline

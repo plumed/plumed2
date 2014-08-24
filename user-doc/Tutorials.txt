@@ -1,6 +1,6 @@
 /**
 
-@page tutorials How-tos
+@page tutorials Tutorials 
 
 The following pages describe how to perform a variety of tasks using PLUMED 2
 

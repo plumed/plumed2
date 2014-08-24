@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -28,17 +28,27 @@ namespace PLMD {
 
 ReferenceArguments::ReferenceArguments( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-hasmetric(false)
+hasmetric(false),
+hasweights(false)
 {
 }
 
 void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ){
-  parseVector( "ARG", arg_names );
+  ReferenceAtoms* aref=dynamic_cast<ReferenceAtoms*>( this );
+  if( !aref ) parseVector( "ARG", arg_names );
+  else parseVector( "ARG", arg_names, true );
 
   reference_args.resize( arg_names.size() );
   for(unsigned i=0;i<arg_names.size();++i) parse( arg_names[i], reference_args[i] );
 
-  if( hasmetric ){
+  if( hasweights ){
+      plumed_massert( !hasmetric, "should not have weights if we are using metric");
+      weights.resize( arg_names.size() );
+      for(unsigned i=0;i<reference_args.size();++i){
+          parse( "sigma_" + arg_names[i], weights[i] ); 
+      }
+  } else if( hasmetric ){
+      plumed_massert( !hasweights, "should not have weights if we are using metric");
       double thissig; metric.resize( arg_names.size(), arg_names.size() );
       for(unsigned i=0;i<reference_args.size();++i){
           for(unsigned j=i;j<reference_args.size();++j){
@@ -46,6 +56,9 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ){
               metric(i,j)=metric(j,i)=thissig;
           }
       }
+  } else {
+      weights.resize( arg_names.size() );
+      for(unsigned i=0;i<weights.size();++i) weights[i]=1.0; 
   }
 }
 
@@ -57,6 +70,7 @@ void ReferenceArguments::setArgumentNames( const std::vector<std::string>& arg_v
      arg_names[i]=arg_vals[i]; der_index[i]=i; 
   }
   if( hasmetric ) metric.resize( arg_vals.size(), arg_vals.size() );
+  else weights.resize( arg_vals.size() );
 }
 
 void ReferenceArguments::setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma ){
@@ -72,7 +86,8 @@ void ReferenceArguments::setReferenceArguments( const std::vector<double>& arg_v
      }
      plumed_assert( k==sigma.size() ); 
   } else {
-     plumed_assert( sigma.size()==0 );
+     plumed_assert( reference_args.size()==sigma.size() );
+     for(unsigned i=0;i<reference_args.size();++i) weights[i]=sigma[i];
   } 
 }
 
@@ -122,6 +137,8 @@ void ReferenceArguments::printArguments( OFile& ofile, const std::string& fmt ) 
   }
   for(unsigned i=0;i<arg_names.size();++i) ofile.printf( descr2.c_str(),arg_names[i].c_str(), reference_args[i] );
   ofile.printf("\n");
+
+  // Missing print out of metrics
 }
 
 const std::vector<double>& ReferenceArguments::getReferenceMetric(){
@@ -135,6 +152,9 @@ const std::vector<double>& ReferenceArguments::getReferenceMetric(){
              trig_metric[k]=metric(i,j); k++;
          }
      }
+  } else {
+    if( trig_metric.size()!=reference_args.size() ) trig_metric.resize( reference_args.size() );
+    for(unsigned i=0;i<reference_args.size();++i) trig_metric[i]=weights[i];
   }
   return trig_metric;
 }
@@ -160,11 +180,11 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
       for(unsigned i=0;i<reference_args.size();++i){
           unsigned ik=der_index[i];
           dp_i=vals[ik]->difference( reference_args[i], arg[ik] );
-          r+=dp_i*dp_i; arg_ders[ik]=dp_i;
+          r+=weights[i]*dp_i*dp_i; arg_ders[ik]=2.0*weights[i]*dp_i;
       }
   }
   if(!squared){ 
-    r=sqrt(r); double ir=1.0/r; 
+    r=sqrt(r); double ir=1.0/(2.0*r); 
     for(unsigned i=0;i<arg_ders.size();++i) arg_ders[i]*=ir; 
   }
   return r;

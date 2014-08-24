@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -58,7 +58,7 @@ The following example instructs plumed to find the average of two angles and to
 print it to a file
 
 \verbatim
-ANGLES ATOMS=1,2,3 ATOMS=4,5,6 MEAN LABEL=a1
+ANGLES ATOMS1=1,2,3 ATOMS2=4,5,6 MEAN LABEL=a1
 PRINT ARG=a1.mean FILE=colvar 
 \endverbatim
 
@@ -76,7 +76,7 @@ This final example instructs plumed to calculate all the angles in the first coo
 spheres of the atoms. A discretized-normalized histogram of the distribution is then output
 
 \verbatim
-ANGLE GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWTICH={GAUSSIAN R_0=1.0} LABEL=a1
+ANGLES GROUP=1-38 HISTOGRAM={GAUSSIAN LOWER=0.0 UPPER=pi NBINS=20} SWITCH={GAUSSIAN R_0=1.0} LABEL=a1
 PRINT ARG=a1.* FILE=colvar
 \endverbatim
 
@@ -93,7 +93,6 @@ public:
   static void registerKeywords( Keywords& keys );
   Angles(const ActionOptions&);
 /// Updates neighbor list
-  virtual void doJobsRequiredBeforeTaskList();
   virtual double compute();
 /// Returns the number of coordinates of the field
   void calculateWeight();
@@ -156,18 +155,12 @@ use_sf(false)
   }
   // Read in the atoms
   int natoms=3; readAtoms( natoms );
+  // Set cutoff for link cells 
+  if( use_sf ) setLinkCellCutoff( 2.*sf1.inverse( getTolerance() ) );
+
   // And check everything has been read in correctly
   checkRead();
 }
-
-// This should give big speed ups during neighbor list update steps
-void Angles::doJobsRequiredBeforeTaskList(){
-  // Do jobs required by action with vessel
-  ActionWithVessel::doJobsRequiredBeforeTaskList();
-  if( !use_sf || getCurrentNumberOfActiveTasks()==ablocks[0].size() ) return ;
-  // First step of update of three body neighbor list
-  threeBodyNeighborList( sf1 );
-} 
 
 void Angles::calculateWeight(){
   dij=getSeparation( getPosition(0), getPosition(2) );

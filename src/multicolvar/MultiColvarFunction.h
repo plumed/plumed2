@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -39,6 +39,8 @@ private:
   Matrix<double> numder_store;
 /// A tempory vector that is used for retrieving vectors
   std::vector<double> tvals;
+/// This sets up the atom list
+  void setupAtomLists();
 protected:
 /// Get the total number of tasks that this calculation is based on
   unsigned getFullNumberOfBaseTasks() const ;
@@ -73,17 +75,10 @@ protected:
 public:
   MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-/// Used to make sure we are calculating everything during neighbor list update step
-  void unlockContributors();
-  void lockContributors();
 /// Active element in atoms_with_derivatives
   void atomHasDerivative( const unsigned& iatom );
-/// Used to get atom numbers
-  unsigned getBaseQuantityIndex( const unsigned& code );
-/// Is a task currently being peformed
-  bool isCurrentlyActive( const unsigned& code );
 /// Finish task list update
-  void finishTaskListUpdate();
+//  void finishTaskListUpdate();
 /// Resize the dynamic arrays 
   void resizeDynamicArrays();
 /// Update the atoms that are active
@@ -100,17 +95,9 @@ public:
   void addStoredDerivative( const unsigned&, const unsigned&, const unsigned&, const double& );
 /// This is used in MultiColvarBase only - it is used to setup the link cells
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom );
+/// Some things can be inactive in functions
+  bool isCurrentlyActive( const unsigned& code ){ return true; }
 };
-
-inline
-unsigned MultiColvarFunction::getBaseQuantityIndex( const unsigned& code ){
-  return code;    
-}
-
-inline
-bool MultiColvarFunction::isCurrentlyActive( const unsigned& code ){
-  return true; // Tasks are all active because of store data vessel
-}
 
 inline
 unsigned MultiColvarFunction::getFullNumberOfBaseTasks() const {

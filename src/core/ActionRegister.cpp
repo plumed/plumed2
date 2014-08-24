@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -89,7 +89,7 @@ Action* ActionRegister::create(const ActionOptions&ao){
 bool ActionRegister::printManual( const std::string& action ){
   if ( check(action) ){
      Keywords keys; mk[action](keys); 
-     keys.print_html(true); keys.destroyData();
+     keys.print_html(); keys.destroyData();
      return true;
   } else {
      return false;

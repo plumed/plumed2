@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -42,6 +42,8 @@ respectively.  The resulting potential is given by:
 
 The number of components for any vector of force constants must be equal to the number
 of arguments to the action.
+
+Additional material and examples can be also found in the tutorial \ref belfast-4 
 
 \par Examples
 The following input tells plumed to restrain the distance between atoms 3 and 5

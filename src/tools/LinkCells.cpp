@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -50,12 +50,16 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     allcells.resize( pos.size() ); lcell_lists.resize( pos.size() ); 
   }
 
-  ncells[0] = std::floor( mypbc.getBox().getRow(0).modulo() / link_cutoff );
-  if( ncells[0]==0 ) ncells[0]=1;
-  ncells[1] = std::floor( mypbc.getBox().getRow(1).modulo() / link_cutoff );
-  if( ncells[1]==0 ) ncells[1]=1;
-  ncells[2] = std::floor( mypbc.getBox().getRow(2).modulo() / link_cutoff );
-  if( ncells[2]==0 ) ncells[2]=1;
+  if( !mypbc.isOrthorombic() ){
+     ncells[0]=ncells[1]=ncells[2]=1;
+  } else {
+     ncells[0] = std::floor( mypbc.getBox().getRow(0).modulo() / link_cutoff );
+     if( ncells[0]==0 ) ncells[0]=1;
+     ncells[1] = std::floor( mypbc.getBox().getRow(1).modulo() / link_cutoff );
+     if( ncells[1]==0 ) ncells[1]=1;
+     ncells[2] = std::floor( mypbc.getBox().getRow(2).modulo() / link_cutoff );
+     if( ncells[2]==0 ) ncells[2]=1;
+  }
   // Setup the strides
   nstride[0]=1; nstride[1]=ncells[0]; nstride[2]=ncells[0]*ncells[1];
 
@@ -66,6 +70,8 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
   }
   // Clear nlcells
   for(unsigned i=0;i<ncellstot;++i) lcell_tots[i]=0;
+  // Clear allcells
+  allcells.assign( allcells.size(), 0 );
 
   // Find out what cell everyone is in
   unsigned rank=comm.Get_rank(), size=comm.Get_size();

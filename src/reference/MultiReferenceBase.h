@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -50,6 +50,10 @@ public:
   virtual void clearRestOfData(){};
 /// Read a frame from the input
   void readFrame( PDB& pdb ); 
+/// Find what is required of us from the reference frames
+  void getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args );
+/// Finish setup of frames
+  void setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs );
 /// Do additional reading required by derived class
   virtual void readRestOfFrame(){}
 /// Do additional resizing required by derived class

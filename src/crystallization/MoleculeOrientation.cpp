@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -61,7 +61,7 @@ public:
 PLUMED_REGISTER_ACTION(MoleculeOrientation,"MOLECULES")
 
 void MoleculeOrientation::registerKeywords( Keywords& keys ){
-  VectorMultiColvar::registerKeywords( keys ); keys.use("MEAN");
+  VectorMultiColvar::registerKeywords( keys ); keys.use("VMEAN");
   keys.add("numbered","MOL","The numerical indices of the atoms in the molecule. The orientation of the molecule is equal to " 
                             "the vector connecting the first two atoms specified.  If a third atom is specified its position "
                             "is used to specify where the molecule is.  If a third atom is not present the molecule is assumed "
@@ -73,9 +73,13 @@ MoleculeOrientation::MoleculeOrientation( const ActionOptions& ao ):
 Action(ao),
 VectorMultiColvar(ao)
 {
-  int natoms=-1; 
-  readAtomsLikeKeyword("MOL",natoms); 
+  int natoms=-1; std::vector<AtomNumber> all_atoms;
+  readAtomsLikeKeyword("MOL",natoms,all_atoms); 
   if( natoms!=2 && natoms!=3 ) error("number of atoms in molecule specification is wrong.  Should be two or three.");
+
+  if( all_atoms.size()==0 ) error("No atoms were specified");
+  ActionAtomistic::requestAtoms( all_atoms );
+
   setVectorDimensionality( 3, false, natoms );
 }
 

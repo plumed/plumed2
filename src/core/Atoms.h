@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -90,6 +90,8 @@ class Atoms
   double timestep;
   double forceOnEnergy;
 
+  double kbT;
+
   std::vector<const ActionAtomistic*> actions;
   std::vector<int>    gatindex;
 
@@ -136,6 +138,9 @@ public:
 
   void setTimeStep(void*);
   double getTimeStep()const;
+
+  void setKbT(void*);
+  double getKbT()const;
 
   void setNatoms(int);
   const int & getNatoms()const;

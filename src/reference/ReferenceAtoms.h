@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -75,7 +75,7 @@ protected:
 /// Get the position of the ith atom
   Vector getReferencePosition( const unsigned& iatom ) const ;  
 /// Get the reference positions
-  const std::vector<Vector> & getReferencePositions() const ;
+  const std::vector<Vector> & getReferencePositions();
 /// Add derivatives to iatom th atom in list
   void addAtomicDerivatives( const unsigned& , const Vector& );
 /// Get the atomic derivatives on the ith atom in the list
@@ -100,8 +100,6 @@ public:
   virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in )=0;
 /// Print the atomic positions
   void printAtoms( OFile& ofile ) const ;
-/// Return all the reference positions
-  const std::vector<Vector>& getReferencePositions();
 /// Return all atom indexes
   const std::vector<AtomNumber>& getAbsoluteIndexes();
 };
@@ -141,7 +139,7 @@ Vector ReferenceAtoms::getReferencePosition( const unsigned& iatom ) const {
 }
 
 inline
-const std::vector<Vector> & ReferenceAtoms::getReferencePositions() const {
+const std::vector<Vector> & ReferenceAtoms::getReferencePositions(){
   return reference_atoms;
 }
 
@@ -158,11 +156,6 @@ Vector ReferenceAtoms::retrieveAtomicDerivatives( const unsigned& iatom ) const 
 inline
 void ReferenceAtoms::addBoxDerivatives( const Tensor& vir ){
   virialWasSet=true; virial+=vir;
-}
-
-inline
-const std::vector<Vector>& ReferenceAtoms::getReferencePositions(){
-  return reference_atoms;
 }
 
 inline

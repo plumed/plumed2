@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -35,7 +35,7 @@ void Steinhardt::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
-  keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN");
+  keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN"); keys.use("VMEAN");
   keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("MIN");
 }
 

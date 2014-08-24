@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -138,7 +138,7 @@ public:
 
 template<typename real>
 void Driver<real>::registerKeywords( Keywords& keys ){
-  CLTool::registerKeywords( keys );
+  CLTool::registerKeywords( keys ); keys.isDriver();
   keys.addFlag("--help-debug",false,"print special options that can be used to create regtests");
   keys.add("compulsory","--plumed","plumed.dat","specify the name of the plumed input file");
   keys.add("compulsory","--timestep","1.0","the timestep that was used in the calculation that produced this trajectory in picoseconds");
@@ -424,7 +424,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 	  //       printf(" read this one :success \n");
 	  //}
 	  if(rc==MOLFILE_EOF){
-	         printf(" read this one :eof or error \n");
+	         //printf(" read this one :eof or error \n");
 	         break;
 	  }
 #endif

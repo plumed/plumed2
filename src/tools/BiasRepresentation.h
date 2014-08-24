@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -49,7 +49,8 @@ class BiasRepresentation {
           /// create a bias using explicit sigma in input (needed for histogram building) 
 	  BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc  ,  vector<double> sigma); 
           /// create a bias containing a grid representation 
-	  BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin );
+	  BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, 
+                             vector<unsigned> nbin, bool doInt, double lowI_, double uppI_);
           /// create a histogram with grid representation and sigmas in input
 	  BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma);
           /// retrieve the number of dimension of the representation
@@ -86,6 +87,9 @@ class BiasRepresentation {
     int ndim; 
     bool hasgrid;
     bool rescaledToBias;
+    bool doInt_;
+    double lowI_;
+    double uppI_;
     vector<Value*> values;
     vector<string> names;
     vector<KernelFunctions*> hills;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -65,18 +65,21 @@ Exception::Exception(const std::string&msg,const std::string&file,unsigned line,
 
 void Exception::abortIfExceptionsAreDisabled(){
 #if ! defined(__PLUMED_HAS_EXCEPTIONS)
-  fprintf(stderr,"%s",what());
-  fprintf(stderr,"\n");
 
 #ifdef __PLUMED_HAS_EXECINFO
+  fprintf(stderr,"\n\n********** STACK DUMP **********\n");
   void* callstack[128];
   int i, frames = backtrace(callstack, 128);
   char** strs = backtrace_symbols(callstack, frames);
   for (i = 0; i < frames; ++i) {
      fprintf(stderr,"%s\n", strs[i]);
   }
+  fprintf(stderr,"******** END STACK DUMP ********\n");
   free(strs);
 #endif
+
+  fprintf(stderr,"%s",what());
+  fprintf(stderr,"\n");
 
   std::abort();
 #endif

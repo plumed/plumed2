@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -61,6 +61,11 @@ void FunctionVessel::resize(){
      nderivatives=0;
      resizeBuffer(2);
   }
+}
+
+void FunctionVessel::setNumberOfDerivatives( const unsigned& nder ){
+  nderivatives=nder;
+  final_value->resizeDerivatives( nder );
 }
 
 void FunctionVessel::mergeFinalDerivatives( const std::vector<double>& df ){

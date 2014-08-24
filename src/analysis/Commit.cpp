@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -33,8 +33,10 @@ namespace analysis {
 Does a committor analysis.
 
 \par Examples
-The following input monitors two torsional angles during a simulation
-and outputs a histogram as a function of them at the end of the simulation.
+The following input monitors two torsional angles during a simulation,
+defines two basins (A and B) as a function of the two torsions and 
+stops the simulation when it falls in one of the two. In the log
+file will be shown the latest values for the CVs and the basin reached.  
 \verbatim
 TORSION ATOMS=1,2,3,4 LABEL=r1
 TORSION ATOMS=2,3,4,5 LABEL=r2
@@ -66,7 +68,6 @@ public:
   Committor(const ActionOptions&ao);
   void calculate();
   void apply(){}
-  ~Committor();
 };
 
 PLUMED_REGISTER_ACTION(Committor,"COMMITTOR")
@@ -89,11 +90,7 @@ Committor::Committor(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionWithArguments(ao),
-fmt("%f"),
-amin(getNumberOfArguments()),
-amax(getNumberOfArguments()),
-bmin(getNumberOfArguments()),
-bmax(getNumberOfArguments())
+fmt("%f")
 {
   ofile.link(*this);
   parse("FILE",file);
@@ -109,11 +106,15 @@ bmax(getNumberOfArguments())
   log.printf("  with format %s\n",fmt.c_str());
   for(unsigned i=0;i<getNumberOfArguments();++i) ofile.setupPrintValue( getPntrToArgument(i) );
   parseVector("BASIN_A_LOWER",amin);
+  if(amin.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_A_LOWER: they should be equal to the number of arguments");
   parseVector("BASIN_A_UPPER",amax);
+  if(amax.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_A_UPPER: they should be equal to the number of arguments");
   parseVector("BASIN_B_LOWER",bmin);
+  if(bmin.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_B_LOWER: they should be equal to the number of arguments");
   parseVector("BASIN_B_UPPER",bmax);
+  if(bmax.size()!=getNumberOfArguments()) error("Wrong number of values for BASIN_B_UPPER: they should be equal to the number of arguments");
   checkRead();
-  if(bmin>bmax||amin>amax) plumed_merror("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
+  if(bmin>bmax||amin>amax) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
 
   log.printf("  BASIN A definition\n");
   for(unsigned i=0;i<amin.size();++i) log.printf(" %lf - %lf\n", amin[i], amax[i]);
@@ -142,9 +143,6 @@ void Committor::calculate(){
       ofile.flush();
       plumed.stop();
   }
-}
-
-Committor::~Committor(){
 }
 
 }

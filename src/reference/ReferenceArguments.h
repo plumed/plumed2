@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -44,6 +44,8 @@ class ReferenceArguments :
   virtual public ReferenceConfiguration
 {
 private:
+/// The weights for normed euclidean distance
+  std::vector<double> weights;
 /// The N X N matrix we are using to calculate our Malanobius distance
   Matrix<double> metric;
   std::vector<double> trig_metric;
@@ -54,6 +56,8 @@ private:
 /// The indices for setting derivatives
   std::vector<unsigned> der_index;
 protected:
+/// Are we reading weights from input
+  bool hasweights;
 /// Are we calculating a Malanobius distance 
   bool hasmetric;
 /// Read in the atoms from the pdb file

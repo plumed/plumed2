@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -121,6 +121,8 @@ protected:
   bool getPeriodicityInformation(const unsigned& i, std::string& dmin, std::string& dmax);
 /// Return the normalization constant
   double getNormalization() const;
+/// Return the set temperature (N.B. k_B T is what is returned by this function)
+  double getTemp () const;
 /// Are we analyzing each data block separately (if we are not this also returns the old normalization )
   bool usingMemory() const; 
 /// Convert the stored log weights to proper weights

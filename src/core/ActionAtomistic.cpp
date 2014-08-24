@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -51,6 +51,7 @@ donotforce(false),
 atoms(plumed.getAtoms())
 {
   atoms.add(this);
+//  if(atoms.getNatoms()==0) error("Cannot perform calculations involving atoms without atoms");
 }
 
 void ActionAtomistic::registerKeywords( Keywords& keys ){
@@ -70,7 +71,7 @@ void ActionAtomistic::requestAtoms(const vector<AtomNumber> & a){
   clearDependencies();
   unique.clear();
   for(unsigned i=0;i<indexes.size();i++){
-    plumed_massert(indexes[i].index()<n,"atom out of range");
+    if(indexes[i].index()>=n) error("atom out of range");
     if(atoms.isVirtualAtom(indexes[i])) addDependency(atoms.getVirtualAtomsAction(indexes[i]));
 // only real atoms are requested to lower level Atoms class
     else unique.insert(indexes[i]);

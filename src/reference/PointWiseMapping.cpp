@@ -1,10 +1,10 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
 
-   This file is part of plumed, version 2.0.
+   This file is part of plumed, version 2.
 
    plumed is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as published by
@@ -60,25 +60,10 @@ void PointWiseMapping::resizeRestOfFrame(){
   plumed_dbg_assert( low_dim.size()==getNumberOfReferenceFrames() );
 }
 
-void PointWiseMapping::getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args ){
-  plumed_assert( atoms.size()==0 && args.size()==0 );
-  for(unsigned i=0;i<frames.size();++i){
-      frames[i]->getAtomRequests( atoms ); 
-      frames[i]->getArgumentRequests( args );
-  }
-}
-
 void PointWiseMapping::duplicateFrameList(){
   unsigned nframes=frames.size();
   for(unsigned i=0;i<nframes;++i){
      frames.push_back( new FakeFrame( ReferenceConfigurationOptions("fake") ) );
-  }
-}
-
-void PointWiseMapping::setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs ){
-  for(unsigned i=0;i<frames.size();++i){
-      frames[i]->setNumberOfAtoms( natoms );
-      frames[i]->setNumberOfArguments( nargs );
   }
 }
 

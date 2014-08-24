@@ -5,21 +5,21 @@
 When you use a collective variable that has many calculated components and you want to 
 refer to them as arguments you can use regular expressions.
 
-If your machine enables this (i.e. has "regex.h" C header ) 
+If your machine enables this (i.e. if your machine has a "regex.h" C header ) 
 then you can compile plumed with the preprocessor flag -D__PLUMED_HAS_CREGEX  
 
 Regular expressions are enclosed in round braces and must not contain spaces (the components 
-name have no spaces indeed, so why using them?).
+names have no spaces indeed, so why use them?).
 
-As an example
+As an example then command
 \verbatim
 d1: DISTANCE ATOMS=1,2 COMPONENTS
 PRINT ARG=(d1\.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
 \endverbatim
 
-selects for printout both  d1.x and d1.y components which are generated through distance in the order they are created by plumed.
-Notice that the "." character should be escaped if one wants to interpret it as a literal ".". Unescaped dots will match any character,
-according to regular expression syntax. E.g.
+will cause both the d1.x and d1.y components of the DISTANCE action to be printed out in the order that they are created by plumed.
+The "." character must be escaped in order to interpret it as a literal ".". An unescaped dot is a wildcard which is matched by any character,
+So as an example
 \verbatim
 d1: DISTANCE ATOMS=1,2 COMPONENTS
 dxy: DISTANCE ATOMS=1,3
@@ -27,11 +27,11 @@ dxy: DISTANCE ATOMS=1,3
 # this will match d1.x,d1.y,dxy
 PRINT ARG=(d1.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
 
-# this will match d1.x,d1.y only
+# while this will match d1.x,d1.y only
 PRINT ARG=(d1\.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
 \endverbatim
 
-You can also include more by using comma separated regular expressions 
+You can include more than one regular expression by using comma separated regular expressions 
 
 \verbatim
 t1: TORSION ATOMS=5,7,9,15
@@ -40,9 +40,8 @@ d1: DISTANCE ATOMS=7,17 COMPONENTS
 PRINT ARG=(d1\.[xy]),(t[0-9]) STRIDE=100 FILE=colvar FMT=%8.4f
 \endverbatim
 
-(this selects t1,t2,d1.x and d2.x) Beware if you have overlapping selection they will be duplicated.
-
-You can equivalently use (recommended) regexp themself with the "or" operator. 
+(this selects t1,t2,d1.x and d2.x) Be aware that if you have overlapping selection they will be duplicated so it 
+a better alternative is to use the "or" operator "|". 
 
 \verbatim
 t1: TORSION ATOMS=5,7,9,15
@@ -51,11 +50,11 @@ d1: DISTANCE ATOMS=7,17 COMPONENTS
 PRINT ARG=(d1\.[xy]|t[0-9]) STRIDE=100 FILE=colvar FMT=%8.4f
 \endverbatim
 
-that selects the same arguments.
+this selects the same set of arguments as the previous example.
 
-In the log produced you can see if your regular expression is effectively matching the component you want.
+You can check the log to see whether or not your regular expression is picking the set of components you desire.
 
-For more info see, for example, http://www.regular-expressions.info/reference.html.
+For more information on regular expressions visit http://www.regular-expressions.info/reference.html.
 
 */
 
