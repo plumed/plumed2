@@ -69,6 +69,7 @@ public:
   ~Mapping();
 /// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
   void turnOnDerivatives();
+  void needsDerivatives();
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void lockRequests();
   void unlockRequests();

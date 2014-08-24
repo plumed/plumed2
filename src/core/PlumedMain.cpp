@@ -161,7 +161,6 @@ PlumedMain::~PlumedMain(){
 void PlumedMain::cmd(const std::string & word,void*val){
 
   stopwatch.start();
-
   std::vector<std::string> words=Tools::getWords(word);
   unsigned nw=words.size();
   if(nw==1) {

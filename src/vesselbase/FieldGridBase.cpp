@@ -29,7 +29,8 @@ void FieldGridBase::registerKeywords( Keywords& keys ){
 }
 
 FieldGridBase::FieldGridBase( const VesselOptions& da ):
-GridVesselBase(da)
+GridVesselBase(da),
+wasforced(false)
 {
   derlow.resize( dimension );
 }

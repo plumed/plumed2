@@ -27,22 +27,68 @@ namespace vesselbase{
 
 PLUMED_REGISTER_VESSEL(FunctionOnGrid,"GRID_NOSPLINE")
 
+FunctionOnGrid* FunctionOnGrid::spawn( const GridVesselBase* myg, const std::vector<std::string>& args, const std::vector<unsigned>& nbins, ActionWithVessel* aa ){
+  
+  std::string ogmin, ogmax, ogbin, ognam, ogper, sbin; unsigned n=0;
+  std::vector<std::string> gmin( myg->getMin() ), gmax( myg->getMax() );
+  for(unsigned i=0;i<args.size();++i){
+      bool found=false;
+      for(unsigned j=0;j<myg->getDimension();++j){
+          found=true;
+          if( args[i]==myg->getQuantityDescription(j) ){
+              Tools::convert( nbins[j], sbin ); n++;
+              if(n==1){
+                 ogmin="MIN=" + gmin[j];
+                 ogmax="MAX=" + gmax[j]; 
+                 ogbin="NBIN=" + sbin;
+                 ognam="ARGS=" + myg->getQuantityDescription(j);
+                 if( myg->pbc[j] ) ogper="PERIODIC=yes"; 
+                 else ogper="PERIODIC=no";
+              } else {
+                 ogmin += "," + gmin[j]; 
+                 ogmax += "," + gmax[j]; 
+                 ogbin += "," + sbin;
+                 ognam += "," + myg->getQuantityDescription(j);
+                 if( myg->pbc[j] ) ogper += ",yes";
+                 else ogper += ",no";
+              }
+          }
+      }
+      if(!found) aa->error( args[i] + " is not in the input grid" );
+  }
+  if( n!=args.size() ) aa->error("problems finding required arguments in input grid");
+
+  std::string grid_input = ogmin + " " + ogmax + " " + ogbin + " " + ognam + " " + ogper;
+  VesselOptions da( "GRID_NOSPLINE", "", 0, grid_input, aa );
+  Keywords mykeys; FunctionOnGrid::registerKeywords( mykeys );
+  VesselOptions ba( da, mykeys );
+  FunctionOnGrid* outgrid = new FunctionOnGrid( ba );
+  return outgrid;
+}
+
 void FunctionOnGrid::reserveKeyword( Keywords& keys ){
   keys.reserve("optional","GRID_NOSPLINE","create a grid to store a function");
 } 
 
 void FunctionOnGrid::registerKeywords( Keywords& keys ){
   GridVesselBase::registerKeywords( keys );
+  keys.add("compulsory","ARGS","names of arguments for grid dimensions");
+  keys.add("compulsory","PERIODIC","is this input variable periodic");
 }
 
 FunctionOnGrid::FunctionOnGrid( const VesselOptions& da ):
 GridVesselBase(da)
 {
-  std::string num;
-  std::vector<std::string> names(dimension+1);  
-  for(unsigned i=0;i<dimension;++i){ Tools::convert(i+1,num); names[i]="x" + num; }  
-  names[dimension]=getAction()->getLabel();
-  std::vector<bool> mypbc( dimension, false );
+  std::vector<std::string> names; parseVector("ARGS",names);  
+  names.push_back( getAction()->getLabel() );
+
+  std::vector<std::string> periodic; 
+  parseVector("PERIODIC",periodic);
+  std::vector<bool> mypbc( periodic.size() );
+  for(unsigned i=0;i<periodic.size();++i){
+      if( periodic[i]=="yes" ) mypbc[i]=true;
+      else mypbc[i]=false;
+  }
   finishSetup( 1, mypbc, names );
 }
 

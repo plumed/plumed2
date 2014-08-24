@@ -162,7 +162,7 @@ public:
   virtual void mergeDerivatives( const unsigned& ider, const double& df );
   virtual void clearDerivativesAfterTask( const unsigned& );
 /// Turn on the derivatives in the vessel
-  void needsDerivatives();
+  virtual void needsDerivatives();
 /// Are derivatives required for this quantity
   bool derivativesAreRequired() const ;
 /// Finish running all the calculations

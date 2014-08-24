@@ -106,6 +106,11 @@ void SecondaryStructureRMSD::turnOnDerivatives(){
   needsDerivatives();
 }
 
+void SecondaryStructureRMSD::needsDerivatives(){
+  ActionWithValue::turnOnDerivatives();
+  ActionWithVessel::needsDerivatives(); 
+}
+
 void SecondaryStructureRMSD::setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 ){
   align_atom_1=atom1; align_atom_2=atom2; 
 }

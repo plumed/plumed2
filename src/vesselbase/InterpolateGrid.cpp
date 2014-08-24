@@ -33,7 +33,7 @@
 namespace PLMD {
 namespace vesselbase {
 
-class TestInterpolation :
+class InterpolateGrid :
   public ActionWithVessel,
   public ActionWithInputVessel
 {
@@ -44,8 +44,8 @@ private:
   std::vector<unsigned> ngrid;
 public:
   static void registerKeywords( Keywords& keys );
-  TestInterpolation(const ActionOptions& ao);
-  ~TestInterpolation();
+  InterpolateGrid(const ActionOptions& ao);
+  ~InterpolateGrid();
   bool isPeriodic(){ plumed_error(); return false; }
   unsigned getNumberOfDerivatives(){ return 0; }
   void calculate();
@@ -53,9 +53,9 @@ public:
   void apply(){}
 };
 
-PLUMED_REGISTER_ACTION(TestInterpolation,"INTERPOLATE_GRID")
+PLUMED_REGISTER_ACTION(InterpolateGrid,"INTERPOLATE_GRID")
 
-void TestInterpolation::registerKeywords( Keywords& keys ){
+void InterpolateGrid::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionWithVessel::registerKeywords( keys );
   ActionWithInputVessel::registerKeywords( keys );
@@ -65,22 +65,12 @@ void TestInterpolation::registerKeywords( Keywords& keys ){
   keys.add("compulsory","NGRIDPOINTS","the number of gridpoints in the output grid");
 }
 
-TestInterpolation::TestInterpolation(const ActionOptions& ao):
+InterpolateGrid::InterpolateGrid(const ActionOptions& ao):
 Action(ao),
 ActionWithVessel(ao),
 ActionWithInputVessel(ao),
 myinterpol(NULL)
 {
-
-  //std::string mylab; parse("ARG",mylab);
-  //ActionWithVessel* gaction=plumed.getActionSet().selectWithLabel<ActionWithVessel*>(mylab);
-  //if(!gaction) error(mylab + " action does not exist");
-  //addDependency(gaction);
-
-  //Vessel* myvessel = gaction->getVesselWithName("GRID");
-  //GridVesselBase* myf=dynamic_cast<GridVesselBase*>( myvessel );
-  //if(!myf) error(mylab + " is not an action that calculates a function on a grid");
-
   readArgument( "func" );
   GridVesselBase* myf = dynamic_cast<GridVesselBase*>( getPntrToArgument() );
 
@@ -106,21 +96,10 @@ myinterpol(NULL)
      error(interpols + " is not a valid interpolation algorithm");
   }
 
-  // Create the input for the output grid 
-  std::vector<std::string> gmin( myf->getMin() ), gmax( myf->getMax() );
-  std::string grid_input="MIN=" + gmin[0];
-  for(unsigned i=1;i<gmin.size();++i) grid_input += "," + gmin[i];
-  grid_input += " MAX=" + gmax[0];
-  for(unsigned i=1;i<gmax.size();++i) grid_input += "," + gmax[i];
-  std::string num; Tools::convert( ngrid[0], num );
-  grid_input += " NBIN=" + num;
-  for(unsigned i=1;i<ngrid.size();++i){ Tools::convert( ngrid[i], num ); grid_input += "," + num; }
-
-  // Create somewhere to store the grid
-  VesselOptions da( "GRID_NOSPLINE", "", 0, grid_input, this );
-  Keywords mykeys; FunctionOnGrid::registerKeywords( mykeys );
-  VesselOptions ba( da, mykeys );
-  outgrid = new FunctionOnGrid( ba );
+  // Create the output grid 
+  std::vector<std::string> args( myf->getDimension() );
+  for(unsigned i=0;i<args.size();++i) args[i] = myf->getQuantityDescription(i);
+  outgrid = FunctionOnGrid::spawn( myf, args, ngrid, this );
   addVessel( outgrid ); 
   log.printf("  interpolating onto a grid of %s \n", outgrid->description().c_str());
 
@@ -128,11 +107,11 @@ myinterpol(NULL)
 
 }
 
-TestInterpolation::~TestInterpolation(){
+InterpolateGrid::~InterpolateGrid(){
   delete myinterpol;
 }
 
-void TestInterpolation::calculate(){
+void InterpolateGrid::calculate(){
   myinterpol->set_table();
 
   std::vector<double> mypos( outgrid->getDimension() );

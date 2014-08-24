@@ -53,8 +53,8 @@ void ProjectOnMap::registerKeywords( Keywords& keys ){
   ActionWithValue::registerKeywords( keys );
   vesselbase::ActionWithInputVessel::registerKeywords( keys );
   keys.remove("DATA"); keys.use("FUNC");
-//  keys.add("compulsory","ARG","The name of the action that describes the mapping from the low to the high dimensional space");
   keys.add("compulsory","TOL","1E-6","The tolerance for the conjugate gradient optimization algorithm");
+  keys.addOutputComponent("_proj","default","the position of the lowest minimum in the stress function");
 }
 
 ProjectOnMap::ProjectOnMap(const ActionOptions& ao):
@@ -66,10 +66,6 @@ mymap(NULL)
   // Find the mapping object
   readArgument( "func" ); plumed_assert( getDependencies().size()==1 );
   mymap=dynamic_cast<Mapping*>( getDependencies()[0] );
-//  std::string mylab; parse("ARG",mylab);
-//  mymap=plumed.getActionSet().selectWithLabel<Mapping*>(mylab);
-//  if(!mymap) error(mylab + " mapping does not exist");
-//  addDependency(mymap);
 
   // Read in the tolerance for the CG minimisation
   parse("TOL",tolerance);

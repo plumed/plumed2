@@ -80,6 +80,7 @@ public:
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();
   void turnOnDerivatives();
+  void needsDerivatives();
   void prepare();
   void finishTaskListUpdate();
   void calculate();
