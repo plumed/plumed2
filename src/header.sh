@@ -2,13 +2,40 @@
 # If the header is already present, it does not touch the file
 # Please run it whenever you add a new file so as to keep copyright info there!
 
+test -d ../.git  || {
+  echo "ERROR: this script should be run from a git repository!"
+  exit 1
+}
+
 for dir in *
 do
 test -d "$dir" || continue
 cd $dir
 
-COPYRIGHT="\
-   Copyright (c) 2014 The plumed team
+FIX_COPYRIGHT=""
+test -f COPYRIGHT && FIX_COPYRIGHT="$(<COPYRIGHT)"
+
+for file in *.c *.cpp *.h *.cpp.in
+do
+
+test -f "$file" || continue
+
+years=$(git log --format=%aD $file |
+  awk '{if(NR==1)last=$4;}END{
+  first=$4
+  if(first=="") print ""
+  else if(first==last) print first;
+  else if(first+1==last) print first "," last;
+  else print first "-" last}')
+
+test -n "$years" || continue
+
+if test -n "$FIX_COPYRIGHT"
+then
+  COPYRIGHT="$FIX_COPYRIGHT"
+else
+  COPYRIGHT="\
+   Copyright (c) $years The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -27,13 +54,7 @@ COPYRIGHT="\
 
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>."
-
-test -f COPYRIGHT && COPYRIGHT="$(<COPYRIGHT)"
-
-for file in *.c *.cpp *.h *.cpp.in
-do
-
-test -f "$file" || continue
+fi
 
 echo "Applying LGPL header to file $file"
 
