@@ -36,7 +36,9 @@ namespace colvar{
 Calculate the components of the position of an atom.
 
 Notice that single components will not have the proper periodicity!
-See \ref DISTANCE for a possible hack.
+If you need the values to be consistent through PBC you should use SCALED_COMPONENTS,
+which defines values that by construction are in the -0.5,0.5 domain. This is 
+similar to the equivalent flag for \ref DISTANCE.
 Also notice that by default the minimal image distance from the
 origin is considered (can be changed with NOPBC).
 
@@ -49,6 +51,16 @@ and cell size and shapes are fixed through the simulation.
 
 If you are not in this situation and still want to use the absolute position of an atom you should first fix the reference frame.
 This can be done e.g. using \ref FIT_TO_TEMPLATE.
+
+\par Examples
+
+\verbatim
+# align to a template
+FIT_TO_TEMPLATE REFERENCE=ref.pdb
+p: POSITION ATOM=3
+PRINT ARG=p.x,p.y,p.z
+\endverbatim
+(see also \ref FIT_TO_TEMPLATE)
 
 
 */

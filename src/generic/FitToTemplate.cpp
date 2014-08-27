@@ -43,9 +43,23 @@ namespace generic{
 /*
 This action is used to align a molecule to a template.
 
+This can be used to move the coordinates stored in plumed
+so as to be aligned with a provided template in pdb format. Pdb should contain
+also weights for alignment (see the format of pdb files used e.g. for \ref RMSD).
+Weights for displacement are ignored, since no displacement is computed here.
 Notice that all atoms (not only those in the template) are aligned.
 To see what effect try
 the \ref DUMPATOMS directive to output the atomic positions.
+
+Also notice that PLUMED propagate forces correctly so that you can add a bias on a CV computed
+after alignment. For many CVs this has no effect, but in some case the alignment can
+change the result. Examples are:
+- \ref POSITION CV since it is affected by a rigid shift of the system.
+- \ref DISTANCE CV with COMPONENTS. Since the alignment could involve a rotation (with TYPE=OPTIMAL) the actual components could be different
+  from the original ones.
+- \ref CELL components for a similar reason.
+
+In the present implementation only TYPE=SIMPLE is implemented. As a consequence, only \ref POSITION CV can be affected by the fit.
 
 \attention
 This directive modifies the stored position at the precise moment
@@ -54,6 +68,20 @@ which are below it in the input script will see the corrected positions.
 As a general rule, put it at the top of the input file. Also, unless you
 know exactly what you are doing, leave the default stride (1), so that
 this action is performed at every MD step.
+
+\par Examples
+
+Align the atomic position to a template then print them
+\verbatim
+# to see the effect, one could dump the atoms before alignment
+DUMPATOMS FILE=dump-before.xyz ATOMS=1-20
+FIT_TO_TEMPLATE STRIDE=1 REFERENCE=ref.pdb TYPE=SIMPLE
+DUMPATOMS FILE=dump-after.xyz ATOMS=1-20
+\endverbatim
+(see also \ref DUMPATOMS)
+
+
+
 
 */
 //+ENDPLUMEDOC
