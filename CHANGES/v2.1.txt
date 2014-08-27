@@ -17,17 +17,19 @@ Changes from version 2.0 which are relevant for users:
 - New actions:
   - \ref SPRINT topological collective variables.
   - \ref CH3SHIFTS collective variable.
+  - \ref POSITION collective variable.
+  - \ref FIT_TO_TEMPLATE.
   - \ref COMMITTOR analysis.
   - \ref LOCAL_AVERAGE.
   - \ref NLINKS.
   - \ref DIHCOR.
   - \ref NOE.
   - \ref RDC. 
-  - \ref CLASSICAL_MDS
-  - \ref XDISTANCES
-  - \ref YDISTANCES 
-  - \ref ZDISTANCES
-  - \ref DUMPMULTICOLVAR
+  - \ref CLASSICAL_MDS.
+  - \ref XDISTANCES.
+  - \ref YDISTANCES.
+  - \ref ZDISTANCES.
+  - \ref DUMPMULTICOLVAR.
   - Crystallization module, including \ref Q3, \ref LOCAL_Q3, \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, \ref SIMPLECUBIC, \ref TETRAHEDRAL and \ref FCCUBIC.
   - \ref ENSEMBLE to perform Replica-Averaging on any collective variable.
 - New features for existing actions:
