@@ -105,5 +105,7 @@ Changes from version 2.0 which are relevant for developers:
   metrics can then be used in paths straightforwardly
 - You can now use multicolvars in tandem with manyrestraints in order to add a large numbers of restraints.
 - Can now do multicolvar like things in which each colvar is a vector rather than a scalar.
+- Updated script that generated header files so that they properly show years. Notice that the script
+  should new be run from within a git repository
 
 */
