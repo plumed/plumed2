@@ -108,4 +108,6 @@ Changes from version 2.0 which are relevant for developers:
 - Updated script that generated header files so that they properly show years. Notice that the script
   should new be run from within a git repository
 
+This list is likely incompleted, if you are developing in PLUMED you are encouraged to follow changes on github.
+
 */
