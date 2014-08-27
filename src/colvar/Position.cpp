@@ -39,6 +39,17 @@ See \ref DISTANCE for a possible hack.
 Also notice that by default the minimal image distance from the
 origin is considered (can be changed with NOPBC).
 
+\attention
+This variable should be used with extreme care since it allows to easily go into troubles. See comments below.
+
+This variable can be safely used only if 
+Hamiltonian is not invariant for translation (i.e. there are other absolute positions which are biased, e.g. by position restraints)
+and cell size and shapes are fixed through the simulation.
+
+If you are not in this situation and still want to use the absolute position of an atom you should first fix the reference frame.
+This can be done e.g. using \ref FIT_TO_TEMPLATE.
+
+
 */
 //+ENDPLUMEDOC
    
