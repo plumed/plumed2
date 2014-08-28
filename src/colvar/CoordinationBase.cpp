@@ -103,7 +103,7 @@ firsttime(true)
   if(dopair) log.printf("  with PAIR option\n");
   if(doneigh){
    log.printf("  using neighbor lists with\n");
-   log.printf("  update every %d steps and cutoff %lf\n",nl_st,nl_cut);
+   log.printf("  update every %d steps and cutoff %f\n",nl_st,nl_cut);
   }
 }
 

@@ -117,9 +117,9 @@ fmt("%f")
   if(bmin>bmax||amin>amax) error("COMMITTOR: UPPER bounds must always be greater than LOWER bounds");
 
   log.printf("  BASIN A definition\n");
-  for(unsigned i=0;i<amin.size();++i) log.printf(" %lf - %lf\n", amin[i], amax[i]);
+  for(unsigned i=0;i<amin.size();++i) log.printf(" %f - %f\n", amin[i], amax[i]);
   log.printf("  BASIN B definition\n");
-  for(unsigned i=0;i<bmin.size();++i) log.printf(" %lf - %lf\n", bmin[i], bmax[i]);
+  for(unsigned i=0;i<bmin.size();++i) log.printf(" %f - %f\n", bmin[i], bmax[i]);
 }
 
 void Committor::calculate(){
