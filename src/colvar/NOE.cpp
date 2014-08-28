@@ -168,9 +168,9 @@ serial(false)
   // Ouput details of all contacts
   unsigned index=0; 
   for(unsigned i=0;i<nga.size();++i){
-    log.printf("  The %dth NOE is calculated using %i equivalent couples of atoms and compared with a %lf reference distance\n", i, nga[i], noedist[i]);
+    log.printf("  The %uth NOE is calculated using %i equivalent couples of atoms and compared with a %lf reference distance\n", i, nga[i], noedist[i]);
     for(unsigned j=0;j<nga[i];j++) {
-      log.printf("    couple %i is %d %d.\n", j, ga_lista[index].serial(), gb_lista[index].serial() );
+      log.printf("    couple %u is %d %d.\n", j, ga_lista[index].serial(), gb_lista[index].serial() );
       index++;
     }
   }
@@ -264,7 +264,7 @@ void NOE::calculate(){
     FILE *outfile = fopen(csfile.c_str(), "w");
     fprintf(outfile, "#index calc exp\n");
     for(unsigned i=0;i<nga.size();i++) { 
-      fprintf(outfile," %4i %10.6lf %10.6lf\n", i, pow(noe[i],(-1./6.)), noedist[i]);
+      fprintf(outfile," %4u %10.6lf %10.6lf\n", i, pow(noe[i],(-1./6.)), noedist[i]);
     }
     fclose(outfile);
   }

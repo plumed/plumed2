@@ -94,7 +94,7 @@ ActionWithVessel(ao)
   fclose(fp); 
 
   if(nfram==0 ) error("no reference configurations were specified");
-  log.printf("  found %d configurations in file %s\n",nfram,reference.c_str() );
+  log.printf("  found %u configurations in file %s\n",nfram,reference.c_str() );
   for(unsigned i=0;i<weights.size();++i) weights[i] /= wnorm;
   mymap->setWeights( weights );
 

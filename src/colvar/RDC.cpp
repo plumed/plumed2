@@ -453,7 +453,7 @@ void RDC::calculate()
     double sum=0.;
     double Q=0.;
     for(unsigned r=0;r<coupl.size();r++) { 
-      fprintf(outfile," %4i %10.6lf %10.6lf\n", r, rdc[r], coupl[r]);
+      fprintf(outfile," %4u %10.6lf %10.6lf\n", r, rdc[r], coupl[r]);
       sum+=(rdc[r]-coupl[r])*(rdc[r]-coupl[r]);
       Q+=(coupl[r]*coupl[r]);
     }
