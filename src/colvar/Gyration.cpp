@@ -48,7 +48,7 @@ The radius of gyration is calculated using:
 
 \f[
 s_{\rm Gyr}=\Big ( \frac{\sum_i^{n}  
- \vert {r}_i -{r}_{\rm COM} \vert ^2 }{\sum_i^{n} m_i} \Big)^{1/2} 
+ m_i \vert {r}_i -{r}_{\rm COM} \vert ^2 }{\sum_i^{n} m_i} \Big)^{1/2} 
 \f]
 
 with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
