@@ -326,10 +326,9 @@ void thermostat(const int natoms,const int ndim,const vector<double>& masses,con
 // Langevin thermostat, implemented as decribed in Bussi and Parrinello, Phys. Rev. E (2007)
 // it is a linear combination of old velocities and new, randomly chosen, velocity,
 // with proper coefficients
-  double c1,c2;
-  c1=exp(-friction*dt);
+  double c1=exp(-friction*dt);
   for(int iatom=0;iatom<natoms;iatom++){
-    c2=sqrt((1.0-c1*c1)*temperature/masses[iatom]);
+    double c2=sqrt((1.0-c1*c1)*temperature/masses[iatom]);
     for(int i=0;i<ndim;i++){
       engint+=0.5*masses[iatom]*velocities[iatom][i]*velocities[iatom][i];
       velocities[iatom][i]=c1*velocities[iatom][i]+c2*random.Gaussian();
@@ -400,7 +399,7 @@ void write_statistics(const string & statfile,const int istep,const double tstep
 
 
 
-int main(FILE* in,FILE*out,PLMD::Communicator& pc){
+virtual int main(FILE* in,FILE*out,PLMD::Communicator& pc){
   int            natoms;       // number of atoms
   vector<Vector> positions;    // atomic positions
   vector<Vector> velocities;   // velocities
