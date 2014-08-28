@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -68,8 +68,8 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   if( tolerance>epsilon){
      if( keywords.exists("NL_TOL") ) parse("NL_TOL",nl_tolerance);
      if( nl_tolerance>tolerance ) error("NL_TOL must be smaller than TOL"); 
-     log.printf(" Ignoring contributions less than %lf",tolerance);
-     if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %lf inbetween neighbor list update steps\n",nl_tolerance);
+     log.printf(" Ignoring contributions less than %f",tolerance);
+     if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %f inbetween neighbor list update steps\n",nl_tolerance);
      else log.printf("\n");
   }
 }

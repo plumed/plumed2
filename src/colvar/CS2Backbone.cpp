@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -309,8 +309,8 @@ PLUMED_COLVAR_INIT(ao)
   len_pl2alm = 10.00*plumed.getAtoms().getUnits().getLength();
   for_pl2alm = ene_pl2alm*len_pl2alm;
   log.printf("  Conversion table from plumed to Almost:\n");
-  log.printf("    Energy %lf\n", ene_pl2alm);
-  log.printf("    Length %lf\n", len_pl2alm);
+  log.printf("    Energy %f\n", ene_pl2alm);
+  log.printf("    Length %f\n", len_pl2alm);
 
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -362,8 +362,8 @@ void CS2Backbone::calculate()
     sprintf(tmps1, "%li", getStep());
     if(ensemble) {
       sprintf(tmps2, "%i", multi_sim_comm.Get_rank());
-      csfile = string("cs")+tmps2+"-"+tmps1+string(".dat");
-    } else csfile = string("cs")+tmps1+string(".dat");
+      csfile = string("cs-")+getLabel()+"-"+tmps2+"-"+tmps1+string(".dat");
+    } else csfile = string("cs-")+getLabel()+"-"+tmps1+string(".dat");
     cam_list[0].printout_chemical_shifts(csfile.c_str());
   }
 

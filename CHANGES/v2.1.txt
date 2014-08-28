@@ -2,7 +2,14 @@
 
 @page CHANGES-2-1 Version 2.1
 
-Include all fixes in branch 2.0 up to 2.0.3
+Version 2.1 contains several improvements with respect to 2.0. Users currently working with 2.0 
+should have a look at the section "Changes leading to incompatible behavior" below and
+might need tiny adjustments in their input files. In 2.1 we restored more features of 1.3
+that were missing in 2.0, so users still working with 1.3 could opt for an upgrade.
+A tutorial explaining how to move from PLUMED 1 to PLUMED 2 is available (see \ref moving).
+
+Below you find a list of all the changes with respect to version 2.0.
+Notice that version 2.1 includes already all the fixes in branch 2.0 up to 2.0.3.
 
 Changes from version 2.0 which are relevant for users:
 - Changes leading to incompatible behavior:
@@ -17,17 +24,19 @@ Changes from version 2.0 which are relevant for users:
 - New actions:
   - \ref SPRINT topological collective variables.
   - \ref CH3SHIFTS collective variable.
+  - \ref POSITION collective variable.
+  - \ref FIT_TO_TEMPLATE.
   - \ref COMMITTOR analysis.
   - \ref LOCAL_AVERAGE.
   - \ref NLINKS.
   - \ref DIHCOR.
   - \ref NOE.
   - \ref RDC. 
-  - \ref CLASSICAL_MDS
-  - \ref XDISTANCES
-  - \ref YDISTANCES 
-  - \ref ZDISTANCES
-  - \ref DUMPMULTICOLVAR
+  - \ref CLASSICAL_MDS.
+  - \ref XDISTANCES.
+  - \ref YDISTANCES.
+  - \ref ZDISTANCES.
+  - \ref DUMPMULTICOLVAR.
   - Crystallization module, including \ref Q3, \ref LOCAL_Q3, \ref Q4, \ref Q6, \ref LOCAL_Q4, \ref LOCAL_Q6, \ref MOLECULES, \ref SIMPLECUBIC, \ref TETRAHEDRAL and \ref FCCUBIC.
   - \ref ENSEMBLE to perform Replica-Averaging on any collective variable.
 - New features for existing actions:
@@ -50,6 +59,7 @@ Changes from version 2.0 which are relevant for users:
     and --setmintozero to translate the minimum of the output files to zero.
   - \ref CONTACTMAP: parallelised and added weights.
 - New features in MD patches (require repatch):
+  - New patch for Gromacs 5.0
   - Gromacs 4.6.X patch updated to 4.6.6
   - Gromacs 4.6.6 supports \ref COMMITTOR analysis; can be now be used to perform energy minimization;
      now passes temperature to PLUMED (this allows temperature to be omitted in some actions,
@@ -102,5 +112,9 @@ Changes from version 2.0 which are relevant for developers:
   metrics can then be used in paths straightforwardly
 - You can now use multicolvars in tandem with manyrestraints in order to add a large numbers of restraints.
 - Can now do multicolvar like things in which each colvar is a vector rather than a scalar.
+- Updated script that generated header files so that they properly show years. Notice that the script
+  should new be run from within a git repository
+
+This list is likely incompleted, if you are developing in PLUMED you are encouraged to follow changes on github.
 
 */
