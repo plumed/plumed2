@@ -109,7 +109,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> POSITION </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> <b> \ref POSITION </b> </TD>
 </TR>
 <TR>
   <TD> MINDIST </TD>

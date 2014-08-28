@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -200,7 +200,7 @@ docmdist(false)
 
   // Ouput details of all contacts 
   for(unsigned i=0;i<sfs.size();++i){
-     log.printf("  The %dth contact is calculated from atoms : %d %d. Inflection point of switching function is at %s. Reference contact value is %lf\n", 
+     log.printf("  The %dth contact is calculated from atoms : %d %d. Inflection point of switching function is at %s. Reference contact value is %f\n", 
                 i+1, ga_lista[i].serial(), gb_lista[i].serial() , ( sfs[i].description() ).c_str(), reference[i] );
   }
 

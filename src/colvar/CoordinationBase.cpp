@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2011-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -104,7 +104,7 @@ firsttime(true)
   if(dopair) log.printf("  with PAIR option\n");
   if(doneigh){
    log.printf("  using neighbor lists with\n");
-   log.printf("  update every %d steps and cutoff %lf\n",nl_st,nl_cut);
+   log.printf("  update every %d steps and cutoff %f\n",nl_st,nl_cut);
   }
 }
 
