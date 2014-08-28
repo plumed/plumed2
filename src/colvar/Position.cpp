@@ -100,14 +100,14 @@ pbc(true)
   vector<AtomNumber> atoms;
   parseAtomList("ATOM",atoms);
   if(atoms.size()!=1)
-    error("Number of specified atoms should be 2");
+    error("Number of specified atoms should be 1");
   parseFlag("SCALED_COMPONENTS",scaled_components);
   bool nopbc=!pbc;
   parseFlag("NOPBC",nopbc);
   pbc=!nopbc;
   checkRead();
 
-  log.printf("  between atoms %d %d\n",atoms[0].serial());
+  log.printf("  for atom %d\n",atoms[0].serial());
   if(pbc) log.printf("  using periodic boundary conditions\n");
   else    log.printf("  without periodic boundary conditions\n");
 

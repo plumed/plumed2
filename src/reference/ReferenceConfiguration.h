@@ -56,7 +56,7 @@ public:
 
 class ReferenceConfiguration {
 friend class SingleDomainRMSD;
-friend double distance( const Pbc& pbc, const std::vector<Value*> vals, ReferenceConfiguration*, ReferenceConfiguration*, const bool& squared );
+friend double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration*, ReferenceConfiguration*, const bool& squared );
 private:
 /// The name of this particular config
   std::string name;

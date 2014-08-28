@@ -51,7 +51,7 @@ void ReferenceAtoms::setAtomNumbers( const std::vector<AtomNumber>& numbers ){
 
 void ReferenceAtoms::printAtoms( OFile& ofile ) const {
   for(unsigned i=0;i<reference_atoms.size();++i){
-      ofile.printf("ATOM  %4d X    RES   %4d %8.3f %8.3f %8.3f %6.2f %6.2f\n",
+      ofile.printf("ATOM  %4d X    RES   %4u %8.3f %8.3f %8.3f %6.2f %6.2f\n",
         indices[i].serial(), i, 
         reference_atoms[i][0], reference_atoms[i][1], reference_atoms[i][2],
         align[i], displace[i] );

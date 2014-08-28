@@ -159,7 +159,7 @@ const std::vector<double>& ReferenceArguments::getReferenceMetric(){
   return trig_metric;
 }
 
-double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> vals, const std::vector<double>& arg, const bool& squared ){
+double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, const bool& squared ){
   double r=0;
   if( hasmetric ){
       double dp_i, dp_j;

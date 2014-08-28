@@ -309,8 +309,8 @@ PLUMED_COLVAR_INIT(ao)
   len_pl2alm = 10.00*plumed.getAtoms().getUnits().getLength();
   for_pl2alm = ene_pl2alm*len_pl2alm;
   log.printf("  Conversion table from plumed to Almost:\n");
-  log.printf("    Energy %lf\n", ene_pl2alm);
-  log.printf("    Length %lf\n", len_pl2alm);
+  log.printf("    Energy %f\n", ene_pl2alm);
+  log.printf("    Length %f\n", len_pl2alm);
 
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
