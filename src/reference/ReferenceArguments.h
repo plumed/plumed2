@@ -66,7 +66,7 @@ protected:
   void setReferenceArguments();
 /// Calculate the euclidean/malanobius distance the atoms have moved from the reference
 /// configuration in CV space
-  double calculateArgumentDistance( const std::vector<Value*> vals, const std::vector<double>& arg, const bool& squared );
+  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, const bool& squared );
 public:
   ReferenceArguments( const ReferenceConfigurationOptions& ro );
 /// Get the arguments required 

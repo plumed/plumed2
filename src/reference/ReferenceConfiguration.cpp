@@ -168,7 +168,7 @@ void ReferenceConfiguration::print( OFile& ofile, const std::string& fmt ){
   ofile.printf("END\n");
 }
 
-double distance( const Pbc& pbc, const std::vector<Value*> vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
+double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
   double dist1=ref1->calc( ref2->getReferencePositions(), pbc, vals, ref2->getReferenceArguments(), squared );
 #ifndef NDEBUG
   // Check that A - B = B - A
