@@ -120,7 +120,8 @@ void LocalAverage::registerKeywords( Keywords& keys ){
 
 LocalAverage::LocalAverage(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao)
+MultiColvarFunction(ao),
+jstart(0)
 {
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
