@@ -420,7 +420,7 @@ isFirstStep(true)
   parse("FILE",hillsfname);
   parse("BIASFACTOR",biasf_);
   if( biasf_<1.0 ) error("well tempered bias factor is nonsensical");
-  double temp;
+  double temp=0.0;
   parse("TEMP",temp);
   if(temp>0.0) kbt_=plumed.getAtoms().getKBoltzmann()*temp;
   else kbt_=plumed.getAtoms().getKbT();
