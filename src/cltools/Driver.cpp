@@ -264,6 +264,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   molfile_plugin_t *api=NULL;      
   void *h_in=NULL;
   molfile_timestep_t ts_in; // this is the structure that has the timestep 
+  ts_in.coords=NULL;
 #endif
 
 // Read in an xyz file
@@ -371,7 +372,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        if(use_molfile==true){
 #ifdef __PLUMED_HAS_MOLFILE
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
-        ts_in.coords = (float *)malloc(3*natoms * sizeof(float));
+        ts_in.coords = new float [3*natoms];
 #endif
        }else{
          fp=fopen(trajectoryFile.c_str(),"r");
@@ -710,9 +711,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   if(fp && fp!=in)fclose(fp);
 #ifdef __PLUMED_HAS_MOLFILE
   if(h_in) api->close_file_read(h_in);
+  if(ts_in.coords) delete [] ts_in.coords;
 #endif
   if(grex_log) fclose(grex_log);
-  
+
   return 0;
 }
 
