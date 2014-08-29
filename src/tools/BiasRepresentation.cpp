@@ -28,6 +28,7 @@ namespace PLMD {
 
 /// the constructor here
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),mycomm(cc){
+    doInt_=false;
     ndim=tmpvalues.size();
     for(int i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
@@ -36,6 +37,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
 }
 /// overload the constructor: add the sigma  at constructor time 
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false),histosigma(sigma),mycomm(cc){
+    doInt_=false;
     ndim=tmpvalues.size();
     for(int i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
@@ -58,6 +60,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
 } 
 /// overload the constructor with some external sigmas: needed for histogram
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc){
+    doInt_=false;
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
