@@ -52,6 +52,8 @@ class BiasRepresentation {
 	  BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin );
           /// create a histogram with grid representation and sigmas in input
 	  BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma);
+	  /// destructor
+	  ~BiasRepresentation();
           /// retrieve the number of dimension of the representation
 	  unsigned 	getNumberOfDimensions();
           /// add the grid to the representation
@@ -91,8 +93,8 @@ class BiasRepresentation {
     vector<KernelFunctions*> hills;
     vector<double> biasf;
     vector<double> histosigma;	
-    Grid* BiasGrid_;
     Communicator& mycomm;
+    Grid* BiasGrid_;
 };
 
 }
