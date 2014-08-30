@@ -46,6 +46,7 @@ private:
 /// Get the cutoff for a kernel
   double getCutoff( const double& width ) const ;
 public:
+  KernelFunctions( const std::string& input, const bool& normed );
   KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate ,const double& w, const bool norm );
 /// Get the dimensionality of the kernel
   unsigned ndim() const;

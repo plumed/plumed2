@@ -86,6 +86,30 @@ the kernels we can use in this method.
 */
 //+ENDPLUMEDOC
 
+KernelFunctions::KernelFunctions( const std::string& input, const bool& normed ){
+  std::vector<std::string> data=Tools::getWords(input);
+  std::string name=data[0];
+  data.erase(data.begin());
+
+  std::vector<double> at; 
+  bool foundc = Tools::parseVector(data,"CENTER",at);
+  if(!foundc) plumed_merror("failed to find center keyword in definition of kernel");
+  std::vector<double> sig; 
+  bool founds = Tools::parseVector(data,"SIGMA",sig);
+  if(!foundc) plumed_merror("failed to find sigma keyword in definition of kernel");
+
+  bool multi; Tools::parseFlag(data,"MULTIVARIATE",multi);
+  if( center.size()==1 && multi ) plumed_merror("one dimensional kernel cannot be multivariate");
+  if( multi && sig.size()!=0.5*center.size()*(center.size()-1) ) plumed_merror("size mismatch between center size and sigma size");
+  if( !multi && sig.size()!=center.size() ) plumed_merror("size mismatch between center size and sigma size");
+
+  double h;
+  bool foundh = Tools::parse(data,"HEIGHT",h); 
+  if( !foundh) h=1.0;
+
+  KernelFunctions( at, sig, name, multi, h, normed );
+}
+
 KernelFunctions::KernelFunctions( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate, const double& w, const bool norm ):
 center(at),
 width(sig)
