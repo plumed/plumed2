@@ -699,6 +699,7 @@ enable_matheval
 enable_zlib
 enable_clock_gettime
 enable_gettimeofday
+enable_readdir_r
 enable_cregex
 enable_dlopen
 enable_execinfo
@@ -1349,6 +1350,8 @@ Optional Features:
   --enable-zlib           enable search for zlib, default: yes
   --enable-clock-gettime  enable search for gettime, default: yes
   --enable-gettimeofday   enable search for gettimeofday, default: yes
+  --enable-readdir-r      enable search for readdir_r (threadsafe), default:
+                          yes
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
@@ -2503,6 +2506,24 @@ else
   case "yes" in
              (yes) gettimeofday=true ;;
              (no)  gettimeofday=false ;;
+  esac
+
+fi
+
+
+
+readdir_r=
+# Check whether --enable-readdir-r was given.
+if test "${enable_readdir_r+set}" = set; then :
+  enableval=$enable_readdir_r; case "${enableval}" in
+             (yes) readdir_r=true ;;
+             (no)  readdir_r=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-readdir-r" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) readdir_r=true ;;
+             (no)  readdir_r=false ;;
   esac
 
 fi
@@ -5536,6 +5557,30 @@ fi
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&2;}
+    fi
+
+fi
+if test $readdir_r == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "dirent.h" "ac_cv_header_dirent_h" "$ac_includes_default"
+if test "x$ac_cv_header_dirent_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "readdir_r" "ac_cv_func_readdir_r"
+if test "x$ac_cv_func_readdir_r" = xyes; then :
+  found=ok
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_READDIR_R 1" >>confdefs.h
+
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_READDIR_R" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_READDIR_R" >&2;}
     fi
 
 fi
