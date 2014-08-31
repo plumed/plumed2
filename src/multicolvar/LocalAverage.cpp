@@ -120,9 +120,12 @@ void LocalAverage::registerKeywords( Keywords& keys ){
 
 LocalAverage::LocalAverage(const ActionOptions& ao):
 Action(ao),
-MultiColvarFunction(ao),
-jstart(0)
+MultiColvarFunction(ao)
 {
+  // One component for regular multicolvar and nelements for vectormulticolvar
+  if( getBaseMultiColvar(0)->getNumberOfQuantities()==5 ){ values.resize( 1 ); jstart=0; }
+  else { values.resize( getBaseMultiColvar(0)->getNumberOfQuantities() - 5 ); jstart=5; }
+
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
   if(sw.length()>0){
@@ -137,10 +140,6 @@ jstart(0)
   log.printf("  averaging over central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
   setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) ); buildSymmetryFunctionLists();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i) getBaseMultiColvar(i)->doNotCalculateDirector();
-
-  // One component for regular multicolvar and nelements for vectormulticolvar
-  if( getBaseMultiColvar(0)->getNumberOfQuantities()==5 ){ values.resize( 1 ); jstart=0; } 
-  else { values.resize( getBaseMultiColvar(0)->getNumberOfQuantities() - 5 ); jstart=5; }
 }
 
 unsigned LocalAverage::getNumberOfQuantities(){
