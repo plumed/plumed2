@@ -185,7 +185,7 @@ fenergy(false)
     error("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
 
   parseFlag("FREE-ENERGY",fenergy);
-  if(getTemp()<=0&&fenergy) error("Set the temperature (TEMP) if you want a free energy.");
+  if(getTemp()<=0 && fenergy) error("Set the temperature (TEMP) if you want a free energy.");
   checkRead();
 
   log.printf("  Using %s kernel functions\n",kerneltype.c_str() );
