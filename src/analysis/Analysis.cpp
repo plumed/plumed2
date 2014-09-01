@@ -158,10 +158,10 @@ argument_names(getNumberOfArguments())
          rtemp*=plumed.getAtoms().getKBoltzmann(); 
       } 
       simtemp=0.; parse("TEMP",simtemp);
-      if( rtemp>0 || !biases.empty() ){
-         if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-         else simtemp*=plumed.getAtoms().getKbT();
+      if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
+      else simtemp=plumed.getAtoms().getKbT();
 
+      if( rtemp>0 || !biases.empty() ){
          if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
       }
 

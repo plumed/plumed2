@@ -27,7 +27,7 @@
 namespace PLMD {
 
 /// the constructor here
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),mycomm(cc){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),mycomm(cc),BiasGrid_(NULL){
     doInt_=false;
     ndim=tmpvalues.size();
     for(int i=0;i<ndim;i++){
@@ -36,7 +36,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 }
 /// overload the constructor: add the sigma  at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false),histosigma(sigma),mycomm(cc){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false),histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
     doInt_=false;
     ndim=tmpvalues.size();
     for(int i=0;i<ndim;i++){
@@ -46,7 +46,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
 } 
 /// overload the constructor: add the grid at constructor time 
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, 
-                                       vector<unsigned> nbin, bool doInt, double lowI, double uppI ):hasgrid(false), rescaledToBias(false), mycomm(cc){
+                                       vector<unsigned> nbin, bool doInt, double lowI, double uppI ):hasgrid(false), rescaledToBias(false), mycomm(cc), BiasGrid_(NULL){
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){
          values.push_back(tmpvalues[i]);
@@ -59,7 +59,7 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     addGrid(gmin,gmax,nbin);
 } 
 /// overload the constructor with some external sigmas: needed for histogram
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
     doInt_=false;
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){
@@ -68,6 +68,11 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     }
     // initialize the grid 
     addGrid(gmin,gmax,nbin);
+}
+
+BiasRepresentation::~BiasRepresentation(){
+  if(BiasGrid_) delete BiasGrid_;
+  for(unsigned i=0;i<hills.size();i++) delete hills[i];
 }
 
 void  BiasRepresentation::addGrid( vector<string> gmin, vector<string> gmax, vector<unsigned> nbin ){
@@ -116,7 +121,7 @@ KernelFunctions* BiasRepresentation::readFromPoint(IFile *ifile){
 	return new KernelFunctions(cc,histosigma,"gaussian",false,h,false);	
 }
 void BiasRepresentation::pushKernel( IFile *ifile ){
-        KernelFunctions *kk;
+        KernelFunctions *kk=NULL;
         // here below the reading of the kernel is completely hidden
         if(histosigma.size()==0){ 
 		ifile->allowIgnoredFields();
