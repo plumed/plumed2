@@ -25,6 +25,41 @@
 namespace PLMD {
 namespace analysis {
 
+//+PLUMEDOC INTERNAL landmarkselection
+/*
+Pre-select a set of the stored configurations for some expensive form of analysis.  
+
+For methods such as \ref CLASSICAL_MDS it can be expensive to run the analysis calculation 
+with a large number of configurations.  What might be required is to run the analysis on a 
+subset of frames.  One may then use the results from the performed analysis to do some further
+analysis on the stored trajectory.  When running \ref CLASSICAL_MDS for example one may subsquently
+project the remainder of the trajectory using some form of out of sample extension.  There are 
+various ways of selecting the subset of frames on which to perform the analysis.  
+These various methods are described below:
+
+<table align=center frame=void width=95%% cellpadding=5%%>
+<tr> 
+<td> TYPE </td> <td> DESCRIPTION </td> <td> EXAMPLE INPUT </td>
+</tr>
+<tr>
+<td> ALL </td> <td> use all the stored frames </td> <td> LANDMARKS={ALL} </td> 
+<td> STRIDE </td> <td> only use every \f$n\f$the frame </td> <td> LANDMARKS={STRIDE FREQ=\f$n\f$} </td>
+<td> RANDOM </td> <td> pick \f$n\f$ random frames from the stored frames </td> <td> LANDMARKS={RANDOM N=\f$n\f$} <\td>
+<td> FPS </td> <td> pick \f$n\f$ frames using farthest point sampling </td> <td> LANMARKS={FPS N=\f$n\f$} </td>
+<td> STAGED </td> <td> pick \f$n\f$ landmarks using the staged algorithm described in \cite{lj-smap} </td> <td> LANDMARKS={STAGED N=\fn$\fn GAMMA=\f$\gamma\f$}
+</tr>
+</table>
+
+Weights are ascribed to each of the the points by doing a Voronoi analysis over all the fraems in the trajectory
+unless this features is explicitally turned off using the keyword NOVORONOI.  As such a landmarks point with 
+20 points in its Voronoi will be ascribed a weight of 20 unless you turn of this weighting.  In addition, if you are
+running biased simulations and \ref rewweighting these weights will be taken into account when calculating weights in these
+analysis algorithm.s
+
+Please be aware that all of the functionality described above is not yet fully available 
+*/
+//+ENDPLUMEDOC
+
 LandmarkSelectionOptions::LandmarkSelectionOptions( const std::vector<std::string>& input, AnalysisWithLandmarks* myanalysis ):
 words(input),
 action(myanalysis)
