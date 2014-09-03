@@ -26,10 +26,18 @@
 
 namespace PLMD{
 
-/// Small utility class.
-/// It has no implemented methods, and all its data are public.
-/// It just simplify the syntax of functions which should pass the
-/// value of all the units.
+/**
+\ingroup TOOLBOX
+Small utility class that contains information about units.
+
+This class can be used to contain in a single place all the
+information about units. Units are expressed in terms of
+standard PLUMED units, i.e. kj/mol, nm, and ps.
+Units can be set as double or as string. In the latter case,
+one can also use strings such as kcal/mol.
+
+
+*/
 class Units{
 /// Units for energy, expressed in kj/mol (e.g. 4.184 means kcal/mol)
   double energy;
@@ -41,19 +49,40 @@ class Units{
   double time;
   std::string timeString;
 public:
-// Constructor, setting default values (1.0)
+/// Constructor, setting default values (1.0)
   Units();
+/// Set energy units from string.
+/// Also understands the following strings:
+/// kj/mol, kcal/mol, j/mol, and eV.
   void setEnergy(const std::string &);
+/// Set time units from string.
+/// Also understands the following strings:
+/// ps, ns, fs.
   void setTime(const std::string &);
+/// Set lengh units from string.
+/// Also understands the following strings:
+/// nm, A, um.
   void setLength(const std::string &);
-  void setEnergy(const double);
-  void setTime(const double);
-  void setLength(const double);
+/// Set energy units from double.
+/// Should be specified in units of kj/mol (e.g. 4.184 means kcal/mol)
+  void setEnergy(double);
+/// Set time units from double.
+/// Should be specified in units of ps (e.g. 0.001 means fs)
+  void setTime(double);
+/// Set lenght units from double.
+/// Should be specified in units of nm (e.g. 0.1 means A)
+  void setLength(double);
+/// Get energy units as double.
   const double & getEnergy()const;
+/// Get length units as double.
   const double & getLength()const;
+/// Get time units as double.
   const double & getTime()const;
+/// Get energy units as string.
   const std::string & getEnergyString()const;
+/// Get length units as string.
   const std::string & getLengthString()const;
+/// Get time units as string.
   const std::string & getTimeString()const;
 };
 
