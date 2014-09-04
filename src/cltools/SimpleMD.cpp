@@ -515,6 +515,14 @@ virtual int main(FILE* in,FILE*out,PLMD::Communicator& pc){
     plumed->cmd("setMDEngine","simpleMD");
     plumed->cmd("setTimestep",&tstep);
     plumed->cmd("setPlumedDat","plumed.dat");
+    int pversion=0;
+    plumed->cmd("getApiVersion",&pversion);
+// setting kbT is only implemented with api>1
+// even if not necessary in principle in SimpleMD (which is part of plumed)
+// we leave the check here as a reference
+      if(pversion>1){
+        plumed->cmd("setKbT",&temperature);
+      }
     plumed->cmd("init");
   }
 

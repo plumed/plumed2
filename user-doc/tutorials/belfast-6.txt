@@ -261,7 +261,7 @@ plumed sum_hills --hills HILLS
 
 The command above generates a file called fes.dat in which the free-energy surface as function
 of phi and psi is calculated on a regular grid. One can modify the default name for the free energy file,
-as well as the boundaries and bin size of the grid, by using the following options of \ref sum_hills:
+as well as the boundaries and bin size of the grid, by using the following options of \ref sum_hills :
 
 \verbatim
 --outfile - specify the outputfile for sumhills
