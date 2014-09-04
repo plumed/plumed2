@@ -136,6 +136,9 @@ For users:
 - Fixed reader for xyz files, that now correctly detecs missing columns. Also a related regtest has
   been changed.
 
+For developers:
+- Renamed Value.cpp to BiasValue.cpp
+
 */
 
 
