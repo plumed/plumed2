@@ -26,8 +26,6 @@
 
 namespace PLMD{
 
-class Communicator;
-
 /// Class containing the log stream.
 ///
 /// It is similar to a FILE stream. It allows a printf() function, and
