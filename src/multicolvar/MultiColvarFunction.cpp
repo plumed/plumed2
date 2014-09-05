@@ -178,7 +178,12 @@ void MultiColvarFunction::calculate(){
 }
 
 void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
-  unsigned pstart=0;
+  // Construct matrix to store numerical derivatives
+  unsigned pstart=0; 
+  for(unsigned i=0;i<mybasemulticolvars.size();++i) pstart+=3*mybasemulticolvars[i]->getNumberOfAtoms();
+  Matrix<double> numder_store( getNumberOfComponents(), pstart + 9 );
+
+  pstart=0; 
   for(unsigned i=0;i<mybasemulticolvars.size();++i){
      mybasemulticolvars[i]->calculateAtomicNumericalDerivatives( this, pstart );
      for(unsigned k=0;k<getNumberOfComponents();++k){

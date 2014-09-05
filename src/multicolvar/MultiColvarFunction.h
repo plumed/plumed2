@@ -37,8 +37,6 @@ private:
   std::vector<multicolvar::MultiColvarBase*> mybasemulticolvars;
 /// This is used to keep track of what is calculated where
   std::vector<unsigned> colvar_label;
-/// Used for numerical derivatives
-  Matrix<double> numder_store;
 /// A tempory vector that is used for retrieving vectors
   std::vector<double> tvals;
 /// This sets up the atom list

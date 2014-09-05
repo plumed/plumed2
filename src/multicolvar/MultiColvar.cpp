@@ -60,15 +60,17 @@ verbose_output(false)
 }
 
 void MultiColvar::readAtoms( int& natoms ){
-  std::vector<AtomNumber> all_atoms;
+  if( getNumberOfAtoms()==0 ){
+     std::vector<AtomNumber> all_atoms;
+     
+     if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
+     if( keywords.exists("GROUP") ) readGroupsKeyword( natoms, all_atoms );
+     if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms, all_atoms );
 
-  if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
-  if( keywords.exists("GROUP") ) readGroupsKeyword( natoms, all_atoms );
-  if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms, all_atoms );
-
-  if( all_atoms.size()==0 ) error("No atoms have been read in");
-  // Request all atoms from ActionAtomistic
-  ActionAtomistic::requestAtoms( all_atoms ); 
+     if( all_atoms.size()==0 ) error("No atoms have been read in");
+     // Request all atoms from ActionAtomistic
+     ActionAtomistic::requestAtoms( all_atoms ); 
+  }
   // Setup the multicolvar base
   setupMultiColvarBase();
 }

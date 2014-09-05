@@ -41,6 +41,8 @@ private:
   std::vector<double> width;
 /// The height of the kernel
   double height;
+/// Used to set all the data in the kernel during construction - avoids double coding as this has two constructors
+  void setData( const std::vector<double>& at, const std::vector<double>& sig, const std::string& type, const bool multivariate ,const double& w, const bool norm );
 /// Convert the width into matrix form
   Matrix<double> getMatrix() const;
 /// Get the cutoff for a kernel

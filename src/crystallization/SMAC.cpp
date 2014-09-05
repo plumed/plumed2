@@ -19,8 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_crystallization_SMAC_h
-#define __PLUMED_crystallization_SMAC_h
 #include "OrientationSphere.h"
 #include "core/ActionRegister.h"
 #include "tools/KernelFunctions.h"
@@ -75,8 +73,8 @@ double SMAC::transformDotProduct( const double& dot, double& df ){
       ans += kernels[i].evaluate( pos, deriv );
       df += deriv[0]*dcos;
   }
+  return ans;
 }
 
 }
 }
-#endif
