@@ -280,6 +280,11 @@ double SwitchingFunction::inverse( const double& val ) const {
   if( dmax<numeric_limits<double>::max() ) return dmax;
 
   if( type==smap ){
+// I add this error because I do not know how to compute ival
+// previously this line was just missing
+// In this manner at least we are should that it cannot happen that
+// an uninitialized ival is used
+    plumed_merror("cannot compute ival in this case");
   } else if(type==rational){
       ival=1.1;
       for(unsigned i=0;;++i){
