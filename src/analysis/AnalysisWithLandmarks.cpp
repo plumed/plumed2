@@ -23,6 +23,15 @@
 #include "LandmarkRegister.h"
 #include "LandmarkSelectionBase.h"
 
+//+PLUMEDOC INTERNAL landmarkselection
+/*
+This is currently a filler page.  
+
+Just use LANDMARKS=ALL.  More complex versions will appear in later versions.
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace analysis {
 
