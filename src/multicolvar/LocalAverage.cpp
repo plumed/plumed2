@@ -134,7 +134,7 @@ MultiColvarFunction(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  averaging over central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
-  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) ); buildSymmetryFunctionLists();
+  setLinkCellCutoff( 2.*switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i) getBaseMultiColvar(i)->doNotCalculateDirector();
 
   // One component for regular multicolvar and nelements for vectormulticolvar

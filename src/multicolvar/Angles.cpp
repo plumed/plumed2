@@ -156,7 +156,7 @@ use_sf(false)
   // Read in the atoms
   int natoms=3; readAtoms( natoms );
   // Set cutoff for link cells 
-  if( use_sf ) setLinkCellCutoff( 2.*sf1.inverse( getTolerance() ) );
+  if( use_sf ) setLinkCellCutoff( 2.*sf1.get_dmax() );
 
   // And check everything has been read in correctly
   checkRead();

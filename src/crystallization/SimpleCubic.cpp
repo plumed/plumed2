@@ -103,7 +103,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
+  setLinkCellCutoff( 2.*switchingFunction.get_dmax() );
 
   // Read in the atoms
   int natoms=2; readAtoms( natoms );

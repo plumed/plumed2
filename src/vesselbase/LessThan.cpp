@@ -76,7 +76,7 @@ void LessThan::finish(){
 }
 
 double LessThan::getCutoff( const double& tol ){
-  return sf.inverse( tol );
+  return sf.get_dmax();
 }
 
 }

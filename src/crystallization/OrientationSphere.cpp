@@ -67,13 +67,10 @@ MultiColvarFunction(ao)
   }
   log.printf("  degree of overlap in orientation between central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
+  setLinkCellCutoff( 2.*switchingFunction.get_dmax() );
 
   // Finish the setup of the object
   buildSymmetryFunctionLists();
-
-  // And check everything has been read in correctly
-  checkRead();
 }
 
 void OrientationSphere::calculateWeight(){

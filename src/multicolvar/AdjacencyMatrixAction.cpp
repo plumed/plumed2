@@ -83,10 +83,10 @@ tmpdf(1)
   active_elements.setupMPICommunication( comm );
 
   // Find the largest sf cutoff
-  double sfmax=switchingFunction(0,0).inverse( getTolerance() );
+  double sfmax=switchingFunction(0,0).get_dmax();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
       for(unsigned j=0;j<<getNumberOfBaseMultiColvars();++j){
-          double tsf=switchingFunction(i,j).inverse( getTolerance() );
+          double tsf=switchingFunction(i,j).get_dmax(); 
           if( tsf>sfmax ) sfmax=tsf;
       }
   }

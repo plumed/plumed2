@@ -295,33 +295,6 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
   return result;
 }
 
-double SwitchingFunction::inverse( const double& val ) const {
-  double ival;  
-
-  if( dmax<numeric_limits<double>::max() ) return dmax;
-
-  if( type==smap ){
-  } else if(type==rational){
-      ival=1.1;
-      for(unsigned i=0;;++i){
-          double vv = ( 1.0 - pow(ival,nn) ) / ( 1.0 - pow( ival,mm) );
-          if( vv < val ) break;
-          ival+=0.1;
-      }
-      return ival/invr0 + d0;
-  } else if(type==exponential){
-      ival=-log(val);
-      return ival/invr0 + d0;
-  } else if(type==gaussian){
-      ival=2*sqrt( -log(val) );
-      return ival/invr0 + d0;
-  } else if(type==cubic){
-      return dmax;
-  } else plumed_merror("Unknown switching function type");
-
-  return dmax;
-}
-
 SwitchingFunction::SwitchingFunction():
   init(false),
   type(rational),
@@ -355,6 +328,10 @@ double SwitchingFunction::get_r0() const {
 
 double SwitchingFunction::get_d0() const {
   return d0;
+}
+
+double SwitchingFunction::get_dmax() const {
+  return dmax;
 }
 
 }
