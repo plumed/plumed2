@@ -63,7 +63,10 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
                                  "elsewhere in the input by using the label of the action. However, thes Action can also be used to "
                                  "calculate the following quantities by using the keywords as described below.  The quantities then "
                                  "calculated can be referened using the label of the action followed by a dot and then the name "
-                                 "from the table below."); 
+                                 "from the table below.  Please note that you can use the LESS_THAN keyword more than once.  The resulting "
+                                 "components will be labelled <em>label</em>.lessthan-1, <em>label</em>.lessthan-2 and so on unless you "
+                                 "exploit the fact that these labels are customizable. In particular, by using the LABEL keyword in the "
+                                 "description of you LESS_THAN function you can set name of the component that you are calculating"); 
 }
 
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
