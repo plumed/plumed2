@@ -55,6 +55,19 @@ void Vessel::registerKeywords( Keywords& keys ){
   keys.add("optional","LABEL","the label used to reference this particular quantity");
 }
 
+std::string Vessel::transformName( const std::string& name ){
+   std::string tlabel=name; 
+   // Convert to lower case
+   std::transform( tlabel.begin(), tlabel.end(), tlabel.begin(), tolower );
+   // Remove any underscore characters (as these are reserved)
+   for(unsigned i=0;;++i){
+      std::size_t num=tlabel.find_first_of("_");
+      if( num==std::string::npos ) break;
+      tlabel.erase( tlabel.begin() + num, tlabel.begin() + num + 1 );
+   }
+   return tlabel;
+}
+
 Vessel::Vessel( const VesselOptions& da ):
 myname(da.myname),
 numlab(da.numlab),
@@ -70,15 +83,7 @@ log((da.action)->log)
   } else {
       if( keywords.exists("LABEL") ) parse("LABEL",mylabel);
       if( mylabel.length()==0 && numlab>=0 ){
-          mylabel=myname; std::string nn; 
-          // Convert to lower case
-          std::transform( mylabel.begin(), mylabel.end(), mylabel.begin(), tolower );
-          // Remove any underscore characters (as these are reserved)
-          for(unsigned i=0;;++i){
-             std::size_t num=mylabel.find_first_of("_");
-             if( num==std::string::npos ) break;
-             mylabel.erase( mylabel.begin() + num, mylabel.begin() + num + 1 ); 
-          }
+          mylabel=transformName( myname ); std::string nn; 
           if(numlab>0){ Tools::convert( numlab, nn ); mylabel =  mylabel + "-" + nn; }
           else { mylabel = mylabel; }
       } 

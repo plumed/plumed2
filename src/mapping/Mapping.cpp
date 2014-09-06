@@ -65,7 +65,7 @@ ActionWithVessel(ao)
      mymap->setPropertyNames( property, false );
   } else {
      std::vector<std::string> property(1); 
-     property[0]="sss";
+     property[0]="spath";
      mymap->setPropertyNames( property, true );
   }
 
