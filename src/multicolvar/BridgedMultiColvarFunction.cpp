@@ -41,6 +41,10 @@ MultiColvarBase(ao)
   BridgedMultiColvarFunction* check = dynamic_cast<BridgedMultiColvarFunction*>( mycolv );
   if(check) error("cannot create a bridge of a bridge");
 
+  // When using numerical derivatives here we must use numerical derivatives
+  // in base multicolvar
+  if( checkNumericalDerivatives() ) mycolv->useNumericalDerivatives();
+
   myBridgeVessel = mycolv->addBridgingVessel( this ); addDependency(mycolv);
   weightHasDerivatives=true;
   // Number of tasks is the same as the number in the underlying MultiColvar

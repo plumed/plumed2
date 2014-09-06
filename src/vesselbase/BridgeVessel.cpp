@@ -96,7 +96,7 @@ void BridgeVessel::completeNumericalDerivatives(){
       for(int j=0;j<myOutputValues->getNumberOfComponents();++j) tmpder(j,i) = myOutputValues->getOutputQuantity(j);
   }
   vval->bridgeVariable=nextra; getAction()->calculate(); 
-  inum=0;  // Reset inum now that we have finished calling calculate
+  plumed_assert( inum==mynumerical_values.size() ); inum=0;  // Reset inum now that we have finished calling calculate
   std::vector<double> base( myOutputValues->getNumberOfComponents() );
   for(int j=0;j<myOutputValues->getNumberOfComponents();++j) base[j] = myOutputValues->getOutputQuantity(j);
 
