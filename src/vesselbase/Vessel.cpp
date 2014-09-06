@@ -71,7 +71,14 @@ log((da.action)->log)
       if( keywords.exists("LABEL") ) parse("LABEL",mylabel);
       if( mylabel.length()==0 && numlab>=0 ){
           mylabel=myname; std::string nn; 
+          // Convert to lower case
           std::transform( mylabel.begin(), mylabel.end(), mylabel.begin(), tolower );
+          // Remove any underscore characters (as these are reserved)
+          for(unsigned i=0;;++i){
+             std::size_t num=mylabel.find_first_of("_");
+             if( num==std::string::npos ) break;
+             mylabel.erase( mylabel.begin() + num, mylabel.begin() + num + 1 ); 
+          }
           if(numlab>0){ Tools::convert( numlab, nn ); mylabel =  mylabel + "-" + nn; }
           else { mylabel = mylabel; }
       } 

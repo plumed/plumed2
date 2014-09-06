@@ -33,6 +33,7 @@ void ManyRestraintsBase::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords( keys );
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
   keys.remove("TOL");
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potentials");
 }
 
 ManyRestraintsBase::ManyRestraintsBase(const ActionOptions& ao):

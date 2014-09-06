@@ -1,4 +1,4 @@
-#! FIELDS time parameter a1.mean a1.less_than a2.mean a2.less_than a3.mean a3.less_than a4.mean a4.less_than a5.mean a5.less_than a6.mean a6.less_than a7.mean a7.less_than
+#! FIELDS time parameter a1.mean a1.lessthan a2.mean a2.lessthan a3.mean a3.lessthan a4.mean a4.lessthan a5.mean a5.lessthan a6.mean a6.lessthan a7.mean a7.lessthan
  0.000000 0   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000
  0.000000 1   0.0000   0.0000   0.0000   0.0000  -0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000  -0.0050   3.0606
  0.000000 2   0.0000   0.0000   0.0000   0.0000   0.0000  -0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000   0.0000
