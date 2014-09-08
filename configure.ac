@@ -350,7 +350,7 @@ then
   then
     AC_MSG_RESULT([yes])
   else
-    AC_MSG_RESULT([yes])
+    AC_MSG_RESULT([no])
     AC_MSG_WARN([dynamic library will be disabled])
     SOEXT=
   fi
