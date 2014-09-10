@@ -265,7 +265,10 @@ private:
   bool doInt_;
   bool isFirstStep;
   double reweight_factor;
-  std::vector<unsigned> nintegrate; 
+  std::vector<unsigned> rewf_grid_; 
+  vector<Gaussian> rewf_last_hills;
+  unsigned int rewf_stridehills_;
+  
  
   void   readGaussians(IFile*);
   bool   readChunkOfGaussians(IFile *ifile, unsigned n);
@@ -278,6 +281,7 @@ private:
   double getGaussianNormalization( const Gaussian& );
   vector<unsigned> getGaussianSupport(const Gaussian&);
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate  );
+  void   computeReweightingFactor();
   std::string fmt;
 
 public:
@@ -295,7 +299,8 @@ void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
-  keys.addOutputComponent("rbias","default","the value of the bias to use in reweighting. This is calculated using the method of Tiwary and Parrinello.");
+  keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias corrected using the c(t) reweighting factor [rbias=bias-c(t)]. This is calculated using the method of Tiwary and Parrinello.");
+  keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor c(t) calculated according to the method of Tiwary and Parrinello.");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
@@ -310,8 +315,8 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
   keys.add("optional","GRID_SPACING","the approximate grid spacing (to be used as an alternative or together with GRID_BIN)");
-  keys.add("optional","NINTEGRATE","calculate the bias for reweiting using the method of Tiwary and Parrinello. Here you should specify the number of grid points required in each dimension. " 
-                                   "This method is not compatible with metadynamics not on a grid.");
+  keys.add("optional","REWEIGHTING_NGRID","calculate the c(t) reweighting factor using the method of Tiwary and Parrinello and use that to obtain the corrected. Here you should specify the number of grid points required in each dimension." "This method is not compatible with metadynamics not on a grid.");
+  keys.add("optional","REWEIGHTING_NHILLS","how many Gaussian hills should be deposited before updating the reweighting factor. The default is to do this after adding 50 Gaussians.");
   keys.addFlag("GRID_SPARSE",false,"use a sparse grid to store hills");
   keys.addFlag("GRID_NOSPLINE",false,"don't use spline interpolation with grids");
   keys.add("optional","GRID_WSTRIDE","write the grid to a file every N steps");
@@ -510,14 +515,15 @@ isFirstStep(true), reweight_factor(0.0)
   parse("GRID_RFILE",gridreadfilename_);
 
   if(grid_){ 
-     parseVector("NINTEGRATE",nintegrate); 
-     if( nintegrate.size()>0 && nintegrate.size()!=getNumberOfArguments() ){
-         error("size mismatch for NINTEGRATE keyword");
-     } else if( nintegrate.size()==getNumberOfArguments() ){
+     parseVector("REWEIGHTING_NGRID",rewf_grid_); 
+     if( rewf_grid_.size()>0 && rewf_grid_.size()!=getNumberOfArguments() ){
+         error("size mismatch for REWEIGHTING_NGRID keyword");
+     } else if( rewf_grid_.size()==getNumberOfArguments() ){
          for(unsigned j=0;j<getNumberOfArguments();++j){
-            if( !getPntrToArgument(j)->isPeriodic() ) nintegrate[j] += 1; 
+            if( !getPntrToArgument(j)->isPeriodic() ) rewf_grid_[j] += 1; 
          }
      }
+     rewf_stridehills_=50; parse("REWEIGHTING_NHILLS",rewf_stridehills_);
   }
 
   // Multiple walkers
@@ -590,7 +596,8 @@ isFirstStep(true), reweight_factor(0.0)
   }
 
   addComponent("bias"); componentIsNotPeriodic("bias");
-  if( nintegrate.size()>0 ){ addComponent("rbias"); componentIsNotPeriodic("rbias"); }
+  if( rewf_grid_.size()>0 ){ addComponent("rbias"); componentIsNotPeriodic("rbias"); }
+  if( rewf_grid_.size()>0 ){ addComponent("rct"); componentIsNotPeriodic("rct"); }
 
   if(acceleration) {
     if(!welltemp_) error("The calculation of the acceleration works only if Well-Tempered Metadynamics is on"); 
@@ -643,6 +650,13 @@ isFirstStep(true), reweight_factor(0.0)
    }
   }
 
+// Tiwary-Parrinello reweighting factor
+  if(rewf_grid_.size()>0){
+   log.printf("  the c(t) reweighting factor will be calculated every %d hills\n",rewf_stridehills_);
+   vector<double> dummy; dummy.assign(getNumberOfArguments(),1.0);
+   for(unsigned i=0;i<rewf_stridehills_;i++){rewf_last_hills.push_back(Gaussian(dummy,dummy,0.0,false));};
+   getPntrToComponent("rct")->set(reweight_factor);
+  }
 
 // creating vector of ifile* for hills reading 
 // open all files at the beginning and read Gaussians if restarting
@@ -670,6 +684,9 @@ isFirstStep(true), reweight_factor(0.0)
    }
   }
 
+  // Calculate the Tiwary-Parrinello reweighting factor if we are restarting from previous hills
+  if(plumed.getRestart() && rewf_grid_.size()>0 ){computeReweightingFactor();}
+
 // open hills file for writing
   hillsOfile_.link(*this);
   hillsOfile_.open(ifilesnames[mw_id_]);
@@ -694,6 +711,8 @@ isFirstStep(true), reweight_factor(0.0)
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(acceleration) log<<plumed.cite(
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
+  if(rewf_grid_.size()>0) log<<plumed.cite(
+     "Pratyush and Parrinello, J. Phys. Chem. B, DOI: 10.1021/jp504920s (2014)");
   log<<"\n";
 
 }
@@ -791,45 +810,9 @@ void MetaD::writeGaussian(const Gaussian& hill, OFile&file){
 
 void MetaD::addGaussian(const Gaussian& hill){
 
-// Recompute Tiwary-Parrinello reweighting factor
- if( nintegrate.size()>0 ){
-   if( !welltemp_ ) error("cannot compute Tiwary-Parrinello reweighting factors for metadynamics when not well-tempered");
-
-   // Recover the minimum values for the grid
-   unsigned ncv=getNumberOfArguments();
-   double grid_size=1.0; unsigned ntotgrid=1;
-   std::vector<double> dmin( ncv ),dmax( ncv ), grid_spacing( ncv ), vals( ncv ); 
-   for(unsigned j=0;j<ncv;++j){
-      Tools::convert( BiasGrid_->getMin()[j], dmin[j] );
-      Tools::convert( BiasGrid_->getMax()[j], dmax[j] );
-      grid_spacing[j] = ( dmax[j] - dmin[j] ) / static_cast<double>( nintegrate[j] );
-      grid_size *= grid_spacing[j]; 
-      if( !getPntrToArgument(j)->isPeriodic() ) dmax[j] += grid_spacing[j]; 
-      ntotgrid *= nintegrate[j];
-   }
-   
-       
-   // Now sum over whole grid
-   reweight_factor=0.0; double* der=new double[ncv]; std::vector<unsigned> t_index( ncv );
-   unsigned rank=comm.Get_rank(), stride=comm.Get_size(); double afactor = biasf_ / (kbt_*(biasf_-1.0));
-   for(unsigned i=rank;i<ntotgrid;i+=stride){
-       t_index[0]=(i%nintegrate[0]);
-       unsigned kk=i;
-       for(unsigned j=1;j<ncv-1;++j){ kk=(kk-t_index[j-1])/nintegrate[i-1]; t_index[j]=(kk%nintegrate[i]); }
-       if( ncv>=2 ) t_index[ncv-1]=((kk-t_index[ncv-1])/nintegrate[ncv-2]);
-       
-       for(unsigned j=0;j<ncv;++j) vals[j]=dmin[j] + t_index[j]*grid_spacing[j]; 
- 
-       double newgauss=evaluateGaussian(vals,hill,der);
-       double oldb=getBiasAndDerivatives(vals,der);
- 
-       reweight_factor += exp( afactor*(newgauss + oldb) ) - exp( afactor*oldb );
-   }
-   comm.Sum( reweight_factor ); 
-   reweight_factor *= grid_size /( afactor*height0_*stride_*getTimeStep()*getGaussianNormalization(hill) ); 
-   reweight_factor = kbt_ * std::log( reweight_factor );
-   delete [] der;
- }
+// Add the Gaussian to the list of last hills if we are 
+// computing the c(t) reweighting factor
+ if( rewf_grid_.size()>0 ){rewf_last_hills.erase(rewf_last_hills.begin()); rewf_last_hills.push_back(hill);}
 
  if(!grid_){hills_.push_back(hill);} 
  else{
@@ -1075,7 +1058,7 @@ void MetaD::calculate()
   for(unsigned i=0;i<ncv;++i){der[i]=0.0;}
   double ene=getBiasAndDerivatives(cv,der);
   getPntrToComponent("bias")->set(ene);
-  if( nintegrate.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
+  if( rewf_grid_.size()>0 ) getPntrToComponent("rbias")->set(ene - reweight_factor);
 // calculate the acceleration factor
   if(acceleration&&!isFirstStep) {
     acc += exp(ene/(kbt_));
@@ -1205,6 +1188,8 @@ void MetaD::update(){
     }
    }
  } 
+
+ if(getStep()%(stride_*rewf_stridehills_)==0 && nowAddAHill && rewf_grid_.size()>0 ){computeReweightingFactor();}
 }
 
 void MetaD::finiteDifferenceGaussian
@@ -1307,6 +1292,47 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
   }else{ 
     return false; 
   }; 
+}
+
+void MetaD::computeReweightingFactor(){
+ if( !welltemp_ ) error("cannot compute the c(t) reweighting factors for non well-tempered metadynamics");
+ if( rewf_last_hills.size() != rewf_stridehills_) error("error in computeReweightingFactor(), the number of hills in rewf_last_hills is not correct.");
+ 
+ // Recover the minimum values for the grid
+ unsigned ncv=getNumberOfArguments();
+ double grid_size=1.0; unsigned ntotgrid=1;
+ std::vector<double> dmin( ncv ),dmax( ncv ), grid_spacing( ncv ), vals( ncv ); 
+ for(unsigned j=0;j<ncv;++j){
+    Tools::convert( BiasGrid_->getMin()[j], dmin[j] );
+    Tools::convert( BiasGrid_->getMax()[j], dmax[j] );
+    grid_spacing[j] = ( dmax[j] - dmin[j] ) / static_cast<double>( rewf_grid_[j] );
+    grid_size *= grid_spacing[j]; 
+    if( !getPntrToArgument(j)->isPeriodic() ) dmax[j] += grid_spacing[j]; 
+    ntotgrid *= rewf_grid_[j];
+ }
+       
+ // Now sum over whole grid
+ reweight_factor=0.0; double* der=new double[ncv]; std::vector<unsigned> t_index( ncv );
+ unsigned rank=comm.Get_rank(), stride=comm.Get_size(); double afactor = biasf_ / (kbt_*(biasf_-1.0));
+ for(unsigned i=rank;i<ntotgrid;i+=stride){
+     t_index[0]=(i%rewf_grid_[0]);
+     unsigned kk=i;
+     for(unsigned j=1;j<ncv-1;++j){ kk=(kk-t_index[j-1])/rewf_grid_[i-1]; t_index[j]=(kk%rewf_grid_[i]); }
+     if( ncv>=2 ) t_index[ncv-1]=((kk-t_index[ncv-1])/rewf_grid_[ncv-2]);
+      
+     for(unsigned j=0;j<ncv;++j) vals[j]=dmin[j] + t_index[j]*grid_spacing[j]; 
+
+     double currentb=getBiasAndDerivatives(vals,der);
+     double oldb=currentb;
+     for(unsigned j=0;j<rewf_last_hills.size();j++){oldb-=evaluateGaussian(vals,rewf_last_hills[j],der);}
+ 
+     reweight_factor += exp( afactor*currentb ) - exp( afactor*oldb );
+ }
+ comm.Sum( reweight_factor ); 
+ delete [] der;
+ reweight_factor *= grid_size /( afactor*height0_*stride_*rewf_stridehills_*getTimeStep()*getGaussianNormalization(rewf_last_hills[rewf_stridehills_-1] ) );
+ reweight_factor = kbt_ * std::log( reweight_factor );
+ getPntrToComponent("rct")->set(reweight_factor);
 }
 
 }
