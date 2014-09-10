@@ -442,7 +442,8 @@ void RDC::calculate()
   bool printout=false;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
   if(printout) {
-    string dcfile = string("rdc-")+getLabel()+"-"+to_string(getStep())+string(".dat");
+    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+    string dcfile = string("rdc-")+getLabel()+"-"+tmp1+string(".dat");
     FILE *outfile = fopen(dcfile.c_str(), "w");
     fprintf(outfile, "#index calc exp\n");
     double sum=0.;

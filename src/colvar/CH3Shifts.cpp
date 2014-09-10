@@ -297,7 +297,7 @@ void CH3Shifts::calculate()
   bool printout=false;
   string csfile;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
-  if(printout) csfile = string("cs")+getLabel()+"-"+to_string(getStep())+string(".dat");
+  if(printout) {char tmp1[21]; sprintf(tmp1, "%ld", getStep()); csfile = string("cs")+getLabel()+"-"+tmp1+string(".dat");}
 
   double fact=1.0;
   if(!ensemble) { 

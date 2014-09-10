@@ -354,7 +354,8 @@ void CS2Backbone::calculate()
   bool printout=false;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
   if(printout) {
-    string csfile = string("cs-")+getLabel()+"-"+to_string(getStep())+string(".dat");;
+    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+    string csfile = string("cs-")+getLabel()+"-"+tmp1+string(".dat");;
     cam_list[0].printout_chemical_shifts(csfile.c_str());
   }
 
