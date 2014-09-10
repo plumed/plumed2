@@ -251,7 +251,7 @@ void NOE::calculate(){
   bool printout=false;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
   if(printout) {
-    string csfile = string("noe")+to_string(getStep())+string(".dat");
+    string csfile = string("noe")+"-"+getLabel()+"-"+to_string(getStep())+string(".dat");
     FILE *outfile = fopen(csfile.c_str(), "w");
     fprintf(outfile, "#index calc exp\n");
     for(unsigned i=0;i<nga.size();i++) { 
