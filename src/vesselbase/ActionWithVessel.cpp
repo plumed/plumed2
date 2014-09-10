@@ -26,6 +26,7 @@
 #include "StoreDataVessel.h"
 #include "VesselRegister.h"
 #include "BridgeVessel.h"
+#include "FunctionVessel.h"
 
 using namespace std;
 namespace PLMD{
@@ -80,13 +81,19 @@ ActionWithVessel::~ActionWithVessel(){
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ){
   VesselOptions da(name,"",numlab,input,this);
-  Vessel* vv=vesselRegister().create(name,da); 
+  Vessel* vv=vesselRegister().create(name,da);
+  FunctionVessel* fv=dynamic_cast<FunctionVessel*>(vv);
+  if( fv ){
+      std::string mylabel=Vessel::transformName( name );
+      plumed_massert( keywords.outputComponentExists(mylabel,false), "a description of the value calculated by vessel " + name + " has not been added to the manual"); 
+  } 
   addVessel(vv);
 }
 
 void ActionWithVessel::addVessel( Vessel* vv ){
   ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
   if(!sv){ vv->checkRead(); functions.push_back(vv); }
+  else { delete sv; }
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
