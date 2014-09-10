@@ -447,7 +447,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
          double cc[3];
          if(trajectory_fmt=="xyz"){
            char dummy[1000];
-           std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
+           int ret=std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
+           if(ret!=4) error("cannot read line"+line);
          } else if(trajectory_fmt=="gro"){
            // do the gromacs way
            if(!i){

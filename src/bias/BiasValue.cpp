@@ -97,6 +97,7 @@ void BiasValue::registerKeywords(Keywords& keys){
                                             "these quantities will named with  the arguments of the bias followed by "
                                             "the character string _bias. These quantities tell the user how much the bias is "
                                             "due to each of the colvars.");
+  keys.addOutputComponent("bias","default","total bias");
 }
 
 BiasValue::BiasValue(const ActionOptions&ao):
@@ -112,15 +113,19 @@ PLUMED_BIAS_INIT(ao)
 //        ss=getPntrToArgument(i)->getName()+"_bias";
 	addComponent(ss); componentIsNotPeriodic(ss);
   }
+  addComponent("bias"); componentIsNotPeriodic("bias");
 }
 
 void BiasValue::calculate(){
+  double bias=0.0;
 for(unsigned i=0;i< getNumberOfArguments() ;++i){
   double val; val=getArgument(i); 
 //  log<<"BIAS "<<val<<"\n";
   getPntrToComponent(i)->set(val);
   setOutputForce(i,-1.);
+  bias+=val;
 }
+  getPntrToComponent(getNumberOfArguments())->set(bias);
 }
 
 }

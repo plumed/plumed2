@@ -53,7 +53,7 @@ public:
   void* load(const std::string&);
 /// Returns the last error in dynamic loader
   const std::string & error();
-/// Returs true if the dynamic loader is available (on some systems it may not).
+/// Returns true if the dynamic loader is available (on some systems it may not).
   static bool installed();
 };
 
