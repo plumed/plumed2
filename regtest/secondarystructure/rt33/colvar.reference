@@ -1,4 +1,4 @@
-#! FIELDS time b.less_than br.less_than p.less_than pr.less_than
+#! FIELDS time b.lessthan br.lessthan p.lessthan pr.lessthan
  0.000000   0.3042   0.1654   0.2681   0.1425
  0.050000  70.2841  42.5600  14.6579   4.1424
  0.100000  55.0842  34.0262  13.0049   3.2851

@@ -1,4 +1,4 @@
-#! FIELDS time d1.less_than d2.less_than c1
+#! FIELDS time d1.lessthan d2.lessthan c1
  0.000000  3.71160  3.70528  3.63725
  0.050000  3.65204  3.64568  3.57396
  0.100000  3.68479  3.67845  3.61408

@@ -46,6 +46,7 @@ void ZpathVessel::registerKeywords( Keywords& keys ){
 
 void ZpathVessel::reserveKeyword( Keywords& keys ){
   keys.reserveFlag("ZPATH",false,"calculate the distance from the low dimensionality manifold",true);
+  keys.addOutputComponent("zpath","ZPATH","the distance from the path");
 }
 
 ZpathVessel::ZpathVessel( const vesselbase::VesselOptions& da ):

@@ -1,4 +1,4 @@
-#! FIELDS time d2.less_than
+#! FIELDS time d2.lessthan
  0.000000 854.7727
  1.000000 837.5221
  2.000000 840.2001
