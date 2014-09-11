@@ -57,12 +57,15 @@ with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
 {r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ m_i }{\sum_i^{n} m_i}
 \f]
 
+The radius of gyration is calculated without applying periodic boundary conditions so the atoms used for the calculation 
+should all be part of the same molecule that should be made whole before calculating the cv, \ref WHOLEMOLECULES.
 
 \par Examples
 
 The following input tells plumed to print the radius of gyration of the 
 chain containing atoms 10 to 20.
 \verbatim
+WHOLEMOLECULES ENTITY0=10-20
 GYRATION TYPE=RADIUS ATOMS=10-20 LABEL=rg
 PRINT ARG=rg STRIDE=1 FILE=colvar 
 \endverbatim
@@ -77,17 +80,18 @@ private:
   int rg_type;
   bool use_masses;
 public:
-  static void registerKeywords( Keywords& keys );
+  static void registerKeywords(Keywords& keys);
   Gyration(const ActionOptions&);
   virtual void calculate();
 };
 
 PLUMED_REGISTER_ACTION(Gyration,"GYRATION")
 
-void Gyration::registerKeywords( Keywords& keys ){
-  Colvar::registerKeywords( keys );
-  keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
+void Gyration::registerKeywords(Keywords& keys){
+  Colvar::registerKeywords(keys);
+  keys.remove("NOPBC");
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
+  keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
   keys.addFlag("NOT_MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
 }
 
