@@ -15,8 +15,19 @@ else
   fi
 fi
 
+LIST="
+ IntroPP.txt ../CHANGES InstallationPP.txt SyntaxPP.txt ColvarPP.txt GroupPP.txt FunctionsPP.txt AnalysisPP.txt
+  BiasPP.txt ToolsPP.txt MiscPP.txt RegexPP.txt ModulesPP.txt TutorialsPP.txt GlossaryPP.txt automatic tutorials"
+
 {
   cat Doxyfile
   echo "PROJECT_NUMBER = \"$(plumed info --version)\""
-  echo "INPUT+=" *PP.txt
+  echo "INPUT+=" $LIST
+  # add this to manually control layout:
+  # echo "LAYOUT_FILE=PlumedLayout.xml"
 } | doxygen -
+
+cd latex
+make
+cp refman.pdf ../manual.pdf
+

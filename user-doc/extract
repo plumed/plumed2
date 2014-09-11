@@ -36,8 +36,9 @@ done
 for file in ../patches/*.diff
 do
    myengine=`echo "$file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///'`
-   mytag=`echo "$myengine" | sed -e 's/\./\_/g'`
-   echo "- \ref $mytag" >> automatic/codes.list
+   mytag=`echo "$myengine" | sed -e 's/\./-/g'`
+   echo "- $mytag" >> automatic/codesl.list # list only, for Intro
+   echo "- \subpage $mytag " >> automatic/codes.list
    echo "/**" >> automatic/$myengine.txt
    echo "\page $mytag $myengine" >> automatic/$myengine.txt
    plumed patch -e $myengine -i -q >> automatic/$myengine.txt
@@ -231,5 +232,6 @@ cat $file.txt |
     /^ *@TOOLS@ *$/r      automatic/TOOLS.list
     /^ *@MODULES@ *$/r    automatic/modules.list
     /^ *@CODES@ *$/r      automatic/codes.list
+    /^ *@CODESL@ *$/r   automatic/codesl.list
 " | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.txt
 done
