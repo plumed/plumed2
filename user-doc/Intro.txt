@@ -9,6 +9,7 @@ extensive rewrite of the original in a way that makes it more modular and thus e
 new methods, more straightforward to add it to MD codes and hopefully simpler to use.  
 This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
 <a href="../../developer-doc/html/index.html"> developer manual </a>.
+
 \htmlonly
 An experimental PDF copy of this manual can be found
 <a href="../manual.pdf"> here </a>.
