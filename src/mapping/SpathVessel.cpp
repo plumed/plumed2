@@ -49,6 +49,7 @@ void SpathVessel::registerKeywords( Keywords& keys ){
 
 void SpathVessel::reserveKeyword( Keywords& keys ){
   keys.reserveFlag("SPATH",false,"docs should not appear",true);
+  keys.addOutputComponent("spath","SPATH","the position on the path");
 }
 
 SpathVessel::SpathVessel( const vesselbase::VesselOptions& da ):

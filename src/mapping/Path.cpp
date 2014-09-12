@@ -76,10 +76,10 @@ PathBase(ao)
 
   std::string empty;
   if(!nos){
-     if( getPropertyIndex("sss")!=0 || getNumberOfProperties()>1 ){
+     if( getPropertyIndex("spath")!=0 || getNumberOfProperties()>1 ){
         error("paths only work when there is a single property called sss being calculated"); 
      }
-     empty="LABEL=sss"; 
+     empty="LABEL=spath"; 
      addVessel("SPATH",empty,0);    
   }
   readVesselKeywords();

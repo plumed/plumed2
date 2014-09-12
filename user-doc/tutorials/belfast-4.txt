@@ -222,7 +222,7 @@ We here use a a model system alanine dipeptide with CHARM27 all atom force field
 \subsection belfast-4-restrained-simulations Restrained simulations
 
 The simplest way in which one
-might inﬂuence a CV is by forcing the system to stay close to a chosen
+might influence a CV is by forcing the system to stay close to a chosen
 value during the simulation. This is achieved with a restraining potential
 that PLUMED provides via the directive \ref RESTRAINT.
 In the umbrella sampling method a bias potential is added so as
@@ -283,7 +283,7 @@ the fifth the additional potential introduced by the restraint on \f$\psi\f$.
 
 It may happen that one wants that a given CV just stays
 within a given range of values. This is achieved in plumed through the
-directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
+directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on specific collective variables and
 limit the exploration within given ranges.
 
 \subsection belfast-4-reweighting Reweighting the results
@@ -483,7 +483,7 @@ You can use the script that you used earlier to compute histogram.
 The fact that when you add a force on the collective variable
 PLUMED can force the atoms to do something depends on the fact that
 the collective variables implemented in PLUMED has analytical
-derivatives. By biasing the value of a single CV one turns to aﬀect
+derivatives. By biasing the value of a single CV one turns to affect
 the time evolution of the system itself. Notice that some of the collective
 variables could be implemented without derivatives (either because the
 developers were lazy or because the CVs cannot be derived).

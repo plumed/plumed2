@@ -1,4 +1,4 @@
-#! FIELDS time parameter d1.less_than d1n.less_than
+#! FIELDS time parameter d1.lessthan d1n.lessthan
  0.000000 0  0.68969  0.68969
  0.000000 1 -0.00889 -0.00889
  0.000000 2  0.60827  0.60827

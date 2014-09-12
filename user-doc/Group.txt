@@ -8,7 +8,7 @@ The vast majority of the CVs implemented in PLUMED are calculated from a list of
 atoms are specified using their numerical indices in the molecular dynamics input file. 
 
 In PLUMED lists of atoms can be either provided directly inside the definition of each collective variable, or
-predefined as a \ref GROUP that can be reused multiple times. Lists of atoms can be written as:
+predefined as a \subpage GROUP that can be reused multiple times. Lists of atoms can be written as:
 
 - comma separated lists of numbers (GROUP ATOMS=10,11,15,20 LABEL=g1)
 - numerical ranges.  So GROUP ATOMS=10-20 LABEL=g2 is equivalent to GROUP ATOMS=10,11,12,13,14,15,16,17,18,19,20 LABEL=g2
@@ -96,6 +96,9 @@ specify atom lists in a reversed order.
 WHOLEMOLECULES STRIDE=1 ENTITY0=1-20
 DUMPATOMS FILE=dump.xyz ATOMS=1-20
 \endverbatim
+
+Notice that since PLUMED 2.1 it is also possible to shift coordinates stored within PLUMED
+so as to align them to a template structure, using the \subpage FIT_TO_TEMPLATE keyword.
 
 
 \section vatoms Virtual Atoms

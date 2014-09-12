@@ -47,7 +47,7 @@ By default the PLUMED inputs and outputs quantities in the following units:
 - Length - nanometers
 - Time - picoseconds
 
-If you want to change these units you can do this using the \subpage UNITS keyword. 
+If you want to change these units you can do this using the \ref UNITS keyword. 
 
 \subsection introinput Introduction to the PLUMED input file
 
@@ -184,7 +184,7 @@ Now 'ca' is not a virtual atom but a simple list of atoms.
 
 Sometimes it can be useful to calculate properties of many similar collective variables at the same time, for example one can be interested
 in calculating the properties of the distances between a group of atoms, or properties linked to the distribution of the dihedral angles
-of a chain and so on. In PLUMED2 this kind of collective variables fall under the name of MULTICOLVAR (cf. \subpage mcolv.)
+of a chain and so on. In PLUMED2 this kind of collective variables fall under the name of MULTICOLVAR (cf. \ref mcolv.)
 Here we are going to analyse the distances between CA carbons along the chain:
 
 \verbatim
