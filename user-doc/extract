@@ -160,7 +160,7 @@ do
           /\\page '$docfile'/{
             print "<table  align=center frame=void width=95%% celpadding=5%%>"
             print "<tr> <td width=70%%> </td> <td>"
-            print "<b> This is part of the '$file' \\ref mymodules </b>"
+            print "<b> This is part of the '$file' \\link mymodules module \\endlink</b>"
             print "</td> </tr> </table>"
           }' > automatic/"$docfile"1.tmp
           mv automatic/"$docfile"1.tmp automatic/"$docfile".tmp

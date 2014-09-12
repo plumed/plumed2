@@ -91,7 +91,7 @@ The value of restraint.force2 is the squared force (which is a proxy of the forc
 Note that the actual force on an atom of the system involved in a CV is instead
 
 \f{eqnarray*}{
--\frac{\partial H_\lambda(X,t)}{\partial x_i}&=&  -\frac{\partial H_\lambda(X,t)}{\partial s} \frac{\partial s}{\partial x_i} &=&  -(s(X)-s_0-vt) \frac{\partial s}{\partial x_i} 
+-\frac{\partial H_\lambda(X,t)}{\partial x_i}&=&  -\frac{\partial H_\lambda(X,t)}{\partial s} \frac{\partial s}{\partial x_i} \\  &=&  -(s(X)-s_0-vt) \frac{\partial s}{\partial x_i} 
 \f}
 
 This is important because in CVs that  have a derivative that change significantly with space then you might have regions in which no force is exerted while in others you

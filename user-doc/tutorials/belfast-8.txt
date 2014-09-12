@@ -48,9 +48,7 @@ equilibrium free-energy, due to hysteresis. Instead, in the bias-exchange approa
 The probability to accept the exchange is given by a Metropolis rule:
 
 \f[
-\begin{eqnarray}
 \min\left( 1, \exp \left[ \beta ( V_G^a(x^a,t)+V_G^b(x^b,t)-V_G^a(x^b,t)-V_G^b(x^a,t) ) \right] \right)
-\end{eqnarray}
 \f]
 
 where \f$ x^{a} \f$ and \f$ x^{b} \f$ are the coordinates of replicas \f$a \f$ and \f$ b \f$
