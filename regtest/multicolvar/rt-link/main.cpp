@@ -29,7 +29,7 @@ int main(){
   for(unsigned nx=1;nx<6;++nx){
       for(unsigned ny=1;ny<6;++ny){
           for(unsigned nz=1;nz<6;++nz){
-              myatoms.resize( nx*ny*nz*2 );
+              myatoms.resize( 1 + nx*ny*nz*2 );
               buildCell( nx, ny, nz, fposA, fposB, Bindices, mypbc );
               // Check list is built correctly - with pbc
               linkcells.buildCellLists( fposB, Bindices, mypbc );
