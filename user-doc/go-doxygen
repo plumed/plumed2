@@ -21,7 +21,7 @@ LIST="
 
 {
   cat Doxyfile
-  echo "PROJECT_NUMBER = \"$(plumed info --version)\""
+  echo "PROJECT_NUMBER = \"$(plumed info --long-version)\""
   echo "INPUT+=" $LIST
   # add this to manually control layout:
   # echo "LAYOUT_FILE=PlumedLayout.xml"

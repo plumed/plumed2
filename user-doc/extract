@@ -15,10 +15,19 @@ else
   fi
 fi
 
+
 # initial cleanup
 rm -f errors
 rm -rf automatic
 mkdir automatic
+
+long_version="$(plumed info --long-version)"
+git_version="$(plumed info --git-version)"
+
+cat > automatic/version.tmp << EOF
+This manual has been compiled from PLUMED version <b> $long_version </b>
+(git version: <b> $git_version </b>)
+EOF
 
 # Check for files that register actions with no documentation
 for file in ../src/*/*.cpp
@@ -233,5 +242,6 @@ cat $file.txt |
     /^ *@MODULES@ *$/r    automatic/modules.list
     /^ *@CODES@ *$/r      automatic/codes.list
     /^ *@CODESL@ *$/r   automatic/codesl.list
+    /^ *@VERSION@ *$/r   automatic/version.tmp
 " | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.txt
 done
