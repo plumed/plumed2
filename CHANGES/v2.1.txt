@@ -2,6 +2,9 @@
 
 @page CHANGES-2-1 Version 2.1
 
+Version 2.1.0 (xxxxxxxx)
+----------------------------
+
 Version 2.1 contains several improvements with respect to 2.0. Users currently working with 2.0 
 should have a look at the section "Changes leading to incompatible behavior" below and
 might need tiny adjustments in their input files. In 2.1 we restored more features of 1.3
