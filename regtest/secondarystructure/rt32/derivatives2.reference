@@ -1,4 +1,4 @@
-#! FIELDS time parameter b2.less_than b2num.less_than
+#! FIELDS time parameter b2.lessthan b2num.lessthan
  0.000000 0   -0.000   -0.000
  0.000000 1   -0.000   -0.000
  0.000000 2   -0.000   -0.000

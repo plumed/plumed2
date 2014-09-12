@@ -1,4 +1,4 @@
-#! FIELDS time parameter ss.coord_0 ss.coord_1 ss.coord_2 ss.coord_3 ss.coord_4 ss.coord_5 ss.coord_6 ss.coord_7 ss.coord_8 ss.coord_9 ss.coord_10 ss.coord_11 ss.coord_12 ss.coord_13
+#! FIELDS time parameter ss.coord-0 ss.coord-1 ss.coord-2 ss.coord-3 ss.coord-4 ss.coord-5 ss.coord-6 ss.coord-7 ss.coord-8 ss.coord-9 ss.coord-10 ss.coord-11 ss.coord-12 ss.coord-13
  0.000000 0  -0.5072   0.7923   0.4947   1.0592  -0.0299   0.3764   0.9470  -1.2449  -0.8196   0.2491   0.0699   0.3840  -0.5192   0.6137
  0.000000 1   0.0017  -0.0009   0.0006  -0.0010   0.0106   0.0003   0.0100   0.0009   0.0005  -0.0014  -0.0000  -0.0015   0.0019  -0.0003
  0.000000 2  -0.2927   0.4574   0.9378  -0.0405   0.4534  -0.2519   0.5475  -0.2275  -0.9643   0.1438   0.4032  -0.1413   1.0089  -0.9541

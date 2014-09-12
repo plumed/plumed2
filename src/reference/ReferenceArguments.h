@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -66,7 +66,7 @@ protected:
   void setReferenceArguments();
 /// Calculate the euclidean/malanobius distance the atoms have moved from the reference
 /// configuration in CV space
-  double calculateArgumentDistance( const std::vector<Value*> vals, const std::vector<double>& arg, const bool& squared );
+  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, const bool& squared );
 public:
   ReferenceArguments( const ReferenceConfigurationOptions& ro );
 /// Get the arguments required 

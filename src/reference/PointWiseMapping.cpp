@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -90,7 +90,7 @@ unsigned PointWiseMapping::getPropertyIndex( const std::string& name ) const {
   return 0;
 }
 
-void PointWiseMapping::print( const std::string& method, const unsigned& time, OFile& afile, const std::string& fmt ){
+void PointWiseMapping::print( const std::string& method, const double & time, OFile& afile, const std::string& fmt ){
   std::string descr2, descr="DESCRIPTION: results from %s analysis performed at time " + fmt +"\n";
   afile.printf(descr.c_str(), method.c_str(), time );
   if(fmt.find("-")!=std::string::npos){

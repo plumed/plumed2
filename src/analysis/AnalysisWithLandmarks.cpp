@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -22,6 +22,15 @@
 #include "AnalysisWithLandmarks.h"
 #include "LandmarkRegister.h"
 #include "LandmarkSelectionBase.h"
+
+//+PLUMEDOC INTERNAL landmarkselection
+/*
+This is currently a filler page.  
+
+Just use LANDMARKS=ALL.  More complex versions will appear in later versions.
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace analysis {

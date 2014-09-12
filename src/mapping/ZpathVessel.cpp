@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -46,6 +46,7 @@ void ZpathVessel::registerKeywords( Keywords& keys ){
 
 void ZpathVessel::reserveKeyword( Keywords& keys ){
   keys.reserveFlag("ZPATH",false,"calculate the distance from the low dimensionality manifold",true);
+  keys.addOutputComponent("zpath","ZPATH","the distance from the path");
 }
 
 ZpathVessel::ZpathVessel( const vesselbase::VesselOptions& da ):

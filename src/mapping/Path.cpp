@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -76,10 +76,10 @@ PathBase(ao)
 
   std::string empty;
   if(!nos){
-     if( getPropertyIndex("sss")!=0 || getNumberOfProperties()>1 ){
+     if( getPropertyIndex("spath")!=0 || getNumberOfProperties()>1 ){
         error("paths only work when there is a single property called sss being calculated"); 
      }
-     empty="LABEL=sss"; 
+     empty="LABEL=spath"; 
      addVessel("SPATH",empty,0);    
   }
   readVesselKeywords();

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -185,7 +185,7 @@ fenergy(false)
     error("Wrong number of values for BANDWIDTH: they should be equal to the number of arguments");
 
   parseFlag("FREE-ENERGY",fenergy);
-  if(getTemp()<=0&&fenergy) error("Set the temperature (TEMP) if you want a free energy.");
+  if(getTemp()<=0 && fenergy) error("Set the temperature (TEMP) if you want a free energy.");
   checkRead();
 
   log.printf("  Using %s kernel functions\n",kerneltype.c_str() );

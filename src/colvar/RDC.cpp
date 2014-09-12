@@ -248,7 +248,7 @@ firstTime(true)
   // Ouput details of all contacts 
   for(unsigned i=0;i<coupl.size();++i){
     log.printf("  The %dth Bond Dipolar Coupling is calculated from atoms : %d %d.", i+1, atoms[2*i].serial(), atoms[2*i+1].serial()); 
-    log.printf("  Dipolar Coupling is %lf. Gyromagnetic moment is %lf. Scaling factor is %lf.\n",coupl[i],mu_s[i],scale[i]);
+    log.printf("  Dipolar Coupling is %f. Gyromagnetic moment is %f. Scaling factor is %f.\n",coupl[i],mu_s[i],scale[i]);
   }
   if(fixdist)  { log.printf("  Keeping bond distances FIXED using those provided\n"); }
   if(ensemble) { log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }
@@ -442,22 +442,18 @@ void RDC::calculate()
   bool printout=false;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
   if(printout) {
-    string dcfile;
-    char tmps1[21];
-    sprintf(tmps1, "%li", getStep());
-    if(ensemble) {
-      dcfile = string("rdc-")+getLabel()+"-"+tmps1+string(".dat");
-    } else dcfile = string("rdc-")+getLabel()+"-"+tmps1+string(".dat");
+    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+    string dcfile = string("rdc-")+getLabel()+"-"+tmp1+string(".dat");
     FILE *outfile = fopen(dcfile.c_str(), "w");
     fprintf(outfile, "#index calc exp\n");
     double sum=0.;
     double Q=0.;
     for(unsigned r=0;r<coupl.size();r++) { 
-      fprintf(outfile," %4i %10.6lf %10.6lf\n", r, rdc[r], coupl[r]);
+      fprintf(outfile," %4u %10.6f %10.6f\n", r, rdc[r], coupl[r]);
       sum+=(rdc[r]-coupl[r])*(rdc[r]-coupl[r]);
       Q+=(coupl[r]*coupl[r]);
     }
-    fprintf(outfile, "# Q factor = %6.4lf\n", sqrt(sum/Q));
+    fprintf(outfile, "# Q factor = %6.4f\n", sqrt(sum/Q));
     fclose(outfile);
   }
 

@@ -162,15 +162,15 @@ serial(false)
   if(ensemble&&comm.Get_rank()==0) {
     if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
     else ens_dim=multi_sim_comm.Get_size(); 
-  } else ens_dim=0; 
+  } else ens_dim=1; 
   if(ensemble) comm.Sum(&ens_dim, 1);
 
   // Ouput details of all contacts
   unsigned index=0; 
   for(unsigned i=0;i<nga.size();++i){
-    log.printf("  The %dth NOE is calculated using %i equivalent couples of atoms and compared with a %lf reference distance\n", i, nga[i], noedist[i]);
+    log.printf("  The %uth NOE is calculated using %u equivalent couples of atoms and compared with a %f reference distance\n", i, nga[i], noedist[i]);
     for(unsigned j=0;j<nga[i];j++) {
-      log.printf("    couple %i is %d %d.\n", j, ga_lista[index].serial(), gb_lista[index].serial() );
+      log.printf("    couple %u is %d %d.\n", j, ga_lista[index].serial(), gb_lista[index].serial() );
       index++;
     }
   }
@@ -251,20 +251,12 @@ void NOE::calculate(){
   bool printout=false;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
   if(printout) {
-    string csfile;
-    char tmps1[21], tmps2[21];
-    // add to the name the label of the cv in such a way to have different files
-    // when there is more than one defined variable
-    sprintf(tmps1, "%li", getStep());
-    if(ensemble) {
-      sprintf(tmps2, "%i", multi_sim_comm.Get_rank());
-      csfile = string("noe")+tmps2+"-"+tmps1+string(".dat");
-    } else csfile = string("noe")+tmps1+string(".dat");
-    // now print it!!
+    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+    string csfile = string("noe")+"-"+getLabel()+"-"+tmp1+string(".dat");
     FILE *outfile = fopen(csfile.c_str(), "w");
     fprintf(outfile, "#index calc exp\n");
     for(unsigned i=0;i<nga.size();i++) { 
-      fprintf(outfile," %4i %10.6lf %10.6lf\n", i, pow(noe[i],(-1./6.)), noedist[i]);
+      fprintf(outfile," %4u %10.6f %10.6f\n", i, pow(noe[i],(-1./6.)), noedist[i]);
     }
     fclose(outfile);
   }
