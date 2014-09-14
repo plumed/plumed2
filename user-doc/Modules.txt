@@ -1,6 +1,6 @@
 /**
 
-@page mymodules module
+@page mymodules List of modules
 
 The functionality in PLUMED 2 is divided into a small number of modules.  Some
 users may only wish to use a subset of the functionality available within the 
