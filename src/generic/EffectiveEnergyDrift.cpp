@@ -44,6 +44,21 @@ namespace PLMD
 {
 namespace generic{
 
+//+PLUMEDOC GENERIC EFFECTIVE_ENERGY_DRIFT
+/*
+Print the effective energy drift.
+
+TODO
+
+\par Examples
+
+TODO
+
+
+*/
+//+ENDPLUMEDOC
+
+
 class EffectiveEnergyDrift:
 public ActionPilot{
   OFile output;
