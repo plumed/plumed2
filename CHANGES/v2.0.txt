@@ -126,7 +126,7 @@ For developers:
 - Fixed non-ansi syntax in a few points and a non-important memory leakage.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
-Version 2.0.4 (xxxxx)
+Version 2.0.4 (Sep 15, 2014)
 ----------------------------------------------
 
 For users:
