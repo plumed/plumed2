@@ -48,11 +48,11 @@ namespace generic{
 /*
 Print the effective energy drift.
 
-TODO
+This is currently undocumented
 
 \par Examples
 
-TODO
+This is currently undocumented
 
 
 */

@@ -9,6 +9,8 @@
 - \subpage degub
 - \subpage exchange-patterns
 - \subpage mymodules
+- \subpage MTS
+- \subpage Openmp
 - \subpage misc
 
 \page comments Comments
@@ -114,22 +116,6 @@ very intensive development of the code of if you are running on a computer with 
 Using the \subpage RANDOM_EXCHANGES keyword it is possible to make exchanges betweem randomly
 chosen replicas. This is useful e.g. for bias exchange metadynamics \cite{piana}.
 
-\page misc Frequently used tools
-
-@DICTIONARY@
-<TABLE ALIGN="center" FRAME="void" WIDTH="95%%" CELLPADDING="5%%">
-<TR>
-<TD WIDTH="5%"> 
-\subpage Regex </TD><TD> </TD><TD> POSIX regular expressions can be used to select multiple actions when using ARG (i.e. \ref PRINT).
-</TD>
-</TR>
-<TR>
-<TD WIDTH="5%"> 
-\subpage Openmp </TD><TD> </TD><TD> Multi-thread parallelization.
-</TD>
-</TR>
-</TABLE>
-
 \page Openmp OpenMP
 
 OpenMP support is still experimental in PLUMED. To
@@ -152,11 +138,29 @@ Notice that:
   equal to the number of threads used to parallelize MD.
 - Only a few CVs are parallelized with opemMP (currently, COORDINATION and
   DHENERGY).
-- You might want to tune also the environmental variable PLUMED_CACHELINE_SIZE, 
+- You might want to tune also the environmental variable PLUMED_CACHELINE_SIZE,
   by default 512, to set the size of cachelines on your machine. This is used
   by PLUMED to decrease the number of threads to be used in each loop so as to
   avoid clashes in memory access. This variable is expected to affect
   performance only, not results.
+
+\page MTS Multiple time stepping
+
+This is currently undocumented.
+
+See also \subpage EFFECTIVE_ENERGY_DRIFT.
+
+
+\page misc Frequently used tools
+
+@DICTIONARY@
+<TABLE ALIGN="center" FRAME="void" WIDTH="95%%" CELLPADDING="5%%">
+<TR>
+<TD WIDTH="5%"> 
+\subpage Regex </TD><TD> </TD><TD> POSIX regular expressions can be used to select multiple actions when using ARG (i.e. \ref PRINT).
+</TD>
+</TR>
+</TABLE>
 
 
 
