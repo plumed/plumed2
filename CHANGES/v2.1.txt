@@ -2,7 +2,7 @@
 
 @page CHANGES-2-1 Version 2.1
 
-Version 2.1.0 (xxxxxxxx)
+Version 2.1.0 (Sep 15, 2014)
 ----------------------------
 
 Version 2.1 contains several improvements with respect to 2.0. Users currently working with 2.0 
@@ -123,5 +123,9 @@ Changes from version 2.0 which are relevant for developers:
   should new be run from within a git repository
 
 This list is likely incompleted, if you are developing in PLUMED you are encouraged to follow changes on github.
+
+Unreleased changes (will be included in 2.1.1)
+----------------------------------------------
+See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
 
 */
