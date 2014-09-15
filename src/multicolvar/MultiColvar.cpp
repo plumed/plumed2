@@ -354,9 +354,9 @@ void MultiColvar::threeBodyNeighborList( const SwitchingFunction& sf ){
           if( w<getNLTolerance() ){
               // Deactivate all tasks involving i and j
               for(unsigned k=0;k<getCurrentNumberOfActiveTasks();++k){
-                  unsigned ind=std::floor( getActiveTask(k) / decoder[0] );
+                  unsigned ind=( getActiveTask(k) / decoder[0] );
                   if( ind!=i ) continue;
-                  unsigned ind2=std::floor( (getActiveTask(k) - ind*decoder[0]) / decoder[1] );
+                  unsigned ind2=( (getActiveTask(k) - ind*decoder[0]) / decoder[1] );
                   if( ind2!=j ) continue;
                   inactive_tasks[k] = 1;
               }
