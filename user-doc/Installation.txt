@@ -336,7 +336,9 @@ do not want to set up modules, but we believe that using modules as described ab
 
 At the present times PLUMED can be added to the following list of codes:
 
-@CODES@
+@CODESL@
+
+In the section \subpage CodeSpecificNotes you can find information specific for each MD code.
 
 To patch your MD code, you should have already installed PLUMED properly.
 This is necessary as you need to have the command "plumed" in your execution
@@ -380,7 +382,6 @@ If your MD code is not supported, you may want to implement an interface for
 it. Refer to the <a href="../../developer-doc/html/index.html"> developer
 manual </a>.
 
-
 \section installingalmost Installing PLUMED with ALMOST
 
 In order to used some of the NMR based collective variables (\ref CS2BACKBONE and \ref CH3SHIFTS) PLUMED needs to be linked with ALMOST.
@@ -403,6 +404,12 @@ Once ALMOST is installeed, PLUMED 2 can then be configured with ALMOST enabled:
 ./configure --enable-almost CPPFLAGS="-I/ALMOST_INSTALL_PATH/include -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib"
 \endverbatim
 with ALMOST_INSTALL_PATH set to the full path to the ALMOST installation folder.
+
+\page CodeSpecificNotes Code specific notes
+
+Here you can find instructions that are specific for patching each of the supported MD codes.
+
+@CODES@
  
 */
 

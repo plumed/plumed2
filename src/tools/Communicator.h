@@ -199,20 +199,20 @@ public:
 /// Wrapper for MPI_Allgatherv (data struct)
   void Allgatherv(ConstData in,Data out,const int*,const int*);
 /// Wrapper for MPI_Allgatherv (pointer)
-  template <class T> void Allgatherv(const T*sendbuf,int sendcount,T*recvbuf,const int*recvcounts,const int*displs){
+  template <class T,class S> void Allgatherv(const T*sendbuf,int sendcount,S*recvbuf,const int*recvcounts,const int*displs){
     Allgatherv(ConstData(sendbuf,sendcount),Data(recvbuf,0),recvcounts,displs);}
 /// Wrapper for MPI_Allgatherv (reference)
-  template <class T> void Allgatherv(const T&sendbuf,T&recvbuf,const int*recvcounts,const int*displs){
+  template <class T,class S> void Allgatherv(const T&sendbuf,S&recvbuf,const int*recvcounts,const int*displs){
     Allgatherv(ConstData(sendbuf),Data(recvbuf),recvcounts,displs);}
 
 /// Wrapper for MPI_Allgather (data struct)
   void Allgather(ConstData in,Data out);
 /// Wrapper for MPI_Allgatherv (pointer)
-  template <class T> void Allgather(const T*sendbuf,int sendcount,T*recvbuf,int recvcount){
+  template <class T,class S> void Allgather(const T*sendbuf,int sendcount,S*recvbuf,int recvcount){
     Allgather(ConstData(sendbuf,sendcount),Data(recvbuf,recvcount*Get_size()));
   }
 /// Wrapper for MPI_Allgatherv (reference)
-  template <class T> void Allgather(const T&sendbuf,T&recvbuf){
+  template <class T,class S> void Allgather(const T&sendbuf,S&recvbuf){
     Allgather(ConstData(sendbuf),Data(recvbuf));
   }
 

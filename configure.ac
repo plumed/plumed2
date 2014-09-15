@@ -209,6 +209,12 @@ LIBS="$save_LIBS"
 AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
 AC_DEFINE([__PLUMED_INTERNAL_BLAS])
 
+else
+
+  if test $blas_found == nounderscore
+  then
+    AC_DEFINE([F77_NO_UNDERSCORE])
+  fi
 fi
 
 #### End of compulsory libraries ####

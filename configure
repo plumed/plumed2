@@ -4918,6 +4918,13 @@ $as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
 $as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
 
 
+else
+
+  if test $blas_found == nounderscore
+  then
+    $as_echo "#define F77_NO_UNDERSCORE 1" >>confdefs.h
+
+  fi
 fi
 
 #### End of compulsory libraries ####
