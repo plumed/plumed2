@@ -216,7 +216,7 @@ do
 done
 
 
-for file in Bias Syntax Colvar Functions Group Installation Intro Analysis Glossary Tutorials Modules Regex  Misc Tools Openmp
+for file in Bias Syntax Colvar Functions Group Installation Intro Analysis Glossary Tutorials Modules Regex  Misc Tools
 do
 
 # first replace with the content of the files
