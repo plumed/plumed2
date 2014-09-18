@@ -48,6 +48,7 @@ Changes from version 2.0 which are relevant for users:
     additional option for KERNEL=DISCRETE to accumulate standard histograms. 
   - \ref sum_hills : added options --spacing (alternative to --bin to set grid spacing)
     and --setmintozero to translate the minimum of the output files to zero.
+  - \ref CONTACTMAP: parallelised and added weights.
 - New features in MD patches (require repatch):
   - Gromacs 4.6.5 supports \ref COMMITTOR analysis; can be now be used to perform energy minimization;
      now passes temperature to PLUMED (this allows temperature to be omitted in some actions,
@@ -76,10 +77,10 @@ Changes from version 2.0 which are relevant for users:
   - Link cells are now exploited in some multicolvars.
   - Derivatives are not calculated unless they are specifically required, because for instance you are adding
     a bias.
--Documentation
+- Documentation:
   - All tutorial material from the recent plumed meeting in Belfast is now in the manual
   - Improvements to documentation, including lists of referenceable quantities outputted by each action
-  - Manual has been re-organized following suggestions recevied at the plumed meeting.
+  - Manual has been re-organized following suggestions received at the plumed meeting.
 
 Changes from version 2.0 which are relevant for developers:
 - Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional

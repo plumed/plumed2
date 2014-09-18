@@ -50,12 +50,16 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
     allcells.resize( pos.size() ); lcell_lists.resize( pos.size() ); 
   }
 
-  ncells[0] = std::floor( mypbc.getBox().getRow(0).modulo() / link_cutoff );
-  if( ncells[0]==0 ) ncells[0]=1;
-  ncells[1] = std::floor( mypbc.getBox().getRow(1).modulo() / link_cutoff );
-  if( ncells[1]==0 ) ncells[1]=1;
-  ncells[2] = std::floor( mypbc.getBox().getRow(2).modulo() / link_cutoff );
-  if( ncells[2]==0 ) ncells[2]=1;
+  if( !mypbc.isOrthorombic() ){
+     ncells[0]=ncells[1]=ncells[2]=1;
+  } else {
+     ncells[0] = std::floor( mypbc.getBox().getRow(0).modulo() / link_cutoff );
+     if( ncells[0]==0 ) ncells[0]=1;
+     ncells[1] = std::floor( mypbc.getBox().getRow(1).modulo() / link_cutoff );
+     if( ncells[1]==0 ) ncells[1]=1;
+     ncells[2] = std::floor( mypbc.getBox().getRow(2).modulo() / link_cutoff );
+     if( ncells[2]==0 ) ncells[2]=1;
+  }
   // Setup the strides
   nstride[0]=1; nstride[1]=ncells[0]; nstride[2]=ncells[0]*ncells[1];
 
