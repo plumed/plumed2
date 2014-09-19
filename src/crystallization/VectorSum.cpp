@@ -61,8 +61,7 @@ FunctionVessel(da)
        ncomp = getAction()->getNumberOfQuantities() - 2;
        vstart=1; wnum=ncomp+1;
    } else { 
-       VectorMultiColvar* vv=dynamic_cast<VectorMultiColvar*>( getAction() );
-       plumed_assert( vv ); vstart=5; wnum=1; 
+       vstart=5; wnum=1; 
        ncomp = getAction()->getNumberOfQuantities() - 5;
    }
 }
@@ -72,6 +71,8 @@ std::string VectorSum::function_description(){
 }
 
 void VectorSum::resize(){
+  if( ncomp==0 ) ncomp=getAction()->getNumberOfQuantities() - 5;
+
   if( getAction()->derivativesAreRequired() ){
      unsigned nder=getAction()->getNumberOfDerivatives();
      resizeBuffer( (1+nder)*(ncomp+1) );
