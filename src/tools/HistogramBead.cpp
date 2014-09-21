@@ -169,7 +169,6 @@ void HistogramBead::setKernelType( const std::string& ktype ){
 }     
 
 double HistogramBead::calculate( double x, double& df ) const {
-  const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
   plumed_dbg_assert(init && periodicity!=unset ); 
   double lowB, upperB, f;
   if( type==gaussian ){
@@ -195,6 +194,39 @@ double HistogramBead::calculate( double x, double& df ) const {
      plumed_merror("function type does not exist");
   } 
   return f;
-}     
+}
+
+double HistogramBead::lboundDerivative( const double& x ) const {
+  double lowB;
+  if( type==gaussian ){
+      lowB = difference( x, lowb ) / ( sqrt(2.0) * width );
+      return exp( -lowB*lowB ) / ( sqrt(2*pi)*width );
+  } else if ( type==triangular ){
+      plumed_error();
+//      lowB = fabs( difference( x, lowb ) / width );
+//      if( lowB<1 ) return ( 1 - (lowB) ) / 2*width;
+//      else return 0;
+  } else {
+     plumed_merror("function type does not exist");
+  }
+  return 0;
+}
+
+double HistogramBead::uboundDerivative( const double& x ) const { 
+  plumed_dbg_assert(init && periodicity!=unset );
+  double upperB;
+  if( type==gaussian ){
+      upperB = difference( x, highb ) / ( sqrt(2.0) * width );
+      return exp( -upperB*upperB ) / ( sqrt(2*pi)*width );
+  } else if ( type==triangular ){
+      plumed_error();
+//      upperB = fabs( difference( x, highb ) / width );
+//      if( upperB<1 ) return ( 1 - (upperB) ) / 2*width; 
+//      else return 0;
+  } else {
+     plumed_merror("function type does not exist");
+  }
+  return 0;
+}
 
 }
