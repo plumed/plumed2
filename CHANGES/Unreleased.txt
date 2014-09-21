@@ -16,6 +16,7 @@ Changes from version 2.1 which are relevant for users:
   - \ref MFILTER_MORE 
   - \ref MFILTER_BETWEEN
   - \ref GRADIENT can be used to calculate the gradient of a quantity.  Used to drive nucleation
+  - \ref CAVITY
 - VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
   can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
   part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
