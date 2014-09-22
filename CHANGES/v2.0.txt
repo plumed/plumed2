@@ -126,9 +126,8 @@ For developers:
 - Fixed non-ansi syntax in a few points and a non-important memory leakage.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
-Unreleased changes (will be included in 2.0.4)
+Version 2.0.4 (Sep 15, 2014)
 ----------------------------------------------
-See <a href="http://github.com/plumed/plumed2/commits/v2.0">branch v2.0 on git repository</a>.
 
 For users:
 - Fixed a bug in \ref BIASVALUE that could produce wrong acceptance with replica exchange simulations.
@@ -138,6 +137,10 @@ For users:
 
 For developers:
 - Renamed Value.cpp to BiasValue.cpp
+
+Unreleased changes (will be included in 2.0.5)
+----------------------------------------------
+See <a href="http://github.com/plumed/plumed2/commits/v2.0">branch v2.0 on git repository</a>.
 
 */
 
