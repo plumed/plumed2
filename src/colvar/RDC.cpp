@@ -298,7 +298,7 @@ void RDC::calculate()
       double d2   = d*d;
       double d3   = d2*d;
       double id3  = 1./d3; 
-      double max  = -Const*mu_s[index];
+      double max  = -Const*mu_s[index]*scale[index];
       dmax[index] = id3*max;
       double mu_x = distance[0]/d;
       double mu_y = distance[1]/d;

@@ -31,7 +31,7 @@ using namespace std;
 namespace PLMD{
 namespace multicolvar{
 
-//+PLUMEDOC COLVAR TORSIONS
+//+PLUMEDOC MCOLVAR TORSIONS
 /*
 Calculate whether or not a set of torsional angles are within a particular range.
 

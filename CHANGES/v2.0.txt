@@ -126,13 +126,13 @@ For developers:
 - Fixed non-ansi syntax in a few points and a non-important memory leakage.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
-Version 2.0.4 (xxxxx)
+Version 2.0.4 (Sep 15, 2014)
 ----------------------------------------------
 
 For users:
 - Fixed a bug in \ref BIASVALUE that could produce wrong acceptance with replica exchange simulations.
 - Fixed a few innocuous memory leaks.
-- Fixed reader for xyz files, that now correctly detecs missing columns. Also a related regtest has
+- Fixed reader for xyz files, that now correctly detects missing columns. Also a related regtest has
   been changed.
 
 For developers:
