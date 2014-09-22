@@ -41,6 +41,7 @@ namespace crystallization{
 class Fccubic : public multicolvar::MultiColvar {
 private:
 //  double nl_cut;
+  double rcut2;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
@@ -86,6 +87,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
+  rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
   setLinkCellCutoff( 2.*switchingFunction.get_dmax() );
 
   // Read in the atoms
@@ -103,8 +105,9 @@ double Fccubic::compute(){
    double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, tmp;
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPosition(0), getPosition(i) );
-      sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
-      if( sw>=getTolerance() ){ 
+      double d2 = distance.modulo2();
+      if( d2<rcut2 ){ 
+         sw = switchingFunction.calculateSqr( d2, dfunc ); 
    
          norm += sw;
 

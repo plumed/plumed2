@@ -75,7 +75,7 @@ void LessThan::finish(){
   mergeFinalDerivatives( df );
 }
 
-double LessThan::getCutoff( const double& tol ){
+double LessThan::getCutoff(){
   return sf.get_dmax();
 }
 

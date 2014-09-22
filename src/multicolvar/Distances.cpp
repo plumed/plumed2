@@ -115,20 +115,20 @@ PLUMED_MULTICOLVAR_INIT(ao)
   if( getNumberOfVessels()>0 ){
      vesselbase::LessThan* lt=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(0) );
      if( lt ){
-         use_link=true; rcut=lt->getCutoff( getTolerance() );
+         use_link=true; rcut=lt->getCutoff();
      } else {
          vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(0) );
-         if( bt ) use_link=true; rcut=bt->getCutoff( getTolerance() );
+         if( bt ) use_link=true; rcut=bt->getCutoff();
      }
      if( use_link ){
          for(unsigned i=1;i<getNumberOfVessels();++i){
             vesselbase::LessThan* lt2=dynamic_cast<vesselbase::LessThan*>( getPntrToVessel(i) );
             vesselbase::Between* bt=dynamic_cast<vesselbase::Between*>( getPntrToVessel(i) );
             if( lt2 ){
-                double tcut=lt2->getCutoff( getTolerance() );
+                double tcut=lt2->getCutoff();
                 if( tcut>rcut ) rcut=tcut;
             } else if( bt ){
-                double tcut=bt->getCutoff( getTolerance() );
+                double tcut=bt->getCutoff();
                 if( tcut>rcut ) rcut=tcut;
             } else {
                use_link=false;

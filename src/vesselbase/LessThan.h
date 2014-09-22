@@ -40,7 +40,7 @@ public:
   std::string function_description();
   bool calculate();
   void finish();
-  double getCutoff( const double& tol );
+  double getCutoff();
 };
 
 }

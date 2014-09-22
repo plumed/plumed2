@@ -106,7 +106,7 @@ void Between::finish(){
   }
 }
 
-double Between::getCutoff( const double& tol ){
+double Between::getCutoff(){
   return std::numeric_limits<double>::max();
 } 
 
