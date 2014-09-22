@@ -36,6 +36,8 @@ OTHER DEALINGS WITH THE SOFTWARE.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_molfile_vmdplugin_h
 #define __PLUMED_molfile_vmdplugin_h
+namespace PLMD{
+namespace molfile{
 /***************************************************************************
  *cr
  *cr            (C) Copyright 1995-2006 The Board of Trustees of the
@@ -99,7 +101,12 @@ OTHER DEALINGS WITH THE SOFTWARE.
 /** "WIN32" is defined on both WIN32 and WIN64 platforms... */
 #if (defined(WIN32)) 
 #define WIN32_LEAN_AND_MEAN
+}
+}
 #include <windows.h>
+namespace PLMD{
+namespace molfile{
+
 
 #if !defined(STATIC_PLUGIN)
 #if defined(VMDPLUGIN_EXPORTS)
@@ -227,4 +234,6 @@ VMDPLUGIN_EXTERN int VMDPLUGIN_register_tcl(void *, void *tcl_interp,
 VMDPLUGIN_EXTERN int VMDPLUGIN_fini(void);
 
 #endif   /* VMD_PLUGIN_H */
+}
+}
 #endif

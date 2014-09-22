@@ -37,6 +37,8 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #ifndef __PLUMED_molfile_libmolfile_plugin_h
 #define __PLUMED_molfile_libmolfile_plugin_h
 #include "vmdplugin.h"
+namespace PLMD{
+namespace molfile{
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,4 +72,6 @@ extern int molfile_pdbplugin_fini(void);
 #ifdef __cplusplus
 }
 #endif
+}
+}
 #endif
