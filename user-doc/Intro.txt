@@ -55,12 +55,16 @@ analsyis tools that come with PLUMED are given in:
 - \ref Analysis tells you about the various forms of analysis you can run on trajectories using PLUMED.
 - \ref Bias tells you about the methods that you can use to bias molecular dynamics simulations with PLUMED.
 
-PLUMED can be used in one of two ways.  It can be incorporated into any one of the MD codes listed below:
+PLUMED can be used in one of two ways.
+First, it can be incorporated into an MD code and used to analyse or bias a molecular dynamics run on the fly.
+Notice that some MD code could already include calls to the PLUMED library
+and be PLUMED-ready in its original distribution (check MD code documentation).
+Additionally, we provide patching procedures for the following codes:
 
 @CODESL@
 
-and used to analyse or bias a molecular dynamics run on the fly.  Alternatively, one
-can use it as a standalone tool for postprocessing the results from molecular dynamics 
+Alternatively, one
+can use PLUMED as a standalone tool for postprocessing the results from molecular dynamics 
 or enhanced sampling calculations.
 
 \page Changelog Change Log
