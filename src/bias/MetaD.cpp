@@ -459,14 +459,14 @@ isFirstStep(true)
   if(gmin.size()!=0){
     if(gbin.size()==0 && gspacing.size()==0){
       if(adaptive_==FlexibleBin::none){
-        log<<"  Binsize not spacified, 1/5 of sigma will be be used\n";
+        log<<"  Binsize not specified, 1/5 of sigma will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
       } else {
         // with adaptive hills and grid a sigma min must be specified
         if(sigma0min_.size()==0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
-        log<<"  Binsize not spacified, 1/5 of sigma_min will be be used\n";
+        log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0min_[i];

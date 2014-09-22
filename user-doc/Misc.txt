@@ -23,7 +23,8 @@ erm... yes add lines of comments or trailing comments to your hearts content as 
 \verbatim
 # This is the distance between two atoms:
 DISTANCE ATOM=1,2 LABEL=d1
-UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall. That I, one Snout by name, present a wall.
+UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall.
+# That I, one Snout by name, present a wall.
 \endverbatim
 (see \ref DISTANCE and \ref UPPER_WALLS)
 

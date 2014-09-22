@@ -80,7 +80,7 @@ character now has a special usage in component names.
     the configuration system falls back to an internal version which implements a minimal list
     of plugins (gromacs and dcd) (kindly provided by T. Giorgino).
   - \ref switchingfunction : added STRETCH flag.
-  - Negative strides in atom ranges (e.g. 10-1:-3).
+  - Negative strides in atom ranges (e.g. ATOMS=10-1:-3 is expanded to ATOMS=10,7,4,1).
   - \ref COORDINATION and \ref DHENERGY with NLIST now work correctly in replica exchange simulations.
   - Multicolvars with neighbor lists now work correctly in replica exchange simulations.
   - Improved multicolvar neighbor lists.
