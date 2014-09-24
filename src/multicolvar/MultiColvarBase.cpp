@@ -413,7 +413,7 @@ void MultiColvarBase::addCentralAtomDerivativeToFunction( const unsigned& iatom,
 }
 
 void MultiColvarBase::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){
-  plumed_dbg_assert( myvalues && vals.size()==1 );
+  // plumed_dbg_assert( myvalues && vals.size()==1 );  // Problem if we want to do MultiColvar + Bridge + MultiColvarFunction
   vals[0]=myvalues->getValue( iatom );
 }
 

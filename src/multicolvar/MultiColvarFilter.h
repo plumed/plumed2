@@ -40,6 +40,8 @@ public:
   MultiColvarFilter(const ActionOptions&);
 /// Do everything required to setup the derivatives
   void doJobsRequiredBeforeTaskList();
+/// Get the number of quantities in the colvar
+  unsigned getNumberOfQuantities();
 /// Actually do what we are asked
   void completeTask();
 /// Do the filtering
@@ -47,6 +49,11 @@ public:
 /// Just checks there are no bridging forces
   void addBridgeForces( const std::vector<double>& bb );
 };
+
+inline
+unsigned MultiColvarFilter::getNumberOfQuantities(){
+  return getPntrToMultiColvar()->getNumberOfQuantities();
+}
 
 }
 }
