@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -124,6 +124,10 @@ LocalAverage::LocalAverage(const ActionOptions& ao):
 Action(ao),
 MultiColvarFunction(ao)
 {
+  // One component for regular multicolvar and nelements for vectormulticolvar
+  if( getBaseMultiColvar(0)->getNumberOfQuantities()==5 ){ values.resize( 1 ); jstart=0; }
+  else { values.resize( getBaseMultiColvar(0)->getNumberOfQuantities() - 5 ); jstart=5; }
+
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
   if(sw.length()>0){
@@ -139,10 +143,6 @@ MultiColvarFunction(ao)
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
   setLinkCellCutoff( 2.*switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i) getBaseMultiColvar(i)->doNotCalculateDirector();
-
-  // One component for regular multicolvar and nelements for vectormulticolvar
-  if( getBaseMultiColvar(0)->getNumberOfQuantities()==5 ){ values.resize( 1 ); jstart=0; } 
-  else { values.resize( getBaseMultiColvar(0)->getNumberOfQuantities() - 5 ); jstart=5; }
 }
 
 unsigned LocalAverage::getNumberOfQuantities(){

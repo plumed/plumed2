@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -34,7 +34,9 @@ hasweights(false)
 }
 
 void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ){
-  parseVector( "ARG", arg_names );
+  ReferenceAtoms* aref=dynamic_cast<ReferenceAtoms*>( this );
+  if( !aref ) parseVector( "ARG", arg_names );
+  else parseVector( "ARG", arg_names, true );
 
   reference_args.resize( arg_names.size() );
   for(unsigned i=0;i<arg_names.size();++i) parse( arg_names[i], reference_args[i] );
@@ -157,7 +159,7 @@ const std::vector<double>& ReferenceArguments::getReferenceMetric(){
   return trig_metric;
 }
 
-double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> vals, const std::vector<double>& arg, const bool& squared ){
+double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, const bool& squared ){
   double r=0;
   if( hasmetric ){
       double dp_i, dp_j;

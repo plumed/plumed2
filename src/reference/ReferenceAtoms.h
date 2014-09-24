@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -75,7 +75,7 @@ protected:
 /// Get the position of the ith atom
   Vector getReferencePosition( const unsigned& iatom ) const ;  
 /// Get the reference positions
-  const std::vector<Vector> & getReferencePositions() const ;
+  const std::vector<Vector> & getReferencePositions();
 /// Add derivatives to iatom th atom in list
   void addAtomicDerivatives( const unsigned& , const Vector& );
 /// Get the atomic derivatives on the ith atom in the list
@@ -139,7 +139,7 @@ Vector ReferenceAtoms::getReferencePosition( const unsigned& iatom ) const {
 }
 
 inline
-const std::vector<Vector> & ReferenceAtoms::getReferencePositions() const {
+const std::vector<Vector> & ReferenceAtoms::getReferencePositions(){
   return reference_atoms;
 }
 

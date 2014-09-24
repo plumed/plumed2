@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -158,10 +158,10 @@ argument_names(getNumberOfArguments())
          rtemp*=plumed.getAtoms().getKBoltzmann(); 
       } 
       simtemp=0.; parse("TEMP",simtemp);
-      if( rtemp>0 || !biases.empty() ){
-         if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-         else simtemp*=plumed.getAtoms().getKbT();
+      if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
+      else simtemp=plumed.getAtoms().getKbT();
 
+      if( rtemp>0 || !biases.empty() ){
          if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
       }
 

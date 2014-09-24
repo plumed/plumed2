@@ -1,4 +1,4 @@
-#! FIELDS time a1.mean a1.less_than a2.mean a2.less_than a3.mean a3.less_than a4.mean a4.less_than a5.mean a5.less_than a6.mean a6.less_than a7.mean a7.less_than
+#! FIELDS time a1.mean a1.lessthan a2.mean a2.lessthan a3.mean a3.lessthan a4.mean a4.lessthan a5.mean a5.lessthan a6.mean a6.lessthan a7.mean a7.lessthan
  0.000000   0.4844  24.6887   0.4089  29.5285   0.4855  26.2692   0.3931  10.5148   0.4644   3.1818   0.5540   4.2788   0.4919 106.5625
  0.050000   0.4812  21.4196   0.5046  24.2911   0.5235  20.4149   0.5257   4.1620   0.5674   2.7270   0.6143   2.9086   0.4913 110.4426
  0.100000   0.4990  24.0789   0.5008  19.5334   0.5338  17.5531   0.5555   2.1380   0.5184   5.4959   0.5083   4.4825   0.4922 104.6113

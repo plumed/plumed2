@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -53,9 +53,9 @@ void MoreThan::reserveKeyword( Keywords& keys ){
   keys.reserve("numbered","MORE_THAN","calculate the number of variables more than a certain target value. "
                                       "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                       "is a \\ref switchingfunction.",true);
-  keys.addOutputComponent("more_than","MORE_THAN","the number of values more than a target value. This is calculated using one of the "
-                                                  "formula described in the description of the keyword so as to make it continuous. "
-                                                  "You can calculate this quantity multiple times using different parameters."); 
+  keys.addOutputComponent("morethan","MORE_THAN","the number of values more than a target value. This is calculated using one of the "
+                                                 "formula described in the description of the keyword so as to make it continuous. "
+                                                 "You can calculate this quantity multiple times using different parameters."); 
 }
 
 MoreThan::MoreThan( const VesselOptions& da ) :

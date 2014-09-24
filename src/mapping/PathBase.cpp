@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -41,7 +41,7 @@ Mapping(ao)
   // Create the list of tasks
   for(unsigned i=0;i<getNumberOfReferencePoints();++i) addTaskToList( i );
 
-  std::string empty="LABEL=zzz";
+  std::string empty="LABEL=zpath";
   if(!noz) addVessel("ZPATH",empty,0);
 }
 

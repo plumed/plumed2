@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -49,6 +49,7 @@ void SpathVessel::registerKeywords( Keywords& keys ){
 
 void SpathVessel::reserveKeyword( Keywords& keys ){
   keys.reserveFlag("SPATH",false,"docs should not appear",true);
+  keys.addOutputComponent("spath","SPATH","the position on the path");
 }
 
 SpathVessel::SpathVessel( const vesselbase::VesselOptions& da ):

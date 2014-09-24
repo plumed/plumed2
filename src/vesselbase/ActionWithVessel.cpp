@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -26,6 +26,7 @@
 #include "StoreDataVessel.h"
 #include "VesselRegister.h"
 #include "BridgeVessel.h"
+#include "FunctionVessel.h"
 
 using namespace std;
 namespace PLMD{
@@ -76,8 +77,8 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   if( tolerance>epsilon){
      if( keywords.exists("NL_TOL") ) parse("NL_TOL",nl_tolerance);
      if( nl_tolerance>tolerance ) error("NL_TOL must be smaller than TOL"); 
-     log.printf(" Ignoring contributions less than %lf",tolerance);
-     if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %lf inbetween neighbor list update steps\n",nl_tolerance);
+     log.printf(" Ignoring contributions less than %f",tolerance);
+     if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %f inbetween neighbor list update steps\n",nl_tolerance);
      else log.printf("\n");
   }
 }
@@ -88,13 +89,19 @@ ActionWithVessel::~ActionWithVessel(){
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ){
   VesselOptions da(name,"",numlab,input,this);
-  Vessel* vv=vesselRegister().create(name,da); 
+  Vessel* vv=vesselRegister().create(name,da);
+  FunctionVessel* fv=dynamic_cast<FunctionVessel*>(vv);
+  if( fv ){
+      std::string mylabel=Vessel::transformName( name );
+      plumed_massert( keywords.outputComponentExists(mylabel,false), "a description of the value calculated by vessel " + name + " has not been added to the manual"); 
+  } 
   addVessel(vv);
 }
 
 void ActionWithVessel::addVessel( Vessel* vv ){
   ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
   if(!sv){ vv->checkRead(); functions.push_back(vv); }
+  else { delete sv; }
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -264,6 +264,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   molfile_plugin_t *api=NULL;      
   void *h_in=NULL;
   molfile_timestep_t ts_in; // this is the structure that has the timestep 
+  ts_in.coords=NULL;
 #endif
 
 // Read in an xyz file
@@ -371,7 +372,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        if(use_molfile==true){
 #ifdef __PLUMED_HAS_MOLFILE
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
-        ts_in.coords = (float *)malloc(3*natoms * sizeof(float));
+        ts_in.coords = new float [3*natoms];
 #endif
        }else{
          fp=fopen(trajectoryFile.c_str(),"r");
@@ -589,7 +590,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
          double cc[3];
          if(trajectory_fmt=="xyz"){
            char dummy[1000];
-           std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
+           int ret=std::sscanf(line.c_str(),"%999s %100lf %100lf %100lf",dummy,&cc[0],&cc[1],&cc[2]);
+           if(ret!=4) error("cannot read line"+line);
          } else if(trajectory_fmt=="gro"){
            // do the gromacs way
            if(!i){
@@ -709,9 +711,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   if(fp && fp!=in)fclose(fp);
 #ifdef __PLUMED_HAS_MOLFILE
   if(h_in) api->close_file_read(h_in);
+  if(ts_in.coords) delete [] ts_in.coords;
 #endif
   if(grex_log) fclose(grex_log);
-  
+
   return 0;
 }
 

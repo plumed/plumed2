@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -36,9 +36,9 @@ void LessThan::reserveKeyword( Keywords& keys ){
   keys.reserve("numbered","LESS_THAN","calculate the number of variables less than a certain target value. "
                                  "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                  "is a \\ref switchingfunction.",true);
-  keys.addOutputComponent("less_than","LESS_THAN","the number of values less than a target value. This is calculated using one of the " 
-                                                  "formula described in the description of the keyword so as to make it continuous. "
-                                                  "You can calculate this quantity multiple times using different parameters."); 
+  keys.addOutputComponent("lessthan","LESS_THAN","the number of values less than a target value. This is calculated using one of the " 
+                                                 "formula described in the description of the keyword so as to make it continuous. "
+                                                 "You can calculate this quantity multiple times using different parameters."); 
 }
 
 LessThan::LessThan( const VesselOptions& da ) :

@@ -15,7 +15,7 @@ is to prepare the system in a particular state or produce nice snapshots for a c
 All the CVs present in PLUMED  can be used in SMD.
 
 In SMD the Hamiltonian of the system \f$ H \f$ is modified into  
- $H_\lambda$. This new Hamiltonian contains now another new term which now depends on time only via a
+ \f$H_\lambda\f$. This new Hamiltonian contains now another new term which now depends on time only via a
  Harmonic potential centered on a point which moves linear with time
 \f{eqnarray*}{
 H_\lambda(X,t)&=&H(X)+U_\lambda(X,t)\\
@@ -91,7 +91,7 @@ The value of restraint.force2 is the squared force (which is a proxy of the forc
 Note that the actual force on an atom of the system involved in a CV is instead
 
 \f{eqnarray*}{
--\frac{\partial H_\lambda(X,t)}{\partial x_i}&=&  -\frac{\partial H_\lambda(X,t)}{\partial s} \frac{\partial s}{\partial x_i} &=&  -(s(X)-s_0-vt) \frac{\partial s}{\partial x_i} 
+-\frac{\partial H_\lambda(X,t)}{\partial x_i}&=&  -\frac{\partial H_\lambda(X,t)}{\partial s} \frac{\partial s}{\partial x_i} \\  &=&  -(s(X)-s_0-vt) \frac{\partial s}{\partial x_i} 
 \f}
 
 This is important because in CVs that  have a derivative that change significantly with space then you might have regions in which no force is exerted while in others you
@@ -123,7 +123,10 @@ So in the exercised proposed in the first phase you see only the second part of 
 After this phase you see the increase due to the motion of the center and then you later the release of the spring constant.
 
 \anchor belfast-5-work-1-fig
-\image html belfast-5-work-1.png "The work profile as function of time when steering ala dipeptide along the \f$ \Phi \f$ variable. " 
+\image html belfast-5-work-1.png 
+<CENTER> <B>
+The work profile as function of time when steering ala dipeptide along the \f$ \Phi \f$ variable.
+</B> </CENTER>
 
 This you get with gnuplot:
 
@@ -170,7 +173,11 @@ By plotting the instataneous value of the variables and the value of the center 
 walk on the Ramachandran plot. (How to do this? Have a look to the header of COLVAR file to plot the right fields)
 
 \anchor belfast-5-doublesteer.png
-\image html  belfast-5-doublesteer.png "Plot of the double steering schedule using \ref MOVINRESTRAINT"
+\image html  belfast-5-doublesteer.png
+<CENTER> <B>
+Plot of the double steering schedule using \ref MOVINGRESTRAINT
+</B> </CENTER>
+
 
 \section belfast-5-work Why work is important?
 
@@ -239,7 +246,7 @@ It can be used for example
 if one wants to prepare the system so that the coordinates of selected
 atoms are as close as possible to a target pdb structure.
 
-As an example we can take alanine dipeptide again \ref ala  
+As an example we can take alanine dipeptide again
 
 \verbatim
 # set up two variables for Phi and Psi dihedral angles

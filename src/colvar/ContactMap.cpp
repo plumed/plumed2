@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -107,7 +107,7 @@ void ContactMap::registerKeywords( Keywords& keys ){
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
   keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.addOutputComponent("contact_","default","By not using SUM or CMDIST each contact will be stored in a component");
+  keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
 }
 
 ContactMap::ContactMap(const ActionOptions&ao):
@@ -141,7 +141,7 @@ docmdist(false)
 
      // Add a value for this contact
      std::string num; Tools::convert(i,num);
-     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact_"+num); componentIsNotPeriodic("contact_"+num);}
+     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
   }
   // Create neighbour lists
   nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
@@ -200,7 +200,7 @@ docmdist(false)
 
   // Ouput details of all contacts 
   for(unsigned i=0;i<sfs.size();++i){
-     log.printf("  The %dth contact is calculated from atoms : %d %d. Inflection point of switching function is at %s. Reference contact value is %lf\n", 
+     log.printf("  The %dth contact is calculated from atoms : %d %d. Inflection point of switching function is at %s. Reference contact value is %f\n", 
                 i+1, ga_lista[i].serial(), gb_lista[i].serial() , ( sfs[i].description() ).c_str(), reference[i] );
   }
 

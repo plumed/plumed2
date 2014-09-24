@@ -1,4 +1,4 @@
-#! FIELDS time parameter d1.mean d1.min d1.more_than d1n.mean d1n.min d1n.more_than
+#! FIELDS time parameter d1.mean d1.min d1.morethan d1n.mean d1n.min d1n.morethan
  0.000000 0 -0.37498 -0.04928 -0.56588 -0.37498 -0.04928 -0.56587
  0.000000 1  0.00484  0.00064  0.00730  0.00484  0.00064  0.00730
  0.000000 2 -0.33071 -0.04346 -0.49907 -0.33071 -0.04346 -0.49907

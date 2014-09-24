@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -48,8 +48,6 @@ public:
   void readRestOfFrame();
 /// Resize everything else from a file
   void resizeRestOfFrame();
-/// Find what is required of us from the reference frames
-  void getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args );
 /// Make a second copy of the frame list 
   void duplicateFrameList();
 /// Get the number of points we are mapping into the lower dimensional space
@@ -62,8 +60,6 @@ public:
   unsigned getPropertyIndex( const std::string& name ) const ;
 /// Get the value of the ith property for th jth frame
   double getPropertyValue( const unsigned& iframe, const unsigned& jprop ) const ;
-/// Finish setup of frames
-  void setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs );
 /// Get the derivatives wrt to the position of an atom
   Vector getAtomDerivatives( const unsigned& iframe, const unsigned& jatom );
 /// Get the derivatives wrt to the box
@@ -75,7 +71,7 @@ public:
 /// Get a pointer to the matrix of pairwise distances
   Matrix<double>& modifyDmat();
 /// Print out the low dimensional mapping
-  void print( const std::string& method, const unsigned& time, OFile& afile, const std::string& fmt );
+  void print( const std::string& method, const double & time, OFile& afile, const std::string& fmt );
 /// Get the low dimensional embedding coordinate
   double getProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord ) const ;
 /// Set the value of the projection coordinate

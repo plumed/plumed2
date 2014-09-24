@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -61,6 +61,7 @@ class FilesHandler{
 		bool scanOneHill(BiasRepresentation *br, IFile *ifile );
 		void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin);
 		void getMinMaxBin(vector<Value*> vals, Communicator &cc, vector<double> &vmin, vector<double> &vmax, vector<unsigned> &vbin, vector<double> &histosigma);
+		~FilesHandler();
 };
 FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallelread , Action &action , Log &mylog ):filenames(filenames),log(&mylog),parallelread(parallelread),beingread(0),isopen(false){
    this->action=&action;
@@ -71,6 +72,10 @@ FilesHandler::FilesHandler(const vector<string> &filenames, const bool &parallel
       plumed_massert((ifile->FileExist(filenames[i])), "the file "+filenames[i]+" does not exist " );
    }
    
+}
+
+FilesHandler::~FilesHandler(){
+  for(unsigned i=0;i<ifiles.size();i++) delete ifiles[i];
 }
 
 // note that the FileHandler is completely transparent respect to the biasrepresentation 
@@ -237,7 +242,9 @@ doInt(false),
 lowI_(-1.),
 uppI_(-1.),
 beta(-1.),
-fmt("%14.9f")
+fmt("%14.9f"),
+biasrep(NULL),
+historep(NULL)
 {
 
   // format
@@ -362,6 +369,7 @@ fmt("%14.9f")
 		 	Tools::convert(vmax[i],gmax[i]);
 			log<<"  variable "<< getPntrToArgument(i)->getName()<<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
 		}
+                delete hillsHandler;
         } 
 	// if at this stage bins are not there then do it with histo
 	if(gmin.size()==0){
@@ -383,6 +391,7 @@ fmt("%14.9f")
 		 	Tools::convert(vmax[i],gmax[i]);
 			log<<"  variable "<< proj[i] <<" min: "<<gmin[i]<<" max: "<<gmax[i]<<" nbin: "<<gbin[i]<<"\n";
 		}
+                delete histoHandler;
         }
 	log<<"  done!\n"; 
 	log<<"   \n"; 
@@ -479,6 +488,9 @@ fmt("%14.9f")
     FilesHandler *hillsHandler;
     FilesHandler *histoHandler;
 
+    hillsHandler=NULL;
+    histoHandler=NULL;
+
     if(integratehills)	hillsHandler=new FilesHandler(hillsFiles,parallelread,*this, log);
     if(integratehisto)	histoHandler=new FilesHandler(histoFiles,parallelread,*this, log);
 
@@ -518,7 +530,7 @@ fmt("%14.9f")
    	      		smallGrid.writeToFile(gridfile);
               		gridfile.close();
                         if(!ibias)integratehills=false;// once you get to the final bunch just give up 
-
+                        delete Bw;
 		}
                 // this should be removed
 		if(integratehisto){
@@ -591,6 +603,8 @@ fmt("%14.9f")
 
 	nfiles++;
     }
+    if(hillsHandler) delete hillsHandler;
+    if(histoHandler) delete histoHandler;
 
     return;
   } 
@@ -608,6 +622,8 @@ void FuncSumHills::calculate(){
 }
 
 FuncSumHills::~FuncSumHills(){
+  if(historep) delete historep;
+  if(biasrep) delete biasrep;
 }
 
 bool FuncSumHills::checkFilesAreExisting(const vector<string> & hills ){
@@ -617,6 +633,7 @@ bool FuncSumHills::checkFilesAreExisting(const vector<string> & hills ){
         for(unsigned i=0; i< hills.size();i++){  
           plumed_massert(ifile->FileExist(hills[i]),"missing file "+hills[i]);
         }
+        delete ifile;
         return true; 
 
 }
