@@ -1,4 +1,4 @@
-#! FIELDS time c1.more_than s1.more_than
+#! FIELDS time c1.morethan s1.morethan
  0.000000 266.3827   1.3385
  1.000000 261.9458   2.8958
  2.000000 260.4346   3.1611
