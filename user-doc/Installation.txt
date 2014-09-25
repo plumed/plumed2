@@ -410,7 +410,8 @@ Once ALMOST is installed, PLUMED 2 can then be configured with ALMOST enabled:
 
 \verbatim
 > ./configure --enable-almost CPPFLAGS="-I/ALMOST_INSTALL_PATH/include \
-  -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib"
+  -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib" \
+  CXXFLAGS="-O3 -fPIC" CFLAGS="-O3 -fPIC"
 \endverbatim
 with ALMOST_INSTALL_PATH set to the full path to the ALMOST installation folder.
 
