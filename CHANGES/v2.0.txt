@@ -145,8 +145,8 @@ See <a href="http://github.com/plumed/plumed2/commits/v2.0">branch v2.0 on git r
 
 For users:
 - Fixed an issue in Makefile that could results in problems when
-  typing "make install" before "make" and then patching an MD code
-  with --shared option (pointed out by Abhi Acharya).
+  patching an MD code with --shared option (pointed out by Abhi Acharya).
+  This fixes a regression introduced in 2.0.2.
 - Small fixes in documentation.
 
 */
