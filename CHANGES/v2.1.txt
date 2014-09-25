@@ -2,6 +2,9 @@
 
 @page CHANGES-2-1 Version 2.1
 
+Version 2.1.0 (Sep 15, 2014)
+----------------------------
+
 Version 2.1 contains several improvements with respect to 2.0. Users currently working with 2.0 
 should have a look at the section "Changes leading to incompatible behavior" below and
 might need tiny adjustments in their input files. In 2.1 we restored more features of 1.3
@@ -9,7 +12,7 @@ that were missing in 2.0, so users still working with 1.3 could opt for an upgra
 A tutorial explaining how to move from PLUMED 1 to PLUMED 2 is available (see \ref moving).
 
 Below you find a list of all the changes with respect to version 2.0.
-Notice that version 2.1 includes already all the fixes in branch 2.0 up to 2.0.3.
+Notice that version 2.1 includes already all the fixes in branch 2.0 up to 2.0.4.
 
 Changes from version 2.0 which are relevant for users:
 - Changes leading to incompatible behavior:
@@ -77,7 +80,7 @@ character now has a special usage in component names.
     the configuration system falls back to an internal version which implements a minimal list
     of plugins (gromacs and dcd) (kindly provided by T. Giorgino).
   - \ref switchingfunction : added STRETCH flag.
-  - Negative strides in atom ranges (e.g. 10-1:-3).
+  - Negative strides in atom ranges (e.g. ATOMS=10-1:-3 is expanded to ATOMS=10,7,4,1).
   - \ref COORDINATION and \ref DHENERGY with NLIST now work correctly in replica exchange simulations.
   - Multicolvars with neighbor lists now work correctly in replica exchange simulations.
   - Improved multicolvar neighbor lists.
@@ -95,6 +98,7 @@ character now has a special usage in component names.
   - All tutorial material from the recent plumed meeting in Belfast is now in the manual
   - Improvements to documentation, including lists of referenceable quantities outputted by each action
   - Manual has been re-organized following suggestions received at the plumed meeting.
+  - An experimental PDF version of the manual is now provided (a link can be found in the documentation homepage).
 
 Changes from version 2.0 which are relevant for developers:
 - Added regtests for plumed as a library (e.g. basic/rt-make-0). plumed command has an additional
@@ -119,5 +123,15 @@ Changes from version 2.0 which are relevant for developers:
   should new be run from within a git repository
 
 This list is likely incompleted, if you are developing in PLUMED you are encouraged to follow changes on github.
+
+Unreleased changes (will be included in 2.1.1)
+----------------------------------------------
+See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
+
+This release will include all the fixes available in branch 2.0.
+
+For users:
+- Small fixes in documentation.
+
 
 */

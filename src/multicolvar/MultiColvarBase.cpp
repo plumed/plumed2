@@ -199,7 +199,7 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode ){
      natomsper=current_atoms.size();
      unsigned scode = taskCode;
      for(unsigned i=0;i<ablocks.size();++i){
-        unsigned ind=std::floor( scode / decoder[i] );
+        unsigned ind=( scode / decoder[i] );
         current_atoms[i]=ablocks[i][ind];
         scode -= ind*decoder[i]; 
      }
