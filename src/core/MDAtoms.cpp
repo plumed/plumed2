@@ -26,13 +26,9 @@
 #include "tools/OpenMP.h"
 #include "tools/Exception.h"
 
-#include "PlumedMain.h"
-
 using namespace std;
 
 namespace PLMD {
-
-  PlumedMain*plumed;
 
 /// Class containing the pointers to the MD data
 /// It is templated so that single and double precision versions coexist
@@ -41,7 +37,6 @@ template <class T>
 class MDAtomsTyped:
 public MDAtomsBase
 {
-  PlumedMain*plumed;
   T scalep,scalef;
   T scaleb,scalev;
   int stride;
@@ -53,8 +48,6 @@ public MDAtomsBase
   T *virial;
 public:
   MDAtomsTyped();
-/// Link to a plumedMain object
-  void link(PlumedMain&p);
   void setm(void*m);
   void setc(void*m);
   void setBox(void*);
@@ -255,7 +248,6 @@ void MDAtomsTyped<T>::setc(void*c){
 
 template <class T>
 MDAtomsTyped<T>::MDAtomsTyped():
-  plumed(NULL),
   scalep(1.0),
   scalef(1.0),
   scaleb(1.0),
@@ -283,11 +275,6 @@ MDAtomsBase* MDAtomsBase::create(unsigned p){
   Tools::convert(p,pp);
   plumed_merror("cannot create an MD interface with sizeof(real)=="+ pp);
   return NULL;
-}
-
-template <class T>
-void MDAtomsTyped<T>::link(PlumedMain&p){
-  plumed=&p;
 }
 
 }
