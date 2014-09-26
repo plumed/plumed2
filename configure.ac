@@ -263,7 +263,6 @@ if test $mpi == true ; then
 fi
 if test $openmp == true ; then
   AC_OPENMP
-  CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
 fi
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])

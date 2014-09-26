@@ -5142,7 +5142,6 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
   fi
 
 
-  CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
 fi
 if test $matheval == true ; then
 
