@@ -128,4 +128,10 @@ Unreleased changes (will be included in 2.1.1)
 ----------------------------------------------
 See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
 
+This release will include all the fixes available in branch 2.0.
+
+For users:
+- Small fixes in documentation.
+
+
 */
