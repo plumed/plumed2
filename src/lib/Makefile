@@ -188,10 +188,10 @@ Plumed.inc:
 	@echo Building Plumed.inc
 	@echo "PLUMED_RUNTIME_LOAD=" $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS) > $@
 	@echo "PLUMED_STATIC_LOAD=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
-	@echo "PLUMED_SHARED_LOAD=" $(realpath ./)libplumed.$(SOEXT) $(LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_SHARED_LOAD=" $(realpath ./)/libplumed.$(SOEXT) $(LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
-	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath ./)libplumed.$(SOEXT)  >> $@
+	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath ./)/libplumed.$(SOEXT)  >> $@
 
 Plumed.inc.runtime: Plumed.inc
 	@echo Building Plumed.inc, runtime-linking version
@@ -212,10 +212,10 @@ Plumed.cmake:
 	@echo Building Plumed.cmake
 	@echo "set(PLUMED_RUNTIME_LOAD " $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS)")" > $@
 	@echo "set(PLUMED_STATIC_LOAD " $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)")" >> $@
-	@echo "set(PLUMED_SHARED_LOAD " $(realpath ./)libplumed.$(SOEXT) $(LIBS) $(LDFLAGS)")" >> $@
+	@echo "set(PLUMED_SHARED_LOAD " $(realpath ./)/libplumed.$(SOEXT) $(LIBS) $(LDFLAGS)")" >> $@
 	@echo "set(PLUMED_RUNTIME_DEPENDENCIES) "   >> $@
 	@echo "set(PLUMED_STATIC_DEPENDENCIES " $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))")"  >> $@
-	@echo "set(PLUMED_SHARED_DEPENDENCIES " $(realpath ./)libplumed.$(SOEXT)")"  >> $@
+	@echo "set(PLUMED_SHARED_DEPENDENCIES " $(realpath ./)/libplumed.$(SOEXT)")"  >> $@
 
 Plumed.cmake.runtime: Plumed.cmake
 	@echo Building Plumed.cmake, runtime-linking version
