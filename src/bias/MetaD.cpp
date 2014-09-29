@@ -265,6 +265,7 @@ private:
   bool doInt_;
   bool isFirstStep;
   double reweight_factor;
+  double reweight_factor2;
   std::vector<unsigned> rewf_grid_; 
   vector<Gaussian> rewf_last_hills;
   unsigned int rewf_stridehills_;
@@ -301,6 +302,7 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias corrected using the c(t) reweighting factor [rbias=bias-c(t)]. This is calculated using the method of Tiwary and Parrinello.");
   keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor c(t) calculated according to the method of Tiwary and Parrinello.");
+  keys.addOutputComponent("rct2","REWEIGHTING_NGRID","the reweighting factor c(t) calculated according to the method of Tiwary and Parrinello.");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
@@ -364,7 +366,7 @@ walkers_mpi(false),
 acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
-isFirstStep(true), reweight_factor(0.0)
+isFirstStep(true), reweight_factor(0.0), reweight_factor2(0.0)
 {
   // parse the flexible hills
   string adaptiveoption;
@@ -598,6 +600,7 @@ isFirstStep(true), reweight_factor(0.0)
   addComponent("bias"); componentIsNotPeriodic("bias");
   if( rewf_grid_.size()>0 ){ addComponent("rbias"); componentIsNotPeriodic("rbias"); }
   if( rewf_grid_.size()>0 ){ addComponent("rct"); componentIsNotPeriodic("rct"); }
+  if( rewf_grid_.size()>0 ){ addComponent("rct2"); componentIsNotPeriodic("rct2"); }
 
   if(acceleration) {
     if(!welltemp_) error("The calculation of the acceleration works only if Well-Tempered Metadynamics is on"); 
@@ -656,6 +659,7 @@ isFirstStep(true), reweight_factor(0.0)
    vector<double> dummy; dummy.assign(getNumberOfArguments(),1.0);
    for(unsigned i=0;i<rewf_stridehills_;i++){rewf_last_hills.push_back(Gaussian(dummy,dummy,0.0,false));};
    getPntrToComponent("rct")->set(reweight_factor);
+   getPntrToComponent("rct2")->set(reweight_factor2);
   }
 
 // creating vector of ifile* for hills reading 
@@ -1313,7 +1317,9 @@ void MetaD::computeReweightingFactor(){
        
  // Now sum over whole grid
  reweight_factor=0.0; double* der=new double[ncv]; std::vector<unsigned> t_index( ncv );
- unsigned rank=comm.Get_rank(), stride=comm.Get_size(); double afactor = biasf_ / (kbt_*(biasf_-1.0));
+ double sum1=0.0; double sum2=0.0;
+ double afactor = biasf_ / (kbt_*(biasf_-1.0)); double afactor2 = 1.0 / (kbt_*(biasf_-1.0));
+ unsigned rank=comm.Get_rank(), stride=comm.Get_size(); 
  for(unsigned i=rank;i<ntotgrid;i+=stride){
      t_index[0]=(i%rewf_grid_[0]);
      unsigned kk=i;
@@ -1327,12 +1333,17 @@ void MetaD::computeReweightingFactor(){
      for(unsigned j=0;j<rewf_last_hills.size();j++){oldb-=evaluateGaussian(vals,rewf_last_hills[j],der);}
  
      reweight_factor += exp( afactor*currentb ) - exp( afactor*oldb );
+     sum1 += exp( afactor*currentb );
+     sum2 += exp( afactor2*currentb );
  }
- comm.Sum( reweight_factor ); 
  delete [] der;
+ comm.Sum( reweight_factor ); 
+ comm.Sum( sum1 ); comm.Sum( sum2 );
  reweight_factor *= grid_size /( afactor*height0_*stride_*rewf_stridehills_*getTimeStep()*getGaussianNormalization(rewf_last_hills[rewf_stridehills_-1] ) );
  reweight_factor = kbt_ * std::log( reweight_factor );
  getPntrToComponent("rct")->set(reweight_factor);
+ reweight_factor2 = kbt_ * std::log( sum1/sum2 );
+ getPntrToComponent("rct2")->set(reweight_factor2);
 }
 
 }
