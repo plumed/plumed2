@@ -44,30 +44,30 @@ namespace molfile{
 extern "C" {
 #endif
 
-extern int plumed_molfile_dcdplugin_init(void);
-extern int plumed_molfile_dcdplugin_register(void *, vmdplugin_register_cb);
-extern int plumed_molfile_dcdplugin_fini(void);
-extern int plumed_molfile_gromacsplugin_init(void);
-extern int plumed_molfile_gromacsplugin_register(void *, vmdplugin_register_cb);
-extern int plumed_molfile_gromacsplugin_fini(void);
-extern int plumed_molfile_pdbplugin_init(void);
-extern int plumed_molfile_pdbplugin_register(void *, vmdplugin_register_cb);
-extern int plumed_molfile_pdbplugin_fini(void);
+extern int molfile_dcdplugin_init(void);
+extern int molfile_dcdplugin_register(void *, vmdplugin_register_cb);
+extern int molfile_dcdplugin_fini(void);
+extern int molfile_gromacsplugin_init(void);
+extern int molfile_gromacsplugin_register(void *, vmdplugin_register_cb);
+extern int molfile_gromacsplugin_fini(void);
+extern int molfile_pdbplugin_init(void);
+extern int molfile_pdbplugin_register(void *, vmdplugin_register_cb);
+extern int molfile_pdbplugin_fini(void);
 
 #define MOLFILE_INIT_ALL \
-    plumed_molfile_dcdplugin_init(); \
-    plumed_molfile_gromacsplugin_init(); \
-    plumed_molfile_pdbplugin_init(); \
+    molfile_dcdplugin_init(); \
+    molfile_gromacsplugin_init(); \
+    molfile_pdbplugin_init(); \
 
 #define MOLFILE_REGISTER_ALL(v, cb) \
-    plumed_molfile_dcdplugin_register(v, cb); \
-    plumed_molfile_gromacsplugin_register(v, cb); \
-    plumed_molfile_pdbplugin_register(v, cb); \
+    molfile_dcdplugin_register(v, cb); \
+    molfile_gromacsplugin_register(v, cb); \
+    molfile_pdbplugin_register(v, cb); \
 
 #define MOLFILE_FINI_ALL \
-    plumed_molfile_dcdplugin_fini(); \
-    plumed_molfile_gromacsplugin_fini(); \
-    plumed_molfile_pdbplugin_fini(); \
+    molfile_dcdplugin_fini(); \
+    molfile_gromacsplugin_fini(); \
+    molfile_pdbplugin_fini(); \
 
 #ifdef __cplusplus
 }
