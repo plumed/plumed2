@@ -1,3 +1,4 @@
+# https://github.com/mloskot/travis-ci-test/blob/master/.travis.yml
 
 before_install:
   - sudo apt-get update -qq
@@ -5,6 +6,9 @@ before_install:
   - sudo apt-get install -qq mingw32 
 
 language: cpp
+
+compiler:
+  - gcc
 
 env:
   - CC=gcc   CXX=g++
