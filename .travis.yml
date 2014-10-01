@@ -1,5 +1,17 @@
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq g++-multilib
+  - sudo apt-get install -qq mingw32 
+
 language: cpp
-compiler:
-  - gcc
-  - clang
-script: ./configure && make && make -C regtest
+
+env:
+  - CC=gcc   CXX=g++
+  - CC=clang CXX=clang++
+  - CC=i586-mingw32msvc-gcc CXX=i586-mingw32msvc-g++ LD=i586-mingw32msvc-ld LDFLAGS="-static -s" OTHER=--disable-shared
+
+
+# Script could be anything (eg. ./run-tests.sh) which returns !0 on failure
+
+script: ./configure $OTHER && make && make -C regtest
