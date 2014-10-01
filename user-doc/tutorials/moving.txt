@@ -1,6 +1,19 @@
 /**
 \page moving Moving from Plumed 1 to Plumed 2
 
+Syntax in PLUMED 2 has been completely redesigned. The main difference is that
+whereas in PLUMED 1 lines could be inserted in any order, 
+in PLUMED 2 the order of the lines matters. This is due to a major change in 
+the internal architecture of PLUMED. In version 2, commands (or "actions") are
+executed in the order they are found in the input file.
+Because of this, you must e.g. first compute a collective variable and then print it
+later. More information can be found in the Section about \ref Syntax.
+
+Another very important change is in the way groups are used, discussed below.
+Finally, many features appear under a different name in the new version.
+
+\section moving-Groups Groups
+
 In Plumed 1 groups (lists) were used for two tasks:
 - To provide centers of masses to collective variables such as distances, angles, etc. This is 
   now done by defining virtual atoms using either \ref CENTER or \ref COM
@@ -11,7 +24,7 @@ If you would still like to use groups you can use the \ref GROUP commands.  When
 for a \ref GROUP action appears in the input it is replaced by the list of atoms that were 
 specified in the \ref GROUP.
 
-\section Directives
+\section moving-Directives Directives
 
 What follows is a list of all the documented directives of Plumed 1 together with their 
 plumed 2 equivalents.  Be aware that the input syntaxes for these directives are not totally 
@@ -201,11 +214,11 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> RDF </TD>
-  <TD> <b> \ref DISTANCES </b>, used in combination with HISTOGRAM / BETWEEN keyword </TD>
+  <TD> \ref DISTANCES, used in combination with HISTOGRAM / BETWEEN keyword </TD>
 </TR>
 <TR>
   <TD> ADF </TD>
-  <TD> <b> \ref ANGLES </b>, used in combination with HISTOGRAM / BETWEEN keyword </TD>
+  <TD> \ref ANGLES, used in combination with HISTOGRAM / BETWEEN keyword </TD>
 </TR>
 <TR>
   <TD> POLY </TD>
