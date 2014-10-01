@@ -393,16 +393,12 @@ void Atoms::removeGroup(const std::string&name){
 
 void Atoms::writeBinary(std::ostream&o)const{
   o.write(reinterpret_cast<const char*>(&positions[0][0]),natoms*3*sizeof(double));
-  o.write(reinterpret_cast<const char*>(&masses[0]),natoms*sizeof(double));
-  o.write(reinterpret_cast<const char*>(&charges[0]),natoms*sizeof(double));
   o.write(reinterpret_cast<const char*>(&box(0,0)),9*sizeof(double));
   o.write(reinterpret_cast<const char*>(&energy),sizeof(double));
 }
 
 void Atoms::readBinary(std::istream&i){
   i.read(reinterpret_cast<char*>(&positions[0][0]),natoms*3*sizeof(double));
-  i.read(reinterpret_cast<char*>(&masses[0]),natoms*sizeof(double));
-  i.read(reinterpret_cast<char*>(&charges[0]),natoms*sizeof(double));
   i.read(reinterpret_cast<char*>(&box(0,0)),9*sizeof(double));
   i.read(reinterpret_cast<char*>(&energy),sizeof(double));
   pbc.setBox(box);
