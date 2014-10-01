@@ -136,7 +136,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 
 //TONI  Plumed mod: never "extern", C++ namespace
 /** define plugin linkage correctly for both C and C++ based plugins */
-#define VMDPLUGIN_EXTERN extern VMDPLUGIN_API
+#define VMDPLUGIN_EXTERN VMDPLUGIN_API
 
 /* 
  * Plugin API functions start here 
