@@ -1,6 +1,7 @@
 SUBDIRS := basic $(shell ./scripts/find_modules.sh)
 SUBDIRSCLEAN := $(addsuffix .clean,$(SUBDIRS))
 SUBDIRSVALGRIND := $(addsuffix .valgrind,$(SUBDIRS))
+export PATH := $(PWD)/../src/lib:$(PATH)
 
 .PHONY: all clean valgrind $(SUBDIRS) $(SUBDIRSCLEAN) $(SUBDIRSVALGRIND)
 
