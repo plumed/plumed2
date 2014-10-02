@@ -66,6 +66,9 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <strings.h>
 #endif
 
+namespace PLMD{
+namespace molfile{
+
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
 #endif
@@ -789,6 +792,9 @@ VMDPLUGIN_API int VMDPLUGIN_register(void *v, vmdplugin_register_cb cb) {
 
 VMDPLUGIN_API int VMDPLUGIN_fini() {
   return 0;
+}
+
+}
 }
 
 
