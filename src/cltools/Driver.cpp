@@ -41,9 +41,10 @@
  */
 #include "molfile/libmolfile_plugin.h"
 #include "molfile/molfile_plugin.h"
+using namespace PLMD::molfile;
 #else
-#include "libmolfile_plugin.h"
-#include "molfile_plugin.h"
+#include <libmolfile_plugin.h>
+#include <molfile_plugin.h>
 #endif
 #endif
 
