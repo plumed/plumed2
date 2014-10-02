@@ -12,7 +12,7 @@ USE=
 include ../maketools/make.module
 
 # Local rules for molfile plugins - replacement is delayed 
-CPPFLAGS+=-DSTATIC_PLUGIN  -DVMDPLUGIN=plumed_molfile_$(patsubst %.o,%,$@)
+CPPFLAGS+=-DSTATIC_PLUGIN  -DVMDPLUGIN=molfile_$(patsubst %.o,%,$@)
 
 # -fpermissive works around a missing cast in pdbplugin 
 #          char *newstr=realloc(pdb->meta->remarks, newlen + 1);
