@@ -249,16 +249,21 @@ void NOE::calculate(){
   }
 
   bool printout=false;
-  if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
+  if(pperiod>0) printout = (!(getStep()%pperiod));
   if(printout) {
-    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
-    string csfile = string("noe")+"-"+getLabel()+"-"+tmp1+string(".dat");
-    FILE *outfile = fopen(csfile.c_str(), "w");
-    fprintf(outfile, "#index calc exp\n");
-    for(unsigned i=0;i<nga.size();i++) { 
-      fprintf(outfile," %4u %10.6f %10.6f\n", i, pow(noe[i],(-1./6.)), noedist[i]);
+    // share the calculated noe
+    if(!serial) comm.Sum(&noe[0],noe.size());
+    // print only if master
+    if(comm.Get_rank()==0) {
+      char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+      string csfile = string("noe")+"-"+getLabel()+"-"+tmp1+string(".dat");
+      FILE *outfile = fopen(csfile.c_str(), "w");
+      fprintf(outfile, "#index calc exp\n");
+      for(unsigned i=0;i<nga.size();i++) { 
+        fprintf(outfile," %4u %10.6f %10.6f\n", i, pow(noe[i],(-1./6.)), noedist[i]);
+      }
+      fclose(outfile);
     }
-    fclose(outfile);
   }
 
   // Ensemble averaging
