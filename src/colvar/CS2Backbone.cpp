@@ -193,9 +193,10 @@ PLUMED_COLVAR_INIT(ao)
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
   if(ensemble){
-    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    if(comm.Get_rank()==0) ens_dim=multi_sim_comm.Get_size();
-    else ens_dim=0;
+    if(comm.Get_rank()==0) { 
+      if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+      ens_dim=multi_sim_comm.Get_size();
+    } else ens_dim=0;
     comm.Sum(&ens_dim, 1);
   } else ens_dim=1;
 
