@@ -158,12 +158,14 @@ serial(false)
   parse("WRITE_NOE", w_period);
   pperiod=w_period;
 
+  ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&comm.Get_rank()==0) {
+  if(ensemble){
     if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    else ens_dim=multi_sim_comm.Get_size(); 
-  } else ens_dim=1; 
-  if(ensemble) comm.Sum(&ens_dim, 1);
+    if(comm.Get_rank()==0) ens_dim=multi_sim_comm.Get_size();
+    else ens_dim=0;
+    comm.Sum(&ens_dim, 1);
+  } else ens_dim=1;
 
   // Ouput details of all contacts
   unsigned index=0; 
