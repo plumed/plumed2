@@ -33,6 +33,8 @@ namespace multicolvar {
 class AdjacencyMatrixAction : public MultiColvarFunction {
 friend class AdjacencyMatrixVessel;
 private:
+/// Are we including the orientation in our measure of adjacency
+  bool use_orient;
 /// Flag to make sure derivatives are calculated infrequently
   bool dertime;
 /// This is the vessel that stores the adjacency matrix
@@ -45,8 +47,12 @@ private:
   bool gathered;
   DynamicList<unsigned> active_elements;
 protected:
+/// Retrieve the vessel that holds the adjacency matrix
+  AdjacencyMatrixVessel* getAdjacencyVessel();
 /// Get the adjacency matrix
   void retrieveMatrix( Matrix<double>& mymatrix );
+/// Retrieve the adjacency lists
+  void retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list );
 /// Get number of active matrix elements
   unsigned getNumberOfActiveMatrixElements();
 /// Put the indices of the matrix elements in current atoms
@@ -77,6 +83,11 @@ unsigned AdjacencyMatrixAction::getNumberOfActiveMatrixElements(){
 inline
 double AdjacencyMatrixAction::getMatrixElement( const unsigned& ielem ) const {
   return mat->getComponent( active_elements[ielem], 0 );
+}
+
+inline
+AdjacencyMatrixVessel* AdjacencyMatrixAction::getAdjacencyVessel(){
+  return mat;
 }
 
 }

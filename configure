@@ -686,6 +686,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_debug
+enable_basic_warnings
 enable_fussy
 enable_debug_glibcxx
 enable_shared
@@ -1327,6 +1328,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-debug          enable debugging, default: no
+  --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
   --enable-debug-glibcxx  enable enable boundary check, default: no
   --enable-shared         enable shared libs, default: yes
@@ -2253,6 +2255,24 @@ else
   case "no" in
              (yes) debug=true ;;
              (no)  debug=false ;;
+  esac
+
+fi
+
+
+
+basic_warnings=
+# Check whether --enable-basic-warnings was given.
+if test "${enable_basic_warnings+set}" = set; then :
+  enableval=$enable_basic_warnings; case "${enableval}" in
+             (yes) basic_warnings=true ;;
+             (no)  basic_warnings=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-basic-warnings" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) basic_warnings=true ;;
+             (no)  basic_warnings=false ;;
   esac
 
 fi
@@ -3862,6 +3882,8 @@ $as_echo "$as_me: Initial LDSO:     $LDSO" >&6;}
 $as_echo "$as_me: Initial SOEXT:    $SOEXT" >&6;}
 
 # check C++ flags
+if test $shared == true
+then
 
 
   save_CXXFLAGS="$CXXFLAGS"
@@ -3889,6 +3911,10 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+fi
+
+if test $basic_warnings == true
+then
 
   save_CXXFLAGS="$CXXFLAGS"
   CXXFLAGS="$CXXFLAGS -Wall"
@@ -3966,6 +3992,8 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
 
 if test $debug == true
 then
@@ -4868,6 +4896,13 @@ $as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
 $as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
 
 
+else
+
+  if test $blas_found == nounderscore
+  then
+    $as_echo "#define F77_NO_UNDERSCORE 1" >>confdefs.h
+
+  fi
 fi
 
 #### End of compulsory libraries ####
@@ -5466,22 +5501,22 @@ $as_echo "$as_me: Using LDSO='$LDSO'" >&6;}
 $as_echo "$as_me: Using LDFLAGS='$LDFLAGS'" >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether LDSO can create dynamic libraries" >&5
 $as_echo_n "checking whether LDSO can create dynamic libraries... " >&6; }
-  rm -f test.*
-  echo "void f(void){ return;}" > test.cpp
-  $CXX $CXXFLAGS $CPPFLAGS -c test.cpp 1>/dev/null 2>/dev/null
-  $LDSO $LDFLAGS test.o -o test.$SOEXT 1>/dev/null 2>/dev/null
-  if test -f test.$SOEXT
+  rm -f conftest.*
+  echo "void f(void){ return;}" > conftest.cpp
+  $CXX $CXXFLAGS $CPPFLAGS -c conftest.cpp 1>/dev/null 2>/dev/null
+  $LDSO $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+  if test -f conftest.$SOEXT
   then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dynamic library will be disabled" >&5
 $as_echo "$as_me: WARNING: dynamic library will be disabled" >&2;}
     SOEXT=
   fi
-  rm -f test.*
+  rm -f conftest.*
 fi
 #### Options for dynamic library to work properly ####
 
@@ -5633,36 +5668,36 @@ $as_echo "$as_me: This is relevant if you want to use plumed patch --static on a
 
 for compiler in CC FC
 do
-  rm -f test.* test-main.*
+  rm -f conftest.* conftest-main.*
   eval compexe=\$$compiler
   if test -n "$compexe" ; then
     case $compiler in
     (CC)
       name=C
-      cat << EOF > test-main.c
+      cat << EOF > conftest-main.c
 int main(int argc,char**argv){
   return 0;
 }
 EOF
-      $CC -c test-main.c
+      $CC -c conftest-main.c
     ;;
     (FC)
       name=FORTRAN
-      cat << EOF > test-main.f90
+      cat << EOF > conftest-main.f90
        program main
        integer i
        end program main
 EOF
-      $FC -c test-main.f90
+      $FC -c conftest-main.f90
     ;;
     esac
-    cat << EOF > test.cpp
+    cat << EOF > conftest.cpp
 #include <iostream>
 void f(void){
   std::cout<<"ciao";return;
 }
 EOF
-    $CXX $CXXFLAGS -c test.cpp
+    $CXX $CXXFLAGS -c conftest.cpp
 # start search:
     found=
     for testlib in "" -lstdc++ -lc++ ; do
@@ -5670,8 +5705,8 @@ EOF
       test -n "$testlib" && comment=" with library $testlib"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $name can link a C++ object$comment" >&5
 $as_echo_n "checking whether $name can link a C++ object$comment... " >&6; }
-      $compexe $LDFLAGS $testlib $LIBS test.o test-main.o -o test.exe 1>/dev/null 2>/dev/null
-      if test -f test.exe
+      $compexe $LDFLAGS $testlib $LIBS conftest.o conftest-main.o -o conftest.exe 1>/dev/null 2>/dev/null
+      if test -f conftest.exe
       then
         found=yes
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
@@ -5693,7 +5728,7 @@ $as_echo "$as_me: WARNING: Please add c++ library to LIBS - e.g. LIBS=-lstdc++" 
     { $as_echo "$as_me:${as_lineno-$LINENO}: $compiler compiler not configured" >&5
 $as_echo "$as_me: $compiler compiler not configured" >&6;}
   fi
-  rm -f test.* test-main.*
+  rm -f conftest.* conftest-main.*
 done
 
 if test "$prefix" == NONE

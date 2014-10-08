@@ -30,6 +30,7 @@ namespace vesselbase{
 
 class MoreThan : public FunctionVessel {
 private:
+  unsigned wnum;
   std::vector<double> df;
   SwitchingFunction sf;
 public:
@@ -52,15 +53,16 @@ void MoreThan::reserveKeyword( Keywords& keys ){
   keys.reserve("numbered","MORE_THAN","calculate the number of variables more than a certain target value. "
                                       "This quantity is calculated using \\f$\\sum_i 1.0 - \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                       "is a \\ref switchingfunction.",true);
-  keys.addOutputComponent("more_than","MORE_THAN","the number of values more than a target value. This is calculated using one of the "
-                                                  "formula described in the description of the keyword so as to make it continuous. "
-                                                  "You can calculate this quantity multiple times using different parameters."); 
+  keys.addOutputComponent("morethan","MORE_THAN","the number of values more than a target value. This is calculated using one of the "
+                                                 "formula described in the description of the keyword so as to make it continuous. "
+                                                 "You can calculate this quantity multiple times using different parameters."); 
 }
 
 MoreThan::MoreThan( const VesselOptions& da ) :
 FunctionVessel(da),
 df(2)
 {
+  wnum=getAction()->getIndexOfWeight();
   if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
   std::string errormsg; sf.set( getAllInput(), errormsg );
   if( errormsg.size()!=0 ) error( errormsg );
@@ -71,7 +73,7 @@ std::string MoreThan::function_description(){
 }
 
 bool MoreThan::calculate(){
-  double weight=getAction()->getElementValue(1);
+  double weight=getAction()->getElementValue(wnum);
   plumed_dbg_assert( weight>=getTolerance() );
 
   double val=getAction()->getElementValue(0);
@@ -80,7 +82,7 @@ bool MoreThan::calculate(){
   bool addval=addValueUsingTolerance(0,contr);
   if(addval){
     getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
-    if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
+    if(diffweight) getAction()->chainRuleForElementDerivatives(0, wnum, f, this);
   }
   return ( contr>getNLTolerance() );
 }

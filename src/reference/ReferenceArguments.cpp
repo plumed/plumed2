@@ -171,7 +171,7 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
              if(i==j) dp_j=dp_i;
              else dp_j=vals[jk]->difference( reference_args[j], arg[jk] );
 
-             arg_ders[ ik ]+=metric(i,j)*dp_j;
+             arg_ders[ ik ]+=2.0*metric(i,j)*dp_j;    // Factor of two for off diagonal terms as you have terms from ij and ji
              r+=dp_i*dp_j*metric(i,j);
           }
       }

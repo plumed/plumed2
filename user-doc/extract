@@ -15,10 +15,19 @@ else
   fi
 fi
 
+
 # initial cleanup
 rm -f errors
 rm -rf automatic
 mkdir automatic
+
+long_version="$(plumed info --long-version)"
+git_version="$(plumed info --git-version)"
+
+cat > automatic/version.tmp << EOF
+This manual has been compiled from PLUMED version <b> $long_version </b>
+(git version: <b> $git_version </b>)
+EOF
 
 # Check for files that register actions with no documentation
 for file in ../src/*/*.cpp
@@ -36,8 +45,9 @@ done
 for file in ../patches/*.diff
 do
    myengine=`echo "$file" | sed -e 's/.diff//' | sed -e 's/..\/patches\///'`
-   mytag=`echo "$myengine" | sed -e 's/\./\_/g'`
-   echo "- \ref $mytag" >> automatic/codes.list
+   mytag=`echo "$myengine" | sed -e 's/\./-/g'`
+   echo "- $mytag" >> automatic/codesl.list # list only, for Intro
+   echo "- \subpage $mytag " >> automatic/codes.list
    echo "/**" >> automatic/$myengine.txt
    echo "\page $mytag $myengine" >> automatic/$myengine.txt
    plumed patch -e $myengine -i -q >> automatic/$myengine.txt
@@ -160,7 +170,7 @@ do
           /\\page '$docfile'/{
             print "<table  align=center frame=void width=95%% celpadding=5%%>"
             print "<tr> <td width=70%%> </td> <td>"
-            print "<b> This is part of the '$file' \\ref mymodules </b>"
+            print "<b> This is part of the '$file' \\link mymodules module \\endlink</b>"
             print "</td> </tr> </table>"
           }' > automatic/"$docfile"1.tmp
           mv automatic/"$docfile"1.tmp automatic/"$docfile".tmp
@@ -231,5 +241,7 @@ cat $file.txt |
     /^ *@TOOLS@ *$/r      automatic/TOOLS.list
     /^ *@MODULES@ *$/r    automatic/modules.list
     /^ *@CODES@ *$/r      automatic/codes.list
+    /^ *@CODESL@ *$/r   automatic/codesl.list
+    /^ *@VERSION@ *$/r   automatic/version.tmp
 " | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.txt
 done

@@ -107,7 +107,7 @@ void ContactMap::registerKeywords( Keywords& keys ){
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
   keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.addOutputComponent("contact_","default","By not using SUM or CMDIST each contact will be stored in a component");
+  keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
 }
 
 ContactMap::ContactMap(const ActionOptions&ao):
@@ -141,7 +141,7 @@ docmdist(false)
 
      // Add a value for this contact
      std::string num; Tools::convert(i,num);
-     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact_"+num); componentIsNotPeriodic("contact_"+num);}
+     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
   }
   // Create neighbour lists
   nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());

@@ -36,6 +36,8 @@ OTHER DEALINGS WITH THE SOFTWARE.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_molfile_endianswap_h
 #define __PLUMED_molfile_endianswap_h
+namespace PLMD{
+namespace molfile{
 /***************************************************************************
  *cr
  *cr            (C) Copyright 1995-2009 The Board of Trustees of the
@@ -208,5 +210,6 @@ void mdio_swap8(double *i) {
 #endif
 
 #endif
-
+}
+}
 #endif

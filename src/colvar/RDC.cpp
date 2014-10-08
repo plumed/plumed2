@@ -298,7 +298,7 @@ void RDC::calculate()
       double d2   = d*d;
       double d3   = d2*d;
       double id3  = 1./d3; 
-      double max  = -Const*mu_s[index];
+      double max  = -Const*mu_s[index]*scale[index];
       dmax[index] = id3*max;
       double mu_x = distance[0]/d;
       double mu_y = distance[1]/d;
@@ -442,12 +442,8 @@ void RDC::calculate()
   bool printout=false;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
   if(printout) {
-    string dcfile;
-    char tmps1[21];
-    sprintf(tmps1, "%li", getStep());
-    if(ensemble) {
-      dcfile = string("rdc-")+getLabel()+"-"+tmps1+string(".dat");
-    } else dcfile = string("rdc-")+getLabel()+"-"+tmps1+string(".dat");
+    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+    string dcfile = string("rdc-")+getLabel()+"-"+tmp1+string(".dat");
     FILE *outfile = fopen(dcfile.c_str(), "w");
     fprintf(outfile, "#index calc exp\n");
     double sum=0.;

@@ -34,7 +34,7 @@
 namespace PLMD {
 namespace multicolvar {
 
-class ActionVolume;
+class BridgedMultiColvarFunction;
 
 class MultiColvarBase :
   public ActionAtomistic,
@@ -43,7 +43,9 @@ class MultiColvarBase :
   {
 friend class StoreCentralAtomsVessel;
 friend class MultiColvarFunction;
-friend class ActionVolume;
+friend class BridgedMultiColvarFunction;
+friend class VolumeGradientBase;
+friend class MultiColvarFilter;
 friend class MultiColvar;
 private:
 /// Use periodic boundary conditions
@@ -119,9 +121,10 @@ public:
 /// Used in setupCurrentAtomList to get atom numbers 
 /// Base quantities are different in MultiColvar and MultiColvarFunction
 /// Turn on the derivatives 
-  void turnOnDerivatives();
+  virtual void turnOnDerivatives();
+/// Prepare for the calculation
 /// Perform one of the tasks
-  void performTask();
+  virtual void performTask();
 /// This gets the position of an atom for the link cell setup
   virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom )=0;
 /// And a virtual function which actually computes the colvar
@@ -131,28 +134,32 @@ public:
 /// This is replaced once we have a function to calculate the cv
   virtual double compute()=0;
 /// These replace the functions in ActionWithVessel to make the code faster
-  void mergeDerivatives( const unsigned& ider, const double& df );
-  void clearDerivativesAfterTask( const unsigned& ider );
+  virtual void mergeDerivatives( const unsigned& ider, const double& df );
+  virtual void clearDerivativesAfterTask( const unsigned& ider );
 /// Apply the forces from this action
   virtual void apply();
 /// Get the number of derivatives for this action
-  unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+  virtual unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
+/// Get number size of atoms with derivatives array
+  virtual unsigned getSizeOfAtomsWithDerivatives();
 /// Checks if an task is being performed at the present time
   virtual bool isCurrentlyActive( const unsigned& code )=0;
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
+/// Get the index where the central atom is stored
+  virtual unsigned getCentralAtomElementIndex();
 /// Retrieve the position of the central atom
-  Vector retrieveCentralAtomPos();
+  virtual Vector retrieveCentralAtomPos();
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
   virtual void calculateWeight();
 /// A virtual routine to get the position of the central atom - used for things like cv gradient
   virtual Vector calculateCentralAtomPosition()=0; 
 /// Get the list of indices that have derivatives
- void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
+ virtual void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 /// Is this a density?
   virtual bool isDensity(){ return false; }
 /// Store central atoms so that this can be used in a function
-  virtual vesselbase::StoreDataVessel* buildDataStashes();
+  virtual vesselbase::StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
 /// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
   void quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout );
 /// Activate the atoms that have derivatives from a storeDataVessel
@@ -163,8 +170,8 @@ public:
   void addCentralAtomDerivativeToFunction( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& der, MultiColvarFunction* func ); 
 /// Get the value for this task
   virtual void getValueForTask( const unsigned& iatom, std::vector<double>& vals ); 
-//// Used in ActionVolume
-  virtual void copyElementsToBridgedColvar( const double& weight, ActionVolume* );
+//// Used in ActionVolume and Gradient
+  virtual void copyElementsToBridgedColvar( BridgedMultiColvarFunction* );
 /// Used to accumulate values
   virtual void addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, MultiColvarFunction* func );
 /// Used for calculating weighted averages
@@ -172,6 +179,8 @@ public:
 /// Add derivatives to the orientations
   virtual void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
                                                 const std::vector<double>& weight, MultiColvarFunction* func );
+/// Is the iatom'th stored value currently active
+  bool storedValueIsActive( const unsigned& iatom );
 /// This is true if multicolvar is calculating a vector or if the multicolvar is the density
   virtual bool hasDifferentiableOrientation() const { return false; }
 /// This makes sure we are not calculating the director when we do LocalAverage
@@ -191,6 +200,11 @@ bool MultiColvarBase::usesPbc() const {
 inline
 unsigned MultiColvarBase::getNumberOfQuantities(){
   return 5;
+}
+
+inline
+unsigned MultiColvarBase::getCentralAtomElementIndex(){
+  return 2;
 }
 
 inline
@@ -229,6 +243,11 @@ void MultiColvarBase::setWeight( const double& weight ){
 inline
 void MultiColvarBase::addBoxDerivativesOfWeight( const Tensor& vir ){
   addBoxDerivatives( 1, vir );
+}
+
+inline
+unsigned MultiColvarBase::getSizeOfAtomsWithDerivatives(){
+  return getNumberOfAtoms();
 }
 
 }

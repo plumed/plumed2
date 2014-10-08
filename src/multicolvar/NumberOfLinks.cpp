@@ -119,7 +119,7 @@ MultiColvarFunction(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  calculating number of links with atoms separation of %s\n",( switchingFunction.description() ).c_str() );
-  buildAtomListWithPairs( false ); setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) ); 
+  buildAtomListWithPairs( false ); setLinkCellCutoff( 2.*switchingFunction.get_dmax() ); 
 
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
     if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );

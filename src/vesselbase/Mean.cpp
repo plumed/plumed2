@@ -28,6 +28,7 @@ namespace vesselbase {
 
 class Mean : public FunctionVessel {
 private:
+  unsigned wnum;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
@@ -52,6 +53,7 @@ void Mean::reserveKeyword( Keywords& keys ){
 Mean::Mean( const vesselbase::VesselOptions& da ) :
 FunctionVessel(da)
 {
+  wnum=getAction()->getIndexOfWeight();
   if( getAction()->isPeriodic() ) error("MEAN cannot be used with periodic variables");
 }
 
@@ -60,15 +62,15 @@ std::string Mean::function_description(){
 }
 
 bool Mean::calculate(){
-  double weight=getAction()->getElementValue(1);
+  double weight=getAction()->getElementValue(wnum);
   plumed_dbg_assert( weight>=getTolerance() );
   addValueIgnoringTolerance( 1, weight );
   double colvar=getAction()->getElementValue(0);
   addValueIgnoringTolerance( 0, weight*colvar  );
   getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
   if(diffweight){
-     getAction()->chainRuleForElementDerivatives( 0, 1, colvar, this );
-     getAction()->chainRuleForElementDerivatives( 1, 1, 1.0, this );
+     getAction()->chainRuleForElementDerivatives( 0, wnum, colvar, this );
+     getAction()->chainRuleForElementDerivatives( 1, wnum, 1.0, this );
   }
   return true;
 }

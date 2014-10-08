@@ -41,7 +41,7 @@ Mapping(ao)
   // Create the list of tasks
   for(unsigned i=0;i<getNumberOfReferencePoints();++i) addTaskToList( i );
 
-  std::string empty="LABEL=zzz";
+  std::string empty="LABEL=zpath";
   if(!noz) addVessel("ZPATH",empty,0);
 }
 

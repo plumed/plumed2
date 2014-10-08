@@ -28,7 +28,8 @@ namespace vesselbase {
 
 BridgeVessel::BridgeVessel( const VesselOptions& da ):
 Vessel(da),
-inum(0)
+inum(0),
+in_normal_calculate(false)
 {
   resizeBuffer(0);
 }
@@ -58,12 +59,16 @@ void BridgeVessel::prepare(){
 }
 
 bool BridgeVessel::calculate(){
+  in_normal_calculate=true;
+  myOutputAction->task_index = getAction()->task_index;
+  myOutputAction->current = getAction()->current;
   myOutputAction->performTask();
-  if( myOutputAction->thisval[1]<myOutputAction->getTolerance() ){
+  if( myOutputAction->getValueForTolerance()<myOutputAction->getTolerance() ){
       myOutputAction->clearAfterTask();
-      return ( !myOutputAction->contributorsAreUnlocked || myOutputAction->thisval[1]>=myOutputAction->getNLTolerance() );
+      return ( !myOutputAction->contributorsAreUnlocked || myOutputAction->getValueForTolerance()>=myOutputAction->getNLTolerance() );
   }
   bool keep=myOutputAction->calculateAllVessels();
+  in_normal_calculate=false;
   return ( !myOutputAction->contributorsAreUnlocked || keep );
 }
 
@@ -91,7 +96,7 @@ void BridgeVessel::completeNumericalDerivatives(){
       for(int j=0;j<myOutputValues->getNumberOfComponents();++j) tmpder(j,i) = myOutputValues->getOutputQuantity(j);
   }
   vval->bridgeVariable=nextra; getAction()->calculate(); 
-  inum=0;  // Reset inum now that we have finished calling calculate
+  plumed_assert( inum==mynumerical_values.size() ); inum=0;  // Reset inum now that we have finished calling calculate
   std::vector<double> base( myOutputValues->getNumberOfComponents() );
   for(int j=0;j<myOutputValues->getNumberOfComponents();++j) base[j] = myOutputValues->getOutputQuantity(j);
 

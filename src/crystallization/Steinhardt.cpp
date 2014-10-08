@@ -56,7 +56,8 @@ VectorMultiColvar(ao)
   }
   log.printf("  Steinhardt parameter of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
+  setLinkCellCutoff( 2.*switchingFunction.get_dmax() );
+  rcut = switchingFunction.get_dmax();
 }
 
 void Steinhardt::setAngularMomentum( const unsigned& ang ){
@@ -72,8 +73,10 @@ void Steinhardt::calculateVector(){
   double sw, poly_ass, dlen, nbond=0.0; std::complex<double> powered;
   for(unsigned i=1;i<getNAtoms();++i){
      distance=getSeparation( getPosition(0), getPosition(i) );
-     dlen=distance.modulo(); sw = switchingFunction.calculate( dlen, dfunc );
-     if( sw>=getTolerance() ){   
+     dlen=distance.modulo(); 
+     if( dlen<rcut ){
+         sw = switchingFunction.calculate( dlen, dfunc ); 
+   
          nbond += sw;  // Accumulate total number of bonds
          double dlen3 = dlen*dlen*dlen;
 

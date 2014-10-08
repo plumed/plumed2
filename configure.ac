@@ -67,6 +67,7 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
 
 # set enable flags for ./configure
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
+PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
@@ -132,10 +133,18 @@ AC_MSG_NOTICE([Initial LDSO:     $LDSO])
 AC_MSG_NOTICE([Initial SOEXT:    $SOEXT])
 
 # check C++ flags
-PLUMED_CHECK_CXXFLAG([-fPIC])
-PLUMED_CHECK_CXXFLAG([-Wall])
-PLUMED_CHECK_CXXFLAG([-pedantic])
-PLUMED_CHECK_CXXFLAG([-ansi])
+if test $shared == true
+then
+  PLUMED_CHECK_CXXFLAG([-fPIC])
+fi
+
+if test $basic_warnings == true
+then
+  PLUMED_CHECK_CXXFLAG([-Wall])
+  PLUMED_CHECK_CXXFLAG([-pedantic])
+  PLUMED_CHECK_CXXFLAG([-ansi])
+fi
+
 if test $debug == true
 then
   PLUMED_CHECK_CXXFLAG([-g])
@@ -199,6 +208,12 @@ LIBS="$save_LIBS"
 AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
 AC_DEFINE([__PLUMED_INTERNAL_BLAS])
 
+else
+
+  if test $blas_found == nounderscore
+  then
+    AC_DEFINE([F77_NO_UNDERSCORE])
+  fi
 fi
 
 #### End of compulsory libraries ####
@@ -342,19 +357,19 @@ then
   AC_MSG_NOTICE([Using LDSO='$LDSO'])
   AC_MSG_NOTICE([Using LDFLAGS='$LDFLAGS'])
   AC_MSG_CHECKING([whether LDSO can create dynamic libraries])
-  rm -f test.*
-  echo "void f(void){ return;}" > test.cpp
-  $CXX $CXXFLAGS $CPPFLAGS -c test.cpp 1>/dev/null 2>/dev/null
-  $LDSO $LDFLAGS test.o -o test.$SOEXT 1>/dev/null 2>/dev/null
-  if test -f test.$SOEXT
+  rm -f conftest.*
+  echo "void f(void){ return;}" > conftest.cpp
+  $CXX $CXXFLAGS $CPPFLAGS -c conftest.cpp 1>/dev/null 2>/dev/null
+  $LDSO $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+  if test -f conftest.$SOEXT
   then
     AC_MSG_RESULT([yes])
   else
-    AC_MSG_RESULT([yes])
+    AC_MSG_RESULT([no])
     AC_MSG_WARN([dynamic library will be disabled])
     SOEXT=
   fi
-  rm -f test.*
+  rm -f conftest.*
 fi
 #### Options for dynamic library to work properly ####
 
@@ -391,44 +406,44 @@ AC_MSG_NOTICE([This is relevant if you want to use plumed patch --static on a no
 
 for compiler in CC FC
 do
-  rm -f test.* test-main.*
+  rm -f conftest.* conftest-main.*
   eval compexe=\$$compiler
   if test -n "$compexe" ; then
     case $compiler in
     (CC)
       name=C
-      cat << EOF > test-main.c
+      cat << EOF > conftest-main.c
 int main(int argc,char**argv){
   return 0;
 }
 EOF
-      $CC -c test-main.c
+      $CC -c conftest-main.c
     ;;
     (FC)
       name=FORTRAN
-      cat << EOF > test-main.f90
+      cat << EOF > conftest-main.f90
        program main
        integer i
        end program main
 EOF
-      $FC -c test-main.f90
+      $FC -c conftest-main.f90
     ;;
     esac
-    cat << EOF > test.cpp
+    cat << EOF > conftest.cpp
 #include <iostream>
 void f(void){
   std::cout<<"ciao";return;
 }
 EOF
-    $CXX $CXXFLAGS -c test.cpp 
+    $CXX $CXXFLAGS -c conftest.cpp 
 # start search:
     found=
     for testlib in "" -lstdc++ -lc++ ; do
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       AC_MSG_CHECKING([whether $name can link a C++ object$comment])
-      $compexe $LDFLAGS $testlib $LIBS test.o test-main.o -o test.exe 1>/dev/null 2>/dev/null
-      if test -f test.exe
+      $compexe $LDFLAGS $testlib $LIBS conftest.o conftest-main.o -o conftest.exe 1>/dev/null 2>/dev/null
+      if test -f conftest.exe
       then
         found=yes
         AC_MSG_RESULT([yes])
@@ -445,7 +460,7 @@ EOF
   else
     AC_MSG_NOTICE([$compiler compiler not configured])
   fi
-  rm -f test.* test-main.*
+  rm -f conftest.* conftest-main.*
 done
 
 if test "$prefix" == NONE

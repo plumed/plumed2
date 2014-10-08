@@ -10,6 +10,16 @@ Changes from version 2.1 which are relevant for users:
 - Link cells are now used in all multicolvars that involve \ref SwitchingFunctions.  The link cell cutoff is
   set equal to 2.*\f$d_{\textrm{max}}\f$.  Where \f$d_{\textrm{max}}\f$ is the (user-specified) point at which
   the switching function goes to zero. Users should always set this parameter when using a switching function
-  in order to achieve optimal performance. 
-
+  in order to achieve optimal performance.
+- New actions
+  - \ref DFSCLUSTERING calculate the size of clusters 
+  - \ref DUMPMULTICOLVAR print out a multicolvar
+  - \ref MFILTER_LESS filter multicolvar by the value of the colvar
+  - \ref MFILTER_MORE 
+  - \ref MFILTER_BETWEEN
+  - \ref GRADIENT can be used to calculate the gradient of a quantity.  Used to drive nucleation
+  - \ref CAVITY
+- VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
+  can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
+  part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
 */

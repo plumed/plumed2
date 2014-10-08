@@ -747,6 +747,7 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& if
  // Retrieve names for fields
  for(unsigned i=0;i<args.size();++i) labels[i]=args[i]->getName();
  // And read the stuff from the header
+ plumed_massert( ifile.FieldExist( funcl ) , "no column labelled " + funcl + " in in grid input");
  for(unsigned i=0;i<args.size();++i){
      ifile.scanField( "min_" + labels[i], gmin[i]);
      ifile.scanField( "max_" + labels[i], gmax[i]);

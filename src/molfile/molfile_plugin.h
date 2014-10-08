@@ -63,6 +63,9 @@ OTHER DEALINGS WITH THE SOFTWARE.
 
 #include "vmdplugin.h"
 
+namespace PLMD{
+namespace molfile{
+
 #if defined(DESRES_READ_TIMESTEP2)
 /* includes needed for large integer types used for frame counts */
 #include <sys/types.h>
@@ -957,6 +960,8 @@ typedef struct {
 
 } molfile_plugin_t;
 
+}
+}
 #endif
 
 #endif
