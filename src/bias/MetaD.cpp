@@ -262,6 +262,8 @@ class MetaD : public Bias {
   double tt_biasthreshold_;
   int tt_n_wells_;
   vector<vector<double> > transitionwells_;
+  bool benthic_toleration_;
+  double benthic_tol_energy_;
   double* dp_;
   int adaptive_;
   FlexibleBin *flexbin;
@@ -328,6 +330,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   for (unsigned i = 0; i < kTTMAXWELLS; i++) {
     keys.add("optional", "TRANSITIONWELL_" + std::to_string(i), "use transition tempered metadynamics with well " + std::to_string(i) + " specified by the coordinates following this keyword");
   }
+  keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition regions");
   keys.add("optional", "TEMP", "the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional", "TAU", "in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
   keys.add("optional", "GRID_MIN", "the lower bounds for the grid");
@@ -385,6 +388,8 @@ MetaD::MetaD(const ActionOptions &ao):
   tt_biasf_(1.0),
   tt_biasthreshold_(0.0),
   tt_n_wells_(0),
+  benthic_toleration_(false),
+  benthic_tol_energy_(0.0),
   // Other stuff
   dp_(NULL), adaptive_(FlexibleBin::none),
   flexbin(NULL),
@@ -518,6 +523,14 @@ MetaD::MetaD(const ActionOptions &ao):
       }
       transitionwells_.push_back(tempcoords);
     }
+  }
+
+  // Check for a benthic metadynamics toleration threshold.
+  // Wait to set the energy threshold until the hill height is parsed.
+  int benthic_n_tolerated = 0;
+  parse("BENTHIC_TOLERATION", benthic_n_tolerated);
+  if (benthic_n_tolerated > 0) {
+    benthic_toleration_ = true;
   }
 
   // Set initial bias deposition rate parameters.
@@ -719,6 +732,10 @@ MetaD::MetaD(const ActionOptions &ao):
         }
       }
     }
+  }
+  if (benthic_toleration_) {
+    benthic_tol_energy_ = height0_ * (.05 + (double) benthic_n_tolerated);
+    log.printf("  Benthic number of hills to tolerate %d, energy threshold %f\n", benthic_n_tolerated, benthic_tol_energy_);
   }
   if (doInt_) {
     log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
@@ -1160,6 +1177,25 @@ double MetaD::getBiasAndDerivatives(const vector<double> &cv, double* der) {
       bias += ExtGrid_->getValue(cv);
     }
   }
+
+  // Use a toleration threshold for benthic metadynamics if one has
+  // been specified.
+  if (benthic_toleration_) {
+    // If the bias is below the threshold, set it and the forces to zero.
+    if (bias <= benthic_tol_energy_) {
+      bias = 0.0;
+      if (der) {
+        for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
+          der[i] = 0.0;
+        }
+      }
+    // Otherwise, just subtract the toleration threshold from the bias and
+    // leave forces unchanged.
+    } else {
+      bias -= benthic_tol_energy_;
+    }
+  }
+
   return bias;
 }
 
