@@ -1277,8 +1277,8 @@ double MetaD::getTransitionBarrierBias() {
   // transitionwell_[1] is sampled.
   } else {
     double least_transition_bias, curr_transition_bias;
-    auto sink = transitionwells_[0];
-    auto source = transitionwells_[1];
+    vector<double> sink = transitionwells_[0];
+    vector<double> source = transitionwells_[1];
     least_transition_bias = BiasGrid_->findMaximalPathMinimum(source, sink);
     for (unsigned i = 2; i < tt_n_wells_; i++) {
       if (least_transition_bias == 0.0) {

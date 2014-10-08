@@ -664,8 +664,8 @@ double Grid::findMaximalPathMinimum(std::vector<double> source, std::vector<doub
       }
       // If the search is not over, add this grid point's neighbors to the
       // possible next points to search for the sink.
-      auto neighs = getNeighbors(curr_indexed_val.first, vector<unsigned int>(dimension_, 1));
-      for (auto i : neighs) {
+      vector<unsigned> neighs = getNeighbors(curr_indexed_val.first, vector<unsigned int>(dimension_, 1));
+      for (unsigned i : neighs) {
         // If the neighbor has not already been added to the list of possible next steps,
         if (mins_from_source[i] == -1.0) {
           // Set the cost to reach it via a path through the current point being examined.
