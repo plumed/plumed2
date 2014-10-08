@@ -252,18 +252,23 @@ vector<unsigned> Grid::getNeighbors
  (const vector<unsigned> &indices,const vector<unsigned> &nneigh)const{
  plumed_dbg_assert(indices.size()==dimension_ && nneigh.size()==dimension_);
 
+ // Set up a small grid corresponding to all possible neighbors
+ // of the desired point if the grid were infinite in size.
  vector<unsigned> neighbors;
  vector<unsigned> small_bin(dimension_);
-
  unsigned small_nbin=1;
  for(unsigned j=0;j<dimension_;++j){
   small_bin[j]=(2*nneigh[j]+1);
   small_nbin*=small_bin[j];
  }
  
+ // For each point in the small neighbor grid, generate the indices for
+ // the point and decide whether it is a real neighbor or not.
  vector<unsigned> small_indices(dimension_);
  vector<unsigned> tmp_indices;
  for(unsigned index=0;index<small_nbin;++index){
+  // First find the putative multidimensional index that this point would
+  // correspond to in the greater grid neglecting boundaries.
   tmp_indices.resize(dimension_);
   unsigned kk=index;
   small_indices[0]=(index%small_bin[0]);
@@ -274,16 +279,23 @@ vector<unsigned> Grid::getNeighbors
   if(dimension_>=2){
    small_indices[dimension_-1]=((kk-small_indices[dimension_-2])/small_bin[dimension_-2]);
   }
+  // Then check against the boundary conditions along each axis.
   unsigned ll=0;
   for(unsigned i=0;i<dimension_;++i){
    int i0=small_indices[i]-nneigh[i]+indices[i];
+   // If the point falls outside the grid and the boundaries
+   // are cutoffs, then do not add this point as a neighbor.
    if(!pbc_[i] && i0<0)         continue;
    if(!pbc_[i] && i0>=nbin_[i]) continue;
+   // If the point falls outside the grid and the boundaries
+   // are periodic, then map the point into the grid and
+   // assign the mapped point as a neighbor.
    if( pbc_[i] && i0<0)         i0=nbin_[i]-(-i0)%nbin_[i];
    if( pbc_[i] && i0>=nbin_[i]) i0%=nbin_[i];
    tmp_indices[ll]=((unsigned)i0);
    ll++;
   }
+  // Add the point to the list of neighbors if it actually fell in the grid.
   tmp_indices.resize(ll);
   if(tmp_indices.size()==dimension_){neighbors.push_back(getIndex(tmp_indices));}
  } 
@@ -533,6 +545,146 @@ void Grid::applyFunctionAllValuesAndDerivatives( double (*func)(double val), dou
      for(unsigned i=0;i<grid_.size();++i) grid_[i]=func(grid_[i]);
   }
 }
+
+bool indexed_lt(pair<unsigned, double> const & x, pair<unsigned, double> const &  y) {return x.second < y.second;}
+
+double Grid::findMaximalPathMinimum(std::vector<double> source, std::vector<double> sink) {
+  plumed_dbg_assert(source.size()==dimension_);
+  plumed_dbg_assert(sink.size()==dimension_);
+
+  // Start and end indices
+  unsigned source_idx = getIndex(source);
+  unsigned sink_idx = getIndex(sink);
+  // Path cost
+  double maximal_minimum;
+
+  // In one dimension, path searching is very easy--either go one way if it's not periodic,
+  // or go both ways if it is periodic. There's no reason to pay the cost of Dijkstra.
+  if (dimension_ == 1) {
+
+    // Do a search from the grid source to grid sink that does not 
+    // cross the grid boundary.
+    double curr_min_bias = getValue(source_idx);
+    // Either search from a high source to a low sink.
+    if (source_idx > sink_idx) {
+      for (unsigned i = source_idx; i >= sink_idx; i--) {
+        if (curr_min_bias == 0.0) break;
+        curr_min_bias = fmin(curr_min_bias, getValue(i));
+      }
+    // Or search from a low source to a high sink.
+    } else if (source_idx < sink_idx) {
+      for (unsigned i = source_idx; i <= sink_idx; i++) {
+        if (curr_min_bias == 0.0) break;
+        curr_min_bias = fmin(curr_min_bias, getValue(i));
+      }
+    }
+    maximal_minimum = curr_min_bias;
+    // If the grid is periodic, also do the search that crosses 
+    // the grid boundary.
+    if (pbc_[0]) {
+      double curr_min_bias = getValue(source_idx);
+      // Either go from a high source to the upper boundary and 
+      // then from the bottom boundary to the sink
+      if (source_idx > sink_idx) {
+        for (unsigned i = source_idx; i < maxsize_; i++) {
+          if (curr_min_bias == 0.0) break;
+          curr_min_bias = fmin(curr_min_bias, getValue(i));
+        }
+        for (unsigned i = 0; i <= sink_idx; i++) {
+          if (curr_min_bias == 0.0) break;
+          curr_min_bias = fmin(curr_min_bias, getValue(i));
+        }
+      // Or go from a low source to the bottom boundary and 
+      // then from the high boundary to the sink
+      } else if (source_idx < sink_idx) {
+        for (unsigned i = source_idx; i > 0; i--) {
+          if (curr_min_bias == 0.0) break;
+          curr_min_bias = fmin(curr_min_bias, getValue(i));
+        }
+        curr_min_bias = fmin(curr_min_bias, getValue(0));
+        for (unsigned i = maxsize_ - 1; i <= sink_idx; i--) {
+          if (curr_min_bias == 0.0) break;
+          curr_min_bias = fmin(curr_min_bias, getValue(i));
+        }
+      }
+      // If the boundary crossing paths was more biased, it's 
+      // minimal bias replaces the non-boundary-crossing path's
+      // minimum.
+      maximal_minimum = fmax(maximal_minimum, curr_min_bias);
+    }
+    // The one dimensional path search is complete.
+    return maximal_minimum;
+
+  // In two or more dimensions, path searching isn't trivial and we really
+  // do need to use a path search algorithm. Dijkstra is the simplest decent
+  // one. Using it we've never found the path search to be performance 
+  // limiting in any solvated biomolecule test system, but faster options are
+  // easy to imagine if they become necessary. Adding a distance-based tie-breaking
+  // heuristic would be first on my list of simple improvements.
+  } else if (dimension_ > 1) {
+    
+    // Prepare calculation temporaries for Dijkstra's algorithm.
+    // Minimal path costs from source to a given grid point
+    vector<double> mins_from_source = vector<double>(maxsize_, -1.0);
+    // The first step backward along the minimal-cost path to each given grid point
+    vector<unsigned> steps_back_to_source = vector<unsigned>(maxsize_, maxsize_);
+    // Heap for tracking available steps, steps are recorded as std::pairs of
+    // an index and a value.
+    vector< pair<unsigned, double> > next_steps;
+    pair<unsigned, double> curr_indexed_val;
+    make_heap(next_steps.begin(), next_steps.end(), indexed_lt);
+
+    // The search begins at the source index.
+    next_steps.push_back(pair<unsigned, double>(source_idx, getValue(source_idx)));
+    push_heap(next_steps.begin(), next_steps.end(), indexed_lt);
+    // At first no points have been examined and the optimal path has not been found.
+    unsigned n_examined = 0;
+    bool path_not_found = true;
+
+    // Until a path is found,
+    while (path_not_found) {
+      // Examine the grid point currently most accessible from
+      // the set of all previously explored grid points by popping
+      // it from the top of the heap.
+      pop_heap(next_steps.begin(), next_steps.end(), indexed_lt);
+      curr_indexed_val = next_steps.back();
+      next_steps.pop_back();
+      n_examined++;
+      // Check if this point is the sink point, and if so
+      // finish the loop.
+      if (curr_indexed_val.first == sink_idx) {
+        path_not_found = false;
+        maximal_minimum = curr_indexed_val.second;
+        break;
+      // Check if this point has reached the worst possible
+      // value, and if so stop looking for paths.
+      } else if (curr_indexed_val.second == 0.0) {
+        maximal_minimum = 0.0;
+        break;
+      }
+      // If the search is not over, add this grid point's neighbors to the
+      // possible next points to search for the sink.
+      auto neighs = getNeighbors(curr_indexed_val.first, vector<unsigned int>(dimension_, 1));
+      for (auto i : neighs) {
+        // If the neighbor has not already been added to the list of possible next steps,
+        if (mins_from_source[i] == -1.0) {
+          // Set the cost to reach it via a path through the current point being examined.
+          mins_from_source[i] = fmin(curr_indexed_val.second, getValue(i));
+          // Record that that cost comes from paths starting from the current point.
+          steps_back_to_source[i] = curr_indexed_val.first;
+          // Add the neighboring point to the heap of potential next steps.
+          next_steps.push_back(pair<unsigned, double>(i, mins_from_source[i]));
+          push_heap(next_steps.begin(), next_steps.end(), indexed_lt);
+        }
+      }
+      // Move on to the next best looking step along any of the paths
+      // growing from the source.
+    }
+    // The multidimensional path search is now complete.
+    return maximal_minimum;
+  }
+}
+
 
 void Grid::writeHeader(OFile& ofile){
  for(unsigned i=0;i<dimension_;++i){
