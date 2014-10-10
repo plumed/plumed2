@@ -27,6 +27,19 @@ LIST="
   # echo "LAYOUT_FILE=PlumedLayout.xml"
 } | doxygen -
 
+for file in html/*.html
+do
+awk -v version=$(plumed info --version) '{
+  if(match($0,"<span>Main&#160;Page</span>")){
+    sub("Main","Home",$0);
+    sub("Page","(v"version")",$0);
+    print
+  } else if(match($0,"<span>Related&#160;Pages</span>")){
+  } else print
+}' $file > $file.tmp
+mv $file.tmp $file
+done
+
 cd latex
 
 # this is a workaround for a problem on the linux workstation
