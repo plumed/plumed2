@@ -119,6 +119,32 @@ void MultiColvarFunction::buildSymmetryFunctionLists(){
   setupAtomLists();
 }
 
+void MultiColvarFunction::buildSets(){
+  nblock = mybasemulticolvars[0]->getFullNumberOfTasks();
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+     if( mybasemulticolvars[i]->getFullNumberOfTasks()!=nblock ){
+          error("mismatch between numbers of tasks in various base multicolvars");
+     }
+     mybasemulticolvars[i]->buildDataStashes( false, 0.0 );
+  }
+  ablocks.resize( mybasemulticolvars.size() );
+  usespecies=false; current_atoms.resize( mybasemulticolvars.size() );
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+      ablocks[i].resize( nblock ); 
+      for(unsigned j=0;j<nblock;++j) ablocks[i][j]=i*nblock+j;  
+  }
+  for(unsigned i=0;i<nblock;++i){
+      if( mybasemulticolvars.size()<4 ){
+          unsigned cvcode=0, tmpc=1;
+          for(unsigned j=0;j<ablocks.size();++j){ cvcode +=i*tmpc; tmpc *= nblock; }
+          addTaskToList( cvcode );
+      } else {
+          addTaskToList( i );
+      }
+  }
+  setupAtomLists();
+}
+
 void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group ){
   if( !allow_intra_group && mybasemulticolvars.size()>2 ) error("only two input multicolvars allowed with this function"); 
 

@@ -98,7 +98,7 @@ KernelFunctions::KernelFunctions( const std::string& input, const bool& normed )
   bool founds = Tools::parseVector(data,"SIGMA",sig);
   if(!foundc) plumed_merror("failed to find sigma keyword in definition of kernel");
 
-  bool multi; Tools::parseFlag(data,"MULTIVARIATE",multi);
+  bool multi=false; Tools::parseFlag(data,"MULTIVARIATE",multi);
   if( center.size()==1 && multi ) plumed_merror("one dimensional kernel cannot be multivariate");
   if( center.size()==1 && sig.size()!=1 ) plumed_merror("size mismatch between center size and sigma size");
   if( multi && center.size()>1 && sig.size()!=0.5*center.size()*(center.size()-1) ) plumed_merror("size mismatch between center size and sigma size");
@@ -119,8 +119,8 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
 
   center.resize( at.size() ); for(unsigned i=0;i<at.size();++i) center[i]=at[i];
   width.resize( sig.size() ); for(unsigned i=0;i<sig.size();++i) width[i]=sig[i];
-  if (multivariate==true)diagonal=false;
-  if (multivariate==false || at.size()==1 )diagonal=true;
+  diagonal=false;
+  if (multivariate==false || at.size()==1 ) diagonal=true;
 
   // Setup the kernel type
   if(type=="GAUSSIAN" || type=="gaussian"){
@@ -132,11 +132,9 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   } else {
       plumed_merror(type+" is an invalid kernel type\n");
   }
-  
 
   if( norm ){
-    double det;
-    unsigned ncv=ndim(); 
+    double det; unsigned ncv=ndim(); 
     if(diagonal){
        det=1; for(unsigned i=0;i<width.size();++i) det*=width[i];
     } else {
