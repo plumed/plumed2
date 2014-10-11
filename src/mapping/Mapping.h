@@ -89,7 +89,7 @@ public:
 /// Return the current value of the high dimensional function
   double getCurrentHighDimFunctionValue( const unsigned& ider ) const ;
 /// Perform chain rule for derivatives
-  void mergeDerivatives( const unsigned& , const double& );
+  void mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer );
 /// Stuff to do before we do the calculation
   void prepare();
 /// Apply the forces 

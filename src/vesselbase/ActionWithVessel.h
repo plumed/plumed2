@@ -67,10 +67,6 @@ private:
   std::vector<double> thisval;
 /// Vector of derivatives for the object
   std::vector<double> derivatives;
-/// The buffers we use for mpi summing DistributionFunction objects
-  unsigned current_buffer_start;
-  unsigned current_buffer_stride;
-  std::vector<double> buffer;
 /// Pointers to the functions we are using on each value
   std::vector<Vessel*> functions;
 /// Tempory storage for forces
@@ -119,11 +115,9 @@ protected:
   void resizeFunctions();
 /// This loops over all the vessels calculating them and also 
 /// sets all the element derivatives equal to zero
-  bool calculateAllVessels();
+  bool calculateAllVessels( std::vector<double>& buffer );
 /// Retrieve the forces from all the vessels (used in apply)
   bool getForcesFromVessels( std::vector<double>& forcesToApply );
-/// This is used to accumulate the derivatives when we merge using chainRuleForElementDerivatives
-  void accumulateDerivative( const unsigned& ider, const double& df );
 /// Clear tempory data that is calculated for each task
   void clearAfterTask();
 /// Is the calculation being done in serial
@@ -146,6 +140,8 @@ protected:
   void deactivateAllTasks();
 /// Deactivate all tasks with i in lower \f$\le\f$  i < upper
   void deactivateTasksInRange( const unsigned& lower, const unsigned& upper );
+/// Get the size of the buffer
+  unsigned getSizeOfBuffer( unsigned& bufsize );
 /// Add a task to the full list
   void addTaskToList( const unsigned& taskCode );
 public:
@@ -159,14 +155,14 @@ public:
 /// Deactivate the current task in future loops
   virtual void deactivate_task();
 /// Merge the derivatives
-  void chainRuleForElementDerivatives( const unsigned&, const unsigned&, const double& , Vessel* );
-  void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , Vessel* );
-  virtual void mergeDerivatives( const unsigned& ider, const double& df );
+  void chainRuleForElementDerivatives( const unsigned&, const unsigned&, const double& , const unsigned& , std::vector<double>& );
+  void chainRuleForElementDerivatives( const unsigned&, const unsigned& , const unsigned& , const unsigned& , const double& , const unsigned& , std::vector<double>& );
+  virtual void mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer );
   virtual void clearDerivativesAfterTask( const unsigned& );
 /// Are derivatives required for this quantity
   bool derivativesAreRequired() const ;
 /// Finish running all the calculations
-  virtual void finishComputations();
+  virtual void finishComputations( const std::vector<double>& buffer );
 /// Are the base quantities periodic
   virtual bool isPeriodic()=0;
 /// What are the domains of the base quantities
@@ -189,8 +185,6 @@ public:
   unsigned getFullNumberOfTasks() const ;
 /// Get the code for the ii th task in the list
   unsigned getTaskCode( const unsigned& ii ) const ;
-/// Get the index for a particular numbered task
-//  unsigned getIndexForTask( const unsigned& itask ) const ;
 /// Set the indices for computing a task
   void setTaskIndexToCompute( const unsigned& itask );
 /// Calculate one of the functions in the distribution
@@ -286,12 +280,6 @@ void ActionWithVessel::setElementDerivative( const unsigned& ider, const double&
 }
 
 inline
-void ActionWithVessel::accumulateDerivative( const unsigned& ider, const double& der ){
-  plumed_dbg_assert( ider<getNumberOfDerivatives() );
-  buffer[current_buffer_start + current_buffer_stride*ider] += der;
-}
-
-inline
 unsigned ActionWithVessel::getFullNumberOfTasks() const {
   return fullTaskList.size();
 }
@@ -318,11 +306,6 @@ unsigned ActionWithVessel::getPositionInFullTaskList( const unsigned& ii ) const
   plumed_dbg_assert( ii<nactive_tasks );
   return indexOfTaskInFullList[ii];
 }
-
-// inline
-// unsigned ActionWithVessel::getIndexForTask( const unsigned& itask ) const {
-//   return taskList.linkIndex( itask );
-// }
 
 inline
 bool ActionWithVessel::serialCalculation() const {

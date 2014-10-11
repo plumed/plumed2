@@ -26,16 +26,12 @@ namespace PLMD {
 namespace vesselbase{
 
 class Sum : public FunctionVessel {
-private:
-  unsigned wnum;
-  std::vector<double> df;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Sum( const VesselOptions& da );
   std::string function_description();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(Sum,"SUM")
@@ -50,34 +46,18 @@ void Sum::reserveKeyword( Keywords& keys ){
 }
 
 Sum::Sum( const VesselOptions& da ) :
-FunctionVessel(da),
-df(2)
+FunctionVessel(da)
 {
-  wnum=getAction()->getIndexOfWeight();
 }
 
 std::string Sum::function_description(){
   return "the sum of all the values"; 
 }
 
-bool Sum::calculate(){
-  double weight=getAction()->getElementValue(wnum);
-  plumed_dbg_assert( weight>=getTolerance() );
-
-  double val=getAction()->getElementValue(0);
-  addValueIgnoringTolerance(0,weight*val);
-  getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
-  if(diffweight) getAction()->chainRuleForElementDerivatives(0, wnum, val, this);
-  return true;
+bool Sum::calculate( std::vector<double>& buffer ){
+   double val=getAction()->getElementValue(0);
+   return addToBuffers( val, 1.0, buffer );
 }
-
-void Sum::finish(){
-  setOutputValue( getFinalValue(0) ); 
-  df[0]=1.0; df[1]=0.0;
-  mergeFinalDerivatives( df );
-}
-
-
 
 }
 }

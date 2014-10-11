@@ -61,10 +61,10 @@ void AdjacencyMatrixVessel::recompute( const unsigned& ivec, const unsigned& jst
   }
 } 
 
-void AdjacencyMatrixVessel::finish(){
+void AdjacencyMatrixVessel::finish( const std::vector<double>& buffer ){
   if( !finished ){
      finished=true;
-     StoreDataVessel::finish(); 
+     StoreDataVessel::finish( buffer ); 
      function->dertime=true;
      function->completeCalculation();
   }

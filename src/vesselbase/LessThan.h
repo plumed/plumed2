@@ -31,15 +31,13 @@ namespace vesselbase{
 
 class LessThan : public FunctionVessel {
 private:
-  unsigned wnum;
   SwitchingFunction sf;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys ); 
   LessThan( const VesselOptions& da );
   std::string function_description();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
   double getCutoff();
 };
 

@@ -30,7 +30,9 @@ void FunctionVessel::registerKeywords( Keywords& keys ){
 }
 
 FunctionVessel::FunctionVessel( const VesselOptions& da ):
-Vessel(da)
+Vessel(da),
+norm(false),
+usetol(false)
 {
   ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
   plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
@@ -46,6 +48,7 @@ Vessel(da)
   }
   final_value=a->copyOutput( a->getNumberOfComponents()-1 );
   diffweight=getAction()->weightHasDerivatives;
+  wnum=getAction()->getIndexOfWeight();
 }
 
 std::string FunctionVessel::description(){
@@ -69,14 +72,45 @@ void FunctionVessel::setNumberOfDerivatives( const unsigned& nder ){
   final_value->resizeDerivatives( nder );
 }
 
-void FunctionVessel::mergeFinalDerivatives( const std::vector<double>& df ){
-  if( !getAction()->derivativesAreRequired() ) return;
+bool FunctionVessel::addToBuffers( const double& f, const double& dval, std::vector<double>& buffer ){
+  double weight=getAction()->getElementValue(wnum);
+  plumed_dbg_assert( weight>=getTolerance() );  
 
-  plumed_dbg_assert( df.size()==2 ); 
-  unsigned ider=1;
-  for(unsigned k=0;k<nderivatives;++k){
-     final_value->addDerivative( k, df[0]*getBufferElement( ider ) + df[1]*getBufferElement( ider + 1 + nderivatives) ); ider++;
+  if( norm ){
+     if( usetol && weight<getTolerance() ) return false;
+     buffer[bufstart+1+nderivatives] += weight;
+     if( diffweight ) getAction()->chainRuleForElementDerivatives( wnum, 1, 1.0, bufstart, buffer );
   }
+
+  double contr=weight*f;
+  if( usetol && contr<getTolerance() ) return false;
+  buffer[bufstart] += contr;
+
+  if( diffweight ) getAction()->chainRuleForElementDerivatives( wnum, 0, f, bufstart, buffer );
+  if(fabs(dval)>0.0) getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, bufstart, buffer );
+
+  return true;
+}
+
+void FunctionVessel::finish( const std::vector<double>& buffer ){
+  if( norm && diffweight ){
+      double dv, val=finalTransform( buffer[bufstart], dv), weight=buffer[bufstart+1+nderivatives];
+      final_value->set( val / weight );
+      for(unsigned i=0;i<nderivatives;++i){
+         final_value->addDerivative( i, buffer[bufstart+1+i]/weight - val*buffer[bufstart+1+nderivatives+1+i]/(weight*weight) );
+      }
+  } else if( norm ){
+     double dv, val=finalTransform( buffer[bufstart], dv), weight=buffer[bufstart+1+nderivatives];
+     final_value->set( val / weight );
+     for(unsigned i=0;i<nderivatives;++i) final_value->addDerivative( i, buffer[bufstart+1+i]/weight );
+  } else {
+     double dv, val=finalTransform( buffer[bufstart], dv); final_value->set( val );
+     for(unsigned i=0;i<nderivatives;++i) final_value->addDerivative( i, dv*buffer[bufstart+1+i] );
+  }
+}
+
+double FunctionVessel::finalTransform( const double& val, double& dv ){
+  dv=1.0; return val;
 }
 
 bool FunctionVessel::applyForce( std::vector<double>& forces ){

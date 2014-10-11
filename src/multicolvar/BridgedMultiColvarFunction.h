@@ -73,7 +73,7 @@ public:
   void apply(){};
 /// These routines replace the virtual routines in ActionWithVessel for 
 /// code optimization
-  void mergeDerivatives( const unsigned& ider, const double& df );
+  void mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer );
   void clearDerivativesAfterTask( const unsigned& ider );
 /// Is this atom currently being copied 
   bool isCurrentlyActive( const unsigned& );

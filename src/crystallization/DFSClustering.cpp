@@ -153,6 +153,8 @@ void DFSClustering::completeCalculation(){
 //   for(unsigned i=0;i<cluster_sizes.size();++i) printf("HELLO CLUSTER %d %d \n",i,cluster_sizes[i].first );
    // Now calculate properties of the largest cluster 
    ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
+   // Get size for buffer
+   unsigned bsize=0; std::vector<double> buffer( getSizeOfBuffer( bsize ), 0.0 );
    // Get rid of bogus derivatives
    clearDerivatives(); getAdjacencyVessel()->setFinishedTrue(); 
    for(unsigned j=rank;j<myatoms.size();j+=size){
@@ -170,11 +172,13 @@ void DFSClustering::completeCalculation(){
        // Update all dynamic lists
        atoms_with_derivatives.updateActiveMembers();
        // Run calculate all vessels
-       calculateAllVessels();
+       calculateAllVessels( buffer );
        // Must clear element values and derivatives
        clearAfterTask();
    }
-   finishComputations();
+   // MPI Gather everything
+   if( buffer.size()>0 ) comm.Sum( buffer );
+   finishComputations( buffer );
 }
 
 int DFSClustering::explore( const unsigned& index ){

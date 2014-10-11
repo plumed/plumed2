@@ -30,17 +30,13 @@ namespace vesselbase {
 
 class Between : public FunctionVessel {
 private:
-  unsigned wnum;
-  bool norm;
-  std::vector<double> df;
   HistogramBead hist;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Between( const VesselOptions& da );
   std::string function_description();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
   double getCutoff();
 };
 

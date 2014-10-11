@@ -84,7 +84,7 @@ double VectorMultiColvar::doCalculation(){
          vecs->storeDerivativesLowMem( 0 );
          vecs->chainRule( 0, dervec );
       } else {
-         vecs->storeDerivativesHighMem( getCurrentPositionInTaskList() );
+         //vecs->storeDerivativesHighMem( getCurrentPositionInTaskList() );
          vecs->chainRule( getCurrentPositionInTaskList(), dervec );
       }
 

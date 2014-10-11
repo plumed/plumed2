@@ -189,32 +189,32 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ){
   }
 }
 
-void Mapping::mergeDerivatives( const unsigned& ider, const double& df ){
+void Mapping::mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer ){
   unsigned cur = getCurrentTask(), frameno=ider*getNumberOfReferencePoints() + cur;
   for(unsigned i=0;i<getNumberOfArguments();++i){
-      accumulateDerivative( i, df*dfframes[frameno]*mymap->getArgumentDerivative(cur,i) );
+      buffer[start+ i*stride] += df*dfframes[frameno]*mymap->getArgumentDerivative(cur,i);
   }
   if( getNumberOfAtoms()>0 ){
       Vector ader; Tensor tmpvir; tmpvir.zero();
       unsigned n=getNumberOfArguments(); 
       for(unsigned i=0;i<getNumberOfAtoms();++i){
           ader=mymap->getAtomDerivatives( cur, i );            
-          accumulateDerivative( n, df*dfframes[frameno]*ader[0] ); n++;
-          accumulateDerivative( n, df*dfframes[frameno]*ader[1] ); n++;
-          accumulateDerivative( n, df*dfframes[frameno]*ader[2] ); n++;
+          buffer[start+n*stride] += df*dfframes[frameno]*ader[0]; n++;
+          buffer[start+n*stride] += df*dfframes[frameno]*ader[1]; n++;
+          buffer[start+n*stride] += df*dfframes[frameno]*ader[2]; n++;
           tmpvir += -1.0*Tensor( getPosition(i), ader );
       }
       Tensor vir; 
       if( !mymap->getVirial( cur, vir ) ) vir=tmpvir;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(0,0) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(0,1) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(0,2) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(1,0) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(1,1) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(1,2) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(2,0) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(2,1) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(2,2) ); 
+      buffer[start+n*stride] += df*dfframes[frameno]*vir(0,0); n++;
+      buffer[start+n*stride] += df*dfframes[frameno]*vir(0,1); n++;
+      buffer[start+n*stride] += df*dfframes[frameno]*vir(0,2); n++;
+      buffer[start+n*stride] += df*dfframes[frameno]*vir(1,0); n++;
+      buffer[start+n*stride] += df*dfframes[frameno]*vir(1,1); n++;
+      buffer[start+n*stride] += df*dfframes[frameno]*vir(1,2); n++;
+      buffer[start+n*stride] += df*dfframes[frameno]*vir(2,0); n++;
+      buffer[start+n*stride] += df*dfframes[frameno]*vir(2,1); n++;
+      buffer[start+n*stride] += df*dfframes[frameno]*vir(2,2); 
   }
 }
 

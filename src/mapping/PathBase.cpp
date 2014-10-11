@@ -35,6 +35,7 @@ PathBase::PathBase(const ActionOptions& ao):
 Action(ao),
 Mapping(ao)
 {
+  weightHasDerivatives=true;
   bool noz; parseFlag("NOZPATH",noz);
   parse("LAMBDA",lambda);
 
@@ -58,7 +59,7 @@ void PathBase::performTask(){
   // Calculate the distance from the frame
   double val=calculateDistanceFunction( getCurrentTask(), true );
   // Put the element value in element zero
-  setElementValue( 0, val ); setElementValue( 1, 1.0 );
+  setElementValue( 1, val ); setElementValue( 0, 1.0 );
   return;
 }
 

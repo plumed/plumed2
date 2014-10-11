@@ -239,14 +239,15 @@ void SecondaryStructureRMSD::performTask(){
   return;
 }
 
-void SecondaryStructureRMSD::mergeDerivatives( const unsigned& ider, const double& df ){
+void SecondaryStructureRMSD::mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer ){
   plumed_dbg_assert( ider==0 );
+  printf("MERGING \n");
   for(unsigned i=0;i<colvar_atoms[getCurrentTask()].size();++i){
      unsigned thisatom=getAtomIndex(i), thispos=3*thisatom; 
      Vector ader=references[closest]->getAtomDerivative(i);
-     accumulateDerivative( thispos, df*ader[0] ); thispos++;
-     accumulateDerivative( thispos, df*ader[1] ); thispos++;
-     accumulateDerivative( thispos, df*ader[2] ); 
+     buffer[start+stride*thispos] += df*ader[0]; thispos++;
+     buffer[start+stride*thispos] += df*ader[1]; thispos++;
+     buffer[start+stride*thispos] += df*ader[2];
   }
   Tensor virial;
   if( !references[closest]->getVirial( virial ) ){ 
@@ -258,15 +259,15 @@ void SecondaryStructureRMSD::mergeDerivatives( const unsigned& ider, const doubl
 
   // Easy to merge the virial
   unsigned outnat=3*getNumberOfAtoms();
-  accumulateDerivative( outnat, df*virial(0,0) ); outnat++;
-  accumulateDerivative( outnat, df*virial(0,1) ); outnat++;
-  accumulateDerivative( outnat, df*virial(0,2) ); outnat++;
-  accumulateDerivative( outnat, df*virial(1,0) ); outnat++;
-  accumulateDerivative( outnat, df*virial(1,1) ); outnat++;
-  accumulateDerivative( outnat, df*virial(1,2) ); outnat++;
-  accumulateDerivative( outnat, df*virial(2,0) ); outnat++;
-  accumulateDerivative( outnat, df*virial(2,1) ); outnat++;
-  accumulateDerivative( outnat, df*virial(2,2) );
+  buffer[start+stride*outnat] += df*virial(0,0); outnat++;
+  buffer[start+stride*outnat] += df*virial(0,1); outnat++;
+  buffer[start+stride*outnat] += df*virial(0,2); outnat++;
+  buffer[start+stride*outnat] += df*virial(1,0); outnat++;
+  buffer[start+stride*outnat] += df*virial(1,1); outnat++;
+  buffer[start+stride*outnat] += df*virial(1,2); outnat++;
+  buffer[start+stride*outnat] += df*virial(2,0); outnat++;
+  buffer[start+stride*outnat] += df*virial(2,1); outnat++;
+  buffer[start+stride*outnat] += df*virial(2,2); 
 }
 
 void SecondaryStructureRMSD::apply(){

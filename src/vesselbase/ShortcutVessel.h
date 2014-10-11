@@ -39,8 +39,8 @@ public:
   ShortcutVessel( const VesselOptions& );
   std::string description(){ return ""; }
   void resize(){ plumed_error(); }
-  bool calculate(){ plumed_error(); }
-  void finish(){ plumed_error(); }
+  bool calculate( std::vector<double>& buffer ){ plumed_error(); }
+  void finish( const std::vector<double>& buffer ){ plumed_error(); }
   bool applyForce( std::vector<double>& forces ){ plumed_error(); }
 };
 

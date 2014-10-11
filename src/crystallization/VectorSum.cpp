@@ -37,8 +37,8 @@ public:
   VectorSum( const vesselbase::VesselOptions& da );
   std::string function_description();
   void resize();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
+  void finish( const std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(VectorSum,"VSUM")
@@ -56,6 +56,7 @@ void VectorSum::reserveKeyword( Keywords& keys ){
 VectorSum::VectorSum( const vesselbase::VesselOptions& da ) :
 FunctionVessel(da)
 {
+   usetol=true;
    multicolvar::ActionVolume* vg=dynamic_cast<multicolvar::ActionVolume*>( getAction() );
    if( vg ){
        ncomp = getAction()->getNumberOfQuantities() - 2;
@@ -83,35 +84,37 @@ void VectorSum::resize(){
   }
 }
 
-bool VectorSum::calculate(){
+bool VectorSum::calculate( std::vector<double>& buffer ){
   double weight=getAction()->getElementValue(wnum);
+  unsigned nder=getAction()->getNumberOfDerivatives();
   plumed_dbg_assert( weight>=getTolerance() );
-  bool addval = addValueUsingTolerance( 0, weight );
-  if( diffweight ) getAction()->chainRuleForElementDerivatives( 0, wnum, 1.0, this );
+  // bool addval = addValueUsingTolerance( 0, weight );
+  buffer[bufstart] += weight;
+  if( diffweight ) getAction()->chainRuleForElementDerivatives( 0, wnum, 1.0, bufstart, buffer );
   for(unsigned i=0;i<ncomp;++i){
       double colvar=getAction()->getElementValue( vstart  + i );
-      addValueIgnoringTolerance( 1 + i, weight*colvar );
-      getAction()->chainRuleForElementDerivatives( 1+i, vstart+i, weight, this );
-      if( diffweight ) getAction()->chainRuleForElementDerivatives( 1+i, wnum, colvar, this );
+      buffer[bufstart + (1+i)*(1+nder)] += weight*colvar;
+      // addValueIgnoringTolerance( 1 + i, weight*colvar );
+      getAction()->chainRuleForElementDerivatives( 1+i, vstart+i, weight, bufstart, buffer );
+      if( diffweight ) getAction()->chainRuleForElementDerivatives( 1+i, wnum, colvar, bufstart, buffer );
   }
-  return addval;
+  return true;
 }
 
-void VectorSum::finish(){
-  double sum=0;
+void VectorSum::finish( const std::vector<double>& buffer ){
+  double sum=0; unsigned nder=getAction()->getNumberOfDerivatives();
   for(unsigned i=0;i<ncomp;++i){ 
-     double tmp = getFinalValue(i+1);
+     double tmp = buffer[bufstart+(nder+1)*(i+1)]; // getFinalValue(i+1);
      sum+=tmp*tmp; 
   }
   double tw = 1.0 / sqrt(sum);
   setOutputValue( sqrt(sum) ); 
   if( !getAction()->derivativesAreRequired() ) return;
 
-  unsigned nder = getAction()->getNumberOfDerivatives(); 
   for(unsigned icomp=0;icomp<ncomp;++icomp){
-      double tmp = getFinalValue(icomp+1);
-      unsigned bstart = (1+icomp)*(nder+1) + 1;
-      for(unsigned jder=0;jder<nder;++jder) addDerivativeToFinalValue( jder, tw*tmp*getBufferElement( bstart + jder ) );
+      double tmp = buffer[(icomp+1)*(1+nder)];    // getFinalValue(icomp+1);
+      unsigned bstart = bufstart + (1+icomp)*(nder+1) + 1;
+      for(unsigned jder=0;jder<nder;++jder) addDerivativeToFinalValue( jder, tw*tmp*buffer[bstart + jder] );
   }
 }
 

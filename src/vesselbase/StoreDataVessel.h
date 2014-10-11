@@ -57,6 +57,8 @@ private:
   std::vector<unsigned> active_der;
 /// This is a tempory vector that is used to store data
   std::vector<double> fvec;
+/// The buffer
+  std::vector<double> local_buffer;
 /// The local derivatives
   std::vector<double> local_derivatives;
 /// The final derivatives
@@ -76,7 +78,7 @@ protected:
 /// Return value of nspace
   unsigned getNumberOfDerivativeSpacesPerComponent() const ;
 /// Retrieve the values from the underlying ActionWithVessel
-  void storeValues( const unsigned& );
+  void storeValues( const unsigned& , std::vector<double>& );
 /// Set the Task that needs redoing
   void setTaskToRecompute( const unsigned& ivec );
 /// Set a component of one of the vectors
@@ -120,13 +122,13 @@ public:
 /// Get the ider'th final derivative value
   double getFinalDerivative( const unsigned& ider ) const ;
 /// This stores the data when not using lowmem
-  bool calculate();
+  bool calculate( std::vector<double>& buffer );
 /// This stores the data we get from the calculation
   void storeDerivativesLowMem( const unsigned& );
 /// This stores the data we get from the calculation
-  void storeDerivativesHighMem( const unsigned& );
+  void storeDerivativesHighMem( const unsigned& , std::vector<double>& );
 /// Final step in gathering data
-  virtual void finish();
+  virtual void finish( const std::vector<double>& buffer );
 /// Is a particular stored value active at the present time
   bool storedValueIsActive( const unsigned& iatom ); 
 /// Activate indexes (this is used at end of chain rule)
@@ -155,13 +157,14 @@ void StoreDataVessel::performTask( const unsigned& ivec ){
 inline
 double StoreDataVessel::getComponent( const unsigned& ival, const unsigned& jcomp ){
   plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() && jcomp<vecsize );
-  return getBufferElement( ival*(vecsize*nspace) + jcomp*nspace ); 
+  return 0.0;    // GAT Broken
+//  return getBufferElement( ival*(vecsize*nspace) + jcomp*nspace ); 
 }
 
 inline
 void StoreDataVessel::setComponent( const unsigned& ival, const unsigned& jcomp, const double& val ){
   plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() && jcomp<vecsize );
-  setBufferElement( ival*(vecsize*nspace) + jcomp*nspace, val );
+//  setBufferElement( ival*(vecsize*nspace) + jcomp*nspace, val );
 }
 
 inline

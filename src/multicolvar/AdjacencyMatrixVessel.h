@@ -54,7 +54,7 @@ public:
 /// Set the finished flag true
   void setFinishedTrue();
 /// Finish the calculation
-  void finish();
+  void finish( const std::vector<double>& buffer );
 };
 
 inline

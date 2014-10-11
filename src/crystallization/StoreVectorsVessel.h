@@ -39,7 +39,7 @@ private:
   unsigned ncomponents;
   std::vector<double> myfvec;
   VectorMultiColvar* vecs;
-  void normalizeVector( const int& );
+  void normalizeVector( const int&, std::vector<double>& );
 public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
@@ -47,7 +47,7 @@ public:
 /// This turns on the full use of this action for storage
   void usedInFunction( const bool& );
 /// This makes sure vectors are normalized (they are already stored)
-  bool calculate();
+  bool calculate( std::vector<double>& buffer );
 /// This reperforms a calculation
   void recompute( const unsigned& , const unsigned& );
 /// This does nothing

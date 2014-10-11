@@ -34,8 +34,8 @@ public:
   static void reserveKeyword( Keywords& keys );
   ZpathVessel( const vesselbase::VesselOptions& da );
   std::string function_description();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
+  double finalTransform( const double& val, double& dv );
 };
 
 PLUMED_REGISTER_VESSEL(ZpathVessel,"ZPATH")
@@ -54,26 +54,21 @@ FunctionVessel(da)
 {
   Mapping* mymap=dynamic_cast<Mapping*>( getAction() );
   plumed_massert( mymap, "ZpathVessel should only be used with mappings");
-  invlambda = 1.0 / mymap->getLambda();
+  invlambda = 1.0 / mymap->getLambda(); usetol=true;
 }
 
 std::string ZpathVessel::function_description(){
   return "the distance from the low-dimensional manifold";
 }
 
-bool ZpathVessel::calculate(){
-  double weight=getAction()->getElementValue(0);
-  bool addval=addValueUsingTolerance( 0, weight );
-  if( addval ) getAction()->chainRuleForElementDerivatives( 0, 0, 1.0, this );
-  return ( weight>getNLTolerance() );
+bool ZpathVessel::calculate( std::vector<double>& buffer ){
+  return addToBuffers( 1.0, 0.0, buffer );
 }
 
-void ZpathVessel::finish(){
-  double sum = getFinalValue(0); std::vector<double> df(2);
-  setOutputValue( -invlambda*std::log( sum ) );
-  df[0] = -invlambda / sum; df[1] = 0.0;
-  mergeFinalDerivatives( df );
-}
+double ZpathVessel::finalTransform( const double& val, double& dv ){
+   dv = -invlambda / val;
+   return -invlambda*std::log( val );
+} 
 
 }
 }

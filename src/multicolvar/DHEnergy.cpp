@@ -35,14 +35,12 @@ private:
   double k; // Inverse Debye screening length
   double constant;
   double epsilon;
-  std::vector<double> df;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   DHEnergy( const vesselbase::VesselOptions& da );
   std::string function_description();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(DHEnergy,"DHENERGY")
@@ -66,8 +64,7 @@ void DHEnergy::reserveKeyword( Keywords& keys ){
 }
 
 DHEnergy::DHEnergy( const vesselbase::VesselOptions& da ) :
-FunctionVessel(da),
-df(2)
+FunctionVessel(da)
 {
   mycolv=dynamic_cast<MultiColvar*>( getAction() );
   plumed_massert( mycolv, "DHENERGY can only be used with MultiColvars and should only be used with DISTANCES");
@@ -88,22 +85,13 @@ std::string DHEnergy::function_description(){
   return ostr.str();
 }
 
-bool DHEnergy::calculate(){
+bool DHEnergy::calculate( std::vector<double>& buffer ){
   if( mycolv->getAbsoluteIndex(0)==mycolv->getAbsoluteIndex(1) ) return false;
 
-  double val=getAction()->getElementValue(0);
-  double invdistance = 1.0 / val;
+  double val=getAction()->getElementValue(0), invdistance = 1.0 / val;
   double f=exp(-k*val)*invdistance*constant*mycolv->getCharge(0)*mycolv->getCharge(1)/epsilon;
   double dval=-(k+invdistance)*f; 
-  addValueIgnoringTolerance(0,f);
-  getAction()->chainRuleForElementDerivatives( 0, 0, dval, this ); 
-  return true;
-}
-
-void DHEnergy::finish(){
-  setOutputValue( getFinalValue(0) ); 
-  df[0]=1.0; df[1]=0.0;
-  mergeFinalDerivatives( df );
+  return addToBuffers( f, dval, buffer );
 }
 
 } 

@@ -28,15 +28,14 @@ namespace vesselbase{
 
 class Max : public FunctionVessel {
 private:
-  std::vector<double> df;
   double beta;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Max( const VesselOptions& da );
   std::string function_description();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
+  double finalTransform( const double& val, double& dv );
 };
 
 PLUMED_REGISTER_VESSEL(Max,"MAX")
@@ -57,8 +56,7 @@ void Max::reserveKeyword( Keywords& keys ){
 }
 
 Max::Max( const VesselOptions& da ) :
-FunctionVessel(da),
-df(2)
+FunctionVessel(da)
 {
   if( getAction()->isPeriodic() ) error("max is not a meaningful option for periodic variables");
   parse("BETA",beta);
@@ -71,18 +69,15 @@ std::string Max::function_description(){
   return "the maximum value. Beta is equal to " + str_beta;
 }
 
-bool Max::calculate(){
+bool Max::calculate( std::vector<double>& buffer ){
   double val=getAction()->getElementValue(0);
   double dval, f = exp(val/beta); dval=f/beta;
-  addValueIgnoringTolerance(0,f);
-  getAction()->chainRuleForElementDerivatives( 0, 0, dval, this );
-  return true;
+  return addToBuffers( f, dval, buffer );
 }
 
-void Max::finish(){
-  double valin=getFinalValue(0); double dist=beta*std::log( valin );
-  setOutputValue( dist ); df[0]=beta/valin; df[1]=0.0;  
-  mergeFinalDerivatives( df );
+double Max::finalTransform( const double& val, double& dv ){
+  double dist=beta*std::log( val );
+  dv = beta/val; return dist;
 }
 
 }

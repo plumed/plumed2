@@ -86,7 +86,7 @@ public:
   void performTask();
   void clearDerivativesAfterTask( const unsigned& );
   void apply();
-  void mergeDerivatives( const unsigned& , const double& );
+  void mergeDerivatives( const unsigned& , const double&, const unsigned, const unsigned, std::vector<double>& );
   bool isPeriodic(){ return false; }
 };
 

@@ -42,8 +42,8 @@ public:
   GradientVessel( const vesselbase::VesselOptions& da );
   std::string function_description();
   void resize();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
+  void finish( const std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(GradientVessel,"GRADIENT")
@@ -100,47 +100,51 @@ void GradientVessel::resize(){
   }
 }
 
-bool GradientVessel::calculate(){
+bool GradientVessel::calculate( std::vector<double>& buffer ){
+  unsigned nder=getAction()->getNumberOfDerivatives();
   for(unsigned iw=0;iw<nweights;++iw){
       unsigned xx = (ncomponents+1)*iw;
       double weight=getAction()->getElementValue(ncomponents + iw);
-      addValueIgnoringTolerance( xx, weight ); 
-      getAction()->chainRuleForElementDerivatives( xx , ncomponents + iw, 1.0, this );
+      buffer[bufstart+xx*(nder+1)] += weight;
+      // addValueIgnoringTolerance( xx, weight ); 
+      getAction()->chainRuleForElementDerivatives( xx , ncomponents + iw, 1.0, bufstart, buffer );
       for(unsigned jc=0;jc<ncomponents;++jc){
           double colvar=getAction()->getElementValue( jc );
-          addValueIgnoringTolerance( xx + 1 + jc, weight*colvar );
-          getAction()->chainRuleForElementDerivatives( xx + 1 + jc, jc, weight, this );
-          getAction()->chainRuleForElementDerivatives( xx + 1 + jc, ncomponents + iw, colvar, this );   
+          // addValueIgnoringTolerance( xx + 1 + jc, weight*colvar );
+          buffer[bufstart+(xx+1+jc)*(nder+1) ] += weight*colvar;
+          getAction()->chainRuleForElementDerivatives( xx + 1 + jc, jc, weight, bufstart, buffer );
+          getAction()->chainRuleForElementDerivatives( xx + 1 + jc, ncomponents + iw, colvar, bufstart, buffer );   
       }
   }
 
   return true;
 }
 
-void GradientVessel::finish(){
+void GradientVessel::finish( const std::vector<double>& buffer ){
   der_interm=0;  // Clear all interim derivatives
   unsigned nder = getAction()->getNumberOfDerivatives();
 
   if( isdens ){
       for(unsigned iw=0;iw<nweights;++iw){
-          val_interm[iw] = getFinalValue( 2*iw );
+          val_interm[iw] = buffer[bufstart + 2*iw*(1+nder)]; // getFinalValue( 2*iw );
           if( getAction()->derivativesAreRequired() ){
               unsigned wstart = 2*iw*(nder+1) + 1;
-              for(unsigned jder=0;jder<nder;++jder) der_interm( iw, jder ) += getBufferElement( wstart + jder );
+              for(unsigned jder=0;jder<nder;++jder) der_interm( iw, jder ) += buffer[ wstart + jder ]; // getBufferElement( wstart + jder );
           }
       }
   } else {
       for(unsigned iw=0;iw<nweights;++iw){
           unsigned xx = (ncomponents+1)*iw;
-          double sum=0, ww=getFinalValue( xx );
-          for(unsigned jc=0;jc<ncomponents;++jc) val_interm[ iw*ncomponents + jc ] = getFinalValue( xx + 1 + jc ) / ww;
+          double ww=buffer[bufstart + xx*(1+nder)];  // getFinalValue( xx );
+          for(unsigned jc=0;jc<ncomponents;++jc) val_interm[ iw*ncomponents + jc ] = buffer[bufstart + (xx+1+jc)*(1+nder)]; //getFinalValue( xx + 1 + jc ) / ww;
           if( getAction()->derivativesAreRequired() ){
-              unsigned wstart = xx*(nder+1) + 1;
+              unsigned wstart = bufstart + xx*(nder+1) + 1;
               for(unsigned jc=0;jc<ncomponents;++jc){
-                  unsigned bstart = ( xx + 1 + jc )*(nder+1) + 1;
-                  double val = getFinalValue( xx + 1 + jc );
+                  unsigned bstart = bufstart + ( xx + 1 + jc )*(nder+1) + 1;
+                  double val = buffer[bufstart + (nder+1)*(xx+1+jc)]; // getFinalValue( xx + 1 + jc );
                   for(unsigned jder=0;jder<nder;++jder) 
-                     der_interm( iw*ncomponents + jc, jder ) = (1.0/ww)*getBufferElement( bstart + jder ) - (val/(ww*ww))*getBufferElement( wstart + jder );
+                     der_interm( iw*ncomponents + jc, jder ) = (1.0/ww)*buffer[bstart + jder] - (val/(ww*ww))*buffer[wstart + jder]; 
+                     // (1.0/ww)*getBufferElement( bstart + jder ) - (val/(ww*ww))*getBufferElement( wstart + jder );
               }
           }
       }

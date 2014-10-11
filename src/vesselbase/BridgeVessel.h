@@ -58,10 +58,12 @@ public:
   std::string description();
 /// Jobs to do before the task list starts
   void prepare();
+/// Set the start of the buffer 
+  void setBufferStart( unsigned& start );
 /// Actually do the calculation
-  bool calculate();
+  bool calculate( std::vector<double>& buffer );
 /// Finish the calculation
-  void finish();
+  void finish( const std::vector<double>& buffer );
 /// Calculate numerical derivatives
   void completeNumericalDerivatives();
 /// This is used to tell if the bridge has been called in recompute

@@ -28,15 +28,14 @@ namespace vesselbase{
 
 class Min : public FunctionVessel {
 private:
-  std::vector<double> df;
   double beta;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Min( const VesselOptions& da );
   std::string function_description();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
+  double finalTransform( const double& val, double& dv );
 };
 
 PLUMED_REGISTER_VESSEL(Min,"MIN")
@@ -56,8 +55,7 @@ void Min::reserveKeyword( Keywords& keys ){
 }
 
 Min::Min( const VesselOptions& da ) :
-FunctionVessel(da),
-df(2)
+FunctionVessel(da)
 {
   if( getAction()->isPeriodic() ) error("min is not a meaningful option for periodic variables");
   parse("BETA",beta);
@@ -70,18 +68,15 @@ std::string Min::function_description(){
   return "the minimum value. Beta is equal to " + str_beta;
 }
 
-bool Min::calculate(){
+bool Min::calculate( std::vector<double>& buffer ){
   double val=getAction()->getElementValue(0);
   double dval, f = exp(beta/val); dval=f/(val*val);
-  addValueIgnoringTolerance(0,f);
-  getAction()->chainRuleForElementDerivatives( 0, 0, dval, this );
-  return true;
+  return addToBuffers( f, dval, buffer );
 }
 
-void Min::finish(){
-  double valin=getFinalValue(0); double dist=beta/std::log( valin );
-  setOutputValue( dist ); df[0]=dist*dist/valin; df[1]=0.0;  
-  mergeFinalDerivatives( df );
+double Min::finalTransform( const double& val, double& dv ){
+  double dist=beta/std::log( val );
+  dv = dist*dist/val; return dist;
 }
 
 }

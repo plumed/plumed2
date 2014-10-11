@@ -47,7 +47,7 @@ void StoreColvarVessel::chainRuleForComponent( const unsigned& icolv, const unsi
   } else {
      unsigned ibuf = icolv*getNumberOfDerivativeSpacesPerComponent() + 1;
      for(unsigned ider=0;ider<getNumberOfDerivatives(icolv);++ider){
-         funcout->addStoredDerivative( jout, base_cv_no, getStoredIndex( icolv, ider ), weight*getBufferElement(ibuf+ider) );
+//         funcout->addStoredDerivative( jout, base_cv_no, getStoredIndex( icolv, ider ), weight*getBufferElement(ibuf+ider) );
      } 
   }
 }

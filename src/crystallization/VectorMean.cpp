@@ -37,8 +37,8 @@ public:
   VectorMean( const vesselbase::VesselOptions& da );
   std::string function_description();
   void resize();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
+  void finish( const std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(VectorMean,"VMEAN")
@@ -56,6 +56,7 @@ void VectorMean::reserveKeyword( Keywords& keys ){
 VectorMean::VectorMean( const vesselbase::VesselOptions& da ) :
 FunctionVessel(da)
 {
+   usetol=true;
    multicolvar::ActionVolume* vg=dynamic_cast<multicolvar::ActionVolume*>( getAction() );
    if( vg ){
        ncomp = getAction()->getNumberOfQuantities() - 2;
@@ -83,35 +84,38 @@ void VectorMean::resize(){
   }
 }
 
-bool VectorMean::calculate(){
+bool VectorMean::calculate( std::vector<double>& buffer ){
   double weight=getAction()->getElementValue(wnum);
-  plumed_dbg_assert( weight>=getTolerance() );
-  bool addval = addValueUsingTolerance( 0, weight );
-  if( diffweight ) getAction()->chainRuleForElementDerivatives( 0, wnum, 1.0, this );
+  unsigned nder=getAction()->getNumberOfDerivatives();
+  plumed_dbg_assert( weight>=getTolerance() ); 
+  // bool addval = addValueUsingTolerance( 0, weight );
+  buffer[bufstart] += weight;
+  if( diffweight ) getAction()->chainRuleForElementDerivatives( 0, wnum, 1.0, bufstart, buffer );
   for(unsigned i=0;i<ncomp;++i){
       double colvar=getAction()->getElementValue( vstart  + i );
-      addValueIgnoringTolerance( 1 + i, weight*colvar );
-      getAction()->chainRuleForElementDerivatives( 1+i, vstart+i, weight, this );
-      if( diffweight ) getAction()->chainRuleForElementDerivatives( 1+i, wnum, colvar, this );
+      buffer[bufstart + (1+i)*(1+nder)] += weight*colvar;  
+      // addValueIgnoringTolerance( 1 + i, weight*colvar );
+      getAction()->chainRuleForElementDerivatives( 1+i, vstart+i, weight, bufstart, buffer );
+      if( diffweight ) getAction()->chainRuleForElementDerivatives( 1+i, wnum, colvar, bufstart, buffer );
   }
-  return addval;
+  return true;
 }
 
-void VectorMean::finish(){
-  double sum=0, ww=getFinalValue(0);
+void VectorMean::finish( const std::vector<double>& buffer ){
+  double sum=0, ww=buffer[bufstart]; // getFinalValue(0);
+  unsigned nder=getAction()->getNumberOfDerivatives();
   for(unsigned i=0;i<ncomp;++i){ 
-     double tmp = getFinalValue(i+1) / ww;
+     double tmp = buffer[bufstart+(nder+1)*(i+1)] / ww;
      sum+=tmp*tmp; 
   }
   double tw = 1.0 / sqrt(sum);
   setOutputValue( sqrt(sum) ); 
   if( !getAction()->derivativesAreRequired() ) return;
 
-  unsigned nder = getAction()->getNumberOfDerivatives(); 
   for(unsigned icomp=0;icomp<ncomp;++icomp){
-      double tmp = getFinalValue(icomp+1) / ww;
-      unsigned bstart = (1+icomp)*(nder+1) + 1;
-      for(unsigned jder=0;jder<nder;++jder) addDerivativeToFinalValue( jder, (tw*tmp/ww)*( getBufferElement( bstart + jder ) - tmp*getBufferElement( 1 + jder )) );
+      double tmp = buffer[(icomp+1)*(1+nder)] / ww; // getFinalValue(icomp+1) / ww;
+      unsigned bstart = bufstart + (1+icomp)*(nder+1) + 1;
+      for(unsigned jder=0;jder<nder;++jder) addDerivativeToFinalValue( jder, (tw*tmp/ww)*( buffer[bstart + jder] - tmp*buffer[bufstart + 1 + jder] ) );
   }
 }
 

@@ -30,16 +30,13 @@ namespace vesselbase{
 
 class MoreThan : public FunctionVessel {
 private:
-  unsigned wnum;
-  std::vector<double> df;
   SwitchingFunction sf;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   MoreThan( const VesselOptions& da );
   std::string function_description();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(MoreThan,"MORE_THAN")
@@ -59,10 +56,9 @@ void MoreThan::reserveKeyword( Keywords& keys ){
 }
 
 MoreThan::MoreThan( const VesselOptions& da ) :
-FunctionVessel(da),
-df(2)
+FunctionVessel(da)
 {
-  wnum=getAction()->getIndexOfWeight();
+  usetol=true; 
   if( getAction()->isPeriodic() ) error("more than is not a meaningful option for periodic variables");
   std::string errormsg; sf.set( getAllInput(), errormsg );
   if( errormsg.size()!=0 ) error( errormsg );
@@ -72,25 +68,10 @@ std::string MoreThan::function_description(){
   return "the number of values more than " + sf.description();
 }
 
-bool MoreThan::calculate(){
-  double weight=getAction()->getElementValue(wnum);
-  plumed_dbg_assert( weight>=getTolerance() );
-
+bool MoreThan::calculate( std::vector<double>& buffer ){
   double val=getAction()->getElementValue(0);
   double dval, f = 1.0 - sf.calculate(val, dval); dval*=-val;
-  double contr=weight*f;
-  bool addval=addValueUsingTolerance(0,contr);
-  if(addval){
-    getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
-    if(diffweight) getAction()->chainRuleForElementDerivatives(0, wnum, f, this);
-  }
-  return ( contr>getNLTolerance() );
-}
-
-void MoreThan::finish(){
-  setOutputValue( getFinalValue(0) ); 
-  df[0]=1.0; df[1]=0.0;
-  mergeFinalDerivatives( df );
+  return addToBuffers( f, dval, buffer );   
 }
 
 }

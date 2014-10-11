@@ -66,6 +66,7 @@ void StoreDataVessel::resize(){
   }
   active_val.resize( getAction()->getFullNumberOfTasks() );
   resizeBuffer( getAction()->getFullNumberOfTasks()*vecsize*nspace );
+  local_buffer.resize( getAction()->getFullNumberOfTasks()*vecsize*nspace );
 }
 
 void StoreDataVessel::prepare(){
@@ -96,15 +97,16 @@ void StoreDataVessel::recompute( const unsigned& ivec, const unsigned& jstore ){
   getAction()->clearAfterTask();
 }
 
-void StoreDataVessel::storeValues( const unsigned& myelem ){
+void StoreDataVessel::storeValues( const unsigned& myelem, std::vector<double>& buffer ){
   ActionWithVessel* act = getAction(); active_val[myelem]=1; // Keeps track of which values are stashed
-  unsigned ibuf = myelem * vecsize * nspace;
+  unsigned ibuf = bufstart + myelem * vecsize * nspace;
   for(unsigned icomp=data_start;icomp<data_start + vecsize;++icomp){
-     setBufferElement( ibuf, act->getElementValue( icomp ) ); ibuf+=nspace;  
+     buffer[ibuf] = act->getElementValue( icomp ); ibuf+=nspace;
+     //setBufferElement( ibuf, act->getElementValue( icomp ) ); ibuf+=nspace;  
   }
 }
 
-void StoreDataVessel::storeDerivativesHighMem( const unsigned& myelem ){
+void StoreDataVessel::storeDerivativesHighMem( const unsigned& myelem, std::vector<double>& buffer ){
   plumed_dbg_assert( getAction()->derivativesAreRequired() && myelem<getAction()->getFullNumberOfTasks() );
   ActionWithVessel* act=getAction();
   getIndexList( act->getFullNumberOfTasks(), myelem, nspace-1, active_der );
@@ -112,10 +114,11 @@ void StoreDataVessel::storeDerivativesHighMem( const unsigned& myelem ){
   // Store the values of the components and the derivatives if 
   unsigned nder = act->getNumberOfDerivatives();
   for(unsigned icomp=data_start;icomp<data_start + vecsize;++icomp){
-     unsigned ibuf = myelem * ( vecsize*nspace ) + (icomp-data_start)*nspace + 1;
+     unsigned ibuf = bufstart + myelem * ( vecsize*nspace ) + (icomp-data_start)*nspace + 1;
      unsigned kder = act->getFullNumberOfTasks() + myelem * ( nspace - 1 );
      for(unsigned jder=0;jder<active_der[myelem];++jder){
-        addToBufferElement( ibuf, act->getElementDerivative(nder*icomp + active_der[ kder ]) );
+        buffer[ibuf] += act->getElementDerivative(nder*icomp + active_der[ kder ]);
+        //addToBufferElement( ibuf, act->getElementDerivative(nder*icomp + active_der[ kder ]) );
         kder++; ibuf++;
      }
   }
@@ -139,28 +142,29 @@ void StoreDataVessel::storeDerivativesLowMem( const unsigned& jstore ){
   }
 }
 
-bool StoreDataVessel::calculate(){
+bool StoreDataVessel::calculate( std::vector<double>& buffer ){
   unsigned myelem = getAction()->getCurrentPositionInTaskList();
   // Normalize vector if it is required
   finishTask( myelem );
 
   // Store the values 
   if( !hard_cut ){
-     storeValues( myelem );
+     storeValues( myelem, buffer );
      // Store the derivatives if we are not using low memory
-     if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivativesHighMem( myelem );  
-  } else {
-     if( getAction()->getElementValue(getAction()->getIndexOfWeight())>wtol ){ 
-         storeValues( myelem );
-         // Store the derivatives if we are not using low memory
-         if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivativesHighMem( myelem );
-     }
+     if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivativesHighMem( myelem, buffer );  
+  } else if( getAction()->getElementValue(getAction()->getIndexOfWeight())>wtol ){ 
+     storeValues( myelem, buffer );
+     // Store the derivatives if we are not using low memory
+     if( !(getAction()->lowmem) && getAction()->derivativesAreRequired() ) storeDerivativesHighMem( myelem, buffer );
   }
 
   return true;
 }
 
-void StoreDataVessel::finish(){
+void StoreDataVessel::finish( const std::vector<double>& buffer ){
+  // Store the buffer locally
+  for(unsigned i=0;i<local_buffer.size();++i) local_buffer[i]=buffer[bufstart+i];
+
   // Update what variables we need
   comm.Sum( &active_val[0], active_val.size() );
 
@@ -186,7 +190,7 @@ double StoreDataVessel::chainRule( const unsigned& ival, const unsigned& ider, c
      plumed_dbg_assert( ival<getAction()->getFullNumberOfTasks() );
      unsigned ibuf=ival*(vecsize*nspace) + 1 + ider;
      for(unsigned icomp=0;icomp<vecsize;++icomp){
-         dfout+=df[icomp]*getBufferElement(ibuf);
+         dfout+=df[icomp]*local_buffer[ibuf]; //getBufferElement(ibuf);
          ibuf+=nspace;
      }
   }
@@ -215,7 +219,8 @@ void StoreDataVessel::chainRule( const unsigned& ival, const std::vector<double>
          final_derivatives[ider]=0.0;
          unsigned ibuf=ival*(vecsize*nspace) + 1 + ider; 
          for(unsigned jcomp=0;jcomp<vecsize;++jcomp){
-             final_derivatives[ider]+=df[jcomp]*getBufferElement(ibuf);
+             final_derivatives[ider]+=df[jcomp]*local_buffer[ibuf];
+             //final_derivatives[ider]+=df[jcomp]*getBufferElement(ibuf);
              ibuf+=nspace;
          }
      }

@@ -37,8 +37,7 @@ public:
   SpathVessel( const vesselbase::VesselOptions& da );
   std::string function_description();
   void prepare();
-  bool calculate();
-  void finish();
+  bool calculate( std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(SpathVessel,"SPATH")
@@ -58,7 +57,8 @@ FunctionVessel(da)
   mymap=dynamic_cast<Mapping*>( getAction() );
   plumed_massert( mymap, "SpathVessel can only be used with mappings");
   // Retrieve the index of the property in the underlying mapping
-  mycoordnumber=mymap->getPropertyIndex( getLabel() );
+  mycoordnumber=mymap->getPropertyIndex( getLabel() ); 
+  usetol=true; norm=true;
 }
 
 std::string SpathVessel::function_description(){
@@ -69,27 +69,9 @@ void SpathVessel::prepare(){
   foundoneclose=false;
 }
 
-bool SpathVessel::calculate(){
-  double weight=getAction()->getElementValue(0);
-  bool addval=addValueUsingTolerance( 1, weight );
-  if( addval ){
-      foundoneclose=true;
-      double pp=mymap->getPropertyValue( mycoordnumber );
-      addValueIgnoringTolerance( 0, weight*pp );
-      getAction()->chainRuleForElementDerivatives( 0, 0, pp, this );
-      getAction()->chainRuleForElementDerivatives( 1, 0, 1.0, this );
-  }
-  return ( weight>getNLTolerance() );
-}
-
-void SpathVessel::finish(){
-  if( !foundoneclose ) error("all weights in path are less than tolerance. Increase tolerance or reconsider path");
-  double numerator=getFinalValue(0), denom=getFinalValue(1);
-  setOutputValue( numerator / denom );
-  std::vector<double> df(2);
-  df[0] = 1.0 / denom;
-  df[1] = - numerator / (denom*denom);
-  mergeFinalDerivatives( df );
+bool SpathVessel::calculate( std::vector<double>& buffer ){
+  double pp=mymap->getPropertyValue( mycoordnumber );
+  return addToBuffers( pp, 0.0, buffer );
 }
 
 }

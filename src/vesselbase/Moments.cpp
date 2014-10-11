@@ -40,7 +40,7 @@ public:
   Moments( const vesselbase::VesselOptions& da );
   std::string description();
   void resize();
-  void finish();
+  void finish( const std::vector<double>& buffer );
   bool applyForce( std::vector<double>& forces );
 };
 
@@ -96,8 +96,8 @@ std::string Moments::description(){
    return descri;
 }
 
-void Moments::finish(){
-  StoreDataVessel::finish();
+void Moments::finish( const std::vector<double>& buffer ){
+  StoreDataVessel::finish( buffer );
 
   const double pi=3.141592653589793238462643383279502884197169399375105820974944592307;
   unsigned nvals=getAction()->getFullNumberOfTasks(); 

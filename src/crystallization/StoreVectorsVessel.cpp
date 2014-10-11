@@ -57,30 +57,31 @@ void StoreVectorsVessel::recompute( const unsigned& ivec, const unsigned& jstore
   // Store the derivatives
   storeDerivativesLowMem( jstore );
   // Normalize the vector if it is required
-  if( store_director ) normalizeVector( jstore ); 
+  std::vector<double> fake_buffer;
+  if( store_director ) normalizeVector( jstore, fake_buffer ); 
   // Clear up afterwards
   vecs->clearAfterTask();
 
 }
 
-bool StoreVectorsVessel::calculate(){
+bool StoreVectorsVessel::calculate( std::vector<double>& buffer ){
   if( !hard_cut ){
-      storeValues( vecs->getCurrentPositionInTaskList() );  // Store the values of the components of the vector
+      storeValues( vecs->getCurrentPositionInTaskList(), buffer );  // Store the values of the components of the vector
       if(!store_director) return true;
-      if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList() );
-      else normalizeVector( -1 );  // Ensures vector components are normalized 
+      if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList(), buffer );
+      else normalizeVector( -1, buffer );  // Ensures vector components are normalized 
   } else {
      if( getAction()->getElementValue(getAction()->getIndexOfWeight())>wtol ){
-         storeValues( vecs->getCurrentPositionInTaskList() );
+         storeValues( vecs->getCurrentPositionInTaskList(), buffer );
          if(!store_director) return true;
-         if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList() );
-         else normalizeVector( -1 );  // Ensures vector components are normalized 
+         if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList(), buffer );
+         else normalizeVector( -1, buffer );  // Ensures vector components are normalized 
      }
   }
   return true;
 }
 
-void StoreVectorsVessel::normalizeVector( const int& jstore ){
+void StoreVectorsVessel::normalizeVector( const int& jstore, std::vector<double>& buffer ){
   unsigned myelem = vecs->getCurrentPositionInTaskList();
   bool lowmemory = usingLowMem(); double norm2=0.0, norm;
   
@@ -104,12 +105,13 @@ void StoreVectorsVessel::normalizeVector( const int& jstore ){
       for(unsigned ider=0;ider<getNumberOfDerivatives(myelem);++ider){
           double comp2=0.0; unsigned ibuf = myelem * ncomponents * getNumberOfDerivativeSpacesPerComponent() + 1 + ider;
           for(unsigned jcomp=0;jcomp<ncomponents;++jcomp){
-              comp2  += myfvec[jcomp]*getBufferElement(ibuf);
+              //comp2  += myfvec[jcomp]*getBufferElement(ibuf);
               ibuf += getNumberOfDerivativeSpacesPerComponent();
           }
-          ibuf = myelem * ncomponents * getNumberOfDerivativeSpacesPerComponent() + 1 + ider;
+          ibuf = bufstart + myelem * ncomponents * getNumberOfDerivativeSpacesPerComponent() + 1 + ider;
           for(unsigned jcomp=0;jcomp<ncomponents;++jcomp){
-             setBufferElement( ibuf, weight*getBufferElement(ibuf) + wdf*comp2*myfvec[jcomp] );
+            buffer[ibuf] = weight*buffer[ibuf] + wdf*comp2*myfvec[jcomp]; 
+            // setBufferElement( ibuf, weight*getBufferElement(ibuf) + wdf*comp2*myfvec[jcomp] );
              ibuf += getNumberOfDerivativeSpacesPerComponent();
           }
       }
@@ -142,7 +144,7 @@ void StoreVectorsVessel::chainRuleForComponent( const unsigned& icolv, const uns
   } else {
      unsigned ibuf = (icolv*ncomponents + jin ) * getNumberOfDerivativeSpacesPerComponent() + 1;
      for(unsigned ider=0;ider<getNumberOfDerivatives(icolv);++ider){
-         funcout->addStoredDerivative( jout, base_cv_no, getStoredIndex( icolv, ider ), weight*getBufferElement(ibuf+ider) );
+         //funcout->addStoredDerivative( jout, base_cv_no, getStoredIndex( icolv, ider ), weight*getBufferElement(ibuf+ider) );
      }   
   }  
 }

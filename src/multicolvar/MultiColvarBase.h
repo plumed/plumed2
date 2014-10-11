@@ -134,7 +134,7 @@ public:
 /// This is replaced once we have a function to calculate the cv
   virtual double compute()=0;
 /// These replace the functions in ActionWithVessel to make the code faster
-  virtual void mergeDerivatives( const unsigned& ider, const double& df );
+  virtual void mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer );
   virtual void clearDerivativesAfterTask( const unsigned& ider );
 /// Apply the forces from this action
   virtual void apply();
