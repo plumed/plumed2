@@ -334,6 +334,27 @@ vector<unsigned> Grid::getSplineNeighbors(const vector<unsigned> & indices)const
  return neighbors;
 }
 
+vector<unsigned> Grid::getNearestNeighbors(const unsigned index) const {
+  vector<unsigned> nearest_neighs = vector<unsigned>();
+  for (unsigned i = 0; i < dimension_; i++) {
+    vector<unsigned> neighsneeded = vector<unsigned>(dimension_, 0);
+    neighsneeded[i] = 1;
+    vector<unsigned> singledim_nearest_neighs = getNeighbors(index, neighsneeded);
+    for (unsigned neigh : singledim_nearest_neighs) {
+      if (neigh != index) {
+        nearest_neighs.push_back(neigh);
+      }
+    }
+  }
+  return nearest_neighs;
+}
+
+vector<unsigned> Grid::getNearestNeighbors(const vector<unsigned> & indices) const {
+  plumed_dbg_assert(indices.size() == dimension_);
+  return getNearestNeighbors(getIndex(indices));
+}
+
+
 void Grid::addKernel( const KernelFunctions& kernel ){
   plumed_dbg_assert( kernel.ndim()==dimension_ );
   std::vector<unsigned> nneighb=kernel.getSupport( dx_ );
@@ -548,7 +569,7 @@ void Grid::applyFunctionAllValuesAndDerivatives( double (*func)(double val), dou
 
 bool indexed_lt(pair<unsigned, double> const & x, pair<unsigned, double> const &  y) {return x.second < y.second;}
 
-double Grid::findMaximalPathMinimum(std::vector<double> source, std::vector<double> sink) {
+double Grid::findMaximalPathMinimum(const std::vector<double>& source, const std::vector<double>& sink) {
   plumed_dbg_assert(source.size()==dimension_);
   plumed_dbg_assert(sink.size()==dimension_);
 
@@ -664,7 +685,7 @@ double Grid::findMaximalPathMinimum(std::vector<double> source, std::vector<doub
       }
       // If the search is not over, add this grid point's neighbors to the
       // possible next points to search for the sink.
-      vector<unsigned> neighs = getNeighbors(curr_indexed_val.first, vector<unsigned int>(dimension_, 1));
+      vector<unsigned> neighs = getNearestNeighbors(curr_indexed_val.first);
       for (unsigned i : neighs) {
         // If the neighbor has not already been added to the list of possible next steps,
         if (mins_from_source[i] == -1.0) {
@@ -683,6 +704,145 @@ double Grid::findMaximalPathMinimum(std::vector<double> source, std::vector<doub
     // The multidimensional path search is now complete.
     return maximal_minimum;
   }
+}
+
+void Grid::erodeFunction(const double threshold_value, const vector<double>& smoothing_der) {
+  // Set below threshold points to zero and find the points on the
+  // boundaries of the above-threshold region.
+  vector<unsigned> threshold_boundary_points = vector<unsigned>();
+  for (unsigned i = 0; i < maxsize_; i++) {
+    // Set to zero if below-threshold.
+    if (grid_[i] < threshold_value) {
+      grid_[i] = 0.0;
+      if (usederiv_) {
+        for (unsigned j = 0; j < dimension_; j++) {
+          der_[i][j] = 0.0;
+        }
+      }
+    // Check if it's a boundary point otherwise.
+    } else {
+      // A point is a boundary point if it is above threshold but has a nearest 
+      // neighbor that is below-threshold.
+      bool is_boundary_point = false;
+      vector<unsigned> nearest_neighs = getNearestNeighbors(i);
+      for (unsigned neigh : nearest_neighs) {
+        if (grid_[neigh] < threshold_value) {
+          is_boundary_point = true;
+        }
+      }
+      // Keep track of the boundary points and their bias values.
+      if (is_boundary_point) {
+        threshold_boundary_points.push_back(i);
+      }
+    }
+  }
+
+  // Smooth the function from the boundary into the below-threshold region.
+  // We do this by looking at points from the (continuously updated) discontinuous
+  // boundary and assigning the points outside the boundary to values based on the
+  // smoothing derivative, assigning the highest-function-value points first. Then,
+  // once values are assigned, we assign the derivatives based on the values.
+  vector<pair<unsigned, double> > point_value_assignment_options;
+  bool is_not_smoothed = true;
+
+  // First, initialize options based on the threshold boundary. 
+  // For each point on the boundary,
+  for (unsigned i : threshold_boundary_points) {
+    // For each of the neighbors that were below threshold, consider setting the value
+    // for that neighbor based on the derivative from this point. Add that option to 
+    // a list of current options.
+    vector<unsigned> nearest_neighs = getNearestNeighbors(i);
+    vector<unsigned> curr_multi_index = getIndices(i);
+    for (unsigned neigh : nearest_neighs) {
+      // If the point was below-threshold, consider reassigning its value by smoothing.
+      if (grid_[neigh] == 0.0) {
+        // The assignment value based on this point would be the point's value minus
+        // the derivative correction for the path from this point to its neighbor.
+        double val_assignment = grid_[i];
+        vector<unsigned> neigh_multi_index = getIndices(neigh);
+        for (unsigned j = 0; j < dimension_; j++) {
+          if (neigh_multi_index[j] != curr_multi_index[j]) {
+            val_assignment -= smoothing_der[j] * dx_[j];
+          }
+        }
+        point_value_assignment_options.push_back(make_pair(neigh, val_assignment));
+      }
+    }
+  }
+  make_heap(point_value_assignment_options.begin(), point_value_assignment_options.end(), indexed_lt);
+
+  while(is_not_smoothed) {
+    
+    // Examine the current highest-value option for assignment.
+    // If no options for smoothing remain, the smoothing is done.
+    if (point_value_assignment_options.size() == 0) break;
+    pop_heap(point_value_assignment_options.begin(), point_value_assignment_options.end(), indexed_lt);
+    pair<unsigned, double> current_option = point_value_assignment_options.back();
+    point_value_assignment_options.pop_back();
+    
+    // If the value to assign would be less than or equal to 0.0, then smoothing is complete.
+    if (current_option.second <= 0.0) break;
+    
+    // If the point has not already been assigned a non-zero value, assign
+    // it to the current option's value and add the new options this assignment
+    // makes possible.
+    if (grid_[current_option.first] == 0.0) {
+      grid_[current_option.first] = current_option.second;
+      vector<unsigned> curr_multi_index = getIndices(current_option.first);
+      vector<unsigned> nearest_neighs = getNearestNeighbors(current_option.first);
+      for (unsigned neigh : nearest_neighs) {
+        // If the point was below-threshold, consider reassigning its value by smoothing.
+        if (grid_[neigh] == 0.0) {
+          // The assignment value based on this point would be the point's value plus
+          // the derivative correction for the path from this point to its neighbor.
+          double val_assignment = grid_[current_option.first];
+          vector<unsigned> neigh_multi_index = getIndices(neigh);
+          for (unsigned j = 0; j < dimension_; j++) {
+            if (neigh_multi_index[j] != curr_multi_index[j]) {
+              val_assignment -= smoothing_der[j] * dx_[j];
+            }
+          }
+          point_value_assignment_options.push_back(make_pair(neigh, val_assignment));
+          push_heap(point_value_assignment_options.begin(), point_value_assignment_options.end(), indexed_lt);
+        }
+      }
+    }
+    // Examine the next available option.
+  }
+  // Now that all values are assigned, set the derivatives for newly assigned points
+  // if necessary.
+  if (usederiv_) {
+    for (unsigned i = 0; i < maxsize_; i++) {
+      if (grid_[i] <= threshold_value) {
+        setDerivFromValues(i);
+      }
+    }
+  }
+}
+
+void Grid::setDerivFromValues(const unsigned index) {
+  // Along each dimension, take a centered finite difference
+  // for the derivative. If one is against a hard boundary,
+  // set the derivative to zero as if the boundaries are reflective.
+  for (unsigned i = 0; i < dimension_; i++) {
+    vector<unsigned> neighsneeded = vector<unsigned>(dimension_, 0);
+    neighsneeded[i] = 1;
+    // These GetNeighbors calls return up to 3 neighbors in a defined ordering
+    // matching the grid's unwrapped-boundaries-ordering. The point of interest
+    // is considered one of its own neighbors.
+    vector<unsigned> neighs = getNeighbors(index, neighsneeded);
+    // If there are three points, use the automatic ordering.
+    if (neighs.size() == 3) {
+      der_[index][i] = (grid_[neighs[2]] - grid_[neighs[0]]) / (2 * dx_[i]);
+    // If there are only two, a hard boundary is nearby. Set to zero.
+    } else {
+      der_[index][i] = 0.0;
+    }
+  }
+}
+
+void Grid::setDerivFromValues(const vector<unsigned>& indices) {
+  setDerivFromValues(getIndex(indices));
 }
 
 

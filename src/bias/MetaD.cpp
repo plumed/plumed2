@@ -264,6 +264,10 @@ class MetaD : public Bias {
   vector<vector<double> > transitionwells_;
   bool benthic_toleration_;
   double benthic_tol_energy_;
+  bool benthic_erosion_;
+  double benthic_erosive_time_;
+  vector<double> benthic_smoothing_der_;
+  double last_benthic_erosion_;
   double* dp_;
   int adaptive_;
   FlexibleBin *flexbin;
@@ -331,6 +335,7 @@ void MetaD::registerKeywords(Keywords &keys) {
     keys.add("optional", "TRANSITIONWELL_" + std::to_string(i), "use transition tempered metadynamics with well " + std::to_string(i) + " specified by the coordinates following this keyword");
   }
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition regions");
+  keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time");
   keys.add("optional", "TEMP", "the system temperature - this is only needed if you are doing well-tempered metadynamics");
   keys.add("optional", "TAU", "in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
   keys.add("optional", "GRID_MIN", "the lower bounds for the grid");
@@ -390,6 +395,10 @@ MetaD::MetaD(const ActionOptions &ao):
   tt_n_wells_(0),
   benthic_toleration_(false),
   benthic_tol_energy_(0.0),
+  benthic_erosion_(false),
+  benthic_erosive_time_(0.0),
+  benthic_smoothing_der_(vector<double>()),
+  last_benthic_erosion_(0.0),
   // Other stuff
   dp_(NULL), adaptive_(FlexibleBin::none),
   flexbin(NULL),
@@ -531,6 +540,11 @@ MetaD::MetaD(const ActionOptions &ao):
   parse("BENTHIC_TOLERATION", benthic_n_tolerated);
   if (benthic_n_tolerated > 0) {
     benthic_toleration_ = true;
+  }
+  // Check for a benthic metadynamics erosion time.
+  parse("BENTHIC_EROSION", benthic_erosive_time_);
+  if (benthic_erosive_time_ > 0.0) {
+    benthic_erosion_ = true;
   }
 
   // Set initial bias deposition rate parameters.
@@ -706,6 +720,7 @@ MetaD::MetaD(const ActionOptions &ao):
     log.printf("  Hills relaxation time (tau) %f\n", tau);
     log.printf("  KbT %f\n", kbt_);
   }
+  // Transition tempered metadynamics options
   if (transitiontempered_) {
     log.printf("  Transition-Tempered Bias Factor %f\n", biasf_);
     log.printf("  Number of transition wells %d\n", tt_n_wells_);
@@ -733,9 +748,39 @@ MetaD::MetaD(const ActionOptions &ao):
       }
     }
   }
+  // Benthic metadynamics options
   if (benthic_toleration_) {
     benthic_tol_energy_ = height0_ * (.05 + (double) benthic_n_tolerated);
     log.printf("  Benthic number of hills to tolerate %d, energy threshold %f\n", benthic_n_tolerated, benthic_tol_energy_);
+  }
+  if (benthic_erosion_) {
+    // Benthic erosion relies on using a grid and an acceleration factor.
+    if (!grid_) {
+      error(" benthic erosion requires a grid for the bias");
+    }
+    if (!acceleration) {
+      error(" benthic erosion requires calculation of the acceleration factor");
+    }
+    // The smoothing derivative is set by assuming that 2 times the maximum force
+    // added by a single hill is a safe force to add to the bias anywhere.
+    benthic_smoothing_der_ = vector<double>(getNumberOfArguments());
+    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+      if (adaptive_ == FlexibleBin::none) {
+        benthic_smoothing_der_[i] = 2.0 * .6065 * height0_ / sigma0_[i];
+      } else {
+        if (sigma0min_.size() == 0) {
+          error(" benthic erosion requires hill width estimates");
+        }
+        benthic_smoothing_der_[i] = 2.0 * .6065 * height0_ / sigma0min_[i];
+      }
+    }
+    // Log the timescale, the threshold, and the smoothing derivatives.
+    log.printf("  Benthic erosion on timescale %f, energy threshold %f\n", benthic_erosive_time_, benthic_tol_energy_);
+    log.printf("  Smoothing derivatives for the erosion are");
+    for (unsigned i = 0; i < benthic_smoothing_der_.size(); ++i) {
+      log.printf(" %f", benthic_smoothing_der_[i]);
+    }
+    log.printf("\n");
   }
   if (doInt_) {
     log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
@@ -1386,6 +1431,17 @@ void MetaD::update() {
   } else {
     multivariate = false;
   };
+  // When using benthic erosion, erosion can't affect anything until a
+  // new hill is added--so only perform erosion just before adding hills.
+  // Hills are added directly or from reading other walkers' hills.
+  if (benthic_erosion_ && (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0))) {
+    // The erosion time is a real time scale, so it is compared to the
+    // boosted time rather than the plain simulation time.
+    if ( acc * getTimeStep() > (last_benthic_erosion_ + benthic_erosive_time_)) {
+      BiasGrid_->erodeFunction(benthic_tol_energy_, benthic_smoothing_der_);
+      last_benthic_erosion_ = acc * getTimeStep();
+    }
+  }
   if (nowAddAHill) { // probably this can be substituted with a signal
     // add a Gaussian
     double height = getHeight(cv);

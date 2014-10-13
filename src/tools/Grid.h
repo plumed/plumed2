@@ -134,6 +134,9 @@ public:
  std::vector<unsigned> getNeighbors(unsigned index,const std::vector<unsigned> & neigh) const;
  std::vector<unsigned> getNeighbors(const std::vector<unsigned> & indices,const std::vector<unsigned> & neigh) const;
  std::vector<unsigned> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
+/// get nearest neighbors
+ std::vector<unsigned> getNearestNeighbors(const unsigned index) const;
+ std::vector<unsigned> getNearestNeighbors(const std::vector<unsigned> & indices) const;
 
 /// write header for grid file
  void writeHeader(OFile& file);
@@ -184,7 +187,15 @@ public:
 
 /// Find the maximum over paths of the minimum value of the gridded function along the paths
 /// for all paths of neighboring grid lattice points from a source point to a sink point.
- virtual double findMaximalPathMinimum(std::vector<double> source, std::vector<double> sink);
+ virtual double findMaximalPathMinimum(const std::vector<double>& source, const std::vector<double>& sink);
+
+/// Set all function values below a threshold to zero, then smooth out the resulting
+/// discontinuities using a maximum derivative set by smoothing_der.
+ virtual void erodeFunction(const double threshold_value, const std::vector<double>& smoothing_der);
+
+/// Reset a grid point's derivatives based on the values of its neighbors.
+void setDerivFromValues(const unsigned index);
+void setDerivFromValues(const std::vector<unsigned>& indices);
 
 /// dump grid on file
  virtual void writeToFile(OFile&);
