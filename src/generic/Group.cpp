@@ -63,7 +63,7 @@ h: GROUP ATOMS=2,3,5,6,8,9,12,13
 \endverbatim
 and then include it in the main 'plumed.dat' file
 \verbatim
-INCLUDE groups.dat
+INCLUDE FILE=groups.dat
 # compute the coordination among the two groups
 c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
 # print the coordination on file 'colvar'
