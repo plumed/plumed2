@@ -15,6 +15,7 @@ else
 all:
 	./extract
 	doxygen
+	./postproc.sh
 	cp Octocat.png html/
 	./report_errors
 
