@@ -105,12 +105,17 @@ class RMSDCoreData
 
 RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),positions_center_is_calculated(false) {}
 
+///
+/// general method to set all the rmsd property at once by using a pdb where occupancy column sets the weights for the atoms involved in the 
+/// alignment and beta sets the weight that are used for calculating the displacement. 
+///
 void RMSD::set(const PDB&pdb, string mytype ){
 
 	setReference(pdb.getPositions());
 	setAlign(pdb.getOccupancy());
 	setDisplace(pdb.getBeta());
         setType(mytype);
+
 }
 
 void RMSD::setType(string mytype){
