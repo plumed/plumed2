@@ -23,6 +23,8 @@
 #define __PLUMED_tools_RMSD_h
 
 #include "Vector.h"
+#include "Matrix.h"
+#include "Tensor.h"
 #include <vector>
 #include <string>
 
@@ -76,6 +78,19 @@ class RMSD
   Vector positions_center;
   bool positions_center_is_calculated; 
   bool positions_center_is_removed; 
+// calculates the center from the position provided
+  Vector calculateCenter(std::vector<Vector> &p,std::vector<double> &w){
+	plumed_massert(p.size()==w.size(),"mismatch in dimension of position/align arrays while calculating the center");
+	unsigned n; n=p.size();
+	Vector c; c.zero();
+	for(unsigned i=0;i<n;i++)c+=p[i]*w[i];
+	return c;
+  };
+// removes the center for the position provided
+  void removeCenter(std::vector<Vector> &p, Vector &c){
+	unsigned n; n=p.size();
+	for(unsigned i=0;i<n;i++)p[i]-=c;
+  };
 
 public:
 /// Constructor
@@ -89,9 +104,9 @@ public:
 /// set reference coordinates
   void setReference(const std::vector<Vector> & reference);
 /// set weights
-  void setAlign(const std::vector<double> & align);
+  void setAlign(const std::vector<double> & align, bool normalize=true, bool remove_center=true);
 /// set align
-  void setDisplace(const std::vector<double> & displace);
+  void setDisplace(const std::vector<double> & displace, bool normalize=true);
 /// 
   std::string getMethod();	
 ///
@@ -108,6 +123,69 @@ template <bool safe,bool alEqDis>
                           std::vector<Vector>  & derivatives, bool squared=false)const;
 /// Compute rmsd
   double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false)const;
+};
+
+/// this is a class which is needed to share information across the various non-threadsafe routines
+/// so that the public function of rmsd are threadsafe while the inner core can safely share information 
+class RMSDCoreData
+{
+	private:
+		bool alEqDis;
+		bool distanceIsMSD; // default is RMSD but can deliver the MSD 
+		bool hasDistance;  // distance is already calculated
+		bool isInitialized;
+		bool safe;
+
+		// use reference assignment to speed up instead of copying
+                const std::vector<Vector> &positions;
+                const std::vector<Vector> &reference;
+                const std::vector<double> &align; 
+                const std::vector<double> &displace; 
+
+		// the needed stuff for distance and more (one could use eigenvecs components and eigenvals for some reason)
+		double dist;
+		std::vector<double> eigenvals;
+		Matrix<double> eigenvecs;
+		double rr00; //  sum of positions squared (needed for dist calc)
+		double rr11; //  sum of reference squared (needed for dist calc)
+		Tensor rotation; // rotation derived from the eigenvector having the smallest eigenvalue
+		Tensor drotation_drr01[3][3]; // derivative of the rotation only available when align!=displace
+		Tensor ddist_drr01;
+	        Tensor ddist_drotation;
+		std::vector<Vector> d; // difference of components
+ 		Vector cpositions,creference; // geometric center of the running position and reference
+	public:
+		// the constructor (note: only references are passed, therefore is rather fast)
+		// note:: this aligns the reference onto the positions
+		RMSDCoreData(const std::vector<double> &a ,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r ):alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),positions(p),reference(r),align(a),displace(d){};
+		//  does the core calc : first thing to call after the constructor	
+		void doCoreCalc(bool safe,bool alEqDis);
+		// retrieve the distance if required after doCoreCalc 
+		double getDistance(bool squared);
+		// retrieve the derivative of the distance respect to the position
+		std::vector<Vector> getDDistanceDPositions();
+		// retrieve the derivative of the distance respect to the reference
+		std::vector<Vector> getDDistanceDReference();
+		// get aligned reference onto position
+                std::vector<Vector> getAlignedReferenceToPositions();	
+		// get aligned position onto reference
+                std::vector<Vector> getAlignedPositionsToReference();	
+		// get centered positions
+                std::vector<Vector> getCenteredPositions();	
+		// get centered reference
+                std::vector<Vector> getCenteredReference();	
+		// get rotation matrix (reference ->positions) 
+		Tensor getRotationMatrixReferenceToPositions();
+		// get rotation matrix (positions -> reference) 
+		Tensor getRotationMatrixPositionsToReference();
+		// get the derivative of the rotation matrix respect to positions
+		// note that the this transformation overlap the  reference onto position
+		// if inverseTransform=true then aligns the positions onto reference
+		Matrix<std::vector<Vector> > getDRotationDPosition( bool inverseTransform=false );
+		// get the derivative of the rotation matrix respect to reference 
+		// note that the this transformation overlap the  reference onto position
+		// if inverseTransform=true then aligns the positions onto reference
+		Matrix<std::vector<Vector> >  getDRotationDReference(bool inverseTransform=false );
 };
 
 }
