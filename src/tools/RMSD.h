@@ -68,6 +68,15 @@ class RMSD
   std::vector<double> align;
 // Weights for deviation
   std::vector<double> displace;
+// Center for reference and flag for its calculation 
+  Vector reference_center;
+  bool reference_center_is_calculated;
+  bool reference_center_is_removed; 
+// Center for running position (not used in principle but here to reflect reference/positio symmetry
+  Vector positions_center;
+  bool positions_center_is_calculated; 
+  bool positions_center_is_removed; 
+
 public:
 /// Constructor
   RMSD();

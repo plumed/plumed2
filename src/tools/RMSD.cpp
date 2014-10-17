@@ -32,7 +32,78 @@
 using namespace std;
 namespace PLMD{
 
-RMSD::RMSD() : alignmentMethod(SIMPLE) {}
+/// this is the core class of the RMSD for the optimal case and consists in a split of the alignment function so to allow for many things by using sequences of simple calls
+/// This is a non-threadsafe call
+class RMSDCoreData
+{
+	private:
+		bool alEqDis;
+		// default is RMSD but can deliver the MSD
+		bool distanceIsMSD; 
+		bool hasDistance;
+		bool isInitialized;
+		bool safe;
+// use initialization reference assignment to speed up instead of copying and sucking out memory
+// Reference coordinates
+                const std::vector<Vector> &positions;
+                const std::vector<Vector> &reference;
+                // Weights for alignment
+                const std::vector<double> &align;
+                // Weights for deviation
+                const std::vector<double> &displace;
+// the needed stuff for distance and more (one could use eigenvecs components and eigenvals for some reason)
+		double dist;
+		std::vector<double> eigenvals;
+		Matrix<double> eigenvecs;
+		double rr00; //  sum of positions squared (needed for dist calc)
+		double rr11; //  sum of reference squared (needed for dist calc)
+// rotation derived from the eigenvector having the smallest eigenvalue
+		Tensor rotation;
+// derivative of the rotation only available when align!=displace
+		Tensor drotation_drr01[3][3];
+		Tensor ddist_drr01;
+	        Tensor ddist_drotation;
+// difference of components
+		std::vector<Vector> d;
+// geometric center of the running position and reference
+ 		Vector cpositions,creference;
+	public:
+		// the constructor (note: only references are passed, therefore is rather fast)
+		// note:: this aligns the reference onto the positions
+		RMSDCoreData(const std::vector<double> &a ,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r ):alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),positions(p),reference(r),align(a),displace(d){};
+		//  does the core calc : first thing to call after the constructor	
+		void doCoreCalc(bool safe,bool alEqDis);
+		// retrieve the distance if required after doCoreCalc 
+		double getDistance(bool squared);
+		// retrieve the derivative of the distance respect to the position
+		std::vector<Vector> getDDistanceDPositions();
+		// retrieve the derivative of the distance respect to the reference
+		std::vector<Vector> getDDistanceDReference();
+		// get aligned reference onto position
+                std::vector<Vector> getAlignedReferenceToPositions();	
+		// get aligned position onto reference
+                std::vector<Vector> getAlignedPositionsToReference();	
+		// get centered positions
+                std::vector<Vector> getCenteredPositions();	
+		// get centered reference
+                std::vector<Vector> getCenteredReference();	
+		// get rotation matrix (reference ->positions) 
+		Tensor getRotationMatrixReferenceToPositions();
+		// get rotation matrix (positions -> reference) 
+		Tensor getRotationMatrixPositionsToReference();
+		// get the derivative of the rotation matrix respect to positions
+		// note that the this transformation overlap the  reference onto position
+		// if inverseTransform=true then aligns the positions onto reference
+		Matrix<std::vector<Vector> > getDRotationDPosition( bool inverseTransform=false );
+		// get the derivative of the rotation matrix respect to reference 
+		// note that the this transformation overlap the  reference onto position
+		// if inverseTransform=true then aligns the positions onto reference
+		Matrix<std::vector<Vector> >  getDRotationDReference(bool inverseTransform=false );
+};
+
+
+
+RMSD::RMSD() : alignmentMethod(SIMPLE),reference_center_is_calculated(false),positions_center_is_calculated(false) {}
 
 void RMSD::set(const PDB&pdb, string mytype ){
 
@@ -60,8 +131,12 @@ void RMSD::setType(string mytype){
 
 void RMSD::clear(){
   reference.clear();
+  reference_center_is_calculated(false);
+  reference_center_is_removed(false);
   align.clear();
   displace.clear();
+  positions_center_is_calculated(false);
+  positions_center_is_removed(false);
 }
 
 string RMSD::getMethod(){
@@ -73,19 +148,25 @@ string RMSD::getMethod(){
 	}	
 	return mystring;
 }
-
+///
+/// this calculates the center of mass for the reference and removes it from the reference itself
+/// considering uniform weights for alignment
+///
 void RMSD::setReference(const vector<Vector> & reference){
   unsigned n=reference.size();
   this->reference=reference;
-  plumed_massert(align.empty(),"you should first clear() an RMSD object, then set a new referece");
-  plumed_massert(displace.empty(),"you should first clear() an RMSD object, then set a new referece");
+  plumed_massert(align.empty(),"you should first clear() an RMSD object, then set a new reference");
+  plumed_massert(displace.empty(),"you should first clear() an RMSD object, then set a new reference");
   align.resize(n,1.0/n);
   displace.resize(n,1.0/n);
-  Vector center;
-  for(unsigned i=0;i<n;i++) center+=this->reference[i]*align[i];
-  for(unsigned i=0;i<n;i++) this->reference[i]-=center;
+  for(unsigned i=0;i<n;i++) reference_center+=this->reference[i]*align[i];
+  for(unsigned i=0;i<n;i++) this->reference[i]-=reference_center;
+  reference_center_is_calculated=true;
+  reference_center_is_removed=true;
 }
-
+///
+/// the alignment weights are here normalized to 1 and  the center of the reference is removed accordingly
+///
 void RMSD::setAlign(const vector<double> & align){
   unsigned n=reference.size();
   plumed_massert(this->align.size()==align.size(),"mismatch in dimension of align/displace arrays");
@@ -94,11 +175,18 @@ void RMSD::setAlign(const vector<double> & align){
   for(unsigned i=0;i<n;i++) w+=this->align[i];
   double inv=1.0/w;
   for(unsigned i=0;i<n;i++) this->align[i]*=inv;
-  Vector center;
-  for(unsigned i=0;i<n;i++) center+=reference[i]*this->align[i];
-  for(unsigned i=0;i<n;i++) reference[i]-=center;
+  // if the center was removed before, then add it and store the new one
+  if(reference_center_is_removed){
+	plumed_massert(reference_center_is_calculated," seems that the reference center has been removed but not calculated and stored!");	
+  	for(unsigned i=0;i<n;i++) reference[i]+=reference_center;
+  }
+  reference_center=0.;
+  for(unsigned i=0;i<n;i++) reference_center+=reference[i]*this->align[i];
+  for(unsigned i=0;i<n;i++) reference[i]-=reference_center;
 }
-
+///
+/// here the weigth for normalized weighths are normalized and set
+///
 void RMSD::setDisplace(const vector<double> & displace){
   unsigned n=reference.size();
   plumed_massert(this->displace.size()==displace.size(),"mismatch in dimension of align/displace arrays");
@@ -108,7 +196,9 @@ void RMSD::setDisplace(const vector<double> & displace){
   double inv=1.0/w;
   for(unsigned i=0;i<n;i++) this->displace[i]*=inv;
 }
-
+///
+/// This is the main workhorse for rmsd that decides to use specific optimal alignment versions
+///
 double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared)const{
 
   double ret=0.;
@@ -172,6 +262,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
       return dist;
 }
 
+#ifdef OLDRMSD
 // notice that in the current implementation the safe argument only makes sense for
 // align==displace
 template <bool safe,bool alEqDis>
@@ -362,5 +453,27 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 
   return dist;
 }
+#else
+// this is the standard version: no renewal of reference
+template <bool safe,bool alEqDis>
+double OptimalRMSD::optimalAlignment(const  std::vector<double>  & align,
+                              const  std::vector<double>  & displace,
+                              const std::vector<Vector> & positions,
+                              bool squared){
+//   //initialize the data into the structure
+//   RMSDCoreData cd(align,displace,positions,getReferencePositions()); 
+//   // Perform the diagonalization and all the needed stuff
+//   cd.doCoreCalc(safe,alEqDis); 
+//   // make the core calc distance
+//   double dist=cd.getDistance(squared); 
+//   // make the derivatives by using pieces calculated in coreCalc (probably the best is just to copy the vector...) 
+//   atom_ders=cd.getDDistanceDPositions(); 
+//   return dist;    
+      return 0.;
+}
+
+
+
+#endif
 
 }
