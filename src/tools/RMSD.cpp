@@ -111,11 +111,10 @@ void RMSD::setAlign(const vector<double> & align, bool normalize, bool remove_ce
   	   // if the center was removed before, then add it and store the new one
 	  if(reference_center_is_removed){
 		plumed_massert(reference_center_is_calculated," seems that the reference center has been removed but not calculated and stored!");	
-	  	for(unsigned i=0;i<n;i++) reference[i]+=reference_center;
+		addCenter(reference,reference_center);
 	  }
-	  reference_center.zero();
-	  for(unsigned i=0;i<n;i++) reference_center+=reference[i]*this->align[i];
-	  for(unsigned i=0;i<n;i++) reference[i]-=reference_center;
+	  reference_center=calculateCenter(reference,this->align);
+	  removeCenter(reference,reference_center);
 	  reference_center_is_calculated=true;
 	  reference_center_is_removed=true;
   }
@@ -390,6 +389,9 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
   return dist;
 }
 #else
+/// note that this method is intended to be repeatedly invoked 
+/// when the reference does already have the center subtracted
+/// but the position has not calculated center and not subtracted 
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment(const  std::vector<double>  & align,
                               const  std::vector<double>  & displace,
@@ -397,10 +399,17 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 			      const std::vector<Vector> & reference ,
 			      std::vector<Vector>  & derivatives,		
                               bool squared) const {
+   plumed_massert(reference_center_is_calculated," at this point the reference center must be calculated"); 
+   plumed_massert(reference_center_is_removed," at this point the reference center must be removed"); 
    //initialize the data into the structure
-   RMSDCoreData cd(align,displace,positions,reference ); 
-//   // Perform the diagonalization and all the needed stuff
-//   cd.doCoreCalc(safe,alEqDis); 
+   RMSDCoreData cd(align,displace,positions,reference); 
+   // transfer the settings for the center to let the CoreCalc deal with it 
+   cd.setPositionsCenterIsRemoved(positions_center_is_removed);
+   cd.setPositionsCenter(positions_center);
+   cd.setReferenceCenterIsRemoved(reference_center_is_removed);
+   cd.setPositionsCenter(positions_center);
+   // Perform the diagonalization and all the needed stuff
+   cd.doCoreCalc(safe,alEqDis); 
 //   // make the core calc distance
 //   double dist=cd.getDistance(squared); 
 //   // make the derivatives by using pieces calculated in coreCalc (probably the best is just to copy the vector...) 
@@ -411,35 +420,28 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
 
 /// This calculates the elements needed by the quaternion to calculate everything that is needed
 /// additional calls retrieve different components
+/// note that this considers that the centers of both reference and positions are already setted by ctor
 void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis){
 
   const unsigned n=static_cast<unsigned int>(reference.size());
-
-  cpositions.zero();
-  creference.zero();
-
-// first expensive loop: compute centers
-// TODO: additional flags could avoid it in case the reference is already centered 
-// or create a specific object for reference and position that calculates the com
-// when the object is created and recalculates it whenever is touched by some public method
-// (this last one is not so smart since then one must ensure that in the ref and pos the weights are identical 
-  for(unsigned iat=0;iat<n;iat++){
-    double w=align[iat];
-    cpositions+=positions[iat]*w;
-    creference+=reference[iat]*w;
-  }
+  
+  plumed_massert(creference_is_calculated,"the center of the reference frame must be already provided at this stage"); 
+  plumed_massert(cpositions_is_calculated,"the center of the positions frame must be already provided at this stage"); 
 
 // This is the trace of positions*positions + reference*reference
   rr00=0.;
   rr11=0.;
 // This is positions*reference
   Tensor rr01;
+// center of mass managing: subtracted or not
+  Vector cp; cp.zero(); if(!cpositions_is_removed)cp=cpositions;
+  Vector cr; cr.zero(); if(!creference_is_removed)cr=creference;
 // second expensive loop: compute second moments wrt centers
   for(unsigned iat=0;iat<n;iat++){
     double w=align[iat];
-    rr00+=dotProduct(positions[iat]-cpositions,positions[iat]-cpositions)*w;
-    rr11+=dotProduct(reference[iat]-creference,reference[iat]-creference)*w;
-    rr01+=Tensor(positions[iat]-cpositions,reference[iat]-creference)*w;
+    rr00+=dotProduct(positions[iat]-cp,positions[iat]-cp)*w;
+    rr11+=dotProduct(reference[iat]-cr,reference[iat]-cr)*w;
+    rr01+=Tensor(positions[iat]-cp,reference[iat]-cr)*w;
   }
 
 // the quaternion matrix: this is internal
@@ -545,9 +547,9 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis){
   if(!alEqDis)ddist_drotation.zero();
   for(unsigned iat=0;iat<n;iat++){
     // components differences: this is useful externally
-    d[iat]=positions[iat]-cpositions - matmul(rotation,reference[iat]-creference);	
+    d[iat]=positions[iat]-cp - matmul(rotation,reference[iat]-creference);	
     // ddist_drotation if needed
-    if(!alEqDis) ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-creference);
+    if(!alEqDis) ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
   }
 
   if(!alEqDis){

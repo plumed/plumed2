@@ -91,6 +91,8 @@ class RMSD
 	unsigned n; n=p.size();
 	for(unsigned i=0;i<n;i++)p[i]-=c;
   };
+// add center
+  void addCenter(std::vector<Vector> &p, Vector &c){Vector cc=c*-1.;removeCenter(p,cc);};
 
 public:
 /// Constructor
@@ -136,6 +138,14 @@ class RMSDCoreData
 		bool isInitialized;
 		bool safe;
 
+		// this need to be copied and they are small, should not affect the performance
+		Vector creference;
+		bool creference_is_calculated;
+		bool creference_is_removed;
+		Vector cpositions;
+		bool cpositions_is_calculated;
+		bool cpositions_is_removed;
+
 		// use reference assignment to speed up instead of copying
                 const std::vector<Vector> &positions;
                 const std::vector<Vector> &reference;
@@ -153,11 +163,30 @@ class RMSDCoreData
 		Tensor ddist_drr01;
 	        Tensor ddist_drotation;
 		std::vector<Vector> d; // difference of components
- 		Vector cpositions,creference; // geometric center of the running position and reference
 	public:
-		// the constructor (note: only references are passed, therefore is rather fast)
-		// note:: this aligns the reference onto the positions
-		RMSDCoreData(const std::vector<double> &a ,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r ):alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),positions(p),reference(r),align(a),displace(d){};
+		/// the constructor (note: only references are passed, therefore is rather fast)
+		/// note: this aligns the reference onto the positions
+		///
+		/// this method assumes that the centers are already calculated and subtracted 
+		RMSDCoreData(const std::vector<double> &a ,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r, Vector &cp, Vector &cr ):alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),creference(cr),creference_is_calculated(true),creference_is_removed(true),cpositions(cp),cpositions_is_calculated(true),cpositions_is_removed(true),positions(p),reference(r),align(a),displace(d){};
+		// this constructor does not assume that the positions and reference have the center subtracted
+		RMSDCoreData(const std::vector<double> &a ,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r):alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),creference_is_calculated(false),creference_is_removed(false),cpositions_is_calculated(false),cpositions_is_removed(false),positions(p),reference(r),align(a),displace(d){cpositions.zero();creference.zero();};
+		// set the center on the fly without subtracting
+		void calcPositionsCenter(){plumed_massert(!cpositions_is_calculated,"the center was already calculated");
+					cpositions.zero();for(unsigned i=0;i<positions.size();i++){cpositions+=positions[i]*align[i];}cpositions_is_calculated=true;}
+		void calcReferenceCenter(){plumed_massert(!creference_is_calculated,"the center was already calculated");
+					creference.zero();for(unsigned i=0;i<reference.size();i++){creference+=reference[i]*align[i];}creference_is_calculated=true;};
+		// assume the center is given externally  
+		void setPositionsCenter(Vector v){plumed_massert(!cpositions_is_calculated,"You are setting the center two times!");cpositions=v;cpositions_is_calculated=true;};
+		void setReferenceCenter(Vector v){plumed_massert(!creference_is_calculated,"You are setting the center two times!");creference=v;creference_is_calculated=true;};
+		// the center is already removed
+		void setPositionsCenterIsRemoved(bool t){cpositions_is_removed=t;};
+		void setReferenceCenterIsRemoved(bool t){creference_is_removed=t;};
+		bool getPositionsCenterIsRemoved(){return cpositions_is_removed;};
+		bool getReferenceCenterIsRemoved(){return creference_is_removed;};
+	
+		
+
 		//  does the core calc : first thing to call after the constructor	
 		void doCoreCalc(bool safe,bool alEqDis);
 		// retrieve the distance if required after doCoreCalc 
