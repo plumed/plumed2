@@ -143,8 +143,10 @@ public:
  virtual void setBufferStart( unsigned& start );
 /// Do something before the loop
   virtual void prepare(){}
+/// This is replaced in bridges so we can transform the derivatives
+  virtual MultiValue& transformDerivatives( const unsigned& current, MultiValue& myvals, MultiValue& bvals );
 /// Calculate the part of the vessel that is done in the loop
-  virtual bool calculate( std::vector<double>& buffer )=0;
+  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer )=0;
 /// Complete the calculation once the loop is finished
   virtual void finish( const std::vector<double>& )=0;
 /// Reset the size of the buffers
@@ -208,6 +210,11 @@ int Vessel::getNumericalLabel() const {
 inline
 void Vessel::setBufferStart( unsigned& start ){
   bufstart=start; start+=bufsize;
+}
+
+inline
+MultiValue& Vessel::transformDerivatives( const unsigned& current, MultiValue& myvals, MultiValue& bvals ){
+  return myvals;
 }
 
 inline

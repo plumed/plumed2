@@ -69,7 +69,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   UWalls( const ActionOptions& );
-  void performTask();
+  double calcPotential( const double& val, double& df );
 };
 
 PLUMED_REGISTER_ACTION(UWalls,"UWALLS")
@@ -95,23 +95,16 @@ ManyRestraintsBase(ao)
   checkRead();
 }
 
-void UWalls::performTask(){
-  double value=getValue(); 
-  double uscale = (value - at + offset)/eps;
+double UWalls::calcPotential( const double& val, double& df ){ 
+  double uscale = (val - at + offset)/eps;
   if( uscale > 0. ){
      double power = pow( uscale, exp );
-     double f = ( kappa / eps ) * exp * power / uscale;
+     df = ( kappa / eps ) * exp * power / uscale;
 
-     setElementValue( 0, kappa*power ); setElementValue( 1, getWeight() );
-     // Add derivatives 
-     applyChainRuleForDerivatives( f );
-    
-     return;
+     return kappa*power;
   }
 
-  // We need do nothing more if this is not true
-  setElementValue( 1, 0.0 );
-  return;
+  return 0.0;
 }
 
 }

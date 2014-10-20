@@ -36,7 +36,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   Between( const VesselOptions& da );
   std::string function_description();
-  bool calculate( std::vector<double>& buffer );
+  double calcTransform( const double& val, double& dv );
   double getCutoff();
 };
 

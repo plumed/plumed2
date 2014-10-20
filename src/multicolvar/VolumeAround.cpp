@@ -78,7 +78,7 @@ public:
   static void registerKeywords( Keywords& keys );
   VolumeAround(const ActionOptions& ao);
   void setupRegions();
-  double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives );
+  double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders );
 }; 
 
 PLUMED_REGISTER_ACTION(VolumeAround,"AROUND")
@@ -116,7 +116,7 @@ ActionVolume(ao)
 
 void VolumeAround::setupRegions(){ }
 
-double VolumeAround::calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives ){
+double VolumeAround::calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ){
   // Calculate position of atom wrt to origin
   Vector fpos=pbcDistance( getPosition(0), cpos );
 
@@ -143,9 +143,9 @@ double VolumeAround::calculateNumberInside( const Vector& cpos, HistogramBead& b
   derivatives[1]=xcontr*yder*zcontr; 
   derivatives[2]=xcontr*ycontr*zder;
   // Add derivatives wrt to position of origin atom
-  addReferenceAtomDerivatives( 0, -derivatives );
+  refders[0] = -derivatives;
   // Add virial contribution
-  addBoxDerivatives( -Tensor(fpos,derivatives) );
+  vir -= Tensor(fpos,derivatives);
   return xcontr*ycontr*zcontr;
 }
 

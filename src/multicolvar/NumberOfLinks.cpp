@@ -75,11 +75,9 @@ public:
   static void registerKeywords( Keywords& keys );
   NumberOfLinks(const ActionOptions&);
 /// Do the stuff with the switching functions
-  void calculateWeight();
+  void calculateWeight( AtomValuePack& myatoms );
 /// Actually do the calculation
-  double compute();
-/// This returns the position of the central atom
-  Vector getCentralAtom();  
+  double compute( const unsigned& tindex, AtomValuePack& myatoms );
 /// Is the variable periodic
   bool isPeriodic(){ return false; }
 };
@@ -124,14 +122,6 @@ MultiColvarFunction(ao)
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
     if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );
   }
-  
-  // Resize these ready for business
-  if( getBaseMultiColvar(0)->getNumberOfQuantities()==5 ){ 
-      orient0.resize( 1 ); orient1.resize( 1 ); 
-  } else { 
-      orient0.resize( getBaseMultiColvar(0)->getNumberOfQuantities() - 5 ); 
-      orient1.resize( getBaseMultiColvar(0)->getNumberOfQuantities() - 5 );
-  }
 
   // Create holders for the collective variable
   readVesselKeywords();
@@ -140,36 +130,44 @@ MultiColvarFunction(ao)
   readVesselKeywords();
 }
 
-void NumberOfLinks::calculateWeight(){
-  Vector distance = getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(1) );
+void NumberOfLinks::calculateWeight( AtomValuePack& myatoms ){
+  Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
-  addCentralAtomsDerivatives( 0, 1, (-dfunc)*distance );
-  addCentralAtomsDerivatives( 1, 1, (dfunc)*distance );
-  MultiColvarBase::addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) );
-  setElementValue(1,sw);
+  myatoms.setValue(0,sw);
+
+  if( !doNotCalculateDerivatives() ){
+      CatomPack atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
+      myatoms.addComDerivatives( 0, (-dfunc)*distance, atom0 );
+      CatomPack atom1=getCentralAtomPackFromInput( myatoms.getIndex(1) );
+      myatoms.addComDerivatives( 0, (dfunc)*distance, atom1 );
+      myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) ); 
+  }
 }
 
-double NumberOfLinks::compute(){
-   getVectorForBaseTask( 0, orient0 ); 
-   getVectorForBaseTask( 1, orient1 );
+double NumberOfLinks::compute( const unsigned& tindex, AtomValuePack& myatoms ){
+   if( getBaseMultiColvar(0)->getNumberOfQuantities()<3 ) return 1.0; 
+
+   unsigned ncomp=getBaseMultiColvar(0)->getNumberOfQuantities();
+
+   std::vector<double> orient0( ncomp ), orient1( ncomp );
+   getVectorForTask( myatoms.getIndex(0), true, orient0 ); 
+   getVectorForTask( myatoms.getIndex(1), true, orient1 );
 
    double dot=0;
-   for(unsigned k=0;k<orient0.size();++k){
+   for(unsigned k=2;k<orient0.size();++k){
        dot+=orient0[k]*orient1[k];
    }
-//   for(unsigned k=0;k<orient0.size();++k){
-//      orient0[k]*=dot_df; orient1[k]*=dot_df;
-//   }
-   addOrientationDerivatives( 0, orient1 );
-   addOrientationDerivatives( 1, orient0 );
+
+   if( !doNotCalculateDerivatives() ){
+     unsigned nder=getNumberOfDerivatives();
+     vesselbase::MultiValue myder0(ncomp,nder), myder1(ncomp,nder);
+     getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
+     mergeVectorDerivatives( 1, 2, orient1.size(), myatoms.getIndex(0), orient1, myder0, myatoms );
+     getVectorDerivatives( myatoms.getIndex(1), true, myder1 ); 
+     mergeVectorDerivatives( 1, 2, orient0.size(), myatoms.getIndex(1), orient0, myder1, myatoms );
+   }
 
    return dot;
-}
-
-Vector NumberOfLinks::getCentralAtom(){
-   addDerivativeOfCentralAtomPos( 0, 0.5*Tensor::identity() );
-   addDerivativeOfCentralAtomPos( 1, 0.5*Tensor::identity() );
-   return 0.5*( getPositionOfCentralAtom(0) + getPositionOfCentralAtom(1) );
 }
 
 }

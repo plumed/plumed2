@@ -40,19 +40,56 @@ private:
   Matrix<double> derivatives;
 public:
   MultiValue( const unsigned& , const unsigned& );
+  void resize( const unsigned& , const unsigned& );
+/// Get the number of values in the stash
+  unsigned getNumberOfValues() const ; 
+/// Get the number of derivatives in the stash
+  unsigned getNumberOfDerivatives() const ;
 /// Set value numbered
   void setValue( const unsigned&,  const double& );
+/// Add value numbered
+  void addValue( const unsigned&,  const double& );
 /// Add derivative
   void addDerivative( const unsigned& , const unsigned& , const double& );
+/// Set the value of the derivative
+  void setDerivative( const unsigned& ival, const unsigned& jder, const double& der);
 /// Return the ith value
   double get( const unsigned& ) const ;
+/// Return a derivative value
+  double getDerivative( const unsigned&, const unsigned& ) const ;
 /// Clear all values
   void clearAll();
 /// Clear a value
   void clear( const unsigned& );
+/// Functions for accessing active list
+  bool updateComplete();
+  void emptyActiveMembers();
+  void updateIndex( const unsigned & );
+  void sortActiveList();
+  void updateDynamicList();
+///
+  unsigned getNumberActive();
+///
+  unsigned getActiveIndex( const unsigned& ) const ;
 /// Transfer derivatives to buffer
   void chainRule( const unsigned& , const unsigned& , const unsigned&, const unsigned& , const double& , const unsigned& , std::vector<double>& buffer );
+///
+  void copyValues( MultiValue& ) const ;
+///
+  void copyDerivatives( MultiValue& );
+///
+  void quotientRule( const unsigned& nder, const unsigned& dder, const unsigned& oder );
 };
+
+inline
+unsigned MultiValue::getNumberOfValues() const {
+  return values.size();
+}
+
+inline
+unsigned MultiValue::getNumberOfDerivatives() const {
+  return derivatives.ncols();
+}
 
 inline
 double MultiValue::get( const unsigned& ival ) const {
@@ -67,9 +104,64 @@ void MultiValue::setValue( const unsigned& ival,  const double& val){
 }
 
 inline
+void MultiValue::addValue( const unsigned& ival,  const double& val){
+  plumed_dbg_assert( ival<=values.size() );
+  values[ival]+=val;
+}
+
+inline
 void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, const double& der){
   plumed_dbg_assert( ival<=values.size() );
   hasDerivatives.activate(jder); derivatives(ival,jder) += der;
+}
+
+inline
+void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, const double& der){
+  plumed_dbg_assert( ival<=values.size() );
+  hasDerivatives.activate(jder); derivatives(ival,jder)=der;
+}
+
+
+inline
+double MultiValue::getDerivative( const unsigned& ival, const unsigned& jder ) const {
+  plumed_dbg_assert( jder<derivatives.ncols() && hasDerivatives.isActive(jder) );
+  return derivatives(ival,jder);
+}
+
+inline
+bool MultiValue::updateComplete(){
+  return hasDerivatives.updateComplete();
+}
+
+inline
+void MultiValue::emptyActiveMembers(){
+  hasDerivatives.emptyActiveMembers();
+}
+
+inline
+void MultiValue::updateIndex( const unsigned& ind ){
+  hasDerivatives.updateIndex( ind );
+}
+
+inline
+void MultiValue::sortActiveList(){
+  hasDerivatives.sortActiveList();
+}
+
+inline
+unsigned MultiValue::getNumberActive(){
+  return hasDerivatives.getNumberActive();
+}
+
+inline
+unsigned MultiValue::getActiveIndex( const unsigned& ind ) const {
+  plumed_dbg_assert( ind<hasDerivatives.getNumberActive() );
+  return hasDerivatives[ind];
+}
+
+inline
+void MultiValue::updateDynamicList(){
+  hasDerivatives.updateActiveMembers();
 }
 
 }

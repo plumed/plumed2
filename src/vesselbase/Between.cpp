@@ -67,10 +67,8 @@ std::string Between::function_description(){
   return "the number of values " + hist.description();
 }
 
-bool Between::calculate( std::vector<double>& buffer ){
-  double val=getAction()->getElementValue(0);
-  double dval, f = hist.calculate(val, dval);
-  return addToBuffers( f, dval, buffer );
+double Between::calcTransform( const double& val, double& dv ){
+  double f = hist.calculate(val, dv); return f; 
 }
 
 double Between::getCutoff(){

@@ -47,8 +47,7 @@ public:
   static void registerKeywords( Keywords& keys );
   Fccubic(const ActionOptions&);
 // active methods:
-  virtual double compute(); 
-  Vector getCentralAtom();
+  virtual double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ); 
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
 };
@@ -96,15 +95,14 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double Fccubic::compute(){
-   weightHasDerivatives=true;
+double Fccubic::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ){
    double value=0, norm=0, dfunc; Vector distance;
 
    // Calculate the coordination number
    Vector myder, fder;
    double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, tmp;
-   for(unsigned i=1;i<getNAtoms();++i){
-      distance=getSeparation( getPosition(0), getPosition(i) );
+   for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
+      distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
       double d2 = distance.modulo2();
       if( d2<rcut2 ){ 
          sw = switchingFunction.calculateSqr( d2, dfunc ); 
@@ -137,27 +135,22 @@ double Fccubic::compute(){
   
          fder = (+dfunc)*tmp*distance + sw*myder;
 
-         addAtomsDerivatives( 0, -fder );
-         addAtomsDerivatives( i, +fder );
-         addBoxDerivatives( Tensor(distance,-fder) );
-         addAtomsDerivativeOfWeight( 0, (-dfunc)*distance );
-         addAtomsDerivativeOfWeight( i, (+dfunc)*distance );
-         addBoxDerivativesOfWeight( (-dfunc)*Tensor(distance,distance) );
+         myatoms.addAtomsDerivatives( 1, 0, -fder );
+         myatoms.addAtomsDerivatives( 1, i, +fder );
+         myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
+         myatoms.addAtomsDerivatives( 0, 0, (-dfunc)*distance );
+         myatoms.addAtomsDerivatives( 0, i, (+dfunc)*distance );
+         myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
       }
    }
    
-   setElementValue(0, value); setElementValue(1, norm ); 
+   myatoms.setValue(1, value); myatoms.setValue(0, norm ); 
    // values -> der of... value [0], weight[1], x coord [2], y, z... [more magic]
-   updateActiveAtoms(); quotientRule( 0, 1, 0 ); clearDerivativesAfterTask(1);
+   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, 0, 1 );   
    // Weight doesn't really have derivatives (just use the holder for convenience)
-   weightHasDerivatives=false; setElementValue( 1, 1.0 );
+   myatoms.getUnderlyingMultiValue().clear(0); myatoms.setValue( 0, 1.0 );
 
    return value / norm; // this is equivalent to getting an "atomic" CV
-}
-
-Vector Fccubic::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 }

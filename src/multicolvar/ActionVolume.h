@@ -47,18 +47,14 @@ private:
   HistogramBead bead;
 protected:
   double getSigma() const ;
-  void addReferenceAtomDerivatives( const unsigned& iatom, const Vector& der );
-  void addBoxDerivatives( const Tensor& vir );
 public:
   static void registerKeywords( Keywords& keys );
   ActionVolume(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
 /// Calculate whats in the volume
-  void calculateAllVolumes();
-  virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
-  double getValueForTolerance();
-  unsigned getIndexOfWeight();
+  void calculateAllVolumes( const unsigned& curr, vesselbase::MultiValue& outvals );
+  virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders )=0;
   unsigned getCentralAtomElementIndex();
 };
 
@@ -70,28 +66,6 @@ unsigned ActionVolume::getNumberOfQuantities(){
 inline
 double ActionVolume::getSigma() const {
   return sigma;
-}
-
-inline
-void ActionVolume::addReferenceAtomDerivatives( const unsigned& iatom, const Vector& der ){
-  if( not_in ) VolumeGradientBase::addReferenceAtomDerivatives( nquantities-1, iatom, -1.0*der );
-  else VolumeGradientBase::addReferenceAtomDerivatives( nquantities-1, iatom, der );
-}
-
-inline 
-void ActionVolume::addBoxDerivatives( const Tensor& vir ){
-  if( not_in ) VolumeGradientBase::addBoxDerivatives( nquantities-1, -1.0*vir );
-  else VolumeGradientBase::addBoxDerivatives( nquantities-1, vir );
-}
-
-inline
-double ActionVolume::getValueForTolerance(){
-  return getElementValue( nquantities-1 );
-}
-
-inline
-unsigned ActionVolume::getIndexOfWeight(){
-  return nquantities-1;
 }
 
 inline

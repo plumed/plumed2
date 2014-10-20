@@ -63,7 +63,7 @@ private:
   std::vector<Vector> pos;
   std::vector<double> forcesToApply;
 /// Get the index of an atom
-  unsigned getAtomIndex( const unsigned& iatom );
+  unsigned getAtomIndex( const unsigned& current, const unsigned& iatom );
 protected:
 /// Get the atoms in the backbone
   void readBackboneAtoms( const std::string& backnames, std::vector<unsigned>& chain_lengths );
@@ -83,10 +83,8 @@ public:
   void prepare();
   void finishTaskListUpdate();
   void calculate();
-  void performTask();
-  void clearDerivativesAfterTask( const unsigned& );
+  void performTask( const unsigned& , const unsigned& , vesselbase::MultiValue& );
   void apply();
-  void mergeDerivatives( const unsigned& , const double&, const unsigned, const unsigned, std::vector<double>& );
   bool isPeriodic(){ return false; }
 };
 
@@ -101,8 +99,8 @@ unsigned SecondaryStructureRMSD::getNumberOfDerivatives(){
 }
 
 inline
-unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& iatom ){
-  return all_atoms.linkIndex( colvar_atoms[getCurrentTask()][iatom] );
+unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& current, const unsigned& iatom ){
+  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
 }
 
 }

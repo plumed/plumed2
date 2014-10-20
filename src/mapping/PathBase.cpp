@@ -55,11 +55,12 @@ void PathBase::calculate(){
   runAllTasks();
 }
 
-void PathBase::performTask(){
+void PathBase::performTask( const unsigned& task_index, const unsigned& current, vesselbase::MultiValue& myvals ){
   // Calculate the distance from the frame
-  double val=calculateDistanceFunction( getCurrentTask(), true );
+  double val=calculateDistanceFunction( current, true );
   // Put the element value in element zero
-  setElementValue( 1, val ); setElementValue( 0, 1.0 );
+  myvals.setValue( 0, val ); myvals.setValue( 1, 1.0 );
+  transferDerivatives( 0, 0, current, myvals ); 
   return;
 }
 

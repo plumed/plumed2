@@ -54,10 +54,8 @@ std::string LessThan::function_description(){
   return "the number of values less than " + sf.description();
 }
 
-bool LessThan::calculate( std::vector<double>& buffer ){
-  double val=getAction()->getElementValue(0);
-  double dval, f = sf.calculate(val, dval); dval*=val;
-  return addToBuffers( f, dval, buffer );
+double LessThan::calcTransform( const double& val, double& dv ){
+  double f = sf.calculate(val, dv); dv*=val; return f;
 }
 
 double LessThan::getCutoff(){

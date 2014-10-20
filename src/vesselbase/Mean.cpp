@@ -32,7 +32,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   Mean( const vesselbase::VesselOptions& da );
   std::string function_description();
-  bool calculate( std::vector<double>& buffer );
+  double calcTransform( const double& val, double& dv );
 };
 
 PLUMED_REGISTER_VESSEL(Mean,"MEAN")
@@ -58,9 +58,8 @@ std::string Mean::function_description(){
   return "the mean value";
 }
 
-bool Mean::calculate( std::vector<double>& buffer ){
- double colvar=getAction()->getElementValue(0);
- return addToBuffers( colvar, 1.0, buffer ); 
+double Mean::calcTransform( const double& val, double& dv ){
+  dv=1.0; return val;
 }
 
 }

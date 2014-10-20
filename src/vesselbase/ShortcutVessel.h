@@ -39,7 +39,7 @@ public:
   ShortcutVessel( const VesselOptions& );
   std::string description(){ return ""; }
   void resize(){ plumed_error(); }
-  bool calculate( std::vector<double>& buffer ){ plumed_error(); }
+  bool calculate( const unsigned& taskCode, MultiValue& myvals, std::vector<double>& buffer ){ plumed_error(); }
   void finish( const std::vector<double>& buffer ){ plumed_error(); }
   bool applyForce( std::vector<double>& forces ){ plumed_error(); }
 };

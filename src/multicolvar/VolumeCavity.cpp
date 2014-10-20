@@ -122,7 +122,7 @@ public:
   ~VolumeCavity();
   void setupRegions();
   void update();
-  double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives );
+  double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders );
 };
 
 PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY")
@@ -340,7 +340,7 @@ void VolumeCavity::update(){
   }
 }
 
-double VolumeCavity::calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives ){
+double VolumeCavity::calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives, Tensor& vir, std::vector<Vector>& rderiv ){
   // Calculate distance of atom from origin of new coordinate frame
   Vector datom=pbcDistance( origin, cpos );
   double ucontr, uder, vcontr, vder, wcontr, wder;
@@ -373,7 +373,6 @@ double VolumeCavity::calculateNumberInside( const Vector& cpos, HistogramBead& b
   double tot = ucontr*vcontr*wcontr*jacob_det; 
 
   // Add reference atom derivatives
-  std::vector<Vector> rderiv(4);
   dfd[0]=uder2*vcontr*wcontr; dfd[1]=ucontr*vder2*wcontr; dfd[2]=ucontr*vcontr*wder2;
   Vector dfld; dfld[0]=udlen*vcontr*wcontr; dfld[1]=ucontr*vdlen*wcontr; dfld[2]=ucontr*vcontr*wdlen;
   rderiv[0] = dfd[0]*matmul(datom,dbi[0]) + dfd[1]*matmul(datom,dcross[0]) + dfd[2]*matmul(datom,dperp[0]) +
@@ -384,12 +383,10 @@ double VolumeCavity::calculateNumberInside( const Vector& cpos, HistogramBead& b
               dfld[0]*dlbi[2] + dfld[1]*dlcross[2] + dfld[2]*dlperp[2];
   rderiv[3] = dfld[0]*dlbi[3] + dfld[1]*dlcross[3] + dfld[2]*dlperp[3];
 
-  Tensor vir; vir.zero();
-  vir-=Tensor( cpos,derivatives );
+  vir.zero(); vir-=Tensor( cpos,derivatives );
   for(unsigned i=0;i<4;++i){
-     vir -= Tensor( getPosition(i), rderiv[i] ); addReferenceAtomDerivatives( i, rderiv[i] );
+     vir -= Tensor( getPosition(i), rderiv[i] ); 
   }
-  addBoxDerivatives( vir );
  
   return tot;
 }

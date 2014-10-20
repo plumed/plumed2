@@ -39,9 +39,9 @@ Action(ao),
 VolumeGradientBase(ao)
 {
   // Find number of quantities
-  if( getPntrToMultiColvar()->isDensity() ) nquantities=5;                           // Value + catom + weight 
-  else if( getPntrToMultiColvar()->getNumberOfQuantities()==5 ) nquantities=5;       // Value + catom + weight
-  else nquantities = 1 + 3 + getPntrToMultiColvar()->getNumberOfQuantities()-5 + 1;  // Norm + catom + vector + weight 
+  if( getPntrToMultiColvar()->isDensity() ) nquantities=2;                           // Value + weight 
+  else if( getPntrToMultiColvar()->getNumberOfQuantities()==2 ) nquantities=2;       // Value + weight
+  else nquantities = 1 + getPntrToMultiColvar()->getNumberOfQuantities()-2 + 1;      // Norm  + vector + weight 
 
   // Output some nice information
   std::string functype=getPntrToMultiColvar()->getName();
@@ -61,13 +61,16 @@ VolumeGradientBase(ao)
   }
 }
 
-void ActionVolume::calculateAllVolumes(){
-  Vector catom_pos=getPntrToMultiColvar()->retrieveCentralAtomPos();
+void ActionVolume::calculateAllVolumes( const unsigned& curr, vesselbase::MultiValue& outvals ){
+  Vector catom_pos=getPntrToMultiColvar()->getCentralAtomPos( curr );
 
-  double weight; Vector wdf; 
-  weight=calculateNumberInside( catom_pos, bead, wdf ); 
-  if( not_in ){ weight = 1.0 - weight; wdf *= -1.; }  
-  setNumberInVolume( nquantities-1, weight, wdf );
+  double weight; Vector wdf; Tensor vir; std::vector<Vector> refders( getNumberOfAtoms() );  
+  weight=calculateNumberInside( catom_pos, bead, wdf, vir, refders ); 
+  if( not_in ){ 
+    weight = 1.0 - weight; wdf *= -1.; vir *=-1; 
+    for(unsigned i=0;i<refders.size();++i) refders[i]*=-1;
+  }  
+  setNumberInVolume( 0, curr, weight, wdf, vir, refders, outvals );
 }
 
 }

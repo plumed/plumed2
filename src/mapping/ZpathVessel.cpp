@@ -34,7 +34,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   ZpathVessel( const vesselbase::VesselOptions& da );
   std::string function_description();
-  bool calculate( std::vector<double>& buffer );
+  double calcTransform( const double& val, double& dv );
   double finalTransform( const double& val, double& dv );
 };
 
@@ -61,8 +61,8 @@ std::string ZpathVessel::function_description(){
   return "the distance from the low-dimensional manifold";
 }
 
-bool ZpathVessel::calculate( std::vector<double>& buffer ){
-  return addToBuffers( 1.0, 0.0, buffer );
+double ZpathVessel::calcTransform( const double& val, double& dv ){
+  dv=0.0; return 1.0;
 }
 
 double ZpathVessel::finalTransform( const double& val, double& dv ){

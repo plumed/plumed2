@@ -71,8 +71,7 @@ public:
   static void registerKeywords( Keywords& keys );
   CoordinationNumbers(const ActionOptions&);
 // active methods:
-  virtual double compute(); 
-  Vector getCentralAtom();
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ); 
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
 };
@@ -120,30 +119,25 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double CoordinationNumbers::compute(){
+double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ){
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number
    double d2, sw;
-   for(unsigned i=1;i<getNAtoms();++i){
-      distance=getSeparation( getPosition(0), getPosition(i) );
+   for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
+      distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
       d2 = distance.modulo2();
       if( d2<rcut2 ){ 
          sw = switchingFunction.calculateSqr( d2, dfunc );
   
          value += sw;             
-         addAtomsDerivatives( 0, (-dfunc)*distance );
-         addAtomsDerivatives( i,  (dfunc)*distance );
-         addBoxDerivatives( (-dfunc)*Tensor(distance,distance) );
+         myatoms.addAtomsDerivatives( 1, 0, (-dfunc)*distance );
+         myatoms.addAtomsDerivatives( 1, i,  (dfunc)*distance );
+         myatoms.addBoxDerivatives( 1, (-dfunc)*Tensor(distance,distance) );
       }
    }
 
    return value;
-}
-
-Vector CoordinationNumbers::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 }

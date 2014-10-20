@@ -48,7 +48,6 @@ usetol(false)
   }
   final_value=a->copyOutput( a->getNumberOfComponents()-1 );
   diffweight=getAction()->weightHasDerivatives;
-  wnum=getAction()->getIndexOfWeight();
 }
 
 std::string FunctionVessel::description(){
@@ -61,9 +60,11 @@ void FunctionVessel::resize(){
      nderivatives=getAction()->getNumberOfDerivatives();
      resizeBuffer( (1+nderivatives)*2 ); 
      final_value->resizeDerivatives( nderivatives );
+     diffweight=getAction()->weightHasDerivatives;
   } else {
      nderivatives=0;
      resizeBuffer(2);
+     diffweight=false;  // Don't need to worry about differentiable weights if no derivatives
   }
 }
 
@@ -72,24 +73,31 @@ void FunctionVessel::setNumberOfDerivatives( const unsigned& nder ){
   final_value->resizeDerivatives( nder );
 }
 
-bool FunctionVessel::addToBuffers( const double& f, const double& dval, std::vector<double>& buffer ){
-  double weight=getAction()->getElementValue(wnum);
+bool FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer ){
+  double weight=myvals.get(0); 
   plumed_dbg_assert( weight>=getTolerance() );  
+
+  // This deals with the value
+  double dval, f=calcTransform( myvals.get(1), dval );
 
   if( norm ){
      if( usetol && weight<getTolerance() ) return false;
      buffer[bufstart+1+nderivatives] += weight;
-     if( diffweight ) getAction()->chainRuleForElementDerivatives( wnum, 1, 1.0, bufstart, buffer );
+     if( diffweight ) myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
   }
 
   double contr=weight*f;
   if( usetol && contr<getTolerance() ) return false;
   buffer[bufstart] += contr;
 
-  if( diffweight ) getAction()->chainRuleForElementDerivatives( wnum, 0, f, bufstart, buffer );
-  if(fabs(dval)>0.0) getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, bufstart, buffer );
+  if( diffweight ) myvals.chainRule( 0, 0, 1, 0, f, bufstart, buffer ); 
+  if( getAction()->derivativesAreRequired() && fabs(dval)>0.0 ) myvals.chainRule( 1, 0, 1, 0, weight*dval, bufstart, buffer );
 
   return true;
+}
+
+double FunctionVessel::calcTransform( const double& , double& ){ 
+  plumed_error(); return 1.0; 
 }
 
 void FunctionVessel::finish( const std::vector<double>& buffer ){

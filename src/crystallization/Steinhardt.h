@@ -41,8 +41,7 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   Steinhardt( const ActionOptions& ao );
-  void calculateVector();
-  Vector getCentralAtom();
+  void calculateVector( multicolvar::AtomValuePack& myatoms );
   double deriv_poly( const unsigned&, const double&, double& );
 };
 

@@ -42,8 +42,6 @@ class FunctionVessel : public Vessel {
 private:
 /// The number of derivatives
   unsigned nderivatives;
-/// The index of the weight
-  unsigned wnum;
 /// This is the pointer to the value we are creating
   Value* final_value;
 protected:
@@ -61,8 +59,6 @@ protected:
   void setNumberOfDerivatives( const unsigned& nder );
 /// Return a pointer to the final value
   void addDerivativeToFinalValue( const unsigned& j, const double& der  );
-/// Add some value to the buffers
-  bool addToBuffers( const double& f, const double& dval, std::vector<double>& buffer );
 public:
   static void registerKeywords( Keywords& keys );
   FunctionVessel( const VesselOptions& );
@@ -74,6 +70,10 @@ public:
   std::string description();
 /// The rest of the description of what we are calculating
   virtual std::string function_description()=0;
+/// Do the calcualtion
+  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer );
+/// Do any transformations of the value that are required
+  virtual double calcTransform( const double& val, double& df );
 /// Finish the calculation of the quantity
   virtual void finish( const std::vector<double>& buffer );
 /// Finish with any transforms required

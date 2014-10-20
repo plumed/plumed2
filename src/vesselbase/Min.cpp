@@ -34,7 +34,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   Min( const VesselOptions& da );
   std::string function_description();
-  bool calculate( std::vector<double>& buffer );
+  double calcTransform( const double& val, double& dv );
   double finalTransform( const double& val, double& dv );
 };
 
@@ -68,10 +68,9 @@ std::string Min::function_description(){
   return "the minimum value. Beta is equal to " + str_beta;
 }
 
-bool Min::calculate( std::vector<double>& buffer ){
-  double val=getAction()->getElementValue(0);
-  double dval, f = exp(beta/val); dval=f/(val*val);
-  return addToBuffers( f, dval, buffer );
+double Min::calcTransform( const double& val, double& dv ){
+  double f = exp(beta/val); dv=f/(val*val);
+  return f; 
 }
 
 double Min::finalTransform( const double& val, double& dv ){

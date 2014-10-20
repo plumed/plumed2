@@ -36,7 +36,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   MoreThan( const VesselOptions& da );
   std::string function_description();
-  bool calculate( std::vector<double>& buffer );
+  double calcTransform( const double& val, double& dv );
 };
 
 PLUMED_REGISTER_VESSEL(MoreThan,"MORE_THAN")
@@ -68,10 +68,8 @@ std::string MoreThan::function_description(){
   return "the number of values more than " + sf.description();
 }
 
-bool MoreThan::calculate( std::vector<double>& buffer ){
-  double val=getAction()->getElementValue(0);
-  double dval, f = 1.0 - sf.calculate(val, dval); dval*=-val;
-  return addToBuffers( f, dval, buffer );   
+double MoreThan::calcTransform( const double& val, double& dv ){
+  double f = 1.0 - sf.calculate(val, dv); dv*=-val; return f; 
 }
 
 }

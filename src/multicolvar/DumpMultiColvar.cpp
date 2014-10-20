@@ -32,6 +32,7 @@
 #include "core/ActionSet.h"
 #include "MultiColvarBase.h"
 #include "vesselbase/ActionWithInputVessel.h"
+#include "vesselbase/StoreDataVessel.h"
 
 using namespace std;
 
@@ -132,15 +133,21 @@ void DumpMultiColvar::update(){
                  lenunit*t(2,0),lenunit*t(2,1),lenunit*t(2,2)
            );
   }
-  std::vector<double> cvals( mycolv->getNumberOfQuantities()-4 );
+  vesselbase::StoreDataVessel* stash=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToArgument() );
+  plumed_dbg_assert( stash );
+  std::vector<double> cvals( mycolv->getNumberOfQuantities() );
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
     const char* defname="X";
     const char* name=defname;
 
-    Vector apos = mycolv->getCentralAtomPosition(i);
+    Vector apos = mycolv->getCentralAtomPos( mycolv->getTaskCode(i) );
     of.printf(("%s "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz).c_str(),name,lenunit*apos[0],lenunit*apos[1],lenunit*apos[2]);
-    mycolv->getValueForTask( i, cvals );
-    for(unsigned j=0;j<cvals.size();++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
+    stash->retrieveValue( i, true, cvals );
+    if( mycolv->weightWithDerivatives() ){
+       for(unsigned j=0;j<cvals.size();++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
+    } else {
+       for(unsigned j=1;j<cvals.size();++j) of.printf((" "+fmt_xyz).c_str(),cvals[j]);
+    }  
     of.printf("\n");
   }
 }

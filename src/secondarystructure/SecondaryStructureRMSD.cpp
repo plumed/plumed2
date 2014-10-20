@@ -205,15 +205,15 @@ void SecondaryStructureRMSD::calculate(){
   runAllTasks();
 }
 
-void SecondaryStructureRMSD::performTask(){
+void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsigned& current, vesselbase::MultiValue& myvals ){
   // Retrieve the positions
-  for(unsigned i=0;i<pos.size();++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(i) );
+  for(unsigned i=0;i<pos.size();++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(current,i) );
 
   // This does strands cutoff
   Vector distance=pbcDistance( pos[align_atom_1],pos[align_atom_2] ); 
   if( s_cutoff>0 ){
      if( distance.modulo()>s_cutoff ){
-       setElementValue(1,0.0);
+       myvals.setValue( 0, 0.0 );
        return;
      }
   }
@@ -234,48 +234,39 @@ void SecondaryStructureRMSD::performTask(){
       nr=references[i]->calculate( pos, pbc, false );
       if( nr<r ){ closest=i; r=nr; }
   }
-  setElementValue(1,1.0); 
-  setElementValue(0,r);
-  return;
-}
 
-void SecondaryStructureRMSD::mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer ){
-  plumed_dbg_assert( ider==0 );
-  printf("MERGING \n");
-  for(unsigned i=0;i<colvar_atoms[getCurrentTask()].size();++i){
-     unsigned thisatom=getAtomIndex(i), thispos=3*thisatom; 
+  // Transfer everything to the value
+  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, r );
+  for(unsigned i=0;i<colvar_atoms[current].size();++i){
+     unsigned thisatom=3*getAtomIndex(current,i);
      Vector ader=references[closest]->getAtomDerivative(i);
-     buffer[start+stride*thispos] += df*ader[0]; thispos++;
-     buffer[start+stride*thispos] += df*ader[1]; thispos++;
-     buffer[start+stride*thispos] += df*ader[2];
+     myvals.addDerivative( 1, thisatom, ader[0] ); thisatom++;
+     myvals.addDerivative( 1, thisatom, ader[1] ); thisatom++;
+     myvals.addDerivative( 1, thisatom, ader[2] );
   }
   Tensor virial;
-  if( !references[closest]->getVirial( virial ) ){ 
+  if( !references[closest]->getVirial( virial ) ){
      virial.zero();
-     for(unsigned i=0;i<colvar_atoms[getCurrentTask()].size();++i){
+     for(unsigned i=0;i<colvar_atoms[current].size();++i){
          virial+=(-1.0*Tensor( pos[i], references[closest]->getAtomDerivative(i) ));
      }
-  } 
-
-  // Easy to merge the virial
+  }
   unsigned outnat=3*getNumberOfAtoms();
-  buffer[start+stride*outnat] += df*virial(0,0); outnat++;
-  buffer[start+stride*outnat] += df*virial(0,1); outnat++;
-  buffer[start+stride*outnat] += df*virial(0,2); outnat++;
-  buffer[start+stride*outnat] += df*virial(1,0); outnat++;
-  buffer[start+stride*outnat] += df*virial(1,1); outnat++;
-  buffer[start+stride*outnat] += df*virial(1,2); outnat++;
-  buffer[start+stride*outnat] += df*virial(2,0); outnat++;
-  buffer[start+stride*outnat] += df*virial(2,1); outnat++;
-  buffer[start+stride*outnat] += df*virial(2,2); 
+  myvals.addDerivative( 1, outnat, virial(0,0) ); outnat++;
+  myvals.addDerivative( 1, outnat, virial(0,1) ); outnat++;
+  myvals.addDerivative( 1, outnat, virial(0,2) ); outnat++;
+  myvals.addDerivative( 1, outnat, virial(1,0) ); outnat++;
+  myvals.addDerivative( 1, outnat, virial(1,1) ); outnat++;
+  myvals.addDerivative( 1, outnat, virial(1,2) ); outnat++;
+  myvals.addDerivative( 1, outnat, virial(2,0) ); outnat++;
+  myvals.addDerivative( 1, outnat, virial(2,1) ); outnat++;
+  myvals.addDerivative( 1, outnat, virial(2,2) );
+
+  return;
 }
 
 void SecondaryStructureRMSD::apply(){
   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
-}
-
-void SecondaryStructureRMSD::clearDerivativesAfterTask( const unsigned& ival ){
-  thisval_wasset[ival]=false; setElementValue( ival, 0.0 ); thisval_wasset[ival]=false;
 }
 
 }

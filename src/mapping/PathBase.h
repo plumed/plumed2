@@ -35,7 +35,7 @@ public:
   PathBase(const ActionOptions&);
   double getLambda();
   void calculate();
-  void performTask();
+  void performTask( const unsigned& , const unsigned& , vesselbase::MultiValue& );
   double transformHD( const double& dist, double& df );
 };
 

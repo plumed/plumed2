@@ -102,7 +102,7 @@ void MultiColvar::readAtomsLikeKeyword( const std::string & key, int& natoms, st
      t.resize(0); 
   }
   if( all_atoms.size()>0 ){
-     current_atoms.resize( natoms ); nblock=ablocks[0].size(); 
+     nblock=ablocks[0].size(); 
      if( natoms<4 ) resizeBookeepingArray( nblock, nblock ); 
 
      for(unsigned i=0;i<nblock;++i){
@@ -137,7 +137,7 @@ void MultiColvar::readGroupsKeyword( int& natoms, std::vector<AtomNumber>& all_a
   std::vector<AtomNumber> t;
   parseAtomList("GROUP",t);
   if( !t.empty() ){
-      ablocks.resize( natoms ); current_atoms.resize( natoms );
+      ablocks.resize( natoms ); 
       for(unsigned i=0;i<t.size();++i) all_atoms.push_back( t[i] );
       if(natoms==2){ 
          nblock=t.size(); for(unsigned i=0;i<2;++i) ablocks[i].resize(nblock);
@@ -180,7 +180,7 @@ void MultiColvar::readGroupsKeyword( int& natoms, std::vector<AtomNumber>& all_a
 
 void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key2, std::vector<AtomNumber>& all_atoms ){
   plumed_assert( all_atoms.size()==0 );
-  ablocks.resize( 2 ); current_atoms.resize( 2 );
+  ablocks.resize( 2 ); 
 
   std::vector<AtomNumber> t1, t2; std::vector<unsigned> newlist; 
   parseAtomList(key1,t1); parseAtomList(key2,t2);
@@ -219,7 +219,7 @@ void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key
 
 void MultiColvar::readThreeGroups( const std::string& key1, const std::string& key2, const std::string& key3, const bool& allow2, std::vector<AtomNumber>& all_atoms ){
   plumed_assert( all_atoms.size()==0 );
-  ablocks.resize( 3 ); current_atoms.resize( 3 );
+  ablocks.resize( 3 ); 
 
   std::vector<AtomNumber> t1, t2, t3; std::vector<unsigned> newlist;
   parseAtomList(key1,t1); parseAtomList(key2,t2);
@@ -307,7 +307,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_
   if( !t.empty() ){
       for(unsigned i=0;i<t.size();++i) all_atoms.push_back( t[i] );
       if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ){
-          plumed_assert( natoms==2 ); current_atoms.resize( t.size() );
+          plumed_assert( natoms==2 ); 
           for(unsigned i=0;i<t.size();++i) addTaskToList(i);
           ablocks[0].resize( t.size() ); for(unsigned i=0;i<t.size();++i) ablocks[0][i]=i; 
           if( !verbose_output ){
@@ -319,7 +319,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_
       } else if( !( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) ){
           std::vector<unsigned> newlist; usespecies=false; verbose_output=false; // Make sure we don't do verbose output
           log.printf("  involving atoms : ");
-          current_atoms.resize(1); ablocks.resize(1); ablocks[0].resize( t.size() ); 
+          ablocks.resize(1); ablocks[0].resize( t.size() ); 
           for(unsigned i=0;i<t.size();++i){ 
              addTaskToList(i); ablocks[0][i]=i; log.printf(" %d",t[i].serial() ); 
           }
@@ -333,7 +333,6 @@ void MultiColvar::readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_
       if( !t1.empty() ){
          parseAtomList("SPECIESB",t2);
          if ( t2.empty() ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
-         current_atoms.resize( 1 + t2.size() );
          for(unsigned i=0;i<t1.size();++i){ all_atoms.push_back( t1[i] ); addTaskToList(i); }
          ablocks[0].resize( t2.size() ); 
          unsigned k=0;
@@ -364,19 +363,8 @@ void MultiColvar::calculate(){
   runAllTasks();
 }
 
-void MultiColvar::updateActiveAtoms(){
-  if( atoms_with_derivatives.updateComplete() ) return;
-  atoms_with_derivatives.emptyActiveMembers();
-  for(unsigned i=0;i<getNAtoms();++i) atoms_with_derivatives.updateIndex( current_atoms[i] );
-  atoms_with_derivatives.sortActiveList();
-}
-
-Vector MultiColvar::calculateCentralAtomPosition(){
-  Vector catom=getCentralAtom();
-  atomsWithCatomDer.emptyActiveMembers();
-  for(unsigned i=0;i<getNAtoms();++i) atomsWithCatomDer.updateIndex( current_atoms[i] );
-  atomsWithCatomDer.sortActiveList();
-  return catom;
+void MultiColvar::updateActiveAtoms( AtomValuePack& myatoms ){
+  myatoms.updateUsingIndices();
 }
      
 }

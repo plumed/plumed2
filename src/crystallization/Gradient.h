@@ -43,31 +43,16 @@ public:
   Gradient(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
-/// This just throws an error
-  unsigned getCentralAtomElementIndex(); 
 /// Check on pbc - is it orthorhombic
   void setupRegions();
 /// Calculate whats in the volume
-  void calculateAllVolumes();
-  double getValueForTolerance();
-  unsigned getIndexOfWeight();
+  void calculateAllVolumes( const unsigned& curr, vesselbase::MultiValue& outvals );
 };
 
 inline
 unsigned Gradient::getNumberOfQuantities(){
   return nquantities;
 } 
-
-inline
-double Gradient::getValueForTolerance(){
-  return 1.0;
-}
-
-inline
-unsigned Gradient::getIndexOfWeight(){
-  plumed_error();
-  return 1;
-}
 
 }
 }

@@ -61,25 +61,22 @@ public:
 /// Is the output quantity periodic
   bool isPeriodic();
 /// Routines that have to be defined so as not to have problems with virtual methods 
-  void deactivate_task();
+  void deactivate_task( const unsigned& taskno );
   void calculate(){}
 /// This does the task
-  void performTask();
-  virtual void completeTask()=0;
+  void transformBridgedDerivatives( const unsigned& current, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals );
+  void performTask( const unsigned& , const unsigned& , vesselbase::MultiValue& );
+  virtual void completeTask( const unsigned& curr, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals )=0;
 /// Get the central atom position
   Vector retrieveCentralAtomPos();
 /// We need our own calculate numerical derivatives here
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
   void apply(){};
-/// These routines replace the virtual routines in ActionWithVessel for 
-/// code optimization
-  void mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer );
-  void clearDerivativesAfterTask( const unsigned& ider );
 /// Is this atom currently being copied 
   bool isCurrentlyActive( const unsigned& );
 /// This should not be called
   Vector calculateCentralAtomPosition(){ plumed_error(); }
-  double compute(){ plumed_error(); }
+  double compute( const unsigned& tindex, AtomValuePack& myvals ){ plumed_error(); }
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ){ plumed_error(); }
   void updateActiveAtoms(){ plumed_error(); }
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
@@ -104,6 +101,11 @@ bool BridgedMultiColvarFunction::isCurrentlyActive( const unsigned& code ){
 inline
 unsigned BridgedMultiColvarFunction::getSizeOfAtomsWithDerivatives(){
   return mycolv->getNumberOfAtoms();
+}
+
+inline 
+Vector BridgedMultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ){
+  return mycolv->getPositionOfAtomForLinkCells(iatom);
 }
 
 }

@@ -60,8 +60,10 @@ public:
   void prepare();
 /// Set the start of the buffer 
   void setBufferStart( unsigned& start );
+/// This transforms the derivatives using the output value
+  MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
 /// Actually do the calculation
-  bool calculate( std::vector<double>& buffer );
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer );
 /// Finish the calculation
   void finish( const std::vector<double>& buffer );
 /// Calculate numerical derivatives

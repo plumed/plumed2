@@ -71,7 +71,7 @@ void AnalysisWithLandmarks::performAnalysis(){
   analyzeLandmarks();
 }
 
-void AnalysisWithLandmarks::performTask(){
+void AnalysisWithLandmarks::performTask( const unsigned& taskIndex, const unsigned& current, vesselbase::MultiValue& myvals ){
   plumed_merror("Should not be here");
 }
 

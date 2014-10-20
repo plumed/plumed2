@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VesselRegister.h"
-#include "StoreValueVessel.h"
+#include "StoreDataVessel.h"
 #include "ActionWithVessel.h"
 
 namespace PLMD {
@@ -30,7 +30,7 @@ namespace vesselbase{
 // The calculation of all the colvars is parallelized 
 // but the loops for calculating moments are not
 // Feel free to reimplement this if you know how
-class Moments : public StoreValueVessel {
+class Moments : public StoreDataVessel {
 private:
   std::vector<unsigned> powers;
   std::vector<Value*> value_out;
@@ -47,7 +47,7 @@ public:
 PLUMED_REGISTER_VESSEL(Moments,"MOMENTS")
 
 void Moments::registerKeywords( Keywords& keys ){
-  StoreValueVessel::registerKeywords( keys );
+  StoreDataVessel::registerKeywords( keys );
 }
 
 void Moments::reserveKeyword( Keywords& keys ){
@@ -61,7 +61,7 @@ void Moments::reserveKeyword( Keywords& keys ){
 }
 
 Moments::Moments( const vesselbase::VesselOptions& da) :
-StoreValueVessel(da)
+StoreDataVessel(da)
 {
    ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
    plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");
@@ -80,9 +80,6 @@ StoreValueVessel(da)
 
 void Moments::resize(){
    StoreDataVessel::resize();
-   if( value_out[0]->getNumberOfDerivatives()>0 ){
-      unsigned nder=getAction()->getNumberOfDerivatives();
-   }
 }
 
 std::string Moments::description(){
@@ -108,33 +105,34 @@ void Moments::finish( const std::vector<double>& buffer ){
      double pfactor, min, max; Tools::convert(str_min,min); Tools::convert(str_max,max);
      pfactor = 2*pi / ( max-min ); myvalue.setDomain( str_min, str_max );
      double sinsum=0, cossum=0, val;
-     for(unsigned i=0;i<nvals;++i){ val=pfactor*( getValue(i) - min ); sinsum+=sin(val); cossum+=cos(val); }
+     for(unsigned i=0;i<nvals;++i){ val=pfactor*( buffer[i*nspace*vecsize+nspace] - min ); sinsum+=sin(val); cossum+=cos(val); }
      mean = 0.5 + atan2( sinsum / static_cast<double>( nvals ) , cossum / static_cast<double>( nvals ) ) / (2*pi);
      mean = min + (max-min)*mean;
   } else {
-     for(unsigned i=0;i<nvals;++i) mean+=getValue(i);    
+     for(unsigned i=0;i<nvals;++i) mean+=buffer[i*nspace*vecsize+nspace];    
      mean/=static_cast<double>( nvals ); myvalue.setNotPeriodic();
   }
 
   for(unsigned npow=0;npow<powers.size();++npow){
      double dev1=0; 
      if( value_out[0]->getNumberOfDerivatives()>0 ){
-         for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, getValue(i) ), powers[npow] - 1 ); 
+         for(unsigned i=0;i<nvals;++i) dev1+=pow( myvalue.difference( mean, buffer[i*nspace*vecsize+nspace] ), powers[npow] - 1 ); 
          dev1/=static_cast<double>( nvals );
      }
 
-     std::vector<double> pref(1); double tmp, moment=0; 
+     double moment=0;
+     MultiValue myvals( getNumberOfComponents(), getAction()->getNumberOfDerivatives() ); myvals.clearAll();
      for(unsigned i=0;i<nvals;++i){
-         tmp=myvalue.difference( mean, getValue(i) );
+         double tmp=myvalue.difference( mean, buffer[i*nspace*vecsize+nspace] );
          moment+=pow( tmp, powers[npow] );
          if( value_out[npow]->getNumberOfDerivatives() ){
-             pref[0]=pow( tmp, powers[npow] - 1 ) - dev1;
-             if( usingLowMem() ){
-                recompute( i, 0 ); // Not very efficient 
-                chainRule( 0, pref, value_out[npow] );
-             } else {
-                chainRule( i, pref, value_out[npow] );
-             }
+             double pref=pow( tmp, powers[npow] - 1 ) - dev1;
+             retrieveDerivatives( i, false, myvals );
+             for(unsigned j=0;j<myvals.getNumberActive();++j){   
+                 unsigned jatom=myvals.getActiveIndex(j);
+                 value_out[npow]->addDerivative(jatom, pref*myvals.getDerivative( 1, jatom ) );
+             } 
+             myvals.clearAll();
          }
      }
      if( value_out[npow]->getNumberOfDerivatives()>0 ) value_out[npow]->chainRule( powers[npow] / static_cast<double>( nvals ) );

@@ -43,7 +43,7 @@ public:
 /// Get the number of quantities in the colvar
   unsigned getNumberOfQuantities();
 /// Actually do what we are asked
-  void completeTask();
+  void completeTask( const unsigned& curr, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals );
 /// Do the filtering
   virtual double applyFilter( const double& val, double& df )=0;
 /// Just checks there are no bridging forces

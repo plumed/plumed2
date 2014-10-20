@@ -34,7 +34,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   Max( const VesselOptions& da );
   std::string function_description();
-  bool calculate( std::vector<double>& buffer );
+  double calcTransform( const double& val, double& dv );
   double finalTransform( const double& val, double& dv );
 };
 
@@ -69,10 +69,8 @@ std::string Max::function_description(){
   return "the maximum value. Beta is equal to " + str_beta;
 }
 
-bool Max::calculate( std::vector<double>& buffer ){
-  double val=getAction()->getElementValue(0);
-  double dval, f = exp(val/beta); dval=f/beta;
-  return addToBuffers( f, dval, buffer );
+double Max::calcTransform( const double& val, double& dv ){
+  double f = exp(val/beta); dv=f/beta; return f;
 }
 
 double Max::finalTransform( const double& val, double& dv ){

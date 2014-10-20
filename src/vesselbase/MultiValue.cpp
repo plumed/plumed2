@@ -33,6 +33,13 @@ derivatives(nvals,nder)
   hasDerivatives.deactivateAll();
 }
 
+void MultiValue::resize( const unsigned& nvals, const unsigned& nder ){
+  values.resize(nvals); derivatives.resize( nvals, nder );
+  hasDerivatives.clear();
+  for(unsigned i=0;i<nder;++i) hasDerivatives.addIndexToList( i );
+  hasDerivatives.deactivateAll();
+}
+
 void MultiValue::clearAll(){
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
   for(unsigned i=0;i<values.size();++i) clear(i);
@@ -56,6 +63,38 @@ void MultiValue::chainRule( const unsigned& ival, const unsigned& iout, const un
       unsigned jder=hasDerivatives[i];
       buffer[start+jder*stride] += df*derivatives(ival,jder);
   }
+}
+
+void MultiValue::copyValues( MultiValue& outvals ) const { 
+  plumed_dbg_assert( values.size()<=outvals.getNumberOfValues() );
+  for(unsigned i=0;i<values.size();++i) outvals.setValue( i, values[i] ); 
+  
+}
+
+void MultiValue::copyDerivatives( MultiValue& outvals ){
+  plumed_dbg_assert( values.size()<=outvals.getNumberOfValues() && derivatives.ncols()<=outvals.getNumberOfDerivatives() );
+
+  if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
+
+  for(unsigned i=0;i<values.size();++i){
+     for(unsigned j=0;j<hasDerivatives.getNumberActive();++j){
+        unsigned jder=hasDerivatives[j];
+        outvals.addDerivative( i, jder, derivatives(i,jder) );
+     }
+  }
+}
+
+void MultiValue::quotientRule( const unsigned& nder, const unsigned& dder, const unsigned& oder ){
+  plumed_dbg_assert( nder<values.size() && dder<values.size() && oder<values.size() );
+
+  if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
+
+  double weight = values[dder], pref = values[nder] / (weight*weight);
+  for(unsigned j=0;j<hasDerivatives.getNumberActive();++j){
+      unsigned jder=hasDerivatives[j];
+      derivatives(oder,jder) = derivatives(nder,jder) / weight - pref*derivatives(dder,jder);
+  }
+  values[oder] = values[nder] / values[dder];
 }
 
 }

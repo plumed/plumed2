@@ -29,15 +29,13 @@ namespace PLMD {
 namespace crystallization {
 
 class VectorMean : public vesselbase::FunctionVessel {
-private:
-  unsigned ncomp, vstart, wnum;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   VectorMean( const vesselbase::VesselOptions& da );
   std::string function_description();
   void resize();
-  bool calculate( std::vector<double>& buffer );
+  bool calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer );
   void finish( const std::vector<double>& buffer );
 };
 
@@ -56,15 +54,6 @@ void VectorMean::reserveKeyword( Keywords& keys ){
 VectorMean::VectorMean( const vesselbase::VesselOptions& da ) :
 FunctionVessel(da)
 {
-   usetol=true;
-   multicolvar::ActionVolume* vg=dynamic_cast<multicolvar::ActionVolume*>( getAction() );
-   if( vg ){
-       ncomp = getAction()->getNumberOfQuantities() - 2;
-       vstart=1; wnum=ncomp+1;
-   } else { 
-       vstart=5; wnum=1; 
-       ncomp = getAction()->getNumberOfQuantities() - 5;
-   }
 }
 
 std::string VectorMean::function_description(){
@@ -72,7 +61,7 @@ std::string VectorMean::function_description(){
 }
 
 void VectorMean::resize(){
-  if( ncomp==0 ) ncomp=getAction()->getNumberOfQuantities() - 5;
+  unsigned ncomp=getAction()->getNumberOfQuantities() - 2;
 
   if( getAction()->derivativesAreRequired() ){
      unsigned nder=getAction()->getNumberOfDerivatives();
@@ -84,36 +73,34 @@ void VectorMean::resize(){
   }
 }
 
-bool VectorMean::calculate( std::vector<double>& buffer ){
-  double weight=getAction()->getElementValue(wnum);
-  unsigned nder=getAction()->getNumberOfDerivatives();
-  plumed_dbg_assert( weight>=getTolerance() ); 
-  // bool addval = addValueUsingTolerance( 0, weight );
+bool VectorMean::calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer ){
+  unsigned ncomp=getAction()->getNumberOfQuantities()-2, nder=getAction()->getNumberOfDerivatives();
+
+  double weight=myvals.get(0); plumed_dbg_assert( weight>=getTolerance() ); 
   buffer[bufstart] += weight;
-  if( diffweight ) getAction()->chainRuleForElementDerivatives( 0, wnum, 1.0, bufstart, buffer );
+  if( diffweight ) myvals.chainRule( 0, 0, 1, 0, 1.0, bufstart, buffer ); 
   for(unsigned i=0;i<ncomp;++i){
-      double colvar=getAction()->getElementValue( vstart  + i );
+      double colvar=myvals.get(2+i); 
       buffer[bufstart + (1+i)*(1+nder)] += weight*colvar;  
-      // addValueIgnoringTolerance( 1 + i, weight*colvar );
-      getAction()->chainRuleForElementDerivatives( 1+i, vstart+i, weight, bufstart, buffer );
-      if( diffweight ) getAction()->chainRuleForElementDerivatives( 1+i, wnum, colvar, bufstart, buffer );
+      myvals.chainRule( 2+i, 1+i, 1, 0, weight, bufstart, buffer );
+      if( diffweight ) myvals.chainRule( 0, 1+i, 1, 0, colvar, bufstart, buffer );
   }
   return true;
 }
 
 void VectorMean::finish( const std::vector<double>& buffer ){
-  double sum=0, ww=buffer[bufstart]; // getFinalValue(0);
+  unsigned ncomp=getAction()->getNumberOfQuantities()-2;
+  double sum=0, ww=buffer[bufstart]; 
   unsigned nder=getAction()->getNumberOfDerivatives();
   for(unsigned i=0;i<ncomp;++i){ 
      double tmp = buffer[bufstart+(nder+1)*(i+1)] / ww;
      sum+=tmp*tmp; 
   }
-  double tw = 1.0 / sqrt(sum);
-  setOutputValue( sqrt(sum) ); 
+  double tw = 1.0 / sqrt(sum); setOutputValue( sqrt(sum) ); 
   if( !getAction()->derivativesAreRequired() ) return;
 
   for(unsigned icomp=0;icomp<ncomp;++icomp){
-      double tmp = buffer[(icomp+1)*(1+nder)] / ww; // getFinalValue(icomp+1) / ww;
+      double tmp = buffer[(icomp+1)*(1+nder)] / ww; 
       unsigned bstart = bufstart + (1+icomp)*(nder+1) + 1;
       for(unsigned jder=0;jder<nder;++jder) addDerivativeToFinalValue( jder, (tw*tmp/ww)*( buffer[bstart + jder] - tmp*buffer[bufstart + 1 + jder] ) );
   }

@@ -31,12 +31,10 @@ void AdjacencyMatrixVessel::registerKeywords( Keywords& keys ){
 }
 
 AdjacencyMatrixVessel::AdjacencyMatrixVessel( const vesselbase::VesselOptions& da ):
-StoreDataVessel(da),
-tmpdf(1)
+StoreDataVessel(da)
 {
   function=dynamic_cast<AdjacencyMatrixAction*>( getAction() );
   plumed_assert( function );
-  completeSetup( 0, 1 ); nrows = function->getFullNumberOfTasks();
 }
 
 void AdjacencyMatrixVessel::prepare(){
@@ -47,19 +45,6 @@ void AdjacencyMatrixVessel::prepare(){
 void AdjacencyMatrixVessel::setFinishedTrue(){
   finished=true;
 }
-
-void AdjacencyMatrixVessel::recompute( const unsigned& ivec, const unsigned& jstore ){
-  plumed_dbg_assert( function->usingLowMem() && function->dertime );
-  
-  // Set the task we want to reperform
-  setTaskToRecompute( ivec );
-  // Reperform the task
-  if( function->dertime ){
-     function->performTask();
-     storeDerivativesLowMem( jstore );
-     function->clearAfterTask();
-  }
-} 
 
 void AdjacencyMatrixVessel::finish( const std::vector<double>& buffer ){
   if( !finished ){

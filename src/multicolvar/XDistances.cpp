@@ -115,10 +115,9 @@ public:
   static void registerKeywords( Keywords& keys );
   XDistances(const ActionOptions&);
 // active methods:
-  virtual double compute();
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms );
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
-  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(XDistances,"XDISTANCES")
@@ -151,23 +150,17 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double XDistances::compute(){
+double XDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ){
    Vector distance; 
-   distance=getSeparation( getPosition(0), getPosition(1) );
+   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
    const double value=distance[myc];
 
    Vector myvec; myvec.zero(); 
    // And finish the calculation
-   myvec[myc]=+1; addAtomsDerivatives( 1,myvec  );
-   myvec[myc]=-1; addAtomsDerivatives( 0,myvec );
-   addBoxDerivatives( Tensor(distance,myvec) );
+   myvec[myc]=+1; myatoms.addAtomsDerivatives( 1, 1, myvec  );
+   myvec[myc]=-1; myatoms.addAtomsDerivatives( 1, 0, myvec );
+   myatoms.addBoxDerivatives( 1, Tensor(distance,myvec) );
    return value;
-}
-
-Vector XDistances::getCentralAtom(){
-   addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
-   addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
-   return 0.5*( getPosition(0) + getPosition(1) );
 }
 
 }

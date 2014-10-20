@@ -30,6 +30,7 @@ class SpathVessel : public vesselbase::FunctionVessel {
 private:
   bool foundoneclose;
   unsigned mycoordnumber;
+  unsigned nderiv;
   Mapping* mymap;
 public:
   static void registerKeywords( Keywords& keys );
@@ -37,7 +38,7 @@ public:
   SpathVessel( const vesselbase::VesselOptions& da );
   std::string function_description();
   void prepare();
-  bool calculate( std::vector<double>& buffer );
+  bool calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(SpathVessel,"SPATH")
@@ -58,7 +59,11 @@ FunctionVessel(da)
   plumed_massert( mymap, "SpathVessel can only be used with mappings");
   // Retrieve the index of the property in the underlying mapping
   mycoordnumber=mymap->getPropertyIndex( getLabel() ); 
-  usetol=true; norm=true;
+  usetol=true; norm=true; nderiv=mymap->getNumberOfDerivatives();
+
+  for(unsigned i=0;i<mymap->getFullNumberOfTasks();++i){
+     if( mymap->getTaskCode(i)!=mymap->getPositionInFullTaskList(i) ) error("mismatched tasks and codes");
+  }
 }
 
 std::string SpathVessel::function_description(){
@@ -69,9 +74,15 @@ void SpathVessel::prepare(){
   foundoneclose=false;
 }
 
-bool SpathVessel::calculate( std::vector<double>& buffer ){
-  double pp=mymap->getPropertyValue( mycoordnumber );
-  return addToBuffers( pp, 0.0, buffer );
+bool SpathVessel::calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer ){
+  double pp=mymap->getPropertyValue( current, mycoordnumber ), weight=myvals.get(0);
+  if( weight<getTolerance() ) return false;
+  buffer[bufstart] += weight*pp; buffer[bufstart+1+nderiv] += weight; 
+  if( getAction()->derivativesAreRequired() ){
+     myvals.chainRule( 0, 0, 1, 0, pp, bufstart, buffer );
+     myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );
+  }
+  return true;
 }
 
 }

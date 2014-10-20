@@ -58,7 +58,9 @@ protected:
 /// Store the distance function
   void storeDistanceFunction( const unsigned& ifunc );
 /// Get the value of the weight
-  double getWeight() const ;
+  double getWeight( const unsigned& weight ) const ;
+/// Transfer the derivatives to a MultiValue object
+  void transferDerivatives( const unsigned& ider, const unsigned& fno, const unsigned& cur, vesselbase::MultiValue& myvals );
 public:
   static void registerKeywords( Keywords& keys );
   Mapping(const ActionOptions&);
@@ -85,11 +87,7 @@ public:
 /// Get the name of the ith argument
   std::string getArgumentName( unsigned& iarg );
 /// Get the value of the ith property for the current frame
-  double getPropertyValue( const unsigned& iprop ) const ;
-/// Return the current value of the high dimensional function
-  double getCurrentHighDimFunctionValue( const unsigned& ider ) const ;
-/// Perform chain rule for derivatives
-  void mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer );
+  double getPropertyValue( const unsigned& current, const unsigned& iprop ) const ;
 /// Stuff to do before we do the calculation
   void prepare();
 /// Apply the forces 
@@ -131,20 +129,14 @@ std::string Mapping::getPropertyName( const unsigned& iprop ) const {
 }
 
 inline
-double Mapping::getPropertyValue( const unsigned& iprop ) const {
+double Mapping::getPropertyValue( const unsigned& cur, const unsigned& iprop ) const {
   plumed_dbg_assert( iprop<getNumberOfProperties() );
-  return mymap->getPropertyValue( getCurrentTask(), iprop ); 
+  return mymap->getPropertyValue( cur, iprop ); 
 }
 
 inline
-double Mapping::getWeight() const {
-  return mymap->getWeight( getCurrentTask() ); 
-}
-
-inline 
-double Mapping::getCurrentHighDimFunctionValue( const unsigned& ider ) const {
-  plumed_dbg_assert( ider<2 );
-  return fframes[ider*getNumberOfReferencePoints() + getCurrentTask()];
+double Mapping::getWeight( const unsigned& current ) const {
+  return mymap->getWeight( current ); 
 }
 
 inline

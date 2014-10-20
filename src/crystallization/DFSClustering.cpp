@@ -41,8 +41,6 @@ private:
   unsigned clustr;
 /// Used to identify the cluster we are working on 
   int number_of_cluster;
-/// The values from the underlying colvar
-  std::vector<double> myvals;
 /// The number of neighbors each atom has
   std::vector<unsigned> nneigh;
 /// The adjacency list
@@ -68,7 +66,7 @@ public:
   void completeCalculation();
 /// Derivatives of elements of adjacency matrix are unimportant.  We thus
 /// overwrite this routine as this makes the code faster
-  void updateActiveAtoms(){}
+  void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ){}
 };
 
 PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
@@ -100,8 +98,6 @@ color(getFullNumberOfBaseTasks())
    if( clustr<1 ) error("cannot look for a cluster larger than the largest cluster");
    if( clustr>getFullNumberOfBaseTasks() ) error("cluster selected is invalid - too few atoms in system");
 
-   // Set myvals size equal to number of components in vector + 1 (for norm)
-   myvals.resize( getBaseMultiColvar(0)->getNumberOfQuantities() - 4 );
    // Setup the various things this will calculate
    readVesselKeywords(); 
 }
@@ -150,31 +146,25 @@ void DFSClustering::completeCalculation(){
    }
    unsigned size=comm.Get_size(), rank=comm.Get_rank();
 
-//   for(unsigned i=0;i<cluster_sizes.size();++i) printf("HELLO CLUSTER %d %d \n",i,cluster_sizes[i].first );
    // Now calculate properties of the largest cluster 
    ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
    // Get size for buffer
    unsigned bsize=0; std::vector<double> buffer( getSizeOfBuffer( bsize ), 0.0 );
+   std::vector<double> vals( getNumberOfQuantities() );
+   vesselbase::MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
+   vesselbase::MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
    // Get rid of bogus derivatives
    clearDerivatives(); getAdjacencyVessel()->setFinishedTrue(); 
    for(unsigned j=rank;j<myatoms.size();j+=size){
        // Note loop above over array containing atoms so this is load balanced
        unsigned i=myatoms[j];
        // Need to copy values from base action
-       extractValueForBaseTask( i, myvals );
-       //  getValueForBaseTask( i, myvals );
-       setElementValue(0, myvals[0] ); setElementValue(1, 1.0 );
-       for(unsigned i=0;i<myvals.size()-1;++i) setElementValue(2+i, myvals[1+i] );
-       // Prepare dynamic lists
-       atoms_with_derivatives.deactivateAll();
-       // Copy derivatives from base action
-       extractWeightedAverageAndDerivatives( i, 1.0 ); 
-       // Update all dynamic lists
-       atoms_with_derivatives.updateActiveMembers();
+       getVectorForTask( i, false, vals );
+       for(unsigned i=0;i<vals.size();++i) myvals.setValue( i, vals[i] );
+       if( !doNotCalculateDerivatives() ) getVectorDerivatives( i, false, myvals );
        // Run calculate all vessels
-       calculateAllVessels( buffer );
-       // Must clear element values and derivatives
-       clearAfterTask();
+       calculateAllVessels( i, myvals, bvals, buffer );
+       myvals.clearAll();
    }
    // MPI Gather everything
    if( buffer.size()>0 ) comm.Sum( buffer );

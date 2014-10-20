@@ -31,7 +31,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   Sum( const VesselOptions& da );
   std::string function_description();
-  bool calculate( std::vector<double>& buffer );
+  double calcTransform( const double& val, double& dv );
 };
 
 PLUMED_REGISTER_VESSEL(Sum,"SUM")
@@ -54,9 +54,8 @@ std::string Sum::function_description(){
   return "the sum of all the values"; 
 }
 
-bool Sum::calculate( std::vector<double>& buffer ){
-   double val=getAction()->getElementValue(0);
-   return addToBuffers( val, 1.0, buffer );
+double Sum::calcTransform( const double& val, double& dv ){
+  dv=1.0; return val;
 }
 
 }

@@ -27,6 +27,7 @@
 #include "VesselRegister.h"
 #include "BridgeVessel.h"
 #include "FunctionVessel.h"
+#include "StoreDataVessel.h"
 
 using namespace std;
 namespace PLMD{
@@ -54,6 +55,7 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   serial(false),
   lowmem(false),
   noderiv(true),
+  actionIsBridged(false),
   contributorsAreUnlocked(false),
   weightHasDerivatives(false)
 {
@@ -108,6 +110,7 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   VesselOptions da("","",0,"",this); 
   BridgeVessel* bv=new BridgeVessel(da);
   bv->setOutputAction( tome );
+  tome->actionIsBridged=true;
   functions.push_back( dynamic_cast<Vessel*>(bv) );
   resizeFunctions();
   return bv; 
@@ -118,7 +121,16 @@ StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, 
       StoreDataVessel* vsv=dynamic_cast<StoreDataVessel*>( functions[i] );
       if( vsv ) return vsv;
   }
-  return NULL;
+  
+  VesselOptions da("","",0,"",this);
+  StoreDataVessel* mydata=new StoreDataVessel(da);
+  if( allow_wcutoff ) mydata->setHardCutoffOnWeight( wtol );
+  addVessel(mydata);
+
+  // Make sure resizing of vessels is done
+  resizeFunctions();
+
+  return mydata;
 }
 
 void ActionWithVessel::addTaskToList( const unsigned& taskCode ){
@@ -169,8 +181,6 @@ void ActionWithVessel::readVesselKeywords(){
 
 void ActionWithVessel::resizeFunctions(){
   for(unsigned i=0;i<functions.size();++i) functions[i]->resize();
-  thisval.resize( getNumberOfQuantities() ); thisval_wasset.resize( getNumberOfQuantities(), false );
-  derivatives.resize( getNumberOfQuantities()*getNumberOfDerivatives(), 0.0 );
 }
 
 void ActionWithVessel::needsDerivatives(){
@@ -235,7 +245,7 @@ void ActionWithVessel::activateTheseTasks( std::vector<unsigned>& additionalTask
   contributorsAreUnlocked=false;
 }
 
-void ActionWithVessel::deactivate_task(){
+void ActionWithVessel::deactivate_task( const unsigned & task_index ){
   plumed_dbg_assert( contributorsAreUnlocked );
   taskFlags[task_index]=1;
 }
@@ -268,32 +278,34 @@ void ActionWithVessel::runAllTasks(){
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize ); 
 
+  // Build storage stuff for loop
   std::vector<double> buffer( bufsize, 0.0 );
+  MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
+  MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
+  myvals.clearAll(); bvals.clearAll();
+ 
   for(unsigned i=rank;i<nactive_tasks;i+=stride){
-      // The index of the task in the full list
-      task_index=indexOfTaskInFullList[i];
-      // Store the task we are currently working on
-      current=partialTaskList[i];
       // Calculate the stuff in the loop for this action
-      performTask();
+      performTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );
       // Weight should be between zero and one
-      plumed_dbg_assert( getValueForTolerance()>=0 && getValueForTolerance()<=1.0 );
+      plumed_dbg_assert( myvals.get(0)>=0 && myvals.get(0)<=1.0 );
 
       // Check for conditions that allow us to just to skip the calculation
       // the condition is that the weight of the contribution is low 
       // N.B. Here weights are assumed to be between zero and one
-      if( getValueForTolerance()<tolerance ){
-         // Clear the derivatives
-         clearAfterTask();  
+      if( myvals.get(0)<tolerance ){
          // Deactivate task if it is less than the neighbor list tolerance
-         if( getValueForTolerance()<nl_tolerance && contributorsAreUnlocked ) deactivate_task();
+         if( myvals.get(0)<nl_tolerance && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
+         // Clear the derivatives
+         myvals.clearAll();
          continue;
       }
 
       // Now calculate all the functions
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
-      if( !calculateAllVessels( buffer ) && contributorsAreUnlocked ) deactivate_task();
+      if( !calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, buffer ) && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
+      myvals.clearAll();
   }
   // MPI Gather everything
   if( !serial && buffer.size()>0 ) comm.Sum( buffer );
@@ -304,60 +316,32 @@ void ActionWithVessel::runAllTasks(){
   finishComputations( buffer );
 }
 
-void ActionWithVessel::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
-  indices[jstore]=getNumberOfDerivatives();
-  if( indices[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");
-
-  unsigned kder = ntotal + jstore*getNumberOfDerivatives();
-  for(unsigned jder=0;jder<getNumberOfDerivatives();++jder){ indices[ kder ] = jder; kder++; }
+void ActionWithVessel::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ){
+  plumed_error();
 }
 
-void ActionWithVessel::clearAfterTask(){
-  // Clear the derivatives from this step
-  for(unsigned k=0;k<thisval.size();++k) clearDerivativesAfterTask(k);
-}
+// void ActionWithVessel::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
+//   indices[jstore]=getNumberOfDerivatives();
+//   if( indices[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");
+// 
+//   unsigned kder = ntotal + jstore*getNumberOfDerivatives();
+//   for(unsigned jder=0;jder<getNumberOfDerivatives();++jder){ indices[ kder ] = jder; kder++; }
+// }
 
-void ActionWithVessel::clearDerivativesAfterTask( const unsigned& ider ){
-  thisval[ider]=0.0; thisval_wasset[ider]=false;
-  if( !noderiv ){
-     unsigned kstart=ider*getNumberOfDerivatives();
-     for(unsigned j=0;j<getNumberOfDerivatives();++j) derivatives[ kstart+j ]=0.0;
-  }
-}
-
-bool ActionWithVessel::calculateAllVessels( std::vector<double>& buffer ){
-  bool keep=false;
+bool ActionWithVessel::calculateAllVessels( const unsigned& taskCode, MultiValue& myvals, MultiValue& bvals, std::vector<double>& buffer ){
+  bool keep=false; 
   for(unsigned j=0;j<functions.size();++j){
       // Calculate returns a bool that tells us if this particular
       // quantity is contributing more than the tolerance
-      if( functions[j]->calculate( buffer ) ) keep=true;
+      if( functions[j]->calculate( taskCode, functions[j]->transformDerivatives(taskCode, myvals, bvals), buffer ) ) keep=true;
+      if( !actionIsBridged ) bvals.clearAll(); 
   }
-  clearAfterTask();
   return keep;
 }
 
 void ActionWithVessel::finishComputations( const std::vector<double>& buffer ){
   // Set the final value of the function
   for(unsigned j=0;j<functions.size();++j) functions[j]->finish( buffer ); 
-}
-
-void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& ider, const unsigned& iout, const double& df, const unsigned& buffer_start, std::vector<double>& buffer ){
-  if( noderiv ) return;
-  mergeDerivatives( ider, df, buffer_start + (getNumberOfDerivatives()+1)*iout + 1 , 1, buffer );
-} 
-
-void ActionWithVessel::chainRuleForElementDerivatives( const unsigned& ider, const unsigned& iout, const unsigned& stride, 
-                                                       const unsigned& off, const double& df, const unsigned& bufstart, 
-                                                       std::vector<double>& buffer ){
-  if( noderiv ) return;
-  plumed_dbg_assert( off<stride );
-  unsigned buffer_start=bufstart + stride*(getNumberOfDerivatives()+1)*iout + stride + off;
-  mergeDerivatives( ider, df, buffer_start, stride, buffer );
-}
-
-void ActionWithVessel::mergeDerivatives( const unsigned& ider, const double& df, const unsigned start, const unsigned stride, std::vector<double>& buffer ){
-  unsigned nder=getNumberOfDerivatives(), vstart=nder*ider; 
-  for(unsigned i=0;i<getNumberOfDerivatives();++i) buffer[start+stride*i] += df*derivatives[vstart+i];
 }
 
 bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply ){

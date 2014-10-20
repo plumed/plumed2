@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "VolumeGradientBase.h"
+#include "CatomPack.h"
 
 namespace PLMD {
 namespace multicolvar {
@@ -46,50 +47,81 @@ void VolumeGradientBase::doJobsRequiredBeforeTaskList(){
   ActionWithVessel::doJobsRequiredBeforeTaskList();
 }
 
-void VolumeGradientBase::completeTask(){
+void VolumeGradientBase::completeTask( const unsigned& curr, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals ){
   if( getPntrToMultiColvar()->isDensity() ){ 
-     setElementValue( 0, 1.0 );
+     outvals.setValue(0, 1.0); outvals.setValue(1, 1.0);
   } else {
      // Copy derivatives of the colvar and the value of the colvar
-     getPntrToMultiColvar()->copyElementsToBridgedColvar( this );
+     invals.copyValues( outvals ); 
+     if( derivativesAreRequired() ) invals.copyDerivatives( outvals );
   }
-  calculateAllVolumes(); 
+  calculateAllVolumes( curr, outvals ); 
 }
 
-void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const double& weight, const Vector& wdf ){
-  MultiColvarBase* mcolv=getPntrToMultiColvar();
+void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned& curr, const double& weight, 
+                                            const Vector& wdf, const Tensor& virial, const std::vector<Vector>& refders, 
+                                            vesselbase::MultiValue& outvals ){
+  MultiColvarBase* mcolv=getPntrToMultiColvar(); 
   if( !mcolv->weightHasDerivatives ){
-      unsigned nstart=ivol*getNumberOfDerivatives();
-      setElementValue( ivol, weight ); 
-      for(unsigned i=0;i<mcolv->atomsWithCatomDer.getNumberActive();++i){
-         unsigned n=mcolv->atomsWithCatomDer[i], nx=nstart + 3*n;
-         atoms_with_derivatives.activate(n);
-         addElementDerivative( nx+0, mcolv->getCentralAtomDerivative(n, 0, wdf ) );
-         addElementDerivative( nx+1, mcolv->getCentralAtomDerivative(n, 1, wdf ) );
-         addElementDerivative( nx+2, mcolv->getCentralAtomDerivative(n, 2, wdf ) );
-      } 
+      outvals.setValue(ivol, weight ); 
+      if( derivativesAreRequired() ){
+         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) );
+         for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
+             unsigned jatom=3*catom.getIndex(i);
+             outvals.addDerivative( ivol, jatom+0, catom.getDerivative(i,0,wdf) );
+             outvals.addDerivative( ivol, jatom+1, catom.getDerivative(i,1,wdf) );
+             outvals.addDerivative( ivol, jatom+2, catom.getDerivative(i,2,wdf) );
+         }
+         unsigned nmder=getPntrToMultiColvar()->getNumberOfDerivatives();
+         for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) outvals.addDerivative( ivol, nmder-9+3*i+j, virial(i,j) );
+         for(unsigned i=0;i<refders.size();++i){
+             unsigned iatom=nmder+3*i;
+             
+             outvals.addDerivative( ivol, iatom+0, refders[i][0] );
+             outvals.addDerivative( ivol, iatom+1, refders[i][1] );
+             outvals.addDerivative( ivol, iatom+2, refders[i][2] );
+         }
+      }
+  } else if(ivol==0){
+      double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
+      if( derivativesAreRequired() ){
+         plumed_merror("This needs testing");
+         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) );
+         for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
+             unsigned jatom=3*catom.getIndex(i);
+             outvals.addDerivative( ivol, jatom+0, weight*outvals.getDerivative(ivol,jatom+0) + ww*catom.getDerivative(i,0,wdf) );
+             outvals.addDerivative( ivol, jatom+1, weight*outvals.getDerivative(ivol,jatom+1) + ww*catom.getDerivative(i,1,wdf) );
+             outvals.addDerivative( ivol, jatom+2, weight*outvals.getDerivative(ivol,jatom+2) + ww*catom.getDerivative(i,2,wdf) );
+         }
+         unsigned nmder=getPntrToMultiColvar()->getNumberOfDerivatives();
+         for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) outvals.addDerivative( ivol, nmder-9+3*i+j, ww*virial(i,j) );
+         for(unsigned i=0;i<refders.size();++i){
+             unsigned iatom=nmder+3*i;
+             outvals.addDerivative( ivol, iatom+0, ww*refders[i][0] );
+             outvals.addDerivative( ivol, iatom+1, ww*refders[i][1] );
+             outvals.addDerivative( ivol, iatom+2, ww*refders[i][2] );
+         }
+      }
   } else {
-      unsigned nstart=ivol*getNumberOfDerivatives();
-      double ww=mcolv->getElementValue(1); setElementValue( ivol, ww*weight );
-      for(unsigned i=0;i<mcolv->atomsWithCatomDer.getNumberActive();++i){
-          unsigned n=mcolv->atomsWithCatomDer[i], nx=nstart + 3*n;
-          atoms_with_derivatives.activate(n);
-          addElementDerivative( nx+0, ww*mcolv->getCentralAtomDerivative(n, 0, wdf ) );
-          addElementDerivative( nx+1, ww*mcolv->getCentralAtomDerivative(n, 1, wdf ) );
-          addElementDerivative( nx+2, ww*mcolv->getCentralAtomDerivative(n, 2, wdf ) );
-     }
-     unsigned nder=mcolv->getNumberOfDerivatives(); 
-     for(unsigned i=0;i<mcolv->atoms_with_derivatives.getNumberActive();++i){
-        unsigned n=mcolv->atoms_with_derivatives[i], nx=nder + 3*n, ny=nstart + 3*n;
-        atoms_with_derivatives.activate(n);
-        addElementDerivative( ny+0, weight*mcolv->getElementDerivative(nx+0) );
-        addElementDerivative( ny+1, weight*mcolv->getElementDerivative(nx+1) );
-        addElementDerivative( ny+2, weight*mcolv->getElementDerivative(nx+2) );
-     }
-     unsigned nwvir=mcolv->getNumberOfDerivatives()-9, nwvir2=nstart + 3*mcolv->getNumberOfAtoms();
-     for(unsigned i=0;i<9;++i){
-        addElementDerivative( nwvir2, weight*mcolv->getElementDerivative(nwvir) ); nwvir++; nwvir2++;
-     }
+      double ww=outvals.get(0); outvals.setValue(ivol,ww*weight);
+      if( derivativesAreRequired() ){
+         plumed_merror("This needs testing");
+         CatomPack catom( mcolv->getCentralAtomPack( 0, curr ) ); 
+         for(unsigned i=0;i<catom.getNumberOfAtomsWithDerivatives();++i){
+             unsigned jatom=3*catom.getIndex(i);
+             outvals.addDerivative( ivol, jatom+0, ww*catom.getDerivative(i,0,wdf) );
+             outvals.addDerivative( ivol, jatom+1, ww*catom.getDerivative(i,1,wdf) );
+             outvals.addDerivative( ivol, jatom+2, ww*catom.getDerivative(i,2,wdf) );
+         }
+         unsigned nmder=getPntrToMultiColvar()->getNumberOfDerivatives();
+         for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) outvals.addDerivative( ivol, nmder-9+3*i+j, ww*virial(i,j) );
+         for(unsigned i=0;i<refders.size();++i){
+             unsigned iatom=nmder+3*i;
+             outvals.addDerivative( ivol, iatom+0, ww*refders[i][0] );
+             outvals.addDerivative( ivol, iatom+1, ww*refders[i][1] );
+             outvals.addDerivative( ivol, iatom+2, ww*refders[i][2] );
+         }
+      }
   }
 }
 

@@ -68,10 +68,9 @@ public:
   static void registerKeywords( Keywords& keys );
   Bridge(const ActionOptions&);
 // active methods:
-  virtual double compute();
-  void calculateWeight();
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms );
+  void calculateWeight( AtomValuePack& myatoms );
   bool isPeriodic(){ return false; }
-  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(Bridge,"BRIDGE")
@@ -99,6 +98,9 @@ PLUMED_MULTICOLVAR_INIT(ao)
   if( all_atoms.size()>0 ) ActionAtomistic::requestAtoms( all_atoms );
   // Setup the multicolvar base
   setupMultiColvarBase();
+  // Setup Central atom atoms
+  std::vector<bool> catom_ind(3, false); catom_ind[0]=true;
+  setAtomsForCentralAtom( catom_ind ); 
 
   std::string sfinput,errors; parse("SWITCH",sfinput);
   if( sfinput.length()>0 ){
@@ -136,32 +138,27 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-void Bridge::calculateWeight(){
-  Vector dij=getSeparation( getPosition(0), getPosition(2) );
+void Bridge::calculateWeight( AtomValuePack& myatoms ){
+  Vector dij=getSeparation( myatoms.getPosition(0), myatoms.getPosition(2) );
   double ldij = dij.modulo2();
-  if( ldij>rcut2 ) { setWeight(0); return; }
+  if( ldij>rcut2 ) { myatoms.setValue(0,0); return; }
   double dw, w=sf2.calculateSqr( ldij, dw );
-  setWeight( w );
+  myatoms.setValue( 0, w );
 
-  addAtomsDerivativeOfWeight( 0, -dw*dij );
-  addAtomsDerivativeOfWeight( 2, dw*dij );
-  addBoxDerivativesOfWeight( (-dw)*Tensor(dij,dij) );
+  myatoms.addAtomsDerivatives( 0, 0, -dw*dij );
+  myatoms.addAtomsDerivatives( 0, 2, dw*dij );
+  myatoms.addBoxDerivatives( 0, (-dw)*Tensor(dij,dij) );
 }
 
-double Bridge::compute(){
-  Vector dik=getSeparation( getPosition(0), getPosition(1) );
+double Bridge::compute( const unsigned& tindex, AtomValuePack& myatoms ){
+  Vector dik=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dw, w=sf1.calculateSqr( dik.modulo2(), dw );
 
   // And finish the calculation
-  addAtomsDerivatives( 0, -dw*dik );
-  addAtomsDerivatives( 1,  dw*dik );
-  addBoxDerivatives( (-dw)*Tensor(dik,dik) );
+  myatoms.addAtomsDerivatives( 1, 0, -dw*dik );
+  myatoms.addAtomsDerivatives( 1, 1,  dw*dik );
+  myatoms.addBoxDerivatives( 1, (-dw)*Tensor(dik,dik) );
   return w;
-}
-
-Vector Bridge::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 }
