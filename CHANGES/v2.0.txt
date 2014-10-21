@@ -152,6 +152,10 @@ For users:
   This fixes a regression introduced in 2.0.2.
 - Small fixes in documentation.
 
+For developers:
+- Added warning when performing regtests using an instance of plumed from
+  a different directory
+
 */
 
 
