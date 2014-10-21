@@ -681,7 +681,7 @@ void PlumedMain::justApply(){
   if(detailedTimers) stopwatch.start("5C Update");
 // update step (for statistics, etc)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
-    if((*p)->isActive()) (*p)->update();
+    if((*p)->isActive() && (*p)->checkUpdate()) (*p)->update();
   }
   if(detailedTimers) stopwatch.stop("5C Update");
 // Check that no action has told the calculation to stop
