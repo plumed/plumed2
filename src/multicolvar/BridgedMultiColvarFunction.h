@@ -83,6 +83,7 @@ public:
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ){ plumed_error(); }
   void updateActiveAtoms(){ plumed_error(); }
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
+  void applyBridgeForces( const std::vector<double>& bb );
 };
 
 inline

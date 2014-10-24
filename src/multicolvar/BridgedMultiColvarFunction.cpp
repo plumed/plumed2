@@ -158,6 +158,15 @@ void BridgedMultiColvarFunction::calculateNumericalDerivatives( ActionWithValue*
   }
 }
 
+void BridgedMultiColvarFunction::applyBridgeForces( const std::vector<double>& bb ){
+  if( getNumberOfAtoms()==0 ) return ;
+
+  std::vector<Vector>& f( modifyForces() );
+  for(unsigned i=0;i<getNumberOfAtoms();++i){
+    f[i][0]+=bb[3*i+0]; f[i][1]+=bb[3*i+1]; f[i][2]+=bb[3*i+2];
+  } 
+}
+
 bool BridgedMultiColvarFunction::isPeriodic(){
   return mycolv->isPeriodic();
 }
