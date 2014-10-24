@@ -19,6 +19,7 @@ Changes from version 2.1 which are relevant for users:
   - \ref MFILTER_BETWEEN
   - \ref GRADIENT can be used to calculate the gradient of a quantity.  Used to drive nucleation
   - \ref CAVITY
+  - \ref WRAPAROUND to fix periodic boundary conditions.
 - New features for existing actions:
   - Keywords UPDATE_FROM and UPDATE_UNTIL to limit update step in a defined time window.
   - Keyword UNNORMALIZED for \ref HISTOGRAM.
