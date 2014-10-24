@@ -2,12 +2,12 @@
 
 # Making sure that plumed executable is available
 echo -n "Searching for plumed ..."
-if plumed 2>/dev/null 1>/dev/null ; then
+if plumed --no-mpi 2>/dev/null 1>/dev/null ; then
   echo " found"
 else
   echo " not found"
   echo -n "Sourcing sourceme.sh and searching again ..."
-  if source ../sourceme.sh && plumed 2>/dev/null 1>/dev/null ; then
+  if source ../sourceme.sh && plumed --no-mpi 2>/dev/null 1>/dev/null ; then
     echo " found"
   else
     echo "ERROR: you should compile plumed first!"
@@ -21,8 +21,8 @@ rm -f errors
 rm -rf automatic
 mkdir automatic
 
-long_version="$(plumed info --long-version)"
-git_version="$(plumed info --git-version)"
+long_version="$(plumed --no-mpi info --long-version)"
+git_version="$(plumed --no-mpi info --git-version)"
 
 cat > automatic/version.tmp << EOF
 This manual has been compiled from PLUMED version <b> $long_version </b>
@@ -50,7 +50,7 @@ do
    echo "- \subpage $mytag " >> automatic/codes.list
    echo "/**" >> automatic/$myengine.txt
    echo "\page $mytag $myengine" >> automatic/$myengine.txt
-   plumed patch -e $myengine -i -q >> automatic/$myengine.txt
+   plumed --no-mpi patch -e $myengine -i -q >> automatic/$myengine.txt
    echo "*/" >> automatic/$myengine.txt 
 done
 
@@ -188,7 +188,7 @@ do
   if grep -q '//+PLUMEDOC INTERNAL' $file 1>/dev/null 2>/dev/null ; then
        cp $file automatic/$flag.txt
   else
-     if ! plumed manual --action=$flag > automatic/$flag.man 2> /dev/null ; then 
+     if ! plumed --no-mpi manual --action=$flag > automatic/$flag.man 2> /dev/null ; then 
         echo Full manual for action $flag will not be generated as you are building the manual from a code where this action was not compiled >> errors
      elif ! grep -q "\par Examples" $file 1>/dev/null 2>/dev/null
      then
