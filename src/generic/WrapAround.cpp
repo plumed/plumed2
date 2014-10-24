@@ -98,7 +98,7 @@ molecules could be broken by \ref WRAPAROUND (hydrogen could end up
 in an image and oxygen in another one).
 
 */
-//+WRAPAROUND
+//+ENDPLUMEDOC
 
 
 class WrapAround:
