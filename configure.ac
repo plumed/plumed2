@@ -84,6 +84,7 @@ PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([almost],[almost],[search for almost],[no])
 PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[no])
+PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
 
 
 # by default use -O flag
@@ -294,7 +295,9 @@ if test $gsl == true ; then
     LIBS="-lgsl -lgslcblas $LIBS"
   fi
 fi
-
+if test $xdrfile == true ; then
+  PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
+fi
 
 # this can be used to enable openmp:
 # AC_OPENMP
