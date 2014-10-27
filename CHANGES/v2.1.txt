@@ -132,6 +132,6 @@ This release will include all the fixes available in branch 2.0.
 
 For users:
 - Small fixes in documentation.
-
+- CS2Backbone: fixed a bug that resulted in only a fraction of the chemical shifts being printed with WRITE_CS and parallel simulations
 
 */
