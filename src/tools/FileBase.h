@@ -79,11 +79,11 @@ protected:
   std::string mode;
 /// Set to true if you want flush to be heavy (close/reopen)
   bool heavyFlush;
+public:
 /// Append suffix.
 /// It appends the desired suffix to the string. Notice that
-/// it conserves a possible ".gz" suffix.
+/// it conserves some suffix (e.g. gz/xtc/trr).
   static std::string appendSuffix(const std::string&path,const std::string&suffix);
-public:
 /// Link to an already open filed
   FileBase& link(FILE*);
 /// Link to a PlumedMain object

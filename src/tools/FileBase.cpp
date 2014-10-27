@@ -28,6 +28,7 @@
 #include "Tools.h"
 #include <cstdarg>
 #include <cstring>
+#include <cstdlib>
 
 #include <iostream>
 #include <string>
@@ -162,13 +163,22 @@ FileBase::operator bool()const{
 std::string FileBase::appendSuffix(const std::string&path,const std::string&suffix){
   std::string ret=path;
   std::string ext=Tools::extension(path);
-  if(ext=="gz"){
-    int l=path.length()-3;
+
+// These are the recognized extensions so far:
+// gz xtc trr
+// If a file name ends with one of these extensions, the suffix is added *before*
+// the extension. This is useful when extensions are conventionally used
+// to detect file type, so as to allow easier file manipulation.
+// Removing this line, any extension recognized by Tools::extension() would be considered
+  if(ext!="gz" && ext!="xtc" && ext!="trr") ext="";
+
+  if(ext.length()>0){
+    int l=path.length()-(ext.length()+1);
     plumed_assert(l>=0);
     ret=ret.substr(0,l);
   }
   ret+=suffix;
-  if(ext=="gz")ret+=".gz";
+  if(ext.length()>0)ret+="."+ext;
   return ret;
 }
 

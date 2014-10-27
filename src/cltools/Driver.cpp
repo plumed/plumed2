@@ -31,6 +31,7 @@
 #include <map>
 #include "tools/Units.h"
 #include "tools/PDB.h"
+#include "tools/FileBase.h"
 
 // when using molfile plugin
 #ifdef __PLUMED_HAS_MOLFILE
@@ -395,7 +396,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   if(multi){
     string n;
     Tools::convert(intercomm.Get_rank(),n);
-    trajectoryFile+="."+n;
+    trajectoryFile=FileBase::appendSuffix(trajectoryFile,"."+n);
   }
 
 
