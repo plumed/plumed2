@@ -353,14 +353,6 @@ void CS2Backbone::calculate()
   cam_list[0].ens_return_shifts(coor, sh);
   if(!serial) comm.Sum(&sh[0][0], numResidues*6);
 
-  bool printout=false;
-  if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
-  if(printout) {
-    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
-    string csfile = string("cs-")+getLabel()+"-"+tmp1+string(".dat");;
-    cam_list[0].printout_chemical_shifts(csfile.c_str());
-  }
-
   double fact=1.0;
   if(ensemble) {
     fact = 1./((double) ens_dim);
@@ -376,6 +368,14 @@ void CS2Backbone::calculate()
   csforces.clear();
   double energy = cam_list[0].ens_energy_force(coor, csforces, sh);
   if(!serial) comm.Sum(&csforces[0][0], N*4);
+
+  bool printout=false;
+  if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
+  if(printout) {
+    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+    string csfile = string("cs-")+getLabel()+"-"+tmp1+string(".dat");;
+    cam_list[0].printout_chemical_shifts(csfile.c_str());
+  }
 
   Tensor virial;
   virial.zero();
