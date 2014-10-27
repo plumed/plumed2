@@ -130,6 +130,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       return (config::hasMolfile()?0:1);
     } else if(a=="--has-zlib"){
       return (config::hasZlib()?0:1);
+    } else if(a=="--has-xdrfile"){
+      return (config::hasXdrfile()?0:1);
     } else if(a=="--is-installed"){
       return (config::isInstalled()?0:1);
     } else if(a=="--no-mpi"){

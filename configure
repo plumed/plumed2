@@ -703,6 +703,7 @@ enable_dlopen
 enable_execinfo
 enable_almost
 enable_gsl
+enable_xdrfile
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1349,6 +1350,7 @@ Optional Features:
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-almost         enable search for almost, default: no
   --enable-gsl            enable search for gsl, default: no
+  --enable-xdrfile        enable search for xdrfile, default: yes
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2561,6 +2563,24 @@ else
   case "no" in
              (yes) gsl=true ;;
              (no)  gsl=false ;;
+  esac
+
+fi
+
+
+
+xdrfile=
+# Check whether --enable-xdrfile was given.
+if test "${enable_xdrfile+set}" = set; then :
+  enableval=$enable_xdrfile; case "${enableval}" in
+             (yes) xdrfile=true ;;
+             (no)  xdrfile=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-xdrfile" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) xdrfile=true ;;
+             (no)  xdrfile=false ;;
   esac
 
 fi
@@ -5421,7 +5441,69 @@ fi
     LIBS="-lgsl -lgslcblas $LIBS"
   fi
 fi
+if test $xdrfile == true ; then
 
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "xdrfile/xdrfile_xtc.h" "ac_cv_header_xdrfile_xdrfile_xtc_h" "$ac_includes_default"
+if test "x$ac_cv_header_xdrfile_xdrfile_xtc_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "write_xtc" "ac_cv_func_write_xtc"
+if test "x$ac_cv_func_write_xtc" = xyes; then :
+  found=ok
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for write_xtc in -lxdrfile" >&5
+$as_echo_n "checking for write_xtc in -lxdrfile... " >&6; }
+if ${ac_cv_lib_xdrfile_write_xtc+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lxdrfile  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char write_xtc ();
+int
+main ()
+{
+return write_xtc ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_xdrfile_write_xtc=yes
+else
+  ac_cv_lib_xdrfile_write_xtc=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xdrfile_write_xtc" >&5
+$as_echo "$ac_cv_lib_xdrfile_write_xtc" >&6; }
+if test "x$ac_cv_lib_xdrfile_write_xtc" = xyes; then :
+  LIBS="-lxdrfile $LIBS" && found=ok
+fi
+
+
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_XDRFILE 1" >>confdefs.h
+
+    fi
+
+fi
 
 # this can be used to enable openmp:
 # AC_OPENMP

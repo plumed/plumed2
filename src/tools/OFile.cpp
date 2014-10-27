@@ -287,6 +287,7 @@ OFile& OFile::open(const std::string&path){
   }
   if(checkRestart()){
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"a");
+     mode="a";
      if(Tools::extension(this->path)=="gz"){
 #ifdef __PLUMED_HAS_ZLIB
        gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"a9");
@@ -298,6 +299,7 @@ OFile& OFile::open(const std::string&path){
      backupFile( backstring, this->path );
      if(comm)comm->Barrier();
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
+     mode="w";
      if(Tools::extension(this->path)=="gz"){
 #ifdef __PLUMED_HAS_ZLIB
        gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");

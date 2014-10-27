@@ -31,6 +31,7 @@
 #include <map>
 #include "tools/Units.h"
 #include "tools/PDB.h"
+#include "tools/FileBase.h"
 
 // when using molfile plugin
 #ifdef __PLUMED_HAS_MOLFILE
@@ -46,6 +47,11 @@ using namespace PLMD::molfile;
 #include <libmolfile_plugin.h>
 #include <molfile_plugin.h>
 #endif
+#endif
+
+#ifdef __PLUMED_HAS_XDRFILE
+#include <xdrfile/xdrfile_trr.h>
+#include <xdrfile/xdrfile_xtc.h>
 #endif
 
 using namespace std;
@@ -107,6 +113,12 @@ configure [...] LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" CPP
 
 and rebuild. Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
 
+Additionally, you can use the xdrfile implementation of xtc and trr. To this aim, just
+download and install properly the xdrfile library (see here: http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library)
+Notice that the xdrfile implementation of xtc and trr
+is more robust than the molfile one, since it provides support for generic cell shapes.
+
+
 */
 //+ENDPLUMEDOC
 //
@@ -148,6 +160,10 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.addFlag("--noatoms",false,"don't read in a trajectory.  Just use colvar files as specified in plumed.dat");
   keys.add("atoms","--ixyz","the trajectory in xyz format");
   keys.add("atoms","--igro","the trajectory in gro format");
+#ifdef __PLUMED_HAS_XDRFILE
+  keys.add("atoms","--ixtc","the trajectory in xtc format (xdrfile implementation");
+  keys.add("atoms","--itrr","the trajectory in trr format (xdrfile implementation");
+#endif
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
@@ -274,6 +290,12 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   if(!noatoms){
      std::string traj_xyz; parse("--ixyz",traj_xyz);
      std::string traj_gro; parse("--igro",traj_gro);
+     std::string traj_xtc;
+     std::string traj_trr;
+#ifdef __PLUMED_HAS_XDRFILE
+     parse("--ixtc",traj_xtc);
+     parse("--itrr",traj_trr);
+#endif
 #ifdef __PLUMED_HAS_MOLFILE 
      for(int i=0;i<plugins.size();i++){ 	
 	string molfile_key="--mf_"+string(plugins[i]->name);
@@ -288,10 +310,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 	}
      } 
 #endif
-     if(traj_xyz.length()>0 && traj_gro.length()>0){
-       fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
-       if(grex_log)fclose(grex_log);
-       return 1;
+     { // check that only one fmt is specified
+       int nn=0;
+       if(traj_xyz.length()>0) nn++;
+       if(traj_gro.length()>0) nn++;
+       if(traj_xtc.length()>0) nn++;
+       if(traj_trr.length()>0) nn++;
+       if(nn>1){
+         fprintf(stderr,"ERROR: cannot provide more than one trajectory file\n");
+         if(grex_log)fclose(grex_log);
+         return 1;
+       }
      }
      if(traj_xyz.length()>0 && trajectoryFile.length()==0){
        trajectoryFile=traj_xyz;
@@ -300,6 +329,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
      if(traj_gro.length()>0 && trajectoryFile.length()==0){
        trajectoryFile=traj_gro;
        trajectory_fmt="gro";
+     }
+     if(traj_xtc.length()>0 && trajectoryFile.length()==0){
+       trajectoryFile=traj_xtc;
+       trajectory_fmt="xdr-xtc";
+     }
+     if(traj_trr.length()>0 && trajectoryFile.length()==0){
+       trajectoryFile=traj_trr;
+       trajectory_fmt="xdr-trr";
      }
      if(trajectoryFile.length()==0){
        fprintf(stderr,"ERROR: missing trajectory data\n"); 
@@ -359,13 +396,16 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   if(multi){
     string n;
     Tools::convert(intercomm.Get_rank(),n);
-    trajectoryFile+="."+n;
+    trajectoryFile=FileBase::appendSuffix(trajectoryFile,"."+n);
   }
 
 
   int natoms;
 
   FILE* fp=NULL; FILE* fp_forces=NULL;
+#ifdef __PLUMED_HAS_XDRFILE
+  XDRFILE* xd=NULL;
+#endif
   if(!noatoms){
      if (trajectoryFile=="-") 
        fp=in;
@@ -374,6 +414,17 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 #ifdef __PLUMED_HAS_MOLFILE
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
         ts_in.coords = new float [3*natoms];
+#endif
+       }else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr"){
+#ifdef __PLUMED_HAS_XDRFILE
+         xd=xdrfile_open(trajectoryFile.c_str(),"r");
+         if(!xd){
+           string msg="ERROR: Error opening trajectory file "+trajectoryFile;
+           fprintf(stderr,"%s\n",msg.c_str());
+           return 1;
+         }
+         if(trajectory_fmt=="xdr-xtc") read_xtc_natoms(&trajectoryFile[0],&natoms);
+         if(trajectory_fmt=="xdr-trr") read_trr_natoms(&trajectoryFile[0],&natoms);
 #endif
        }else{
          fp=fopen(trajectoryFile.c_str(),"r");
@@ -430,14 +481,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 	         break;
 	  }
 #endif
-       }else{ 
+       }else if(trajectory_fmt=="xyz" || trajectory_fmt=="gro"){
          if(!Tools::getline(fp,line)) break;
        }
     }
 
     bool first_step=false;
     if(!noatoms){
-      if(use_molfile==false){
+      if(use_molfile==false && (trajectory_fmt=="xyz" || trajectory_fmt=="gro")){
         if(trajectory_fmt=="gro") if(!Tools::getline(fp,line)) error("premature end of trajectory file");
         sscanf(line.c_str(),"%100d",&natoms);
       }
@@ -561,6 +612,23 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     		   coordinates[i]=real(ts_in.coords[i]/10.); //convert to nm
     		   //cerr<<"COOR "<<coordinates[i]<<endl;
     	   }
+#endif
+       }else if(trajectory_fmt=="xdr-xtc" || trajectory_fmt=="xdr-trr"){
+#ifdef __PLUMED_HAS_XDRFILE
+         int step;
+         float time;
+         matrix box;
+         rvec* pos=new rvec[natoms];
+         float prec,lambda;
+         int ret;
+         if(trajectory_fmt=="xdr-xtc") ret=read_xtc(xd,natoms,&step,&time,box,pos,&prec);
+         if(trajectory_fmt=="xdr-trr") ret=read_trr(xd,natoms,&step,&time,&lambda,box,pos,NULL,NULL);
+         if(ret==exdrENDOFFILE) break;
+         if(ret!=exdrOK) break;
+         for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) cell[3*i+j]=box[i][j];
+         for(unsigned i=0;i<natoms;i++) for(unsigned j=0;j<3;j++)
+                 coordinates[3*i+j]=real(pos[i][j]);
+         delete [] pos;
 #endif
        }else{
        if(trajectory_fmt=="xyz"){
@@ -710,6 +778,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
   if(fp_forces) fclose(fp_forces);
   if(fp && fp!=in)fclose(fp);
+#ifdef __PLUMED_HAS_XDRFILE
+  if(xd) xdrfile_close(xd);
+#endif
 #ifdef __PLUMED_HAS_MOLFILE
   if(h_in) api->close_file_read(h_in);
   if(ts_in.coords) delete [] ts_in.coords;
