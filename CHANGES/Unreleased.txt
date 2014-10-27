@@ -23,6 +23,8 @@ Changes from version 2.1 which are relevant for users:
 - New features for existing actions:
   - Keywords UPDATE_FROM and UPDATE_UNTIL to limit update step in a defined time window.
   - Keyword UNNORMALIZED for \ref HISTOGRAM.
+  - \ref DUMPATOMS now supports dumping xtc and trr files (requires xdrfile library).
+  - \ref driver can now read xtc and trr files also with xdrfile library.
 - VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
   can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
   part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
