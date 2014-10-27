@@ -36,6 +36,16 @@ Calculate the total energy of the simulation box.
 
 Total energy can be biased with umbrella sampling \cite bart-karp98jpcb or with well tempered metadynamics \cite Bonomi:2009p17935.
 
+Notice that this CV could be unavailable with some MD code. When
+it is available, and when also replica exchange is available,
+metadynamics applied to ENERGY can be used to decrease the
+number of required replicas.
+
+\bug Acceptance for replica exchange when \ref ENERGY is biased
+is computed correctly only of all the replicas has the same 
+potential energy function. This is for instance not true when
+using GROMACS with lambda replica exchange of with plumed-hrex branch.
+
 \par Examples
 The following input instructs plumed to print the energy of the system
 \verbatim

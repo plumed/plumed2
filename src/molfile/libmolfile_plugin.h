@@ -37,20 +37,19 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #ifndef __PLUMED_molfile_libmolfile_plugin_h
 #define __PLUMED_molfile_libmolfile_plugin_h
 #include "vmdplugin.h"
+namespace PLMD{
+namespace molfile{
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-extern int molfile_dcdplugin_init(void);
-extern int molfile_dcdplugin_register(void *, vmdplugin_register_cb);
-extern int molfile_dcdplugin_fini(void);
-extern int molfile_gromacsplugin_init(void);
-extern int molfile_gromacsplugin_register(void *, vmdplugin_register_cb);
-extern int molfile_gromacsplugin_fini(void);
-extern int molfile_pdbplugin_init(void);
-extern int molfile_pdbplugin_register(void *, vmdplugin_register_cb);
-extern int molfile_pdbplugin_fini(void);
+ int molfile_dcdplugin_init(void);
+ int molfile_dcdplugin_register(void *, vmdplugin_register_cb);
+ int molfile_dcdplugin_fini(void);
+ int molfile_gromacsplugin_init(void);
+ int molfile_gromacsplugin_register(void *, vmdplugin_register_cb);
+ int molfile_gromacsplugin_fini(void);
+ int molfile_pdbplugin_init(void);
+ int molfile_pdbplugin_register(void *, vmdplugin_register_cb);
+ int molfile_pdbplugin_fini(void);
 
 #define MOLFILE_INIT_ALL \
     molfile_dcdplugin_init(); \
@@ -67,7 +66,6 @@ extern int molfile_pdbplugin_fini(void);
     molfile_gromacsplugin_fini(); \
     molfile_pdbplugin_fini(); \
 
-#ifdef __cplusplus
 }
-#endif
+}
 #endif

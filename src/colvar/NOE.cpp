@@ -158,12 +158,15 @@ serial(false)
   parse("WRITE_NOE", w_period);
   pperiod=w_period;
 
+  ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    else ens_dim=multi_sim_comm.Get_size(); 
-  } else ens_dim=1; 
-  if(ensemble) comm.Sum(&ens_dim, 1);
+  if(ensemble){
+    if(comm.Get_rank()==0) {
+      if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+      ens_dim=multi_sim_comm.Get_size();
+    } else ens_dim=0;
+    comm.Sum(&ens_dim, 1);
+  } else ens_dim=1;
 
   // Ouput details of all contacts
   unsigned index=0; 
@@ -249,16 +252,21 @@ void NOE::calculate(){
   }
 
   bool printout=false;
-  if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
+  if(pperiod>0) printout = (!(getStep()%pperiod));
   if(printout) {
-    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
-    string csfile = string("noe")+"-"+getLabel()+"-"+tmp1+string(".dat");
-    FILE *outfile = fopen(csfile.c_str(), "w");
-    fprintf(outfile, "#index calc exp\n");
-    for(unsigned i=0;i<nga.size();i++) { 
-      fprintf(outfile," %4u %10.6f %10.6f\n", i, pow(noe[i],(-1./6.)), noedist[i]);
+    // share the calculated noe
+    if(!serial) comm.Sum(&noe[0],noe.size());
+    // print only if master
+    if(comm.Get_rank()==0) {
+      char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+      string csfile = string("noe")+"-"+getLabel()+"-"+tmp1+string(".dat");
+      FILE *outfile = fopen(csfile.c_str(), "w");
+      fprintf(outfile, "#index calc exp\n");
+      for(unsigned i=0;i<nga.size();i++) { 
+        fprintf(outfile," %4u %10.6f %10.6f\n", i, pow(noe[i],(-1./6.)), noedist[i]);
+      }
+      fclose(outfile);
     }
-    fclose(outfile);
   }
 
   // Ensemble averaging

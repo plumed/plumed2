@@ -45,6 +45,20 @@ echo "++ Processors: $mpiprocs"
 mpi=env
 plumed=plumed
 
+root=$($plumed info --root)
+
+if test -z "$root" ; then
+  echo "ERROR: plumed executable not available"
+  exit 1
+fi
+
+cd ../../../../
+if [[ "${PWD}"/ != "$root" ]] ; then
+echo "WARNING using plumed from $root"
+fi
+cd -
+
+
 if ((mpiprocs>0)); then
 mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
 
