@@ -66,6 +66,10 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
+namespace PLMD{
+namespace molfile{
+
+
 /*
  * API functions start here
  */
@@ -637,6 +641,9 @@ VMDPLUGIN_API int VMDPLUGIN_register(void *v, vmdplugin_register_cb cb) {
 
 VMDPLUGIN_API int VMDPLUGIN_fini() {
   return VMDPLUGIN_SUCCESS;
+}
+
+}
 }
 
 #endif
