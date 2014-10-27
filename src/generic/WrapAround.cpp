@@ -117,9 +117,9 @@ public:
 PLUMED_REGISTER_ACTION(WrapAround,"WRAPAROUND")
 
 void WrapAround::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionPilot::registerKeywords( keys );
-  ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("atoms","AROUND","reference ions");
   keys.add("atoms","ATOMS","atoms numbers");
