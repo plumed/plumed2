@@ -107,8 +107,13 @@ bool hasZlib(){
 #endif
 }
 
-
-
+bool hasXdrfile(){
+#if __PLUMED_HAS_XDRFILE
+      return true;
+#else
+      return false;
+#endif
+}
 
 }
 }
