@@ -103,10 +103,12 @@ bool FileBase::FileExist(const std::string& path){
   if(plumed){
     this->path=appendSuffix(path,plumed->getSuffix());
     ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+    mode="r";
   }
   if(!ff){
     this->path=path;
     ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
+    mode="r";
   }
   if(ff) {do_exist=true; fclose(ff);}
   if(comm) comm->Barrier();
