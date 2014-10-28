@@ -147,6 +147,8 @@ For users:
 - Fixed a bug in replica exchange with different Hamiltonians (either lamdba-dynamics
   or plumed XX-hrex branch) possibly occuring when using charge or mass dependent
   variables.
+- Fixed a bug in analysis (e.g. \ref HISTOGRAM) leading to wrong accumulation
+  of statistics when running a replica exchange simulation.
 - Fixed an issue in Makefile that could results in problems when
   patching an MD code with --shared option (pointed out by Abhi Acharya).
   This fixes a regression introduced in 2.0.2.
