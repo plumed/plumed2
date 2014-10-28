@@ -233,7 +233,7 @@ std::string Action::cite(const std::string&s){
 /// Check if action should be updated.
 bool Action::checkUpdate()const{
   double t=getTime();
-  if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>update_from)) return true;
+  if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>=update_from)) return true;
   else return false;
 }
 
