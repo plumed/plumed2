@@ -209,6 +209,10 @@ void Analysis::prepare(){
 }
 
 void Analysis::calculate(){
+// do nothing
+}
+
+void Analysis::accumulate(){
   // Don't store the first step (also don't store if we are getting data from elsewhere)
   if( getStep()==0 || reusing_data ) return;
   // This is used when we have a full quota of data from the first run
@@ -323,6 +327,7 @@ double Analysis::getNormalization() const {
 }
 
 void Analysis::update(){
+  accumulate();
   if( !single_run ){
     if( getStep()>0 && getStep()%freq==0 ) runAnalysis(); 
     else if( idata==logweights.size() ) error("something has gone wrong. Probably a wrong initial time on restart"); 
