@@ -216,8 +216,10 @@ do
 done
 
 
-for file in Bias Syntax Colvar Functions Group Installation Intro Analysis Glossary Tutorials Modules Regex  Misc Tools
+for f in *.txt
 do
+
+file=${f%.txt}
 
 # first replace with the content of the files
 # then grep out the special strings

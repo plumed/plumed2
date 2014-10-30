@@ -17,7 +17,7 @@ fi
 
 LIST="
  IntroPP.txt ../CHANGES InstallationPP.txt SyntaxPP.txt ColvarPP.txt GroupPP.txt FunctionsPP.txt AnalysisPP.txt
-  BiasPP.txt ToolsPP.txt MiscPP.txt RegexPP.txt ModulesPP.txt TutorialsPP.txt GlossaryPP.txt automatic tutorials"
+  BiasPP.txt ToolsPP.txt MiscPP.txt RegexPP.txt FilesPP.txt ModulesPP.txt TutorialsPP.txt GlossaryPP.txt automatic tutorials"
 
 {
   cat Doxyfile
