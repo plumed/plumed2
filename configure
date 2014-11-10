@@ -698,6 +698,7 @@ enable_external_molfile_plugins
 enable_matheval
 enable_zlib
 enable_clock_gettime
+enable_gettimeofday
 enable_cregex
 enable_dlopen
 enable_execinfo
@@ -1344,6 +1345,7 @@ Optional Features:
   --enable-matheval       enable search for matheval, default: yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-clock-gettime  enable search for gettime, default: yes
+  --enable-gettimeofday   enable search for gettimeofday, default: yes
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
@@ -2471,6 +2473,24 @@ else
   case "yes" in
              (yes) clock_gettime=true ;;
              (no)  clock_gettime=false ;;
+  esac
+
+fi
+
+
+
+gettimeofday=
+# Check whether --enable-gettimeofday was given.
+if test "${enable_gettimeofday+set}" = set; then :
+  enableval=$enable_gettimeofday; case "${enableval}" in
+             (yes) gettimeofday=true ;;
+             (no)  gettimeofday=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-gettimeofday" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) gettimeofday=true ;;
+             (no)  gettimeofday=false ;;
   esac
 
 fi
@@ -4686,21 +4706,6 @@ fi
 done
 
 
-ac_fn_cxx_check_header_mongrel "$LINENO" "sys/time.h" "ac_cv_header_sys_time_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_time_h" = xyes; then :
-
-else
-  as_fn_error $? "compulsory header not found" "$LINENO" 5
-fi
-
-
-ac_fn_cxx_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"
-if test "x$ac_cv_func_gettimeofday" = xyes; then :
-
-else
-  as_fn_error $? "compulsory function not found" "$LINENO" 5
-fi
-
 ac_fn_cxx_check_header_mongrel "$LINENO" "dirent.h" "ac_cv_header_dirent_h" "$ac_includes_default"
 if test "x$ac_cv_header_dirent_h" = xyes; then :
 
@@ -5175,6 +5180,27 @@ fi
 
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_CLOCK_GETTIME 1" >>confdefs.h
+
+    fi
+
+fi
+if test $gettimeofday == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "sys/time.h" "ac_cv_header_sys_time_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_time_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"
+if test "x$ac_cv_func_gettimeofday" = xyes; then :
+  found=ok
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_GETTIMEOFDAY 1" >>confdefs.h
 
     fi
 
