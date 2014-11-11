@@ -137,5 +137,6 @@ For users:
 - Small fixes in documentation.
 - CS2Backbone: fixed a bug that resulted in only a fraction of the chemical shifts being printed with WRITE_CS and parallel simulations
   (requires to get the last almost updated from SVN)
+- Fixed a linking issue with ALMOST, where bz2 was always used to link ALMOST to PLUMED even if it is not compulsory to build ALMOST.
 
 */
