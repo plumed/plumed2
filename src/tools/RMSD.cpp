@@ -190,6 +190,23 @@ double RMSD::calc_DDistDRef( const std::vector<Vector>& positions, std::vector<V
 
 }
 
+double RMSD::calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, std::vector<Vector>& DDistDRef, Tensor & Rot, Matrix<std::vector<Vector> > &DRotDPos, const bool squared  ){
+   double ret=0.;
+   switch(alignmentMethod){
+	case SIMPLE:
+		plumed_merror("derivative of the refreence frame not implemented for SIMPLE alignmentMethod \n");	
+		break;	
+        case OPTIMAL_FAST:
+                if(align==displace) ret=optimalAlignment_DDistDRef_Rot_DRotDPos<false,true>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos,  squared);
+                else                ret=optimalAlignment_DDistDRef_Rot_DRotDPos<false,false>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, squared);
+                break;
+        case OPTIMAL:
+                if(align==displace) ret=optimalAlignment_DDistDRef_Rot_DRotDPos<true,true>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, squared);
+                else                ret=optimalAlignment_DDistDRef_Rot_DRotDPos<true,false>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, squared);
+                break;
+  }	
+  return ret;
+}
 
 double RMSD::simpleAlignment(const  std::vector<double>  & align,
 		                     const  std::vector<double>  & displace,
@@ -481,6 +498,45 @@ double RMSD::optimalAlignment_DDistDRef(const  std::vector<double>  & align,
    ddistdref=cd.getDDistanceDReference();
    return dist;
 }
+
+template <bool safe,bool alEqDis>
+double RMSD::optimalAlignment_DDistDRef_Rot_DRotDPos(const  std::vector<double>  & align,
+                              const  std::vector<double>  & displace,
+                              const std::vector<Vector> & positions,
+                              const std::vector<Vector> & reference ,
+                              std::vector<Vector>  & derivatives,	
+                              std::vector<Vector> & ddistdref,
+			      Tensor & Rotation,	
+			      Matrix<std::vector<Vector> > &DRotDPos,
+                              bool squared) const {
+   //initialize the data into the structure
+   // typically the positions do not have the com neither calculated nor subtracted. This layer takes care of this business
+   RMSDCoreData cd(align,displace,positions,reference);
+   // transfer the settings for the center to let the CoreCalc deal with it 
+   // transfer the settings for the center to let the CoreCalc deal with it 
+   cd.setPositionsCenterIsRemoved(positions_center_is_removed);
+   if(positions_center_is_calculated){cd.setPositionsCenter(positions_center);}
+   else{cd.calcPositionsCenter();};
+
+   cd.setReferenceCenterIsRemoved(reference_center_is_removed);
+   if(!reference_center_is_calculated){cd.calcReferenceCenter();}
+   else{cd.setReferenceCenter(reference_center);}
+
+   // Perform the diagonalization and all the needed stuff
+   cd.doCoreCalc(safe,alEqDis); 
+   // make the core calc distance
+   double dist=cd.getDistance(derivatives,squared); 
+//  make the derivatives by using pieces calculated in coreCalc (probably the best is just to copy the vector...) 
+   derivatives=cd.getDDistanceDPositions(); 
+   ddistdref=cd.getDDistanceDReference();
+   // get the rotation matrix
+   Rotation=cd.getRotationMatrixReferenceToPositions(); 
+   // get its derivative
+   DRotDPos=cd.getDRotationDPosition();  
+   return dist;
+}
+
+
 
 /// This calculates the elements needed by the quaternion to calculate everything that is needed
 /// additional calls retrieve different components

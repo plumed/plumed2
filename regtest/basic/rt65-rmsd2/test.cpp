@@ -183,59 +183,60 @@ int main(int argc, char* argv[]) {
 	}
   }
 
+  // Task 4: calculate findiff of reference frame for alEqDis version (align=displace)
+  if(std::find(task.begin(), task.end(), 4)!=task.end()){
+	cout<<"Task 4: calculates the finite difference for the reference frame"<<endl;
+	std::vector<double> newalign(run.size(),1.); 
+	std::vector<double> newdisplace(run.size(),1.); 
+	rmsd->clear();
+	rmsd->set(newalign, newdisplace, ref,type,remove_com,normalize_weights);
+  	double r_old=rmsd->calculate( run, derivatives, squared ); 
+	std::vector<Vector> DDistDRef;	
+	std::vector<Vector> ref_save=ref;	
+	for(unsigned int comp=0;comp<3;comp++){	
+		for(unsigned int i=0;i<run.size();++i){
+			//change the position		
+			ref[i][comp]+=eps;
+			// this function below also reset the com of the reference (but not of the running frame)
+			rmsd->clear();
+			rmsd->set(newalign, newdisplace, ref,type,remove_com,normalize_weights  );
+  			double r=rmsd->calc_DDistDRef( run, derivatives,DDistDRef, squared); 
+			cout<<"DDIST_DREF_FAST COMPONENT "<<comp<<" "<<(r-r_old)/(ref[i][comp]-ref_save[i][comp])<<" "<<DDistDRef[i][comp]<<" "<<r<<" "<<r_old<<"\n";
+			// restore the old position
+			ref=ref_save;
+		}
+	}
+  }
+  
+  // Task 5: calculate findiff of derivative of the rotation matrix respect to running frame
+  if(std::find(task.begin(), task.end(), 5)!=task.end()){
+	cout<<"Task 5: calculates the finite difference for derivative of the rotation matrix respect to the the running frame"<<endl;
+	Tensor Rotation,OldRotation;
+	Matrix<std::vector<Vector> > DRotDPos(3,3);
+        std::vector<Vector> DDistDRef;
+	rmsd->calc_DDistDRef_Rot_DRotDPos( run, derivatives, DDistDRef, OldRotation, DRotDPos, squared ); 
+	std::vector<Vector> run_save=run;	
+	for(unsigned int a=0;a<3;a++){	
+		for(unsigned int b=0;b<3;b++){	
+			for(unsigned int comp=0;comp<3;comp++){	
+				for(unsigned int i=0;i<run.size();++i){
+					//change the position		
+					run[i][comp]+=eps;
+					rmsd->calc_DDistDRef_Rot_DRotDPos( run, derivatives ,DDistDRef, Rotation, DRotDPos, squared ); 
+					cout<<"DROT_DPOS COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(run[i][comp]-run_save[i][comp])<<" "<<DRotDPos[a][b][i][comp]<<"\n";
+					// restore the old position
+					run=run_save;
+				}
+			}
+		}
+	}
+  }
+
+
+
 
   return 1;
 }
-
-//  // Task 4: calculate findiff of reference frame for alEqDis version (align=displace)
-//  if(std::find(task.begin(), task.end(), 4)!=task.end()){
-//	cout<<"Task 4: calculates the finite difference for the reference frame"<<endl;
-//	std::vector<double> newalign(run.size(),1.); 
-//	std::vector<double> newdisplace(run.size(),1.); 
-//	rmsd->setReferenceAtoms( ref, align, displace );
-//  	double r_old=rmsd->calculate( run, squared ); 
-//  	//r_old=rmsd->calculate( run, squared ); 
-//	//cout<<"ROLD "<<r_old<<endl;
-//	std::vector<Vector> DDistDRef;	
-//	std::vector<Vector> ref_save=ref;	
-//	for(unsigned int comp=0;comp<3;comp++){	
-//		for(unsigned int i=0;i<run.size();++i){
-//			//change the position		
-//			ref[i][comp]+=eps;
-//			// this function below also reset the com of the reference (but not of the running frame)
-//			rmsd->setReferenceAtoms( ref, align, displace );
-//  			double r=rmsd->calculate_DDistDRef( run, squared ,DDistDRef); 
-//			cout<<"DDIST_DREF_FAST COMPONENT "<<comp<<" "<<(r-r_old)/(ref[i][comp]-ref_save[i][comp])<<" "<<DDistDRef[i][comp]<<" "<<r<<" "<<r_old<<"\n";
-//			// restore the old position
-//			ref=ref_save;
-//		}
-//	}
-//  }
-//  // Task 5: calculate findiff of derivative of the rotation matrix respect to running fram
-//  rmsd->setReferenceAtoms( ref, align, displace );
-//  if(std::find(task.begin(), task.end(), 5)!=task.end()){
-//	cout<<"Task 5: calculates the finite difference for derivative of the rotation matrix respect to the the running frame"<<endl;
-//	Tensor Rotation,OldRotation;
-//	Matrix<std::vector<Vector> > DRotDPos(3,3);
-//        std::vector<Vector> DDistDRef;
-//	rmsd->calc_DDistDRef_Rot_DRotDPos( run, squared, DDistDRef, OldRotation , DRotDPos  ); 
-//	std::vector<Vector> run_save=run;	
-//	for(unsigned int a=0;a<3;a++){	
-//		for(unsigned int b=0;b<3;b++){	
-//			for(unsigned int comp=0;comp<3;comp++){	
-//				for(unsigned int i=0;i<run.size();++i){
-//					//change the position		
-//					run[i][comp]+=eps;
-//					rmsd->calc_DDistDRef_Rot_DRotDPos( run, squared, DDistDRef, Rotation , DRotDPos  ); 
-//					cout<<"DROT_DPOS COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(run[i][comp]-run_save[i][comp])<<" "<<DRotDPos[a][b][i][comp]<<"\n";
-//					// restore the old position
-//					run=run_save;
-//				}
-//			}
-//		}
-//	}
-//  }
-//
 //  // Task 6: calculate findiff of derivative of the rotation matrix respect to reference frame 
 //  if(std::find(task.begin(), task.end(), 6)!=task.end()){
 //	cout<<"Task 6: calculates the finite difference for derivative of the rotation matrix respect to the the reference frame"<<endl;

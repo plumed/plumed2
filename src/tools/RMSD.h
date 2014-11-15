@@ -101,6 +101,7 @@ public:
   void clear();
 /// set reference, align and displace from input pdb structure: evtl remove com from the initial structure and normalize the input weights from the pdb 
   void set(const PDB&, std::string mytype, bool remove_center=true, bool normalize_weights=true);
+/// set align displace reference and type from input vectors
   void set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference , std::string mytype, bool remove_center=true , bool normalize_weights=true );
 /// set the type of alignment we are doing
   void setType(std::string mytype);
@@ -132,7 +133,18 @@ double optimalAlignment_DDistDRef(const  std::vector<double>  & align,
                               const std::vector<Vector> & reference ,
 			      std::vector<Vector>  & derivatives,	
                               std::vector<Vector> & ddistdref,
-                              bool squared) const;
+                              bool squared=false) const;
+
+template <bool safe,bool alEqDis>
+double optimalAlignment_DDistDRef_Rot_DRotDPos(const  std::vector<double>  & align,
+                              const  std::vector<double>  & displace,
+                              const std::vector<Vector> & positions,
+                              const std::vector<Vector> & reference ,
+			      std::vector<Vector>  & derivatives,	
+                              std::vector<Vector> & ddistdref,
+			      Tensor & Rotation,
+			      Matrix<std::vector<Vector> > &DRotDPos,
+                              bool squared=false) const;
 
 /// Compute rmsd: note that this is an intermediate layer which is kept in order to evtl expand with more alignment types/user options to be called while keeping the workhorses separated 
   double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false)const;
@@ -140,6 +152,8 @@ double optimalAlignment_DDistDRef(const  std::vector<double>  & align,
 /// calculate the derivative of distance plus additional other stuff (intermediate layer kept so to add
  double calc_DDistDRef( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, std::vector<Vector>& DDistDRef , const bool squared=false   ); 
 ///
+ double calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos, const bool squared=false   ); 
+
 };
 
 /// this is a class which is needed to share information across the various non-threadsafe routines
