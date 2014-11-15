@@ -48,20 +48,19 @@ int main(int argc, char* argv[]) {
   cout<<" -2 : normalize_weights=false (default=true)\n";
   cout<<" -3 : remove_com=false (default=true) \n";
   cout<<"  0 : normal rmsd/msd calculation  and derivative dumps (default: always done)\n";
-  //cout<<"  1 : findiff test for  d msd / d position  (inhomogenehous weights)\n";
-  //cout<<"  2 : findiff test for  d msd / d reference (inhomogenehous weights)\n";
-  //cout<<"  3 : findiff test for  d msd / d position  (homogenehous weights)\n";
-  //cout<<"  4 : findiff test for  d msd / d reference (homogenehous weights)\n";
-  //cout<<"  5 : findiff test for  d Rot / d position  (inhomogenehous weights)  (reference->position)\n";
-  //cout<<"  6 : findiff test for  d Rot / d reference  (inhomogenehous weights) (reference->position)\n";
-  //cout<<"  7 : consistency check for MSD proportionality (works with squared=true through option -1 )\n";
-  //cout<<"  8 : do some timings for all the above routines and for a growing number of atoms\n";
-  //cout<<"  9 : test the rotation order: print position.pdb reference.pdb aligned.pdb and check that it makes sense(should be reference aligned onto positions)\n";
+  cout<<"  1 : findiff test for  d msd / d position  (inhomogenehous weights)\n";
+  cout<<"  2 : findiff test for  d msd / d reference (inhomogenehous weights)\n";
+  cout<<"  3 : findiff test for  d msd / d position  (homogenehous weights)\n";
+  cout<<"  4 : findiff test for  d msd / d reference (homogenehous weights)\n";
+  cout<<"  5 : findiff test for  d Rot / d position  (inhomogenehous weights)  (reference->position)\n";
+  cout<<"  6 : findiff test for  d Rot / d reference  (inhomogenehous weights) (reference->position)\n";
+  cout<<"  7 : consistency check for MSD proportionality (works with squared=true through option -1 )\n";
+  cout<<"  8 : do some timings for all the above routines and for a growing number of atoms\n";
+  cout<<"  9 : test the rotation order: print position.pdb reference.pdb aligned.pdb and check that it makes sense(should be reference aligned onto positions)\n";
   //cout<<" 10 : findiff test for  d Rot / d position  ( position -> reference ) \n";
   //cout<<" 11 : findiff test for  d Rot / d position  (homogenehous weights)  (reference->position)\n";
   //cout<<" 12 : findiff test for  d Rot / d reference  (homogenehous weights) (reference->position)\n";
   //cout<<" 13 : do timings only for the most common use (aligment +derivatives) and repeat for homogeneous weights\n";
-  //return 0 ;
 
   PDB pdbref;
 
@@ -231,185 +230,188 @@ int main(int argc, char* argv[]) {
 		}
 	}
   }
+  // Task 6: calculate findiff of derivative of the rotation matrix respect to reference frame 
+  if(std::find(task.begin(), task.end(), 6)!=task.end()){
+	cout<<"Task 6: calculates the finite difference for derivative of the rotation matrix respect to the the reference frame"<<endl;
+	Tensor Rotation,OldRotation;
+	Matrix<std::vector<Vector> > DRotDPos(3,3),DRotDRef(3,3);
+        std::vector<Vector> DDistDRef;
+	rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( run, derivatives,  DDistDRef, OldRotation , DRotDPos , DRotDRef , squared); 
+	std::vector<Vector> ref_save=ref;	
+	for(unsigned int a=0;a<3;a++){	
+		for(unsigned int b=0;b<3;b++){	
+			for(unsigned int comp=0;comp<3;comp++){	
+				for(unsigned int i=0;i<run.size();++i){
+					//change the position		
+					ref[i][comp]+=eps;
+					// this function below also reset the com of the reference (but not of the running frame)
+		                        rmsd->clear();
+       			                rmsd->set(align, displace, ref,type,remove_com,normalize_weights  );
+					rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( run, derivatives, DDistDRef, Rotation , DRotDPos, DRotDRef ,squared ); 
+					cout<<"DROT_DREF COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(ref[i][comp]-ref_save[i][comp])<<" "<<DRotDRef[a][b][i][comp]<<"\n";
+					// restore the old position
+					ref=ref_save;
+				}
+			}
+		}
+	}
+  }
+  // Task 7:  check weight consistency 
+
+  if(std::find(task.begin(), task.end(), 7)!=task.end()){
+	cout<<"Task 7: calculates the weight (displacement) consistency: all these should same result when weights are normalized in input by setReferenceAtoms otherwise they should be proportional when squared=true \n When squared=false, each factor of 2 in weights should produce a factor of sqrt(2) in the total value  "<<endl;
+	rmsd->clear();
+        rmsd->set(align, displace, ref,type,remove_com, false   );
+  	double r=rmsd->calculate( run, derivatives, squared ); 
+	cout<<"STANDARD WEIGHT "<<r<<"\n"; 
+
+        std::vector<double> newdisplace=displace;for(std::vector<double>::iterator p=newdisplace.begin();p!=newdisplace.end();++p ){(*p)*=2.;} 
+	rmsd->clear();
+        rmsd->set(align, newdisplace, ref,type,remove_com, false   );
+  	r=rmsd->calculate( run, derivatives,  squared ); 
+	cout<<"DOUBLE WEIGHT "<<r<<"\n"; 
+
+        newdisplace=displace;for(std::vector<double>::iterator p=newdisplace.begin();p!=newdisplace.end();++p ){(*p)*=4.;} 
+	rmsd->clear();
+        rmsd->set(align,newdisplace, ref,type,remove_com, false );
+  	r=rmsd->calculate( run, derivatives, squared ); 
+	cout<<"FOUR WEIGHT "<<r<<"\n"; 
+  }
+
+  // Task 8: do some timings to get a flavor
+  if(std::find(task.begin(), task.end(), 8)!=task.end()){
+      cout<<"Task 8: makes some timings for increasing atoms and different routines "<<endl;
+      vector<Vector> r_run,r_ref;
+      vector<double> r_al,r_disp;
+      for (unsigned int i=0;i<10;i++){r_run.push_back(run[i]);r_ref.push_back(ref[i]);r_al.push_back(align[i]);r_disp.push_back(displace[i]);}
+
+      for(unsigned int i=0;i<10;i++){
+      	cout<<"NUMBER OF ATOMS : "<<r_run.size()<<endl;
+      	unsigned ntest; ntest=100;
+      	// test the fast routine
+	rmsd->clear();
+        rmsd->set(r_al,r_disp, r_ref, type,remove_com, normalize_weights );
+ 
+      	Stopwatch sw;
+      	sw.start();	
+        for(unsigned int j=0;j<ntest;j++)rmsd->calculate( r_run, derivatives, squared );
+      	sw.stop();	
+      	cout<<"SIMPLE ROUTINE \n"<<sw<<endl;
+
+        std::vector<Vector> DDistDRef;
+      	Stopwatch sw2;
+      	sw2.start();	
+        for(unsigned int j=0;j<ntest;j++)rmsd->calc_DDistDRef( r_run, derivatives,DDistDRef, squared); 
+      	sw2.stop();	
+      	cout<<"WITH REFERENCE FRAME: \n"<<sw2<<endl;
+
+      	Tensor Rotation;
+      	Matrix<std::vector<Vector> > DRotDPos(3,3);	
+      	Stopwatch sw3;
+      	sw3.start();	
+        for(unsigned int j=0;j<ntest;j++)rmsd->calc_DDistDRef_Rot_DRotDPos( r_run, derivatives,DDistDRef, Rotation , DRotDPos, squared); 
+      	sw3.stop();	
+      	cout<<"WITH ROTATION MATRIX DERIVATIVE: \n"<<sw3<<endl;
+
+        Matrix<std::vector<Vector> > DRotDRef(3,3);
+      	Stopwatch sw4;
+      	sw4.start();	
+        for(unsigned int j=0;j<ntest;j++)rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( r_run, derivatives ,DDistDRef, Rotation , DRotDPos, DRotDRef, squared); 
+      	sw4.stop();	
+      	cout<<"WITH ROTATION MATRIX DERIVATIVE OF REEFERENCE: \n"<<sw4<<endl;
+      	// duplicate the atoms
+      	unsigned s=r_run.size();
+      	for (unsigned int i=0;i<s;i++){r_run.push_back(r_run[i]);r_ref.push_back(r_ref[i]);r_al.push_back(r_al[i]);r_disp.push_back(r_disp[i]);}
+      
+      }
+  } 
+  // Task 9: check the rotation
+  if(std::find(task.begin(), task.end(), 9)!=task.end()){
+	// dump the reference
+	ofstream myfile;
+	myfile.open ("reference.pdb");		
+	std::vector<AtomNumber> at=pdb.getAtomNumbers();
+	std::vector<Vector>   pos=pdb.getPositions();
+	unsigned k=0;
+	for(std::vector<AtomNumber>::iterator i=at.begin(); i!=at.end(); i++){
+		myfile<<"ATOM";
+                myfile.width(7);myfile<<std::right<<(*i).serial()<<" "; 
+                myfile.width(4);myfile<<std::left<<pdb.getAtomName(*i); 
+                myfile.width(4);myfile<<std::right<<pdb.getResidueName(*i)<<" A"; 
+                myfile.width(4);myfile<<std::right<<pdb.getResidueNumber(*i)<<"    "; 
+		myfile.setf( std::ios::fixed, std:: ios::floatfield );
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<pos[k][0]*10; 
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<pos[k][1]*10; 
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<pos[k][2]*10<<"  1.00  1.00\n"; 
+		k++;	
+	}	
+	myfile.close();			
+	// dump the position
+	myfile.open ("positions.pdb");		
+	at=pdbrun.getAtomNumbers();
+	std::vector<Vector>   runpos=pdbrun.getPositions();
+	k=0;
+	for(std::vector<AtomNumber>::iterator i=at.begin(); i!=at.end(); i++){
+		myfile<<"ATOM";
+                myfile.width(7);myfile<<std::right<<(*i).serial()<<" "; 
+                myfile.width(4);myfile<<std::left<<pdbrun.getAtomName(*i); 
+                myfile.width(4);myfile<<std::right<<pdbrun.getResidueName(*i)<<" A"; 
+                myfile.width(4);myfile<<std::right<<pdbrun.getResidueNumber(*i)<<"    "; 
+		myfile.setf( std::ios::fixed, std:: ios::floatfield );
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<runpos[k][0]*10; 
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<runpos[k][1]*10; 
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<runpos[k][2]*10<<"  1.00  1.00\n"; 
+		k++;	
+	}	
+	myfile.close();			
+	// now do the alignment
+	Tensor Rotation;
+	Matrix<std::vector<Vector> > DRotDPos(3,3);
+        std::vector<Vector> DDistDRef;
+	std::vector<Vector> alignedpos;
+	std::vector<Vector> centeredpos;
+	std::vector<Vector> centeredref;
+	std::vector<Vector> ddistdpos;
+	rmsd->calc_PCAelements( run, derivatives, Rotation ,  DRotDPos , alignedpos ,centeredpos, centeredref ,squared); 
+	myfile.open ("positions_aligned.pdb");		
+	k=0;
+	for(std::vector<AtomNumber>::iterator i=at.begin(); i!=at.end(); i++){
+		myfile<<"ATOM";
+                myfile.width(7);myfile<<std::right<<(*i).serial()<<" "; 
+                myfile.width(4);myfile<<std::left<<pdbrun.getAtomName(*i); 
+                myfile.width(4);myfile<<std::right<<pdbrun.getResidueName(*i)<<" A"; 
+                myfile.width(4);myfile<<std::right<<pdbrun.getResidueNumber(*i)<<"    "; 
+		myfile.setf( std::ios::fixed, std:: ios::floatfield );
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<alignedpos[k][0]*10; 
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<alignedpos[k][1]*10; 
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<alignedpos[k][2]*10<<"  1.00  1.00\n"; 
+		k++;	
+	}	
+	myfile.close();			
+	// dump the aligned	
+	myfile.open ("reference_centered.pdb");		
+	k=0;
+	for(std::vector<AtomNumber>::iterator i=at.begin(); i!=at.end(); i++){
+		myfile<<"ATOM";
+                myfile.width(7);myfile<<std::right<<(*i).serial()<<" "; 
+                myfile.width(4);myfile<<std::left<<pdbrun.getAtomName(*i); 
+                myfile.width(4);myfile<<std::right<<pdbrun.getResidueName(*i)<<" A"; 
+                myfile.width(4);myfile<<std::right<<pdbrun.getResidueNumber(*i)<<"    "; 
+		myfile.setf( std::ios::fixed, std:: ios::floatfield );
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<centeredref[k][0]*10; 
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<centeredref[k][1]*10; 
+                myfile.width(8);myfile.precision(3); myfile<<std::right<<centeredref[k][2]*10<<"  1.00  1.00\n"; 
+		k++;	
+	}	
+	myfile.close();			
+  }
 
 
 
 
   return 1;
 }
-//  // Task 6: calculate findiff of derivative of the rotation matrix respect to reference frame 
-//  if(std::find(task.begin(), task.end(), 6)!=task.end()){
-//	cout<<"Task 6: calculates the finite difference for derivative of the rotation matrix respect to the the reference frame"<<endl;
-//	Tensor Rotation,OldRotation;
-//	Matrix<std::vector<Vector> > DRotDPos(3,3),DRotDRef(3,3);
-//        std::vector<Vector> DDistDRef;
-//	rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( run, squared, DDistDRef, OldRotation , DRotDPos , DRotDRef ); 
-//	std::vector<Vector> ref_save=ref;	
-//	for(unsigned int a=0;a<3;a++){	
-//		for(unsigned int b=0;b<3;b++){	
-//			for(unsigned int comp=0;comp<3;comp++){	
-//				for(unsigned int i=0;i<run.size();++i){
-//					//change the position		
-//					ref[i][comp]+=eps;
-//					// this function below also reset the com of the reference (but not of the running frame)
-//					rmsd->setReferenceAtoms( ref, align, displace );
-//					rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( run, squared, DDistDRef, Rotation , DRotDPos, DRotDRef  ); 
-//					cout<<"DROT_DREF COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(ref[i][comp]-ref_save[i][comp])<<" "<<DRotDRef[a][b][i][comp]<<"\n";
-//					// restore the old position
-//					ref=ref_save;
-//				}
-//			}
-//		}
-//	}
-//  }
-// 
-//  // Task 7:  check weight consistency 
-//
-//  if(std::find(task.begin(), task.end(), 7)!=task.end()){
-//	cout<<"Task 7: calculates the weight (displacement) consistency: all these should same result when weights are normalized in input by setReferenceAtoms otherwise they should be proportional when squared=true "<<endl;
-//  	double r=rmsd->calculate( run, squared ); 
-//	cout<<"STANDARD WEIGHT "<<r<<"\n"; 
-//
-//        std::vector<double> newalign=align;//for(std::vector<double>::iterator p=newalign.begin();p!=newalign.end();++p ){(*p)*=2.;}  
-//        std::vector<double> newdisplace=displace;for(std::vector<double>::iterator p=newdisplace.begin();p!=newdisplace.end();++p ){(*p)*=2.;} 
-//	rmsd->setReferenceAtoms( ref, newalign, newdisplace );
-//  	r=rmsd->calculate( run, squared ); 
-//	cout<<"DOUBLE WEIGHT "<<r<<"\n"; 
-//
-//        newalign=align;//for(std::vector<double>::iterator p=newalign.begin();p!=newalign.end();++p ){(*p)*=4.;}  
-//        newdisplace=displace;for(std::vector<double>::iterator p=newdisplace.begin();p!=newdisplace.end();++p ){(*p)*=4.;} 
-//	rmsd->setReferenceAtoms( ref, newalign, newdisplace );
-//  	r=rmsd->calculate( run, squared ); 
-//	cout<<"FOUR WEIGHT "<<r<<"\n"; 
-//  }
-//
-//  // Task 8: do some timings to get a flavor
-//  if(std::find(task.begin(), task.end(), 8)!=task.end()){
-//	cout<<"Task 8: makes some timings for increasing atoms and different routines "<<endl;
-//	vector<Vector> r_run,r_ref;
-//	vector<double> r_al,r_disp;
-//	for (unsigned int i=0;i<10;i++){r_run.push_back(run[i]);r_ref.push_back(ref[i]);r_al.push_back(align[i]);r_disp.push_back(displace[i]);}
-//
-//	for(unsigned int i=0;i<10;i++){
-//		cout<<"NUMBER OF ATOMS : "<<r_run.size()<<endl;
-//		unsigned ntest; ntest=100;
-//		// test the fast routine
-//	        rmsd->setReferenceAtoms( r_ref, r_al, r_disp );
-//		Stopwatch sw;
-//		sw.start();	
-//	        for(unsigned int j=0;j<ntest;j++)rmsd->calculate( r_run, squared );
-//		sw.stop();	
-//		cout<<"SIMPLE ROUTINE \n"<<sw<<endl;
-//
-//	        std::vector<Vector> DDistDRef;
-//		Stopwatch sw2;
-//		sw2.start();	
-//	        for(unsigned int j=0;j<ntest;j++)rmsd->calculate_DDistDRef( r_run, squared ,DDistDRef); 
-//		sw2.stop();	
-//		cout<<"WITH REFERENCE FRAME: \n"<<sw2<<endl;
-//
-//		Tensor Rotation;
-//        	Matrix<std::vector<Vector> > DRotDPos(3,3);	
-//		Stopwatch sw3;
-//		sw3.start();	
-//	        for(unsigned int j=0;j<ntest;j++)rmsd->calc_DDistDRef_Rot_DRotDPos( r_run, squared ,DDistDRef, Rotation , DRotDPos); 
-//		sw3.stop();	
-//		cout<<"WITH ROTATION MATRIX DERIVATIVE: \n"<<sw3<<endl;
-//
-//                Matrix<std::vector<Vector> > DRotDRef(3,3);
-//		Stopwatch sw4;
-//		sw4.start();	
-//	        for(unsigned int j=0;j<ntest;j++)rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( r_run, squared ,DDistDRef, Rotation , DRotDPos, DRotDRef); 
-//		sw4.stop();	
-//		cout<<"WITH ROTATION MATRIX DERIVATIVE OF REEFERENCE: \n"<<sw4<<endl;
-//		// duplicate the atoms
-//		unsigned s=r_run.size();
-//		for (unsigned int i=0;i<s;i++){r_run.push_back(r_run[i]);r_ref.push_back(r_ref[i]);r_al.push_back(r_al[i]);r_disp.push_back(r_disp[i]);}
-//	
-//	}
-//
-//  } 
-//
-//  // Task 9: check the rotation
-//  if(std::find(task.begin(), task.end(), 9)!=task.end()){
-//	// dump the reference
-//	ofstream myfile;
-//	myfile.open ("reference.pdb");		
-//	std::vector<AtomNumber> at=pdb.getAtomNumbers();
-//	std::vector<Vector>   pos=pdb.getPositions();
-//	unsigned k=0;
-//	for(std::vector<AtomNumber>::iterator i=at.begin(); i!=at.end(); i++){
-//		myfile<<"ATOM";
-//                myfile.width(7);myfile<<std::right<<(*i).serial()<<" "; 
-//                myfile.width(4);myfile<<std::left<<pdb.getAtomName(*i); 
-//                myfile.width(4);myfile<<std::right<<pdb.getResidueName(*i)<<" A"; 
-//                myfile.width(4);myfile<<std::right<<pdb.getResidueNumber(*i)<<"    "; 
-//		myfile.setf( std::ios::fixed, std:: ios::floatfield );
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<pos[k][0]*10; 
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<pos[k][1]*10; 
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<pos[k][2]*10<<"  1.00  1.00\n"; 
-//		k++;	
-//	}	
-//	myfile.close();			
-//	// dump the position
-//	myfile.open ("position.pdb");		
-//	at=pdbrun.getAtomNumbers();
-//	std::vector<Vector>   runpos=pdbrun.getPositions();
-//	k=0;
-//	for(std::vector<AtomNumber>::iterator i=at.begin(); i!=at.end(); i++){
-//		myfile<<"ATOM";
-//                myfile.width(7);myfile<<std::right<<(*i).serial()<<" "; 
-//                myfile.width(4);myfile<<std::left<<pdbrun.getAtomName(*i); 
-//                myfile.width(4);myfile<<std::right<<pdbrun.getResidueName(*i)<<" A"; 
-//                myfile.width(4);myfile<<std::right<<pdbrun.getResidueNumber(*i)<<"    "; 
-//		myfile.setf( std::ios::fixed, std:: ios::floatfield );
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<runpos[k][0]*10; 
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<runpos[k][1]*10; 
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<runpos[k][2]*10<<"  1.00  1.00\n"; 
-//		k++;	
-//	}	
-//	myfile.close();			
-//	// now do the alignment
-//	Tensor Rotation;
-//	Matrix<std::vector<Vector> > DRotDPos(3,3);
-//        std::vector<Vector> DDistDRef;
-//	std::vector<Vector> alignedpos;
-//	std::vector<Vector> centeredpos;
-//	std::vector<Vector> centeredref;
-//	std::vector<Vector> ddistdpos;
-//	rmsd->calc_PCA( run, squared, Rotation , ddistdpos, DRotDPos , alignedpos ,centeredpos, centeredref ); 
-//	myfile.open ("aligned.pdb");		
-//	k=0;
-//	for(std::vector<AtomNumber>::iterator i=at.begin(); i!=at.end(); i++){
-//		myfile<<"ATOM";
-//                myfile.width(7);myfile<<std::right<<(*i).serial()<<" "; 
-//                myfile.width(4);myfile<<std::left<<pdbrun.getAtomName(*i); 
-//                myfile.width(4);myfile<<std::right<<pdbrun.getResidueName(*i)<<" A"; 
-//                myfile.width(4);myfile<<std::right<<pdbrun.getResidueNumber(*i)<<"    "; 
-//		myfile.setf( std::ios::fixed, std:: ios::floatfield );
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<alignedpos[k][0]*10; 
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<alignedpos[k][1]*10; 
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<alignedpos[k][2]*10<<"  1.00  1.00\n"; 
-//		k++;	
-//	}	
-//	myfile.close();			
-//	// dump the aligned	
-//	myfile.open ("reference_centered.pdb");		
-//	k=0;
-//	for(std::vector<AtomNumber>::iterator i=at.begin(); i!=at.end(); i++){
-//		myfile<<"ATOM";
-//                myfile.width(7);myfile<<std::right<<(*i).serial()<<" "; 
-//                myfile.width(4);myfile<<std::left<<pdbrun.getAtomName(*i); 
-//                myfile.width(4);myfile<<std::right<<pdbrun.getResidueName(*i)<<" A"; 
-//                myfile.width(4);myfile<<std::right<<pdbrun.getResidueNumber(*i)<<"    "; 
-//		myfile.setf( std::ios::fixed, std:: ios::floatfield );
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<centeredref[k][0]*10; 
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<centeredref[k][1]*10; 
-//                myfile.width(8);myfile.precision(3); myfile<<std::right<<centeredref[k][2]*10<<"  1.00  1.00\n"; 
-//		k++;	
-//	}	
-//	myfile.close();			
-//  }
+ 
 //  // Task 10: derivative of the rotation matrix (in case of reverse transition) 
 //  if(std::find(task.begin(), task.end(), 10)!=task.end()){
 //	cout<<"Task 5: calculates the finite difference for derivative of the rotation matrix respect to the the running frame"<<endl;

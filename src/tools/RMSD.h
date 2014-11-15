@@ -124,15 +124,15 @@ template <bool safe,bool alEqDis>
                           const  std::vector<double>  & displace,
                           const std::vector<Vector> & positions,
                           const std::vector<Vector> & reference ,
-                          std::vector<Vector>  & derivatives, bool squared=false)const;
+                          std::vector<Vector>  & DDistDPos, bool squared=false)const;
 
 template <bool safe,bool alEqDis>
 double optimalAlignment_DDistDRef(const  std::vector<double>  & align,
                               const  std::vector<double>  & displace,
                               const std::vector<Vector> & positions,
                               const std::vector<Vector> & reference ,
-			      std::vector<Vector>  & derivatives,	
-                              std::vector<Vector> & ddistdref,
+			      std::vector<Vector>  & DDistDPos,	
+                              std::vector<Vector> &  DDistDRef, 
                               bool squared=false) const;
 
 template <bool safe,bool alEqDis>
@@ -140,19 +140,48 @@ double optimalAlignment_DDistDRef_Rot_DRotDPos(const  std::vector<double>  & ali
                               const  std::vector<double>  & displace,
                               const std::vector<Vector> & positions,
                               const std::vector<Vector> & reference ,
-			      std::vector<Vector>  & derivatives,	
-                              std::vector<Vector> & ddistdref,
+			      std::vector<Vector>  & DDistDPos,		
+                              std::vector<Vector> &  DDistDRef, 
 			      Tensor & Rotation,
 			      Matrix<std::vector<Vector> > &DRotDPos,
                               bool squared=false) const;
 
+template <bool safe,bool alEqDis>
+double optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef(const  std::vector<double>  & align,
+                              const  std::vector<double>  & displace,
+                              const std::vector<Vector> & positions,
+                              const std::vector<Vector> & reference ,
+			      std::vector<Vector>  & DDistDPos,	
+                              std::vector<Vector> &  DDistDRef,
+			      Tensor & Rotation,
+			      Matrix<std::vector<Vector> > &DRotDPos,
+			      Matrix<std::vector<Vector> > &DRotDRef,
+                              bool squared=false) const;
+
+template <bool safe,bool alEqDis>
+double optimalAlignment_PCA(const  std::vector<double>  & align,
+                            const  std::vector<double>  & displace,
+                            const std::vector<Vector> & positions,
+                            const std::vector<Vector> & reference,
+                            std::vector<Vector> & alignedpositions,
+                            std::vector<Vector> & centeredpositions, 
+                            std::vector<Vector> & centeredreference, 
+			    Tensor & Rotation, 
+                            std::vector<Vector> & DDistDPos, 
+			    Matrix<std::vector<Vector> > & DRotDPos,
+                            bool squared=false);
+
 /// Compute rmsd: note that this is an intermediate layer which is kept in order to evtl expand with more alignment types/user options to be called while keeping the workhorses separated 
   double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false)const;
 /// Other convenience methods:
-/// calculate the derivative of distance plus additional other stuff (intermediate layer kept so to add
- double calc_DDistDRef( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, std::vector<Vector>& DDistDRef , const bool squared=false   ); 
+/// calculate the derivative of distance respect to position(DDistDPos) and reference (DDistDPos)  
+ double calc_DDistDRef( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef , const bool squared=false   ); 
 ///
- double calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos, const bool squared=false   ); 
+ double calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos, const bool squared=false   ); 
+ double calc_DDistDRef_Rot_DRotDPos_DRotDRef( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos,Matrix<std::vector<Vector> > &DRotDRef, const bool squared=false   ); 
+ double calc_PCAelements( const std::vector<Vector>& pos, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared=false); 
+
+
 
 };
 
@@ -216,7 +245,7 @@ class RMSDCoreData
 		//  does the core calc : first thing to call after the constructor	
 		void doCoreCalc(bool safe,bool alEqDis);
 		// retrieve the distance if required after doCoreCalc 
-		double getDistance(std::vector<Vector> &derivatives, bool squared);
+		double getDistance(bool squared);
 		// retrieve the derivative of the distance respect to the position
 		std::vector<Vector> getDDistanceDPositions();
 		// retrieve the derivative of the distance respect to the reference
@@ -236,7 +265,7 @@ class RMSDCoreData
 		// get the derivative of the rotation matrix respect to positions
 		// note that the this transformation overlap the  reference onto position
 		// if inverseTransform=true then aligns the positions onto reference
-		Matrix<std::vector<Vector> > getDRotationDPosition( bool inverseTransform=false );
+		Matrix<std::vector<Vector> > getDRotationDPositions( bool inverseTransform=false );
 		// get the derivative of the rotation matrix respect to reference 
 		// note that the this transformation overlap the  reference onto position
 		// if inverseTransform=true then aligns the positions onto reference
