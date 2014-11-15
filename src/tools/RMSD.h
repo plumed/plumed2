@@ -99,19 +99,20 @@ public:
   RMSD();
 /// clear the structure
   void clear();
-/// set reference, align and displace from input pdb structure
-  void set(const PDB&, std::string mytype);
+/// set reference, align and displace from input pdb structure: evtl remove com from the initial structure and normalize the input weights from the pdb 
+  void set(const PDB&, std::string mytype, bool remove_center=true, bool normalize_weights=true);
+  void set(const std::vector<double> & align, const std::vector<double> & displace, const std::vector<Vector> & reference , std::string mytype, bool remove_center=true , bool normalize_weights=true );
 /// set the type of alignment we are doing
   void setType(std::string mytype);
-/// set reference coordinates
+/// set reference coordinates, remove the com by using uniform weights
   void setReference(const std::vector<Vector> & reference);
-/// set weights
-  void setAlign(const std::vector<double> & align, bool normalize=true, bool remove_center=true);
+/// set weights and remove the center from reference with normalized weights. If the com has been removed, it resets to the new value
+  void setAlign(const std::vector<double> & align, bool normalize_weights=true, bool remove_center=true);
 /// set align
-  void setDisplace(const std::vector<double> & displace, bool normalize=true);
+  void setDisplace(const std::vector<double> & displace, bool normalize_weights=true);
 /// 
   std::string getMethod();	
-///
+/// workhorses
   double simpleAlignment(const  std::vector<double>  & align,
   		                     const  std::vector<double>  & displace,
   		                     const std::vector<Vector> & positions,
@@ -123,8 +124,22 @@ template <bool safe,bool alEqDis>
                           const std::vector<Vector> & positions,
                           const std::vector<Vector> & reference ,
                           std::vector<Vector>  & derivatives, bool squared=false)const;
-/// Compute rmsd
+
+template <bool safe,bool alEqDis>
+double optimalAlignment_DDistDRef(const  std::vector<double>  & align,
+                              const  std::vector<double>  & displace,
+                              const std::vector<Vector> & positions,
+                              const std::vector<Vector> & reference ,
+			      std::vector<Vector>  & derivatives,	
+                              std::vector<Vector> & ddistdref,
+                              bool squared) const;
+
+/// Compute rmsd: note that this is an intermediate layer which is kept in order to evtl expand with more alignment types/user options to be called while keeping the workhorses separated 
   double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false)const;
+/// Other convenience methods:
+/// calculate the derivative of distance plus additional other stuff (intermediate layer kept so to add
+ double calc_DDistDRef( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, std::vector<Vector>& DDistDRef , const bool squared=false   ); 
+///
 };
 
 /// this is a class which is needed to share information across the various non-threadsafe routines
@@ -184,13 +199,10 @@ class RMSDCoreData
 		void setReferenceCenterIsRemoved(bool t){creference_is_removed=t;};
 		bool getPositionsCenterIsRemoved(){return cpositions_is_removed;};
 		bool getReferenceCenterIsRemoved(){return creference_is_removed;};
-	
-		
-
 		//  does the core calc : first thing to call after the constructor	
 		void doCoreCalc(bool safe,bool alEqDis);
 		// retrieve the distance if required after doCoreCalc 
-		double getDistance(bool squared);
+		double getDistance(std::vector<Vector> &derivatives, bool squared);
 		// retrieve the derivative of the distance respect to the position
 		std::vector<Vector> getDDistanceDPositions();
 		// retrieve the derivative of the distance respect to the reference
