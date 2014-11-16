@@ -57,10 +57,11 @@ int main(int argc, char* argv[]) {
   cout<<"  7 : consistency check for MSD proportionality (works with squared=true through option -1 )\n";
   cout<<"  8 : do some timings for all the above routines and for a growing number of atoms\n";
   cout<<"  9 : test the rotation order: print position.pdb reference.pdb aligned.pdb and check that it makes sense(should be reference aligned onto positions)\n";
-  //cout<<" 10 : findiff test for  d Rot / d position  ( position -> reference ) \n";
-  //cout<<" 11 : findiff test for  d Rot / d position  (homogenehous weights)  (reference->position)\n";
-  //cout<<" 12 : findiff test for  d Rot / d reference  (homogenehous weights) (reference->position)\n";
-  //cout<<" 13 : do timings only for the most common use (aligment +derivatives) and repeat for homogeneous weights\n";
+  cout<<" 10 : findiff test for  d Rot / d position  ( position -> reference ) \n";
+  cout<<" 11 : findiff test for  d Rot / d position  (homogenehous weights)  (reference->position)\n";
+  cout<<" 12 : findiff test for  d Rot / d reference  (homogenehous weights) (reference->position)\n";
+  cout<<" 13 : do timings only for the most common use (aligment +derivatives) and repeat for homogeneous weights\n";
+  cout<<" 20 : a simple test calculating only derivative of positions which is needed to compare new version and old version (need to compile with -DOLDRMSD both plumed and the test)\n";
 
   PDB pdbref;
 
@@ -148,6 +149,8 @@ int main(int argc, char* argv[]) {
   	double r_old=rmsd->calculate( run, derivatives, squared ); 
 	std::vector<Vector> ref_save=ref;	
 	std::vector<Vector> DDistDRef;	
+        rmsd->clear();
+        rmsd->set(align, displace, ref,type,remove_com,normalize_weights  );	
 	for(unsigned int comp=0;comp<3;comp++){	
 		for(unsigned int i=0;i<run.size();++i){
 			//change the position		
@@ -212,6 +215,9 @@ int main(int argc, char* argv[]) {
   // Task 5: calculate findiff of derivative of the rotation matrix respect to running frame
   if(std::find(task.begin(), task.end(), 5)!=task.end()){
 	cout<<"Task 5: calculates the finite difference for derivative of the rotation matrix respect to the the running frame"<<endl;
+        rmsd->clear();
+        rmsd->set(align, displace, ref,type,remove_com,normalize_weights  );	
+
 	Tensor Rotation,OldRotation;
 	Matrix<std::vector<Vector> > DRotDPos(3,3);
         std::vector<Vector> DDistDRef;
@@ -235,6 +241,8 @@ int main(int argc, char* argv[]) {
   // Task 6: calculate findiff of derivative of the rotation matrix respect to reference frame 
   if(std::find(task.begin(), task.end(), 6)!=task.end()){
 	cout<<"Task 6: calculates the finite difference for derivative of the rotation matrix respect to the the reference frame"<<endl;
+        rmsd->clear();
+        rmsd->set(align, displace, ref,type,remove_com,normalize_weights  );	
 	Tensor Rotation,OldRotation;
 	Matrix<std::vector<Vector> > DRotDPos(3,3),DRotDRef(3,3);
         std::vector<Vector> DDistDRef;
@@ -283,6 +291,8 @@ int main(int argc, char* argv[]) {
   // Task 8: do some timings to get a flavor
   if(std::find(task.begin(), task.end(), 8)!=task.end()){
       cout<<"Task 8: makes some timings for increasing atoms and different routines "<<endl;
+      rmsd->clear();
+      rmsd->set(align, displace, ref,type,remove_com,normalize_weights  );	
       vector<Vector> r_run,r_ref;
       vector<double> r_al,r_disp;
       for (unsigned int i=0;i<10;i++){r_run.push_back(run[i]);r_ref.push_back(ref[i]);r_al.push_back(align[i]);r_disp.push_back(displace[i]);}
@@ -329,6 +339,9 @@ int main(int argc, char* argv[]) {
   } 
   // Task 9: check the rotation
   if(std::find(task.begin(), task.end(), 9)!=task.end()){
+      cout<<"Task 9: dump some pdbs so to check if all makes sense when using inverse transform. In particular positions_aligned.pdb should overlap with reference_centered.pdb "<<endl;
+	rmsd->clear();
+        rmsd->set(align, displace, ref,type,remove_com,normalize_weights  );	
 	// dump the reference
 	ofstream myfile;
 	myfile.open ("reference.pdb");		
@@ -407,6 +420,147 @@ int main(int argc, char* argv[]) {
 	}	
 	myfile.close();			
   }
+  // Task 10: derivative of the rotation matrix (in case of reverse transition) 
+  if(std::find(task.begin(), task.end(), 10)!=task.end()){
+	cout<<"Task 10: calculates the finite difference for derivative of the rotation matrix respect to the the running frame"<<endl;
+	rmsd->clear();
+        rmsd->set(align, displace, ref,type,remove_com,normalize_weights  );	
+	Tensor Rotation,OldRotation;
+	Matrix<std::vector<Vector> > DRotDPos(3,3);
+        std::vector<Vector> DDistDRef;
+        std::vector<Vector> alignedpos;
+        std::vector<Vector> centeredpos;
+        std::vector<Vector> centeredref;
+	std::vector<Vector> ddistdpos;
+	rmsd->calc_PCAelements( run, derivatives, OldRotation , DRotDPos , alignedpos ,centeredpos, centeredref, squared ); 
+	std::vector<Vector> run_save=run;	
+	for(unsigned int a=0;a<3;a++){	
+		for(unsigned int b=0;b<3;b++){	
+			for(unsigned int comp=0;comp<3;comp++){	
+				for(unsigned int i=0;i<run.size();++i){
+					//change the position		
+					run[i][comp]+=eps;
+					rmsd->calc_PCAelements( run, derivatives, Rotation ,DRotDPos , alignedpos ,centeredpos, centeredref , squared); 
+					cout<<"DROT_DPOS_INVERSE_TRANSFORM COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(run[i][comp]-run_save[i][comp])<<" "<<DRotDPos[a][b][i][comp]<<"\n";
+					// restore the old position
+					run=run_save;
+				}
+			}
+		}
+	}
+  }
+  // Task 11: calculate findiff of derivative of the rotation matrix respect to running frame (homogenehous weights)
+  if(std::find(task.begin(), task.end(), 11)!=task.end()){
+	cout<<"Task 11: calculates the finite difference for derivative of the rotation matrix respect to the the running frame (homogeneous weights)"<<endl;
+	std::vector<double> newalign(run.size(),1.); 
+	std::vector<double> newdisplace(run.size(),1.); 
+	rmsd->clear();
+        rmsd->set(newalign, newdisplace, ref,type,remove_com,normalize_weights  );	
+	Tensor Rotation,OldRotation;
+	Matrix<std::vector<Vector> > DRotDPos(3,3);
+        std::vector<Vector> DDistDRef;
+	rmsd->calc_DDistDRef_Rot_DRotDPos( run,derivatives, DDistDRef, OldRotation , DRotDPos, squared  ); 
+	std::vector<Vector> run_save=run;	
+	for(unsigned int a=0;a<3;a++){	
+		for(unsigned int b=0;b<3;b++){	
+			for(unsigned int comp=0;comp<3;comp++){	
+				for(unsigned int i=0;i<run.size();++i){
+					//change the position		
+					run[i][comp]+=eps;
+					rmsd->calc_DDistDRef_Rot_DRotDPos( run, derivatives , DDistDRef, Rotation , DRotDPos, squared  ); 
+					cout<<"DROT_DPOS COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(run[i][comp]-run_save[i][comp])<<" "<<DRotDPos[a][b][i][comp]<<"\n";
+					// restore the old position
+					run=run_save;
+				}
+			}
+		}
+	}
+  }
+  // Task 12: calculate findiff of derivative of the rotation matrix respect to reference frame 
+  if(std::find(task.begin(), task.end(), 12)!=task.end()){
+	cout<<"Task 12: calculates the finite difference for derivative of the rotation matrix respect to the the reference frame (homogeneous weights)"<<endl;
+	std::vector<double> newalign(run.size(),1.); 
+	std::vector<double> newdisplace(run.size(),1.); 
+	rmsd->clear();
+        rmsd->set(newalign, newdisplace, ref,type,remove_com,normalize_weights  );	
+	Tensor Rotation,OldRotation;
+	Matrix<std::vector<Vector> > DRotDPos(3,3),DRotDRef(3,3);
+        std::vector<Vector> DDistDRef;
+	rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( run, derivatives, DDistDRef, OldRotation , DRotDPos , DRotDRef ,squared); 
+	std::vector<Vector> ref_save=ref;	
+	for(unsigned int a=0;a<3;a++){	
+		for(unsigned int b=0;b<3;b++){	
+			for(unsigned int comp=0;comp<3;comp++){	
+				for(unsigned int i=0;i<run.size();++i){
+					//change the position		
+					ref[i][comp]+=eps;
+					// this function below also reset the com of the reference (but not of the running frame)
+					rmsd->clear();
+				        rmsd->set(newalign, newdisplace, ref,type,remove_com,normalize_weights  );	
+					rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( run, derivatives, DDistDRef, Rotation , DRotDPos, DRotDRef ,squared ); 
+					cout<<"DROT_DREF COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(ref[i][comp]-ref_save[i][comp])<<" "<<DRotDRef[a][b][i][comp]<<"\n";
+					// restore the old position
+					ref=ref_save;
+				}
+			}
+		}
+	}
+  }
+   // Task 13: do some timings to get a flavor (only on alignment+derivatives)
+  if(std::find(task.begin(), task.end(), 13)!=task.end()){
+	cout<<"Task 13: timings for the most common use (only on alignment+derivatives)  "<<endl;
+	vector<Vector> r_run,r_ref;
+	vector<double> r_al,r_disp;
+	for (unsigned int i=0;i<10;i++){r_run.push_back(run[i]);r_ref.push_back(ref[i]);r_al.push_back(align[i]);r_disp.push_back(displace[i]);}
+	for(unsigned int i=0;i<10;i++){
+		cout<<"NUMBER OF ATOMS : "<<r_run.size()<<endl;
+		unsigned ntest; ntest=100;
+		// test the fast routine
+		rmsd->clear();
+	        rmsd->set(r_al, r_disp, r_ref, type,remove_com,normalize_weights  );	
+		Stopwatch sw;
+		sw.start();	
+	        for(unsigned int j=0;j<ntest;j++)rmsd->calculate( r_run, derivatives, squared );
+		sw.stop();	
+                cout<<"TIME \n"<<sw<<endl;
+		// duplicate the atoms
+		unsigned s=r_run.size();
+		for (unsigned int i=0;i<s;i++){r_run.push_back(r_run[i]);r_ref.push_back(r_ref[i]);r_al.push_back(r_al[i]);r_disp.push_back(r_disp[i]);}
+	
+	}
+	cout <<"NOW HOMOGENEOUS WEIGHTS\n";
+	std::vector<double> newalign(10,1.); 
+	std::vector<double> newdisplace(10,1.); 
+	r_run.resize(0);
+	r_ref.resize(0);
+	r_al.resize(0);
+	r_disp.resize(0);
+	for (unsigned int i=0;i<10;i++){r_run.push_back(run[i]);r_ref.push_back(ref[i]);r_al.push_back(newalign[i]);r_disp.push_back(newdisplace[i]);}
+        rmsd->clear();
+        rmsd->set(r_al,r_disp , r_ref ,type,remove_com,normalize_weights  );
+	for(unsigned int i=0;i<10;i++){
+		cout<<"NUMBER OF ATOMS : "<<r_run.size()<<endl;
+		unsigned ntest; ntest=100;
+		// test the fast routine
+                rmsd->clear();
+                rmsd->set(r_al, r_disp, r_ref, type,remove_com,normalize_weights  );
+		derivatives.resize(r_al.size());
+		Stopwatch sw;
+		sw.start();	
+	        for(unsigned int j=0;j<ntest;j++)rmsd->calculate( r_run, derivatives, squared );
+		sw.stop();	
+                cout<<"TIME \n"<<sw<<endl;
+		// duplicate the atoms
+		unsigned s=r_run.size();
+		for (unsigned int i=0;i<s;i++){r_run.push_back(r_run[i]);r_ref.push_back(r_ref[i]);r_al.push_back(r_al[i]);r_disp.push_back(r_disp[i]);}
+	
+	}
+	
+	
+
+  } 
+
+
 #endif
   // Task 20: do some timings to get a flavor
   if(std::find(task.begin(), task.end(), 20)!=task.end()){
@@ -437,144 +591,3 @@ int main(int argc, char* argv[]) {
 
   return 1;
 }
- 
-//  // Task 10: derivative of the rotation matrix (in case of reverse transition) 
-//  if(std::find(task.begin(), task.end(), 10)!=task.end()){
-//	cout<<"Task 5: calculates the finite difference for derivative of the rotation matrix respect to the the running frame"<<endl;
-//	Tensor Rotation,OldRotation;
-//	Matrix<std::vector<Vector> > DRotDPos(3,3);
-//        std::vector<Vector> DDistDRef;
-//        std::vector<Vector> alignedpos;
-//        std::vector<Vector> centeredpos;
-//        std::vector<Vector> centeredref;
-//	std::vector<Vector> ddistdpos;
-//	rmsd->calc_PCA( run, squared, OldRotation , ddistdpos, DRotDPos , alignedpos ,centeredpos, centeredref ); 
-//	std::vector<Vector> run_save=run;	
-//	for(unsigned int a=0;a<3;a++){	
-//		for(unsigned int b=0;b<3;b++){	
-//			for(unsigned int comp=0;comp<3;comp++){	
-//				for(unsigned int i=0;i<run.size();++i){
-//					//change the position		
-//					run[i][comp]+=eps;
-//					rmsd->calc_PCA( run, squared, Rotation , ddistdpos, DRotDPos , alignedpos ,centeredpos, centeredref ); 
-//					cout<<"DROT_DPOS_INVERSE_TRANSFORM COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(run[i][comp]-run_save[i][comp])<<" "<<DRotDPos[a][b][i][comp]<<"\n";
-//					// restore the old position
-//					run=run_save;
-//				}
-//			}
-//		}
-//	}
-//  }
-//  // Task 11: calculate findiff of derivative of the rotation matrix respect to running frame (homogenehous weights)
-//  rmsd->setReferenceAtoms( ref, align, displace );
-//  if(std::find(task.begin(), task.end(), 11)!=task.end()){
-//	cout<<"Task 11: calculates the finite difference for derivative of the rotation matrix respect to the the running frame (homogeneous weights)"<<endl;
-//	std::vector<double> newalign(run.size(),1.); 
-//	std::vector<double> newdisplace(run.size(),1.); 
-//	rmsd->setReferenceAtoms( ref, newalign, newdisplace );
-//  	
-//	Tensor Rotation,OldRotation;
-//	Matrix<std::vector<Vector> > DRotDPos(3,3);
-//        std::vector<Vector> DDistDRef;
-//	rmsd->calc_DDistDRef_Rot_DRotDPos( run, squared, DDistDRef, OldRotation , DRotDPos  ); 
-//	std::vector<Vector> run_save=run;	
-//	for(unsigned int a=0;a<3;a++){	
-//		for(unsigned int b=0;b<3;b++){	
-//			for(unsigned int comp=0;comp<3;comp++){	
-//				for(unsigned int i=0;i<run.size();++i){
-//					//change the position		
-//					run[i][comp]+=eps;
-//					rmsd->calc_DDistDRef_Rot_DRotDPos( run, squared, DDistDRef, Rotation , DRotDPos  ); 
-//					cout<<"DROT_DPOS COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(run[i][comp]-run_save[i][comp])<<" "<<DRotDPos[a][b][i][comp]<<"\n";
-//					// restore the old position
-//					run=run_save;
-//				}
-//			}
-//		}
-//	}
-//  }
-//
-//  // Task 6: calculate findiff of derivative of the rotation matrix respect to reference frame 
-//  if(std::find(task.begin(), task.end(), 12)!=task.end()){
-//	cout<<"Task 12: calculates the finite difference for derivative of the rotation matrix respect to the the reference frame (homogeneous weights)"<<endl;
-//	std::vector<double> newalign(run.size(),1.); 
-//	std::vector<double> newdisplace(run.size(),1.); 
-//	rmsd->setReferenceAtoms( ref, newalign, newdisplace );
-//  	
-//	Tensor Rotation,OldRotation;
-//	Matrix<std::vector<Vector> > DRotDPos(3,3),DRotDRef(3,3);
-//        std::vector<Vector> DDistDRef;
-//	rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( run, squared, DDistDRef, OldRotation , DRotDPos , DRotDRef ); 
-//	std::vector<Vector> ref_save=ref;	
-//	for(unsigned int a=0;a<3;a++){	
-//		for(unsigned int b=0;b<3;b++){	
-//			for(unsigned int comp=0;comp<3;comp++){	
-//				for(unsigned int i=0;i<run.size();++i){
-//					//change the position		
-//					ref[i][comp]+=eps;
-//					// this function below also reset the com of the reference (but not of the running frame)
-//					rmsd->setReferenceAtoms( ref, align, displace );
-//					rmsd->calc_DDistDRef_Rot_DRotDPos_DRotDRef( run, squared, DDistDRef, Rotation , DRotDPos, DRotDRef  ); 
-//					cout<<"DROT_DREF COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(ref[i][comp]-ref_save[i][comp])<<" "<<DRotDRef[a][b][i][comp]<<"\n";
-//					// restore the old position
-//					ref=ref_save;
-//				}
-//			}
-//		}
-//	}
-//  }
-// 
-//   // Task 13: do some timings to get a flavor (only on alignment+derivatives)
-//  if(std::find(task.begin(), task.end(), 13)!=task.end()){
-//	cout<<"Task 13: timings for the most common use (only on alignment+derivatives)  "<<endl;
-//	vector<Vector> r_run,r_ref;
-//	vector<double> r_al,r_disp;
-//	for (unsigned int i=0;i<10;i++){r_run.push_back(run[i]);r_ref.push_back(ref[i]);r_al.push_back(align[i]);r_disp.push_back(displace[i]);}
-//	for(unsigned int i=0;i<10;i++){
-//		cout<<"NUMBER OF ATOMS : "<<r_run.size()<<endl;
-//		unsigned ntest; ntest=100;
-//		// test the fast routine
-//	        rmsd->setReferenceAtoms( r_ref, r_al, r_disp );
-//		Stopwatch sw;
-//		sw.start();	
-//	        for(unsigned int j=0;j<ntest;j++)rmsd->calculate( r_run, squared );
-//		sw.stop();	
-//                cout<<"TIME \n"<<sw<<endl;
-//		// duplicate the atoms
-//		unsigned s=r_run.size();
-//		for (unsigned int i=0;i<s;i++){r_run.push_back(r_run[i]);r_ref.push_back(r_ref[i]);r_al.push_back(r_al[i]);r_disp.push_back(r_disp[i]);}
-//	
-//	}
-//	cout <<"NOW HOMOGENEOUS WEIGHTS\n";
-//	std::vector<double> newalign(10,1.); 
-//	std::vector<double> newdisplace(10,1.); 
-//	r_run.resize(0);
-//	r_ref.resize(0);
-//	for (unsigned int i=0;i<10;i++){r_run.push_back(run[i]);r_ref.push_back(ref[i]);r_al.push_back(newalign[i]);r_disp.push_back(newdisplace[i]);}
-//	rmsd->setReferenceAtoms( r_ref, newalign, newdisplace );
-//
-//	for(unsigned int i=0;i<10;i++){
-//		cout<<"NUMBER OF ATOMS : "<<r_run.size()<<endl;
-//		unsigned ntest; ntest=100;
-//		// test the fast routine
-//	        rmsd->setReferenceAtoms( r_ref, r_al, r_disp );
-//		Stopwatch sw;
-//		sw.start();	
-//	        for(unsigned int j=0;j<ntest;j++)rmsd->calculate( r_run, squared );
-//		sw.stop();	
-//                cout<<"TIME \n"<<sw<<endl;
-//		// duplicate the atoms
-//		unsigned s=r_run.size();
-//		for (unsigned int i=0;i<s;i++){r_run.push_back(r_run[i]);r_ref.push_back(r_ref[i]);r_al.push_back(r_al[i]);r_disp.push_back(r_disp[i]);}
-//	
-//	}
-//	
-//	
-//
-//  } 
-//
-//
-//
-//	
-//  return 0;
-//}
