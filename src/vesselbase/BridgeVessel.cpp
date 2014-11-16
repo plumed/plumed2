@@ -28,8 +28,8 @@ namespace vesselbase {
 
 BridgeVessel::BridgeVessel( const VesselOptions& da ):
 Vessel(da),
-inum(0),
-in_normal_calculate(false)
+inum(0)
+// in_normal_calculate(false)
 {
 }
 
@@ -71,13 +71,13 @@ MultiValue& BridgeVessel::transformDerivatives( const unsigned& current, MultiVa
   return outvals;
 }
 
-bool BridgeVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer ){
-  in_normal_calculate=true;
+bool BridgeVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+  // in_normal_calculate=true;
   if( myvals.get(0)<myOutputAction->getTolerance() ){
       return ( !myOutputAction->contributorsAreUnlocked || myvals.get(0)>=myOutputAction->getNLTolerance() );
   }
-  bool keep=myOutputAction->calculateAllVessels( current, myvals, myvals, buffer );    
-  in_normal_calculate=false;
+  bool keep=myOutputAction->calculateAllVessels( current, myvals, myvals, buffer, der_list );    
+  // in_normal_calculate=false;
   return ( !myOutputAction->contributorsAreUnlocked || keep );
 }
 

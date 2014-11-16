@@ -51,10 +51,6 @@ MultiColvarBase(ao)
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList( mycolv->getTaskCode(i) );
 }
 
-//void BridgedMultiColvarFunction::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
-//  mycolv->getIndexList( ntotal, jstore, maxder, indices );
-//}
-
 void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& current, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals ){
   completeTask( current, invals, outvals );
   
@@ -70,43 +66,11 @@ void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& cu
   outvals.sortActiveList(); 
 }
 
-/// These two functions (commented out one underneath) are needed and are a bit tricky
 void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const unsigned& current, vesselbase::MultiValue& myvals ){
-  //atoms_with_derivatives.deactivateAll();
-
-  // GAT this is for recomputing - this needs to work -- how?
-  if( !myBridgeVessel->prerequisitsCalculated() ){
-      mycolv->performTask( taskIndex, current, myvals );
-  } 
-
-  // completeTask( myvals, outvals );  -- also need this
-  //atoms_with_derivatives.updateActiveMembers();
+  vesselbase::MultiValue invals( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
+  mycolv->performTask( taskIndex, current, invals );
+  transformBridgedDerivatives( taskIndex, invals, myvals ); 
 }
-
-// Vector BridgedMultiColvarFunction::retrieveCentralAtomPos(){
-//  if( atomsWithCatomDer.getNumberActive()==0 ){
-//      Vector cvec = mycolv->retrieveCentralAtomPos();
-//
-//      // Copy the value and derivatives from the MultiColvar
-//      atomsWithCatomDer.emptyActiveMembers();
-//      for(unsigned i=0;i<3;++i){
-//         setElementValue( getCentralAtomElementIndex() + i, mycolv->getElementValue( mycolv->getCentralAtomElementIndex() + i ) );
-//         unsigned nbase = ( getCentralAtomElementIndex() + i)*getNumberOfDerivatives();
-//         unsigned nbas2 = ( mycolv->getCentralAtomElementIndex() + i )*mycolv->getNumberOfDerivatives();
-//         for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j){
-//             unsigned n=mycolv->atomsWithCatomDer[j], nx=3*n; atomsWithCatomDer.activate(n);
-//             addElementDerivative(nbase + nx + 0, mycolv->getElementDerivative(nbas2 + nx + 0) );
-//             addElementDerivative(nbase + nx + 1, mycolv->getElementDerivative(nbas2 + nx + 1) );
-//             addElementDerivative(nbase + nx + 2, mycolv->getElementDerivative(nbas2 + nx + 2) ); 
-//         } 
-//      }
-//      atomsWithCatomDer.updateActiveMembers();  // This can perhaps be faster
-//      return cvec;
-//  }
-//  Vector cvec;
-//  for(unsigned i=0;i<3;++i) cvec[i]=getElementValue(1+i);
-//  return cvec;
-// }
 
 void BridgedMultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
   if(!a){

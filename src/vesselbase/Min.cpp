@@ -34,7 +34,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   Min( const VesselOptions& da );
   std::string function_description();
-  double calcTransform( const double& val, double& dv );
+  double calcTransform( const double& val, double& dv ) const ;
   double finalTransform( const double& val, double& dv );
 };
 
@@ -68,7 +68,7 @@ std::string Min::function_description(){
   return "the minimum value. Beta is equal to " + str_beta;
 }
 
-double Min::calcTransform( const double& val, double& dv ){
+double Min::calcTransform( const double& val, double& dv ) const {
   double f = exp(beta/val); dv=f/(val*val);
   return f; 
 }

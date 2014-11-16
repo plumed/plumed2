@@ -113,7 +113,7 @@ protected:
 /// This returns the whole input line (it is used for less_than/more_than/between)
   std::string getAllInput(); 
 /// Return a pointer to the action we are working in
-  ActionWithVessel* getAction();
+  ActionWithVessel* getAction() const ;
 /// Return the value of the tolerance
   double getTolerance() const ;
 /// Return the value of the neighbor list tolerance
@@ -146,7 +146,7 @@ public:
 /// This is replaced in bridges so we can transform the derivatives
   virtual MultiValue& transformDerivatives( const unsigned& current, MultiValue& myvals, MultiValue& bvals );
 /// Calculate the part of the vessel that is done in the loop
-  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer )=0;
+  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const = 0;
 /// Complete the calculation once the loop is finished
   virtual void finish( const std::vector<double>& )=0;
 /// Reset the size of the buffers
@@ -233,7 +233,7 @@ double Vessel::getNLTolerance() const {
 }
 
 inline
-ActionWithVessel* Vessel::getAction(){
+ActionWithVessel* Vessel::getAction() const {
   return action;
 }
 

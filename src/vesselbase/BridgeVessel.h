@@ -40,7 +40,7 @@ it is created in a different Action however.  At the moment this is used for reg
 class BridgeVessel : public Vessel {
 private:
   unsigned inum;
-  bool in_normal_calculate;
+  // bool in_normal_calculate;
   std::vector<double> mynumerical_values;
   ActionWithVessel* myOutputAction;
   ActionWithValue* myOutputValues;
@@ -63,19 +63,12 @@ public:
 /// This transforms the derivatives using the output value
   MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
 /// Actually do the calculation
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer );
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Finish the calculation
   void finish( const std::vector<double>& buffer );
 /// Calculate numerical derivatives
   void completeNumericalDerivatives();
-/// This is used to tell if the bridge has been called in recompute
-  bool prerequisitsCalculated();
 };
-
-inline
-bool BridgeVessel::prerequisitsCalculated(){
-  return in_normal_calculate;
-}
 
 }
 }

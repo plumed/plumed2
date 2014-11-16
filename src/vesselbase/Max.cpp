@@ -34,7 +34,7 @@ public:
   static void reserveKeyword( Keywords& keys );
   Max( const VesselOptions& da );
   std::string function_description();
-  double calcTransform( const double& val, double& dv );
+  double calcTransform( const double& val, double& dv ) const ;
   double finalTransform( const double& val, double& dv );
 };
 
@@ -69,7 +69,7 @@ std::string Max::function_description(){
   return "the maximum value. Beta is equal to " + str_beta;
 }
 
-double Max::calcTransform( const double& val, double& dv ){
+double Max::calcTransform( const double& val, double& dv ) const {
   double f = exp(val/beta); dv=f/beta; return f;
 }
 

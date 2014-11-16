@@ -67,7 +67,7 @@ std::string Between::function_description(){
   return "the number of values " + hist.description();
 }
 
-double Between::calcTransform( const double& val, double& dv ){
+double Between::calcTransform( const double& val, double& dv ) const {
   double f = hist.calculate(val, dv); return f; 
 }
 

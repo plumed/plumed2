@@ -37,7 +37,7 @@ public:
   static void reserveKeyword( Keywords& keys ); 
   LessThan( const VesselOptions& da );
   std::string function_description();
-  double calcTransform( const double& val, double& dv );
+  double calcTransform( const double& val, double& dv ) const ;
   double getCutoff();
 };
 

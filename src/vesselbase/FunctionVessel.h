@@ -53,8 +53,6 @@ protected:
   bool usetol;
 /// Set the final value
   void setOutputValue( const double& val );
-/// This does a combination of the product and chain rules
-  void mergeFinalDerivatives( const std::vector<double>& df );
 /// Resize the vector containing the derivatives
   void setNumberOfDerivatives( const unsigned& nder );
 /// Return a pointer to the final value
@@ -71,9 +69,9 @@ public:
 /// The rest of the description of what we are calculating
   virtual std::string function_description()=0;
 /// Do the calcualtion
-  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer );
+  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
 /// Do any transformations of the value that are required
-  virtual double calcTransform( const double& val, double& df );
+  virtual double calcTransform( const double& val, double& df ) const ;
 /// Finish the calculation of the quantity
   virtual void finish( const std::vector<double>& buffer );
 /// Finish with any transforms required

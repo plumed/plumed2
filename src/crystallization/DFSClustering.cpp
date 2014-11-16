@@ -150,7 +150,7 @@ void DFSClustering::completeCalculation(){
    ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
    // Get size for buffer
    unsigned bsize=0; std::vector<double> buffer( getSizeOfBuffer( bsize ), 0.0 );
-   std::vector<double> vals( getNumberOfQuantities() );
+   std::vector<double> vals( getNumberOfQuantities() ); std::vector<unsigned> der_index;
    vesselbase::MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
    vesselbase::MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
    // Get rid of bogus derivatives
@@ -163,7 +163,7 @@ void DFSClustering::completeCalculation(){
        for(unsigned i=0;i<vals.size();++i) myvals.setValue( i, vals[i] );
        if( !doNotCalculateDerivatives() ) getVectorDerivatives( i, false, myvals );
        // Run calculate all vessels
-       calculateAllVessels( i, myvals, bvals, buffer );
+       calculateAllVessels( i, myvals, bvals, buffer, der_index );
        myvals.clearAll();
    }
    // MPI Gather everything

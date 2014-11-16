@@ -68,6 +68,8 @@ private:
   double nl_tolerance;
 /// Pointers to the functions we are using on each value
   std::vector<Vessel*> functions;
+/// A pointer to the object that stores data
+  StoreDataVessel* mydata;
 /// Tempory storage for forces
   std::vector<double> tmpforces;
 /// Ths full list of tasks we have to perform
@@ -110,7 +112,7 @@ protected:
   void resizeFunctions();
 /// This loops over all the vessels calculating them and also 
 /// sets all the element derivatives equal to zero
-  bool calculateAllVessels( const unsigned& taskCode, MultiValue& myvals, MultiValue& bvals, std::vector<double>& buffer );
+  bool calculateAllVessels( const unsigned& taskCode, MultiValue& myvals, MultiValue& bvals, std::vector<double>& buffer, std::vector<unsigned>& der_list );
 /// Retrieve the forces from all the vessels (used in apply)
   bool getForcesFromVessels( std::vector<double>& forcesToApply );
 /// Is the calculation being done in serial

@@ -73,7 +73,7 @@ void FunctionVessel::setNumberOfDerivatives( const unsigned& nder ){
   final_value->resizeDerivatives( nder );
 }
 
-bool FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer ){
+bool FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   double weight=myvals.get(0); 
   plumed_dbg_assert( weight>=getTolerance() );  
 
@@ -96,7 +96,7 @@ bool FunctionVessel::calculate( const unsigned& current, MultiValue& myvals, std
   return true;
 }
 
-double FunctionVessel::calcTransform( const double& , double& ){ 
+double FunctionVessel::calcTransform( const double& , double& ) const { 
   plumed_error(); return 1.0; 
 }
 
