@@ -510,6 +510,7 @@ double RMSD::optimalAlignment(const  std::vector<double>  & align,
    derivatives=cd.getDDistanceDPositions(); 
    return dist;    
 }
+#endif
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_DDistDRef(const  std::vector<double>  & align,
                               const  std::vector<double>  & displace,
@@ -668,8 +669,9 @@ double RMSD::optimalAlignment_PCA(const  std::vector<double>  & align,
 /// note that this considers that the centers of both reference and positions are already setted 
 /// but automatically should properly account for non removed components: if not removed then it 
 /// removes prior to calculation of the alignment 
-void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis){
+void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis, bool only_rotation){
 
+  retrieve_only_rotation=only_rotation;
   const unsigned n=static_cast<unsigned int>(reference.size());
   
   plumed_massert(creference_is_calculated,"the center of the reference frame must be already provided at this stage"); 
@@ -713,7 +715,7 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis){
 
   
   Tensor dm_drr01[4][4];
-  if(!alEqDis){
+  if(!alEqDis or !retrieve_only_rotation){
     dm_drr01[0][0] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,-1.0); 
     dm_drr01[1][1] = 2.0*Tensor(-1.0, 0.0, 0.0,  0.0,+1.0, 0.0,  0.0, 0.0,+1.0);
     dm_drr01[2][2] = 2.0*Tensor(+1.0, 0.0, 0.0,  0.0,-1.0, 0.0,  0.0, 0.0,+1.0);
@@ -746,7 +748,7 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis){
 //  cerr<<"EIGENVAL "<<eigenvals[0]<<" "<<eigenvals[1]<<" "<<eigenvals[2]<<" "<<eigenvals[3]<<"\n";
 
   Tensor dq_drr01[4];
-  if(!alEqDis){
+  if(!alEqDis or !only_rotation){
     double dq_dm[4][4][4];
     for(unsigned i=0;i<4;i++) for(unsigned j=0;j<4;j++) for(unsigned k=0;k<4;k++){
       double tmp=0.0;
@@ -777,7 +779,8 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis){
   rotation[2][0]=2*(+q[0]*q[2]+q[1]*q[3]);
   rotation[2][1]=2*(-q[0]*q[1]+q[2]*q[3]);
   
-  if(!alEqDis){
+ 
+  if(!alEqDis or !only_rotation){
     drotation_drr01[0][0]=2*q[0]*dq_drr01[0]+2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
     drotation_drr01[1][1]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]+2*q[2]*dq_drr01[2]-2*q[3]*dq_drr01[3];
     drotation_drr01[2][2]=2*q[0]*dq_drr01[0]-2*q[1]*dq_drr01[1]-2*q[2]*dq_drr01[2]+2*q[3]*dq_drr01[3];
@@ -799,10 +802,10 @@ void RMSDCoreData::doCoreCalc(bool safe,bool alEqDis){
     //cerr<<"D "<<iat<<" "<<d[iat][0]<<" "<<d[iat][1]<<" "<<d[iat][2]<<"\n"; 
 
     // ddist_drotation if needed
-    if(!alEqDis) ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
+    if(!alEqDis or !only_rotation) ddist_drotation+=-2*displace[iat]*extProduct(d[iat],reference[iat]-cr);
   }
 
-  if(!alEqDis){
+  if(!alEqDis or !only_rotation){
           ddist_drr01.zero();
           for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) ddist_drr01+=ddist_drotation[i][j]*drotation_drr01[i][j];
   }
@@ -844,6 +847,7 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions(){
   derivatives.resize(n);
   double prefactor=2.0;
   if(!distanceIsMSD && alEqDis) prefactor*=0.5/dist;
+  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance)plumed_merror("getDPositionsDerivatives needs to calculate the distance via getDistance first !");
   if(!isInitialized)plumed_merror("getDPositionsDerivatives needs to initialize the coreData first!");
   vector<Vector> ddist_tmp(n);
@@ -889,6 +893,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
   vector<Vector> ddist_tmp(n);
   Vector csum,tmp1,tmp2;
 
+  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance)plumed_merror("getDDistanceDReference needs to calculate the distance via getDistance first !");
   if(!isInitialized)plumed_merror("getDDistanceDReference to initialize the coreData first!");
   // get the transpose rotation
@@ -935,6 +940,7 @@ if inverseTransform=true then aligns the positions onto reference
 */
 Matrix<std::vector<Vector> >  RMSDCoreData::getDRotationDPositions( bool inverseTransform ){
   const unsigned n=static_cast<unsigned int>(reference.size());
+  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!isInitialized)plumed_merror("getDRotationDPosition to initialize the coreData first!");
   Matrix<std::vector<Vector> > DRotDPos=Matrix<std::vector<Vector> >(3,3);  
   // remember drotation_drr01 is Tensor drotation_drr01[3][3]
@@ -972,6 +978,7 @@ if inverseTransform=true then aligns the positions onto reference
 */
 Matrix<std::vector<Vector> >  RMSDCoreData::getDRotationDReference( bool inverseTransform ){
   const unsigned n=static_cast<unsigned int>(reference.size());
+  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!isInitialized)plumed_merror("getDRotationDPositions to initialize the coreData first!");
   Matrix<std::vector<Vector> > DRotDRef=Matrix<std::vector<Vector> >(3,3);  
   // remember drotation_drr01 is Tensor drotation_drr01[3][3]
@@ -1016,9 +1023,9 @@ std::vector<Vector> RMSDCoreData::getAlignedReferenceToPositions(){
 }
 std::vector<Vector> RMSDCoreData::getAlignedPositionsToReference(){
 	  std::vector<Vector> alignedpos;
+	  if(!isInitialized)plumed_merror("getAlignedPostionsToReference needs to initialize the coreData first!");
 	  const unsigned n=static_cast<unsigned int>(positions.size());
 	  alignedpos.resize(n);
-	  if(!isInitialized)plumed_merror("getAlignedPostionsToReference needs to initialize the coreData first!");
 	  Vector cp; cp.zero(); if(!cpositions_is_removed)cp=cpositions;
           // avoid to calculate matrix element but use the sum of what you have		  
 	  for(unsigned iat=0;iat<n;iat++)alignedpos[iat]=matmul(rotation.transpose(),positions[iat]-cp);
@@ -1061,8 +1068,5 @@ Tensor RMSDCoreData::getRotationMatrixPositionsToReference(){
 }
 
 
-
-
-#endif
 
 }

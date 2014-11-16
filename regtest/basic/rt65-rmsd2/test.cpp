@@ -98,6 +98,7 @@ int main(int argc, char* argv[]) {
   std::vector<Vector> run ;  run=pdbrun.getPositions() ;
   std::vector<Vector> derivatives ; 
 
+
 // Task 0: calculate the alignment and dump some data
   if(std::find(task.begin(), task.end(), 0)!=task.end()){
 
@@ -140,6 +141,7 @@ int main(int argc, char* argv[]) {
 	}
   }
 
+#ifndef OLDRMSD
   // Task 2: calculate findiff of reference frame
   if(std::find(task.begin(), task.end(), 2)!=task.end()){
 	cout<<"Task 2: calculates the finite difference for the reference frame"<<endl;
@@ -405,8 +407,32 @@ int main(int argc, char* argv[]) {
 	}	
 	myfile.close();			
   }
+#endif
+  // Task 20: do some timings to get a flavor
+  if(std::find(task.begin(), task.end(), 20)!=task.end()){
+      cout<<"Task 8: makes some timings for increasing atoms to compare new and old rmsd (need to be recompiled with -DOLDRMSD) "<<endl;
+      vector<Vector> r_run,r_ref;
+      vector<double> r_al,r_disp;
+      for (unsigned int i=0;i<10;i++){r_run.push_back(run[i]);r_ref.push_back(ref[i]);r_al.push_back(align[i]);r_disp.push_back(displace[i]);}
 
+      for(unsigned int i=0;i<10;i++){
+      	cout<<"NUMBER OF ATOMS : "<<r_run.size()<<endl;
+      	unsigned ntest; ntest=100;
+      	// test the fast routine
+	rmsd->clear();
+        rmsd->set(r_al,r_disp, r_ref, type,remove_com, normalize_weights );
+ 
+      	Stopwatch sw;
+      	sw.start();	
+        for(unsigned int j=0;j<ntest;j++)rmsd->calculate( r_run, derivatives, squared );
+      	sw.stop();	
+      	cout<<"SIMPLE ROUTINE \n"<<sw<<endl;
 
+      	unsigned s=r_run.size();
+      	for (unsigned int i=0;i<s;i++){r_run.push_back(r_run[i]);r_ref.push_back(r_ref[i]);r_al.push_back(r_al[i]);r_disp.push_back(r_disp[i]);}
+      
+      }
+  } 
 
 
   return 1;
