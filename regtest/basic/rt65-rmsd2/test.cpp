@@ -35,6 +35,9 @@ int main(int argc, char* argv[]) {
   // default task, calculate the RMSD of one frame respect to a set of others 
   vector<int> task(1);task[0]=0;
 
+  // this test wants to be only for OPTIMAL case
+  string type; type.assign("OPTIMAL"); 
+
   // first parse the task: in this applications the tasks are simple integers that pass the action that is required
   for(int i = 1; i < argc; i++){ 
       task.push_back(atoi(argv[i]));
@@ -42,11 +45,16 @@ int main(int argc, char* argv[]) {
   if(std::find(task.begin(), task.end(), -1)!=task.end()){cout<<"squared=true (default false)"<<endl;squared=true;}
   if(std::find(task.begin(), task.end(), -2)!=task.end()){cout<<"normalize_weights=false (default true)"<<endl;normalize_weights=false;}
   if(std::find(task.begin(), task.end(), -3)!=task.end()){cout<<"remove_com=false (default true)"<<endl; remove_com=false;}
+  if(std::find(task.begin(), task.end(), -4)!=task.end()){cout<<"OPTIMAL-FAST (default OPTIMAL)"<<endl; type.assign("OPTIMAL-FAST");}
+
 
   cout<<"ARGUMENTS: \n";
+  cout<<"OPTIONS that go on top of tasks:\n";
   cout<<" -1 : squared=true (default=false)\n";  
   cout<<" -2 : normalize_weights=false (default=true)\n";
   cout<<" -3 : remove_com=false (default=true) \n";
+  cout<<" -4 : OPTIMAL-FAST (default=OPTIMAL) \n";
+  cout<<"TASKS (can choose more than one):\n";
   cout<<"  0 : normal rmsd/msd calculation  and derivative dumps (default: always done)\n";
   cout<<"  1 : findiff test for  d msd / d position  (inhomogenehous weights)\n";
   cout<<"  2 : findiff test for  d msd / d reference (inhomogenehous weights)\n";
@@ -67,9 +75,6 @@ int main(int argc, char* argv[]) {
 
   // now create the object: does not do anything but set the typer to SIMPLE
   PLMD::RMSD* rmsd=new RMSD();
-
-  // this test wants to be only for OPTIMAL case
-  string type; type.assign("OPTIMAL"); 
 
   // set the reference pdb 
   string reference; reference.assign("1GB1_mdl1_rototranslated.pdb");
