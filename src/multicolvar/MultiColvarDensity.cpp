@@ -152,7 +152,9 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   } 
   log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
 
-  checkRead(); requestAtoms(atom);
+  checkRead(); requestAtoms(atom); 
+  // Stupid dependencies cleared by requestAtoms - why GBussi why? That's got me so many times
+  addDependency( mycolv );
 
   std::vector<bool> pbc(nbins.size());
   std::vector<std::string> args(nbins.size()), gmin(nbins.size()), gmax(nbins.size());;
