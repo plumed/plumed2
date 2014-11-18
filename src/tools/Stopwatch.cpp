@@ -31,13 +31,13 @@ Different clocks can be used
 
 gettimeofday (default):
   seems portable
-clock_gettime (#define __CLOCK_GETTIME):
+clock_gettime (#define __PLUMED_HAS_CLOCK_GETTIME)
   requires linking -lrt (on linux)
 */
 
-#ifdef __CLOCK_GETTIME
+#ifdef __PLUMED_HAS_CLOCK_GETTIME
 #include <time.h>
-#else
+#elif __PLUMED_HAS_GETTIMEOFDAY
 // this is the default
 #include <sys/time.h>
 #endif
@@ -57,16 +57,19 @@ Stopwatch::Time::operator double()const{
 
 Stopwatch::Time Stopwatch::Time::get(){
   Time t;
-#ifdef __CLOCK_GETTIME
+#ifdef __PLUMED_HAS_CLOCK_GETTIME
   timespec ts;
   clock_gettime(CLOCK_REALTIME,&ts);
   t.sec=ts.tv_sec;
   t.nsec=ts.tv_nsec;
-#else
+#elif __PLUMED_HAS_GETTIMEOFDAY
   timeval tv;
   gettimeofday(&tv,NULL);
   t.sec=tv.tv_sec;
   t.nsec=1000*tv.tv_usec;
+#else
+  t.sec=0;
+  t.nsec=0;
 #endif
   return t;
 }

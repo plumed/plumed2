@@ -700,6 +700,7 @@ enable_external_molfile_plugins
 enable_matheval
 enable_zlib
 enable_clock_gettime
+enable_gettimeofday
 enable_cregex
 enable_dlopen
 enable_execinfo
@@ -1347,6 +1348,7 @@ Optional Features:
   --enable-matheval       enable search for matheval, default: yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-clock-gettime  enable search for gettime, default: yes
+  --enable-gettimeofday   enable search for gettimeofday, default: yes
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
@@ -2493,6 +2495,24 @@ else
   case "yes" in
              (yes) clock_gettime=true ;;
              (no)  clock_gettime=false ;;
+  esac
+
+fi
+
+
+
+gettimeofday=
+# Check whether --enable-gettimeofday was given.
+if test "${enable_gettimeofday+set}" = set; then :
+  enableval=$enable_gettimeofday; case "${enableval}" in
+             (yes) gettimeofday=true ;;
+             (no)  gettimeofday=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-gettimeofday" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) gettimeofday=true ;;
+             (no)  gettimeofday=false ;;
   esac
 
 fi
@@ -4708,21 +4728,6 @@ fi
 done
 
 
-ac_fn_cxx_check_header_mongrel "$LINENO" "sys/time.h" "ac_cv_header_sys_time_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_time_h" = xyes; then :
-
-else
-  as_fn_error $? "compulsory header not found" "$LINENO" 5
-fi
-
-
-ac_fn_cxx_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"
-if test "x$ac_cv_func_gettimeofday" = xyes; then :
-
-else
-  as_fn_error $? "compulsory function not found" "$LINENO" 5
-fi
-
 ac_fn_cxx_check_header_mongrel "$LINENO" "dirent.h" "ac_cv_header_dirent_h" "$ac_includes_default"
 if test "x$ac_cv_header_dirent_h" = xyes; then :
 
@@ -5269,6 +5274,27 @@ fi
     fi
 
 fi
+if test $gettimeofday == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "sys/time.h" "ac_cv_header_sys_time_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_time_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"
+if test "x$ac_cv_func_gettimeofday" = xyes; then :
+  found=ok
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_GETTIMEOFDAY 1" >>confdefs.h
+
+    fi
+
+fi
 if test $cregex == true ; then
 
     found=ko
@@ -5396,8 +5422,71 @@ fi
 
 fi
 if test $almost == true ; then
+  bz2=ko
+  ac_fn_cxx_check_header_mongrel "$LINENO" "bzlib.h" "ac_cv_header_bzlib_h" "$ac_includes_default"
+if test "x$ac_cv_header_bzlib_h" = xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing BZ2_bzReadOpen" >&5
+$as_echo_n "checking for library containing BZ2_bzReadOpen... " >&6; }
+if ${ac_cv_search_BZ2_bzReadOpen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char BZ2_bzReadOpen ();
+int
+main ()
+{
+return BZ2_bzReadOpen ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' bz2; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_BZ2_bzReadOpen=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_BZ2_bzReadOpen+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_BZ2_bzReadOpen+:} false; then :
+
+else
+  ac_cv_search_BZ2_bzReadOpen=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_BZ2_bzReadOpen" >&5
+$as_echo "$ac_cv_search_BZ2_bzReadOpen" >&6; }
+ac_res=$ac_cv_search_BZ2_bzReadOpen
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  bz2=ok
+fi
+
+fi
+
+
   found=ko
-  ac_fn_cxx_check_header_mongrel "$LINENO" "almost.h" "ac_cv_header_almost_h" "$ac_includes_default"
+  if test $bz2 == ok; then
+    ac_fn_cxx_check_header_mongrel "$LINENO" "almost.h" "ac_cv_header_almost_h" "$ac_includes_default"
 if test "x$ac_cv_header_almost_h" = xyes; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing init_camshift" >&5
 $as_echo_n "checking for library containing init_camshift... " >&6; }
@@ -5461,6 +5550,72 @@ fi
 fi
 
 
+  else
+    ac_fn_cxx_check_header_mongrel "$LINENO" "almost.h" "ac_cv_header_almost_h" "$ac_includes_default"
+if test "x$ac_cv_header_almost_h" = xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing init_camshift" >&5
+$as_echo_n "checking for library containing init_camshift... " >&6; }
+if ${ac_cv_search_init_camshift+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char init_camshift ();
+int
+main ()
+{
+return init_camshift ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' Alm; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib -lsqlite3 -lz -lnbimpl -lshx $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_init_camshift=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_init_camshift+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_init_camshift+:} false; then :
+
+else
+  ac_cv_search_init_camshift=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_init_camshift" >&5
+$as_echo "$ac_cv_search_init_camshift" >&6; }
+ac_res=$ac_cv_search_init_camshift
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: \"Almost not found\"" >&5
+$as_echo "$as_me: \"Almost not found\"" >&6;}
+fi
+
+fi
+
+
+  fi
   if test $found == ok; then
     $as_echo "#define __PLUMED_HAS_ALMOST 1" >>confdefs.h
 
