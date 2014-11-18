@@ -115,7 +115,7 @@ public:
   static void registerKeywords( Keywords& keys );
   XDistances(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms );
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
 };
@@ -150,7 +150,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double XDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ){
+double XDistances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
    Vector distance; 
    distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
    const double value=distance[myc];

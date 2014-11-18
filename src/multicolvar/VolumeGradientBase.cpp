@@ -47,7 +47,7 @@ void VolumeGradientBase::doJobsRequiredBeforeTaskList(){
   ActionWithVessel::doJobsRequiredBeforeTaskList();
 }
 
-void VolumeGradientBase::completeTask( const unsigned& curr, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals ){
+void VolumeGradientBase::completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const {
   if( getPntrToMultiColvar()->isDensity() ){ 
      outvals.setValue(0, 1.0); outvals.setValue(1, 1.0);
   } else {
@@ -60,7 +60,7 @@ void VolumeGradientBase::completeTask( const unsigned& curr, vesselbase::MultiVa
 
 void VolumeGradientBase::setNumberInVolume( const unsigned& ivol, const unsigned& curr, const double& weight, 
                                             const Vector& wdf, const Tensor& virial, const std::vector<Vector>& refders, 
-                                            vesselbase::MultiValue& outvals ){
+                                            MultiValue& outvals ) const { 
   MultiColvarBase* mcolv=getPntrToMultiColvar(); 
   if( !mcolv->weightHasDerivatives ){
       outvals.setValue(ivol, weight ); 

@@ -37,6 +37,8 @@ class MultiRMSD : public Colvar {
 	
   PLMD::MultiDomainRMSD* rmsd;
   bool squared; 
+  MultiValue myvals;
+  ReferenceValuePack mypack;
 
 public:
   MultiRMSD(const ActionOptions&);
@@ -124,7 +126,7 @@ void MultiRMSD::registerKeywords(Keywords& keys){
 }
 
 MultiRMSD::MultiRMSD(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),squared(false)
+PLUMED_COLVAR_INIT(ao),squared(false),myvals(1,0), mypack(0,0,myvals)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -147,8 +149,12 @@ PLUMED_COLVAR_INIT(ao),squared(false)
   
   std::vector<AtomNumber> atoms;
   rmsd->getAtomRequests( atoms );
-  rmsd->setNumberOfAtoms( atoms.size() );
+//   rmsd->setNumberOfAtoms( atoms.size() );
   requestAtoms( atoms );
+
+  myvals.resize( 1, 3*atoms.size()+9 );
+  mypack.resize( 0, atoms.size() ); mypack.setValIndex(0);
+  for(unsigned i=0;i<atoms.size();++i) mypack.setAtomIndex( i, i );
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
@@ -163,14 +169,13 @@ MultiRMSD::~MultiRMSD(){
 
 // calculator
 void MultiRMSD::calculate(){
-  double r=rmsd->calculate( getPositions(), getPbc(), squared );
+  mypack.clear(); double r=rmsd->calculate( getPositions(), getPbc(), mypack, squared );
 
   setValue(r); 
-  for(unsigned i=0;i<getNumberOfAtoms();i++) setAtomsDerivatives( i, rmsd->getAtomDerivative(i) );
+  for(unsigned i=0;i<getNumberOfAtoms();i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
 
-  Tensor virial; 
-  if( !rmsd->getVirial( virial ) ) setBoxDerivativesNoPbc();
-  else setBoxDerivatives( virial );
+  if( !mypack.virialWasSet() ) setBoxDerivativesNoPbc();
+  else setBoxDerivatives( mypack.getBoxDerivatives() );
 }
 
 }

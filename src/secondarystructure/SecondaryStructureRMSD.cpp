@@ -161,7 +161,6 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   if( references.size()==0 ){
-     pos.resize( structure.size() ); 
      finishTaskListUpdate();
 
      readVesselKeywords();
@@ -181,7 +180,7 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
   references[nn]->setBoundsOnDistances( true , bondlength );  // We always use pbc
   references[nn]->setReferenceAtoms( structure, align, displace );
-  references[nn]->setNumberOfAtoms( structure.size() );
+//  references[nn]->setNumberOfAtoms( structure.size() );
 }
 
 void SecondaryStructureRMSD::prepare(){
@@ -205,8 +204,9 @@ void SecondaryStructureRMSD::calculate(){
   runAllTasks();
 }
 
-void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsigned& current, vesselbase::MultiValue& myvals ){
+void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
   // Retrieve the positions
+  std::vector<Vector> pos( references[0]->getNumberOfAtoms() );
   for(unsigned i=0;i<pos.size();++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(current,i) );
 
   // This does strands cutoff
@@ -225,42 +225,31 @@ void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsi
      for(unsigned i=15;i<30;++i){
          pos[i]+=( origin_new - origin_old );
      }
-  } 
+  }
+  // Create a holder for the derivatives
+  ReferenceValuePack mypack( 0, pos.size(), myvals ); mypack.setValIndex( 1 );
+  for(unsigned i=0;i<pos.size();++i) mypack.setAtomIndex( i, getAtomIndex(current,i) );
 
   // And now calculate the RMSD
   double r,nr; const Pbc& pbc=getPbc(); 
-  closest=0; r=references[0]->calculate( pos, pbc, false );
+  unsigned closest=0; r=references[0]->calculate( pos, pbc, mypack, false );
   for(unsigned i=1;i<references.size();++i){
-      nr=references[i]->calculate( pos, pbc, false );
+      mypack.setValIndex( i+1 );
+      nr=references[i]->calculate( pos, pbc, mypack, false );
       if( nr<r ){ closest=i; r=nr; }
   }
 
   // Transfer everything to the value
   myvals.setValue( 0, 1.0 ); myvals.setValue( 1, r );
-  for(unsigned i=0;i<colvar_atoms[current].size();++i){
-     unsigned thisatom=3*getAtomIndex(current,i);
-     Vector ader=references[closest]->getAtomDerivative(i);
-     myvals.addDerivative( 1, thisatom, ader[0] ); thisatom++;
-     myvals.addDerivative( 1, thisatom, ader[1] ); thisatom++;
-     myvals.addDerivative( 1, thisatom, ader[2] );
+  if( closest>0 ) mypack.moveDerivatives( closest+1, 1 );
+
+  if( !mypack.virialWasSet() ){
+      Tensor vir; vir.zero();
+      for(unsigned i=0;i<colvar_atoms[current].size();++i){
+         vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) ));
+      } 
+      mypack.setValIndex(1); mypack.addBoxDerivatives( vir );
   }
-  Tensor virial;
-  if( !references[closest]->getVirial( virial ) ){
-     virial.zero();
-     for(unsigned i=0;i<colvar_atoms[current].size();++i){
-         virial+=(-1.0*Tensor( pos[i], references[closest]->getAtomDerivative(i) ));
-     }
-  }
-  unsigned outnat=3*getNumberOfAtoms();
-  myvals.addDerivative( 1, outnat, virial(0,0) ); outnat++;
-  myvals.addDerivative( 1, outnat, virial(0,1) ); outnat++;
-  myvals.addDerivative( 1, outnat, virial(0,2) ); outnat++;
-  myvals.addDerivative( 1, outnat, virial(1,0) ); outnat++;
-  myvals.addDerivative( 1, outnat, virial(1,1) ); outnat++;
-  myvals.addDerivative( 1, outnat, virial(1,2) ); outnat++;
-  myvals.addDerivative( 1, outnat, virial(2,0) ); outnat++;
-  myvals.addDerivative( 1, outnat, virial(2,1) ); outnat++;
-  myvals.addDerivative( 1, outnat, virial(2,2) );
 
   return;
 }

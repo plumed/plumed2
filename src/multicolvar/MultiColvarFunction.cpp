@@ -241,11 +241,11 @@ void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
   }
 }
 
-void MultiColvarFunction::updateActiveAtoms( AtomValuePack& myatoms ){
+void MultiColvarFunction::updateActiveAtoms( AtomValuePack& myatoms ) const {
   myatoms.updateDynamicList();
 }
 
-void MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool& normed, vesselbase::MultiValue& myder ){
+void MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const {
   plumed_dbg_assert( ind<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ind];
   plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
   myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
@@ -254,7 +254,7 @@ void MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool&
 
 void MultiColvarFunction::mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end, 
                                                   const unsigned& jatom, const std::vector<double>& der, 
-                                                  vesselbase::MultiValue& myder, AtomValuePack& myatoms ){
+                                                  MultiValue& myder, AtomValuePack& myatoms ) const {
   plumed_dbg_assert( ival<myatoms.getUnderlyingMultiValue().getNumberOfValues() );
   plumed_dbg_assert( start<myder.getNumberOfValues() && end<=myder.getNumberOfValues() );
   plumed_dbg_assert( der.size()==myder.getNumberOfValues() && jatom<getFullNumberOfBaseTasks() );
@@ -266,7 +266,7 @@ void MultiColvarFunction::mergeVectorDerivatives( const unsigned& ival, const un
   // Now get the start of the virial
   unsigned virbas = 3*getNumberOfAtoms();
 
-  vesselbase::MultiValue& myvals=myatoms.getUnderlyingMultiValue();
+  MultiValue& myvals=myatoms.getUnderlyingMultiValue();
   for(unsigned j=0;j<myder.getNumberActive();++j){
      unsigned jder=myder.getActiveIndex(j);
      if( jder<3*mybasemulticolvars[mmc]->getNumberOfAtoms() ){

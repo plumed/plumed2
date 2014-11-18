@@ -29,13 +29,10 @@ namespace crystallization {
 class SMAC : public OrientationSphere {
 private:
   std::vector<KernelFunctions> kernels;
-  std::vector<double> deriv;
-  std::vector<Value*> pos;
 public:
   static void registerKeywords( Keywords& keys ); 
   SMAC(const ActionOptions& ao); 
-  ~SMAC();
-  double transformDotProduct( const double& dot, double& df ); 
+  double transformDotProduct( const double& dot, double& df ) const ; 
 };
 
 PLUMED_REGISTER_ACTION(SMAC,"SMAC")
@@ -48,8 +45,7 @@ void SMAC::registerKeywords( Keywords& keys ){
 
 SMAC::SMAC(const ActionOptions& ao):
 Action(ao),
-OrientationSphere(ao),
-deriv(1)
+OrientationSphere(ao)
 {
    std::string kernelinpt;
    for(int i=1;;i++){
@@ -58,21 +54,17 @@ deriv(1)
       kernels.push_back( mykernel ); 
    }
    if( kernels.size()==0 ) error("no kernels defined");
-
-   pos.push_back( new Value() ); 
-   pos[0]->setNotPeriodic();
 }
 
-SMAC::~SMAC(){
-   delete pos[0];
-}
-
-double SMAC::transformDotProduct( const double& dot, double& df ){
-  double ans=0; df=0; pos[0]->set( acos( dot ) ); double dcos=-1./sqrt( 1. - dot*dot );
+double SMAC::transformDotProduct( const double& dot, double& df ) const {
+  std::vector<Value*> pos; pos.push_back( new Value() ); std::vector<double> deriv(1);
+  pos[0]->setNotPeriodic(); pos[0]->set( acos( dot ) ); 
+  double ans=0; df=0; double dcos=-1./sqrt( 1. - dot*dot );
   for(unsigned i=0;i<kernels.size();++i){
       ans += kernels[i].evaluate( pos, deriv );
       df += deriv[0]*dcos;
   }
+  delete pos[0];
   return ans;
 }
 

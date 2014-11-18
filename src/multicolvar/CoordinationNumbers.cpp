@@ -71,7 +71,7 @@ public:
   static void registerKeywords( Keywords& keys );
   CoordinationNumbers(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ); 
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ; 
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
 };
@@ -119,7 +119,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ){
+double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number

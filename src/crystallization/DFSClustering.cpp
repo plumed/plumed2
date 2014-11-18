@@ -66,7 +66,7 @@ public:
   void completeCalculation();
 /// Derivatives of elements of adjacency matrix are unimportant.  We thus
 /// overwrite this routine as this makes the code faster
-  void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ){}
+  void updateActiveAtoms( multicolvar::AtomValuePack& myatoms ) const {}
 };
 
 PLUMED_REGISTER_ACTION(DFSClustering,"DFSCLUSTERING")
@@ -151,8 +151,8 @@ void DFSClustering::completeCalculation(){
    // Get size for buffer
    unsigned bsize=0; std::vector<double> buffer( getSizeOfBuffer( bsize ), 0.0 );
    std::vector<double> vals( getNumberOfQuantities() ); std::vector<unsigned> der_index;
-   vesselbase::MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
-   vesselbase::MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
+   MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
+   MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
    // Get rid of bogus derivatives
    clearDerivatives(); getAdjacencyVessel()->setFinishedTrue(); 
    for(unsigned j=rank;j<myatoms.size();j+=size){

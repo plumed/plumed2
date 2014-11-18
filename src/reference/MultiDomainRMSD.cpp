@@ -60,9 +60,9 @@ void MultiDomainRMSD::read( const PDB& pdb ){
           if( !parse("UPPER_CUTTOFF"+num,upper,true) ) upper=std::numeric_limits<double>::max( );
        }
        domains.push_back( metricRegister().create<SingleDomainRMSD>( ftype ) );
-       positions.resize( blocks[i] - blocks[i-1] + 1 );
-       align.resize( blocks[i] - blocks[i-1] + 1 );
-       displace.resize( blocks[i] - blocks[i-1] + 1 );
+       positions.resize( blocks[i] - blocks[i-1] );
+       align.resize( blocks[i] - blocks[i-1] );
+       displace.resize( blocks[i] - blocks[i-1] );
        unsigned n=0;
        for(unsigned j=blocks[i-1];j<blocks[i];++j){
            positions[n]=pdb.getPositions()[j];
@@ -72,7 +72,7 @@ void MultiDomainRMSD::read( const PDB& pdb ){
        }
        domains[i-1]->setBoundsOnDistances( true, lower, upper );  // Currently no option for nopbc
        domains[i-1]->setReferenceAtoms( positions, align, displace );
-       domains[i-1]->setNumberOfAtoms( positions.size() );
+       // domains[i-1]->setNumberOfAtoms( positions.size() );
        
        double ww=0; parse("WEIGHT"+num, ww, true );
        if( ww==0 ) weights.push_back( 1.0 );
@@ -86,37 +86,38 @@ void MultiDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const 
   plumed_error();
 }
 
-double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc,  const bool& squared ){
-  clearDerivatives(); double totd=0.; Tensor tvirial; std::vector<Vector> mypos;
+double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
+  //clearDerivatives(); 
+  double totd=0.; Tensor tvirial; std::vector<Vector> mypos;
+  MultiValue tvals( 2, myder.getNumberOfDerivatives() ); ReferenceValuePack tder( 0, 0, tvals );
   for(unsigned i=0;i<domains.size();++i){
      // Must extract appropriate positions here
-     mypos.resize( blocks[i+1] - blocks[i] + 1 );
-     unsigned n=0;
-     for(unsigned j=blocks[i];j<blocks[i+1];++j){ mypos[n]=pos[j]; n++; }
+     mypos.resize( blocks[i+1] - blocks[i] ); 
+     unsigned n=0; tder.resize( 0, mypos.size() );
+     for(unsigned j=blocks[i];j<blocks[i+1];++j){ tder.setAtomIndex(n,j); mypos[n]=pos[j]; n++; }
 
      // This actually does the calculation
-     totd += weights[i]*domains[i]->calculate( mypos, pbc, true );
-
-     // Must extract derivatives here
-     n=0;
-     for(unsigned j=blocks[i];j<blocks[i+1];++j){
-         addAtomicDerivatives( j, weights[i]*domains[i]->getAtomDerivative(n) ); n++;
-     }
-     if( domains[i]->getVirial( tvirial ) ){
-         addBoxDerivatives( weights[i]*tvirial );
-     }
+     totd += weights[i]*domains[i]->calculate( mypos, pbc, tder, true );
+     // Now merge the derivative
+     myder.copyScaledDerivatives( 1, weights[i], tvals );
+     // Make sure virial status is set correctly in output derivative pack
+     // This is only done here so I do this by using class friendship
+     if( tder.virialWasSet() ) myder.boxWasSet=true;
+     // And clear
+     tder.clear();
   }
   if( !squared ){
      totd=sqrt(totd); double xx=0.5/totd;
-     for(unsigned iat=0;iat<atom_ders.size();iat++) atom_ders[iat]*=xx;
-     if( virialWasSet ) virial*=xx;
+     myder.scaleAllDerivatives( xx );
   }
+  if( !myder.updateComplete() ) myder.updateDynamicLists();
   return totd;
 }
 
-double MultiDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
+double MultiDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, 
+                              ReferenceValuePack& myder, const bool& squared ) const {
   plumed_dbg_assert( vals.size()==0 && pos.size()==getNumberOfAtoms() && arg.size()==0 );
-  return calculate( pos, pbc, squared );
+  return calculate( pos, pbc, myder, squared );
 }
 
 }

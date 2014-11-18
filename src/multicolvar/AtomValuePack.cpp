@@ -25,11 +25,11 @@
 namespace PLMD {
 namespace multicolvar {
 
-AtomValuePack::AtomValuePack( vesselbase::MultiValue& vals, MultiColvarBase* mcolv ):
+AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
 myvals(vals),
 mycolv(mcolv)
 {
-  indices.resize( mycolv->getNumberOfDerivatives() );
+  indices.resize( vals.getNumberOfDerivatives() ); // mycolv->getNumberOfDerivatives() );
 }
 
 void AtomValuePack::updateUsingIndices(){

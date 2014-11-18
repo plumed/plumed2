@@ -65,20 +65,20 @@ MultiColvarFunction(ao)
   buildSymmetryFunctionLists();
 }
 
-double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ){
+double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
    // Make sure derivatives for central atom are only calculated once
    VectorMultiColvar* vv = dynamic_cast<VectorMultiColvar*>( getBaseMultiColvar(0) );
    vv->firstcall=true;
 
    double d2, sw, value=0, denom=0, dot, f_dot, dot_df, dfunc; Vector distance;
    unsigned ncomponents=getBaseMultiColvar(0)->getNumberOfQuantities();
-   unsigned nder=getNumberOfDerivatives();
+   unsigned nder=myatoms.getNumberOfDerivatives();
    std::vector<double> catom_orient( ncomponents ), this_orient( ncomponents ), catom_der( ncomponents ); 
 
    Vector catom_pos = myatoms.getPosition(0);
    getVectorForTask( myatoms.getIndex(0), true, catom_orient );
    multicolvar::CatomPack atom0; 
-   vesselbase::MultiValue myder0(ncomponents,nder), myder1(ncomponents,nder); 
+   MultiValue myder0(ncomponents,nder), myder1(ncomponents,nder); 
    if( !doNotCalculateDerivatives() ){
        atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
        getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
@@ -121,7 +121,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
    
    // Now divide everything
    double denom2=denom*denom;
-   updateActiveAtoms( myatoms ); vesselbase::MultiValue& myvals=myatoms.getUnderlyingMultiValue();
+   updateActiveAtoms( myatoms ); MultiValue& myvals=myatoms.getUnderlyingMultiValue();
    for(unsigned i=0;i<myvals.getNumberActive();++i){
        unsigned ider=myvals.getActiveIndex(i);
        myvals.setDerivative( 1, ider, myvals.getDerivative(1,ider)/denom - (value*myvals.getDerivative(0,ider))/denom2 );

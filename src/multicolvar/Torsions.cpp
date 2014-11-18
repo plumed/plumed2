@@ -75,7 +75,7 @@ class Torsions : public MultiColvar {
 public:
   static void registerKeywords( Keywords& keys );
   Torsions(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms );
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return true; }
   void retrieveDomain( std::string& min, std::string& max ){ min="-pi"; max="pi"; }
 };
@@ -101,7 +101,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double Torsions::compute( const unsigned& tindex, AtomValuePack& myatoms ){
+double Torsions::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector d0,d1,d2;
   d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
   d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));

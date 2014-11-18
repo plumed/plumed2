@@ -28,6 +28,7 @@
 #include "tools/Tensor.h"
 #include "tools/Tools.h"
 #include "tools/Exception.h"
+#include "ReferenceValuePack.h"
 
 namespace PLMD{
 
@@ -65,7 +66,7 @@ private:
 /// A vector containing all the remarks from the pdb input
   std::vector<std::string> line;
 /// This is used to store the values of arguments
-  std::vector<double> tmparg;
+//  std::vector<double> tmparg;
 /// These are used to do fake things when we copy frames
   std::vector<AtomNumber> fake_atom_numbers;
   std::vector<std::string> fake_arg_names;
@@ -75,12 +76,12 @@ private:
   std::vector<double> fake_metric;
 protected:
 /// Derivatives wrt to the arguments
-  std::vector<double> arg_ders;
+//  std::vector<double> arg_ders;
 /// The virial contribution has to be stored 
-  bool virialWasSet;
-  Tensor virial;
+//  bool virialWasSet;
+//  Tensor virial;
 /// Derivatives wrt to the atoms
-  std::vector<Vector> atom_ders;
+//  std::vector<Vector> atom_ders;
 /// Crash with an error
   void error(const std::string& msg);
 /// Clear the derivatives 
@@ -91,14 +92,17 @@ public:
   virtual ~ReferenceConfiguration();
 /// Return the name of this metric
   std::string getName() const ;
+///
+  virtual unsigned getNumberOfReferencePositions() const ;
+  virtual unsigned getNumberOfReferenceArguments() const ;
 /// Retrieve the atoms that are required for this guy
   virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false ){}
 /// Retrieve the arguments that are required for this guy
   virtual void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false ){}
 /// Set the final number of arguments
-  virtual void setNumberOfArguments( const unsigned& );
+//  virtual void setNumberOfArguments( const unsigned& );
 /// Set the final number of atoms
-  virtual void setNumberOfAtoms( const unsigned& );
+//  virtual void setNumberOfAtoms( const unsigned& );
 /// Set the reference configuration using a PDB 
   virtual void set( const PDB& );
 /// Do all local business for setting the configuration 
@@ -108,17 +112,18 @@ public:
 /// Return the weight for this frame
   double getWeight() const ;
 /// Calculate the distance from the reference configuration
-  double calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const bool& squared=false );
+  double calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, ReferenceValuePack& myder, const bool& squared=false ) const ;
 /// Calculate the distance from the reference configuration
-  virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, const bool& squared )=0;
-/// Return the derivative wrt to the ith atom
-  Vector getAtomDerivative( const unsigned& ) const ;
-/// Return the derivative wrt to the ith argument
-  double getArgumentDerivative( const unsigned& ) const ;
+  virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
+                       ReferenceValuePack& myder, const bool& squared ) const=0;
+// /// Return the derivative wrt to the ith atom
+//   Vector getAtomDerivative( const unsigned& ) const ;
+// /// Return the derivative wrt to the ith argument
+//   double getArgumentDerivative( const unsigned& ) const ;
 /// Return the derivatives of the distance wrt the cell vectors.  This returns false
 /// for everything other than DRMSD as these sort of calculations have to be done 
 /// separately when you use RMSD 
-  bool getVirial( Tensor& virout ) const ;    
+//   bool getVirial( Tensor& virout ) const ;    
 /// Parse something from the pdb remarks
   template<class T>
   bool parse( const std::string&key, T&t, bool ignore_missing=false );
@@ -142,7 +147,7 @@ public:
   virtual double getReferenceArgument( const unsigned& i ){ plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
 /// to make PLMD::distance work
-  virtual const std::vector<Vector>& getReferencePositions();
+  virtual const std::vector<Vector>& getReferencePositions() const ; 
   virtual const std::vector<double>& getReferenceArguments(); 
   virtual const std::vector<double>& getReferenceMetric();
 /// These are overwritten in ReferenceArguments and ReferenceAtoms to make frame copying work
@@ -150,17 +155,17 @@ public:
   virtual const std::vector<std::string>& getArgumentNames();
 };
 
-inline
-Vector ReferenceConfiguration::getAtomDerivative( const unsigned& ider ) const {
-  plumed_dbg_assert( ider<atom_ders.size() );
-  return atom_ders[ider];
-}
+// inline
+// Vector ReferenceConfiguration::getAtomDerivative( const unsigned& ider ) const {
+//   plumed_dbg_assert( ider<atom_ders.size() );
+//   return atom_ders[ider];
+// }
 
-inline
-double ReferenceConfiguration::getArgumentDerivative( const unsigned& ider ) const {
-  plumed_dbg_assert( ider<arg_ders.size() );
-  return arg_ders[ider];
-}
+// inline
+// double ReferenceConfiguration::getArgumentDerivative( const unsigned& ider ) const {
+//   plumed_dbg_assert( ider<arg_ders.size() );
+//   return arg_ders[ider];
+// }
 
 inline
 void ReferenceConfiguration::setWeight( const double& ww ){
@@ -187,7 +192,7 @@ bool ReferenceConfiguration::parseVector(const std::string&key,std::vector<T>&t,
 }
 
 inline
-const std::vector<Vector>& ReferenceConfiguration::getReferencePositions(){
+const std::vector<Vector>& ReferenceConfiguration::getReferencePositions() const { 
   return fake_refatoms;
 }
 
@@ -209,6 +214,16 @@ const std::vector<AtomNumber>& ReferenceConfiguration::getAbsoluteIndexes(){
 inline
 const std::vector<std::string>& ReferenceConfiguration::getArgumentNames(){
   return fake_arg_names;
+}
+
+inline
+unsigned ReferenceConfiguration::getNumberOfReferencePositions() const {
+  return 0;
+}
+
+inline
+unsigned ReferenceConfiguration::getNumberOfReferenceArguments() const {
+  return 0;
 }
 
 

@@ -47,7 +47,7 @@ public:
   static void registerKeywords( Keywords& keys );
   Fccubic(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ); 
+  virtual double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ; 
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
 };
@@ -95,7 +95,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double Fccubic::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ){
+double Fccubic::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
    double value=0, norm=0, dfunc; Vector distance;
 
    // Calculate the coordination number

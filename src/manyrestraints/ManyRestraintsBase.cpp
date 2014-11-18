@@ -65,7 +65,7 @@ void ManyRestraintsBase::doJobsRequiredBeforeTaskList(){
   ActionWithValue::clearDerivatives();
 }
 
-void ManyRestraintsBase::transformBridgedDerivatives( const unsigned& current, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals ){
+void ManyRestraintsBase::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
   outvals.setValue( 0, invals.get(0) );
   
   // Get the potential

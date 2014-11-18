@@ -38,7 +38,7 @@ public:
   SpathVessel( const vesselbase::VesselOptions& da );
   std::string function_description();
   void prepare();
-  bool calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 };
 
 PLUMED_REGISTER_VESSEL(SpathVessel,"SPATH")
@@ -74,7 +74,7 @@ void SpathVessel::prepare(){
   foundoneclose=false;
 }
 
-bool SpathVessel::calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const {
+bool SpathVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const {
   double pp=mymap->getPropertyValue( current, mycoordnumber ), weight=myvals.get(0);
   if( weight<getTolerance() ) return false;
   buffer[bufstart] += weight*pp; buffer[bufstart+1+nderiv] += weight; 

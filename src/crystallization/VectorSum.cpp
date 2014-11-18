@@ -35,7 +35,7 @@ public:
   VectorSum( const vesselbase::VesselOptions& da );
   std::string function_description();
   void resize();
-  bool calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
 };
 
@@ -73,7 +73,7 @@ void VectorSum::resize(){
   }
 }
 
-bool VectorSum::calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+bool VectorSum::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   unsigned ncomp=getAction()->getNumberOfQuantities()-2, nder=getAction()->getNumberOfDerivatives();
 
   double weight=myvals.get(0); 

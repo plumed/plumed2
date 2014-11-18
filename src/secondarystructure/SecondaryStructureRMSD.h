@@ -41,8 +41,6 @@ class SecondaryStructureRMSD :
   public vesselbase::ActionWithVessel
 {
 private:
-/// Tempory integer to say which refernce configuration is the closest
-  unsigned closest;
 /// The type of rmsd we are calculating
   std::string alignType;
 /// List of all the atoms we require
@@ -60,10 +58,9 @@ private:
   unsigned align_atom_1, align_atom_2;
   bool verbose_output;
 /// Tempory variables for getting positions of atoms and applying forces
-  std::vector<Vector> pos;
   std::vector<double> forcesToApply;
 /// Get the index of an atom
-  unsigned getAtomIndex( const unsigned& current, const unsigned& iatom );
+  unsigned getAtomIndex( const unsigned& current, const unsigned& iatom ) const ;
 protected:
 /// Get the atoms in the backbone
   void readBackboneAtoms( const std::string& backnames, std::vector<unsigned>& chain_lengths );
@@ -79,14 +76,21 @@ public:
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();
+  unsigned getNumberOfQuantities();
   void turnOnDerivatives();
   void prepare();
   void finishTaskListUpdate();
   void calculate();
-  void performTask( const unsigned& , const unsigned& , vesselbase::MultiValue& );
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ; 
   void apply();
   bool isPeriodic(){ return false; }
 };
+
+inline
+unsigned SecondaryStructureRMSD::getNumberOfQuantities(){
+  return 1 + references.size();
+}
+
 
 inline
 unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction(){
@@ -99,7 +103,7 @@ unsigned SecondaryStructureRMSD::getNumberOfDerivatives(){
 }
 
 inline
-unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& current, const unsigned& iatom ){
+unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& current, const unsigned& iatom ) const {
   return all_atoms.linkIndex( colvar_atoms[current][iatom] );
 }
 

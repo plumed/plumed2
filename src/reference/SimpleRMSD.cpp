@@ -31,7 +31,7 @@ private:
 public:
   SimpleRMSD( const ReferenceConfigurationOptions& ro );
   void read( const PDB& );
-  double calc( const std::vector<Vector>& pos, const bool& squared );
+  double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
 };
 
 PLUMED_REGISTER_METRIC(SimpleRMSD,"SIMPLE")
@@ -46,8 +46,12 @@ void SimpleRMSD::read( const PDB& pdb ){
   readReference( pdb );
 }
 
-double SimpleRMSD::calc( const std::vector<Vector>& pos, const bool& squared ){
-  return myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), atom_ders, squared );
+double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
+  std::vector<Vector> atom_ders( pos.size() );
+  double d=myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), atom_ders, squared );
+  for(unsigned i=0;i<pos.size();++i) myder.addAtomDerivatives( i, atom_ders[i] );
+  if( !myder.updateComplete() ) myder.updateDynamicLists();
+  return d;
 }
 
 }

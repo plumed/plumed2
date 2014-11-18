@@ -40,7 +40,7 @@ public:
   GradientVessel( const vesselbase::VesselOptions& da );
   std::string function_description();
   void resize();
-  bool calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
 };
 
@@ -99,7 +99,7 @@ void GradientVessel::resize(){
   }
 }
 
-bool GradientVessel::calculate( const unsigned& current, vesselbase::MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+bool GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
   unsigned nder=getAction()->getNumberOfDerivatives();
   unsigned wstart, cstart; if( ncomponents==1 ){ cstart=1; wstart=2; } else { cstart=2; wstart=2+ncomponents; }
 

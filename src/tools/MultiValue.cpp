@@ -22,7 +22,6 @@
 #include "MultiValue.h"
 
 namespace PLMD{
-namespace vesselbase{
 
 MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
 values(nvals),
@@ -97,5 +96,4 @@ void MultiValue::quotientRule( const unsigned& nder, const unsigned& dder, const
   values[oder] = values[nder] / values[dder];
 }
 
-}
 }

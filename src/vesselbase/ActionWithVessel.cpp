@@ -327,7 +327,7 @@ void ActionWithVessel::runAllTasks(){
   finishComputations( buffer );
 }
 
-void ActionWithVessel::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ){
+void ActionWithVessel::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
   plumed_error();
 }
 

@@ -44,7 +44,7 @@ public:
 //  void check( ReferenceConfiguration* , ReferenceConfiguration* );
   void read( const PDB& );
   void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared );
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
 };
 
 }

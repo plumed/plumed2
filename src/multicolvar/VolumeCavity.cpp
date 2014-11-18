@@ -122,7 +122,7 @@ public:
   ~VolumeCavity();
   void setupRegions();
   void update();
-  double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders );
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
 
 PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY")
@@ -340,7 +340,10 @@ void VolumeCavity::update(){
   }
 }
 
-double VolumeCavity::calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives, Tensor& vir, std::vector<Vector>& rderiv ){
+double VolumeCavity::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& rderiv ) const {
+  // Setup the histogram bead
+  HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( getKernelType() );
+
   // Calculate distance of atom from origin of new coordinate frame
   Vector datom=pbcDistance( origin, cpos );
   double ucontr, uder, vcontr, vder, wcontr, wder;

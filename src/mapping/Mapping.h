@@ -53,14 +53,14 @@ protected:
   std::vector<double> fframes;
 /// Get the number of frames in the path
   unsigned getNumberOfReferencePoints() const ;
+/// Finish the setup of the referenceValuePack by transfering atoms and args
+  void finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const ;
 /// Calculate the value of the distance from the ith frame
-  double calculateDistanceFunction( const unsigned& ifunc, const bool& squared );
+  double calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const ;
 /// Store the distance function
   void storeDistanceFunction( const unsigned& ifunc );
 /// Get the value of the weight
   double getWeight( const unsigned& weight ) const ;
-/// Transfer the derivatives to a MultiValue object
-  void transferDerivatives( const unsigned& ider, const unsigned& fno, const unsigned& cur, vesselbase::MultiValue& myvals );
 public:
   static void registerKeywords( Keywords& keys );
   Mapping(const ActionOptions&);
@@ -77,7 +77,7 @@ public:
 /// Get the value of lambda for paths and property maps 
   virtual double getLambda();
 /// This does the transformation of the distance by whatever function is required
-  virtual double transformHD( const double& dist, double& df )=0;
+  virtual double transformHD( const double& dist, double& df ) const=0;
 /// Get the number of properties we are projecting onto
   unsigned getNumberOfProperties() const ;
 /// Get the name of the ith property we are projecting

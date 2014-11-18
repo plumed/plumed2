@@ -69,7 +69,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   UWalls( const ActionOptions& );
-  double calcPotential( const double& val, double& df );
+  double calcPotential( const double& val, double& df ) const ;
 };
 
 PLUMED_REGISTER_ACTION(UWalls,"UWALLS")
@@ -95,7 +95,7 @@ ManyRestraintsBase(ao)
   checkRead();
 }
 
-double UWalls::calcPotential( const double& val, double& df ){ 
+double UWalls::calcPotential( const double& val, double& df ) const { 
   double uscale = (val - at + offset)/eps;
   if( uscale > 0. ){
      double power = pow( uscale, exp );

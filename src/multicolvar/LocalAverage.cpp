@@ -92,7 +92,7 @@ public:
 /// We have to overwrite this here
   unsigned getNumberOfQuantities();
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms );
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
   bool isPeriodic(){ return false; }   
 };
@@ -140,10 +140,10 @@ unsigned LocalAverage::getNumberOfQuantities(){
   return getBaseMultiColvar(0)->getNumberOfQuantities();
 }
 
-double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ){
+double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector distance; double d2, sw, dfunc, nbond=1; CatomPack atom0, atom1;
   std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() );
-  vesselbase::MultiValue myder(values.size(), getNumberOfDerivatives());
+  MultiValue myder(values.size(), myatoms.getNumberOfDerivatives());
 
   getVectorForTask( myatoms.getIndex(0), false, values );
   if( values.size()>2 ){
@@ -219,7 +219,7 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ){
   myatoms.setValue( 0, nbond ); updateActiveAtoms( myatoms );
   if( values.size()>2){
       double norm=0;
-      vesselbase::MultiValue& myvals=myatoms.getUnderlyingMultiValue(); 
+      MultiValue& myvals=myatoms.getUnderlyingMultiValue(); 
       for(unsigned i=2;i<values.size();++i){
           myvals.quotientRule( i, 0, i );
           // Calculate length of vector

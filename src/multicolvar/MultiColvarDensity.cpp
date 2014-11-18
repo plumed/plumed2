@@ -34,6 +34,7 @@
 #include "tools/Grid.h"
 #include "tools/KernelFunctions.h"
 #include "vesselbase/ActionWithInputVessel.h"
+#include "vesselbase/StoreDataVessel.h"
 
 using namespace std;
 
@@ -181,16 +182,16 @@ MultiColvarDensity::~MultiColvarDensity(){
 
 void MultiColvarDensity::update(){
 
+  vesselbase::StoreDataVessel* stash=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToArgument() );
+  plumed_dbg_assert( stash ); std::vector<double> cvals( mycolv->getNumberOfQuantities() );
   Vector origin = getPosition(0); std::vector<double> pp( directions.size() );
-  std::vector<double> cvals( mycolv->getNumberOfQuantities()-4 );
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
-      mycolv->getValueForTask( i, cvals );
-      Vector apos = pbcDistance( mycolv->getCentralAtomPosition(i), origin );
+      stash->retrieveValue( i, false, cvals );
+      Vector apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(i) ), origin );
       Vector fpos = getPbc().realToScaled( apos );
       for(unsigned j=0;j<directions.size();++j) pp[j]=fpos[ directions[j] ];
-      KernelFunctions kernel( pp, bw, kerneltype, false, cvals[0], true );
-      gg->addKernel( kernel );
-      norm += 1.0;    // This should be replaced by the proper weight
+      KernelFunctions kernel( pp, bw, kerneltype, false, cvals[0]*cvals[1], true );
+      gg->addKernel( kernel ); norm += cvals[0];    
   }
 
   // Output and reset the counter if required

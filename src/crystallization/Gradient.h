@@ -36,8 +36,8 @@ private:
   unsigned vend, nquantities;
 /// Number of bins in each direction
   std::vector<unsigned> nbins;
-/// The bead for the histogram
-  HistogramBead bead;
+/// The type of kernel for the histogram
+  std::string kerneltype;
 public:
   static void registerKeywords( Keywords& keys );
   Gradient(const ActionOptions&);
@@ -46,7 +46,7 @@ public:
 /// Check on pbc - is it orthorhombic
   void setupRegions();
 /// Calculate whats in the volume
-  void calculateAllVolumes( const unsigned& curr, vesselbase::MultiValue& outvals );
+  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
 };
 
 inline

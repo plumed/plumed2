@@ -54,7 +54,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   MoleculeOrientation( const ActionOptions& ao );
-  void calculateVector( multicolvar::AtomValuePack& myatoms );
+  void calculateVector( multicolvar::AtomValuePack& myatoms ) const;
 };
 
 PLUMED_REGISTER_ACTION(MoleculeOrientation,"MOLECULES")
@@ -87,7 +87,7 @@ VectorMultiColvar(ao)
   } 
 }
 
-void MoleculeOrientation::calculateVector( multicolvar::AtomValuePack& myatoms ){
+void MoleculeOrientation::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
   Vector distance; distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
 
   myatoms.addAtomsDerivatives( 2, 0, Vector(-1.0,0,0) ); 

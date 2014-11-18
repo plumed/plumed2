@@ -33,7 +33,7 @@ private:
 public:
   OptimalRMSD(const ReferenceConfigurationOptions& ro);
   void read( const PDB& );
-  double calc( const std::vector<Vector>& pos, const bool& squared );
+  double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
 };
 
 PLUMED_REGISTER_METRIC(OptimalRMSD,"OPTIMAL")
@@ -49,14 +49,18 @@ void OptimalRMSD::read( const PDB& pdb ){
   readReference( pdb ); 
 }
 
-double OptimalRMSD::calc( const std::vector<Vector>& pos, const bool& squared ){
+double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
+  double d; std::vector<Vector> atom_ders( pos.size() );
   if( fast ){
-     if( getAlign()==getDisplace() ) return myrmsd.optimalAlignment<false,true>(getAlign(),getDisplace(),pos,getReferencePositions(),atom_ders,squared); 
-     return myrmsd.optimalAlignment<false,false>(getAlign(),getDisplace(),pos,getReferencePositions(),atom_ders,squared);
+     if( getAlign()==getDisplace() ) d=myrmsd.optimalAlignment<false,true>(getAlign(),getDisplace(),pos,getReferencePositions(),atom_ders,squared); 
+     d=myrmsd.optimalAlignment<false,false>(getAlign(),getDisplace(),pos,getReferencePositions(),atom_ders,squared);
   } else {
-     if( getAlign()==getDisplace() ) return myrmsd.optimalAlignment<true,true>(getAlign(),getDisplace(),pos,getReferencePositions(),atom_ders,squared);
-     return myrmsd.optimalAlignment<true,false>(getAlign(),getDisplace(),pos,getReferencePositions(),atom_ders,squared);
+     if( getAlign()==getDisplace() ) d=myrmsd.optimalAlignment<true,true>(getAlign(),getDisplace(),pos,getReferencePositions(),atom_ders,squared);
+     d=myrmsd.optimalAlignment<true,false>(getAlign(),getDisplace(),pos,getReferencePositions(),atom_ders,squared);
   }
+  for(unsigned i=0;i<atom_ders.size();++i) myder.addAtomDerivatives( i, atom_ders[i] ); 
+  if( !myder.updateComplete() ) myder.updateDynamicLists();
+  return d;
 }
 
 }

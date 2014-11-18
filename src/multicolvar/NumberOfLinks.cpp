@@ -75,9 +75,9 @@ public:
   static void registerKeywords( Keywords& keys );
   NumberOfLinks(const ActionOptions&);
 /// Do the stuff with the switching functions
-  void calculateWeight( AtomValuePack& myatoms );
+  void calculateWeight( AtomValuePack& myatoms ) const ;
 /// Actually do the calculation
-  double compute( const unsigned& tindex, AtomValuePack& myatoms );
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Is the variable periodic
   bool isPeriodic(){ return false; }
 };
@@ -130,7 +130,7 @@ MultiColvarFunction(ao)
   readVesselKeywords();
 }
 
-void NumberOfLinks::calculateWeight( AtomValuePack& myatoms ){
+void NumberOfLinks::calculateWeight( AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
   myatoms.setValue(0,sw);
@@ -144,7 +144,7 @@ void NumberOfLinks::calculateWeight( AtomValuePack& myatoms ){
   }
 }
 
-double NumberOfLinks::compute( const unsigned& tindex, AtomValuePack& myatoms ){
+double NumberOfLinks::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
    if( getBaseMultiColvar(0)->getNumberOfQuantities()<3 ) return 1.0; 
 
    unsigned ncomp=getBaseMultiColvar(0)->getNumberOfQuantities();
@@ -159,8 +159,8 @@ double NumberOfLinks::compute( const unsigned& tindex, AtomValuePack& myatoms ){
    }
 
    if( !doNotCalculateDerivatives() ){
-     unsigned nder=getNumberOfDerivatives();
-     vesselbase::MultiValue myder0(ncomp,nder), myder1(ncomp,nder);
+     unsigned nder=myatoms.getNumberOfDerivatives();   //getNumberOfDerivatives();
+     MultiValue myder0(ncomp,nder), myder1(ncomp,nder);
      getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
      mergeVectorDerivatives( 1, 2, orient1.size(), myatoms.getIndex(0), orient1, myder0, myatoms );
      getVectorDerivatives( myatoms.getIndex(1), true, myder1 ); 

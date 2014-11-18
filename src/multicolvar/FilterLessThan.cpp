@@ -42,7 +42,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   FilterLess(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df );
+  double applyFilter( const double& val, double& df ) const ;
 }; 
 
 PLUMED_REGISTER_ACTION(FilterLess,"MFILTER_LESS")
@@ -79,7 +79,7 @@ MultiColvarFilter(ao)
   checkRead();  
 }
 
-double FilterLess::applyFilter( const double& val, double& df ){
+double FilterLess::applyFilter( const double& val, double& df ) const {
   double f = sf.calculate( val, df ); df*=val;
   return f;
 }

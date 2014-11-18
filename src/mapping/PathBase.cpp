@@ -55,16 +55,18 @@ void PathBase::calculate(){
   runAllTasks();
 }
 
-void PathBase::performTask( const unsigned& task_index, const unsigned& current, vesselbase::MultiValue& myvals ){
+void PathBase::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+  // This builds a pack to hold the derivatives
+  ReferenceValuePack mypack( getNumberOfArguments(), getNumberOfAtoms(), myvals );
+  finishPackSetup( current, mypack );
   // Calculate the distance from the frame
-  double val=calculateDistanceFunction( current, true );
+  double val=calculateDistanceFunction( current, mypack, true );
   // Put the element value in element zero
   myvals.setValue( 0, val ); myvals.setValue( 1, 1.0 );
-  transferDerivatives( 0, 0, current, myvals ); 
   return;
 }
 
-double PathBase::transformHD( const double& dist, double& df ){
+double PathBase::transformHD( const double& dist, double& df ) const {
   double val = exp( -dist*lambda );
   df = -lambda*val; 
   return val;

@@ -54,10 +54,10 @@ public:
   static void registerKeywords( Keywords& keys );
   Density(const ActionOptions&);
 // active methods:
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms );
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
-  bool isDensity(){ return true; }
+  bool isDensity() const { return true; }
   bool hasDifferentiableOrientation() const { return true; }
 //  void addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
 //                                        const std::vector<double>& weight, MultiColvarFunction* func ){}
@@ -81,7 +81,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead(); 
 }
 
-double Density::compute( const unsigned& tindex, AtomValuePack& myvals ){
+double Density::compute( const unsigned& tindex, AtomValuePack& myvals ) const {
   return 1.0;
 }
 

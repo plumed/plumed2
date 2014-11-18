@@ -363,7 +363,7 @@ void MultiColvar::calculate(){
   runAllTasks();
 }
 
-void MultiColvar::updateActiveAtoms( AtomValuePack& myatoms ){
+void MultiColvar::updateActiveAtoms( AtomValuePack& myatoms ) const {
   myatoms.updateUsingIndices();
 }
      

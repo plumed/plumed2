@@ -22,7 +22,7 @@
 #ifndef __PLUMED_multicolvar_AtomValuePack_h
 #define __PLUMED_multicolvar_AtomValuePack_h
 
-#include "vesselbase/MultiValue.h"
+#include "tools/MultiValue.h"
 #include "MultiColvarBase.h"
 
 namespace PLMD {
@@ -33,15 +33,15 @@ class CatomPack;
 class AtomValuePack {
 private:
 /// Copy of the values that we are adding to
-  vesselbase::MultiValue& myvals;
+  MultiValue& myvals;
 /// Copy of the underlying multicolvar
-  MultiColvarBase* mycolv;
+  MultiColvarBase const * mycolv;
 /// Number of atoms at the moment
   unsigned natoms;
 /// Atom indices
   std::vector<unsigned> indices;
 public:
-  AtomValuePack( vesselbase::MultiValue& vals, MultiColvarBase* mcolv );
+  AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv );
 /// Set the number of atoms
   void setNumberOfAtoms( const unsigned& );
 /// Set the index for one of the atoms
@@ -50,6 +50,8 @@ public:
   unsigned getIndex( const unsigned& j ) const ;
 ///
   unsigned getNumberOfAtoms() const ;
+///
+  unsigned getNumberOfDerivatives() const ;
 /// Get the position of the ith atom
   Vector getPosition( const unsigned& );
 ///
@@ -71,7 +73,7 @@ public:
 ///
   void addComDerivatives( const unsigned& , const Vector& , CatomPack& );
 ///
-  vesselbase::MultiValue& getUnderlyingMultiValue();
+  MultiValue& getUnderlyingMultiValue();
 };
 
 inline
@@ -82,6 +84,11 @@ void AtomValuePack::setNumberOfAtoms( const unsigned& nat ){
 inline
 unsigned AtomValuePack::getNumberOfAtoms() const {
   return natoms;
+}
+
+inline
+unsigned AtomValuePack::getNumberOfDerivatives() const {
+  return myvals.getNumberOfDerivatives();
 }
 
 inline
@@ -141,7 +148,7 @@ void AtomValuePack::updateDynamicList(){
 }
 
 inline
-vesselbase::MultiValue& AtomValuePack::getUnderlyingMultiValue(){
+MultiValue& AtomValuePack::getUnderlyingMultiValue(){
   return myvals;
 } 
 

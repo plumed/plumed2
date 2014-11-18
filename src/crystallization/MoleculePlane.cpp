@@ -41,7 +41,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   MoleculePlane( const ActionOptions& ao );
-  void calculateVector( multicolvar::AtomValuePack& myatoms );
+  void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
 };
 
 PLUMED_REGISTER_ACTION(MoleculePlane,"PLANES")
@@ -71,7 +71,7 @@ VectorMultiColvar(ao)
   setVectorDimensionality( 3, natoms );
 }
 
-void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ){
+void MoleculePlane::calculateVector( multicolvar::AtomValuePack& myatoms ) const { 
   Vector d1, d2, cp; 
   if( myatoms.getNumberOfAtoms()==3 ){
      d1=getSeparation( myatoms.getPosition(1), myatoms.getPosition(0) );

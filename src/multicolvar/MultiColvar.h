@@ -66,15 +66,15 @@ public:
 /// Calculate the multicolvar
   virtual void calculate();
 /// Update the atoms that have derivatives
-  void updateActiveAtoms( AtomValuePack& myatoms );
+  void updateActiveAtoms( AtomValuePack& myatoms ) const ;
 /// This is used in MultiColvarBase only - it is used to setup the link cells
-  Vector getPositionOfAtomForLinkCells( const unsigned& iatom );
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 /// Atoms are always active
   bool isCurrentlyActive( const unsigned& code ){ return true; }
 };
 
 inline
-Vector MultiColvar::getPositionOfAtomForLinkCells( const unsigned& iatom ){
+Vector MultiColvar::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
   return ActionAtomistic::getPosition( iatom );
 }
 

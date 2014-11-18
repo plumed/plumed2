@@ -64,7 +64,7 @@ void Steinhardt::setAngularMomentum( const unsigned& ang ){
   tmom=ang; setVectorDimensionality( 2*(2*ang + 1), 2 );
 } 
 
-void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ){
+void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
   double dfunc, dpoly_ass, md, tq6, itq6, real_z, imag_z; 
   Vector distance, dz, myrealvec, myimagvec, real_dz, imag_dz;
   // The square root of -1
@@ -163,7 +163,7 @@ void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ){
   myatoms.getUnderlyingMultiValue().clear(1);
 }
 
-double Steinhardt::deriv_poly( const unsigned& m, const double& val, double& df ){
+double Steinhardt::deriv_poly( const unsigned& m, const double& val, double& df ) const { 
   double fact=1.0;
   for(unsigned j=1;j<=m;++j) fact=fact*j;
   double res=coeff_poly[m]*fact;

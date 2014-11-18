@@ -98,7 +98,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   AlphaBeta(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms );
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
 };
 
@@ -148,7 +148,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double AlphaBeta::compute( const unsigned& tindex, AtomValuePack& myatoms ){
+double AlphaBeta::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector d0,d1,d2;
   d0=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
   d1=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));

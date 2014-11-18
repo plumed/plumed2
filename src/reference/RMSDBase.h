@@ -33,9 +33,9 @@ class Pbc;
 class RMSDBase : public SingleDomainRMSD {
 public:
   RMSDBase( const ReferenceConfigurationOptions& ro );
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared );
-  double calculate( const std::vector<Vector>& pos, const bool& squared );
-  virtual double calc( const std::vector<Vector>& pos, const bool& squared )=0;
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const;
+  double calculate( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ; 
+  virtual double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const=0;
 };
 
 }

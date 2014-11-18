@@ -38,13 +38,13 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   OrientationSphere(const ActionOptions&);
-  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms );
-  virtual double transformDotProduct( const double& dot, double& df );
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  virtual double transformDotProduct( const double& dot, double& df ) const ;
   bool isPeriodic(){ return false; }
 };
 
 inline
-double OrientationSphere::transformDotProduct( const double& dot, double& df ){
+double OrientationSphere::transformDotProduct( const double& dot, double& df ) const {
   df=1.0; return dot;
 }
 

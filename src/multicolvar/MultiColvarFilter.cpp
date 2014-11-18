@@ -43,7 +43,7 @@ void MultiColvarFilter::doJobsRequiredBeforeTaskList(){
   ActionWithVessel::doJobsRequiredBeforeTaskList();
 }
 
-void MultiColvarFilter::completeTask( const unsigned& curr, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals ){
+void MultiColvarFilter::completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const {
   invals.copyValues( outvals );
   if( derivativesAreRequired() ) invals.copyDerivatives( outvals );
  

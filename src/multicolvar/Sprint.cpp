@@ -169,7 +169,7 @@ void Sprint::completeCalculation(){
    else { rank=comm.Get_rank(); stride=comm.Get_size(); } 
 
    // Derivatives
-   vesselbase::MultiValue myvals( 2, getNumberOfDerivatives() );
+   MultiValue myvals( 2, getNumberOfDerivatives() );
    Matrix<double> mymat_ders( getNumberOfComponents(), getNumberOfDerivatives() );  
    std::vector<unsigned> catoms(2); unsigned nval = getFullNumberOfBaseTasks(); mymat_ders=0; 
    for(unsigned i=rank;i<getNumberOfActiveMatrixElements();i+=stride){

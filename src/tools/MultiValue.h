@@ -19,16 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_vesselbase_MultiValue_h
-#define __PLUMED_vesselbase_MultiValue_h
+#ifndef __PLUMED_tools_MultiValue_h
+#define __PLUMED_tools_MultiValue_h
 
 #include <vector>
-#include "tools/Exception.h"
-#include "tools/Matrix.h"
-#include "tools/DynamicList.h"
+#include "Exception.h"
+#include "Matrix.h"
+#include "DynamicList.h"
 
 namespace PLMD{
-namespace vesselbase{
 
 class MultiValue {
 private:
@@ -68,7 +67,7 @@ public:
   void sortActiveList();
   void updateDynamicList();
 ///
-  unsigned getNumberActive();
+  unsigned getNumberActive() const ;
 ///
   unsigned getActiveIndex( const unsigned& ) const ;
 /// Transfer derivatives to buffer
@@ -149,7 +148,7 @@ void MultiValue::sortActiveList(){
 }
 
 inline
-unsigned MultiValue::getNumberActive(){
+unsigned MultiValue::getNumberActive() const {
   return hasDerivatives.getNumberActive();
 }
 
@@ -164,6 +163,5 @@ void MultiValue::updateDynamicList(){
   hasDerivatives.updateActiveMembers();
 }
 
-}
 }
 #endif

@@ -83,7 +83,6 @@ tmpdf(1)
 
   // Build active elements array
   for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
-  active_elements.setupMPICommunication( comm );
 
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
@@ -101,6 +100,8 @@ tmpdf(1)
   Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );
   vesselbase::VesselOptions da2(da,keys);
   mat = new AdjacencyMatrixVessel(da2);
+  // Set a cutoff for clustering
+  mat->setHardCutoffOnWeight( getTolerance() );
   // Add the vessel to the base
   addVessel( mat );
   // And resize everything
@@ -111,20 +112,20 @@ void AdjacencyMatrixAction::doJobsRequiredBeforeTaskList(){
   // Do jobs required by ActionWithVessel
   ActionWithVessel::doJobsRequiredBeforeTaskList();
   // Make it possible only to go through loop once
-  gathered=false; active_elements.deactivateAll();
+  gathered=false; 
   // Dont calculate derivatives on first loop
   if( usingLowMem() ) dertime=false;
   else dertime=true;
 }
 
-void AdjacencyMatrixAction::calculateWeight( AtomValuePack& myatoms ){
+void AdjacencyMatrixAction::calculateWeight( AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ),getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( distance.modulo(), dfunc );
   myatoms.setValue(0,sw);
 }
 
-double AdjacencyMatrixAction::compute( const unsigned& tindex, AtomValuePack& myatoms ){
-  active_elements.activate( tindex );
+double AdjacencyMatrixAction::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+//  active_elements.activate( tindex );
 
   double f_dot, dot_df; 
   unsigned ncomp=getBaseMultiColvar(0)->getNumberOfQuantities();
@@ -160,9 +161,9 @@ double AdjacencyMatrixAction::compute( const unsigned& tindex, AtomValuePack& my
         for(unsigned k=2;k<orient0.size();++k){
            orient0[k]*=sw*dot_df; orient1[k]*=sw*dot_df;
         }
-        vesselbase::MultiValue myder0(0,0); getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
+        MultiValue myder0(0,0); getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
         mergeVectorDerivatives( 1, 2, orient1.size(), myatoms.getIndex(0), orient1, myder0, myatoms );
-        vesselbase::MultiValue myder1(0,0); getVectorDerivatives( myatoms.getIndex(1), true, myder1 );
+        MultiValue myder1(0,0); getVectorDerivatives( myatoms.getIndex(1), true, myder1 );
         mergeVectorDerivatives( 1, 2, orient0.size(), myatoms.getIndex(1), orient0, myder1, myatoms );
      }
   }
@@ -171,8 +172,13 @@ double AdjacencyMatrixAction::compute( const unsigned& tindex, AtomValuePack& my
 
 void AdjacencyMatrixAction::retrieveMatrix( Matrix<double>& mymatrix ){
   // Gather active elements in matrix
-  if(!gathered) active_elements.mpi_gatherActiveMembers( comm ); 
-  gathered=true;
+  if(!gathered){
+     active_elements.deactivateAll();
+     for(unsigned i=0;i<getFullNumberOfTasks();++i){
+        if( mat->storedValueIsActive(i) ) active_elements.activate(i);
+     }
+     active_elements.updateActiveMembers(); gathered=true;
+  }
  
   std::vector<unsigned> myatoms(2); std::vector<double> vals(2);
   for(unsigned i=0;i<active_elements.getNumberActive();++i){
@@ -187,8 +193,13 @@ void AdjacencyMatrixAction::retrieveAdjacencyLists( std::vector<unsigned>& nneig
   plumed_dbg_assert( nneigh.size()==getFullNumberOfBaseTasks() && adj_list.nrows()==getFullNumberOfBaseTasks() && 
                        adj_list.ncols()==getFullNumberOfBaseTasks() );
   // Gather active elements in matrix
-  if(!gathered) active_elements.mpi_gatherActiveMembers( comm );
-  gathered=true;
+  if(!gathered){
+     active_elements.deactivateAll();
+     for(unsigned i=0;i<getFullNumberOfTasks();++i){
+        if( mat->storedValueIsActive(i) ) active_elements.activate(i);
+     }
+     active_elements.updateActiveMembers(); gathered=true;
+  }
 
   // Currently everything has zero neighbors
   for(unsigned i=0;i<nneigh.size();++i) nneigh[i]=0;

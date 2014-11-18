@@ -49,9 +49,7 @@ VolumeGradientBase(ao)
   log.printf("  calculating %s inside region of insterest\n",functype.c_str() ); 
 
   parseFlag("OUTSIDE",not_in); parse("SIGMA",sigma); 
-  bead.isNotPeriodic(); 
-  std::string kerneltype; parse("KERNEL",kerneltype); 
-  bead.setKernelType( kerneltype );
+  parse("KERNEL",kerneltype); 
   
   if( getPntrToMultiColvar()->isDensity() ){
      std::string input;
@@ -61,11 +59,11 @@ VolumeGradientBase(ao)
   }
 }
 
-void ActionVolume::calculateAllVolumes( const unsigned& curr, vesselbase::MultiValue& outvals ){
+void ActionVolume::calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const {
   Vector catom_pos=getPntrToMultiColvar()->getCentralAtomPos( curr );
 
   double weight; Vector wdf; Tensor vir; std::vector<Vector> refders( getNumberOfAtoms() );  
-  weight=calculateNumberInside( catom_pos, bead, wdf, vir, refders ); 
+  weight=calculateNumberInside( catom_pos, wdf, vir, refders ); 
   if( not_in ){ 
     weight = 1.0 - weight; wdf *= -1.; vir *=-1; 
     for(unsigned i=0;i<refders.size();++i) refders[i]*=-1;

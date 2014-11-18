@@ -85,7 +85,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   DihedralCorrelation(const ActionOptions&);
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms );
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
 };
 
@@ -117,7 +117,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myatoms ){
+double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector d10,d11,d12;
   d10=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
   d11=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));

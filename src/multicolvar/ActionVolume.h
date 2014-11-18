@@ -43,18 +43,19 @@ private:
   double sigma;
 /// Are we interested in the area outside the colvar
   bool not_in;
-/// The bead for the histogram
-  HistogramBead bead;
+/// The kernel type for this histogram
+  std::string kerneltype;
 protected:
   double getSigma() const ;
+  std::string getKernelType() const ;
 public:
   static void registerKeywords( Keywords& keys );
   ActionVolume(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
 /// Calculate whats in the volume
-  void calculateAllVolumes( const unsigned& curr, vesselbase::MultiValue& outvals );
-  virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders )=0;
+  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
+  virtual double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const=0;
   unsigned getCentralAtomElementIndex();
 };
 
@@ -66,6 +67,11 @@ unsigned ActionVolume::getNumberOfQuantities(){
 inline
 double ActionVolume::getSigma() const {
   return sigma;
+}
+
+inline
+std::string ActionVolume::getKernelType() const {
+  return kerneltype;
 }
 
 inline

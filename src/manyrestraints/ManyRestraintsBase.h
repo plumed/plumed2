@@ -53,13 +53,13 @@ public:
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
 /// This actually does the calculation
-  void transformBridgedDerivatives( const unsigned& current, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals );
+  void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const ;
 /// Calculate the potential
-  virtual double calcPotential( const double& val, double& df )=0;
+  virtual double calcPotential( const double& val, double& df ) const=0;
 // Calculate does nothing
   void calculate(){};
 /// This should never be called
-  void performTask( const unsigned& , const unsigned& , vesselbase::MultiValue& ){ plumed_error(); }
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
 /// Deactivate task now does nothing
   void apply();
   void applyBridgeForces( const std::vector<double>& bb ){ plumed_assert( bb.size()==0 ); }

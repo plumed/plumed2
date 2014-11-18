@@ -89,9 +89,7 @@ nbins(3)
   std::transform( functype.begin(), functype.end(), functype.begin(), tolower );
   log.printf("  calculating gradient of %s in %s direction \n",functype.c_str(), direction.c_str() ); 
 
-  parse("SIGMA",sigma); 
-  bead.isNotPeriodic(); std::string kerneltype; 
-  parse("KERNEL",kerneltype); bead.setKernelType( kerneltype );
+  parse("SIGMA",sigma); parse("KERNEL",kerneltype); 
   checkRead(); requestAtoms(atom);
 
   // And setup the vessel
@@ -104,7 +102,10 @@ void Gradient::setupRegions(){
 //  if( !getPbc().isOrthorombic() ) error("cell must be orthorhombic when using gradient");
 }
 
-void Gradient::calculateAllVolumes( const unsigned& curr, vesselbase::MultiValue& outvals ){
+void Gradient::calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const {
+  // Setup the bead
+  HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( kerneltype );  
+
   Vector cpos = pbcDistance( getPosition(0), getPntrToMultiColvar()->getCentralAtomPos( curr ) );
   // Note we use the pbc from base multicolvar so that we get numerical derivatives correct
   Vector oderiv, fpos = (getPntrToMultiColvar()->getPbc()).realToScaled( cpos );  

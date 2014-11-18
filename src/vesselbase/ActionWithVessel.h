@@ -26,7 +26,7 @@
 #include "core/ActionAtomistic.h"
 #include "tools/Exception.h"
 #include "tools/DynamicList.h"
-#include "MultiValue.h"
+#include "tools/MultiValue.h"
 #include <vector>
 
 namespace PLMD{
@@ -168,9 +168,9 @@ public:
 /// Get the code for the ii th task in the list
   unsigned getTaskCode( const unsigned& ii ) const ;
 /// Calculate one of the functions in the distribution
-  virtual void performTask( const unsigned& , const unsigned& , MultiValue& )=0;
+  virtual void performTask( const unsigned& , const unsigned& , MultiValue& ) const=0;
 /// Do the task if we have a bridge
-  virtual void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
+  virtual void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const;
 /// Ensure that data required in other vessels is stored
   StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume

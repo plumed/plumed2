@@ -49,37 +49,17 @@ protected:
 /// Get the total number of tasks that this calculation is based on
   unsigned getFullNumberOfBaseTasks() const ;
 /// Get the derivatives for the central atom with index ind
-  CatomPack getCentralAtomPackFromInput( const unsigned& ind );
+  CatomPack getCentralAtomPackFromInput( const unsigned& ind ) const ;
 ///
-  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 );
+  void getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient0 ) const ;
 ///
-  void getVectorDerivatives( const unsigned& ind, const bool& normed, vesselbase::MultiValue& myder0 );
+  void getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder0 ) const ;
 ///
   void mergeVectorDerivatives( const unsigned& ival, const unsigned& start, const unsigned& end,
                                const unsigned& jatom, const std::vector<double>& der, 
-                               vesselbase::MultiValue& myder, AtomValuePack& myatoms );
-/// Get the index of the ith colvar we are using
-//  unsigned getColvarIndex( const unsigned& ) const;
-/// Get the position of one of the central atoms
-//  Vector getPositionOfCentralAtom(const unsigned&) const;
-/// Add derivatives of value wrt to an atomic position 
-//  void addCentralAtomsDerivatives( const unsigned& , const unsigned& , const Vector& );
-/// Extract the value for the iatom th base task (this ignores current_atoms)
-//  void extractValueForBaseTask( const unsigned& iatom, std::vector<double>& vals );
-/// Retrieve the value calculated by the iatom th base task (this uses current_atoms)
-//  void getValueForBaseTask( const unsigned& iatom, std::vector<double>& vals );
-/// Retrieve the vector calculated by the iatom th base task (this uses current_atoms)
-//  void getVectorForBaseTask( const unsigned& iatom, std::vector<double>& vecs );
-/// Add the derivatives of this quantity (this ignores current_atoms)
-//  void extractWeightedAverageAndDerivatives( const unsigned& iatom, const double& weight );
-/// Add the value and derivatives of this quantity (this uses current_atoms)
-//  void accumulateWeightedAverageAndDerivatives( const unsigned& iatom, const double& weight );
-/// Add derivative wrt to the position of the central atom
-//  void addDerivativeOfCentralAtomPos( const unsigned& iatom, const Tensor& der );
+                               MultiValue& myder, AtomValuePack& myatoms ) const ;
 /// Convert an index in the global array to an index in the individual base colvars
   unsigned convertToLocalIndex( const unsigned& index, const unsigned& mcv_code ) const ;
-/// Add derivatives to the orientation
-//  void addOrientationDerivatives( const unsigned& iatom, const std::vector<double>& der );
 /// Build sets by taking one multicolvar from each base
   void buildSets();
 /// Build colvars for atoms as if they were symmetry functions
@@ -89,30 +69,20 @@ protected:
 /// Get the number of base multicolvars 
   unsigned getNumberOfBaseMultiColvars() const ;
 /// Get an example of the underlying multicolvar
-  MultiColvarBase* getBaseMultiColvar( const unsigned& icolv );
+  MultiColvarBase* getBaseMultiColvar( const unsigned& icolv ) const ;
 /// Return the base multicolvar index that this colvar is a part of
   unsigned getBaseColvarNumber( const unsigned& iatom ) const ;
 public:
   MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
-/// Active element in atoms_with_derivatives
-//  void atomHasDerivative( const unsigned& iatom );
-/// Resize the dynamic arrays 
-//  void resizeDynamicArrays();
 /// Update the atoms that are active
-  virtual void updateActiveAtoms( AtomValuePack& myatoms );
+  virtual void updateActiveAtoms( AtomValuePack& myatoms ) const ;
 /// Regular calculate
   void calculate();
 /// Calculate the numerical derivatives for this action
   void calculateNumericalDerivatives( ActionWithValue* a=NULL );
-/// Calculate the position of the central atom
-//  Vector calculateCentralAtomPosition();
-/// Get the position of the central atom
-//  virtual Vector getCentralAtom()=0;
-/// Add derivatives from storage vessels in MultiColvarBase
-//  void addStoredDerivative( const unsigned&, const unsigned&, const unsigned&, const double& );
 /// This is used in MultiColvarBase only - it is used to setup the link cells
-  Vector getPositionOfAtomForLinkCells( const unsigned& iatom );
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 /// Some things can be inactive in functions
   bool isCurrentlyActive( const unsigned& code );
 };
@@ -135,7 +105,7 @@ unsigned MultiColvarFunction::getNumberOfBaseMultiColvars() const {
 }
 
 inline
-MultiColvarBase* MultiColvarFunction::getBaseMultiColvar( const unsigned& icolv ){
+MultiColvarBase* MultiColvarFunction::getBaseMultiColvar( const unsigned& icolv ) const {
   plumed_dbg_assert( icolv<mybasemulticolvars.size() );
   return mybasemulticolvars[icolv];
 } 
@@ -153,13 +123,13 @@ unsigned MultiColvarFunction::getBaseColvarNumber( const unsigned& iatom ) const
 }
 
 inline
-Vector MultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ){
+Vector MultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ) const {
   plumed_dbg_assert( iatom<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ iatom ];
   return mybasemulticolvars[mmc]->getCentralAtomPos( convertToLocalIndex(iatom,mmc) );
 }
 
 inline
-CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind ){
+CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind ) const {
   plumed_dbg_assert( ind<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ind];
   unsigned basen=0;
   for(unsigned i=0;i<mmc;++i) basen+=mybasemulticolvars[i]->getNumberOfAtoms();
@@ -167,80 +137,11 @@ CatomPack MultiColvarFunction::getCentralAtomPackFromInput( const unsigned& ind 
 }
 
 inline
-void MultiColvarFunction::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ){
+void MultiColvarFunction::getVectorForTask( const unsigned& ind, const bool& normed, std::vector<double>& orient ) const {
   plumed_dbg_assert( ind<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ind];
   plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
   mybasedata[mmc]->retrieveValue( convertToLocalIndex(ind,mmc), normed, orient );
 }
-
-// inline
-// Vector MultiColvarFunction::getPositionOfCentralAtom( const unsigned& iatom ) const {
-//   plumed_dbg_assert( iatom<natomsper ); unsigned mmc = colvar_label[ current_atoms[iatom] ];
-//   return mybasemulticolvars[mmc]->getCentralAtomPosition( convertToLocalIndex(current_atoms[iatom],mmc) );   
-// }
-// 
-// inline
-// void MultiColvarFunction::addCentralAtomsDerivatives( const unsigned& iatom, const unsigned& jout, const Vector& der ){
-//   if( doNotCalculateDerivatives() ) return ;
-// 
-//   plumed_dbg_assert( iatom<natomsper ); unsigned mmc = colvar_label[ current_atoms[iatom] ]; 
-//   mybasemulticolvars[mmc]->addCentralAtomDerivativeToFunction( convertToLocalIndex(current_atoms[iatom],mmc), jout, mmc, der, this );
-// }
-
-// inline
-// void MultiColvarFunction::atomHasDerivative( const unsigned& iatom ){
-//   plumed_dbg_assert( !doNotCalculateDerivatives() );
-//   atoms_with_derivatives.activate( iatom );
-// }
-
-// inline
-// void MultiColvarFunction::addDerivativeOfCentralAtomPos( const unsigned& iatom, const Tensor& der ){
-//   if( doNotCalculateDerivatives() ) return;
-// 
-//   plumed_dbg_assert( iatom<natomsper ); unsigned mmc = colvar_label[ current_atoms[iatom] ]; Vector tmpder;
-//   for(unsigned i=0;i<3;++i){
-//       for(unsigned j=0;j<3;++j) tmpder[j]=der(i,j);
-//       mybasemulticolvars[mmc]->addCentralAtomDerivativeToFunction( convertToLocalIndex(current_atoms[iatom],mmc), (2+i), mmc, tmpder, this );
-//   }
-// }
-
-// inline
-// void MultiColvarFunction::extractValueForBaseTask( const unsigned& iatom, std::vector<double>& vals ){
-//   unsigned mmc = colvar_label[iatom]; mybasemulticolvars[mmc]->getValueForTask( convertToLocalIndex(iatom,mmc), vals ); 
-// }
-// 
-// inline
-// void MultiColvarFunction::getValueForBaseTask( const unsigned& iatom, std::vector<double>& vals ){
-//   plumed_dbg_assert( iatom<natomsper ); extractValueForBaseTask( current_atoms[iatom], vals );
-// }
-
-// inline
-// void MultiColvarFunction::getVectorForBaseTask( const unsigned& iatom, std::vector<double>& vec ){
-//   plumed_dbg_assert( vec.size()==mybasemulticolvars[0]->getNumberOfQuantities()-5 && tvals.size()>1 );
-//   getValueForBaseTask( iatom, tvals ); for(unsigned i=0;i<vec.size();++i) vec[i]=tvals[i+1];
-// }
-
-// inline
-// void MultiColvarFunction::extractWeightedAverageAndDerivatives( const unsigned& iatom, const double& weight ){
-//   if( doNotCalculateDerivatives() ) return;
-//   unsigned mmc = colvar_label[iatom];
-//   mybasemulticolvars[mmc]->addWeightedValueDerivatives( convertToLocalIndex(iatom, mmc), mmc, weight, this );
-// }
-// 
-// inline
-// void MultiColvarFunction::accumulateWeightedAverageAndDerivatives( const unsigned& iatom, const double& weight ){
-//   if( doNotCalculateDerivatives() ) return;
-//   plumed_dbg_assert( iatom<natomsper ); extractWeightedAverageAndDerivatives( current_atoms[iatom], weight ); 
-// }
-// 
-// inline
-// void MultiColvarFunction::addOrientationDerivatives( const unsigned& iatom , const std::vector<double>& der ){
-//   if( doNotCalculateDerivatives() ) return;
-// 
-//   plumed_dbg_assert( iatom<natomsper ); unsigned mmc = colvar_label[ current_atoms[iatom] ];
-//   unsigned jout=2; if( usespecies && iatom==0 ) jout=1;
-//   mybasemulticolvars[mmc]->addOrientationDerivativesToBase( convertToLocalIndex(current_atoms[iatom],mmc), jout, mmc, der, this );
-// }
 
 }
 }

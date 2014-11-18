@@ -27,8 +27,6 @@
 #include "tools/DynamicList.h"
 #include "tools/LinkCells.h"
 #include "vesselbase/ActionWithVessel.h"
-// #include "StoreColvarVessel.h"
-// #include "StoreCentralAtomsVessel.h"
 #include <vector>
 
 namespace PLMD {
@@ -92,9 +90,9 @@ protected:
 /// Get the number of atoms in this particular colvar
   unsigned getNAtoms() const;
 /// This sets up the list of atoms that are involved in this colvar
-  bool setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms );
+  bool setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
 /// Decode indices if there are 2 or 3 atoms involved
-  void decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms );
+  void decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const ;
 public:
   MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(){}
@@ -103,15 +101,15 @@ public:
   virtual void turnOnDerivatives();
 /// Prepare for the calculation
 /// Perform one of the tasks
-  virtual void performTask( const unsigned& , const unsigned& , vesselbase::MultiValue& );
+  virtual void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 /// This gets the position of an atom for the link cell setup
-  virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom )=0;
+  virtual Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const=0;
 /// And a virtual function which actually computes the colvar
-  virtual double doCalculation( const unsigned& tindex, AtomValuePack& myatoms );  
+  virtual double doCalculation( const unsigned& tindex, AtomValuePack& myatoms ) const ;  
 /// Update the atoms that have derivatives
-  virtual void updateActiveAtoms( AtomValuePack& myatoms ){};
+  virtual void updateActiveAtoms( AtomValuePack& myatoms ) const {};
 /// This is replaced once we have a function to calculate the cv
-  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms )=0;
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const=0;
 /// Apply the forces from this action
   virtual void apply();
 /// Get the number of derivatives for this action
@@ -123,11 +121,11 @@ public:
 /// Get the index where the central atom is stored
   virtual Vector getCentralAtomPos( const unsigned& curr );
 /// You can use this to screen contributions that are very small so we can avoid expensive (and pointless) calculations
-  virtual void calculateWeight( AtomValuePack& myatoms );
+  virtual void calculateWeight( AtomValuePack& myatoms ) const ;
 /// Get the list of indices that have derivatives
 // virtual void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
 /// Is this a density?
-  virtual bool isDensity(){ return false; }
+  virtual bool isDensity() const { return false; }
 /// Store central atoms so that this can be used in a function
 //  virtual vesselbase::StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
 /// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)

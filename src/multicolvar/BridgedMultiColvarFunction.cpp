@@ -51,7 +51,7 @@ MultiColvarBase(ao)
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList( mycolv->getTaskCode(i) );
 }
 
-void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& current, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals ){
+void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
   completeTask( current, invals, outvals );
   
   // Now update the outvals derivatives lists
@@ -66,8 +66,8 @@ void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& cu
   outvals.sortActiveList(); 
 }
 
-void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const unsigned& current, vesselbase::MultiValue& myvals ){
-  vesselbase::MultiValue invals( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
+void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const unsigned& current, MultiValue& myvals ) const {
+  MultiValue invals( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
   mycolv->performTask( taskIndex, current, invals );
   transformBridgedDerivatives( taskIndex, invals, myvals ); 
 }

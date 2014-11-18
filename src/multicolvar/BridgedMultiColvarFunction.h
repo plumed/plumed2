@@ -64,9 +64,9 @@ public:
   void deactivate_task( const unsigned& taskno );
   void calculate(){}
 /// This does the task
-  void transformBridgedDerivatives( const unsigned& current, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals );
-  void performTask( const unsigned& , const unsigned& , vesselbase::MultiValue& );
-  virtual void completeTask( const unsigned& curr, vesselbase::MultiValue& invals, vesselbase::MultiValue& outvals )=0;
+  void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const ;
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
+  virtual void completeTask( const unsigned& curr, MultiValue& invals, MultiValue& outvals ) const=0;
 /// Get the central atom position
   Vector retrieveCentralAtomPos();
 /// We need our own calculate numerical derivatives here
@@ -76,9 +76,9 @@ public:
   bool isCurrentlyActive( const unsigned& );
 /// This should not be called
   Vector calculateCentralAtomPosition(){ plumed_error(); }
-  double compute( const unsigned& tindex, AtomValuePack& myvals ){ plumed_error(); }
-  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ){ plumed_error(); }
-  void updateActiveAtoms(){ plumed_error(); }
+  double compute( const unsigned& tindex, AtomValuePack& myvals ) const { plumed_error(); }
+  Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
+  void updateActiveAtoms( AtomValuePack& myatoms ) const { plumed_error(); }
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
   void applyBridgeForces( const std::vector<double>& bb );
 };
@@ -104,7 +104,7 @@ unsigned BridgedMultiColvarFunction::getSizeOfAtomsWithDerivatives(){
 }
 
 inline 
-Vector BridgedMultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ){
+Vector BridgedMultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ) const { 
   return mycolv->getPositionOfAtomForLinkCells(iatom);
 }
 

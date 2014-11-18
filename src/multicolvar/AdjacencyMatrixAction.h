@@ -64,8 +64,8 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   AdjacencyMatrixAction(const ActionOptions&);
-  double compute( const unsigned& tindex, AtomValuePack& myatoms );
-  void calculateWeight( AtomValuePack& myatoms );
+  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
+  void calculateWeight( AtomValuePack& myatoms ) const ;
   void doJobsRequiredBeforeTaskList();
 /// Finish the calculation
   virtual void completeCalculation()=0;

@@ -193,7 +193,7 @@ void MultiColvarBase::setupLinkCells(){
   }
 }
 
-void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ){
+void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {
   plumed_dbg_assert( atoms.size()==ablocks.size() && !usespecies && ablocks.size()<4 );
   unsigned scode = taskCode;
   for(unsigned i=0;i<ablocks.size();++i){
@@ -203,7 +203,7 @@ void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<
   }
 }
 
-bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ){
+bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   if( usespecies ){
      unsigned natomsper=1; std::vector<unsigned> current_atoms( getNumberOfAtoms() );
      if( isDensity() ) return true;
@@ -223,7 +223,7 @@ bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValueP
   return true;
 }
 
-void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& current, vesselbase::MultiValue& myvals ){
+void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
 
   AtomValuePack myatoms( myvals, this );
   // Retrieve the atom list
@@ -242,11 +242,11 @@ void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& c
   return;
 }
 
-void MultiColvarBase::calculateWeight( AtomValuePack& myatoms ){
+void MultiColvarBase::calculateWeight( AtomValuePack& myatoms ) const {
   myatoms.setValue( 0, 1.0 );
 }
 
-double MultiColvarBase::doCalculation( const unsigned& taskIndex, AtomValuePack& myatoms ){
+double MultiColvarBase::doCalculation( const unsigned& taskIndex, AtomValuePack& myatoms ) const {
   double val=compute( taskIndex, myatoms ); updateActiveAtoms( myatoms );
   return val;
 }
