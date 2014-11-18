@@ -120,6 +120,7 @@ public:
   void prepare();
   void calculate();
   void update();
+  void accumulate();
   virtual void performAnalysis()=0;
   void apply(){}
   void runFinalJobs();
