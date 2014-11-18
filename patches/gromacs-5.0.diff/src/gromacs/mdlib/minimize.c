@@ -81,7 +81,7 @@
 #include "gromacs/imd/imd.h"
 
 /* PLUMED */
-#include "../../Plumed.h"
+#include "../../../Plumed.h"
 extern int    plumedswitch;
 extern plumed plumedmain;
 extern void(*plumedcmd)(plumed,const char*,const void*);

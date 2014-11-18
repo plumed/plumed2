@@ -124,6 +124,11 @@ chosen replicas. This is useful e.g. for bias exchange metadynamics \cite{piana}
 \subpage Regex </TD><TD> </TD><TD> POSIX regular expressions can be used to select multiple actions when using ARG (i.e. \ref PRINT).
 </TD>
 </TR>
+<TR>
+<TD WIDTH="5%"> 
+\subpage Files </TD><TD> </TD><TD> Dealing with Input/Outpt
+</TD>
+</TR>
 </TABLE>
 
 */
