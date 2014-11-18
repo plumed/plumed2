@@ -131,7 +131,13 @@ See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git r
 This release will include all the fixes available in branch 2.0.
 
 For users:
+- Fixed a portability issue in BG/P where gettimeofday is not implemented.
+  Notice that this fix implies that one should execute again ./configure to have
+  plumed timing working correctly.
 - Small fixes in documentation.
-
+- CS2Backbone: fixed a bug that resulted in only a fraction of the chemical shifts being printed with WRITE_CS and parallel simulations
+  (requires to get the last almost updated from SVN)
+- Fixed a linking issue with ALMOST, where bz2 was always used to link ALMOST to PLUMED even if it is not compulsory to build ALMOST.
+- Fixed a wrong include in the GMX5 patch.
 
 */
