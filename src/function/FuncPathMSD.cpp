@@ -153,9 +153,9 @@ PLUMED_REGISTER_ACTION(FuncPathMSD,"FUNCPATHMSD")
 void FuncPathMSD::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","LAMBDA","all compulsory keywords should be added like this with a description here");
-  keys.add("optional","NEIGH_SIZE","all optional keywords that have input should be added like a description here");
-  keys.add("optional","NEIGH_STRIDE","all optional keywords that have input should be added like a description here");
+  keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
+  keys.add("optional","NEIGH_SIZE","size of the neighbor list");
+  keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("s","default","the position on the path");
   keys.addOutputComponent("z","default","the distance from the path");
