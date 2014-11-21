@@ -50,7 +50,7 @@ void SimpleRMSD::read( const PDB& pdb ){
 }
 
 double SimpleRMSD::calc( const std::vector<Vector>& pos, const bool& squared ){
-  return myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), atom_ders, squared );
+  return myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), atom_ders, displacement, squared );
 }
 
 Vector SimpleRMSD::getAtomicDisplacement( const unsigned& iatom ){

@@ -149,20 +149,23 @@ double RMSD::calculate(const std::vector<Vector> & positions,std::vector<Vector>
   double ret=0.;
 
   switch(alignmentMethod){
-	case SIMPLE:
-		//	do a simple alignment without rotation 
-		ret=simpleAlignment(align,displace,positions,reference,derivatives,squared);
-		break;	
-	case OPTIMAL_FAST:
+	case SIMPLE : {
+		//	do a simple alignment without rotation  
+                std::vector<Vector> displacement( derivatives.size() );
+		ret=simpleAlignment(align,displace,positions,reference,derivatives,displacement,squared);
+		break;
+        } case OPTIMAL_FAST : {
 		// this is calling the fastest option:
                 if(align==displace) ret=optimalAlignment<false,true>(align,displace,positions,reference,derivatives,squared); 
                 else                ret=optimalAlignment<false,false>(align,displace,positions,reference,derivatives,squared); 
 		break;
-	case OPTIMAL:
+        
+	} case OPTIMAL : {
 		// this is the fast routine but in the "safe" mode, which gives less numerical error:
 		if(align==displace) ret=optimalAlignment<true,true>(align,displace,positions,reference,derivatives,squared); 
 		else ret=optimalAlignment<true,false>(align,displace,positions,reference,derivatives,squared); 
 		break;	
+        }
   }	
 
   return ret;
@@ -254,7 +257,10 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 		                     const  std::vector<double>  & displace,
 		                     const std::vector<Vector> & positions,
 		                     const std::vector<Vector> & reference ,
-		                     std::vector<Vector>  & derivatives, bool squared)const{
+		                     std::vector<Vector>  & derivatives, 
+                                     std::vector<Vector>  & displacement,
+                                     bool squared)const{
+
       double dist(0);
       unsigned n=reference.size();
 
@@ -274,9 +280,9 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 
       Vector shift=((apositions-areference)-(dpositions-dreference));
       for(unsigned i=0;i<n;i++){
-        Vector d=(positions[i]-apositions)-(reference[i]-areference);
-        dist+=displace[i]*d.modulo2();
-        derivatives[i]=2*(displace[i]*d+align[i]*shift);
+        displacement[i]=(positions[i]-apositions)-(reference[i]-areference);
+        dist+=displace[i]*displacement[i].modulo2();
+        derivatives[i]=2*(displace[i]*displacement[i]+align[i]*shift);
       }
 
      if(!squared){
