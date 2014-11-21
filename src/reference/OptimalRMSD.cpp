@@ -76,7 +76,7 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, const bool& squared ){
 }
 
 Vector OptimalRMSD::getAtomicDisplacement( const unsigned& iatom ){
-  return matmul( rot, alignedpos[iatom] - getReferencePosition(iatom) );
+  return alignedpos[iatom] - getReferencePosition(iatom);
 }
 
 double OptimalRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, std::vector<Vector>& derivatives ){
