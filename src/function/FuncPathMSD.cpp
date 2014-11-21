@@ -176,7 +176,7 @@ neigh_stride(-1.)
   for(unsigned i=0;i<getNumberOfArguments();i++){
        // for each value get the name and the label of the corresponding action
        std::string myname=getPntrToArgument(i)->getPntrToAction()->getName(); 
-       if(myname!="RMSD")plumed_merror("This argument is not of RMSD type!!!");
+       if(myname!="RMSD"&&myname!="CONTACTMAP")plumed_merror("This argument is not of RMSD type!!!");
   }   
   log.printf("  Consistency check completed! Your path cvs look good!\n"); 
   // do some neighbor printout
