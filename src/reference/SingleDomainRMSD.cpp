@@ -42,6 +42,7 @@ void SingleDomainRMSD::readReference( const PDB& pdb ){
      center+=reference_atoms[i]*align[i];
   }
   for(unsigned i=0;i<pdb.size();++i) reference_atoms[i]-=center;
+  displacement.resize( getReferencePositions().size() );
 } 
 
 void SingleDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){
@@ -57,6 +58,7 @@ void SingleDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const
   }
   for(unsigned i=0;i<conf.size();++i) reference_atoms[i]=conf[i]-center;
   setNumberOfAtoms( conf.size() ); setNumberOfArguments( 0 );
+  displacement.resize( getReferencePositions().size() );
 }
 
 double SingleDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc,  const bool& squared ){

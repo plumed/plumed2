@@ -48,6 +48,10 @@ public:
 /// Calculate
   double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc,  const bool& squared );
+///
+  bool pcaIsEnabledForThisReference();
+  Vector getAtomicDisplacement( const unsigned& iatom );
+  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, std::vector<Vector>& derivatives );
 };
 
 }

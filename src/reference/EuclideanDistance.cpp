@@ -29,6 +29,7 @@ public:
   EuclideanDistance( const ReferenceConfigurationOptions& ro );
   void read( const PDB& );
   double calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
+  bool pcaIsEnabledForThisReference(){ return true; }
 };
 
 PLUMED_REGISTER_METRIC(EuclideanDistance,"EUCLIDEAN")
