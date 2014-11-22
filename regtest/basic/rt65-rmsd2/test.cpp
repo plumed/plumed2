@@ -464,7 +464,11 @@ int main(int argc, char* argv[]) {
 	Tensor Rotation,OldRotation;
 	Matrix<std::vector<Vector> > DRotDPos(3,3);
         std::vector<Vector> DDistDRef;
+	std::vector<Vector> alignedpos;
+	std::vector<Vector> centeredpos;
+	std::vector<Vector> centeredref;
 	rmsd->calc_DDistDRef_Rot_DRotDPos( run,derivatives, DDistDRef, OldRotation , DRotDPos, squared  ); 
+	//rmsd->calc_PCAelements( run, derivatives, OldRotation ,  DRotDPos , alignedpos ,centeredpos, centeredref ,squared); 
 	std::vector<Vector> run_save=run;	
 	for(unsigned int a=0;a<3;a++){	
 		for(unsigned int b=0;b<3;b++){	
@@ -473,6 +477,7 @@ int main(int argc, char* argv[]) {
 					//change the position		
 					run[i][comp]+=eps;
 					rmsd->calc_DDistDRef_Rot_DRotDPos( run, derivatives , DDistDRef, Rotation , DRotDPos, squared  ); 
+					//rmsd->calc_PCAelements( run, derivatives, Rotation ,  DRotDPos , alignedpos ,centeredpos, centeredref ,squared); 
 					cout<<"DROT_DPOS COMPONENT "<<comp<<" "<<(Rotation[a][b]-OldRotation[a][b])/(run[i][comp]-run_save[i][comp])<<" "<<DRotDPos[a][b][i][comp]<<"\n";
 					// restore the old position
 					run=run_save;

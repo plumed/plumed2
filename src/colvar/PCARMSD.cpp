@@ -100,6 +100,10 @@ PLUMED_COLVAR_INIT(ao),squared(true)
   // here align and displace are a simple vector of ones
   std::vector<double> align; align=pdb.getOccupancy();for(unsigned i=0;i<align.size();i++){align[i]=1.;} ;
   std::vector<double> displace;  displace=pdb.getBeta();for(unsigned i=0;i<displace.size();i++){displace[i]=1.;} ; 
+  log.printf("SIZE OF ALIGN: %d \n",align.size());
+  for(unsigned i=0;i<align.size();i++){log.printf("AL %f\n",align[i]);}
+  log.printf("SIZE OF DISPLACE: %d \n",align.size());
+  for(unsigned i=0;i<displace.size();i++){log.printf("DIS %f\n",displace[i]);}
   // reset again to reimpose unifrom weights (safe to disable this)
   rmsd->set(align,displace,pdb.getPositions(),type,remove_com,normalize_weights);
   requestAtoms( pdb.getAtomNumbers() );
@@ -178,6 +182,15 @@ void PCARMSD::calculate(){
 	std::vector< Vector > der;
 	der.resize(getNumberOfAtoms());
 
+
+	// (type OPTIMAL with homogeneous weights, normalized weights, squared=true)
+	// 1) centeredpos
+	// 2) drotdpos   
+	// 3) invrotation
+	// 4) ddistdpos   OK
+	// 5) centeredref OK
+	// 6) alignedpos OK
+	// 7) err OK
 	for(unsigned i=0;i<eigenvectors.size();i++){
 		Value* value=getPntrToComponent(pca_names[i].c_str());
 		double val;val=0.;
@@ -196,6 +209,7 @@ void PCARMSD::calculate(){
 						tmp1+=centeredpos[n][b]*eigenvectors[i][n][a];
 					}
 					der[iat]+=drotdpos[a][b][iat]*tmp1;	
+		//			log.printf("XXXXX  %d %d %d : %f %f %f\n",a,b,iat,drotdpos[a][b][iat][0],drotdpos[a][b][iat][1],drotdpos[a][b][iat][2]);
 				}
 			}
 		}
@@ -209,7 +223,7 @@ void PCARMSD::calculate(){
 		}		
  	 }
 
-//  setBoxDerivativesNoPbc();
+  setBoxDerivativesNoPbc();
 
 }
 

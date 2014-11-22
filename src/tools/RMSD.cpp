@@ -956,7 +956,7 @@ Matrix<std::vector<Vector> >  RMSDCoreData::getDRotationDPositions( bool inverse
   // these below could probably be calculated in the main routine
   Vector cp; cp.zero(); if(!cpositions_is_removed)cp=cpositions;
   Vector cr; cr.zero(); if(!creference_is_removed)cr=creference;
-  for(unsigned iat=0;iat<n;iat++) csum+=(reference[iat]-cp)*align[iat];
+  for(unsigned iat=0;iat<n;iat++) csum+=(reference[iat]-cr)*align[iat];
   for(unsigned iat=0;iat<n;iat++) v[iat]=(reference[iat]-cr-csum)*align[iat];
   for(unsigned a=0;a<3;a++){
   	for(unsigned b=0;b<3;b++){
