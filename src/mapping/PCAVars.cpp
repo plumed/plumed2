@@ -153,7 +153,7 @@ ActionWithArguments(ao)
       for(unsigned j=0;j<getNumberOfArguments();++j){ tmp = 0.5*myframes.getFrame(i)->getArgumentDerivative(j); norm+=tmp*tmp; }
 
       // Normalize the eigevector
-      norm = 1.0; //  / sqrt(norm);
+      norm = 1.0 / sqrt(norm);
       for(unsigned j=0;j<getNumberOfAtoms();++j) atom_eigv(i-1,j) = norm*myframes.getFrame(i)->getAtomicDisplacement(j); 
       for(unsigned j=0;j<getNumberOfArguments();++j) arg_eigv(i-1,j) = -0.5*norm*myframes.getFrame(i)->getArgumentDerivative(j); 
 
@@ -203,7 +203,7 @@ void PCAVars::calculate(){
   // Now calculate projections on pca vectors
   unsigned nargs=getNumberOfArguments(); Vector adif, ader; Tensor fvir, tvir;
   for(unsigned i=0;i<getNumberOfComponents();++i){
-      double proj=0; tvir.zero();
+      double proj=0; tvir.zero(); 
       for(unsigned j=0;j<getNumberOfArguments();++j){
           proj+=arg_eigv(i,j)*0.5*myref->getArgumentDerivative(j);
           getPntrToComponent(i)->addDerivative( j, arg_eigv(i,j) );
