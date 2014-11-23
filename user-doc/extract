@@ -220,6 +220,7 @@ do
 done
 
 
+rm -f *PP.txt
 for f in *.txt
 do
 
