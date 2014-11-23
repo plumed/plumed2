@@ -78,8 +78,7 @@ or enhanced sampling calculations.
 
 \page Changelog Change Log
 
-- Changes for \subpage CHANGES-2-0
-- Changes for \subpage CHANGES-2-1
+@CHANGES@
 
 */
 

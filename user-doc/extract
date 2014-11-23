@@ -29,6 +29,10 @@ This manual has been compiled from PLUMED version <b> $long_version </b>
 (git version: <b> $git_version </b>)
 EOF
 
+for file in ../CHANGES/* ; do
+echo "- Changes for \\subpage $(cat $file | grep "@page" | awk '{print $2}')"
+done > automatic/changes.tmp
+
 # Check for files that register actions with no documentation
 for file in ../src/*/*.cpp
 do
@@ -243,7 +247,8 @@ cat $file.txt |
     /^ *@TOOLS@ *$/r      automatic/TOOLS.list
     /^ *@MODULES@ *$/r    automatic/modules.list
     /^ *@CODES@ *$/r      automatic/codes.list
-    /^ *@CODESL@ *$/r   automatic/codesl.list
-    /^ *@VERSION@ *$/r   automatic/version.tmp
+    /^ *@CODESL@ *$/r     automatic/codesl.list
+    /^ *@VERSION@ *$/r    automatic/version.tmp
+    /^ *@CHANGES@ *$/r    automatic/changes.tmp
 " | grep -Ev '^ *@[A-Z]*@ *$' > ${file}PP.txt
 done
