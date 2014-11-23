@@ -139,5 +139,5 @@ For users:
   (requires to get the last almost updated from SVN)
 - Fixed a linking issue with ALMOST, where bz2 was always used to link ALMOST to PLUMED even if it is not compulsory to build ALMOST.
 - Fixed a wrong include in the GMX5 patch.
-- \ref FUNCPATHMSD can now be used together with \ref CONTATCMAP to define pathways in contactmaps space
+- \ref FUNCPATHMSD can now be used together with \ref CONTACTMAP to define pathways in contactmaps space
 */
