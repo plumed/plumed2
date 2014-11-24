@@ -39,7 +39,7 @@ plumed.dat file.  The same units must be used througout the plumed.dat file.
 
 Notice that all input/output will then be made using the specified units.
 That is: all the input parameters, all the output files, etc. The only
-exceptions are file formats for which there is a specific concention concerning
+exceptions are file formats for which there is a specific convention concerning
 the units. For example, trajectories written in .gro format (with \ref DUMPATOMS)
 are going to be always in nm.
 
