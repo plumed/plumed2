@@ -76,9 +76,9 @@ Action::Action(const ActionOptions&ao):
   }
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
   log.printf("  with label %s\n",label.c_str());
-  parse("UPDATE_FROM",update_from);
+  if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
   if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
-  parse("UPDATE_UNTIL",update_until);
+  if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
   if(update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
 }
 
