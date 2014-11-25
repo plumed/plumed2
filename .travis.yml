@@ -1,8 +1,34 @@
 language: cpp
-compiler:
-  - clang
-  - gcc
-script: 
-  - ./configure
+env:
+# list of configurations to be attempted:
+# full configuration, with full manual and MPI
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  MAKEDOC=yes
+# no manual, test clang compiler
+  - PLUMED_CC=clang PLUMED_CXX=clang++ MAKEDOC=no
+# no manual, test GNU compiler
+  - PLUMED_CC=gcc   PLUMED_CXX=g++     MAKEDOC=no
+before_install:
+# install some package - these are fast, we install them anyway
+  - sudo apt-get update -qq
+  - sudo apt-get install -y wget
+  - sudo apt-get install -y libopenmpi-dev openmpi-bin
+  - sudo apt-get install -y libmatheval-dev
+  - ./.travis.install.xdrfile
+# installation of these packages takes a lot of time
+# we do it only when needed
+  - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen             || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-fonts-extra || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-full        || true
+install: 
+# we set all the optional modules on
+  - touch src/crystallization.on src/manyrestraints.on
+# we have to pass the full path since on travis machines sudo does not have compilers in the path
+# moreover, we hardcode path to dynamic library, required for xdrfile to link properly
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) LDFLAGS="-Wl,-rpath,/usr/local/lib:$LD_LIBRARY_PATH"
   - make
-  - PATH=$PATH:$PWD/src/lib make -C regtest 
+  - test $MAKEDOC == yes && make doc > makedoc.out || true
+# we install plumed so that it is in the path
+  - sudo make install
+script:
+  - make -C regtest 
