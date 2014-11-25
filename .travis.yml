@@ -1,8 +1,8 @@
 language: cpp
 compiler:
-  - gcc
   - clang
+  - gcc
 script: 
   - ./configure
   - make
-  - PATH=$PWD/src/lib make -C regtest 
+  - PATH=$PATH:$PWD/src/lib make -C regtest 
