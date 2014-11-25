@@ -67,6 +67,11 @@ void PCAVars::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   componentsAreNotOptional(keys);
+  keys.addOutputComponent("residual","default","the distance of the configuration from the linear subspace defined "
+                                               "by the eigenvectors.  In other words this is "
+                                               "\\f$| \\mathbf{r} - \\sum_i  \\mathbf{r}.\\mathbf{e_i} | \\$ where "
+                                               "\\f$\\mathbf{r}\\f$ is the vector connecting the instantaneous position "
+                                               "to the reference point and the sum runs over the set of eigenvectors $\\f e_i\\f$.");
   keys.addOutputComponent("eig-","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
@@ -161,6 +166,7 @@ ActionWithArguments(ao)
       std::string num; Tools::convert( i, num );
       addComponentWithDerivatives("eig-"+num); componentIsNotPeriodic("eig-"+num);
   }
+  addComponentWithDerivatives("residual"); componentIsNotPeriodic("residual");
 
   // Get appropriate number of derivatives
   unsigned nder;
@@ -199,28 +205,54 @@ void PCAVars::unlockRequests(){
 void PCAVars::calculate(){
   // Calculate distance between instaneous configuration and reference
   double dist = myref->calculate( getPositions(), getPbc(), getArguments(), true );
+  
+  // Start accumulating residual by adding derivatives of distance
+  Value* resid=getPntrToComponent( getNumberOfComponents()-1 ); unsigned nargs=getNumberOfArguments();
+  for(unsigned j=0;j<getNumberOfArguments();++j) resid->addDerivative( j, myref->getArgumentDerivative(j) );
+  for(unsigned j=0;j<getNumberOfAtoms();++j){
+      Vector ader=myref->getAtomDerivative( j );
+      for(unsigned k=0;k<3;++k) resid->addDerivative( nargs +3*j+k, ader[k] );
+  }
 
   // Now calculate projections on pca vectors
-  unsigned nargs=getNumberOfArguments(); Vector adif, ader; Tensor fvir, tvir;
-  for(unsigned i=0;i<getNumberOfComponents();++i){
-      double proj=0; tvir.zero(); 
+  Vector adif, ader; Tensor fvir, tvir;
+  for(unsigned i=0;i<getNumberOfComponents()-1;++i){  // One less component as we also have residual
+      double proj=0; tvir.zero(); Value* eid=getPntrToComponent(i);
       for(unsigned j=0;j<getNumberOfArguments();++j){
           proj+=arg_eigv(i,j)*0.5*myref->getArgumentDerivative(j);
-          getPntrToComponent(i)->addDerivative( j, arg_eigv(i,j) );
+          eid->addDerivative( j, arg_eigv(i,j) ); resid->addDerivative( j, -arg_eigv(i,j) );
       }
       if( getNumberOfAtoms()>0 ){
          proj += myref->projectAtomicDisplacementOnVector( i, atom_eigv, getPositions(), tmpder );
          for(unsigned j=0;j<getNumberOfAtoms();++j){
-            for(unsigned k=0;k<3;++k) getPntrToComponent(i)->addDerivative( nargs + 3*j+k, tmpder[j][k] );
+            for(unsigned k=0;k<3;++k){
+                eid->addDerivative( nargs + 3*j+k, tmpder[j][k] );
+                resid->addDerivative( nargs + 3*j+k, -tmpder[j][k] );
+            }
             tvir += -1.0*Tensor( getPosition(j), tmpder[j] );
          }
          plumed_assert( !myref->getVirial( fvir ) );
          for(unsigned j=0;j<3;++j){
-            for(unsigned k=0;k<3;++k) getPntrToComponent(i)->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
+            for(unsigned k=0;k<3;++k) eid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
          }
       }
+      dist -= proj; // Subtract from total distance to get residual
       getPntrToComponent(i)->set( proj );
   }
+  resid->set( dist );
+
+  // And finally virial for residual
+  if( getNumberOfAtoms()>0 ){
+      tvir.zero();
+      for(unsigned j=0;j<getNumberOfAtoms();++j){
+          Vector ader; for(unsigned k=0;k<3;++k) ader[k]=resid->getDerivative( nargs + 3*j+k );
+          tvir += -1.0*Tensor( getPosition(j), ader );
+      }
+      for(unsigned j=0;j<3;++j){
+          for(unsigned k=0;k<3;++k) resid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
+      }
+  }
+
 }
 
 void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ){
