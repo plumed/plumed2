@@ -102,7 +102,7 @@ double Fccubic::compute(){
 
    // Calculate the coordination number
    Vector myder, fder;
-   double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, tmp;
+   double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, r12, tmp;
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPosition(0), getPosition(i) );
       double d2 = distance.modulo2();
@@ -121,19 +121,27 @@ double Fccubic::compute(){
          z4 = z2*z2;
                  
          r8 = pow( distance.modulo2(), 4 );
+         r12 = pow( distance.modulo2(), 6 );
 
-         tmp = ((x4*y4)+(x4*z4)+(y4*z4))/r8;
+         tmp = ((x4*y4)+(x4*z4)+(y4*z4))/r8-3.0*x4*y4*z4/r12;
 
-         value += sw*tmp;
-
-         t0 = (x2*y4+x2*z4)/r8;
-         t1 = (y2*x4+y2*z4)/r8;
-         t2 = (z2*x4+z2*y4)/r8;
-         t3 = 2*tmp/distance.modulo2();         
+         t0 = (x2*y4+x2*z4)/r8-3.0*x2*y4*z4/r12;
+         t1 = (y2*x4+y2*z4)/r8-3.0*y2*x4*z4/r12;
+         t2 = (z2*x4+z2*y4)/r8-3.0*z2*x4*y4/r12;
+         t3 = (2*tmp-3.0*x4*y4*z4/r12)/distance.modulo2();         
  
          myder[0]=4*distance[0]*(t0-t3);
          myder[1]=4*distance[1]*(t1-t3);
          myder[2]=4*distance[2]*(t2-t3);
+         
+         // Scaling so that '1' corresponds to fcc lattice
+         // and '0' corresponds to liquid
+         tmp = (2288.0*tmp-64.0)/79.0;
+         myder[0] = (2288.0*myder[0]-64.0)/79.0;
+         myder[1] = (2288.0*myder[1]-64.0)/79.0;
+         myder[2] = (2288.0*myder[2]-64.0)/79.0;
+          
+         value += sw*tmp;
   
          fder = (+dfunc)*tmp*distance + sw*myder;
 
