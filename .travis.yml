@@ -16,10 +16,12 @@ before_install:
   - ./.travis.install.xdrfile
 # installation of these packages takes a lot of time
 # we do it only when needed
-  - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen             || true
-  - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-fonts-extra || true
+# this takes a lot of time but apparently some of these packages are required for doxygen
   - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-full        || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
+# doxygen from its repository (apt-get gets an old version)
+  - test "$MAKEDOC" == yes && ./.travis.install.doxygen                   || true
 install: 
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
