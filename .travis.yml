@@ -1,11 +1,13 @@
 language: cpp
 env:
 # list of configurations to be attempted:
-# full configuration, with full manual and MPI
+# full configuration (including MPI), used to build manual
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++  MAKEDOC=yes
-# no manual, test clang compiler
+# mpi
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  MAKEDOC=no
+# clang
   - PLUMED_CC=clang PLUMED_CXX=clang++ MAKEDOC=no
-# no manual, test GNU compiler
+# gnu
   - PLUMED_CC=gcc   PLUMED_CXX=g++     MAKEDOC=no
 before_install:
 # install some package - these are fast, we install them anyway
@@ -28,9 +30,11 @@ install:
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
   - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) LDFLAGS="-Wl,-rpath,/usr/local/lib:$LD_LIBRARY_PATH"
-  - make
-  - test $MAKEDOC == yes && make doc > makedoc.out || true
+  - make -j 2
 # we install plumed so that it is in the path
   - sudo make install
 script:
-  - make -C regtest 
+  - make -C regtest
+  - test $MAKEDOC == yes && make -C regtest copytodoc || true
+  - test $MAKEDOC == yes && make doc > makedoc.out || true
+  - make -C regtest checkfail
