@@ -28,6 +28,140 @@
 #include "core/PlumedMain.h"
 #include "tools/Pbc.h"
 
+//+PLUMEDOC COLVAR PCAVARS
+/*
+Projection on principal component eigenvectors or other high dimensional linear subspace
+
+The collective variables described in \ref dists allow one to calculate the distance between the 
+instaneous structure adopted by the system and some high-dimensional, reference configuration.  The 
+problem with doing this is that, as one gets further and further from the reference configuration, the
+distance from it becomes a progressively poorer and poorer collective variable.  This happens because
+the ``number" of structures at a distance \f$d\f$ from a reference configuration is proportional to \f$d^N\f$ in 
+an \f$N\f$ dimensional space.  Consequently, when \f$d\f$ is small the distance from the reference configuration 
+may well be a good collective variable.  However, when \f$d\f$ is large it is unlikely that the distance from the reference
+structure is a good CV.  When the distance is large there will almost certainly be markedly different 
+configuration that have the same CV value and hence barriers in transverse degrees of 
+freedom.   
+
+For these reasons dimensionality reduction is often employed so a projection \f$\mathbf{s}\f$ of a high-dimensional configuration 
+\f$\mathbf{X}\f$ in a lower dimensionality space using a function:
+
+\f[
+\mathbf{s} = F(\mathbf{X}-\mathbf{X}^{ref})
+\f]
+
+where here we have introduced some high-dimensional reference configuration \f$\mathbf{X}^{ref}\f$.  By far the simplest way to 
+do this is to use some linear operator for \f$F\f$.  That is to say we find a low-dimensional projection
+by rotating the basis vectors using some linear algebra:
+
+\f[
+\mathbf{s}_i = \sum_k A_{ik} ( X_{k} - X_{k}^{ref} )
+\f]
+
+Here \f$A\f$ is a \f$d\f$ by \f$D\f$ matrix where \f$D\f$ is the dimensionality of the high dimensional space and \f$d\f$ is
+the dimensionality of the lower dimensional subspace.  In plumed when this kind of projection you can use the majority
+of the metrics detailed on \ref dists to calculate the displacement, \f$\mathbf{X}-\mathbf{X}^{ref}\f$, from the reference configuration.  
+The matrix \f$A\f$ can be found by various means including principal component analysis and normal mode analysis.  In both these methods the 
+rows of \f$A\f$ would be the principle eigenvectors of a square matrix.  For PCA the covariance while for normal modes the Hessian. 
+
+\bug It is not possible to use the \ref DRMSD metric with this variable.  You can get around this by listing the set of distances you wish to calculate for your DRMSD in the plumed file explicitally and using the EUCLIDEAN metric.  MAHALONOBIS and NORM-EUCLIDEAN also do not work with this variable but using these options makes little sense when projecting on a linear subspace.
+
+\par Examples
+
+The following input calculates a projection on a linear subspace where the displacements
+from the reference configuration are calculated using the OPTIMAL metric.  Consequently,
+both translation of the center of mass of the atoms and rotation of the reference
+frame are removed from these displacements.  The matrix \f$A\f$ and the reference 
+configuration \f$R^{ref}\f$ are specified in the pdb input file reference.pdb and the 
+value of all projections (and the residual) are output to a file called colvar2.
+
+\verbatim
+PCAVARS REFERENCE=reference.pdb TYPE=OPTIMAL LABEL=pca2
+PRINT ARG=pca2.* FILE=colvar2 
+\endverbatim
+
+The reference configurations can be specified using a pdb file.  The first configuration that you provide is the reference configuration,
+which is refered to in the above as \f$X^{ref}\f$ subsequent configurations give the directions of row vectors that are contained in 
+the matrix \f$A\f$ above.  These directions can be specified by specifying a second configuration - in this case a vector will 
+be constructed by calculating the displacement of this second configuration from the reference configuration.  A pdb input prepared 
+in this way would look as follows:
+
+\verbatim
+ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
+ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
+ATOM      9  CA  ALA     2      19.462 -11.088  -8.986  1.00  1.00
+ATOM     13  HB2 ALA     2      21.112 -10.688 -12.476  1.00  1.00
+ATOM     15  C   ALA     2      19.422   7.978 -14.536  1.00  1.00
+ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
+ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
+END
+ATOM      2  CH3 ACE     1      13.932 -14.718  -6.016  1.00  1.00
+ATOM      5  C   ACE     1      20.312  -9.928  -5.946  1.00  1.00
+ATOM      9  CA  ALA     2      18.462 -11.088  -8.986  1.00  1.00
+ATOM     13  HB2 ALA     2      20.112 -11.688 -12.476  1.00  1.00
+ATOM     15  C   ALA     2      19.422   7.978 -12.536  1.00  1.00
+ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
+ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
+END
+\endverbatim
+
+Alternatively, the second configuration can specify the components of \f$A\f$ explicitally.  In this case you need to include the 
+keyword TYPE=DIRECTION in the remarks to the pdb as shown below.
+
+\verbatim
+ATOM      2  CH3 ACE     1      12.932 -14.718  -6.016  1.00  1.00
+ATOM      5  C   ACE     1      21.312  -9.928  -5.946  1.00  1.00
+ATOM      9  CA  ALA     2      19.462 -11.088  -8.986  1.00  1.00
+ATOM     13  HB2 ALA     2      21.112 -10.688 -12.476  1.00  1.00
+ATOM     15  C   ALA     2      19.422   7.978 -14.536  1.00  1.00
+ATOM     20 HH31 NME     3      20.122  -9.928 -17.746  1.00  1.00
+ATOM     21 HH32 NME     3      18.572 -13.148 -16.346  1.00  1.00
+END
+REMARK TYPE=DIRECTION
+ATOM      2  CH3 ACE     1      0.1414  0.3334 -0.0302  1.00  0.00
+ATOM      5  C   ACE     1      0.0893 -0.1095 -0.1434  1.00  0.00
+ATOM      9  CA  ALA     2      0.0207 -0.321   0.0321  1.00  0.00
+ATOM     13  HB2 ALA     2      0.0317 -0.6085  0.0783  1.00  0.00
+ATOM     15  C   ALA     2      0.1282 -0.4792  0.0797  1.00  0.00
+ATOM     20 HH31 NME     3      0.0053 -0.465   0.0309  1.00  0.00
+ATOM     21 HH32 NME     3     -0.1019 -0.4261 -0.0082  1.00  0.00
+END
+\endverbatim
+
+If your metric involves arguments the labels of these arguments in your plumed input file should be specified in the REMARKS
+for each of the frames of your path.  An input file in this case might look like this:
+
+\verbatim
+DESCRIPTION: a pca eigenvector specified using the start point and direction in the HD space.
+REMARK WEIGHT=1.0 
+REMARK ARG=d1,d2 
+REMARK d1=1.0 d2=1.0
+END
+REMARK TYPE=DIRECTION
+REMARK ARG=d1,d2 
+REMARK d1=0.1 d2=0.25
+END
+\endverbatim
+
+Here we are working with the EUCLIDEAN metric and notice that we have specified the components of \f$A\f$ using DIRECTION.
+Consequently, the values of d1 and d2 in the second frame above do not specify a particular coordinate in the high-dimensional
+space as in they do in the first frame.  Instead these values are the coefficients that can be used to construct a linear combination of d1 and d2.
+If we wanted to specify the direction in this metric using the start and end point of the vector we would write:
+
+\verbatim
+DESCRIPTION: a pca eigenvector specified using the start and end point of a vector in the HD space.
+REMARK WEIGHT=1.0 
+REMARK ARG=d1,d2 
+REMARK d1=1.0 d2=1.0
+END
+REMARK ARG=d1,d2 
+REMARK d1=1.1 d2=1.25
+END
+\endverbatim
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace mapping {
 
@@ -67,12 +201,12 @@ void PCAVars::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   componentsAreNotOptional(keys);
+  keys.addOutputComponent("eig-","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ..."); 
   keys.addOutputComponent("residual","default","the distance of the configuration from the linear subspace defined "
-                                               "by the eigenvectors.  In other words this is "
-                                               "\\f$| \\mathbf{r} - \\sum_i  \\mathbf{r}.\\mathbf{e_i} | \\$ where "
-                                               "\\f$\\mathbf{r}\\f$ is the vector connecting the instantaneous position "
-                                               "to the reference point and the sum runs over the set of eigenvectors $\\f e_i\\f$.");
-  keys.addOutputComponent("eig-","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ...");
+                                               "by the vectors, \\f$e_i\\f$, that are contained in the rows of \\f$A\\f$.  In other words this is "
+                                               "\\f$\\sqrt( r^2 - \\sum_i [\\mathbf{r}.\\mathbf{e_i}]^2)\\f$ where "
+                                               "\\f$r\\f$ is the distance between the instantaneous position and the "
+                                               "reference point."); 
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
 }
