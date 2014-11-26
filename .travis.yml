@@ -1,30 +1,47 @@
 language: cpp
 env:
 # list of configurations to be attempted:
-# full configuration (including MPI), used to build manual
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  MAKEDOC=yes
-# mpi
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  MAKEDOC=no
+# g++
+  - PLUMED_CC=gcc   PLUMED_CXX=g++
 # clang
-  - PLUMED_CC=clang PLUMED_CXX=clang++ MAKEDOC=no
-# gnu
-  - PLUMED_CC=gcc   PLUMED_CXX=g++     MAKEDOC=no
-before_install:
+  - PLUMED_CC=clang PLUMED_CXX=clang++
+# MPI (notice: we should build manual with this so as to have
+# all regtests checked, but this is currently not working)
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++
+# additional g++ with documentation
+  - PLUMED_CC=gcc   PLUMED_CXX=g++     MAKEDOC=yes
+# Possible additional variables:
+#   MAKEDOC=yes to build manual, only when log file contains string [makedoc]
+#   VALGRIND=yes to make valgrind tests, only when log file contains string [valgrind]
+install:
+  - ./.travis.check.log makedoc  || MAKEDOC=no
+  - ./.travis.check.log valgrind || VALGRIND=no
 # install some package - these are fast, we install them anyway
   - sudo apt-get update -qq
   - sudo apt-get install -y wget
-  - sudo apt-get install -y libopenmpi-dev openmpi-bin
   - sudo apt-get install -y libmatheval-dev
-  - ./.travis.install.xdrfile
+# this is not needed (will be used in 2.2)
+#  - ./.travis.install.xdrfile
 # installation of these packages takes a lot of time
 # we do it only when needed
+  - test "$PLUMED_CXX" == "mpic++" && sudo apt-get install -y libopenmpi1.5-dev openmpi1.5-bin || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y texlive             || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-fonts-extra || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y latex-xcolor        || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-extra-utils || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-font-utils  || true
 # this takes a lot of time but apparently some of these packages are required for doxygen
   - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-full        || true
-  - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
 # doxygen from its repository (apt-get gets an old version)
+# this makes a full compilation
   - test "$MAKEDOC" == yes && ./.travis.install.doxygen                   || true
-install: 
+# this is downloading a precompiles binary, but does not work properly
+# - test "$MAKEDOC" == yes && ftp://ftp.stack.nl/pub/users/dimitri/doxygen-1.8.8.linux.bin.tar.gz || true
+# - test "$MAKEDOC" == yes && tar xzf doxygen-1.8.8.linux.bin.tar.gz      || true
+# - test "$MAKEDOC" == yes && PATH="$PATH:$PWD/doxygen-1.8.8/bin"              || true
+  - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
+script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
@@ -33,8 +50,8 @@ install:
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install
-script:
-  - make -C regtest
+  - test "$VALGRIND" == yes && OPT=valgrind || OPT=""
+  - make -C regtest $OPT
   - test $MAKEDOC == yes && make -C regtest copytodoc || true
   - test $MAKEDOC == yes && make doc > makedoc.out || true
   - make -C regtest checkfail
