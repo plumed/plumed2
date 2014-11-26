@@ -220,14 +220,14 @@ void PCAVars::calculate(){
       double proj=0; tvir.zero(); Value* eid=getPntrToComponent(i);
       for(unsigned j=0;j<getNumberOfArguments();++j){
           proj+=arg_eigv(i,j)*0.5*myref->getArgumentDerivative(j);
-          eid->addDerivative( j, arg_eigv(i,j) ); resid->addDerivative( j, -arg_eigv(i,j) );
+          eid->addDerivative( j, arg_eigv(i,j) ); 
       }
       if( getNumberOfAtoms()>0 ){
          proj += myref->projectAtomicDisplacementOnVector( i, atom_eigv, getPositions(), tmpder );
          for(unsigned j=0;j<getNumberOfAtoms();++j){
             for(unsigned k=0;k<3;++k){
                 eid->addDerivative( nargs + 3*j+k, tmpder[j][k] );
-                resid->addDerivative( nargs + 3*j+k, -tmpder[j][k] );
+                resid->addDerivative( nargs + 3*j+k, -2*proj*tmpder[j][k] );
             }
             tvir += -1.0*Tensor( getPosition(j), tmpder[j] );
          }
@@ -236,10 +236,21 @@ void PCAVars::calculate(){
             for(unsigned k=0;k<3;++k) eid->addDerivative( nargs + 3*getNumberOfAtoms() + 3*j + k, tvir(j,k) );
          }
       }
-      dist -= proj; // Subtract from total distance to get residual
+      dist -= proj*proj; // Subtract square from total squared distance to get residual squared
+      // Derivatives of residual
+      for(unsigned j=0;j<getNumberOfArguments();++j) resid->addDerivative( j, -2*proj*arg_eigv(i,j) ); 
+      // And set final value
       getPntrToComponent(i)->set( proj );
   }
+  dist=sqrt(dist);
   resid->set( dist );
+
+  // Take square root of residual derivatives
+  double prefactor = 0.5 / dist;
+  for(unsigned j=0;j<getNumberOfArguments();++j) resid->setDerivative( j, prefactor*resid->getDerivative(j) );
+  for(unsigned j=0;j<getNumberOfAtoms();++j){
+      for(unsigned k=0;k<3;++k) resid->setDerivative( nargs + 3*j+k, prefactor*resid->getDerivative( nargs+3*j+k ) );
+  }
 
   // And finally virial for residual
   if( getNumberOfAtoms()>0 ){
