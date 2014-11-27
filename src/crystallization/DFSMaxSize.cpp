@@ -88,8 +88,8 @@ void DFSMaxCluster::doCalculationOnCluster(){
    for(unsigned iclust=0;iclust<getNumberOfClusters();++iclust){
        retrieveAtomsInCluster( iclust+1, myatoms );
 
-       double vv, df, tval=0; tder.assign( tder.size(), 0.0 ); 
-       for(unsigned j=rank;j<myatoms.size();j+=size){ 
+       double vv, df, tval=0; tder.assign( tder.size(), 0.0 );
+       for(unsigned j=0;j<myatoms.size();++j){ 
            unsigned i=myatoms[j];
            getVectorForTask( i, false, vals );
            if( use_switch ){
@@ -114,7 +114,6 @@ void DFSMaxCluster::doCalculationOnCluster(){
            for(unsigned k=0;k<getNumberOfDerivatives();++k) fder[1+k]+=pref*tder[k];
        }
    }
-   comm.Sum( fder );
 
    // And finish the derivatives
    setValue( beta*std::log( fder[0] ) ); Value* myval=getPntrToValue();
