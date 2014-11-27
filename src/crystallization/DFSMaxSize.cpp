@@ -38,6 +38,10 @@ class DFSMaxCluster : public DFSClustering {
 private:
 /// The value of beta
   double beta;
+///
+  bool use_switch;
+//
+  SwitchingFunction sf;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
@@ -54,6 +58,7 @@ void DFSMaxCluster::registerKeywords( Keywords& keys ){
   keys.add("compulsory","BETA","the value of beta to be used in calculating the smooth maximum");
   keys.use("WTOL"); keys.use("USE_ORIENTATION");
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
+  keys.add("optional","CSWITCH","use a switching function on the crystallinity parameter");
 }
 
 DFSMaxCluster::DFSMaxCluster(const ActionOptions&ao):
@@ -63,6 +68,13 @@ DFSClustering(ao)
    // Find out the value of beta
    parse("BETA",beta);
    addValueWithDerivatives(); setNotPeriodic();
+
+   use_switch=false;
+   std::string input, errors; parse("CSWITCH",input);
+   if( input.length()>0 ){
+      use_switch=true; sf.set( input, errors );
+      if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
+   }
 }
 
 void DFSMaxCluster::doCalculationOnCluster(){
@@ -76,16 +88,21 @@ void DFSMaxCluster::doCalculationOnCluster(){
    for(unsigned iclust=0;iclust<getNumberOfClusters();++iclust){
        retrieveAtomsInCluster( iclust+1, myatoms );
 
-       double tval=0; tder.assign( tder.size(), 0.0 );
+       double vv, df, tval=0; tder.assign( tder.size(), 0.0 ); 
        for(unsigned j=rank;j<myatoms.size();j+=size){ 
            unsigned i=myatoms[j];
            getVectorForTask( i, false, vals );
-           tval += vals[0]*vals[1];
+           if( use_switch ){
+               vv = 1.0 - sf.calculate( vals[1], df );
+               tval += vals[0]*vv; df=-df*vals[1];
+           } else {
+               tval += vals[0]*vals[1]; df=1.; vv=vals[1];
+           }
            if( !doNotCalculateDerivatives() ){ 
                getVectorDerivatives( i, false, myvals );
                for(unsigned k=0;k<myvals.getNumberActive();++k){
                    unsigned kat=myvals.getActiveIndex(k);
-                   tder[kat]+=vals[0]*myvals.getDerivative(1,kat) + vals[1]*myvals.getDerivative(0,kat);
+                   tder[kat]+=vals[0]*df*myvals.getDerivative(1,kat) + vv*myvals.getDerivative(0,kat);
                }
                myvals.clearAll();
            }
