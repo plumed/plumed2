@@ -87,6 +87,8 @@ void DFSMaxCluster::doCalculationOnCluster(){
    fder[0]=0;  // Value and derivatives are accumulated in one array so that there is only one MPI call 
    for(unsigned iclust=0;iclust<getNumberOfClusters();++iclust){
        retrieveAtomsInCluster( iclust+1, myatoms );
+       // This deals with filters
+       if( myatoms.size()==1 && !isCurrentlyActive(myatoms[0]) ) continue ;
 
        double vv, df, tval=0; tder.assign( tder.size(), 0.0 );
        for(unsigned j=0;j<myatoms.size();++j){ 

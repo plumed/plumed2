@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
-//#include "MultiColvarFunction.h"
 #include "BridgedMultiColvarFunction.h"
 #include "vesselbase/Vessel.h"
 #include "tools/Pbc.h"
@@ -66,8 +65,6 @@ ActionWithValue(ao),
 ActionWithVessel(ao),
 usepbc(false),
 linkcells(comm),
-//mycatoms(NULL),        // This will be destroyed by ActionWithVesel
-//myvalues(NULL),        // This will be destroyed by ActionWithVesel 
 usespecies(false)
 {
   if( keywords.exists("NOPBC") ){ 
@@ -148,7 +145,6 @@ void MultiColvarBase::setupLinkCells(){
 
   nactive_atoms=0;
   if( usespecies ){
-     ltmp_pos.resize( ablocks[0].size() ); ltmp_ind.resize( ablocks[0].size() );
      for(unsigned i=0;i<ablocks[0].size();++i){
         if( !isCurrentlyActive( ablocks[0][i] ) ) continue; 
         ltmp_ind[nactive_atoms]=ablocks[0][i];
@@ -156,7 +152,6 @@ void MultiColvarBase::setupLinkCells(){
         nactive_atoms++;
      }
   } else {
-     ltmp_pos.resize( ablocks[1].size() ); ltmp_ind.resize( ablocks[1].size() ); 
      for(unsigned i=0;i<ablocks[1].size();++i){
         if( !isCurrentlyActive( ablocks[1][i] ) ) continue;
         ltmp_ind[nactive_atoms]=i; 
