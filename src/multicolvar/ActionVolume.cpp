@@ -234,7 +234,7 @@ void ActionVolume::deactivate_task(){
   plumed_merror("This should never be called");
 }
 
-void ActionVolume::addBridgeForces( const std::vector<double>& bb ){ 
+void ActionVolume::applyBridgeForces( const std::vector<double>& bb ){ 
   plumed_dbg_assert( bb.size()==tmpforces.size()-9 );
   // Forces on local atoms
   for(unsigned i=0;i<bb.size();++i) tmpforces[i]=bb[i];
