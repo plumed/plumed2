@@ -1,0 +1,24 @@
+#! /bin/bash
+
+set -e
+set -x
+
+git clone https://github.com/doxygen/doxygen.git
+
+cd doxygen
+
+if [ -n "$1" ] ; then
+  echo "installing doxygen $version"
+  version=$1
+else
+  echo "installing latest doxygen"
+  version=$(git tag | tail -n 1)
+fi
+
+git checkout $version
+
+./configure --prefix=/usr/local
+make
+sudo make install
+cd ../
+
