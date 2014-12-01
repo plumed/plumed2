@@ -1,0 +1,54 @@
+language: cpp
+env:
+# list of configurations to be attempted:
+# clang
+  - PLUMED_CC=clang PLUMED_CXX=clang++
+# GNU + doc
+  - PLUMED_CC=gcc   PLUMED_CXX=g++
+# MPI + doc
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++
+# Possible additional variables:
+#   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
+install:
+# build the manual, only if log contains string [makedoc]
+  - MAKEDOC=yes
+  - ./.travis.check.log makedoc  || MAKEDOC=no
+  - ./.travis.check.log valgrind || VALGRIND=no
+# install some package - these are fast, we install them anyway
+  - sudo apt-get update -qq
+  - sudo apt-get install -y wget
+  - sudo apt-get install -y libmatheval-dev
+# this is not needed (will be used in 2.2)
+#  - ./.travis.install.xdrfile
+# installation of these packages takes a lot of time
+# we do it only when needed
+  - test "$PLUMED_CXX" == "mpic++" && sudo apt-get install -y libopenmpi1.5-dev openmpi1.5-bin || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
+# this is to install full tex - not needed
+# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive             || true
+# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-fonts-extra || true
+# - test "$MAKEDOC" == yes && sudo apt-get install -y latex-xcolor        || true
+# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-extra-utils || true
+# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-font-utils  || true
+# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-full        || true
+# doxygen from its repository (apt-get gets an old version)
+#  - test "$MAKEDOC" == yes && ./.travis.install.doxygen                   || true
+# it seems that here we can get precompiled doxygen and latex
+  - test "$MAKEDOC" == yes && sudo apt-add-repository -y ppa:libreoffice/libreoffice-4-2 || true
+  - test "$MAKEDOC" == yes && sudo apt-get update -qq                     || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
+  - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
+script:
+# we set all the optional modules on
+  - touch src/crystallization.on src/manyrestraints.on
+# we have to pass the full path since on travis machines sudo does not have compilers in the path
+# moreover, we hardcode path to dynamic library, required for xdrfile to link properly
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"
+  - make -j 2
+# we install plumed so that it is in the path
+  - sudo make install
+  - test "$VALGRIND" == yes && OPT=valgrind || OPT=""
+  - make -C regtest $OPT
+  - test "$MAKEDOC" == yes && make -C regtest copytodoc || true
+  - test "$MAKEDOC" == yes && make doc || true
+  - make -C regtest checkfail

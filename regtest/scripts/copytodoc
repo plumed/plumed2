@@ -1,0 +1,10 @@
+#! /bin/bash
+
+set -e
+
+testdir=../user-doc/regtests/
+mkdir -p $testdir
+scripts/check --html | sed 's|$|<br>|' > report.html
+tar cf - report.html */*/report.txt | tar xf - -C  $testdir
+cd ../
+

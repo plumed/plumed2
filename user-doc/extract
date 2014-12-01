@@ -29,6 +29,13 @@ This manual has been compiled from PLUMED version <b> $long_version </b>
 (git version: <b> $git_version </b>)
 EOF
 
+if test -d regtests ; then
+cat >> automatic/version.tmp << EOF
+
+Regtest results for this version can be found <a href="../regtests/report.html">here</a>.
+EOF
+fi
+
 for file in ../CHANGES/* ; do
 echo "- Changes for \\subpage $(cat $file | grep "@page" | awk '{print $2}')"
 done > automatic/changes.tmp
