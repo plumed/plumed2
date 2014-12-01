@@ -48,7 +48,7 @@ plumed=plumed
 root=$($plumed --no-mpi info --root)
 
 if test -z "$root" ; then
-  echo "ERROR: plumed executable not available"
+  echo "FAILURE: plumed executable not available"
   exit 1
 fi
 
