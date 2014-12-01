@@ -20,6 +20,8 @@ install:
   - sudo apt-get install -y libmatheval-dev
 # this is not needed (will be used in 2.2)
   - ./.travis.install.xdrfile
+  - LIBRARY_PATH="$LIBRARY_PATH:/usr/local/lib"
+  - LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
 # installation of these packages takes a lot of time
 # we do it only when needed
   - test "$PLUMED_CXX" == "mpic++" && sudo apt-get install -y libopenmpi1.5-dev openmpi1.5-bin || true
