@@ -131,6 +131,9 @@ See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git r
 This release will include all the fixes available in branch 2.0.
 
 For users:
+- New patch for AMBER 14 (sander module only). This patch should be compatible
+  with any PLUMED 2 version (including 2.0). It includes most PLUMED features
+  with the notable exception of multi-replica framework.
 - Fixed a portability issue in BG/P where gettimeofday is not implemented.
   Notice that this fix implies that one should execute again ./configure to have
   plumed timing working correctly.
