@@ -257,9 +257,13 @@ fi
 # to be loaded later
 AC_CHECK_LIB([dl],dlopen, [STATIC_LIBS="-ldl $STATIC_LIBS"] [LIBS="-ldl $LIBS"])
 
+mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
+  mpi_found=ok
   PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
+else 
+  mpi_found=ko
 fi
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
@@ -487,6 +491,13 @@ AC_MSG_NOTICE([**** You can change this later setting PLUMED_PREFIX environment 
 AC_MSG_NOTICE([**** Executable will be named 'plumed'])
 AC_MSG_NOTICE([**** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing])
 
+if test $mpi == true; then
+  if test $mpi_found == ok; then
+    AC_MSG_NOTICE([**** PLUMED will be compiled using MPI])
+  else 
+    AC_MSG_NOTICE([**** PLUMED will NOT be compiled using MPI])
+  fi
+fi
 
 AC_SUBST(build_dir)
 build_dir=`pwd`
