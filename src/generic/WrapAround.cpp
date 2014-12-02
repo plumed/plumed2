@@ -152,7 +152,7 @@ WrapAround::WrapAround(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionAtomistic(ao),
-groupby=1
+groupby(1)
 {
   parseAtomList("ATOMS",atoms);
   parseAtomList("AROUND",reference);
