@@ -36,7 +36,7 @@ install:
   - test "$MAKEDOC" == yes && sudo apt-get update -qq                     || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
   - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
-  - test "$LAPACK" == yes  && sudo apt-get install lapack                  || true
+  - test "$LAPACK" == yes  && sudo apt-get install libatlas-base-dev      || true
 script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
