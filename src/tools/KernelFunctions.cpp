@@ -190,8 +190,9 @@ double KernelFunctions::evaluate( const std::vector<Value*>& pos, std::vector<do
   double r2=0;
   if(diagonal){ 
      for(unsigned i=0;i<ndim();++i){
-         derivatives[i]=pos[i]->difference( center[i] ) / width[i]; 
+         derivatives[i]=-pos[i]->difference( center[i] ) / width[i];
          r2+=derivatives[i]*derivatives[i];
+         derivatives[i] /= width[i];
      }
   } else {
      Matrix<double> mymatrix( getMatrix() ); 
