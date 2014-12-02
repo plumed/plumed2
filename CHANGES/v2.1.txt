@@ -145,4 +145,6 @@ For users:
   to build ALMOST.
 - Fixed a wrong include in the GMX5 patch.
 - \ref FUNCPATHMSD can now be used together with \ref CONTACTMAP to define pathways in contactmaps space
+- Configuration is more verbose, a warning is given if a default option cannot be enabled and an error is given if 
+  an option explicitly enabled cannot be enabled.
 */
