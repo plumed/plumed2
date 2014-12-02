@@ -16,7 +16,6 @@ install:
   - ./.travis.check.log valgrind || VALGRIND=no
 # install some package - these are fast, we install them anyway
   - sudo apt-get update -qq
-  - sudo apt-get install -y wget
   - sudo apt-get install -y libmatheval-dev
 # this is not needed (will be used in 2.2)
 #  - ./.travis.install.xdrfile
