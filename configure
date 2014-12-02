@@ -5055,6 +5055,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_MPI 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_MPI" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_MPI" >&2;}
     fi
 
 fi
@@ -5118,6 +5121,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_MATHEVAL 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&2;}
     fi
 
 fi
@@ -5181,6 +5187,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_CLOCK_GETTIME 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CLOCK_GETTIME" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CLOCK_GETTIME" >&2;}
     fi
 
 fi
@@ -5202,6 +5211,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_GETTIMEOFDAY 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&2;}
     fi
 
 fi
@@ -5223,6 +5235,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_CREGEX 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CREGEX" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CREGEX" >&2;}
     fi
 
 fi
@@ -5244,6 +5259,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_DLOPEN 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_DLOPEN" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_DLOPEN" >&2;}
     fi
 
 fi
@@ -5265,6 +5283,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_EXECINFO 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_EXECINFO" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_EXECINFO" >&2;}
     fi
 
 fi
@@ -5328,6 +5349,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_ZLIB 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&2;}
     fi
 
 fi
@@ -5531,7 +5555,7 @@ fi
 
     LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
   else
-    as_fn_error $? "--enalbe-almost: cannot find almost" "$LINENO" 5
+    as_fn_error $? "--enable-almost: cannot find almost" "$LINENO" 5
   fi
 fi
 if test $gsl == true ; then
@@ -5576,6 +5600,8 @@ fi
     $as_echo "#define __PLUMED_HAS_GSL 1" >>confdefs.h
 
     LIBS="-lgsl -lgslcblas $LIBS"
+  else
+    as_fn_error $? "--enable-gsl: cannot find gsl" "$LINENO" 5
   fi
 fi
 

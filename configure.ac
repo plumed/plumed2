@@ -60,6 +60,8 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
     ])
     if test $found == ok ; then
       AC_DEFINE([$3])
+    else
+       AC_MSG_WARN([cannot enable $3]) 
     fi
 ])
 
@@ -293,7 +295,7 @@ if test $almost == true ; then
     AC_DEFINE([__PLUMED_HAS_ALMOST]) 
     LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
   else 
-    AC_MSG_ERROR([--enalbe-almost: cannot find almost])
+    AC_MSG_ERROR([--enable-almost: cannot find almost])
   fi
 fi
 if test $gsl == true ; then
@@ -302,6 +304,8 @@ if test $gsl == true ; then
   if test $found == ok ; then
     AC_DEFINE([__PLUMED_HAS_GSL])
     LIBS="-lgsl -lgslcblas $LIBS"
+  else 
+    AC_MSG_ERROR([--enable-gsl: cannot find gsl])
   fi
 fi
 
