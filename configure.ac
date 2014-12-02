@@ -99,11 +99,11 @@ fi
 # the reason why I put it here explicitly is that I want a
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
-compilers="g++ cxx gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
-compilers="mpic++ mpicxx openmpic++ openmpicxx $compilers"
+compilers="mpic++ mpicxx mpiicpc openmpic++ openmpicxx $compilers"
 fi
 
 # do the actual search
@@ -292,6 +292,8 @@ if test $almost == true ; then
   if test $found == ok; then
     AC_DEFINE([__PLUMED_HAS_ALMOST]) 
     LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+  else 
+    AC_MSG_ERROR([--enalbe-almost: cannot find almost])
   fi
 fi
 if test $gsl == true ; then

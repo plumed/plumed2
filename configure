@@ -2600,11 +2600,11 @@ fi
 # the reason why I put it here explicitly is that I want a
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
-compilers="g++ cxx gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
-compilers="mpic++ mpicxx openmpic++ openmpicxx $compilers"
+compilers="mpic++ mpicxx mpiicpc openmpic++ openmpicxx $compilers"
 fi
 
 # do the actual search
@@ -5530,6 +5530,8 @@ fi
     $as_echo "#define __PLUMED_HAS_ALMOST 1" >>confdefs.h
 
     LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+  else
+    as_fn_error $? "--enalbe-almost: cannot find almost" "$LINENO" 5
   fi
 fi
 if test $gsl == true ; then
