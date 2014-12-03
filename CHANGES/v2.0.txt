@@ -149,6 +149,9 @@ For users:
   variables.
 - Fixed a bug in analysis (e.g. \ref HISTOGRAM) leading to wrong accumulation
   of statistics when running a replica exchange simulation.
+- Fixed a bug in the calculation of derivatives in histograms. This should
+  be harmless since people usually only consider the value in histograms
+  and not the derivatives.
 - Fixed an issue in Makefile that could results in problems when
   patching an MD code with --shared option (pointed out by Abhi Acharya).
   This fixes a regression introduced in 2.0.2.

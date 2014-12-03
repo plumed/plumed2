@@ -7,6 +7,12 @@ env:
   - PLUMED_CC=gcc   PLUMED_CXX=g++
 # MPI + doc
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++
+# clang
+  - PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3 LAPACK=yes
+# GNU + doc
+  - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
+# MPI + doc
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
@@ -16,7 +22,6 @@ install:
   - ./.travis.check.log valgrind || VALGRIND=no
 # install some package - these are fast, we install them anyway
   - sudo apt-get update -qq
-  - sudo apt-get install -y wget
   - sudo apt-get install -y libmatheval-dev
 # this is not needed (will be used in 2.2)
 #  - ./.travis.install.xdrfile
@@ -24,13 +29,6 @@ install:
 # we do it only when needed
   - test "$PLUMED_CXX" == "mpic++" && sudo apt-get install -y libopenmpi1.5-dev openmpi1.5-bin || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
-# this is to install full tex - not needed
-# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive             || true
-# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-fonts-extra || true
-# - test "$MAKEDOC" == yes && sudo apt-get install -y latex-xcolor        || true
-# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-extra-utils || true
-# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-font-utils  || true
-# - test "$MAKEDOC" == yes && sudo apt-get install -y texlive-full        || true
 # doxygen from its repository (apt-get gets an old version)
 #  - test "$MAKEDOC" == yes && ./.travis.install.doxygen                   || true
 # it seems that here we can get precompiled doxygen and latex
@@ -38,12 +36,13 @@ install:
   - test "$MAKEDOC" == yes && sudo apt-get update -qq                     || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
   - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
+  - test "$LAPACK" == yes  && sudo apt-get install libatlas-base-dev      || true
 script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install
