@@ -1,7 +1,0 @@
-/**
-
-@page CHANGES-UNRELEASED Unreleased changes
-
-Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
-
-*/

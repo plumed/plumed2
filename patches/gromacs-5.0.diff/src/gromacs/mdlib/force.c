@@ -68,7 +68,7 @@
 #include "gmx_fatal.h"
 
 /* PLUMED */
-#include "../../Plumed.h"
+#include "../../../Plumed.h"
 int    plumedswitch=0;
 plumed plumedmain;
 void(*plumedcmd)(plumed,const char*,const void*)=NULL;

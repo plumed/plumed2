@@ -9,12 +9,7 @@
 
 USE=
 
-
 include ../maketools/make.module
-
-OBJ=dcdplugin.o gromacsplugin.o pdbplugin.o
-
-obj: $(OBJ)
 
 # Local rules for molfile plugins - replacement is delayed 
 CPPFLAGS+=-DSTATIC_PLUGIN  -DVMDPLUGIN=molfile_$(patsubst %.o,%,$@)

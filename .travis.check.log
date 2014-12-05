@@ -1,0 +1,11 @@
+#! /bin/bash
+
+set -e
+
+if git log --format=%B -n 1 | grep -q "\[$1\]"
+then
+  exit 0
+else
+  exit 1
+fi
+
