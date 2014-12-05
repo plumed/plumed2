@@ -134,6 +134,9 @@ For users:
 - New patch for AMBER 14 (sander module only). This patch should be compatible
   with any PLUMED 2 version (including 2.0). It includes most PLUMED features
   with the notable exception of multi-replica framework.
+- Changed definition in arbitrary phase of eigenvectors. This will change the result of some
+  analysis method where the phase does matter (e.g. \ref CLASSICAL_MDS) and make
+  some regression test better reproducible.
 - Fixed a portability issue in BG/P where gettimeofday is not implemented.
   Notice that this fix implies that one should execute again ./configure to have
   plumed timing working correctly.
