@@ -205,6 +205,9 @@ do
   rm automatic/$file.1.list
 done
 
+# Make all double hyphens appear as double hypens
+sed -ie 's/<b> --/<b> \\c \\-\\-/g' automatic/*.txt
+rm automatic/*.txte
 
 for file in Bias Syntax Colvar Functions Group Installation Intro Analysis Glossary Tutorials Modules Regex  Misc Tools
 do
