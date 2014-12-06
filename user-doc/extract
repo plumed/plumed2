@@ -26,8 +26,14 @@ git_version="$(plumed --no-mpi info --git-version)"
 
 cat > automatic/version.tmp << EOF
 This manual has been compiled from PLUMED version <b> $long_version </b>
-(git version: <b> $git_version </b>)
+(git version: <b> $git_version </b>).
 EOF
+
+if test "$TRAVIS" == true ; then
+cat >> automatic/version.tmp << EOF
+Manual built on Travis CI for branch $TRAVIS_BRANCH.
+EOF
+fi
 
 if test -d regtests ; then
 cat >> automatic/version.tmp << EOF

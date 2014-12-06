@@ -91,7 +91,7 @@ For users:
 - Several small fixes in documentation and log file.
 
 For developers:
-- Fixed makefile dependencies in some auxiliary files in src/lib (src/lib/*cmake and src/lib/*inc).
+- Fixed makefile dependencies in some auxiliary files in src/lib (*cmake and *inc).
 - Changed way modules are linked in src/.
   E.g. src/colvar/tools/ is not anymore a symlink to src/colvar but a real directory.
   (Notice that this introduces a regression: when using plumed as an external library
