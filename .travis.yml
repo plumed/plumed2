@@ -33,7 +33,7 @@ install:
 # doxygen from its repository (apt-get gets an old version)
 #  - test "$MAKEDOC" == yes && ./.travis.install.doxygen                   || true
 # it seems that here we can get precompiled doxygen and latex
-  - test "$MAKEDOC" == yes && sudo apt-add-repository -y ppa:libreoffice/libreoffice-4-2 || true
+  - test "$MAKEDOC" == yes && sudo apt-add-repository -y ppa:libreoffice/ppa || true
   - test "$MAKEDOC" == yes && sudo apt-get update -qq                     || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
   - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
