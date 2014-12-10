@@ -140,7 +140,6 @@ For users:
 - Fixed a portability issue in BG/P where gettimeofday is not implemented.
   Notice that this fix implies that one should execute again ./configure to have
   plumed timing working correctly.
-- Small fixes in documentation.
 - CS2Backbone: fixed a bug that resulted in only a fraction of the chemical shifts being printed with WRITE_CS and 
   parallel simulations (requires to get the last almost updated from SVN)
 - NOE: fixed a bug in the replica-averaging
@@ -150,4 +149,12 @@ For users:
 - \ref FUNCPATHMSD can now be used together with \ref CONTACTMAP to define pathways in contactmaps space
 - Configuration is more verbose, a warning is given if a default option cannot be enabled and an error is given if 
   an option explicitly enabled cannot be enabled.
+- Compilation is less verbose (use "make VERBOSE=1" to have old behavior)
+- Small fixes in documentation.
+
+For developers:
+- Tests are now performed at every single push on travis-ci.org
+- Manual is built and pushed to the online server from travis-ci.org (see developer doc)
+- Fixes in developer doc.
+
 */
