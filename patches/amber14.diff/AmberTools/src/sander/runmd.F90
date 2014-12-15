@@ -327,7 +327,7 @@ subroutine runmd(xx,ix,ih,ipairs,x,winv,amass,f, &
 
 ! variables for plumed
    _REAL_ :: plumed_box(3,3),plumed_virial(3,3), plumed_kbt
-   integer :: plumed_version,plumed_stopflag
+   integer :: plumed_version,plumed_stopflag,plumed_ms
    _REAL_ :: plumed_energyUnits,plumed_timeUnits,plumed_lengthUnits
 
    !==========================================================================
@@ -761,10 +761,21 @@ subroutine runmd(xx,ix,ih,ipairs,x,winv,amass,f, &
      call plumed_f_gcmd("setMDTimeUnits"//char(0),plumed_timeUnits)
      call plumed_f_gcmd("setPlumedDat"//char(0),trim(adjustl(plumedfile))//char(0))
      call plumed_f_gcmd("setNatoms"//char(0),nr)
-     call plumed_f_gcmd("setMDEngine"//char(0),"amber");
-     call plumed_f_gcmd("setTimestep"//char(0),dt);
+     call plumed_f_gcmd("setMDEngine"//char(0),"amber")
+     call plumed_f_gcmd("setTimestep"//char(0),dt)
 #  ifdef MPI
      call plumed_f_gcmd("setMPIFComm"//char(0),commsander)
+     if(master)then
+       call mpi_comm_size(commmaster,plumed_ms,ierr)
+     endif
+     call mpi_bcast(plumed_ms,1,MPI_INTEGER,0,commsander,ierr)
+     if(plumed_ms>1)then
+       call plumed_f_gcmd("GREX setMPIFIntracomm"//char(0),commsander)
+       if(master) then
+         call plumed_f_gcmd("GREX setMPIFIntercomm"//char(0),commmaster)
+       endif
+       call plumed_f_gcmd("GREX init"//char(0),0)
+     endif
 #  endif
 
      call plumed_f_gcmd("init"//char(0),0);
