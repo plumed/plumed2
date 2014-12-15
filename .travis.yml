@@ -6,18 +6,17 @@ env:
 # GNU + doc
   - PLUMED_CC=gcc   PLUMED_CXX=g++ 
 # MPI + doc
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes
 # clang
   - PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3 LAPACK=yes
-# GNU + doc
+# GNU
   - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
-# MPI + doc
+# MPI
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
 # build the manual, only if log contains string [makedoc]
-  - MAKEDOC=yes
   - export PLUMED_NUM_THREADS=2
   - ./.travis.check.log makedoc  || MAKEDOC=no
   - ./.travis.check.log valgrind || VALGRIND=no
@@ -33,7 +32,7 @@ install:
 # doxygen from its repository (apt-get gets an old version)
 #  - test "$MAKEDOC" == yes && ./.travis.install.doxygen                   || true
 # it seems that here we can get precompiled doxygen and latex
-  - test "$MAKEDOC" == yes && sudo apt-add-repository -y ppa:libreoffice/libreoffice-4-2 || true
+  - test "$MAKEDOC" == yes && sudo apt-add-repository -y ppa:libreoffice/ppa || true
   - test "$MAKEDOC" == yes && sudo apt-get update -qq                     || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
   - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
@@ -50,5 +49,7 @@ script:
   - test "$VALGRIND" == yes && OPT=valgrind || OPT=""
   - make -C regtest $OPT
   - test "$MAKEDOC" == yes && make -C regtest copytodoc || true
-  - test "$MAKEDOC" == yes && make doc || true
+  - test "$MAKEDOC" == yes && make doc >/dev/null || true
   - make -C regtest checkfail
+after_success:
+  - test "$MAKEDOC" == yes && ./.travis.pushdoc
