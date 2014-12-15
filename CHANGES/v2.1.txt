@@ -124,11 +124,10 @@ Changes from version 2.0 which are relevant for developers:
 
 This list is likely incompleted, if you are developing in PLUMED you are encouraged to follow changes on github.
 
-Unreleased changes (will be included in 2.1.1)
+Version 2.1.1 (Dec 15, 2014)
 ----------------------------------------------
-See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
 
-This release will include all the fixes available in branch 2.0.
+This release includes all the fixes available in branch 2.0 until 2.0.5.
 
 For users:
 - New patch for AMBER 14 (sander module only). This patch should be compatible
@@ -156,5 +155,9 @@ For developers:
 - Tests are now performed at every single push on travis-ci.org
 - Manual is built and pushed to the online server from travis-ci.org (see developer doc)
 - Fixes in developer doc.
+
+Unreleased changes (will be included in 2.1.2)
+----------------------------------------------
+See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
 
 */
