@@ -33,7 +33,7 @@ SingleDomainRMSD( ro ),
 bounds_were_set(false),
 nopbc(true),
 lower(0),
-upper(0)
+upper(std::numeric_limits<double>::max( ))
 {
 }
 
@@ -46,8 +46,8 @@ void DRMSD::read( const PDB& pdb ){
   readAtomsFromPDB( pdb );
 
   parseFlag("NOPBC",nopbc);  
-  if( !parse("LOWER_CUTOFF",lower,true) ) lower=0.0; 
-  if( !parse("UPPER_CUTTOFF",upper,true) ) upper=std::numeric_limits<double>::max( );
+  parse("LOWER_CUTOFF",lower,true);
+  parse("UPPER_CUTTOFF",upper,true);
   setBoundsOnDistances( !nopbc, lower, upper );
   setup_targets();
 }
