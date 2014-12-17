@@ -47,7 +47,7 @@ void DRMSD::read( const PDB& pdb ){
 
   parseFlag("NOPBC",nopbc);  
   parse("LOWER_CUTOFF",lower,true);
-  parse("UPPER_CUTTOFF",upper,true);
+  parse("UPPER_CUTOFF",upper,true);
   setBoundsOnDistances( !nopbc, lower, upper );
   setup_targets();
 }
