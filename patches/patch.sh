@@ -226,6 +226,12 @@ case "$action" in
       echo "Compile plumed before patching"
       exit
     fi
+    if [ ! -f "$PLUMED_ROOT/src/lib/Plumed.cmake.$mode" ]
+    then
+      echo "ERROR: cannot find $PLUMED_ROOT/src/lib/Plumed.cmake.$mode file"
+      echo "Compile a $mode version of plumed before patching, or change patching mode [static|shared|runtime]"
+      exit
+    fi
     if type -t plumed_before_patch 1>/dev/null ; then
       test -n "$quiet" || echo "Executing plumed_before_patch function"
       plumed_before_patch
