@@ -209,7 +209,7 @@ for example the set of Secondary Structure CVs (\ref ANTIBETARMSD, \ref PARABETA
 MOLINFO STRUCTURE=template.pdb
 abeta: ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} STRANDS_CUTOFF=1
 
-PRINT ARG=abeta.less_than STRIDE=1 FILE=COLVAR 
+PRINT ARG=abeta.lessthan STRIDE=1 FILE=COLVAR 
 
 ENDPLUMED
 \endverbatim
@@ -257,10 +257,10 @@ DISTANCES ...
 GROUP=ca MEAN MIN={BETA=50} MAX={BETA=0.02} MOMENTS=2 LABEL=dd
 ... DISTANCES 
 
-PRINT ARG=abeta.less_than,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR 
+PRINT ARG=abeta.lessthan,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR 
 
 HISTOGRAM ...
-ARG=abeta.less_than,dd.mean
+ARG=abeta.lessthan,dd.mean
 USE_ALL_DATA
 KERNEL=discrete
 GRID_MIN=0,0.8
@@ -286,7 +286,7 @@ and the BANDWIDTH should be smaller (i.e. one order of magnitude) than the varia
 
 \verbatim
 HISTOGRAM ...
-ARG=abeta.less_than,dd.mean
+ARG=abeta.lessthan,dd.mean
 USE_ALL_DATA
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
