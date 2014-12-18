@@ -1,2 +1,0 @@
-Configuration files ending with ".local" will not be tracked by git.
-This might be useful to maintain local configurations.

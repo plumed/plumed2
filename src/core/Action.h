@@ -71,6 +71,17 @@ class Action
 /// so as to check if all the present keywords are correct.
   std::vector<std::string> line;
 
+/// Update only after this time.
+  double update_from;
+
+/// Update only until this time.
+  double update_until;
+
+public:
+
+/// Check if action should be updated.
+  bool checkUpdate()const;
+
 public:
   typedef std::vector<Action*> Dependencies;
 

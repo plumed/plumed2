@@ -53,6 +53,7 @@ bool hasMolfile();
 
 bool hasZlib();
 
+bool hasXdrfile();
 }
 }
 

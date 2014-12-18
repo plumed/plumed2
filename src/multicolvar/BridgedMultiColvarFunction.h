@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -83,6 +83,7 @@ public:
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ){ plumed_error(); }
   void updateActiveAtoms(){ plumed_error(); }
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
+  void applyBridgeForces( const std::vector<double>& bb );
 };
 
 inline

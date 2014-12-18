@@ -148,7 +148,7 @@ public:
   void setCollectEnergy(bool b){ collectEnergy=b; }
 
   void setDomainDecomposition(Communicator&);
-  void setAtomsGatindex(int*);
+  void setAtomsGatindex(int*,bool);
   void setAtomsContiguous(int);
   void setAtomsNlocal(int);
 

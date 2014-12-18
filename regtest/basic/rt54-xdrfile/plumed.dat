@@ -1,0 +1,16 @@
+MOLINFO STRUCTURE=helix.pdb
+
+# this change the interal plumed units to A
+# in this regtest, it should not affect any result
+UNITS LENGTH=A
+
+# full dump
+DUMPATOMS FILE=helix.gro ATOMS=1-132
+DUMPATOMS FILE=helix.xtc ATOMS=1-132
+DUMPATOMS FILE=helix.trr ATOMS=1-132
+# enforce a different format:
+DUMPATOMS FILE=helix.ttt TYPE=xtc
+
+# this is to test precision
+DUMPATOMS FILE=helix-pr.xtc ATOMS=1-132 PRECISION=6
+

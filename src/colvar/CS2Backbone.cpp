@@ -192,11 +192,13 @@ PLUMED_COLVAR_INIT(ao)
 
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    else ens_dim=multi_sim_comm.Get_size(); 
-  } else ens_dim=1; 
-  if(ensemble) comm.Sum(&ens_dim, 1);
+  if(ensemble){
+    if(comm.Get_rank()==0) { 
+      if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+      ens_dim=multi_sim_comm.Get_size();
+    } else ens_dim=0;
+    comm.Sum(&ens_dim, 1);
+  } else ens_dim=1;
 
   stringadb  = stringa_data + string("/camshift.db");
   stringamdb = stringa_data + string("/") + stringa_forcefield;
@@ -356,7 +358,7 @@ void CS2Backbone::calculate()
   if(printout) {
     char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
     string csfile = string("cs-")+getLabel()+"-"+tmp1+string(".dat");;
-    cam_list[0].printout_chemical_shifts(csfile.c_str());
+    cam_list[0].printout_chemical_shifts(csfile.c_str(), sh);
   }
 
   double fact=1.0;

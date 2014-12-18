@@ -39,6 +39,8 @@ ActionSetup::ActionSetup(const ActionOptions&ao):
 void ActionSetup::registerKeywords( Keywords& keys ){
   Action::registerKeywords(keys);
   keys.remove("LABEL");
+  keys.remove("UPDATE_UNTIL");
+  keys.remove("UPDATE_FROM");
 }
 
 }
