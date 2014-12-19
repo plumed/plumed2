@@ -566,7 +566,7 @@ MetaD::MetaD(const ActionOptions &ao):
     for (unsigned i = 0; ; i++) {
       if (!parseNumberedVector("TRANSITIONWELL", i, tempcoords) ) break;
       if (tempcoords.size() != getNumberOfArguments()) {
-        error("Incorrect number of coordinates for transition tempering well " + std::to_string(i));
+        error("incorrect number of coordinates for transition tempering well");
       }
       transitionwells_.push_back(tempcoords);
     }
@@ -812,7 +812,7 @@ MetaD::MetaD(const ActionOptions &ao):
       Tools::convert(gmax[i], max);
       for (unsigned j = 0; j < transitionwells_.size(); j++) {
         if (transitionwells_[j][i] < min || transitionwells_[j][i] > max) {
-          error(" transition well " + std::to_string(j) + " (coordinate " + std::to_string(transitionwells_[j][i]) +  ") is not in grid along coordinate " + std::to_string(i) + " (limits " + std::to_string(min) + " " + std::to_string(max) + ")");
+          error(" transition well is not in grid");
         }
       }
     }
@@ -1057,7 +1057,9 @@ MetaD::MetaD(const ActionOptions &ao):
     createScalingGrids();
     scale_new_hills_ = true;
     for (unsigned i = 0; i < HillScalingGrids_.size(); i++) {
-      std::string scalingfilename = "regions_scaling" + std::to_string(i) + ".dat";
+      std::ostringstream filename_stream;
+      filename_stream << "regions_scaling" << i << ".dat";
+      std::string scalingfilename = filename_stream.str();
       OFile scalefile;
       scalefile.link(*this);
       scalefile.open(scalingfilename);
@@ -1798,7 +1800,9 @@ void MetaD::createScalingGrids() {
   for (unsigned i = 0; i < n_domains_; i++) {
     // Prepare to create a new scaling
     Grid * newScalingGrid;
-    string funcl = getLabel() + ".scaling" + to_string(i);
+    std::ostringstream label_stream;
+    label_stream << getLabel() << ".scaling" << i;
+    string funcl = label_stream.str();
     vector<unsigned> input_nbins = BiasGrid_->getNbin();
     for (unsigned j = 0; j < getNumberOfArguments(); ++j) {
       if (!getPntrToArgument(j)->isPeriodic()) {
@@ -1934,7 +1938,9 @@ void MetaD::adaptDomains() {
     scale_new_hills_ = true;
     // Print for examination
     for (unsigned i = 0; i < HillScalingGrids_.size(); i++) {
-      std::string scalingfilename = "regions_scaling" + std::to_string(i) + ".dat";
+      std::ostringstream filename_stream;
+      filename_stream << "regions_scaling" << i << ".dat";
+      std::string scalingfilename = filename_stream.str();
       OFile scalefile;
       scalefile.link(*this);
       scalefile.open(scalingfilename);

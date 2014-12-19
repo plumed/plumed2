@@ -370,7 +370,8 @@ vector<unsigned> Grid::getNearestNeighbors(const unsigned index) const {
     vector<unsigned> neighsneeded = vector<unsigned>(dimension_, 0);
     neighsneeded[i] = 1;
     vector<unsigned> singledim_nearest_neighs = getNeighbors(index, neighsneeded);
-    for (unsigned neigh : singledim_nearest_neighs) {
+    for (unsigned j = 0; j < singledim_nearest_neighs.size(); j++) {
+      unsigned neigh = singledim_nearest_neighs[j];
       if (neigh != index) {
         nearest_neighs.push_back(neigh);
       }
@@ -761,7 +762,8 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
       // If the search is not over, add this grid point's neighbors to the
       // possible next points to search for the sink.
       vector<unsigned> neighs = getNearestNeighbors(curr_indexed_val.first);
-      for (unsigned i : neighs) {
+      for (unsigned k = 0; k < neighs.size(); k++) {
+	unsigned i = neighs[k];
         // If the neighbor has not already been added to the list of possible next steps,
         if (mins_from_source[i] == -1.0) {
           // Set the cost to reach it via a path through the current point being examined.
@@ -798,8 +800,9 @@ void Grid::erodeFunction(const double threshold_value, const vector<double> &smo
       // neighbor that is below-threshold.
       bool is_boundary_point = false;
       vector<unsigned> nearest_neighs = getNearestNeighbors(i);
-      for (unsigned neigh : nearest_neighs) {
-        if (grid_[neigh] < threshold_value) {
+      for (unsigned j = 0; j < nearest_neighs.size(); j++) {
+        unsigned neigh = nearest_neighs[j];
+	if (grid_[neigh] < threshold_value) {
           is_boundary_point = true;
         }
       }
@@ -818,13 +821,15 @@ void Grid::erodeFunction(const double threshold_value, const vector<double> &smo
   bool is_not_smoothed = true;
   // First, initialize options based on the threshold boundary.
   // For each point on the boundary,
-  for (unsigned i : threshold_boundary_points) {
+  for (unsigned k = 0; k < threshold_boundary_points.size(); k++) {
+    unsigned i = threshold_boundary_points[k];
     // For each of the neighbors that were below threshold, consider setting the value
     // for that neighbor based on the derivative from this point. Add that option to
     // a list of current options.
     vector<unsigned> nearest_neighs = getNearestNeighbors(i);
     vector<unsigned> curr_multi_index = getIndices(i);
-    for (unsigned neigh : nearest_neighs) {
+    for (unsigned k = 0; k < nearest_neighs.size(); k++) {
+      unsigned neigh = nearest_neighs[k];
       // If the point was below-threshold, consider reassigning its value by smoothing.
       if (grid_[neigh] == 0.0) {
         // The assignment value based on this point would be the point's value minus
@@ -861,8 +866,9 @@ void Grid::erodeFunction(const double threshold_value, const vector<double> &smo
       grid_[current_option.first] = current_option.second;
       vector<unsigned> curr_multi_index = getIndices(current_option.first);
       vector<unsigned> nearest_neighs = getNearestNeighbors(current_option.first);
-      for (unsigned neigh : nearest_neighs) {
-        // If the point was below-threshold, consider reassigning its value by smoothing.
+      for (unsigned l = 0; l < nearest_neighs.size(); l++) {
+        unsigned neigh = nearest_neighs[l];
+	// If the point was below-threshold, consider reassigning its value by smoothing.
         if (grid_[neigh] == 0.0) {
           // The assignment value based on this point would be the point's value plus
           // the derivative correction for the path from this point to its neighbor.
