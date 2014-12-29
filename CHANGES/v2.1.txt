@@ -166,6 +166,7 @@ For users:
   Notice that this bug was introduced in 2.1.0, so that it should not affect the 2.0.x series.
 - Patching system now checks for the availabity of shared/static/runtime version of plumed before
   patching
+- GMX5 patch was not working for bias-exchange like cases
 
 
 */
