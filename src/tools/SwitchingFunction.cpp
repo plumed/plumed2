@@ -77,7 +77,7 @@ s(r)=\exp\left(-\frac{ (r - d_0)^2 }{ 2r_0^2 }\right)
 </tr> <tr> 
 <td> SMAP </td> <td>
 \f$
-s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)\right]^{-b/a}
+s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)^a\right]^{-b/a}
 \f$
 </td> <td>
 {SMAP R_0=\f$r_0\f$ D_0=\f$d_0\f$ A=\f$a\f$ B=\f$b\f$}

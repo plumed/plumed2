@@ -42,6 +42,8 @@ class Fccubic : public multicolvar::MultiColvar {
 private:
 //  double nl_cut;
   double rcut2, alpha;
+  double phi, theta, psi;
+  double rotationmatrix[3][3]; 
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
@@ -66,6 +68,9 @@ void Fccubic::registerKeywords( Keywords& keys ){
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.add("optional","ALPHA","The alpha parameter of the angular function");
+  keys.add("optional","PHI","The Euler rotational angle phi");
+  keys.add("optional","THETA","The Euler rotational angle theta");
+  keys.add("optional","PSI","The Euler rotational angle psi");
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
@@ -93,6 +98,39 @@ PLUMED_MULTICOLVAR_INIT(ao)
 	  log.printf("  using ALPHA %f\n", alpha);
   } else { alpha=3.0; } // defaults to the Angioletti paper
   
+  // Set the orientation for the fcc harmonic function
+  std::string sphi; parse("PHI", sphi);
+  if (sphi.length()>0) {
+	  Tools::convert(sphi,phi);
+	  log.printf("  using PHI %f\n", phi);
+  } else { phi=1.0; }
+  
+  std::string stheta; parse("THETA", stheta);
+  if (stheta.length()>0) {
+	  Tools::convert(stheta,theta);
+	  log.printf("  using THETA %f\n", theta);
+  } else { theta=1.0; }
+  
+  std::string spsi; parse("PSI", spsi);
+  if (spsi.length()>0) {
+	  Tools::convert(spsi,psi);
+	  log.printf("  using PSI %f\n", psi);
+  } else { psi=1.0; } 
+  
+  // Calculate the rotation matrix http://mathworld.wolfram.com/EulerAngles.html
+  rotationmatrix[0][0]=cos(psi)*cos(phi)-cos(theta)*sin(phi)*sin(psi);
+  rotationmatrix[0][1]=cos(psi)*sin(phi)+cos(theta)*cos(phi)*sin(psi);
+  rotationmatrix[0][2]=sin(psi)*sin(theta);
+  
+  rotationmatrix[1][0]=-sin(psi)*cos(phi)-cos(theta)*sin(phi)*cos(psi);
+  rotationmatrix[1][1]=-sin(psi)*sin(phi)+cos(theta)*cos(phi)*cos(psi);
+  rotationmatrix[1][2]=cos(psi)*sin(theta);
+  
+  rotationmatrix[2][0]=sin(theta)*sin(phi);
+  rotationmatrix[2][1]=-sin(theta)*cos(phi);
+  rotationmatrix[2][2]=cos(theta);
+  
+  
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
@@ -106,26 +144,37 @@ PLUMED_MULTICOLVAR_INIT(ao)
 
 double Fccubic::compute(){
    weightHasDerivatives=true;
-   double value=0, norm=0, dfunc; Vector distance;
+   double value=0, norm=0, dfunc; Vector distance; Vector rotatedis;
 
    // Calculate the coordination number
    Vector myder, fder;
    double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, r12, tmp, a1, b1;
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPosition(0), getPosition(i) );
+      
+      rotatedis[0]=rotationmatrix[0][0]*distance[0]
+                  +rotationmatrix[1][0]*distance[1]
+                  +rotationmatrix[2][0]*distance[2];
+      rotatedis[1]=rotationmatrix[0][1]*distance[0]
+                  +rotationmatrix[1][1]*distance[1]
+                  +rotationmatrix[2][1]*distance[2];
+      rotatedis[2]=rotationmatrix[0][2]*distance[0]
+                  +rotationmatrix[1][2]*distance[1]
+                  +rotationmatrix[2][2]*distance[2];
+      
       double d2 = distance.modulo2();
       if( d2<rcut2 ){ 
          sw = switchingFunction.calculateSqr( d2, dfunc ); 
    
          norm += sw;
 
-         x2 = distance[0]*distance[0];
+         x2 = rotatedis[0]*rotatedis[0];
          x4 = x2*x2;
 
-         y2 = distance[1]*distance[1];
+         y2 = rotatedis[1]*rotatedis[1];
          y4 = y2*y2;
 
-         z2 = distance[2]*distance[2];
+         z2 = rotatedis[2]*rotatedis[2];
          z4 = z2*z2;
                  
          r8 = pow( distance.modulo2(), 4 );
