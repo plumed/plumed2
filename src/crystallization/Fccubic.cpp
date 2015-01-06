@@ -147,7 +147,7 @@ double Fccubic::compute(){
    double value=0, norm=0, dfunc; Vector distance; Vector rotatedis;
 
    // Calculate the coordination number
-   Vector myder, fder;
+   Vector myder, rotateder, fder;
    double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, r12, tmp, a1, b1;
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPosition(0), getPosition(i) );
@@ -187,9 +187,19 @@ double Fccubic::compute(){
          t2 = (z2*x4+z2*y4)/r8-alpha*z2*x4*y4/r12;
          t3 = (2*tmp-alpha*x4*y4*z4/r12)/distance.modulo2();         
  
-         myder[0]=4*distance[0]*(t0-t3);
-         myder[1]=4*distance[1]*(t1-t3);
-         myder[2]=4*distance[2]*(t2-t3);
+         rotateder[0]=4*rotatedis[0]*(t0-t3);
+         rotateder[1]=4*rotatedis[1]*(t1-t3);
+         rotateder[2]=4*rotatedis[2]*(t2-t3);
+         
+         myder[0]=rotationmatrix[0][0]*rotateder[0]
+                  +rotationmatrix[1][0]*rotateder[1]
+                  +rotationmatrix[2][0]*rotateder[2];
+         myder[1]=rotationmatrix[0][1]*rotateder[0]
+                  +rotationmatrix[1][1]*rotateder[1]
+                  +rotationmatrix[2][1]*rotateder[2];
+         myder[2]=rotationmatrix[0][2]*rotateder[0]
+                  +rotationmatrix[1][2]*rotateder[1]
+                  +rotationmatrix[2][2]*rotateder[2];
          
          // Scaling so that '1' corresponds to fcc lattice
          // and '0' corresponds to liquid
