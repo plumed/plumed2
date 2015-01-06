@@ -103,19 +103,19 @@ PLUMED_MULTICOLVAR_INIT(ao)
   if (sphi.length()>0) {
 	  Tools::convert(sphi,phi);
 	  log.printf("  using PHI %f\n", phi);
-  } else { phi=1.0; }
+  } else { phi=0.0; }
   
   std::string stheta; parse("THETA", stheta);
   if (stheta.length()>0) {
 	  Tools::convert(stheta,theta);
 	  log.printf("  using THETA %f\n", theta);
-  } else { theta=1.0; }
+  } else { theta=0.0; }
   
   std::string spsi; parse("PSI", spsi);
   if (spsi.length()>0) {
 	  Tools::convert(spsi,psi);
 	  log.printf("  using PSI %f\n", psi);
-  } else { psi=1.0; } 
+  } else { psi=0.0; } 
   
   // Calculate the rotation matrix http://mathworld.wolfram.com/EulerAngles.html
   rotationmatrix[0][0]=cos(psi)*cos(phi)-cos(theta)*sin(phi)*sin(psi);
