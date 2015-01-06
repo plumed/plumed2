@@ -153,13 +153,13 @@ double Fccubic::compute(){
       distance=getSeparation( getPosition(0), getPosition(i) );
       
       rotatedis[0]=rotationmatrix[0][0]*distance[0]
-                  +rotationmatrix[1][0]*distance[1]
-                  +rotationmatrix[2][0]*distance[2];
-      rotatedis[1]=rotationmatrix[0][1]*distance[0]
+                  +rotationmatrix[0][1]*distance[1]
+                  +rotationmatrix[0][2]*distance[2];
+      rotatedis[1]=rotationmatrix[1][0]*distance[0]
                   +rotationmatrix[1][1]*distance[1]
-                  +rotationmatrix[2][1]*distance[2];
-      rotatedis[2]=rotationmatrix[0][2]*distance[0]
-                  +rotationmatrix[1][2]*distance[1]
+                  +rotationmatrix[1][2]*distance[2];
+      rotatedis[2]=rotationmatrix[2][0]*distance[0]
+                  +rotationmatrix[2][1]*distance[1]
                   +rotationmatrix[2][2]*distance[2];
       
       double d2 = distance.modulo2();
