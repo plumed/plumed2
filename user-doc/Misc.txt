@@ -9,6 +9,8 @@
 - \subpage degub
 - \subpage exchange-patterns
 - \subpage mymodules
+- \subpage MTS
+- \subpage Openmp
 - \subpage misc
 
 \page comments Comments
@@ -115,6 +117,41 @@ very intensive development of the code of if you are running on a computer with 
 Using the \subpage RANDOM_EXCHANGES keyword it is possible to make exchanges betweem randomly
 chosen replicas. This is useful e.g. for bias exchange metadynamics \cite{piana}.
 
+\page Openmp OpenMP
+
+OpenMP support is still experimental in PLUMED. To
+enable it you should configure using flag "--enable-openmp".
+Additionally, at runtime, you should set the environment variable
+PLUMED_NUM_THREADS to the number of threads you wish to use with PLUMED.
+By default (if PLUMED_NUM_THREADS is unset) openmp will be disabled at
+runtime. E.g., to run with gromacs you should do:
+\verbatim
+export PLUMED_NUM_THREADS=8
+mdrun -plumed
+\endverbatim
+
+Notice that:
+- This option is likely to improve the performance, but could also slow down
+  the code in some case.
+- Results could be slightly different because of numerical roundoff and
+  different order in summations. This should be harmless.
+- The optimum number of threads is not necessary "all of them", nor should be
+  equal to the number of threads used to parallelize MD.
+- Only a few CVs are parallelized with opemMP (currently, COORDINATION and
+  DHENERGY).
+- You might want to tune also the environmental variable PLUMED_CACHELINE_SIZE,
+  by default 512, to set the size of cachelines on your machine. This is used
+  by PLUMED to decrease the number of threads to be used in each loop so as to
+  avoid clashes in memory access. This variable is expected to affect
+  performance only, not results.
+
+\page MTS Multiple time stepping
+
+This is currently undocumented.
+
+See also \subpage EFFECTIVE_ENERGY_DRIFT.
+
+
 \page misc Frequently used tools
 
 @DICTIONARY@
@@ -130,5 +167,7 @@ chosen replicas. This is useful e.g. for bias exchange metadynamics \cite{piana}
 </TD>
 </TR>
 </TABLE>
+
+
 
 */

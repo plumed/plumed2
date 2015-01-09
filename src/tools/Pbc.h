@@ -93,11 +93,18 @@ public:
 /// Full search (for testing).
 /// Perform a full search on vector
   void fullSearch(Vector&)const;
+/// Returns true if box is set and non zero
+  bool isSet()const;
 };
 
 inline
 Vector Pbc::distance(const Vector& v1,const Vector& v2)const{
   return distance(v1,v2,NULL);
+}
+
+inline
+bool Pbc::isSet()const{
+  return type!=unset;
 }
 
 }

@@ -2,9 +2,9 @@ language: cpp
 env:
 # list of configurations to be attempted:
 # clang
-  - PLUMED_CC=clang PLUMED_CXX=clang++
-# GNU
-  - PLUMED_CC=gcc   PLUMED_CXX=g++
+  - PLUMED_CC=clang PLUMED_CXX=clang++ 
+# GNU + doc
+  - PLUMED_CC=gcc   PLUMED_CXX=g++ 
 # MPI + doc
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes
 # clang
@@ -17,6 +17,7 @@ env:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
 # build the manual, only if log contains string [makedoc]
+  - export PLUMED_NUM_THREADS=2
   - ./.travis.check.log makedoc  || MAKEDOC=no
   - ./.travis.check.log valgrind || VALGRIND=no
 # install some package - these are fast, we install them anyway
@@ -43,7 +44,7 @@ script:
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" --enable-openmp
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install
