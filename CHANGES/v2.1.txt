@@ -158,6 +158,15 @@ For developers:
 
 Unreleased changes (will be included in 2.1.2)
 ----------------------------------------------
+
 See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
+
+For users:
+- Fixed a severe bug on \ref DRMSD - cutoff values were ignored by PLUMED.
+  Notice that this bug was introduced in 2.1.0, so that it should not affect the 2.0.x series.
+- Patching system now checks for the availabity of shared/static/runtime version of plumed before
+  patching
+- GMX5 patch was not working for bias-exchange like cases
+
 
 */
