@@ -12,7 +12,7 @@ env:
 # GNU
   - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # MPI
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes ALMOST=yes
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
