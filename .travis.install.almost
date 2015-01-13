@@ -3,12 +3,13 @@
 set -e
 set -x
 
-svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code
+svn checkout svn://svn.code.sf.net/p/almost/code/branches/almost-2.1 almost-2.1
 
-cd almost-code/branches/almost-2.1
+cd almost-2.1
 
+autoreconf -fi
 ./configure --prefix=/usr/local CFLAGS="-fPIC" CXXFLAGS="-fPIC"
 make -j2
 sudo make install
-cd ../../../
+cd ../
 
