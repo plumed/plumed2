@@ -1,0 +1,14 @@
+#! /bin/bash
+
+set -e
+set -x
+
+svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code
+
+cd almost-code/branches/almost-2.1
+
+./configure --prefix=/usr/local CFLAGS="-fPIC" CXXFLAGS="-fPIC"
+make -j2
+sudo make install
+cd ../../../
+

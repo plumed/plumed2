@@ -19,6 +19,7 @@ install:
 # build the manual, only if log contains string [makedoc]
   - ./.travis.check.log makedoc  || MAKEDOC=no
   - ./.travis.check.log valgrind || VALGRIND=no
+  - ./.travis.check.log almost   || ALMOST=no
 # install some package - these are fast, we install them anyway
   - sudo apt-get update -qq
   - sudo apt-get install -y libmatheval-dev
@@ -36,12 +37,14 @@ install:
   - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
   - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
   - test "$LAPACK" == yes  && sudo apt-get install libatlas-base-dev      || true
+  - test "$ALMOST" == yes && ./.travis.install.almost                     || true
+  - test "$ALMOST" == yes && ENALMOST="--enable-almost"                 || true
 script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH"
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost" $ENALMOST
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install
