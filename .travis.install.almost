@@ -9,7 +9,7 @@ cd almost-2.1
 
 autoreconf -fi
 ./configure --prefix=/usr/local CFLAGS="-fPIC" CXXFLAGS="-fPIC"
-make -j2
+make -j2 -s
 sudo make install
 cd ../
 
