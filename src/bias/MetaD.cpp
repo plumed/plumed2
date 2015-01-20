@@ -1979,7 +1979,7 @@ void MetaD::calculate() {
     }
     double mean_acc = acc / ((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
-  } else if (isFirstStep) {
+  } else if (acceleration && isFirstStep) {
     getPntrToComponent("acc")->set(1.0);
   }
   // set Forces
