@@ -642,7 +642,7 @@ isFirstStep(true)
    ifilesnames.push_back(fname);
    if(ifile->FileExist(fname)){
     ifile->open(fname);
-    if(plumed.getRestart()){
+    if(getRestart()){
      log.printf("  Restarting from %s:",ifilesnames[i].c_str());                  
      readGaussians(ifiles[i]);                                                    
     }

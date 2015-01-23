@@ -49,12 +49,14 @@ keys(keys)
 void Action::registerKeywords( Keywords& keys ){
   plumed_assert( keys.size()==0 );
   keys.add( "hidden", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using label.component" );
+  keys.add("optional","RESTART","allows per-action setting of restart (YES/NO/AUTO)");
 }
 
 Action::Action(const ActionOptions&ao):
   name(ao.line[0]),
   line(ao.line),
   active(false),
+  restart(ao.plumed.getRestart()),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),
@@ -72,6 +74,15 @@ Action::Action(const ActionOptions&ao):
   }
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
   log.printf("  with label %s\n",label.c_str());
+
+  if ( keywords.exists("RESTART") ){
+    std::string srestart="AUTO";
+    parse("RESTART",srestart);
+    if(srestart=="YES") restart=true;
+    else if(srestart=="NO")  restart=false;
+    else if(srestart=="AUTO") {}
+    else error("RESTART should be either YES, NO, or AUTO");
+  }
 }
 
 Action::~Action(){

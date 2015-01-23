@@ -234,7 +234,7 @@ void OFile::setBackupString( const std::string& str ){
 }
 
 void OFile::backupAllFiles( const std::string& str ){
-  plumed_assert( backstring!="bck" && plumed && !plumed->getRestart() );
+  plumed_assert( backstring!="bck" && !checkRestart());
   size_t found=str.find_last_of("/\\");
   std::string filename = appendSuffix(str,plumed->getSuffix());
   std::string directory=filename.substr(0,found+1);
@@ -362,7 +362,9 @@ FileBase& OFile::flush(){
 }
 
 bool OFile::checkRestart()const{
-  if(enforceRestart_ || (plumed && plumed->getRestart() ) ) return true;
+  if(enforceRestart_) return true;
+  else if(action) return action->getRestart();
+  else if(plumed) return plumed->getRestart();
   else return false;
 }
 

@@ -84,6 +84,8 @@ private:
 /// Option that you might have enabled 
   std::set<std::string> options; 
 
+  bool restart;
+
 public:
 
 /// Reference to main plumed object
@@ -106,6 +108,9 @@ public:
 
 /// Return the timestep
   double getTimeStep()const;
+
+/// Return true if we are doing a restart
+  bool getRestart()const;
 
 /// Parse one keyword as generic type
   template<class T>
@@ -379,6 +384,11 @@ bool Action::isActive()const{
 inline
 bool Action::isOptionOn(const std::string &s)const{
   return options.count(s);
+}
+
+inline
+bool Action::getRestart()const{
+  return restart;
 }
 
 }
