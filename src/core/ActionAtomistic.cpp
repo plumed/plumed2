@@ -161,9 +161,8 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
 
   Tools::interpretRanges(strings); t.resize(0);
   for(unsigned i=0;i<strings.size();++i){
-   bool ok=false;
    AtomNumber atom;
-   ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
+   bool ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
    if(ok) t.push_back(atom);
 // here we check if this is a special symbol for MOLINFO
    if( !ok && strings[i].compare(0,1,"@")==0 ){
