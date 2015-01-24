@@ -75,7 +75,7 @@ PLUMED_COLVAR_INIT(ao)
   checkRead();
   addValueWithDerivatives(); setNotPeriodic();
 
-  log.printf("  of %d atoms\n",ga_lista.size());
+  log.printf("  of %u atoms\n",static_cast<unsigned>(ga_lista.size()));
   for(unsigned int i=0;i<ga_lista.size();++i){
     log.printf("  %d", ga_lista[i].serial());
   }

@@ -86,7 +86,7 @@ firsttime(true)
   
   requestAtoms(nl->getFullAtomList());
  
-  log.printf("  between two groups of %d and %d atoms\n",ga_lista.size(),gb_lista.size());
+  log.printf("  between two groups of %u and %u atoms\n",static_cast<unsigned>(ga_lista.size()),static_cast<unsigned>(gb_lista.size()));
   log.printf("  first group:\n");
   for(unsigned int i=0;i<ga_lista.size();++i){
    if ( (i+1) % 25 == 0 ) log.printf("  \n");

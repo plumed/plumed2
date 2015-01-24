@@ -196,7 +196,7 @@ fenergy(false)
   for(unsigned i=0;i<gmax.size();++i) log.printf(" %s",gmax[i].c_str() );
   log.printf("\n");
   log.printf("  Grid bin");
-  for(unsigned i=0;i<gbin.size();++i) log.printf(" %d",gbin[i]);
+  for(unsigned i=0;i<gbin.size();++i) log.printf(" %u",gbin[i]);
   log.printf("\n");
 }
 

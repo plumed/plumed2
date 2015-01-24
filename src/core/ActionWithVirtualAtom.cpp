@@ -37,7 +37,7 @@ ActionWithVirtualAtom::ActionWithVirtualAtom(const ActionOptions&ao):
   ActionAtomistic(ao)
 {
   index=atoms.addVirtualAtom(this);
-  log.printf("  serial associated to this virtual atom is %d\n",index.serial());
+  log.printf("  serial associated to this virtual atom is %u\n",index.serial());
 }
 
 ActionWithVirtualAtom::~ActionWithVirtualAtom(){

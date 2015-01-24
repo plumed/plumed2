@@ -121,7 +121,7 @@ DumpMultiColvar::DumpMultiColvar(const ActionOptions&ao):
 }
 
 void DumpMultiColvar::update(){
-  of.printf("%d\n",mycolv->getFullNumberOfTasks());
+  of.printf("%u\n",mycolv->getFullNumberOfTasks());
   const Tensor & t(mycolv->getPbc().getBox());
   if(mycolv->getPbc().isOrthorombic()){
     of.printf((" "+fmt_xyz+" "+fmt_xyz+" "+fmt_xyz+"\n").c_str(),lenunit*t(0,0),lenunit*t(1,1),lenunit*t(2,2));
