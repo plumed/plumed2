@@ -5,8 +5,10 @@
 When you use a collective variable that has many calculated components and you want to 
 refer to them as arguments you can use regular expressions.
 
-If your machine enables this (i.e. if your machine has a "regex.h" C header ) 
-then you can compile plumed with the preprocessor flag -D__PLUMED_HAS_CREGEX  
+Since version 2.1, plumed takes advantage of a configuration scripts that
+detects libraries installed on your system. If regex library is found,
+then you will be able to use regular expressions to refer to collective variables
+or function names.
 
 Regular expressions are enclosed in round braces and must not contain spaces (the components 
 names have no spaces indeed, so why use them?).
@@ -16,7 +18,6 @@ As an example then command
 d1: DISTANCE ATOMS=1,2 COMPONENTS
 PRINT ARG=(d1\.[xy])   STRIDE=100 FILE=colvar FMT=%8.4f
 \endverbatim
-
 will cause both the d1.x and d1.y components of the DISTANCE action to be printed out in the order that they are created by plumed.
 The "." character must be escaped in order to interpret it as a literal ".". An unescaped dot is a wildcard which is matched by any character,
 So as an example

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -161,9 +161,8 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
 
   Tools::interpretRanges(strings); t.resize(0);
   for(unsigned i=0;i<strings.size();++i){
-   bool ok=false;
    AtomNumber atom;
-   ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
+   bool ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
    if(ok) t.push_back(atom);
 // here we check if this is a special symbol for MOLINFO
    if( !ok && strings[i].compare(0,1,"@")==0 ){

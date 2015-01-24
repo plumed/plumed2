@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -69,11 +69,11 @@ void DRMSD::setup_targets(){
           }
        }
   }
-  if( targets.size()==0 ) error("drmsd will compare no distances - check upper and lower bounds are sensible");  
+  if( targets.empty() ) error("drmsd will compare no distances - check upper and lower bounds are sensible");  
 }
 
 double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared ){
-  plumed_dbg_assert( targets.size()>0 );
+  plumed_dbg_assert( !targets.empty() );
 
   Vector distance; 
   double drmsd=0.; 

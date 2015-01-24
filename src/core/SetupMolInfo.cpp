@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -81,7 +81,7 @@ pdb(*new(PDB))
     if( ! pdb.read(reference,plumed.getAtoms().usingNaturalUnits(),0.1/plumed.getAtoms().getUnits().getLength()))plumed_merror("missing input file " + reference );
 
     std::vector<std::string> chains; pdb.getChainNames( chains );
-    log.printf("  pdb file named %s contains %d chains \n",reference.c_str(), chains.size() );
+    log.printf("  pdb file named %s contains %u chains \n",reference.c_str(), static_cast<unsigned>(chains.size()));
     for(unsigned i=0;i<chains.size();++i){
        unsigned start,end; std::string errmsg;
        pdb.getResidueRange( chains[i], start, end, errmsg );
@@ -89,7 +89,7 @@ pdb(*new(PDB))
        AtomNumber astart,aend; 
        pdb.getAtomRange( chains[i], astart, aend, errmsg );
        if( errmsg.length()!=0 ) error( errmsg );
-       log.printf("  chain named %s contains residues %u to %u and atoms %d to %d \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
+       log.printf("  chain named %s contains residues %u to %u and atoms %u to %u \n",chains[i].c_str(),start,end,astart.serial(),aend.serial());
     }
   }
 }

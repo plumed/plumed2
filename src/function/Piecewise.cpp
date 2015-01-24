@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -51,7 +51,8 @@ Control points are passed using the POINT0=... POINT1=... syntax as in the examp
 
 If one argument is supplied, it results in a scalar quantity.
 If multiple arguments are supplied, it results
-in a vector of arguments.
+in a vector of values. Each value will be named as the name of the original
+argument with suffix _pfunc.
 
 \par Examples
 \verbatim
@@ -60,7 +61,7 @@ dist2: DISTANCE ATOMS=2,11
 
 pw: PIECEWISE POINT0=1,10 POINT1=1,PI POINT2=3,10 ARG=dist1
 ppww: PIECEWISE POINT0=1,10 POINT1=1,PI POINT2=3,10 ARG=dist1,dist2
-PRINT ARG=pw,ppww.1,ppww.2
+PRINT ARG=pw,ppww.dist1_pfunc,ppww.dist2_pfunc
 \endverbatim
 (See also \ref PRINT and \ref DISTANCE).
 
