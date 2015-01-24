@@ -80,7 +80,7 @@ CLTool* CLToolRegister::create(const CLToolOptions&ao){
 std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar){
   vector<string> s(ar.list());
   for(unsigned i=0;i<s.size();i++) log<<"  "<<s[i]<<"\n";
-  if(ar.disabled.size()>0){
+  if(!ar.disabled.empty()){
     s.assign(ar.disabled.size(),"");
     copy(ar.disabled.begin(),ar.disabled.end(),s.begin());
     sort(s.begin(),s.end());

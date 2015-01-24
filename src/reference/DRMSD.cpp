@@ -69,11 +69,11 @@ void DRMSD::setup_targets(){
           }
        }
   }
-  if( targets.size()==0 ) error("drmsd will compare no distances - check upper and lower bounds are sensible");  
+  if( targets.empty() ) error("drmsd will compare no distances - check upper and lower bounds are sensible");  
 }
 
 double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared ){
-  plumed_dbg_assert( targets.size()>0 );
+  plumed_dbg_assert( !targets.empty() );
 
   Vector distance; 
   double drmsd=0.; 
