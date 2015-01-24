@@ -30,9 +30,9 @@ PLUMED_REGISTER_METRIC(MultiDomainRMSD,"MULTI")
 
 MultiDomainRMSD::MultiDomainRMSD( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-ReferenceAtoms(ro)
+ReferenceAtoms(ro),
+ftype(ro.getMultiRMSDType())
 {
-   ftype=ro.getMultiRMSDType();
 }
 
 MultiDomainRMSD::~MultiDomainRMSD(){
