@@ -232,8 +232,8 @@ void Analysis::readDataFromFile( const std::string& filename ){
            break; 
         } 
      }
+    fclose(fp);
   }
-  fclose(fp);
   if(old_norm>0) firstAnalysisDone=true;
 }
 
