@@ -78,13 +78,10 @@ Action::Action(const ActionOptions&ao):
   }
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
   log.printf("  with label %s\n",label.c_str());
-<<<<<<< HEAD
   if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
   if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
   if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
   if(update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
-=======
-
   if ( keywords.exists("RESTART") ){
     std::string srestart="AUTO";
     parse("RESTART",srestart);
@@ -93,7 +90,6 @@ Action::Action(const ActionOptions&ao):
     else if(srestart=="AUTO") {}
     else error("RESTART should be either YES, NO, or AUTO");
   }
->>>>>>> v2.1-per-action-restart
 }
 
 Action::~Action(){
