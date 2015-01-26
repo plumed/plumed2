@@ -191,7 +191,7 @@ argument_names(getNumberOfArguments())
       // We need no restart file if we are just collecting data and analyzing all of it
       std::string filename = getName() + "_" + getLabel() + ".chkpnt"; 
       if( write_chq ) rfile.link(*this);
-      if( plumed.getRestart() ){
+      if( getRestart() ){
           if( single_run ) error("cannot restart histogram when using the USE_ALL_DATA option");
           if( !write_chq ) warning("restarting without writing a checkpoint file is somewhat strange");
           // Read in data from input file
@@ -241,7 +241,7 @@ void Analysis::parseOutputFile( const std::string& key, std::string& filename ){
   parse(key,filename);
   if(filename=="dont output") return;
 
-  if( !plumed.getRestart() ){
+  if( !getRestart() ){
       OFile ofile; ofile.link(*this);
       ofile.setBackupString("analysis");
       ofile.backupAllFiles(filename);

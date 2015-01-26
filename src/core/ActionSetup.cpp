@@ -41,6 +41,7 @@ void ActionSetup::registerKeywords( Keywords& keys ){
   keys.remove("LABEL");
   keys.remove("UPDATE_UNTIL");
   keys.remove("UPDATE_FROM");
+  keys.remove("RESTART");
 }
 
 }
