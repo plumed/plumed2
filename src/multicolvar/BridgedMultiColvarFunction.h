@@ -42,8 +42,6 @@ private:
   bool firsttime;
   int updateFreq;
 protected:
-/// Get a pointer to the base multicolvar
-  MultiColvarBase* getPntrToMultiColvar() const ;
 /// Deactivate all the atoms in the list
   void deactivateAllAtoms();
 /// Activate the nth atom in the list
@@ -51,6 +49,8 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   BridgedMultiColvarFunction(const ActionOptions&);
+/// Get a pointer to the base multicolvar
+  MultiColvarBase* getPntrToMultiColvar() const ;
 /// Don't actually clear the derivatives when this is called from plumed main.  
 /// They are calculated inside another action and clearing them would be bad  
   void clearDerivatives(){}

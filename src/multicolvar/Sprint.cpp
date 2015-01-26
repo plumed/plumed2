@@ -104,7 +104,7 @@ PLUMED_REGISTER_ACTION(Sprint,"SPRINT")
 void Sprint::registerKeywords( Keywords& keys ){
   AdjacencyMatrixAction::registerKeywords( keys );
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("coord","default","all \f$n\f$ sprint coordinates are calculated and then stored in increasing order. "
+  keys.addOutputComponent("coord","default","all \\f$n\\f$ sprint coordinates are calculated and then stored in increasing order. "
                                             "the smallest sprint coordinate will be labelled <em>label</em>.coord-1, "
                                             "the second smallest will be labelleled <em>label</em>.coord-1 and so on");
 }

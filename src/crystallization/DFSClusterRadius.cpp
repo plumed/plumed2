@@ -24,7 +24,13 @@
 
 //+PLUMEDOC MCOLVARF DFSCLUSTERDIAMETER
 /*
-Find average properites of atoms in a cluster
+Retrieve the size of a cluster.  This quantity is NOT differentiable.
+
+This action uses the DFS clustering algorithm described in \ref DFSCLUSTERING to find a set of connected components
+based on the configuration of the atoms in your system.  Once again this can be used to find crystalline nuclei or 
+bubble of atoms.  Once these connected components  you can then find the sizes of the connected components by 
+measuring the distance between the two most widely separated atoms in the connected component.  This is what is 
+done by this action.
 
 \par Examples
 
