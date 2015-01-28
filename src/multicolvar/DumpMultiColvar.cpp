@@ -44,7 +44,15 @@ namespace multicolvar {
 Dump atom positions and multicolvar on a file.
 
 \par Examples
+In this examples we calculate the distances between the  atoms of the first and the second 
+group and we write them in the file MULTICOLVAR.xyz. For each couple it writes the 
+coordinates of their geometric center and their distance.
 
+pos:   GROUP ATOMS=220,221,235,236,247,248,438,439,450,451,534,535
+neg:   GROUP ATOMS=65,68,138,182,185,267,270,291,313,316,489,583,621,711
+DISTANCES GROUPA=pos GROUPB=neg LABEL=slt
+
+DUMPMULTICOLVAR DATA=slt FILE=MULTICOLVAR.xyz
 
 */
 //+ENDPLUMEDOC
