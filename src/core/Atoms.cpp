@@ -53,13 +53,13 @@ Atoms::Atoms(PlumedMain&plumed):
   forcesHaveBeenSet(0),
   virialHasBeenSet(false),
   massAndChargeOK(false),
-  asyncSent(false),
-  atomsNeeded(false),
   plumed(plumed),
   naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
   kbT(0.0),
+  asyncSent(false),
+  atomsNeeded(false),
   ddStep(0)
 {
   mdatoms=MDAtomsBase::create(sizeof(double));
@@ -331,7 +331,6 @@ void Atoms::DomainDecomposition::enable(Communicator& c){
   on=true;
   Set_comm(c.Get_comm());
   async=Get_size()<10;
-//  async=false;
 }
 
 void Atoms::setAtomsNlocal(int n){
