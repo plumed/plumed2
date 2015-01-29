@@ -168,6 +168,7 @@ For users:
 - Patching system now checks for the availabity of shared/static/runtime version of plumed before
   patching
 - GMX5 patch was not working for bias-exchange like cases
+- Sander patch now works with multiple replica (no replica exchange yet).
 
 
 */
