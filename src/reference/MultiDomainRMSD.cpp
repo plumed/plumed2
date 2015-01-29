@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -30,9 +30,9 @@ PLUMED_REGISTER_METRIC(MultiDomainRMSD,"MULTI")
 
 MultiDomainRMSD::MultiDomainRMSD( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-ReferenceAtoms(ro)
+ReferenceAtoms(ro),
+ftype(ro.getMultiRMSDType())
 {
-   ftype=ro.getMultiRMSDType();
 }
 
 MultiDomainRMSD::~MultiDomainRMSD(){

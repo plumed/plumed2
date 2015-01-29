@@ -12,7 +12,7 @@ env:
 # GNU
   - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # MPI
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes ALMOST=yes
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
@@ -20,6 +20,7 @@ install:
   - export PLUMED_NUM_THREADS=2
   - ./.travis.check.log makedoc  || MAKEDOC=no
   - ./.travis.check.log valgrind || VALGRIND=no
+  - ./.travis.check.log almost   || ALMOST=no
 # install some package - these are fast, we install them anyway
   - sudo apt-get update -qq
   - sudo apt-get install -y libmatheval-dev
@@ -37,12 +38,14 @@ install:
   - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
   - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
   - test "$LAPACK" == yes  && sudo apt-get install libatlas-base-dev      || true
+  - test "$ALMOST" == yes && ./.travis.install.almost                     || true
+  - test "$ALMOST" == yes && ENALMOST="--enable-almost"                 || true
 script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" --enable-openmp
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost" $ENALMOST --enable-openmp
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install
