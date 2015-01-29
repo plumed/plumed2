@@ -49,6 +49,7 @@ static unsigned getGoodNumThreads(const std::vector<T> & v);
 template<typename T>
 unsigned OpenMP::getGoodNumThreads(const T*x,unsigned n){
   unsigned long p=(unsigned long) x;
+  (void) p; // this is not to have warnings. notice that the pointer location is not used actually.
 // a factor two is necessary since there is no guarantee that x is aligned
 // to cache line boundary
   unsigned m=n/(2*getCachelineSize()*sizeof(T));

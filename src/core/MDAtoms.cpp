@@ -144,17 +144,7 @@ void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const{
 
 template <class T>
 void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&forces){
-  unsigned ntx=1,nty=1,ntz=1;
-// I take the smallest among the three.
-// Notice that currently the actual pointer is not used to decide the number of threads,
-// so this is not really useful
-  if(index.size()>0) ntx=OpenMP::getGoodNumThreads(&fx[0],stride*index.size());
-  if(index.size()>0) nty=OpenMP::getGoodNumThreads(&fy[0],stride*index.size());
-  if(index.size()>0) ntz=OpenMP::getGoodNumThreads(&fz[0],stride*index.size());
-  unsigned nt=ntx;
-  if(nty<nt) nt=nty;
-  if(ntz<nt) nt=ntz;
-#pragma omp parallel for num_threads(nt)
+#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0;i<index.size();++i){
     fx[stride*i]+=scalef*T(forces[index[i]][0]);
     fy[stride*i]+=scalef*T(forces[index[i]][1]);
@@ -165,17 +155,7 @@ void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&
 template <class T>
 void MDAtomsTyped<T>::rescaleForces(const vector<int>&index,double factor){
   if(virial) for(unsigned i=0;i<3;i++)for(unsigned j=0;j<3;j++) virial[3*i+j]*=T(factor);
-  unsigned ntx=1,nty=1,ntz=1;
-// I take the smallest among the three.
-// Notice that currently the actual pointer is not used to decide the number of threads,
-// so this is not really useful
-  if(index.size()>0) ntx=OpenMP::getGoodNumThreads(&fx[0],stride*index.size());
-  if(index.size()>0) nty=OpenMP::getGoodNumThreads(&fy[0],stride*index.size());
-  if(index.size()>0) ntz=OpenMP::getGoodNumThreads(&fz[0],stride*index.size());
-  unsigned nt=ntx;
-  if(nty<nt) nt=nty;
-  if(ntz<nt) nt=ntz;
-#pragma omp parallel for num_threads(nt)
+#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0;i<index.size();++i){
     fx[stride*i]*=T(factor);
     fy[stride*i]*=T(factor);
