@@ -95,6 +95,9 @@ class Atoms
   std::vector<const ActionAtomistic*> actions;
   std::vector<int>    gatindex;
 
+  bool asyncSent;
+  bool atomsNeeded;
+
   class DomainDecomposition:
     public Communicator
   {
@@ -118,6 +121,7 @@ class Atoms
   };
 
   DomainDecomposition dd;
+  long int ddStep;  //last step in which dd happened
 
   void share(const std::set<AtomNumber>&);
 
@@ -144,6 +148,13 @@ public:
 
   void setNatoms(int);
   const int & getNatoms()const;
+
+  const long int& getDdStep()const;
+  const std::vector<int>& getGatindex()const;
+  const Pbc& getPbc()const;
+  void getLocalPositions(std::vector<Vector>&);
+  void getLocalForces(std::vector<Vector>&);
+  const Tensor& getVirial()const;
 
   void setCollectEnergy(bool b){ collectEnergy=b; }
 
@@ -208,6 +219,21 @@ const int & Atoms::getNatoms()const{
 }
 
 inline
+const long int& Atoms::getDdStep()const{
+  return ddStep;
+}
+
+inline
+const std::vector<int>& Atoms::getGatindex()const{
+  return gatindex;
+}
+
+inline
+const Pbc& Atoms::getPbc()const{
+  return pbc;
+}
+
+inline
 bool Atoms::isVirtualAtom(AtomNumber i)const{
   return i.index()>=(unsigned) getNatoms();
 }
@@ -230,6 +256,11 @@ bool Atoms::chargesWereSet() const {
 inline
 bool Atoms::boxWasSet() const {
   return boxHasBeenSet;
+}
+
+inline
+const Tensor& Atoms::getVirial()const{
+  return virial;
 }
 
 

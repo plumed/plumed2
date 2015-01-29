@@ -264,6 +264,8 @@ private:
   double lowI_;
   bool doInt_;
   bool isFirstStep;
+/// accumulator for work
+  double work_;
   
   void   readGaussians(IFile*);
   bool   readChunkOfGaussians(IFile *ifile, unsigned n);
@@ -353,6 +355,7 @@ walkers_mpi(false),
 acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
+work_(0.0),
 isFirstStep(true)
 {
   // parse the flexible hills
@@ -573,6 +576,7 @@ isFirstStep(true)
   }
 
   addComponent("bias"); componentIsNotPeriodic("bias");
+  addComponent("work"); componentIsNotPeriodic("work");
 
   if(acceleration) {
     if(!welltemp_) error("The calculation of the acceleration works only if Well-Tempered Metadynamics is on"); 
@@ -1001,6 +1005,7 @@ void MetaD::calculate()
     double mean_acc = acc/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
   }
+  getPntrToComponent("work")->set(work_);
 // set Forces 
   for(unsigned i=0;i<ncv;++i){
    const double f=-der[i];
@@ -1020,6 +1025,8 @@ void MetaD::update(){
   if(getStep()%stride_==0 && !isFirstStep ){nowAddAHill=true;}else{nowAddAHill=false;isFirstStep=false;}
 
   for(unsigned i=0;i<cv.size();++i){cv[i]=getArgument(i);}
+
+  double vbias=getBiasAndDerivatives(cv);
 
   // if you use adaptive, call the FlexibleBin 
   if (adaptive_!=FlexibleBin::none){
@@ -1086,6 +1093,10 @@ void MetaD::update(){
      writeGaussian(newhill,hillsOfile_);
    }
   }
+
+  double vbias1=getBiasAndDerivatives(cv);
+  work_+=vbias1-vbias;
+
 // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
 // in case old grids are stored, a sequence of grids should appear
