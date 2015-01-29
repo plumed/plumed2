@@ -165,6 +165,7 @@ void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
   virial.zero();
   if(int(gatindex.size())==natoms){
+// not sure this parallelization helps
 #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(forces))
     for(unsigned i=0;i<natoms;i++) forces[i].zero();
   } else {
@@ -178,8 +179,6 @@ void Atoms::share(const std::set<AtomNumber>& unique){
 
   atomsNeeded=false;
 
-  mdatoms->getMasses(gatindex,masses);
-  mdatoms->getCharges(gatindex,charges);
   if(int(gatindex.size())==natoms){
 // faster version, which retrieves all atoms
     mdatoms->getPositions(0,natoms,positions);
@@ -263,7 +262,6 @@ void Atoms::wait(){
   if(collectEnergy) energy=md_energy;
 
   if(dd && int(gatindex.size())<natoms){
-    if(collectEnergy) dd.Sum(&energy,1);
 // receive toBeReceived
     if(asyncSent){
       Communicator::Status status;
@@ -495,6 +493,7 @@ void Atoms::getLocalPositions(std::vector<Vector>& localPositions){
 
 void Atoms::getLocalForces(std::vector<Vector>& localForces){
   localForces.resize(gatindex.size());
+// not sure this parallelization helps
 #pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(localForces))
   for(int i=0; i<gatindex.size(); i++) localForces[i] = forces[gatindex[i]];
 }
