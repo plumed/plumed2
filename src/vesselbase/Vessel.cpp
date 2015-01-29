@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -74,10 +74,10 @@ numlab(da.numlab),
 action(da.action),
 keywords(da.keywords),
 finished_read(false),
+line(Tools::getWords( da.parameters )),
 comm(da.action->comm),
 log((da.action)->log)
 {
-  line=Tools::getWords( da.parameters );
   if( da.mylabel.length()>0){
       mylabel=da.mylabel;
   } else {
@@ -85,7 +85,6 @@ log((da.action)->log)
       if( mylabel.length()==0 && numlab>=0 ){
           mylabel=transformName( myname ); std::string nn; 
           if(numlab>0){ Tools::convert( numlab, nn ); mylabel =  mylabel + "-" + nn; }
-          else { mylabel = mylabel; }
       } 
   }
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -37,8 +37,8 @@ This function can be used to sort colvars according to their magnitudes.
 
 \par Description of components
 
-This function sorts its arguments according to their magnitudes. The largest argument will be 
-labelled <em>label</em>.1, the second largest will be labelled <em>label</em>.2 and so on.  
+This function sorts its arguments according to their magnitudes. The lowest argument will be 
+labelled <em>label</em>.1, the second lowest will be labelled <em>label</em>.2 and so on.  
 
 \par Examples
 The following input tells plumed to print the distance of the closest and of

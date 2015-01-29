@@ -12,6 +12,7 @@ Changes from version 2.1 which are relevant for users:
   the switching function goes to zero. Users should always set this parameter when using a switching function
   in order to achieve optimal performance.
 - New actions
+  - \ref EXTENDED_LAGRANGIAN
   - \ref DFSCLUSTERING calculate the size of clusters 
   - \ref DUMPMULTICOLVAR print out a multicolvar
   - \ref MFILTER_LESS filter multicolvar by the value of the colvar
@@ -26,6 +27,7 @@ Changes from version 2.1 which are relevant for users:
   - Keywords for \ref GROUP (REMOVE, SORT, UNIQUE)
   - \ref DUMPATOMS now supports dumping xtc and trr files (requires xdrfile library).
   - \ref driver can now read xtc and trr files also with xdrfile library.
+  - Possibility to enable or disable \ref RESTART on a per action basis.
 - VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
   can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
   part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
