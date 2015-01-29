@@ -209,6 +209,7 @@ void PCAVars::registerKeywords( Keywords& keys ){
                                                "reference point."); 
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
+  keys.addFlag("NORM-VECTOR",false,"calculate the length of the eigenvector input and divide the components by it so as to have a normalised vector");
 }
 
 PCAVars::PCAVars(const ActionOptions& ao):
@@ -277,6 +278,8 @@ ActionWithArguments(ao)
   if( getNumberOfAtoms()>0 ) atom_eigv.resize( nfram-1, getNumberOfAtoms() ); 
   if( getNumberOfArguments()>0 ) arg_eigv.resize( nfram-1, getNumberOfArguments() );
 
+  // Work out if the user wants to normalise the input vector
+  bool nflag; parseFlag("NORM-VECTOR",nflag);
   // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)
   Pbc fake_pbc; 
   // Now calculate the eigenvectors 
@@ -292,7 +295,7 @@ ActionWithArguments(ao)
       for(unsigned j=0;j<getNumberOfArguments();++j){ tmp = 0.5*myframes.getFrame(i)->getArgumentDerivative(j); norm+=tmp*tmp; }
 
       // Normalize the eigevector
-      norm = 1.0 / sqrt(norm);
+      if(nflag){ norm = 1.0 / sqrt(norm); } else { norm = 1.0; }
       for(unsigned j=0;j<getNumberOfAtoms();++j) atom_eigv(i-1,j) = norm*myframes.getFrame(i)->getAtomicDisplacement(j); 
       for(unsigned j=0;j<getNumberOfArguments();++j) arg_eigv(i-1,j) = -0.5*norm*myframes.getFrame(i)->getArgumentDerivative(j); 
 
