@@ -263,7 +263,6 @@ void Atoms::wait(){
   if(collectEnergy) energy=md_energy;
 
   if(dd && int(gatindex.size())<natoms){
-    if(collectEnergy) dd.Sum(&energy,1);
 // receive toBeReceived
     if(asyncSent){
       Communicator::Status status;
