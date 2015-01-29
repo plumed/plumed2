@@ -327,7 +327,7 @@ subroutine runmd(xx,ix,ih,ipairs,x,winv,amass,f, &
 
 ! variables for plumed
    _REAL_ :: plumed_box(3,3),plumed_virial(3,3), plumed_kbt
-   integer :: plumed_version,plumed_stopflag,plumed_ms,plumed_ss,plumed_ws
+   integer :: plumed_version,plumed_stopflag,plumed_ms
    _REAL_ :: plumed_energyUnits,plumed_timeUnits,plumed_lengthUnits
 
    !==========================================================================
@@ -765,23 +765,7 @@ subroutine runmd(xx,ix,ih,ipairs,x,winv,amass,f, &
      call plumed_f_gcmd("setTimestep"//char(0),dt)
 #  ifdef MPI
      call plumed_f_gcmd("setMPIFComm"//char(0),commsander)
-     if(master)then
-       call mpi_comm_size(commmaster,plumed_ms,ierr)
-     else
-       plumed_ms=1
-     endif
-     call mpi_bcast(plumed_ms,1,MPI_INTEGER,0,commsander,ierr)
-     call mpi_comm_size(commsander,plumed_ss,ierr)
-     call mpi_comm_size(commworld,plumed_ws,ierr)
-! this is a hack that is necessary to detect multiple replicas
-! commworld: all processors
-! commsander: group related to a single replica
-! commmaster: with replicas, group with the master of each replica
-!             without replicas, group with all processors
-! thus, to detect multiple replicas, I check that
-! size(commworld)==size(commmaster)*size(commsander)
-! and at the same time size(commaster)>1
-     if(plumed_ms>1 .and. plumed_ws==plumed_ms*plumed_ss)then
+     if(numgroup>1)then
        call plumed_f_gcmd("GREX setMPIFIntracomm"//char(0),commsander)
        if(master) then
          call plumed_f_gcmd("GREX setMPIFIntercomm"//char(0),commmaster)
@@ -789,7 +773,6 @@ subroutine runmd(xx,ix,ih,ipairs,x,winv,amass,f, &
        call plumed_f_gcmd("GREX init"//char(0),0)
      endif
 #  endif
-
      call plumed_f_gcmd("init"//char(0),0);
 
 
