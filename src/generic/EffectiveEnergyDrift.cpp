@@ -46,14 +46,27 @@ namespace generic{
 
 //+PLUMEDOC GENERIC EFFECTIVE_ENERGY_DRIFT
 /*
-Print the effective energy drift.
+Print the effective energy drift described in Ref \cite Ferrarotti2015
 
-This is currently undocumented
 
 \par Examples
 
-This is currently undocumented
 
+This is to monitor the effective energy drift for a metadynamics
+simulation on the Debye-Huckel energy. Since this variable is very expensive,
+it could be conveniently computed every second step.
+\verbatim
+dh: DHENERGY GROUPA=1-10 GROUPB=11-20 EPSILON=80.0 I=0.1 TEMP=300.0
+METAD ARG=dh HEIGHT=0.5 SIGMA=0.1 PACE=500 STRIDE=2 
+EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=100 FILE=eff
+\endverbatim
+
+This is to monitor if a restraint is too stiff
+\verbatim
+d: DISTANCE ATOMS=10,20
+RESTRAINT ARG=d KAPPA=100000 AT=0.6
+EFFECTIVE_ENERGY_DRIFT PRINT_STRIDE=100 FILE=eff
+\endverbatim
 
 */
 //+ENDPLUMEDOC
