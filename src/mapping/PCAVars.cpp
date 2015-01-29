@@ -421,7 +421,7 @@ void PCAVars::calculateNumericalDerivatives( ActionWithValue* a ){
 
 void PCAVars::apply(){
 
-  bool wasforced=false;
+  bool wasforced=false; forcesToApply.assign(forcesToApply.size(),0.0);
   for(unsigned i=0;i<getNumberOfComponents();++i){
      if( getPntrToComponent(i)->applyForce( forces ) ){
          wasforced=true;
