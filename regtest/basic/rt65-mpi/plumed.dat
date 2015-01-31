@@ -1,0 +1,3 @@
+dist: DISTANCE ATOMS=3,50 
+ens: ENSEMBLE ARG=dist
+PRINT FILE=COLVAR STRIDE=1 ARG=dist,ens.dist FMT=%6.4f

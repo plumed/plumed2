@@ -174,10 +174,9 @@ We tried to keep PLUMED as independent as possible from external libraries and a
 that require external libraries (e.g. Almost and Matheval) are optional. However, to have a properly working version
 of plumed PLUMED you need BLAS and LAPACK libraries.  We would strongly recommend you download these libraries and 
 install them separately so as to have the most efficient possible implementations of the functions contained within 
-them.  However, if you cannot install blas and lapack, you can use the internal ones. To do so simply add the flags 
--D__PLUMED_INTERNAL_BLAS and -D__PLUMED_INTERNAL_LAPACK to your CPPFLAGS variable.
-However, as described above, the automatic configure should be able to choose automatically the internal
-libraries when necessary.
+them.  However, if you cannot install blas and lapack, you can use the internal ones.
+Since version 2.1, PLUMED uses a configure script to detect libraries. In case system LAPACK or BLAS
+are not found on your system, PLUMED will use the internal replacement.
 
 We have had a number of emails (and have struggled ourselves) with ensuring that PLUMED 
 can link BLAS and LAPACK.  The following describes some of the pitfalls that you can fall

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -80,7 +80,7 @@ CLTool* CLToolRegister::create(const CLToolOptions&ao){
 std::ostream & operator<<(std::ostream &log,const CLToolRegister&ar){
   vector<string> s(ar.list());
   for(unsigned i=0;i<s.size();i++) log<<"  "<<s[i]<<"\n";
-  if(ar.disabled.size()>0){
+  if(!ar.disabled.empty()){
     s.assign(ar.disabled.size(),"");
     copy(ar.disabled.begin(),ar.disabled.end(),s.begin());
     sort(s.begin(),s.end());
