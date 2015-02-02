@@ -40,6 +40,15 @@ git checkout -b gh-pages
 set +x
 git remote add doc https://plumedbot:$GIT_TOKEN@github.com/plumed/doc-${TRAVIS_BRANCH}.git
 set -x
+cat > README.md << EOF
+Precompiled manual for PLUMED ${TRAVIS_BRANCH}
+-----------------------------
+
+This manual has been compiled on [travis](http://travis-ci.org/plumed/plumed2)
+
+$(date)
+
+EOF
 git add --all .
 git commit -m "Update to plumed/plumed2@$hash"
 # -q is not to show the GIT_TOKEN on Travis log
