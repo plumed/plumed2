@@ -44,9 +44,11 @@ cat > README.md << EOF
 Precompiled manual for PLUMED ${TRAVIS_BRANCH}
 -----------------------------
 
-This manual has been compiled on [travis](http://travis-ci.org/plumed/plumed2)
-
-$(date)
+This repository hosts a precompiled manual
+for PLUMED ${TRAVIS_BRANCH}, git revision $hash, $(date).
+This manual has been compiled on [travis](http://travis-ci.org/plumed/plumed2).
+To browse the manual you should go
+[here](http://plumed.github.io/doc-${TRAVIS_BRANCH}).
 
 EOF
 git add --all .
