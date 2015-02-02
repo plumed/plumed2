@@ -73,7 +73,7 @@ utility.
 
 In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics 
 calculation increases with the length of the simulation as one has to, at every step, evaluate 
-the values of a larger and larger number of Gaussians. To avoid this issue you can in plumed 2.0 
+the values of a larger and larger number of Gaussians. To avoid this issue you can
 store the bias on a grid.  This approach is similar to that proposed in \cite babi+08jcp but has the 
 advantage that the grid spacing is independent on the Gaussian width.
 Notice that you should
@@ -84,7 +84,7 @@ In case you do not provide any information about bin size (neither GRID_BIN nor 
 and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
-Another option that is available in plumed 2.0 is well-tempered metadynamics \cite Barducci:2008. In this
+Another option that is available in plumed is well-tempered metadynamics \cite Barducci:2008. In this
 varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
 given by:
 
