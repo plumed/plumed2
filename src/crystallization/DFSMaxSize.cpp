@@ -72,7 +72,7 @@ private:
 /// The value of beta
   double beta;
 ///
-  bool use_switch;
+  bool use_switch, inverse;
 //
   SwitchingFunction sf;
 public:
@@ -92,6 +92,8 @@ void DFSMaxCluster::registerKeywords( Keywords& keys ){
   keys.use("WTOL"); keys.use("USE_ORIENTATION");
   keys.remove("LOWMEM"); keys.use("HIGHMEM");
   keys.add("compulsory","TRANSFORM","none","the switching function to use to convert the crystallinity parameter to a number between zero and one");
+  keys.addFlag("INVERSE_TRANSFORM",false,"when TRANSFORM appears alone the input symmetry functions, \\fx\\f$ are transformed used \\f$1-s(x)\\f$ "
+                                         "where \\f$s(x)\\f$ is a switching function.  When this option is used you instead transform using \\f$s(x)\\f$ only.");
 }
 
 DFSMaxCluster::DFSMaxCluster(const ActionOptions&ao):
@@ -108,6 +110,8 @@ DFSClustering(ao)
       use_switch=true; sf.set( input, errors );
       if( errors.length()!=0 ) error("problem reading SWITCH keyword : " + errors );
    }
+   parseFlag("INVERSE_TRANSFORM",inverse);
+   if( inverse && !use_switch ) error("INVERSE_TRANSFORM option was specified but no TRANSOFRM switching function was given");
 }
 
 void DFSMaxCluster::doCalculationOnCluster(){
@@ -127,9 +131,12 @@ void DFSMaxCluster::doCalculationOnCluster(){
        for(unsigned j=0;j<myatoms.size();++j){ 
            unsigned i=myatoms[j];
            getVectorForTask( i, false, vals );
-           if( use_switch ){
+           if( use_switch && !inverse ){
                vv = 1.0 - sf.calculate( vals[1], df );
                tval += vals[0]*vv; df=-df*vals[1];
+           } else if( use_switch ){
+               vv = sf.calculate( vals[1], df );
+               tval += vals[0]*vv; df=df*vals[1];
            } else {
                tval += vals[0]*vals[1]; df=1.; vv=vals[1];
            }
