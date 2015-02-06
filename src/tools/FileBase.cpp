@@ -101,11 +101,8 @@ FileBase& FileBase::link(Action&action){
 bool FileBase::FileExist(const std::string& path){
   FILE *ff=NULL;
   bool do_exist=false;
-  if(plumed){
-    this->path=appendSuffix(path,plumed->getSuffix());
-    ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
-    mode="r";
-  }
+  this->path=appendSuffix(path,getSuffix());
+  ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
   if(!ff){
     this->path=path;
     ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
@@ -143,7 +140,8 @@ FileBase::FileBase():
   cloned(false),
   eof(false),
   err(false),
-  heavyFlush(false)
+  heavyFlush(false),
+  enforcedSuffix_(false)
 {
 }
 
@@ -161,6 +159,7 @@ FileBase::operator bool()const{
 }
 
 std::string FileBase::appendSuffix(const std::string&path,const std::string&suffix){
+  if(path=="/dev/null") return path; // do not append a suffix to /dev/null
   std::string ret=path;
   std::string ext=Tools::extension(path);
 
@@ -182,7 +181,16 @@ std::string FileBase::appendSuffix(const std::string&path,const std::string&suff
   return ret;
 }
 
+FileBase& FileBase::enforceSuffix(const std::string&suffix){
+  enforcedSuffix_=true;
+  enforcedSuffix=suffix;
+  return *this;
+}
 
-
+std::string FileBase::getSuffix()const{
+  if(enforcedSuffix_) return enforcedSuffix;
+  if(plumed) return plumed->getSuffix();
+  return "";
+}
 
 }
