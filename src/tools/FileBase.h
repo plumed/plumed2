@@ -81,6 +81,11 @@ protected:
 /// It appends the desired suffix to the string. Notice that
 /// it conserves a possible ".gz" suffix.
   static std::string appendSuffix(const std::string&path,const std::string&suffix);
+private:
+/// Enforced suffix:
+  std::string enforcedSuffix;
+/// If true, use enforcedSuffix, else get it from PlumedMain
+  bool enforcedSuffix_;
 public:
 /// Link to an already open filed
   FileBase& link(FILE*);
@@ -92,6 +97,9 @@ public:
 /// Link to an Action object.
 /// Automatically links also the corresponding PlumedMain and Communicator.
   FileBase& link(Action&);
+/// Enforce suffix.
+/// Overrides the one set in PlumedMain&
+  FileBase& enforceSuffix(const std::string&suffix);
 /// Flushes the file to disk
   virtual FileBase& flush();
 /// Closes the file
@@ -111,6 +119,8 @@ public:
   bool FileExist(const std::string& path);
 /// Check if a file is open
   bool isOpen();
+/// Get the file suffix
+  std::string getSuffix()const;
 };
 
 
