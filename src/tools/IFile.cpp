@@ -221,7 +221,7 @@ unsigned IFile::findField(const std::string&name)const{
 void IFile::reset(bool reset){
  eof = reset;
  err = reset;
- if(!reset) clearerr(fp);
+ if(!reset && fp) clearerr(fp);
 #ifdef __PLUMED_HAS_ZLIB
  if(!reset && gzfp) gzclearerr(gzFile(gzfp));
 #endif
