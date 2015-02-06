@@ -102,6 +102,7 @@ bool FileBase::FileExist(const std::string& path){
   FILE *ff=NULL;
   bool do_exist=false;
   this->path=appendSuffix(path,getSuffix());
+  mode="r";
   ff=std::fopen(const_cast<char*>(this->path.c_str()),"r");
   if(!ff){
     this->path=path;
