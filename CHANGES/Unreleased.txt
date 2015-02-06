@@ -7,6 +7,7 @@ Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
 Changes from version 2.1 which are relevant for users:
 - Changes leading to incompatible behavior:
   - Labels of quantities calculates by \ref SPRINT have changed from <i>label</i>.coord_<i>num</i> to <i>label</i>.coord-<i>num</i>
+  - \ref METAD with WALKERS_MPI now writes a single hills file, without suffixes
 - Added experimental OpenMP support, see \ref Openmp
 - Added multiple time step integration for bias potentials, see \ref MTS
 - Link cells are now used in all multicolvars that involve \ref SwitchingFunctions.  The link cell cutoff is
