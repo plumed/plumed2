@@ -42,12 +42,15 @@ install:
   - test "$LAPACK" == yes  && sudo apt-get install libatlas-base-dev      || true
   - test "$ALMOST" == yes && ./.travis.install.almost                     || true
   - test "$ALMOST" == yes && ENALMOST="--enable-almost"                 || true
+  - test "$ALMOST" == yes && PLUMED_CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost"  || true
+# moreover, we hardcode path to dynamic library, required for xdrfile to link properly
+# I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
+  - test -n "$LD_LIBRARY_PATH" && PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" || true
 script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
-# moreover, we hardcode path to dynamic library, required for xdrfile to link properly
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost" $ENALMOST --enable-openmp
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST --enable-openmp
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install
