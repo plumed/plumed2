@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013 The plumed team
+   Copyright (c) 2011-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -88,7 +88,9 @@ Vector BridgedMultiColvarFunction::retrieveCentralAtomPos(){
              addElementDerivative(nbase + nx + 2, mycolv->getElementDerivative(nbas2 + nx + 2) ); 
          } 
       }
-      atomsWithCatomDer.updateActiveMembers();  // This can perhaps be faster
+      for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j) atomsWithCatomDer.updateIndex( mycolv->atomsWithCatomDer[j] );
+      atomsWithCatomDer.sortActiveList();
+//      atomsWithCatomDer.updateActiveMembers();  // This can perhaps be faster
       return cvec;
   }
   Vector cvec;

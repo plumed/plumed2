@@ -313,7 +313,8 @@ void DynamicList<T>::updateActiveMembers(){
   for(unsigned i=0;i<all.size();++i){
       if( onoff[i]>0 && onoff[i]%nprocessors==0 ){ translator[i]=kk; active[kk]=i; kk++; }
   }
-  nactive=kk; 
+  nactive=kk;
+  //std::cerr<<"kk "<<kk<< ", "<<all.size()<<std::endl; 
 }
 
 template <typename T>

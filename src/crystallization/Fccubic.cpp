@@ -41,7 +41,7 @@ namespace crystallization{
 class Fccubic : public multicolvar::MultiColvar {
 private:
 //  double nl_cut;
-  double rcut2, alpha;
+  double rcut, rcut2, alpha;
   double phi, theta, psi;
   double rotationmatrix[3][3]; 
   SwitchingFunction switchingFunction;
@@ -133,7 +133,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
   
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
+  rcut = switchingFunction.get_dmax();
+  rcut2 = rcut*rcut;
   setLinkCellCutoff( 2.*switchingFunction.get_dmax() );
 
   // Read in the atoms
@@ -144,26 +145,32 @@ PLUMED_MULTICOLVAR_INIT(ao)
 
 double Fccubic::compute(){
    weightHasDerivatives=true;
-   double value=0, norm=0, dfunc; Vector distance; Vector rotatedis;
+   double value=0, norm=0, dfunc; Vector rotatedis;
 
    // Calculate the coordination number
    Vector myder, rotateder, fder;
    double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, r12, tmp, a1, b1;
+   //std::cerr<<getNAtoms()<<" natoms\n";
+   std::valarray<Vector> dlist(getNAtoms());
+   for(unsigned i=1;i<getNAtoms();++i) dlist[i]=getPosition(0)-getPosition(i);
+   applyPbc(dlist);
+   
+   double d2; 
    for(unsigned i=1;i<getNAtoms();++i){
-      distance=getSeparation( getPosition(0), getPosition(i) );
+      Vector& distance=dlist[i]; //getSeparation( getPosition(0), getPosition(i) );
       
-      rotatedis[0]=rotationmatrix[0][0]*distance[0]
+      if( distance[0]<rcut && distance[1]<rcut && distance[2]<rcut && 
+          distance[0]>-rcut && distance[1]>-rcut && distance[2]>-rcut &&
+         (d2=distance.modulo2())<rcut2 ){ 
+         rotatedis[0]=rotationmatrix[0][0]*distance[0]
                   +rotationmatrix[0][1]*distance[1]
                   +rotationmatrix[0][2]*distance[2];
-      rotatedis[1]=rotationmatrix[1][0]*distance[0]
+         rotatedis[1]=rotationmatrix[1][0]*distance[0]
                   +rotationmatrix[1][1]*distance[1]
                   +rotationmatrix[1][2]*distance[2];
-      rotatedis[2]=rotationmatrix[2][0]*distance[0]
+         rotatedis[2]=rotationmatrix[2][0]*distance[0]
                   +rotationmatrix[2][1]*distance[1]
                   +rotationmatrix[2][2]*distance[2];
-      
-      double d2 = distance.modulo2();
-      if( d2<rcut2 ){ 
          sw = switchingFunction.calculateSqr( d2, dfunc ); 
    
          norm += sw;
