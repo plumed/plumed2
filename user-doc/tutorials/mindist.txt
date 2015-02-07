@@ -34,7 +34,7 @@ DISTANCES ...
  BETWEEN={GAUSSIAN LOWER=1.0 UPPER=2.0} 
  MIN={BETA=500.}
 ... DISTANCES
-PRINT ARG=d1.less_than,d1.more_than,d1.between,d1.min FILE=colvar STRIDE=10
+PRINT ARG=d1.lessthan,d1.morethan,d1.between,d1.min FILE=colvar STRIDE=10
 \endverbatim
 (see \ref DISTANCES and \ref PRINT)
 

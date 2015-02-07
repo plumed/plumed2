@@ -60,6 +60,8 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
     ])
     if test $found == ok ; then
       AC_DEFINE([$3])
+    else
+       AC_MSG_WARN([cannot enable $3]) 
     fi
 ])
 
@@ -73,6 +75,7 @@ PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
+PLUMED_CONFIG_ENABLE([openmp],[openmp],[search for openmp],[no])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
@@ -100,11 +103,11 @@ fi
 # the reason why I put it here explicitly is that I want a
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
-compilers="g++ cxx gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
-compilers="mpic++ mpicxx openmpic++ openmpicxx $compilers"
+compilers="mpic++ mpicxx mpiicpc openmpic++ openmpicxx $compilers"
 fi
 
 # do the actual search
@@ -256,9 +259,16 @@ fi
 # to be loaded later
 AC_CHECK_LIB([dl],dlopen, [STATIC_LIBS="-ldl $STATIC_LIBS"] [LIBS="-ldl $LIBS"])
 
+mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
+  mpi_found=ok
   PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
+else 
+  mpi_found=ko
+fi
+if test $openmp == true ; then
+  AC_OPENMP
 fi
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
@@ -293,6 +303,8 @@ if test $almost == true ; then
   if test $found == ok; then
     AC_DEFINE([__PLUMED_HAS_ALMOST]) 
     LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+  else 
+    AC_MSG_ERROR([--enable-almost: cannot find almost])
   fi
 fi
 if test $gsl == true ; then
@@ -301,16 +313,13 @@ if test $gsl == true ; then
   if test $found == ok ; then
     AC_DEFINE([__PLUMED_HAS_GSL])
     LIBS="-lgsl -lgslcblas $LIBS"
+  else 
+    AC_MSG_ERROR([--enable-gsl: cannot find gsl])
   fi
 fi
 if test $xdrfile == true ; then
   PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
 fi
-
-# this can be used to enable openmp:
-# AC_OPENMP
-# CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
-#### End of optional libraries ####
 
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
@@ -484,6 +493,13 @@ AC_MSG_NOTICE([**** You can change this later setting PLUMED_PREFIX environment 
 AC_MSG_NOTICE([**** Executable will be named 'plumed'])
 AC_MSG_NOTICE([**** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing])
 
+if test $mpi == true; then
+  if test $mpi_found == ok; then
+    AC_MSG_NOTICE([**** PLUMED will be compiled using MPI])
+  else 
+    AC_MSG_NOTICE([**** PLUMED will NOT be compiled using MPI])
+  fi
+fi
 
 AC_SUBST(build_dir)
 build_dir=`pwd`

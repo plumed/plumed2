@@ -93,7 +93,7 @@ tmpdf(1)
       }
   }
   // And set the link cell cutoff
-  setLinkCellCutoff( 2*sfmax );
+  setLinkCellCutoff( sfmax );
 
   // Create the storeAdjacencyMatrixVessel
   std::string param; vesselbase::VesselOptions da("","",0,param,this);

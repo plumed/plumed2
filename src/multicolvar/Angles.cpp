@@ -156,7 +156,7 @@ use_sf(false)
   int natoms=3; readAtoms( natoms );
   // Set cutoff for link cells 
   if( use_sf ){ 
-    setLinkCellCutoff( 2.*sf1.get_dmax() ); 
+    setLinkCellCutoff( sf1.get_dmax() ); 
     rcut2_1=sf1.get_dmax()*sf1.get_dmax(); 
     rcut2_2=sf2.get_dmax()*sf2.get_dmax(); 
   }

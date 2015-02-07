@@ -48,7 +48,7 @@ plumed=plumed
 root=$($plumed --no-mpi info --root)
 
 if test -z "$root" ; then
-  echo "ERROR: plumed executable not available"
+  echo "FAILURE: plumed executable not available"
   exit 1
 fi
 
@@ -131,11 +131,14 @@ then
 for file in *.reference ; do
   new="${file%.reference}"
   if test -f "$new" ; then
-    out="$(diff "$file" "$new")"
+    ../../../scripts/fixzeroes.sh "$file"
+    cp "$new" "$new.zfix"
+    ../../../scripts/fixzeroes.sh "$new.zfix"
+    out="$(diff "$file" "$new.zfix")"
     test -n "$out" && {
       echo FAILURE
       echo "Diff for ${file%.reference}:"
-      diff "${file}" "${file%.reference}"
+      diff "${file}" "$new.zfix"
     }
   else
     echo FAILURE

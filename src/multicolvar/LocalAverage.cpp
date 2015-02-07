@@ -133,7 +133,7 @@ MultiColvarFunction(ao)
   }
   log.printf("  averaging over central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
-  setLinkCellCutoff( 2.*switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
+  setLinkCellCutoff( switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
 }
 
 unsigned LocalAverage::getNumberOfQuantities(){

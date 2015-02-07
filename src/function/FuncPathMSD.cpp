@@ -57,6 +57,43 @@ p1: FUNCPATHMSD ARG=t1,t2,t3 LAMBDA=500.0
 PRINT ARG=t1,t2,t3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
 \endverbatim
 
+In this second example is shown how to define a PATH in the \ref CONTACTMAP space:
+
+\verbatim
+CONTACTMAP ...
+ATOMS1=1,2 REFERENCE1=0.1  
+ATOMS2=3,4 REFERENCE2=0.5  
+ATOMS3=4,5 REFERENCE3=0.25  
+ATOMS4=5,6 REFERENCE4=0.0  
+SWITCH=(RATIONAL R_0=1.5) 
+LABEL=c1
+CMDIST
+... CONTACTMAP
+
+CONTACTMAP ...
+ATOMS1=1,2 REFERENCE1=0.3  
+ATOMS2=3,4 REFERENCE2=0.9  
+ATOMS3=4,5 REFERENCE3=0.45  
+ATOMS4=5,6 REFERENCE4=0.1  
+SWITCH=(RATIONAL R_0=1.5) 
+LABEL=c2
+CMDIST
+... CONTACTMAP
+
+CONTACTMAP ...
+ATOMS1=1,2 REFERENCE1=1.0  
+ATOMS2=3,4 REFERENCE2=1.0  
+ATOMS3=4,5 REFERENCE3=1.0  
+ATOMS4=5,6 REFERENCE4=1.0  
+SWITCH=(RATIONAL R_0=1.5) 
+LABEL=c3
+CMDIST
+... CONTACTMAP
+
+p1: FUNCPATHMSD ARG=c1,c2,c3 LAMBDA=500.0 
+PRINT ARG=c1,c2,c3,p1.s,p1.z STRIDE=1 FILE=colvar FMT=%8.4f
+\endverbatim
+
 */
 //+ENDPLUMEDOC
    
@@ -116,9 +153,9 @@ PLUMED_REGISTER_ACTION(FuncPathMSD,"FUNCPATHMSD")
 void FuncPathMSD::registerKeywords(Keywords& keys){
   Function::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","LAMBDA","all compulsory keywords should be added like this with a description here");
-  keys.add("optional","NEIGH_SIZE","all optional keywords that have input should be added like a description here");
-  keys.add("optional","NEIGH_STRIDE","all optional keywords that have input should be added like a description here");
+  keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
+  keys.add("optional","NEIGH_SIZE","size of the neighbor list");
+  keys.add("optional","NEIGH_STRIDE","how often the neighbor list needs to be calculated in time units");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("s","default","the position on the path");
   keys.addOutputComponent("z","default","the distance from the path");
@@ -139,7 +176,7 @@ neigh_stride(-1.)
   for(unsigned i=0;i<getNumberOfArguments();i++){
        // for each value get the name and the label of the corresponding action
        std::string myname=getPntrToArgument(i)->getPntrToAction()->getName(); 
-       if(myname!="RMSD")plumed_merror("This argument is not of RMSD type!!!");
+       if(myname!="RMSD"&&myname!="CONTACTMAP")plumed_merror("This argument is not of RMSD type!!!");
   }   
   log.printf("  Consistency check completed! Your path cvs look good!\n"); 
   // do some neighbor printout

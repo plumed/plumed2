@@ -91,7 +91,7 @@ For users:
 - Several small fixes in documentation and log file.
 
 For developers:
-- Fixed makefile dependencies in some auxiliary files in src/lib (src/lib/*cmake and src/lib/*inc).
+- Fixed makefile dependencies in some auxiliary files in src/lib (*cmake and *inc).
 - Changed way modules are linked in src/.
   E.g. src/colvar/tools/ is not anymore a symlink to src/colvar but a real directory.
   (Notice that this introduces a regression: when using plumed as an external library
@@ -139,9 +139,11 @@ For users:
 For developers:
 - Renamed Value.cpp to BiasValue.cpp
 
-Unreleased changes (will be included in 2.0.5)
+Version 2.0.5 (Dec 15, 2014)
 ----------------------------------------------
-See <a href="http://github.com/plumed/plumed2/commits/v2.0">branch v2.0 on git repository</a>.
+
+Notice that branch 2.0 will not be longer maintained!
+All users are invited to switch to version 2.1.
 
 For users:
 - Fixed a bug in replica exchange with different Hamiltonians (either lamdba-dynamics
@@ -149,6 +151,9 @@ For users:
   variables.
 - Fixed a bug in analysis (e.g. \ref HISTOGRAM) leading to wrong accumulation
   of statistics when running a replica exchange simulation.
+- Fixed a bug in the calculation of derivatives in histograms. This should
+  be harmless since people usually only consider the value in histograms
+  and not the derivatives.
 - Fixed an issue in Makefile that could results in problems when
   patching an MD code with --shared option (pointed out by Abhi Acharya).
   This fixes a regression introduced in 2.0.2.
@@ -157,6 +162,7 @@ For users:
 For developers:
 - Added warning when performing regtests using an instance of plumed from
   a different directory
+
 
 */
 

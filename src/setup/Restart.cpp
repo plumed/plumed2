@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -35,7 +35,18 @@ namespace setup{
 Activate restart.
 
 This is a Setup directive and, as such, should appear
-at the beginning of the input file.
+at the beginning of the input file. It influences the way
+PLUMED treat files open for writing (see also \ref Files).
+
+Notice that it is also possible to enable or disable restart on a per-action
+basis using the RESTART keyword on a single action. In this case,
+the keyword should be assigned a value. RESTART=AUTO means that global
+settings are used, RESTART=YES or RESTART=NO respectively enable
+and disable restart for that single action.
+
+\attention
+This directive can have also other side effects, e.g. on \ref METAD
+and on some analysis action.
 
 \par Examples
 
@@ -44,7 +55,9 @@ Using the following input:
 d: DISTANCE ATOMS=1,2
 PRINT ARG=d FILE=out
 \endverbatim
+(See also \ref DISTANCE and \ref PRINT).
 a new 'out' file will be created. If an old one is on the way, it will be automatically backed up.
+
 On the other hand, using the following input:
 \verbatim
 RESTART
@@ -54,8 +67,18 @@ PRINT ARG=d FILE=out
 the file 'out' will be appended.
 (See also \ref DISTANCE and \ref PRINT).
 
-\attention
-This directive can have also other side effects, e.g. on \ref METAD
+In the following case, file out1 will be backed up and file out2 will be concatenated
+\verbatim
+RESTART
+d1: DISTANCE ATOMS=1,2
+d2: DISTANCE ATOMS=1,2
+PRINT ARG=d1 FILE=out1 RESTART=NO
+PRINT ARG=d2 FILE=out2
+\endverbatim
+(See also \ref DISTANCE and \ref PRINT).
+
+
+
 
 */
 //+ENDPLUMEDOC

@@ -628,6 +628,7 @@ STATIC_LIBS
 LDSO
 LD
 SOEXT
+OPENMP_CXXFLAGS
 EGREP
 GREP
 CXXCPP
@@ -692,6 +693,7 @@ enable_debug_glibcxx
 enable_shared
 enable_cxx_exceptions
 enable_mpi
+enable_openmp
 enable_external_lapack
 enable_molfile_plugins
 enable_external_molfile_plugins
@@ -1336,6 +1338,7 @@ Optional Features:
   --enable-shared         enable shared libs, default: yes
   --enable-cxx-exceptions enable c++ exceptions, default: no
   --enable-mpi            enable search for mpi, default: yes
+  --enable-openmp         enable search for openmp, default: no
   --enable-external-lapack
                           enable search for external lapack, default: yes
   --enable-molfile-plugins
@@ -1353,6 +1356,7 @@ Optional Features:
   --enable-almost         enable search for almost, default: no
   --enable-gsl            enable search for gsl, default: no
   --enable-xdrfile        enable search for xdrfile, default: yes
+  --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2373,6 +2377,24 @@ fi
 
 
 
+openmp=
+# Check whether --enable-openmp was given.
+if test "${enable_openmp+set}" = set; then :
+  enableval=$enable_openmp; case "${enableval}" in
+             (yes) openmp=true ;;
+             (no)  openmp=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-openmp" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) openmp=true ;;
+             (no)  openmp=false ;;
+  esac
+
+fi
+
+
+
 external_lapack=
 # Check whether --enable-external-lapack was given.
 if test "${enable_external_lapack+set}" = set; then :
@@ -2620,11 +2642,11 @@ fi
 # the reason why I put it here explicitly is that I want a
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
-compilers="g++ cxx gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
-compilers="mpic++ mpicxx openmpic++ openmpicxx $compilers"
+compilers="mpic++ mpicxx mpiicpc openmpic++ openmpicxx $compilers"
 fi
 
 # do the actual search
@@ -5056,8 +5078,10 @@ if test "x$ac_cv_lib_dl_dlopen" = xyes; then :
 fi
 
 
+mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
+  mpi_found=ok
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
@@ -5075,7 +5099,80 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_MPI 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_MPI" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_MPI" >&2;}
     fi
+
+else
+  mpi_found=ko
+fi
+if test $openmp == true ; then
+
+  OPENMP_CXXFLAGS=
+  # Check whether --enable-openmp was given.
+if test "${enable_openmp+set}" = set; then :
+  enableval=$enable_openmp;
+fi
+
+  if test "$enable_openmp" != no; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $CXX option to support OpenMP" >&5
+$as_echo_n "checking for $CXX option to support OpenMP... " >&6; }
+if ${ac_cv_prog_cxx_openmp+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifndef _OPENMP
+ choke me
+#endif
+#include <omp.h>
+int main () { return omp_get_num_threads (); }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_prog_cxx_openmp='none needed'
+else
+  ac_cv_prog_cxx_openmp='unsupported'
+	  	  	  	  	  	  	                                	  	  	  	  	  	  for ac_option in -fopenmp -xopenmp -openmp -mp -omp -qsmp=omp -homp \
+                           -Popenmp --openmp; do
+	    ac_save_CXXFLAGS=$CXXFLAGS
+	    CXXFLAGS="$CXXFLAGS $ac_option"
+	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifndef _OPENMP
+ choke me
+#endif
+#include <omp.h>
+int main () { return omp_get_num_threads (); }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_prog_cxx_openmp=$ac_option
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+	    CXXFLAGS=$ac_save_CXXFLAGS
+	    if test "$ac_cv_prog_cxx_openmp" != unsupported; then
+	      break
+	    fi
+	  done
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_prog_cxx_openmp" >&5
+$as_echo "$ac_cv_prog_cxx_openmp" >&6; }
+    case $ac_cv_prog_cxx_openmp in #(
+      "none needed" | unsupported)
+	;; #(
+      *)
+	OPENMP_CXXFLAGS=$ac_cv_prog_cxx_openmp ;;
+    esac
+  fi
+
 
 fi
 if test $matheval == true ; then
@@ -5138,6 +5235,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_MATHEVAL 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&2;}
     fi
 
 fi
@@ -5201,6 +5301,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_CLOCK_GETTIME 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CLOCK_GETTIME" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CLOCK_GETTIME" >&2;}
     fi
 
 fi
@@ -5222,6 +5325,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_GETTIMEOFDAY 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&2;}
     fi
 
 fi
@@ -5243,6 +5349,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_CREGEX 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CREGEX" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CREGEX" >&2;}
     fi
 
 fi
@@ -5264,6 +5373,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_DLOPEN 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_DLOPEN" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_DLOPEN" >&2;}
     fi
 
 fi
@@ -5285,6 +5397,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_EXECINFO 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_EXECINFO" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_EXECINFO" >&2;}
     fi
 
 fi
@@ -5348,6 +5463,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_ZLIB 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&2;}
     fi
 
 fi
@@ -5550,6 +5668,8 @@ fi
     $as_echo "#define __PLUMED_HAS_ALMOST 1" >>confdefs.h
 
     LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+  else
+    as_fn_error $? "--enable-almost: cannot find almost" "$LINENO" 5
   fi
 fi
 if test $gsl == true ; then
@@ -5594,6 +5714,8 @@ fi
     $as_echo "#define __PLUMED_HAS_GSL 1" >>confdefs.h
 
     LIBS="-lgsl -lgslcblas $LIBS"
+  else
+    as_fn_error $? "--enable-gsl: cannot find gsl" "$LINENO" 5
   fi
 fi
 if test $xdrfile == true ; then
@@ -5656,14 +5778,12 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_XDRFILE 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_XDRFILE" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_XDRFILE" >&2;}
     fi
 
 fi
-
-# this can be used to enable openmp:
-# AC_OPENMP
-# CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
-#### End of optional libraries ####
 
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
@@ -5982,6 +6102,15 @@ $as_echo "$as_me: **** Executable will be named 'plumed'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing" >&5
 $as_echo "$as_me: **** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing" >&6;}
 
+if test $mpi == true; then
+  if test $mpi_found == ok; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled using MPI" >&5
+$as_echo "$as_me: **** PLUMED will be compiled using MPI" >&6;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will NOT be compiled using MPI" >&5
+$as_echo "$as_me: **** PLUMED will NOT be compiled using MPI" >&6;}
+  fi
+fi
 
 
 build_dir=`pwd`

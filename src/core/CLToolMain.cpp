@@ -137,7 +137,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
     } else if(a=="--no-mpi"){
 // this is ignored, as it is parsed in main
       if(i>1){
-        fprintf(stderr,"--no-mpi option should can only be used as the first option");
+        fprintf(stderr,"--no-mpi option can only be used as the first option");
         return 1;
       }
     } else if(a=="--standalone-executable"){

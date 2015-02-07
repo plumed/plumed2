@@ -110,7 +110,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
   log.printf("  coordination of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  setLinkCellCutoff( 2.*switchingFunction.get_dmax() );
+  setLinkCellCutoff( switchingFunction.get_dmax() );
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
   
   // Read in the atoms

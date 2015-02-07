@@ -259,7 +259,8 @@ Plumed has functionality to deal with parallel MD codes.  The particular form of
 
 \verbatim
 plumed_cmd(plumedmain,"setAtomsNlocal",&nlocal);            // Pass a pointer to the number of atoms on this node
-plumed_cmd(plumedmain,"setAtomsGatindex",gatindex);         // Pass an array containing the indices of all the atoms on this node (used for domain decomposition)
+plumed_cmd(plumedmain,"setAtomsGatindex",gatindex);         // Pass an array (from a code in c) containing the indices of all the atoms on this node (used for domain decomposition)
+plumed_cmd(plumedmain,"setAtomsFGatindex",gatindex);        // Pass an array (from a code in fortran) containing the indices of all the atoms on this node (used for domain decomposition)
 plumed_cmd(plumedmain,"setAtomsContiguous",&start);         // Number the atoms on this node from start to start+nlocal   (used for particle decomposition)
 \endverbatim 
 
