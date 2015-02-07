@@ -124,7 +124,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
   // Setup link cells
-  setLinkCellCutoff( 2.*sf1.get_dmax() );
+  setLinkCellCutoff( sf1.get_dmax() );
   rcut2 = sf1.get_dmax()*sf1.get_dmax();
 
   // And setup the ActionWithVessel

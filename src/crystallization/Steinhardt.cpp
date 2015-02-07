@@ -56,7 +56,7 @@ VectorMultiColvar(ao)
   }
   log.printf("  Steinhardt parameter of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  setLinkCellCutoff( 2.*switchingFunction.get_dmax() );
+  setLinkCellCutoff( switchingFunction.get_dmax() );
   rcut = switchingFunction.get_dmax();
 }
 
