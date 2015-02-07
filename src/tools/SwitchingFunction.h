@@ -94,6 +94,8 @@ public:
   double get_r0() const;
 /// Return dmax 
   double get_dmax() const;
+/// Return dmax 
+  double get_recommended_cutoff() const;
 };
 
 }

@@ -19,6 +19,7 @@ Changes from version 2.0 which are relevant for users:
   - \ref COORDINATION now skips pairs of one atom with itself.
   - Labels of quantities calculated by \ref BIASVALUE have changed from <i>label</i>.bias.<i>argname</i> to <i>label</i>.<i>argname</i>_bias, which is more consistent with steered MD
   - Labels of quantities calculated by \ref ABMD have change from <i>label</i>.min_<i>argname</i> to <i>label</i>.<i>argname</i>_min, which is more consistent with steered MD
+  - Labels of quantities calculated by \ref PIECEWISE have change from <i>label</i>.<i>argnumber</i> to <i>label</i>.<i>argname</i>_pfunc, which is more consistent with steered MD
   - For multicolvars components calculated with LESS_THAN and MORE_THAN keywords are now labelled lessthan and morethan. This change is necessary as the underscore
 character now has a special usage in component names.
   - In \ref CONTACTMAP components are now labelled <i>label</i>.contact-\f$n\f$.
@@ -124,14 +125,50 @@ Changes from version 2.0 which are relevant for developers:
 
 This list is likely incompleted, if you are developing in PLUMED you are encouraged to follow changes on github.
 
-Unreleased changes (will be included in 2.1.1)
+Version 2.1.1 (Dec 15, 2014)
 ----------------------------------------------
-See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
 
-This release will include all the fixes available in branch 2.0.
+This release includes all the fixes available in branch 2.0 until 2.0.5.
 
 For users:
+- New patch for AMBER 14 (sander module only). This patch should be compatible
+  with any PLUMED 2 version (including 2.0). It includes most PLUMED features
+  with the notable exception of multi-replica framework.
+- Changed definition in arbitrary phase of eigenvectors. This will change the result of some
+  analysis method where the phase does matter (e.g. \ref CLASSICAL_MDS) and make
+  some regression test better reproducible.
+- Fixed a portability issue in BG/P where gettimeofday is not implemented.
+  Notice that this fix implies that one should execute again ./configure to have
+  plumed timing working correctly.
+- CS2Backbone: fixed a bug that resulted in only a fraction of the chemical shifts being printed with WRITE_CS and 
+  parallel simulations (requires to get the last almost updated from SVN)
+- NOE: fixed a bug in the replica-averaging
+- Fixed a linking issue with ALMOST, where bz2 was always used to link ALMOST to PLUMED even if it is not compulsory 
+  to build ALMOST.
+- Fixed a wrong include in the GMX5 patch.
+- \ref FUNCPATHMSD can now be used together with \ref CONTACTMAP to define pathways in contactmaps space
+- Configuration is more verbose, a warning is given if a default option cannot be enabled and an error is given if 
+  an option explicitly enabled cannot be enabled.
+- Compilation is less verbose (use "make VERBOSE=1" to have old behavior)
 - Small fixes in documentation.
+
+For developers:
+- Tests are now performed at every single push on travis-ci.org
+- Manual is built and pushed to the online server from travis-ci.org (see developer doc)
+- Fixes in developer doc.
+
+Unreleased changes (will be included in 2.1.2)
+----------------------------------------------
+
+See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
+
+For users:
+- Fixed a severe bug on \ref DRMSD - cutoff values were ignored by PLUMED.
+  Notice that this bug was introduced in 2.1.0, so that it should not affect the 2.0.x series.
+- Patching system now checks for the availabity of shared/static/runtime version of plumed before
+  patching
+- GMX5 patch was not working for bias-exchange like cases
+- Sander patch now works with multiple replica (no replica exchange yet).
 
 
 */

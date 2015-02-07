@@ -68,7 +68,13 @@ void BridgedMultiColvarFunction::performTask(){
   }
 
   completeTask();
-  atoms_with_derivatives.updateActiveMembers();
+  atoms_with_derivatives.emptyActiveMembers();
+  if( mycolv->isDensity() ){
+     for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j) atoms_with_derivatives.updateIndex( mycolv->atomsWithCatomDer[j] );
+  } else {
+     for(unsigned j=0;j<mycolv->atoms_with_derivatives.getNumberActive();++j) atoms_with_derivatives.updateIndex( mycolv->atoms_with_derivatives[j] );
+  }
+  atoms_with_derivatives.sortActiveList();
 }
 
 Vector BridgedMultiColvarFunction::retrieveCentralAtomPos(){
@@ -90,7 +96,6 @@ Vector BridgedMultiColvarFunction::retrieveCentralAtomPos(){
       }
       for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j) atomsWithCatomDer.updateIndex( mycolv->atomsWithCatomDer[j] );
       atomsWithCatomDer.sortActiveList();
-//      atomsWithCatomDer.updateActiveMembers();  // This can perhaps be faster
       return cvec;
   }
   Vector cvec;

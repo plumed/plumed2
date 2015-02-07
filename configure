@@ -628,6 +628,7 @@ STATIC_LIBS
 LDSO
 LD
 SOEXT
+OPENMP_CXXFLAGS
 EGREP
 GREP
 CXXCPP
@@ -692,17 +693,20 @@ enable_debug_glibcxx
 enable_shared
 enable_cxx_exceptions
 enable_mpi
+enable_openmp
 enable_external_lapack
 enable_molfile_plugins
 enable_external_molfile_plugins
 enable_matheval
 enable_zlib
 enable_clock_gettime
+enable_gettimeofday
 enable_cregex
 enable_dlopen
 enable_execinfo
 enable_almost
 enable_gsl
+enable_xdrfile
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1334,6 +1338,7 @@ Optional Features:
   --enable-shared         enable shared libs, default: yes
   --enable-cxx-exceptions enable c++ exceptions, default: no
   --enable-mpi            enable search for mpi, default: yes
+  --enable-openmp         enable search for openmp, default: no
   --enable-external-lapack
                           enable search for external lapack, default: yes
   --enable-molfile-plugins
@@ -1344,11 +1349,14 @@ Optional Features:
   --enable-matheval       enable search for matheval, default: yes
   --enable-zlib           enable search for zlib, default: yes
   --enable-clock-gettime  enable search for gettime, default: yes
+  --enable-gettimeofday   enable search for gettimeofday, default: yes
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
   --enable-almost         enable search for almost, default: no
   --enable-gsl            enable search for gsl, default: no
+  --enable-xdrfile        enable search for xdrfile, default: yes
+  --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -2369,6 +2377,24 @@ fi
 
 
 
+openmp=
+# Check whether --enable-openmp was given.
+if test "${enable_openmp+set}" = set; then :
+  enableval=$enable_openmp; case "${enableval}" in
+             (yes) openmp=true ;;
+             (no)  openmp=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-openmp" "$LINENO" 5 ;;
+  esac
+else
+  case "no" in
+             (yes) openmp=true ;;
+             (no)  openmp=false ;;
+  esac
+
+fi
+
+
+
 external_lapack=
 # Check whether --enable-external-lapack was given.
 if test "${enable_external_lapack+set}" = set; then :
@@ -2477,6 +2503,24 @@ fi
 
 
 
+gettimeofday=
+# Check whether --enable-gettimeofday was given.
+if test "${enable_gettimeofday+set}" = set; then :
+  enableval=$enable_gettimeofday; case "${enableval}" in
+             (yes) gettimeofday=true ;;
+             (no)  gettimeofday=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-gettimeofday" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) gettimeofday=true ;;
+             (no)  gettimeofday=false ;;
+  esac
+
+fi
+
+
+
 cregex=
 # Check whether --enable-cregex was given.
 if test "${enable_cregex+set}" = set; then :
@@ -2567,6 +2611,24 @@ fi
 
 
 
+xdrfile=
+# Check whether --enable-xdrfile was given.
+if test "${enable_xdrfile+set}" = set; then :
+  enableval=$enable_xdrfile; case "${enableval}" in
+             (yes) xdrfile=true ;;
+             (no)  xdrfile=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-xdrfile" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) xdrfile=true ;;
+             (no)  xdrfile=false ;;
+  esac
+
+fi
+
+
+
 
 # by default use -O flag
 # we override the autoconf default (-g) because in release build we do not want to
@@ -2580,11 +2642,11 @@ fi
 # the reason why I put it here explicitly is that I want a
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
-compilers="g++ cxx gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
-compilers="mpic++ mpicxx openmpic++ openmpicxx $compilers"
+compilers="mpic++ mpicxx mpiicpc openmpic++ openmpicxx $compilers"
 fi
 
 # do the actual search
@@ -4686,21 +4748,6 @@ fi
 done
 
 
-ac_fn_cxx_check_header_mongrel "$LINENO" "sys/time.h" "ac_cv_header_sys_time_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_time_h" = xyes; then :
-
-else
-  as_fn_error $? "compulsory header not found" "$LINENO" 5
-fi
-
-
-ac_fn_cxx_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"
-if test "x$ac_cv_func_gettimeofday" = xyes; then :
-
-else
-  as_fn_error $? "compulsory function not found" "$LINENO" 5
-fi
-
 ac_fn_cxx_check_header_mongrel "$LINENO" "dirent.h" "ac_cv_header_dirent_h" "$ac_includes_default"
 if test "x$ac_cv_header_dirent_h" = xyes; then :
 
@@ -5031,8 +5078,10 @@ if test "x$ac_cv_lib_dl_dlopen" = xyes; then :
 fi
 
 
+mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
+  mpi_found=ok
 
     found=ko
     ac_fn_cxx_check_header_mongrel "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
@@ -5050,7 +5099,80 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_MPI 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_MPI" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_MPI" >&2;}
     fi
+
+else
+  mpi_found=ko
+fi
+if test $openmp == true ; then
+
+  OPENMP_CXXFLAGS=
+  # Check whether --enable-openmp was given.
+if test "${enable_openmp+set}" = set; then :
+  enableval=$enable_openmp;
+fi
+
+  if test "$enable_openmp" != no; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $CXX option to support OpenMP" >&5
+$as_echo_n "checking for $CXX option to support OpenMP... " >&6; }
+if ${ac_cv_prog_cxx_openmp+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifndef _OPENMP
+ choke me
+#endif
+#include <omp.h>
+int main () { return omp_get_num_threads (); }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_prog_cxx_openmp='none needed'
+else
+  ac_cv_prog_cxx_openmp='unsupported'
+	  	  	  	  	  	  	                                	  	  	  	  	  	  for ac_option in -fopenmp -xopenmp -openmp -mp -omp -qsmp=omp -homp \
+                           -Popenmp --openmp; do
+	    ac_save_CXXFLAGS=$CXXFLAGS
+	    CXXFLAGS="$CXXFLAGS $ac_option"
+	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#ifndef _OPENMP
+ choke me
+#endif
+#include <omp.h>
+int main () { return omp_get_num_threads (); }
+
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_prog_cxx_openmp=$ac_option
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+	    CXXFLAGS=$ac_save_CXXFLAGS
+	    if test "$ac_cv_prog_cxx_openmp" != unsupported; then
+	      break
+	    fi
+	  done
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_prog_cxx_openmp" >&5
+$as_echo "$ac_cv_prog_cxx_openmp" >&6; }
+    case $ac_cv_prog_cxx_openmp in #(
+      "none needed" | unsupported)
+	;; #(
+      *)
+	OPENMP_CXXFLAGS=$ac_cv_prog_cxx_openmp ;;
+    esac
+  fi
+
 
 fi
 if test $matheval == true ; then
@@ -5113,6 +5235,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_MATHEVAL 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_MATHEVAL" >&2;}
     fi
 
 fi
@@ -5176,6 +5301,33 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_CLOCK_GETTIME 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CLOCK_GETTIME" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CLOCK_GETTIME" >&2;}
+    fi
+
+fi
+if test $gettimeofday == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "sys/time.h" "ac_cv_header_sys_time_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_time_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"
+if test "x$ac_cv_func_gettimeofday" = xyes; then :
+  found=ok
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_GETTIMEOFDAY 1" >>confdefs.h
+
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&2;}
     fi
 
 fi
@@ -5197,6 +5349,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_CREGEX 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_CREGEX" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_CREGEX" >&2;}
     fi
 
 fi
@@ -5218,6 +5373,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_DLOPEN 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_DLOPEN" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_DLOPEN" >&2;}
     fi
 
 fi
@@ -5239,6 +5397,9 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_EXECINFO 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_EXECINFO" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_EXECINFO" >&2;}
     fi
 
 fi
@@ -5302,12 +5463,78 @@ fi
     if test $found == ok ; then
       $as_echo "#define __PLUMED_HAS_ZLIB 1" >>confdefs.h
 
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_ZLIB" >&2;}
     fi
 
 fi
 if test $almost == true ; then
+  bz2=ko
+  ac_fn_cxx_check_header_mongrel "$LINENO" "bzlib.h" "ac_cv_header_bzlib_h" "$ac_includes_default"
+if test "x$ac_cv_header_bzlib_h" = xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing BZ2_bzReadOpen" >&5
+$as_echo_n "checking for library containing BZ2_bzReadOpen... " >&6; }
+if ${ac_cv_search_BZ2_bzReadOpen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char BZ2_bzReadOpen ();
+int
+main ()
+{
+return BZ2_bzReadOpen ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' bz2; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_BZ2_bzReadOpen=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_BZ2_bzReadOpen+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_BZ2_bzReadOpen+:} false; then :
+
+else
+  ac_cv_search_BZ2_bzReadOpen=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_BZ2_bzReadOpen" >&5
+$as_echo "$ac_cv_search_BZ2_bzReadOpen" >&6; }
+ac_res=$ac_cv_search_BZ2_bzReadOpen
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  bz2=ok
+fi
+
+fi
+
+
   found=ko
-  ac_fn_cxx_check_header_mongrel "$LINENO" "almost.h" "ac_cv_header_almost_h" "$ac_includes_default"
+  if test $bz2 == ok; then
+    ac_fn_cxx_check_header_mongrel "$LINENO" "almost.h" "ac_cv_header_almost_h" "$ac_includes_default"
 if test "x$ac_cv_header_almost_h" = xyes; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing init_camshift" >&5
 $as_echo_n "checking for library containing init_camshift... " >&6; }
@@ -5371,10 +5598,78 @@ fi
 fi
 
 
+  else
+    ac_fn_cxx_check_header_mongrel "$LINENO" "almost.h" "ac_cv_header_almost_h" "$ac_includes_default"
+if test "x$ac_cv_header_almost_h" = xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing init_camshift" >&5
+$as_echo_n "checking for library containing init_camshift... " >&6; }
+if ${ac_cv_search_init_camshift+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char init_camshift ();
+int
+main ()
+{
+return init_camshift ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' Alm; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib -lsqlite3 -lz -lnbimpl -lshx $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_init_camshift=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_init_camshift+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_init_camshift+:} false; then :
+
+else
+  ac_cv_search_init_camshift=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_init_camshift" >&5
+$as_echo "$ac_cv_search_init_camshift" >&6; }
+ac_res=$ac_cv_search_init_camshift
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  found=ok
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: \"Almost not found\"" >&5
+$as_echo "$as_me: \"Almost not found\"" >&6;}
+fi
+
+fi
+
+
+  fi
   if test $found == ok; then
     $as_echo "#define __PLUMED_HAS_ALMOST 1" >>confdefs.h
 
     LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+  else
+    as_fn_error $? "--enable-almost: cannot find almost" "$LINENO" 5
   fi
 fi
 if test $gsl == true ; then
@@ -5419,14 +5714,76 @@ fi
     $as_echo "#define __PLUMED_HAS_GSL 1" >>confdefs.h
 
     LIBS="-lgsl -lgslcblas $LIBS"
+  else
+    as_fn_error $? "--enable-gsl: cannot find gsl" "$LINENO" 5
   fi
+fi
+if test $xdrfile == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "xdrfile/xdrfile_xtc.h" "ac_cv_header_xdrfile_xdrfile_xtc_h" "$ac_includes_default"
+if test "x$ac_cv_header_xdrfile_xdrfile_xtc_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "write_xtc" "ac_cv_func_write_xtc"
+if test "x$ac_cv_func_write_xtc" = xyes; then :
+  found=ok
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for write_xtc in -lxdrfile" >&5
+$as_echo_n "checking for write_xtc in -lxdrfile... " >&6; }
+if ${ac_cv_lib_xdrfile_write_xtc+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lxdrfile  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char write_xtc ();
+int
+main ()
+{
+return write_xtc ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_xdrfile_write_xtc=yes
+else
+  ac_cv_lib_xdrfile_write_xtc=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xdrfile_write_xtc" >&5
+$as_echo "$ac_cv_lib_xdrfile_write_xtc" >&6; }
+if test "x$ac_cv_lib_xdrfile_write_xtc" = xyes; then :
+  LIBS="-lxdrfile $LIBS" && found=ok
 fi
 
 
-# this can be used to enable openmp:
-# AC_OPENMP
-# CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
-#### End of optional libraries ####
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_HAS_XDRFILE 1" >>confdefs.h
+
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_XDRFILE" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_XDRFILE" >&2;}
+    fi
+
+fi
 
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
@@ -5745,6 +6102,15 @@ $as_echo "$as_me: **** Executable will be named 'plumed'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing" >&5
 $as_echo "$as_me: **** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing" >&6;}
 
+if test $mpi == true; then
+  if test $mpi_found == ok; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled using MPI" >&5
+$as_echo "$as_me: **** PLUMED will be compiled using MPI" >&6;}
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will NOT be compiled using MPI" >&5
+$as_echo "$as_me: **** PLUMED will NOT be compiled using MPI" >&6;}
+  fi
+fi
 
 
 build_dir=`pwd`

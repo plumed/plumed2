@@ -41,7 +41,7 @@ namespace crystallization{
 class Fccubic : public multicolvar::MultiColvar {
 private:
 //  double nl_cut;
-  double rcut, rcut2, alpha;
+  double rcut2, alpha;
   double phi, theta, psi;
   double rotationmatrix[3][3]; 
   SwitchingFunction switchingFunction;
@@ -133,9 +133,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
   
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  rcut = switchingFunction.get_dmax();
-  rcut2 = rcut*rcut;
-  setLinkCellCutoff( 2.*switchingFunction.get_dmax() );
+  rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
+  setLinkCellCutoff(switchingFunction.get_recommended_cutoff() );
 
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
@@ -159,9 +158,18 @@ double Fccubic::compute(){
    for(unsigned i=1;i<getNAtoms();++i){
       Vector& distance=dlist[i]; //getSeparation( getPosition(0), getPosition(i) );
       
-      if( distance[0]<rcut && distance[1]<rcut && distance[2]<rcut && 
+      /*if( distance[0]<rcut && distance[1]<rcut && distance[2]<rcut && 
           distance[0]>-rcut && distance[1]>-rcut && distance[2]>-rcut &&
-         (d2=distance.modulo2())<rcut2 ){ 
+         (d2=distance.modulo2())<rcut2 ){ */
+      // computes the squared distance while trying to minimize number of operations
+      if ( (d2=distance[0]*distance[0])<rcut2 && 
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+           
+         sw = switchingFunction.calculateSqr( d2, dfunc ); 
+   
+         norm += sw;
+
          rotatedis[0]=rotationmatrix[0][0]*distance[0]
                   +rotationmatrix[0][1]*distance[1]
                   +rotationmatrix[0][2]*distance[2];
@@ -171,10 +179,7 @@ double Fccubic::compute(){
          rotatedis[2]=rotationmatrix[2][0]*distance[0]
                   +rotationmatrix[2][1]*distance[1]
                   +rotationmatrix[2][2]*distance[2];
-         sw = switchingFunction.calculateSqr( d2, dfunc ); 
-   
-         norm += sw;
-
+                  
          x2 = rotatedis[0]*rotatedis[0];
          x4 = x2*x2;
 
@@ -184,8 +189,8 @@ double Fccubic::compute(){
          z2 = rotatedis[2]*rotatedis[2];
          z4 = z2*z2;
                  
-         r8 = pow( distance.modulo2(), 4 );
-         r12 = pow( distance.modulo2(), 6 );
+         r8 = pow( d2, 4 );
+         r12 = pow( d2, 6 );
 
          tmp = ((x4*y4)+(x4*z4)+(y4*z4))/r8-alpha*x4*y4*z4/r12;
 
@@ -231,7 +236,9 @@ double Fccubic::compute(){
    
    setElementValue(0, value); setElementValue(1, norm ); 
    // values -> der of... value [0], weight[1], x coord [2], y, z... [more magic]
-   updateActiveAtoms(); quotientRule( 0, 1, 0 ); clearDerivativesAfterTask(1);
+   updateActiveAtoms(); 
+   quotientRule( 0, 1, 0 ); 
+   clearDerivativesAfterTask(1);
    // Weight doesn't really have derivatives (just use the holder for convenience)
    weightHasDerivatives=false; setElementValue( 1, 1.0 );
 

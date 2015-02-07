@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -33,7 +33,7 @@ SingleDomainRMSD( ro ),
 bounds_were_set(false),
 nopbc(true),
 lower(0),
-upper(0)
+upper(std::numeric_limits<double>::max( ))
 {
 }
 
@@ -46,8 +46,8 @@ void DRMSD::read( const PDB& pdb ){
   readAtomsFromPDB( pdb );
 
   parseFlag("NOPBC",nopbc);  
-  if( !parse("LOWER_CUTOFF",lower,true) ) lower=0.0; 
-  if( !parse("UPPER_CUTTOFF",upper,true) ) upper=std::numeric_limits<double>::max( );
+  parse("LOWER_CUTOFF",lower,true);
+  parse("UPPER_CUTOFF",upper,true);
   setBoundsOnDistances( !nopbc, lower, upper );
   setup_targets();
 }
@@ -69,11 +69,11 @@ void DRMSD::setup_targets(){
           }
        }
   }
-  if( targets.size()==0 ) error("drmsd will compare no distances - check upper and lower bounds are sensible");  
+  if( targets.empty() ) error("drmsd will compare no distances - check upper and lower bounds are sensible");  
 }
 
 double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared ){
-  plumed_dbg_assert( targets.size()>0 );
+  plumed_dbg_assert( !targets.empty() );
 
   Vector distance; 
   double drmsd=0.; 

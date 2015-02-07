@@ -67,6 +67,7 @@ void ActionVolume::calculateAllVolumes(){
   double weight; Vector wdf; 
   weight=calculateNumberInside( catom_pos, bead, wdf ); 
   if( not_in ){ weight = 1.0 - weight; wdf *= -1.; }  
+
   setNumberInVolume( nquantities-1, weight, wdf );
 }
 

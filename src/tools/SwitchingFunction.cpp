@@ -77,7 +77,7 @@ s(r)=\exp\left(-\frac{ (r - d_0)^2 }{ 2r_0^2 }\right)
 </tr> <tr> 
 <td> SMAP </td> <td>
 \f$
-s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)^a\right]^{-b/a}
+s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)^a \right]^{-b/a}
 \f$
 </td> <td>
 {SMAP R_0=\f$r_0\f$ D_0=\f$d_0\f$ A=\f$a\f$ B=\f$b\f$}
@@ -332,6 +332,11 @@ double SwitchingFunction::get_d0() const {
 
 double SwitchingFunction::get_dmax() const {
   return dmax;
+}
+
+double SwitchingFunction::get_recommended_cutoff() const {
+  if (type==cubic) return dmax;
+  else return 2.0*dmax;  //! TODO define reasonable cutoffs for all the available switching functions
 }
 
 }

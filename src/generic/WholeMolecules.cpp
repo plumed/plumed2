@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -108,6 +108,8 @@ public:
 PLUMED_REGISTER_ACTION(WholeMolecules,"WHOLEMOLECULES")
 
 void WholeMolecules::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys );
+  ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY1, ENTITY2,...");
@@ -149,7 +151,7 @@ ActionAtomistic(ao)
       std::vector< std::vector<AtomNumber> > backatoms;
       moldat[0]->getBackbone( resstrings, moltype, backatoms );
       for(unsigned i=0;i<backatoms.size();++i){
-          log.printf("  atoms in entity %d : ", groups.size()+1 );
+          log.printf("  atoms in entity %u : ", static_cast<unsigned>(groups.size()+1));
           for(unsigned j=0;j<backatoms[i].size();++j) log.printf("%d ",backatoms[i][j].serial() );
           log.printf("\n");
           groups.push_back( backatoms[i] );

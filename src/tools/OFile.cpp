@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -234,7 +234,7 @@ void OFile::setBackupString( const std::string& str ){
 }
 
 void OFile::backupAllFiles( const std::string& str ){
-  plumed_assert( backstring!="bck" && plumed && !plumed->getRestart() );
+  plumed_assert( backstring!="bck" && !checkRestart());
   size_t found=str.find_last_of("/\\");
   std::string filename = appendSuffix(str,plumed->getSuffix());
   std::string directory=filename.substr(0,found+1);
@@ -287,6 +287,7 @@ OFile& OFile::open(const std::string&path){
   }
   if(checkRestart()){
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"a");
+     mode="a";
      if(Tools::extension(this->path)=="gz"){
 #ifdef __PLUMED_HAS_ZLIB
        gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"a9");
@@ -298,6 +299,7 @@ OFile& OFile::open(const std::string&path){
      backupFile( backstring, this->path );
      if(comm)comm->Barrier();
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"w");
+     mode="w";
      if(Tools::extension(this->path)=="gz"){
 #ifdef __PLUMED_HAS_ZLIB
        gzfp=(void*)gzopen(const_cast<char*>(this->path.c_str()),"w9");
@@ -362,7 +364,9 @@ FileBase& OFile::flush(){
 }
 
 bool OFile::checkRestart()const{
-  if(enforceRestart_ || (plumed && plumed->getRestart() ) ) return true;
+  if(enforceRestart_) return true;
+  else if(action) return action->getRestart();
+  else if(plumed) return plumed->getRestart();
   else return false;
 }
 

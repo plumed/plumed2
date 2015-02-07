@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -51,6 +51,7 @@ void Action::registerKeywords( Keywords& keys ){
   keys.add( "hidden", "LABEL", "a label for the action so that its output can be referenced in the input to other actions.  Actions with scalar output are referenced using their label only.  Actions with vector output must have a separate label for every component.  Individual componets are then refered to using label.component" );
   keys.add("optional","UPDATE_FROM","Only update this action from this time");
   keys.add("optional","UPDATE_UNTIL","Only update this action until this time");
+  keys.add("optional","RESTART","allows per-action setting of restart (YES/NO/AUTO)");
 }
 
 Action::Action(const ActionOptions&ao):
@@ -59,6 +60,7 @@ Action::Action(const ActionOptions&ao):
   update_from(std::numeric_limits<double>::max()),
   update_until(std::numeric_limits<double>::max()),
   active(false),
+  restart(ao.plumed.getRestart()),
   plumed(ao.plumed),
   log(plumed.getLog()),
   comm(plumed.comm),
@@ -76,10 +78,18 @@ Action::Action(const ActionOptions&ao):
   }
   if( plumed.getActionSet().selectWithLabel<Action*>(label) ) error("label " + label + " has been already used");
   log.printf("  with label %s\n",label.c_str());
-  parse("UPDATE_FROM",update_from);
+  if ( keywords.exists("UPDATE_FROM") ) parse("UPDATE_FROM",update_from);
   if(update_from!=std::numeric_limits<double>::max()) log.printf("  only update from time %f\n",update_from);
-  parse("UPDATE_UNTIL",update_until);
+  if ( keywords.exists("UPDATE_UNTIL") ) parse("UPDATE_UNTIL",update_until);
   if(update_until!=std::numeric_limits<double>::max()) log.printf("  only update until time %f\n",update_until);
+  if ( keywords.exists("RESTART") ){
+    std::string srestart="AUTO";
+    parse("RESTART",srestart);
+    if(srestart=="YES") restart=true;
+    else if(srestart=="NO")  restart=false;
+    else if(srestart=="AUTO") {}
+    else error("RESTART should be either YES, NO, or AUTO");
+  }
 }
 
 Action::~Action(){
@@ -233,7 +243,7 @@ std::string Action::cite(const std::string&s){
 /// Check if action should be updated.
 bool Action::checkUpdate()const{
   double t=getTime();
-  if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>update_from)) return true;
+  if(t<update_until && (update_from==std::numeric_limits<double>::max() || t>=update_from)) return true;
   else return false;
 }
 
