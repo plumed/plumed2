@@ -136,12 +136,11 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
-  setLinkCellCutoff(switchingFunction.get_dmax());
+  setLinkCellCutoff( switchingFunction.get_dmax() );
 
   // Scaling factors such that '1' corresponds to fcc lattice
   // and '0' corresponds to isotropic (liquid)
   a1 = 80080. / (2717. + 16*alpha); b1 = 16.*(alpha-143)/(2717+16*alpha);
-   
 
   // Read in the atoms
   int natoms=2; readAtoms( natoms );

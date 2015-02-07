@@ -135,7 +135,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
             }
          }
      }
-     if( use_link ) setLinkCellCutoff( 2.*rcut );
+     if( use_link ) setLinkCellCutoff( rcut );
   }
 }
 
