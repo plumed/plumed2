@@ -158,7 +158,7 @@ double Fccubic::compute(){
    
    //std::valarray<Vector> dlist(getPosition(0),getNAtoms());
    if (getNAtoms()>dlist.size()) dlist.resize(getNAtoms());
-   for(unsigned i=1;i<getNAtoms();++i) dlist[i]=getPosition(0)-getPosition(i);
+   for(unsigned i=1;i<getNAtoms();++i) dlist[i]=getPosition(i)-getPosition(0);
    applyPbc( dlist, getNAtoms() );
    
    double d2; 
