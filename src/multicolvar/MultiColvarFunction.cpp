@@ -197,10 +197,16 @@ void MultiColvarFunction::calculate(){
      // accumulated from previous calculations
      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->clearDerivatives(); 
      // And recalculate
-     for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->calculate();
+     for(unsigned i=0;i<mybasemulticolvars.size();++i){
+        BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+        if( bb ) (bb->getPntrToMultiColvar())->calculate();
+        else mybasemulticolvars[i]->calculate();
+     }
      // Copy the box from the base multicolvar here
      unsigned maxb=mybasemulticolvars.size() - 1;
-     changeBox( mybasemulticolvars[maxb]->getBox() );
+     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[maxb] );
+     if( bb ) changeBox( (bb->getPntrToMultiColvar())->getBox() ); 
+     else changeBox( mybasemulticolvars[maxb]->getBox() );
   }
   setupLinkCells(); 
   // And run all tasks
@@ -210,19 +216,40 @@ void MultiColvarFunction::calculate(){
 void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
   // Construct matrix to store numerical derivatives
   unsigned pstart=0; 
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) pstart+=3*mybasemulticolvars[i]->getNumberOfAtoms();
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+     if( bb ){
+         BridgedMultiColvarFunction* bb2=dynamic_cast<BridgedMultiColvarFunction*>( bb->getPntrToMultiColvar() );
+         plumed_massert( !bb2, "double filtered multicolvars and NumericalDerivatives are not compatible" );
+         pstart+=3*(bb->getPntrToMultiColvar())->getNumberOfAtoms();
+     } else {
+        pstart+=3*mybasemulticolvars[i]->getNumberOfAtoms();
+     }
+  }
   Matrix<double> numder_store( getNumberOfComponents(), pstart + 9 );
 
   pstart=0; 
   for(unsigned i=0;i<mybasemulticolvars.size();++i){
-     mybasemulticolvars[i]->calculateAtomicNumericalDerivatives( this, pstart );
-     for(unsigned k=0;k<getNumberOfComponents();++k){
-        Value* val=getPntrToComponent(k);
-        for(unsigned j=0;j<3*mybasemulticolvars[i]->getNumberOfAtoms();++j){
-           numder_store(k,pstart+j) = val->getDerivative(pstart + j);
+     BridgedMultiColvarFunction* bb=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+     if( bb ){
+        ( bb->getPntrToMultiColvar() )->calculateAtomicNumericalDerivatives( this, pstart );
+        for(unsigned k=0;k<getNumberOfComponents();++k){
+           Value* val=getPntrToComponent(k);
+           for(unsigned j=0;j<3*(bb->getPntrToMultiColvar())->getNumberOfAtoms();++j){
+              numder_store(k,pstart+j) = val->getDerivative(pstart + j);
+           }
+        }   
+        pstart += 3*(bb->getPntrToMultiColvar())->getNumberOfAtoms();
+     } else {
+        mybasemulticolvars[i]->calculateAtomicNumericalDerivatives( this, pstart );
+        for(unsigned k=0;k<getNumberOfComponents();++k){
+           Value* val=getPntrToComponent(k);
+           for(unsigned j=0;j<3*mybasemulticolvars[i]->getNumberOfAtoms();++j){
+              numder_store(k,pstart+j) = val->getDerivative(pstart + j);
+           }
         }
+        pstart += 3*mybasemulticolvars[i]->getNumberOfAtoms(); 
      }
-     pstart += 3*mybasemulticolvars[i]->getNumberOfAtoms(); 
   }
 
   // Note numerical derivatives only work for virial if mybasemulticolvars.size()==1

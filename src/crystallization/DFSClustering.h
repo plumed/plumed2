@@ -68,7 +68,7 @@ public:
 
 inline
 unsigned DFSClustering::getNumberOfClusters() const {
-  return number_of_cluster;
+  return number_of_cluster + 1;
 }
 
 }
