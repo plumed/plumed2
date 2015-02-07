@@ -120,6 +120,10 @@ private:
 /// The total bias (=total energy of the restraints)
   double bias;
 
+/// The total work.
+/// This computed by accumulating the change in external potentials.
+  double work;
+
 /// Class of possible exchange patterns, used for BIASEXCHANGE but also for future parallel tempering
   ExchangePatterns& exchangePatterns;
 
@@ -148,6 +152,17 @@ public:
 
 /// word list command
   std::map<std::string, int> word_map;
+
+/// Get number of threads that can be used by openmp
+  unsigned getNumThreads()const;
+
+/// Get a reasonable number of threads so as to access to an array of size s located at x
+  template<typename T>
+  unsigned getGoodNumThreads(const T*x,unsigned s)const;
+
+/// Get a reasonable number of threads so as to access to vector v;
+  template<typename T>
+  unsigned getGoodNumThreads(const std::vector<T> & v)const;
 
 public:
   PlumedMain();
@@ -247,6 +262,8 @@ public:
   void setSuffix(const std::string&);
 /// get the value of the bias
   double getBias()const;
+/// get the value of the work
+  double getWork()const;
 /// Opens a file.
 /// Similar to plain fopen, but, if it finds an error in opening the file, it also tries with
 /// path+suffix.  This trick is useful for multiple replica simulations.

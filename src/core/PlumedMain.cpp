@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedMain.h"
 #include "tools/Tools.h"
+#include "tools/OpenMP.h"
 #include <cstring>
 #include "ActionPilot.h"
 #include "ActionWithValue.h"
@@ -65,6 +66,7 @@ PlumedMain::PlumedMain():
   atoms(*new Atoms(*this)),
   actionSet(*new ActionSet(*this)),
   bias(0.0),
+  work(0.0),
   exchangePatterns(*new(ExchangePatterns)),
   exchangeStep(false),
   restart(false),
@@ -471,6 +473,8 @@ void PlumedMain::init(){
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
+  log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
+  log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   log.printf("Number of atoms: %d\n",atoms.getNatoms());
   if(grex) log.printf("GROMACS-like replica exchange is on\n");
   log.printf("File suffix: %s\n",getSuffix().c_str());
@@ -616,6 +620,7 @@ void PlumedMain::justCalculate(){
   if(!active)return;
   stopwatch.start("4 Calculating (forward loop)");
   bias=0.0;
+  work=0.0;
 
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
@@ -641,6 +646,7 @@ void PlumedMain::justCalculate(){
       else (*p)->calculate();
       // This retrieves components called bias 
       if(av) bias+=av->getOutputQuantity("bias");
+      if(av) work+=av->getOutputQuantity("work");
       if(av)av->setGradientsIfNeeded();	
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(*p);
       if(avv)avv->setGradientsIfNeeded();	
@@ -739,6 +745,10 @@ void PlumedMain::load(const std::string& ss){
 
 double PlumedMain::getBias() const{
   return bias;
+}
+
+double PlumedMain::getWork() const{
+  return work;
 }
 
 FILE* PlumedMain::fopen(const char *path, const char *mode){

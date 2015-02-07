@@ -46,6 +46,9 @@ action(lo.action)
   parseFlag("IGNORE_WEIGHTS",noweights);
 }
 
+LandmarkSelectionBase::~LandmarkSelectionBase(){
+}
+
 void LandmarkSelectionBase::parseFlag(const std::string& key, bool& t){
   Tools::parseFlag(input,key,t);
 }
