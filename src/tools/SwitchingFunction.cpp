@@ -334,11 +334,6 @@ double SwitchingFunction::get_dmax() const {
   return dmax;
 }
 
-double SwitchingFunction::get_recommended_cutoff() const {
-  if (type==cubic) return dmax;
-  else return 2.0*dmax;  //! TODO define reasonable cutoffs for all the available switching functions
-}
-
 }
 
 

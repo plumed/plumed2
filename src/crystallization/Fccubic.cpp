@@ -41,9 +41,11 @@ namespace crystallization{
 class Fccubic : public multicolvar::MultiColvar {
 private:
 //  double nl_cut;
-  double rcut2, alpha;
+  double rcut2, alpha, a1, b1;
   double phi, theta, psi;
   double rotationmatrix[3][3]; 
+  std::valarray<Vector> dlist; // A buffer array to store distances and apply PBC wholesale
+  
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
@@ -134,7 +136,12 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
-  setLinkCellCutoff(switchingFunction.get_recommended_cutoff() );
+  setLinkCellCutoff(switchingFunction.get_dmax());
+
+  // Scaling factors such that '1' corresponds to fcc lattice
+  // and '0' corresponds to isotropic (liquid)
+  a1 = 80080. / (2717. + 16*alpha); b1 = 16.*(alpha-143)/(2717+16*alpha);
+   
 
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
@@ -148,20 +155,17 @@ double Fccubic::compute(){
 
    // Calculate the coordination number
    Vector myder, rotateder, fder;
-   double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, r12, tmp, a1, b1;
-   //std::cerr<<getNAtoms()<<" natoms\n";
-   std::valarray<Vector> dlist(getNAtoms());
+   double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, r12, tmp;
+   
+   //std::valarray<Vector> dlist(getPosition(0),getNAtoms());
+   if (getNAtoms()>dlist.size()) dlist.resize(getNAtoms());
    for(unsigned i=1;i<getNAtoms();++i) dlist[i]=getPosition(0)-getPosition(i);
-   applyPbc(dlist);
+   applyPbc( dlist, getNAtoms() );
    
    double d2; 
    for(unsigned i=1;i<getNAtoms();++i){
-      Vector& distance=dlist[i]; //getSeparation( getPosition(0), getPosition(i) );
+      Vector& distance=dlist[i]; 
       
-      /*if( distance[0]<rcut && distance[1]<rcut && distance[2]<rcut && 
-          distance[0]>-rcut && distance[1]>-rcut && distance[2]>-rcut &&
-         (d2=distance.modulo2())<rcut2 ){ */
-      // computes the squared distance while trying to minimize number of operations
       if ( (d2=distance[0]*distance[0])<rcut2 && 
            (d2+=distance[1]*distance[1])<rcut2 &&
            (d2+=distance[2]*distance[2])<rcut2) {
@@ -197,7 +201,7 @@ double Fccubic::compute(){
          t0 = (x2*y4+x2*z4)/r8-alpha*x2*y4*z4/r12;
          t1 = (y2*x4+y2*z4)/r8-alpha*y2*x4*z4/r12;
          t2 = (z2*x4+z2*y4)/r8-alpha*z2*x4*y4/r12;
-         t3 = (2*tmp-alpha*x4*y4*z4/r12)/distance.modulo2();         
+         t3 = (2*tmp-alpha*x4*y4*z4/r12)/d2;         
  
          rotateder[0]=4*rotatedis[0]*(t0-t3);
          rotateder[1]=4*rotatedis[1]*(t1-t3);
@@ -213,13 +217,8 @@ double Fccubic::compute(){
                   +rotationmatrix[1][2]*rotateder[1]
                   +rotationmatrix[2][2]*rotateder[2];
          
-         // Scaling so that '1' corresponds to fcc lattice
-         // and '0' corresponds to liquid
-         a1 = 80080. / (2717. + 16*alpha); b1 = 16.*(alpha-143)/(2717+16*alpha);
          tmp = a1*tmp+b1;
-         myder[0] = a1*myder[0]; 
-         myder[1] = a1*myder[1];
-         myder[2] = a1*myder[2];
+         myder *= a1;
           
          value += sw*tmp;
   

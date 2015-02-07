@@ -79,6 +79,8 @@ public:
   VectorGeneric(double,double);
   VectorGeneric(double,double,double);
   VectorGeneric(double,double,double,double);
+/// Copy constructor
+  VectorGeneric(const VectorGeneric<n>& src);
 /// create it null
   VectorGeneric();
 /// set it to zero
@@ -164,6 +166,17 @@ VectorGeneric<4>:: VectorGeneric(double x0,double x1,double x2,double x3){
   d[3]=x3;
 }
 
+template<unsigned n>
+VectorGeneric<n>::VectorGeneric(const VectorGeneric<n>& src){
+  for(unsigned i=0;i<n;i++) d[i]=src[i];
+}
+
+/// Specialized copy constructor
+template<>
+inline VectorGeneric<3>::VectorGeneric(const VectorGeneric<3>& src){
+  d[0]=src[0]; d[1]=src[1]; d[2]=src[2];
+}
+
 template <unsigned n>
 VectorGeneric<n>::VectorGeneric(){
   for(unsigned i=0;i<n;i++) d[i]=0.0;
@@ -200,6 +213,15 @@ VectorGeneric<n>& VectorGeneric<n>::operator +=(const VectorGeneric<n>& b){
   return *this;
 }
 
+// specialized version for 3-vectors
+template <> inline
+VectorGeneric<3>& VectorGeneric<3>::operator +=(const VectorGeneric<3>& b){
+  d[0]+=b.d[0];
+  d[1]+=b.d[1];
+  d[2]+=b.d[2];  
+  return *this;
+}
+
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator -=(const VectorGeneric<n>& b){
   for(unsigned i=0;i<n;i++) d[i]-=b.d[i];
@@ -218,6 +240,13 @@ VectorGeneric<3>& VectorGeneric<3>::operator -=(const VectorGeneric<3>& b){
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator *=(double s){
   for(unsigned i=0;i<n;i++) d[i]*=s;
+  return *this;
+}
+
+// specialized version for 3-vectors
+template <> inline
+VectorGeneric<3>& VectorGeneric<3>::operator *=(double s){
+  d[0]*=s; d[1]*=s; d[2]*=s;  
   return *this;
 }
 
