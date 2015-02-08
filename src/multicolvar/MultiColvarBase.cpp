@@ -200,12 +200,8 @@ void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<
 
 bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   if( usespecies ){
-     unsigned natomsper=1; std::vector<unsigned> current_atoms( getNumberOfAtoms() );
      if( isDensity() ) return true;
-     current_atoms[0]=taskCode;
-     linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells(current_atoms[0]), natomsper, current_atoms );
-     myatoms.setNumberOfAtoms( natomsper ); 
-     for(unsigned i=0;i<natomsper;++i) myatoms.setIndex( i, current_atoms[i] );  
+     unsigned natomsper=myatoms.setupIndicesFromLinkCells( taskCode, getPositionOfAtomForLinkCells(taskCode), linkcells );
      return natomsper>1;
   } else if( ablocks.size()<4 ){
      std::vector<unsigned> atoms( ablocks.size() );
@@ -319,13 +315,13 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
 //  for(unsigned icomp=0;icomp<9;++icomp){ indices[ kder ] = nbase + icomp; kder++; }   
 // }   
 
-void MultiColvarBase::activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ){
-  plumed_assert( number>0 );
-  for(unsigned i=0;i<number-9;i+=3){
-      plumed_dbg_assert( indexes[istart+i]%3==0 ); // unsigned iatom=indexes[istart+i]/3; 
-      //atoms_with_derivatives.activate( iatom ); 
-  }
-}
+// void MultiColvarBase::activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ){
+//   plumed_assert( number>0 );
+//   for(unsigned i=0;i<number-9;i+=3){
+//       plumed_dbg_assert( indexes[istart+i]%3==0 ); // unsigned iatom=indexes[istart+i]/3; 
+//       //atoms_with_derivatives.activate( iatom ); 
+//   }
+// }
 
 // void MultiColvarBase::quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout ){
 //  unsigned ustart=uder*getNumberOfDerivatives();

@@ -27,16 +27,16 @@ MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
 values(nvals),
 derivatives(nvals,nder)
 {
-  hasDerivatives.clear();
-  for(unsigned i=0;i<nder;++i) hasDerivatives.addIndexToList( i );
-  hasDerivatives.deactivateAll();
+  std::vector<unsigned> myind( nder );
+  for(unsigned i=0;i<nder;++i) myind[i]=i;
+  hasDerivatives.createIndexListFromVector( myind ); 
 }
 
 void MultiValue::resize( const unsigned& nvals, const unsigned& nder ){
   values.resize(nvals); derivatives.resize( nvals, nder );
-  hasDerivatives.clear();
-  for(unsigned i=0;i<nder;++i) hasDerivatives.addIndexToList( i );
-  hasDerivatives.deactivateAll();
+  hasDerivatives.clear(); std::vector<unsigned> myind( nder ); 
+  for(unsigned i=0;i<nder;++i) myind[i]=i;
+  hasDerivatives.createIndexListFromVector( myind );
 }
 
 void MultiValue::clearAll(){

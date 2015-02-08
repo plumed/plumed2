@@ -26,6 +26,9 @@
 #include "MultiColvarBase.h"
 
 namespace PLMD {
+
+class LinkCells;
+
 namespace multicolvar {
 
 class CatomPack;
@@ -39,13 +42,15 @@ private:
 /// Number of atoms at the moment
   unsigned natoms;
 /// Atom indices
-  std::vector<unsigned> indices;
+  std::vector<unsigned>& indices;
 public:
   AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv );
 /// Set the number of atoms
   void setNumberOfAtoms( const unsigned& );
 /// Set the index for one of the atoms
   void setIndex( const unsigned& , const unsigned& );
+///
+  unsigned setupIndicesFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells );
 ///
   unsigned getIndex( const unsigned& j ) const ;
 ///

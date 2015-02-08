@@ -178,6 +178,8 @@ public:
   void setupMPICommunication( Communicator& comm );
 /// Add something to the active list
   void addIndexToList( const T & ii );
+/// Create the list from a vector
+  void createIndexListFromVector( const std::vector<T>& myind );
 /// Find the index of in the list which has value t
   int getIndexOfElement( const T& t ) const ;
 /// Make a particular element inactive
@@ -241,6 +243,14 @@ template <typename T>
 void DynamicList<T>::addIndexToList( const T & ii ){
   all.push_back(ii); active.resize( all.size() );
   translator.push_back( all.size()-1 ); onoff.push_back(0); 
+}
+
+template <typename T>
+void DynamicList<T>::createIndexListFromVector( const std::vector<T>& myind ){
+  plumed_dbg_assert( all.size()==0 ); onoff.resize( myind.size(), 0 );
+  active.resize( myind.size() ); translator.resize( myind.size() ); 
+  all.insert( all.end(), myind.begin(), myind.end() );
+  for(unsigned i=0;i<myind.size();++i) translator[i]=i;  
 }
 
 template <typename T>

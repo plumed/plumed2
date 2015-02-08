@@ -37,9 +37,13 @@ private:
   std::vector<double> values;
 /// Derivatives
   Matrix<double> derivatives;
+/// This is a fudge to save on vector resizing in MultiColvar
+  std::vector<unsigned> indices;
 public:
   MultiValue( const unsigned& , const unsigned& );
   void resize( const unsigned& , const unsigned& );
+///
+  std::vector<unsigned>& getIndices();
 /// Get the number of values in the stash
   unsigned getNumberOfValues() const ; 
 /// Get the number of derivatives in the stash
@@ -161,6 +165,11 @@ unsigned MultiValue::getActiveIndex( const unsigned& ind ) const {
 inline
 void MultiValue::updateDynamicList(){
   hasDerivatives.updateActiveMembers();
+}
+
+inline
+std::vector<unsigned>& MultiValue::getIndices(){
+  return indices;
 }
 
 }

@@ -21,15 +21,22 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AtomValuePack.h"
 #include "CatomPack.h"
+#include "tools/LinkCells.h"
 
 namespace PLMD {
 namespace multicolvar {
 
 AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
 myvals(vals),
-mycolv(mcolv)
+mycolv(mcolv),
+indices( vals.getIndices() )
 {
-  indices.resize( vals.getNumberOfDerivatives() ); // mycolv->getNumberOfDerivatives() );
+  if( indices.size()!=mcolv->getNumberOfAtoms() ) indices.resize( mcolv->getNumberOfAtoms() );
+}
+
+unsigned AtomValuePack::setupIndicesFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells ){
+  indices[0]=cind; natoms=1; linkcells.retrieveNeighboringAtoms( cpos, natoms, indices );
+  return natoms;
 }
 
 void AtomValuePack::updateUsingIndices(){

@@ -131,7 +131,7 @@ public:
 /// Calculate and store getElementValue(uder)/getElementValue(vder) and its derivatives in getElementValue(iout)
 //  void quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout );
 /// Activate the atoms that have derivatives from a storeDataVessel
-  void activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ); 
+//  void activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ); 
 /// Add central atom derivatives to a multicolvar function
 //  void addCentralAtomDerivativeToFunction( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& der, MultiColvarFunction* func ); 
 /// Get the value for this task
