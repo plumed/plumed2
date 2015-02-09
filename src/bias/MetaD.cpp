@@ -658,6 +658,13 @@ isFirstStep(true)
 
 // open hills file for writing
   hillsOfile_.link(*this);
+  if(walkers_mpi){
+    int r=0;
+    if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+    comm.Bcast(r,0);
+    if(r>0) ifilesnames[mw_id_]="/dev/null";
+    hillsOfile_.enforceSuffix("");
+  }
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
