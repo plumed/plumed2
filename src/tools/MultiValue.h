@@ -67,9 +67,11 @@ public:
 /// Functions for accessing active list
   bool updateComplete();
   void emptyActiveMembers();
-  void updateIndex( const unsigned & );
+  void putIndexInActiveArray( const unsigned & );
+  void updateIndex( const unsigned& );
   void sortActiveList();
   void updateDynamicList();
+  bool isActive( const unsigned& ind ) const ;
 ///
   unsigned getNumberActive() const ;
 ///
@@ -142,8 +144,13 @@ void MultiValue::emptyActiveMembers(){
 }
 
 inline
+void MultiValue::putIndexInActiveArray( const unsigned& ind ){
+  hasDerivatives.putIndexInActiveArray( ind );
+}
+
+inline
 void MultiValue::updateIndex( const unsigned& ind ){
-  hasDerivatives.updateIndex( ind );
+  if( hasDerivatives.isActive(ind) ) hasDerivatives.putIndexInActiveArray( ind );
 }
 
 inline
@@ -170,6 +177,11 @@ void MultiValue::updateDynamicList(){
 inline
 std::vector<unsigned>& MultiValue::getIndices(){
   return indices;
+}
+
+inline
+bool MultiValue::isActive( const unsigned& ind ) const {
+  return hasDerivatives.isActive( ind );
 }
 
 }

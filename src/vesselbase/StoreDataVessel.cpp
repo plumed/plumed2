@@ -160,7 +160,7 @@ void StoreDataVessel::retrieveDerivatives( const unsigned& myelem, const bool& n
       // Now ensure appropriate parts of list are activated
       myvals.emptyActiveMembers();
       unsigned kder = getAction()->getFullNumberOfTasks() + myelem * ( nspace - 1 );
-      for(unsigned j=0;j<active_der[myelem];++j){ myvals.updateIndex( active_der[kder] ); kder++; }
+      for(unsigned j=0;j<active_der[myelem];++j){ myvals.putIndexInActiveArray( active_der[kder] ); kder++; }
       myvals.sortActiveList();
   } 
 }

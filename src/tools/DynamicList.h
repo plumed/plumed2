@@ -200,7 +200,7 @@ public:
   void emptyActiveMembers();
 /// This can be used for a fast version of updateActiveMembers in which only a subset of the
 /// indexes are checked
-  void updateIndex( const unsigned& ii );
+  void putIndexInActiveArray( const unsigned& ii );
 /// This tells one if an update has been completed
   bool updateComplete() const ;
 /// This sorts the elements in the active list
@@ -333,11 +333,10 @@ void DynamicList<T>::emptyActiveMembers(){
 }
 
 template <typename T>
-void DynamicList<T>::updateIndex( const unsigned& ii ){
+void DynamicList<T>::putIndexInActiveArray( const unsigned& ii ){
   plumed_dbg_assert( allWereActivated || allWereDeactivated );
-  if( onoff[ii]>0 && onoff[ii]%nprocessors==0 ){
-     translator[nactive]=nactive; active[nactive]=ii; nactive++;
-  }
+  plumed_dbg_assert( onoff[ii]>0 && onoff[ii]%nprocessors==0 );
+  active[nactive]=ii; nactive++;
 }
 
 template <typename T>

@@ -42,13 +42,16 @@ unsigned AtomValuePack::setupIndicesFromLinkCells( const unsigned& cind, const V
 void AtomValuePack::updateUsingIndices(){
   if( myvals.updateComplete() ) return;
   myvals.emptyActiveMembers();
-  for(unsigned i=0;i<natoms;++i){ 
-     myvals.updateIndex( 3*indices[i] + 0 ); 
-     myvals.updateIndex( 3*indices[i] + 1 ); 
-     myvals.updateIndex( 3*indices[i] + 2 );
+  for(unsigned i=0;i<natoms;++i){
+     unsigned base=3*indices[i]; 
+     if( myvals.isActive( base ) ){
+         myvals.putIndexInActiveArray( base );
+         myvals.putIndexInActiveArray( base + 1 );
+         myvals.putIndexInActiveArray( base + 2 ); 
+     }
   }
   unsigned nvir=3*mycolv->getNumberOfAtoms();
-  for(unsigned i=0;i<9;++i) myvals.updateIndex( nvir + i );
+  for(unsigned i=0;i<9;++i) myvals.putIndexInActiveArray( nvir + i );
   myvals.sortActiveList();
 }
 

@@ -54,9 +54,8 @@ VolumeGradientBase(ao)
   if( getPntrToMultiColvar()->isDensity() ){
      std::string input;
      addVessel( "SUM", input, -1 );  // -1 here means that this value will be named getLabel()
-  } else {
-     readVesselKeywords();
-  }
+  } 
+  readVesselKeywords();
 }
 
 void ActionVolume::calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const {

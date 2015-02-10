@@ -57,12 +57,12 @@ void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& cu
   // Now update the outvals derivatives lists
   outvals.emptyActiveMembers();
   if( mycolv->isDensity() ){
-     for(unsigned j=0;j<3;++j) outvals.updateIndex( 3*current+j ); 
-     for(unsigned j=invals.getNumberOfDerivatives()-9;j<invals.getNumberOfDerivatives();++j) outvals.updateIndex(j);
+     for(unsigned j=0;j<3;++j) outvals.putIndexInActiveArray( 3*current+j ); 
+     for(unsigned j=invals.getNumberOfDerivatives()-9;j<invals.getNumberOfDerivatives();++j) outvals.putIndexInActiveArray(j);
   } else {
-     for(unsigned j=0;j<invals.getNumberActive();++j) outvals.updateIndex( invals.getActiveIndex(j) );
+     for(unsigned j=0;j<invals.getNumberActive();++j) outvals.putIndexInActiveArray( invals.getActiveIndex(j) );
   }
-  for(unsigned j=invals.getNumberOfDerivatives();j<outvals.getNumberOfDerivatives();++j) outvals.updateIndex( j );
+  for(unsigned j=invals.getNumberOfDerivatives();j<outvals.getNumberOfDerivatives();++j) outvals.putIndexInActiveArray( j );
   outvals.sortActiveList(); 
 }
 
