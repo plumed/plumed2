@@ -24,5 +24,10 @@ PRINT ...
   FILE=COLVAR FMT=%6.5f
 ... PRINT
 
+# this writes all physical atoms
+DUMPMASSCHARGE FILE=mc
+# this writes selected atoms (including two virtuals)
+DUMPMASSCHARGE FILE=mc2 ATOMS=1-10,c1,c2
+
 ENDPLUMED
 
