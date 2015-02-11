@@ -31,6 +31,8 @@ namespace PLMD {
 class Pbc;
 
 class RMSDBase : public SingleDomainRMSD {
+// this is to avoid warnings:
+  using SingleDomainRMSD::calc;
 public:
   RMSDBase( const ReferenceConfigurationOptions& ro );
   double calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared );
