@@ -31,6 +31,7 @@
 #include <map>
 #include "tools/Units.h"
 #include "tools/PDB.h"
+#include "tools/IFile.h"
 
 // when using molfile plugin
 #ifdef __PLUMED_HAS_MOLFILE
@@ -152,6 +153,7 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
   keys.add("optional","--pdb","provides a pdb with masses and charges");
+  keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
   keys.add("hidden","--debug-dd","use a fake domain decomposition");
@@ -269,7 +271,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 #endif
 
 // Read in an xyz file
-  string trajectoryFile(""), pdbfile("");
+  string trajectoryFile(""), pdbfile(""), mcfile("");
   bool pbc_cli_given=false; vector<double> pbc_cli_box(9,0.0);
   if(!noatoms){
      std::string traj_xyz; parse("--ixyz",traj_xyz);
@@ -314,6 +316,8 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        bool check=pdb.read(pdbfile,false,1.0);
        if(!check) error("error reading pdb file");
      }
+
+     parse("--mc",mcfile);
 
      string pbc_cli_list; parse("--box",pbc_cli_list);
      if(pbc_cli_list.length()>0) {
@@ -456,6 +460,15 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
           if( index>=unsigned(natoms) ) error("atom index in pdb exceeds the number of atoms in trajectory");
           masses[index]=pdb.getOccupancy()[i];
           charges[index]=pdb.getBeta()[i];
+        }
+      }
+      if(mcfile.length()>0){
+        IFile ifile;
+        ifile.open(mcfile);
+        int index; double mass; double charge;
+        while(ifile.scanField("index",index).scanField("mass",mass).scanField("charge",charge).scanField()){
+          masses[index]=mass;
+          charges[index]=charge;
         }
       }
     } else if( checknatoms<0 && noatoms ){ 
