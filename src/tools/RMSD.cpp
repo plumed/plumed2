@@ -907,8 +907,8 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions(){
   const unsigned n=static_cast<unsigned int>(reference.size());
   Vector ddist_dcpositions;
   derivatives.resize(n);
-  double prefactor=2.0;
-  if(!distanceIsMSD && alEqDis) prefactor*=0.5/dist;
+  double prefactor=1.0;
+  if(!distanceIsMSD) prefactor*=0.5/dist;
   plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
   if(!hasDistance)plumed_merror("getDPositionsDerivatives needs to calculate the distance via getDistance first !");
   if(!isInitialized)plumed_merror("getDPositionsDerivatives needs to initialize the coreData first!");
@@ -919,7 +919,7 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions(){
     if(alEqDis){
 // there is no need for derivatives of rotation and shift here as it is by construction zero
 // (similar to Hellman-Feynman forces)
-      derivatives[iat]= prefactor*align[iat]*d[iat];
+      derivatives[iat]= 2*prefactor*align[iat]*d[iat];
     } else {
 // these are the derivatives assuming the roto-translation as frozen
       tmp1=2*displace[iat]*d[iat];
@@ -933,15 +933,8 @@ std::vector<Vector> RMSDCoreData::getDDistanceDPositions(){
     }
   }
 
-  if(!alEqDis){
-    for(unsigned iat=0;iat<n;iat++)derivatives[iat]+=(ddist_dcpositions-csum)*align[iat]; 
-  }
-  if(!distanceIsMSD){
-    if(!alEqDis){
-      double xx=0.5/dist;
-      for(unsigned iat=0;iat<n;iat++) derivatives[iat]*=xx;
-    }
-  }
+  if(!alEqDis)  for(unsigned iat=0;iat<n;iat++){derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcpositions-csum)*align[iat]); } 
+
   return derivatives;
 }
 
@@ -950,8 +943,8 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
   const unsigned n=static_cast<unsigned int>(reference.size());
   Vector ddist_dcreference;
   derivatives.resize(n);
-  double prefactor=2.0;
-  if(!distanceIsMSD && alEqDis) prefactor*=0.5/dist;
+  double prefactor=1.0;
+  if(!distanceIsMSD) prefactor*=0.5/dist;
   vector<Vector> ddist_tmp(n);
   Vector csum,tmp1,tmp2;
 
@@ -968,7 +961,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
 // there is no need for derivatives of rotation and shift here as it is by construction zero
 // (similar to Hellman-Feynman forces)
 	//TODO: check this derivative down here
-      derivatives[iat]= -prefactor*align[iat]*matmul(t_rotation,d[iat]);
+      derivatives[iat]= -2*prefactor*align[iat]*matmul(t_rotation,d[iat]);
     } else {
 // these are the derivatives assuming the roto-translation as frozen
       tmp1=2*displace[iat]*matmul(t_rotation,d[iat]);
@@ -982,15 +975,8 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
     }
   }
 
-  if(!alEqDis){
-    for(unsigned iat=0;iat<n;iat++)derivatives[iat]+=(ddist_dcreference-csum)*align[iat]; 
-  }
-  if(!distanceIsMSD){
-    if(!alEqDis){
-      double xx=0.5/dist;
-      for(unsigned iat=0;iat<n;iat++) derivatives[iat]*=xx;
-    }
-  }
+  if(!alEqDis)  for(unsigned iat=0;iat<n;iat++){derivatives[iat]= prefactor*(derivatives[iat]+(ddist_dcreference-csum)*align[iat]);} 
+
   return derivatives;
 }
 
@@ -1000,8 +986,8 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
   const unsigned n=static_cast<unsigned int>(reference.size());
   Vector ddist_dcreference;
   derivatives.resize(n);
-  double prefactor=2.0;
-  if(!distanceIsMSD && alEqDis) prefactor*=0.5/dist;
+  double prefactor=1.0;
+  if(!distanceIsMSD) prefactor*=0.5/dist;
   vector<Vector> ddist_tmp(n);
   Vector csum,tmp1,tmp2;
 
@@ -1018,7 +1004,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
 // there is no need for derivatives of rotation and shift here as it is by construction zero
 // (similar to Hellman-Feynman forces)
 	//TODO: check this derivative down here
-      derivatives[iat]= -prefactor*align[iat]*matmul(t_rotation,d[iat]);
+      derivatives[iat]= -2*prefactor*align[iat]*matmul(t_rotation,d[iat]);
     } else {
 // these are the derivatives assuming the roto-translation as frozen
       tmp1=2*displace[iat]*matmul(t_rotation,d[iat]);
@@ -1028,15 +1014,8 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
     }
   }
 
-  if(!alEqDis){
-    for(unsigned iat=0;iat<n;iat++)derivatives[iat]+=ddist_dcreference*align[iat]; 
-  }
-  if(!distanceIsMSD){
-    if(!alEqDis){
-      double xx=0.5/dist;
-      for(unsigned iat=0;iat<n;iat++) derivatives[iat]*=xx;
-    }
-  }
+  if(!alEqDis) for(unsigned iat=0;iat<n;iat++)derivatives[iat]=prefactor*(derivatives[iat]+ddist_dcreference*align[iat]); 
+
   return derivatives;
 }
 
