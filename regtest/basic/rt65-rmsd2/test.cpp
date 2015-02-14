@@ -10,7 +10,6 @@
 #include "plumed/tools/Log.h"
 #include "plumed/tools/Vector.h"
 #include "plumed/tools/Matrix.h"
-#include <vector>
 #include <fstream>
 #include "plumed/tools/AtomNumber.h"
 #include "plumed/tools/RMSD.h"
@@ -30,6 +29,8 @@ int main(int argc, char* argv[]) {
   bool normalize_weights=true;
   // use msd instead of rmsd to check consistency
   bool squared=false;
+  // enhance com to enphasize the issues with COM treatment
+  bool enhance_com=false;
 
   // parse input instructions
   // default task, calculate the RMSD of one frame respect to a set of others 
@@ -46,6 +47,8 @@ int main(int argc, char* argv[]) {
   if(std::find(task.begin(), task.end(), -2)!=task.end()){cout<<"normalize_weights=false (default true)"<<endl;normalize_weights=false;}
   if(std::find(task.begin(), task.end(), -3)!=task.end()){cout<<"remove_com=false (default true)"<<endl; remove_com=false;}
   if(std::find(task.begin(), task.end(), -4)!=task.end()){cout<<"OPTIMAL-FAST (default OPTIMAL)"<<endl; type.assign("OPTIMAL-FAST");}
+  if(std::find(task.begin(), task.end(), -5)!=task.end()){cout<<"enhance_com=true (default false) include option -3 (no com removal) "<<endl;enhance_com=true ; }
+  if(enhance_com)remove_com=false;
 
 
   cout<<"ARGUMENTS: \n";
@@ -54,6 +57,7 @@ int main(int argc, char* argv[]) {
   cout<<" -2 : normalize_weights=false (default=true)\n";
   cout<<" -3 : remove_com=false (default=true) \n";
   cout<<" -4 : OPTIMAL-FAST (default=OPTIMAL) \n";
+  cout<<" -5 : enhance_com=true (default false) automatically set option -3 (i.e. check the trouble with com when you do not remove it)\n";
   cout<<"TASKS (can choose more than one):\n";
   cout<<"  0 : normal rmsd/msd calculation  and derivative dumps (default: always done)\n";
   cout<<"  1 : findiff test for  d msd / d position  (inhomogenehous weights)\n";
@@ -81,7 +85,13 @@ int main(int argc, char* argv[]) {
   PDB pdb;
   if( !pdb.read(reference,false,0.1) ) 
         cout<<"missing input file 1GB1_mdl1_rototranslated.pdb "<<"\n";
+  if (enhance_com){
+	vector<Vector> v=pdb.getPositions();
+	for(unsigned i=0;i<v.size();i++){v[i][0]+=10.;v[i][1]+=20.;v[i][2]+=30.;}
+	pdb.setPositions(v);
+  }
 
+  
   cout<<"NOW CREATING THE RMSD OBJECT... with set() method";  
   // remember that "set" method parses the reference, align and displace from the PDB by calling the following methods 
   //      setReference(pdb.getPositions());  -> set the reference and put the weights as 1/n, remove the com according to such weight 
@@ -103,6 +113,11 @@ int main(int argc, char* argv[]) {
         cout<<"missing input file 1GB1_mdl2.pdb\n" ;
   std::vector<Vector> run ;  run=pdbrun.getPositions() ;
   std::vector<Vector> derivatives ; 
+  if (enhance_com){
+        for(unsigned i=0;i<run.size();i++){run[i][0]-=10.;run[i][1]-=20.;run[i][2]-=30.;}
+  }
+
+
 
 
 // Task 0: calculate the alignment and dump some data
