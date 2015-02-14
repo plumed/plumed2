@@ -951,7 +951,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
   Vector ddist_dcreference;
   derivatives.resize(n);
   double prefactor=2.0;
-  if(!distanceIsMSD && alEqDis) prefactor*=0.5/sqrt(dist);
+  if(!distanceIsMSD && alEqDis) prefactor*=0.5/dist;
   vector<Vector> ddist_tmp(n);
   Vector csum,tmp1,tmp2;
 
@@ -1001,7 +1001,7 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
   Vector ddist_dcreference;
   derivatives.resize(n);
   double prefactor=2.0;
-  if(!distanceIsMSD && alEqDis) prefactor*=0.5/sqrt(dist);
+  if(!distanceIsMSD && alEqDis) prefactor*=0.5/dist;
   vector<Vector> ddist_tmp(n);
   Vector csum,tmp1,tmp2;
 
