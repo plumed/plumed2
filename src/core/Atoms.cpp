@@ -53,6 +53,7 @@ Atoms::Atoms(PlumedMain&plumed):
   forcesHaveBeenSet(0),
   virialHasBeenSet(false),
   massAndChargeOK(false),
+  shuffledAtoms(false),
   plumed(plumed),
   naturalUnits(false),
   timestep(0.0),
@@ -367,6 +368,7 @@ void Atoms::setAtomsContiguous(int start){
   for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=start+i;
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
   if(dd) for(unsigned i=0;i<gatindex.size();i++) dd.g2l[gatindex[i]]=i;
+  if(gatindex.size()<natoms) shuffledAtoms=true;
 }
 
 void Atoms::setRealPrecision(int p){
