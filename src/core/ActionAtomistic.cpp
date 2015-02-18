@@ -264,3 +264,11 @@ void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ){
   for(unsigned j=0;j<indexes.size();j++) charges[j]=pdb.getBeta()[indexes[j].index()];
   for(unsigned j=0;j<indexes.size();j++) masses[j]=pdb.getOccupancy()[indexes[j].index()];
 }
+
+void ActionAtomistic::makeWhole(){
+  for(unsigned j=0;j<positions.size()-1;++j){
+    const Vector & first (positions[j]);
+    Vector & second (positions[j+1]);
+    second=first+pbcDistance(first,second);
+  }
+}

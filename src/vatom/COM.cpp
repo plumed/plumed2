@@ -58,6 +58,7 @@ PRINT ARG=d1
 class COM:
   public ActionWithVirtualAtom
 {
+  bool nopbc;
 public:
   COM(const ActionOptions&ao);
   void calculate();
@@ -68,24 +69,33 @@ PLUMED_REGISTER_ACTION(COM,"COM")
 
 void COM::registerKeywords(Keywords& keys){
   ActionWithVirtualAtom::registerKeywords(keys);
+  keys.addFlag("NOPBC",false,"ignore the periodic boundary conditions when calculating distances");
 }
 
 COM::COM(const ActionOptions&ao):
   Action(ao),
-  ActionWithVirtualAtom(ao)
+  ActionWithVirtualAtom(ao),
+  nopbc(false)
 {
   vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
   if(atoms.size()==0) error("at least one atom should be specified");
+  parseFlag("NOPBC",nopbc);
   checkRead();
   log.printf("  of atoms");
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());
   log.printf("\n");
+  if(!nopbc){
+    log<<"  PBC will be ignored\n";
+  } else {
+    log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
+  }
   requestAtoms(atoms);
 }
 
 void COM::calculate(){
   Vector pos;
+  if(!nopbc) makeWhole();
   double mass(0.0);
   vector<Tensor> deriv(getNumberOfAtoms());
   for(unsigned i=0;i<getNumberOfAtoms();i++) mass+=getMass(i);
