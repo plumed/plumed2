@@ -40,10 +40,17 @@ Notice that the generated virtual atom has charge equal to the sum of the
 charges and mass equal to the sum of the masses. If used with the MASS flag,
 then it provides a result identical to \ref COM.
 
-When running with periodic boundary conditions, the user should take care 
-that the atoms in the COM group actually are in the proper periodic image.
-This is typically achieved using the \ref WHOLEMOLECULES action
-before COM calculation.
+When running with periodic boundary conditions, the atoms should be 
+in the proper periodic image. This is done automatically since PLUMED 2.2,
+by considering the ordered list of atoms and rebuilding PBCs with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED. 
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
+
 
 \par Examples
 

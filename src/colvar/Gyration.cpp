@@ -57,8 +57,19 @@ with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
 {r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ m_i }{\sum_i^{n} m_i}
 \f]
 
-The radius of gyration is calculated without applying periodic boundary conditions so the atoms used for the calculation 
-should all be part of the same molecule that should be made whole before calculating the cv, \ref WHOLEMOLECULES.
+The radius of gyration usually makes sense when atoms used for the calculation 
+are all part of the same molecule.
+When running with periodic boundary conditions, the atoms should be 
+in the proper periodic image. This is done automatically since PLUMED 2.2,
+by considering the ordered list of atoms and rebuilding PBCs with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED. 
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
+
 
 \par Examples
 
