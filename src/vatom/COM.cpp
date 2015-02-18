@@ -39,6 +39,11 @@ an atom list through the label for the COM action that creates it.
 
 For arbitrary weights (e.g. geometric center) see \ref CENTER.
 
+When running with periodic boundary conditions, the user should take care 
+that the atoms in the COM group actually are in the proper periodic image.
+This is typically achieved using the \ref WHOLEMOLECULES action
+before COM calculation.
+
 \par Examples
 
 The following input instructs plumed to print the distance between the
