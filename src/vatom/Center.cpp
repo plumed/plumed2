@@ -42,7 +42,7 @@ then it provides a result identical to \ref COM.
 
 When running with periodic boundary conditions, the user should take care 
 that the atoms in the COM group actually are in the proper periodic image.
-This is typically achieved using the \ref WHOLEMOLECULE action
+This is typically achieved using the \ref WHOLEMOLECULES action
 before COM calculation.
 
 \par Examples
