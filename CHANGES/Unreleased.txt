@@ -9,6 +9,8 @@ Changes from version 2.1 which are relevant for users:
   - Labels of quantities calculates by \ref SPRINT have changed from <i>label</i>.coord_<i>num</i> to <i>label</i>.coord-<i>num</i>
   - \ref METAD with WALKERS_MPI now writes a single hills file, without suffixes
   - removed the ./configure.sh script of v2.0.x, now plumed can only be configured using autotools (./configure)
+  - \ref COM, \ref CENTER, and \ref GYRATION now automatically make molecules whole. In case you do not want them to do it, use NOPBC flag,
+    which recovers plumed 2.1 behavior
 - Added experimental OpenMP support, see \ref Openmp
 - Added multiple time step integration for bias potentials, see \ref MTS
 - Link cells are now used in all multicolvars that involve \ref SwitchingFunctions.  The link cell cutoff is
