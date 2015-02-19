@@ -28,8 +28,8 @@ namespace PLMD {
 
 ReferenceArguments::ReferenceArguments( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-hasmetric(false),
-hasweights(false)
+hasweights(false),
+hasmetric(false)
 {
 }
 

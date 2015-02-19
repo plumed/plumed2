@@ -72,6 +72,7 @@ protected:
   void selectFrame( const unsigned& , MultiReferenceBase* );
 public:
   LandmarkSelectionBase( const LandmarkSelectionOptions& lo );
+  virtual ~LandmarkSelectionBase();
 /// Check everything was read in
   void checkRead() const ;
 /// Return a description of the landmark selection protocol

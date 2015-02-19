@@ -52,6 +52,7 @@ Atoms::Atoms(PlumedMain&plumed):
   forcesHaveBeenSet(0),
   virialHasBeenSet(false),
   massAndChargeOK(false),
+  shuffledAtoms(false),
   plumed(plumed),
   naturalUnits(false),
   timestep(0.0),
@@ -140,7 +141,7 @@ void Atoms::share(){
     shareAll();
     return;
   }
-  if(dd && int(gatindex.size())<natoms){
+  if(dd && shuffledAtoms){
     for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
       unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
     }
@@ -150,7 +151,7 @@ void Atoms::share(){
 
 void Atoms::shareAll(){
   std::set<AtomNumber> unique;
-  if(dd && int(gatindex.size())<natoms)
+  if(dd && shuffledAtoms)
     for(int i=0;i<natoms;i++) unique.insert(AtomNumber::index(i));
   share(unique);
 }
@@ -166,7 +167,7 @@ void Atoms::share(const std::set<AtomNumber>& unique){
     mdatoms->getCharges(gatindex,charges);
     mdatoms->getMasses(gatindex,masses);
   }
-  if(dd && int(gatindex.size())<natoms){
+  if(dd && shuffledAtoms){
     if(dd.async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
       for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();
@@ -236,7 +237,7 @@ void Atoms::wait(){
 
   if(collectEnergy) energy=md_energy;
 
-  if(dd && int(gatindex.size())<natoms){
+  if(dd && shuffledAtoms){
 // receive toBeReceived
     Communicator::Status status;
     if(dd.async){
@@ -320,6 +321,14 @@ void Atoms::setAtomsGatindex(int*g){
   plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
   for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=g[i];
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
+  if( gatindex.size()==natoms ){
+      shuffledAtoms=false;
+      for(unsigned i=0;i<gatindex.size();i++){
+          if( gatindex[i]!=i ){ shuffledAtoms=true; break; }
+      }
+  } else {
+      shuffledAtoms=true;
+  }
   if(dd) for(unsigned i=0;i<gatindex.size();i++) dd.g2l[gatindex[i]]=i;
 }
 
@@ -327,6 +336,7 @@ void Atoms::setAtomsContiguous(int start){
   for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=start+i;
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
   if(dd) for(unsigned i=0;i<gatindex.size();i++) dd.g2l[gatindex[i]]=i;
+  if(gatindex.size()<natoms) shuffledAtoms=true;
 }
 
 void Atoms::setRealPrecision(int p){
