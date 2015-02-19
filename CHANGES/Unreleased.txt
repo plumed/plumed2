@@ -18,6 +18,7 @@ Changes from version 2.1 which are relevant for users:
   the switching function goes to zero. Users should always set this parameter when using a switching function
   in order to achieve optimal performance.
 - New actions
+  - \ref DUMPMASSCHARGE to dump a file with mass and charges during MD.
   - \ref EFFECTIVE_ENERGY_DRIFT
   - \ref EXTENDED_LAGRANGIAN
   - \ref DFSCLUSTERING calculate the size of clusters 
@@ -34,6 +35,8 @@ Changes from version 2.1 which are relevant for users:
   - Keywords for \ref GROUP (REMOVE, SORT, UNIQUE)
   - \ref DUMPATOMS now supports dumping xtc and trr files (requires xdrfile library).
   - \ref driver can now read xtc and trr files also with xdrfile library.
+  - \ref driver accepts a --mc flag to read charges and masses from a file produced during
+    molecular dynamics with \ref DUMPMASSCHARGE
   - Possibility to enable or disable \ref RESTART on a per action basis.
 - VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
   can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
