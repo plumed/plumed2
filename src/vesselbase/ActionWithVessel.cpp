@@ -28,6 +28,7 @@
 #include "BridgeVessel.h"
 #include "FunctionVessel.h"
 #include "StoreDataVessel.h"
+#include "tools/OpenMP.h"
 
 using namespace std;
 namespace PLMD{
@@ -264,6 +265,11 @@ void ActionWithVessel::doJobsRequiredBeforeTaskList(){
 
 unsigned ActionWithVessel::getSizeOfBuffer( unsigned& bufsize ){
   for(unsigned i=0;i<functions.size();++i) functions[i]->setBufferStart( bufsize ); 
+  if( buffer.size()!=bufsize ) buffer.resize( bufsize );
+  if( mydata ){
+      unsigned dsize=mydata->getSizeOfDerivativeList();
+      if( der_list.size()!=dsize ) der_list.resize( dsize );
+  }
   return bufsize;
 }
 
@@ -277,18 +283,31 @@ void ActionWithVessel::runAllTasks(){
   // Make sure jobs are done
   doJobsRequiredBeforeTaskList();
 
+  // Get number of threads for OpenMP
+  unsigned nt=OpenMP::getNumThreads();
+  if( nt*stride*10>nactive_tasks) nt=nactive_tasks/stride/10;
+  if( nt==0 ) nt=1;
+
   // Get size for buffer
   unsigned bsize=0, bufsize=getSizeOfBuffer( bsize ); 
+  // Clear buffer
+  buffer.assign( buffer.size(), 0.0 );
 
-  std::vector<unsigned> der_list;
-  if( mydata ) der_list.resize( mydata->getSizeOfDerivativeList(), 0 ); 
+  // std::vector<unsigned> der_list;
+  // if( mydata ) der_list.resize( mydata->getSizeOfDerivativeList(), 0 ); 
 
   // Build storage stuff for loop
-  std::vector<double> buffer( bufsize, 0.0 );
+  // std::vector<double> buffer( bufsize, 0.0 );
+
+#pragma omp parallel num_threads(nt)
+{
+  std::vector<double> omp_buffer;
+  if( nt>1 ) omp_buffer.resize( bufsize, 0.0 );
   MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
   MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
   myvals.clearAll(); bvals.clearAll();
  
+#pragma omp for reduction nowait
   for(unsigned i=rank;i<nactive_tasks;i+=stride){
       // Calculate the stuff in the loop for this action
       performTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );
@@ -309,11 +328,19 @@ void ActionWithVessel::runAllTasks(){
       // Now calculate all the functions
       // If the contribution of this quantity is very small at neighbour list time ignore it
       // untill next neighbour list time
-      if( !calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, buffer, der_list ) && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
+      if( nt>1 ){
+          if( !calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, omp_buffer, der_list ) && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
+      } else {
+          if( !calculateAllVessels( indexOfTaskInFullList[i], myvals, bvals, buffer, der_list ) && contributorsAreUnlocked ) deactivate_task( indexOfTaskInFullList[i] );
+      }
 
       // Clear the value
       myvals.clearAll();
   }
+#pragma omp critical
+  if(nt>1) for(unsigned i=0;i<bufsize;++i) buffer[i]+=omp_buffer[i];
+}
+
   // MPI Gather everything
   if( !serial && buffer.size()>0 ) comm.Sum( buffer );
   // MPI Gather index stores
@@ -323,7 +350,7 @@ void ActionWithVessel::runAllTasks(){
   // Update the elements that are makign contributions to the sum here
   // this causes problems if we do it in prepare
   if( !serial && contributorsAreUnlocked ) comm.Sum( taskFlags );
- 
+
   finishComputations( buffer );
 }
 

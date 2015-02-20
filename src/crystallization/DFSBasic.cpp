@@ -131,6 +131,8 @@ class DFSBasic : public DFSClustering {
 private:
 /// The cluster we are looking for
   unsigned clustr;
+/// The buffer (we keep a copy here to avoid resizing)
+  std::vector<double> buffer;
 public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
@@ -174,7 +176,11 @@ void DFSBasic::doCalculationOnCluster(){
    // Now calculate properties of the largest cluster 
    ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
    // Get size for buffer
-   unsigned bsize=0; std::vector<double> buffer( getSizeOfBuffer( bsize ), 0.0 );
+   unsigned bsize=0, bufsize=getSizeOfBuffer(bsize); 
+   // std::vector<double> buffer( getSizeOfBuffer( bsize ), 0.0 );
+   if( buffer.size()!=bufsize ) buffer.resize( bufsize );
+   buffer.assign( bufsize, 0.0 );   
+
    std::vector<double> vals( getNumberOfQuantities() ); std::vector<unsigned> der_index;
    MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
    MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );

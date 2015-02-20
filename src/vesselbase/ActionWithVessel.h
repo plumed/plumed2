@@ -82,6 +82,10 @@ private:
   std::vector<unsigned> partialTaskList;
 /// This list is used to update the neighbor list
   std::vector<unsigned> taskFlags;
+/// The list of atoms involved in derivatives (we keep a copy here to avoid resizing)
+  std::vector<unsigned> der_list;
+/// The buffer that we use (we keep a copy here to avoid resizing)
+  std::vector<double> buffer;
 protected:
 /// The terms in the series are locked
   bool contributorsAreUnlocked;

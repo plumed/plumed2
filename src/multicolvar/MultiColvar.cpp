@@ -65,7 +65,7 @@ void MultiColvar::readAtoms( int& natoms ){
      
      if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
      if( keywords.exists("GROUP") ) readGroupsKeyword( natoms, all_atoms );
-     if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms, all_atoms );
+     if( keywords.exists("SPECIES") ) readSpeciesKeyword( "SPECIESA", "SPECIESB", natoms, all_atoms );
 
      if( all_atoms.size()==0 ) error("No atoms have been read in");
      // Request all atoms from ActionAtomistic
@@ -297,16 +297,17 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
   }
 }
 
-void MultiColvar::readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_atoms ){
+void MultiColvar::readSpeciesKeyword( const std::string& str1, const std::string& str2, int& natoms, std::vector<AtomNumber>& all_atoms ){
   plumed_assert( usespecies );
   if( all_atoms.size()>0 ) return ;
   ablocks.resize( natoms-1 );
 
   std::vector<AtomNumber> t;
-  parseAtomList("SPECIES",t);
+  if( keywords.exists("SPECIES") ) parseAtomList("SPECIES",t);
+
   if( !t.empty() ){
       for(unsigned i=0;i<t.size();++i) all_atoms.push_back( t[i] );
-      if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ){
+      if( keywords.exists(str1) && keywords.exists(str2) ){
           plumed_assert( natoms==2 ); 
           for(unsigned i=0;i<t.size();++i) addTaskToList(i);
           ablocks[0].resize( t.size() ); for(unsigned i=0;i<t.size();++i) ablocks[0][i]=i; 
@@ -316,7 +317,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_
               for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
               log.printf("\n");
           }
-      } else if( !( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) ){
+      } else if( !( keywords.exists(str1) && keywords.exists(str2) ) ){
           std::vector<unsigned> newlist; usespecies=false; verbose_output=false; // Make sure we don't do verbose output
           log.printf("  involving atoms : ");
           ablocks.resize(1); ablocks[0].resize( t.size() ); 
@@ -325,14 +326,14 @@ void MultiColvar::readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_
           }
           log.printf("\n");
       } else {
-          plumed_merror("SPECIES keyword is not for density or coordination like CV");
+          plumed_merror("SPECIES keyword should probably not be used for your CV");
       }
-  } else if( keywords.exists("SPECIESA") && keywords.exists("SPECIESB") ) {
+  } else if( keywords.exists(str1) && keywords.exists(str2) ) {
       std::vector<AtomNumber> t1,t2;
-      parseAtomList("SPECIESA",t1);
+      parseAtomList(str1,t1);
       if( !t1.empty() ){
-         parseAtomList("SPECIESB",t2);
-         if ( t2.empty() ) error("SPECIESB keyword defines no atoms or is missing. Use either SPECIESA and SPECIESB or just SPECIES");
+         parseAtomList(str2,t2);
+         if ( t2.empty() ) error(str2 + "keyword defines no atoms or is missing. Use " + str1 + " and " + str2);
          for(unsigned i=0;i<t1.size();++i){ all_atoms.push_back( t1[i] ); addTaskToList(i); }
          ablocks[0].resize( t2.size() ); 
          unsigned k=0;
