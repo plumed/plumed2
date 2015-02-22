@@ -7,9 +7,38 @@ Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
 Changes from version 2.1 which are relevant for users:
 - Changes leading to incompatible behavior:
   - Labels of quantities calculates by \ref SPRINT have changed from <i>label</i>.coord_<i>num</i> to <i>label</i>.coord-<i>num</i>
+  - \ref METAD with WALKERS_MPI now writes a single hills file, without suffixes
+  - removed the ./configure.sh script of v2.0.x, now plumed can only be configured using autotools (./configure)
+  - \ref COM, \ref CENTER, and \ref GYRATION now automatically make molecules whole. In case you do not want them to do it, use NOPBC flag,
+    which recovers plumed 2.1 behavior
+- Added experimental OpenMP support, see \ref Openmp
+- Added multiple time step integration for bias potentials, see \ref MTS
 - Link cells are now used in all multicolvars that involve \ref SwitchingFunctions.  The link cell cutoff is
   set equal to 2.*\f$d_{\textrm{max}}\f$.  Where \f$d_{\textrm{max}}\f$ is the (user-specified) point at which
   the switching function goes to zero. Users should always set this parameter when using a switching function
-  in order to achieve optimal performance. 
-
+  in order to achieve optimal performance.
+- New actions
+  - \ref DUMPMASSCHARGE to dump a file with mass and charges during MD.
+  - \ref EFFECTIVE_ENERGY_DRIFT
+  - \ref EXTENDED_LAGRANGIAN
+  - \ref DFSCLUSTERING calculate the size of clusters 
+  - \ref DUMPMULTICOLVAR print out a multicolvar
+  - \ref MFILTER_LESS filter multicolvar by the value of the colvar
+  - \ref MFILTER_MORE 
+  - \ref MFILTER_BETWEEN
+  - \ref GRADIENT can be used to calculate the gradient of a quantity.  Used to drive nucleation
+  - \ref CAVITY
+  - \ref WRAPAROUND to fix periodic boundary conditions.
+- New features for existing actions:
+  - Keywords UPDATE_FROM and UPDATE_UNTIL to limit update step in a defined time window.
+  - Keyword UNNORMALIZED for \ref HISTOGRAM.
+  - Keywords for \ref GROUP (REMOVE, SORT, UNIQUE)
+  - \ref DUMPATOMS now supports dumping xtc and trr files (requires xdrfile library).
+  - \ref driver can now read xtc and trr files also with xdrfile library.
+  - \ref driver accepts a --mc flag to read charges and masses from a file produced during
+    molecular dynamics with \ref DUMPMASSCHARGE
+  - Possibility to enable or disable \ref RESTART on a per action basis.
+- VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
+  can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
+  part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
 */

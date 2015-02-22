@@ -101,13 +101,13 @@ int main(){
   Stopwatch sw;
   sw.start();
   std::ofstream ofs("logfile");
-  ofs.precision(2);
   ofs<<std::fixed;
   for(unsigned type=0;type<6;type++){
     double nsh;
     int err=run(type,&nsh);
     ofs<<"Box type "<<type<<"\n";
     ofs<<"Failures "<<err<<"\n";
+    ofs.precision(1);
     ofs<<"Shifts   "<<nsh<<"\n\n";
   }
   sw.stop();

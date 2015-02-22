@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2011-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -595,6 +595,7 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& if
  // Retrieve names for fields
  for(unsigned i=0;i<args.size();++i) labels[i]=args[i]->getName();
  // And read the stuff from the header
+ plumed_massert( ifile.FieldExist( funcl ) , "no column labelled " + funcl + " in in grid input");
  for(unsigned i=0;i<args.size();++i){
      ifile.scanField( "min_" + labels[i], gmin[i]);
      ifile.scanField( "max_" + labels[i], gmax[i]);

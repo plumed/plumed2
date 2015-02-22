@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2011-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -32,7 +32,6 @@ void StoreColvarVessel::registerKeywords( Keywords& keys ){
 StoreColvarVessel::StoreColvarVessel( const vesselbase::VesselOptions& da):
 StoreDataVessel(da)
 {
-  if( weightHasDerivatives() ) error("this quantity cannot be calculated if weights have derivatives");
   completeSetup( 0, 1 );
 }
 

@@ -34,6 +34,9 @@ doc:
 	$(MAKE) -C user-doc
 	$(MAKE) -C developer-doc
 
+docs:
+	$(MAKE) doc
+
 # regtests
 check: src test
 	$(MAKE) -C regtest

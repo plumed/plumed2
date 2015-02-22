@@ -70,7 +70,7 @@ void GridStats::registerKeywords( Keywords& keys ){
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.addOutputComponent("_mean","default","the global minimum calculated as described above");
   keys.addOutputComponent("_var","default","the eigenvalues of covariance matrix for the distribution described above");
-  keys.addOutputComponent("var-thet","default","the angle between the eigenvector of the covariance with the largest eigenvalue and the x axis (2d distribution only)");
+  keys.addOutputComponent("varthet","default","the angle between the eigenvector of the covariance with the largest eigenvalue and the x axis (2d distribution only)");
   keys.addOutputComponent("_skew","NOSKEW","the skewness projected along the eigenvectors of the covariance matrix");
   keys.addOutputComponent("_kurt","NOSKEW","the kurtosis projected along the eigenvectors of the covariance matrix");
 }

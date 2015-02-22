@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -49,6 +49,7 @@ Vessel(da)
 }
 
 std::string FunctionVessel::description(){
+  if( final_value->getName()==getAction()->getLabel() ) return "value " + getAction()->getLabel() + " contains " + function_description();
   return "value " + getAction()->getLabel() + "." + getLabel() + " contains " + function_description();
 }
 

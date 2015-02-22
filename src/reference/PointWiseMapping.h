@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -71,7 +71,7 @@ public:
 /// Get a pointer to the matrix of pairwise distances
   Matrix<double>& modifyDmat();
 /// Print out the low dimensional mapping
-  void print( const std::string& method, const unsigned& time, OFile& afile, const std::string& fmt );
+  void print( const std::string& method, const double & time, OFile& afile, const std::string& fmt );
 /// Get the low dimensional embedding coordinate
   double getProjectionCoordinate( const unsigned& iframe, const unsigned& jcoord ) const ;
 /// Set the value of the projection coordinate

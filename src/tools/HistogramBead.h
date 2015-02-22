@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -60,6 +60,8 @@ public:
         void set(const std::string& params, const std::string& dd, std::string& errormsg);
 	void set(double l, double h, double w);
 	double calculate(double x, double&df) const;
+        double lboundDerivative( const double& x ) const;
+        double uboundDerivative( const double& x ) const;
 	double getlowb() const ;
 	double getbigb() const ;
 };	

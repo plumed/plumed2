@@ -53,22 +53,19 @@ void ActionWithInputVessel::readArgument( const std::string& type ){
       if(!mves) error("action labelled " +  mlab + " does not exist or does not have vessels");
       addDependency(mves);
 
-      if( type=="bridge" ){
-         ActionWithVessel* aves=dynamic_cast<ActionWithVessel*>( this );
-         plumed_assert(aves); myBridgeVessel = mves->addBridgingVessel( aves ); 
-         arguments = dynamic_cast<Vessel*>( myBridgeVessel );
-      } else  if( type=="store" ){ 
-         arguments = dynamic_cast<Vessel*>( mves->buildDataStashes() );  
-      } else {
-         plumed_error();
-      }
-
       ActionWithValue* aval=dynamic_cast<ActionWithValue*>( this );
       if(aval){
           if( aval->checkNumericalDerivatives() ){
               ActionWithValue* aval2=dynamic_cast<ActionWithValue*>( getDependencies()[0] );
               plumed_assert( aval2 ); aval2->useNumericalDerivatives();
           }
+      }
+      if( type=="bridge" ){
+         ActionWithVessel* aves=dynamic_cast<ActionWithVessel*>( this );
+         plumed_assert(aves); myBridgeVessel = mves->addBridgingVessel( aves );
+         arguments = dynamic_cast<Vessel*>( myBridgeVessel );
+      } else  if( type=="store" ){
+         arguments = dynamic_cast<Vessel*>( mves->buildDataStashes( false, 0.0 ) );
       }
   } else {
       plumed_assert( type=="func" ); std::string glab; parse("FUNC",glab);

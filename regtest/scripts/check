@@ -4,10 +4,15 @@ nerror=0
 nok=0
 notapp=0
 html=
+fail=
 
-if [ "$1" == --html ] ; then
-html=1
-fi
+for arg
+do
+case $arg in
+  (--html) html=1 ;;
+  (--fail) fail=1 ;;
+esac
+done
 
 echo
 echo
@@ -58,6 +63,9 @@ else
 echo "+ Find the bug!"
 echo "+ To replace references, go to the test directory and"
 echo "+ type 'make reset'"
+if [ -n "$fail" ] ; then
+  exit 1
+fi
 fi
 echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo

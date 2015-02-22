@@ -11,8 +11,8 @@ dsz: MATHEVAL ARG=ds.a,ds.b,ds.c,cc.az,cc.bz,cc.cz VAR=sa,sb,sc,ca,cb,cc FUNC=sa
 PRINT FILE=colvar ARG=dsx,dsy,dsz
 
 # this is to test forces
-RESTRAINT ARG=dc.x AT=0 KAPPA=0 SLOPE=1
+BIASVALUE ARG=dc.x
 # this should be equivalent
-#RESTRAINT ARG=dsx AT=0 KAPPA=0 SLOPE=1
+# BIASVALUE ARG=dsx
 
 

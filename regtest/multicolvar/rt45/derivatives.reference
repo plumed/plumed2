@@ -1,4 +1,4 @@
-#! FIELDS time parameter a2.mean a2.less_than a2.between-1 a2.between-2 a2.more_than
+#! FIELDS time parameter a2.mean a2.lessthan a2.between-1 a2.between-2 a2.morethan
  0.000000 0  0.04928 -0.45829 -0.01577 -0.51808 -0.26441
  0.000000 1 -0.04458  0.56901  0.00969  0.51733  0.24915
  0.000000 2 -0.01318  0.18970  0.00056  0.18379  0.10368

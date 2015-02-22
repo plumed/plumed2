@@ -57,6 +57,8 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <string.h>
 #include <ctype.h>
 
+namespace PLMD{
+namespace molfile{
 /* periodic table of elements for translation of ordinal to atom type */
 static const char *pte_label[] = { 
     "X",  "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne",
@@ -241,4 +243,6 @@ int main() {
   return 0;
 }
 #endif
+}
+}
 #endif

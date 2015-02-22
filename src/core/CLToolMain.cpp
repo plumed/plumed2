@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -130,12 +130,14 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       return (config::hasMolfile()?0:1);
     } else if(a=="--has-zlib"){
       return (config::hasZlib()?0:1);
+    } else if(a=="--has-xdrfile"){
+      return (config::hasXdrfile()?0:1);
     } else if(a=="--is-installed"){
       return (config::isInstalled()?0:1);
     } else if(a=="--no-mpi"){
 // this is ignored, as it is parsed in main
       if(i>1){
-        fprintf(stderr,"--no-mpi option should can only be used as the first option");
+        fprintf(stderr,"--no-mpi option can only be used as the first option");
         return 1;
       }
     } else if(a=="--standalone-executable"){

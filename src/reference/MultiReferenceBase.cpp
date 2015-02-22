@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -90,7 +90,8 @@ void MultiReferenceBase::setWeights( const std::vector<double>& weights ){
    for(unsigned i=0;i<weights.size();++i) frames[i]->setWeight( weights[i] );
 }
 
-void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> vals, Communicator& comm, Matrix<double>& distances, const bool& squared ){
+
+void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> & vals, Communicator& comm, Matrix<double>& distances, const bool& squared ){
   distances=0.0;
   unsigned k=0, size=comm.Get_size(), rank=comm.Get_rank(); 
   for(unsigned i=1;i<frames.size();++i){

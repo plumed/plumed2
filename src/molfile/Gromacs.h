@@ -85,6 +85,9 @@ OTHER DEALINGS WITH THE SOFTWARE.
 
 #include "endianswap.h"
 
+namespace PLMD{
+namespace molfile{
+
 #if defined(WIN32) || defined(WIN64)
 #define strcasecmp stricmp
 #endif
@@ -1988,6 +1991,8 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 		sizesmall[0] = sizesmall[1] = sizesmall[2] = xtc_magicints[smallidx] ;
 	}
 	return 1;
+}
+}
 }
 #endif
 #endif

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -158,10 +158,10 @@ argument_names(getNumberOfArguments())
          rtemp*=plumed.getAtoms().getKBoltzmann(); 
       } 
       simtemp=0.; parse("TEMP",simtemp);
-      if( rtemp>0 || !biases.empty() ){
-         if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-         else simtemp*=plumed.getAtoms().getKbT();
+      if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
+      else simtemp=plumed.getAtoms().getKbT();
 
+      if( rtemp>0 || !biases.empty() ){
          if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
       }
 
@@ -191,7 +191,7 @@ argument_names(getNumberOfArguments())
       // We need no restart file if we are just collecting data and analyzing all of it
       std::string filename = getName() + "_" + getLabel() + ".chkpnt"; 
       if( write_chq ) rfile.link(*this);
-      if( plumed.getRestart() ){
+      if( getRestart() ){
           if( single_run ) error("cannot restart histogram when using the USE_ALL_DATA option");
           if( !write_chq ) warning("restarting without writing a checkpoint file is somewhat strange");
           // Read in data from input file
@@ -232,8 +232,8 @@ void Analysis::readDataFromFile( const std::string& filename ){
            break; 
         } 
      }
+    fclose(fp);
   }
-  fclose(fp);
   if(old_norm>0) firstAnalysisDone=true;
 }
 
@@ -241,7 +241,7 @@ void Analysis::parseOutputFile( const std::string& key, std::string& filename ){
   parse(key,filename);
   if(filename=="dont output") return;
 
-  if( !plumed.getRestart() ){
+  if( !getRestart() ){
       OFile ofile; ofile.link(*this);
       ofile.setBackupString("analysis");
       ofile.backupAllFiles(filename);
@@ -253,6 +253,10 @@ void Analysis::prepare(){
 }
 
 void Analysis::calculate(){
+// do nothing
+}
+
+void Analysis::accumulate(){
   // Don't store the first step (also don't store if we are getting data from elsewhere)
   if( (!single_run && getStep()==0) || reusing_data ) return;
   // This is used when we have a full quota of data from the first run
@@ -397,6 +401,7 @@ double Analysis::getTemp() const {
 }
 
 void Analysis::update(){
+  accumulate();
   if( !single_run ){
     if( getStep()>0 && getStep()%freq==0 ) runAnalysis(); 
     else if( idata==logweights.size() ) error("something has gone wrong. Probably a wrong initial time on restart"); 

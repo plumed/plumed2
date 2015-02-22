@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -65,7 +65,7 @@ ActionWithVessel(ao)
      mymap->setPropertyNames( property, false );
   } else {
      std::vector<std::string> property(1); 
-     property[0]="sss";
+     property[0]="spath";
      mymap->setPropertyNames( property, true );
   }
 
@@ -94,7 +94,7 @@ ActionWithVessel(ao)
   fclose(fp); 
 
   if(nfram==0 ) error("no reference configurations were specified");
-  log.printf("  found %d configurations in file %s\n",nfram,reference.c_str() );
+  log.printf("  found %u configurations in file %s\n",nfram,reference.c_str() );
   for(unsigned i=0;i<weights.size();++i) weights[i] /= wnorm;
   frameWasCalculated.resize( nfram ); mymap->setWeights( weights );
   distances.resize( nfram );

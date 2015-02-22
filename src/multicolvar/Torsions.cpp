@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -31,7 +31,7 @@ using namespace std;
 namespace PLMD{
 namespace multicolvar{
 
-//+PLUMEDOC COLVAR TORSIONS
+//+PLUMEDOC MCOLVAR TORSIONS
 /*
 Calculate whether or not a set of torsional angles are within a particular range.
 
