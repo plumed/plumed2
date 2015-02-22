@@ -128,6 +128,21 @@ for replica exchange methods to be computed correctly.
 
 Multiple walkers  \cite multiplewalkers can also be used. See below the examples.
 
+
+The c(t) reweighting factor can also be calculated on the fly using the equations 
+presented in \cite Tiwary_jp504920s. 
+The expression used to calculate c(t) follows directly from using Eq. 12 in 
+Eq. 3 in \cite Tiwary_jp504920s and gives smoother results than equivalent Eqs. 13 
+and Eqs. 14 in that paper. The c(t) is given by the rct component while the bias 
+normalized by c(t) is given by rbias component (rbias=bias-ct) which can be used 
+to obtain a reweighted histogram.
+The calculation of c(t) is enabled by using the keyword REWEIGHTING_NGRID where the grid used for the 
+calculation is specified. 
+By default c(t) is updated every 50 Gaussian hills but this 
+can be changed by using the REWEIGHTING_NHILLS keyword. 
+This option can only be employed together with Well-Tempered Metadynamics and requires that 
+a grid is used.
+
 Additional material and examples can be also found in the tutorials: 
 
 - \ref belfast-6
@@ -212,6 +227,7 @@ in \cite PRL230602. The flag ACCELERATION turn on accumulation of the accelerati
 factor that can then be used to determine the rate. This method can be used together
 with \ref COMMITTOR analysis to stop the simulation when the system get to the target basin.
 It must be used together with Well-Tempered Metadynamics.
+
 
 */
 //+ENDPLUMEDOC
@@ -298,7 +314,7 @@ void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
-  keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias corrected using the c(t) reweighting factor [rbias=bias-c(t)]. This is calculated using the method of Tiwary and Parrinello.");
+  keys.addOutputComponent("rbias","REWEIGHTING_NGRID","the instantaneous value of the bias normalized using the c(t) reweighting factor [rbias=bias-c(t)]. This is calculated using the method of Tiwary and Parrinello.");
   keys.addOutputComponent("rct","REWEIGHTING_NGRID","the reweighting factor c(t) calculated according to the method of Tiwary and Parrinello.");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.use("ARG");
@@ -712,7 +728,7 @@ isFirstStep(true), reweight_factor(0.0)
   if(acceleration) log<<plumed.cite(
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   if(rewf_grid_.size()>0) log<<plumed.cite(
-     "Pratyush and Parrinello, J. Phys. Chem. B, DOI: 10.1021/jp504920s (2014)");
+     "Pratyush and Parrinello, J. Phys. Chem. B, 119, 736 (2015)");
   log<<"\n";
 
 }
