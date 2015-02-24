@@ -381,9 +381,9 @@ walkers_mpi(false),
 acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
-isFirstStep(true), reweight_factor(0.0),
-work_(0.0),
-isFirstStep(true)
+isFirstStep(true),
+reweight_factor(0.0),
+work_(0.0)
 {
   // parse the flexible hills
   string adaptiveoption;
