@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2011-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -110,6 +110,7 @@ class MovingRestraint : public Bias{
   std::vector<double> oldf;
   std::vector<string> verse;
   std::vector<double> work;
+  double tot_work;
 public:
   MovingRestraint(const ActionOptions&);
   void calculate();
@@ -121,12 +122,18 @@ PLUMED_REGISTER_ACTION(MovingRestraint,"MOVINGRESTRAINT")
 void MovingRestraint::registerKeywords( Keywords& keys ){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","VERSE","B","Tells plumed whether the restraint is only acting for CV larger (U) or smaller (L) than the restraint or whether it is acting on both sides (B)");
-  keys.add("numbered","STEP","This keyword appears multiple times as STEPx with x=0,1,2,...,n.  Each value given represents the MD step at which the restraint parameters take the values KAPPAx and ATx."); 
+  keys.add("compulsory","VERSE","B","Tells plumed whether the restraint is only acting for CV larger (U) or smaller (L) than "
+                                    "the restraint or whether it is acting on both sides (B)");
+  keys.add("numbered","STEP","This keyword appears multiple times as STEPx with x=0,1,2,...,n. Each value given represents "
+                             "the MD step at which the restraint parameters take the values KAPPAx and ATx."); 
   keys.reset_style("STEP","compulsory");
-  keys.add("numbered","AT","ATx is equal to the position of the restraint at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no ATx is specified for STEPx then the values of AT are kept constant during the interval of time between STEPx-1 and STEPx.");
+  keys.add("numbered","AT","ATx is equal to the position of the restraint at time STEPx. For intermediate times this parameter "
+                           "is linearly interpolated. If no ATx is specified for STEPx then the values of AT are kept constant "
+                           "during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("AT","compulsory"); 
-  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx.  For intermediate times this parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx are kept constant during the interval of time between STEPx-1 and STEPx.");
+  keys.add("numbered","KAPPA","KAPPAx is equal to the value of the force constants at time STEPx. For intermediate times this "
+                              "parameter is linearly interpolated.  If no KAPPAx is specified for STEPx then the values of KAPPAx "
+                              "are kept constant during the interval of time between STEPx-1 and STEPx.");
   keys.reset_style("KAPPA","compulsory");
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
@@ -139,6 +146,9 @@ void MovingRestraint::registerKeywords( Keywords& keys ){
                                             "These quantities will named with the arguments of the bias followed by "
                                             "the character string _work. These quantities tell the user how much work has "
                                             "been done by the potential in dragging the system along the various colvar axis.");
+  keys.addOutputComponent("_kappa","default","one or multiple instances of this quantity will be refereceable elsewhere in the input file. "
+                                            "These quantities will named with the arguments of the bias followed by "
+                                            "the character string _kappa. These quantities tell the user the time dependent value of kappa.");
 }
 
 MovingRestraint::MovingRestraint(const ActionOptions&ao):
@@ -187,8 +197,12 @@ verse(getNumberOfArguments())
         addComponent(comp); componentIsNotPeriodic(comp);
 	comp=getPntrToArgument(i)->getName()+"_work"; // each spring has its own work
         addComponent(comp); componentIsNotPeriodic(comp);
+	comp=getPntrToArgument(i)->getName()+"_kappa"; // each spring has its own kappa 
+        addComponent(comp); componentIsNotPeriodic(comp);
         work.push_back(0.); // initialize the work value 
   }
+  addComponent("work"); componentIsNotPeriodic("work");
+  tot_work=0.0;
 
   log<<"  Bibliography ";
   log<<cite("Grubmuller, Heymann, and Tavan, Science 271, 997 (1996)")<<"\n";
@@ -220,6 +234,7 @@ void MovingRestraint::calculate(){
     for(unsigned j=0;j<narg;j++) kk[j]=(c1*kappa[i-1][j]+c2*kappa[i][j]);
     for(unsigned j=0;j<narg;j++) aa[j]=(c1*at[i-1][j]+c2*at[i][j]);
   }
+  tot_work=0.0;
   for(unsigned i=0;i<narg;++i){
     const double cv=difference(i,aa[i],getArgument(i)); // this gives: getArgument(i) - aa[i]
     getPntrToComponent(getPntrToArgument(i)->getName()+"_cntr")->set(aa[i]); 
@@ -231,10 +246,13 @@ void MovingRestraint::calculate(){
     dpotdk[i]=0.5*cv*cv;
     if(oldaa.size()==aa.size() && oldf.size()==f.size()) work[i]+=0.5*(oldf[i]+f[i])*(aa[i]-oldaa[i]) + 0.5*( dpotdk[i]+olddpotdk[i] )*(kk[i]-oldk[i]);
     getPntrToComponent(getPntrToArgument(i)->getName()+"_work")->set(work[i]); 
+    getPntrToComponent(getPntrToArgument(i)->getName()+"_kappa")->set(kk[i]); 
+    tot_work+=work[i];
     ene+=0.5*k*cv*cv;
     setOutputForce(i,f[i]);
     totf2+=f[i]*f[i];
   };
+  getPntrToComponent("work")->set(tot_work);
   oldf=f;
   oldaa=aa;
   oldk=kk;

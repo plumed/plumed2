@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2011-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -41,7 +41,7 @@ class SwitchingFunction{
 /// This is to check that switching function has been initialized
   bool init;
 /// Type of function
-  enum {rational,exponential,gaussian,smap} type;
+  enum {rational,exponential,gaussian,smap,cubic} type;
 /// Inverse of scaling length.
 /// We store the inverse to avoid a division
   double invr0;
@@ -88,12 +88,12 @@ public:
 /// The advantage is that in some case the expensive square root can be avoided
 /// (namely for rational functions, if nn and mm are even and d0 is zero)
   double calculateSqr(double distance2,double&dfunc)const;
-/// Calculate the x value for a given y value
-  double inverse( const double& val ) const ;
 /// Returns d0
   double get_d0() const;
 /// Returns r0
   double get_r0() const;
+/// Return dmax 
+  double get_dmax() const;
 };
 
 }

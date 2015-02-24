@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -55,6 +55,21 @@ void MultiReferenceBase::readFrame( PDB& mypdb ){
   mymsd->checkRead();
 }
 
+void MultiReferenceBase::getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args ){
+  plumed_assert( atoms.size()==0 && args.size()==0 );
+  for(unsigned i=0;i<frames.size();++i){
+      frames[i]->getAtomRequests( atoms );
+      frames[i]->getArgumentRequests( args );
+  }
+}
+
+void MultiReferenceBase::setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs ){
+  for(unsigned i=0;i<frames.size();++i){
+      frames[i]->setNumberOfAtoms( natoms );
+      frames[i]->setNumberOfArguments( nargs );
+  }
+}
+
 void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ){
   // Create a reference configuration of the appropriate type
   ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( frameToCopy->getName() );
@@ -76,7 +91,7 @@ void MultiReferenceBase::setWeights( const std::vector<double>& weights ){
 }
 
 
-void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> vals, Communicator& comm, Matrix<double>& distances, const bool& squared ){
+void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> & vals, Communicator& comm, Matrix<double>& distances, const bool& squared ){
   distances=0.0;
   unsigned k=0, size=comm.Get_size(), rank=comm.Get_rank(); 
   for(unsigned i=1;i<frames.size();++i){

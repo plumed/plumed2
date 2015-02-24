@@ -1,0 +1,63 @@
+language: cpp
+env:
+# list of configurations to be attempted:
+# clang
+  - PLUMED_CC=clang PLUMED_CXX=clang++ 
+# GNU + doc
+  - PLUMED_CC=gcc   PLUMED_CXX=g++ 
+# MPI + doc
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes
+# clang
+  - PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3 LAPACK=yes
+# GNU
+  - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
+# MPI
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes ALMOST=yes
+# Possible additional variables:
+#   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
+install:
+# build the manual, only if log contains string [makedoc]
+  - export PLUMED_NUM_THREADS=2
+  - ./.travis.check.log makedoc  || MAKEDOC=no
+  - ./.travis.check.log valgrind || VALGRIND=no
+  - ./.travis.check.log almost   || ALMOST=no
+# install some package - these are fast, we install them anyway
+  - sudo apt-get update -qq
+  - sudo apt-get install -y libmatheval-dev
+# this is not needed (will be used in 2.2)
+  - ./.travis.install.xdrfile
+  - LIBRARY_PATH="$LIBRARY_PATH:/usr/local/lib"
+  - LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
+# installation of these packages takes a lot of time
+# we do it only when needed
+  - test "$PLUMED_CXX" == "mpic++" && sudo apt-get install -y libopenmpi1.5-dev openmpi1.5-bin || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
+# doxygen from its repository (apt-get gets an old version)
+#  - test "$MAKEDOC" == yes && ./.travis.install.doxygen                   || true
+# it seems that here we can get precompiled doxygen and latex
+  - test "$MAKEDOC" == yes && sudo apt-add-repository -y ppa:libreoffice/ppa || true
+  - test "$MAKEDOC" == yes && sudo apt-get update -qq                     || true
+  - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
+  - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
+  - test "$LAPACK" == yes  && sudo apt-get install libatlas-base-dev      || true
+  - test "$ALMOST" == yes && ./.travis.install.almost                     || true
+  - test "$ALMOST" == yes && ENALMOST="--enable-almost"                 || true
+  - test "$ALMOST" == yes && PLUMED_CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost"  || true
+# moreover, we hardcode path to dynamic library, required for xdrfile to link properly
+# I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
+  - test -n "$LD_LIBRARY_PATH" && PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" || true
+script:
+# we set all the optional modules on
+  - touch src/crystallization.on src/manyrestraints.on
+# we have to pass the full path since on travis machines sudo does not have compilers in the path
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST --enable-openmp
+  - make -j 2
+# we install plumed so that it is in the path
+  - sudo make install
+  - test "$VALGRIND" == yes && OPT=valgrind || OPT=""
+  - make -C regtest $OPT
+  - test "$MAKEDOC" == yes && make -C regtest copytodoc || true
+  - test "$MAKEDOC" == yes && make doc >/dev/null || true
+  - make -C regtest checkfail
+after_success:
+  - test "$MAKEDOC" == yes && ./.travis.pushdoc

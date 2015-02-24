@@ -56,7 +56,7 @@ double f( double x, struct fparams myparams );
 
 <b>
 Nevertheless for reasons that will hopefully become clear as you read this document every bias, 
-colvar and function that is implemented in plumed 2.0 is inside its own separate class.
+colvar and function that is implemented in plumed 2 is inside its own separate class.
 </b>
 
 \section publicprivate Public and private members
@@ -112,7 +112,7 @@ double s=thisIsTheInstance.f(4.0);
 \endverbatim         
 
 <b>
-In plumed 2.0 all the lines in the input file are read in inside the constructors.  This ensures
+In plumed 2 all the lines in the input file are read in inside the constructors.  This ensures
 that the parameters inside any given method are set correctly from the outset.
 </b> 
 
@@ -128,7 +128,7 @@ to the compiler what a given symbol means for a given class.  Among other things
 - How to perform arithmatic for a class: +, -, /, *, +=, -= etc
 - What brackets mean i.e. the meanings of (), [] 
 
-We do not use this extensively in plumed 2.0 but it does occasionally appear.
+We do not use this extensively in plumed 2 but it does occasionally appear.
 
 \section inclusion Including the functionality of one class in a new class 1: Inclusion
 
@@ -238,7 +238,7 @@ Matrix<double> mat;   // This is a matrix of doubles
 \endverbatim
 
 <b>
-The most common way we use this kind of functionality in plumed 2.0 is when we take advantage of the
+The most common way we use this kind of functionality in plumed 2 is when we take advantage of the
 features that are available in the C++ standard library.  For more details on the standard library
 visit http://www.cplusplus.com/reference/
 </b>  

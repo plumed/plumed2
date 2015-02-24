@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -64,11 +64,19 @@ void StoreVectorsVessel::recompute( const unsigned& ivec, const unsigned& jstore
 }
 
 bool StoreVectorsVessel::calculate(){
-  storeValues( vecs->getCurrentPositionInTaskList() );  // Store the values of the components of the vector
-
-  if(!store_director) return true;
-  if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList() );
-  else normalizeVector( -1 );  // Ensures vector components are normalized 
+  if( !hard_cut ){
+      storeValues( vecs->getCurrentPositionInTaskList() );  // Store the values of the components of the vector
+      if(!store_director) return true;
+      if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList() );
+      else normalizeVector( -1 );  // Ensures vector components are normalized 
+  } else {
+     if( getAction()->getElementValue(getAction()->getIndexOfWeight())>wtol ){
+         storeValues( vecs->getCurrentPositionInTaskList() );
+         if(!store_director) return true;
+         if( !usingLowMem() ) normalizeVector( vecs->getCurrentPositionInTaskList() );
+         else normalizeVector( -1 );  // Ensures vector components are normalized 
+     }
+  }
   return true;
 }
 

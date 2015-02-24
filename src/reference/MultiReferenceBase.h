@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -50,6 +50,10 @@ public:
   virtual void clearRestOfData(){};
 /// Read a frame from the input
   void readFrame( PDB& pdb ); 
+/// Find what is required of us from the reference frames
+  void getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args );
+/// Finish setup of frames
+  void setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs );
 /// Do additional reading required by derived class
   virtual void readRestOfFrame(){}
 /// Do additional resizing required by derived class
@@ -68,7 +72,7 @@ public:
 /// Retrieve the weight of one of the frames
   double getWeight( const unsigned& ifram ) const ;
 /// Calculate the distances between all the frames and store in a matrix
-  void calculateAllDistances( const Pbc& pbc, const std::vector<Value*> vals, Communicator& comm, Matrix<double>& distances, const bool& squared );
+  void calculateAllDistances( const Pbc& pbc, const std::vector<Value*> & vals, Communicator& comm, Matrix<double>& distances, const bool& squared );
 };
 
 template <class T>

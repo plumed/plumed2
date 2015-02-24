@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -40,6 +40,7 @@ it is created in a different Action however.  At the moment this is used for reg
 class BridgeVessel : public Vessel {
 private:
   unsigned inum;
+  bool in_normal_calculate;
   std::vector<double> mynumerical_values;
   ActionWithVessel* myOutputAction;
   ActionWithValue* myOutputValues;
@@ -63,7 +64,14 @@ public:
   void finish();
 /// Calculate numerical derivatives
   void completeNumericalDerivatives();
+/// This is used to tell if the bridge has been called in recompute
+  bool prerequisitsCalculated();
 };
+
+inline
+bool BridgeVessel::prerequisitsCalculated(){
+  return in_normal_calculate;
+}
 
 }
 }

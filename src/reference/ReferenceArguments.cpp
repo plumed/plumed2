@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -28,13 +28,15 @@ namespace PLMD {
 
 ReferenceArguments::ReferenceArguments( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-hasmetric(false),
-hasweights(false)
+hasweights(false),
+hasmetric(false)
 {
 }
 
 void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ){
-  parseVector( "ARG", arg_names );
+  ReferenceAtoms* aref=dynamic_cast<ReferenceAtoms*>( this );
+  if( !aref ) parseVector( "ARG", arg_names );
+  else parseVector( "ARG", arg_names, true );
 
   reference_args.resize( arg_names.size() );
   for(unsigned i=0;i<arg_names.size();++i) parse( arg_names[i], reference_args[i] );
@@ -157,7 +159,7 @@ const std::vector<double>& ReferenceArguments::getReferenceMetric(){
   return trig_metric;
 }
 
-double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> vals, const std::vector<double>& arg, const bool& squared ){
+double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, const bool& squared ){
   double r=0;
   if( hasmetric ){
       double dp_i, dp_j;
@@ -169,7 +171,7 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
              if(i==j) dp_j=dp_i;
              else dp_j=vals[jk]->difference( reference_args[j], arg[jk] );
 
-             arg_ders[ ik ]+=metric(i,j)*dp_j;
+             arg_ders[ ik ]+=2.0*metric(i,j)*dp_j;    // Factor of two for off diagonal terms as you have terms from ij and ji
              r+=dp_i*dp_j*metric(i,j);
           }
       }

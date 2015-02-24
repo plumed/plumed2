@@ -19,22 +19,29 @@ user-doc        : user documentation
 INSTALL
 
 Extensive installation instructions are in the user documentation.
-A precompiled version of the user documentation can be found here:
-http://plumed.github.io/doc-v2.0
+Links to precompiled versions of the documentation can be found here:
+http://www.plumed-code.org/documentation
 
 Needed software:
 * GNU make
-* c/c++/fortran compiler
+* c/c++ compiler
+* a modern version of the "patch"
+* support for POSIX library dirent.h
 * xxd (present in most unix distributions)
+
+Suggested software (libraries are checked during configure and enabled if available):
+* optimized blas and lapack libraries, can be replaced by an internal version if not available
+* MPI library to run parallel simulations
+* VMD molfile plugins (www.ks.uiuc.edu/Research/vmd/plugins) to read arbitrary file formats,
+  can be replaced by an internal version supporting a few formats if not available
+* matheval library (www.gnu.org/software/libmatheval) to use algebraic collective variables
 * doxygen (www.doxygen.org) to build user manual
 * latex to build the user manual - used by doxygen
 * graphviz (www.graphviz.org) to show class hierarchy in developer manual - used by doxygen
-* a modern version of the "patch" command
-* lapack and blas libraries
 
 Quick compilation instructions:
 * configure for your system:
-> ./configure
+> ./configure --prefix=$HOME/opt
 * if necessary, edit Makefile.conf
 * configure your environment
 > source ./sourceme.sh
@@ -51,12 +58,11 @@ user-doc/html/index.html
 The starting point for developer documentation is
 developer-doc/html/index.html
 
-* To install plumed:
-> export PLUMED_PREFIX=/usr/local
+* To install plumed in $HOME/opt (set during configure):
 > umask 022
 > make install
 * A sample modulefile with environment variable will be placed in
-$PLUMED_PREFIX/lib/plumed/src/lib/modulefile
+$HOME/opt/lib/plumed/src/lib/modulefile
 * Path to installed documentation can be found with command
 > plumed info --user-doc
 

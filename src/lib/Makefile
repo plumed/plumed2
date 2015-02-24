@@ -92,7 +92,7 @@ install-do:
 # rebuild libraries and main using new target dir
 	$(MAKE) PLUMED_LIBDIR=$(PLUMED_INSTALL_ROOT)/src/lib/ PLUMED_INSTALL=Install all
 # copy .h, .cpp .o compile_options.sh and documentation:
-	cd ../../ ; tar cf - patches scripts src/*/*.h src/*/*.cpp src/*/*.o src/config/compile_options.sh *-doc | tar xf - -C $(PLUMED_INSTALL_ROOT)/
+	cd ../../ ; tar cf - patches scripts src/*/*.h src/*/*.cpp src/*/*.o src/config/compile_options.sh *-doc/*.png *-doc/html *-doc/regtests *-doc/manual.pdf | tar xf - -C $(PLUMED_INSTALL_ROOT)/
 # also copy .h files into include/ dir
 	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)/
 # copy inc files changing the path
@@ -188,10 +188,10 @@ Plumed.inc:
 	@echo Building Plumed.inc
 	@echo "PLUMED_RUNTIME_LOAD=" $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS) > $@
 	@echo "PLUMED_STATIC_LOAD=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS) >> $@
-	@echo "PLUMED_SHARED_LOAD=" $(realpath ./)/$(PLUMED_SHARED_OBJ) $(LIBS) $(LDFLAGS) >> $@
+	@echo "PLUMED_SHARED_LOAD=" $(realpath ./)/libplumed.$(SOEXT) $(LIBS) $(LDFLAGS) >> $@
 	@echo "PLUMED_RUNTIME_DEPENDENCIES="   >> $@
 	@echo "PLUMED_STATIC_DEPENDENCIES=" $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))  >> $@
-	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath ./)/$(PLUMED_SHARED_OBJ)  >> $@
+	@echo "PLUMED_SHARED_DEPENDENCIES=" $(realpath ./)/libplumed.$(SOEXT)  >> $@
 
 Plumed.inc.runtime: Plumed.inc
 	@echo Building Plumed.inc, runtime-linking version
@@ -212,10 +212,10 @@ Plumed.cmake:
 	@echo Building Plumed.cmake
 	@echo "set(PLUMED_RUNTIME_LOAD " $(realpath $(OBJ_DYNAMIC_WRAPPER)) $(LIBS) $(LDFLAGS)")" > $@
 	@echo "set(PLUMED_STATIC_LOAD " $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER)) $(LIBS) $(DYNAMIC_LIBS) $(LDFLAGS)")" >> $@
-	@echo "set(PLUMED_SHARED_LOAD " $(realpath ./)/$(PLUMED_SHARED_OBJ) $(LIBS) $(LDFLAGS)")" >> $@
+	@echo "set(PLUMED_SHARED_LOAD " $(realpath ./)/libplumed.$(SOEXT) $(LIBS) $(LDFLAGS)")" >> $@
 	@echo "set(PLUMED_RUNTIME_DEPENDENCIES) "   >> $@
 	@echo "set(PLUMED_STATIC_DEPENDENCIES " $(realpath $(OBJ_KERNEL)) $(realpath $(OBJ_WRAPPER))")"  >> $@
-	@echo "set(PLUMED_SHARED_DEPENDENCIES " $(realpath ./)/$(PLUMED_SHARED_OBJ)")"  >> $@
+	@echo "set(PLUMED_SHARED_DEPENDENCIES " $(realpath ./)/libplumed.$(SOEXT)")"  >> $@
 
 Plumed.cmake.runtime: Plumed.cmake
 	@echo Building Plumed.cmake, runtime-linking version

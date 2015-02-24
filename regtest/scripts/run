@@ -45,6 +45,20 @@ echo "++ Processors: $mpiprocs"
 mpi=env
 plumed=plumed
 
+root=$($plumed --no-mpi info --root)
+
+if test -z "$root" ; then
+  echo "FAILURE: plumed executable not available"
+  exit 1
+fi
+
+cd ../../../../
+if [[ "${PWD}"/ != "$root" ]] ; then
+echo "WARNING using plumed from $root"
+fi
+cd -
+
+
 if ((mpiprocs>0)); then
 mpi="${PLUMED_MPIRUN:-mpirun} -np $mpiprocs"
 
@@ -69,7 +83,7 @@ fi
 for need in $plumed_needs
 do
   echo "Checking for $need"
-  if ! plumed --has-$need
+  if ! $plumed --has-$need
   then
     echo "NOT_APPLIABLE ($need NOT INSTALLED)"
     exit 0;
@@ -87,25 +101,17 @@ case "$type" in
   ;;
 (driver)
   echo "Run driver"
-if ((mpiprocs==0)) ; then
-  $mpi $valgrind plumed --no-mpi driver $arg > out 2> err
-else
-  $mpi $valgrind plumed driver $arg > out 2> err
-fi
+  $mpi $valgrind $plumed driver $arg > out 2> err
   ;;
 (sum_hills)
   echo "Run driver"
-if ((mpiprocs==0)) ; then
-  $mpi $valgrind plumed --no-mpi sum_hills $arg > out 2> err
-else
-  $mpi $valgrind plumed sum_hills $arg > out 2> err
-fi
+  $mpi $valgrind $plumed sum_hills $arg > out 2> err
  ;;
 (make)
   echo "Run Make"
-  plumed info --configuration > Makefile.conf
-  plumed --is-installed || ln -s $(plumed info --root)/src plumed
-  cat <(plumed info --configuration) $(plumed info --root)/src/lib/Plumed.inc.static ../../../scripts/exe.make > Makefile 
+  $plumed info --configuration > Makefile.conf
+  $plumed --is-installed || ln -s $($plumed info --root)/src plumed
+  cat <($plumed info --configuration) $($plumed info --root)/src/lib/Plumed.inc.static ../../../scripts/exe.make > Makefile 
   make exe 1>out 2> err
   $mpi $valgrind ./exe $arg >> out 2>> err
  ;;
@@ -125,11 +131,14 @@ then
 for file in *.reference ; do
   new="${file%.reference}"
   if test -f "$new" ; then
-    out="$(diff "$file" "$new")"
+    ../../../scripts/fixzeroes.sh "$file"
+    cp "$new" "$new.zfix"
+    ../../../scripts/fixzeroes.sh "$new.zfix"
+    out="$(diff "$file" "$new.zfix")"
     test -n "$out" && {
       echo FAILURE
       echo "Diff for ${file%.reference}:"
-      diff "${file}" "${file%.reference}"
+      diff "${file}" "$new.zfix"
     }
   else
     echo FAILURE

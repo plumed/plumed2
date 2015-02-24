@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -34,7 +34,7 @@ StoreDataVessel(da),
 tmpdf(3)
 {
   mycolv=dynamic_cast<MultiColvarBase*>( getAction() );
-  plumed_assert( mycolv ); completeSetup( 2, 3 );
+  plumed_assert( mycolv ); completeSetup( mycolv->getCentralAtomElementIndex(), 3 );
 }
 
 void StoreCentralAtomsVessel::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& aindexes ){

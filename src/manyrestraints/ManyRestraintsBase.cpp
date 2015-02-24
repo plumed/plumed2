@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2011-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -33,6 +33,7 @@ void ManyRestraintsBase::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords( keys );
   keys.add("hidden","STRIDE","the frequency with which the forces due to the bias should be calculated.  This can be used to correctly set up multistep algorithms");
   keys.remove("TOL");
+  keys.addOutputComponent("bias","default","the instantaneous value of the bias potentials");
 }
 
 ManyRestraintsBase::ManyRestraintsBase(const ActionOptions& ao):

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -39,6 +39,15 @@ tmpdf(1)
   completeSetup( 0, 1 ); nrows = function->getFullNumberOfTasks();
 }
 
+void AdjacencyMatrixVessel::prepare(){
+  finished=false; 
+  StoreDataVessel::prepare();
+}
+
+void AdjacencyMatrixVessel::setFinishedTrue(){
+  finished=true;
+}
+
 void AdjacencyMatrixVessel::recompute( const unsigned& ivec, const unsigned& jstore ){
   plumed_dbg_assert( function->usingLowMem() && function->dertime );
   
@@ -53,9 +62,12 @@ void AdjacencyMatrixVessel::recompute( const unsigned& ivec, const unsigned& jst
 } 
 
 void AdjacencyMatrixVessel::finish(){
-  StoreDataVessel::finish(); 
-  function->dertime=true;
-  function->completeCalculation();
+  if( !finished ){
+     finished=true;
+     StoreDataVessel::finish(); 
+     function->dertime=true;
+     function->completeCalculation();
+  }
 }
 
 }

@@ -18,7 +18,7 @@ Once this tutorial is completed students will:
 
 \section Resources
 
-The <a href="belfast-8.tgz" download="belfast-8.tgz"> tarball </a> for this project contains the following files:
+The <a href="tutorial-resources/belfast-8.tgz" download="belfast-8.tgz"> tarball </a> for this project contains the following files:
 
 - system folder: a starting structure for Val-Ile-Leu system
 - WTBX: a run of Well-Tempered Bias-Exchange Metadynamics ready for the analysis
@@ -48,9 +48,7 @@ equilibrium free-energy, due to hysteresis. Instead, in the bias-exchange approa
 The probability to accept the exchange is given by a Metropolis rule:
 
 \f[
-\begin{eqnarray}
 \min\left( 1, \exp \left[ \beta ( V_G^a(x^a,t)+V_G^b(x^b,t)-V_G^a(x^b,t)-V_G^b(x^a,t) ) \right] \right)
-\end{eqnarray}
 \f]
 
 where \f$ x^{a} \f$ and \f$ x^{b} \f$ are the coordinates of replicas \f$a \f$ and \f$ b \f$
@@ -343,3 +341,4 @@ link: @subpage belfast-8
 
 description: Bias exchange and multiple walkers
 
+additional-files: belfast-8.tgz 

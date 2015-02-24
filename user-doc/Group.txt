@@ -8,7 +8,7 @@ The vast majority of the CVs implemented in PLUMED are calculated from a list of
 atoms are specified using their numerical indices in the molecular dynamics input file. 
 
 In PLUMED lists of atoms can be either provided directly inside the definition of each collective variable, or
-predefined as a \ref GROUP that can be reused multiple times. Lists of atoms can be written as:
+predefined as a \subpage GROUP that can be reused multiple times. Lists of atoms can be written as:
 
 - comma separated lists of numbers (GROUP ATOMS=10,11,15,20 LABEL=g1)
 - numerical ranges.  So GROUP ATOMS=10-20 LABEL=g2 is equivalent to GROUP ATOMS=10,11,12,13,14,15,16,17,18,19,20 LABEL=g2
@@ -72,7 +72,7 @@ periodic boundaries, a fact which PLUMED could only deal with were the topology 
 work would involve a lot laborious programming and goes against our original aim of having a general patch that can be implemented 
 in a wide variety of MD codes.  Consequentially, we have implemented a more pragmatic solution to this probem - the user specifies
 in input any molecules (or parts of molecules) that must be kept in tact throughout the simulation run.  In PLUMED 1 this was done
-using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be acchieved using the \subpage WHOLEMOLECULES command.
+using the ALIGN_ATOMS keyword.  In PLUMED 2 the same effect can be achieved using the \subpage WHOLEMOLECULES command.
 
 The following input computes the end-to-end distance for a polymer of 100 atoms and keeps it at a value around 5.
 
@@ -96,6 +96,12 @@ specify atom lists in a reversed order.
 WHOLEMOLECULES STRIDE=1 ENTITY0=1-20
 DUMPATOMS FILE=dump.xyz ATOMS=1-20
 \endverbatim
+
+Notice that since PLUMED 2.1 it is also possible to shift coordinates stored within PLUMED
+so as to align them to a template structure, using the \subpage FIT_TO_TEMPLATE keyword.
+
+Finally, you can bring a set of atom as close as possible to another set of
+atoms using the \subpage WRAPAROUND keyword.
 
 
 \section vatoms Virtual Atoms

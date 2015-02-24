@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2013,2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -168,7 +168,7 @@ void ReferenceConfiguration::print( OFile& ofile, const std::string& fmt ){
   ofile.printf("END\n");
 }
 
-double distance( const Pbc& pbc, const std::vector<Value*> vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
+double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
   double dist1=ref1->calc( ref2->getReferencePositions(), pbc, vals, ref2->getReferenceArguments(), squared );
 #ifndef NDEBUG
   // Check that A - B = B - A

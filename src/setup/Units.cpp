@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2011-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -36,6 +36,12 @@ This command sets the internal units for the code.  A new unit can be set by eit
 specifying how to convert from the plumed default unit into that new unit or by using
 the shortcuts described below.  This directive MUST appear at the BEGINNING of the 
 plumed.dat file.  The same units must be used througout the plumed.dat file.
+
+Notice that all input/output will then be made using the specified units.
+That is: all the input parameters, all the output files, etc. The only
+exceptions are file formats for which there is a specific convention concerning
+the units. For example, trajectories written in .gro format (with \ref DUMPATOMS)
+are going to be always in nm.
 
 \par Examples
 \verbatim
