@@ -9,7 +9,7 @@ and \link InstallingPlumed install\endlink
 PLUMED.
 For those of you who are impatient, the following might do the job:
 \verbatim
-> ./configure --prefix=/usr/local/lib
+> ./configure --prefix=/usr/local
 > make -j 4
 > make doc # this is optional and requires doxygen installed
 > make install # this is also optional - plumed can be used from the compilation directory
