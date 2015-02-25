@@ -1,0 +1,97 @@
+/**
+\page munster Munster tutorial
+
+\section Aims
+
+The aim of this document is to describe the PLUMED tutorial held in Munster, March 2015.
+Syntax is consistent with PLUMED 2.1. Simulations are made using GROMACS, which is expected to
+be already installed.
+
+\section munster-monitor Monitoring collective variables
+
+The main scope of PLUMED is to compute collective variables, that is complex descriptors than can be used
+to analyze a conformational change or a chemical reaction. This can be done either on the fly, that is during
+molecular dynamics, or a posteriori, using PLUMED as a post-processing tool. In both cases
+one should create an input file with a specific PLUMED syntax. A sample input file is below:
+
+\verbatim
+# compute distance between atoms 1 and 10
+d: DISTANCE ATOMS=1,10
+# compute torsional angle between atoms 1,10,20,30
+phi: TORSION ATOMS=1,10,20,30
+# print both of them every 10 step
+PRINT ARG=d,phi STRIDE=10
+\endverbatim
+(see \ref DISTANCE, \ref TORSION, and \ref PRINT)
+
+PLUMED works using kJ/nm/ps as energy/length/time units. This can be personalized using \ref UNITS.
+Notice that variables should be given a name (in the example above, 'd' and 'phi'), which is
+then used to refer to these variables. Also notice that lists of atoms should be provided as 
+comma separated numbers, with no space. You can find more information on the PLUMED syntax
+at \ref Syntax page of the manual. A complete documentation for all the supported
+collective variables can be found at the \ref colvarintro page.
+
+\subsection munster-monitor-of Analyze on the fly
+
+Here we will run a plain MD on alanine dipeptide and compute two torsional angles on the fly.
+
+TODO:
+- instructions on running gromacs
+- input monitoring phi and psi
+- run two trajectories starting from the two different minima
+- (optional) compute histogram
+- (optional) an example with \ref MATHEVAL
+
+\subsection munster-monitor-dr Analyze using the driver
+
+Analyze phi and psi with the \ref driver.
+
+TODO:
+- instructions on running the driver
+- compute another variable (e.g. \ref GYRATION)
+- explain how to use \ref WHOLEMOLECULES
+
+\section munster-biasing Biasing collective variables
+
+We have seen that PLUMED can be used to compute collective variables. However, PLUMED
+is most often use to add forces on the collective variables. To this aim,
+we have implemented a variety of possible biases acting on collective variables.
+A bias works in a manner conceptually similar to the \ref PRINT command, taking as argument
+one or more collective variables. However, here the STRIDE is usually set to 1, which means
+that forces are applied at every timestep. In the following we will see how to apply harmonic restraints
+and haw to build an adaptive bias potential with metadynamics.
+
+\subsection munster-biasing-re Using restraints
+
+TODO:
+- instructions for using \ref RESTRAINT on phi
+- instructions for using \ref MOVINGRESTRAINT perhaps bringing phi from one basin to the other
+
+\subsection munster-biasing-me Metadynamics
+
+TODO:
+- instructions for using  \ref METAD on phi,psi
+- show how to compute the landscape with \ref sum_hills
+- (optional) show metadynamics failure with \ref GYRATION
+
+\section munster-rex Using multiple replicas
+
+Some free-energy methods are intrinsically parallel and requires running
+several simultaneous simulations. (expand).
+
+\subsection munster-rex-wham Using multiple restraints with replica exchange
+
+(is this section a good idea or analysis is going to be too complicated?)
+
+\subsection munster-rex-ptmetad Using metadynamics with parallel tempering
+
+TODO:
+- show metadynamics working properly with \ref GYRATION
+
+*/
+
+link: @subpage munster
+
+description: A short 3 hours tutorial
+
+additional-files: munster.tar.gz
