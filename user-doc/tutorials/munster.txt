@@ -4,12 +4,20 @@
 \section Aims
 
 The aim of this document is to describe the PLUMED tutorial held in Munster, March 2015.
-Syntax is consistent with PLUMED 2.1. Simulations are made using GROMACS, which is expected to
-be already installed.
+We here use PLUMED 2.1 syntax.
+Users are encouraged to follow the links to the full PLUMED reference documentation.
+
+All the tests here are performed on a toy system, alanine dipeptide in water, simulated
+using the AMBER99SB force field. All the input files are provided in this tarball.
+Simulations are made using GROMACS 4.6.7, which is expected to be already patched with PLUMED and properly installed.
+However, these examples should be easily converted to other MD software.
+
+All the gromacs input files are provided in this tarball (ADD LINK).
+Users are expected to write PLUMED input files based on the instructions below.
 
 \section munster-monitor Monitoring collective variables
 
-The main scope of PLUMED is to compute collective variables, that is complex descriptors than can be used
+The main goal of PLUMED is to compute collective variables, which are complex descriptors than can be used
 to analyze a conformational change or a chemical reaction. This can be done either on the fly, that is during
 molecular dynamics, or a posteriori, using PLUMED as a post-processing tool. In both cases
 one should create an input file with a specific PLUMED syntax. A sample input file is below:
@@ -28,28 +36,100 @@ PLUMED works using kJ/nm/ps as energy/length/time units. This can be personalize
 Notice that variables should be given a name (in the example above, 'd' and 'phi'), which is
 then used to refer to these variables. Also notice that lists of atoms should be provided as 
 comma separated numbers, with no space. You can find more information on the PLUMED syntax
-at \ref Syntax page of the manual. A complete documentation for all the supported
+at \ref Syntax page of the manual. The complete documentation for all the supported
 collective variables can be found at the \ref colvarintro page.
 
 \subsection munster-monitor-of Analyze on the fly
 
 Here we will run a plain MD on alanine dipeptide and compute two torsional angles on the fly.
+GROMACS needs a topol.tpr file, which is a binary file containing initial positions
+as well as force-field parameters. We also provide conf.gro, grompp.mdp, and topol.top files,
+that can be modified and used to generate a new topol.tpr file. For this tutorial,
+it is sufficient to use the provided tpr files. Gromacs md can be run using on the command line:
+\verbatim
+> mdrun -s topolA.tpr -nsteps 10000
+\endverbatim
+The nsteps flags can be used to change the number of timesteps.
+To run a simulation with gromacs+plumed you just need to add a -plumed flag
+\verbatim
+> mdrun -s topolA.tpr -nsteps 10000 -plumed plumed.dat
+\endverbatim
+Here plumed.dat is the name of the plumed input file.
 
-TODO:
-- instructions on running gromacs
-- input monitoring phi and psi
-- run two trajectories starting from the two different minima
-- (optional) compute histogram
-- (optional) an example with \ref MATHEVAL
+Using the following PLUMED input file you can monitor \f$\phi\f$ and \f$\psi\f$ angles during the MD simulation
+\verbatim
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+PRINT ARG=phi,psi STRIDE=100 FILE=colvar
+\endverbatim
+
+Results can be plotted using gnuplot:
+\verbatim
+> gnuplot
+# this show phi as a function of time
+gnuplot> plot "colvar" u 2
+# this show psi as a function of time
+gnuplot> plot "colvar" u 3
+# this show psi as a function of phi
+gnuplot> plot "colvar" u 2:3
+\endverbatim
+
+Now try to do the same using the two different initial configurations that we provided (topolA.tpr and topolB.tpr).
+You should obtain a plot similar to this one
+
+TODO: graph phi,psi
+
+Notice that the result depends heavily on the starting structure. Indeed, the two free-energy minima are
+separated by a large barrier and, in such a short simulation, the system cannot cross it.
+Also notice that the two clouds are well separated, indicating that these two collective variables
+are good enough to properly distinguish among the two minima.
 
 \subsection munster-monitor-dr Analyze using the driver
 
-Analyze phi and psi with the \ref driver.
+Imagine you already made a simulation, with or without PLUMED. You might want to compute the collective
+variables a posteriori, from the trajectory file. You can do this by using the plumed executable on the command line.
+Type
+\verbatim
+> plumed driver --help
+\endverbatim
+to have an idea of the possible options. See \ref driver for the full documentation.
+
+Here we will use the driver the compute phi and psi on the already generated trajectory. Let's assume
+the trajectory is named traj.xtc. You should prepare an PLUMED input file such as
+\verbatim
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+PRINT ARG=phi,psi FILE=analyze
+\endverbatim
+Notice that typically when using the driver we do not provide a STRIDE keyword to PRINT. This means "print at every step" which,
+analyzing a trajectory, means "print for all the available snapshots".
+
+TODO: add driver command line
+
+Obviously you might want to analyze a different collective variable, such as the gyration radius. You can
+do it with the following plumed input file
+
+\verbatim
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+heavy: GROUP ATOMS=1,5,6,7,9,11,15,16,17,19
+gyr: GYRATION ATOMS=heavy
+
+# the same could have been achieved with
+# gyr: GYRATION ATOMS=1,5,6,7,9,11,15,16,17,19
+
+PRINT ARG=phi,psi,gyr FILE=analyze
+\endverbatim
 
 TODO:
-- instructions on running the driver
-- compute another variable (e.g. \ref GYRATION)
-- explain how to use \ref WHOLEMOLECULES
+- check if with ala2 gromacs breaks the molecule and explain how to use \ref WHOLEMOLECULES
+- explain how to compute a histogram
+- make an example with \ref MATHEVAL
+
+Notice that the plumed driver can also be used directly from VMD taking advantage of the PLUMED collective variable tool
+developed by Toni Giorgino (http://multiscalelab.org/utilities/PlumedGUI).
+Just open a recent version of VMD and go to Extensions/Analysis/Collective Variable Analsys (PLUMED).
 
 \section munster-biasing Biasing collective variables
 
@@ -57,33 +137,85 @@ We have seen that PLUMED can be used to compute collective variables. However, P
 is most often use to add forces on the collective variables. To this aim,
 we have implemented a variety of possible biases acting on collective variables.
 A bias works in a manner conceptually similar to the \ref PRINT command, taking as argument
-one or more collective variables. However, here the STRIDE is usually set to 1, which means
-that forces are applied at every timestep. In the following we will see how to apply harmonic restraints
-and haw to build an adaptive bias potential with metadynamics.
+one or more collective variables. However, here the STRIDE is usually omitted (that is equivalent to setting it to 1), which means
+that forces are applied at every timestep. In PLUMED 2.2 you will be able to change the STRIDE also for bias potentials,
+but that's another story.
+In the following we will see how to apply harmonic restraints
+and haw to build an adaptive bias potential with metadynamics. The complete documentation for
+all the biasing methods available in PLUMED can be found at the \ref Bias page.
 
 \subsection munster-biasing-re Using restraints
 
-TODO:
-- instructions for using \ref RESTRAINT on phi
-- instructions for using \ref MOVINGRESTRAINT perhaps bringing phi from one basin to the other
+Now let's imagine that we want to force the \f$\phi\f$ angle to visit a region close to
+\f$\phi=\pi/2\f$. We can do it adding a restraint in \f$\phi\f$, with the following input
+\verbatim
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+res: RESTRAINT ARG=phi AT=0.5pi KAPPA=5
+PRINT ARG=phi,psi,res.bias
+\endverbatim
+(see \ref TORSION and \ref RESTRAINT).
+
+TODO: comment on .bias component
+
+Now you can plot your trajectory with gnuplot and see the effect of KAPPA. You can also try different values
+of KAPPA. The stiffer the restraint, the less the collective variable will fluctuate.
+
+A restraint can also be modified as a function of time. For example, if you want to
+bring the system from one minimum to the other, you can use a moving restraint on \f$\phi\f$:
+\verbatim
+phi: TORSION=xxx
+psi: TORSION=yyy
+# notice that a long line can be splitted with this syntax
+RESTRAINT ...
+# also notice that a LABEL keyword can be used and is equivalent
+# to adding the name at the beginning of the line with colon, as we did so far
+  LABEL=res
+  ARG=phi
+  STEP0=0 AT0=-0.5pi KAPPA0=5
+  STEP1=10000 AT0=0.5pi 
+...
+PRINT ARG=phi,psi,res.work
+\endverbatim
+
+TODO: add some explanation on work
 
 \subsection munster-biasing-me Metadynamics
 
 TODO:
 - instructions for using  \ref METAD on phi,psi
 - show how to compute the landscape with \ref sum_hills
-- (optional) show metadynamics failure with \ref GYRATION
+- show how to restart a metad simulation
+- (optional) show metadynamics failure with \ref GYRATION or another variable
 
-\section munster-rex Using multiple replicas
+\section munster-multi Using multiple replicas
+
+\warning Notice that multireplica simulations with PLUMED are fully supported
+with GROMACS, but only partly supported with other MD engines.
 
 Some free-energy methods are intrinsically parallel and requires running
-several simultaneous simulations. (expand).
+several simultaneous simulations. This can be done with gromacs using the
+multi replica framework. That is, if you have 4 tpr files named topol0.tpr,
+topol1.tpr, topol2.tpr, topol3.tpr you can run 4 simultaneous simulations.
+\verbatim
+> mpirun -np 4 mdrun_mpi -s topol.tpr -plumed plumed.dat
+\endverbatim
+Each of the 4 replicas will open a different topol file, and GROMACS will
+take care of adding the replica number before the .tpr suffix.
+PLUMED deals with the extra number in a slightly different way.
+In this case, for example, PLUMED first look for a file named 'plumed.dat.X',
+where X is the number of the replica.  In case the file is not found,
+then PLUMED looks for 'plumed.dat'. If also this is not found, PLUMED will complain.
+As a consequence, if all the replicas should use the same input file it is sufficient
+to put a single 'plumed.dat' file, but one has also the flexibility of using separate files.
 
-\subsection munster-rex-wham Using multiple restraints with replica exchange
+\subsection munster-multi-mw Using multiple-walkers metadynamics
+
+\subsection munster-multi-wham Using multiple restraints with replica exchange
 
 (is this section a good idea or analysis is going to be too complicated?)
 
-\subsection munster-rex-ptmetad Using metadynamics with parallel tempering
+\subsection munster-multi-ptmetad Using metadynamics with parallel tempering
 
 TODO:
 - show metadynamics working properly with \ref GYRATION
