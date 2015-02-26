@@ -4,16 +4,23 @@
 \section Aims
 
 The aim of this document is to describe the PLUMED tutorial held in Munster, March 2015.
-We here use PLUMED 2.1 syntax.
 Users are encouraged to follow the links to the full PLUMED reference documentation.
+We here use PLUMED 2.1 syntax and we explicitly note if some syntax is expected
+to change in PLUMED 2.2, which will be released later in 2015.
 
 All the tests here are performed on a toy system, alanine dipeptide in water, simulated
-using the AMBER99SB force field. All the input files are provided in this tarball.
-Simulations are made using GROMACS 4.6.7, which is expected to be already patched with PLUMED and properly installed.
-However, these examples should be easily converted to other MD software.
+using the AMBER99SB force field.
+Simulations are made using GROMACS 4.6.7, which is here assumed to be already patched with PLUMED and properly installed.
+However, these examples could be easily converted to other MD software.
 
-All the gromacs input files are provided in this tarball (ADD LINK).
+All the gromacs input files are provided in this tarball.
+\todo prepare tarball with gromacs input files - I think it is not necessary to have PLUMED inputs there
+
 Users are expected to write PLUMED input files based on the instructions below.
+
+\section munster-toymodel Alanine dipeptide: our toy model
+
+\todo add description of aladip
 
 \section munster-monitor Monitoring collective variables
 
@@ -25,17 +32,22 @@ one should create an input file with a specific PLUMED syntax. A sample input fi
 \verbatim
 # compute distance between atoms 1 and 10
 d: DISTANCE ATOMS=1,10
-# compute torsional angle between atoms 1,10,20,30
-phi: TORSION ATOMS=1,10,20,30
+# create a virtual atom in the center between atoms 20 and 30
+center: CENTER ATOMS=20,30
+# compute torsional angle between atoms 1,10,20 and center
+phi: TORSION ATOMS=1,10,20,center
+# compute some function of previously computed variables
+d2: MATHEVAL ARG=phi FUNC=cos(x) PERIODIC=NO
 # print both of them every 10 step
-PRINT ARG=d,phi STRIDE=10
+PRINT ARG=d,phi,d2 STRIDE=10
 \endverbatim
-(see \ref DISTANCE, \ref TORSION, and \ref PRINT)
+(see \ref DISTANCE, \ref TORSION, \ref MATHEVAL, and \ref PRINT)
 
 PLUMED works using kJ/nm/ps as energy/length/time units. This can be personalized using \ref UNITS.
-Notice that variables should be given a name (in the example above, 'd' and 'phi'), which is
-then used to refer to these variables. Also notice that lists of atoms should be provided as 
-comma separated numbers, with no space. You can find more information on the PLUMED syntax
+Notice that variables should be given a name (in the example above, 'd', 'phi', and 'd2'), which is
+then used to refer to these variables. Lists of atoms should be provided as 
+comma separated numbers, with no space. Virtual atoms can be created and assigned a name for later use.
+You can find more information on the PLUMED syntax
 at \ref Syntax page of the manual. The complete documentation for all the supported
 collective variables can be found at the \ref colvarintro page.
 
@@ -62,6 +74,7 @@ phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 PRINT ARG=phi,psi STRIDE=100 FILE=colvar
 \endverbatim
+(see \ref TORSION and \ref PRINT)
 
 Results can be plotted using gnuplot:
 \verbatim
@@ -77,7 +90,7 @@ gnuplot> plot "colvar" u 2:3
 Now try to do the same using the two different initial configurations that we provided (topolA.tpr and topolB.tpr).
 You should obtain a plot similar to this one
 
-TODO: graph phi,psi
+\todo graph phi,psi
 
 Notice that the result depends heavily on the starting structure. Indeed, the two free-energy minima are
 separated by a large barrier and, in such a short simulation, the system cannot cross it.
@@ -101,10 +114,11 @@ phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
 PRINT ARG=phi,psi FILE=analyze
 \endverbatim
+(see \ref TORSION and \ref PRINT)
 Notice that typically when using the driver we do not provide a STRIDE keyword to PRINT. This means "print at every step" which,
 analyzing a trajectory, means "print for all the available snapshots".
 
-TODO: add driver command line
+\todo add driver command line
 
 Obviously you might want to analyze a different collective variable, such as the gyration radius. You can
 do it with the following plumed input file
@@ -121,15 +135,18 @@ gyr: GYRATION ATOMS=heavy
 
 PRINT ARG=phi,psi,gyr FILE=analyze
 \endverbatim
+(see \ref TORSION, \ref GYRATION, and \ref PRINT)
 
-TODO:
-- check if with ala2 gromacs breaks the molecule and explain how to use \ref WHOLEMOLECULES
+\todo
+- I checked, gromacs breaks the molecole. this is a good way to explain \ref WHOLEMOLECULES.
+  Also observe that \ref GYRATION will make molecules whole by default starting with PLUMED 2.2.
 - explain how to compute a histogram
-- make an example with \ref MATHEVAL
+- (maybe) make an example with \ref MATHEVAL
 
 Notice that the plumed driver can also be used directly from VMD taking advantage of the PLUMED collective variable tool
 developed by Toni Giorgino (http://multiscalelab.org/utilities/PlumedGUI).
 Just open a recent version of VMD and go to Extensions/Analysis/Collective Variable Analsys (PLUMED).
+This graphical interface can also be used to quickly build PLUMED input files based on template lines.
 
 \section munster-biasing Biasing collective variables
 
@@ -154,9 +171,9 @@ psi: TORSION ATOMS=7,9,15,17
 res: RESTRAINT ARG=phi AT=0.5pi KAPPA=5
 PRINT ARG=phi,psi,res.bias
 \endverbatim
-(see \ref TORSION and \ref RESTRAINT).
+(see \ref TORSION, \ref RESTRAINT, and \ref PRINT).
 
-TODO: comment on .bias component
+\todo comment on .bias component
 
 Now you can plot your trajectory with gnuplot and see the effect of KAPPA. You can also try different values
 of KAPPA. The stiffer the restraint, the less the collective variable will fluctuate.
@@ -164,10 +181,10 @@ of KAPPA. The stiffer the restraint, the less the collective variable will fluct
 A restraint can also be modified as a function of time. For example, if you want to
 bring the system from one minimum to the other, you can use a moving restraint on \f$\phi\f$:
 \verbatim
-phi: TORSION=xxx
-psi: TORSION=yyy
+phi: TORSION=5,7,9,15
+psi: TORSION=7,9,15,17
 # notice that a long line can be splitted with this syntax
-RESTRAINT ...
+MOVINGRESTRAINT ...
 # also notice that a LABEL keyword can be used and is equivalent
 # to adding the name at the beginning of the line with colon, as we did so far
   LABEL=res
@@ -177,12 +194,13 @@ RESTRAINT ...
 ...
 PRINT ARG=phi,psi,res.work
 \endverbatim
+(see \ref TORSION, \ref MOVINGRESTRAINT, and \ref PRINT).
 
-TODO: add some explanation on work
+\todo add some explanation on work
 
 \subsection munster-biasing-me Metadynamics
 
-TODO:
+\todo
 - instructions for using  \ref METAD on phi,psi
 - show how to compute the landscape with \ref sum_hills
 - show how to restart a metad simulation
@@ -207,9 +225,14 @@ In this case, for example, PLUMED first look for a file named 'plumed.dat.X',
 where X is the number of the replica.  In case the file is not found,
 then PLUMED looks for 'plumed.dat'. If also this is not found, PLUMED will complain.
 As a consequence, if all the replicas should use the same input file it is sufficient
-to put a single 'plumed.dat' file, but one has also the flexibility of using separate files.
+to put a single 'plumed.dat' file, but one has also the flexibility of using separate files
+named 'plumed.dat.0', 'plumed.dat.1' etc. Finally, notice that 
+the way PLUMED adds suffixes will change in version 2.2, and names will be 'plumed.0.dat' etc.
 
 \subsection munster-multi-mw Using multiple-walkers metadynamics
+
+\todo show how to quickly fill the free-energy landscape using multiple walkers
+(is this section a good idea or analysis is going to be too complicated?)
 
 \subsection munster-multi-wham Using multiple restraints with replica exchange
 
@@ -217,8 +240,8 @@ to put a single 'plumed.dat' file, but one has also the flexibility of using sep
 
 \subsection munster-multi-ptmetad Using metadynamics with parallel tempering
 
-TODO:
-- show metadynamics working properly with \ref GYRATION
+\todo
+- show metadynamics working properly with \ref GYRATION (hopefully!)
 
 */
 
