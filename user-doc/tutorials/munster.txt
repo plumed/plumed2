@@ -29,6 +29,14 @@ Users are expected to write PLUMED input files based on the instructions below.
 
 \todo add description of aladip
 
+In Fig. \ref munster-1-ala-fig its structure is shown.
+
+\anchor munster-1-ala-fig
+\image html belfast-2-ala.png "The molecule of the day: alanine dipeptide."
+
+\anchor munster-1-transitionfig
+\image html belfast-2-transition.png "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
+
 \section munster-monitor Monitoring collective variables
 
 The main goal of PLUMED is to compute collective variables, which are complex descriptors than can be used
