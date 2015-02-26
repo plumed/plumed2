@@ -56,7 +56,7 @@ d2: MATHEVAL ARG=phi FUNC=cos(x) PERIODIC=NO
 # print both of them every 10 step
 PRINT ARG=d,phi,d2 STRIDE=10
 \endverbatim
-(see \ref DISTANCE, \ref TORSION, \ref MATHEVAL, and \ref PRINT)
+(see \ref DISTANCE, \ref CENTER, \ref TORSION, \ref MATHEVAL, and \ref PRINT)
 
 PLUMED works using kJ/nm/ps as energy/length/time units. This can be personalized using \ref UNITS.
 Notice that variables should be given a name (in the example above, `d`, `phi`, and `d2`), which is
@@ -110,7 +110,7 @@ gnuplot> plot "colvar" u 3
 gnuplot> plot "colvar" u 2:3
 \endverbatim
 
-Now try to do the same using the two different initial configurations that we provided (topolA.tpr and topolB.tpr).
+Now try to do the same using the two different initial configurations that we provided (`topolA.tpr` and `topolB.tpr`).
 You should obtain a plot similar to this one
 
 \todo graph phi,psi
@@ -130,8 +130,8 @@ Type
 \endverbatim
 to have an idea of the possible options. See \ref driver for the full documentation.
 
-Here we will use the driver the compute phi and psi on the already generated trajectory. Let's assume
-the trajectory is named traj.xtc. You should prepare an PLUMED input file named `analysis.dat` as:
+Here we will use the driver the compute \f$\phi\f$ and \f$\psi\f$ on the already generated trajectory. Let's assume
+the trajectory is named `traj.xtc`. You should prepare an PLUMED input file named `analysis.dat` as:
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
@@ -149,6 +149,8 @@ be printed in the `analysis` file you should give more information to the driver
 \verbatim
 > plumed driver --mf_xtc traj.xtc --plumed analysis.dat --timestep 0.002 --trajectory-stride 1000
 \endverbatim
+(see \ref driver)
+
 In this case we inform the driver that the `traj.xtc` file was produced in a run with a timestep of 0.002 ps and
 saving a snapshop every 1000 timesteps.
 
@@ -168,7 +170,7 @@ gyr: GYRATION ATOMS=heavy
 
 PRINT ARG=phi,psi,gyr FILE=analyze
 \endverbatim
-(see \ref TORSION, \ref GYRATION, and \ref PRINT)
+(see \ref TORSION, \ref GYRATION, \ref GROUP, and \ref PRINT)
 
 Now try to compute the time series of the gyration radius. You might see that at some point this variable
 shows some crazy jump. The reason is that the MD program is giving PLUMED coordinates where
@@ -190,6 +192,8 @@ gyr: GYRATION ATOMS=heavy
 
 PRINT ARG=phi,psi,gyr FILE=analyze
 \endverbatim
+(see \ref TORSION, \ref WHOLEMOLECULES, \ref GROUP, \ref GYRATION, and \ref PRINT)
+
 This is a very important issue that should be kept in mind when using PLUMED.
 Notice that starting with version 2.2 PLUMED will make molecules used in
 \ref GYRATION (as well as in other variables) whole automatically, so that
@@ -197,8 +201,33 @@ this extra command will not be necessary.
 
 \todo (optional) show how to use DUMPATOMS and visulize the broken molecule
 
+PLUMED also allows you to make some analyis on the collective variables
+you are calculating. For example, you can compute a histogram with an input like this one
+\verbatim
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+WHOLEMOLECULES ENTITY0=1-22
+heavy: GROUP ATOMS=1,5,6,7,9,11,15,16,17,19
+gyr: GYRATION ATOMS=heavy
+PRINT ARG=phi,psi,gyr FILE=analyze
+HISTOGRAM ...
+  ARG=gyr
+  USE_ALL_DATA
+  KERNEL=discrete
+  GRID_MIN=0
+  GRID_MAX=1
+  GRID_BIN=50
+  GRID_WFILE=histogram
+... HISTOGRAM
+\endverbatim
+(see \ref TORSION, \ref WHOLEMOLECULES, \ref GROUP, \ref GYRATION, \ref PRINT, and \ref HISTOGRAM)
+
+An histogram with 50 bins will be performed on the gyration radius. Try to compute the histogram for
+the \f$\phi\f$ and \f$\psi\f$ angles.
+
+PLUMED can do much more than a histogram, more information on analysis can be found at the page \ref Analysis
+
 \todo
-- explain how to compute a histogram
 - (maybe) make an example with \ref MATHEVAL
 
 Notice that the plumed driver can also be used directly from VMD taking advantage of the PLUMED collective variable tool
@@ -283,6 +312,7 @@ phi: TORSION=5,7,9,15
 psi: TORSION=7,9,15,17
 METAD ARG=phi,psi HEIGHT=1.0 BIASFACTOR=10 SIGMA=0.35,0.35 PACE=100
 \endverbatim
+(see \ref TORSION and \ref METAD)
 Thus, a single METAD line will contain all the metadynamics related options, such
 as Gaussian height (`HEIGHT`, here in kJ/mol), stride (`PACE`, here in number of time steps),
 bias factor (`BIASFACTOR`, here indicates that we are going to effectively boost
@@ -360,4 +390,4 @@ link: @subpage munster
 
 description: A short 3 hours tutorial
 
-additional-files: munster.tar.gz
+additional-files: munster.tar.gz munster-1
