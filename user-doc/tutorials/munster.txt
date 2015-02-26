@@ -162,9 +162,34 @@ PRINT ARG=phi,psi,gyr FILE=analyze
 \endverbatim
 (see \ref TORSION, \ref GYRATION, and \ref PRINT)
 
+Now try to compute the time series of the gyration radius. You might see that at some point this variable
+shows some crazy jump. The reason is that the MD program is giving PLUMED coordinates where
+molecules are broken across periodic-boundary conditions. We know that and we have a workaround in PLUMED,
+that is the molecule should be made whole using the \ref WHOLEMOLECULE command.
+What this command is doing is making a loop over all the atoms (in the order they are provided) and set the coordinates
+of each of them in the periodic image which is as close as possible to the coordinates of the preceeding atom.
+In most cases it is sufficient to list all atoms of a molecule in order. Look in the \ref WHOLEMOLECULE page
+to get more information. Here this will be enough:
+\verbatim
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+# notice the 1-22 syntax, a shortcut for a list 1,2,3,...,22
+WHOLEMOLECULES ENTITY0=1-22
+
+heavy: GROUP ATOMS=1,5,6,7,9,11,15,16,17,19
+gyr: GYRATION ATOMS=heavy
+
+PRINT ARG=phi,psi,gyr FILE=analyze
+\endverbatim
+This is a very important issue that should be kept in mind when using PLUMED.
+Notice that starting with version 2.2 PLUMED will make molecules used in
+\ref GYRATION (as well as in other variables) whole automatically, so that
+this extra command will not be necessary.
+
+\todo (optional) show how to use DUMPATOMS and visulize the broken molecule
+
 \todo
-- I checked, gromacs breaks the molecole. this is a good way to explain \ref WHOLEMOLECULES.
-  Also observe that \ref GYRATION will make molecules whole by default starting with PLUMED 2.2.
 - explain how to compute a histogram
 - (maybe) make an example with \ref MATHEVAL
 
