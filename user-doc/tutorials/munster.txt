@@ -1,13 +1,20 @@
 /**
 \page munster Munster tutorial
 
-\section Aims
+This document describes the PLUMED tutorial held in Munster, March 2015.
+The aim of this tutorial is to learn how to use PLUMED to analyze molecular
+dynamics simulations on the fly, to analyze existing trajectories, and to
+perform enhanced sampling. Although the presented input files are correct,
+the users are invited to refer to the literature to understand how the
+parameters of enhanced sampling methods should be chosen in a real application.
 
-The aim of this document is to describe the PLUMED tutorial held in Munster, March 2015.
-Users are encouraged to follow the links to the full PLUMED reference documentation.
+Users are also encouraged to follow the links to the full PLUMED reference documentation
+and to wander around in the manual to discover the many available features
+and to do the other, more complete, tutorials. Here 
+we are going to present only a very narrow selection of methods.
+
 We here use PLUMED 2.1 syntax and we explicitly note if some syntax is expected
 to change in PLUMED 2.2, which will be released later in 2015.
-
 All the tests here are performed on a toy system, alanine dipeptide in water, simulated
 using the AMBER99SB force field.
 Simulations are made using GROMACS 4.6.7, which is here assumed to be already patched with PLUMED and properly installed.
@@ -76,6 +83,7 @@ PRINT ARG=phi,psi STRIDE=100 FILE=colvar
 \endverbatim
 (see \ref TORSION and \ref PRINT)
 
+PLUMED will write a textual file named 'colvar' containing three columns: physical time, \f$\phi\f$ and \f$\psi\f$.
 Results can be plotted using gnuplot:
 \verbatim
 > gnuplot
@@ -108,17 +116,26 @@ Type
 to have an idea of the possible options. See \ref driver for the full documentation.
 
 Here we will use the driver the compute phi and psi on the already generated trajectory. Let's assume
-the trajectory is named traj.xtc. You should prepare an PLUMED input file such as
+the trajectory is named traj.xtc. You should prepare an PLUMED input file named 'analysis.dat' as:
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
-PRINT ARG=phi,psi FILE=analyze
+PRINT ARG=phi,psi FILE=analysis
 \endverbatim
 (see \ref TORSION and \ref PRINT)
-Notice that typically when using the driver we do not provide a STRIDE keyword to PRINT. This means "print at every step" which,
-analyzing a trajectory, means "print for all the available snapshots".
-
-\todo add driver command line
+Notice that typically when using the driver we do not provide a STRIDE keyword to PRINT. This implies "print at every step" which,
+analyzing a trajectory, means "print for all the available snapshots". Then, you can use the following
+command:
+\verbatim
+> plumed driver --mf_xtc traj.xtc --plumed analysis.dat
+\endverbatim
+Notice that PLUMED has no way to now the value of physical time from the trajectory. If you want physical time to
+be printed in the 'analysis' file you should give more information to the driver, e.g.:
+\verbatim
+> plumed driver --mf_xtc traj.xtc --plumed analysis.dat --timestep 0.002 --trajectory-stride 1000
+\endverbatim
+In this case we inform the driver that the 'traj.xtc' file was produced in a run with a timestep of 0.002 ps and
+saving a snapshop every 1000 timesteps.
 
 Obviously you might want to analyze a different collective variable, such as the gyration radius. You can
 do it with the following plumed input file
@@ -173,10 +190,16 @@ PRINT ARG=phi,psi,res.bias
 \endverbatim
 (see \ref TORSION, \ref RESTRAINT, and \ref PRINT).
 
-\todo comment on .bias component
+Notice that here we are printing a quantity named 'res.bias'. We do this because \ref RESTRAINT does not define a single
+value (that here would be theoretically named 'res') but a structure with several components. All
+biasing methods do so, as well as many collective variables (see e.g. \ref DISTANCE used with COMPONENTS keyword).
+Printing the bias allows one to know how much a given snapshop was penalized.
 
 Now you can plot your trajectory with gnuplot and see the effect of KAPPA. You can also try different values
-of KAPPA. The stiffer the restraint, the less the collective variable will fluctuate.
+of KAPPA. The stiffer the restraint, the less the collective variable will fluctuate. However, notice 
+that a too large kappa could make the MD integrator unstable.
+
+\todo maybe an exercise looking at how fluctuations are affected by KAPPA?
 
 A restraint can also be modified as a function of time. For example, if you want to
 bring the system from one minimum to the other, you can use a moving restraint on \f$\phi\f$:
@@ -192,11 +215,15 @@ MOVINGRESTRAINT ...
   STEP0=0 AT0=-0.5pi KAPPA0=5
   STEP1=10000 AT0=0.5pi 
 ...
-PRINT ARG=phi,psi,res.work
+PRINT ARG=phi,psi,res.work,res.phi_cntr FILE=colvar
 \endverbatim
 (see \ref TORSION, \ref MOVINGRESTRAINT, and \ref PRINT).
 
-\todo add some explanation on work
+Notice that here we are plotting a few new components, namely 'work' and 'phi_cntr'.
+The former gives the work performed in pulling the restraint, and the latter the position of the restraint.
+Notice that if pulling is slow enough one can compute free energy profile from the work.
+
+\todo maybe an exercise computing free energy from work
 
 \subsection munster-biasing-me Metadynamics
 
