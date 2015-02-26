@@ -51,7 +51,7 @@ PRINT ARG=d,phi,d2 STRIDE=10
 (see \ref DISTANCE, \ref TORSION, \ref MATHEVAL, and \ref PRINT)
 
 PLUMED works using kJ/nm/ps as energy/length/time units. This can be personalized using \ref UNITS.
-Notice that variables should be given a name (in the example above, 'd', 'phi', and 'd2'), which is
+Notice that variables should be given a name (in the example above, `d`, `phi`, and `d2`), which is
 then used to refer to these variables. Lists of atoms should be provided as 
 comma separated numbers, with no space. Virtual atoms can be created and assigned a name for later use.
 You can find more information on the PLUMED syntax
@@ -61,19 +61,26 @@ collective variables can be found at the \ref colvarintro page.
 \subsection munster-monitor-of Analyze on the fly
 
 Here we will run a plain MD on alanine dipeptide and compute two torsional angles on the fly.
-GROMACS needs a topol.tpr file, which is a binary file containing initial positions
-as well as force-field parameters. We also provide conf.gro, grompp.mdp, and topol.top files,
-that can be modified and used to generate a new topol.tpr file. For this tutorial,
-it is sufficient to use the provided tpr files. Gromacs md can be run using on the command line:
+GROMACS needs a .tpr file, which is a binary file containing initial positions
+as well as force-field parameters. We also provide .gro, .mdp, and .top files,
+that can be modified and used to generate a new .tpr file. For this tutorial,
+it is sufficient to use the provided .tpr files. Gromacs md can be run using on the command line:
 \verbatim
 > mdrun -s topolA.tpr -nsteps 10000
 \endverbatim
-The nsteps flags can be used to change the number of timesteps.
+The nsteps flags can be used to change the number of timesteps and topolA.tpr is the name of the tpr file.
+While running, gromacs will produce an md.log file, with log information, and a traj.xtc file, with a binary trajectory.
+The trajectory can be visualized with VMD using a command such as
+\verbatim
+> vmd confout.gro tra.xtc
+\endverbatim
+
 To run a simulation with gromacs+plumed you just need to add a -plumed flag
 \verbatim
 > mdrun -s topolA.tpr -nsteps 10000 -plumed plumed.dat
 \endverbatim
-Here plumed.dat is the name of the plumed input file.
+Here plumed.dat is the name of the plumed input file. Notice that PLUMED will write
+information in the md.log that could be useful to verify if the simulation has been set up properly.
 
 Using the following PLUMED input file you can monitor \f$\phi\f$ and \f$\psi\f$ angles during the MD simulation
 \verbatim
@@ -83,7 +90,7 @@ PRINT ARG=phi,psi STRIDE=100 FILE=colvar
 \endverbatim
 (see \ref TORSION and \ref PRINT)
 
-PLUMED will write a textual file named 'colvar' containing three columns: physical time, \f$\phi\f$ and \f$\psi\f$.
+PLUMED will write a textual file named `colvar` containing three columns: physical time, \f$\phi\f$ and \f$\psi\f$.
 Results can be plotted using gnuplot:
 \verbatim
 > gnuplot
@@ -116,7 +123,7 @@ Type
 to have an idea of the possible options. See \ref driver for the full documentation.
 
 Here we will use the driver the compute phi and psi on the already generated trajectory. Let's assume
-the trajectory is named traj.xtc. You should prepare an PLUMED input file named 'analysis.dat' as:
+the trajectory is named traj.xtc. You should prepare an PLUMED input file named `analysis.dat` as:
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
@@ -130,15 +137,16 @@ command:
 > plumed driver --mf_xtc traj.xtc --plumed analysis.dat
 \endverbatim
 Notice that PLUMED has no way to now the value of physical time from the trajectory. If you want physical time to
-be printed in the 'analysis' file you should give more information to the driver, e.g.:
+be printed in the `analysis` file you should give more information to the driver, e.g.:
 \verbatim
 > plumed driver --mf_xtc traj.xtc --plumed analysis.dat --timestep 0.002 --trajectory-stride 1000
 \endverbatim
-In this case we inform the driver that the 'traj.xtc' file was produced in a run with a timestep of 0.002 ps and
+In this case we inform the driver that the `traj.xtc` file was produced in a run with a timestep of 0.002 ps and
 saving a snapshop every 1000 timesteps.
 
-Obviously you might want to analyze a different collective variable, such as the gyration radius. You can
-do it with the following plumed input file
+You might want to analyze a different collective variable, such as the gyration radius.
+The gyration radius tells how extended is the molecules in space.
+You can do it with the following plumed input file
 
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
@@ -190,10 +198,12 @@ PRINT ARG=phi,psi,res.bias
 \endverbatim
 (see \ref TORSION, \ref RESTRAINT, and \ref PRINT).
 
-Notice that here we are printing a quantity named 'res.bias'. We do this because \ref RESTRAINT does not define a single
-value (that here would be theoretically named 'res') but a structure with several components. All
+Notice that here we are printing a quantity named `res.bias`. We do this because \ref RESTRAINT does not define a single
+value (that here would be theoretically named `res`) but a structure with several components. All
 biasing methods do so, as well as many collective variables (see e.g. \ref DISTANCE used with COMPONENTS keyword).
 Printing the bias allows one to know how much a given snapshop was penalized.
+Also notice that PLUMED understands numbers in the for `{number}pi`. This is convenient when using
+torsions, since they are expressed in radians.
 
 Now you can plot your trajectory with gnuplot and see the effect of KAPPA. You can also try different values
 of KAPPA. The stiffer the restraint, the less the collective variable will fluctuate. However, notice 
@@ -219,7 +229,7 @@ PRINT ARG=phi,psi,res.work,res.phi_cntr FILE=colvar
 \endverbatim
 (see \ref TORSION, \ref MOVINGRESTRAINT, and \ref PRINT).
 
-Notice that here we are plotting a few new components, namely 'work' and 'phi_cntr'.
+Notice that here we are plotting a few new components, namely `work` and `phi_cntr`.
 The former gives the work performed in pulling the restraint, and the latter the position of the restraint.
 Notice that if pulling is slow enough one can compute free energy profile from the work.
 
@@ -227,11 +237,49 @@ Notice that if pulling is slow enough one can compute free energy profile from t
 
 \subsection munster-biasing-me Metadynamics
 
+If you do not know exactly where you would like your collective variables to go,
+and just know (or suspect) that some variables have large free-energy barriers
+that hinder some conformational rearrangement or some chemical reaction,
+you can bias them using metadynamics. In this way, a time dependent,
+adaptive potential will be constructed that tends to disfavor visited configurations
+in the collective-variable space. The bias is usually built as a sum of
+Gaussian deposited in the already visited states.
+A sample input follows
+\verbatim
+phi: TORSION=5,7,9,15
+psi: TORSION=7,9,15,17
+METAD ARG=phi,psi HEIGHT=1.0 BIASFACTOR=10 SIGMA=0.35,0.35 PACE=100
+\endverbatim
+Thus, a single METAD line will contain all the metadynamics related options, such
+as Gaussian height (`HEIGHT`, here in kJ/mol), stride (`PACE`, here in number of time steps),
+bias factor (`BIASFACTOR`, here indicates that we are going to effectively boost
+the temperature of the collective variables by a factor 10), and width (`SIGMA`, an array with
+same size as the number of collective variables).
+
+If you run a simulation with this input, PLUMED will produce an additional
+`HILLS` file, containing as list of the deposited Gaussians. Notice that
+the apparent height written in the `HILLS` file is not the same height that you
+specified with the `HEIGHT` keyword, but is scaled by a factor \f$\gamma/(\gamma-1)\f$,
+where \f$\gamma\f$ is the biasfactor. This is a technical issue and is related to the
+fact that well-tempered metadynamics is only partially compensating the free-energy landscape.
+
+Now, run a metadynamics simulations and check the explored collective variable space.
+\todo Put a figure
+
+As you can see, exploration is greatly enhanced. Moreover, you can exploit the
+fact that the deposited bias potential has a relationship with the underlying free-energy landscape
+and compute the latter. To this aim, you can use the command line sum_hills tool:
+
+\verbatim
+> plumed sum_hills --hills HILLS
+\endverbatim
+(see \ref sum_hills).
+
+
 \todo
-- instructions for using  \ref METAD on phi,psi
-- show how to compute the landscape with \ref sum_hills
-- show how to restart a metad simulation
+- show how to monitor the difference between minima as a function of time
 - (optional) show metadynamics failure with \ref GYRATION or another variable
+- show how to restart a metad simulation
 
 \section munster-multi Using multiple replicas
 
@@ -248,13 +296,16 @@ topol1.tpr, topol2.tpr, topol3.tpr you can run 4 simultaneous simulations.
 Each of the 4 replicas will open a different topol file, and GROMACS will
 take care of adding the replica number before the .tpr suffix.
 PLUMED deals with the extra number in a slightly different way.
-In this case, for example, PLUMED first look for a file named 'plumed.dat.X',
+In this case, for example, PLUMED first look for a file named `plumed.dat.X`,
 where X is the number of the replica.  In case the file is not found,
-then PLUMED looks for 'plumed.dat'. If also this is not found, PLUMED will complain.
+then PLUMED looks for `plumed.dat`. If also this is not found, PLUMED will complain.
 As a consequence, if all the replicas should use the same input file it is sufficient
-to put a single 'plumed.dat' file, but one has also the flexibility of using separate files
-named 'plumed.dat.0', 'plumed.dat.1' etc. Finally, notice that 
-the way PLUMED adds suffixes will change in version 2.2, and names will be 'plumed.0.dat' etc.
+to put a single `plumed.dat` file, but one has also the flexibility of using separate files
+named `plumed.dat.0`, `plumed.dat.1` etc. Finally, notice that 
+the way PLUMED adds suffixes will change in version 2.2, and names will be `plumed.0.dat` etc.
+
+\todo We should provide multiple tpr files, maybe something like topolA300.tpr topolA310.tpr etc. The
+letter indicates the starting basin.
 
 \subsection munster-multi-mw Using multiple-walkers metadynamics
 
