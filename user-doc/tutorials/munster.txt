@@ -120,6 +120,11 @@ separated by a large barrier and, in such a short simulation, the system cannot 
 Also notice that the two clouds are well separated, indicating that these two collective variables
 are good enough to properly distinguish among the two minima.
 
+As a final comment, notice that if you run twice the same calculation in the same directory, you might overwrite the
+resulting files. GROMACS takes automatic backup of the output files, and PLUMED does it as well. In case you are restarting a simulation,
+you can add the keyword \ref RESTART at the beginning of the PLUMED input file. This will tell PLUMED to *append* files
+instead of taking a backup copy.
+
 \subsection munster-monitor-dr Analyze using the driver
 
 Imagine you already made a simulation, with or without PLUMED. You might want to compute the collective
@@ -173,8 +178,13 @@ PRINT ARG=phi,psi,gyr FILE=analyze
 (see \ref TORSION, \ref GYRATION, \ref GROUP, and \ref PRINT)
 
 Now try to compute the time series of the gyration radius. You might see that at some point this variable
-shows some crazy jump. The reason is that the MD program is giving PLUMED coordinates where
-molecules are broken across periodic-boundary conditions. We know that and we have a workaround in PLUMED,
+shows some crazy jump. The reason is that the trajectory containes coordinates where
+molecules are broken across periodic-boundary conditions
+This happens with GROMACS and some other MD code. These codes typically have tools to process
+trajecories and restore whole molecules. This trick is ok for the a-posteriori analysis
+we are trying now, but cannot used when one needs to compute a collective variable
+on-the-fly or, as we will see later, one wants to add a bias to that collective variable.
+For this reason, we implemented a workaround in PLUMED,
 that is the molecule should be made whole using the \ref WHOLEMOLECULE command.
 What this command is doing is making a loop over all the atoms (in the order they are provided) and set the coordinates
 of each of them in the periodic image which is as close as possible to the coordinates of the preceeding atom.
@@ -198,8 +208,34 @@ This is a very important issue that should be kept in mind when using PLUMED.
 Notice that starting with version 2.2 PLUMED will make molecules used in
 \ref GYRATION (as well as in other variables) whole automatically, so that
 this extra command will not be necessary.
+}
 
-\todo (optional) show how to use DUMPATOMS and visulize the broken molecule
+Notice that you can instruct PLUMED to dump on a file not only the
+collective variables (as we are doing with \ref PRINT) but also
+the atomic positions. This is a very good way to understand what \ref WHOLEMOLECULES 
+is actually doing. Try the following input
+
+\verbatim
+MOLINFO STRUCTURE=reference.pdb
+DUMPATOMS FILE=test1.gro ATOMS=1-22
+WHOLEMOLECULES ENTITY0=1-22
+DUMPATOMS FILE=test2.gro ATOMS=1-22
+\endverbatim
+(see \ref MOLINFO, \ref DUMPATOMS, and \ref WHOLEMOLECULES).
+
+\ref DUMPATOMS writes on a gro file the coordinates of the alanine dipeptide atoms. Here PLUMED will produce
+two files, one with coordinates *before* the application of \ref WHOLEMOLECULES, and one with coordinates
+*after* the application of \ref WHOLEMOLECULES. You can load both trajectories in VMD to see the difference.
+The \ref MOLINFO command is here used to provide atom names to PLUMED so that the resulting gro
+file looks nicer in VMD.
+
+Notice that PLUMED has several commands that manipulate atomic coordinates. One example is  \ref WHOLEMOLECULES,
+that fixes problems with periodic boundary conditions. \ref COM and \ref CENTER add new atoms,
+and \ref FIT_TO_TEMPLATE can actually move atoms from their original position to align them on a template.
+\ref DUMPATOMS is this very useful to check what these commands are doing and for using the PLUMED \ref driver
+to manipulate MD trajectories.
+
+\subsection munster-monitor-an More analysis tools
 
 PLUMED also allows you to make some analyis on the collective variables
 you are calculating. For example, you can compute a histogram with an input like this one
@@ -295,6 +331,8 @@ Notice that here we are plotting a few new components, namely `work` and `phi_cn
 The former gives the work performed in pulling the restraint, and the latter the position of the restraint.
 Notice that if pulling is slow enough one can compute free energy profile from the work.
 
+Try to pull the system from one minimum to the other
+
 \todo maybe an exercise computing free energy from work
 
 \subsection munster-biasing-me Metadynamics
@@ -342,7 +380,10 @@ and compute the latter. To this aim, you can use the command line sum_hills tool
 \todo
 - show how to monitor the difference between minima as a function of time
 - (optional) show metadynamics failure with \ref GYRATION or another variable
-- show how to restart a metad simulation
+
+Finally, notice that \ref METAD potential depends on the previously visited trajectories.
+As such, when you restart a previous simulation, it should read the previously deposited
+HILLS file. This is automatically triggered by the \ref RESTART keyword.
 
 \section munster-multi Using multiple replicas
 
