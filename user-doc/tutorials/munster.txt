@@ -27,14 +27,18 @@ Users are expected to write PLUMED input files based on the instructions below.
 
 \section munster-toymodel Alanine dipeptide: our toy model
 
-\todo add description of aladip
-
-In Fig. \ref munster-1-ala-fig its structure is shown.
+In this tutorial we will play with alanine dipeptide (see Fig. \ref munster-1-ala-fig).
+This rather simple molecule is useful to make many benchmark that are around for data analysis and free energy methods.
+It is a rather nice example
+since it presents two metastable states separated by a high (free) energy barrier. 
+Here metastable states are intended as states which have a relatively low free energy compared to adjacent conformation.
+It is conventional use to show the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$
+in Fig. \ref munster-1-transition-fig .
 
 \anchor munster-1-ala-fig
 \image html belfast-2-ala.png "The molecule of the day: alanine dipeptide."
 
-\anchor munster-1-transitionfig
+\anchor munster-1-transition-fig
 \image html belfast-2-transition.png "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
 \section munster-monitor Monitoring collective variables
@@ -90,7 +94,7 @@ To run a simulation with gromacs+plumed you just need to add a -plumed flag
 Here plumed.dat is the name of the plumed input file. Notice that PLUMED will write
 information in the md.log that could be useful to verify if the simulation has been set up properly.
 
-Using the following PLUMED input file you can monitor \f$\phi\f$ and \f$\psi\f$ angles during the MD simulation
+Using the following PLUMED input file you can monitor \f$\Phi\f$ and \f$\Psi\f$ angles during the MD simulation
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
@@ -98,7 +102,7 @@ PRINT ARG=phi,psi STRIDE=100 FILE=colvar
 \endverbatim
 (see \ref TORSION and \ref PRINT)
 
-PLUMED will write a textual file named `colvar` containing three columns: physical time, \f$\phi\f$ and \f$\psi\f$.
+PLUMED will write a textual file named `colvar` containing three columns: physical time, \f$\Phi\f$ and \f$\Psi\f$.
 Results can be plotted using gnuplot:
 \verbatim
 > gnuplot
@@ -135,7 +139,7 @@ Type
 \endverbatim
 to have an idea of the possible options. See \ref driver for the full documentation.
 
-Here we will use the driver the compute \f$\phi\f$ and \f$\psi\f$ on the already generated trajectory. Let's assume
+Here we will use the driver the compute \f$\Phi\f$ and \f$\Psi\f$ on the already generated trajectory. Let's assume
 the trajectory is named `traj.xtc`. You should prepare an PLUMED input file named `analysis.dat` as:
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
@@ -208,7 +212,6 @@ This is a very important issue that should be kept in mind when using PLUMED.
 Notice that starting with version 2.2 PLUMED will make molecules used in
 \ref GYRATION (as well as in other variables) whole automatically, so that
 this extra command will not be necessary.
-}
 
 Notice that you can instruct PLUMED to dump on a file not only the
 collective variables (as we are doing with \ref PRINT) but also
@@ -259,7 +262,7 @@ HISTOGRAM ...
 (see \ref TORSION, \ref WHOLEMOLECULES, \ref GROUP, \ref GYRATION, \ref PRINT, and \ref HISTOGRAM)
 
 An histogram with 50 bins will be performed on the gyration radius. Try to compute the histogram for
-the \f$\phi\f$ and \f$\psi\f$ angles.
+the \f$\Phi\f$ and \f$\Psi\f$ angles.
 
 PLUMED can do much more than a histogram, more information on analysis can be found at the page \ref Analysis
 
@@ -286,8 +289,8 @@ all the biasing methods available in PLUMED can be found at the \ref Bias page.
 
 \subsection munster-biasing-re Using restraints
 
-Now let's imagine that we want to force the \f$\phi\f$ angle to visit a region close to
-\f$\phi=\pi/2\f$. We can do it adding a restraint in \f$\phi\f$, with the following input
+Now let's imagine that we want to force the \f$\Phi\f$ angle to visit a region close to
+\f$\Phi=\pi/2\f$. We can do it adding a restraint in \f$\Phi\f$, with the following input
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
@@ -310,7 +313,7 @@ that a too large kappa could make the MD integrator unstable.
 \todo maybe an exercise looking at how fluctuations are affected by KAPPA?
 
 A restraint can also be modified as a function of time. For example, if you want to
-bring the system from one minimum to the other, you can use a moving restraint on \f$\phi\f$:
+bring the system from one minimum to the other, you can use a moving restraint on \f$\Phi\f$:
 \verbatim
 phi: TORSION=5,7,9,15
 psi: TORSION=7,9,15,17
