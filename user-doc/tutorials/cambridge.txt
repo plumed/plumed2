@@ -193,6 +193,95 @@ and KBT is the temperature in energy units (in this case KBT=2.5).
  
 This analysis, along with the observation of the diffusive behavior in the CVs space, suggest that the simulation is converged.
 
+\section cambridge-exercise-2 Exercise 2. Bias-Exchange Metadynamics 
+
+\subsection cambridge-exercise-2-1  Setup, run, and analyse a well-tempered bias-exchange metadynamics simulation
+
+In well-tempered metadynamics the free-energy landscape of the system is reconstructed by gradually
+filling the local minima with gaussian hills. The dimensionality of the landscape is equal to the
+number of CVs which are biased, and typically a number of CVs smaller than four is employed.
+The reason for this is that qualitatively, if the CVs are not correlated among them, the simulation time
+required to fill the free-energy landscape grows exponentially with the number of CVs.
+This limitation can be severe when studying complex transformations or reactions in which
+more than say three relevant CVs can be identified.
+
+Alternative solutions employ metadynamics together with other enhanced sampling techniques (i.e. Parallel
+Tempering or more generally Hamiltionan Replica Exchange). In particular in Bias-Exchange metadynamics the
+problem of sampling a multi-dimensional free-energy surface is recast in that of sampling many one-dimensional
+free-energies. In this approach a relatively large number N of CVs  is chosen to describe the possible transformations
+of the system (e.g., to study the conformations of a peptide one may consider all the dihedral angles between amino acids).
+Then, N metadynamics simulations (replicas) are run on the same system at the same temperature, biasing a different
+CV in each replica. Normally, in these conditions, each bias profile would converge very slowly to the
+equilibrium free-energy, due to hysteresis. 
+
+In order to tackle this problem, in the bias-exchange approach every fixed number of steps
+(say 10,000) an exchange is attempted between a randomly selected pair of replicas \f$ a \f$ and \f$ b \f$. The
+exchanges allow the replicas to gain from the sampling of the other replicas and enable the system to explore
+the conformational space along a large number of different directions.
+
+The probability to accept the exchange is given by a Metropolis rule:
+
+\f[
+\min\left( 1, \exp \left[ \beta ( V_G^a(x^a,t)+V_G^b(x^b,t)-V_G^a(x^b,t)-V_G^b(x^a,t) ) \right] \right)
+\f]
+
+where \f$ x^{a} \f$ and \f$ x^{b} \f$ are the coordinates of replicas \f$a \f$ and \f$ b \f$
+and \f$ V_{G}^{a(b)}\left(x,t\right) \f$ is the metadynamics potential acting on the replica \f$ a \f$( \f$ b \f$).
+Each trajectory evolves through the high dimensional free energy landscape in the space of the CVs sequentially biased by
+different metadynamics potentials acting on one CV at each time. The results of the simulation are N one-dimensional projections of the free energy.
+
+In the following example, a bias-exchange simulation is performed on Alanine di-peptide. A typical input file for BE-WTMetaD is the following:
+
+- a common input file in which all the collective variables are defined:
+
+\verbatim
+plumed-common.dat:
+
+# read a pdb file to get topology info
+MOLINFO STRUCTURE=ALAD.pdb 
+
+# tell PLUMED to generate random exchange trials
+RANDOM_EXCHANGES
+
+# set up two variables for Phi and Psi dihedral angles
+phi: TORSION ATOMS=@phi-2
+psi: TORSION ATOMS=@psi-2
+
+PRINT ARG=phi,psi STRIDE=250 FILE=COLVAR
+\endverbatim
+(see \ref MOLINFO and \ref RANDOM_EXCHANGES).
+
+- additional input files that \ref INCLUDE the common input and define the \ref METAD along the selected CVs:
+
+\verbatim
+plumed.dat.0:
+
+INCLUDE FILE=plumed-common.dat
+METAD ARG=phi HEIGHT=1.2 SIGMA=0.35 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+ENDPLUMED
+
+ 
+plumed.dat.1:
+
+INCLUDE FILE=plumed-common.dat
+METAD ARG=psi HEIGHT=1.2 SIGMA=0.35 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+ENDPLUMED
+\endverbatim
+
+The, in this case, two replicas start from the same GROMACS topology file replicated twice: topol0.tpr, topol1.tpr.
+Finally, GROMACS is launched as a parallel run on 2 cores, with one replica per core, with the command 
+
+\verbatim
+mpirun -np 2 mdrun_mpi -s topol -plumed plumed -multi 2 -replex 1000 >& log &
+\endverbatim
+
+where -replex 1000 indicates that every 1000 molecular-dynamics steps exchanges are attempted
+(as printed in the GROMACS *.log files).
+
+# comparison of the sampling in standard WT and BE-METAD
+
+\subsection cambridge-exercise-2-2  Calculate free-energies and monitor convergence 
+
 
 */
 
