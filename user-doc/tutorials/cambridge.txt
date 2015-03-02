@@ -26,26 +26,26 @@ All the gromacs input files are provided in this tarball.
 
 Users are expected to write PLUMED input files based on the instructions below.
 
-\section munster-toymodel Alanine dipeptide: our toy model
+\section cambridge-toymodel Alanine dipeptide: our toy model
 
-In this tutorial we will play with alanine dipeptide (see Fig. \ref munster-1-ala-fig).
+In this tutorial we will play with alanine dipeptide (see Fig. \ref cambridge-1-ala-fig).
 This rather simple molecule is useful to make many benchmark that are around for data analysis and free energy methods.
 It is a rather nice example
 since it presents two metastable states separated by a high (free) energy barrier. 
 Here metastable states are intended as states which have a relatively low free energy compared to adjacent conformation.
 It is conventional use to show the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$
-in Fig. \ref munster-1-transition-fig .
+in Fig. \ref cambridge-1-transition-fig .
 
-\anchor munster-1-ala-fig
+\anchor cambridge-1-ala-fig
 \image html belfast-2-ala.png "The molecule of the day: alanine dipeptide."
 
-\anchor munster-1-transition-fig
+\anchor cambridge-1-transition-fig
 \image html belfast-2-transition.png "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
 */
 
-link: @subpage munster
+link: @subpage cambridge 
 
-description: A short 3 hours tutorial
+description: A short 2 hours tutorial
 
 additional-files: 
