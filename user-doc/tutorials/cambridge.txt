@@ -20,9 +20,6 @@ to change in PLUMED 2.2, which will be released later in 2015.
 Simulations are made using GROMACS 4.6.7, which is here assumed to be already patched with PLUMED and properly installed.
 However, these examples could be easily converted to other MD software.
 
-All the gromacs input files are provided in this tarball.
-\todo prepare tarball with input files - I think it is not necessary to have PLUMED inputs there
-
 Users are expected to write PLUMED input files based on the instructions below.
 
 \section cambridge-toymodel Alanine dipeptide: our toy model
@@ -42,6 +39,10 @@ in Fig. \ref cambridge-1-transition-fig .
 \image html belfast-2-transition.png "Two metastable states of alanine dipeptide are characterized by their Ramachandran dihedral angles."
 
 \section cambridge-exercise-1 Exercise 1. Metadynamics 
+
+\subsection cambridge-exercise-1-resources Resources
+
+The <a href="tutorial-resources/cambridge-1.tar.gz" download="cambridge-1.tar.gz"> tarball </a> for this project contains all the files needed to run this exercise. 
 
 \subsection cambridge-exercise-1-0 Summary of theory
 
@@ -432,4 +433,4 @@ link: @subpage cambridge
 
 description: A short 2 hours tutorial
 
-additional-files: 
+additional-files: cambridge-1.tar.gz 
