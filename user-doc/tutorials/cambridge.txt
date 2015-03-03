@@ -326,28 +326,28 @@ PRINT ARG=phi,psi,theta,xi STRIDE=250 FILE=COLVAR
 plumed.dat.0:
 
 INCLUDE FILE=plumed-common.dat
-METAD ARG=phi HEIGHT=1.2 SIGMA=0.35 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+METAD ARG=phi HEIGHT=0.4 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
 ENDPLUMED
 
  
 plumed.dat.1:
 
 INCLUDE FILE=plumed-common.dat
-METAD ARG=psi HEIGHT=1.2 SIGMA=0.35 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+METAD ARG=psi HEIGHT=0.4 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
 ENDPLUMED
 
 
 plumed.dat.2:
 
 INCLUDE FILE=plumed-common.dat
-METAD ARG=theta HEIGHT=1.2 SIGMA=0.35 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+METAD ARG=theta HEIGHT=0.4 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
 ENDPLUMED
 
 
 plumed.dat.3:
 
 INCLUDE FILE=plumed-common.dat
-METAD ARG=xi HEIGHT=1.2 SIGMA=0.35 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+METAD ARG=xi HEIGHT=0.4 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
 ENDPLUMED
 \endverbatim
 
@@ -355,10 +355,10 @@ The, in this case, two replicas start from the same GROMACS topology file replic
 Finally, GROMACS is launched as a parallel run on 4 cores, with one replica per core, with the command 
 
 \verbatim
-mpirun -np 4 mdrun_mpi -s topol -plumed plumed -multi 4 -replex 1000 >& log &
+mpirun -np 4 mdrun_mpi -s topol -plumed plumed -multi 4 -replex 10000 >& log &
 \endverbatim
 
-where -replex 1000 indicates that every 1000 molecular-dynamics steps exchanges are attempted
+where -replex 10000 indicates that every 10000 molecular-dynamics steps exchanges are attempted
 (as printed in the GROMACS *.log files).
 
 # comparison of the sampling in standard WT and BE-METAD
