@@ -17,8 +17,7 @@ we are going to present only a very narrow selection of methods.
 
 We here use PLUMED 2.1 syntax and we explicitly note if some syntax is expected
 to change in PLUMED 2.2, which will be released later in 2015.
-Simulations are made using GROMACS 4.6.7, which is here assumed to be already patched with PLUMED and properly installed.
-However, these examples could be easily converted to other MD software.
+Simulations are made using GROMACS 4.6.7. However, these examples could be easily converted to other MD software.
 
 Users are expected to write PLUMED input files based on the instructions below.
 
@@ -317,7 +316,9 @@ This analysis, along with the observation of the diffusive behavior in the CVs s
 
 \section cambridge-exercise-2 Exercise 2. Bias-Exchange Metadynamics 
 
-\subsection cambridge-exercise-1-0 Summary of theory
+\subsection cambridge-exercise-2-resources Resources
+
+\subsection cambridge-exercise-2-0 Summary of theory
 
 In well-tempered metadynamics the free-energy landscape of the system is reconstructed by gradually
 filling the local minima with gaussian hills. The dimensionality of the landscape is equal to the
