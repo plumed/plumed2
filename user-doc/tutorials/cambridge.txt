@@ -15,9 +15,7 @@ and to wander around in the manual to discover the many available features
 and to do the other, more complete, tutorials. Here 
 we are going to present only a very narrow selection of methods.
 
-We here use PLUMED 2.1 syntax and we explicitly note if some syntax is expected
-to change in PLUMED 2.2, which will be released later in 2015.
-Simulations are made using GROMACS 4.6.7. However, these examples could be easily converted to other MD software.
+We here use PLUMED 2.1, simulations are made using GROMACS 4.6.7. However, these examples could be easily converted to other MD software.
 
 Users are expected to write PLUMED input files based on the instructions below.
 
