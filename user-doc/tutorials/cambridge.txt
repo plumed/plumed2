@@ -318,6 +318,8 @@ This analysis, along with the observation of the diffusive behavior in the CVs s
 
 \subsection cambridge-exercise-2-resources Resources
 
+The <a href="tutorial-resources/cambridge-1.tar.gz" download="cambridge-2.tar.gz"> tarball </a> for this project contains all the files needed to run this exercise. 
+
 \subsection cambridge-exercise-2-0 Summary of theory
 
 In well-tempered metadynamics the free-energy landscape of the system is reconstructed by gradually
@@ -503,4 +505,4 @@ link: @subpage cambridge
 
 description: A short 2 hours tutorial
 
-additional-files: cambridge-1.tar.gz 
+additional-files: cambridge-1.tar.gz cambridge-2.tar.gz 
