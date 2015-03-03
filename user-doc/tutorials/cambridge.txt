@@ -384,28 +384,28 @@ PRINT ARG=phi,psi,theta,xi STRIDE=250 FILE=COLVAR
 plumed.dat.0:
 
 INCLUDE FILE=plumed-common.dat
-METAD ARG=phi HEIGHT=0.4 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+METAD ARG=phi HEIGHT=1.2 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
 ENDPLUMED
 
  
 plumed.dat.1:
 
 INCLUDE FILE=plumed-common.dat
-METAD ARG=psi HEIGHT=0.4 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+METAD ARG=psi HEIGHT=1.2 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
 ENDPLUMED
 
 
 plumed.dat.2:
 
 INCLUDE FILE=plumed-common.dat
-METAD ARG=theta HEIGHT=0.4 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+METAD ARG=theta HEIGHT=1.2 SIGMA=0.50 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
 ENDPLUMED
 
 
 plumed.dat.3:
 
 INCLUDE FILE=plumed-common.dat
-METAD ARG=xi HEIGHT=0.4 SIGMA=0.25 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+METAD ARG=xi HEIGHT=1.2 SIGMA=0.50 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
 ENDPLUMED
 \endverbatim
 
@@ -464,7 +464,6 @@ If we use the following command line:
 plumed sum_hills --hills HILLS.0 --stride 500 --mintozero
 \endverbatim
 
-one free energy is calculated every 500 Gaussians deposited, and the global minimum is set to zero in all profiles.
 Try to visualize the different estimates of the free energy as a function of time.
 
 To assess the convergence of the simulation more quantitatively, we can calculate the free-energy difference between the two
@@ -482,7 +481,20 @@ and KBT is the temperature in energy units (in this case KBT=2.5).
 \anchor cambridge-2-deltaG
 \image html cambridge-2-deltaG.png "Free Energy differences between two minima along phi"
  
+In addition to check for the convergence of the one dimesional profiles, it is important to verify the rate of exchange among the replicas. In fact
+if the rate is too low or if it is not enough homegenues then the replicas can still suffer from histeris problems (ie with one replica trapped
+somewhere in the conformational space). Generally speaking a good probability of exchange is between 10 and 30%.
 
+It is possible to check the exchange statistics and the detailed diffusion of the replicas among the different biases using a script provided:
+
+\verbatim
+./demux_m.pl md0.log
+\endverbatim
+
+which will create two files, called replica_temp.xvg and replica_index.xvg.
+We can plot the first file, which reports the bias index of each configuration at
+a given time of the simulation. This file is extremely useful, because it allows us monitoring
+the replicas diffusion in bias. 
 
 */
 
