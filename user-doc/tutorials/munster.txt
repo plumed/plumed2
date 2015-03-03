@@ -15,13 +15,15 @@ we are going to present only a very narrow selection of methods.
 
 We here use PLUMED 2.1 syntax and we explicitly note if some syntax is expected
 to change in PLUMED 2.2, which will be released later in 2015.
-All the tests here are performed on a toy system, alanine dipeptide in water, simulated
-using the AMBER99SB force field.
+All the tests here are performed on a toy system, alanine dipeptide, simulated
+using the AMBER99SB force field. We provide both a setup that includes explicit water, which is
+more realistic but slower, and a setup in gas phase, which is much faster.
 Simulations are made using GROMACS 4.6.7, which is here assumed to be already patched with PLUMED and properly installed.
 However, these examples could be easily converted to other MD software.
 
 All the gromacs input files are provided in this tarball.
-\todo prepare tarball with gromacs input files - I think it is not necessary to have PLUMED inputs there
+\todo Temporarily we can use this gdrive folder: http://drive.google.com/folderview?id=0Bz_0by6-gq6BZzBiWDdHV3JqRHc&usp=sharing
+      Before the actual tutorial we will prepare a tar.gz with all the files.
 
 Users are expected to write PLUMED input files based on the instructions below.
 
@@ -76,7 +78,14 @@ Here we will run a plain MD on alanine dipeptide and compute two torsional angle
 GROMACS needs a .tpr file, which is a binary file containing initial positions
 as well as force-field parameters. We also provide .gro, .mdp, and .top files,
 that can be modified and used to generate a new .tpr file. For this tutorial,
-it is sufficient to use the provided .tpr files. Gromacs md can be run using on the command line:
+it is sufficient to use the provided .tpr files. You will find several tpr files,
+namely:
+- topolAwat.tpr - setup in water, initialized in state A
+- topolBwat.tpr - setup in water, initialized in state B
+- topolA.tpr - setup in vacuum, initialized in state A
+- topolB.tpr - setup in vacuum, initialized in state B
+
+Gromacs md can be run using on the command line:
 \verbatim
 > mdrun -s topolA.tpr -nsteps 10000
 \endverbatim
@@ -115,12 +124,14 @@ gnuplot> plot "colvar" u 2:3
 \endverbatim
 
 Now try to do the same using the two different initial configurations that we provided (`topolA.tpr` and `topolB.tpr`).
-You should obtain a plot similar to this one
+Try both setup (water and vacuum).
 
-\todo graph phi,psi
+\todo graph phi,psi water and vacuum
 
-Notice that the result depends heavily on the starting structure. Indeed, the two free-energy minima are
+Notice that the result depends heavily on the starting structure.
+For the simulation in vacuum, the two free-energy minima are
 separated by a large barrier and, in such a short simulation, the system cannot cross it.
+In water the barrier is smaller and you might see some crossing.
 Also notice that the two clouds are well separated, indicating that these two collective variables
 are good enough to properly distinguish among the two minima.
 
@@ -181,8 +192,11 @@ PRINT ARG=phi,psi,gyr FILE=analyze
 \endverbatim
 (see \ref TORSION, \ref GYRATION, \ref GROUP, and \ref PRINT)
 
-Now try to compute the time series of the gyration radius. You might see that at some point this variable
-shows some crazy jump. The reason is that the trajectory containes coordinates where
+Now try to compute the time series of the gyration radius.
+**In case you are running the simulation in water,
+you might see that at some point this variable
+shows some crazy jump.**
+The reason is that the trajectory containes coordinates where
 molecules are broken across periodic-boundary conditions
 This happens with GROMACS and some other MD code. These codes typically have tools to process
 trajecories and restore whole molecules. This trick is ok for the a-posteriori analysis
@@ -266,9 +280,6 @@ the \f$\Phi\f$ and \f$\Psi\f$ angles.
 
 PLUMED can do much more than a histogram, more information on analysis can be found at the page \ref Analysis
 
-\todo
-- (maybe) make an example with \ref MATHEVAL
-
 Notice that the plumed driver can also be used directly from VMD taking advantage of the PLUMED collective variable tool
 developed by Toni Giorgino (http://multiscalelab.org/utilities/PlumedGUI).
 Just open a recent version of VMD and go to Extensions/Analysis/Collective Variable Analsys (PLUMED).
@@ -333,10 +344,13 @@ PRINT ARG=phi,psi,res.work,res.phi_cntr FILE=colvar
 Notice that here we are plotting a few new components, namely `work` and `phi_cntr`.
 The former gives the work performed in pulling the restraint, and the latter the position of the restraint.
 Notice that if pulling is slow enough one can compute free energy profile from the work.
-
-Try to pull the system from one minimum to the other
-
-\todo maybe an exercise computing free energy from work
+You can plot the putative free-energy landscape with
+\verbatim
+> gnuplot
+# column 5 is res.phi_cntr
+# column 4 is res.work
+gnuplot> p "colvar" u 5:4
+\endverbatim
 
 \subsection munster-biasing-me Metadynamics
 
@@ -413,11 +427,6 @@ the way PLUMED adds suffixes will change in version 2.2, and names will be `plum
 
 \todo We should provide multiple tpr files, maybe something like topolA300.tpr topolA310.tpr etc. The
 letter indicates the starting basin.
-
-\subsection munster-multi-mw Using multiple-walkers metadynamics
-
-\todo show how to quickly fill the free-energy landscape using multiple walkers
-(is this section a good idea or analysis is going to be too complicated?)
 
 \subsection munster-multi-wham Using multiple restraints with replica exchange
 
