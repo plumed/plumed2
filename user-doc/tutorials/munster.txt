@@ -30,8 +30,8 @@ Users are expected to write PLUMED input files based on the instructions below.
 \section munster-toymodel Alanine dipeptide: our toy model
 
 In this tutorial we will play with alanine dipeptide (see Fig. \ref munster-1-ala-fig).
-This rather simple molecule is useful to make many benchmark that are around for data analysis and free energy methods.
-It is a rather nice example
+This rather simple molecule is useful to make benchmark that are around for data analysis and free energy methods.
+It is a nice example
 since it presents two metastable states separated by a high (free) energy barrier. 
 Here metastable states are intended as states which have a relatively low free energy compared to adjacent conformations.
 It is conventional use to show the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$
@@ -115,18 +115,20 @@ PLUMED will write a textual file named `colvar` containing three columns: physic
 Results can be plotted using gnuplot:
 \verbatim
 > gnuplot
-# this show phi as a function of time
+# this shows phi as a function of time
 gnuplot> plot "colvar" u 2
-# this show psi as a function of time
+# this shows psi as a function of time
 gnuplot> plot "colvar" u 3
-# this show psi as a function of phi
+# this shows psi as a function of phi
 gnuplot> plot "colvar" u 2:3
 \endverbatim
 
 Now try to do the same using the two different initial configurations that we provided (`topolA.tpr` and `topolB.tpr`).
-Try both setup (water and vacuum).
+You can try both setup (water and vacuum). Results from 200ps (100000 steps) trajectories in
+vacuum are shown in Figure \ref munster-ala-traj.
 
-\todo graph phi,psi water and vacuum
+\anchor munster-ala-traj
+\image html munster-ala-traj.png "(phi,psi) scatter plot obtained starting from two different structures. Simulation performed in vacuum."
 
 Notice that the result depends heavily on the starting structure.
 For the simulation in vacuum, the two free-energy minima are
@@ -307,9 +309,77 @@ In the following we will see how to apply harmonic restraints
 and haw to build an adaptive bias potential with metadynamics. The complete documentation for
 all the biasing methods available in PLUMED can be found at the \ref Bias page.
 
-\subsection munster-biasing-re Using restraints
+\subsection munster-biasing-me Metadynamics
 
-Now let's imagine that we want to force the \f$\Phi\f$ angle to visit a region close to
+If you do not know exactly where you would like your collective variables to go,
+and just know (or suspect) that some variables have large free-energy barriers
+that hinder some conformational rearrangement or some chemical reaction,
+you can bias them using metadynamics. In this way, a time dependent,
+adaptive potential will be constructed that tends to disfavor visited configurations
+in the collective-variable space. The bias is usually built as a sum of
+Gaussian deposited in the already visited states.
+A sample input follows
+\verbatim
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+METAD ARG=phi,psi HEIGHT=1.0 BIASFACTOR=10 SIGMA=0.35,0.35 PACE=100 GRID_MIN=-pi,-pi GRID_MAX=pi,pi
+\endverbatim
+(see \ref TORSION and \ref METAD)
+Thus, a single METAD line will contain all the metadynamics related options, such
+as Gaussian height (`HEIGHT`, here in kJ/mol), stride (`PACE`, here in number of time steps),
+bias factor (`BIASFACTOR`, here indicates that we are going to effectively boost
+the temperature of the collective variables by a factor 10), and width (`SIGMA`, an array with
+same size as the number of collective variables).
+
+There are two additional keywords that are optional, namely GRID_MIN and GRID_MAX. These
+keywords sets the range of the collective variables and tell PLUMED to keep the bias
+potential stored on a grid. This affects speed but, in principle, not the accuraty of the calculation.
+You can try to remove those keywords and see the difference.
+
+If you run a simulation with this input, PLUMED will produce an additional
+`HILLS` file, containing as list of the deposited Gaussians. Notice that
+the apparent height written in the `HILLS` file is not the same height that you
+specified with the `HEIGHT` keyword, but is scaled by a factor \f$\gamma/(\gamma-1)\f$,
+where \f$\gamma\f$ is the biasfactor. This is a technical issue and is related to the
+fact that well-tempered metadynamics is only partially compensating the free-energy landscape.
+
+Now, run a metadynamics simulations and check the explored collective variable space.
+Results from a 200ps (100000 steps) trajectory in
+vacuum are shown in Figure \ref munster-ala-traj-metad.
+
+\anchor munster-ala-traj-metad
+\image html munster-ala-traj-metad.png "(phi,psi) scatter plot obtained with metadynamics and two different values of the biasfactor. Simulation performed in vacuum."
+
+
+As you can see, exploration is greatly enhanced.
+Notice that the explored ensemble  can be tuned using the biasfactor \f$\gamma\f$.
+Larger \f$\gamma\f$ implies that the system will explore states with higher free energy.
+As a rule of thumb, if you expect a barrier of the order of \f$\Delta G^*\f$,
+a reasonable choice for the biasfactor is \f$\gamma\approx\frac{\Delta G}{2k_BT}\f$.
+
+One can then exploit the
+fact that the deposited bias potential has a relationship with the underlying free-energy landscape
+and compute the latter. To this aim, you can use the command line sum_hills tool:
+
+\verbatim
+> plumed sum_hills --hills HILLS
+\endverbatim
+(see \ref sum_hills).
+
+\todo
+- show how to monitor the difference between minima as a function of time
+- show metadynamics failure with \f$\Psi\f$.
+
+Finally, notice that \ref METAD potential depends on the previously visited trajectories.
+As such, when you restart a previous simulation, it should read the previously deposited
+HILLS file. This is automatically triggered by the \ref RESTART keyword.
+
+
+\subsection munster-biasing-re Restraints
+
+If you want to just bring a collective variables to a specific value, you
+can use a simple restraint.
+Let's imagine that we want to force the \f$\Phi\f$ angle to visit a region close to
 \f$\Phi=\pi/2\f$. We can do it adding a restraint in \f$\Phi\f$, with the following input
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
@@ -321,7 +391,7 @@ PRINT ARG=phi,psi,res.bias
 
 Notice that here we are printing a quantity named `res.bias`. We do this because \ref RESTRAINT does not define a single
 value (that here would be theoretically named `res`) but a structure with several components. All
-biasing methods do so, as well as many collective variables (see e.g. \ref DISTANCE used with COMPONENTS keyword).
+biasing methods (including \ref METAD) do so, as well as many collective variables (see e.g. \ref DISTANCE used with COMPONENTS keyword).
 Printing the bias allows one to know how much a given snapshop was penalized.
 Also notice that PLUMED understands numbers in the for `{number}pi`. This is convenient when using
 torsions, since they are expressed in radians.
@@ -336,8 +406,8 @@ that a too large kappa could make the MD integrator unstable.
 A restraint can also be modified as a function of time. For example, if you want to
 bring the system from one minimum to the other, you can use a moving restraint on \f$\Phi\f$:
 \verbatim
-phi: TORSION=5,7,9,15
-psi: TORSION=7,9,15,17
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
 # notice that a long line can be splitted with this syntax
 MOVINGRESTRAINT ...
 # also notice that a LABEL keyword can be used and is equivalent
@@ -364,57 +434,7 @@ gnuplot> p "colvar" u 5:4
 
 \endhidden
 
-\subsection munster-biasing-me Metadynamics
-
-If you do not know exactly where you would like your collective variables to go,
-and just know (or suspect) that some variables have large free-energy barriers
-that hinder some conformational rearrangement or some chemical reaction,
-you can bias them using metadynamics. In this way, a time dependent,
-adaptive potential will be constructed that tends to disfavor visited configurations
-in the collective-variable space. The bias is usually built as a sum of
-Gaussian deposited in the already visited states.
-A sample input follows
-\verbatim
-phi: TORSION=5,7,9,15
-psi: TORSION=7,9,15,17
-METAD ARG=phi,psi HEIGHT=1.0 BIASFACTOR=10 SIGMA=0.35,0.35 PACE=100
-\endverbatim
-(see \ref TORSION and \ref METAD)
-Thus, a single METAD line will contain all the metadynamics related options, such
-as Gaussian height (`HEIGHT`, here in kJ/mol), stride (`PACE`, here in number of time steps),
-bias factor (`BIASFACTOR`, here indicates that we are going to effectively boost
-the temperature of the collective variables by a factor 10), and width (`SIGMA`, an array with
-same size as the number of collective variables).
-
-If you run a simulation with this input, PLUMED will produce an additional
-`HILLS` file, containing as list of the deposited Gaussians. Notice that
-the apparent height written in the `HILLS` file is not the same height that you
-specified with the `HEIGHT` keyword, but is scaled by a factor \f$\gamma/(\gamma-1)\f$,
-where \f$\gamma\f$ is the biasfactor. This is a technical issue and is related to the
-fact that well-tempered metadynamics is only partially compensating the free-energy landscape.
-
-Now, run a metadynamics simulations and check the explored collective variable space.
-\todo Put a figure
-
-As you can see, exploration is greatly enhanced. Moreover, you can exploit the
-fact that the deposited bias potential has a relationship with the underlying free-energy landscape
-and compute the latter. To this aim, you can use the command line sum_hills tool:
-
-\verbatim
-> plumed sum_hills --hills HILLS
-\endverbatim
-(see \ref sum_hills).
-
-
-\todo
-- show how to monitor the difference between minima as a function of time
-- show metadynamics failure with \f$\Psi\f$.
-
-Finally, notice that \ref METAD potential depends on the previously visited trajectories.
-As such, when you restart a previous simulation, it should read the previously deposited
-HILLS file. This is automatically triggered by the \ref RESTART keyword.
-
-\section munster-multi Using multiple replicas
+\subsection munster-multi Using multiple replicas
 
 \warning Notice that multireplica simulations with PLUMED are fully supported
 with GROMACS, but only partly supported with other MD engines.
@@ -437,12 +457,10 @@ to put a single `plumed.dat` file, but one has also the flexibility of using sep
 named `plumed.dat.0`, `plumed.dat.1` etc. Finally, notice that 
 the way PLUMED adds suffixes will change in version 2.2, and names will be `plumed.0.dat` etc.
 
-\todo We should provide multiple tpr files, maybe something like topolA300.tpr topolA310.tpr etc. The
-letter indicates the starting basin.
-
 \subsection munster-multi-wham Using multiple restraints with replica exchange
 
 \todo
+- Explain multiple restraints
 - Prepare topologies initialized with different values of \f$\Psi\f$
 - Script to perform WHAM
 
