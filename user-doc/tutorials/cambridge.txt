@@ -25,16 +25,16 @@ Users are expected to write PLUMED input files based on the instructions below.
 
 \verbatim
 # get binaries from Dropbox
-wget https://dl.dropboxusercontent.com/u/23916760/plumed/bin.tgz
+wget https://dl.dropboxusercontent.com/u/23916760/plumed/bin_intel.tgz
 
 # unpack bin directory
-tar xzf bin.tgz
+tar xzf bin_intel.tgz
 
 # add plumed to the path (!!!!!!)
-export PATH=$HOME/bin/plumed/bin:$PATH
+export PATH=$HOME/bin_intel/plumed/bin:$PATH
 
 # source gromacs stuff (!!!!!)
-source $HOME/bin/gromacs/bin/GMXRC
+source $HOME/bin_intel/gromacs/bin/GMXRC
 \endverbatim
 
 \subsection cambridge-installation-2 2. Slow, but instructive
@@ -571,6 +571,7 @@ Here we will give partial information on how to setup the simulations. Users sho
 and thus successfully perform the exercise.
 
 Step 1: Add the collective variables that describe the distances averaged over the ensemble to the template input files provided.
+
 For each of the above experimental data one should define:
 \verbatim
 #this is the distance between CA atoms 5 and 33 belonging to residues 1 and 3, respectively.
@@ -578,23 +579,27 @@ d1: DISTANCE ATOMS=5,33
 # this is the averaging of the distance among the replicas
 ed1: ENSEMBLE ARG=d1
 # this is the restraint applied on the averaged distance to match the experimental one
-RESTRAINT ARG=ed1 KAPPA=200000 AT=0.656214
+RESTRAINT ARG=ed1.d1 KAPPA=200000 AT=0.656214
 \endverbatim
 (see \ref DISTANCE, \ref ENSEMBLE, and \ref RESTRAINT).
 
 Step 2: Setup the Bias-Exchange simulations
+
 We will run Bias-Exchange simulations using four CVs, two of them have already been chosen (see plumed-common.dat) while the others should be selected by you.
 Additionally Metadynamics parameters \ref METAD for the two selected cvs should be added in the plumed.dat.0 and plumed.dat.1 files. In particular while the
 PACE, HEIGHT and BIASFACTOR can be kept the same of those defined for the preselected CVs, the SIGMA should be half of the fluctuations of the
 chosen CV in an unbiased run (>1 ns).
 
 Step 3: Run
+
 The simulation should be run until convergence of the four monodimensional free energies, this will tipically take more than 200 ns per replica. 
 
 Step 4: Analysis
+
 The user should check the diffusion of the replicas among the biases (see above) and send the converged free energy profiles.
 
 Step 5: Only for the brave!
+
 The same simulation without experimental restraints could be performed in such a way to compare the free energy profiles obtained with and without the inclusion
 of experimental data.
 
