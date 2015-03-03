@@ -259,7 +259,7 @@ This analysis, along with the observation of the diffusive behavior in the CVs s
 
 \section cambridge-exercise-2 Exercise 2. Bias-Exchange Metadynamics 
 
-\subsection cambridge-exercise-2-1  Setup, run, and analyse a well-tempered bias-exchange metadynamics simulation
+\subsection cambridge-exercise-1-0 Summary of theory
 
 In well-tempered metadynamics the free-energy landscape of the system is reconstructed by gradually
 filling the local minima with gaussian hills. The dimensionality of the landscape is equal to the
@@ -294,6 +294,9 @@ and \f$ V_{G}^{a(b)}\left(x,t\right) \f$ is the metadynamics potential acting on
 Each trajectory evolves through the high dimensional free energy landscape in the space of the CVs sequentially biased by
 different metadynamics potentials acting on one CV at each time. The results of the simulation are N one-dimensional projections of the free energy.
 
+\subsection cambridge-exercise-2-1  Setup, run, and analyse a well-tempered bias-exchange metadynamics simulation
+
+
 In the following example, a bias-exchange simulation is performed on Alanine di-peptide. A typical input file for BE-WTMetaD is the following:
 
 - a common input file in which all the collective variables are defined:
@@ -307,11 +310,13 @@ MOLINFO STRUCTURE=ALAD.pdb
 # tell PLUMED to generate random exchange trials
 RANDOM_EXCHANGES
 
-# set up two variables for Phi and Psi dihedral angles
+# set up four variables for Phi, Psi, Theta, Xi dihedral angles
 phi: TORSION ATOMS=@phi-2
 psi: TORSION ATOMS=@psi-2
+theta: TORSION ATOMS=6,5,7,9
+xi: TORSION ATOMS=16,15,17,19
 
-PRINT ARG=phi,psi STRIDE=250 FILE=COLVAR
+PRINT ARG=phi,psi,theta,xi STRIDE=250 FILE=COLVAR
 \endverbatim
 (see \ref MOLINFO and \ref RANDOM_EXCHANGES).
 
@@ -330,13 +335,27 @@ plumed.dat.1:
 INCLUDE FILE=plumed-common.dat
 METAD ARG=psi HEIGHT=1.2 SIGMA=0.35 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
 ENDPLUMED
+
+
+plumed.dat.2:
+
+INCLUDE FILE=plumed-common.dat
+METAD ARG=theta HEIGHT=1.2 SIGMA=0.35 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+ENDPLUMED
+
+
+plumed.dat.3:
+
+INCLUDE FILE=plumed-common.dat
+METAD ARG=xi HEIGHT=1.2 SIGMA=0.35 PACE=100 GRID_MIN=-pi GRID_MAX=pi BIASFACTOR=10.0
+ENDPLUMED
 \endverbatim
 
-The, in this case, two replicas start from the same GROMACS topology file replicated twice: topol0.tpr, topol1.tpr.
-Finally, GROMACS is launched as a parallel run on 2 cores, with one replica per core, with the command 
+The, in this case, two replicas start from the same GROMACS topology file replicated twice: topol0.tpr, topol1.tpr, topol2.tpr and topol3.tpr.
+Finally, GROMACS is launched as a parallel run on 4 cores, with one replica per core, with the command 
 
 \verbatim
-mpirun -np 2 mdrun_mpi -s topol -plumed plumed -multi 2 -replex 1000 >& log &
+mpirun -np 4 mdrun_mpi -s topol -plumed plumed -multi 4 -replex 1000 >& log &
 \endverbatim
 
 where -replex 1000 indicates that every 1000 molecular-dynamics steps exchanges are attempted
