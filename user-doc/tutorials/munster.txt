@@ -5,8 +5,8 @@ This document describes the PLUMED tutorial held in Munster, March 2015.
 The aim of this tutorial is to learn how to use PLUMED to analyze molecular
 dynamics simulations on the fly, to analyze existing trajectories, and to
 perform enhanced sampling. Although the presented input files are correct,
-the users are invited to refer to the literature to understand how the
-parameters of enhanced sampling methods should be chosen in a real application.
+the users are invited to **refer to the literature to understand how the
+parameters of enhanced sampling methods should be chosen in a real application.**
 
 Users are also encouraged to follow the links to the full PLUMED reference documentation
 and to wander around in the manual to discover the many available features
@@ -33,7 +33,7 @@ In this tutorial we will play with alanine dipeptide (see Fig. \ref munster-1-al
 This rather simple molecule is useful to make many benchmark that are around for data analysis and free energy methods.
 It is a rather nice example
 since it presents two metastable states separated by a high (free) energy barrier. 
-Here metastable states are intended as states which have a relatively low free energy compared to adjacent conformation.
+Here metastable states are intended as states which have a relatively low free energy compared to adjacent conformations.
 It is conventional use to show the two states in terms of Ramachandran dihedral angles, which are denoted with \f$ \Phi \f$ and \f$ \Psi \f$
 in Fig. \ref munster-1-transition-fig .
 
