@@ -318,7 +318,7 @@ This analysis, along with the observation of the diffusive behavior in the CVs s
 
 \subsection cambridge-exercise-2-resources Resources
 
-The <a href="tutorial-resources/cambridge-1.tar.gz" download="cambridge-2.tar.gz"> tarball </a> for this project contains all the files needed to run this exercise. 
+The <a href="tutorial-resources/cambridge-2.tar.gz" download="cambridge-2.tar.gz"> tarball </a> for this project contains all the files needed to run this exercise. 
 
 \subsection cambridge-exercise-2-0 Summary of theory
 
