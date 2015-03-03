@@ -193,9 +193,13 @@ PRINT ARG=phi,psi,gyr FILE=analyze
 (see \ref TORSION, \ref GYRATION, \ref GROUP, and \ref PRINT)
 
 Now try to compute the time series of the gyration radius.
-**In case you are running the simulation in water,
+
+\hidden{Periodic boundaries and explicit water}
+\subsection munster-monitor-pbc Periodic boundaries and explicit water
+
+In case you are running the simulation in water,
 you might see that at some point this variable
-shows some crazy jump.**
+shows some crazy jump.
 The reason is that the trajectory containes coordinates where
 molecules are broken across periodic-boundary conditions
 This happens with GROMACS and some other MD code. These codes typically have tools to process
@@ -227,6 +231,7 @@ Notice that starting with version 2.2 PLUMED will make molecules used in
 \ref GYRATION (as well as in other variables) whole automatically, so that
 this extra command will not be necessary.
 
+
 Notice that you can instruct PLUMED to dump on a file not only the
 collective variables (as we are doing with \ref PRINT) but also
 the atomic positions. This is a very good way to understand what \ref WHOLEMOLECULES 
@@ -252,14 +257,16 @@ and \ref FIT_TO_TEMPLATE can actually move atoms from their original position to
 \ref DUMPATOMS is this very useful to check what these commands are doing and for using the PLUMED \ref driver
 to manipulate MD trajectories.
 
-\subsection munster-monitor-an More analysis tools
+\endhidden
+
+\hidden{Other analysis tools}
+\subsection munster-monitor-an Other analysis tools
 
 PLUMED also allows you to make some analyis on the collective variables
 you are calculating. For example, you can compute a histogram with an input like this one
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
-WHOLEMOLECULES ENTITY0=1-22
 heavy: GROUP ATOMS=1,5,6,7,9,11,15,16,17,19
 gyr: GYRATION ATOMS=heavy
 PRINT ARG=phi,psi,gyr FILE=analyze
@@ -284,6 +291,8 @@ Notice that the plumed driver can also be used directly from VMD taking advantag
 developed by Toni Giorgino (http://multiscalelab.org/utilities/PlumedGUI).
 Just open a recent version of VMD and go to Extensions/Analysis/Collective Variable Analsys (PLUMED).
 This graphical interface can also be used to quickly build PLUMED input files based on template lines.
+
+\endhidden
 
 \section munster-biasing Biasing collective variables
 
@@ -321,7 +330,8 @@ Now you can plot your trajectory with gnuplot and see the effect of KAPPA. You c
 of KAPPA. The stiffer the restraint, the less the collective variable will fluctuate. However, notice 
 that a too large kappa could make the MD integrator unstable.
 
-\todo maybe an exercise looking at how fluctuations are affected by KAPPA?
+\hidden{Moving restraints}
+\subsection munster-biasing-moving Moving restraints
 
 A restraint can also be modified as a function of time. For example, if you want to
 bring the system from one minimum to the other, you can use a moving restraint on \f$\Phi\f$:
@@ -351,6 +361,8 @@ You can plot the putative free-energy landscape with
 # column 4 is res.work
 gnuplot> p "colvar" u 5:4
 \endverbatim
+
+\endhidden
 
 \subsection munster-biasing-me Metadynamics
 
@@ -396,7 +408,7 @@ and compute the latter. To this aim, you can use the command line sum_hills tool
 
 \todo
 - show how to monitor the difference between minima as a function of time
-- (optional) show metadynamics failure with \ref GYRATION or another variable
+- show metadynamics failure with \f$\Psi\f$.
 
 Finally, notice that \ref METAD potential depends on the previously visited trajectories.
 As such, when you restart a previous simulation, it should read the previously deposited
@@ -430,12 +442,9 @@ letter indicates the starting basin.
 
 \subsection munster-multi-wham Using multiple restraints with replica exchange
 
-(is this section a good idea or analysis is going to be too complicated?)
-
-\subsection munster-multi-ptmetad Using metadynamics with parallel tempering
-
 \todo
-- show metadynamics working properly with \ref GYRATION (hopefully!)
+- Prepare topologies initialized with different values of \f$\Psi\f$
+- Script to perform WHAM
 
 */
 
