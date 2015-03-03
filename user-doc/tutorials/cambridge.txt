@@ -595,12 +595,9 @@ Step 4: Analysis
 The user should check the diffusion of the replicas among the biases (see above) and send the converged free energy profiles.
 
 Step 5: Only for the brave!
-The same simulation without experimental restraint could be performed in such a way to compare the free energy profiles obtained with and without the inclusion
-of experimental dat
-
-Step 5: Only for the brave!
-The same simulation without experimental restraint could be performed in such a way to compare the free energy profiles obtained with and without the inclusion
+The same simulation without experimental restraints could be performed in such a way to compare the free energy profiles obtained with and without the inclusion
 of experimental data.
+
 */
 
 link: @subpage cambridge 
