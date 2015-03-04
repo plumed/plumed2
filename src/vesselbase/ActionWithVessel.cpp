@@ -105,7 +105,7 @@ void ActionWithVessel::addVessel( const std::string& name, const std::string& in
 void ActionWithVessel::addVessel( Vessel* vv ){
   ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
   if(!sv){ vv->checkRead(); functions.push_back(vv); }
-  else { delete sv; }
+  else { delete sv; return; }
 
   StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv );
   if( mydata && mm ) error("cannot have more than one StoreDataVessel in one action");

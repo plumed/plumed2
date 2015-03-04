@@ -118,17 +118,19 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
          denom += sw;
       }
    }
+   double df2, pref=calculateCoordinationPrefactor( denom, df2 );
    
    // Now divide everything
    double denom2=denom*denom;
    updateActiveAtoms( myatoms ); MultiValue& myvals=myatoms.getUnderlyingMultiValue();
    for(unsigned i=0;i<myvals.getNumberActive();++i){
        unsigned ider=myvals.getActiveIndex(i);
-       myvals.setDerivative( 1, ider, myvals.getDerivative(1,ider)/denom - (value*myvals.getDerivative(0,ider))/denom2 );
+       double  dgd=myvals.getDerivative(0,ider);
+       myvals.setDerivative( 1, ider, (pref*myvals.getDerivative(1,ider)+value*df2*dgd)/denom - (value*pref*dgd)/denom2 );
    } 
    myvals.clear(0); myvals.setValue( 0, 1.0 );
 
-   return value / denom;
+   return pref*value / denom;
 }
 
 }
