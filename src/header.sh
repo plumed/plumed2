@@ -20,20 +20,23 @@ do
 
 test -f "$file" || continue
 
-years=$(git log --follow --format=%aD $file |
-  awk '{if(NR==1)last=$4;}END{
-  first=$4
-  if(first=="") print ""
-  else if(first==last) print first;
-  else if(first+1==last) print first "," last;
-  else print first "-" last}')
-
-test -n "$years" || continue
-
 if test -n "$FIX_COPYRIGHT"
 then
   COPYRIGHT="$FIX_COPYRIGHT"
+  echo -n "Custom header for file: $file"
 else
+  years=$(git log --follow --format=%aD $file |
+    awk '{if(NR==1)last=$4;}END{
+    first=$4
+    if(first=="") print ""
+    else if(first==last) print first;
+    else if(first+1==last) print first "," last;
+    else print first "-" last}')
+  if test -z "$years" ; then
+    echo  "Error processing file: $file"
+    continue
+  fi
+
   COPYRIGHT="\
    Copyright (c) $years The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
@@ -54,9 +57,9 @@ else
 
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>."
+  echo -n "LGPL header ($years) for file: $file"
 fi
 
-echo "Applying LGPL header to file $file"
 
 {
 
@@ -108,8 +111,12 @@ mv $file.tmp2 $file.tmp
 
 esac
 
-
-cmp -s $file $file.tmp || cp $file.tmp $file
+if cmp -s $file $file.tmp ; then
+  echo 
+else
+  cp $file.tmp $file
+  echo " +++ PATCHED"
+fi
 
 rm $file.tmp
 
