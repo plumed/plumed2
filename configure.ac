@@ -42,9 +42,24 @@ AC_DEFUN([PLUMED_CHECK_CXXFLAG], [
   CXXFLAGS="$CXXFLAGS $1"
   AC_MSG_CHECKING([whether $CXX accepts $1])
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-    [AC_MSG_RESULT([yes])],
+    [
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([not linking]); CXXFLAGS="$save_CXXFLAGS"])
+    ],
     [AC_MSG_RESULT([no]); CXXFLAGS="$save_CXXFLAGS"]
   )
+])
+
+# PLUMED_CHECK_LDFLAGS(flag)
+# use it to check if a flag is available on this compiler
+AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS $1"
+  AC_MSG_CHECKING([whether LDFLAGS can contain $1])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+    [AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no]); LDFLAGS="$save_LDFLAGS"])
 ])
 
 # PLUMED_CHECK_PACKAGE(header,function,define[,library])
@@ -362,7 +377,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([LDSO and LDFLAGS need special flags])
     SOEXT=so
     LDSO="$LDSO -shared"
-    LDFLAGS="$LDFLAGS -rdynamic"
+    PLUMED_CHECK_LDFLAGS([-rdynamic])
   ;;
   (*)
     AC_MSG_NOTICE([*** Dynamic library only enabled on OSX and Linux ***])
