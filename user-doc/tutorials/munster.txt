@@ -21,7 +21,7 @@ more realistic but slower, and a setup in gas phase, which is much faster.
 Simulations are made using GROMACS 4.6.7, which is here assumed to be already patched with PLUMED and properly installed.
 However, these examples could be easily converted to other MD software.
 
-All the gromacs input files are provided in this tarball.
+All the gromacs input files and analsys scripts are provided in this tarball.
 \todo Temporarily we can use this gdrive folder: http://drive.google.com/folderview?id=0Bz_0by6-gq6BZzBiWDdHV3JqRHc&usp=sharing
       Before the actual tutorial we will prepare a tar.gz with all the files.
 
@@ -373,6 +373,164 @@ and compute the latter. To this aim, you can use the command line sum_hills tool
 Finally, notice that \ref METAD potential depends on the previously visited trajectories.
 As such, when you restart a previous simulation, it should read the previously deposited
 HILLS file. This is automatically triggered by the \ref RESTART keyword.
+
+\subsection munster-exercise-1 Exercise 1
+
+In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CVs the
+backbone dihedral angle phi. In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
+
+\verbatim
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Activate well-tempered metadynamics in phi depositing 
+# a Gaussian every 500 time steps, with initial height equal 
+# to 1.2 kJoule/mol, biasfactor equal to 10.0, and width to 0.35 rad
+
+METAD ...
+LABEL=metad
+ARG=phi
+PACE=500
+HEIGHT=1.2
+SIGMA=0.35
+FILE=HILLS
+BIASFACTOR=10.0
+TEMP=300.0
+GRID_MIN=-pi
+GRID_MAX=pi
+GRID_SPACING=0.1
+... METAD
+
+# monitor the two variables and the metadynamics bias potential
+PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
+
+\endverbatim
+(see \ref TORSION, \ref METAD, and \ref PRINT).
+
+The syntax for the command \ref METAD is simple. 
+The directive is followed by a keyword ARG followed by the labels of the CVs
+on which the metadynamics potential will act.
+The keyword PACE determines the stride of Gaussian deposition in number of time steps,
+while the keyword HEIGHT specifies the height of the Gaussian in kJoule/mol. For each CVs, one has
+to specified the width of the Gaussian by using the keyword SIGMA. Gaussian will be written
+to the file indicated by the keyword FILE. 
+
+The bias potential will be stored on a grid, whose boundaries are specified by the keywords GRID_MIN and GRID_MAX.
+Notice that you should provide either the number of bins for every collective variable (GRID_BIN) or
+the desired grid spacing (GRID_SPACING). In case you provide both PLUMED will use
+the most conservative choice (highest number of bins) for each dimension.
+In case you do not provide any information about bin size (neither GRID_BIN nor GRID_SPACING)
+and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
+This default choice should be reasonable for most applications.
+
+Once the PLUMED input file is prepared, one has to run Gromacs with the option to activate PLUMED and
+read the input file:
+
+\verbatim
+mdrun_mpi -s ../TOPO/topol -plumed plumed.dat
+\endverbatim
+
+During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
+The COLVAR file contains all the information specified by the PRINT command, in this case
+the value of the CVs every 10 steps of simulation, along with the current value of the metadynamics bias potential. 
+We can use COLVAR to visualize the behavior of the CV during the simulation:
+
+\anchor munster-metad-phi-fig
+\image html munster-metad-phi.png "Time evolution of the CV phi during the first 2 ns of a metadynamics simulation of alanine dipeptide in vacuum."
+
+By inspecting Figure \ref munster-metad-phi-fig, we can see that the system is initialized in one of the two metastable
+states of alanine dipeptide. After a while (t=0.1 ns), the system is pushed
+by the metadynamics bias potential to visit the other local minimum. As the simulation continues,
+the bias potential fills the underlying free-energy landscape, and the system is able to diffuse in the
+entire phase space.
+
+The HILLS file contains a list of the Gaussians deposited along the simulation.
+If we give a look at the header of this file, we can find relevant information about its content:
+
+\verbatim
+#! FIELDS time phi psi sigma_phi sigma_psi height biasf
+#! SET multivariate false
+#! SET min_phi -pi
+#! SET max_phi pi
+#! SET min_psi -pi
+#! SET max_psi pi
+\endverbatim 
+
+The line starting with FIELDS tells us what is displayed in the various columns of the HILLS file:
+the time of the simulation, the value of phi and psi, the width of the Gaussian in phi and psi,
+the height of the Gaussian, and  the biasfactor.
+We can use the HILLS file to visualize the decrease of the Gaussian height during the simulation,
+according to the well-tempered recipe:
+
+\anchor munster-metad-phihills-fig
+\image html munster-metad-phihills.png "Time evolution of the Gaussian height."
+
+If we look carefully at the scale of the y-axis, we will notice that in the beginning the value
+of the Gaussian height is higher than the initial height specified in the input file, which should be 1.2 kJoule/mol.
+In fact, this column reports the height of the Gaussian rescaled by the pre-factor that
+in well-tempered metadynamics relates the bias potential to the free energy. In this way, when
+we will use \ref sum_hills, the sum of the Gaussians deposited will directly provide the free-energy,
+without further rescaling needed (see below).
+
+One can estimate the free energy as a function of the metadynamics CVs directly from the metadynamics
+bias potential. In order to do so, the utility \ref sum_hills should be used to sum the Gaussians
+deposited during the simulation and stored in the HILLS file.  
+To calculate the free energy as a function of phi, it is sufficient to use the following command line:
+
+\verbatim
+plumed sum_hills --hills HILLS
+\endverbatim
+
+The command above generates a file called fes.dat in which the free-energy surface as function
+of phi is calculated on a regular grid. One can modify the default name for the free energy file,
+as well as the boundaries and bin size of the grid, by using the following options of \ref sum_hills :
+
+\verbatim
+--outfile - specify the outputfile for sumhills
+--min - the lower bounds for the grid
+--max - the upper bounds for the grid
+--bin - the number of bins for the grid
+--spacing - grid spacing, alternative to the number of bins
+\endverbatim 
+
+The result should look like this:
+
+\anchor munster-metad-phifes-fig
+\image html munster-metad-phifes.png "Estimate of the free energy as a function of the dihedral phi from a 10ns-long well-tempered metadynamics simulation."
+
+To assess the convergence of a metadynamics simulation, one can calculate the estimate of the free energy as a function
+of simulation time. At convergence, the reconstructed profiles should be similar.
+The option --stride should be used to give an estimate of the free energy every N Gaussians deposited, and
+the option --mintozero can be used to align the profiles by setting the global minimum to zero.
+If we use the following command line:
+
+\verbatim
+plumed sum_hills --hills HILLS --stride 100 --mintozero
+\endverbatim
+
+one free energy is calculated every 100 Gaussians deposited, and the global minimum is set to zero in all profiles.
+The resulting plot should look like the following:
+
+\anchor munster-metad-phifest-fig
+\image html munster-metad-phifest.png "Estimates of the free energy as a function of the dihedral phi calculated every 100 Gaussians deposited."
+
+To assess the convergence of the simulation more quantitatively, we can calculate the free-energy difference between the two
+local minima of the free energy along phi as a function of simulation time.
+We can use the bash script analyze_FES.sh to integrate the multiple free-energy profiles in the two basins defined 
+by the following intervals in phi space: basin A, -3<phi<-1, basin B, 0.5<phi<1.5.
+
+\verbatim
+../SCRIPTS/analyze_FES.sh NFES -3.0 -1.0 0.5 1.5 KBT 
+\endverbatim
+
+where NFES is the number of profiles (free-energy estimates at different times of the simulation) generated by the option --stride of \ref sum_hills,
+and KBT is the temperature in energy units (in this case KBT=2.5).
+
+\anchor munster-metad-phifes-difft-fig
+\image html munster-metad-phifes-difft.png "Free-energy difference between basin A and B as a function of simulation time."
+
+This analysis, along with the observation of the diffusive behavior in the CVs space, suggest that the simulation is converged.
 
 
 \subsection munster-biasing-re Restraints
