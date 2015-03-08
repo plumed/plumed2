@@ -376,7 +376,7 @@ HILLS file. This is automatically triggered by the \ref RESTART keyword.
 
 \subsection munster-exercise-1 Exercise 1
 
-In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CVs the
+In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CV the
 backbone dihedral angle phi. In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
 
 \verbatim
@@ -532,6 +532,59 @@ and KBT is the temperature in energy units (in this case KBT=2.5).
 
 This analysis, along with the observation of the diffusive behavior in the CVs space, suggest that the simulation is converged.
 
+\subsection munster-exercise-2 Exercise 2
+
+In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CV the
+backbone dihedral angle psi. In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
+
+\verbatim
+# set up two variables for Phi and Psi dihedral angles 
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Activate well-tempered metadynamics in psi depositing 
+# a Gaussian every 500 time steps, with initial height equal 
+# to 1.2 kJoule/mol, biasfactor equal to 10.0, and width to 0.35 rad
+
+METAD ...
+LABEL=metad
+ARG=psi
+PACE=500
+HEIGHT=1.2
+SIGMA=0.35
+FILE=HILLS
+BIASFACTOR=10.0
+TEMP=300.0
+GRID_MIN=-pi
+GRID_MAX=pi
+GRID_SPACING=0.1
+... METAD
+
+# monitor the two variables and the metadynamics bias potential
+PRINT STRIDE=10 ARG=phi,psi,metad.bias FILE=COLVAR
+
+\endverbatim
+(see \ref TORSION, \ref METAD, and \ref PRINT).
+
+Once the PLUMED input file is prepared, one has to run Gromacs with the option to activate PLUMED and
+read the input file:
+
+\verbatim
+mdrun_mpi -s ../TOPO/topol -plumed plumed.dat
+\endverbatim
+
+As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
+Here we will plot at the same time the evolution of the metadynamics CV psi and of the other dihedral phi:
+
+\anchor munster-metad-psi-phi-fig
+\image html munster-metad-psi-phi.png "Time evolution of the dihedrals phi and psi during a 10-ns long metadynamics simulation using psi as CV."
+
+By inspecting Figure \ref munster-metad-psi-phi-fig, we notice that something different happened compared to the previous exercise.
+At first the behavior of psi looks diffusive in the entire CV space. However, around t=1 ns, psi seems trapped in a region of the CV space
+in which it was previously diffusing without problems. The reason is that the non-biased CV phi after a while has jumped into a different local minima.
+Since phi is not directly biased, one has to wait for this (slow) degree of freedom to equilibrate before the free energy along psi can converge.
+Try to repeat the analysis done in the previous exercise (calculate the estimate of the free energy as a function of time and monitor
+the free-energy difference between basins) to assess the convergence of this metadynamics simulation.
 
 \subsection munster-biasing-re Restraints
 
