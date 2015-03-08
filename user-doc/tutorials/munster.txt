@@ -311,6 +311,72 @@ all the biasing methods available in PLUMED can be found at the \ref Bias page.
 
 \subsection munster-biasing-me Metadynamics
 
+\hidden{Summary of theory}
+\subsubsection munster-biasing-me-theory Summary of theory
+In metadynamics, an external history-dependent bias potential is constructed in the space of 
+a few selected degrees of freedom \f$ \vec{s}({q}) \f$, generally called collective variables (CVs) \cite metad.
+This potential is built as a sum of Gaussians deposited along the trajectory in the CVs space:
+
+\f[
+V(\vec{s},t) = \sum_{ k \tau < t} W(k \tau)
+\exp\left(
+-\sum_{i=1}^{d} \frac{(s_i-s_i({q}(k \tau)))^2}{2\sigma_i^2}
+\right).
+\f]
+
+where \f$ \tau \f$ is the Gaussian deposition stride, 
+\f$ \sigma_i \f$ the width of the Gaussian for the ith CV, and \f$ W(k \tau) \f$ the
+height of the Gaussian. The effect of the metadynamics bias potential is to push the system away 
+from local minima into visiting new regions of the phase space. Furthermore, in the long
+time limit, the bias potential converges to minus the free energy as a function of the CVs:
+
+\f[
+V(\vec{s},t\rightarrow \infty) = -F(\vec{s}) + C.
+\f]
+
+In standard metadynamics, Gaussians of constant height are added for the entire course of a 
+simulation. As a result, the system is eventually pushed to explore high free-energy regions
+and the estimate of the free energy calculated from the bias potential oscillates around
+the real value. 
+In well-tempered metadynamics \cite Barducci:2008, the height of the Gaussian 
+is decreased with simulation time according to:
+
+\f[
+ W (k \tau ) = W_0 \exp \left( -\frac{V(\vec{s}({q}(k \tau)),k \tau)}{k_B\Delta T} \right ),
+\f]
+
+where \f$ W_0 \f$ is an initial Gaussian height, \f$ \Delta T \f$ an input parameter 
+with the dimension of a temperature, and \f$ k_B \f$ the Boltzmann constant. 
+With this rescaling of the Gaussian height, the bias potential smoothly converges in the long time limit,
+but it does not fully compensate the underlying free energy:
+
+\f[
+V(\vec{s},t\rightarrow \infty) = -\frac{\Delta T}{T+\Delta T}F(\vec{s}) + C.
+\f]
+
+where \f$ T \f$ is the temperature of the system.
+In the long time limit, the CVs thus sample an ensemble
+at a temperature \f$ T+\Delta T \f$ which is higher than the system temperature \f$ T \f$.
+The parameter \f$ \Delta T \f$ can be chosen to regulate the extent of free-energy exploration:
+ \f$ \Delta T = 0\f$ corresponds to standard molecular dynamics, \f$ \Delta T \rightarrow \infty \f$ to standard
+metadynamics. In well-tempered metadynamics literature and in PLUMED, you will often encounter
+the term "biasfactor" which is the ratio between the temperature of the CVs (\f$ T+\Delta T \f$) 
+and the system temperature (\f$ T \f$):
+
+\f[
+\gamma = \frac{T+\Delta T}{T}.
+\f]
+
+The biasfactor should thus be carefully chosen in order for the relevant free-energy barriers to be crossed
+efficiently in the time scale of the simulation.
+ 
+Additional information can be found in the several review papers on metadynamics 
+\cite gerv-laio09review \cite WCMS:WCMS31 \cite WCMS:WCMS1103.
+
+
+
+\endhidden
+
 If you do not know exactly where you would like your collective variables to go,
 and just know (or suspect) that some variables have large free-energy barriers
 that hinder some conformational rearrangement or some chemical reaction,
@@ -366,15 +432,11 @@ and compute the latter. To this aim, you can use the command line sum_hills tool
 \endverbatim
 (see \ref sum_hills).
 
-\todo
-- show how to monitor the difference between minima as a function of time
-- show metadynamics failure with \f$\Psi\f$.
-
 Finally, notice that \ref METAD potential depends on the previously visited trajectories.
 As such, when you restart a previous simulation, it should read the previously deposited
 HILLS file. This is automatically triggered by the \ref RESTART keyword.
 
-\subsection munster-exercise-1 Exercise 1
+\subsubsection munster-exercise-1 Exercise 1
 
 In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CV the
 backbone dihedral angle phi. In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
@@ -532,7 +594,7 @@ and KBT is the temperature in energy units (in this case KBT=2.5).
 
 This analysis, along with the observation of the diffusive behavior in the CVs space, suggest that the simulation is converged.
 
-\subsection munster-exercise-2 Exercise 2
+\subsubsection munster-exercise-2 Exercise 2
 
 In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CV the
 backbone dihedral angle psi. In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
@@ -587,6 +649,126 @@ Try to repeat the analysis done in the previous exercise (calculate the estimate
 the free-energy difference between basins) to assess the convergence of this metadynamics simulation.
 
 \subsection munster-biasing-re Restraints
+
+\hidden{Biased sampling theory}
+\subsubsection munster-biased-sampling-theory Biased sampling theory 
+
+A system at temperature \f$ T\f$ samples 
+conformations from the canonical ensemble:
+\f[
+  P(q)\propto e^{-\frac{U(q)}{k_BT}}
+\f].
+Here \f$ q \f$ are the microscopic coordinates and \f$ k_B \f$ is the Boltzmann constant.
+Since \f$ q \f$ is a highly dimensional vector, it is often convenient to analyze it
+in terms of a few collective variables (see \ref belfast-1 , \ref belfast-2 , and \ref belfast-3 ).
+The probability distribution for a CV \f$ s\f$ is 
+\f[
+  P(s)\propto \int dq  e^{-\frac{U(q)}{k_BT}} \delta(s-s(q))
+\f]
+This probability can be expressed in energy units as a free energy landscape \f$ F(s) \f$:
+\f[
+  F(s)=-k_B T \log P(s)
+\f].
+
+Now we would like to modify the potential by adding a term that depends on the CV only.
+That is, instead of using \f$ U(q) \f$, we use \f$ U(q)+V(s(q))\f$.
+There are several reasons why one would like to introduce this potential. One is to
+avoid that the system samples some un-desired portion of the conformational space.
+As an example, imagine  that you want to study dissociation of a complex of two molecules.
+If you perform a very long simulation you will be able to see association and dissociation.
+However, the typical time required for association will depend on the size of the simulation
+box. It could be thus convenient to limit the exploration to conformations where the 
+distance between the two molecules is lower than a given threshold. This could be done
+by adding a bias potential on the distance between the two molecules.
+Another example
+is the simulation of a portion of a large molecule taken out from its initial context.
+The fragment alone could be unstable, and one might want to add additional
+potentials to keep the fragment in place. This could be done by adding
+a bias potential on some measure of the distance from the experimental structure
+(e.g. on root-mean-square deviation).
+
+Whatever CV we decide to bias, it is very important to recognize which is the
+effect of this bias and, if necessary, remove it a posteriori.
+The biased distribution  of the CV will be
+\f[
+  P'(s)\propto \int dq  e^{-\frac{U(q)+V(s(q))}{k_BT}} \delta(s-s(q))\propto e^{-\frac{V(s(q))}{k_BT}}P(s)
+\f]
+and the biased free energy landscape
+\f[
+  F'(s)=-k_B T \log P'(s)=F(s)+V(s)+C
+\f]
+Thus, the effect of a bias potential on the free energy is additive. Also notice the presence
+of an undetermined constant \f$ C \f$. This constant is irrelevant for what concerns free-energy differences
+and barriers, but will be important later when we will learn the weighted-histogram method.
+Obviously the last equation can be inverted so as to obtain the original, unbiased free-energy 
+landscape from the biased one just subtracting the bias potential
+\f[
+  F(s)=F'(s)-V(s)+C
+\f]
+
+Additionally, one might be interested in recovering the distribution of an arbitrary
+observable. E.g., one could add a bias on the distance between two molecules and be willing to
+compute the unbiased distribution of some torsional angle. In this case
+there is no straightforward relationship that can be used, and one has to go back to
+the relationship between the microscopic probabilities:
+\f[
+  P(q)\propto P'(q) e^{\frac{V(s(q))}{k_BT}}
+\f]
+The consequence of this expression is that one can obtained any kind of unbiased
+information from a biased simulation just by weighting every sampled conformation
+with a weight
+\f[
+  w\propto e^{\frac{V(s(q))}{k_BT}}
+\f]
+That is, frames that have been explored
+in spite of a high (disfavoring) bias potential \f$ V \f$ will be counted more
+than frames that has been explored with a less disfavoring bias potential.
+
+\endhidden
+
+\hidden{Umbrella sampling theory}
+\subsubsection munster-umbrella-sampling-theory Umbrella sampling theory
+
+Often in interesting cases the free-energy landscape has several local minima. If these
+minima have free-energy differences that are on the order of a few times \f$k_BT\f$
+they might all be relevant. However, if they are separated by a high saddle point
+in the free-energy landscape (i.e. a low probability region) than the transition
+between one and the other will take a lot of time and these minima will correspond
+to metastable states. The transition between one minimum and the other could require
+a time scale which is out of reach for molecular dynamics. In these situations,
+one could take inspiration from catalysis and try to favor in a controlled manner
+the conformations corresponding to the transition state.
+
+Imagine that you know since the beginning the shape of the free-energy landscape
+\f$ F(s) \f$ as a function of one CV \f$ s \f$. If you perform a molecular dynamics
+simulation using a bias potential which is exactly equal to \f$ -F(s) \f$,
+the biased free-energy landscape will be flat and barrierless.
+This potential acts as an "umbrella" that helps you to safely cross
+the transition state in spite of its high free energy.
+
+It is however difficult to have an a priori guess of the free-energy landscape.
+We will see later how adaptive techniques such as metadynamics (\ref belfast-6) can be used
+to this aim. Because of this reason, umbrella sampling is often used
+in a slightly different  manner.
+
+Imagine that you do not know the exact height of the free-energy barrier
+but you have an idea of where the barrier is located. You could try to just
+favor the sampling of the transition state by adding a harmonic restraint 
+on the CV, e.g. in the form
+\f[
+  V(s)=\frac{k}{2} (s-s_0)^2
+\f].
+The sampled distribution will be 
+\f[
+  P'(q)\propto P(q) e^{\frac{-k(s(q)-s_0)^2}{2k_BT}}
+\f]
+For large values of \f$ k \f$, only points close to \f$ s_0 \f$ will be explored. It is thus clear
+how one can force the system to explore only a predefined region of the space adding such a restraint.
+By combining simulations performed with different values of \f$ s_0 \f$, one could
+obtain a continuous set of simulations going from one minimum to the other crossing the transition state.
+In the next section we will see how to combine the information from these simulations.
+
+\endhidden
 
 If you want to just bring a collective variables to a specific value, you
 can use a simple restraint.
@@ -655,7 +837,7 @@ several simultaneous simulations. This can be done with gromacs using the
 multi replica framework. That is, if you have 4 tpr files named topol0.tpr,
 topol1.tpr, topol2.tpr, topol3.tpr you can run 4 simultaneous simulations.
 \verbatim
-> mpirun -np 4 mdrun_mpi -s topol.tpr -plumed plumed.dat
+> mpirun -np 4 mdrun_mpi -s topol.tpr -plumed plumed.dat -multi 4
 \endverbatim
 Each of the 4 replicas will open a different topol file, and GROMACS will
 take care of adding the replica number before the .tpr suffix.
@@ -669,6 +851,67 @@ named `plumed.dat.0`, `plumed.dat.1` etc. Finally, notice that
 the way PLUMED adds suffixes will change in version 2.2, and names will be `plumed.0.dat` etc.
 
 \subsection munster-multi-wham Using multiple restraints with replica exchange
+
+\hidden{Weighted histogram analysis method theory}
+\subsubsection munster-wham-theory Weighted histogram analysis method theory 
+
+Let's now consider multiple simulations performed with restraints located in different positions.
+In particular, we will consider the \f$i\f$-th bias potential as \f$V_i\f$.
+The probability to observe a given value of the collective variable \f$s\f$ is:
+\f[
+P_i({s})=\frac{P({s})e^{-\frac{V_i({s})}{k_BT}}}{\int ds' P({s}') e^{-\frac{V_i({s}')}{k_BT}}}=
+\frac{P({s})e^{-\frac{V_i({s})}{k_BT}}}{Z_i}
+\f]
+where
+\f[
+Z_i=\sum_{q}e^{-\left(U(q)+V_i(q)\right)}
+\f]
+The likelyhood for the observation of a sequence of snapshots \f$q_i(t)\f$ (where \f$i\f$ is
+the index of the trajectory and \f$t\f$ is time) is just the product of the probability
+of each of the snapshots. We use here the minus-logarithm of the likelihood (so that
+the product is converted to a sum) that can be written as
+\f[
+\mathcal{L}=-\sum_i \int dt \log P_i({s}_i(t))=
+\sum_i \int dt
+\left(
+-\log P({s}_i(t))
++\frac{V_i({s}_i(t))}{k_BT}
++\log Z_i
+\right)
+\f]
+One can then maximize the likelyhood by setting \f$\frac{\delta \mathcal{L}}{\delta P({\bf s})}=0\f$.
+After some boring algebra the following expression can be obtained
+\f[
+0=\sum_{i}\int dt\left(-\frac{\delta_{{\bf s}_{i}(t),{\bf s}}}{P({\bf s})}+\frac{e^{-\frac{V_{i}({\bf s})}{k_{B}T}}}{Z_{i}}\right)
+\f]
+In this equation we aim at finding \f$P(s)\f$. However, also the list of normalization factors \f$Z_i\f$ is unknown, and they should 
+be found selfconsistently. Thus one can find the solution as
+\f[
+P({\bf s})\propto \frac{N({\bf s})}{\sum_i\int dt\frac{e^{-\frac{V_{i}({\bf s})}{k_{B}T}}}{Z_{i}} }
+\f]
+where \f$Z\f$ is selfconsistently determined as 
+\f[
+Z_i\propto\int ds' P({\bf s}') e^{-\frac{V_i({\bf s}')}{k_BT}}
+\f]
+
+These are the WHAM equations that are traditionally solved to derive the unbiased probability \f$P(s)\f$ by the combination
+of multiple restrained simulations. To make a slightly more general implementation, one can compute
+the weights that should be assigned to each snapshot, that turn out to be:
+\f[
+w_i(t)\propto \frac{1}{\sum_j\int dt\frac{e^{-\beta V_{j}({\bf s}_i(t))}}{Z_{j}} }
+\f]
+The normalization factors can in turn be found from the weights as
+\f[
+Z_i\propto\frac{\sum_j \int dt e^{-\beta V_i({\bf s}_j(t))} w_j(t)}{
+\sum_j \int dt w_j(t)}
+\f]
+
+This allows to straighforwardly compute averages related
+to other, non-biased degrees of freedom, and it is thus a bit more flexible.
+It is sufficient to precompute this factors \f$w\f$ and use them to weight
+every single frame in the trajectory.
+
+\endhidden
 
 \todo
 - Explain multiple restraints
