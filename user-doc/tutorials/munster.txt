@@ -1004,6 +1004,56 @@ This script will produce several files. Let's visualize "phi_fes.dat", which con
 \anchor munster-usrem-phi-fes
 \image html munster-usrem-phi-fes.png "Free energy as a function of phi from multiple restraint (US-REM) and metadynamics (MetaD) simulations." 
 
+\subsubsection munster-exercise-4 Exercise4 
+
+In the previous exercise, we use multiple restraint simulations to calculate the free energy as a function of the
+dihedral phi. The resulting free energy was in excellent agreement with our previous metadynamics simulation.
+In this exercise we will repeat the same procedure for the dihedral psi.
+At the end of the steps defined above, we can plot the free energy "psi_fes.dat" and compare it with the reference
+profile calculated from a metadynamics simulations using both phi and psi as CVs.
+
+\anchor munster-usrem-psi-fes
+\image html munster-usrem-psi-fes.png "Free energy as a function of psi from multiple restraint (US-REM) and metadynamics (MetaD) simulations."
+
+We can easily spot from the plot above that something went wrong in this multiple restraint simulations, despite we used the very same approach we adopted for the phi dihedral. The problem here is that psi is a "bad" collective variable, and the system is not able to equilibrate the missing slow degree of freedom phi in the short time scale of the umbrella simulation (1 ns). In the metadynamics exercise in which we biased only psi, we detect problems by observing the behavior of the CV as a function of simulation time. How can we detect problems in multiple restraint simulations? This is slightly more complicated, but running this kind of simulation in a replica-exchange scheme offers a convenient way to detect problems.
+
+The first thing we need to do is to demux the replica-exchange trajectories and reconstruct the continous trajectories of the replicas
+across the different restraint potentials. In order to do so, we can use the following script:
+
+\verbatim
+demux.pl md0.log
+trjcat_mpi -f traj*.xtc  -demux replica_index.xvg
+\endverbatim
+ 
+This commands will generate 32 continous trajectories, named XX_trajout.xtc. We will use the driver to calculate the value of the CVs
+phi and psi on these trajectories.
+
+\verbatim
+nrep=32
+
+for i in `seq 0 $(( $nrep - 1 ))`
+do
+
+cat >plumed.dat << EOF
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+
+# monitor the two variables
+PRINT STRIDE=100 ARG=phi,psi FILE=COLVARDEMUX.$i
+EOF
+
+plumed driver --mf_xtc ${i}_trajout.xtc --trajectory-stride=10 --plumed plumed.dat
+
+done
+\endverbatim
+
+The COLVARDEMUX.XX files will contain the value of the CVs on the demuxed trajectory. If we visualize these files we will notice that
+replicas sample the CVs space differently. In order for each umbrella to equilibrate the slow degrees of freedom phi, the continuous replicas
+must be ergodic and thus sample the same distribution in phi and psi.  
+
+\anchor munster-usrem-psi-demux
+\image html munster-usrem-psi-demux.png "(phi,psi) scatter plot from the demuxed trajectories of the multiple restraints simulation in psi."
+
 
 \todo
 - Explain multiple restraints
