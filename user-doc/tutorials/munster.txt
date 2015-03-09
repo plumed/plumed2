@@ -88,7 +88,7 @@ namely:
 
 Gromacs md can be run using on the command line:
 \verbatim
-> mdrun -s topolA.tpr -nsteps 10000
+> mdrun_mpi -s topolA.tpr -nsteps 10000
 \endverbatim
 The nsteps flags can be used to change the number of timesteps and topolA.tpr is the name of the tpr file.
 While running, gromacs will produce an md.log file, with log information, and a traj.xtc file, with a binary trajectory.
@@ -99,7 +99,7 @@ The trajectory can be visualized with VMD using a command such as
 
 To run a simulation with gromacs+plumed you just need to add a -plumed flag
 \verbatim
-> mdrun -s topolA.tpr -nsteps 10000 -plumed plumed.dat
+> mdrun_mpi -s topolA.tpr -nsteps 10000 -plumed plumed.dat
 \endverbatim
 Here plumed.dat is the name of the plumed input file. Notice that PLUMED will write
 information in the md.log that could be useful to verify if the simulation has been set up properly.
