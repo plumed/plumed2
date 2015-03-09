@@ -501,7 +501,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -s ../TOPO/topol -plumed plumed.dat
+mdrun_mpi -s ../TOPO/topolA -plumed plumed.dat
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -643,7 +643,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -s ../TOPO/topol -plumed plumed.dat
+mdrun_mpi -s ../TOPO/topolA -plumed plumed.dat
 \endverbatim
 
 As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
@@ -861,6 +861,12 @@ to put a single `plumed.dat` file, but one has also the flexibility of using sep
 named `plumed.dat.0`, `plumed.dat.1` etc. Finally, notice that 
 the way PLUMED adds suffixes will change in version 2.2, and names will be `plumed.0.dat` etc.
 
+Also notice that providing the flag `-replex` one can instruct gromacs to perform a replica exchange
+simulation. Namely, from time to time gromacs will try to swap coordinates among neighboring
+replicas and accept of reject the exchange with a Monte Carlo procedure which also
+takes into account the bias potentials acting on the replicas. That is, PLUMED allows
+to easily implement many forms of Hamiltonian replica exchange.
+
 \subsection munster-multi-wham Using multiple restraints with replica exchange
 
 \hidden{Weighted histogram analysis method theory}
@@ -936,7 +942,7 @@ We will instruct gromacs to attempt an exchange between different simulations ev
 nrep=32
 dx=`echo "6.0 / ( $nrep - 1 )" | bc -l`
 
-for i in `seq 0 $(( $nrep - 1 ))`
+for((i=0;i<nrep;i++))
 do
 # center of the restraint
 AT=`echo "$i * $dx - 3.0" | bc -l`
@@ -953,10 +959,17 @@ restraint-phi: RESTRAINT ARG=phi KAPPA=200.0 AT=$AT
 # monitor the two variables and the bias potential
 PRINT STRIDE=100 ARG=phi,psi,restraint-phi.bias FILE=COLVAR
 EOF
+
+# we initialize some replicas in A and some in B:
+if((i%2==0); then
+  cp ../TOPO/topolA.tpr topol$i.tpr
+else
+  cp ../TOPO/topolB.tpr topol$i.tpr
+fi
 done
 
 # run REM
-mpirun -np $nrep mdrun_mpi -plumed plumed.dat -s ../TOPO/topol -multi $nrep -replex 1000
+mpirun -np $nrep mdrun_mpi -plumed plumed.dat -s topol -multi $nrep -replex 1000
 \endverbatim
 
 To be able to combine data from all the simulations, it is necessary to have an overlap between 
