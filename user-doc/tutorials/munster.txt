@@ -23,7 +23,8 @@ However, these examples could be easily converted to other MD software.
 
 All the gromacs input files and analsys scripts are provided in this tarball.
 \todo Temporarily we can use this gdrive folder: http://drive.google.com/folderview?id=0Bz_0by6-gq6BZzBiWDdHV3JqRHc&usp=sharing
-      Before the actual tutorial we will prepare a tar.gz with all the files.
+      Before the actual tutorial we will prepare a tar.gz with all the files. It will contain all the files that
+      are  presently in the `tarball` directory.
 
 Users are expected to write PLUMED input files based on the instructions below.
 
@@ -1078,9 +1079,6 @@ must be ergodic and thus sample the same distribution in phi and psi.
 \anchor munster-usrem-psi-demux
 \image html munster-usrem-psi-demux.png "(phi,psi) scatter plot from the demuxed trajectories of the multiple restraints simulation in psi."
 
-
-\todo
-- Explain multiple restraints
 
 */
 
