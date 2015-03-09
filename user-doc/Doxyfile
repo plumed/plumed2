@@ -219,8 +219,8 @@ TAB_SIZE               = 8
 # newlines.
 
 ALIASES                = \
-    hidden="\htmlonly <details> <summary> <b> To learn more </b> </summary> <div class=\"cmd\">\endhtmlonly" \
-    hidden{1}="\htmlonly <details> <summary> <b> To learn more: \1 </b> </summary> <div class=\"cmd\"> \endhtmlonly" \
+    hidden="\htmlonly <details> <summary> <b> To learn more </b> </summary> <div class=\"hidden\"> \endhtmlonly" \
+    hidden{1}="\htmlonly <details> <summary> <b> To learn more: \1 </b> </summary> <div class=\"hidden\"> \endhtmlonly" \
     endhidden="\htmlonly </div> </details> \endhtmlonly"
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).
@@ -1061,7 +1061,7 @@ HTML_STYLESHEET        =
 # see the documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = plumed.css
+HTML_EXTRA_STYLESHEET  =
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
