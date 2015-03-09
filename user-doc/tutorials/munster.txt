@@ -103,6 +103,10 @@ To run a simulation with gromacs+plumed you just need to add a -plumed flag
 Here plumed.dat is the name of the plumed input file. Notice that PLUMED will write
 information in the md.log that could be useful to verify if the simulation has been set up properly.
 
+\subsubsection munster-exercise-1 Exercise 1
+
+In this exercise, we will run a plain molecular dynamics simulation and monitor the \f$\Phi\f$ and \f$\Psi\f$ dihedral angles
+on the fly.
 Using the following PLUMED input file you can monitor \f$\Phi\f$ and \f$\Psi\f$ angles during the MD simulation
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
@@ -110,6 +114,10 @@ psi: TORSION ATOMS=7,9,15,17
 PRINT ARG=phi,psi STRIDE=100 FILE=colvar
 \endverbatim
 (see \ref TORSION and \ref PRINT)
+
+Notice that PLUMED is going to compute the collective variables only when necessary, that is, in this case, every 100 steps.
+This is not very relevant for simple variables such as torsional angles, but provides a significant speedup
+when using expensive collective variables.
 
 PLUMED will write a textual file named `colvar` containing three columns: physical time, \f$\Phi\f$ and \f$\Psi\f$.
 Results can be plotted using gnuplot:
@@ -142,6 +150,7 @@ resulting files. GROMACS takes automatic backup of the output files, and PLUMED 
 you can add the keyword \ref RESTART at the beginning of the PLUMED input file. This will tell PLUMED to *append* files
 instead of taking a backup copy.
 
+\hidden{Analyze using the driver}
 \subsection munster-monitor-dr Analyze using the driver
 
 Imagine you already made a simulation, with or without PLUMED. You might want to compute the collective
@@ -195,6 +204,8 @@ PRINT ARG=phi,psi,gyr FILE=analyze
 (see \ref TORSION, \ref GYRATION, \ref GROUP, and \ref PRINT)
 
 Now try to compute the time series of the gyration radius.
+
+\endhidden
 
 \hidden{Periodic boundaries and explicit water}
 \subsection munster-monitor-pbc Periodic boundaries and explicit water
@@ -436,7 +447,7 @@ Finally, notice that \ref METAD potential depends on the previously visited traj
 As such, when you restart a previous simulation, it should read the previously deposited
 HILLS file. This is automatically triggered by the \ref RESTART keyword.
 
-\subsubsection munster-exercise-1 Exercise 1
+\subsubsection munster-exercise-2 Exercise 2
 
 In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CV the
 backbone dihedral angle phi. In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
@@ -594,7 +605,7 @@ and KBT is the temperature in energy units (in this case KBT=2.5).
 
 This analysis, along with the observation of the diffusive behavior in the CVs space, suggest that the simulation is converged.
 
-\subsubsection munster-exercise-2 Exercise 2
+\subsubsection munster-exercise-3 Exercise 3
 
 In this exercise, we will run a well-tempered metadynamics simulation on alanine dipeptide in vacuum, using as CV the
 backbone dihedral angle psi. In order to run this simulation we need to prepare the PLUMED input file (plumed.dat) as follows.
@@ -913,7 +924,7 @@ every single frame in the trajectory.
 
 \endhidden
 
-\subsubsection munster-exercise-3 Exercise 3
+\subsubsection munster-exercise-4 Exercise 4
 
 In this exercise we will run multiple restraint simulations and learn
 how to reweight and combine data with WHAM to obtain free-energy profiles.
@@ -1004,7 +1015,7 @@ This script will produce several files. Let's visualize "phi_fes.dat", which con
 \anchor munster-usrem-phi-fes
 \image html munster-usrem-phi-fes.png "Free energy as a function of phi from multiple restraint (US-REM) and metadynamics (MetaD) simulations." 
 
-\subsubsection munster-exercise-4 Exercise4 
+\subsubsection munster-exercise-5 Exercise 5
 
 In the previous exercise, we use multiple restraint simulations to calculate the free energy as a function of the
 dihedral phi. The resulting free energy was in excellent agreement with our previous metadynamics simulation.
