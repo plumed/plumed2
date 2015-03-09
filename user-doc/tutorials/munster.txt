@@ -913,10 +913,100 @@ every single frame in the trajectory.
 
 \endhidden
 
+\subsubsection munster-exercise-3 Exercise 3
+
+In this exercise we will run multiple restraint simulations and learn
+how to reweight and combine data with WHAM to obtain free-energy profiles.
+We start with running in a replica-exchange scheme 32 
+simulations with a restraint on phi in different positions, ranging from -3 to 3.
+We will instruct gromacs to attempt an exchange between different simulations every 1000 steps.
+
+\verbatim
+nrep=32
+dx=`echo "6.0 / ( $nrep - 1 )" | bc -l`
+
+for i in `seq 0 $(( $nrep - 1 ))`
+do
+# center of the restraint
+AT=`echo "$i * $dx - 3.0" | bc -l`
+
+cat >plumed.dat.$i << EOF
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+#
+# Impose an umbrella potential on phi
+# with a spring constant of 200 kjoule/mol
+# and centered in phi=AT
+#
+restraint-phi: RESTRAINT ARG=phi KAPPA=200.0 AT=$AT
+# monitor the two variables and the bias potential
+PRINT STRIDE=100 ARG=phi,psi,restraint-phi.bias FILE=COLVAR
+EOF
+done
+
+# run REM
+mpirun -np $nrep mdrun_mpi -plumed plumed.dat -s ../TOPO/topol -multi $nrep -replex 1000
+\endverbatim
+
+To be able to combine data from all the simulations, it is necessary to have an overlap between 
+statistics collected in two adjacent umbrellas.  
+Have a look at the plot of (phi,psi) for the different simulations to understand what is happening.
+
+\anchor munster-usrem-phi-all
+\image html munster-usrem-phi-all.png "(phi,psi) scatter plot from the multiple restraints simulation."
+
+An often misunderstood fact about WHAM is that data of the different trajectories
+can be mixed and it is not necessary to keep track of which restraint was used to produce
+every single frame. Let's get the concatenated trajectory
+
+\verbatim
+trjcat_mpi -cat -f traj*.xtc -o alltraj.xtc
+\endverbatim
+
+Now we should compute the value of each of the bias potentials on the entire (concatenated) trajectory.
+
+\verbatim
+nrep=32
+dx=`echo "6.0 / ( $nrep - 1 )" | bc -l`
+
+for i in `seq 0 $(( $nrep - 1 ))`
+do
+# center of the restraint
+AT=`echo "$i * $dx - 3.0" | bc -l`
+
+cat >plumed.dat << EOF
+phi: TORSION ATOMS=5,7,9,15
+psi: TORSION ATOMS=7,9,15,17
+restraint-phi: RESTRAINT ARG=phi KAPPA=200.0 AT=$AT
+
+# monitor the two variables and the bias potential
+PRINT STRIDE=100 ARG=phi,psi,restraint-phi.bias FILE=ALLCOLVAR.$i
+EOF
+
+plumed driver --mf_xtc alltraj.xtc --trajectory-stride=10 --plumed plumed.dat
+
+done
+\endverbatim
+
+It is very important that this script is consistent with the one used to generate the multiple simulations above.
+Now, single files named ALLCOLVAR.XX will contain on the fourth column the value of the bias
+centered in a given position, computed on the entire concatenated trajectory.
+
+Next step is to compute the weights self-consistently solving the WHAM equations, using
+the python script "wham.py" contained in the SCRIPTS directory. To use this code:
+
+\verbatim
+../SCRIPTS/wham.sh ALLCOLVAR.*
+\endverbatim 
+
+This script will produce several files. Let's visualize "phi_fes.dat", which contains the free energy as a function of phi, and compare this with the result previously obtained with metadynamics.
+
+\anchor munster-usrem-phi-fes
+\image html munster-usrem-phi-fes.png "Free energy as a function of phi from multiple restraint (US-REM) and metadynamics (MetaD) simulations." 
+
+
 \todo
 - Explain multiple restraints
-- Prepare topologies initialized with different values of \f$\Psi\f$
-- Script to perform WHAM
 
 */
 
