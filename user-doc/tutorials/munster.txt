@@ -25,10 +25,8 @@ more realistic but slower, and a setup in gas phase, which is much faster.
 Simulations are made using GROMACS 4.6.7, which is here assumed to be already patched with PLUMED and properly installed.
 However, these examples could be easily converted to other MD software.
 
-All the gromacs input files and analsys scripts are provided in this tarball.
-\todo Temporarily we can use this gdrive folder: http://drive.google.com/folderview?id=0Bz_0by6-gq6BZzBiWDdHV3JqRHc&usp=sharing
-      Before the actual tutorial we will prepare a tar.gz with all the files that presently are in
-      this folder http://drive.google.com/open?id=0Bz_0by6-gq6Ba0h5eGtOY1pVMHc&authuser=0
+All the gromacs input files and analsys scripts are provided in this
+<a href="tutorial-resources/munster.tar.gz" download="munster.tar.gz"> tarball </a>.
 
 Users are expected to write PLUMED input files based on the instructions below.
 
