@@ -1,6 +1,10 @@
 /**
 \page munster Munster tutorial
 
+\authors Max Bonomi and Giovanni Bussi, stealing a lot of material from other tutorials.
+         Richard Cunha is acknowledged for beta-testing this tutorial.
+\date March 11, 2015
+
 This document describes the PLUMED tutorial held in Munster, March 2015.
 The aim of this tutorial is to learn how to use PLUMED to analyze molecular
 dynamics simulations on the fly, to analyze existing trajectories, and to
@@ -318,7 +322,7 @@ one or more collective variables. However, here the STRIDE is usually omitted (t
 that forces are applied at every timestep. In PLUMED 2.2 you will be able to change the STRIDE also for bias potentials,
 but that's another story.
 In the following we will see how to apply harmonic restraints
-and haw to build an adaptive bias potential with metadynamics. The complete documentation for
+and how to build an adaptive bias potential with metadynamics. The complete documentation for
 all the biasing methods available in PLUMED can be found at the \ref Bias page.
 
 \subsection munster-biasing-me Metadynamics
@@ -411,7 +415,7 @@ same size as the number of collective variables).
 
 There are two additional keywords that are optional, namely GRID_MIN and GRID_MAX. These
 keywords sets the range of the collective variables and tell PLUMED to keep the bias
-potential stored on a grid. This affects speed but, in principle, not the accuraty of the calculation.
+potential stored on a grid. This affects speed but, in principle, not the accuracy of the calculation.
 You can try to remove those keywords and see the difference.
 
 If you run a simulation with this input, PLUMED will produce an additional
@@ -502,7 +506,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -s ../TOPO/topolA -plumed plumed.dat
+mdrun_mpi -s ../TOPO/topolA.tpr -plumed plumed.dat
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -668,7 +672,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -s ../TOPO/topolA -plumed plumed.dat
+mdrun_mpi -s ../TOPO/topolA.tpr -plumed plumed.dat
 \endverbatim
 
 As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
@@ -986,7 +990,7 @@ PRINT STRIDE=100 ARG=phi,psi,restraint-phi.bias FILE=COLVAR
 EOF
 
 # we initialize some replicas in A and some in B:
-if((i%2==0); then
+if((i%2==0)); then
   cp ../TOPO/topolA.tpr topol$i.tpr
 else
   cp ../TOPO/topolB.tpr topol$i.tpr
@@ -994,7 +998,7 @@ fi
 done
 
 # run REM
-mpirun -np $nrep mdrun_mpi -plumed plumed.dat -s topol -multi $nrep -replex 1000
+mpirun -np $nrep mdrun_mpi -plumed plumed.dat -s topol.tpr -multi $nrep -replex 1000
 \endverbatim
 
 To be able to combine data from all the simulations, it is necessary to have an overlap between 
