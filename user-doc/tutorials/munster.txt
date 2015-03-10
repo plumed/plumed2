@@ -504,7 +504,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -s ../TOPO/topolA.tpr -plumed plumed.dat
+mdrun_mpi -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
 \endverbatim
 
 During the metadynamics simulation, PLUMED will create two files, named COLVAR and HILLS.
@@ -670,7 +670,7 @@ Once the PLUMED input file is prepared, one has to run Gromacs with the option t
 read the input file:
 
 \verbatim
-mdrun_mpi -s ../TOPO/topolA.tpr -plumed plumed.dat
+mdrun_mpi -s ../TOPO/topolA.tpr -plumed plumed.dat -nsteps 5000000
 \endverbatim
 
 As we did in the previous exercise, we can use COLVAR to visualize the behavior of the CV during the simulation.
@@ -875,7 +875,7 @@ several simultaneous simulations. This can be done with gromacs using the
 multi replica framework. That is, if you have 4 tpr files named topol0.tpr,
 topol1.tpr, topol2.tpr, topol3.tpr you can run 4 simultaneous simulations.
 \verbatim
-> mpirun -np 4 mdrun_mpi -s topol.tpr -plumed plumed.dat -multi 4
+> mpirun -np 4 mdrun_mpi -s topol.tpr -plumed plumed.dat -multi 4 -nsteps 500000
 \endverbatim
 Each of the 4 replicas will open a different topol file, and GROMACS will
 take care of adding the replica number before the .tpr suffix.
@@ -996,7 +996,7 @@ fi
 done
 
 # run REM
-mpirun -np $nrep mdrun_mpi -plumed plumed.dat -s topol.tpr -multi $nrep -replex 1000
+mpirun -np $nrep mdrun_mpi -plumed plumed.dat -s topol.tpr -multi $nrep -replex 1000 -nsteps 500000
 \endverbatim
 
 To be able to combine data from all the simulations, it is necessary to have an overlap between 
