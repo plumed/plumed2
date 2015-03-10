@@ -256,7 +256,7 @@ the atomic positions. This is a very good way to understand what \ref WHOLEMOLEC
 is actually doing. Try the following input
 
 \verbatim
-MOLINFO STRUCTURE=reference.pdb
+MOLINFO STRUCTURE=../TOPO/reference.pdb
 DUMPATOMS FILE=test1.gro ATOMS=1-22
 WHOLEMOLECULES ENTITY0=1-22
 DUMPATOMS FILE=test2.gro ATOMS=1-22
