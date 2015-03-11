@@ -108,7 +108,7 @@ IFile& IFile::open(const std::string&path){
   fp=NULL;
   gzfp=NULL;
   bool do_exist=FileExist(path);
-  plumed_massert(do_exist,"file " + path + "cannot be found");
+  plumed_massert(do_exist,"file " + path + " cannot be found");
   fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
   if(Tools::extension(this->path)=="gz"){
 #ifdef __PLUMED_HAS_ZLIB
