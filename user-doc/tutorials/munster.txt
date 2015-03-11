@@ -106,7 +106,7 @@ To run a simulation with gromacs+plumed you just need to add a -plumed flag
 Here plumed.dat is the name of the plumed input file. Notice that PLUMED will write
 information in the md.log that could be useful to verify if the simulation has been set up properly.
 
-\subsubsection munster-exercise-1 Exercise 1
+\subsubsection munster-exercise-0 Exercise 0
 
 In this exercise, we will run a plain molecular dynamics simulation and monitor the \f$\Phi\f$ and \f$\Psi\f$ dihedral angles
 on the fly.
@@ -398,7 +398,10 @@ you can bias them using metadynamics. In this way, a time dependent,
 adaptive potential will be constructed that tends to disfavor visited configurations
 in the collective-variable space. The bias is usually built as a sum of
 Gaussian deposited in the already visited states.
-A sample input follows
+
+\subsubsection munster-exercise-1 Exercise 1
+
+Now run a metadynamics simulation with the following input
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
 psi: TORSION ATOMS=7,9,15,17
@@ -416,13 +419,6 @@ keywords sets the range of the collective variables and tell PLUMED to keep the 
 potential stored on a grid. This affects speed but, in principle, not the accuracy of the calculation.
 You can try to remove those keywords and see the difference.
 
-If you run a simulation with this input, PLUMED will produce an additional
-`HILLS` file, containing as list of the deposited Gaussians. Notice that
-the apparent height written in the `HILLS` file is not the same height that you
-specified with the `HEIGHT` keyword, but is scaled by a factor \f$\gamma/(\gamma-1)\f$,
-where \f$\gamma\f$ is the biasfactor. This is a technical issue and is related to the
-fact that well-tempered metadynamics is only partially compensating the free-energy landscape.
-
 Now, run a metadynamics simulations and check the explored collective variable space.
 Results from a 200ps (100000 steps) trajectory in
 vacuum are shown in Figure \ref munster-ala-traj-metad.
@@ -430,21 +426,11 @@ vacuum are shown in Figure \ref munster-ala-traj-metad.
 \anchor munster-ala-traj-metad
 \image html munster-ala-traj-metad.png "(phi,psi) scatter plot obtained with metadynamics and two different values of the biasfactor. Simulation performed in vacuum."
 
-
 As you can see, exploration is greatly enhanced.
 Notice that the explored ensemble  can be tuned using the biasfactor \f$\gamma\f$.
 Larger \f$\gamma\f$ implies that the system will explore states with higher free energy.
 As a rule of thumb, if you expect a barrier of the order of \f$\Delta G^*\f$,
 a reasonable choice for the biasfactor is \f$\gamma\approx\frac{\Delta G}{2k_BT}\f$.
-
-One can then exploit the
-fact that the deposited bias potential has a relationship with the underlying free-energy landscape
-and compute the latter. To this aim, you can use the command line sum_hills tool:
-
-\verbatim
-> plumed sum_hills --hills HILLS
-\endverbatim
-(see \ref sum_hills).
 
 Finally, notice that \ref METAD potential depends on the previously visited trajectories.
 As such, when you restart a previous simulation, it should read the previously deposited
@@ -617,7 +603,7 @@ do
  # and basin B
  B=`awk 'BEGIN{tot=0.0}{if($1!="#!" && $1>min && $1<max)tot+=exp(-$2/kbt)}END{print -kbt*log(tot)}' min=${minB} max=${maxB} kbt=${kbt} fes_${i}.dat`
  # calculate difference
- Delta=`echo "${A} - ${B}" | bc -l`
+ Delta=$(echo "${A} - ${B}" | bc -l)
  # print it
  echo $i $Delta
 done
@@ -891,7 +877,8 @@ the way PLUMED adds suffixes will change in version 2.2, and names will be `plum
 Also notice that providing the flag `-replex` one can instruct gromacs to perform a replica exchange
 simulation. Namely, from time to time gromacs will try to swap coordinates among neighboring
 replicas and accept of reject the exchange with a Monte Carlo procedure which also
-takes into account the bias potentials acting on the replicas. That is, PLUMED allows
+takes into account the bias potentials acting on the replicas, even if different bias potentials
+are used in different replicas. That is, PLUMED allows
 to easily implement many forms of Hamiltonian replica exchange.
 
 \subsection munster-multi-wham Using multiple restraints with replica exchange
