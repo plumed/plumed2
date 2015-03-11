@@ -1,18 +1,18 @@
 /**
 \page belfast-9 Belfast tutorial: NMR constraints
 
-\section Aims
+\section belfast-9-aim Aims
 This tutorial is about the use of experimental data, in particular NMR data, either as collective variables or as replica-averaged
 restraints in MD simulations. While the first is a just a simple extension of what we have been already doing in previous tutorials,
 the latter is an approach that can be used to increase the quality of a force-field in describing the properties of a specific system.
 
-\section belfast-9-lo Learning Outcomes
+\subsection belfast-9-lo Learning Outcomes
 
 Once this tutorial is completed students will:
 - know why and how to use experimental data to define a collective variable 
 - know why and how to use experimental data as replica-averaged restraints in MD simulations
 
-\section Resources
+\section belfast-9-res Resources
 
 The <a href="tutorial-resources/belfast-9a.tar.gz" download="belfast-9a.tar.gz"> tarball </a> for this project contains the following:
 - system: the files use to generate the topol?.tpr files of the first and second example
@@ -20,7 +20,7 @@ The <a href="tutorial-resources/belfast-9a.tar.gz" download="belfast-9a.tar.gz">
 - second: an example on the use of chemical shifts as replica-averaged restraints
 - third: an example on the use of RDCs (calculated with the theta-method) as replica-averaged restrains 
 
-\section Instructions
+\section belfast-9-ins Instructions
 
 \subsection expdata Experimental data as Collective Variables
 

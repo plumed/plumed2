@@ -1,14 +1,14 @@
 /**
 \page belfast-8 Belfast tutorial: Replica exchange II and Multiple walkers
 
-\section Aims
+\section belfast-8-aim Aims
 
 The aim of this tutorial is to introduce the users to the use of Bias-Exchange Metadynamics. We will go through the writing of
 the input files for BEMETA for a simple case of three peptide and we will use METAGUI to to analyse them. We will compare
 the results of WT-BEMETA and STANDARD-BEMETA with four independent runs on the four Collective Variables. Finally we will
 use a simplified version of BEMETA that is Multiple Walkers Metadynamics.
 
-\section belfast-8-lo Learning Outcomes
+\subsection belfast-8-lo Learning Outcomes
 
 Once this tutorial is completed students will:
 
@@ -16,14 +16,14 @@ Once this tutorial is completed students will:
 - Know how to analyse the results of BEMETA with the help of METAGUI
 - Know how to run a Multiple Walker simulation 
 
-\section Resources
+\section belfast-8-res Resources
 
 The <a href="tutorial-resources/belfast-8.tgz" download="belfast-8.tgz"> tarball </a> for this project contains the following files:
 
 - system folder: a starting structure for Val-Ile-Leu system
 - WTBX: a run of Well-Tempered Bias-Exchange Metadynamics ready for the analysis
 
-\section Instructions
+\section belfast-8-ins Instructions
 
 \subsection bemeta Bias-Exchange Metadynamics
 
