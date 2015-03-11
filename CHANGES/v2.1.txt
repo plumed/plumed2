@@ -168,12 +168,13 @@ For users:
   the fixed is inside PLUMED, thus it does not necessarily requires repatching.
 - Fixed a severe bug on \ref DRMSD - cutoff values were ignored by PLUMED.
   Notice that this bug was introduced in 2.1.0, so that it should not affect the 2.0.x series.
+- Sander patch now works with multiple replica (no replica exchange yet).
 - Patching system now checks for the availabity of shared/static/runtime version of plumed before
   patching
 - Configure now check better if compiler flag are accepted by the compiler. This makes
   configure on bluegene more robust.
+- Sourceme.sh now sets proper library path in linux also.
 - GMX5 patch was not working for bias-exchange like cases
-- Sander patch now works with multiple replica (no replica exchange yet).
 
 
 */
