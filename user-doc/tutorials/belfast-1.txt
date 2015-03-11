@@ -307,4 +307,4 @@ link: @subpage belfast-1
 
 description: This tutorial explains how to use plumed to analyze CVs
 
-additional-files: belfast-1.tar.gz
+additional-files: belfast-1

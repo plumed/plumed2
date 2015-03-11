@@ -146,5 +146,5 @@ link: @subpage belfast-9
 
 description: NMR constraints
 
-additional-files: belfast-9a.tar.gz
+additional-files: belfast-9a
 

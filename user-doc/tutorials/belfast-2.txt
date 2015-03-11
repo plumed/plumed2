@@ -453,4 +453,4 @@ link: @subpage belfast-2
 
 description: How to use path CVs
 
-additional-files: belfast-2.tar.gz
+additional-files: belfast-2

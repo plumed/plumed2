@@ -466,6 +466,6 @@ link: @subpage belfast-6
 
 description: How to run a metadynamics simulation
 
-additional-files: belfast-6.tar.gz
+additional-files: belfast-6
 
 

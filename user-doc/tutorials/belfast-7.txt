@@ -517,5 +517,5 @@ link: @subpage belfast-7
 
 description: Parallel tempering and Metadynamics, Well-Tempered Ensemble
 
-additional-files: belfast-7.tar.gz
+additional-files: belfast-7
 

@@ -1099,4 +1099,4 @@ link: @subpage munster
 
 description: A short 3 hours tutorial that introduces analysis, well-tempered metadynamics, and multiple-restraints umbrella sampling.
 
-additional-files: munster.tar.gz munster-1
+additional-files: munster

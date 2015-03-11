@@ -156,6 +156,6 @@ link: @subpage belfast-3
 
 description: Dimensionality reduction and sketch maps
 
-additional-files: belfast-3.tar.gz
+additional-files: belfast-3
 
 
