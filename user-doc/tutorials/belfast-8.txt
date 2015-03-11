@@ -25,7 +25,7 @@ The <a href="tutorial-resources/belfast-8.tar.gz" download="belfast-8.tar.gz"> t
 
 \section belfast-8-ins Instructions
 
-\subsection bemeta Bias-Exchange Metadynamics
+\subsection belfast-8-bemeta Bias-Exchange Metadynamics
 
 In all variants of metadynamics the free-energy landscape of the system is reconstructed by gradually
 filling the local minima with gaussian hills. The dimensionality of the landscape is equal to the
@@ -111,7 +111,7 @@ between each pair (as printed in the GROMACS *.log files).
 
 The same simulation can be run using WELLTEMPERED metadynamics.
 
-\subsection bxcon   Convergence of the Simulations
+\subsection belfast-8-bxcon   Convergence of the Simulations
 In the resources for this tutorial you can find the results for a 40ns long Well-Tempered Bias Exchange simulation. First of all we
 can try to assess the convergence of the simulations by looking at the profiles. In the "convergence" folder there is a script that
 calculates the free energy from the HILLS.0 file at incresing simulation lengths (i.e. every more 0.8 ns of simulation). The
@@ -127,7 +127,7 @@ at successive profiles:
 \anchor belfast-8-convergence-fig
 \image html belfast-8-convergence.png "Superposition of FE profiles in different time windows" 
 
-\subsection metagui Bias-Exchange Analysis with METAGUI
+\subsection belfast-8-metagui Bias-Exchange Analysis with METAGUI
 In principle Bias-Exchange Metadynamics can give as a results only N 1D free energy profiles. But the information
 contained in all the replicas can be used to recover multidensional free energy surfaces in >=N dimensions. A simple
 way to perform this analysis is to use METAGUI. METAGUI performs the following operations:
@@ -282,7 +282,7 @@ cp MICROSTATES FES/FES.4D
 
 and edit the script to select the two columns of MICROSTATES on which show the integrated FES.
 
-\subsection mw Multiple Walker Metadynamics
+\subsection belfast-8-mw Multiple Walker Metadynamics
 
 Multiple Walker metadynamics is the simplest way to parallelise a MetaD calculation: multiple simulation of the same system
 are run in parallel using metadynamics on the same set of collective variables. The deposited bias is shared among the replicas
@@ -322,7 +322,7 @@ alternatively Multiple Walkers can be run as independent simulations sharing via
 this is usefull because it provides a parallelisation that does not need a parallel code. In this case the walkers read with
 a given frequency the gaussians deposited by the others and add them to their own \ref METAD.
 
-\section refer Reference
+\section belfast-8-refer Reference
 
 This tutorial is freely inspired to the work of Biarnes et al.
 

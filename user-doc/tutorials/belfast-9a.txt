@@ -22,7 +22,7 @@ The <a href="tutorial-resources/belfast-9a.tar.gz" download="belfast-9a.tar.gz">
 
 \section belfast-9-ins Instructions
 
-\subsection expdata Experimental data as Collective Variables
+\subsection belfast-9-expdata Experimental data as Collective Variables
 
 In the former tutorials it has been often discussed the possibility of measuring a distance with respect to a structure representing
 some kind of state for a system, i.e. \ref belfast-5. An alternative possibility is to use as a reference a set of experimental data
@@ -61,7 +61,7 @@ This example can be executed as
 mdrun_mpi -s topol -plumed plumed
 \endverbatim
 
-\subsection replica Replica-Averaged Restrained Simulations 
+\subsection belfast-9-replica Replica-Averaged Restrained Simulations 
 
 NMR data, as all the equilibrium experimental data, are the result of a measure over an ensemble of structures and over time.
 In principle a "perfect" molecular dynamics simulations, that is a simulations with a perfect force-field and a perfect sampling
@@ -131,7 +131,7 @@ This example can be executed as
 mpiexec -np 8 mdrun_mpi -s topol -plumed plumed -multi 8
 \endverbatim
 
-\section refer Reference
+\section belfast-9-refer Reference
 
 1. Granata, D., Camilloni, C., Vendruscolo, M. & Laio, A. Characterization of the free-energy landscapes of proteins by NMR-guided metadynamics. Proc. Natl. Acad. Sci. U.S.A. 110, 6817–6822 (2013).
 2. Cavalli, A., Camilloni, C. & Vendruscolo, M.  Molecular dynamics simulations with replica-averaged structural restraints generate structural ensembles according to the maximum entropy principle. J. Chem. Phys. 138, 094112 (2013).

@@ -223,10 +223,10 @@ trajecories and restore whole molecules. This trick is ok for the a-posteriori a
 we are trying now, but cannot used when one needs to compute a collective variable
 on-the-fly or, as we will see later, one wants to add a bias to that collective variable.
 For this reason, we implemented a workaround in PLUMED,
-that is the molecule should be made whole using the \ref WHOLEMOLECULE command.
+that is the molecule should be made whole using the \ref WHOLEMOLECULES command.
 What this command is doing is making a loop over all the atoms (in the order they are provided) and set the coordinates
 of each of them in the periodic image which is as close as possible to the coordinates of the preceeding atom.
-In most cases it is sufficient to list all atoms of a molecule in order. Look in the \ref WHOLEMOLECULE page
+In most cases it is sufficient to list all atoms of a molecule in order. Look in the \ref WHOLEMOLECULES page
 to get more information. Here this will be enough:
 \verbatim
 phi: TORSION ATOMS=5,7,9,15
