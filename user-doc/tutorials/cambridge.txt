@@ -1,6 +1,10 @@
 /**
 \page cambridge Cambridge tutorial
 
+\authors Max Bonomi and Carlo Camilloni, part of the tutorial is based on other tutorials.
+
+\date March 4, 2015
+
 This document describes the PLUMED tutorial held for the Computational Biology MPhil, University
 of Cambridge, March 2015.
 The aim of this tutorial is to learn how to use PLUMED to run well-tempered
