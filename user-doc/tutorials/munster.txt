@@ -1097,6 +1097,6 @@ must be ergodic and thus sample the same distribution in phi and psi.
 
 link: @subpage munster
 
-description: A short 3 hours tutorial
+description: A short 3 hours tutorial that introduces analysis, well-tempered metadynamics, and multiple-restraints umbrella sampling.
 
 additional-files: munster.tar.gz munster-1
