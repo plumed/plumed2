@@ -38,7 +38,6 @@ awk -v version=$(plumed --no-mpi info --version) '{
     print "      <li><a href=\"_syntax.html\"><span>Getting&#160;started</span></a></li>"
     print "      <li><a href=\"tutorials.html\"><span>Tutorials</span></a></li>"
     print "      <li><a href=\"glossary.html\"><span>Index&#160;of&#160;Actions</span></a></li>"
-    print "      <li><a href=\"munster.html\"><span>Munster&#160;Tutorial</span></a></li>"
   } else print
 }' $file > $file.tmp
 mv $file.tmp $file
