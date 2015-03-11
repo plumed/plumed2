@@ -19,63 +19,6 @@ We here use PLUMED 2.1, simulations are made using GROMACS 4.6.7. However, these
 
 Users are expected to write PLUMED input files based on the instructions below.
 
-\section cambridge-installation Software installation
-
-\subsection cambridge-installation-1 1. Quick and dirty
-
-\verbatim
-# get binaries from Dropbox
-wget https://dl.dropboxusercontent.com/u/23916760/plumed/bin_intel.tgz
-
-# unpack bin directory
-tar xzf bin_intel.tgz
-
-# add plumed to the path (!!!!!!)
-export PATH=$HOME/bin_intel/plumed/bin:$PATH
-
-# source gromacs stuff (!!!!!)
-source $HOME/bin_intel/gromacs/bin/GMXRC
-\endverbatim
-
-\subsection cambridge-installation-2 2. Slow, but instructive
-\verbatim
-# create sources and bin directories in your home
-mkdir sources bin bin/gromacs bin/plumed
-# download GROMACS
-wget https://dl.dropboxusercontent.com/u/23916760/plumed/gromacs-4.6.7.tar.gz
-# download PLUMED
-wget https://dl.dropboxusercontent.com/u/23916760/plumed/plumed-2.1.1.tgz
-
-# unpack and compile PLUMED 
-tar xzf plumed-2.1.1.tgz 
-# go inside plumed directory and configure it
-./configure --prefix=$HOME/bin/plumed
-# compile it
-make -j 4
-# install it
-make install
-# add it to the path (!!!!!!)
-export PATH=$HOME/bin/plumed/bin:$PATH
-
-# unpack and compile GROMACS 
-tar xzf gromacs-4.6.7.tar.gz
-# go inside GROMACS directory
-cd gromacs-4.6.7
-# patch it with PLUMED
-plumed patch -p
-# make a build directory and go inside
-mkdir build
-cd build
-# build
-cmake ../ -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=off -DGMX_THREAD_MPI=OFF -DGMX_GPU=OFF -DCMAKE_INSTALL_PREFIX=$HOME/bin/gromacs -DCMAKE_CXX_COMPILER=mpic++ -DCMAKE_C_COMPILER=mpicc -DGMX_MPI=ON -DGMX_FORCE_CXX=ON
-# compile it
-make -j 4
-# install it
-make install
-# source gromacs stuff (!!!!!)
-source $HOME/bin/gromacs/bin/GMXRC
-\endverbatim 
-
 \section cambridge-toymodel Alanine dipeptide: our toy model
 
 In this tutorial we will play with alanine dipeptide (see Fig. \ref cambridge-1-ala-fig).
