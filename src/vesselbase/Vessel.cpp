@@ -72,9 +72,9 @@ Vessel::Vessel( const VesselOptions& da ):
 myname(da.myname),
 numlab(da.numlab),
 action(da.action),
+line(Tools::getWords( da.parameters )),
 keywords(da.keywords),
 finished_read(false),
-line(Tools::getWords( da.parameters )),
 comm(da.action->comm),
 log((da.action)->log)
 {

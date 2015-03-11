@@ -1,7 +1,7 @@
 /**
 \page belfast-10 Belfast tutorial: Steinhardt Parameters
 
-\section Aims
+\section belfast-10-aim Aims
 
 This tutorial is concerned with the collective variables that we use to study order/disorder
 transitions such as the transition between the solid and liquid phase.  In this tutorial
@@ -9,7 +9,7 @@ we will look at the transition from solid to liquid as this is easier to study u
 The CVs we will intorduce can, and have, been used to study the transition from liquid to solid.
 More information can be found in the further reading section.
 
-\section belfast-10-lo Learning Outcomes
+\subsection belfast-10-lo Learning Outcomes
 
 Once this tutorial is completed students will:
 
@@ -18,16 +18,16 @@ Once this tutorial is completed students will:
 local order in a material by taking dot products of the Steinhardt Parameter vectors of adjacent atoms. Students will
 know how to calculate such quantities using plumed.
 
-\section Resources
+\section belfast-10-res Resources
 
 The <a href="tutorial-resources/belfast-9b.tar.gz" download="belfast-9b.tar.gz"> tarball </a> for this project contains the following files:
 
 - in : An input file for the simplemd code that forms part of plumed
 - input.xyz : A configuration file for Lennard-Jones solid with an fcc solid structure
 
-\section Instructions
+\section belfast-10-ins Instructions
 
-\subsection Simplemd
+\subsection simplemd Simplemd
 
 For this tutorial we will be using the MD code that is part of plumed - simplemd.  This code allows us to 
 do the simulations of <a href="http://en.wikipedia.org/wiki/Lennard-Jones_potential"> Lennard-Jones </a> that we
