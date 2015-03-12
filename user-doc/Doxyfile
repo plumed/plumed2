@@ -1669,7 +1669,7 @@ LATEX_SOURCE_CODE      = NO
 # The default value is: plain.
 # This tag requires that the tag GENERATE_LATEX is set to YES.
 
-LATEX_BIB_STYLE        = plain
+LATEX_BIB_STYLE        = unsrt
 
 #---------------------------------------------------------------------------
 # Configuration options related to the RTF output

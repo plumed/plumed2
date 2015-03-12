@@ -502,7 +502,7 @@ link: @subpage belfast-4
 
 description: Umbrella sampling, reweighting, and weighted histogram
 
-additional-files: belfast-4.tar.gz
+additional-files: belfast-4
 
 
 
