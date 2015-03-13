@@ -4165,7 +4165,7 @@ subroutine runmd(xx,ix,ih,ipairs,x,winv,amass,f, &
     return                                             ! lam81
    end if                                              ! lam81
 
-   if (plumed_stopflag/=0) goto 480
+   if (plumed.eq.1 .and. plumed_stopflag/=0) goto 480
 
    if (nstep < nstlim) goto 260
    480 continue
@@ -4378,7 +4378,9 @@ subroutine runmd(xx,ix,ih,ipairs,x,winv,amass,f, &
       REQUIRE( ier == 0 )
    end if
 
-   call plumed_f_gfinalize()
+   if (plumed.eq.1) then
+     call plumed_f_gfinalize()
+   end if
 
    500 format(/,' NMR restraints on final step:'/)
    540 format(/5x,' A V E R A G E S   O V E R ',i7,' S T E P S',/)

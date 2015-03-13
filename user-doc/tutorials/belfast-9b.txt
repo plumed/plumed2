@@ -1,7 +1,7 @@
 /**
 \page belfast-10 Belfast tutorial: Steinhardt Parameters
 
-\section Aims
+\section belfast-10-aim Aims
 
 This tutorial is concerned with the collective variables that we use to study order/disorder
 transitions such as the transition between the solid and liquid phase.  In this tutorial
@@ -9,7 +9,7 @@ we will look at the transition from solid to liquid as this is easier to study u
 The CVs we will intorduce can, and have, been used to study the transition from liquid to solid.
 More information can be found in the further reading section.
 
-\section belfast-10-lo Learning Outcomes
+\subsection belfast-10-lo Learning Outcomes
 
 Once this tutorial is completed students will:
 
@@ -18,16 +18,16 @@ Once this tutorial is completed students will:
 local order in a material by taking dot products of the Steinhardt Parameter vectors of adjacent atoms. Students will
 know how to calculate such quantities using plumed.
 
-\section Resources
+\section belfast-10-res Resources
 
 The <a href="tutorial-resources/belfast-9b.tar.gz" download="belfast-9b.tar.gz"> tarball </a> for this project contains the following files:
 
 - in : An input file for the simplemd code that forms part of plumed
 - input.xyz : A configuration file for Lennard-Jones solid with an fcc solid structure
 
-\section Instructions
+\section belfast-10-ins Instructions
 
-\subsection Simplemd
+\subsection belfast-10-simplemd Simplemd
 
 For this tutorial we will be using the MD code that is part of plumed - simplemd.  This code allows us to 
 do the simulations of <a href="http://en.wikipedia.org/wiki/Lennard-Jones_potential"> Lennard-Jones </a> that we
@@ -60,7 +60,7 @@ using VMD.  Please be aware that simplemd does not wrap the atoms into the cell 
 we have resolved this problem by making it so that if you press w when you load all the atoms they will be wrapped into the box.
 At what temperatures did the simulations melt?  What then is the melting point of the Lennard-Jones potential at this density?
 
-\subsection cvs Coordination Numbers
+\subsection belfast-10-cvs Coordination Numbers
 
 At the end of the previous section you were able to make very sophisticated judegements about whether or not the arrangment of atoms
 in your system was solid-like or liquid-like by simply looking at the configuration.  The aim in the rest of this tutorial is to 
@@ -75,7 +75,7 @@ parameter equal to 0.2 and its \f$n\f$ and \f$m\f$ parameters set equal to 6 and
 Rerun the simpled simulations described at the end of the previous section.  Is the average coordination number good at 
 differentiaing between solid and liquid configurations?  Given your knowledge of physics/chemistry is this result surprising?
 
-\subsection steinhardt Steinhard parameter 
+\subsection belfast-10-steinhardt Steinhard parameter 
 
 The solid and liquid phases of a material are both relatively dense so the result at the end of the last section - the fact that 
 the coordination number is not particularly good at differentiating between them - should not be that much of a surprise.  As you 
@@ -94,7 +94,7 @@ coordination sphere of a particular atom are defined using a continuous switchin
 switching funciton with parameters \f$d_0\f$ equal to 1.3, \f$r_0\f$ equal to 0.2 and \f$n\f$ and \f$m\f$ set equal to 6 and 12 repsectively.
 Is the average Q6 parameter able to differentiate between the solid and liquid states?
 
-\subsection lvsg Local versus Global
+\subsection belfast-10-lvsg Local versus Global
 
 At the end of the previous section you showed that the average Q6 parameter for a system of atoms is able to tell you whether or not that collection 
 of atoms is in a solid-like or liquid-like configuration.  In this section we will now ask the question - can the Steinhardt parameter always, unambiously 
@@ -114,7 +114,7 @@ recommendation would be to calculate a histogram consisting of 20 bins over a ra
 Do the distributions of Q6 parameters for the solid and liquid phase overlap?  N.B.  You can load the output from these simulations using GISMO and the all cvs
 button from the bar at the bottom.
 
-\subsection links Local Steinhardt parameters 
+\subsection belfast-10-links Local Steinhardt parameters 
 
 Hopefully you saw that the distribution of Q6 parameters for the solid and liquid phase overlap at the end of the previous section.  Again this is not so 
 surprising - as you go from solid to liquid the distribution of the geometries of the coordination spheres widens.  The system is now able to arrange the
@@ -134,7 +134,7 @@ starting at 0.0 and finishing at 1.0.  Se the SMEAR paraemter equal to 0.1.  Do 
 Lectner and Dellago have designed an alternative to the \ref LOCAL_Q6 parameter that is based on taking the \ref LOCAL_AVERAGE of the Q6 parameter arround a central atom. This
 quantity can be calcualted using plumed. If you have time try to use the manual to work out how.
 
-\section further Further Reading
+\section belfast-10-further Further Reading
 
 There is a substantial literature on simulation of nucleation. Some papers are listed below but this list is far from exhaustive. 
 
@@ -147,4 +147,4 @@ link: @subpage belfast-10
 
 description: Steinhardt Parameters
 
-additional-files: belfast-9b.tar.gz
+additional-files: belfast-9b

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -51,7 +51,9 @@ PRINT ARG=f1.* FILE=colvar
 \endverbatim
 
 The following example calculates the difference of the current contact map with respect
-to a reference provided. 
+to a reference provided. In this case REFERENCE is the fraction of contact that is formed
+(i.e. the distance between two atoms transformed with the SWITH), while R_0 is the contact
+distance. WEIGHT gives the relative weight of each contact to the final distance measure. 
 
 \verbatim
 CONTACTMAP ...
