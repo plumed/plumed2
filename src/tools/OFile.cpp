@@ -234,9 +234,10 @@ void OFile::setBackupString( const std::string& str ){
 }
 
 void OFile::backupAllFiles( const std::string& str ){
+  if(str=="/dev/null") return;
   plumed_assert( backstring!="bck" && !checkRestart());
   size_t found=str.find_last_of("/\\");
-  std::string filename = appendSuffix(str,plumed->getSuffix());
+  std::string filename = appendSuffix(str,getSuffix());
   std::string directory=filename.substr(0,found+1);
   std::string file=filename.substr(found+1);
   if( FileExist(filename) ) backupFile("bck", filename);
@@ -249,6 +250,7 @@ void OFile::backupAllFiles( const std::string& str ){
 }
 
 void OFile::backupFile( const std::string& bstring, const std::string& fname ){
+   if(fname=="/dev/null") return;
    int maxbackup=100;
    if(std::getenv("PLUMED_MAXBACKUP")) Tools::convert(std::getenv("PLUMED_MAXBACKUP"),maxbackup);
    if(maxbackup>0 && (!comm || comm->Get_rank()==0)){
@@ -282,9 +284,7 @@ OFile& OFile::open(const std::string&path){
   fp=NULL;
   gzfp=NULL;
   this->path=path;
-  if(plumed){
-    this->path=appendSuffix(path,plumed->getSuffix());
-  }
+  this->path=appendSuffix(path,getSuffix());
   if(checkRestart()){
      fp=std::fopen(const_cast<char*>(this->path.c_str()),"a");
      mode="a";

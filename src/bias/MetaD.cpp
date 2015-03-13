@@ -74,7 +74,7 @@ utility.
 In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics 
 calculation increases with the length of the simulation as one has to, at every step, evaluate 
 the values of a larger and larger number of Gaussians. To avoid this issue you can
-store the bias on a grid.  This approach is similar to that proposed in \cite babi+08jcp but has the 
+store the bias on a grid.  This approach is similar to that proposed in \cite babi08jcp but has the 
 advantage that the grid spacing is independent on the Gaussian width.
 Notice that you should
 provide either the number of bins for every collective variable (GRID_BIN) or
@@ -658,6 +658,13 @@ isFirstStep(true)
 
 // open hills file for writing
   hillsOfile_.link(*this);
+  if(walkers_mpi){
+    int r=0;
+    if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+    comm.Bcast(r,0);
+    if(r>0) ifilesnames[mw_id_]="/dev/null";
+    hillsOfile_.enforceSuffix("");
+  }
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
