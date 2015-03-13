@@ -70,6 +70,7 @@ class Atoms
   unsigned forcesHaveBeenSet;
   bool virialHasBeenSet;
   bool massAndChargeOK;
+  bool needCommunication;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 

@@ -145,7 +145,7 @@ void Atoms::share(){
     return;
   }
   for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
-    if(dd && int(gatindex.size())<natoms){
+    if(dd && needCommunication ){
       unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
     }
     if(!actions[i]->getUnique().empty()) atomsNeeded=true;
@@ -155,7 +155,7 @@ void Atoms::share(){
 
 void Atoms::shareAll(){
   std::set<AtomNumber> unique;
-  if(dd && int(gatindex.size())<natoms)
+  if(dd && needCommunication )
     for(int i=0;i<natoms;i++) unique.insert(AtomNumber::index(i));
   atomsNeeded=true;
   share(unique);
@@ -179,7 +179,7 @@ void Atoms::share(const std::set<AtomNumber>& unique){
 
   atomsNeeded=false;
 
-  if(int(gatindex.size())==natoms){
+  if(int(gatindex.size())==natoms && !needCommunication){  
 // faster version, which retrieves all atoms
     mdatoms->getPositions(0,natoms,positions);
   } else {
@@ -194,7 +194,7 @@ void Atoms::share(const std::set<AtomNumber>& unique){
     mdatoms->getMasses(gatindex,masses);
   }
 
-  if(dd && int(gatindex.size())<natoms){
+  if(dd && needCommunication){
     if(dd.async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
       for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();
@@ -261,7 +261,7 @@ void Atoms::wait(){
 
   if(collectEnergy) energy=md_energy;
 
-  if(dd && int(gatindex.size())<natoms){
+  if(dd && needCommunication){
 // receive toBeReceived
     if(asyncSent){
       Communicator::Status status;
@@ -350,6 +350,14 @@ void Atoms::setAtomsGatindex(int*g,bool fortran){
   } else {
       for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=g[i];
   }
+  if( gatindex.size()==natoms ){
+      needCommunication=false;
+      for(unsigned i=0;i<gatindex.size();i++){
+          if( gatindex[i]!=i ){ needCommunication=true; break; }
+      }
+  } else {
+      needCommunication=true;
+  } 
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
   if(dd) for(unsigned i=0;i<gatindex.size();i++) dd.g2l[gatindex[i]]=i;
 }
