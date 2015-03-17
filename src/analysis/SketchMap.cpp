@@ -33,7 +33,7 @@ class SketchMap : public AnalysisWithLandmarks {
 private:
   unsigned nlow;
   bool nosmacof;
-  double smactol, smaptol;
+  double smactol, smaptol, regulariser;
   std::string ofilename;
   std::string efilename;
   PointWiseMapping* myembedding;
@@ -57,6 +57,7 @@ void SketchMap::registerKeywords( Keywords& keys ){
   keys.add("compulsory","EMBEDDING_OFILE","dont output","file on which to output the embedding in plumed input format");
   keys.add("compulsory","SMACOF_TOL","1E-4","the tolerance for each SMACOF cycle");
   keys.add("compulsory","SMAP_TOL","1E-4","the tolerance for sketch-map");
+  keys.add("compulsory","REGULARISE_PARAM","0.001","this is used to ensure that we don't divide by zero when updating weights");
 }
 
 SketchMap::SketchMap( const ActionOptions& ao ):
@@ -81,6 +82,7 @@ AnalysisWithLandmarks(ao)
   // Read tolerances
   parse("SMACOF_TOL",smactol);
   parse("SMAP_TOL",smaptol);
+  parse("REGULARISE_PARAM",regulariser);
 
   // Setup the property names
   std::vector<std::string> propnames( nlow ); std::string num;
@@ -170,7 +172,9 @@ double SketchMap::recalculateWeights( const Matrix<double>& Distances, const Mat
           double dij=sqrt(tempd);
           double fij = 1.0 - lowdf.calculate( dij, dr );
           double filter=F(i,j)-fij;
-          Weights(i,j)=Weights(j,i) = ( -ninj*filter*dij*dr ) / ( Distances(i,j) - dij );
+          double diff=Distances(i,j) - dij;
+          if( fabs(diff)<regulariser ) Weights(i,j)=Weights(j,i)=0.0;
+          else Weights(i,j)=Weights(j,i) = ( -ninj*filter*dij*dr ) / diff;
           filt += ninj*filter*filter;
       }
   }
