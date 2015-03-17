@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AnalysisWithLandmarks.h"
 #include "ClassicalScaling.h"
+#include "SMACOF.h"
 #include "reference/PointWiseMapping.h"
 #include "core/ActionRegister.h"
 
@@ -170,6 +171,8 @@ private:
   std::string ofilename;
   std::string efilename;
   PointWiseMapping* myembedding;
+  bool nosmacof;
+  double stol;
 public:
   static void registerKeywords( Keywords& keys );
   ClassicalMultiDimensionalScaling( const ActionOptions& ao );
@@ -184,6 +187,8 @@ void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ){
   keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
   keys.add("compulsory","OUTPUT_FILE","file on which to output the final embedding coordinates");
   keys.add("compulsory","EMBEDDING_OFILE","dont output","file on which to output the embedding in plumed input format");
+  keys.addFlag("NOSMACOF",false,"don't refine the projection using the SMACOF algorithm.  N.B. classical MDS ignores weights");
+  keys.add("compulsory","SMACOF_TOL","1E-4","tolerance for the SMACOF optimization algorith");
 }
 
 ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao ):
@@ -193,8 +198,13 @@ AnalysisWithLandmarks(ao)
   myembedding = new PointWiseMapping( getMetricName(), false );
   setDataToAnalyze( dynamic_cast<MultiReferenceBase*>(myembedding) );
 
-  parse("NLOW_DIM",nlow);
+  parse("NLOW_DIM",nlow); 
   if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
+
+  parseFlag("NOSMACOF",nosmacof); parse("SMACOF_TOL",stol);
+  if(nosmacof) log.printf("  generating projection using classical MDS and ignoring weight information \n");
+  else log.printf("  generating projection using SMCAOF.  Tolerance is %f \n",stol);
+ 
   std::vector<std::string> propnames( nlow ); std::string num;
   for(unsigned i=0;i<propnames.size();++i){
      Tools::convert(i+1,num); std::string lab=getLabel();
@@ -205,6 +215,7 @@ AnalysisWithLandmarks(ao)
 
   parseOutputFile("EMBEDDING_OFILE",efilename);
   parseOutputFile("OUTPUT_FILE",ofilename);
+
 }
 
 ClassicalMultiDimensionalScaling::~ClassicalMultiDimensionalScaling(){
@@ -217,6 +228,14 @@ void ClassicalMultiDimensionalScaling::analyzeLandmarks(){
 
   // Run multidimensional scaling
   ClassicalScaling::run( myembedding );
+
+  if( !nosmacof ){
+     unsigned M=myembedding->getNumberOfReferenceFrames(); Matrix<double> Weights( M, M );
+     for(unsigned i=1; i<M; ++i){
+         for(unsigned j=0; j<i; ++j) Weights(i,j) = Weights(j,i) = myembedding->getWeight(i)*myembedding->getWeight(j);
+     }  
+     SMACOF::run( Weights, myembedding, stol );
+  }
 
   // Output the embedding as long lists of data
 //  std::string gfname=saveResultsFromPreviousAnalyses( ofilename );
