@@ -208,7 +208,7 @@ void MultiColvarDensity::update(){
 
   vesselbase::StoreDataVessel* stash=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToArgument() );
   plumed_dbg_assert( stash ); std::vector<double> cvals( mycolv->getNumberOfQuantities() );
-  Vector origin = getPosition(0); std::vector<double> pp( directions.size() );
+  Vector origin = getPosition(0); std::vector<double> pp( directions.size() ); Vector fpos;
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
       stash->retrieveValue( i, false, cvals );
       Vector apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(i) ), origin );
