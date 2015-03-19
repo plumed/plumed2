@@ -115,7 +115,7 @@ very intensive development of the code of if you are running on a computer with 
 \page exchange-patterns Changing exchange patterns in replica exchange
 
 Using the \subpage RANDOM_EXCHANGES keyword it is possible to make exchanges betweem randomly
-chosen replicas. This is useful e.g. for bias exchange metadynamics \cite{piana}.
+chosen replicas. This is useful e.g. for bias exchange metadynamics \cite piana.
 
 \page Openmp OpenMP
 

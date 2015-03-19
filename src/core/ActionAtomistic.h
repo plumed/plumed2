@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -127,6 +127,8 @@ public:
 /// If this function is called during initialization, then forces are
 /// not going to be propagated. Can be used for optimization.
   void doNotForce(){donotforce=true;}
+/// Make atoms whole, assuming they are in the proper order
+  void makeWhole();
 public:
 
 // virtual functions:

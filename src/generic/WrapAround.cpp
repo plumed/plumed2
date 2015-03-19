@@ -96,6 +96,27 @@ Notice that whereas \ref WHOLEMOLECULES is designed to make molecules whole,
 if solvent (atoms 101-1000) is made e.g. of water, then water
 molecules could be broken by \ref WRAPAROUND (hydrogen could end up
 in an image and oxygen in another one).
+This issue can be solved using the GROUPBY option which is going
+to consider the atoms listed in ATOMS as a list of groups
+each of size GROUPBY. The first atom of the group will be brought
+close to the AROUND atoms. The following atoms of the group
+will be just brought close to the first.
+
+\verbatim
+solute: GROUP ATOMS=1-100
+water: GROUP ATOMS=101-1000
+# first make the solute whole
+# this is necessary to compute its center of mass properly
+WHOLEMOLECULES ENTITY0=solute
+# center of the solute:
+com: COM ATOMS=solute
+# notice that we wrap around a single atom. this should be fast
+WRAPAROUND ATOMS=solute AROUND=com
+# notice that we wrap around a single atom. this should be fast
+WRAPAROUND ATOMS=water AROUND=com GROUPBY=3
+DUMPATOMS FILE=dump.xyz ATOMS=solute,water
+\endverbatim
+(see also \ref GROUP \ref COM \ref DUMPATOMS)
 
 */
 //+ENDPLUMEDOC
@@ -107,6 +128,7 @@ class WrapAround:
 {
   vector<AtomNumber> atoms;
   vector<AtomNumber> reference;
+  unsigned groupby;
 public:
   WrapAround(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -123,16 +145,18 @@ void WrapAround::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("atoms","AROUND","reference ions");
   keys.add("atoms","ATOMS","atoms numbers");
-
+  keys.add("compulsory","GROUPBY","1","group atoms so as not to break molecules");
 }
 
 WrapAround::WrapAround(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
-ActionAtomistic(ao)
+ActionAtomistic(ao),
+groupby(1)
 {
   parseAtomList("ATOMS",atoms);
   parseAtomList("AROUND",reference);
+  parse("GROUPBY",groupby);
 
   log.printf("  atoms in reference :");
   for(unsigned j=0;j<reference.size();++j) log.printf(" %d",reference[j].serial() );
@@ -140,10 +164,13 @@ ActionAtomistic(ao)
   log.printf("  atoms to be wrapped :");
   for(unsigned j=0;j<atoms.size();++j) log.printf(" %d",atoms[j].serial() );
   log.printf("\n");
+  if(groupby>1) log<<"  atoms will be grouped by "<<groupby<<"\n";
+
+  if(atoms.size()%groupby!=0) error("number of atoms should be a multiple of groupby option");
   
   checkRead();
 
-  Tools::removeDuplicates(atoms);
+  if(groupby<=1) Tools::removeDuplicates(atoms);
   Tools::removeDuplicates(reference);
 
   vector<AtomNumber> merged(atoms.size()+reference.size());
@@ -155,7 +182,7 @@ ActionAtomistic(ao)
 }
 
 void WrapAround::calculate(){
-  for(unsigned i=0;i<atoms.size();++i){
+  for(unsigned i=0;i<atoms.size();i+=groupby){
     Vector & first (modifyPosition(atoms[i]));
     double mindist2=std::numeric_limits<double>::max();
     int closest=-1;
@@ -170,7 +197,13 @@ void WrapAround::calculate(){
     }
     plumed_massert(closest>=0,"closest not found");
     Vector & second (modifyPosition(reference[closest]));
+// place first atom of the group
     first=second+pbcDistance(second,first);
+// then place other atoms close to the first of the group
+    for(unsigned j=1;j<groupby;j++){
+      Vector & second (modifyPosition(atoms[i+j]));
+      second=first+pbcDistance(first,second);
+    }
   }
 }
 

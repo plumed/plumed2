@@ -184,6 +184,8 @@ public:
 
 /// dump grid on file
  virtual void writeToFile(OFile&);
+/// dump grid to gaussian cube file
+ void writeCubeFile(OFile&);
 
  virtual ~Grid(){}
 

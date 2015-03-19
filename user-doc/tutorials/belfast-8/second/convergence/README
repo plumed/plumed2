@@ -1,0 +1,5 @@
+these four script can be useful to have indications of the convergence of a metadynamics simulations
+1. the first can be used to generate the set of profiles
+2. the second can be used to assess the difference in free energy between two regions (so assessing the homogeneity of the sampling)
+3. the third can be used to assess the stability of the overall profile (so assessing the appearence of newly visited regions)
+4. the fourth can be used to generate average profiles, assess their standard deviation and the differences between non-overlapping averaged profiles 

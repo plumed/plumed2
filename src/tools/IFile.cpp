@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -108,7 +108,7 @@ IFile& IFile::open(const std::string&path){
   fp=NULL;
   gzfp=NULL;
   bool do_exist=FileExist(path);
-  plumed_massert(do_exist,"file " + path + "cannot be found");
+  plumed_massert(do_exist,"file " + path + " cannot be found");
   fp=std::fopen(const_cast<char*>(this->path.c_str()),"r");
   if(Tools::extension(this->path)=="gz"){
 #ifdef __PLUMED_HAS_ZLIB
@@ -221,7 +221,7 @@ unsigned IFile::findField(const std::string&name)const{
 void IFile::reset(bool reset){
  eof = reset;
  err = reset;
- if(!reset) clearerr(fp);
+ if(!reset && fp) clearerr(fp);
 #ifdef __PLUMED_HAS_ZLIB
  if(!reset && gzfp) gzclearerr(gzFile(gzfp));
 #endif

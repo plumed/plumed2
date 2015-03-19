@@ -157,18 +157,29 @@ For developers:
 - Manual is built and pushed to the online server from travis-ci.org (see developer doc)
 - Fixes in developer doc.
 
-Unreleased changes (will be included in 2.1.2)
+Version 2.1.2 (Mar 16, 2015)
+----------------------------------------------
+
+For users:
+- Added two new short tutorials to the manual (\ref cambridge and \ref munster).
+- Fixed a severe bug on \ref DRMSD - cutoff values were ignored by PLUMED.
+  Notice that this bug was introduced in 2.1.0, so that it should not affect the 2.0.x series.
+- Fixed a bug affecting LAMMPS patch used with a single processor. Notice that
+  the fix is inside PLUMED, thus it does not necessarily requires repatching.
+- Sander patch now works with multiple replica (no replica exchange yet). It also contains
+  some fix from J. Swails.
+- GMX5 patch was not working for bias-exchange like cases
+- Patching system now checks for the availabity of shared/static/runtime version of plumed before
+  patching
+- Configure now check better if compiler flag are accepted by the compiler. This makes
+  configure on bluegene more robust.
+- Sourceme.sh now sets proper library path in linux also.
+
+Unreleased changes (will be included in 2.1.3)
 ----------------------------------------------
 
 See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
 
-For users:
-- Fixed a severe bug on \ref DRMSD - cutoff values were ignored by PLUMED.
-  Notice that this bug was introduced in 2.1.0, so that it should not affect the 2.0.x series.
-- Patching system now checks for the availabity of shared/static/runtime version of plumed before
-  patching
-- GMX5 patch was not working for bias-exchange like cases
-- Sander patch now works with multiple replica (no replica exchange yet).
 
 
 */

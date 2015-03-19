@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -57,8 +57,19 @@ with the position of the center of mass \f${r}_{\rm COM}\f$ given by:
 {r}_{\rm COM}=\frac{\sum_i^{n} {r}_i\ m_i }{\sum_i^{n} m_i}
 \f]
 
-The radius of gyration is calculated without applying periodic boundary conditions so the atoms used for the calculation 
-should all be part of the same molecule that should be made whole before calculating the cv, \ref WHOLEMOLECULES.
+The radius of gyration usually makes sense when atoms used for the calculation 
+are all part of the same molecule.
+When running with periodic boundary conditions, the atoms should be 
+in the proper periodic image. This is done automatically since PLUMED 2.2,
+by considering the ordered list of atoms and rebuilding PBCs with a procedure
+that is equivalent to that done in \ref WHOLEMOLECULES . Notice that
+rebuilding is local to this action. This is different from \ref WHOLEMOLECULES
+which actually modifies the coordinates stored in PLUMED. 
+
+In case you want to recover the old behavior you should use the NOPBC flag.
+In that case you need to take care that atoms are in the correct
+periodic image.
+
 
 \par Examples
 
@@ -79,6 +90,7 @@ private:
   enum CV_TYPE {RADIUS, TRACE, GTPC_1, GTPC_2, GTPC_3, ASPHERICITY, ACYLINDRICITY, KAPPA2, GYRATION_3, GYRATION_2, GYRATION_1, TOT};
   int rg_type;
   bool use_masses;
+  bool nopbc;
 public:
   static void registerKeywords(Keywords& keys);
   Gyration(const ActionOptions&);
@@ -89,7 +101,6 @@ PLUMED_REGISTER_ACTION(Gyration,"GYRATION")
 
 void Gyration::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
-  keys.remove("NOPBC");
   keys.add("atoms","ATOMS","the group of atoms that you are calculating the Gyration Tensor for");
   keys.add("compulsory","TYPE","RADIUS","The type of calculation relative to the Gyration Tensor you want to perform");
   keys.addFlag("NOT_MASS_WEIGHTED",false,"set the masses of all the atoms equal to one");
@@ -97,7 +108,8 @@ void Gyration::registerKeywords(Keywords& keys){
 
 Gyration::Gyration(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
-use_masses(true)
+use_masses(true),
+nopbc(false)
 {
   std::vector<AtomNumber> atoms;
   parseAtomList("ATOMS",atoms);
@@ -107,6 +119,7 @@ use_masses(true)
   use_masses=!not_use_masses;
   std::string Type;
   parse("TYPE",Type);
+  parseFlag("NOPBC",nopbc);
   checkRead();
 
   if(Type=="RADIUS") rg_type=RADIUS;
@@ -142,11 +155,19 @@ use_masses(true)
   for(unsigned i=0;i<atoms.size();++i) log.printf("%d ",atoms[i].serial());
   log.printf("\n");
 
+  if(!nopbc){
+    log<<"  PBC will be ignored\n";
+  } else {
+    log<<"  broken molecules will be rebuilt assuming atoms are in the proper order\n";
+  }
+
   addValueWithDerivatives(); setNotPeriodic();
   requestAtoms(atoms);
 }
 
 void Gyration::calculate(){
+
+  if(!nopbc) makeWhole();
 
   std::vector<Vector> derivatives( getNumberOfAtoms() );
   double totmass = 0.; 

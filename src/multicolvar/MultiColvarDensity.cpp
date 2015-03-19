@@ -58,12 +58,15 @@ class MultiColvarDensity :
   public vesselbase::ActionWithInputVessel
 {
   std::string kerneltype;
-  bool nomemory;
+  bool nomemory,cube;
   double norm;
+  bool firststep;
+  bool fractional;
   unsigned rstride;
   std::string filename;
   Grid* gg;
   MultiColvarBase* mycolv; 
+  std::vector<unsigned> nbins;
   std::vector<double> bw;
   std::vector<unsigned> directions;
 public:
@@ -92,7 +95,9 @@ void MultiColvarDensity::registerKeywords( Keywords& keys ){
   keys.add("compulsory","KERNEL","gaussian","the kernel function you are using.  More details on  the kernels available "
                                             "in plumed plumed can be found in \\ref kernelfunctions.");
   keys.add("compulsory","OFILE","density","the file on which to write the profile");
+  keys.addFlag("FRACTIONAL",false,"use fractional coordinates on the x-axis");
   keys.addFlag("NOMEMORY",false,"do a block averaging rather than a cumulative average");
+  keys.addFlag("DUMP_CUBE",false,"write out a Gaussian cube file to visualise the three dimensional density");
 }
 
 MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
@@ -100,7 +105,8 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   ActionPilot(ao),
   ActionAtomistic(ao),
   ActionWithInputVessel(ao),
-  norm(0)
+  norm(0),
+  firststep(true)
 {
 
   std::vector<AtomNumber> atom;
@@ -116,64 +122,48 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   parse("OFILE",filename); parse("RUN",rstride);
   if(filename.length()==0) error("name out output file was not specified");
 
-  std::vector<unsigned> nbins; parseVector("NBINS",nbins); parseFlag("NOMEMORY",nomemory);
-  parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bw); 
+  parseVector("NBINS",nbins); parseFlag("NOMEMORY",nomemory);
+  parse("KERNEL",kerneltype); parseVector("BANDWIDTH",bw); parseFlag("FRACTIONAL",fractional);
   std::string direction; parse("DIR",direction);
   log.printf("  calculating density profile along ");
   if( direction=="x" ){
-      if( bw.size()!=1 && nbins.size()!=1 ) error("BANDWIDTH or NBINS has wrong dimensionality");
+      if( bw.size()!=1 || nbins.size()!=1 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("x axis");
       directions.resize(1); directions[0]=0;
   } else if( direction=="y" ){
-      if( bw.size()!=1 && nbins.size()!=1 ) error("BANDWIDTH or NBINS has wrong dimensionality");
+      if( bw.size()!=1 || nbins.size()!=1 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("y axis");
       directions.resize(1); directions[0]=1;
   } else if( direction=="z" ){
-      if( bw.size()!=1 && nbins.size()!=1 ) error("BANDWIDTH or NBINS has wrong dimensionality");
+      if( bw.size()!=1 || nbins.size()!=1 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("z axis");
       directions.resize(1); directions[0]=2;
   } else if( direction=="xy" ){
-      if( bw.size()!=2 && nbins.size()!=2 ) error("BANDWIDTH or NBINS has wrong dimensionality");
+      if( bw.size()!=2 || nbins.size()!=2 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("x and y axes");
       directions.resize(2); directions[0]=0; directions[1]=1;
   } else if( direction=="xz" ){
-      if( bw.size()!=2 && nbins.size()!=2 ) error("BANDWIDTH or NBINS has wrong dimensionality");
+      if( bw.size()!=2 || nbins.size()!=2 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("x and z axes");
       directions.resize(2); directions[0]=0; directions[1]=2;
   } else if( direction=="yz" ){
-      if( bw.size()!=2 && nbins.size()!=2 ) error("BANDWIDTH or NBINS has wrong dimensionality");
+      if( bw.size()!=2 || nbins.size()!=2 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("y and z axis");
       directions.resize(2); directions[0]=1; directions[1]=2;
   } else if( direction=="xyz" ){
-      if( bw.size()!=3 && nbins.size()!=3 ) error("BANDWIDTH or NBINS has wrong dimensionality");
+      if( bw.size()!=3 || nbins.size()!=3 ) error("BANDWIDTH or NBINS has wrong dimensionality");
       log.printf("x, y and z axes");
       directions.resize(3); directions[0]=0; directions[1]=1; directions[2]=2;
   } else {
      error( direction + " is not valid gradient direction");
   } 
   log.printf(" for colvars calculated by action %s \n",mycolv->getLabel().c_str() );
+  parseFlag("DUMP_CUBE",cube);
+  if( cube && directions.size()!=3 ) error("can only dump gaussian cube file with three dimensional plots");
 
   checkRead(); requestAtoms(atom); 
   // Stupid dependencies cleared by requestAtoms - why GBussi why? That's got me so many times
   addDependency( mycolv );
-
-  std::vector<bool> pbc(nbins.size());
-  std::vector<std::string> args(nbins.size()), gmin(nbins.size()), gmax(nbins.size());;
-  for(unsigned i=0;i<directions.size();++i){
-      gmin[i]="-0.5"; gmax[i]="0.5"; pbc[i]=true;
-      if( directions[i]==0 ) args[i]="x";
-      else if( directions[i]==1 ) args[i]="y";
-      else if( directions[i]==2 ) args[i]="z";
-      else plumed_error();
-  }   
-  
-  if( plumed.getRestart() ){   
-     error("restarting of MultiColvarDensity is not yet implemented");
-  } else {
-     // Setup the grid
-     std::string funcl=mycolv->getLabel() + ".dens";
-     gg = new Grid(funcl,args,gmin,gmax,nbins,true,true,true,pbc,gmin,gmax);
-  }
 }
 
 MultiColvarDensity::~MultiColvarDensity(){
@@ -181,6 +171,40 @@ MultiColvarDensity::~MultiColvarDensity(){
 }
 
 void MultiColvarDensity::update(){
+  if(firststep){
+     std::vector<bool> pbc(nbins.size()); std::vector<double> min(nbins.size()), max(nbins.size());
+     std::vector<std::string> args(nbins.size()), gmin(nbins.size()), gmax(nbins.size());;
+     for(unsigned i=0;i<directions.size();++i){
+         min[i]=-0.5; max[i]=0.5; pbc[i]=true;
+         if( directions[i]==0 ) args[i]="x";
+         else if( directions[i]==1 ) args[i]="y";
+         else if( directions[i]==2 ) args[i]="z";
+         else plumed_error();
+     }
+     if( !fractional ){
+         if( !mycolv->getPbc().isOrthorombic() ) error("I think that density profiles with non-orthorhombic cells don't work.  If you want it have a look and see if you can work it out");
+
+         for(unsigned i=0;i<directions.size();++i){
+             min[i]*=mycolv->getBox()(directions[i],directions[i]);
+             max[i]*=mycolv->getBox()(directions[i],directions[i]); 
+         }
+     }
+     for(unsigned i=0;i<directions.size();++i){ Tools::convert(min[i],gmin[i]); Tools::convert(max[i],gmax[i]); }
+
+     if( plumed.getRestart() ){
+        error("restarting of MultiColvarDensity is not yet implemented");
+     } else {
+        // Setup the grid
+        std::string funcl=mycolv->getLabel() + ".dens";
+        gg = new Grid(funcl,args,gmin,gmax,nbins,true,true,true,pbc,gmin,gmax);
+     }
+     firststep=false;    // We only have the first step once
+  } else {
+      for(unsigned i=0;i<directions.size();++i){
+          double max; Tools::convert( gg->getMax()[i], max );
+          if( fabs( 2*max - mycolv->getBox()(directions[i],directions[i]) )>epsilon ) error("box size should be fixed.  Use FRACTIONAL");
+      }
+  } 
 
   vesselbase::StoreDataVessel* stash=dynamic_cast<vesselbase::StoreDataVessel*>( getPntrToArgument() );
   plumed_dbg_assert( stash ); std::vector<double> cvals( mycolv->getNumberOfQuantities() );
@@ -188,7 +212,7 @@ void MultiColvarDensity::update(){
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i){
       stash->retrieveValue( i, false, cvals );
       Vector apos = pbcDistance( mycolv->getCentralAtomPos( mycolv->getTaskCode(i) ), origin );
-      Vector fpos = getPbc().realToScaled( apos );
+      if( fractional ){ fpos = getPbc().realToScaled( apos ); } else { fpos=apos; }
       for(unsigned j=0;j<directions.size();++j) pp[j]=fpos[ directions[j] ];
       KernelFunctions kernel( pp, bw, kerneltype, false, cvals[0]*cvals[1], true );
       gg->addKernel( kernel ); norm += cvals[0];    
@@ -200,7 +224,10 @@ void MultiColvarDensity::update(){
       gg->scaleAllValuesAndDerivatives( 1.0 / norm );
 
       OFile gridfile; gridfile.link(*this); gridfile.setBackupString("analysis");
-      gridfile.open( filename ); gg->writeToFile( gridfile ); gridfile.close();
+      gridfile.open( filename ); 
+      if( cube ) gg->writeCubeFile( gridfile );
+      else gg->writeToFile( gridfile ); 
+      gridfile.close();
 
       if( nomemory ){ 
         gg->clear(); norm=0.0; 
