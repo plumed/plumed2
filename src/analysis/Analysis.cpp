@@ -309,6 +309,8 @@ std::vector<double> Analysis::getMetric() const {
   std::vector<double> empty;
   if( metricname=="EUCLIDEAN" ){
       empty.resize( getNumberOfArguments(), 1.0 );
+  } else if( metricname=="DOTPRODUCT" ){
+      empty.resize( getNumberOfArguments(), 1.0 );
   }
   return empty;
 }
