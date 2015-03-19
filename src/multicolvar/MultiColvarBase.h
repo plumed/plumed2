@@ -107,7 +107,7 @@ public:
 /// And a virtual function which actually computes the colvar
   virtual double doCalculation( const unsigned& tindex, AtomValuePack& myatoms ) const ;  
 /// Update the atoms that have derivatives
-  virtual void updateActiveAtoms( AtomValuePack& myatoms ) const {};
+  virtual void updateActiveAtoms( AtomValuePack& myatoms ) const=0;
 /// This is replaced once we have a function to calculate the cv
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const=0;
 /// Apply the forces from this action

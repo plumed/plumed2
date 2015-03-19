@@ -37,6 +37,8 @@ private:
   std::vector<double> values;
 /// Derivatives
   Matrix<double> derivatives;
+/// Logical to check if any derivatives were set
+  bool atLeastOneSet;
 /// This is a fudge to save on vector resizing in MultiColvar
   std::vector<unsigned> indices;
 public:
@@ -116,13 +118,13 @@ void MultiValue::addValue( const unsigned& ival,  const double& val){
 
 inline
 void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, const double& der){
-  plumed_dbg_assert( ival<=values.size() );
+  plumed_dbg_assert( ival<=values.size() ); atLeastOneSet=true;
   hasDerivatives.activate(jder); derivatives(ival,jder) += der;
 }
 
 inline
 void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, const double& der){
-  plumed_dbg_assert( ival<=values.size() );
+  plumed_dbg_assert( ival<=values.size() ); atLeastOneSet=true;
   hasDerivatives.activate(jder); derivatives(ival,jder)=der;
 }
 

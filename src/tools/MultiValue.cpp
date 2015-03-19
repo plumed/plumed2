@@ -25,7 +25,8 @@ namespace PLMD{
 
 MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
 values(nvals),
-derivatives(nvals,nder)
+derivatives(nvals,nder),
+atLeastOneSet(false)
 {
   std::vector<unsigned> myind( nder );
   for(unsigned i=0;i<nder;++i) myind[i]=i;
@@ -37,18 +38,21 @@ void MultiValue::resize( const unsigned& nvals, const unsigned& nder ){
   hasDerivatives.clear(); std::vector<unsigned> myind( nder ); 
   for(unsigned i=0;i<nder;++i) myind[i]=i;
   hasDerivatives.createIndexListFromVector( myind );
+  atLeastOneSet=false;
 }
 
 void MultiValue::clearAll(){
-  if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
+  if( atLeastOneSet && !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
   for(unsigned i=0;i<values.size();++i) clear(i);
-  hasDerivatives.deactivateAll();
+  hasDerivatives.deactivateAll(); atLeastOneSet=false;
 }
 
 void MultiValue::clear( const unsigned& ival ){
   values[ival]=0;
-  for(unsigned i=0;i<hasDerivatives.getNumberActive();++i){
-      unsigned jder=hasDerivatives[i]; derivatives(ival,jder)=0.;   
+  if( atLeastOneSet ){
+      for(unsigned i=0;i<hasDerivatives.getNumberActive();++i){
+          unsigned jder=hasDerivatives[i]; derivatives(ival,jder)=0.;   
+      }
   }
 }
 
@@ -72,7 +76,6 @@ void MultiValue::copyValues( MultiValue& outvals ) const {
 
 void MultiValue::copyDerivatives( MultiValue& outvals ){
   plumed_dbg_assert( values.size()<=outvals.getNumberOfValues() && derivatives.ncols()<=outvals.getNumberOfDerivatives() );
-
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
   for(unsigned i=0;i<values.size();++i){
@@ -85,7 +88,6 @@ void MultiValue::copyDerivatives( MultiValue& outvals ){
 
 void MultiValue::quotientRule( const unsigned& nder, const unsigned& dder, const unsigned& oder ){
   plumed_dbg_assert( nder<values.size() && dder<values.size() && oder<values.size() );
-
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
   double weight = values[dder], pref = values[nder] / (weight*weight);
