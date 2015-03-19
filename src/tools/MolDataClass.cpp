@@ -28,6 +28,8 @@ namespace PLMD {
 
 unsigned MolDataClass::numberOfAtomsPerResidueInBackbone( const std::string& type ){
   if( type=="protein" ) return 5;
+  else if( type=="dna" ) return 6;
+  else if( type=="rna" ) return 6;   
   else return 0;
 }
 
@@ -66,6 +68,46 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
       else if(residuename=="HIP") return true; // neutral HIS-P amber
       else if(residuename=="HSP") return true; // neutral HIS-P charmm
       else return false; 
+  } else if( type=="dna" ){
+      if(residuename=="DA") return true;
+      else if(residuename=="DG") return true;
+      else if(residuename=="DT") return true;
+      else if(residuename=="DC") return true;
+      else if(residuename=="DA5") return true;
+      else if(residuename=="DA3") return true;
+      else if(residuename=="DAN") return true;
+      else if(residuename=="DG5") return true;
+      else if(residuename=="DG3") return true;
+      else if(residuename=="DGN") return true;
+      else if(residuename=="DT5") return true;
+      else if(residuename=="DT3") return true;
+      else if(residuename=="DTN") return true;
+      else if(residuename=="DC5") return true;
+      else if(residuename=="DC3") return true;
+      else if(residuename=="DCN") return true;
+      else return false;
+  } else if( type=="rna" ){
+      if(residuename=="A") return true;
+      else if(residuename=="G") return true;
+      else if(residuename=="U") return true;
+      else if(residuename=="C") return true;
+      else if(residuename=="RA") return true;
+      else if(residuename=="RA5") return true;
+      else if(residuename=="RA3") return true;
+      else if(residuename=="RAN") return true;
+      else if(residuename=="RG") return true;
+      else if(residuename=="RG5") return true;
+      else if(residuename=="RG3") return true;
+      else if(residuename=="RGN") return true;
+      else if(residuename=="RU") return true;
+      else if(residuename=="RU5") return true;
+      else if(residuename=="RU3") return true;
+      else if(residuename=="RUN") return true;
+      else if(residuename=="RC") return true;
+      else if(residuename=="RC5") return true;
+      else if(residuename=="RC3") return true;
+      else if(residuename=="RCN") return true;
+      else return false;
   } 
   return false;
 }
@@ -95,7 +137,16 @@ void MolDataClass::getBackboneForResidue( const std::string& type, const unsigne
          atoms[3]=mypdb.getNamedAtomFromResidue("C",residuenum);
          atoms[4]=mypdb.getNamedAtomFromResidue("O",residuenum);
      }
-  } else {
+  } else if( type=="dna" || type=="rna" ){
+      atoms.resize(6);
+      atoms[0]=mypdb.getNamedAtomFromResidue("P",residuenum);
+      atoms[1]=mypdb.getNamedAtomFromResidue("O5\'",residuenum);
+      atoms[2]=mypdb.getNamedAtomFromResidue("C5\'",residuenum);
+      atoms[3]=mypdb.getNamedAtomFromResidue("C4\'",residuenum);
+      atoms[4]=mypdb.getNamedAtomFromResidue("C3\'",residuenum);
+      atoms[5]=mypdb.getNamedAtomFromResidue("O3\'",residuenum);
+  } 
+  else {
      plumed_merror(type + " is not a valid molecule type");
   }
 }
@@ -163,7 +214,238 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
            numbers[3]=mypdb.getNamedAtomFromResidue("OG",resnum);
          else  numbers[3]=mypdb.getNamedAtomFromResidue("CG",resnum);
       }
-  } else {
+  } else if( type=="dna" || type=="rna" ){
+      if( symbol.find("chi")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          if( resname=="DT" || resname=="DC" || resname=="U" || resname=="C" ){
+              numbers.resize(4);
+              numbers[0]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
+              numbers[1]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
+              numbers[2]=mypdb.getNamedAtomFromResidue("N1",resnum);
+              numbers[3]=mypdb.getNamedAtomFromResidue("C2",resnum);
+          } else if( resname=="DG" || resname=="DA" || resname=="G" || resname=="A" ){
+              numbers.resize(4);
+              numbers[0]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
+              numbers[1]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
+              numbers[2]=mypdb.getNamedAtomFromResidue("N1",resnum);
+              numbers[3]=mypdb.getNamedAtomFromResidue("C4",resnum);
+          }
+      } else if( symbol.find("alpha")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("O3\'",resnum-1);
+          numbers[1]=mypdb.getNamedAtomFromResidue("P",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("O5\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
+      } else if( symbol.find("beta")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("P",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("O5\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+      } else if( symbol.find("gamma")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("O5\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+      } else if( symbol.find("delta")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
+      } else if( symbol.find("epsilon")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("P",resnum);
+      } else if( symbol.find("zeta")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("P",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("O5\'",resnum+1);
+      } else if( symbol.find("v0")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
+      } else if( symbol.find("v1")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+      } else if( symbol.find("v2")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+      } else if( symbol.find("v3")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
+      } else if( symbol.find("v4")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(4);
+          numbers[0]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
+      } else if( symbol.find("back")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(6);
+          numbers[0]=mypdb.getNamedAtomFromResidue("P",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("O5\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+          numbers[4]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+          numbers[5]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
+      } else if( symbol.find("sugar")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          numbers.resize(5);
+          numbers[0]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
+          numbers[1]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
+          numbers[4]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
+      } else if( symbol.find("base")!=std::string::npos ){
+          std::size_t dash=symbol.find_first_of('-');
+          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+          std::string resname = mypdb.getResidueName(resnum);
+          if( type=="rna" ){resname.erase (0,2);} else if( type=="dna" ){resname.erase (0,1);}
+          if( !allowedResidue( type, resname ) ) return ;
+          if( resname=="DC" || resname=="C" || resname=="DCN" || resname=="DC5" || resname=="DC3" || resname=="RC5" || resname=="RC3" || resname=="RCN" ){
+              numbers.resize(8);
+              numbers[0]=mypdb.getNamedAtomFromResidue("N1",resnum);
+              numbers[1]=mypdb.getNamedAtomFromResidue("C2",resnum);
+              numbers[2]=mypdb.getNamedAtomFromResidue("O2",resnum);
+              numbers[3]=mypdb.getNamedAtomFromResidue("N3",resnum);
+              numbers[4]=mypdb.getNamedAtomFromResidue("C4",resnum);
+              numbers[5]=mypdb.getNamedAtomFromResidue("N4",resnum);
+              numbers[6]=mypdb.getNamedAtomFromResidue("C5",resnum);
+              numbers[7]=mypdb.getNamedAtomFromResidue("C6",resnum);
+          } else if( resname=="U" || resname=="RU" || resname=="RU5" || resname=="RU3" || resname=="RUN" ){
+              numbers.resize(8);
+              numbers[0]=mypdb.getNamedAtomFromResidue("N1",resnum);
+              numbers[1]=mypdb.getNamedAtomFromResidue("C2",resnum);
+              numbers[2]=mypdb.getNamedAtomFromResidue("O2",resnum);
+              numbers[3]=mypdb.getNamedAtomFromResidue("N3",resnum);
+              numbers[4]=mypdb.getNamedAtomFromResidue("C4",resnum);
+              numbers[5]=mypdb.getNamedAtomFromResidue("O4",resnum);
+              numbers[6]=mypdb.getNamedAtomFromResidue("C5",resnum);
+              numbers[7]=mypdb.getNamedAtomFromResidue("C6",resnum);
+          } else if( resname=="DT" || resname=="DT5" || resname=="DT3" || resname=="DTN" ){
+              numbers.resize(9);
+              numbers[0]=mypdb.getNamedAtomFromResidue("N1",resnum);
+              numbers[1]=mypdb.getNamedAtomFromResidue("C2",resnum);
+              numbers[2]=mypdb.getNamedAtomFromResidue("O2",resnum);
+              numbers[3]=mypdb.getNamedAtomFromResidue("N3",resnum);
+              numbers[4]=mypdb.getNamedAtomFromResidue("C4",resnum);
+              numbers[5]=mypdb.getNamedAtomFromResidue("O4",resnum);
+              numbers[6]=mypdb.getNamedAtomFromResidue("C5",resnum);
+              numbers[7]=mypdb.getNamedAtomFromResidue("C7",resnum);
+              numbers[8]=mypdb.getNamedAtomFromResidue("C6",resnum);
+          } else if( resname=="DG" || resname=="G" ){
+              numbers.resize(11);
+              numbers[0]=mypdb.getNamedAtomFromResidue("N9",resnum);
+              numbers[1]=mypdb.getNamedAtomFromResidue("C4",resnum);
+              numbers[2]=mypdb.getNamedAtomFromResidue("N3",resnum);
+              numbers[3]=mypdb.getNamedAtomFromResidue("C2",resnum);
+              numbers[4]=mypdb.getNamedAtomFromResidue("N2",resnum);
+              numbers[5]=mypdb.getNamedAtomFromResidue("N1",resnum);
+              numbers[6]=mypdb.getNamedAtomFromResidue("C6",resnum);
+              numbers[7]=mypdb.getNamedAtomFromResidue("O6",resnum);
+              numbers[8]=mypdb.getNamedAtomFromResidue("C5",resnum);
+              numbers[9]=mypdb.getNamedAtomFromResidue("N7",resnum);
+              numbers[10]=mypdb.getNamedAtomFromResidue("C8",resnum);
+          }  else if( resname=="DA" || resname=="A" ){
+              numbers.resize(10);
+              numbers[0]=mypdb.getNamedAtomFromResidue("N9",resnum);
+              numbers[1]=mypdb.getNamedAtomFromResidue("C4",resnum);
+              numbers[2]=mypdb.getNamedAtomFromResidue("N1",resnum);
+              numbers[3]=mypdb.getNamedAtomFromResidue("C2",resnum);
+              numbers[4]=mypdb.getNamedAtomFromResidue("N3",resnum);
+              numbers[5]=mypdb.getNamedAtomFromResidue("C6",resnum);
+              numbers[6]=mypdb.getNamedAtomFromResidue("N6",resnum);
+              numbers[7]=mypdb.getNamedAtomFromResidue("C5",resnum);
+              numbers[8]=mypdb.getNamedAtomFromResidue("N7",resnum);
+              numbers[9]=mypdb.getNamedAtomFromResidue("C8",resnum);
+          }
+      }
+  }
+  else {
       plumed_merror(type + " is not a valid molecule type"); 
   }
 }  
