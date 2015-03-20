@@ -60,6 +60,8 @@ First, it can be incorporated into an MD code and used to analyse or bias a mole
 Notice that some MD code could already include calls to the PLUMED library
 and be PLUMED-ready in its original distribution.
 As far as we know, the following MD codes can be used with PLUMED 2 out of the box:
+- [AmberTools](http://ambermd.org/), sander module, since version 15.
+- [CP2K](http://www.cp2k.org), since Feb 2015.
 - [ESPResSo](http://espressomd.org), in a Plumedized version that can be found
   [here](http://davidebr.github.io/espresso/).
 - [PINY-MD](http://github.com/TuckermanGroup/PINY), in its plumed branch.
