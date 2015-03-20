@@ -29,6 +29,7 @@
 #include "FunctionVessel.h"
 #include "StoreDataVessel.h"
 #include "tools/OpenMP.h"
+#include "tools/Stopwatch.h"
 
 using namespace std;
 namespace PLMD{
@@ -47,6 +48,7 @@ void ActionWithVessel::registerKeywords(Keywords& keys){
                                      "we have to start using lowmem");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
+  keys.addFlag("TIMINGS",false,"output information on the timings of the various parts of the calculation");
   keys.reserveFlag("HIGHMEM",false,"use a more memory intensive version of this collective variable");
   keys.add( vesselRegister().getKeywords() );
 }
@@ -59,7 +61,8 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   actionIsBridged(false),
   mydata(NULL),
   contributorsAreUnlocked(false),
-  weightHasDerivatives(false)
+  weightHasDerivatives(false),
+  stopwatch(*new Stopwatch)
 {
   maxderivatives=309; parse("MAXDERIVATIVES",maxderivatives);
   if( keywords.exists("SERIAL") ) parseFlag("SERIAL",serial);
@@ -85,10 +88,18 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
      if( nl_tolerance>epsilon ) log.printf(" and ignoring quantities less than %f inbetween neighbor list update steps\n",nl_tolerance);
      else log.printf("\n");
   }
+  parseFlag("TIMINGS",timers);
+  stopwatch.start(); stopwatch.pause();
 }
 
 ActionWithVessel::~ActionWithVessel(){
   for(unsigned i=0;i<functions.size();++i) delete functions[i]; 
+  stopwatch.start(); stopwatch.stop();
+  if(timers){
+     log.printf("timings for action %s with label %s \n", getName().c_str(), getLabel().c_str() );
+     log<<stopwatch;
+  }
+  delete &stopwatch;
 }
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ){
@@ -281,7 +292,9 @@ void ActionWithVessel::runAllTasks(){
   if(serial){ stride=1; rank=0; }
 
   // Make sure jobs are done
+  if(timers) stopwatch.start("1 Prepare Tasks");
   doJobsRequiredBeforeTaskList();
+  if(timers) stopwatch.stop("1 Prepare Tasks");
 
   // Get number of threads for OpenMP
   unsigned nt=OpenMP::getNumThreads();
@@ -299,6 +312,7 @@ void ActionWithVessel::runAllTasks(){
   // Build storage stuff for loop
   // std::vector<double> buffer( bufsize, 0.0 );
 
+  if(timers) stopwatch.start("2 Loop over tasks");
 #pragma omp parallel num_threads(nt)
 {
   std::vector<double> omp_buffer;
@@ -340,6 +354,7 @@ void ActionWithVessel::runAllTasks(){
 #pragma omp critical
   if(nt>1) for(unsigned i=0;i<bufsize;++i) buffer[i]+=omp_buffer[i];
 }
+  if(timers) stopwatch.stop("2 Loop over tasks");
 
   // MPI Gather everything
   if( !serial && buffer.size()>0 ) comm.Sum( buffer );
@@ -351,7 +366,9 @@ void ActionWithVessel::runAllTasks(){
   // this causes problems if we do it in prepare
   if( !serial && contributorsAreUnlocked ) comm.Sum( taskFlags );
 
+  if(timers) stopwatch.start("3 Finishing computations");
   finishComputations( buffer );
+  if(timers) stopwatch.stop("3 Finishing computations");
 }
 
 void ActionWithVessel::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {

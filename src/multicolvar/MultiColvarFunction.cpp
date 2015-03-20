@@ -275,7 +275,10 @@ void MultiColvarFunction::updateActiveAtoms( AtomValuePack& myatoms ) const {
 void MultiColvarFunction::getVectorDerivatives( const unsigned& ind, const bool& normed, MultiValue& myder ) const {
   plumed_dbg_assert( ind<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[ind];
   plumed_dbg_assert( mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(ind,mmc) ) );
-  myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
+  if( myder.getNumberOfValues()!=mybasemulticolvars[mmc]->getNumberOfQuantities() || 
+      myder.getNumberOfDerivatives()!=mybasemulticolvars[mmc]->getNumberOfDerivatives() ){
+          myder.resize( mybasemulticolvars[mmc]->getNumberOfQuantities(), mybasemulticolvars[mmc]->getNumberOfDerivatives() );
+  }
   mybasedata[mmc]->retrieveDerivatives( convertToLocalIndex(ind,mmc), normed, myder );
 }
 

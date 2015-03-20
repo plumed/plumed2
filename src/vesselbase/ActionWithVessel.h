@@ -31,6 +31,7 @@
 
 namespace PLMD{
 class Value;
+class Stopwatch;
 
 namespace vesselbase{
 
@@ -86,6 +87,10 @@ private:
   std::vector<unsigned> der_list;
 /// The buffer that we use (we keep a copy here to avoid resizing)
   std::vector<double> buffer;
+/// Do we want to output information on the timings of different parts of the calculation
+  bool timers;
+/// The stopwatch that times the different parts of the calculation
+  Stopwatch& stopwatch;
 protected:
 /// The terms in the series are locked
   bool contributorsAreUnlocked;

@@ -191,8 +191,8 @@ void DFSBasic::doCalculationOnCluster(){
        unsigned i=myatoms[j];
        // Need to copy values from base action
        getVectorForTask( i, false, vals );
-       for(unsigned i=0;i<vals.size();++i) myvals.setValue( i, vals[i] );
        if( !doNotCalculateDerivatives() ) getVectorDerivatives( i, false, myvals );
+       for(unsigned k=0;k<vals.size();++k) myvals.setValue( k, vals[k] );
        // Run calculate all vessels
        calculateAllVessels( i, myvals, bvals, buffer, der_index );
        myvals.clearAll();
