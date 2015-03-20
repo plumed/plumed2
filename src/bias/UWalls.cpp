@@ -44,7 +44,7 @@ The expression for the bias due to the wall is given by:
 \f$
 
 \f$k_i\f$ (KAPPA) is an energy constant in internal unit of the code, \f$s_i\f$ (EPS) a rescaling factor and 
-\f$e_i\f$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFF = 0.
+\f$e_i\f$ (EXP) the exponent determining the power law. By default: EXP = 2, EPS = 1.0, OFFSET = 0.
 
 
 \par Examples
@@ -55,8 +55,8 @@ It also tells plumed to print the energy of the walls.
 \verbatim
 DISTANCE ATOMS=3,5 LABEL=d1
 DISTANCE ATOMS=2,4 LABEL=d2
-UPPER_WALLS ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET 0,0 LABEL=uwall
-LOWER_WALLS ARG=d1,d2 AT=0.0,1.0 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET 0,0 LABEL=lwall
+UPPER_WALLS ARG=d1,d2 AT=1.0,1.5 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0 LABEL=uwall
+LOWER_WALLS ARG=d1,d2 AT=0.0,1.0 KAPPA=150.0,150.0 EXP=2,2 EPS=1,1 OFFSET=0,0 LABEL=lwall
 PRINT ARG=uwall.bias,lwall.bias
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
