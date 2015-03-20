@@ -46,6 +46,11 @@ void AdjacencyMatrixVessel::setFinishedTrue(){
   finished=true;
 }
 
+bool AdjacencyMatrixVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+  if( !finished ) return StoreDataVessel::calculate( current, myvals, buffer, der_list );
+  return false;
+}
+
 void AdjacencyMatrixVessel::finish( const std::vector<double>& buffer ){
   if( !finished ){
      finished=true;

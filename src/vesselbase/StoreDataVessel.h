@@ -102,7 +102,7 @@ public:
 /// Get the size of the derivative list
   unsigned getSizeOfDerivativeList() const ;
 /// This stores the data when not using lowmem
-  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
+  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Build index stores
 //  void buildIndexStores( const unsigned& current, MultiValue& myvals, std::vector<unsigned>& val_index, std::vector<unsigned>& der_index ) const ;
 /// Final step in gathering data

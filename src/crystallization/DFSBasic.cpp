@@ -175,17 +175,18 @@ void DFSBasic::doCalculationOnCluster(){
 
    // Now calculate properties of the largest cluster 
    ActionWithVessel::doJobsRequiredBeforeTaskList();  // Note we loose adjacency data by doing this
+   // Get rid of bogus derivatives
+   clearDerivatives(); 
+
    // Get size for buffer
+   getAdjacencyVessel()->setFinishedTrue();    // This ensures buffer size is smaller
    unsigned bsize=0, bufsize=getSizeOfBuffer(bsize); 
-   // std::vector<double> buffer( getSizeOfBuffer( bsize ), 0.0 );
    if( buffer.size()!=bufsize ) buffer.resize( bufsize );
    buffer.assign( bufsize, 0.0 );   
 
    std::vector<double> vals( getNumberOfQuantities() ); std::vector<unsigned> der_index;
    MultiValue myvals( getNumberOfQuantities(), getNumberOfDerivatives() );
    MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
-   // Get rid of bogus derivatives
-   clearDerivatives(); getAdjacencyVessel()->setFinishedTrue();
    for(unsigned j=rank;j<myatoms.size();j+=size){
        // Note loop above over array containing atoms so this is load balanced
        unsigned i=myatoms[j];

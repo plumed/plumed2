@@ -40,13 +40,24 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Constructor
   AdjacencyMatrixVessel( const vesselbase::VesselOptions& );
+/// Ensures we use less memory for buffer in final loop
+  void setBufferStart( unsigned& start );
 /// Ensures that finish is set properly
   void prepare();
 /// Set the finished flag true
   void setFinishedTrue();
+/// An overwrite of calculate to stop this being done more than once
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Finish the calculation
   void finish( const std::vector<double>& buffer );
 };
+
+inline
+void AdjacencyMatrixVessel::setBufferStart( unsigned& start ){
+  if( finished ){ bufstart=start; }
+  else { Vessel::setBufferStart( start ); } 
+}
+
 
 }
 }
