@@ -356,6 +356,7 @@ void ActionWithVessel::runAllTasks(){
 }
   if(timers) stopwatch.stop("2 Loop over tasks");
 
+  if(timers) stopwatch.start("3 MPI gather");
   // MPI Gather everything
   if( !serial && buffer.size()>0 ) comm.Sum( buffer );
   // MPI Gather index stores
@@ -365,10 +366,11 @@ void ActionWithVessel::runAllTasks(){
   // Update the elements that are makign contributions to the sum here
   // this causes problems if we do it in prepare
   if( !serial && contributorsAreUnlocked ) comm.Sum( taskFlags );
+  if(timers) stopwatch.stop("3 MPI gather");
 
-  if(timers) stopwatch.start("3 Finishing computations");
+  if(timers) stopwatch.start("4 Finishing computations");
   finishComputations( buffer );
-  if(timers) stopwatch.stop("3 Finishing computations");
+  if(timers) stopwatch.stop("4 Finishing computations");
 }
 
 void ActionWithVessel::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
@@ -388,7 +390,7 @@ bool ActionWithVessel::calculateAllVessels( const unsigned& taskCode, MultiValue
 
 void ActionWithVessel::finishComputations( const std::vector<double>& buffer ){
   // Set the final value of the function
-  for(unsigned j=0;j<functions.size();++j) functions[j]->finish( buffer ); 
+  for(unsigned j=0;j<functions.size();++j) functions[j]->finish( buffer );  
 }
 
 bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply ){
