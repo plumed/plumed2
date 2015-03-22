@@ -24,8 +24,6 @@
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 #include <cmath>
-#include <ctime>
-#include "time.h"
 
 using namespace std;
 
@@ -139,7 +137,9 @@ PLUMED_BIAS_INIT(ao), MCsteps_(1), MCstride_(1), MCaccept_(0), MCfirst_(-1)
   kbt_ = plumed.getAtoms().getKbT();
 
   // get number of replicas
-  nrep_ = multi_sim_comm.Get_size();
+  if(comm.Get_rank()==0) nrep_ = multi_sim_comm.Get_size();
+  else nrep_ = 0;
+  comm.Sum(&nrep_,1);
 
   // divide sigma_mean by the square root of the number of replicas
   sigma_mean_ /= sqrt(static_cast<double>(nrep_));
@@ -166,7 +166,6 @@ PLUMED_BIAS_INIT(ao), MCsteps_(1), MCstride_(1), MCaccept_(0), MCfirst_(-1)
   valueSigma=getPntrToComponent("sigma");
   valueAccept=getPntrToComponent("accept");
   valueKappa=getPntrToComponent("kappa");
-
 
   // initialize random seed
   unsigned int iseed;
