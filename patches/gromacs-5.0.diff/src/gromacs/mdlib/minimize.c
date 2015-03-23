@@ -795,6 +795,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
      */
     /* PLUMED */
     int plumedNeedsEnergy=0;
+    real plumed_vir[3][3];
     if(plumedswitch){
       long int lstep=count; (*plumedcmd)(plumedmain,"setStepLong",&count);
       (*plumedcmd) (plumedmain,"setPositions",&ems->s.x[0][0]);
@@ -803,8 +804,9 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
       (*plumedcmd) (plumedmain,"setBox",&ems->s.box[0][0]);
       (*plumedcmd) (plumedmain,"prepareCalc",NULL);
       (*plumedcmd) (plumedmain,"setForces",&ems->f[0][0]);
-      (*plumedcmd) (plumedmain,"setVirial",&force_vir[0][0]);
       (*plumedcmd) (plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+      for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) plumed_vir[i][j]=0.0;
+      (*plumedcmd) (plumedmain,"setVirial",&plumed_vir[0][0]);
     }
     /* END PLUMED */
     do_force(fplog, cr, inputrec,
@@ -818,8 +820,12 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     /* PLUMED */
     if(plumedswitch){
       if(plumedNeedsEnergy) {
+        for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) plumed_vir[i][j]=force_vir[i][j]*2.0;
         (*plumedcmd) (plumedmain,"setEnergy",&enerd->term[F_EPOT]);
         (*plumedcmd) (plumedmain,"performCalc",NULL);
+        for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) force_vir[i][j]=plumed_vir[i][j]*0.5;
+      } else {
+        for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) force_vir[i][j]+=plumed_vir[i][j]*0.5;
       }
     }
     /* END PLUMED */

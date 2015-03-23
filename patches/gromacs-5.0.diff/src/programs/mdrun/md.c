@@ -233,6 +233,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* PLUMED */
     int plumedNeedsEnergy=0;
     int plumedWantsToStop=0;
+    real plumed_vir[3][3];
     /* END PLUMED */
 
 #ifdef GMX_FAHCORE
@@ -1150,8 +1151,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               plumed_cmd(plumedmain,"prepareCalc",NULL);
               plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
               plumed_cmd(plumedmain,"setForces",&f[0][0]);
-              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
               plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+              for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) plumed_vir[i][j]=0.0;
+              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
             }
             /* END PLUMED */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
@@ -1163,8 +1165,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* PLUMED */
             if(plumedswitch){
               if(plumedNeedsEnergy){
+                for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) plumed_vir[i][j]=force_vir[i][j]*2.0;
                 plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
                 plumed_cmd(plumedmain,"performCalc",NULL);
+                for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) force_vir[i][j]=plumed_vir[i][j]*0.5;
+              } else {
+                for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) force_vir[i][j]+=plumed_vir[i][j]*0.5;
               }
               if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
                  do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
