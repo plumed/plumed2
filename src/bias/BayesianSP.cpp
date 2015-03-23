@@ -272,7 +272,7 @@ void BayesianSP::calculate(){
        // increment energy
        ene += std::log( 2.0 * a2 / ( 1.0 - t ) );
        // increment force
-       f += 0.5 / a2 - 1.0 / (1.0-t) * t * 0.5 / sigma_mean_ / sigma_mean_;
+       f += - 0.5 / a2 + 1.0 / (1.0-t) * t * 0.5 / sigma_mean_ / sigma_mean_;
     }
     // set derivatives
     setOutputForce(i, kbt_*f);
