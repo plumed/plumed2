@@ -216,7 +216,6 @@ bool Value::hasDerivatives() const {
 
 inline
 void Value::resizeDerivatives(int n){
-  plumed_massert(hasDeriv,"cannot resize derivatives in values that have not got derivatives"); 
   derivatives.resize(n);
 }
 
