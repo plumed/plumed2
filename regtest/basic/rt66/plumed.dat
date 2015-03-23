@@ -34,7 +34,7 @@ puck14: PUCKERING ATOMS=@sugar-14
 PRINT ARG=t2,t3,t4,t5,t6,t7,t8,t9,t10,t12,d1 FILE=COLVAR FMT=%6.3f
 
 DUMPDERIVATIVES ...
-  ARG=puck1.Zx,puck1.Zy,puck2.Zx,puck2.Zy,puck3.Zx,puck3.Zy,puck4.Zx,puck4.Zy,puck5.Zx,puck5.Zy,puck6.Zx,puck6.Zy,puck7.Zx,puck7.Zy,puck8.Zx,puck8.Zy,puck9.Zx,puck9.Zy,puck10.Zx,puck10.Zy,puck11.Zx,puck11.Zy,puck12.Zx,puck12.Zy,puck13.Zx,puck13.Zy,puck14.Zx,puck14.Zy
+  ARG=puck1.amp,puck1.phs,puck1.Zx,puck1.Zy,puck2.Zx,puck2.Zy,puck3.Zx,puck3.Zy,puck4.Zx,puck4.Zy,puck5.Zx,puck5.Zy,puck6.Zx,puck6.Zy,puck7.Zx,puck7.Zy,puck8.Zx,puck8.Zy,puck9.Zx,puck9.Zy,puck10.Zx,puck10.Zy,puck11.Zx,puck11.Zy,puck12.Zx,puck12.Zy,puck13.Zx,puck13.Zy,puck14.Zx,puck14.Zy
   FILE=DERIVATIVES 
   FMT=%8.4f
 ... DUMPDERIVATIVES 
