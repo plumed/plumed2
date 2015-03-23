@@ -317,7 +317,8 @@ void init_em(FILE *fplog, const char *title,
              gmx_vsite_t *vsite, gmx_constr_t constr,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
-             int imdport, unsigned long gmx_unused Flags)
+             int imdport, unsigned long gmx_unused Flags,
+             gmx_wallcycle_t wcycle)
 {
     int  i;
     real dvdl_constr;
@@ -434,7 +435,7 @@ void init_em(FILE *fplog, const char *title,
         *gstat = global_stat_init(ir);
     }
 
-    *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, ir, top_global, NULL);
+    *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, ir, top_global, NULL, wcycle);
 
     snew(*enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
@@ -593,6 +594,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     int      start, end;
     rvec    *x1, *x2;
     real     dvdl_constr;
+    int      nthreads gmx_unused;
 
     s1 = &ems1->s;
     s2 = &ems2->s;
@@ -630,7 +632,8 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     x1 = s1->x;
     x2 = s2->x;
 
-#pragma omp parallel num_threads(gmx_omp_nthreads_get(emntUpdate))
+    nthreads = gmx_omp_nthreads_get(emntUpdate);
+#pragma omp parallel num_threads(nthreads)
     {
         int gf, i, m;
 
@@ -1072,7 +1075,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
     init_em(fplog, CG, cr, inputrec,
             state_global, top_global, s_min, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, &mdebin, imdport, Flags);
+            nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1744,7 +1747,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     init_em(fplog, LBFGS, cr, inputrec,
             state, top_global, &ems, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, &mdebin, imdport, Flags);
+            nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
     /* Do_lbfgs is not completely updated like do_steep and do_cg,
      * so we free some memory again.
      */
@@ -2489,7 +2492,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     init_em(fplog, SD, cr, inputrec,
             state_global, top_global, s_try, &top, &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, &mdebin, imdport, Flags);
+            nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
@@ -2741,7 +2744,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
             state_global, top_global, state_work, &top,
             &f, &f_global,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
-            nfile, fnm, &outf, NULL, imdport, Flags);
+            nfile, fnm, &outf, NULL, imdport, Flags, wcycle);
 
     natoms = top_global->natoms;
     snew(fneg, natoms);
