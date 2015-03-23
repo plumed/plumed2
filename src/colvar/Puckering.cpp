@@ -143,6 +143,12 @@ void Puckering::calculate(){
   for(unsigned j=0;j<5;j++) dZx_dR[j]*=(1.0/(2.0*cos(4.0*pi/5.0)));
   for(unsigned j=0;j<5;j++) dZy_dR[j]*=(1.0/(2.0*sin(4.0*pi/5.0)));
     
+  Vector dphase_dR[5];
+    for(unsigned j=0;j<5;j++) dphase_dR[j]=(1.0/(Zx*Zx+Zy*Zy))*(-Zy*dZx_dR[j] + Zx*dZy_dR[j]);  
+  
+  Vector damplitude_dR[5];
+    for(unsigned j=0;j<5;j++) damplitude_dR[j]=(1.0/amplitude)*(Zx*dZx_dR[j] + Zy*dZy_dR[j]);   
+    
   Value* vzx=getPntrToComponent("Zx");
   vzx->set(Zx);
   setAtomsDerivatives (vzx,0, dZx_dR[0]);
@@ -170,8 +176,32 @@ void Puckering::calculate(){
   setBoxDerivatives (vzy,zy_virial);
 
 
-  getPntrToComponent("amp")->set(amplitude);
-  getPntrToComponent("phs")->set(phase);
+  Value* vph=getPntrToComponent("phs");
+  vph->set(phase);
+  setAtomsDerivatives (vph,0, dphase_dR[0]);
+  setAtomsDerivatives (vph,1, dphase_dR[1]);
+  setAtomsDerivatives (vph,2, dphase_dR[2]);
+  setAtomsDerivatives (vph,3, dphase_dR[3]);
+  setAtomsDerivatives (vph,4, dphase_dR[4]);
+  Tensor phase_virial;
+  for(unsigned j=0;j<5;j++){
+    phase_virial-=extProduct(r[j],dphase_dR[j]);
+  }
+  setBoxDerivatives (vph,phase_virial);
+    
+  Value* vam=getPntrToComponent("amp");
+  vam->set(amplitude);
+  setAtomsDerivatives (vam,0, damplitude_dR[0]);
+  setAtomsDerivatives (vam,1, damplitude_dR[1]);
+  setAtomsDerivatives (vam,2, damplitude_dR[2]);
+  setAtomsDerivatives (vam,3, damplitude_dR[3]);
+  setAtomsDerivatives (vam,4, damplitude_dR[4]);
+  Tensor amplitude_virial;
+  for(unsigned j=0;j<5;j++){
+    amplitude_virial-=extProduct(r[j],damplitude_dR[j]);
+  }
+  setBoxDerivatives (vam,amplitude_virial);  
+
     
 }
 
