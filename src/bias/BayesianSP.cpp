@@ -21,8 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "ActionRegister.h"
-
-#include <math.h>
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
+#include <cmath>
 
 using namespace std;
 
@@ -51,7 +52,7 @@ to print the values of the uncertainty parameter, MC acceptance, and Bayesian sc
 \verbatim
 WHOLEMOLECULES ENTITY0=1-174
 cs:  CS2BACKBONE ATOMS=1-174 DATA=data/ FF=a03_gromacs.mdb FLAT=0.0 NRES=13 ENSEMBLE COMPONENTS
-csb: BAYESIANSP ARG=cs.ha SIGMA0=1.0 SIGMA_MIN=0.00001 SIGMA_MAX=10.0 DSIGMA=0.1 KBT=2.494 MC_STEPS=1 MC_STRIDE=1 MC_SEED=1234
+csb: BAYESIANSP ARG=cs.ha SIGMA0=1.0 SIGMA_MIN=0.00001 SIGMA_MAX=10.0 DSIGMA=0.1 NDATA=13
 PRINT ARG=csb.sigma,csb.accept,csb.bias
 \endverbatim
 (See also \ref CS2BACKBONE and \ref PRINT).
@@ -63,30 +64,32 @@ PRINT ARG=csb.sigma,csb.accept,csb.bias
 
 class BayesianSP : public Bias
 {
-// constants
-  const double sqrt2_div_pi = 0.45015815807855; 
-// sigma is data uncertainty
+  const double sqrt2_div_pi = 0.45015815807855;
+  // sigma is data uncertainty
   double sigma_;
   double sigma_min_;
   double sigma_max_;
   double Dsigma_;
-// sigma_mean is uncertainty on the mean estimate
+  // vectors to communicate sigma
+  vector<double> s2_global_;
+  vector<double> s2_local_;
+  // sigma_mean is uncertainty in the mean estimate
   double sigma_mean_;
-// temperature in kbt
-  double temp_;
-// number of replicas
+  // temperature in kbt
+  double kbt_;
+  // number of data points
+  int ndata_;
+  // number of replicas
   int nrep_;
-// Monte Carlo stuff
+  // Monte Carlo stuff
   int MCsteps_;
   int MCstride_;
-  unsigned int MCseed_;
   unsigned int MCaccept_;
   long int MCfirst_;
-// output
+  // output
   Value* valueBias;
   Value* valueSigma;
   Value* valueAccept;
-  Value* valueKappa;
  
   void doMonteCarlo();
   double getEnergy(double sigma);
@@ -104,70 +107,75 @@ PLUMED_REGISTER_ACTION(BayesianSP,"BAYESIANSP")
 void BayesianSP::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   keys.use("ARG");
-  keys.add("compulsory","SIGMA0",   "1.0",    "initial value of the uncertainty parameter");
-  keys.add("compulsory","SIGMA_MIN","0.00001","minimum value of the uncertainty parameter");
-  keys.add("compulsory","SIGMA_MAX","10.0",   "maximum value of the uncertainty parameter");
-  keys.add("compulsory","DSIGMA",   "0.1",    "maximum MC move of the uncertainty parameter");
-  keys.add("compulsory","SIGMA_MEAN","0.1",    "uncertainty in the mean estimate");
-  keys.add("compulsory","KBT",      "2.494",  "temperature of the system in energy units");
-  keys.add("compulsory","NREP",               "number of replicas");
-  keys.add("compulsory","MC_STEPS", "1",      "number of MC steps");
-  keys.add("compulsory","MC_STRIDE","1",      "MC stride");
-  keys.add("compulsory","MC_SEED",  "1234",   "MC seed");
+  keys.add("compulsory","SIGMA0","initial value of the uncertainty parameter");
+  keys.add("compulsory","SIGMA_MIN","minimum value of the uncertainty parameter");
+  keys.add("compulsory","SIGMA_MAX","maximum value of the uncertainty parameter");
+  keys.add("compulsory","DSIGMA","maximum MC move of the uncertainty parameter");
+  keys.add("compulsory","SIGMA_MEAN","uncertainty in the mean estimate");
+  keys.add("compulsory","NDATA","number of experimental data points");
+  keys.add("optional","MC_STEPS","number of MC steps");
+  keys.add("optional","MC_STRIDE","MC stride");
   componentsAreNotOptional(keys); 
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
   keys.addOutputComponent("sigma", "default","uncertainty parameter");
-  keys.addOutputComponent("kappa", "default","intensity of the harmonic restraint");
   keys.addOutputComponent("accept","default","MC acceptance");
 }
 
 BayesianSP::BayesianSP(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao),
-sigma_(1.0), sigma_min_(0.00001), sigma_max_(10.0), Dsigma_(0.1), sigma_mean_(0.1),
-temp_(2.494), MCsteps_(1), MCstride_(1), MCseed_(1234), MCaccept_(0), MCfirst_(-1)
+PLUMED_BIAS_INIT(ao), MCsteps_(1), MCstride_(1), MCaccept_(0), MCfirst_(-1)
 {
-  parse("SIGMA0",   sigma_);
+  parse("SIGMA0",sigma_);
   parse("SIGMA_MIN",sigma_min_);
   parse("SIGMA_MAX",sigma_max_);
-  parse("DSIGMA",   Dsigma_);
+  parse("DSIGMA",Dsigma_);
   parse("SIGMA_MEAN",sigma_mean_);
-  parse("KBT",      temp_);
-  parse("NREP",     nrep_);
-  parse("MC_STEPS", MCsteps_);
+  parse("NDATA",ndata_);
+  parse("MC_STEPS",MCsteps_);
   parse("MC_STRIDE",MCstride_);
-  parse("MC_SEED",  MCseed_);
   checkRead();
 
-  log.printf("  initial value of uncertainty %f\n",sigma_);
-  log.printf("  minimum value of uncertainty %f\n",sigma_min_);
-  log.printf("  maximum value of uncertainty %f\n",sigma_max_);
-  log.printf("  maximum MC move of the uncertainty parameter %f\n",Dsigma_);
-  log.printf("  uncertainty in the mean estimate %f\n",sigma_mean_);
-  log.printf("  temperature of the system %f\n",temp_);
-  log.printf("  number of data points %d\n",getNumberOfArguments());
-  log.printf("  number of replicas %d\n",nrep_);
-  log.printf("  number of MC steps %d\n",MCsteps_);
-  log.printf("  do MC every %d steps\n", MCstride_);
-  log.printf("  MC seed %d\n", MCseed_);    
+  // get temperature
+  kbt_ = plumed.getAtoms().getKbT();
 
+  // get number of replicas
+  if(comm.Get_rank()==0) nrep_ = multi_sim_comm.Get_size();
+  else nrep_ = 0;
+  comm.Sum(&nrep_,1);
 
-  addComponent("bias");   componentIsNotPeriodic("bias");
-  addComponent("sigma");  componentIsNotPeriodic("sigma");
-  addComponent("accept"); componentIsNotPeriodic("accept");
-  addComponent("kappa");  componentIsNotPeriodic("kappa");
-  valueBias=getPntrToComponent("bias");
-  valueSigma=getPntrToComponent("sigma");
-  valueAccept=getPntrToComponent("accept");
-  valueKappa=getPntrToComponent("kappa");
-
-  // initialize random seed
-  srand (MCseed_);
+  // resize s2 vectors
+  s2_global_.resize(nrep_);
+  s2_local_.resize(nrep_);
 
   // divide sigma_mean by the square root of the number of replicas
   sigma_mean_ /= sqrt(static_cast<double>(nrep_));
 
   // adjust for multiple-time steps
   MCstride_ *= getStride();
+
+  log.printf("  initial data uncertainty %f\n",sigma_);
+  log.printf("  minimum data uncertainty %f\n",sigma_min_);
+  log.printf("  maximum data uncertainty %f\n",sigma_max_);
+  log.printf("  maximum MC move of data uncertainty %f\n",Dsigma_);
+  log.printf("  uncertainty in the mean estimate %f\n",sigma_mean_);
+  log.printf("  temperature of the system %f\n",kbt_);
+  log.printf("  number of experimental data points %d\n",ndata_);
+  log.printf("  number of replicas %d\n",nrep_);
+  log.printf("  MC steps %d\n",MCsteps_);
+  log.printf("  MC stride %d\n",MCstride_);
+
+  addComponent("bias");   componentIsNotPeriodic("bias");
+  addComponent("sigma");  componentIsNotPeriodic("sigma");
+  addComponent("accept"); componentIsNotPeriodic("accept");
+  valueBias=getPntrToComponent("bias");
+  valueSigma=getPntrToComponent("sigma");
+  valueAccept=getPntrToComponent("accept");
+
+  // initialize random seed
+  unsigned int iseed;
+  if(comm.Get_rank()==0) iseed = time(NULL)+multi_sim_comm.Get_rank();
+  else iseed = 0;     
+  comm.Sum(&iseed, 1);
+  srand(iseed);
 
 }
 
@@ -176,14 +184,15 @@ double BayesianSP::getEnergy(double sigma){
   double s = sqrt( sigma*sigma + sigma_mean_*sigma_mean_ );
   // cycle on arguments
   double ene = 0.0;
-  double nrep = static_cast<double>(nrep_);
   for(unsigned i=0;i<getNumberOfArguments();++i){
-    double v = 0.5 * getArgument(i) + s * s;
-    ene += ( 3.0*nrep - 1.0 ) / 2.0 * std::log( nrep * v  ); 
+    // argument
+    double a2 = 0.5 * getArgument(i) + s*s;
+    // increment energy
+    ene += std::log( 2.0 * a2 / ( 1.0 - exp(- a2 / sigma_mean_ / sigma_mean_) ) );
   }
-  // add priors and normalizations
-  ene += std::log(sigma) - static_cast<double>(getNumberOfArguments())*nrep*std::log( sqrt2_div_pi * s );
-  return temp_ * ene;
+  // add normalization and Jeffrey's prior
+  ene += std::log(s) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
+  return kbt_ * ene;
 }
 
 void BayesianSP::doMonteCarlo(){
@@ -201,7 +210,7 @@ void BayesianSP::doMonteCarlo(){
   // calculate new energy
   double new_energy = getEnergy(new_sigma);
   // accept or reject
-  double delta = ( new_energy - old_energy ) / temp_;
+  double delta = ( new_energy - old_energy ) / kbt_;
   // if delta is negative always accept move
   if( delta < 0.0 ){
    old_energy = new_energy;
@@ -223,11 +232,11 @@ void BayesianSP::update(){
   // get time step 
   long int step = getStep();
   // do MC stuff at the right time step
-  if(step%MCstride_==0){doMonteCarlo();}
+  if(step%MCstride_==0) doMonteCarlo();
   // this is needed when restarting simulations
-  if(MCfirst_==-1){MCfirst_=step;}
+  if(MCfirst_==-1) MCfirst_=step;
   // calculate acceptance
-  double MCtrials = std::floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
+  double MCtrials = floor(static_cast<double>(step-MCfirst_) / static_cast<double>(MCstride_))+1.0;
   double accept = static_cast<double>(MCaccept_) / static_cast<double>(MCsteps_) / MCtrials;
   // set value of acceptance
   valueAccept->set(accept);
@@ -236,26 +245,44 @@ void BayesianSP::update(){
 void BayesianSP::calculate(){
   // calculate effective sigma
   double s = sqrt( sigma_*sigma_ + sigma_mean_*sigma_mean_ );
-  // cycle on arguments
+  // communicate with other replicas
+  for(unsigned i=0; i<nrep_; ++i){
+    s2_global_[i] = 0.0;
+    s2_local_[i]  = 0.0;
+  }
+  // inter-replicas summation
+  if(comm.Get_rank()==0){
+     s2_global_[multi_sim_comm.Get_rank()] = s*s;
+     multi_sim_comm.Sum(&s2_global_[0],nrep_);
+     s2_local_ = s2_global_;
+  }
+  // intra-replica summation
+  comm.Sum(&s2_local_[0],nrep_);
+
+  // cycle on arguments (experimental data) 
   double ene = 0.0;
-  double nrep = static_cast<double>(nrep_);
   for(unsigned i=0;i<getNumberOfArguments();++i){
-    double v = 0.5 * getArgument(i) + s * s;
-    // increment energy
-    ene += ( 3.0*nrep - 1.0 ) / 2.0 * std::log( nrep * v  );
-    // calculate force
-    double force = -( 3.0*nrep - 1.0 ) / 2.0 / v;
-    // set force on the i-th component
-    setOutputForce(i, temp_ * force);
+    // cycle on replicas
+    double f = 0.0;
+    for(unsigned j=0; j<nrep_; ++j){
+       // argument
+       double a2 = 0.5 * getArgument(i) + s2_local_[j];
+       // useful quantity
+       double t = exp(- a2 / sigma_mean_ / sigma_mean_);
+       // increment energy
+       ene += std::log( 2.0 * a2 / ( 1.0 - t ) );
+       // increment force
+       f += 0.5 / a2 - 1.0 / (1.0-t) * t * 0.5 / sigma_mean_ / sigma_mean_;
+    }
+    // set derivatives
+    setOutputForce(i, kbt_*f);
   };
-  // add priors and normalizations 
-  ene += std::log(sigma_) - static_cast<double>(getNumberOfArguments())*nrep*std::log( sqrt2_div_pi * s );
+  // add normalizations and priors
+  ene += std::log(s) - static_cast<double>(ndata_)*std::log(sqrt2_div_pi*s);
   // set value of the bias
-  valueBias->set(temp_*ene);
+  valueBias->set(kbt_*ene);
   // set value of data uncertainty
   valueSigma->set(sigma_);
-  // and of the harmonic restraint
-  valueKappa->set(nrep*temp_/s/s);
 }
 
 
