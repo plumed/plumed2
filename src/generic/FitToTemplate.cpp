@@ -164,8 +164,6 @@ void FitToTemplate::calculate(){
 void FitToTemplate::apply(){
   Vector totForce;
   for(unsigned i=0;i<getTotAtoms();i++){
-    Vector & ato (modifyPosition(AtomNumber::index(i)));
-    ato-=shift;
     totForce+=modifyForce(AtomNumber::index(i));
   }
   for(unsigned i=0;i<aligned.size();++i){
