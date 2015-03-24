@@ -272,7 +272,7 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
   else{ return delta( vec1, vec2 ); }
 }
 
-void MultiColvarBase::applyPbc(std::valarray<Vector>& dlist, unsigned int max_index) const {
+void MultiColvarBase::applyPbc(std::vector<Vector>& dlist, unsigned int max_index) const {
    if (usepbc) pbcApply(dlist, max_index);
 }
 

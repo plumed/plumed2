@@ -155,7 +155,7 @@ double Pbc::distance( const bool pbc, const Vector& v1, const Vector& v2 ) const
   else{ return ( delta(v1,v2) ).modulo(); }
 }
 
-void Pbc::apply(std::valarray<Vector>& dlist, unsigned max_index) const {
+void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
    if (max_index==0) max_index=dlist.size();
    if(type==unset){
   } else if(type==orthorombic) {

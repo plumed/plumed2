@@ -44,7 +44,7 @@ private:
   double rcut2, alpha, a1, b1;
   double phi, theta, psi;
   double rotationmatrix[3][3]; 
-  std::valarray<Vector> dlist; // A buffer array to store distances and apply PBC wholesale
+  std::vector<Vector> dlist; // A buffer array to store distances and apply PBC wholesale
   
   SwitchingFunction switchingFunction;
 public:
@@ -156,7 +156,7 @@ double Fccubic::compute(){
    Vector myder, rotateder, fder;
    double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, r12, tmp;
    
-   //std::valarray<Vector> dlist(getPosition(0),getNAtoms());
+   //std::vector<Vector> dlist(getPosition(0),getNAtoms());
    if (getNAtoms()>dlist.size()) dlist.resize(getNAtoms());
    for(unsigned i=1;i<getNAtoms();++i) dlist[i]=getPosition(i)-getPosition(0);
    applyPbc( dlist, getNAtoms() );
