@@ -1909,7 +1909,8 @@ bool MetaD::shouldAdaptDomainsNow() {
   bool adapt_domains_now = true;
   if (delay_adaptive_domains_) {
     // For the min-referenced adaptive domains, delay until the 
-    // bias is above the offset somewhere.
+    // bias (scaled into free energy by the biasfactor) is above
+    // the offset somewhere.
     if (adaptive_domains_reftype_ == kMinRef) {
       double max_bias = 0.0;
       for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
