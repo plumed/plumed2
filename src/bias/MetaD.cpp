@@ -262,11 +262,13 @@ class MetaD : public Bias {
   double tt_biasthreshold_;
   vector<vector<double> > transitionwells_;
   bool benthic_toleration_;
-  double benthic_tol_energy_;
+  double benthic_tol_number_;
   bool benthic_erosion_;
   double benthic_erosive_time_;
-  vector<double> benthic_smoothing_der_;
   double last_benthic_erosion_;
+  int benthic_histo_stride_;
+  vector<double> benthic_histo_bandwidth_;
+  Grid *BenthicHistogram_;
   bool use_domains_;
   bool scale_new_hills_;
   string domainsreadfilename_;
@@ -282,9 +284,9 @@ class MetaD : public Bias {
   AdaptiveDomainRefType adaptive_domains_reftype_;
   double adaptive_domains_eoffset_;
   int adaptive_domains_stride_;
-  int histo_stride_;
-  vector<double> histo_bandwidth_;
-  Grid *Histogram_;
+  int domains_histo_stride_;
+  vector<double> domains_histo_bandwidth_;
+  Grid *DomainsHistogram_;
   bool print_domains_scaling_;
   vector<OFile*> DomainsScalingFilePs_;
   bool print_adaptive_domains_energies_;
@@ -406,6 +408,12 @@ MetaD::~MetaD() {
   if (ExtGrid_) {
     delete ExtGrid_;
   }
+  if (benthic_toleration_) {
+    delete BenthicHistogram_;
+  }
+  if (use_adaptive_domains_) {
+    delete DomainsHistogram_;
+  }
   if (scale_new_hills_) {
     for (unsigned i = 0; i < n_domains_; i++) {
       if (HillScalingGrids_[i]) delete HillScalingGrids_[i];
@@ -447,11 +455,12 @@ MetaD::MetaD(const ActionOptions &ao):
   tt_biasf_(1.0),
   tt_biasthreshold_(0.0),
   benthic_toleration_(false),
-  benthic_tol_energy_(0.0),
+  benthic_tol_number_(0.0),
   benthic_erosion_(false),
   benthic_erosive_time_(0.0),
-  benthic_smoothing_der_(vector<double>()),
   last_benthic_erosion_(0.0),
+  benthic_histo_stride_(0),
+  BenthicHistogram_(NULL),
   use_domains_(false),
   scale_new_hills_(false),
   n_domains_(0),
@@ -461,8 +470,8 @@ MetaD::MetaD(const ActionOptions &ao):
   adaptive_domains_reftype_(kMinRef),
   adaptive_domains_eoffset_(0.0),
   adaptive_domains_stride_(0),
-  histo_stride_(0),
-  Histogram_(NULL),
+  domains_histo_stride_(0),
+  DomainsHistogram_(NULL),
   print_domains_scaling_(false),
   DomainsScalingFilePs_(vector<OFile*>()),
   print_adaptive_domains_energies_(false),
@@ -597,9 +606,8 @@ MetaD::MetaD(const ActionOptions &ao):
 
   // Check for a benthic metadynamics toleration threshold.
   // Wait to set the energy threshold until the hill height is parsed.
-  int benthic_n_tolerated = 0;
-  parse("BENTHIC_TOLERATION", benthic_n_tolerated);
-  if (benthic_n_tolerated > 0) {
+  parse("BENTHIC_TOLERATION", benthic_tol_number_);
+  if (benthic_tol_number_ > 0.0) {
     benthic_toleration_ = true;
   }
   // Check for a benthic metadynamics erosion time.
@@ -851,38 +859,36 @@ MetaD::MetaD(const ActionOptions &ao):
   }
   // Benthic metadynamics options
   if (benthic_toleration_) {
-    benthic_tol_energy_ = height0_ * (.05 + (double) benthic_n_tolerated);
-    log.printf("  Benthic number of hills to tolerate %d, energy threshold %f\n", benthic_n_tolerated, benthic_tol_energy_);
-  }
-  if (benthic_erosion_) {
     // Benthic erosion relies on using a grid and an acceleration factor.
     if (!grid_) {
-      error(" benthic erosion requires a grid for the bias");
+      error(" benthic requires a grid for the bias");
     }
     if (!acceleration) {
-      error(" benthic erosion requires calculation of the acceleration factor");
+      error(" benthic requires calculation of the acceleration factor");
     }
-    // The smoothing derivative is set by assuming that 2 times the maximum force
-    // added by a single hill is a safe force to add to the bias anywhere.
-    benthic_smoothing_der_ = vector<double>(getNumberOfArguments());
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-      if (adaptive_ == FlexibleBin::none) {
-        benthic_smoothing_der_[i] = 2.0 * .6065 * height0_ / sigma0_[i];
-      } else {
-        if (sigma0min_.size() == 0) {
-          error(" benthic erosion requires hill width estimates");
-        }
-        benthic_smoothing_der_[i] = 2.0 * .6065 * height0_ / sigma0min_[i];
+    log.printf("  Benthic number of hills to tolerate %d\n", benthic_tol_number_);
+    if (benthic_erosion_) {
+      // Log the timescale.
+      log.printf("  Benthic erosion on timescale %f \n", benthic_erosive_time_);
+    }
+    // Set the histogramming parameters for the thresholding if not already
+    // specified.
+    if (benthic_histo_stride_ == 0) {
+      benthic_histo_stride_ = max(1, stride_);
+    }
+    if (benthic_histo_bandwidth_.size() == 0) {
+      benthic_histo_bandwidth_ = vector<double>(getNumberOfArguments());
+      for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+        benthic_histo_bandwidth_[i] = sigma0_[i];
       }
     }
-    // Log the timescale, the threshold, and the smoothing derivatives.
-    log.printf("  Benthic erosion on timescale %f, energy threshold %f\n", benthic_erosive_time_, benthic_tol_energy_);
-    log.printf("  Smoothing derivatives for the erosion are");
-    for (unsigned i = 0; i < benthic_smoothing_der_.size(); ++i) {
-      log.printf(" %f", benthic_smoothing_der_[i]);
+    log.printf("  Histogram update stride is %d and bandwiths are", domains_histo_stride_);
+    for (unsigned i = 0; i < domains_histo_bandwidth_.size(); i++) {
+      log.printf(" %f", domains_histo_bandwidth_[i]);
     }
     log.printf("\n");
   }
+
   if (doInt_) {
     log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
   }
@@ -940,18 +946,18 @@ MetaD::MetaD(const ActionOptions &ao):
       log.printf("  Domains will be updated every %d steps\n", adaptive_domains_stride_);
       // Set the histogramming parameters for the future free energy estimates
       // if they are not already specified.
-      if (histo_stride_ == 0) {
-        histo_stride_ = max(1, stride_ / 5);
+      if (domains_histo_stride_ == 0) {
+        domains_histo_stride_ = max(1, stride_ / 5);
       }
-      if (histo_bandwidth_.size() == 0) {
-        histo_bandwidth_ = vector<double>(getNumberOfArguments());
+      if (domains_histo_bandwidth_.size() == 0) {
+        domains_histo_bandwidth_ = vector<double>(getNumberOfArguments());
         for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-          histo_bandwidth_[i] = sigma0_[i] / 2.5;
+          domains_histo_bandwidth_[i] = sigma0_[i] / 2.5;
         }
       }
-      log.printf("  Histogram update stride is %d and bandwiths are", histo_stride_);
-      for (unsigned i = 0; i < histo_bandwidth_.size(); i++) {
-        log.printf(" %f", histo_bandwidth_[i]);
+      log.printf("  Histogram update stride is %d and bandwiths are", domains_histo_stride_);
+      for (unsigned i = 0; i < domains_histo_bandwidth_.size(); i++) {
+        log.printf(" %f", domains_histo_bandwidth_[i]);
       }
       log.printf("\n");
     }
@@ -1063,6 +1069,17 @@ MetaD::MetaD(const ActionOptions &ao):
     }
   }
 
+  // Initialize an auxiliary histogram for the benthic metadynamics control.
+  if (benthic_toleration_) {
+    // Use the same parameters as for the main grid, but don't use splines or derivatives.
+    std::string funcl = getLabel() + ".number";
+    BenthicHistogram_ = new Grid(funcl, getArguments(), gmin, gmax, gbin, false, false);
+    // Set the parameters to match the hill addition rate & size
+    // if not already set.
+    benthic_histo_stride_ = stride_;
+
+  }
+
   if (use_domains_) {
     // Initialize and read a region grid if requested or default.
     if (domainsreadfilename_.length() > 0) {
@@ -1113,9 +1130,9 @@ MetaD::MetaD(const ActionOptions &ao):
     // Use the same parameters as for the main grid, but don't use splines or derivatives.
     if (use_adaptive_domains_) {
       std::string funcl = getLabel() + ".number";
-      Histogram_ = new Grid(funcl, getArguments(), gmin, gmax, gbin, false, false);
-      for (unsigned i = 0; i < Histogram_->getMaxSize(); i++) {
-        Histogram_->setValue(i, .3);
+      DomainsHistogram_ = new Grid(funcl, getArguments(), gmin, gmax, gbin, false, false);
+      for (unsigned i = 0; i < DomainsHistogram_->getMaxSize(); i++) {
+        DomainsHistogram_->setValue(i, .3);
       }
     }
   }
@@ -1298,6 +1315,10 @@ double tame_scaling(double scale) {
 }
 
 void MetaD::addGaussian(const Gaussian &hill) {
+  // If the height is zero, add no hill.
+  if (hill.height == 0.0) {
+    return;
+  }
   // Add the hill to the list of Gaussians if there is no grid.
   if (!grid_) {
     hills_.push_back(hill);
@@ -1391,7 +1412,7 @@ void MetaD::addGaussian(const Gaussian &hill) {
           }
         }
       }
-      // Set all derivatives. This is incorrect.
+      // Set all derivatives.
       for (unsigned i = 0; i < neighbors.size(); ++i) {
         BiasGrid_->setDerivFromValues(neighbors[i]);
       }
@@ -1548,23 +1569,6 @@ double MetaD::getBiasAndDerivatives(const vector<double> &cv, double* der) {
     }
   }
 
-  // Use a toleration threshold for benthic metadynamics if one has
-  // been specified.
-  if (benthic_toleration_) {
-    // If the bias is below the threshold, set it and the forces to zero.
-    if (bias <= benthic_tol_energy_) {
-      bias = 0.0;
-      if (der) {
-        for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
-          der[i] = 0.0;
-        }
-      }
-    // Otherwise, just subtract the toleration threshold from the bias and
-    // leave forces unchanged.
-    } else {
-      bias -= benthic_tol_energy_;
-    }
-  }
   // Add in the overall bias level if domains are being used.
   if (use_domains_) {
     bias += domain_bias_level_;
@@ -1664,6 +1668,11 @@ double MetaD::getHeight(const vector<double> &cv) {
   if (transitiontempered_) {
     double vbarrier = getTransitionBarrierBias();
     height = height0_ * exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
+  }
+  if (benthic_toleration_) {
+    if (BenthicHistogram_->getValue(BiasGrid_->getIndex(cv)) < benthic_tol_number_) {
+      height = 0.0;
+    }
   }
   if (use_domains_ && scale_new_hills_) {
     if (domain_ids_[BiasGrid_->getIndex(cv)] == 0) {
@@ -1932,7 +1941,7 @@ void MetaD::adaptDomains() {
   new_region = new Grid(funcl, getArguments(), BiasGrid_->getMin(), BiasGrid_->getMax(), input_nbins, false, false);
   // Copy the histogram.
   for (unsigned i = 0; i < new_region->getMaxSize(); i++) {
-    new_region->setValue(i, Histogram_->getValue(i));
+    new_region->setValue(i, DomainsHistogram_->getValue(i));
   }
   // Take a log scaled by kbT to convert the histogram into an energy.
   new_region->logAllValuesAndDerivatives(-kbt_);
@@ -2095,9 +2104,9 @@ void MetaD::update() {
   // only be used through the log and normalization thus corresponds to an
   // irrelevant constant. 
   if (use_adaptive_domains_) {
-    if (getStep() % histo_stride_ == 0 && !isFirstStep) {
-      KernelFunctions kernel(cv, histo_bandwidth_, "gaussian", false, 1.0, false);
-      Histogram_->addKernel(kernel);
+    if (getStep() % domains_histo_stride_ == 0 && !isFirstStep) {
+      KernelFunctions kernel(cv, domains_histo_bandwidth_, "gaussian", false, 1.0, false);
+      DomainsHistogram_->addKernel(kernel);
     }
     if (getStep() % adaptive_domains_stride_ == 0 && !isFirstStep) {
       // Check if the delay conditions are satisfied.
@@ -2107,15 +2116,25 @@ void MetaD::update() {
       }
     }
   }
-  // When using benthic erosion, erosion can't affect anything until a
-  // new hill is added--so only perform erosion just before adding hills.
-  // Hills are added directly or from reading other walkers' hills.
-  if (benthic_erosion_ && (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0))) {
-    // The erosion time is a real time scale, so it is compared to the
-    // boosted time rather than the plain simulation time.
-    if ( acc * getTimeStep() > (last_benthic_erosion_ + benthic_erosive_time_)) {
-      BiasGrid_->erodeFunction(benthic_tol_energy_, benthic_smoothing_der_);
-      last_benthic_erosion_ = acc * getTimeStep();
+  if (benthic_toleration_) {
+    if (getStep() % benthic_histo_stride_ == 0 && !isFirstStep) {
+      KernelFunctions kernel(cv, benthic_histo_bandwidth_, "gaussian", false, 1.0, false);
+      BenthicHistogram_->addKernel(kernel);
+    }
+    // When using benthic erosion, erosion can't affect anything until a
+    // new hill is added--so only perform erosion just before adding hills.
+    // Hills are added directly or from reading other walkers' hills.
+    if (benthic_erosion_ && (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0))) {
+      // The erosion time is a real time scale, so it is compared to the
+      // boosted time rather than the plain simulation time.
+      if ( acc * getTimeStep() > (last_benthic_erosion_ + benthic_erosive_time_)) {
+        for (unsigned i = 0; i < BenthicHistogram_->getMaxSize(); i++) {
+          if (BenthicHistogram_->getValue(i) <= benthic_tol_number_) {
+            BenthicHistogram_->setValue(i, 0.0);
+          }
+        }
+        last_benthic_erosion_ = acc * getTimeStep();
+      }
     }
   }
   if (nowAddAHill) { // probably this can be substituted with a signal

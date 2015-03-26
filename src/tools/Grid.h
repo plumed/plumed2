@@ -204,10 +204,6 @@ class Grid {
 /// for all paths of neighboring grid lattice points from a source point to a sink point.
   virtual double findMaximalPathMinimum(const std::vector<double> &source, const std::vector<double> &sink);
 
-/// Set all function values below a threshold to zero, then smooth out the resulting
-/// discontinuities using a maximum derivative set by smoothing_der.
-  virtual void erodeFunction(const double threshold_value, const std::vector<double> &smoothing_der);
-
 /// Reset a grid point's derivatives based on the values of its neighbors.
   void setDerivFromValues(const unsigned index);
   void setDerivFromValues(const std::vector<unsigned> &indices);
