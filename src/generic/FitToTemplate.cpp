@@ -165,6 +165,8 @@ void FitToTemplate::apply(){
   for(unsigned i=0;i<getTotAtoms();i++){
     totForce+=modifyGlobalForce(AtomNumber::index(i));
   }
+  Tensor & vv(modifyGlobalVirial());
+  vv+=Tensor(center,totForce);
   for(unsigned i=0;i<aligned.size();++i){
     Vector & ff(modifyGlobalForce(aligned[i]));
     ff-=totForce*weights[i];
