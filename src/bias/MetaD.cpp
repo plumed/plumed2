@@ -270,11 +270,13 @@ class MetaD : public Bias {
   bool use_domains_;
   bool scale_new_hills_;
   string domainsreadfilename_;
+  string domains_histo_readfilename_;
   unsigned n_domains_;
   vector<unsigned> domain_ids_;
   vector<vector<unsigned> > domain_boundary_pts_;
   double domain_bias_level_;
   vector<Grid*> HillScalingGrids_;
+  vector<OFile> regionfiles_;
   bool use_adaptive_domains_;
   bool delay_adaptive_domains_;
   enum AdaptiveDomainRefType {kTransitionRef, kMinRef};
@@ -284,6 +286,13 @@ class MetaD : public Bias {
   int histo_stride_;
   vector<double> histo_bandwidth_;
   Grid *Histogram_;
+  string whistofilename_;
+  OFile whistofile_;
+  bool print_domains_scaling_;
+  vector<OFile*> DomainsScalingFilePs_;
+  bool print_adaptive_domains_energies_;
+  OFile HistEnergyFile_;
+  OFile HistBiasEnergyFile_;
   double* dp_;
   int adaptive_;
   FlexibleBin *flexbin;
@@ -313,6 +322,7 @@ class MetaD : public Bias {
   void   spread_domain(unsigned, unsigned, vector<unsigned> &, const Grid * const, const Grid * const);
 
   void   createScalingGrids();
+  bool   shouldAdaptDomainsNow();
   void   adaptDomains();
   double getBiasAndDerivatives(const vector<double> &, double* der = NULL);
   double evaluateGaussian(const vector<double> &, const Gaussian &, double* der = NULL);
@@ -356,13 +366,18 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well in transition-tempered metadynamics. At least one must be provided.");
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition states");
   keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time");
-  keys.add("optional", "REGIONS_RFILE", "use regions metadynamics with this file defining areas to flatten");
-  keys.addFlag("USE_ADAPTIVE_DOMAINS", false, "use regions metadynamics with adaptively set regions");
-  keys.addFlag("DELAY_ADAPTIVE_DOMAINS", false, "use adaptive regions metadynamics only after the reference bias crosses the offset.");
-  keys.add("optional", "ADAPTIVE_DOMAINS_REFERENCE", "set regions metadynamics adaptive regions with reference to either the 'transition' free energy or the 'minimum' free energy");
-  keys.add("optional", "ADAPTIVE_DOMAINS_ENERGY_OFFSET", "use adaptive regions metadynamics with regions below a free energy that is the reference free energy plus this value");
-  keys.add("optional", "ADAPTIVE_DOMAINS_STRIDE", "use adaptive regions metadynamics with regions adapted every this number of steps");  
-  keys.add("optional", "TEMP", "the system temperature - this is only needed if you are doing well-tempered metadynamics, transition-tempered metadynamics, acceleration, or adaptive regions metadynamics");
+  keys.addFlag("USE_DOMAINS", false, "use metabasin metadynamics with adaptively set regions");
+  keys.add("optional", "REGION_RFILE", "use metabasin metadynamics with this file defining areas to flatten");
+  keys.addFlag("USE_ADAPTIVE_DOMAINS", false, "use metabasin metadynamics with adaptively set regions");
+  keys.add("optional", "ADAPTIVE_DOMAINS_HISTOGRAM_RFILE", "read in a histogram file for restarting an adaptive domain calculation");
+  keys.add("optional", "ADAPTIVE_DOMAINS_HISTOGRAM_WFILE", "print histogram files for restarting an adaptive domain calculation");
+  keys.addFlag("DELAY_ADAPTIVE_DOMAINS", false, "use adaptive metabasin metadynamics only after the reference bias crosses the offset.");
+  keys.add("optional", "ADAPTIVE_DOMAINS_REFERENCE", "set metabasin metadynamics adaptive regions with reference to either the 'transition' free energy or the 'minimum' free energy");
+  keys.add("optional", "ADAPTIVE_DOMAINS_ENERGY_OFFSET", "use adaptive metabasin metadynamics with regions below a free energy that is the reference free energy plus this value");
+  keys.add("optional", "ADAPTIVE_DOMAINS_STRIDE", "use adaptive metabasin metadynamics with regions adapted every this number of steps");  
+  keys.addFlag("PRINT_DOMAINS_SCALING", false, "print out the scaling functions for each metabasin metadynamics domain");
+  keys.addFlag("PRINT_ADAPTIVE_DOMAINS_ENERGIES", false, "print out the scaling functions for each metabasin metadynamics domain");
+  keys.add("optional", "TEMP", "the system temperature - this is only needed if you are doing well-tempered metadynamics, transition-tempered metadynamics, acceleration, or adaptive metabasin metadynamics");
   keys.add("optional", "TAU", "in well tempered metadynamics, sets height to (kb*DeltaT*pace*timestep)/tau");
   keys.add("optional", "GRID_MIN", "the lower bounds for the grid");
   keys.add("optional", "GRID_MAX", "the upper bounds for the grid");
@@ -399,6 +414,21 @@ MetaD::~MetaD() {
   if (scale_new_hills_) {
     for (unsigned i = 0; i < n_domains_; i++) {
       if (HillScalingGrids_[i]) delete HillScalingGrids_[i];
+    }
+  }
+  if (use_domains_) {
+    if (print_domains_scaling_) {
+      for (unsigned i = 0; i < DomainsScalingFilePs_.size(); i++) {
+        DomainsScalingFilePs_[i]->close();
+        delete DomainsScalingFilePs_[i];
+      }
+    }
+    if (wgridstride_ > 0 && whistofilename_.size() > 0) {
+      whistofile_.close();
+    }
+    if (print_adaptive_domains_energies_) {
+      HistEnergyFile_.close();
+      HistBiasEnergyFile_.close();
     }
   }
   hillsOfile_.close();
@@ -443,6 +473,9 @@ MetaD::MetaD(const ActionOptions &ao):
   adaptive_domains_stride_(0),
   histo_stride_(0),
   Histogram_(NULL),
+  print_domains_scaling_(false),
+  DomainsScalingFilePs_(vector<OFile*>()),
+  print_adaptive_domains_energies_(false),
   // Other stuff
   dp_(NULL), adaptive_(FlexibleBin::none),
   flexbin(NULL),
@@ -706,35 +739,46 @@ MetaD::MetaD(const ActionOptions &ao):
   }
   parse("GRID_RFILE", gridreadfilename_);
   
-  // Set regions metadynamics parameters
-  parse("REGIONS_RFILE", domainsreadfilename_);
-  if (domainsreadfilename_.length() > 0) {
-    use_domains_ = true;
-  }
-  parseFlag("USE_ADAPTIVE_DOMAINS", use_adaptive_domains_);
-  if (use_adaptive_domains_) {
-    use_domains_ = true;
-    if (kbt_ == 0.0) {
-      error("Unless the MD engine passes the temperature to plumed, with adaptive domains regions metad you must specify it using TEMP");
+  // Set metabasin metadynamics parameters
+  parseFlag("USE_DOMAINS", use_domains_);
+  if (use_domains_) {
+    parse("REGION_RFILE", domainsreadfilename_);
+    parseFlag("USE_ADAPTIVE_DOMAINS", use_adaptive_domains_);
+    if (use_adaptive_domains_) {
+      if (kbt_ == 0.0) {
+        error("Unless the MD engine passes the temperature to plumed, with adaptive domains metabasin metad you must specify it using TEMP");
+      }
+      parse("ADAPTIVE_DOMAINS_HISTOGRAM_RFILE", domains_histo_readfilename_);
+      parse("ADAPTIVE_DOMAINS_HISTOGRAM_WFILE", whistofilename_);
+      parseFlag("DELAY_ADAPTIVE_DOMAINS", delay_adaptive_domains_);
+      string refstring;
+      parse("ADAPTIVE_DOMAINS_REFERENCE", refstring);
+      if (refstring == "minimum") {
+        adaptive_domains_reftype_ = kMinRef;
+      } else if (refstring == "transition") {
+        adaptive_domains_reftype_ = kTransitionRef;
+      } else {
+        error("unrecognized adaptive domains reference type for metabasin metadynamics");
+      }
+      parse("ADAPTIVE_DOMAINS_ENERGY_OFFSET", adaptive_domains_eoffset_);
+      if (adaptive_domains_reftype_ == kMinRef && adaptive_domains_eoffset_ <= 0.0) {
+        error("adaptive domains energy offset must be positive for minimum-referenced to make sense");
+      }
+      parse("ADAPTIVE_DOMAINS_STRIDE", adaptive_domains_stride_);
+      if (adaptive_domains_stride_ <=0) {
+        error("adaptive domains requires a stride value greater than zero");
+      }
+      parseFlag("PRINT_ADAPTIVE_DOMAINS_ENERGIES", print_adaptive_domains_energies_);
+      if (print_adaptive_domains_energies_) {
+        std::string histogram_energy_filename = "histogram_energy.dat";
+        HistEnergyFile_.link(*this);
+        HistEnergyFile_.open(histogram_energy_filename);
+        std::string histbias_energy_filename = "histogram-bias_energy.dat";
+        HistBiasEnergyFile_.link(*this);
+        HistBiasEnergyFile_.open(histbias_energy_filename);
+      }
     }
-    parseFlag("DELAY_ADAPTIVE_DOMAINS", delay_adaptive_domains_);
-    string refstring;
-    parse("ADAPTIVE_DOMAINS_REFERENCE", refstring);
-    if (refstring == "minimum") {
-      adaptive_domains_reftype_ = kMinRef;
-    } else if (refstring == "transition") {
-      adaptive_domains_reftype_ = kTransitionRef;
-    } else {
-      error("unrecognized adaptive domains reference type for regions metadynamics");
-    }
-    parse("ADAPTIVE_DOMAINS_ENERGY_OFFSET", adaptive_domains_eoffset_);
-    if (adaptive_domains_reftype_ == kMinRef && adaptive_domains_eoffset_ <= 0.0) {
-      error("adaptive domains energy offset must be positive for minimum-referenced to make sense");
-    }
-    parse("ADAPTIVE_DOMAINS_STRIDE", adaptive_domains_stride_);
-    if (adaptive_domains_stride_ <=0) {
-      error("adaptive domains requires a stride value greater than zero");
-    }
+    parseFlag("PRINT_DOMAINS_SCALING", print_domains_scaling_);
   }
 
   // Set multiple walkers parameters.
@@ -878,6 +922,9 @@ MetaD::MetaD(const ActionOptions &ao):
     }
     if (wgridstride_ > 0) {
       log.printf("  Grid is written on file %s with stride %d\n", gridfilename_.c_str(), wgridstride_);
+      if (whistofilename_.size() > 0) {
+        log.printf("  Adaptive domains histogram is written on file %s with stride %d\n", whistofilename_.c_str(), wgridstride_);
+      }
     }
   }
   if (gridreadfilename_.length() > 0) {
@@ -892,7 +939,7 @@ MetaD::MetaD(const ActionOptions &ao):
       error(" using domains only works for fixed, non-adaptive Gaussians");
     }
     if (domainsreadfilename_.size() > 0) {
-      log.printf("  Reading grid in file %s for initial regions metadynamics domains \n", domainsreadfilename_.c_str());
+      log.printf("  Reading grid in file %s for initial metabasin metadynamics domains \n", domainsreadfilename_.c_str());
     }
     if (use_adaptive_domains_) {
       if (adaptive_domains_reftype_ == kTransitionRef) {
@@ -904,7 +951,14 @@ MetaD::MetaD(const ActionOptions &ao):
       } else if (adaptive_domains_reftype_ == kMinRef) {
         log.printf("  Using adaptive domains with a free energy limit of the minimum free energy");
       }
-      log.printf("  Domains will be updated every %d steps", adaptive_domains_stride_);
+      log.printf(" plus %f \n", adaptive_domains_eoffset_);
+      if (domains_histo_readfilename_.size() > 0) {
+        if (gridreadfilename_.size() == 0) {
+          error( " adaptive domains cannot be restart with only an input histogram, also provide an input bias");
+        }
+        log.printf("  Reading histogram in file %s for restarting metabasin metadynamics with adaptive domains \n", domains_histo_readfilename_.c_str());
+      }
+      log.printf("  Domains will be updated every %d steps\n", adaptive_domains_stride_);
       // Set the histogramming parameters for the future free energy estimates
       // if they are not already specified.
       if (histo_stride_ == 0) {
@@ -913,11 +967,10 @@ MetaD::MetaD(const ActionOptions &ao):
       if (histo_bandwidth_.size() == 0) {
         histo_bandwidth_ = vector<double>(getNumberOfArguments());
         for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-          histo_bandwidth_[i] = sigma0_[i] / 5.0;
+          histo_bandwidth_[i] = sigma0_[i] / 2.5;
         }
       }
-      log.printf(" plus %f \n", adaptive_domains_eoffset_);
-      log.printf(" Histogram update stride is %d and bandwiths are", histo_stride_);
+      log.printf("  Histogram update stride is %d and bandwiths are", histo_stride_);
       for (unsigned i = 0; i < histo_bandwidth_.size(); i++) {
         log.printf(" %f", histo_bandwidth_[i]);
       }
@@ -1021,7 +1074,9 @@ MetaD::MetaD(const ActionOptions &ao):
       for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
         BiasGrid_->getPoint(i, temp_point);
         temp_val = ExtGrid_->getValueAndDerivatives(temp_point, temp_der);
-        BiasGrid_->addValueAndDerivatives(i, temp_val, temp_der);
+        if(temp_val != 0.0) {
+          BiasGrid_->addValueAndDerivatives(i, temp_val, temp_der);
+        }
       }
       delete ExtGrid_;
       ExtGrid_ = NULL;
@@ -1029,52 +1084,83 @@ MetaD::MetaD(const ActionOptions &ao):
     }
   }
 
-  // Initialize and read a region grid if requested.
-  if (domainsreadfilename_.length() > 0) {
-    // Read the grid in input, find the keys.
-    IFile gridfile;
-    gridfile.open(domainsreadfilename_);
-    std::string funcl = getLabel() + ".indicator";
-    Grid* input_region = Grid::create(funcl, getArguments(), gridfile, false, false, false);
-    gridfile.close();
-    // Check for consistency between the region grid and the MetaD input specs.
-    if (input_region->getDimension() != getNumberOfArguments()) {
-      error("mismatch between dimensionality of region input grid and number of arguments");
-    }
-    for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
-      if (getPntrToArgument(i)->isPeriodic() != input_region->getIsPeriodic()[i]) {
-        error("periodicity mismatch between arguments and region input function");
+  if (use_domains_) {
+    // Initialize and read a region grid if requested or default.
+    if (domainsreadfilename_.length() > 0) {
+      // Read the grid in input, find the keys.
+      IFile gridfile;
+      gridfile.open(domainsreadfilename_);
+      std::string funcl = getLabel() + ".indicator";
+      Grid* input_region = Grid::create(funcl, getArguments(), gridfile, false, false, false);
+      gridfile.close();
+      // Check for consistency between the region grid and the MetaD input specs.
+      if (input_region->getDimension() != getNumberOfArguments()) {
+        error("mismatch between dimensionality of region input grid and number of arguments");
+      }
+      for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
+        if (getPntrToArgument(i)->isPeriodic() != input_region->getIsPeriodic()[i]) {
+          error("periodicity mismatch between arguments and region input function");
+        }
+      }
+      // Use the region grid to set up domains in the bias grid.
+      defineDomains(input_region);
+      // Get rid of the temporary.
+      delete input_region;
+      if (n_domains_ == 0) {
+        error("no domains found in region file " + domainsreadfilename_);
+      }
+      // Use the domains to set up the scaling grids.
+      createScalingGrids();
+      scale_new_hills_ = true;
+      if (print_domains_scaling_) {
+        if (DomainsScalingFilePs_.size() < HillScalingGrids_.size()) {
+          for (unsigned i = DomainsScalingFilePs_.size(); i < HillScalingGrids_.size(); i++) {
+            std::ostringstream filename_stream;
+            filename_stream << "domain_" << i << "_scaling.dat";
+            std::string scaling_filename = filename_stream.str();
+            OFile* scaling_filep = new OFile();
+            scaling_filep->link(*this);
+            scaling_filep->open(scaling_filename);
+            DomainsScalingFilePs_.push_back(scaling_filep);
+          }
+        }
+        for (unsigned i = 0; i < DomainsScalingFilePs_.size(); i++) DomainsScalingFilePs_[i]->rewind();
+        for (unsigned i = 0; i < HillScalingGrids_.size(); i++) HillScalingGrids_[i]->writeToFile(*(DomainsScalingFilePs_[i]));
+        for (unsigned i = 0; i < DomainsScalingFilePs_.size(); i++) DomainsScalingFilePs_[i]->flush();
       }
     }
-    // Use the region grid to set up domains in the bias grid.
-    defineDomains(input_region);
-    // Get rid of the temporary.
-    delete input_region;
-    if (n_domains_ == 0) {
-      error("no domains found in region file " + domainsreadfilename_);
-    }
-    // Use the domains to set up the scaling grids.
-    createScalingGrids();
-    scale_new_hills_ = true;
-    for (unsigned i = 0; i < HillScalingGrids_.size(); i++) {
-      std::ostringstream filename_stream;
-      filename_stream << "regions_scaling" << i << ".dat";
-      std::string scalingfilename = filename_stream.str();
-      OFile scalefile;
-      scalefile.link(*this);
-      scalefile.open(scalingfilename);
-      HillScalingGrids_[i]->writeToFile(scalefile);
-      scalefile.close();
-    }
-  }
-
-  // Initialize an auxiliary histogram for adaptive domain regions metadynamics.
-  // Use the same parameters as for the main grid, but don't use splines or derivatives.
-  if (use_adaptive_domains_) {
-    std::string funcl = getLabel() + ".number";
-    Histogram_ = new Grid(funcl, getArguments(), gmin, gmax, gbin, false, false);
-    for (unsigned i = 0; i < Histogram_->getMaxSize(); i++) {
-      Histogram_->setValue(i, .00001);
+  
+    // Initialize an auxiliary histogram for adaptive domain metabasin metadynamics.
+    // Use the same parameters as for the main grid, but don't use splines or derivatives.
+    if (use_adaptive_domains_) {
+      // Either initialize by reading in a past histogram or from scratch.
+      if (domains_histo_readfilename_.size() > 0) {
+        IFile histofile;
+        histofile.open(domains_histo_readfilename_);
+        std::string funcl = getLabel() + ".number";
+        Histogram_ = Grid::create(funcl, getArguments(), histofile, false, false, false);
+        histofile.close();
+        // Check for consistency between the external grid and the MetaD input specs.
+        if (Histogram_->getDimension() != getNumberOfArguments()) {
+          error("mismatch between dimensionality of input histogram and number of arguments");
+        }
+        for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
+          if (getPntrToArgument(i)->isPeriodic() != Histogram_->getIsPeriodic()[i]) {
+            error("periodicity mismatch between arguments and input histogram");
+          }
+        }
+        adaptDomains();
+      } else {
+        std::string funcl = getLabel() + ".number";
+        Histogram_ = new Grid(funcl, getArguments(), gmin, gmax, gbin, false, false);
+        for (unsigned i = 0; i < Histogram_->getMaxSize(); i++) {
+          Histogram_->setValue(i, .3);
+        }
+      }
+      if (wgridstride_ > 0 && whistofilename_.size() > 0) {
+        whistofile_.link(*this);
+        whistofile_.open(whistofilename_);
+      }
     }
   }
 
@@ -1264,7 +1350,7 @@ void MetaD::addGaussian(const Gaussian &hill) {
     unsigned ncv = getNumberOfArguments();
     vector<double> der(ncv);
     unsigned hilldomain = 0;
-    if (use_domains_) {
+    if (scale_new_hills_) {
       hilldomain = domain_ids_[BiasGrid_->getIndex(hill.center)];
     }
     vector<double> xx(ncv);
@@ -1317,15 +1403,26 @@ void MetaD::addGaussian(const Gaussian &hill) {
         BiasGrid_->addValueAndDerivatives(ineigh, allbias[i], der);
       }
     }
+    // After adding a hill, correct the derivatives and the 
+    // bias level.
     if (scale_new_hills_ && hilldomain != 0) {
       // Set the overall bias level as needed.
       double boundary_ave = 0.0;
+      // The bias level is set so that the current domain's 
+      // average boundary bias matches the exterior bias.
+      // First calculate the average boundary bias.
       for (unsigned i = 0; i < domain_boundary_pts_[hilldomain - 1].size(); i++) {
          boundary_ave += BiasGrid_->getValue(domain_boundary_pts_[hilldomain - 1][i]);
       }
       boundary_ave /= (double) domain_boundary_pts_[hilldomain - 1].size();
+      // If the boundary bias differs from zero appreciably, then
+      // correct the bias level by 1) adding to the level and 2)
+      // subtracting off a bias with the same boundary level that 
+      // could be added through flat sampling of the domain. 
       if (boundary_ave >= .2 * height0_) {
+        // Add to the level.
         domain_bias_level_ += boundary_ave;
+        // Subtract bias from the domain and its immediate surroundings.
         for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
           if (HillScalingGrids_[hilldomain - 1]->getValue(i) > 0.0) {
             if (domain_ids_[i] == hilldomain) {
@@ -1338,7 +1435,7 @@ void MetaD::addGaussian(const Gaussian &hill) {
           }
         }
       }
-      // Set all derivatives.
+      // Set all derivatives. This is incorrect.
       for (unsigned i = 0; i < neighbors.size(); ++i) {
         BiasGrid_->setDerivFromValues(neighbors[i]);
       }
@@ -1512,6 +1609,7 @@ double MetaD::getBiasAndDerivatives(const vector<double> &cv, double* der) {
       bias -= benthic_tol_energy_;
     }
   }
+  // Add in the overall bias level if domains are being used.
   if (use_domains_) {
     bias += domain_bias_level_;
   }
@@ -1611,7 +1709,7 @@ double MetaD::getHeight(const vector<double> &cv) {
     double vbarrier = getTransitionBarrierBias();
     height = height0_ * exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
   }
-  if (use_domains_) {
+  if (use_domains_ && scale_new_hills_) {
     if (domain_ids_[BiasGrid_->getIndex(cv)] == 0) {
       height = 0.0;
     }
@@ -1726,9 +1824,9 @@ void MetaD::filterDomains() {
   double vol = 1.0;
   double half_args = ((double) getNumberOfArguments()) / 2.0;
   vol *= pow(M_PI, half_args) / tgamma(1.0 + half_args);
-  // Rescale by half a hill size (in units of grid points) along each dimension.
+  // Rescale by hill size (in units of grid points) along each dimension.
   for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-    vol *= .5 * sigma0_[i] / BiasGrid_->getDx()[i];
+    vol *= sigma0_[i] / BiasGrid_->getDx()[i];
   }
   // Set the minimum number of points based on the volume.
   // If it is 1 or 0, there is no filtering to be done at all.
@@ -1842,8 +1940,33 @@ void MetaD::createScalingGrids() {
   }
 }
 
+bool MetaD::shouldAdaptDomainsNow() {
+  bool adapt_domains_now = true;
+  if (delay_adaptive_domains_) {
+    // For the min-referenced adaptive domains, delay until the 
+    // (FES-scaled) bias is above the offset somewhere.
+    if (adaptive_domains_reftype_ == kMinRef) {
+      double max_bias = 0.0;
+      for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
+        max_bias = max(max_bias, BiasGrid_->getValue(i));
+      }
+      max_bias += domain_bias_level_;
+      if (welltempered_) {
+        max_bias *= biasf_ / (biasf_ - 1.0);
+      }
+      adapt_domains_now = (max_bias > adaptive_domains_eoffset_);
+    // For the transition-referenced adaptive domains, delay until
+    // the transition barrier bias is above the offset.
+    } else if (adaptive_domains_reftype_ == kTransitionRef) {
+      double transition_bias = getTransitionBarrierBias();
+      adapt_domains_now = (transition_bias > adaptive_domains_eoffset_);
+    }
+  }
+  return adapt_domains_now;
+}
+
 void MetaD::adaptDomains() {
-  
+
   // Calculate a new free energy estimate.
   Grid *new_region;
   std::string funcl = getLabel() + ".indicator";
@@ -1858,32 +1981,23 @@ void MetaD::adaptDomains() {
   for (unsigned i = 0; i < new_region->getMaxSize(); i++) {
     new_region->setValue(i, Histogram_->getValue(i));
   }
-  std::string histofilename = "histogram.dat";
-  OFile histofile;
-  histofile.link(*this);
-  histofile.open(histofilename);
-  new_region->writeToFile(histofile);
-  histofile.close();
-  // Take a log.
+  // Take a log scaled by kbT to convert the histogram into an energy.
   new_region->logAllValuesAndDerivatives(-kbt_);
-  std::string energyfilename = "histogram_energy.dat";
-  OFile energyfile;
-  energyfile.link(*this);
-  energyfile.open(energyfilename);
-  new_region->writeToFile(energyfile);
-  energyfile.close();
+  if (print_adaptive_domains_energies_) {
+    HistEnergyFile_.rewind();
+    new_region->writeToFile(HistEnergyFile_);
+    HistEnergyFile_.flush();
+  }
 
   // Subtract the current bias.
   for (unsigned i = 0; i < new_region->getMaxSize(); i++) {
     new_region->addValue(i, -BiasGrid_->getValue(i));
   }
-  
-  std::string hb_energyfilename = "hb_energy.dat";
-  OFile hb_energyfile;
-  hb_energyfile.link(*this);
-  hb_energyfile.open(hb_energyfilename);
-  new_region->writeToFile(hb_energyfile);
-  hb_energyfile.close();
+  if (print_adaptive_domains_energies_) {
+    HistBiasEnergyFile_.rewind();
+    new_region->writeToFile(HistBiasEnergyFile_);
+    HistBiasEnergyFile_.flush();
+  }
 
   // Find the threshold to use. 
   // First find the adaptive reference value.
@@ -1930,23 +2044,32 @@ void MetaD::adaptDomains() {
   }
 
   // Update the domains and the scaling grid.
+  scale_new_hills_ = false;
   defineDomains(new_region);
   delete new_region;
   filterDomains();
+  createScalingGrids();
   if (n_domains_ > 0) {
-    createScalingGrids();
     scale_new_hills_ = true;
-    // Print for examination
-    for (unsigned i = 0; i < HillScalingGrids_.size(); i++) {
-      std::ostringstream filename_stream;
-      filename_stream << "regions_scaling" << i << ".dat";
-      std::string scalingfilename = filename_stream.str();
-      OFile scalefile;
-      scalefile.link(*this);
-      scalefile.open(scalingfilename);
-      HillScalingGrids_[i]->writeToFile(scalefile);
-      scalefile.close();
+    // Print for examination if desired.
+    if (print_domains_scaling_) {
+      if (DomainsScalingFilePs_.size() < HillScalingGrids_.size()) {
+        for (unsigned i = DomainsScalingFilePs_.size(); i < HillScalingGrids_.size(); i++) {
+          std::ostringstream filename_stream;
+          filename_stream << "domain_" << i << "_scaling.dat";
+          std::string scaling_filename = filename_stream.str();
+          OFile* scaling_filep = new OFile();
+          scaling_filep->link(*this);
+          scaling_filep->open(scaling_filename);
+          DomainsScalingFilePs_.push_back(scaling_filep);
+        }
+      }
+      for (unsigned i = 0; i < DomainsScalingFilePs_.size(); i++) DomainsScalingFilePs_[i]->rewind();
+      for (unsigned i = 0; i < HillScalingGrids_.size(); i++) HillScalingGrids_[i]->writeToFile(*(DomainsScalingFilePs_[i]));
+      for (unsigned i = 0; i < DomainsScalingFilePs_.size(); i++) DomainsScalingFilePs_[i]->flush();
     }
+  } else {
+    scale_new_hills_ = false;
   }
 }
 
@@ -1979,7 +2102,7 @@ void MetaD::calculate() {
     }
     double mean_acc = acc / ((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
-  } else if (isFirstStep) {
+  } else if (acceleration && isFirstStep) {
     getPntrToComponent("acc")->set(1.0);
   }
   // set Forces
@@ -2014,7 +2137,7 @@ void MetaD::update() {
   } else {
     multivariate = false;
   };
-  // When using adaptive domains regions metadynamics, record a histogram
+  // When using adaptive domains metabasin metadynamics, record a histogram
   // in addition to the usual hills. These are not normed because this will
   // only be used through the log and normalization thus corresponds to an
   // irrelevant constant. 
@@ -2024,9 +2147,11 @@ void MetaD::update() {
       Histogram_->addKernel(kernel);
     }
     if (getStep() % adaptive_domains_stride_ == 0 && !isFirstStep) {
-      // Calculate a new region by calculating a free energy estimate and then
-      // thresholding it according to a prespecified rule.
-      adaptDomains();
+      // Check if the delay conditions are satisfied.
+      if (shouldAdaptDomainsNow()) {
+        // If so calculate a new region and new domains.
+        adaptDomains();
+      }
     }
   }
   // When using benthic erosion, erosion can't affect anything until a
@@ -2107,13 +2232,23 @@ void MetaD::update() {
     // this call results in a repetition of the header:
     if (storeOldGrids_) {
       gridfile_.clearFields();
+      if (use_adaptive_domains_ && whistofilename_.size() > 0) {
+        whistofile_.clearFields();
+      }
     }
     // in case only latest grid is stored, file should be rewound
     // this will overwrite previously written grids
     else {
       gridfile_.rewind();
+      if (use_adaptive_domains_ && whistofilename_.size() > 0) {
+        whistofile_.clearFields();
+      }
     }
     BiasGrid_->writeToFile(gridfile_);
+    if (use_adaptive_domains_ && whistofilename_.size() > 0) {
+      Histogram_->writeToFile(whistofile_);
+    }
+
     // if a single grid is stored, it is necessary to flush it, otherwise
     // the file might stay empty forever (when a single grid is not large enough to
     // trigger flushing from the operating system).
@@ -2122,6 +2257,9 @@ void MetaD::update() {
     // (with FLUSH keyword)
     if (!storeOldGrids_) {
       gridfile_.flush();
+      if (use_adaptive_domains_ && whistofilename_.size() > 0) {
+        whistofile_.flush();
+      }
     }
   }
   // if multiple walkers and time to read Gaussians
