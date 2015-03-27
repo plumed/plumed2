@@ -164,10 +164,12 @@ void FitToTemplate::calculate(){
 void FitToTemplate::apply(){
   Vector totForce;
   for(unsigned i=0;i<getTotAtoms();i++){
-    totForce+=modifyForce(AtomNumber::index(i));
+    totForce+=modifyGlobalForce(AtomNumber::index(i));
   }
+  Tensor & vv(modifyGlobalVirial());
+  vv+=Tensor(center,totForce);
   for(unsigned i=0;i<aligned.size();++i){
-    Vector & ff(modifyForce(aligned[i]));
+    Vector & ff(modifyGlobalForce(aligned[i]));
     ff-=totForce*weights[i];
   }
 }

@@ -82,7 +82,10 @@ public:
   unsigned getTotAtoms()const;
 /// Get modifiable force of i-th atom (access by absolute AtomNumber).
 /// Should be used by action that need to modify the stored atomic forces
-  Vector & modifyForce(AtomNumber);
+  Vector & modifyGlobalForce(AtomNumber);
+/// Get modifiable virial
+/// Should be used by action that need to modify the stored virial
+  Tensor & modifyGlobalVirial();
 /// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
@@ -173,8 +176,13 @@ Vector & ActionAtomistic::modifyPosition(AtomNumber i){
 }
 
 inline
-Vector & ActionAtomistic::modifyForce(AtomNumber i){
+Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i){
   return atoms.forces[i.index()];
+}
+
+inline
+Tensor & ActionAtomistic::modifyGlobalVirial(){
+  return atoms.virial;
 }
 
 inline
