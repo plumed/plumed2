@@ -185,6 +185,7 @@ For users:
 - Fixed a serious bug in virial communicated from plumed to gromacs, for both gromacs versions 4.6 and 5.0.
   Patch for gromacs 4.5 is not fixed. See notes <a href="http://github.com/plumed/plumed2/issues/132"> here </a>
   This fix requires gromacs to be repatched and could be very important if you run biased simulations in the NPT ensemble.
+- Fixed a bug in the virial computed with \ref FIT_TO_TEMPLATE when the reference pdb had center non located at the origin.
 
 
 
