@@ -417,7 +417,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
               numbers[6]=mypdb.getNamedAtomFromResidue("C5",resnum);
               numbers[7]=mypdb.getNamedAtomFromResidue("C7",resnum);
               numbers[8]=mypdb.getNamedAtomFromResidue("C6",resnum);
-          } else if( resname=="DG" || resname=="G" ){
+          } else if( resname=="DG" || resname=="G" || resname=="DGN" || resname=="DG5" || resname=="DG3" || resname=="RG5" || resname=="RG3" || resname=="RGN" ){
               numbers.resize(11);
               numbers[0]=mypdb.getNamedAtomFromResidue("N9",resnum);
               numbers[1]=mypdb.getNamedAtomFromResidue("C4",resnum);
@@ -430,7 +430,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
               numbers[8]=mypdb.getNamedAtomFromResidue("C5",resnum);
               numbers[9]=mypdb.getNamedAtomFromResidue("N7",resnum);
               numbers[10]=mypdb.getNamedAtomFromResidue("C8",resnum);
-          }  else if( resname=="DA" || resname=="A" ){
+          }  else if( resname=="DA" || resname=="A" || resname=="DAN" || resname=="DA5" || resname=="DA3" || resname=="RA5" || resname=="RA3" || resname=="RAN" ){
               numbers.resize(10);
               numbers[0]=mypdb.getNamedAtomFromResidue("N9",resnum);
               numbers[1]=mypdb.getNamedAtomFromResidue("C4",resnum);
