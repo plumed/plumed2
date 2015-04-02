@@ -261,7 +261,7 @@ class MetaD : public Bias {
   double tt_biasf_;
   double tt_biasthreshold_;
   vector<vector<double> > transitionwells_;
-  double globalt_alpha_;
+  double tt_alpha_;
   bool benthic_toleration_;
   double benthic_tol_energy_;
   bool benthic_erosion_;
@@ -365,9 +365,9 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "TTBIASFACTOR", "use transition tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
   keys.add("optional", "TTBIASTHRESHOLD", "use transition tempered metadynamics with this bias threshold.  Please note you must also specify TTBIASFACTOR");
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well in transition-tempered metadynamics. At least one must be provided.");
-  keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this alpha value.  Please note you must also specify TTBIASFACTOR");
+  keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this decay shape parameter value between 0 and 0.5 (default 0.5).  Please note you must also specify TTBIASFACTOR");
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition states");
-  keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time");
+  keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
   keys.addFlag("USE_DOMAINS", false, "use metabasin metadynamics with adaptively set regions");
   keys.add("optional", "REGION_RFILE", "use metabasin metadynamics with this file defining areas to flatten");
   keys.addFlag("USE_ADAPTIVE_DOMAINS", false, "use metabasin metadynamics with adaptively set regions");
@@ -843,6 +843,8 @@ MetaD::MetaD(const ActionOptions &ao):
   // Transition tempered metadynamics options
   if (transitiontempered_) {
     log.printf("  Transition-Tempered Bias Factor %f\n", tt_biasf_);
+    log.printf("  Transition-Tempered bias threshold %f\n", tt_biasthreshold_);
+    log.printf("  Transition-Tempered decay shape parameter alpha %f\n", tt_alpha_);
     log.printf("  Number of transition wells %d\n", transitionwells_.size());
     for (unsigned i = 0; i < transitionwells_.size(); i++) {
       log.printf("  Transition well %d at coordinate ", i);
@@ -1718,7 +1720,7 @@ double MetaD::getHeight(const vector<double> &cv) {
       height *= exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
     }
     else {
-      height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha / (1 - tt_alpha));
+      height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha_ / (1 - tt_alpha_));
     }
   }
   if (use_domains_ && scale_new_hills_) {
