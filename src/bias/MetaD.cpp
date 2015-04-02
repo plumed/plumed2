@@ -1720,7 +1720,7 @@ double MetaD::getHeight(const vector<double> &cv) {
       height *= exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
     }
     else {
-      height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha_ / (1 - tt_alpha_));
+      height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - (1 - tt_alpha_) / tt_alpha_);
     }
   }
   if (use_domains_ && scale_new_hills_) {
