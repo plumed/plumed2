@@ -261,6 +261,7 @@ class MetaD : public Bias {
   double tt_biasf_;
   double tt_biasthreshold_;
   vector<vector<double> > transitionwells_;
+  double globalt_alpha_;
   bool benthic_toleration_;
   double benthic_tol_energy_;
   bool benthic_erosion_;
@@ -364,6 +365,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "TTBIASFACTOR", "use transition tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
   keys.add("optional", "TTBIASTHRESHOLD", "use transition tempered metadynamics with this bias threshold.  Please note you must also specify TTBIASFACTOR");
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well in transition-tempered metadynamics. At least one must be provided.");
+  keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this alpha value.  Please note you must also specify TTBIASFACTOR");
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition states");
   keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time");
   keys.addFlag("USE_DOMAINS", false, "use metabasin metadynamics with adaptively set regions");
@@ -456,6 +458,7 @@ MetaD::MetaD(const ActionOptions &ao):
   transitiontempered_(false),
   tt_biasf_(1.0),
   tt_biasthreshold_(0.0),
+  tt_alpha_(0.5),
   benthic_toleration_(false),
   benthic_tol_energy_(0.0),
   benthic_erosion_(false),
@@ -594,6 +597,10 @@ MetaD::MetaD(const ActionOptions &ao):
     parse("TTBIASTHRESHOLD", tt_biasthreshold_);
     if (tt_biasthreshold_ < 0.0) {
       error("transition tempered bias threshold is nonsensical");
+    }
+    parse("TTALPHA", tt_alpha_);
+    if (tt_alpha_ > .5 || tt_alpha_ < 0.0) {
+      error("transition tempered decay shape parameter is nonsensical");
     }
     vector<double> tempcoords(getNumberOfArguments());    
     for (unsigned i = 0; ; i++) {
@@ -1703,11 +1710,16 @@ double MetaD::getHeight(const vector<double> &cv) {
   double height = height0_;
   if (welltempered_) {
     double vbias = getBiasAndDerivatives(cv);
-    height = height0_ * exp(-max(0.0, vbias - wt_biasthreshold_) / (kbt_ * (biasf_ - 1.0)));
+    height *= exp(-max(0.0, vbias - wt_biasthreshold_) / (kbt_ * (biasf_ - 1.0)));
   }
   if (transitiontempered_) {
     double vbarrier = getTransitionBarrierBias();
-    height = height0_ * exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
+    if (tt_alpha_ == 0.0) {
+      height *= exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
+    }
+    else {
+      height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha / (1 - tt_alpha));
+    }
   }
   if (use_domains_ && scale_new_hills_) {
     if (domain_ids_[BiasGrid_->getIndex(cv)] == 0) {
