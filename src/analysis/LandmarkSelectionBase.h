@@ -77,8 +77,6 @@ public:
   void checkRead() const ;
 /// Return a description of the landmark selection protocol
   std::string description();
-/// Overwrite this to have a more descriptive output
-  virtual std::string rest_of_description(){ return ""; };
 /// Actually do landmark selection
   void selectLandmarks( MultiReferenceBase* );
   virtual void select( MultiReferenceBase* )=0;

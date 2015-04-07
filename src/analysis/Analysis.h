@@ -35,6 +35,8 @@ class ReferenceConfiguration;
 
 namespace analysis {
 
+class DimensionalityReductionBase;
+
 /**
 \ingroup INHERIT
 This is the abstract base class to use for implementing new methods for analyzing the trajectory, within it there 
@@ -57,10 +59,14 @@ private:
   bool write_chq;
 /// Are we reusing data stored by another analysis action
   bool reusing_data;
+/// Are we using data projected in a dimensionality reduction object
+  bool dimred_data;
 /// If we are reusing data are we ignoring the reweighting in that data
   bool ignore_reweight;
 /// The Analysis action that we are reusing data from
   Analysis* mydatastash;
+/// The dimensionality reduction object that we are reusing data from
+  DimensionalityReductionBase* dimredstash;
 /// The frequency with which we are performing analysis
   unsigned freq;
 /// Number of data point we need to run analysis
@@ -101,6 +107,8 @@ private:
 /// Get the metric if we are using malonobius distance and flexible hill
   std::vector<double> getMetric() const ;
 protected:
+/// Get a reference configuration 
+  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata );
 /// This is used to read in output file names for analysis methods.  When
 /// this method is used and the calculation is not restarted old analysis
 /// files are backed up.

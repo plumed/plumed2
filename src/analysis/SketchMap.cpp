@@ -19,42 +19,47 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AnalysisWithLandmarks.h"
+#include "DimensionalityReductionBase.h"
 #include "ClassicalScaling.h"
 #include "SMACOF.h"
 #include "reference/PointWiseMapping.h"
 #include "core/ActionRegister.h"
 #include "tools/SwitchingFunction.h"
 
+//+PLUMEDOC ANALYSIS SKETCHMAP
+/*
+Perform a dimensionality reduction using the sketch-map algorithm
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace analysis {
 
-class SketchMap : public AnalysisWithLandmarks {
+class SketchMap : public DimensionalityReductionBase {
 private:
-  unsigned nlow;
   bool nosmacof;
   double smactol, smaptol, regulariser;
-  std::string ofilename;
-  std::string efilename;
-  PointWiseMapping* myembedding;
   SwitchingFunction lowdf, highdf;
-  double recalculateWeights( const Matrix<double>& Distances, const Matrix<double>& F, Matrix<double>& Weights );
+  double recalculateWeights( const Matrix<double>& Distances, const Matrix<double>& F, PointWiseMapping* mymap, Matrix<double>& Weights );
 public:
   static void registerKeywords( Keywords& keys );
   SketchMap( const ActionOptions& ao );
-  ~SketchMap();
-  void analyzeLandmarks();
+  std::string getAlgorithmName() const { return "sketch-map"; }
+  void calculateAllDistances( PointWiseMapping* mymap, Matrix<double>& targets );
+  void generateProjections( PointWiseMapping* mymap );
+  double transformHD( const double& val, double& df ) const ;
+  double transformLD( const double& val, double& df ) const ;
 };
 
 PLUMED_REGISTER_ACTION(SketchMap,"SKETCHMAP")
 
 void SketchMap::registerKeywords( Keywords& keys ){
-  AnalysisWithLandmarks::registerKeywords( keys );
-  keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
+  DimensionalityReductionBase::registerKeywords( keys );
   keys.add("compulsory","HIGH_DIM_FUNCTION","the parameters of the switching function in the high dimensional space");
   keys.add("compulsory","LOW_DIM_FUNCTION","the parameters of the switching function in the low dimensional space");
-  keys.add("compulsory","OUTPUT_FILE","file on which to output the final embedding coordinates");
-  keys.add("compulsory","EMBEDDING_OFILE","dont output","file on which to output the embedding in plumed input format");
   keys.add("compulsory","SMACOF_TOL","1E-4","the tolerance for each SMACOF cycle");
   keys.add("compulsory","SMAP_TOL","1E-4","the tolerance for sketch-map");
   keys.add("compulsory","REGULARISE_PARAM","0.001","this is used to ensure that we don't divide by zero when updating weights");
@@ -62,14 +67,8 @@ void SketchMap::registerKeywords( Keywords& keys ){
 
 SketchMap::SketchMap( const ActionOptions& ao ):
 Action(ao),
-AnalysisWithLandmarks(ao)
+DimensionalityReductionBase(ao)
 {
-  myembedding = new PointWiseMapping( getMetricName(), false );
-  setDataToAnalyze( dynamic_cast<MultiReferenceBase*>(myembedding) );
-
-  parse("NLOW_DIM",nlow); 
-  if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
-
   // Read in the switching functions
   std::string linput,hinput, errors;
   parse("HIGH_DIM_FUNCTION",hinput);
@@ -83,90 +82,53 @@ AnalysisWithLandmarks(ao)
   parse("SMACOF_TOL",smactol);
   parse("SMAP_TOL",smaptol);
   parse("REGULARISE_PARAM",regulariser);
-
-  // Setup the property names
-  std::vector<std::string> propnames( nlow ); std::string num;
-  for(unsigned i=0;i<propnames.size();++i){
-     Tools::convert(i+1,num); std::string lab=getLabel();
-     if(lab.find("@")!=std::string::npos) propnames[i]=getName() + "." + num;
-     else propnames[i]=getLabel() + "." + num;
-  }
-  myembedding->setPropertyNames( propnames, false );
-
-  parseOutputFile("EMBEDDING_OFILE",efilename);
-  parseOutputFile("OUTPUT_FILE",ofilename);
 }
 
-SketchMap::~SketchMap(){
-  delete myembedding;
-}
-
-void SketchMap::analyzeLandmarks(){
+void SketchMap::calculateAllDistances( PointWiseMapping* mymap, Matrix<double>& targets ){
   // Calculate matrix of dissimilarities (High dimensional space) 
-  myembedding->calculateAllDistances( getPbc(), getArguments(), comm, myembedding->modifyDmat(), false );
-  Matrix<double> Distances( myembedding->modifyDmat() ); //making a copy
-  unsigned M = myembedding->getNumberOfReferenceFrames(); Matrix<double> F(M,M); double dr;
+  mymap->calculateAllDistances( getPbc(), getArguments(), comm, mymap->modifyDmat(), false );
+  double dr; unsigned M = mymap->getNumberOfReferenceFrames(); 
   for(unsigned i=1; i<M; ++i){
       for(unsigned j=0; j<i; ++j) {
-          F(i,j) = F(j,i) = 1.0 - highdf.calculate( Distances(i,j), dr ); // high dim space
+          targets(i,j) = targets(j,i) = 1.0 - highdf.calculate( mymap->modifyDmat()(i,j), dr ); // high dim space
       }
-      
   }
+}
+
+
+void SketchMap::generateProjections( PointWiseMapping* mymap ){
+  Matrix<double> Distances( mymap->modifyDmat() ); //making a copy
   // Calculates the first guess of projections in LD space 
-  ClassicalScaling::run( myembedding );
+  ClassicalScaling::run( mymap );
   
   // Calculate the value of sigma and the weights
-  Matrix<double> Weights(M,M); double filt = recalculateWeights( Distances, F, Weights );
+  unsigned M = mymap->getNumberOfReferenceFrames();
+  Matrix<double> Weights(M,M); double filt = recalculateWeights( Distances, getTargets(), mymap, Weights );
 
   unsigned MAXSTEPS=100; double newsig;
   for(unsigned i=0;i<MAXSTEPS;++i){
       // Run the smacof algorithm
-      SMACOF::run( Weights, myembedding, smactol );
+      SMACOF::run( Weights, mymap, smactol );
       // Recalculate weights matrix and sigma
-      newsig = recalculateWeights( Distances, F, Weights );
+      newsig = recalculateWeights( Distances, getTargets(), mymap, Weights );
       printf("HELLO GARETH AND RACHEL %d %f %f %f \n",i, newsig, filt, fabs( newsig - filt ) );
       // Test whether or not the algorithm has converged
       if( fabs( newsig - filt )<smaptol ) break;
       // Make initial sigma into new sigma so that the value of new sigma is used every time so that the error can be reduced
       filt=newsig;
   } 
-
-  // Output the embedding as long lists of data
-  OFile gfile; gfile.link(*this); 
-  gfile.setBackupString("analysis");
-  gfile.fmtField(getOutputFormat()+" ");
-  gfile.open( ofilename.c_str() );
-  
-  // Print embedding coordinates
-  for(unsigned i=0;i<myembedding->getNumberOfReferenceFrames();++i){
-      for(unsigned j=0;j<nlow;++j){
-          std::string num; Tools::convert(j+1,num);
-          gfile.printField( getLabel() + "." + num , myembedding->getProjectionCoordinate(i,j) );
-      }
-      gfile.printField();
-  }  
-  gfile.close();
-
-  // Output the embedding in plumed format
-  if( efilename!="dont output"){
-     // std::string ifname=saveResultsFromPreviousAnalyses( efilename );
-     OFile afile; afile.link(*this); afile.setBackupString("analysis");
-     afile.open( efilename.c_str() );
-     myembedding->print( "sketch-map", getTime(), afile, getOutputFormat() );
-     afile.close();
-  }
 }
 
-double SketchMap::recalculateWeights( const Matrix<double>& Distances, const Matrix<double>& F, Matrix<double>& Weights ){
+double SketchMap::recalculateWeights( const Matrix<double>& Distances, const Matrix<double>& F, PointWiseMapping* mymap, Matrix<double>& Weights ){
   double filt=0, totalWeight=0.;; double dr;
   for(unsigned i=1; i<Weights.nrows(); ++i){
       for(unsigned j=0; j<i; ++j){
           double tempd=0;
-          for(unsigned k=0;k<nlow;++k){
-             double tmp = myembedding->getProjectionCoordinate( i, k ) - myembedding->getProjectionCoordinate( j, k );
+          for(unsigned k=0;k<mymap->getNumberOfProperties();++k){
+             double tmp = mymap->getProjectionCoordinate( i, k ) - mymap->getProjectionCoordinate( j, k );
              tempd += tmp*tmp;
           }
-          double ninj=myembedding->getWeight(i)*myembedding->getWeight(j);
+          double ninj=mymap->getWeight(i)*mymap->getWeight(j);
           totalWeight += ninj;
 
           double dij=sqrt(tempd);
@@ -179,6 +141,15 @@ double SketchMap::recalculateWeights( const Matrix<double>& Distances, const Mat
       }
   }
   return filt / totalWeight;
+}
+
+double SketchMap::transformHD( const double& val, double& df ) const { 
+  double vv=1.0 - highdf.calculate( val, df );
+  df=-df; return vv;
+}
+double SketchMap::transformLD( const double& val, double& df ) const {
+  double vv=1.0 - lowdf.calculate( val, df );
+  df=-df; return vv;
 }
 
 }

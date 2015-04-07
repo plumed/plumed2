@@ -23,15 +23,6 @@
 #include "LandmarkRegister.h"
 #include "LandmarkSelectionBase.h"
 
-//+PLUMEDOC INTERNAL landmarkselection
-/*
-This is currently a filler page.  
-
-Just use LANDMARKS=ALL.  More complex versions will appear in later versions.
-
-*/
-//+ENDPLUMEDOC
-
 namespace PLMD {
 namespace analysis {
 
@@ -39,7 +30,7 @@ void AnalysisWithLandmarks::registerKeywords( Keywords& keys ){
   Analysis::registerKeywords( keys );
   keys.add("compulsory","LANDMARKS","ALL","only use a subset of the data that was collected. "
                                           "For more information on the landmark selection algorithms that are available in "
-                                          "plumed see \\ref landmarkselection.");
+                                          "plumed see \\ref OUTPUT_LANDMARKS.");
 }
 
 AnalysisWithLandmarks::AnalysisWithLandmarks( const ActionOptions& ao):
@@ -50,7 +41,7 @@ data_to_analyze(NULL)
    std::string linput; parse("LANDMARKS",linput);
    std::vector<std::string> words=Tools::getWords(linput); 
    landmarkSelector=landmarkRegister().create( LandmarkSelectionOptions(words,this) );
-   log.printf("  %s\n", landmarkSelector->description().c_str() );
+   log.printf("  %s", landmarkSelector->description().c_str() );
 }
 
 AnalysisWithLandmarks::~AnalysisWithLandmarks(){

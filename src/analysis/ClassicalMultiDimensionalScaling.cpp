@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "AnalysisWithLandmarks.h"
+#include "DimensionalityReductionBase.h"
 #include "ClassicalScaling.h"
 #include "SMACOF.h"
 #include "reference/PointWiseMapping.h"
@@ -165,102 +165,63 @@ see <a href="http://quest4rigor.com/tag/multidimensional-scaling/"> this website
 */
 //+ENDPLUMEDOC
 
-class ClassicalMultiDimensionalScaling : public AnalysisWithLandmarks {
+class ClassicalMultiDimensionalScaling : public DimensionalityReductionBase {
 private:
-  unsigned nlow;
-  std::string ofilename;
-  std::string efilename;
-  PointWiseMapping* myembedding;
   bool nosmacof;
   double stol;
 public:
   static void registerKeywords( Keywords& keys );
   ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-  ~ClassicalMultiDimensionalScaling();
-  void analyzeLandmarks();
+  std::string getAlgorithmName() const { return "classical mds"; }
+  void calculateAllDistances( PointWiseMapping* mymap, Matrix<double>& targets );
+  void generateProjections( PointWiseMapping* mymap );
+  double transformHD( const double& val, double& df ) const ;
+  double transformLD( const double& val, double& df ) const ;
 };
 
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")
 
 void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ){
-  AnalysisWithLandmarks::registerKeywords( keys );
-  keys.add("compulsory","NLOW_DIM","number of low-dimensional coordinates required");
-  keys.add("compulsory","OUTPUT_FILE","file on which to output the final embedding coordinates");
-  keys.add("compulsory","EMBEDDING_OFILE","dont output","file on which to output the embedding in plumed input format");
+  DimensionalityReductionBase::registerKeywords( keys );
   keys.addFlag("NOSMACOF",false,"don't refine the projection using the SMACOF algorithm.  N.B. classical MDS ignores weights");
   keys.add("compulsory","SMACOF_TOL","1E-4","tolerance for the SMACOF optimization algorith");
 }
 
 ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao ):
 Action(ao),
-AnalysisWithLandmarks(ao)
+DimensionalityReductionBase(ao)
 {
-  myembedding = new PointWiseMapping( getMetricName(), false );
-  setDataToAnalyze( dynamic_cast<MultiReferenceBase*>(myembedding) );
-
-  parse("NLOW_DIM",nlow); 
-  if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
-
   parseFlag("NOSMACOF",nosmacof); parse("SMACOF_TOL",stol);
   if(nosmacof) log.printf("  generating projection using classical MDS and ignoring weight information \n");
   else log.printf("  generating projection using SMCAOF.  Tolerance is %f \n",stol);
- 
-  std::vector<std::string> propnames( nlow ); std::string num;
-  for(unsigned i=0;i<propnames.size();++i){
-     Tools::convert(i+1,num); std::string lab=getLabel();
-     if(lab.find("@")!=std::string::npos) propnames[i]=getName() + "." + num;
-     else propnames[i]=getLabel() + "." + num;
-  }
-  myembedding->setPropertyNames( propnames, false );
-
-  parseOutputFile("EMBEDDING_OFILE",efilename);
-  parseOutputFile("OUTPUT_FILE",ofilename);
-
 }
 
-ClassicalMultiDimensionalScaling::~ClassicalMultiDimensionalScaling(){
-  delete myembedding;
-}
-
-void ClassicalMultiDimensionalScaling::analyzeLandmarks(){
+void ClassicalMultiDimensionalScaling::calculateAllDistances( PointWiseMapping* mymap, Matrix<double>& targets ){
   // Calculate all pairwise diatances
-  myembedding->calculateAllDistances( getPbc(), getArguments(), comm, myembedding->modifyDmat(), true );
+  mymap->calculateAllDistances( getPbc(), getArguments(), comm, mymap->modifyDmat(), true );
+  // Copy data to targets
+  targets=mymap->modifyDmat();
+}
+
+void ClassicalMultiDimensionalScaling::generateProjections( PointWiseMapping* mymap ){
 
   // Run multidimensional scaling
-  ClassicalScaling::run( myembedding );
+  ClassicalScaling::run( mymap );
 
   if( !nosmacof ){
-     unsigned M=myembedding->getNumberOfReferenceFrames(); Matrix<double> Weights( M, M );
+     unsigned M=mymap->getNumberOfReferenceFrames(); Matrix<double> Weights( M, M );
      for(unsigned i=1; i<M; ++i){
-         for(unsigned j=0; j<i; ++j) Weights(i,j) = Weights(j,i) = myembedding->getWeight(i)*myembedding->getWeight(j);
+         for(unsigned j=0; j<i; ++j) Weights(i,j) = Weights(j,i) = mymap->getWeight(i)*mymap->getWeight(j);
      }  
-     SMACOF::run( Weights, myembedding, stol );
+     SMACOF::run( Weights, mymap, stol );
   }
+}
 
-  // Output the embedding as long lists of data
-//  std::string gfname=saveResultsFromPreviousAnalyses( ofilename );
-  OFile gfile; gfile.link(*this); 
-  gfile.setBackupString("analysis");
-  gfile.fmtField(getOutputFormat()+" ");
-  gfile.open( ofilename.c_str() );
-  
-  // Print embedding coordinates
-  for(unsigned i=0;i<myembedding->getNumberOfReferenceFrames();++i){
-      for(unsigned j=0;j<nlow;++j){
-          std::string num; Tools::convert(j+1,num);
-          gfile.printField( getLabel() + "." + num , myembedding->getProjectionCoordinate(i,j) );
-      }
-      gfile.printField();
-  }  
-  gfile.close();
-
-  // Output the embedding in plumed format
-  if( efilename!="dont output"){
-     OFile afile; afile.link(*this); afile.setBackupString("analysis");
-     afile.open( efilename.c_str() );
-     myembedding->print( "classical mds", getTime(), afile, getOutputFormat() );
-     afile.close();
-  }
+double ClassicalMultiDimensionalScaling::transformHD( const double& val, double& df ) const {
+  df=1.0; return val; 
+}
+double ClassicalMultiDimensionalScaling::transformLD( const double& val, double& df ) const {
+  df=1.0; return val;
 }
 
 }

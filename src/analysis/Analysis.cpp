@@ -30,6 +30,7 @@
 #include "reference/ReferenceArguments.h"
 #include "reference/ReferenceAtoms.h"
 #include "reference/MetricRegister.h"
+#include "DimensionalityReductionBase.h"
 
 namespace PLMD {
 namespace analysis {
@@ -61,12 +62,22 @@ void Analysis::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  keys.use("ARG"); keys.reset_style("ARG","optional");
+  keys.use("ARG"); keys.reset_style("ARG","atoms");
   keys.add("atoms","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
   keys.add("compulsory","METRIC","EUCLIDEAN","how are we measuring the distances between configurations");
-  keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis");
+  keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis.  This is not required if you specify REUSE_DATA_FROM/USE_DIMRED_DATA_FROM");
+  keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA/REUSE_DATA_FROM/USE_DIMRED_DATA_FROM");
+  keys.add("atoms-2","REUSE_DATA_FROM","using this form of input allows one to do multiple analyses on the same set of data.  The data "
+                                       "from the referenced Analysis action will be re-analysed using this new form of analysis after having "
+                                       "been analysed using the form of analysis specified in the action that was previously referenced. The " 
+                                       "frequency (STRIDE) of storage of the data and the frequency of running this second form of analysis (RUN) "
+                                       "are the same as those in the referenced analysis object");
+  keys.add("atoms-3","USE_DIMRED_DATA_FROM","using this form of input allows one to analyse projections of the data generated using some dimensionality reduction algoirthm. "
+                                            "The dimensionality reduction will have been performed using the referenced Analysis action.  If landmark configurations were "
+                                            "used projections of all stored points will be generated using the appropriate out of sample technique.  The frequency (STRIDE) "
+                                            "of storage of the data and the frequency with which this particular form of analysis are performed (RUN) are the same as those "
+                                            "in the referenced analysis object.");
   keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
-  keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA");
   keys.add("optional","FMT","the format that should be used in analysis output files");
   keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics. For more information see \\ref reweighting.");
   keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting or doing free energies.");
@@ -74,7 +85,6 @@ void Analysis::registerKeywords( Keywords& keys ){
                                       "distribution at a second temperature. For more information see \\ref reweighting. "
                                       "This is not possible during postprocessing.");
   keys.addFlag("WRITE_CHECKPOINT",false,"write out a checkpoint so that the analysis can be restarted in a later run");
-  keys.add("hidden","REUSE_DATA_FROM","eventually this will allow you to analyse the same set of data multiple times");
   keys.add("hidden","IGNORE_REWEIGHTING","this allows you to ignore any reweighting factors");
   keys.reserveFlag("NOMEMORY",false,"analyse each block of data separately");
   ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); 
@@ -90,6 +100,7 @@ single_run(false),
 nomemory(true),
 write_chq(false),
 reusing_data(false),
+dimred_data(false),
 ignore_reweight(false),
 needeng(false),
 idata(0),
@@ -128,26 +139,36 @@ argument_names(getNumberOfArguments())
       parseFlag("IGNORE_REWEIGHTING",ignore_reweight);
       if( ignore_reweight ) log.printf("  reusing data stored by %s but ignoring all reweighting\n",prev_analysis.c_str() );
       else log.printf("  reusing data stored by %s\n",prev_analysis.c_str() ); 
-  } else { 
-      if( keywords.exists("REWEIGHT_BIAS") ){
-         bool dobias; parseFlag("REWEIGHT_BIAS",dobias);
-         if( dobias ){
-             std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
-             if( all.empty() ) error("your input file is not telling plumed to calculate anything");
-             std::vector<Value*> arg( getArguments() );
-             log.printf("  reweigting using the following biases ");
-             for(unsigned j=0;j<all.size();j++){
-                 std::string flab; flab=all[j]->getLabel() + ".bias";
-                 if( all[j]->exists(flab) ){ 
-                    biases.push_back( all[j]->copyOutput(flab) ); 
-                    arg.push_back( all[j]->copyOutput(flab) ); 
-                    log.printf(" %s",flab.c_str()); 
+  } else {
+      std::string prev_dimred; parse("USE_DIMRED_DATA_FROM",prev_dimred);
+      if( prev_dimred.length()>0 ){
+          reusing_data=true; dimred_data=true;
+          dimredstash=plumed.getActionSet().selectWithLabel<DimensionalityReductionBase*>( prev_dimred );
+          if( !dimredstash ) error("could not find dimensionality reduction action named " + prev_dimred );
+          mydatastash=dynamic_cast<Analysis*>( dimredstash ); plumed_assert( mydatastash );
+          if( ignore_reweight ) log.printf("  using projections calculated by %s but ignoring all reweighting\n",prev_dimred.c_str() );
+          else log.printf("  using projections calculated by %s\n",prev_dimred.c_str() ); 
+      } else { 
+          if( keywords.exists("REWEIGHT_BIAS") ){
+             bool dobias; parseFlag("REWEIGHT_BIAS",dobias);
+             if( dobias ){
+                 std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
+                 if( all.empty() ) error("your input file is not telling plumed to calculate anything");
+                 std::vector<Value*> arg( getArguments() );
+                 log.printf("  reweigting using the following biases ");
+                 for(unsigned j=0;j<all.size();j++){
+                     std::string flab; flab=all[j]->getLabel() + ".bias";
+                     if( all[j]->exists(flab) ){ 
+                        biases.push_back( all[j]->copyOutput(flab) ); 
+                        arg.push_back( all[j]->copyOutput(flab) ); 
+                        log.printf(" %s",flab.c_str()); 
+                     }
                  }
+                 log.printf("\n");
+                 if( biases.empty() ) error("you are asking to reweight bias but there does not appear to be a bias acting on your system");
+                 requestArguments( arg ); 
              }
-             log.printf("\n");
-             if( biases.empty() ) error("you are asking to reweight bias but there does not appear to be a bias acting on your system");
-             requestArguments( arg ); 
-         }
+          }
       }
 
       rtemp=0;      
@@ -166,7 +187,7 @@ argument_names(getNumberOfArguments())
       }
 
       parseFlag("USE_ALL_DATA",single_run); 
-      if( !single_run ){
+      if( !single_run && !reusing_data ){
           parse("RUN",freq );
           log.printf("  running analysis every %u steps\n",freq);
           if( freq%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
@@ -177,7 +198,13 @@ argument_names(getNumberOfArguments())
              data[i]->setNamesAndAtomNumbers( atom_numbers, argument_names );
           }
           logweights.resize( ndata );
-      } else {       
+      } else if( reusing_data ){
+          single_run=mydatastash->single_run;
+          if( !single_run ){
+              freq=mydatastash->freq;
+              ndata=freq/mydatastash->getStride();
+          }
+      } else if( single_run ) {       
           log.printf("  analyzing all data in trajectory\n");
       }
       if( keywords.exists("NOMEMORY") ){ nomemory=false; parseFlag("NOMEMORY",nomemory); }
@@ -324,6 +351,24 @@ double Analysis::getWeight( const unsigned& idata ) const {
   }
 }
 
+ReferenceConfiguration* Analysis::getReferenceConfiguration( const unsigned& idata ){
+  if( !reusing_data ){
+      return data[idata];
+  } else if( dimred_data ){
+      ReferenceConfigurationOptions("EUCLIDEAN");
+      ReferenceConfiguration* mydata=metricRegister().create<ReferenceConfiguration>("EUCLIDEAN");
+      unsigned ndim=dimredstash->getLowDimensionSize();
+      std::vector<std::string> dimnames(ndim); dimredstash->getPropertyNames( dimnames );
+      mydata->setNamesAndAtomNumbers( std::vector<AtomNumber>(), dimnames );
+      std::vector<double> pp(ndim); dimredstash->getProjectedPoint( idata, pp );
+      std::vector<double> empty( pp.size() );
+      mydata->setReferenceConfig( std::vector<Vector>(), pp, empty );  
+      return mydata;
+  } else {
+      return mydatastash->getReferenceConfiguration( idata );
+  }
+}
+
 void Analysis::finalizeWeights( const bool& ignore_weights ){
   // Check that we have the correct ammount of data
   if( !reusing_data && idata!=logweights.size() ) error("something has gone wrong.  Am trying to run analysis but I don't have sufficient data");
@@ -369,8 +414,11 @@ void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, 
       plumed_dbg_assert( idata<logweights.size() &&  point.size()==getNumberOfArguments() );
       for(unsigned i=0;i<point.size();++i) point[i]=data[idata]->getReferenceArgument(i);
       weight=data[idata]->getWeight();
+  } else if( dimred_data ){
+      weight = getWeight( idata );
+      dimredstash->getProjectedPoint( idata, point );
   } else {
-      return mydatastash->getDataPoint( idata, point, weight );
+      mydatastash->getDataPoint( idata, point, weight );
   }
 }
 
@@ -383,7 +431,7 @@ void Analysis::runAnalysis(){
   if( !reusing_data ){ 
      finalizeWeights( ignore_reweight ); 
   } else {
-     mydatastash->finalizeWeights( ignore_reweight );
+     // mydatastash->finalizeWeights( ignore_reweight ); Weights will have been finalized by previous analysis
      norm=mydatastash->retrieveNorm();
   }
   // And run the analysis
