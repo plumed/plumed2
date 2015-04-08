@@ -207,15 +207,13 @@ void ActionWithValue::turnOnDerivatives(){
   // Turn on the derivatives
   noderiv=false;
   // Resize the derivatives 
-  for(unsigned i=0;i<values.size();++i) values[i]->resizeDerivatives( getNumberOfDerivatives() ); 
-  // values[i]->resizeDerivatives( getNumberOfDerivatives() );
+  for(unsigned i=0;i<values.size();++i) values[i]->resizeDerivatives( getNumberOfDerivatives() );
   // And turn on the derivatives in all actions on which we are dependent
   for(unsigned i=0;i<getDependencies().size();++i){
       ActionWithValue* vv=dynamic_cast<ActionWithValue*>( getDependencies()[i] );
       if(vv) vv->turnOnDerivatives();
   }
 }
-
 
 Value* ActionWithValue::getPntrToComponent( const std::string& name ){
   int kk=getComponent(name);
