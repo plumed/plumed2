@@ -159,12 +159,12 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const{
   Vector d=delta(v1,v2);
   if(type==unset){
   } else if(type==orthorombic) {
-   for(int i=0;i<3;i++) d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
-// this is another possibility:
-//   for(unsigned i=0;i<3;i++){
-//     while(d[i]>hdiag[i]) d[i]-=diag[i];
-//     while(d[i]<=mdiag[i]) d[i]+=diag[i];
-//   }
+//   for(int i=0;i<3;i++) d[i]=Tools::pbc(d[i]*invBox(i,i))*box(i,i);
+// this is another possibility that is slighlty faster:
+   for(unsigned i=0;i<3;i++){
+     while(d[i]>hdiag[i]) d[i]-=diag[i];
+     while(d[i]<=mdiag[i]) d[i]+=diag[i];
+   }
   } else if(type==generic) {
     Vector s=matmul(d,invReduced);
 // check if images have to be computed:
