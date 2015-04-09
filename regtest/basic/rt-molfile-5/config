@@ -1,0 +1,3 @@
+type=driver
+plumed_needs=external-molfile
+arg="--plumed plumed.dat --mf_crdbox test.crd --natoms 9560"
