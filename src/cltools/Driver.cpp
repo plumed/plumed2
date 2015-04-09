@@ -153,6 +153,7 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
   keys.add("optional","--pdb","provides a pdb with masses and charges");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
+  keys.add("optional","--natoms","provides number of atoms - only used if file format does not contain number of atoms");
   keys.add("hidden","--debug-float","turns on the single precision version (to check float interface)");
   keys.add("hidden","--debug-dd","use a fake domain decomposition");
   keys.add("hidden","--debug-pd","use a fake particle decomposition");
@@ -266,11 +267,14 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   void *h_in=NULL;
   molfile_timestep_t ts_in; // this is the structure that has the timestep 
   ts_in.coords=NULL;
+  ts_in.A=-1; // we use this to check whether cell is provided or not
 #endif
 
 // Read in an xyz file
   string trajectoryFile(""), pdbfile("");
   bool pbc_cli_given=false; vector<double> pbc_cli_box(9,0.0);
+  int command_line_natoms=-1;
+
   if(!noatoms){
      std::string traj_xyz; parse("--ixyz",traj_xyz);
      std::string traj_gro; parse("--igro",traj_gro);
@@ -330,6 +334,9 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        }
 
      }
+
+     parse("--natoms",command_line_natoms);
+     
   }
 
   if( debug_dd && debug_pd ) error("cannot use debug-dd and debug-pd at the same time");
@@ -373,6 +380,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        if(use_molfile==true){
 #ifdef __PLUMED_HAS_MOLFILE
         h_in = api->open_file_read(trajectoryFile.c_str(), trajectory_fmt.c_str(), &natoms);
+        if(natoms==MOLFILE_NUMATOMS_UNKNOWN){
+          if(command_line_natoms>=0) natoms=command_line_natoms;
+          else error("this file format does not provide number of atoms; use --natoms on the command line");
+        }
         ts_in.coords = new float [3*natoms];
 #endif
        }else{
@@ -536,6 +547,7 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
        if(use_molfile){
 #ifdef __PLUMED_HAS_MOLFILE
     	   if(pbc_cli_given==false) {
+                 if(ts_in.A>0.0){ // this is negative if molfile does not provide box
     		   // info on the cell: convert using pbcset.tcl from pbctools in vmd distribution
     		   real cosBC=cos(ts_in.alpha*pi/180.);
     		   //double sinBC=sin(ts_in.alpha*pi/180.);
@@ -551,7 +563,11 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
     		   cell[0]=Ax/10.;cell[1]=0.;cell[2]=0.;
     		   cell[3]=Bx/10.;cell[4]=By/10.;cell[5]=0.;
     		   cell[6]=Cx/10.;cell[7]=Cy/10.;cell[8]=Cz/10.;
-    		   //cerr<<"CELL "<<cell[0]<<" "<<cell[1]<<" "<<cell[2]<<" "<<cell[3]<<" "<<cell[4]<<" "<<cell[5]<<" "<<cell[6]<<" "<<cell[7]<<" "<<cell[8]<<endl;
+                 } else {
+                   cell[0]=0.0; cell[1]=0.0; cell[2]=0.0;
+                   cell[3]=0.0; cell[4]=0.0; cell[5]=0.0;
+                   cell[6]=0.0; cell[7]=0.0; cell[8]=0.0;
+                 }
     	   }else{
     		   for(unsigned i=0;i<9;i++)cell[i]=pbc_cli_box[i];
     	   }
