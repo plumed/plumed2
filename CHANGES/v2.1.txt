@@ -189,6 +189,7 @@ For users:
 - Added --natoms to \ref driver . This is required to read coordinate
   files with VMD plugins when number of atoms is not present (e.g. amber
   crd files)
+
 For developers:
 - Allow external VMD plugins to be detected with --has-external-molfile. This
   is required to enable some regtest with amber files.

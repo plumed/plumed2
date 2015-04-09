@@ -105,7 +105,18 @@ the lines of:
 configure [...] LDFLAGS="-ltcl8.5 -L/mypathtomolfilelibrary/ -L/mypathtotcl" CPPFLAGS="-I/mypathtolibmolfile_plugin.h/"
 \endverbatim
 
-and rebuild. Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
+and rebuild.
+
+Molfile plugin require periodic cell to be triangular (i.e. first vector oriented along x and
+second vector in xy plane). This is true for many MD codes. However, it could be false
+if you rotate the coordinates in your trajectory before reading them in the driver.
+Also notice that some formats (e.g. amber crd) do not specify atom number. In this case you can use
+the `--natoms` option:
+\verbatim
+plumed driver --plumed plumed.dat --imf_crd trajectory.crd --natoms 128
+\endverbatim
+
+Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
 
 */
 //+ENDPLUMEDOC
