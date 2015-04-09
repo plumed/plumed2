@@ -51,6 +51,8 @@ bool hasCregex();
 
 bool hasMolfile();
 
+bool hasExternalMolfile();
+
 bool hasZlib();
 
 bool hasXdrfile();
