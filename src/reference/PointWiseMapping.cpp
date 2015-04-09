@@ -75,7 +75,7 @@ unsigned PointWiseMapping::getPropertyIndex( const std::string& name ) const {
   return 0;
 }
 
-void PointWiseMapping::print( const std::string& method, const double & time, OFile& afile, const std::string& fmt ){
+void PointWiseMapping::print( const double& lunits, const std::string& method, const double & time, OFile& afile, const std::string& fmt ){
   std::string descr2, descr="DESCRIPTION: results from %s analysis performed at time " + fmt +"\n";
   afile.printf(descr.c_str(), method.c_str(), time );
   if(fmt.find("-")!=std::string::npos){
@@ -91,7 +91,7 @@ void PointWiseMapping::print( const std::string& method, const double & time, OF
       afile.printf(descr.c_str(), frames[i]->getWeight(), property[0].c_str(), low_dim[i][0] );
       for(unsigned j=1;j<property.size();++j) afile.printf(descr2.c_str(), property[j].c_str(), low_dim[i][j]);
       afile.printf("\n"); 
-      frames[i]->print( afile, fmt );
+      frames[i]->print( lunits, afile, fmt );
   }
 } 
 

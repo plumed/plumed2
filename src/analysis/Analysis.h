@@ -40,7 +40,7 @@ class DimensionalityReductionBase;
 /**
 \ingroup INHERIT
 This is the abstract base class to use for implementing new methods for analyzing the trajectory, within it there 
-is information as to how to go about implementing a new analysis method.
+is \ref AddingAnAnalysis "information" as to how to go about implementing a new analysis method.
 
 */
 

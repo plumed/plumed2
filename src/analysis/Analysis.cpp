@@ -319,7 +319,8 @@ void Analysis::accumulate(){
   // Write data to checkpoint file
   if( write_chq ){
      rfile.rewind();
-     data[idata]->print( rfile, getTime(), logweights[idata], old_norm );
+     if( plumed.getAtoms().usingNaturalUnits() ) data[idata]->print( 1.0, rfile, getTime(), logweights[idata], old_norm );
+     else data[idata]->print( atoms.getUnits().getLength()/0.1, rfile, getTime(), logweights[idata], old_norm );
      rfile.flush();
   }
   // Increment data counter

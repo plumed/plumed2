@@ -24,6 +24,8 @@
 #include "reference/ReferenceArguments.h"
 #include "reference/MultiReferenceBase.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 //+PLUMEDOC ANALYSIS OUTPUT_LANDMARKS
 /*
@@ -133,7 +135,9 @@ void OutputLandmarks::analyzeLandmarks(){
      afile.open( efilename.c_str() ); std::string descr="REMARK WEIGHT=%-" + getOutputFormat().substr(psign+1);
      for(unsigned j=0;j<myembedding->getNumberOfReferenceFrames();++j){
          afile.printf("DESCRIPTION: landmark configuration from %s performed at time %f",getLabel().c_str(),getTime() );
-         afile.printf(descr.c_str(),(myembedding->getFrame(j))->getWeight() ); (myembedding->getFrame(j))->print( afile, getOutputFormat() );
+         afile.printf(descr.c_str(),(myembedding->getFrame(j))->getWeight() ); 
+         if( plumed.getAtoms().usingNaturalUnits() ) (myembedding->getFrame(j))->print( 1.0, afile, getOutputFormat() );
+         else (myembedding->getFrame(j))->print( plumed.getAtoms().getUnits().getLength()/0.1, afile, getOutputFormat() );
      }
      afile.close();
   }

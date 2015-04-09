@@ -21,6 +21,8 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DimensionalityReductionBase.h"
 #include "tools/ConjugateGradient.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 #include "reference/PointWiseMapping.h"
 
 namespace PLMD {
@@ -92,7 +94,8 @@ void DimensionalityReductionBase::analyzeLandmarks(){
      // std::string ifname=saveResultsFromPreviousAnalyses( efilename );
      OFile afile; afile.link(*this); afile.setBackupString("analysis");
      afile.open( efilename.c_str() );
-     myembedding->print( getAlgorithmName(), getTime(), afile, getOutputFormat() );
+     if( plumed.getAtoms().usingNaturalUnits() ) myembedding->print( 1.0, getAlgorithmName(), getTime(), afile, getOutputFormat() );
+     else myembedding->print( plumed.getAtoms().getUnits().getLength()/0.1, getAlgorithmName(), getTime(), afile, getOutputFormat() );
      afile.close();
   }
 }

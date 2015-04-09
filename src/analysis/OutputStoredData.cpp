@@ -23,6 +23,8 @@
 #include "reference/ReferenceAtoms.h"
 #include "reference/ReferenceArguments.h"
 #include "core/ActionRegister.h"
+#include "core/PlumedMain.h"
+#include "core/Atoms.h"
 
 namespace PLMD {
 namespace analysis {
@@ -101,7 +103,9 @@ void OutputStoredData::performAnalysis(){
      afile.open( efilename.c_str() ); std::string descr="REMARK WEIGHT=%-" + getOutputFormat().substr(psign+1);
      for(unsigned j=0;j<getNumberOfDataPoints();++j){
          afile.printf("DESCRIPTION: landmark configuration from %s performed at time %f",getLabel().c_str(),getTime() );
-         afile.printf(descr.c_str(),getReferenceConfiguration(j)->getWeight() ); getReferenceConfiguration(j)->print( afile, getOutputFormat() );
+         afile.printf(descr.c_str(),getReferenceConfiguration(j)->getWeight() ); 
+         if( plumed.getAtoms().usingNaturalUnits() ) getReferenceConfiguration(j)->print( 1.0, afile, getOutputFormat() );
+         else getReferenceConfiguration(j)->print( plumed.getAtoms().getUnits().getLength()/0.1, afile, getOutputFormat() );
      }
      afile.close();
   }
