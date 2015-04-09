@@ -128,6 +128,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       return (config::hasDlopen()?0:1);
     } else if(a=="--has-molfile"){
       return (config::hasMolfile()?0:1);
+    } else if(a=="--has-external-molfile"){
+      return (config::hasExternalMolfile()?0:1);
     } else if(a=="--has-zlib"){
       return (config::hasZlib()?0:1);
     } else if(a=="--is-installed"){

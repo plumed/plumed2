@@ -99,6 +99,14 @@ bool hasMolfile(){
 #endif
 }
 
+bool hasExternalMolfile(){
+#if __PLUMED_INTERNAL_MOLFILE_PLUGINS
+      return false;
+#else
+      return true;
+#endif
+}
+
 bool hasZlib(){
 #if __PLUMED_HAS_ZLIB
       return true;
