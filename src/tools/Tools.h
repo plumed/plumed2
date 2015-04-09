@@ -168,15 +168,6 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 /// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
 inline
 double Tools::pbc(double x){
-////
-// I tested this alternative implementation on an intel CPU with intel compiler
-// regtest 42 becomes signficantly slower. tests on a cubic lattice are
-// equivalent. I prefer to leave the previous implementation which
-// is expected to be efficient also for large vectors
-//  while (x>0.5) x-=1.0;
-//  while (x<-0.5) x+=1.0;
-//  return x;
-////
   if(std::numeric_limits<int>::round_style == std::round_toward_zero) {
     const double offset=100.0;
     const double y=x+offset;
