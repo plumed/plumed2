@@ -121,6 +121,8 @@ protected:
   unsigned getNumberOfArguments() const;
 /// Return the number of data points
   unsigned getNumberOfDataPoints() const;
+/// Calculate the distance between stored snapshot iframe and stored snapshot jframe
+  double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe );
 /// Return the weight of the ith point
   double getWeight( const unsigned& idata ) const ;
 /// Retrieve the ith point

@@ -423,6 +423,10 @@ void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, 
   }
 }
 
+double Analysis::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe ){
+  return distance( getPbc(), getArguments(), getReferenceConfiguration(iframe), getReferenceConfiguration(jframe), false );
+}
+
 void Analysis::runAnalysis(){
 
   // Note : could add multiple walkers here - simply read in the data from all

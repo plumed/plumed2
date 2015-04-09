@@ -78,7 +78,7 @@ double LandmarkSelectionBase::getWeightOfFrame( const unsigned& iframe ){
   return action->getWeight(iframe);
 }
 double LandmarkSelectionBase::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe  ){
-  return distance( action->getPbc(), action->getArguments(), action->getReferenceConfiguration(iframe), action->getReferenceConfiguration(jframe), false );
+  return action->getDistanceBetweenFrames( iframe, jframe ); 
 }
 
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe, MultiReferenceBase* myframes){
