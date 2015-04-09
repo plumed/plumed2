@@ -39,15 +39,4 @@ DUMPDERIVATIVES ...
   FMT=%8.4f
 ... DUMPDERIVATIVES 
 
-DUMPDERIVATIVES ...
-  ARG=puck1.phs,puck1.amp,puck2.phs,puck2.amp,puck3.phs,puck3.amp,puck4.phs,puck4.amp,puck5.phs,puck5.amp,puck6.phs,puck6.amp,puck7.phs,puck7.amp,puck8.phs,puck8.amp,puck9.phs,puck9.amp,puck10.phs,puck10.amp,puck11.phs,puck11.amp,puck12.phs,puck12.amp,puck13.phs,puck13.amp,puck14.phs,puck14.amp
-  FILE=DERIVATIVES-phs-amp
-  FMT=%8.4f
-... DUMPDERIVATIVES
-
-
-# this is to check derivatives:
-# puck1n: PUCKERING ATOMS=@sugar-1
-# DUMPDERIVATIVES ARG=puck1.Zx,puck1n.Zx,puck1.Zy,puck1n.Zy,puck1.phs,puck1n.phs,puck1.amp,puck1n.amp FILE=testd
-
 ENDPLUMED
