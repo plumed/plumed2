@@ -28,6 +28,7 @@ Changes from version 2.1 which are relevant for users:
   - \ref MFILTER_BETWEEN
   - \ref GRADIENT can be used to calculate the gradient of a quantity.  Used to drive nucleation
   - \ref CAVITY
+  - \ref PUCKERING (thanks to Alejandro Gil-Ley).
   - \ref WRAPAROUND to fix periodic boundary conditions.
 - New features for existing actions:
   - Keywords UPDATE_FROM and UPDATE_UNTIL to limit update step in a defined time window.
@@ -38,6 +39,7 @@ Changes from version 2.1 which are relevant for users:
   - \ref driver accepts a --mc flag to read charges and masses from a file produced during
     molecular dynamics with \ref DUMPMASSCHARGE
   - Possibility to enable or disable \ref RESTART on a per action basis.
+  - \ref MOLFILE now supports many more special names for rna and dna (thanks to Alejandro Gil-Ley).
 - VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
   can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
   part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
