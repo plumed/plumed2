@@ -13,6 +13,10 @@ env:
   - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # MPI
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes ALMOST=yes
+# MPI + debug
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  CONFIG_FLAGS=--enable-debug
+# MPI + bound check (could be very slow)
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
@@ -47,7 +51,7 @@ script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install
