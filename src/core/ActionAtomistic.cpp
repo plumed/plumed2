@@ -83,6 +83,10 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
   return pbc.distance(v1,v2);
 }
 
+void ActionAtomistic::pbcApply(std::valarray<Vector>& dlist, unsigned max_index)const{
+  pbc.apply(dlist, max_index);
+}
+
 void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
   calculateAtomicNumericalDerivatives( a, 0 );
 }
