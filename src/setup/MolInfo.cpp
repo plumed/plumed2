@@ -40,7 +40,9 @@ Please be aware that the pdb parser in plumed is far from perfect. You should th
 and examine what plumed is actually doing whenenver you use the MOLINFO action.
 
 Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special
-symbol. Current registered keywords are:
+symbol.
+
+Current registered keywords for `MOLTYPE=protein` are:
 
 \verbatim
 @phi-#
@@ -51,12 +53,40 @@ symbol. Current registered keywords are:
 
 that select the appropriate atoms that define each dihedral angle for residue #.
 
+Current registered keywords for `MOLTYPE=dna` or `MOLTYPE=rna` are:
+
+\verbatim
+# quadruplets for backbone dihedral angles
+@alpha-#
+@beta-#
+@gamma-#
+@delta-#
+@epsilon-#
+@zeta-#
+
+# quadruplets for sugar dihedral angles
+@v0-#
+@v1-#
+@v2-#
+@v3-#
+@v4-#
+
+# backbone, sugar, and base heavy atoms
+@back-#
+@sugar-#
+@base-#
+\endverbatim
+
+Notice that `zeta` group should not be used on 3' end and `alpha` should not be used on 5' end.
+
 \bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
 may not be true - GLY is problematic for secondary structure residues as it is achiral. 
 
 \bug If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein 
 ( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to 
 interpret termnal residue 1.
+
+\bug MOLTYPE should be either protein or dna or rna. Thus, this keyword is of limited usage on e.g. protein/rna complexes.
 
 \par Examples
 
