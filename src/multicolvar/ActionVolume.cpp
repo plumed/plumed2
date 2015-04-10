@@ -48,7 +48,7 @@ VolumeGradientBase(ao)
   std::transform( functype.begin(), functype.end(), functype.begin(), tolower );
   log.printf("  calculating %s inside region of insterest\n",functype.c_str() ); 
 
-  parseFlag("OUTSIDE",not_in); 
+  parseFlag("OUTSIDE",not_in); sigma=0.0;
   if( keywords.exists("SIGMA") ) parse("SIGMA",sigma); 
   if( keywords.exists("KERNEL") ) parse("KERNEL",kerneltype); 
   

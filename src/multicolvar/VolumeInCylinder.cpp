@@ -62,7 +62,9 @@ namespace multicolvar {
 
 class VolumeInCylinder : public ActionVolume {
 private:
+  bool docylinder;
   Vector origin;
+  HistogramBead bead;
   std::vector<unsigned> dir; 
   SwitchingFunction switchingFunction;
 public:
@@ -79,12 +81,15 @@ void VolumeInCylinder::registerKeywords( Keywords& keys ){
   keys.add("atoms","ATOM","the atom whose vicinity we are interested in examining");
   keys.add("compulsory","DIRECTION","the direction of the long axis of the cylinder. Must be x, y or z");
   keys.add("compulsory","RADIUS","a switching function that gives the extent of the cyclinder in the plane perpendicular to the direction");
-  keys.remove("SIGMA"); keys.remove("KERNEL");
+  keys.add("compulsory","LOWER","0.0","the lower boundary on the direction parallel to the long axis of the cylinder");
+  keys.add("compulsory","UPPER","0.0","the upper boundary on the direction parallel to the long axis of the cylinder");
+  keys.reset_style("SIGMA","optional");
 }
 
 VolumeInCylinder::VolumeInCylinder(const ActionOptions& ao):
 Action(ao),
-ActionVolume(ao)
+ActionVolume(ao),
+docylinder(false)
 {
   std::vector<AtomNumber> atom; 
   parseAtomList("ATOM",atom);
@@ -92,9 +97,9 @@ ActionVolume(ao)
   log.printf("  center of cylinder is at position of atom : %d\n",atom[0].serial() );
 
   std::string sdir; parse("DIRECTION",sdir);
-  if( sdir=="X"){dir.push_back(1); dir.push_back(2); }
-  else if( sdir=="Y"){dir.push_back(0); dir.push_back(2); }
-  else if( sdir=="Z"){dir.push_back(0); dir.push_back(1); }
+  if( sdir=="X"){dir.push_back(1); dir.push_back(2); dir.push_back(0); }
+  else if( sdir=="Y"){dir.push_back(0); dir.push_back(2); dir.push_back(1); }
+  else if( sdir=="Z"){dir.push_back(0); dir.push_back(1); dir.push_back(2); }
   else { error(sdir + "is not a valid direction.  Should be X, Y or Z"); }
   log.printf("  cylinder's long axis is along %s axis\n",sdir.c_str() ); 
 
@@ -104,18 +109,36 @@ ActionVolume(ao)
   if( errors.length()!=0 ) error("problem reading RADIUS keyword : " + errors );
   log.printf("  radius of cylinder is given by %s \n", ( switchingFunction.description() ).c_str() );
 
+  double min, max; parse("LOWER",min); parse("UPPER",max);
+  if( min!=0.0 ||  max!=0.0 ){
+     if( min>max ) error("minimum of cylinder should be less than maximum");
+     docylinder=true;
+     log.printf("  cylinder extends from %f to %f along the %s axis\n",min,max,sdir.c_str() );
+     bead.isNotPeriodic(); bead.setKernelType( getKernelType() ); bead.set( min, max, getSigma() );
+  }
+
   checkRead(); requestAtoms(atom); 
 }
 
 void VolumeInCylinder::setupRegions(){ }
 
 double VolumeInCylinder::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const {
-
   // Calculate position of atom wrt to origin
   Vector fpos=pbcDistance( getPosition(0), cpos );
+   
+  double vcylinder, dcylinder;
+  if( docylinder ){
+      vcylinder=bead.calculate( fpos[dir[2]], dcylinder );
+  } else {
+      vcylinder=1.0; dcylinder=0.0;
+  }
+
   const double dd = fpos[dir[0]]*fpos[dir[0]] + fpos[dir[1]]*fpos[dir[1]];
-  double dfunc, value = 1.0 - switchingFunction.calculateSqr( dd, dfunc );
-  derivatives.zero(); derivatives[dir[0]]=-dfunc*fpos[dir[0]]; derivatives[dir[1]]=-dfunc*fpos[dir[1]];
+  double dfunc, vswitch = switchingFunction.calculateSqr( dd, dfunc );
+  derivatives.zero(); double value=vswitch*vcylinder;
+  derivatives[dir[0]]=vcylinder*dfunc*fpos[dir[0]]; 
+  derivatives[dir[1]]=vcylinder*dfunc*fpos[dir[1]];
+  derivatives[dir[2]]=vswitch*dcylinder;
   // Add derivatives wrt to position of origin atom
   refders[0] = -derivatives;
   // Add virial contribution
