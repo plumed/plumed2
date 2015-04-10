@@ -34,6 +34,9 @@ namespace crystallization{
 
 //+PLUMEDOC MCOLVAR FCCUBIC    
 /*
+
+\par Examples
+
 */
 //+ENDPLUMEDOC
 
@@ -42,7 +45,6 @@ class Fccubic : public multicolvar::MultiColvar {
 private:
 //  double nl_cut;
   double rcut2, alpha, a1, b1;
-  double phi, theta, psi;
   double rotationmatrix[3][3]; 
   std::vector<Vector> dlist; // A buffer array to store distances and apply PBC wholesale
   
@@ -69,10 +71,10 @@ void Fccubic::registerKeywords( Keywords& keys ){
   keys.add("optional","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
-  keys.add("optional","ALPHA","The alpha parameter of the angular function");
-  keys.add("optional","PHI","The Euler rotational angle phi");
-  keys.add("optional","THETA","The Euler rotational angle theta");
-  keys.add("optional","PSI","The Euler rotational angle psi");
+  keys.add("compulsory","ALPHA","3.0","The alpha parameter of the angular function");
+  keys.add("compulsory","PHI","0.0","The Euler rotational angle phi");
+  keys.add("compulsory","THETA","0.0","The Euler rotational angle theta");
+  keys.add("compulsory","PSI","0.0","The Euler rotational angle psi");
   // Use actionWithDistributionKeywords
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN"); keys.use("MAX");
   keys.use("MIN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
@@ -94,31 +96,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   
-  std::string salpha; parse("ALPHA", salpha);
-  if (salpha.length()>0) {
-	  Tools::convert(salpha,alpha);
-	  log.printf("  using ALPHA %f\n", alpha);
-  } else { alpha=3.0; } // defaults to the Angioletti paper
-  
-  // Set the orientation for the fcc harmonic function
-  std::string sphi; parse("PHI", sphi);
-  if (sphi.length()>0) {
-	  Tools::convert(sphi,phi);
-	  log.printf("  using PHI %f\n", phi);
-  } else { phi=0.0; }
-  
-  std::string stheta; parse("THETA", stheta);
-  if (stheta.length()>0) {
-	  Tools::convert(stheta,theta);
-	  log.printf("  using THETA %f\n", theta);
-  } else { theta=0.0; }
-  
-  std::string spsi; parse("PSI", spsi);
-  if (spsi.length()>0) {
-	  Tools::convert(spsi,psi);
-	  log.printf("  using PSI %f\n", psi);
-  } else { psi=0.0; } 
-  
+  double phi, theta, psi; parse("PHI",phi); parse("THETA",theta); parse("PSI",psi);
+  log.printf("  creating rotation matrix with Euler angles phi=%f, theta=%f and psi=%f\n",phi,theta,psi);
   // Calculate the rotation matrix http://mathworld.wolfram.com/EulerAngles.html
   rotationmatrix[0][0]=cos(psi)*cos(phi)-cos(theta)*sin(phi)*sin(psi);
   rotationmatrix[0][1]=cos(psi)*sin(phi)+cos(theta)*cos(phi)*sin(psi);
@@ -140,7 +119,9 @@ PLUMED_MULTICOLVAR_INIT(ao)
 
   // Scaling factors such that '1' corresponds to fcc lattice
   // and '0' corresponds to isotropic (liquid)
+  parse("ALPHA",alpha);
   a1 = 80080. / (2717. + 16*alpha); b1 = 16.*(alpha-143)/(2717+16*alpha);
+  log.printf("  setting alpha paramter equal to %f \n",alpha);
 
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
