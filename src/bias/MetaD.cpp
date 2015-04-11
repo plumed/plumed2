@@ -950,6 +950,9 @@ MetaD::MetaD(const ActionOptions &ao):
     if (!grid_ || sparsegrid) {
       error(" using domains requires a dense grid for the bias");
     }
+    if (!nospline) {
+      error(" using domains is currently numerically unstable when using splines for the bias");
+    }
     if (adaptive_ != FlexibleBin::none) {
       error(" using domains only works for fixed, non-adaptive Gaussians");
     }
