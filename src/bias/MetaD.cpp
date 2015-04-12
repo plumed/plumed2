@@ -265,6 +265,7 @@ class MetaD : public Bias {
   double tt_alpha_;
   bool benthic_toleration_;
   double benthic_tol_energy_;
+  double benthic_filter_time_;
   bool benthic_erosion_;
   double benthic_erosive_time_;
   vector<double> benthic_smoothing_der_;
@@ -373,6 +374,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well in transition-tempered metadynamics. At least one must be provided.");
   keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this decay shape parameter value between 0 and 0.5 (default 0.5).  Please note you must also specify TTBIASFACTOR");
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition states");
+  keys.add("optional", "BENTHIC_FILTER_TIME", "use benthic metadynamics accumulating filter samples on this timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
   keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
   keys.addFlag("USE_DOMAINS", false, "use metabasin metadynamics");
   keys.add("optional", "REGION_RFILE", "use metabasin metadynamics with this file defining areas to flatten");
@@ -470,6 +472,7 @@ MetaD::MetaD(const ActionOptions &ao):
   tt_alpha_(0.5),
   benthic_toleration_(false),
   benthic_tol_energy_(0.0),
+  benthic_filter_time_(0.0),
   benthic_erosion_(false),
   benthic_erosive_time_(0.0),
   benthic_smoothing_der_(vector<double>()),
@@ -630,11 +633,13 @@ MetaD::MetaD(const ActionOptions &ao):
   parse("BENTHIC_TOLERATION", benthic_n_tolerated);
   if (benthic_n_tolerated > 0) {
     benthic_toleration_ = true;
-  }
-  // Check for a benthic metadynamics erosion time.
-  parse("BENTHIC_EROSION", benthic_erosive_time_);
-  if (benthic_erosive_time_ > 0.0) {
-    benthic_erosion_ = true;
+    // Check for a benthic metadynamics filter time.
+    parse("BENTHIC_FILTER_TIME", benthic_filter_time_);
+    // Check for a benthic metadynamics erosion time.
+    parse("BENTHIC_EROSION", benthic_erosive_time_);
+    if (benthic_erosive_time_ > 0.0) {
+      benthic_erosion_ = true;
+    }
   }
 
   // Set initial bias deposition rate parameters.
@@ -893,6 +898,9 @@ MetaD::MetaD(const ActionOptions &ao):
   if (benthic_toleration_) {
     benthic_tol_energy_ = height0_ * (.05 + (double) benthic_n_tolerated);
     log.printf("  Benthic number of hills to tolerate %d, energy threshold %f\n", benthic_n_tolerated, benthic_tol_energy_);
+  }
+  if (benthic_filter_time_ > 0.0) {
+    log.printf("  Benthic timescale %f to add hills under toleration threshold\n", benthic_filter_time_);
   }
   if (benthic_erosion_) {
     // Benthic erosion relies on using a grid and an acceleration factor.
