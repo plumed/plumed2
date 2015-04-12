@@ -2384,21 +2384,26 @@ void MetaD::update() {
       }
     }
   }
-  // Calculate the new average bias after adding the new hill.
+  // Calculate the new average bias after any bias update.
+  // This follows the Tiwary and Parrinello JPCB paper.
   if (calc_average_bias_coft_ && (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0))) {
+    // Calc sums rather than integrals because the normalization
+    // is irrelevant.
     double exp_free_energy_sum = 0.0;
     double exp_biased_free_energy_sum = 0.0;
-    if (biasf_ > 1.0) {
-      for (unsigned i; i < BiasGrid_->getMaxSize(); i++) {
-        double pt_bias = BiasGrid_->getValue(i);
-        exp_free_energy_sum += exp(biasf_ * pt_bias / (kbt_  * (biasf_ - 1)));
-        exp_biased_free_energy_sum += exp(pt_bias / (kbt_ * (biasf_ - 1)));
-      }
-    } else if (biasf_ == 1.0) {
+    // The formula depends on how the final free energy 
+    // should be inferred from the bias.
+    if (biasf_ == 1.0) {
       for (unsigned i; i < BiasGrid_->getMaxSize(); i++) {
         double pt_bias = BiasGrid_->getValue(i);
         exp_free_energy_sum += exp(pt_bias / kbt_);
         exp_biased_free_energy_sum += 1.0;
+      }
+    } else if (biasf_ > 1.0) {
+      for (unsigned i; i < BiasGrid_->getMaxSize(); i++) {
+        double pt_bias = BiasGrid_->getValue(i);
+        exp_free_energy_sum += exp(biasf_ * pt_bias / (kbt_  * (biasf_ - 1)));
+        exp_biased_free_energy_sum += exp(pt_bias / (kbt_ * (biasf_ - 1)));
       }
     }
     average_bias_coft_ = kbt_ * ( std::log(exp_free_energy_sum) - std::log(exp_biased_free_energy_sum));
