@@ -286,6 +286,7 @@ class MetaD : public Bias {
   AdaptiveDomainRefType adaptive_domains_reftype_;
   double adaptive_domains_eoffset_;
   int adaptive_domains_stride_;
+  double adaptive_domains_downsampling_;
   int histo_stride_;
   vector<double> histo_bandwidth_;
   Grid *Histogram_;
@@ -305,6 +306,8 @@ class MetaD : public Bias {
   int mw_rstride_;
   bool walkers_mpi;
   bool acceleration;
+  bool calc_average_bias_coft_;
+  double average_bias_coft_;
   double acc;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
@@ -356,6 +359,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias", "default", "the instantaneous value of the bias potential");
   keys.addOutputComponent("acc", "ACCELERATION", "the metadynamics acceleration factor");
+  keys.addOutputComponent("coft", "CALC_AVERAGE_BIAS", "the metadynamics average bias c(t)");
   keys.use("ARG");
   keys.add("compulsory", "SIGMA", "the widths of the Gaussian hills");
   keys.add("compulsory", "PACE", "the frequency for hill addition");
@@ -380,6 +384,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "ADAPTIVE_DOMAINS_REFERENCE", "set metabasin metadynamics adaptive regions with reference to either the 'transition' free energy or the 'minimum' free energy");
   keys.add("optional", "ADAPTIVE_DOMAINS_ENERGY_OFFSET", "use adaptive metabasin metadynamics with regions below a free energy that is the reference free energy plus this value");
   keys.add("optional", "ADAPTIVE_DOMAINS_STRIDE", "use adaptive metabasin metadynamics with regions adapted every this number of steps");  
+  keys.add("optional", "ADAPTIVE_DOMAINS_DOWNSAMPLING", "when creating scaling grids, add this ratio fewer hills to minimize performance costs");
   keys.addFlag("PRINT_DOMAINS_SCALING", false, "print out the scaling functions for each metabasin metadynamics domain");
   keys.addFlag("PRINT_ADAPTIVE_DOMAINS_ENERGIES", false, "print out the scaling functions for each metabasin metadynamics domain");
   keys.add("optional", "TEMP", "the system temperature - this is only needed if you are doing well-tempered metadynamics, transition-tempered metadynamics, acceleration, or adaptive metabasin metadynamics");
@@ -404,6 +409,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "SIGMA_MIN", "the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI", false, "Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
   keys.addFlag("ACCELERATION", false, "Set to TRUE if you want to compute the metadynamics acceleration factor.");
+  keys.addFlag("CALC_AVERAGE_BIAS", false, "Set to TRUE if you want to compute the metadynamics average bias, c(t).");
 }
 
 MetaD::~MetaD() {
@@ -478,6 +484,7 @@ MetaD::MetaD(const ActionOptions &ao):
   adaptive_domains_reftype_(kMinRef),
   adaptive_domains_eoffset_(0.0),
   adaptive_domains_stride_(0),
+  adaptive_domains_downsampling_(1.0),
   histo_stride_(0),
   Histogram_(NULL),
   print_domains_scaling_(false),
@@ -490,6 +497,7 @@ MetaD::MetaD(const ActionOptions &ao):
   mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
   walkers_mpi(false),
   acceleration(false), acc(0.0),
+  calc_average_bias_coft_(false), average_bias_coft_(0.0),
   // Interval initialization
   uppI_(-1), lowI_(-1), doInt_(false),
   // Event clock initialization
@@ -777,8 +785,12 @@ MetaD::MetaD(const ActionOptions &ao):
         error("adaptive domains energy offset must be positive for minimum-referenced to make sense");
       }
       parse("ADAPTIVE_DOMAINS_STRIDE", adaptive_domains_stride_);
-      if (adaptive_domains_stride_ <=0) {
+      if (adaptive_domains_stride_ <= 0) {
         error("adaptive domains requires a stride value greater than zero");
+      }
+      parse("ADAPTIVE_DOMAINS_DOWNSAMPLING", adaptive_domains_downsampling_);
+      if (adaptive_domains_downsampling_ < 1.0) {
+        error("adaptive domains downsampling must be at least one");
       }
       parseFlag("PRINT_ADAPTIVE_DOMAINS_ENERGIES", print_adaptive_domains_energies_);
       if (print_adaptive_domains_energies_) {
@@ -824,6 +836,8 @@ MetaD::MetaD(const ActionOptions &ao):
   // Set special clock options.
   acceleration = false;
   parseFlag("ACCELERATION", acceleration);
+  // Set to calculate the average bias.
+  parseFlag("CALC_AVERAGE_BIAS", calc_average_bias_coft_);
   checkRead();
   
   // Log all of what has just been set.
@@ -986,6 +1000,7 @@ MetaD::MetaD(const ActionOptions &ao):
         log.printf("  Reading histogram in file %s for restarting metabasin metadynamics with adaptive domains \n", domains_histo_readfilename_.c_str());
       }
       log.printf("  Domains will be updated every %d steps\n", adaptive_domains_stride_);
+      log.printf("  Scaling grids will be generated using 1 / %f of the grid points\n", adaptive_domains_downsampling_);
       // Set the histogramming parameters for the future free energy estimates
       // if they are not already specified.
       if (histo_stride_ == 0) {
@@ -1027,6 +1042,17 @@ MetaD::MetaD(const ActionOptions &ao):
     log.printf("  calculation on the fly of the acceleration factor\n");
     addComponent("acc");
     componentIsNotPeriodic("acc");
+  }
+  if (calc_average_bias_coft_) {
+    if (kbt_ == 0.0) {
+      error("The calculation of the average bias on the fly works only if simulation temperature has been defined");
+    }
+    if (!grid_) {
+      error("Calculating the average bias on the fly works only with a grid");
+    }
+    log.printf("  calculation on the fly of the average bias c(t)\n");
+    addComponent("coft");
+    componentIsNotPeriodic("coft");
   }
   
   // Perform initializations based on the options just set and logged.
@@ -1282,6 +1308,8 @@ MetaD::MetaD(const ActionOptions &ao):
                       "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if (acceleration) log << plumed.cite(
                             "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
+  if (calc_average_bias_coft_) log << plumed.cite(
+                                       "Pratyush and Parrinello, J. Phys. Chem. B 119, 736–742 (2015)");
   log << "\n";
   log.flush();
 }
@@ -1980,10 +2008,16 @@ void MetaD::createScalingGrids() {
     }
     // Create the base scaling function by adding a Gaussian to the grid for
     // each point in the domain.
+    int pts_seen = 0;
+    int hills_added = 0;
     for (unsigned j = 0; j < BiasGrid_->getMaxSize(); j++) {
       if (domain_ids_[j] == (i + 1)) {
-        Gaussian newhill = Gaussian(BiasGrid_->getPoint(j), sigma0_, height0_, false);
-        addGaussianToGrid(newhill, newScalingGrid);
+        pts_seen++;
+        if (pts_seen >= adaptive_domains_downsampling_ * hills_added) {
+          hills_added++;
+          Gaussian newhill = Gaussian(BiasGrid_->getPoint(j), sigma0_, height0_, false);
+          addGaussianToGrid(newhill, newScalingGrid);
+        }
       }
     }
 
@@ -2169,6 +2203,8 @@ void MetaD::calculate() {
   } else if (acceleration && isFirstStep) {
     getPntrToComponent("acc")->set(1.0);
   }
+  // Set the average bias
+  getPntrToComponent("coft")->set(average_bias_coft_);  
   // set Forces
   for (unsigned i = 0; i < ncv; ++i) {
     const double f = -der[i];
@@ -2347,6 +2383,26 @@ void MetaD::update() {
         ifiles[i]->reset(false);
       }
     }
+  }
+  // Calculate the new average bias after adding the new hill.
+  if (calc_average_bias_coft_ && (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0))) {
+    double exp_free_energy_sum = 0.0;
+    double exp_biased_free_energy_sum = 0.0;
+    if (biasf_ > 1.0) {
+      for (unsigned i; i < BiasGrid_->getMaxSize(); i++) {
+        double pt_bias = BiasGrid_->getValue(i);
+        exp_free_energy_sum += exp(biasf_ * pt_bias / (kbt_  * (biasf_ - 1)));
+        exp_biased_free_energy_sum += exp(pt_bias / (kbt_ * (biasf_ - 1)));
+      }
+    } else if (biasf_ == 1.0) {
+      for (unsigned i; i < BiasGrid_->getMaxSize(); i++) {
+        double pt_bias = BiasGrid_->getValue(i);
+        exp_free_energy_sum += exp(pt_bias / kbt_);
+        exp_biased_free_energy_sum += 1.0;
+      }
+    }
+    average_bias_coft_ = kbt_ * ( std::log(exp_free_energy_sum) - std::log(exp_biased_free_energy_sum));
+    getPntrToComponent("coft")->set(average_bias_coft_);
   }
 }
 
