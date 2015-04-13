@@ -163,273 +163,185 @@ bool MolDataClass::isTerminalGroup( const std::string& type, const std::string& 
 }
 
 void MolDataClass::specialSymbol( const std::string& type, const std::string& symbol, const PDB& mypdb, std::vector<AtomNumber>& numbers ){
-  std::string name=symbol.substr(0,symbol.find_first_of('-'));
-  if( type=="protein" ){
-      if( name=="phi" ){
-         std::size_t dash=symbol.find_first_of('-');
-         unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-         std::string resname = mypdb.getResidueName(resnum);
-         if( !allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
-         numbers.resize(4); 
-         numbers[0]=mypdb.getNamedAtomFromResidue("C",resnum-1); 
-         numbers[1]=mypdb.getNamedAtomFromResidue("N",resnum);
-         numbers[2]=mypdb.getNamedAtomFromResidue("CA",resnum);
-         numbers[3]=mypdb.getNamedAtomFromResidue("C",resnum);
-      } else if( name=="psi" ){
-         std::size_t dash=symbol.find_first_of('-');
-         unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-         std::string resname = mypdb.getResidueName(resnum);
-         if( !allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
-         numbers.resize(4); 
-         numbers[0]=mypdb.getNamedAtomFromResidue("N",resnum); 
-         numbers[1]=mypdb.getNamedAtomFromResidue("CA",resnum);
-         numbers[2]=mypdb.getNamedAtomFromResidue("C",resnum);
-         numbers[3]=mypdb.getNamedAtomFromResidue("N",resnum+1);
-      } else if( name=="omega" ){
-         std::size_t dash=symbol.find_first_of('-');
-         unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-         std::string resname = mypdb.getResidueName(resnum);
-         if( !allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
-         numbers.resize(4); 
-         numbers[0]=mypdb.getNamedAtomFromResidue("CA",resnum); 
-         numbers[1]=mypdb.getNamedAtomFromResidue("C",resnum);
-         numbers[2]=mypdb.getNamedAtomFromResidue("N",resnum+1);
-         numbers[3]=mypdb.getNamedAtomFromResidue("CA",resnum+1);
-      } else if( name=="chi1" ){
-         std::size_t dash=symbol.find_first_of('-');
-         unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-         std::string resname = mypdb.getResidueName(resnum);
-         if( !allowedResidue( type, resname ) || isTerminalGroup( type, resname ) ) return ;
-         if ( resname=="GLY" || resname=="ALA" ) plumed_merror("chi-1 is not defined for Alanine and Glycine");
-         numbers.resize(4); 
-         numbers[0]=mypdb.getNamedAtomFromResidue("N",resnum); 
-         numbers[1]=mypdb.getNamedAtomFromResidue("CA",resnum);
-         numbers[2]=mypdb.getNamedAtomFromResidue("CB",resnum);
-         if(resname=="ILE"||resname=="VAL") 
-           numbers[3]=mypdb.getNamedAtomFromResidue("CG1",resnum);
-         else if(resname=="CYS") 
-           numbers[3]=mypdb.getNamedAtomFromResidue("SG",resnum);
-         else if(resname=="THR") 
-           numbers[3]=mypdb.getNamedAtomFromResidue("OG1",resnum);
-         else if(resname=="SER") 
-           numbers[3]=mypdb.getNamedAtomFromResidue("OG",resnum);
-         else  numbers[3]=mypdb.getNamedAtomFromResidue("CG",resnum);
-      }
-  } else if( type=="dna" || type=="rna" ){
-      if( name=="chi" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          if( resname=="DT" || resname=="DC" || resname=="U" || resname=="C" ){
-              numbers.resize(4);
-              numbers[0]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
-              numbers[1]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
-              numbers[2]=mypdb.getNamedAtomFromResidue("N1",resnum);
-              numbers[3]=mypdb.getNamedAtomFromResidue("C2",resnum);
-          } else if( resname=="DG" || resname=="DA" || resname=="G" || resname=="A" ){
-              numbers.resize(4);
-              numbers[0]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
-              numbers[1]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
-              numbers[2]=mypdb.getNamedAtomFromResidue("N1",resnum);
-              numbers[3]=mypdb.getNamedAtomFromResidue("C4",resnum);
-          }
-      } else if( name == "alpha" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("O3\'",resnum-1);
-          numbers[1]=mypdb.getNamedAtomFromResidue("P",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("O5\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
-      } else if( name == "beta" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("P",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("O5\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-      } else if( name == "gamma" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("O5\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-      } else if( name == "delta"){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
-      } else if( name == "epsilon" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("P",resnum+1);
-      } else if( name == "zeta" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("P",resnum+1);
-          numbers[3]=mypdb.getNamedAtomFromResidue("O5\'",resnum+1);
-      } else if( name == "v0" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
-      } else if( name == "v1" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-      } else if( name == "v2" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-      } else if( name == "v3" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
-      } else if( name == "v4" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(4);
-          numbers[0]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
-      } else if( name == "back" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(6);
-          numbers[0]=mypdb.getNamedAtomFromResidue("P",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("O5\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("C5\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-          numbers[4]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-          numbers[5]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
-      } else if( name == "sugar" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          numbers.resize(5);
-          numbers[0]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
-          numbers[1]=mypdb.getNamedAtomFromResidue("O4\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("C1\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("C2\'",resnum);
-          numbers[4]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
-      } else if( name == "base" ){
-          std::size_t dash=symbol.find_first_of('-');
-          unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-          std::string resname = mypdb.getResidueName(resnum); Tools::stripLeadingAndTrailingBlanks(resname);
-          if( !allowedResidue( type, resname ) ) return ;
-          if( resname=="DC" || resname=="C" || resname=="DCN" || resname=="DC5" || resname=="DC3" || resname=="RC5" || resname=="RC3" || resname=="RCN" ){
-              numbers.resize(8);
-              numbers[0]=mypdb.getNamedAtomFromResidue("N1",resnum);
-              numbers[1]=mypdb.getNamedAtomFromResidue("C2",resnum);
-              numbers[2]=mypdb.getNamedAtomFromResidue("O2",resnum);
-              numbers[3]=mypdb.getNamedAtomFromResidue("N3",resnum);
-              numbers[4]=mypdb.getNamedAtomFromResidue("C4",resnum);
-              numbers[5]=mypdb.getNamedAtomFromResidue("N4",resnum);
-              numbers[6]=mypdb.getNamedAtomFromResidue("C5",resnum);
-              numbers[7]=mypdb.getNamedAtomFromResidue("C6",resnum);
-          } else if( resname=="U" || resname=="RU" || resname=="RU5" || resname=="RU3" || resname=="RUN" ){
-              numbers.resize(8);
-              numbers[0]=mypdb.getNamedAtomFromResidue("N1",resnum);
-              numbers[1]=mypdb.getNamedAtomFromResidue("C2",resnum);
-              numbers[2]=mypdb.getNamedAtomFromResidue("O2",resnum);
-              numbers[3]=mypdb.getNamedAtomFromResidue("N3",resnum);
-              numbers[4]=mypdb.getNamedAtomFromResidue("C4",resnum);
-              numbers[5]=mypdb.getNamedAtomFromResidue("O4",resnum);
-              numbers[6]=mypdb.getNamedAtomFromResidue("C5",resnum);
-              numbers[7]=mypdb.getNamedAtomFromResidue("C6",resnum);
-          } else if( resname=="DT" || resname=="DT5" || resname=="DT3" || resname=="DTN" ){
-              numbers.resize(9);
-              numbers[0]=mypdb.getNamedAtomFromResidue("N1",resnum);
-              numbers[1]=mypdb.getNamedAtomFromResidue("C2",resnum);
-              numbers[2]=mypdb.getNamedAtomFromResidue("O2",resnum);
-              numbers[3]=mypdb.getNamedAtomFromResidue("N3",resnum);
-              numbers[4]=mypdb.getNamedAtomFromResidue("C4",resnum);
-              numbers[5]=mypdb.getNamedAtomFromResidue("O4",resnum);
-              numbers[6]=mypdb.getNamedAtomFromResidue("C5",resnum);
-              numbers[7]=mypdb.getNamedAtomFromResidue("C7",resnum);
-              numbers[8]=mypdb.getNamedAtomFromResidue("C6",resnum);
-          } else if( resname=="DG" || resname=="G" || resname=="DGN" || resname=="DG5" || resname=="DG3" || resname=="RG5" || resname=="RG3" || resname=="RGN" ){
-              numbers.resize(11);
-              numbers[0]=mypdb.getNamedAtomFromResidue("N9",resnum);
-              numbers[1]=mypdb.getNamedAtomFromResidue("C4",resnum);
-              numbers[2]=mypdb.getNamedAtomFromResidue("N3",resnum);
-              numbers[3]=mypdb.getNamedAtomFromResidue("C2",resnum);
-              numbers[4]=mypdb.getNamedAtomFromResidue("N2",resnum);
-              numbers[5]=mypdb.getNamedAtomFromResidue("N1",resnum);
-              numbers[6]=mypdb.getNamedAtomFromResidue("C6",resnum);
-              numbers[7]=mypdb.getNamedAtomFromResidue("O6",resnum);
-              numbers[8]=mypdb.getNamedAtomFromResidue("C5",resnum);
-              numbers[9]=mypdb.getNamedAtomFromResidue("N7",resnum);
-              numbers[10]=mypdb.getNamedAtomFromResidue("C8",resnum);
-          }  else if( resname=="DA" || resname=="A" || resname=="DAN" || resname=="DA5" || resname=="DA3" || resname=="RA5" || resname=="RA3" || resname=="RAN" ){
-              numbers.resize(10);
-              numbers[0]=mypdb.getNamedAtomFromResidue("N9",resnum);
-              numbers[1]=mypdb.getNamedAtomFromResidue("C4",resnum);
-              numbers[2]=mypdb.getNamedAtomFromResidue("N1",resnum);
-              numbers[3]=mypdb.getNamedAtomFromResidue("C2",resnum);
-              numbers[4]=mypdb.getNamedAtomFromResidue("N3",resnum);
-              numbers[5]=mypdb.getNamedAtomFromResidue("C6",resnum);
-              numbers[6]=mypdb.getNamedAtomFromResidue("N6",resnum);
-              numbers[7]=mypdb.getNamedAtomFromResidue("C5",resnum);
-              numbers[8]=mypdb.getNamedAtomFromResidue("N7",resnum);
-              numbers[9]=mypdb.getNamedAtomFromResidue("C8",resnum);
-          }
-      }
+  if(type=="protein" || type=="rna" || type=="dna"){
+    numbers.resize(0);
+    std::size_t dash=symbol.find_first_of('-');
+    std::string name=symbol.substr(0,dash);
+    unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
+    std::string resname = mypdb.getResidueName(resnum);
+    Tools::stripLeadingAndTrailingBlanks(resname);
+    if(allowedResidue("protein",resname)){
+      if( name=="phi" && !isTerminalGroup("protein",resname) ){
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C",resnum-1));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C",resnum));
+      } else if( name=="psi" && !isTerminalGroup("protein",resname) ){
+        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum+1));
+      } else if( name=="omega" && !isTerminalGroup("protein",resname) ){
+        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum+1));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum+1));
+      } else if( name=="chi1" && !isTerminalGroup("protein",resname) ){
+        if ( resname=="GLY" || resname=="ALA" ) plumed_merror("chi-1 is not defined for Alanine and Glycine");
+        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("CB",resnum));
+        if(resname=="ILE"||resname=="VAL")
+          numbers.push_back(mypdb.getNamedAtomFromResidue("CG1",resnum));
+        else if(resname=="CYS")
+          numbers.push_back(mypdb.getNamedAtomFromResidue("SG",resnum));
+        else if(resname=="THR")
+          numbers.push_back(mypdb.getNamedAtomFromResidue("OG1",resnum));
+        else if(resname=="SER")
+          numbers.push_back(mypdb.getNamedAtomFromResidue("OG",resnum));
+        else
+          numbers.push_back(mypdb.getNamedAtomFromResidue("CG",resnum));
+      } else plumed_merror("protein name not recognized "+name);
+    } else if( allowedResidue("rna",resname) || allowedResidue("dna",resname)){
+      std::string basetype;
+      if(resname.find_first_of("A")!=std::string::npos) basetype+="A";
+      if(resname.find_first_of("U")!=std::string::npos) basetype+="U";
+      if(resname.find_first_of("T")!=std::string::npos) basetype+="T";
+      if(resname.find_first_of("C")!=std::string::npos) basetype+="C";
+      if(resname.find_first_of("G")!=std::string::npos) basetype+="G";
+      plumed_massert(basetype.length()==1,"cannot find type of rna/dna residue "+resname+" "+basetype);
+      if( name=="chi" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
+        if(basetype=="T" || basetype=="U" || basetype=="C"){
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
+        } else if(basetype=="G" || basetype=="A"){
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
+        } else plumed_error();
+      } else if( name=="alpha" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum-1));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
+      } else if( name=="beta" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+      } else if( name=="gamma" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+      } else if( name=="delta" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum));
+      } else if( name=="epsilon" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum+1));
+      } else if( name=="zeta" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum+1));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum+1));
+      } else if( name=="v0" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
+      } else if( name=="v1" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+      } else if( name=="v2" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+      } else if( name=="v3" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
+      } else if( name=="v4" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
+      } else if( name=="back" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum));
+      } else if( name=="sugar" ) {
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+      } else if( name=="base" ) {
+        if(basetype=="C"){
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("O2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N4",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
+        } else if(basetype=="U"){
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("O2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("O4",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
+        } else if(basetype=="T"){
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("O2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("O4",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C7",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
+        } else if(basetype=="G"){
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N9",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("O6",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N7",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C8",resnum));
+        } else if(basetype=="A"){
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N9",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N6",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("N7",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidue("C8",resnum));
+        } else plumed_error();
+      } else plumed_merror("RNA/DNA name not recognized "+name);
+    }
   }
   else {
       plumed_merror(type + " is not a valid molecule type"); 
