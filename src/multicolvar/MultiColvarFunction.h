@@ -84,11 +84,11 @@ public:
 /// This is used in MultiColvarBase only - it is used to setup the link cells
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 /// Some things can be inactive in functions
-  bool isCurrentlyActive( const unsigned& code );
+  virtual bool isCurrentlyActive( const unsigned& bno, const unsigned& code );
 };
 
 inline
-bool MultiColvarFunction::isCurrentlyActive( const unsigned& code ){
+bool MultiColvarFunction::isCurrentlyActive( const unsigned& bno, const unsigned& code ){
   plumed_dbg_assert( code<getFullNumberOfBaseTasks() ); unsigned mmc=colvar_label[code];
   return mybasedata[mmc]->storedValueIsActive( convertToLocalIndex(code,mmc) );
 }

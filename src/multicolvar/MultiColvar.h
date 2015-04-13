@@ -70,7 +70,7 @@ public:
 /// This is used in MultiColvarBase only - it is used to setup the link cells
   Vector getPositionOfAtomForLinkCells( const unsigned& iatom ) const ;
 /// Atoms are always active
-  bool isCurrentlyActive( const unsigned& code ){ return true; }
+  bool isCurrentlyActive( const unsigned& bno, const unsigned& code ){ return true; }
 };
 
 inline

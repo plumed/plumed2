@@ -115,7 +115,7 @@ public:
 /// Get the number of derivatives for this action
   virtual unsigned getNumberOfDerivatives();  // N.B. This is replacing the virtual function in ActionWithValue
 /// Checks if an task is being performed at the present time
-  virtual bool isCurrentlyActive( const unsigned& code )=0;
+  virtual bool isCurrentlyActive( const unsigned& bno, const unsigned& code )=0;
 ///
   virtual CatomPack getCentralAtomPack( const unsigned& basn, const unsigned& curr );
 /// Get the index where the central atom is stored

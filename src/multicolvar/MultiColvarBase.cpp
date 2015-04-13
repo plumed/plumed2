@@ -137,7 +137,7 @@ void MultiColvarBase::setupLinkCells(){
   // Count number of currently active atoms
   unsigned nactive_atoms=0;
   for(unsigned i=0;i<ablocks[iblock].size();++i){
-      if( isCurrentlyActive( ablocks[iblock][i] ) ) nactive_atoms++;
+      if( isCurrentlyActive( iblock, ablocks[iblock][i] ) ) nactive_atoms++;
   }
 
   std::vector<Vector> ltmp_pos( nactive_atoms ); 
@@ -146,14 +146,14 @@ void MultiColvarBase::setupLinkCells(){
   nactive_atoms=0;
   if( usespecies ){
      for(unsigned i=0;i<ablocks[0].size();++i){
-        if( !isCurrentlyActive( ablocks[0][i] ) ) continue; 
+        if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue; 
         ltmp_ind[nactive_atoms]=ablocks[0][i];
         ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ltmp_ind[nactive_atoms] );
         nactive_atoms++;
      }
   } else {
      for(unsigned i=0;i<ablocks[1].size();++i){
-        if( !isCurrentlyActive( ablocks[1][i] ) ) continue;
+        if( !isCurrentlyActive( 1, ablocks[1][i] ) ) continue;
         ltmp_ind[nactive_atoms]=i; 
         ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ablocks[1][i] );
         nactive_atoms++; 
@@ -173,7 +173,7 @@ void MultiColvarBase::setupLinkCells(){
      std::vector<unsigned> linked_atoms( 1+ablocks[1].size() );
      std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
-         if( !isCurrentlyActive( ablocks[0][i] ) ) continue;
+         if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
          unsigned natomsper=1; linked_atoms[0]=ltmp_ind[0];  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
          linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
          for(unsigned j=0;j<natomsper;++j){
