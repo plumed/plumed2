@@ -42,7 +42,11 @@ and examine what plumed is actually doing whenenver you use the MOLINFO action.
 Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special
 symbol.
 
-Current registered keywords for `MOLTYPE=protein` are:
+Providing `MOLTYPE=protein`, `MOLTYPE=rna`, or `MOLTYPE=dna` will instruct plumed to look
+for known residues from these three types of molecule (so that any of these three choice
+can be safely used in a RNA/protein complex).
+
+For protein residues, the following groups are available:
 
 \verbatim
 @phi-#
@@ -53,7 +57,7 @@ Current registered keywords for `MOLTYPE=protein` are:
 
 that select the appropriate atoms that define each dihedral angle for residue #.
 
-Current registered keywords for `MOLTYPE=dna` or `MOLTYPE=rna` are:
+For RNA or RNA residues, the following groups are available:
 
 \verbatim
 # quadruplets for backbone dihedral angles
@@ -77,7 +81,7 @@ Current registered keywords for `MOLTYPE=dna` or `MOLTYPE=rna` are:
 @base-#
 \endverbatim
 
-Notice that `zeta` group should not be used on 3' end and `alpha` should not be used on 5' end.
+Notice that `zeta` and `epsilon` groupis should not be used on 3' end and `alpha` should not be used on 5' end.
 
 \bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
 may not be true - GLY is problematic for secondary structure residues as it is achiral. 
@@ -85,8 +89,6 @@ may not be true - GLY is problematic for secondary structure residues as it is a
 \bug If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein 
 ( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to 
 interpret termnal residue 1.
-
-\bug MOLTYPE should be either protein or dna or rna. Thus, this keyword is of limited usage on e.g. protein/rna complexes.
 
 \par Examples
 

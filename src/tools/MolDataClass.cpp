@@ -164,43 +164,58 @@ bool MolDataClass::isTerminalGroup( const std::string& type, const std::string& 
 
 void MolDataClass::specialSymbol( const std::string& type, const std::string& symbol, const PDB& mypdb, std::vector<AtomNumber>& numbers ){
   if(type=="protein" || type=="rna" || type=="dna"){
+// symbol should be something like
+// phi-123 i.e. phi torsion of residue 123 of first chain
+// psi-A321 i.e. psi torsion of residue 321 of chain A
     numbers.resize(0);
     std::size_t dash=symbol.find_first_of('-');
+    std::size_t firstnum=symbol.find_first_of("0123456789",dash+1);
     std::string name=symbol.substr(0,dash);
-    unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
-    std::string resname = mypdb.getResidueName(resnum);
+    unsigned resnum;
+    std::string resname;
+    std::string chainid;
+// if chain id is provided:
+    if(firstnum==dash+1){
+      Tools::convert( symbol.substr(dash+1), resnum );
+      resname= mypdb.getResidueName(resnum);
+      chainid="*"; // this is going to match the first chain
+    } else {
+      Tools::convert( symbol.substr(firstnum), resnum );
+      chainid=symbol.substr(dash+1,firstnum-(dash+1)); // this is going to match the proper chain
+    }
+    resname= mypdb.getResidueName(resnum,chainid);
     Tools::stripLeadingAndTrailingBlanks(resname);
     if(allowedResidue("protein",resname)){
       if( name=="phi" && !isTerminalGroup("protein",resname) ){
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C",resnum-1));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C",resnum-1,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C",resnum,chainid));
       } else if( name=="psi" && !isTerminalGroup("protein",resname) ){
-        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum+1));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum+1,chainid));
       } else if( name=="omega" && !isTerminalGroup("protein",resname) ){
-        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum+1));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum+1));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum+1,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum+1,chainid));
       } else if( name=="chi1" && !isTerminalGroup("protein",resname) ){
         if ( resname=="GLY" || resname=="ALA" ) plumed_merror("chi-1 is not defined for Alanine and Glycine");
-        numbers.push_back(mypdb.getNamedAtomFromResidue("N",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("CA",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("CB",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CA",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CB",resnum,chainid));
         if(resname=="ILE"||resname=="VAL")
-          numbers.push_back(mypdb.getNamedAtomFromResidue("CG1",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG1",resnum,chainid));
         else if(resname=="CYS")
-          numbers.push_back(mypdb.getNamedAtomFromResidue("SG",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("SG",resnum,chainid));
         else if(resname=="THR")
-          numbers.push_back(mypdb.getNamedAtomFromResidue("OG1",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("OG1",resnum,chainid));
         else if(resname=="SER")
-          numbers.push_back(mypdb.getNamedAtomFromResidue("OG",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("OG",resnum,chainid));
         else
-          numbers.push_back(mypdb.getNamedAtomFromResidue("CG",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("CG",resnum,chainid));
       } else plumed_merror("protein name not recognized "+name);
     } else if( allowedResidue("rna",resname) || allowedResidue("dna",resname)){
       std::string basetype;
@@ -211,134 +226,134 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
       if(resname.find_first_of("G")!=std::string::npos) basetype+="G";
       plumed_massert(basetype.length()==1,"cannot find type of rna/dna residue "+resname+" "+basetype);
       if( name=="chi" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C1\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N1",resnum,chainid));
         if(basetype=="T" || basetype=="U" || basetype=="C"){
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2",resnum,chainid));
         } else if(basetype=="G" || basetype=="A"){
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
         } else plumed_error();
       } else if( name=="alpha" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum-1));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O3\'",resnum-1,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("P",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O5\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5\'",resnum,chainid));
       } else if( name=="beta" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("P",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O5\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
       } else if( name=="gamma" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O5\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
       } else if( name=="delta" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O3\'",resnum,chainid));
       } else if( name=="epsilon" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum+1));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O3\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("P",resnum+1,chainid));
       } else if( name=="zeta" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum+1));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum+1));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O3\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("P",resnum+1,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O5\'",resnum+1,chainid));
       } else if( name=="v0" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C1\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2\'",resnum,chainid));
       } else if( name=="v1" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C1\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
       } else if( name=="v2" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C1\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
       } else if( name=="v3" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O4\'",resnum,chainid));
       } else if( name=="v4" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C1\'",resnum,chainid));
       } else if( name=="back" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("P",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O5\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C5\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("P",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O5\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O3\'",resnum,chainid));
       } else if( name=="sugar" ) {
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("O4\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C1\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C2\'",resnum));
-        numbers.push_back(mypdb.getNamedAtomFromResidue("C3\'",resnum));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O4\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C1\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2\'",resnum,chainid));
+        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C3\'",resnum,chainid));
       } else if( name=="base" ) {
         if(basetype=="C"){
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("O2",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N4",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N1",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O2",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N3",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C6",resnum,chainid));
         } else if(basetype=="U"){
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("O2",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("O4",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N1",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O2",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N3",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C6",resnum,chainid));
         } else if(basetype=="T"){
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("O2",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("O4",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C7",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N1",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O2",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N3",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C7",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C6",resnum,chainid));
         } else if(basetype=="G"){
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N9",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N2",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("O6",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N7",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C8",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N9",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N3",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N2",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N1",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C6",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O6",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N7",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C8",resnum,chainid));
         } else if(basetype=="A"){
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N9",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C4",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N1",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C2",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N3",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C6",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N6",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C5",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("N7",resnum));
-          numbers.push_back(mypdb.getNamedAtomFromResidue("C8",resnum));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N9",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N1",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N3",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C6",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N6",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C5",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N7",resnum,chainid));
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C8",resnum,chainid));
         } else plumed_error();
       } else plumed_merror("RNA/DNA name not recognized "+name);
     }

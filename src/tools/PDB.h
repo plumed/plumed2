@@ -86,12 +86,18 @@ public:
   std::string getResidueName(AtomNumber a) const;
 /// get the name of the resnum'th residue
   std::string getResidueName(const unsigned& resnum ) const;
+/// get the name of the resnum'th residue of chain
+/// Chain=="*" matches any chain and makes it equivalent to getResidueName
+  std::string getResidueName(const unsigned& resnum,const std::string& chain ) const;
 /// Check if any of the residues are named name
   bool checkForResidue( const std::string& name ) const ;
 /// Check if any of the atoms are named atom
   bool checkForAtom( const std::string& name ) const ;
 /// Return the atom named aname from residue number resnum
   AtomNumber getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const;
+/// Return the atom named aname from residue number resnum and chain.
+/// Chain=="*" matches any chain and makes it equivalent to getNamedAtomFromResidue.
+  AtomNumber getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chain ) const;
 /// Get the extents of the blocks containing the atoms
   const std::vector<unsigned> & getAtomBlockEnds() const ;
 /// Get the number of blocks of atoms in the pdb
