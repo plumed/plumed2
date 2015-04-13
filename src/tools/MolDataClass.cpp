@@ -283,7 +283,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
           numbers[0]=mypdb.getNamedAtomFromResidue("C4\'",resnum);
           numbers[1]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
           numbers[2]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
-          numbers[3]=mypdb.getNamedAtomFromResidue("P",resnum);
+          numbers[3]=mypdb.getNamedAtomFromResidue("P",resnum+1);
       } else if( name == "zeta" ){
           std::size_t dash=symbol.find_first_of('-');
           unsigned resnum; Tools::convert( symbol.substr(dash+1), resnum );
@@ -292,7 +292,7 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
           numbers.resize(4);
           numbers[0]=mypdb.getNamedAtomFromResidue("C3\'",resnum);
           numbers[1]=mypdb.getNamedAtomFromResidue("O3\'",resnum);
-          numbers[2]=mypdb.getNamedAtomFromResidue("P",resnum);
+          numbers[2]=mypdb.getNamedAtomFromResidue("P",resnum+1);
           numbers[3]=mypdb.getNamedAtomFromResidue("O5\'",resnum+1);
       } else if( name == "v0" ){
           std::size_t dash=symbol.find_first_of('-');
