@@ -142,7 +142,7 @@ public:
   virtual double getReferenceArgument( const unsigned& i ){ plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
 /// to make PLMD::distance work
-  virtual const std::vector<Vector>& getReferencePositions()const;
+  virtual const std::vector<Vector>& getReferencePositions();
   virtual const std::vector<double>& getReferenceArguments(); 
   virtual const std::vector<double>& getReferenceMetric();
 /// These are overwritten in ReferenceArguments and ReferenceAtoms to make frame copying work
@@ -187,7 +187,7 @@ bool ReferenceConfiguration::parseVector(const std::string&key,std::vector<T>&t,
 }
 
 inline
-const std::vector<Vector>& ReferenceConfiguration::getReferencePositions()const{
+const std::vector<Vector>& ReferenceConfiguration::getReferencePositions(){
   return fake_refatoms;
 }
 
