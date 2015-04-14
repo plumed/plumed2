@@ -71,7 +71,7 @@ class Atoms
   bool virialHasBeenSet;
   bool massAndChargeOK;
   bool shuffledAtoms;
-
+  
   std::map<std::string,std::vector<AtomNumber> > groups;
 
   void resizeVectors(unsigned);
