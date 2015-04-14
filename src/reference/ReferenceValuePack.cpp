@@ -50,7 +50,7 @@ void ReferenceValuePack::updateDynamicLists(){
      for(unsigned i=0;i<9;++i) myvals.addDerivative( oind, nbase+i, 0.0 );
   } 
   for(unsigned i=0;i<9;++i) myvals.updateIndex( nbase+i ); 
-  myvals.sortActiveList();
+  myvals.completeUpdate();
 }
 
 void ReferenceValuePack::clear(){

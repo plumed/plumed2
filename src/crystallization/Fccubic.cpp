@@ -99,9 +99,9 @@ double Fccubic::compute( const unsigned& tindex, multicolvar::AtomValuePack& mya
    double value=0, norm=0, dfunc; Vector distance;
 
    // Calculate the coordination number
-   Vector myder, fder;
+   Vector myder, fder; unsigned nat=myatoms.getNumberOfAtoms();
    double sw, t0, t1, t2, t3, x2, x4, y2, y4, z2, z4, r8, tmp;
-   for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
+   for(unsigned i=1;i<nat;++i){
       distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
       double d2 = distance.modulo2();
       if( d2<rcut2 ){ 

@@ -43,6 +43,8 @@ private:
   unsigned natoms;
 /// Atom indices
   std::vector<unsigned>& indices;
+/// This is used to sort the atom indices
+  std::vector<unsigned>& sort_vector;
 public:
   AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv );
 /// Set the number of atoms

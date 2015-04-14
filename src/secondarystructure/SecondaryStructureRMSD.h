@@ -44,7 +44,7 @@ private:
 /// The type of rmsd we are calculating
   std::string alignType;
 /// List of all the atoms we require
-  DynamicList<AtomNumber> all_atoms;
+  std::vector<AtomNumber> all_atoms;
 /// The atoms involved in each of the secondary structure segments
   std::vector< std::vector<unsigned> > colvar_atoms;
 /// The list of reference configurations
@@ -104,7 +104,7 @@ unsigned SecondaryStructureRMSD::getNumberOfDerivatives(){
 
 inline
 unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& current, const unsigned& iatom ) const {
-  return all_atoms.linkIndex( colvar_atoms[current][iatom] );
+  return colvar_atoms[current][iatom];
 }
 
 }

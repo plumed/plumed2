@@ -24,7 +24,6 @@
 
 #include <vector>
 #include "Exception.h"
-#include "Matrix.h"
 #include "DynamicList.h"
 
 namespace PLMD{
@@ -35,17 +34,20 @@ private:
   DynamicList<unsigned> hasDerivatives;
 /// Values of quantities
   std::vector<double> values;
+/// Number of derivatives per value
+  unsigned nderivatives;
 /// Derivatives
-  Matrix<double> derivatives;
+  std::vector<double> derivatives;
 /// Logical to check if any derivatives were set
   bool atLeastOneSet;
 /// This is a fudge to save on vector resizing in MultiColvar
-  std::vector<unsigned> indices;
+  std::vector<unsigned> indices, sort_indices;
 public:
   MultiValue( const unsigned& , const unsigned& );
   void resize( const unsigned& , const unsigned& );
 ///
   std::vector<unsigned>& getIndices();
+  std::vector<unsigned>& getSortIndices();
 /// Get the number of values in the stash
   unsigned getNumberOfValues() const ; 
 /// Get the number of derivatives in the stash
@@ -72,6 +74,7 @@ public:
   void putIndexInActiveArray( const unsigned & );
   void updateIndex( const unsigned& );
   void sortActiveList();
+  void completeUpdate();
   void updateDynamicList();
   bool isActive( const unsigned& ind ) const ;
 ///
@@ -95,7 +98,7 @@ unsigned MultiValue::getNumberOfValues() const {
 
 inline
 unsigned MultiValue::getNumberOfDerivatives() const {
-  return derivatives.ncols();
+  return nderivatives; //derivatives.ncols();
 }
 
 inline
@@ -118,21 +121,21 @@ void MultiValue::addValue( const unsigned& ival,  const double& val){
 
 inline
 void MultiValue::addDerivative( const unsigned& ival, const unsigned& jder, const double& der){
-  plumed_dbg_assert( ival<=values.size() ); atLeastOneSet=true;
-  hasDerivatives.activate(jder); derivatives(ival,jder) += der;
+  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
+  hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder] += der;
 }
 
 inline
 void MultiValue::setDerivative( const unsigned& ival, const unsigned& jder, const double& der){
-  plumed_dbg_assert( ival<=values.size() ); atLeastOneSet=true;
-  hasDerivatives.activate(jder); derivatives(ival,jder)=der;
+  plumed_dbg_assert( ival<=values.size() && jder<nderivatives ); atLeastOneSet=true;
+  hasDerivatives.activate(jder); derivatives[nderivatives*ival+jder]=der;
 }
 
 
 inline
 double MultiValue::getDerivative( const unsigned& ival, const unsigned& jder ) const {
-  plumed_dbg_assert( jder<derivatives.ncols() && hasDerivatives.isActive(jder) );
-  return derivatives(ival,jder);
+  plumed_dbg_assert( jder<nderivatives && hasDerivatives.isActive(jder) );
+  return derivatives[nderivatives*ival+jder];
 }
 
 inline
@@ -161,6 +164,11 @@ void MultiValue::sortActiveList(){
 }
 
 inline
+void MultiValue::completeUpdate(){
+  hasDerivatives.completeUpdate();
+}
+
+inline
 unsigned MultiValue::getNumberActive() const {
   return hasDerivatives.getNumberActive();
 }
@@ -179,6 +187,11 @@ void MultiValue::updateDynamicList(){
 inline
 std::vector<unsigned>& MultiValue::getIndices(){
   return indices;
+}
+
+inline
+std::vector<unsigned>& MultiValue::getSortIndices(){
+  return sort_indices;
 }
 
 inline

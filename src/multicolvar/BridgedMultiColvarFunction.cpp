@@ -63,7 +63,7 @@ void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& cu
      for(unsigned j=0;j<invals.getNumberActive();++j) outvals.putIndexInActiveArray( invals.getActiveIndex(j) );
   }
   for(unsigned j=invals.getNumberOfDerivatives();j<outvals.getNumberOfDerivatives();++j) outvals.putIndexInActiveArray( j );
-  outvals.sortActiveList(); 
+  outvals.completeUpdate(); 
 }
 
 void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const unsigned& current, MultiValue& myvals ) const {

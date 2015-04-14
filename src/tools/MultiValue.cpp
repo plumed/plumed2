@@ -25,7 +25,8 @@ namespace PLMD{
 
 MultiValue::MultiValue( const unsigned& nvals, const unsigned& nder ):
 values(nvals),
-derivatives(nvals,nder),
+nderivatives(nder),
+derivatives(nvals*nder),
 atLeastOneSet(false)
 {
   std::vector<unsigned> myind( nder );
@@ -34,7 +35,7 @@ atLeastOneSet(false)
 }
 
 void MultiValue::resize( const unsigned& nvals, const unsigned& nder ){
-  values.resize(nvals); derivatives.resize( nvals, nder );
+  values.resize(nvals); nderivatives=nder; derivatives.resize( nvals*nder );
   hasDerivatives.clear(); std::vector<unsigned> myind( nder ); 
   for(unsigned i=0;i<nder;++i) myind[i]=i;
   hasDerivatives.createIndexListFromVector( myind );
@@ -50,8 +51,9 @@ void MultiValue::clearAll(){
 void MultiValue::clear( const unsigned& ival ){
   values[ival]=0;
   if( atLeastOneSet ){
-      for(unsigned i=0;i<hasDerivatives.getNumberActive();++i){
-          unsigned jder=hasDerivatives[i]; derivatives(ival,jder)=0.;   
+      unsigned base=ival*nderivatives, ndert=hasDerivatives.getNumberActive();
+      for(unsigned i=0;i<ndert;++i){
+          unsigned jder=hasDerivatives[i]; derivatives[base+jder]=0.;   
       }
   }
 }
@@ -61,10 +63,11 @@ void MultiValue::chainRule( const unsigned& ival, const unsigned& iout, const un
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
   plumed_dbg_assert( off<stride );
-  unsigned start=bufstart+stride*(derivatives.ncols()+1)*iout + stride + off; 
-  for(unsigned i=0;i<hasDerivatives.getNumberActive();++i){
+  unsigned base=nderivatives*ival, ndert=hasDerivatives.getNumberActive();
+  unsigned start=bufstart+stride*(nderivatives+1)*iout + stride; 
+  for(unsigned i=0;i<ndert;++i){
       unsigned jder=hasDerivatives[i];
-      buffer[start+jder*stride] += df*derivatives(ival,jder);
+      buffer[start+jder*stride] += df*derivatives[base+jder];
   }
 }
 
@@ -78,11 +81,18 @@ void MultiValue::copyDerivatives( MultiValue& outvals ){
   plumed_dbg_assert( values.size()<=outvals.getNumberOfValues() && derivatives.ncols()<=outvals.getNumberOfDerivatives() );
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
+  outvals.atLeastOneSet=true; unsigned ndert=hasDerivatives.getNumberActive();
+  for(unsigned j=0;j<ndert;++j){
+      unsigned jder=hasDerivatives[j]; outvals.hasDerivatives.activate(jder);
+  }
+  
+  unsigned base=0, obase=0;
   for(unsigned i=0;i<values.size();++i){
-     for(unsigned j=0;j<hasDerivatives.getNumberActive();++j){
+     for(unsigned j=0;j<ndert;++j){
         unsigned jder=hasDerivatives[j];
-        outvals.addDerivative( i, jder, derivatives(i,jder) );
+        outvals.derivatives[obase+jder] += derivatives[base+jder];
      }
+     obase+=outvals.nderivatives; base+=nderivatives;
   }
 }
 
@@ -90,10 +100,12 @@ void MultiValue::quotientRule( const unsigned& nder, const unsigned& dder, const
   plumed_dbg_assert( nder<values.size() && dder<values.size() && oder<values.size() );
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
+  unsigned ndert=hasDerivatives.getNumberActive();
+  unsigned obase=oder*nderivatives, nbase=nder*nderivatives, dbase=dder*nderivatives;
   double weight = values[dder], pref = values[nder] / (weight*weight);
-  for(unsigned j=0;j<hasDerivatives.getNumberActive();++j){
+  for(unsigned j=0;j<ndert;++j){
       unsigned jder=hasDerivatives[j];
-      derivatives(oder,jder) = derivatives(nder,jder) / weight - pref*derivatives(dder,jder);
+      derivatives[obase+jder] = derivatives[nbase+jder] / weight - pref*derivatives[dbase+jder];
   }
   values[oder] = values[nder] / values[dder];
 }

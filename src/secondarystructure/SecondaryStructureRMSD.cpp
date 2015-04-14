@@ -133,15 +133,17 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
   chain_lengths.resize( backatoms.size() );
   for(unsigned i=0;i<backatoms.size();++i){
      chain_lengths[i]=backatoms[i].size();
-     for(unsigned j=0;j<backatoms[i].size();++j) all_atoms.addIndexToList( backatoms[i][j] );
+     for(unsigned j=0;j<backatoms[i].size();++j) all_atoms.push_back( backatoms[i][j] );
   }
+  ActionAtomistic::requestAtoms( all_atoms );
+  forcesToApply.resize( getNumberOfDerivatives() );
 }
 
 void SecondaryStructureRMSD::addColvar( const std::vector<unsigned>& newatoms ){
   if( colvar_atoms.size()>0 ) plumed_assert( colvar_atoms[0].size()==newatoms.size() );
   if( verbose_output ){
      log.printf("  Secondary structure segment %u contains atoms : ", static_cast<unsigned>(colvar_atoms.size()+1));
-     for(unsigned i=0;i<newatoms.size();++i) log.printf("%d ",all_atoms(newatoms[i]).serial() );
+     for(unsigned i=0;i<newatoms.size();++i) log.printf("%d ",all_atoms[newatoms[i]].serial() );
      log.printf("\n");
   }
   addTaskToList( colvar_atoms.size() );
@@ -190,15 +192,7 @@ void SecondaryStructureRMSD::prepare(){
   }
 }
 
-void SecondaryStructureRMSD::finishTaskListUpdate(){
-  all_atoms.deactivateAll();
-  for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
-      for(unsigned j=0;j<colvar_atoms[getActiveTask(i)].size();++j) all_atoms.activate( colvar_atoms[getActiveTask(i)][j] );
-  }
-  all_atoms.updateActiveMembers();
-  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-  forcesToApply.resize( getNumberOfDerivatives() );
-}
+void SecondaryStructureRMSD::finishTaskListUpdate(){ }
 
 void SecondaryStructureRMSD::calculate(){
   runAllTasks();

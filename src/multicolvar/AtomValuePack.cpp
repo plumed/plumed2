@@ -29,9 +29,10 @@ namespace multicolvar {
 AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
 myvals(vals),
 mycolv(mcolv),
-indices( vals.getIndices() )
+indices( vals.getIndices() ),
+sort_vector( vals.getSortIndices() )
 {
-  if( indices.size()!=mcolv->getNumberOfAtoms() ) indices.resize( mcolv->getNumberOfAtoms() );
+  if( indices.size()!=mcolv->getNumberOfAtoms() ){ indices.resize( mcolv->getNumberOfAtoms() ); sort_vector.resize( mcolv->getNumberOfAtoms() ); }
 }
 
 unsigned AtomValuePack::setupIndicesFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells ){
@@ -41,18 +42,24 @@ unsigned AtomValuePack::setupIndicesFromLinkCells( const unsigned& cind, const V
 
 void AtomValuePack::updateUsingIndices(){
   if( myvals.updateComplete() ) return;
-  myvals.emptyActiveMembers();
+
+  unsigned jactive=0;
   for(unsigned i=0;i<natoms;++i){
-     unsigned base=3*indices[i]; 
-     if( myvals.isActive( base ) ){
-         myvals.putIndexInActiveArray( base );
-         myvals.putIndexInActiveArray( base + 1 );
-         myvals.putIndexInActiveArray( base + 2 ); 
-     }
+      unsigned base=3*indices[i];
+      if( myvals.isActive( base ) ){ sort_vector[jactive]=indices[i]; jactive++; } 
+  }
+  std::sort( sort_vector.begin(), sort_vector.begin()+jactive );
+
+  myvals.emptyActiveMembers();
+  for(unsigned i=0;i<jactive;++i){
+     unsigned base=3*sort_vector[i]; // indices[i]; 
+     myvals.putIndexInActiveArray( base );
+     myvals.putIndexInActiveArray( base + 1 );
+     myvals.putIndexInActiveArray( base + 2 ); 
   }
   unsigned nvir=3*mycolv->getNumberOfAtoms();
   for(unsigned i=0;i<9;++i) myvals.putIndexInActiveArray( nvir + i );
-  myvals.sortActiveList();
+  myvals.completeUpdate();
 }
 
 void AtomValuePack::addComDerivatives( const unsigned& ind, const Vector& der, CatomPack& catom_der ){
