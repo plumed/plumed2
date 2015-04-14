@@ -59,11 +59,6 @@ if(GMX_USE_TNG)
         include_directories(${TNG_IO_INCLUDE_DIRS})
     endif()
     if(NOT GMX_EXTERNAL_TNG)
-        # TNG wants zlib if it is available
-        find_package(ZLIB QUIET)
-        include(gmxTestZLib)
-        gmx_test_zlib(HAVE_ZLIB)
-
         include(${CMAKE_SOURCE_DIR}/src/external/tng_io/BuildTNG.cmake)
         tng_get_source_list(TNG_SOURCES TNG_IO_DEFINITIONS)
         list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
@@ -71,11 +66,12 @@ if(GMX_USE_TNG)
 
         if (HAVE_ZLIB)
             list(APPEND GMX_EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
+            include_directories(${ZLIB_INCLUDE_DIRS})
         endif()
     endif()
 else()
     # We still need to get tng/tng_io_fwd.h from somewhere!
-    include_directories(${CMAKE_SOURCE_DIR}/src/external/tng_io/include)
+    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/tng_io/include)
 endif()
 
 add_subdirectory(gmxlib)
@@ -203,7 +199,11 @@ set_target_properties(libgromacs PROPERTIES
 # Only install the library in mdrun-only mode if it is actually necessary
 # for the binary
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
-    install(TARGETS libgromacs DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+    install(TARGETS libgromacs
+        LIBRARY DESTINATION ${LIB_INSTALL_DIR}
+        RUNTIME DESTINATION ${BIN_INSTALL_DIR}
+        ARCHIVE DESTINATION ${LIB_INSTALL_DIR}
+        COMPONENT libraries)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)

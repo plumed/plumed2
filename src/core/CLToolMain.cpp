@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -128,6 +128,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
       return (config::hasDlopen()?0:1);
     } else if(a=="--has-molfile"){
       return (config::hasMolfile()?0:1);
+    } else if(a=="--has-external-molfile"){
+      return (config::hasExternalMolfile()?0:1);
     } else if(a=="--has-zlib"){
       return (config::hasZlib()?0:1);
     } else if(a=="--has-xdrfile"){

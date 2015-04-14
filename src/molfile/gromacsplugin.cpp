@@ -48,7 +48,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  *
  *      $RCSfile: gromacsplugin.C,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.48 $       $Date: 2014/03/04 21:48:53 $
+ *      $Revision: 1.49 $       $Date: 2014/05/19 19:36:39 $
  *
  ***************************************************************************/
 
@@ -650,8 +650,8 @@ static void close_trr_write(void *v) {
   delete gmx;
 }
 
-#define GROMACS_PLUGIN_MAJOR_VERSION 0
-#define GROMACS_PLUGIN_MINOR_VERSION 9
+#define GROMACS_PLUGIN_MAJOR_VERSION 1
+#define GROMACS_PLUGIN_MINOR_VERSION 0 
 
 //
 // plugin registration stuff below
