@@ -41,7 +41,8 @@ Value::Value():
   min(0.0), 
   max(0.0), 
   max_minus_min(0.0), 
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  nrep(1)
 {
 }
 
@@ -57,7 +58,8 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv)
   min(0.0),
   max(0.0),
   max_minus_min(0.0),
-  inv_max_minus_min(0.0)
+  inv_max_minus_min(0.0),
+  nrep(1)
 {
 }
 
@@ -176,6 +178,22 @@ void add( const Value& val1, Value* val2 ){
   plumed_assert( val1.getNumberOfDerivatives()==val2->getNumberOfDerivatives() );
   for(unsigned i=0;i<val1.getNumberOfDerivatives();++i) val2->addDerivative( i, val1.getDerivative(i) );
   val2->set( val1.get() + val2->get() );
+}
+
+bool Value::isEnsemble()const{
+  return ensemble==averaged;
+}
+
+void Value::setNotEnsemble(){
+  nrep=1; ensemble=notaveraged;
+}
+
+void Value::setEnsemble(unsigned n){
+  nrep=n; ensemble=averaged;
+}
+
+unsigned Value::getEnsemble()const{
+  return nrep;
 }
 
 }

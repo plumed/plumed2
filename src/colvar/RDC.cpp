@@ -263,6 +263,9 @@ type(QF)
     setNotPeriodic();
   }
 
+  if(ensemble) setEnsemble(ens_dim);
+  else setNotEnsemble();
+
   requestAtoms(atoms);
 
   norm = 0.; 

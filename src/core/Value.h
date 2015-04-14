@@ -82,6 +82,9 @@ private:
   double inv_max_minus_min;
 /// Complete the setup of the periodicity
   void setupPeriodicity();
+/// Is this quantity an ensemble average 
+  enum {averaged,notaveraged} ensemble;
+  unsigned nrep;
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
@@ -140,6 +143,14 @@ public:
 /// This sets up the gradients
   void setGradients();
   static double projection(const Value&,const Value&);
+/// Check if the value is an ensemble average 
+  bool isEnsemble() const;
+/// Set the function is not an ensemble average 
+  void setNotEnsemble();
+/// Set the function is an ensemble average 
+  void setEnsemble(unsigned n);
+/// Get the number of replicas of the ensemble averaging 
+  unsigned getEnsemble() const;
 };
 
 void copy( const Value& val1, Value& val2 );

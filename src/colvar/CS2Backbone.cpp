@@ -385,6 +385,10 @@ isvectorial(false)
       addComponentWithDerivatives("co_"+num); componentIsNotPeriodic("co_"+num);
     }
   }
+
+  if(ensemble) setEnsemble(ens_dim);
+  else setNotEnsemble();
+
   requestAtoms(atoms);
   log.printf("  DONE!\n"); log.flush();
 }

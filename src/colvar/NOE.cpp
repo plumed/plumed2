@@ -187,6 +187,10 @@ serial(false)
 
   addValueWithDerivatives(); 
   setNotPeriodic(); 
+
+  if(ensemble) setEnsemble(ens_dim);
+  else setNotEnsemble();
+
   requestAtoms(nl->getFullAtomList());
   checkRead();
 }

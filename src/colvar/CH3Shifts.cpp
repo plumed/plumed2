@@ -265,6 +265,10 @@ PLUMED_COLVAR_INIT(ao)
 
   addValueWithDerivatives();
   setNotPeriodic();
+
+  if(ensemble) setEnsemble(ens_dim);
+  else setNotEnsemble();
+
   requestAtoms(atoms);
   log.printf("  DONE!\n"); log.flush();
 }

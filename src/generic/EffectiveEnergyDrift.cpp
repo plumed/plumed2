@@ -107,6 +107,8 @@ public ActionPilot{
   double initialBias;
   bool isFirstStep;
 
+  bool ensemble;
+
 public:
   EffectiveEnergyDrift(const ActionOptions&);
   ~EffectiveEnergyDrift();
@@ -127,6 +129,7 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ){
   keys.add("compulsory","STRIDE","1","should be set to 1. Effective energy drift computation has to be active at each step.");
   keys.add("compulsory", "FILE", "file on which to output the effective energy drift.");
   keys.add("compulsory", "PRINT_STRIDE", "frequency to which output the effective energy drift on FILE");
+  keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");
 }
 
 EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):
@@ -136,7 +139,9 @@ eed(0.0),
 atoms(plumed.getAtoms()),
 nProc(plumed.comm.Get_size()),
 initialBias(0.0),
-isFirstStep(true){
+isFirstStep(true),
+ensemble(false)
+{
   //stride must be == 1
   if(getStride()!=1) error("EFFECTIVE_ENERGY_DRIFT must have STRIDE=1 to work properly");
 
@@ -149,6 +154,13 @@ isFirstStep(true){
 
   //parse PRINT_STRIDE
   parse("PRINT_STRIDE",printStride);
+
+  //parse ENSEMBLE
+  ensemble=false;
+  parseFlag("ENSEMBLE",ensemble);
+  if(ensemble&&comm.Get_rank()==0) {
+    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+  } 
 
   log<<"Bibliography "<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, submitted (2014)")<<"\n";
 
@@ -286,6 +298,14 @@ void EffectiveEnergyDrift::update(){
     for(int i=0;i<biases.size();i++) bias+=biases[i]->getOutputQuantity("bias");
 
     plumed.comm.Sum(&eedSum,1);
+
+    // this is to take into account ensemble averaging
+    if(ensemble) {
+      if(plumed.comm.Get_rank()==0) plumed.multi_sim_comm.Sum(&eedSum,1);
+      else eedSum=0.;
+      plumed.comm.Sum(&eedSum,1);
+    }
+
     output.printField("time",getTime());
     output.printField("effective-energy",eedSum+bias-initialBias-plumed.getWork());
     output.printField();
