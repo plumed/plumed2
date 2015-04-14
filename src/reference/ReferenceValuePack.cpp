@@ -38,10 +38,10 @@ void ReferenceValuePack::resize( const unsigned& nargs, const unsigned& natoms )
 
 void ReferenceValuePack::updateDynamicLists(){
   myvals.emptyActiveMembers();
-  for(unsigned i=0;i<numberOfArgs;++i) myvals.updateIndex( i );
+  for(unsigned i=0;i<numberOfArgs;++i) myvals.putIndexInActiveArray( i );
   for(unsigned i=0;i<atom_indices.size();++i){
      unsigned nbase = numberOfArgs + 3*atom_indices[i];
-     myvals.updateIndex( nbase+0 ); myvals.updateIndex( nbase+1 ); myvals.updateIndex( nbase+2 );
+     myvals.putIndexInActiveArray( nbase+0 ); myvals.putIndexInActiveArray( nbase+1 ); myvals.putIndexInActiveArray( nbase+2 );
   }
   unsigned nbase = myvals.getNumberOfDerivatives() - 9;
   // zero is added to all virial components to ensure that these are active in the dynamic list
@@ -49,7 +49,7 @@ void ReferenceValuePack::updateDynamicLists(){
   if( atom_indices.size()>0 ){
      for(unsigned i=0;i<9;++i) myvals.addDerivative( oind, nbase+i, 0.0 );
   } 
-  for(unsigned i=0;i<9;++i) myvals.updateIndex( nbase+i ); 
+  for(unsigned i=0;i<9;++i) myvals.putIndexInActiveArray( nbase+i ); 
   myvals.completeUpdate();
 }
 
