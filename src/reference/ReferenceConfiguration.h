@@ -36,14 +36,6 @@ class Pbc;
 class OFile;
 class PDB;
 
-/// \ingroup TOOLBOX
-/// Abstract base class for calculating the distance from a reference configuration.
-/// A reference configuration can either have a particular set of atoms in a particular
-/// given configuration or it can be that a particular set of colvars have a particular 
-/// set of values.  It could also be a combination of both.  To allow all the posible
-/// permutations and in order make it easy to add new ways of calculating the distance 
-/// we have implemented this using polymorphism and multiple inheritance. 
-
 class ReferenceConfigurationOptions {
 friend class ReferenceConfiguration;
 private:
@@ -53,6 +45,16 @@ public:
   bool usingFastOption() const ;
   std::string getMultiRMSDType() const ;
 };
+
+/// \ingroup INHERIT
+/// Abstract base class for calculating the distance from a reference configuration.
+/// A reference configuration can either have a particular set of atoms in a particular
+/// given configuration or it can be that a particular set of colvars have a particular 
+/// set of values.  It could also be a combination of both.  To allow all the posible
+/// permutations and in order make it easy to add new ways of calculating the distance 
+/// we have implemented this using polymorphism and multiple inheritance.  The following 
+/// provides \ref AddingAMetric "information" on how to implement a new method for 
+/// calculating the distance between a pair of configurations
 
 class ReferenceConfiguration {
 friend class SingleDomainRMSD;
