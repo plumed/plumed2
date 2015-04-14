@@ -61,12 +61,12 @@ bool MolDataClass::allowedResidue( const std::string& type, const std::string& r
 // Alternative residue names in common force fiels   
       else if(residuename=="GLH") return true; // neutral GLU
       else if(residuename=="ASH") return true; // neutral ASP
-      else if(residuename=="HID") return true; // neutral HIS-D amber
-      else if(residuename=="HSD") return true; // neutral HIS-D charmm
-      else if(residuename=="HIE") return true; // neutral HIS-E amber
-      else if(residuename=="HSE") return true; // neutral HIS-E charmm
-      else if(residuename=="HIP") return true; // neutral HIS-P amber
-      else if(residuename=="HSP") return true; // neutral HIS-P charmm
+      else if(residuename=="HID") return true; // HIS-D amber
+      else if(residuename=="HSD") return true; // HIS-D charmm
+      else if(residuename=="HIE") return true; // HIS-E amber
+      else if(residuename=="HSE") return true; // HIS-E charmm
+      else if(residuename=="HIP") return true; // HIS-P amber
+      else if(residuename=="HSP") return true; // HIS-P charmm
       else return false; 
   } else if( type=="dna" ){
       if(residuename=="DA") return true;
@@ -174,12 +174,12 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
     unsigned resnum;
     std::string resname;
     std::string chainid;
-// if chain id is provided:
     if(firstnum==dash+1){
       Tools::convert( symbol.substr(dash+1), resnum );
       resname= mypdb.getResidueName(resnum);
       chainid="*"; // this is going to match the first chain
     } else {
+      // if chain id is provided:
       Tools::convert( symbol.substr(firstnum), resnum );
       chainid=symbol.substr(dash+1,firstnum-(dash+1)); // this is going to match the proper chain
     }

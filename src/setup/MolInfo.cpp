@@ -81,14 +81,16 @@ For RNA or RNA residues, the following groups are available:
 @base-#
 \endverbatim
 
-Notice that `zeta` and `epsilon` groupis should not be used on 3' end and `alpha` should not be used on 5' end.
+Notice that `zeta` and `epsilon` groups should not be used on 3' end and `alpha` should not be used on 5' end.
+
+\warning If a residue-chain is repeated twice only the first entry will be selected.
 
 \bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
 may not be true - GLY is problematic for secondary structure residues as it is achiral. 
 
 \bug If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein 
 ( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to 
-interpret termnal residue 1.
+interpret terminal residue 1.
 
 \par Examples
 
