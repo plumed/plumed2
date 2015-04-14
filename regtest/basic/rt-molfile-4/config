@@ -1,3 +1,2 @@
 type=driver
-plumed_needs=external-molfile
 arg="--plumed plumed.dat --mf_crd test.crd --natoms 2257"
