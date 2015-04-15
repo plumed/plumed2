@@ -272,6 +272,10 @@ Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) 
   else{ return delta( vec1, vec2 ); }
 }
 
+void MultiColvarBase::applyPbc(std::vector<Vector>& dlist, unsigned int max_index) const {
+   if (usepbc) pbcApply(dlist, max_index);
+}
+
 void MultiColvarBase::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
   plumed_dbg_assert( !doNotCalculateDerivatives() );
   indices[jstore]=3*atoms_with_derivatives.getNumberActive() + 9;

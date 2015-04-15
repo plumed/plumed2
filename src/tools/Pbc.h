@@ -74,6 +74,8 @@ public:
 /// version of distance which also returns the number
 /// of attempted shifts
   Vector distance(const Vector&,const Vector&,int*nshifts)const;
+/// Apply PBC to a set of positions or distance vectors
+  void apply(std::vector<Vector>&dlist, unsigned max_index=0) const;
 /// Set the lattice vectors.
 /// b[i][j] is the j-th component of the i-th vector
   void setBox(const Tensor&b);
