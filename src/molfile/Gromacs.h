@@ -47,7 +47,7 @@ OTHER DEALINGS WITH THE SOFTWARE.
  * RCS INFORMATION:
  *      $RCSfile: Gromacs.h,v $
  *      $Author: johns $       $Locker:  $             $State: Exp $
- *      $Revision: 1.31 $       $Date: 2013/04/13 03:34:58 $
+ *      $Revision: 1.33 $       $Date: 2014/05/19 19:34:26 $
  ***************************************************************************/
 
 /*
@@ -1790,6 +1790,7 @@ static int xtc_receivebits(int *buf, int nbits) {
 }
 
 // decompresses small integers from the buffer
+// sizes parameter has to be non-zero to prevent divide-by-zero
 static void xtc_receiveints(int *buf, const int nints, int nbits,
 			unsigned int *sizes, int *nums) {
 	int bytes[32];
@@ -1897,10 +1898,16 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 	xtc_int(mf, &smallidx);
 	smaller = xtc_magicints[FIRSTIDX > smallidx - 1 ? FIRSTIDX : smallidx - 1] / 2;
 	small = xtc_magicints[smallidx] / 2;
-	sizesmall[0] = sizesmall[1] = sizesmall[2] = xtc_magicints[smallidx] ;
+	sizesmall[0] = sizesmall[1] = sizesmall[2] = xtc_magicints[smallidx];
+	
+	/* check for zero values that would yield corrupted data */
+	if ( !sizesmall[0] || !sizesmall[1] || !sizesmall[2] ) {
+		printf("XTC corrupted, sizesmall==0 (case 1)\n");
+		return -1;
+	}
+
 
 	/* buf[0] holds the length in bytes */
-
 	if (xtc_int(mf, &(buf[0])) < 0) return -1;
 
 	if (xtc_data(mf, (char *) &buf[3], (int) buf[0]) < 0) return -1;
@@ -1962,6 +1969,12 @@ static int xtc_3dfcoord(md_file *mf, float *fp, int *size, float *precision) {
 					*lfp++ = prevcoord[0] * inv_precision;
 					*lfp++ = prevcoord[1] * inv_precision;
 					*lfp++ = prevcoord[2] * inv_precision;
+
+					if ( !sizesmall[0] || !sizesmall[1] || !sizesmall[2] ) {
+						printf("XTC corrupted, sizesmall==0 (case 2)\n");
+						return -1;
+					}
+
 				} else {
 					prevcoord[0] = thiscoord[0];
 					prevcoord[1] = thiscoord[1];
