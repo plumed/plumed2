@@ -47,9 +47,8 @@ void SimpleRMSD::read( const PDB& pdb ){
 }
 
 double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
-  std::vector<Vector> atom_ders( pos.size() );
-  double d=myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), atom_ders, squared );
-  for(unsigned i=0;i<pos.size();++i) myder.addAtomDerivatives( i, atom_ders[i] );
+  double d=myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), myder.getAtomVector(), squared );
+  for(unsigned i=0;i<pos.size();++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
   if( !myder.updateComplete() ) myder.updateDynamicLists();
   return d;
 }

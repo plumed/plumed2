@@ -50,12 +50,8 @@ void MultiValue::clearAll(){
 
 void MultiValue::clear( const unsigned& ival ){
   values[ival]=0;
-  if( atLeastOneSet ){
-      unsigned base=ival*nderivatives, ndert=hasDerivatives.getNumberActive();
-      for(unsigned i=0;i<ndert;++i){
-          unsigned jder=hasDerivatives[i]; derivatives[base+jder]=0.;   
-      }
-  }
+  unsigned base=ival*nderivatives, ndert=hasDerivatives.getNumberActive();
+  for(unsigned i=0;i<ndert;++i) derivatives[ base+hasDerivatives[i] ]=0.;   
 }
 
 void MultiValue::chainRule( const unsigned& ival, const unsigned& iout, const unsigned& stride, const unsigned& off, 

@@ -29,11 +29,11 @@ numberOfArgs(nargs),
 oind(1),
 myvals(vals)
 {
-  atom_indices.resize( natoms );
+  atom_indices.resize( natoms ); tmp_derivs.resize( natoms );
 }
 
 void ReferenceValuePack::resize( const unsigned& nargs, const unsigned& natoms ){
-  numberOfArgs=nargs; atom_indices.resize( natoms );
+  numberOfArgs=nargs; atom_indices.resize( natoms ); tmp_derivs.resize( natoms );
 }
 
 void ReferenceValuePack::updateDynamicLists(){

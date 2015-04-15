@@ -39,6 +39,8 @@ private:
   MultiValue& myvals;
 /// Ths list of atom indices
   std::vector<unsigned> atom_indices;
+/// A vector of vectors to save us some overhead for vector resises
+  std::vector<Vector> tmp_derivs;
 public:
   ReferenceValuePack( const unsigned& nargs, const unsigned& natoms, MultiValue& vals );
 ///
@@ -59,6 +61,8 @@ public:
   void copyScaledDerivatives( const unsigned& from, const double& scalef, const MultiValue& tvals );
 ///
   void addArgumentDerivatives( const unsigned& iarg, const double& der );
+///
+  void setAtomDerivatives( const unsigned& jder, const Vector& der );
 ///
   void addAtomDerivatives( const unsigned& iatom, const Vector& der );
 ///
@@ -81,6 +85,8 @@ public:
   double getArgumentDerivative( const unsigned& ival ) const ;
 ///
   Tensor getBoxDerivatives() const ;
+///
+  std::vector<Vector>& getAtomVector();
 };
 
 inline
@@ -117,6 +123,14 @@ void ReferenceValuePack::addArgumentDerivatives( const unsigned& iarg, const dou
 inline
 bool ReferenceValuePack::updateComplete() const {
   return myvals.updateComplete();
+}
+
+inline
+void ReferenceValuePack::setAtomDerivatives( const unsigned& jder, const Vector& der ){
+  plumed_dbg_assert( jder<atom_indices.size() );
+  myvals.setDerivative( oind, numberOfArgs + 3*atom_indices[jder] + 0, der[0] );
+  myvals.setDerivative( oind, numberOfArgs + 3*atom_indices[jder] + 1, der[1] );
+  myvals.setDerivative( oind, numberOfArgs + 3*atom_indices[jder] + 2, der[2] );
 }
 
 inline
@@ -163,6 +177,11 @@ Tensor ReferenceValuePack::getBoxDerivatives() const {
   plumed_dbg_assert( boxWasSet ); Tensor tvir; unsigned nbase = myvals.getNumberOfDerivatives() - 9;
   for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) tvir(i,j)=myvals.getDerivative( oind, nbase + 3*i + j );
   return tvir;
+}
+
+inline
+std::vector<Vector>& ReferenceValuePack::getAtomVector(){
+  return tmp_derivs;
 }
 
 }

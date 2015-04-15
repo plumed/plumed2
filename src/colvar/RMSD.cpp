@@ -196,7 +196,7 @@ RMSD::~RMSD(){
 
 // calculator
 void RMSD::calculate(){
-  mypack.clear(); double r=rmsd->calculate( getPositions(), mypack, squared );
+  double r=rmsd->calculate( getPositions(), mypack, squared );
 
   setValue(r); 
   for(unsigned i=0;i<getNumberOfAtoms();i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
