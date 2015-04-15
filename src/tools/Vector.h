@@ -23,6 +23,10 @@
 #define __PLUMED_tools_Vector_h
 
 #include <cmath>
+#ifdef _GLIBCXX_DEBUG
+#include "Exception.h"
+#endif
+
 
 namespace PLMD{
 
@@ -176,21 +180,33 @@ void VectorGeneric<n>::zero(){
 
 template <unsigned n>
 double & VectorGeneric<n>::operator[](unsigned i){
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n);
+#endif
   return d[i];
 }
 
 template <unsigned n>
 const double & VectorGeneric<n>::operator[](unsigned i)const{
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n);
+#endif
   return d[i];
 }
 
 template <unsigned n>
 double & VectorGeneric<n>::operator()(unsigned i){
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n);
+#endif
   return d[i];
 }
 
 template <unsigned n>
 const double & VectorGeneric<n>::operator()(unsigned i)const{
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n);
+#endif
   return d[i];
 }
 

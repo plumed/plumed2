@@ -25,6 +25,10 @@
 #include "MatrixSquareBracketsAccess.h"
 #include "Vector.h"
 
+#ifdef _GLIBCXX_DEBUG
+#include "Exception.h"
+#endif
+
 namespace PLMD{
 
 /**
@@ -201,11 +205,17 @@ void TensorGeneric<n,m>::zero(){
 
 template<unsigned n,unsigned m>
 double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j){
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n && j<m);
+#endif
   return d[m*i+j];
 }
 
 template<unsigned n,unsigned m>
 const double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j)const{
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n && j<m);
+#endif
   return d[m*i+j];
 }
 
