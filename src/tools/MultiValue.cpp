@@ -74,7 +74,7 @@ void MultiValue::copyValues( MultiValue& outvals ) const {
 }
 
 void MultiValue::copyDerivatives( MultiValue& outvals ){
-  plumed_dbg_assert( values.size()<=outvals.getNumberOfValues() && derivatives.ncols()<=outvals.getNumberOfDerivatives() );
+  plumed_dbg_assert( values.size()<=outvals.getNumberOfValues() && nderivatives<=outvals.getNumberOfDerivatives() );
   if( !hasDerivatives.updateComplete() ) hasDerivatives.updateActiveMembers();
 
   outvals.atLeastOneSet=true; unsigned ndert=hasDerivatives.getNumberActive();
