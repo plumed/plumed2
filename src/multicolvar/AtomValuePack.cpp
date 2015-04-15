@@ -30,13 +30,21 @@ AtomValuePack::AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv ):
 myvals(vals),
 mycolv(mcolv),
 indices( vals.getIndices() ),
-sort_vector( vals.getSortIndices() )
+sort_vector( vals.getSortIndices() ),
+myatoms( vals.getAtomVector() )
 {
-  if( indices.size()!=mcolv->getNumberOfAtoms() ){ indices.resize( mcolv->getNumberOfAtoms() ); sort_vector.resize( mcolv->getNumberOfAtoms() ); }
+  if( indices.size()!=mcolv->getNumberOfAtoms() ){ 
+    indices.resize( mcolv->getNumberOfAtoms() ); 
+    sort_vector.resize( mcolv->getNumberOfAtoms() ); 
+    myatoms.resize( mcolv->getNumberOfAtoms() );
+  }
 }
 
-unsigned AtomValuePack::setupIndicesFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells ){
+unsigned AtomValuePack::setupAtomsFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells ){
   indices[0]=cind; natoms=1; linkcells.retrieveNeighboringAtoms( cpos, natoms, indices );
+  myatoms[0]=Vector(0.0,0.0,0.0);
+  for(unsigned i=1;i<natoms;++i) myatoms[i]=mycolv->getPositionOfAtomForLinkCells( indices[i] ) - cpos;
+  if( mycolv->usesPbc() ) mycolv->applyPbc( myatoms, natoms );
   return natoms;
 }
 

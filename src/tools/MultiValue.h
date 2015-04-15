@@ -42,12 +42,14 @@ private:
   bool atLeastOneSet;
 /// This is a fudge to save on vector resizing in MultiColvar
   std::vector<unsigned> indices, sort_indices;
+  std::vector<Vector> tmp_atoms;
 public:
   MultiValue( const unsigned& , const unsigned& );
   void resize( const unsigned& , const unsigned& );
 ///
   std::vector<unsigned>& getIndices();
   std::vector<unsigned>& getSortIndices();
+  std::vector<Vector>& getAtomVector();
 /// Get the number of values in the stash
   unsigned getNumberOfValues() const ; 
 /// Get the number of derivatives in the stash
@@ -192,6 +194,11 @@ std::vector<unsigned>& MultiValue::getIndices(){
 inline
 std::vector<unsigned>& MultiValue::getSortIndices(){
   return sort_indices;
+}
+
+inline
+std::vector<Vector>& MultiValue::getAtomVector(){
+  return tmp_atoms;
 }
 
 inline

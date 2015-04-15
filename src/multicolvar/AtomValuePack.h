@@ -45,6 +45,8 @@ private:
   std::vector<unsigned>& indices;
 /// This is used to sort the atom indices
   std::vector<unsigned>& sort_vector;
+/// This holds atom positions
+  std::vector<Vector>& myatoms;
 public:
   AtomValuePack( MultiValue& vals, MultiColvarBase const * mcolv );
 /// Set the number of atoms
@@ -52,7 +54,9 @@ public:
 /// Set the index for one of the atoms
   void setIndex( const unsigned& , const unsigned& );
 ///
-  unsigned setupIndicesFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells );
+  void setAtom( const unsigned& j, const unsigned& ind );
+///
+  unsigned setupAtomsFromLinkCells( const unsigned& cind, const Vector& cpos, const LinkCells& linkcells );
 ///
   unsigned getIndex( const unsigned& j ) const ;
 ///
@@ -60,7 +64,7 @@ public:
 ///
   unsigned getNumberOfDerivatives() const ;
 /// Get the position of the ith atom
-  Vector getPosition( const unsigned& );
+  Vector& getPosition( const unsigned& );
 ///
   void setValue( const unsigned& , const double& );
 ///
@@ -104,14 +108,20 @@ void AtomValuePack::setIndex( const unsigned& j, const unsigned& ind ){
 }
 
 inline
+void AtomValuePack::setAtom( const unsigned& j, const unsigned& ind ){
+  plumed_dbg_assert( j<natoms ); indices[j]=ind;
+  myatoms[j]=mycolv->getPositionOfAtomForLinkCells( ind );
+}
+
+inline
 unsigned AtomValuePack::getIndex( const unsigned& j ) const {
   plumed_dbg_assert( j<natoms ); return indices[j];
 }
 
 inline
-Vector AtomValuePack::getPosition( const unsigned& iatom ){
+Vector& AtomValuePack::getPosition( const unsigned& iatom ){
   plumed_dbg_assert( iatom<natoms );
-  return mycolv->getPositionOfAtomForLinkCells( indices[iatom] );
+  return myatoms[iatom]; 
 }
 
 inline

@@ -106,6 +106,8 @@ public:
   unsigned getNumberOfAtoms()const{return indexes.size();}
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
+/// Applies  PBCs to a seriens of positions or distances
+  void pbcApply(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Get the vector of absolute indexes
   const std::vector<AtomNumber> & getAbsoluteIndexes()const;
 /// Get the absolute index of an atom

@@ -85,10 +85,6 @@ protected:
   void setupLinkCells();
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
-/// Do we use pbc to calculate this quantity
-  bool usesPbc() const ;
-/// Get the number of atoms in this particular colvar
-  unsigned getNAtoms() const;
 /// This sets up the list of atoms that are involved in this colvar
   bool setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const ;
 /// Decode indices if there are 2 or 3 atoms involved
@@ -99,6 +95,10 @@ public:
   static void registerKeywords( Keywords& keys );
 /// Turn on the derivatives 
   virtual void turnOnDerivatives();
+/// Do we use pbc to calculate this quantity
+  bool usesPbc() const ;
+/// Apply PBCs over a set of distance vectors
+  void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Prepare for the calculation
 /// Perform one of the tasks
   virtual void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
@@ -160,40 +160,6 @@ inline
 bool MultiColvarBase::usesPbc() const {
   return usepbc;
 }
-
-// inline
-// unsigned MultiColvarBase::getNAtoms() const {
-//   return natomsper;   // colvar_atoms[current].getNumberActive();
-// }
-
-// inline
-// void MultiColvarBase::addAtomsDerivatives(const unsigned& ielem, const unsigned& iatom, const Vector& der ){
-//   atoms_with_derivatives.activate(iatom);
-//   unsigned ibase=ielem*getNumberOfDerivatives() + 3*iatom;
-//   for(unsigned i=0;i<3;++i) addElementDerivative( ibase + i, der[i] );
-// }
-// 
-// inline 
-// void MultiColvarBase::addBoxDerivatives(const unsigned& ielem, const Tensor& vir ){
-//   unsigned ibase=ielem*getNumberOfDerivatives() + 3*getNumberOfAtoms();
-//   for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) addElementDerivative( ibase+3*i+j, vir(i,j) );
-// }
-// 
-// inline
-// void MultiColvarBase::addBoxDerivatives(const Tensor& vir){
-//   addBoxDerivatives( 0, vir );
-// }
-
-// inline
-// void MultiColvarBase::setWeight( const double& weight ){
-//   setElementValue( 1, weight );
-// }
-
-// inline
-// void MultiColvarBase::addBoxDerivativesOfWeight( const Tensor& vir ){
-//   addBoxDerivatives( 1, vir );
-// }
-
 
 }
 }
