@@ -17,6 +17,7 @@ Changes from version 2.1 which are relevant for users:
   set equal to 2.*\f$d_{\textrm{max}}\f$.  Where \f$d_{\textrm{max}}\f$ is the (user-specified) point at which
   the switching function goes to zero. Users should always set this parameter when using a switching function
   in order to achieve optimal performance.
+- DHENERGY option is no longer possible within \ref DISTANCES.  You can still calculate the DHENERGY colvar by using \ref DHENERGY
 - New actions
   - \ref DUMPMASSCHARGE to dump a file with mass and charges during MD.
   - \ref EFFECTIVE_ENERGY_DRIFT to check that plumed forces are not screwing the MD integrator.
@@ -43,4 +44,16 @@ Changes from version 2.1 which are relevant for users:
 - VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
   can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
   part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
+
+For developers:
+
+- In order to be able to use openmp parallelism within multcolvar, secondarystructure, manyrestraints and crystallisation
+we had to make some substantial changes to the code that underlies these routines that is contained within vesselbase. In 
+particular we needed to get rid of the derivatives and buffer private variables in the class ActionWithVessel.  As a consequence
+the derivatives calculated in the various performTask methods are stored in an object of type MultiValue.  Within multicolvar
+this is contained within an object of type AtomValuePack, which stores information on the atom indices.  If you have implemented
+a new multicolvar it should be relatively straightforward to translate them so they can exploit this new version of the code.  Look 
+at what has been done to the other multicolvars in there for guidance.  Sorry for any inconvenience caused.
+
+
 */

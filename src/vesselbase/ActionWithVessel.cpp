@@ -321,7 +321,7 @@ void ActionWithVessel::runAllTasks(){
   MultiValue bvals( getNumberOfQuantities(), getNumberOfDerivatives() );
   myvals.clearAll(); bvals.clearAll();
  
-#pragma omp for reduction nowait
+#pragma omp for nowait
   for(unsigned i=rank;i<nactive_tasks;i+=stride){
       // Calculate the stuff in the loop for this action
       performTask( indexOfTaskInFullList[i], partialTaskList[i], myvals );
