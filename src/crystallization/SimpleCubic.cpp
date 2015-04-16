@@ -113,15 +113,17 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 double SimpleCubic::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { 
-   double d2, value=0, norm=0, dfunc; Vector distance;
+   double d2, value=0, norm=0, dfunc; 
 
    // Calculate the coordination number
    Vector myder, fder;
    double sw, t1, t2, t3, x2, x3, x4, y2, y3, y4, z2, z3, z4, r4, tmp;
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
-      distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
-      d2 = distance.modulo2();
-      if( d2<rcut2 ){ 
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 &&
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+
          sw = switchingFunction.calculateSqr( d2, dfunc );        
 
          x2 = distance[0]*distance[0];

@@ -57,7 +57,7 @@ VectorMultiColvar(ao)
   log.printf("  Steinhardt parameter of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
   setLinkCellCutoff( switchingFunction.get_dmax() );
-  rcut = switchingFunction.get_dmax();
+  rcut = switchingFunction.get_dmax(); rcut2 = rcut*rcut;
 }
 
 void Steinhardt::setAngularMomentum( const unsigned& ang ){
@@ -66,20 +66,22 @@ void Steinhardt::setAngularMomentum( const unsigned& ang ){
 
 void Steinhardt::calculateVector( multicolvar::AtomValuePack& myatoms ) const {
   double dfunc, dpoly_ass, md, tq6, itq6, real_z, imag_z; 
-  Vector distance, dz, myrealvec, myimagvec, real_dz, imag_dz;
+  Vector dz, myrealvec, myimagvec, real_dz, imag_dz;
   // The square root of -1
   std::complex<double> ii( 0.0, 1.0 ), dp_x, dp_y, dp_z;
 
   unsigned ncomp=2*tmom+1;
-  double sw, poly_ass, dlen, nbond=0.0; std::complex<double> powered;
+  double sw, poly_ass, d2, dlen, nbond=0.0; std::complex<double> powered;
   for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
-     distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
-     dlen=distance.modulo(); 
-     if( dlen<rcut ){
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 &&
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+         dlen = sqrt(d2);
          sw = switchingFunction.calculate( dlen, dfunc ); 
    
          nbond += sw;  // Accumulate total number of bonds
-         double dlen3 = dlen*dlen*dlen;
+         double dlen3 = d2*dlen;
 
          // Store derivatives of weight
          myatoms.addAtomsDerivatives( 1, 0, (-dfunc)*distance );

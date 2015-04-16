@@ -69,22 +69,19 @@ void ManyRestraintsBase::transformBridgedDerivatives( const unsigned& current, M
   outvals.setValue( 0, invals.get(0) );
   
   // Get the potential
-  double dval, val=calcPotential( invals.get(1), dval );
+  double dval=0, val=calcPotential( invals.get(1), dval );
 
-  if( val>getTolerance() ){
-      outvals.setValue( 1, val );
-      for(unsigned i=0;i<invals.getNumberActive();++i){
-          unsigned jder=invals.getActiveIndex(i);
-          outvals.addDerivative( 1, jder, dval*invals.getDerivative( 1, jder ) );
-      } 
+  outvals.setValue( 1, val );
+  for(unsigned i=0;i<invals.getNumberActive();++i){
+      unsigned jder=invals.getActiveIndex(i);
+      outvals.addDerivative( 1, jder, dval*invals.getDerivative( 1, jder ) );
+  } 
 
-      // Now update the outvals derivatives lists
-      outvals.emptyActiveMembers();
-      for(unsigned j=0;j<invals.getNumberActive();++j) outvals.updateIndex( invals.getActiveIndex(j) );
-      outvals.sortActiveList();
-      return;
-  }
-  outvals.setValue( 1, 0.0 ); 
+  // Now update the outvals derivatives lists
+  outvals.emptyActiveMembers();
+  for(unsigned j=0;j<invals.getNumberActive();++j) outvals.updateIndex( invals.getActiveIndex(j) );
+  outvals.completeUpdate();
+  return;
 }
 
 void ManyRestraintsBase::apply(){

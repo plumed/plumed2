@@ -41,15 +41,19 @@ void ReferenceValuePack::updateDynamicLists(){
   for(unsigned i=0;i<numberOfArgs;++i) myvals.putIndexInActiveArray( i );
   for(unsigned i=0;i<atom_indices.size();++i){
      unsigned nbase = numberOfArgs + 3*atom_indices[i];
-     myvals.putIndexInActiveArray( nbase+0 ); myvals.putIndexInActiveArray( nbase+1 ); myvals.putIndexInActiveArray( nbase+2 );
+     if( myvals.isActive( nbase ) ){
+        myvals.putIndexInActiveArray( nbase+0 ); myvals.putIndexInActiveArray( nbase+1 ); myvals.putIndexInActiveArray( nbase+2 );
+     }
   }
   unsigned nbase = myvals.getNumberOfDerivatives() - 9;
   // zero is added to all virial components to ensure that these are active in the dynamic list
   // if this is not done there is a problem with secondary structure variables
   if( atom_indices.size()>0 ){
-     for(unsigned i=0;i<9;++i) myvals.addDerivative( oind, nbase+i, 0.0 );
+     for(unsigned i=0;i<9;++i){
+        myvals.addDerivative( oind, nbase+i, 0.0 );
+        myvals.putIndexInActiveArray( nbase+i ); 
+     }
   } 
-  for(unsigned i=0;i<9;++i) myvals.putIndexInActiveArray( nbase+i ); 
   myvals.completeUpdate();
 }
 

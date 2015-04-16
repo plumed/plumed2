@@ -120,14 +120,16 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 double CoordinationNumbers::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-   double value=0, dfunc; Vector distance;
+   double value=0, dfunc; 
 
    // Calculate the coordination number
    double d2, sw;
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
-      distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
-      d2 = distance.modulo2();
-      if( d2<rcut2 ){ 
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 && 
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+  
          sw = switchingFunction.calculateSqr( d2, dfunc );
   
          value += sw;             

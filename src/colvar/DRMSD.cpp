@@ -152,7 +152,7 @@ void DRMSD::calculate(){
  drmsd=drmsd_->calculate(getPositions(), getPbc(), mypack, false);
 
  setValue(drmsd);
- for(unsigned i=0;i<getNumberOfAtoms();++i) { setAtomsDerivatives( i, mypack.getAtomDerivative(i) ); }
+ for(unsigned i=0;i<getNumberOfAtoms();++i) { if( myvals.isActive(3*i) ) setAtomsDerivatives( i, mypack.getAtomDerivative(i) ); }
  setBoxDerivatives( mypack.getBoxDerivatives() );   
 
  // drmsd_->getVirial( virial ); setBoxDerivatives(virial);

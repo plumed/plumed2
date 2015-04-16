@@ -66,7 +66,9 @@ void AtomValuePack::updateUsingIndices(){
      myvals.putIndexInActiveArray( base + 2 ); 
   }
   unsigned nvir=3*mycolv->getNumberOfAtoms();
-  for(unsigned i=0;i<9;++i) myvals.putIndexInActiveArray( nvir + i );
+  if( myvals.isActive( nvir ) ){
+      for(unsigned i=0;i<9;++i) myvals.putIndexInActiveArray( nvir + i );
+  }
   myvals.completeUpdate();
 }
 

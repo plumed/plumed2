@@ -99,7 +99,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
 }
 
 double Tetrahedral::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
-   double value=0, norm=0, dfunc; Vector distance;
+   double value=0, norm=0, dfunc; 
 
    // Calculate the coordination number
    Vector myder, fder;
@@ -107,9 +107,11 @@ double Tetrahedral::compute( const unsigned& tindex, multicolvar::AtomValuePack&
    double sp1c, sp2c, sp3c, sp4c, r3, r5, tmp;
    double d2, t1, t2, t3, t4, tt1, tt2, tt3, tt4;
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
-      distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
-      d2 = distance.modulo2();
-      if( d2<rcut2 ){ 
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 &&
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+      
          sw = switchingFunction.calculateSqr( d2, dfunc );
 
          sp1 = +distance[0]+distance[1]+distance[2];

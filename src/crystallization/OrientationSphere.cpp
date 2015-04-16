@@ -70,7 +70,7 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
    VectorMultiColvar* vv = dynamic_cast<VectorMultiColvar*>( getBaseMultiColvar(0) );
    vv->firstcall=true;
 
-   double d2, sw, value=0, denom=0, dot, f_dot, dot_df, dfunc; Vector distance;
+   double d2, sw, value=0, denom=0, dot, f_dot, dot_df, dfunc; 
    unsigned ncomponents=getBaseMultiColvar(0)->getNumberOfQuantities();
    unsigned nder=myatoms.getNumberOfDerivatives();
    std::vector<double> catom_orient( ncomponents ), this_orient( ncomponents ), catom_der( ncomponents ); 
@@ -85,9 +85,11 @@ double OrientationSphere::compute( const unsigned& tindex, multicolvar::AtomValu
    }
 
    for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
-      distance=getSeparation( catom_pos, myatoms.getPosition(i) );
-      d2 = distance.modulo2();
-      if( d2<rcut2 ){ 
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( catom_pos, myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 &&
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+ 
          sw = switchingFunction.calculateSqr( d2, dfunc );  
  
          getVectorForTask( myatoms.getIndex(i), true, this_orient );

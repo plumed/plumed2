@@ -141,7 +141,7 @@ unsigned LocalAverage::getNumberOfQuantities(){
 }
 
 double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
-  Vector distance; double d2, sw, dfunc, nbond=1; CatomPack atom0, atom1;
+  double d2, sw, dfunc, nbond=1; CatomPack atom0, atom1;
   std::vector<double> values( getBaseMultiColvar(0)->getNumberOfQuantities() );
   MultiValue myder(values.size(), myatoms.getNumberOfDerivatives());
 
@@ -171,10 +171,13 @@ double LocalAverage::compute( const unsigned& tindex, AtomValuePack& myatoms ) c
   }
 
   for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
-     distance=getSeparation( catom_pos, myatoms.getPosition(i) );
-     d2 = distance.modulo2(); 
-     if( d2<rcut2 ){
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 &&
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+
          sw = switchingFunction.calculateSqr( d2, dfunc );
+
          getVectorForTask( myatoms.getIndex(i), false, values );
          if( values.size()>2 ){
              for(unsigned j=2;j<values.size();++j) myatoms.addValue( j, sw*values[j] );

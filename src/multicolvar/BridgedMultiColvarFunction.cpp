@@ -55,15 +55,17 @@ void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& cu
   completeTask( current, invals, outvals );
   
   // Now update the outvals derivatives lists
-  outvals.emptyActiveMembers();
-  if( mycolv->isDensity() ){
-     for(unsigned j=0;j<3;++j) outvals.putIndexInActiveArray( 3*current+j ); 
-     for(unsigned j=invals.getNumberOfDerivatives()-9;j<invals.getNumberOfDerivatives();++j) outvals.putIndexInActiveArray(j);
-  } else {
-     for(unsigned j=0;j<invals.getNumberActive();++j) outvals.putIndexInActiveArray( invals.getActiveIndex(j) );
+  if( derivativesAreRequired() ){ 
+     outvals.emptyActiveMembers();
+     if( mycolv->isDensity() ){
+         for(unsigned j=0;j<3;++j) outvals.putIndexInActiveArray( 3*current+j ); 
+         for(unsigned j=invals.getNumberOfDerivatives()-9;j<invals.getNumberOfDerivatives();++j) outvals.putIndexInActiveArray(j);
+      } else {
+         for(unsigned j=0;j<invals.getNumberActive();++j) outvals.putIndexInActiveArray( invals.getActiveIndex(j) );
+      }
+      for(unsigned j=invals.getNumberOfDerivatives();j<outvals.getNumberOfDerivatives();++j) outvals.putIndexInActiveArray( j );
+      outvals.completeUpdate(); 
   }
-  for(unsigned j=invals.getNumberOfDerivatives();j<outvals.getNumberOfDerivatives();++j) outvals.putIndexInActiveArray( j );
-  outvals.completeUpdate(); 
 }
 
 void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const unsigned& current, MultiValue& myvals ) const {
