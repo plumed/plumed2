@@ -24,6 +24,7 @@
 
 #include "MatrixSquareBracketsAccess.h"
 #include "Vector.h"
+#include "LoopUnroller.h"
 
 #ifdef _GLIBCXX_DEBUG
 #include "Exception.h"
@@ -167,7 +168,7 @@ public:
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>::TensorGeneric(){
-  for(unsigned i=0;i<n*m;i++)d[i]=0.0;
+  LoopUnroller<n*m>::_zero(d);
 }
 
 template<unsigned n,unsigned m>
@@ -200,7 +201,7 @@ TensorGeneric<3,3>::TensorGeneric(double d00,double d01,double d02,double d10,do
 
 template<unsigned n,unsigned m>
 void TensorGeneric<n,m>::zero(){
-  for(unsigned i=0;i<n*m;i++)d[i]=0.0;
+  LoopUnroller<n*m>::_zero(d);
 }
 
 template<unsigned n,unsigned m>
@@ -221,25 +222,26 @@ const double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j)const{
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator +=(const TensorGeneric<n,m>& b){
-  for(unsigned i=0;i<n*m;i++)d[i]+=b.d[i];
+  LoopUnroller<n*m>::_add(d,b.d);
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator -=(const TensorGeneric<n,m>& b){
-  for(unsigned i=0;i<n*m;i++)d[i]-=b.d[i];
+  LoopUnroller<n*m>::_sub(d,b.d);
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator *=(double s){
-  for(unsigned i=0;i<n*m;i++)d[i]*=s;
+  LoopUnroller<n*m>::_mul(d,s);
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator /=(double s){
-  return (*this)*=1.0/s;
+  LoopUnroller<n*m>::_mul(d,1.0/s);
+  return *this;
 }
 
 template<unsigned n,unsigned m>
@@ -250,7 +252,7 @@ TensorGeneric<n,m> TensorGeneric<n,m>::operator+()const{
 template<unsigned n,unsigned m>
 TensorGeneric<n,m> TensorGeneric<n,m>::operator-()const{
   TensorGeneric<n,m> r;
-  for(unsigned i=0;i<n*m;i++)r.d[i]=-d[i];
+  LoopUnroller<n*m>::_neg(r.d,d);
   return r;
 }
 
