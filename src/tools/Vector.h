@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -23,6 +23,8 @@
 #define __PLUMED_tools_Vector_h
 
 #include <cmath>
+#include "LoopUnroller.h"
+
 #ifdef _GLIBCXX_DEBUG
 #include "Exception.h"
 #endif
@@ -73,6 +75,7 @@ int main(){
 \endverbatim
 
 */
+
 
 template <unsigned n>
 class VectorGeneric{
@@ -169,13 +172,13 @@ VectorGeneric<4>:: VectorGeneric(double x0,double x1,double x2,double x3){
 }
 
 template <unsigned n>
-VectorGeneric<n>::VectorGeneric(){
-  for(unsigned i=0;i<n;i++) d[i]=0.0;
+void VectorGeneric<n>::zero(){
+  LoopUnroller<n>::_zero(d);
 }
 
 template <unsigned n>
-void VectorGeneric<n>::zero(){
-  for(unsigned i=0;i<n;i++) d[i]=0.0;
+VectorGeneric<n>::VectorGeneric(){
+  zero();
 }
 
 template <unsigned n>
@@ -212,26 +215,26 @@ const double & VectorGeneric<n>::operator()(unsigned i)const{
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator +=(const VectorGeneric<n>& b){
-  for(unsigned i=0;i<n;i++) d[i]+=b.d[i];
+  LoopUnroller<n>::_add(d,b.d);
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator -=(const VectorGeneric<n>& b){
-  for(unsigned i=0;i<n;i++) d[i]-=b.d[i];
+  LoopUnroller<n>::_sub(d,b.d);
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator *=(double s){
-  for(unsigned i=0;i<n;i++) d[i]*=s;
+  LoopUnroller<n>::_mul(d,s);
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator /=(double s){
-  double x=1.0/s;
-  return (*this)*=x;
+  LoopUnroller<n>::_mul(d,1.0/s);
+  return *this;
 }
 
 template <unsigned n>
@@ -242,7 +245,7 @@ VectorGeneric<n>  VectorGeneric<n>::operator +()const{
 template <unsigned n>
 VectorGeneric<n> VectorGeneric<n>::operator -()const{
   VectorGeneric<n> r;
-  for(unsigned i=0;i<n;i++) r[i]=-d[i];
+  LoopUnroller<n>::_neg(r.d,d);
   return r;
 }
 
@@ -281,52 +284,12 @@ VectorGeneric<n> delta(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2){
 
 template <unsigned n>
 double VectorGeneric<n>::modulo2()const{
-  double r=0.0;
-  for(unsigned i=0;i<n;i++) r+=d[i]*d[i];
-  return r;
+  return LoopUnroller<n>::_sum2(d);
 }
 
 template <unsigned n>
 double dotProduct(const VectorGeneric<n>& v1,const VectorGeneric<n>& v2){
-  double r=0.0;
-  for(unsigned i=0;i<n;i++) r+=v1[i]*v2[i];
-  return r;
-}
-
-// faster, specialized version for 2d
-inline
-double dotProduct(const VectorGeneric<2>& v1,const VectorGeneric<2>& v2){
-  return v1[0]*v2[0]+v1[1]*v2[1];
-}
-
-template<>
-inline
-double VectorGeneric<2>::modulo2()const{
-  return d[0]*d[0]+d[1]*d[1];
-}
-
-// faster, specialized version for 3d
-inline
-double dotProduct(const VectorGeneric<3>& v1,const VectorGeneric<3>& v2){
-  return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
-}
-
-template<>
-inline
-double VectorGeneric<3>::modulo2()const{
-  return d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
-}
-
-// faster, specialized version for 4d
-inline
-double dotProduct(const VectorGeneric<4>& v1,const VectorGeneric<4>& v2){
-  return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]+v1[3]*v2[3];
-}
-
-template<>
-inline
-double VectorGeneric<4>::modulo2()const{
-  return d[0]*d[0]+d[1]*d[1]+d[2]*d[2]+d[3]*d[3];
+  return LoopUnroller<n>::_dot(v1.d,v2.d);
 }
 
 inline
