@@ -298,16 +298,17 @@ void EffectiveEnergyDrift::update(){
     for(int i=0;i<biases.size();i++) bias+=biases[i]->getOutputQuantity("bias");
 
     plumed.comm.Sum(&eedSum,1);
-
+ 
+    double effective = eedSum+bias-initialBias-plumed.getWork();
     // this is to take into account ensemble averaging
     if(ensemble) {
-      if(plumed.comm.Get_rank()==0) plumed.multi_sim_comm.Sum(&eedSum,1);
-      else eedSum=0.;
-      plumed.comm.Sum(&eedSum,1);
+      if(plumed.comm.Get_rank()==0) plumed.multi_sim_comm.Sum(&effective,1);
+      else effective=0.;
+      plumed.comm.Sum(&effective,1);
     }
 
     output.printField("time",getTime());
-    output.printField("effective-energy",eedSum+bias-initialBias-plumed.getWork());
+    output.printField("effective-energy",effective);
     output.printField();
   }
 
