@@ -1,4 +1,4 @@
-#! FIELDS time parameter pca.pca-0
+#! FIELDS time parameter pca.eig-0
  0.000000 0   -0.3063119998
  0.000000 1    0.0483588785
  0.000000 2    0.2244111770
