@@ -254,21 +254,39 @@ double RMSD::calc_PCAelements( const std::vector<Vector>& positions, std::vector
    double ret=0.;
    switch(alignmentMethod){
 	case SIMPLE:
-		plumed_merror("derivative of the refreence frame not implemented for SIMPLE alignmentMethod \n");	
-		break;	
+	  plumed_merror("derivative of the refreence frame not implemented for SIMPLE alignmentMethod \n");	
+	  break;	
         case OPTIMAL_FAST:
-//                if(align==displace) ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<false,true>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef,   squared);
- //               else                ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<false,false>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef,  squared);
-	        return optimalAlignment_PCA<false,false>(align,displace,positions,reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);	
-                break;
+	  if(align==displace) ret=optimalAlignment_PCA<false,true>(align,displace,positions,reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
+	  else                ret=optimalAlignment_PCA<false,false>(align,displace,positions,reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
+          break;
         case OPTIMAL:
-//                if(align==displace) ret=optimalAlignment_DDistDRef_Rot_DRotDPos_DRotDRef<true,true>(align,displace,positions,reference,derivatives,DDistDRef, Rot, DRotDPos, DRotDRef, squared);
-//                else              
-		return optimalAlignment_PCA<true,false>(align,displace,positions,reference,alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared); 
-                break;
+	  if(align==displace) ret=optimalAlignment_PCA<true,true>(align,displace,positions,reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
+	  else                ret=optimalAlignment_PCA<true,false>(align,displace,positions,reference, alignedpositions, centeredpositions,centeredreference,Rotation,DDistDPos,DRotDPos,squared);
+          break;
   }	
   return ret;
 }
+
+
+double RMSD::calc_FitElements( const std::vector<Vector>& positions, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos, std::vector<Vector> & centeredpositions, Vector &center_positions, const bool& squared  ){
+   double ret=0.;
+   switch(alignmentMethod){
+	case SIMPLE:
+		plumed_merror("derivative of the refreence frame not implemented for SIMPLE alignmentMethod \n");	
+		break;	
+        case OPTIMAL_FAST:
+	  if(align==displace)ret=optimalAlignment_Fit<false,true>(align,displace,positions,reference, Rotation,DRotDPos,centeredpositions,center_positions,squared);	
+	  else               ret=optimalAlignment_Fit<false,false>(align,displace,positions,reference, Rotation,DRotDPos,centeredpositions,center_positions,squared);
+          break;
+        case OPTIMAL:
+	  if(align==displace)ret=optimalAlignment_Fit<true,true>(align,displace,positions,reference,Rotation,DRotDPos,centeredpositions,center_positions,squared); 
+	  else               ret=optimalAlignment_Fit<true,false>(align,displace,positions,reference,Rotation,DRotDPos,centeredpositions,center_positions,squared); 
+          break;
+  }	
+  return ret;
+}
+
 
 
 
@@ -724,6 +742,46 @@ double RMSD::optimalAlignment_PCA(const  std::vector<double>  & align,
 }
 
 
+template <bool safe,bool alEqDis>
+double RMSD::optimalAlignment_Fit(const  std::vector<double>  & align,
+                            const  std::vector<double>  & displace,
+                            const std::vector<Vector> & positions,
+                            const std::vector<Vector> & reference,
+                            Tensor & Rotation,
+                            Matrix<std::vector<Vector> > & DRotDPos,
+			    std::vector<Vector> & centeredpositions,
+			    Vector & center_positions,
+                            bool squared){
+   //initialize the data into the structure
+   // typically the positions do not have the com neither calculated nor subtracted. This layer takes care of this business
+   RMSDCoreData cd(align,displace,positions,reference);
+   // transfer the settings for the center to let the CoreCalc deal with it 
+   cd.setPositionsCenterIsRemoved(positions_center_is_removed);
+   if(positions_center_is_calculated){cd.setPositionsCenter(positions_center);}
+   else{cd.calcPositionsCenter();};
+
+   cd.setReferenceCenterIsRemoved(reference_center_is_removed);
+   if(!reference_center_is_calculated){cd.calcReferenceCenter();}
+   else{cd.setReferenceCenter(reference_center);}
+
+   // Perform the diagonalization and all the needed stuff
+   cd.doCoreCalc(safe,alEqDis); 
+   // make the core calc distance
+   double dist=cd.getDistance(squared); 
+   // get the rotation matrix
+   Rotation=cd.getRotationMatrixPositionsToReference(); 
+   // get its derivative
+   DRotDPos=cd.getDRotationDPositions(true); // this gives back the inverse  
+   // get centered positions
+   centeredpositions=cd.getCenteredPositions();
+  // get center
+   center_positions=cd.getPositionsCenter();
+   return dist;
+}
+
+
+
+
 
 
 /// This calculates the elements needed by the quaternion to calculate everything that is needed
@@ -1144,7 +1202,15 @@ std::vector<Vector> RMSDCoreData::getCenteredReference(){
 }
 
 
+Vector RMSDCoreData::getPositionsCenter(){
+	  if(!isInitialized)plumed_merror("getCenteredPositions needs to initialize the coreData first!");
+	  return cpositions; 
+}
 
+Vector RMSDCoreData::getReferenceCenter(){
+	  if(!isInitialized)plumed_merror("getCenteredPositions needs to initialize the coreData first!");
+	  return creference; 
+}
 
 Tensor RMSDCoreData::getRotationMatrixReferenceToPositions(){
 	  if(!isInitialized)plumed_merror("getRotationMatrixReferenceToPositions needs to initialize the coreData first!");

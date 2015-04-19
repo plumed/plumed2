@@ -182,6 +182,18 @@ double optimalAlignment_PCA(const  std::vector<double>  & align,
 			    Matrix<std::vector<Vector> > & DRotDPos,
                             bool squared=false);
 
+template <bool safe,bool alEqDis>
+double optimalAlignment_Fit(const  std::vector<double>  & align,
+                            const  std::vector<double>  & displace,
+                            const std::vector<Vector> & positions,
+                            const std::vector<Vector> & reference,
+			    Tensor & Rotation, 
+			    Matrix<std::vector<Vector> > & DRotDPos,
+		            std::vector<Vector> & centeredpositions,		
+		            Vector & center_positions,		
+                            bool squared=false);
+
+
 /// Compute rmsd: note that this is an intermediate layer which is kept in order to evtl expand with more alignment types/user options to be called while keeping the workhorses separated 
   double calculate(const std::vector<Vector> & positions,std::vector<Vector> &derivatives, bool squared=false)const;
 /// Other convenience methods:
@@ -192,10 +204,18 @@ double optimalAlignment_PCA(const  std::vector<double>  & align,
 ///
  double calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos, const bool squared=false   ); 
  double calc_DDistDRef_Rot_DRotDPos_DRotDRef( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos,Matrix<std::vector<Vector> > &DRotDRef, const bool squared=false   ); 
+ /// convenience method to retrieve all the bits and pieces for PCA
  double calc_PCAelements( const std::vector<Vector>& pos, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared=false); 
-
-
-
+ /// convenience method to retrieve all the bits and pieces needed by FitToTemplate 
+ double calc_FitElements( const std::vector<Vector>& pos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector> & centeredpositions ,Vector & center_positions, const bool& squared=false ); 
+ /// static convenience method to get the matrix i,a from drotdpos (which is a bit tricky)
+ static  Tensor getMatrixFromDRot(Matrix< std::vector<Vector> > &drotdpos, const unsigned &i, const unsigned &a){ 
+	Tensor t; 
+	t[0][0]=drotdpos[0][0][i][a]; t[0][1]=drotdpos[0][1][i][a]; t[0][2]=drotdpos[0][2][i][a];  
+	t[1][0]=drotdpos[1][0][i][a]; t[1][1]=drotdpos[1][1][i][a]; t[1][2]=drotdpos[1][2][i][a];  
+	t[2][0]=drotdpos[2][0][i][a]; t[2][1]=drotdpos[2][1][i][a]; t[2][2]=drotdpos[2][2][i][a];  
+	return t;
+ }; 
 };
 
 /// this is a class which is needed to share information across the various non-threadsafe routines
@@ -284,6 +304,10 @@ class RMSDCoreData
                 std::vector<Vector> getCenteredPositions();	
 		// get centered reference
                 std::vector<Vector> getCenteredReference();	
+		// get center of positions
+                Vector getPositionsCenter();	
+		// get center of reference 
+                Vector getReferenceCenter();	
 		// get rotation matrix (reference ->positions) 
 		Tensor getRotationMatrixReferenceToPositions();
 		// get rotation matrix (positions -> reference) 
