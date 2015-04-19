@@ -51,13 +51,16 @@ using namespace std;
 
 //+PLUMEDOC DCOLVAR PCARMSD 
 /*
-Calculate the PCA components for a number of provided eigenvectors and an average structure. Performs optimal alignment at every step. 
+Calculate the PCA components ( see \cite Sutto:2010 and \cite spiwok )  for a number of provided eigenvectors and an average structure. Performs optimal alignment at every step and reports the rmsd so you know if you are far or close from the average structure.
+It takes the average structure and eigenvectors in form of a pdb.
 
 \par Examples
 
 \verbatim
 PCARMSD AVERAGE=file.pdb EIGENVECTORS=eigenvectors.pdb 
 \endverbatim
+
+The input is taken so to be compatible with the output you get from g_covar utility of gromacs (suitably adapted to have a pdb input format). 
 
 ...
 
@@ -113,6 +116,9 @@ PLUMED_COLVAR_INIT(ao),squared(true)
   log.printf("  average from file %s\n",f_average.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
   log.printf("  method for alignment : %s \n",type.c_str() );
+
+  log<<"  Bibliography "<<plumed.cite("Spiwok, Lipovova and Kralova, JPCB, 111, 3073 (2007)  ");
+  log<<" "<<plumed.cite( "Sutto, D'Abramo, Gervasio, JCTC, 6, 3640 (2010)");
 
   // now get the eigenvectors 
   // open the file
@@ -183,14 +189,6 @@ void PCARMSD::calculate(){
 	der.resize(getNumberOfAtoms());
 
 
-	// (type OPTIMAL with homogeneous weights, normalized weights, squared=true)
-	// 1) centeredpos
-	// 2) drotdpos   
-	// 3) invrotation
-	// 4) ddistdpos   OK
-	// 5) centeredref OK
-	// 6) alignedpos OK
-	// 7) err OK
 	for(unsigned i=0;i<eigenvectors.size();i++){
 		Value* value=getPntrToComponent(pca_names[i].c_str());
 		double val;val=0.;
@@ -209,7 +207,6 @@ void PCARMSD::calculate(){
 						tmp1+=centeredpos[n][b]*eigenvectors[i][n][a];
 					}
 					der[iat]+=drotdpos[a][b][iat]*tmp1;	
-		//			log.printf("XXXXX  %d %d %d : %f %f %f\n",a,b,iat,drotdpos[a][b][iat][0],drotdpos[a][b][iat][1],drotdpos[a][b][iat][2]);
 				}
 			}
 		}
