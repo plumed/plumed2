@@ -22,9 +22,12 @@
 #include "core/ActionAtomistic.h"
 #include "core/ActionPilot.h"
 #include "core/ActionRegister.h"
+#include "core/ActionWithValue.h"
 #include "tools/Vector.h"
+#include "tools/Matrix.h"
 #include "tools/AtomNumber.h"
 #include "tools/Tools.h"
+#include "tools/RMSD.h"
 #include "core/Atoms.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
@@ -91,10 +94,23 @@ class FitToTemplate:
   public ActionPilot,
   public ActionAtomistic
 {
+  std::string type;
   std::vector<double> weights;
   std::vector<AtomNumber> aligned;
   Vector center;
   Vector shift;
+  // optimal alignment related stuff
+  PLMD::RMSD* rmsd; 
+  Tensor rotation,invrotation;
+  Matrix< std::vector<Vector> > drotdpos;
+  std::vector<Vector> positions;
+  std::vector<Vector> DDistDRef;
+  std::vector<Vector> alignedpos;
+  std::vector<Vector> centeredpos;
+  std::vector<Vector> centeredref;
+  std::vector<Vector> ddistdpos;
+  std::vector<Vector> derivatives;
+        
 public:
   FitToTemplate(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
@@ -118,11 +134,10 @@ ActionAtomistic(ao)
 {
   string reference;
   parse("REFERENCE",reference);
-  string type;
   type.assign("SIMPLE");
   parse("TYPE",type);
 
-  if(type!="SIMPLE") error("Only TYPE=SIMPLE is implemented in FIT_TO_TEMPLATE");
+ // if(type!="SIMPLE") error("Only TYPE=SIMPLE is implemented in FIT_TO_TEMPLATE");
 
   checkRead();
 
@@ -138,39 +153,82 @@ ActionAtomistic(ao)
   weights=pdb.getOccupancy();
   aligned=pdb.getAtomNumbers();
 
+  // normalize weights
   double n=0.0; for(unsigned i=0;i<weights.size();++i) n+=weights[i]; n=1.0/n;
   for(unsigned i=0;i<weights.size();++i) weights[i]*=n;
 
+  // subtract the center 
   for(unsigned i=0;i<weights.size();++i) center+=positions[i]*weights[i];
+  for(unsigned i=0;i<weights.size();++i) positions[i]-=center;
+
+  if(type=="OPTIMAL" or type=="OPTIMAL-FAST" ){
+	  rmsd=new RMSD();
+          rmsd->set(weights,pdb.getBeta(),positions,type,false,false);// note: the reference is shifted now with center in the origin
+	  log<<"  Method chosen for fitting: "<<rmsd->getMethod()<<" \n";
+  }
 
   doNotRetrieve();
 }
 
 void FitToTemplate::calculate(){
-  Vector cc;
-  for(unsigned i=0;i<aligned.size();++i){
-    cc+=weights[i]*modifyPosition(aligned[i]);
-  }
 
-  shift=center-cc;
+ 	Vector cc;
 
-  for(unsigned i=0;i<getTotAtoms();i++){
-    Vector & ato (modifyPosition(AtomNumber::index(i)));
-    ato+=shift;
-  }
+  	for(unsigned i=0;i<aligned.size();++i){
+  	  cc+=weights[i]*modifyPosition(aligned[i]);
+  	}
+
+  	if (type=="SIMPLE"){
+  		shift=center-cc;
+  		for(unsigned i=0;i<getTotAtoms();i++){
+  		  Vector & ato (modifyPosition(AtomNumber::index(i)));
+  		  ato+=shift;
+  		}
+	}
+  	else if( type=="OPTIMAL" or type=="OPTIMAL-FAST"){
+		if(positions.size()!=aligned.size()){
+			for (unsigned i=0;i<aligned.size();i++)	positions.push_back(modifyPosition(aligned[i]));
+		}else{
+		        for (unsigned i=0;i<aligned.size();i++) positions[i]=modifyPosition(aligned[i]);
+		}
+  	        // now use the PCAelements: it provides all the useful rmsd stuff for fitting the positions on a template  
+  	        double r=rmsd->calc_PCAelements( positions, ddistdpos, rotation ,  drotdpos , alignedpos ,centeredpos, centeredref ,false);
+		for(unsigned i=0;i<getTotAtoms();i++){
+			Vector & ato (modifyPosition(AtomNumber::index(i)));
+			ato=matmul(rotation,ato-cc)+center;
+		}
+	}
+
 }
 
 void FitToTemplate::apply(){
-  Vector totForce;
-  for(unsigned i=0;i<getTotAtoms();i++){
-    Vector & ato (modifyPosition(AtomNumber::index(i)));
-    ato-=shift;
-    totForce+=modifyForce(AtomNumber::index(i));
-  }
-  for(unsigned i=0;i<aligned.size();++i){
-    Vector & ff(modifyForce(aligned[i]));
-    ff-=totForce*weights[i];
-  }
+  if (type=="SIMPLE") {
+  	Vector totForce;
+  	for(unsigned i=0;i<getTotAtoms();i++){
+  	  Vector & ato (modifyPosition(AtomNumber::index(i)));
+  	  ato-=shift;
+  	  totForce+=modifyForce(AtomNumber::index(i));
+  	}
+  	for(unsigned i=0;i<aligned.size();++i){
+  	  Vector & ff(modifyForce(aligned[i]));
+  	  ff-=totForce*weights[i];
+  	}
+  } else if ( type=="OPTIMAL" or type=="OPTIMAL-FAST") { 
+  	Vector force;
+	// first: the term needed by everyone
+  	for(unsigned i=0;i<getTotAtoms();i++){
+		Vector &force=modifyForce(AtomNumber::index(i));
+		force=matmul(rotation,force);
+	}	
+        // the term with the com
+	
+ 
+	// the term only for the ones involved in the rotation (heavier)
+	for (unsigned i=0;i<aligned.size();i++){
+		// the term for the derivative of rotation matrix
+		// the term for the derivative of com of running frame 
+	}	
+  } 
 }
 
 }
