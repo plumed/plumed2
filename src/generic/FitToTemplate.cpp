@@ -92,7 +92,8 @@ DUMPATOMS FILE=dump-after.xyz ATOMS=1-20
 
 class FitToTemplate:
   public ActionPilot,
-  public ActionAtomistic
+  public ActionAtomistic,
+  public ActionWithValue
 {
   std::string type;
   std::vector<double> weights;
@@ -101,21 +102,20 @@ class FitToTemplate:
   Vector shift;
   // optimal alignment related stuff
   PLMD::RMSD* rmsd; 
-  Tensor rotation,invrotation;
+  Tensor rotation;
   Matrix< std::vector<Vector> > drotdpos;
   std::vector<Vector> positions;
   std::vector<Vector> DDistDRef;
-  std::vector<Vector> alignedpos;
-  std::vector<Vector> centeredpos;
-  std::vector<Vector> centeredref;
   std::vector<Vector> ddistdpos;
-  std::vector<Vector> derivatives;
+  std::vector<Vector> centeredpositions;
+  Vector center_positions;
         
 public:
   FitToTemplate(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();
+  unsigned getNumberOfDerivatives(){plumed_merror("You should not call this function");};
 };
 
 PLUMED_REGISTER_ACTION(FitToTemplate,"FIT_TO_TEMPLATE")
@@ -130,7 +130,8 @@ void FitToTemplate::registerKeywords( Keywords& keys ){
 FitToTemplate::FitToTemplate(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
-ActionAtomistic(ao)
+ActionAtomistic(ao),
+ActionWithValue(ao)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -153,9 +154,15 @@ ActionAtomistic(ao)
   weights=pdb.getOccupancy();
   aligned=pdb.getAtomNumbers();
 
+
   // normalize weights
   double n=0.0; for(unsigned i=0;i<weights.size();++i) n+=weights[i]; n=1.0/n;
   for(unsigned i=0;i<weights.size();++i) weights[i]*=n;
+
+  // normalize weights for rmsd calculation
+  vector<double> weights_measure=pdb.getBeta();
+  n=0.0; for(unsigned i=0;i<weights_measure.size();++i) n+=weights_measure[i]; n=1.0/n;
+  for(unsigned i=0;i<weights_measure.size();++i) weights_measure[i]*=n;
 
   // subtract the center 
   for(unsigned i=0;i<weights.size();++i) center+=positions[i]*weights[i];
@@ -163,12 +170,15 @@ ActionAtomistic(ao)
 
   if(type=="OPTIMAL" or type=="OPTIMAL-FAST" ){
 	  rmsd=new RMSD();
-          rmsd->set(weights,pdb.getBeta(),positions,type,false,false);// note: the reference is shifted now with center in the origin
+          rmsd->set(weights,weights_measure,positions,type,false,false);// note: the reference is shifted now with center in the origin
 	  log<<"  Method chosen for fitting: "<<rmsd->getMethod()<<" \n";
   }
+  // register the value of rmsd (might be useful sometimes)
+  addValue(); setNotPeriodic();
 
   doNotRetrieve();
 }
+
 
 void FitToTemplate::calculate(){
 
@@ -180,6 +190,7 @@ void FitToTemplate::calculate(){
 
   	if (type=="SIMPLE"){
   		shift=center-cc;
+		setValue(shift.modulo());
   		for(unsigned i=0;i<getTotAtoms();i++){
   		  Vector & ato (modifyPosition(AtomNumber::index(i)));
   		  ato+=shift;
@@ -191,11 +202,13 @@ void FitToTemplate::calculate(){
 		}else{
 		        for (unsigned i=0;i<aligned.size();i++) positions[i]=modifyPosition(aligned[i]);
 		}
-  	        // now use the PCAelements: it provides all the useful rmsd stuff for fitting the positions on a template  
-  	        double r=rmsd->calc_PCAelements( positions, ddistdpos, rotation ,  drotdpos , alignedpos ,centeredpos, centeredref ,false);
+
+		// specific stuff that provides all that is needed
+  	        double r=rmsd->calc_FitElements( positions, rotation ,  drotdpos , centeredpositions, center_positions);
+		setValue(r);
 		for(unsigned i=0;i<getTotAtoms();i++){
 			Vector & ato (modifyPosition(AtomNumber::index(i)));
-			ato=matmul(rotation,ato-cc)+center;
+			ato=matmul(rotation,ato-center_positions)+center;
 		}
 	}
 
@@ -214,20 +227,35 @@ void FitToTemplate::apply(){
   	  ff-=totForce*weights[i];
   	}
   } else if ( type=="OPTIMAL" or type=="OPTIMAL-FAST") { 
-  	Vector force;
+  	Vector totalforce;
+	vector<Vector> rotatedforce(getTotAtoms());
 	// first: the term needed by everyone
   	for(unsigned i=0;i<getTotAtoms();i++){
 		Vector &force=modifyForce(AtomNumber::index(i));
-		force=matmul(rotation,force);
+		rotatedforce[i]=matmul(rotation,force);
 	}	
-        // the term with the com
-	
- 
-	// the term only for the ones involved in the rotation (heavier)
-	for (unsigned i=0;i<aligned.size();i++){
-		// the term for the derivative of rotation matrix
-		// the term for the derivative of com of running frame 
+	// term with derivative with respect of the com (again, only for atoms involved in the optimal alignment)
+	for(unsigned i=0;i<aligned.size(); i++) {
+		totalforce+=rotatedforce[i]*weights[i];
 	}	
+	for(unsigned i=0;i<getTotAtoms(); i++) {
+		rotatedforce[i]-=totalforce;// this loop can be embedded down	
+	}
+	// term with derivatives of rotation matrix (only for atoms involved in the calculation of optimal alignment)
+	for(unsigned i=0;i<getTotAtoms(); i++) {
+		Vector &pos_i=modifyPosition(AtomNumber::index(i));
+		for(unsigned j=0;j<aligned.size(); j++) {
+			Vector &force_j=modifyForce(aligned[j]);
+			for(unsigned k=0;k<3;k++){	
+				Tensor a_j=RMSD::getMatrixFromDRot(drotdpos,j,k);
+				rotatedforce[i][k]+=dotProduct(matmul(a_j,pos_i-center_positions),force_j);	
+			}	
+		}
+		// sum all
+		Vector &force=modifyForce(AtomNumber::index(i));	
+		force=rotatedforce[i];
+	}	
+
   } 
 }
 
