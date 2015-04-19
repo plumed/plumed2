@@ -201,7 +201,7 @@ void PCAVars::registerKeywords( Keywords& keys ){
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("eig-","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ..."); 
+  keys.addOutputComponent("eig","default","the projections on each eigenvalue are stored on values labeled eig-1, eig-2, ..."); 
   keys.addOutputComponent("residual","default","the distance of the configuration from the linear subspace defined "
                                                "by the vectors, \\f$e_i\\f$, that are contained in the rows of \\f$A\\f$.  In other words this is "
                                                "\\f$\\sqrt( r^2 - \\sum_i [\\mathbf{r}.\\mathbf{e_i}]^2)\\f$ where "
@@ -209,7 +209,7 @@ void PCAVars::registerKeywords( Keywords& keys ){
                                                "reference point."); 
   keys.add("compulsory","REFERENCE","a pdb file containing the reference configuration and configurations that define the directions for each eigenvector");
   keys.add("compulsory","TYPE","OPTIMAL","The method we are using for alignment to the reference structure");
-  keys.addFlag("NORM-VECTOR",false,"calculate the length of the eigenvector input and divide the components by it so as to have a normalised vector");
+  keys.addFlag("NORMALIZE",false,"calculate the length of the eigenvector input and divide the components by it so as to have a normalised vector");
 }
 
 PCAVars::PCAVars(const ActionOptions& ao):
@@ -272,14 +272,14 @@ ActionWithArguments(ao)
   for(unsigned i=0;i<getNumberOfArguments();++i){
       if( getPntrToArgument(i)->isPeriodic() ) error("cannot use periodic variables in pca projections");
   }
+  // Work out if the user wants to normalise the input vector
+  bool nflag; parseFlag("NORMALIZE",nflag);
   checkRead();
 
   // Resize the matrices that will hold our eivenvectors 
   if( getNumberOfAtoms()>0 ) atom_eigv.resize( nfram-1, getNumberOfAtoms() ); 
   if( getNumberOfArguments()>0 ) arg_eigv.resize( nfram-1, getNumberOfArguments() );
 
-  // Work out if the user wants to normalise the input vector
-  bool nflag; parseFlag("NORM-VECTOR",nflag);
   // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)
   Pbc fake_pbc; 
   // Now calculate the eigenvectors 
