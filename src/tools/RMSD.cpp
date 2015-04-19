@@ -193,6 +193,27 @@ double RMSD::calc_DDistDRef( const std::vector<Vector>& positions, std::vector<V
 
 }
 
+/// convenience method for calculating the standard derivatives and the derivative of the rmsd respect to the reference position without the matrix contribution
+/// as required by SOMA
+double RMSD::calc_SOMA( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, std::vector<Vector>& DDistDRef , const bool squared  ){
+   double ret=0.;
+   switch(alignmentMethod){
+	case SIMPLE:
+		plumed_merror("derivative of the refreence frame not implemented for SIMPLE alignmentMethod \n");	
+		break;	
+        case OPTIMAL_FAST:
+                if(align==displace) ret=optimalAlignment_SOMA<false,true>(align,displace,positions,reference,derivatives,DDistDRef, squared);
+                else                ret=optimalAlignment_SOMA<false,false>(align,displace,positions,reference,derivatives,DDistDRef,squared);
+                break;
+        case OPTIMAL:
+                if(align==displace) ret=optimalAlignment_SOMA<true,true>(align,displace,positions,reference,derivatives,DDistDRef,squared);
+                else                ret=optimalAlignment_SOMA<true,false>(align,displace,positions,reference,derivatives,DDistDRef,squared);
+                break;
+  }	
+  return ret;
+
+}
+
 double RMSD::calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, std::vector<Vector> &derivatives, std::vector<Vector>& DDistDRef, Tensor & Rot, Matrix<std::vector<Vector> > &DRotDPos, const bool squared  ){
    double ret=0.;
    switch(alignmentMethod){
@@ -550,6 +571,38 @@ double RMSD::optimalAlignment_DDistDRef(const  std::vector<double>  & align,
    ddistdref=cd.getDDistanceDReference();
    return dist;
 }
+
+template <bool safe,bool alEqDis>
+double RMSD::optimalAlignment_SOMA(const  std::vector<double>  & align,
+                              const  std::vector<double>  & displace,
+                              const std::vector<Vector> & positions,
+                              const std::vector<Vector> & reference ,
+                              std::vector<Vector>  & derivatives,	
+                              std::vector<Vector> & ddistdref,
+                              bool squared) const {
+   //initialize the data into the structure
+   // typically the positions do not have the com neither calculated nor subtracted. This layer takes care of this business
+   RMSDCoreData cd(align,displace,positions,reference);
+   // transfer the settings for the center to let the CoreCalc deal with it 
+   // transfer the settings for the center to let the CoreCalc deal with it 
+   cd.setPositionsCenterIsRemoved(positions_center_is_removed);
+   if(positions_center_is_calculated){cd.setPositionsCenter(positions_center);}
+   else{cd.calcPositionsCenter();};
+
+   cd.setReferenceCenterIsRemoved(reference_center_is_removed);
+   if(!reference_center_is_calculated){cd.calcReferenceCenter();}
+   else{cd.setReferenceCenter(reference_center);}
+
+   // Perform the diagonalization and all the needed stuff
+   cd.doCoreCalc(safe,alEqDis); 
+   // make the core calc distance
+   double dist=cd.getDistance(squared); 
+//  make the derivatives by using pieces calculated in coreCalc (probably the best is just to copy the vector...) 
+   derivatives=cd.getDDistanceDPositions(); 
+   ddistdref=cd.getDDistanceDReferenceSOMA();
+   return dist;
+}
+
 
 template <bool safe,bool alEqDis>
 double RMSD::optimalAlignment_DDistDRef_Rot_DRotDPos(const  std::vector<double>  & align,
@@ -940,6 +993,54 @@ std::vector<Vector>  RMSDCoreData::getDDistanceDReference(){
   }
   return derivatives;
 }
+
+/// this version does not calculate the derivative of rotation matrix as needed for SOMA
+std::vector<Vector>  RMSDCoreData::getDDistanceDReferenceSOMA(){
+  std::vector<Vector>  derivatives;
+  const unsigned n=static_cast<unsigned int>(reference.size());
+  Vector ddist_dcreference;
+  derivatives.resize(n);
+  double prefactor=2.0;
+  if(!distanceIsMSD && alEqDis) prefactor*=0.5/sqrt(dist);
+  vector<Vector> ddist_tmp(n);
+  Vector csum,tmp1,tmp2;
+
+  plumed_massert(!retrieve_only_rotation,"You used  only_rotation=true in doCoreCalc therefore you cannot retrieve this information now");
+  if(!hasDistance)plumed_merror("getDDistanceDReference needs to calculate the distance via getDistance first !");
+  if(!isInitialized)plumed_merror("getDDistanceDReference to initialize the coreData first!");
+  // get the transpose rotation
+  Tensor t_rotation=rotation.transpose();
+  Tensor t_ddist_drr01=ddist_drr01.transpose();	
+  
+// third expensive loop: derivatives
+  for(unsigned iat=0;iat<n;iat++){
+    if(alEqDis){
+// there is no need for derivatives of rotation and shift here as it is by construction zero
+// (similar to Hellman-Feynman forces)
+	//TODO: check this derivative down here
+      derivatives[iat]= -prefactor*align[iat]*matmul(t_rotation,d[iat]);
+    } else {
+// these are the derivatives assuming the roto-translation as frozen
+      tmp1=2*displace[iat]*matmul(t_rotation,d[iat]);
+      derivatives[iat]= -tmp1;
+// derivative of cpositions
+      ddist_dcreference+=tmp1;
+    }
+  }
+
+  if(!alEqDis){
+    for(unsigned iat=0;iat<n;iat++)derivatives[iat]+=ddist_dcreference*align[iat]; 
+  }
+  if(!distanceIsMSD){
+    if(!alEqDis){
+      double xx=0.5/dist;
+      for(unsigned iat=0;iat<n;iat++) derivatives[iat]*=xx;
+    }
+  }
+  return derivatives;
+}
+
+
 
 /*
 This below is the derivative of the rotation matrix that aligns the reference onto the positions
