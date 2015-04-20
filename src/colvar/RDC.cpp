@@ -363,7 +363,6 @@ void RDC::calculate()
     /* using on-the-fly bonds distances */
     if(!fixdist) {
       /* RDC Calculations and forces */
-      //for(unsigned r=0;r<N;r+=2)
       for(unsigned r=rank;r<N;r+=stride)
       {
         unsigned index=r/2;
@@ -402,7 +401,6 @@ void RDC::calculate()
     /* using time0 bonds distances */
     } else {
       /* RDC Calculations and forces */
-      //for(unsigned r=0;r<N;r+=2)
       for(unsigned r=rank;r<N;r+=stride)
       {
         unsigned index=r/2;
@@ -469,8 +467,8 @@ void RDC::calculate()
   double fact=1.0;
   if(ensemble) {
     fact = 1./((double) ens_dim);
-    // share the calculated rdc
-    if(!serial) comm.Sum(&rdc[0],rdc.size());
+    // share the calculated rdc unless they have been already shared by printout
+    if(!serial&&!printout) comm.Sum(&rdc[0],rdc.size());
     // I am the master of my replica
     if(comm.Get_rank()==0) {
       // among replicas
@@ -480,8 +478,6 @@ void RDC::calculate()
     // inside each replica
     comm.Sum(&rdc[0], coupl.size() );
     score = 0.;
-    //unsigned r=0;
-    //for(unsigned index=0;index<coupl.size();index++) {
     for(unsigned r=rank;r<N;r+=stride) {
       unsigned index=r/2;
       if(!correlation) {
@@ -495,7 +491,6 @@ void RDC::calculate()
         scy  += coupl[index];
         scxy += rdc[index]*coupl[index];
       }
-      //r+=2;
     } 
   }
  
@@ -525,8 +520,6 @@ void RDC::calculate()
     double idevx = 1./sqrt(ns*scx2-scx*scx);
     double idevy = 1./sqrt(ns*scy2-scy*scy);
     score = num * idevx * idevy;
-    //unsigned r=0;
-    //for(unsigned index=0;index<coupl.size();index++) {
     for(unsigned r=rank;r<N;r+=stride) {
       unsigned index=r/2;
       double tmpder1 = (ns*coupl[index]-scy)*idevx*idevy;
@@ -536,7 +529,6 @@ void RDC::calculate()
       deriv[r+1] = tmpder3*dRDC[r+1];
       virial=virial+(-1.*Tensor(getPosition(r),deriv[r]));
       virial=virial+(-1.*Tensor(getPosition(r+1),deriv[r+1]));
-      //r+=2;
     }
   }
 
