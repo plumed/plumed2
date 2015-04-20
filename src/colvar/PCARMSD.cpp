@@ -190,12 +190,11 @@ void PCARMSD::calculate(){
 		Value* value=getPntrToComponent(pca_names[i].c_str());
 		double val;val=0.;
 		for(unsigned iat=0;iat<getNumberOfAtoms();iat++){
-			val+=dotProduct(alignedpos[iat]-centeredref[iat],eigenvectors[i][iat]);	
+			val+=dotProduct(alignedpos[iat]-centeredref[iat],eigenvectors[i][iat]);	der[iat].zero();
 		}
 		value->set(val);
 		// here the loop is reversed to better suit the structure of the derivative of the rotation matrix
 		double tmp1;
-		der.clear();
 		for(unsigned a=0;a<3;a++){
 			for(unsigned b=0;b<3;b++){
 				for(unsigned iat=0;iat<getNumberOfAtoms();iat++){
@@ -217,7 +216,7 @@ void PCARMSD::calculate(){
 		}		
  	 }
 
-         setBoxDerivativesNoPbc();
+         for(unsigned i=0;i<getNumberOfComponents();++i) setBoxDerivativesNoPbc( getPntrToComponent(i) );
 
 }
 
