@@ -373,7 +373,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "TTBIASFACTOR", "use transition tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
   keys.add("optional", "TTBIASTHRESHOLD", "use transition tempered metadynamics with this bias threshold.  Please note you must also specify TTBIASFACTOR");
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well in transition-tempered metadynamics. At least one must be provided.");
-  keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this decay shape parameter value between 0 and 0.5 (default 0.5).  Please note you must also specify TTBIASFACTOR");
+  keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this decay shape parameter value between 0.5 and 1.0 (default 0.5).  Please note you must also specify TTBIASFACTOR");
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition states");
   keys.add("optional", "BENTHIC_FILTER_STRIDE", "use benthic metadynamics accumulating filter samples on this timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
   keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
@@ -622,8 +622,8 @@ MetaD::MetaD(const ActionOptions &ao):
       error("transition tempered bias threshold is nonsensical");
     }
     parse("TTALPHA", tt_alpha_);
-    if (tt_alpha_ > .5 || tt_alpha_ < 0.0) {
-      error("transition tempered decay shape parameter is nonsensical");
+    if (tt_alpha_ < 0.5 || tt_alpha_ > 1.0) {
+      error("transition tempered decay shape parameter alpha is nonsensical");
     }
     vector<double> tempcoords(getNumberOfArguments());    
     for (unsigned i = 0; ; i++) {
@@ -867,13 +867,16 @@ MetaD::MetaD(const ActionOptions &ao):
   log.printf("  Gaussian deposition pace %d\n", stride_);
   log.printf("  Gaussian file %s\n", hillsfname.c_str());
   if (welltempered_) {
-    log.printf("  Well-Tempered Bias Factor %f\n", biasf_);
+    log.printf("  Well-Tempered bias factor %f\n", biasf_);
     log.printf("  Hills relaxation time (tau) %f\n", tau);
     log.printf("  KbT %f\n", kbt_);
+    if (wt_biasthreshold_ != 0.0) {
+      log.printf("  Well-Tempered bias threshold %f\n", wt_biasthreshold_);
+    }
   }
   // Transition tempered metadynamics options
   if (transitiontempered_) {
-    log.printf("  Transition-Tempered Bias Factor %f\n", tt_biasf_);
+    log.printf("  Transition-Tempered bias factor %f\n", tt_biasf_);
     log.printf("  Transition-Tempered bias threshold %f\n", tt_biasthreshold_);
     log.printf("  Transition-Tempered decay shape parameter alpha %f\n", tt_alpha_);
     log.printf("  Number of transition wells %d\n", transitionwells_.size());
@@ -1791,11 +1794,10 @@ double MetaD::getHeight(const vector<double> &cv) {
   }
   if (transitiontempered_) {
     double vbarrier = getTransitionBarrierBias();
-    if (tt_alpha_ == 0.0) {
+    if (tt_alpha_ == 1.0) {
       height *= exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
-    }
-    else {
-      height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - (1 - tt_alpha_) / tt_alpha_);
+    } else {
+      height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha_ / (1 - tt_alpha_));
     }
   }
   if (benthic_toleration_) {
