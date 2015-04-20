@@ -21,16 +21,56 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #ifndef __PLUMED_tools_LoopUnroller_h
 #define __PLUMED_tools_LoopUnroller_h
+
+namespace PLMD{
+
+/**
+\ingroup TOOLBOX
+Utiliy class for loop unrolling.
+
+Many c++ compilers do not unroll small loops such as those
+used in the PLMD::Vector and PLMD::Tensor classes.
+This class provides methods to perform basic vector
+operations with unrolled loops. The methods work on double*
+so that they can be used in principles in other places of the code,
+but they are designed to be used in PLMD::Vector and PLMD::Tensor .
+
+In case in the future we see that some compiler better optimize explicit loops,
+it should be easy to replace the methods here with loops. Alternatively,
+we could provide two paths using a cpp macro (e.g. __PLUMED_UNROLL_LOOPS or so).
+
+All the methods for class LoopUnroller<n> act on n elements.
+Implementation is made using template metaprogramming, that is:
+- LoopUnroller<1>::xxx acts on the element [0] of the array.
+- LoopUnroller<n>::xxx calls LoopUnroller<n-1>::xxx then acts on element [n-1] of the array.
+
+Here xxx is any of the methods of the class.
+
+*/
 template<unsigned n>
 class LoopUnroller{
 public:
-  static void _zero(double*);
-  static void _add(double*,const double*);
-  static void _sub(double*,const double*);
-  static void _mul(double*,const double);
-  static void _neg(double*,const double*);
-  static double _sum2(const double*);
-  static double _dot(const double*,const double*);
+/// Set to zero.
+/// Same as `for(unsigned i=0;i<n;i++) d[i]=0.0;`
+  static void _zero(double*d);
+/// Add v to d.
+/// Same as `for(unsigned i=0;i<n;i++) d[i]+=v[i];`
+  static void _add(double*d,const double*v);
+/// Subtract v from d.
+/// Same as `for(unsigned i=0;i<n;i++) d[i]-=v[i];`
+  static void _sub(double*d,const double*v);
+/// Multiply d by s.
+/// Same as `for(unsigned i=0;i<n;i++) d[i]*=s;`
+  static void _mul(double*d,const double s);
+/// Set d to -v.
+/// Same as `for(unsigned i=0;i<n;i++) d[i]=-v[i];`
+  static void _neg(double*d,const double*v);
+/// Squared modulo of d;
+/// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*d[i]; return r;`
+  static double _sum2(const double*d);
+/// Dot product of d and v
+/// Same as `r=0.0; for(unsigned i=0;i<n;i++) r+=d[i]*v[i]; return r;`
+  static double _dot(const double*d,const double*v);
 };
 
 template<unsigned n>
@@ -113,6 +153,8 @@ template<>
 inline
 double LoopUnroller<1>::_dot(const double*d,const double*v){
   return d[0]*v[0];
+}
+
 }
 
 #endif

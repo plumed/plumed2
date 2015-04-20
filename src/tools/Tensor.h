@@ -44,6 +44,7 @@ compile time. It is useful for small fixed size objects (e.g.
 3x3 tensors) as it does not waste space to store the vector size.
 Moreover, as the compiler knows the size, it can be completely
 opimized inline.
+Most of the loops are explicitly unrolled using PLMD::LoopUnroller class
 Matrix elements are initialized to zero by default. Notice that
 this means that constructor is a bit slow. This point might change
 in future if we find performance issues.
