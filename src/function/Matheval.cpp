@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -36,10 +36,41 @@ namespace function{
 /*
 Calculate a combination of variables using a matheval expression.
 
-If you are using a time dependent expression you can get the time using
-\subpage TIME   
+This action computes an  arbitrary function of one or more precomputed
+collective variables. Arguments are chosen with the ARG keyword,
+and the function is provided with the FUNC string. Notice that this
+string should contain no space. Within FUNC, one can refer to the
+arguments as x,y,z, and t (up to four variables provided as ARG).
+This names can be customized using the VAR keyword (see examples below).
+
+If you want a function that depends not only on collective variables
+but also on time you can use the \subpage TIME action.
+
+\attention
+The MATHEVAL object only works if libmatheval is installed on the system and
+PLUMED has been linked to it
 
 \par Examples
+
+The following input tells plumed to perform a metadynamics
+using as a CV the difference between two distances.
+\verbatim
+dAB: DISTANCE ARG=10,12
+dAC: DISTANCE ARG=10,15
+diff: MATHEVAL ARG=dAB,dAC FUNC=y-x PERIODIC=NO
+# notice: the previous line could be replaced with the following
+# diff: COMBINE ARG=dAB,dAC COEFFICIENTS=-1,1
+METAD ARG=diff WIDTH=0.1 HEIGHT=0.5 BIASFACTOR=10 PACE=100
+\endverbatim
+(see also \ref DISTANCE, \ref COMBINE, and \ref METAD).
+Notice that forces applied to diff will be correctly propagated
+to atoms 10, 12, and 15.
+Also notice that since MATHEVAL is used without the VAR option
+the two arguments should be referred to as x and y in the expression FUNC.
+For simple functions
+such as this one it is possible to use \ref COMBINE, which does
+not require libmatheval to be installed on your system.
+
 The following input tells plumed to print the angle between vectors
 identified by atoms 1,2 and atoms 2,3
 its square (as computed from the x,y,z components) and the distance
@@ -57,10 +88,6 @@ MATHEVAL ...
 PRINT ARG=theta
 \endverbatim
 (See also \ref PRINT and \ref DISTANCE).
-
-\attention
-The MATHEVAL object only works if libmatheval is installed on the system and
-PLUMED has been linked to it
 
 */
 //+ENDPLUMEDOC

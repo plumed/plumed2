@@ -42,9 +42,24 @@ AC_DEFUN([PLUMED_CHECK_CXXFLAG], [
   CXXFLAGS="$CXXFLAGS $1"
   AC_MSG_CHECKING([whether $CXX accepts $1])
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-    [AC_MSG_RESULT([yes])],
+    [
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([not linking]); CXXFLAGS="$save_CXXFLAGS"])
+    ],
     [AC_MSG_RESULT([no]); CXXFLAGS="$save_CXXFLAGS"]
   )
+])
+
+# PLUMED_CHECK_LDFLAGS(flag)
+# use it to check if a flag is available on this compiler
+AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS $1"
+  AC_MSG_CHECKING([whether LDFLAGS can contain $1])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+    [AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no]); LDFLAGS="$save_LDFLAGS"])
 ])
 
 # PLUMED_CHECK_PACKAGE(header,function,define[,library])
@@ -60,6 +75,8 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
     ])
     if test $found == ok ; then
       AC_DEFINE([$3])
+    else
+       AC_MSG_WARN([cannot enable $3]) 
     fi
 ])
 
@@ -67,22 +84,26 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
 
 # set enable flags for ./configure
 PLUMED_CONFIG_ENABLE([debug],[debug],[debugging],[no])
+PLUMED_CONFIG_ENABLE([basic_warnings],[basic-warnings],[basic warnings],[yes])
 PLUMED_CONFIG_ENABLE([fussy],[fussy],[fussy warnings],[no])
 PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no])
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
+PLUMED_CONFIG_ENABLE([openmp],[openmp],[search for openmp],[no])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
+PLUMED_CONFIG_ENABLE([gettimeofday],[gettimeofday],[search for gettimeofday],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([almost],[almost],[search for almost],[no])
 PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[no])
+PLUMED_CONFIG_ENABLE([xdrfile],[xdrfile],[search for xdrfile],[yes])
 
 
 # by default use -O flag
@@ -97,11 +118,11 @@ fi
 # the reason why I put it here explicitly is that I want a
 # correct fallback list to be searched after preferred choices
 # (e.g. MPI) have been checked.
-compilers="g++ cxx gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
+compilers="g++ cxx icpc gpp aCC CC cxx cc++ cl.exe FCC KCC RCC xlC_r xlC"
 
 # if searching for MPI, try first mpi-like compilers
 if test $mpi == true ; then
-compilers="mpic++ mpicxx openmpic++ openmpicxx $compilers"
+compilers="mpic++ mpicxx mpiicpc openmpic++ openmpicxx $compilers"
 fi
 
 # do the actual search
@@ -132,10 +153,18 @@ AC_MSG_NOTICE([Initial LDSO:     $LDSO])
 AC_MSG_NOTICE([Initial SOEXT:    $SOEXT])
 
 # check C++ flags
-PLUMED_CHECK_CXXFLAG([-fPIC])
-PLUMED_CHECK_CXXFLAG([-Wall])
-PLUMED_CHECK_CXXFLAG([-pedantic])
-PLUMED_CHECK_CXXFLAG([-ansi])
+if test $shared == true
+then
+  PLUMED_CHECK_CXXFLAG([-fPIC])
+fi
+
+if test $basic_warnings == true
+then
+  PLUMED_CHECK_CXXFLAG([-Wall])
+  PLUMED_CHECK_CXXFLAG([-pedantic])
+  PLUMED_CHECK_CXXFLAG([-ansi])
+fi
+
 if test $debug == true
 then
   PLUMED_CHECK_CXXFLAG([-g])
@@ -158,8 +187,6 @@ fi
 #### Compulsory libraries ####
 # some of them might be made optional if we find that are not available in some system
 AC_MSG_NOTICE([Now we will check compulsory headers and libraries])
-AC_CHECK_HEADER([sys/time.h],   [ ], [AC_MSG_ERROR([compulsory header not found])] )
-AC_CHECK_FUNC(  [gettimeofday], [ ], [AC_MSG_ERROR([compulsory function not found])] )
 AC_CHECK_HEADER([dirent.h],     [ ], [AC_MSG_ERROR([compulsory header not found])] )
 AC_CHECK_FUNC(  [readdir],      [ ], [AC_MSG_ERROR([compulsory function not found])] )
 
@@ -199,6 +226,12 @@ LIBS="$save_LIBS"
 AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
 AC_DEFINE([__PLUMED_INTERNAL_BLAS])
 
+else
+
+  if test $blas_found == nounderscore
+  then
+    AC_DEFINE([F77_NO_UNDERSCORE])
+  fi
 fi
 
 #### End of compulsory libraries ####
@@ -241,15 +274,25 @@ fi
 # to be loaded later
 AC_CHECK_LIB([dl],dlopen, [STATIC_LIBS="-ldl $STATIC_LIBS"] [LIBS="-ldl $LIBS"])
 
+mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
+  mpi_found=ok
   PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
+else 
+  mpi_found=ko
+fi
+if test $openmp == true ; then
+  AC_OPENMP
 fi
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
 fi
 if test $clock_gettime == true ; then
   PLUMED_CHECK_PACKAGE([time.h],[clock_gettime],[__PLUMED_HAS_CLOCK_GETTIME],[rt])
+fi
+if test $gettimeofday == true ; then
+  PLUMED_CHECK_PACKAGE([sys/time.h], [gettimeofday], [__PLUMED_HAS_GETTIMEOFDAY])
 fi
 if test $cregex == true ; then
   PLUMED_CHECK_PACKAGE([regex.h],[regcomp],[__PLUMED_HAS_CREGEX])
@@ -264,11 +307,19 @@ if test $zlib == true ; then
   PLUMED_CHECK_PACKAGE([zlib.h],[gzopen],[__PLUMED_HAS_ZLIB],[z])
 fi
 if test $almost == true ; then
+  bz2=ko
+  AC_CHECK_HEADER([bzlib.h], AC_SEARCH_LIBS([BZ2_bzReadOpen], [bz2], [bz2=ok] ))
   found=ko
-  AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lbz2 -lnbimpl -lshx]))
+  if test $bz2 == ok; then
+    AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lbz2 -lnbimpl -lshx]))
+  else 
+    AC_CHECK_HEADER([almost.h], AC_SEARCH_LIBS([init_camshift], [Alm], [found=ok] , AC_MSG_NOTICE(["Almost not found"]), [-lsqlite3 -lz -lnbimpl -lshx]))
+  fi
   if test $found == ok; then
     AC_DEFINE([__PLUMED_HAS_ALMOST]) 
     LIBS="$LIBS -lsqlite3 -lz -lbz2 -lnbimpl -lshx"
+  else 
+    AC_MSG_ERROR([--enable-almost: cannot find almost])
   fi
 fi
 if test $gsl == true ; then
@@ -277,14 +328,13 @@ if test $gsl == true ; then
   if test $found == ok ; then
     AC_DEFINE([__PLUMED_HAS_GSL])
     LIBS="-lgsl -lgslcblas $LIBS"
+  else 
+    AC_MSG_ERROR([--enable-gsl: cannot find gsl])
   fi
 fi
-
-
-# this can be used to enable openmp:
-# AC_OPENMP
-# CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
-#### End of optional libraries ####
+if test $xdrfile == true ; then
+  PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
+fi
 
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
@@ -329,7 +379,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([LDSO and LDFLAGS need special flags])
     SOEXT=so
     LDSO="$LDSO -shared"
-    LDFLAGS="$LDFLAGS -rdynamic"
+    PLUMED_CHECK_LDFLAGS([-rdynamic])
   ;;
   (*)
     AC_MSG_NOTICE([*** Dynamic library only enabled on OSX and Linux ***])
@@ -342,19 +392,19 @@ then
   AC_MSG_NOTICE([Using LDSO='$LDSO'])
   AC_MSG_NOTICE([Using LDFLAGS='$LDFLAGS'])
   AC_MSG_CHECKING([whether LDSO can create dynamic libraries])
-  rm -f test.*
-  echo "void f(void){ return;}" > test.cpp
-  $CXX $CXXFLAGS $CPPFLAGS -c test.cpp 1>/dev/null 2>/dev/null
-  $LDSO $LDFLAGS test.o -o test.$SOEXT 1>/dev/null 2>/dev/null
-  if test -f test.$SOEXT
+  rm -f conftest.*
+  echo "void f(void){ return;}" > conftest.cpp
+  $CXX $CXXFLAGS $CPPFLAGS -c conftest.cpp 1>/dev/null 2>/dev/null
+  $LDSO $LDFLAGS conftest.o -o conftest.$SOEXT 1>/dev/null 2>/dev/null
+  if test -f conftest.$SOEXT
   then
     AC_MSG_RESULT([yes])
   else
-    AC_MSG_RESULT([yes])
+    AC_MSG_RESULT([no])
     AC_MSG_WARN([dynamic library will be disabled])
     SOEXT=
   fi
-  rm -f test.*
+  rm -f conftest.*
 fi
 #### Options for dynamic library to work properly ####
 
@@ -391,44 +441,44 @@ AC_MSG_NOTICE([This is relevant if you want to use plumed patch --static on a no
 
 for compiler in CC FC
 do
-  rm -f test.* test-main.*
+  rm -f conftest.* conftest-main.*
   eval compexe=\$$compiler
   if test -n "$compexe" ; then
     case $compiler in
     (CC)
       name=C
-      cat << EOF > test-main.c
+      cat << EOF > conftest-main.c
 int main(int argc,char**argv){
   return 0;
 }
 EOF
-      $CC -c test-main.c
+      $CC -c conftest-main.c
     ;;
     (FC)
       name=FORTRAN
-      cat << EOF > test-main.f90
+      cat << EOF > conftest-main.f90
        program main
        integer i
        end program main
 EOF
-      $FC -c test-main.f90
+      $FC -c conftest-main.f90
     ;;
     esac
-    cat << EOF > test.cpp
+    cat << EOF > conftest.cpp
 #include <iostream>
 void f(void){
   std::cout<<"ciao";return;
 }
 EOF
-    $CXX $CXXFLAGS -c test.cpp 
+    $CXX $CXXFLAGS -c conftest.cpp 
 # start search:
     found=
     for testlib in "" -lstdc++ -lc++ ; do
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       AC_MSG_CHECKING([whether $name can link a C++ object$comment])
-      $compexe $LDFLAGS $testlib $LIBS test.o test-main.o -o test.exe 1>/dev/null 2>/dev/null
-      if test -f test.exe
+      $compexe $LDFLAGS $testlib $LIBS conftest.o conftest-main.o -o conftest.exe 1>/dev/null 2>/dev/null
+      if test -f conftest.exe
       then
         found=yes
         AC_MSG_RESULT([yes])
@@ -445,7 +495,7 @@ EOF
   else
     AC_MSG_NOTICE([$compiler compiler not configured])
   fi
-  rm -f test.* test-main.*
+  rm -f conftest.* conftest-main.*
 done
 
 if test "$prefix" == NONE
@@ -458,6 +508,13 @@ AC_MSG_NOTICE([**** You can change this later setting PLUMED_PREFIX environment 
 AC_MSG_NOTICE([**** Executable will be named 'plumed'])
 AC_MSG_NOTICE([**** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing])
 
+if test $mpi == true; then
+  if test $mpi_found == ok; then
+    AC_MSG_NOTICE([**** PLUMED will be compiled using MPI])
+  else 
+    AC_MSG_NOTICE([**** PLUMED will NOT be compiled using MPI])
+  fi
+fi
 
 AC_SUBST(build_dir)
 build_dir=`pwd`

@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "PlumedMain.h"
 #include "tools/Tools.h"
+#include "tools/OpenMP.h"
 #include <cstring>
 #include "ActionPilot.h"
 #include "ActionWithValue.h"
@@ -46,7 +47,7 @@
 
 using namespace std;
 
-enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT };
+enum { SETBOX, SETPOSITIONS, SETMASSES, SETCHARGES, SETPOSITIONSX, SETPOSITIONSY, SETPOSITIONSZ, SETVIRIAL, SETENERGY, SETFORCES, SETFORCESX, SETFORCESY, SETFORCESZ, CALC, PREPAREDEPENDENCIES, SHAREDATA, PREPARECALC, PERFORMCALC, SETSTEP, SETSTEPLONG, SETATOMSNLOCAL, SETATOMSGATINDEX, SETATOMSFGATINDEX, SETATOMSCONTIGUOUS, CREATEFULLLIST, GETFULLLIST, CLEARFULLLIST, READ, CLEAR, GETAPIVERSION, INIT, SETREALPRECISION, SETMDLENGTHUNITS, SETMDENERGYUNITS, SETMDTIMEUNITS, SETNATURALUNITS, SETNOVIRIAL, SETPLUMEDDAT, SETMPICOMM, SETMPIFCOMM, SETMPIMULTISIMCOMM, SETNATOMS, SETTIMESTEP, SETMDENGINE, SETLOG, SETLOGFILE, SETSTOPFLAG, GETEXCHANGESFLAG, SETEXCHANGESSEED, SETNUMBEROFREPLICAS, GETEXCHANGESLIST, RUNFINALJOBS, ISENERGYNEEDED, GETBIAS, SETKBT };
 
 namespace PLMD{
 
@@ -65,6 +66,7 @@ PlumedMain::PlumedMain():
   atoms(*new Atoms(*this)),
   actionSet(*new ActionSet(*this)),
   bias(0.0),
+  work(0.0),
   exchangePatterns(*new(ExchangePatterns)),
   exchangeStep(false),
   restart(false),
@@ -99,6 +101,7 @@ PlumedMain::PlumedMain():
   word_map["setStepLong"]=SETSTEPLONG;
   word_map["setAtomsNlocal"]=SETATOMSNLOCAL;
   word_map["setAtomsGatindex"]=SETATOMSGATINDEX;
+  word_map["setAtomsFGatindex"]=SETATOMSFGATINDEX;
   word_map["setAtomsContiguous"]=SETATOMSCONTIGUOUS;
   word_map["createFullList"]=CREATEFULLLIST;
   word_map["getFullList"]=GETFULLLIST;
@@ -261,7 +264,11 @@ void PlumedMain::cmd(const std::string & word,void*val){
         break;
       case SETATOMSGATINDEX:
         CHECK_INIT(initialized,word);
-        atoms.setAtomsGatindex(static_cast<int*>(val));
+        atoms.setAtomsGatindex(static_cast<int*>(val),false);
+        break;
+      case SETATOMSFGATINDEX:
+        CHECK_INIT(initialized,word);
+        atoms.setAtomsGatindex(static_cast<int*>(val),true);
         break;
       case SETATOMSCONTIGUOUS:
         CHECK_INIT(initialized,word);
@@ -466,6 +473,8 @@ void PlumedMain::init(){
   log.printf("Molecular dynamics engine: %s\n",MDEngine.c_str());
   log.printf("Precision of reals: %d\n",atoms.getRealPrecision());
   log.printf("Running over %d %s\n",comm.Get_size(),(comm.Get_size()>1?"nodes":"node"));
+  log<<"Number of threads: "<<OpenMP::getNumThreads()<<"\n";
+  log<<"Cache line size: "<<OpenMP::getCachelineSize()<<"\n";
   log.printf("Number of atoms: %d\n",atoms.getNatoms());
   if(grex) log.printf("GROMACS-like replica exchange is on\n");
   log.printf("File suffix: %s\n",getSuffix().c_str());
@@ -611,6 +620,7 @@ void PlumedMain::justCalculate(){
   if(!active)return;
   stopwatch.start("4 Calculating (forward loop)");
   bias=0.0;
+  work=0.0;
 
   int iaction=0;
 // calculate the active actions in order (assuming *backward* dependence)
@@ -636,6 +646,7 @@ void PlumedMain::justCalculate(){
       else (*p)->calculate();
       // This retrieves components called bias 
       if(av) bias+=av->getOutputQuantity("bias");
+      if(av) work+=av->getOutputQuantity("work");
       if(av)av->setGradientsIfNeeded();	
       ActionWithVirtualAtom*avv=dynamic_cast<ActionWithVirtualAtom*>(*p);
       if(avv)avv->setGradientsIfNeeded();	
@@ -681,7 +692,7 @@ void PlumedMain::justApply(){
   if(detailedTimers) stopwatch.start("5C Update");
 // update step (for statistics, etc)
   for(ActionSet::iterator p=actionSet.begin();p!=actionSet.end();++p){
-    if((*p)->isActive()) (*p)->update();
+    if((*p)->isActive() && (*p)->checkUpdate()) (*p)->update();
   }
   if(detailedTimers) stopwatch.stop("5C Update");
 // Check that no action has told the calculation to stop
@@ -734,6 +745,10 @@ void PlumedMain::load(const std::string& ss){
 
 double PlumedMain::getBias() const{
   return bias;
+}
+
+double PlumedMain::getWork() const{
+  return work;
 }
 
 FILE* PlumedMain::fopen(const char *path, const char *mode){

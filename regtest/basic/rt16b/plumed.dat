@@ -1,0 +1,2 @@
+# this is just to check if charges are read properly from mc file
+DUMPMASSCHARGE FILE=mcnew

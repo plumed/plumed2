@@ -34,7 +34,7 @@ StoreDataVessel(da),
 tmpdf(3)
 {
   mycolv=dynamic_cast<MultiColvarBase*>( getAction() );
-  plumed_assert( mycolv ); completeSetup( 2, 3 );
+  plumed_assert( mycolv ); completeSetup( mycolv->getCentralAtomElementIndex(), 3 );
 }
 
 void StoreCentralAtomsVessel::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& aindexes ){

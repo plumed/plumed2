@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -86,6 +86,7 @@ PRINT ARG=a1.* FILE=colvar
 class Angles : public MultiColvar {
 private:
   bool use_sf;
+  double rcut2_1, rcut2_2;
   Vector dij, dik;
   SwitchingFunction sf1;
   SwitchingFunction sf2;
@@ -156,7 +157,11 @@ use_sf(false)
   // Read in the atoms
   int natoms=3; readAtoms( natoms );
   // Set cutoff for link cells 
-  if( use_sf ) setLinkCellCutoff( 2.*sf1.inverse( getTolerance() ) );
+  if( use_sf ){ 
+    setLinkCellCutoff( sf1.get_dmax() ); 
+    rcut2_1=sf1.get_dmax()*sf1.get_dmax(); 
+    rcut2_2=sf2.get_dmax()*sf2.get_dmax(); 
+  }
 
   // And check everything has been read in correctly
   checkRead();
@@ -168,12 +173,17 @@ void Angles::calculateWeight(){
   if(!use_sf){ setWeight(1.0); return; }
 
   double w1, w2, dw1, dw2, wtot;
-  w1=sf1.calculateSqr( dij.modulo2(), dw1 );
-  w2=sf2.calculateSqr( dik.modulo2(), dw2 );
+  double ldij = dij.modulo2(), ldik = dik.modulo2(); 
+
+  if( use_sf ){
+     if( ldij>rcut2_1 || ldik>rcut2_2 ){ setWeight(0.0); return; }
+  }
+
+  w1=sf1.calculateSqr( ldij, dw1 );
+  w2=sf2.calculateSqr( ldik, dw2 );
   wtot=w1*w2; dw1*=w2; dw2*=w1; 
 
   setWeight( wtot );
-  if( wtot<getTolerance() ) return; 
   addAtomsDerivativeOfWeight( 1, dw2*dik );
   addAtomsDerivativeOfWeight( 0, -dw1*dij - dw2*dik ); 
   addAtomsDerivativeOfWeight( 2, dw1*dij );

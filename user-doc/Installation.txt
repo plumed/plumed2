@@ -9,10 +9,10 @@ and \link InstallingPlumed install\endlink
 PLUMED.
 For those of you who are impatient, the following might do the job:
 \verbatim
-> ./configure --prefix=/usr/local/lib
+> ./configure --prefix=/usr/local
 > make -j 4
 > make doc # this is optional and requires doxygen installed
-> make install
+> make install # this is also optional - plumed can be used from the compilation directory
 \endverbatim
 
 Once the above is completed you can use PLUMED to analyze
@@ -87,7 +87,7 @@ in place so as to do some checking you can use
 > ./configure --enable-debug
 \endverbatim
 This will perform some extra check during execution (possibly slowing down PLUMED)
-and write full symbol tables in the executable (making the final executible  much larger).
+and write full symbol tables in the executable (making the final executable  much larger).
 
 The main goal of the automatic configure is to find the libraries.
 When they are stored in unconventional places it is thus sensible to tell autoconf where 
@@ -124,7 +124,8 @@ a specific version of a library by specifying it using the LIBS variable.
 if you have problems in linking the file 'src/lib/plumed-shared', try to set correctly
 the runtime path by using
 \verbatim
-> ./configure LDFLAGS="-L/opt/local/lib -Wl,-rpath,/opt/local/lib" CPPFLAGS=-I/opt/local/include LIBS=-lmymatheval
+> ./configure LDFLAGS="-L/opt/local/lib -Wl,-rpath,/opt/local/lib" \
+  CPPFLAGS=-I/opt/local/include LIBS=-lmymatheval
 \endverbatim
 Notice that although the file 'src/lib/plumed-shared' is not necessary, being
 able to produce it means that it will be possible to link PLUMED dynamically
@@ -173,10 +174,9 @@ We tried to keep PLUMED as independent as possible from external libraries and a
 that require external libraries (e.g. Almost and Matheval) are optional. However, to have a properly working version
 of plumed PLUMED you need BLAS and LAPACK libraries.  We would strongly recommend you download these libraries and 
 install them separately so as to have the most efficient possible implementations of the functions contained within 
-them.  However, if you cannot install blas and lapack, you can use the internal ones. To do so simply add the flags 
--D__PLUMED_INTERNAL_BLAS and -D__PLUMED_INTERNAL_LAPACK to your CPPFLAGS variable.
-However, as described above, the automatic configure should be able to choose automatically the internal
-libraries when necessary.
+them.  However, if you cannot install blas and lapack, you can use the internal ones.
+Since version 2.1, PLUMED uses a configure script to detect libraries. In case system LAPACK or BLAS
+are not found on your system, PLUMED will use the internal replacement.
 
 We have had a number of emails (and have struggled ourselves) with ensuring that PLUMED 
 can link BLAS and LAPACK.  The following describes some of the pitfalls that you can fall
@@ -193,12 +193,13 @@ Some simple to fix further problems include:
 - If the linker complains and suggests recompiling lapack with -fPIC, it means that you have static lapack libraries. Either install dynamic lapack libraries
 or switch to static compilation of PLUMED by unsetting the SOEXT variable
 in the configuration file.
-- If the linker complains that dsyevr_ cannot be found, try adding
-  -DF77_NO_UNDERSCORE to CPPFLAGS
 - If the linker complains about other missing functions (typically starting with
   "for_" prefix) then you should also link some Fortran libraries. PLUMED
   is written in C++ and often C++ linkers do not include Fortran libraries by default.
   These libraries are required for lapack and blas to work. Please check the documentation of your compiler.
+- If the linker complains that dsyevr_ cannot be found, try adding
+  -DF77_NO_UNDERSCORE to CPPFLAGS
+  Notice that "./configure" should automatically try this solution.
 
 \section CompilingPlumed Compiling PLUMED
 
@@ -296,6 +297,9 @@ Then the PLUMED_PREFIX will be set equal to $HOME/opt.
 If the PLUMED_PREFIX is not set, it defaults to /usr/local.
 The install command should be executed with root permissions (e.g. "sudo make install")
 if you want to install PLUMED on a system directory.
+Notice that upon installation PLUMED currently needs to relink a library. If
+root user does not have access to compilers, "sudo -E make install" might solve
+the issue.
 An almost full copy of the compilation directory will
 be installed into $PLUMED_PREFIX/lib/plumed/ directory. A link to the proper
 PLUMED executable will be set up in $PLUMED_PREFIX/bin,
@@ -334,9 +338,14 @@ do not want to set up modules, but we believe that using modules as described ab
 
 \section Patching Patching your MD code
 
-At the present times PLUMED can be added to the following list of codes:
+In case your MD code is not supporting PLUMED already, you should modify it.
+We provide scripts to adjust some of the most popular MD codes
+so as to provide PLUMED support.
+At the present times we support patching the following list of codes:
 
-@CODES@
+@CODESL@
+
+In the section \subpage CodeSpecificNotes you can find information specific for each MD code.
 
 To patch your MD code, you should have already installed PLUMED properly.
 This is necessary as you need to have the command "plumed" in your execution
@@ -380,29 +389,44 @@ If your MD code is not supported, you may want to implement an interface for
 it. Refer to the <a href="../../developer-doc/html/index.html"> developer
 manual </a>.
 
-
 \section installingalmost Installing PLUMED with ALMOST
 
 In order to used some of the NMR based collective variables (\ref CS2BACKBONE and \ref CH3SHIFTS) PLUMED needs to be linked with ALMOST.
 To do this the free package ALMOST v.2.1 MUST be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
 ALMOST 2.1 can be found in branches/almost-2.1/ and can be compiled:
 
-\warning ALMOST needs SQLITE3, GZIP and BZIP2 installed on your computer.
+\warning ALMOST needs SQLITE3 and  GZIP installed on your computer.
+\warning ALMOST cannot be installed in the same folder of the source code, use --prefix to install it in a different folder
 
 \verbatim
-./configure --prefix="wherever you want it" 
-make
-make install
+> ./configure --prefix="wherever you want it" CXXFLAGS="-O3 -fPIC" CFLAGS="-O3 -fPIC" 
+> make
+> make install
 \endverbatim
+
+Sometimes ALMOST can give errors related to the automake tools. To fix them it is often enough to execute
+\verbatim
+> autoreconf -fi
+> automake
+\endverbatim
+and then repeat the configuration and compilation instructions.
 
 PLUMED will not use the RDCs module of ALMOST so you can ignore the warning about LAPACK.
 
-Once ALMOST is installeed, PLUMED 2 can then be configured with ALMOST enabled: 
+Once ALMOST is installed, PLUMED 2 can then be configured with ALMOST enabled: 
 
 \verbatim
-./configure --enable-almost CPPFLAGS="-I/ALMOST_INSTALL_PATH/include -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib"
+> ./configure --enable-almost CPPFLAGS="-I/ALMOST_INSTALL_PATH/include \
+  -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib"
+  
 \endverbatim
 with ALMOST_INSTALL_PATH set to the full path to the ALMOST installation folder.
+
+\page CodeSpecificNotes Code specific notes
+
+Here you can find instructions that are specific for patching each of the supported MD codes.
+
+@CODES@
  
 */
 

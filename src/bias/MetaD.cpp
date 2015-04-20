@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -73,8 +73,8 @@ utility.
 
 In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics 
 calculation increases with the length of the simulation as one has to, at every step, evaluate 
-the values of a larger and larger number of Gaussians. To avoid this issue you can in plumed 2.0 
-store the bias on a grid.  This approach is similar to that proposed in \cite babi+08jcp but has the 
+the values of a larger and larger number of Gaussians. To avoid this issue you can
+store the bias on a grid.  This approach is similar to that proposed in \cite babi08jcp but has the 
 advantage that the grid spacing is independent on the Gaussian width.
 Notice that you should
 provide either the number of bins for every collective variable (GRID_BIN) or
@@ -84,7 +84,7 @@ In case you do not provide any information about bin size (neither GRID_BIN nor 
 and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
-Another option that is available in plumed 2.0 is well-tempered metadynamics \cite Barducci:2008. In this
+Another option that is available in plumed is well-tempered metadynamics \cite Barducci:2008. In this
 varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
 given by:
 
@@ -264,6 +264,8 @@ private:
   double lowI_;
   bool doInt_;
   bool isFirstStep;
+/// accumulator for work
+  double work_;
   
   void   readGaussians(IFile*);
   bool   readChunkOfGaussians(IFile *ifile, unsigned n);
@@ -353,6 +355,7 @@ walkers_mpi(false),
 acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
+work_(0.0),
 isFirstStep(true)
 {
   // parse the flexible hills
@@ -456,14 +459,14 @@ isFirstStep(true)
   if(gmin.size()!=0){
     if(gbin.size()==0 && gspacing.size()==0){
       if(adaptive_==FlexibleBin::none){
-        log<<"  Binsize not spacified, 1/5 of sigma will be be used\n";
+        log<<"  Binsize not specified, 1/5 of sigma will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
       } else {
         // with adaptive hills and grid a sigma min must be specified
         if(sigma0min_.size()==0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
-        log<<"  Binsize not spacified, 1/5 of sigma_min will be be used\n";
+        log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0min_[i];
@@ -551,7 +554,7 @@ isFirstStep(true)
    for(unsigned i=0;i<gmax.size();++i) log.printf(" %s",gmax[i].c_str() );
    log.printf("\n");
    log.printf("  Grid bin");
-   for(unsigned i=0;i<gbin.size();++i) log.printf(" %d",gbin[i]);
+   for(unsigned i=0;i<gbin.size();++i) log.printf(" %u",gbin[i]);
    log.printf("\n");
    if(spline){log.printf("  Grid uses spline interpolation\n");}
    if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
@@ -573,6 +576,7 @@ isFirstStep(true)
   }
 
   addComponent("bias"); componentIsNotPeriodic("bias");
+  addComponent("work"); componentIsNotPeriodic("work");
 
   if(acceleration) {
     if(!welltemp_) error("The calculation of the acceleration works only if Well-Tempered Metadynamics is on"); 
@@ -642,7 +646,7 @@ isFirstStep(true)
    ifilesnames.push_back(fname);
    if(ifile->FileExist(fname)){
     ifile->open(fname);
-    if(plumed.getRestart()){
+    if(getRestart()){
      log.printf("  Restarting from %s:",ifilesnames[i].c_str());                  
      readGaussians(ifiles[i]);                                                    
     }
@@ -654,6 +658,13 @@ isFirstStep(true)
 
 // open hills file for writing
   hillsOfile_.link(*this);
+  if(walkers_mpi){
+    int r=0;
+    if(comm.Get_rank()==0) r=multi_sim_comm.Get_rank();
+    comm.Bcast(r,0);
+    if(r>0) ifilesnames[mw_id_]="/dev/null";
+    hillsOfile_.enforceSuffix("");
+  }
   hillsOfile_.open(ifilesnames[mw_id_]);
   if(fmt.length()>0) hillsOfile_.fmtField(fmt);
   hillsOfile_.addConstantField("multivariate");
@@ -1001,6 +1012,7 @@ void MetaD::calculate()
     double mean_acc = acc/((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
   }
+  getPntrToComponent("work")->set(work_);
 // set Forces 
   for(unsigned i=0;i<ncv;++i){
    const double f=-der[i];
@@ -1020,6 +1032,8 @@ void MetaD::update(){
   if(getStep()%stride_==0 && !isFirstStep ){nowAddAHill=true;}else{nowAddAHill=false;isFirstStep=false;}
 
   for(unsigned i=0;i<cv.size();++i){cv[i]=getArgument(i);}
+
+  double vbias=getBiasAndDerivatives(cv);
 
   // if you use adaptive, call the FlexibleBin 
   if (adaptive_!=FlexibleBin::none){
@@ -1086,6 +1100,10 @@ void MetaD::update(){
      writeGaussian(newhill,hillsOfile_);
    }
   }
+
+  double vbias1=getBiasAndDerivatives(cv);
+  work_+=vbias1-vbias;
+
 // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
 // in case old grids are stored, a sequence of grids should appear

@@ -33,6 +33,7 @@ namespace crystallization {
 
 class OrientationSphere : public multicolvar::MultiColvarFunction {
 private:
+  double rcut2;
   std::vector<double> catom_orient, catom_der, this_orient;
   std::vector<double> catom_iorient, catom_ider, this_iorient;
   SwitchingFunction switchingFunction;

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -26,6 +26,7 @@ namespace multicolvar {
 
 void AdjacencyMatrixAction::registerKeywords( Keywords& keys ){
   MultiColvarFunction::registerKeywords( keys );
+  keys.reserveFlag("USE_ORIENTATION",false,"When computing whether two atoms/molecules are adjacent also take their orientations into account");
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
@@ -36,6 +37,8 @@ Action(ao),
 MultiColvarFunction(ao),
 tmpdf(1)
 {
+  if( keywords.exists("USE_ORIENTATION") ) parseFlag("USE_ORIENTATION",use_orient);
+  else use_orient=true;
   // Weight of this does have derivatives
   weightHasDerivatives=true;
   // Read in the switching function
@@ -80,17 +83,16 @@ tmpdf(1)
   active_elements.setupMPICommunication( comm );
 
   // Find the largest sf cutoff
-  double sfmax=switchingFunction(0,0).inverse( getTolerance() );
+  double sfmax=switchingFunction(0,0).get_dmax();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
       for(unsigned j=0;j<<getNumberOfBaseMultiColvars();++j){
-          double tsf=switchingFunction(i,j).inverse( getTolerance() );
+          double tsf=switchingFunction(i,j).get_dmax(); 
           if( tsf>sfmax ) sfmax=tsf;
       }
   }
   // And set the link cell cutoff
-  setLinkCellCutoff( 2*sfmax );
+  setLinkCellCutoff( sfmax );
 
-  if( getNumberOfVessels()!=0 ) error("there should be no vessel keywords");
   // Create the storeAdjacencyMatrixVessel
   std::string param; vesselbase::VesselOptions da("","",0,param,this);
   Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );
@@ -104,9 +106,6 @@ tmpdf(1)
   // One component for regular multicolvar and nelements for vectormulticolvar
   unsigned ncomp=getBaseMultiColvar(0)->getNumberOfQuantities() - 5;;
   orient0.resize( ncomp ); orient1.resize( ncomp );
-
-  // And check everything has been read in correctly
-  checkRead();
 }
 
 void AdjacencyMatrixAction::doJobsRequiredBeforeTaskList(){
@@ -128,13 +127,18 @@ void AdjacencyMatrixAction::calculateWeight(){
 double AdjacencyMatrixAction::compute(){
   active_elements.activate( getCurrentPositionInTaskList() );
 
-  getVectorForBaseTask( 0, orient0 );
-  getVectorForBaseTask( 1, orient1 );   
+  double f_dot, dot_df;
+  if( use_orient ){
+      getVectorForBaseTask( 0, orient0 );
+      getVectorForBaseTask( 1, orient1 );   
 
-  double f_dot, dot_df, dot; dot=0;
-  for(unsigned k=0;k<orient0.size();++k) dot+=orient0[k]*orient1[k];
-  f_dot=0.5*( 1 + dot ); dot_df=0.5;
-  // Add smac stuff here if required
+      double dot; dot=0;
+      for(unsigned k=0;k<orient0.size();++k) dot+=orient0[k]*orient1[k];
+      f_dot=0.5*( 1 + dot ); dot_df=0.5;
+      // Add smac stuff here if required
+  } else {
+      f_dot=1.0; dot_df=0.0;
+  }
 
   // Retrieve the weight of the connection
   double weight = getElementValue(1); 
@@ -148,18 +152,19 @@ double AdjacencyMatrixAction::compute(){
      MultiColvarBase::addBoxDerivatives( 0, (-dfunc)*f_dot*Tensor(distance,distance) );
 
      // And derivatives of orientation
-     for(unsigned k=0;k<orient0.size();++k){
-        orient0[k]*=sw*dot_df; orient1[k]*=sw*dot_df;
+     if( use_orient ){
+        for(unsigned k=0;k<orient0.size();++k){
+           orient0[k]*=sw*dot_df; orient1[k]*=sw*dot_df;
+        }
+        addOrientationDerivatives( 0, orient1 );
+        addOrientationDerivatives( 1, orient0 );
      }
-     addOrientationDerivatives( 0, orient1 );
-     addOrientationDerivatives( 1, orient0 );
   }
   return weight*f_dot;
 }
 
 void AdjacencyMatrixAction::setMatrixIndexesForTask( const unsigned& ii ){
-  unsigned icolv = active_elements[ii];
-  unsigned tcode = getActiveTask( icolv );
+  unsigned icolv = active_elements[ii], tcode = getTaskCode( icolv );
   bool check = MultiColvarBase::setupCurrentAtomList( tcode );
   plumed_assert( check );
 }
@@ -175,6 +180,25 @@ void AdjacencyMatrixAction::retrieveMatrix( Matrix<double>& mymatrix ){
       mymatrix(k,j)=mymatrix(j,k)=getMatrixElement( i );
   }
 }
+
+void AdjacencyMatrixAction::retrieveAdjacencyLists( std::vector<unsigned>& nneigh, Matrix<unsigned>& adj_list ){
+  plumed_dbg_assert( nneigh.size()==getFullNumberOfBaseTasks() && adj_list.nrows()==getFullNumberOfBaseTasks() && 
+                       adj_list.ncols()==getFullNumberOfBaseTasks() );
+  // Gather active elements in matrix
+  if(!gathered) active_elements.mpi_gatherActiveMembers( comm );
+  gathered=true;
+
+  // Currently everything has zero neighbors
+  for(unsigned i=0;i<nneigh.size();++i) nneigh[i]=0;
+
+  // And set up the adjacency list
+  for(unsigned i=0;i<active_elements.getNumberActive();++i){
+      setMatrixIndexesForTask( i );
+      unsigned j = current_atoms[1], k = current_atoms[0];
+      adj_list(k,nneigh[k])=j; nneigh[k]++;
+      adj_list(j,nneigh[j])=k; nneigh[j]++;
+  } 
+} 
 
 void AdjacencyMatrixAction::addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der ){
   plumed_dbg_assert( ielem<active_elements.getNumberActive() );

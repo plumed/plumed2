@@ -1,4 +1,4 @@
-#! FIELDS time a1.mean a2.mean a2.less_than a2.between-1 a2.between-2 a2.more_than
+#! FIELDS time a1.mean a2.mean a2.lessthan a2.between-1 a2.between-2 a2.morethan
  0.000000  1.66115  1.66663  3.40427  0.54041  3.28252  2.45980
  0.050000  1.65922  1.66505  3.27471  0.53982  3.15893  2.36446
  0.100000  1.65828  1.66517  3.31055  0.53871  3.21053  2.40988

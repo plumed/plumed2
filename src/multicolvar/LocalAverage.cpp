@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -82,6 +82,8 @@ namespace multicolvar {
 
 class LocalAverage : public MultiColvarFunction {
 private:
+/// Cutoff
+  double rcut2;
 /// Ensures we deal with vectors properly
   unsigned jstart;
 /// The values of the quantities we need to differentiate
@@ -138,7 +140,8 @@ MultiColvarFunction(ao)
      switchingFunction.set(nn,mm,r_0,d_0);
   }
   log.printf("  averaging over central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
-  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) ); buildSymmetryFunctionLists();
+  rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
+  setLinkCellCutoff( switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i) getBaseMultiColvar(i)->doNotCalculateDirector();
 }
 
@@ -149,7 +152,7 @@ unsigned LocalAverage::getNumberOfQuantities(){
 double LocalAverage::compute(){
   weightHasDerivatives=true;  
 
-  Vector distance; double sw, dfunc, nbond=1;
+  Vector distance; double d2, sw, dfunc, nbond=1;
 
   getVectorForBaseTask( 0, values ); 
   for(unsigned j=0;j<values.size();++j) addElementValue( jstart + j, values[j] );
@@ -157,8 +160,9 @@ double LocalAverage::compute(){
   accumulateWeightedAverageAndDerivatives( 0, 1.0 );
   for(unsigned i=1;i<getNAtoms();++i){
      distance=getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(i) );
-     sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
-     if( sw>=getTolerance() ){
+     d2 = distance.modulo2(); 
+     if( d2<rcut2 ){
+         sw = switchingFunction.calculateSqr( d2, dfunc );
          Tensor vir(distance,distance); 
          getVectorForBaseTask( i, values ); 
          accumulateWeightedAverageAndDerivatives( i, sw );

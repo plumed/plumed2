@@ -32,6 +32,7 @@ namespace crystallization {
 class Steinhardt : public VectorMultiColvar {
 private:
   unsigned tmom;
+  double rcut;
   SwitchingFunction switchingFunction;
 protected:
   std::vector<double> coeff_poly;

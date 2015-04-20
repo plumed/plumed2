@@ -27,6 +27,7 @@ namespace vesselbase{
 
 class Sum : public FunctionVessel {
 private:
+  unsigned wnum;
   std::vector<double> df;
 public:
   static void registerKeywords( Keywords& keys );
@@ -52,6 +53,7 @@ Sum::Sum( const VesselOptions& da ) :
 FunctionVessel(da),
 df(2)
 {
+  wnum=getAction()->getIndexOfWeight();
 }
 
 std::string Sum::function_description(){
@@ -59,13 +61,13 @@ std::string Sum::function_description(){
 }
 
 bool Sum::calculate(){
-  double weight=getAction()->getElementValue(1);
+  double weight=getAction()->getElementValue(wnum);
   plumed_dbg_assert( weight>=getTolerance() );
 
   double val=getAction()->getElementValue(0);
   addValueIgnoringTolerance(0,weight*val);
   getAction()->chainRuleForElementDerivatives( 0, 0, weight, this );
-  if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, val, this);
+  if(diffweight) getAction()->chainRuleForElementDerivatives(0, wnum, val, this);
   return true;
 }
 

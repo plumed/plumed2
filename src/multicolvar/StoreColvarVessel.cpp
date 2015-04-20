@@ -32,7 +32,6 @@ void StoreColvarVessel::registerKeywords( Keywords& keys ){
 StoreColvarVessel::StoreColvarVessel( const vesselbase::VesselOptions& da):
 StoreDataVessel(da)
 {
-  if( weightHasDerivatives() ) error("this quantity cannot be calculated if weights have derivatives");
   completeSetup( 0, 1 );
 }
 

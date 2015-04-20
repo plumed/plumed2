@@ -253,13 +253,39 @@ The plumed calls for the finalization tasks is as follows:
 plumed_finalize(plumedmain);          // Call the plumed destructor
 \endverbatim
 
+\section debugging-virial Debugging virial contribution
+
+Most of the people use plumed to bias a small number of coordinates. This makes the contribution of plumed forces to the total virial
+very small and makes it particularly difficult to find errors in this part. In case you combine plumed with a new MD code we highly
+suggest to use the following procedure to debug the virial.
+
+First run a short simulation (1000 steps should be enough) at constant pressure with pressure=1bar and the following plumed input:
+\verbatim
+v: VOLUME
+PRINT ARG=v FILE=volume
+\endverbatim
+
+Then run another short simulation starting from identical conditions (i.e. same positions, velocities, random seed, etc) at constant pressure
+with pressure=1001bar and the following plumed input:
+\verbatim
+v: VOLUME 
+# slope should be just 10 times the Avogadro constant:
+RESTRAINT AT=0.0 ARG=v SLOPE=-60.2214129
+PRINT ARG=v FILE=volume2
+\endverbatim
+In this way, the negative pressure provided by plumed should exactly compensate for the extra 1000bar set in the barostat.
+Thus, the two files `volume` and `volume2` should be virtually identical. Notice that small differences
+due to different precision in the storage of avogadro number and other issues related to difficulties in exactly reproducing
+a simulation could make the two trajectory slightly different.
+
 \section mpicodes Dealing with parallelism
 
 Plumed has functionality to deal with parallel MD codes.  The particular form of the functionality used to do this (and the frequency with which you will have to call these routines) will depend on whether your code is parallelism using a domain decomposition or particle decomposition strategy.  The calls for required for using this functionality are as follows:
 
 \verbatim
 plumed_cmd(plumedmain,"setAtomsNlocal",&nlocal);            // Pass a pointer to the number of atoms on this node
-plumed_cmd(plumedmain,"setAtomsGatindex",gatindex);         // Pass an array containing the indices of all the atoms on this node (used for domain decomposition)
+plumed_cmd(plumedmain,"setAtomsGatindex",gatindex);         // Pass an array (from a code in c) containing the indices of all the atoms on this node (used for domain decomposition)
+plumed_cmd(plumedmain,"setAtomsFGatindex",gatindex);        // Pass an array (from a code in fortran) containing the indices of all the atoms on this node (used for domain decomposition)
 plumed_cmd(plumedmain,"setAtomsContiguous",&start);         // Number the atoms on this node from start to start+nlocal   (used for particle decomposition)
 \endverbatim 
 

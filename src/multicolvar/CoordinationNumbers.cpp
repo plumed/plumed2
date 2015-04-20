@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -65,6 +65,7 @@ COORDINATIONNUMBER SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R
 class CoordinationNumbers : public MultiColvar {
 private:
 //  double nl_cut;
+  double rcut2;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
@@ -110,8 +111,9 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
   log.printf("  coordination of central atom and those within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
-
+  setLinkCellCutoff( switchingFunction.get_dmax() );
+  rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
+  
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
   // And setup the ActionWithVessel
@@ -122,11 +124,13 @@ double CoordinationNumbers::compute(){
    double value=0, dfunc; Vector distance;
 
    // Calculate the coordination number
-   double sw;
+   double d2, sw;
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPosition(0), getPosition(i) );
-      sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
-      if( sw>=getTolerance() ){   
+      d2 = distance.modulo2();
+      if( d2<rcut2 ){ 
+         sw = switchingFunction.calculateSqr( d2, dfunc );
+  
          value += sw;             
          addAtomsDerivatives( 0, (-dfunc)*distance );
          addAtomsDerivatives( i,  (dfunc)*distance );

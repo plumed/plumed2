@@ -51,6 +51,8 @@ private:
   unsigned vecsize;
 /// The amount of data per vector element
   unsigned nspace;
+/// The currently active values 
+  std::vector<unsigned> active_val;
 /// The active derivative elements
   std::vector<unsigned> active_der;
 /// This is a tempory vector that is used to store data
@@ -60,6 +62,10 @@ private:
 /// The final derivatives
   std::vector<double> final_derivatives;
 protected:
+/// Apply a hard cutoff on the weight
+  bool hard_cut;
+/// The value of the cutoff on the weight
+  double wtol;
 /// Is the weight differentiable
   bool weightHasDerivatives();
 /// Are we using low mem option
@@ -86,12 +92,16 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   StoreDataVessel( const VesselOptions& );
+/// Set a hard cutoff on the weight of an element
+  void setHardCutoffOnWeight( const double& mytol );
+/// Is the hard weight cutoff on
+  bool weightCutoffIsOn() const ;
 /// Return the number of components in the vector
   unsigned getNumberOfComponents() const { return vecsize; }
 /// Do all resizing of data
   virtual void resize();
 /// Clear certain data before start of main loop
-  void prepare();
+  virtual void prepare();
 /// Get the number of derivatives for the ith value
   unsigned getNumberOfDerivatives( const unsigned& );
 /// Get one of the stored indexes
@@ -117,6 +127,8 @@ public:
   void storeDerivativesHighMem( const unsigned& );
 /// Final step in gathering data
   virtual void finish();
+/// Is a particular stored value active at the present time
+  bool storedValueIsActive( const unsigned& iatom ); 
 /// Activate indexes (this is used at end of chain rule)
   virtual void activateIndices( ActionWithVessel* ){}
 /// Get the list of indices that we are storing data for
@@ -190,6 +202,12 @@ inline
 void StoreDataVessel::setLocalDerivative( const unsigned& ibuf, const double& val ){
   plumed_dbg_assert( getAction()->lowmem && ibuf<local_derivatives.size() );
   local_derivatives[ibuf]=val;
+}
+
+inline
+bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ){
+  plumed_dbg_assert( iatom<active_val.size() );
+  return (active_val[iatom]==1);
 }
 
 }

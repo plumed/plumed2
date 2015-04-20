@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -58,6 +58,7 @@ SIMPLECUBIC SPECIESA=101-110 SPECIESB=1-100 R_0=3.0 MORE_THAN={RATIONAL R_0=0.8 
 class SimpleCubic : public multicolvar::MultiColvar {
 private:
 //  double nl_cut;
+  double rcut2;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
@@ -103,7 +104,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
+  rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
+  setLinkCellCutoff( switchingFunction.get_dmax() );
 
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
@@ -113,15 +115,17 @@ PLUMED_MULTICOLVAR_INIT(ao)
 
 double SimpleCubic::compute(){
    weightHasDerivatives=true;
-   double value=0, norm=0, dfunc; Vector distance;
+   double d2, value=0, norm=0, dfunc; Vector distance;
 
    // Calculate the coordination number
    Vector myder, fder;
    double sw, t1, t2, t3, x2, x3, x4, y2, y3, y4, z2, z3, z4, r4, tmp;
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPosition(0), getPosition(i) );
-      sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
-      if( sw>=getTolerance() ){ 
+      d2 = distance.modulo2();
+      if( d2<rcut2 ){ 
+         sw = switchingFunction.calculateSqr( d2, dfunc );        
+
          x2 = distance[0]*distance[0];
          x3 = distance[0]*x2;
          x4 = distance[0]*x3;

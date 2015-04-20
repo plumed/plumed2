@@ -177,7 +177,11 @@ public:
   virtual unsigned getNumberOfQuantities();
 /// Get the list of indices that have derivatives
   virtual void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
-/// Switch on additional tasks
+/// This returns the value on which we apply the tolerance - by default this is element 1 - the weight
+  virtual double getValueForTolerance();
+/// Get the index of the element in which we are storing the weight
+  virtual unsigned getIndexOfWeight();
+/// Switch on additional tasks 
   void activateTheseTasks( std::vector<unsigned>& addtionalTasks );
 /// Do any jobs that are required before the task list is undertaken
   virtual void doJobsRequiredBeforeTaskList();
@@ -187,6 +191,8 @@ public:
   unsigned getTaskCode( const unsigned& ii ) const ;
 /// Get the index for a particular numbered task
 //  unsigned getIndexForTask( const unsigned& itask ) const ;
+/// Set the indices for computing a task
+  void setTaskIndexToCompute( const unsigned& itask );
 /// Calculate one of the functions in the distribution
   virtual void performTask()=0;
 /// Set the derivative of the jth element wrt to a numbered element
@@ -202,7 +208,7 @@ public:
 /// Retrieve the derivative of the quantity in the sum wrt to a numbered element
   double getElementDerivative( const unsigned& ) const ;
 /// Ensure that data required in other vessels is stored
-  virtual StoreDataVessel* buildDataStashes();
+  virtual StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
 /// Apply forces from bridge vessel - this is rarely used - currently only in ActionVolume
   virtual void applyBridgeForces( const std::vector<double>& bb ){ plumed_error(); }
 /// These are overwritten in MultiColvarFunction
@@ -346,6 +352,21 @@ unsigned ActionWithVessel::getCurrentPositionInTaskList() const {
 inline
 bool ActionWithVessel::derivativesAreRequired() const {
   return !noderiv;
+}
+
+inline
+double ActionWithVessel::getValueForTolerance(){
+  return thisval[1];
+}
+
+inline
+unsigned ActionWithVessel::getIndexOfWeight(){
+  return 1;
+}
+
+inline
+void ActionWithVessel::setTaskIndexToCompute( const unsigned& itask ){
+  current=fullTaskList[itask]; task_index=itask;
 }
 
 } 

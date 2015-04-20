@@ -114,8 +114,8 @@ class CH3Shifts : public Colvar {
   vector<MethCS*> meth_list;
   Molecules molecules;
   int  numResidues;
-  int  pperiod;
-  int  ens_dim;
+  unsigned pperiod;
+  unsigned ens_dim;
   bool ensemble;
   bool serial;
   double **sh;
@@ -172,7 +172,7 @@ PLUMED_COLVAR_INIT(ao)
   int neigh_f=10;
   parse("NEIGH_FREQ", neigh_f);
 
-  int w_period=0;
+  unsigned w_period=0;
   parse("WRITE_CS", w_period);
   pperiod=w_period;
 
@@ -180,11 +180,13 @@ PLUMED_COLVAR_INIT(ao)
 
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    else ens_dim=multi_sim_comm.Get_size(); 
-  } else ens_dim=0; 
-  if(ensemble) comm.Sum(&ens_dim, 1);
+  if(ensemble){
+    if(comm.Get_rank()==0) {
+      if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+      ens_dim=multi_sim_comm.Get_size();
+    } else ens_dim=0;
+    comm.Sum(&ens_dim, 1);
+  } else ens_dim=1;
 
   stringadb  = stringa_data + string("/CH3shifts.dat");
   stringamdb = stringa_data + string("/") + stringa_forcefield;
@@ -234,7 +236,7 @@ PLUMED_COLVAR_INIT(ao)
   if(stride>1) log.printf("  Parallelized over %d processors\n", stride);
   a.set_mpi(stride, rank);*/
   
-  if(ensemble) { log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }
+  if(ensemble) { log.printf("  ENSEMBLE averaging over %u replicas\n", ens_dim); }
   a->set_w_cs(1);
   a->set_flat_bottom_const(grains);
   a->set_box_nupdate(neigh_f);
@@ -294,34 +296,19 @@ void CH3Shifts::calculate()
      coor.coor[ipos+2] = len_pl2alm*Pos[2];
   }
 
+  bool printout=false;
+  string csfile;
+  if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
+  if(printout) {char tmp1[21]; sprintf(tmp1, "%ld", getStep()); csfile = string("cs")+getLabel()+"-"+tmp1+string(".dat");}
+
   double fact=1.0;
   if(!ensemble) { 
      energy = meth_list[0]->calc_cs_force(coor, forces);
-     bool printout=false;
-     if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
-     if(printout) {
-       string csfile;
-       char tmps1[21];
-       // add to the name the label of the cv in such a way to have different files
-       // when there is more than one defined variable
-       sprintf(tmps1, "%li", getStep());
-       csfile = string("cs")+tmps1+string(".dat");
-       meth_list[0]->write_cs(csfile.c_str());
-     }
+     if(printout) meth_list[0]->write_cs(csfile.c_str());
   } else {
      meth_list[0]->calc_cs(coor);
-     bool printout=false;
-     if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
-     if(printout) {
-       string csfile;
-       char tmps1[21], tmps2[21];
-       // add to the name the label of the cv in such a way to have different files
-       // when there is more than one defined variable
-       sprintf(tmps1, "%li", getStep());
-       sprintf(tmps2, "%i", multi_sim_comm.Get_rank());
-       csfile = string("cs")+tmps2+"-"+tmps1+string(".dat");
-       meth_list[0]->write_cs(csfile.c_str());
-     }
+     if(printout) meth_list[0]->write_cs(csfile.c_str());
+
      unsigned size = meth_list[0]->ala_calc_hb.size();
      for(unsigned j=0;j<size;j++) sh[0][j] = meth_list[0]->ala_calc_hb[j];
      size = meth_list[0]->ile_calc_hd.size();
@@ -342,7 +329,6 @@ void CH3Shifts::calculate()
      if(comm.Get_rank()==0) { // I am the master of my replica
        // among replicas
        multi_sim_comm.Sum(&sh[0][0], numResidues*8);
-       multi_sim_comm.Barrier(); 
        for(unsigned i=0;i<8;i++) for(int j=0;j<numResidues;j++) sh[j][i] *= fact; 
      } else for(unsigned i=0;i<8;i++) for(int j=0;j<numResidues;j++) sh[j][i] = 0.;
      // inside each replica

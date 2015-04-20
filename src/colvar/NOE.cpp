@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -158,17 +158,20 @@ serial(false)
   parse("WRITE_NOE", w_period);
   pperiod=w_period;
 
+  ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    else ens_dim=multi_sim_comm.Get_size(); 
-  } else ens_dim=0; 
-  if(ensemble) comm.Sum(&ens_dim, 1);
+  if(ensemble){
+    if(comm.Get_rank()==0) {
+      if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+      ens_dim=multi_sim_comm.Get_size();
+    } else ens_dim=0;
+    comm.Sum(&ens_dim, 1);
+  } else ens_dim=1;
 
   // Ouput details of all contacts
   unsigned index=0; 
   for(unsigned i=0;i<nga.size();++i){
-    log.printf("  The %uth NOE is calculated using %i equivalent couples of atoms and compared with a %f reference distance\n", i, nga[i], noedist[i]);
+    log.printf("  The %uth NOE is calculated using %u equivalent couples of atoms and compared with a %f reference distance\n", i, nga[i], noedist[i]);
     for(unsigned j=0;j<nga[i];j++) {
       log.printf("    couple %u is %d %d.\n", j, ga_lista[index].serial(), gb_lista[index].serial() );
       index++;
@@ -196,8 +199,9 @@ void NOE::calculate(){
   Tensor virial;
   double score=0.;
   std::vector<Vector> deriv(getNumberOfAtoms());
-  vector<double> noe(nga.size());
-  vector<double> dnoe(nga.size());
+  unsigned sga = nga.size();
+  vector<double> noe(sga);
+  vector<double> dnoe(sga);
  
   // internal parallelisation
   unsigned stride=comm.Get_size();
@@ -205,16 +209,13 @@ void NOE::calculate(){
   if(serial){
     stride=1;
     rank=0;
-  }else{
-    stride=comm.Get_size();
-    rank=comm.Get_rank();
   }
  
-  for(unsigned i=0;i<nga.size();i++) { noe[i]=0.; dnoe[i]=0.;}
+  for(unsigned i=0;i<sga;i++) { noe[i]=0.; dnoe[i]=0.;}
 
   unsigned index=0; for(unsigned k=0;k<rank;k++) index += nga[k];
 
-  for(unsigned i=rank;i<nga.size();i+=stride) { //cycle over the number of noe 
+  for(unsigned i=rank;i<sga;i+=stride) { //cycle over the number of noe 
     for(unsigned j=0;j<nga[i];j++) {
       Vector distance;
       double aver=1./((double)nga[i]);
@@ -249,41 +250,38 @@ void NOE::calculate(){
   }
 
   bool printout=false;
-  if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
+  if(pperiod>0) printout = (!(getStep()%pperiod));
   if(printout) {
-    string csfile;
-    char tmps1[21], tmps2[21];
-    // add to the name the label of the cv in such a way to have different files
-    // when there is more than one defined variable
-    sprintf(tmps1, "%li", getStep());
-    if(ensemble) {
-      sprintf(tmps2, "%i", multi_sim_comm.Get_rank());
-      csfile = string("noe")+tmps2+"-"+tmps1+string(".dat");
-    } else csfile = string("noe")+tmps1+string(".dat");
-    // now print it!!
-    FILE *outfile = fopen(csfile.c_str(), "w");
-    fprintf(outfile, "#index calc exp\n");
-    for(unsigned i=0;i<nga.size();i++) { 
-      fprintf(outfile," %4u %10.6f %10.6f\n", i, pow(noe[i],(-1./6.)), noedist[i]);
+    // share the calculated noe
+    if(!serial) comm.Sum(&noe[0],noe.size());
+    // print only if master
+    if(comm.Get_rank()==0) {
+      char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+      string csfile = string("noe")+"-"+getLabel()+"-"+tmp1+string(".dat");
+      FILE *outfile = fopen(csfile.c_str(), "w");
+      fprintf(outfile, "#index calc exp\n");
+      for(unsigned i=0;i<sga;i++) { 
+        fprintf(outfile," %4u %10.6f %10.6f\n", i, pow(noe[i],(-1./6.)), noedist[i]);
+      }
+      fclose(outfile);
     }
-    fclose(outfile);
   }
 
   // Ensemble averaging
   double fact=1.0;
   if(ensemble) {
     fact = 1./((double) ens_dim);
-    // share the calculated noe
-    if(!serial) comm.Sum(&noe[0],noe.size());
+    // share the calculated noe unless they have been already shared by printout
+    if(!serial&&!printout) comm.Sum(&noe[0],noe.size());
     // I am the master of my replica
     if(comm.Get_rank()==0) {
       // among replicas
-      multi_sim_comm.Sum(&noe[0], nga.size() );
-      for(unsigned i=0;i<nga.size();i++) noe[i] *= fact; 
-    } else for(unsigned i=0;i<nga.size();i++) noe[i] = 0.;
+      multi_sim_comm.Sum(&noe[0], sga );
+      for(unsigned i=0;i<sga;i++) noe[i] *= fact; 
+    } else for(unsigned i=0;i<sga;i++) noe[i] = 0.;
     // inside each replica
-    comm.Sum(&noe[0], nga.size() );
-    for(unsigned i=rank;i<nga.size();i+=stride) {
+    comm.Sum(&noe[0], sga );
+    for(unsigned i=rank;i<sga;i+=stride) {
       double diff = pow(noe[i],(-1./6.)) - noedist[i];
       bool doscore = (isupper&&diff>0.) || (!isupper); 
       if(doscore) {
@@ -295,7 +293,7 @@ void NOE::calculate(){
 
   index=0; for(unsigned k=0;k<rank;k++) index += nga[k];
 
-  for(unsigned i=rank;i<nga.size();i+=stride) { //cycle over the number of groups
+  for(unsigned i=rank;i<sga;i+=stride) { //cycle over the number of groups
     for(unsigned j=0;j<nga[i];j++) {
       unsigned i0=nl->getClosePair(index).first;
       unsigned i1=nl->getClosePair(index).second;
@@ -310,7 +308,7 @@ void NOE::calculate(){
 
   if(!serial){
     comm.Sum(score);
-    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
+    comm.Sum(&deriv[0][0],3*deriv.size());
     comm.Sum(virial);
   }
 

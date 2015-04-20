@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -567,6 +567,26 @@ void Grid::writeToFile(OFile& ofile){
  }
 }
 
+void Grid::writeCubeFile(OFile& ofile){
+  plumed_assert( dimension_==3 );
+  ofile.printf("PLUMED CUBE FILE\n");
+  ofile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
+  ofile.printf("%d %f %f %f\n",0,0.0,0.0,0.0); // Number of atoms followed by position of origin
+  ofile.printf("%d %f %f %f\n",nbin_[0],dx_[0],0.0,0.0);  // Number of bins in each direction followed by 
+  ofile.printf("%d %f %f %f\n",nbin_[1],0.0,dx_[1],0.0);  // shape of voxel
+  ofile.printf("%d %f %f %f\n",nbin_[2],0.0,0.0,dx_[2]);
+  std::vector<unsigned> pp(3);
+  for(pp[0]=0;pp[0]<nbin_[0];++pp[0]){
+      for(pp[1]=0;pp[1]<nbin_[1];++pp[1]){
+          for(pp[2]=0;pp[2]<nbin_[2];++pp[2]){
+              ofile.printf("%f ",getValue(pp) );
+              if(pp[2]%6==5) ofile.printf("\n");
+          }
+          ofile.printf("\n");
+     }
+  }
+}
+
 Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& ifile, 
                    const vector<std::string> & gmin,const vector<std::string> & gmax, 
                    const vector<unsigned> & nbin,bool dosparse, bool dospline, bool doder){
@@ -595,6 +615,7 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& if
  // Retrieve names for fields
  for(unsigned i=0;i<args.size();++i) labels[i]=args[i]->getName();
  // And read the stuff from the header
+ plumed_massert( ifile.FieldExist( funcl ) , "no column labelled " + funcl + " in in grid input");
  for(unsigned i=0;i<args.size();++i){
      ifile.scanField( "min_" + labels[i], gmin[i]);
      ifile.scanField( "max_" + labels[i], gmax[i]);

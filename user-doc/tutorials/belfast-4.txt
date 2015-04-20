@@ -23,14 +23,14 @@ any kind of collective variable.
 A system at temperature \f$ T\f$ samples 
 conformations from the canonical ensemble:
 \f[
-  P(q)\propto e^{-\frac{U(q)}{kb_BT}}
+  P(q)\propto e^{-\frac{U(q)}{k_BT}}
 \f].
 Here \f$ q \f$ are the microscopic coordinates and \f$ k_B \f$ is the Boltzmann constant.
 Since \f$ q \f$ is a highly dimensional vector, it is often convenient to analyze it
 in terms of a few collective variables (see \ref belfast-1 , \ref belfast-2 , and \ref belfast-3 ).
 The probability distribution for a CV \f$ s\f$ is 
 \f[
-  P(s)\propto \int dq  e^{-\frac{U(q)}{kb_BT}} \delta(s-s(q))
+  P(s)\propto \int dq  e^{-\frac{U(q)}{k_BT}} \delta(s-s(q))
 \f]
 This probability can be expressed in energy units as a free energy landscape \f$ F(s) \f$:
 \f[
@@ -58,7 +58,7 @@ Whatever CV we decide to bias, it is very important to recognize which is the
 effect of this bias and, if necessary, remove it a posteriori.
 The biased distribution  of the CV will be
 \f[
-  P'(s)\propto \int dq  e^{-\frac{U(q)+V(s(q))}{k_BT}} \delta(s-s(q))\propto e^{-\frac{V(s(q))}{kb_BT}}P(s)
+  P'(s)\propto \int dq  e^{-\frac{U(q)+V(s(q))}{k_BT}} \delta(s-s(q))\propto e^{-\frac{V(s(q))}{k_BT}}P(s)
 \f]
 and the biased free energy landscape
 \f[
@@ -105,7 +105,7 @@ the conformations corresponding to the transition state.
 
 Imagine that you know since the beginning the shape of the free-energy landscape
 \f$ F(s) \f$ as a function of one CV \f$ s \f$. If you perform a molecular dynamics
-simulation using a bias potential which is exactly equal to \f$ -V(s) \f$,
+simulation using a bias potential which is exactly equal to \f$ -F(s) \f$,
 the biased free-energy landscape will be flat and barrierless.
 This potential acts as an "umbrella" that helps you to safely cross
 the transition state in spite of its high free energy.
@@ -222,7 +222,7 @@ We here use a a model system alanine dipeptide with CHARM27 all atom force field
 \subsection belfast-4-restrained-simulations Restrained simulations
 
 The simplest way in which one
-might inﬂuence a CV is by forcing the system to stay close to a chosen
+might influence a CV is by forcing the system to stay close to a chosen
 value during the simulation. This is achieved with a restraining potential
 that PLUMED provides via the directive \ref RESTRAINT.
 In the umbrella sampling method a bias potential is added so as
@@ -283,7 +283,7 @@ the fifth the additional potential introduced by the restraint on \f$\psi\f$.
 
 It may happen that one wants that a given CV just stays
 within a given range of values. This is achieved in plumed through the
-directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on speciﬁc collective variables and
+directives \ref UPPER_WALLS and \ref LOWER_WALLS that act on specific collective variables and
 limit the exploration within given ranges.
 
 \subsection belfast-4-reweighting Reweighting the results
@@ -326,7 +326,7 @@ We can now try to reweight the result so as to get rid of the bias introduced by
 Since the reweighting factor is just \f$\exp(\frac{V}{k_BT} \f$
 the script should be modified as
 \verbatim
-> grep -v \# COLVAR0 | tail -n 80000 |
+> grep -v \# COLVAR10 | tail -n 80000 |
 awk '{w=exp($4/2.5); if($3>1 && $3<2)a+=w; else b+=w;}END{print a/(a+b)}'
 \endverbatim
 Notice that 2.5 is just \f$k_BT\f$ in kj/mol units.
@@ -342,7 +342,7 @@ histograms, either with PLUMED or with external programs. Here I decided to
 use awk.
 
 \verbatim
-grep -v \# COLVAR0 | tail -n 80000 |
+grep -v \# COLVAR10 | tail -n 80000 |
 awk 'BEGIN{
   min1=-3.14159265358979
   max1=+3.14159265358979
@@ -483,7 +483,7 @@ You can use the script that you used earlier to compute histogram.
 The fact that when you add a force on the collective variable
 PLUMED can force the atoms to do something depends on the fact that
 the collective variables implemented in PLUMED has analytical
-derivatives. By biasing the value of a single CV one turns to aﬀect
+derivatives. By biasing the value of a single CV one turns to affect
 the time evolution of the system itself. Notice that some of the collective
 variables could be implemented without derivatives (either because the
 developers were lazy or because the CVs cannot be derived).
@@ -502,7 +502,7 @@ link: @subpage belfast-4
 
 description: Umbrella sampling, reweighting, and weighted histogram
 
-additional-files: belfast-4.tar.gz
+additional-files: belfast-4
 
 
 

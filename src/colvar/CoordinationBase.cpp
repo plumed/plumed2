@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -22,6 +22,7 @@
 #include "CoordinationBase.h"
 #include "tools/NeighborList.h"
 #include "tools/Communicator.h"
+#include "tools/OpenMP.h"
 
 #include <string>
 
@@ -86,7 +87,7 @@ firsttime(true)
   
   requestAtoms(nl->getFullAtomList());
  
-  log.printf("  between two groups of %d and %d atoms\n",ga_lista.size(),gb_lista.size());
+  log.printf("  between two groups of %u and %u atoms\n",static_cast<unsigned>(ga_lista.size()),static_cast<unsigned>(gb_lista.size()));
   log.printf("  first group:\n");
   for(unsigned int i=0;i<ga_lista.size();++i){
    if ( (i+1) % 25 == 0 ) log.printf("  \n");
@@ -149,7 +150,20 @@ void CoordinationBase::calculate()
    rank=comm.Get_rank();
  }
 
- for(unsigned int i=rank;i<nl->size();i+=stride) {                   // sum over close pairs
+unsigned nt=OpenMP::getNumThreads();
+
+const unsigned nn=nl->size();
+
+if(nt*stride*10>nn) nt=nn/stride/10;
+if(nt==0)nt=1;
+
+#pragma omp parallel num_threads(nt)
+{
+ std::vector<Vector> omp_deriv(getPositions().size());
+ Tensor omp_virial;
+
+#pragma omp for reduction(+:ncoord) nowait
+ for(unsigned int i=rank;i<nn;i+=stride) {   
  
   Vector distance;
   unsigned i0=nl->getClosePair(i).first;
@@ -166,10 +180,25 @@ void CoordinationBase::calculate()
   double dfunc=0.;
   ncoord += pairing(distance.modulo2(), dfunc,i0,i1);
 
-  deriv[i0] = deriv[i0] + (-dfunc)*distance ;
-  deriv[i1] = deriv[i1] + dfunc*distance ;
-  virial=virial+(-dfunc)*Tensor(distance,distance);
+  Vector dd(dfunc*distance);
+  Tensor vv(dd,distance);
+  if(nt>1){
+    omp_deriv[i0]-=dd;
+    omp_deriv[i1]+=dd;
+    omp_virial-=vv;
+  } else {
+    deriv[i0]-=dd;
+    deriv[i1]+=dd;
+    virial-=vv;
+  }
+
  }
+#pragma omp critical
+ if(nt>1){
+  for(int i=0;i<getPositions().size();i++) deriv[i]+=omp_deriv[i];
+  virial+=omp_virial;
+ }
+}
 
  if(!serial){
    comm.Sum(ncoord);

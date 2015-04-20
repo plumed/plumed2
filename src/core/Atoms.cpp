@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -23,6 +23,7 @@
 #include "ActionAtomistic.h"
 #include "MDAtoms.h"
 #include "PlumedMain.h"
+#include "tools/OpenMP.h"
 #include "tools/Pbc.h"
 #include <algorithm>
 #include <iostream>
@@ -52,11 +53,15 @@ Atoms::Atoms(PlumedMain&plumed):
   forcesHaveBeenSet(0),
   virialHasBeenSet(false),
   massAndChargeOK(false),
+  shuffledAtoms(false),
   plumed(plumed),
   naturalUnits(false),
   timestep(0.0),
   forceOnEnergy(0.0),
-  kbT(0.0)
+  kbT(0.0),
+  asyncSent(false),
+  atomsNeeded(false),
+  ddStep(0)
 {
   mdatoms=MDAtomsBase::create(sizeof(double));
 }
@@ -140,25 +145,48 @@ void Atoms::share(){
     shareAll();
     return;
   }
-  if(dd && int(gatindex.size())<natoms){
-    for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
+  for(unsigned i=0;i<actions.size();i++) if(actions[i]->isActive()) {
+    if(dd && shuffledAtoms){
       unique.insert(actions[i]->getUnique().begin(),actions[i]->getUnique().end());
     }
+    if(!actions[i]->getUnique().empty()) atomsNeeded=true;
   }
   share(unique);
 }
 
 void Atoms::shareAll(){
   std::set<AtomNumber> unique;
-  if(dd && int(gatindex.size())<natoms)
+  if(dd && shuffledAtoms)
     for(int i=0;i<natoms;i++) unique.insert(AtomNumber::index(i));
+  atomsNeeded=true;
   share(unique);
 }
 
 void Atoms::share(const std::set<AtomNumber>& unique){
   plumed_assert( positionsHaveBeenSet==3 && massesHaveBeenSet );
+  virial.zero();
+  if(int(gatindex.size())==natoms){
+// not sure this parallelization helps
+#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(forces))
+    for(unsigned i=0;i<natoms;i++) forces[i].zero();
+  } else {
+    for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].zero();
+  }
+  for(unsigned i=getNatoms();i<positions.size();i++) forces[i].zero(); // virtual atoms
+  forceOnEnergy=0.0;
   mdatoms->getBox(box);
-  mdatoms->getPositions(gatindex,positions);
+
+  if(!atomsNeeded) return;
+
+  atomsNeeded=false;
+
+  if(int(gatindex.size())==natoms && !shuffledAtoms){
+// faster version, which retrieves all atoms
+    mdatoms->getPositions(0,natoms,positions);
+  } else {
+// version that picks only atoms that are available on this proc
+    mdatoms->getPositions(gatindex,positions);
+  }
 // how many double per atom should be scattered:
   int ndata=3;
   if(!massAndChargeOK){
@@ -166,7 +194,8 @@ void Atoms::share(const std::set<AtomNumber>& unique){
     mdatoms->getCharges(gatindex,charges);
     mdatoms->getMasses(gatindex,masses);
   }
-  if(dd && int(gatindex.size())<natoms){
+
+  if(dd && shuffledAtoms){
     if(dd.async){
       for(unsigned i=0;i<dd.mpi_request_positions.size();i++) dd.mpi_request_positions[i].wait();
       for(unsigned i=0;i<dd.mpi_request_index.size();i++)     dd.mpi_request_index[i].wait();
@@ -186,6 +215,7 @@ void Atoms::share(const std::set<AtomNumber>& unique){
       }
     }
     if(dd.async){
+      asyncSent=true;
       dd.mpi_request_positions.resize(dd.Get_size());
       dd.mpi_request_index.resize(dd.Get_size());
       for(int i=0;i<dd.Get_size();i++){
@@ -217,10 +247,6 @@ void Atoms::share(const std::set<AtomNumber>& unique){
       }
     }
   }
-  virial.zero();
-  for(unsigned i=0;i<gatindex.size();i++) forces[gatindex[i]].zero();
-  for(unsigned i=getNatoms();i<positions.size();i++) forces[i].zero(); // virtual atoms
-  forceOnEnergy=0.0;
 }
 
 void Atoms::wait(){
@@ -236,10 +262,10 @@ void Atoms::wait(){
 
   if(collectEnergy) energy=md_energy;
 
-  if(dd && int(gatindex.size())<natoms){
+  if(dd && shuffledAtoms){
 // receive toBeReceived
-    Communicator::Status status;
-    if(dd.async){
+    if(asyncSent){
+      Communicator::Status status;
       int count=0;
       for(int i=0;i<dd.Get_size();i++){
         dd.Recv(&dd.indexToBeReceived[count],dd.indexToBeReceived.size()-count,i,666,status);
@@ -256,6 +282,7 @@ void Atoms::wait(){
           charges[dd.indexToBeReceived[i]]     =dd.positionsToBeReceived[ndata*i+4];
         }
       }
+      asyncSent=false;
     }
     if(collectEnergy) dd.Sum(energy);
   }
@@ -316,17 +343,32 @@ void Atoms::setAtomsNlocal(int n){
   };
 }
 
-void Atoms::setAtomsGatindex(int*g){
+void Atoms::setAtomsGatindex(int*g,bool fortran){
   plumed_massert( g || gatindex.size()==0, "NULL gatindex pointer with non-zero local atoms");
-  for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=g[i];
+  ddStep=plumed.getStep();
+  if(fortran){
+      for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=g[i]-1;
+  } else {
+      for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=g[i];
+  }
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
+  if( gatindex.size()==natoms ){
+      shuffledAtoms=false;
+      for(unsigned i=0;i<gatindex.size();i++){
+          if( gatindex[i]!=i ){ shuffledAtoms=true; break; }
+      }
+  } else {
+      shuffledAtoms=true;
+  }
   if(dd) for(unsigned i=0;i<gatindex.size();i++) dd.g2l[gatindex[i]]=i;
 }
 
 void Atoms::setAtomsContiguous(int start){
+  ddStep=plumed.getStep();
   for(unsigned i=0;i<gatindex.size();i++) gatindex[i]=start+i;
   for(unsigned i=0;i<dd.g2l.size();i++) dd.g2l[i]=-1;
   if(dd) for(unsigned i=0;i<gatindex.size();i++) dd.g2l[gatindex[i]]=i;
+  if(gatindex.size()<natoms) shuffledAtoms=true;
 }
 
 void Atoms::setRealPrecision(int p){
@@ -432,16 +474,12 @@ void Atoms::removeGroup(const std::string&name){
 
 void Atoms::writeBinary(std::ostream&o)const{
   o.write(reinterpret_cast<const char*>(&positions[0][0]),natoms*3*sizeof(double));
-  o.write(reinterpret_cast<const char*>(&masses[0]),natoms*sizeof(double));
-  o.write(reinterpret_cast<const char*>(&charges[0]),natoms*sizeof(double));
   o.write(reinterpret_cast<const char*>(&box(0,0)),9*sizeof(double));
   o.write(reinterpret_cast<const char*>(&energy),sizeof(double));
 }
 
 void Atoms::readBinary(std::istream&i){
   i.read(reinterpret_cast<char*>(&positions[0][0]),natoms*3*sizeof(double));
-  i.read(reinterpret_cast<char*>(&masses[0]),natoms*sizeof(double));
-  i.read(reinterpret_cast<char*>(&charges[0]),natoms*sizeof(double));
   i.read(reinterpret_cast<char*>(&box(0,0)),9*sizeof(double));
   i.read(reinterpret_cast<char*>(&energy),sizeof(double));
   pbc.setBox(box);
@@ -457,6 +495,16 @@ double Atoms::getMDKBoltzmann()const{
   else return kBoltzmann/MDUnits.getEnergy();
 }
 
+void Atoms::getLocalPositions(std::vector<Vector>& localPositions){
+  localPositions.resize(gatindex.size());
+  mdatoms->getLocalPositions(localPositions);
 }
 
+void Atoms::getLocalForces(std::vector<Vector>& localForces){
+  localForces.resize(gatindex.size());
+// not sure this parallelization helps
+#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(localForces))
+  for(int i=0; i<gatindex.size(); i++) localForces[i] = forces[gatindex[i]];
+}
 
+}

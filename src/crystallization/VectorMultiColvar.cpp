@@ -20,7 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "multicolvar/MultiColvarFunction.h"
-#include "multicolvar/ActionVolume.h"
+#include "multicolvar/BridgedMultiColvarFunction.h"
 #include "VectorMultiColvar.h"
 
 namespace PLMD {
@@ -109,9 +109,10 @@ double VectorMultiColvar::doCalculation(){
   return norm;
 }
 
-vesselbase::StoreDataVessel* VectorMultiColvar::buildDataStashes(){
+vesselbase::StoreDataVessel* VectorMultiColvar::buildDataStashes( const bool& allow_wcutoff, const double& wtol ){
   // Build everyting for the multicolvar
-  vesselbase::StoreDataVessel* vsv=MultiColvarBase::buildDataStashes();
+  vesselbase::StoreDataVessel* vsv=MultiColvarBase::buildDataStashes( allow_wcutoff, wtol );
+  if( allow_wcutoff ) vsv->setHardCutoffOnWeight( wtol );
   // Resize the variable
   vecs->resize();
   // And make sure we set up the vector storage correctly
@@ -203,13 +204,13 @@ void VectorMultiColvar::addForcesOnAtoms( const std::vector<double>& inforces ){
   setForcesOnAtoms( oldforces );
 }
 
-void VectorMultiColvar::copyElementsToBridgedColvar( const double& weight, multicolvar::ActionVolume* func ){
-  MultiColvarBase::copyElementsToBridgedColvar( weight, func );
+void VectorMultiColvar::copyElementsToBridgedColvar( multicolvar::BridgedMultiColvarFunction* func ){
+  MultiColvarBase::copyElementsToBridgedColvar( func );
 
   for(unsigned icomp=5;icomp<getNumberOfQuantities();++icomp){
-      func->setElementValue( icomp, getElementValue(icomp) );
+      func->setElementValue( icomp-4, getElementValue(icomp) );
       unsigned nbase =  icomp * getNumberOfDerivatives();
-      unsigned nbasev = icomp * func->getNumberOfDerivatives();
+      unsigned nbasev = (icomp-4) * func->getNumberOfDerivatives();
       for(unsigned jatom=0;jatom<atoms_with_derivatives.getNumberActive();++jatom){
           unsigned n=atoms_with_derivatives[jatom], nx=nbase + 3*n, ny=nbasev + 3*n;
           func->addElementDerivative( ny+0, getElementDerivative(nx+0) );

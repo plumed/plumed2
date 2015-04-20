@@ -184,6 +184,8 @@ public:
   void deactivate( const T& t ); 
 /// Make everything in the list inactive
   void deactivateAll();
+/// Reset the translator vector
+  void resetTranslator();
 /// Make something active
   void activate( const unsigned ii );
 /// Make everything in the list active
@@ -271,11 +273,14 @@ void DynamicList<T>::deactivateAll(){
   allWereDeactivated=true; allWereActivated=false;
   for(unsigned i=0;i<nactive;++i) onoff[ active[i] ]= 0; 
   nactive=0;
-  // Reset translator
-  for(unsigned i=0;i<all.size();++i) translator[i]=i;
 #ifndef NDEBUG
   for(unsigned i=0;i<onoff.size();++i) plumed_dbg_assert( onoff[i]==0 );
 #endif
+}
+
+template <typename T>
+void DynamicList<T>::resetTranslator(){
+  for(unsigned i=0;i<all.size();++i) translator[i]=i;
 }
 
 template <typename T>
@@ -287,7 +292,7 @@ void DynamicList<T>::activate( const unsigned ii ){
 
 template <typename T>
 void DynamicList<T>::activateAll(){
-  for(unsigned i=0;i<onoff.size();++i) onoff[i]=nprocessors;
+  for(unsigned i=0;i<onoff.size();++i) onoff[i]=nprocessors; 
   allWereActivated=true; updateActiveMembers(); allWereActivated=true; 
   
 }

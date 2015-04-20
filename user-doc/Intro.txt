@@ -10,14 +10,34 @@ new methods, more straightforward to add it to MD codes and hopefully simpler to
 This is the user manual -  if you want to modify PLUMED or to understand how it works internally, have a look at the 
 <a href="../../developer-doc/html/index.html"> developer manual </a>.
 
+\htmlonly
+An experimental PDF copy of this manual can be found
+<a href="../manual.pdf"> here </a>.
+\endhtmlonly
+
 To understand the difference between PLUMED 1 and PLUMED 2, and to
-follow the development of PLUMED 2, you can look at the detailed changelog:
-- Changes for \ref CHANGES-2-0
-- Changes for \ref CHANGES-2-1
+follow the development of PLUMED 2, you can look at the detailed \ref Changelog.
 
 A short tutorial explaining how to move from PLUMED 1 to PLUMED 2 is also available (see \ref moving)
 
 To install PLUMED 2, see this page: \ref Installation
+
+\section AboutManual About this manual
+
+@VERSION@
+
+Since version 2.1 we provide an experimental PDF manual.
+The PDF version is still not complete and has some known issue (e.g. some
+links are not working properly and images are not correctly included),
+and the html documentation should be considered as the official one.
+The goal of the PDF manual is to allow people to download a full copy on the documentation for offline
+access and to perform easily full-text searches.
+Notice that the manual is updated very frequently (sometime more than once per week),
+so keep your local version of the PDF manual up to date. 
+Since the PDF manual is 200+ pages and is continuously updated,
+<b>
+please do not print it!
+</b>
 
 \section qintro A quick introduction
 
@@ -35,14 +55,32 @@ analsyis tools that come with PLUMED are given in:
 - \ref Analysis tells you about the various forms of analysis you can run on trajectories using PLUMED.
 - \ref Bias tells you about the methods that you can use to bias molecular dynamics simulations with PLUMED.
 
-PLUMED can be used in one of two ways.  It can be incorporated into any one of the MD codes listed below:
+PLUMED can be used in one of two ways.
+First, it can be incorporated into an MD code and used to analyse or bias a molecular dynamics run on the fly.
+Notice that some MD code could already include calls to the PLUMED library
+and be PLUMED-ready in its original distribution.
+As far as we know, the following MD codes can be used with PLUMED 2 out of the box:
+- [AmberTools](http://ambermd.org/), sander module, since version 15.
+- [CP2K](http://www.cp2k.org), since Feb 2015.
+- [ESPResSo](http://espressomd.org), in a Plumedized version that can be found
+  [here](http://davidebr.github.io/espresso/).
+- [PINY-MD](http://github.com/TuckermanGroup/PINY), in its plumed branch.
+- [IPHIGENIE](http://sourceforge.net/projects/iphigenie/).
 
-@CODES@
+Please refer to the documentation of the MD code to know how to use it with the latest PLUMED release.
+If you maintain another MD code that is PLUMED-ready let us know and we will add it to this list.
 
-and used to analyse or bias a molecular dynamics run on the fly.  Alternatively, one
-can use it as a standalone tool for postprocessing the results from molecular dynamics 
+Additionally, we provide patching procedures for the following codes:
+
+@CODESL@
+
+Alternatively, one
+can use PLUMED as a standalone tool for postprocessing the results from molecular dynamics 
 or enhanced sampling calculations.
 
+\page Changelog Change Log
+
+@CHANGES@
 
 */
 

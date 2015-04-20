@@ -1,7 +1,7 @@
 /**
 \page belfast-3 Belfast tutorial: Adaptive variables II
 
-\section Aims
+\section belfast-3-aims Aims
 
 The aim of this tutorial is to consolidate the material that was covered during
 \ref belfast-1 and \ref belfast-2 on analysing trajectories using collective variables
@@ -18,7 +18,7 @@ Once this tutorial is completed students will:
 - Be able to explain how we can automate the process of finding collective variables
 by seeking out an isometry between a high-dimensional and low-dimensional space
 
-\section Resources
+\section belfast-3-resources Resources
 
 The <a href="tutorial-resources/belfast-3.tar.gz" download="belfast-3.tar.gz"> tarball </a> for this project contains the following files:
 
@@ -26,9 +26,9 @@ The <a href="tutorial-resources/belfast-3.tar.gz" download="belfast-3.tar.gz"> t
 - trajectory-short.pdb : the same trajectory in pdb format, this can be loaded with VMD 
 - template.pdb : a single frame from the trajectory that can be used in conjuction with the \ref MOLINFO command
 
-\section Instructions
+\section belfast-3-instructions Instructions
 
-\subsection vis-traj Visualising the trajectory
+\subsection belfast-3-vis-traj Visualising the trajectory
 
 The aim of this tutorial is to understand the data contained in the trajectory called trajectory-short.pdb.  This file contains some
 frames from a simulation from a 16 residue protein.  As a start point then let load this trajectory with vmd and have a look
@@ -47,7 +47,7 @@ If your answers to the questions at the end of the above paragraph are I don't k
 by just looking at a trajectory.  In fact the whole point of today has been to find ways of analyzing trajectories precisely
 so that we are not put in this position of staring at trajetories mystified!
 
-\subsection cvs Finding collective variables
+\subsection belfast-3-cvs Finding collective variables
 
 Right so lets come up with some CVs to analyse this trajectory with.  As some of you may know we can understand the conformation of proteins
 by looking at the Ramachandran angles.  For those of you who don't know here is a Wikkepedia article:
@@ -80,7 +80,7 @@ clustered together or are they always far apart? What can we conclude about the 
 that have been explored in this trajectory?  How many are there?  Would your estimate be the same if you tried the above estimate
 with a different pair of ramachandran angles? 
 
-\subsection dim-red Dimensionality reduction
+\subsection belfast-3-dim-red Dimensionality reduction
 
 What we have done for most of today is seek out a function that takes as input the position of all the atoms in the system - a \f$3N\f$
 dimensional vector, where \f$N\f$ is the number of atoms.  This function then outputs a single number - the value of the collective variable -
@@ -129,7 +129,7 @@ clustered together or are they always far apart? What can we conclude about the 
 that have been explored in this trajectory?  How many are there? Do you think this gives you a fuller picture of the 
 trajectory than the ones you obtained by considering ramachandran angles?
 
-\section extensions Extensions
+\section belfast-3-extensions Extensions
 
 As discussed in the previous section this approach to trajectory analysis works by calcalating distances between pairs of atomic configurations.
 Projections corresponding to these configurations are then generated in the low dimensional space in a way that tries to preserve these 
@@ -141,7 +141,7 @@ for the \ref CLASSICAL_MDS action and see if you can calculate an MDS projection
 Some suggestions to try in order of increasing difficulty: DRMSD, how much the full set of 32 ramachandran angles change and the change in the
  contact map 
 
-\section further Further Reading
+\section belfast-3-further Further Reading
 
 There is a growing community of people using these ideas to analyse trajectory data. Some start points for investigating their work in more detail
 are:
@@ -156,6 +156,6 @@ link: @subpage belfast-3
 
 description: Dimensionality reduction and sketch maps
 
-additional-files: belfast-3.tar.gz
+additional-files: belfast-3
 
 

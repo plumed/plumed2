@@ -32,7 +32,7 @@ namespace crystallization {
 class VectorMultiColvar : public multicolvar::MultiColvar {
 friend class StoreVectorsVessel;
 friend class OrientationSphere;
-friend class VectorAverage;
+friend class VolumeGradientBase;
 private:
 /// Are the vectors complex
   bool complexvec;
@@ -99,7 +99,7 @@ public:
 /// Get the number of quantities we are calculating per step
   unsigned getNumberOfQuantities();
 /// Create places to store the data
-  vesselbase::StoreDataVessel* buildDataStashes();
+  vesselbase::StoreDataVessel* buildDataStashes( const bool& allow_wcutoff, const double& wtol );
 /// Get the vector
   void getValueForTask( const unsigned& iatom, std::vector<double>& vals );
 /// Used to accumulate values
@@ -114,7 +114,7 @@ public:
 ///  This makes sure we are not calculating the director when we do LocalAverage
   virtual void doNotCalculateDirector();
 /// Used by ActionVolume
-  void copyElementsToBridgedColvar( const double& weight, multicolvar::ActionVolume* func );
+  void copyElementsToBridgedColvar( multicolvar::BridgedMultiColvarFunction* func );
 };
 
 inline

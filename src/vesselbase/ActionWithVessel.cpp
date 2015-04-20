@@ -26,6 +26,7 @@
 #include "StoreDataVessel.h"
 #include "VesselRegister.h"
 #include "BridgeVessel.h"
+#include "FunctionVessel.h"
 
 using namespace std;
 namespace PLMD{
@@ -44,6 +45,7 @@ void ActionWithVessel::registerKeywords(Keywords& keys){
                                      "we have to start using lowmem");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
   keys.addFlag("LOWMEM",false,"lower the memory requirements");
+  keys.reserveFlag("HIGHMEM",false,"use a more memory intensive version of this collective variable");
   keys.add( vesselRegister().getKeywords() );
 }
 
@@ -60,8 +62,15 @@ ActionWithVessel::ActionWithVessel(const ActionOptions&ao):
   else serial=true;
   if(serial)log.printf("  doing calculation in serial\n");
   if( keywords.exists("LOWMEM") ){
+     plumed_assert( !keywords.exists("HIGHMEM") );
      parseFlag("LOWMEM",lowmem);
      if(lowmem)log.printf("  lowering memory requirements\n");
+  } 
+  if( keywords.exists("HIGHMEM") ){
+     plumed_assert( !keywords.exists("LOWMEM") );
+     bool highmem; parseFlag("HIGHMEM",highmem);
+     lowmem=!highmem;
+     if(!lowmem) log.printf("  increasing the memory requirements\n");
   }
   tolerance=nl_tolerance=epsilon; 
   if( keywords.exists("TOL") ) parse("TOL",tolerance);
@@ -80,13 +89,19 @@ ActionWithVessel::~ActionWithVessel(){
 
 void ActionWithVessel::addVessel( const std::string& name, const std::string& input, const int numlab ){
   VesselOptions da(name,"",numlab,input,this);
-  Vessel* vv=vesselRegister().create(name,da); 
+  Vessel* vv=vesselRegister().create(name,da);
+  FunctionVessel* fv=dynamic_cast<FunctionVessel*>(vv);
+  if( fv ){
+      std::string mylabel=Vessel::transformName( name );
+      plumed_massert( keywords.outputComponentExists(mylabel,false), "a description of the value calculated by vessel " + name + " has not been added to the manual"); 
+  } 
   addVessel(vv);
 }
 
 void ActionWithVessel::addVessel( Vessel* vv ){
   ShortcutVessel* sv=dynamic_cast<ShortcutVessel*>(vv);
   if(!sv){ vv->checkRead(); functions.push_back(vv); }
+  else { delete sv; }
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
@@ -98,7 +113,7 @@ BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
   return bv; 
 }
 
-StoreDataVessel* ActionWithVessel::buildDataStashes(){
+StoreDataVessel* ActionWithVessel::buildDataStashes( const bool& allow_wcutoff, const double& wtol ){
   for(unsigned i=0;i<functions.size();++i){
       StoreDataVessel* vsv=dynamic_cast<StoreDataVessel*>( functions[i] );
       if( vsv ) return vsv;
@@ -261,16 +276,16 @@ void ActionWithVessel::runAllTasks(){
       // Calculate the stuff in the loop for this action
       performTask();
       // Weight should be between zero and one
-      plumed_dbg_assert( thisval[1]>=0 && thisval[1]<=1.0 );
+      plumed_dbg_assert( getValueForTolerance()>=0 && getValueForTolerance()<=1.0 );
 
       // Check for conditions that allow us to just to skip the calculation
       // the condition is that the weight of the contribution is low 
       // N.B. Here weights are assumed to be between zero and one
-      if( thisval[1]<tolerance ){
+      if( getValueForTolerance()<tolerance ){
          // Clear the derivatives
          clearAfterTask();  
          // Deactivate task if it is less than the neighbor list tolerance
-         if( thisval[1]<nl_tolerance && contributorsAreUnlocked ) deactivate_task();
+         if( getValueForTolerance()<nl_tolerance && contributorsAreUnlocked ) deactivate_task();
          continue;
       }
 

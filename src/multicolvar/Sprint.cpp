@@ -80,8 +80,6 @@ class Sprint : public AdjacencyMatrixAction {
 private:
 /// Square root of number of atoms
   double sqrtn;
-/// Largest eigenvalue
-  double lambda;
 /// Vector that stores eigenvalues
   std::vector<double> eigvals;
 /// Vector that stores max eigenvector
@@ -106,9 +104,9 @@ PLUMED_REGISTER_ACTION(Sprint,"SPRINT")
 void Sprint::registerKeywords( Keywords& keys ){
   AdjacencyMatrixAction::registerKeywords( keys );
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("coord-","default","all \f$n\f$ sprint coordinates are calculated and then stored in increasing order. "
-                                             "the smallest sprint coordinate will be labelled <em>label</em>.coord-0, "
-                                             "the second smallest will be labelleled <em>label</em>.coord-1 and so on");
+  keys.addOutputComponent("coord","default","all \f$n\f$ sprint coordinates are calculated and then stored in increasing order. "
+                                            "the smallest sprint coordinate will be labelled <em>label</em>.coord-1, "
+                                            "the second smallest will be labelleled <em>label</em>.coord-1 and so on");
 }
 
 Sprint::Sprint(const ActionOptions&ao):
@@ -119,6 +117,8 @@ maxeig( getFullNumberOfBaseTasks() ),
 mymatrix( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() ),
 eigenvecs( getFullNumberOfBaseTasks(), getFullNumberOfBaseTasks() )
 {
+   // Check on setup
+   if( getNumberOfVessels()!=1 ) error("there should be no vessel keywords");
    // Check for bad colvar input
    for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i){
       if( !getBaseMultiColvar(i)->hasDifferentiableOrientation() ) error("cannot use multicolvar of type " + getBaseMultiColvar(i)->getName() );

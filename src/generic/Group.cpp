@@ -27,6 +27,7 @@
 #include "tools/Tools.h"
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -42,8 +43,17 @@ Atoms can be listed as comma separated numbers (i.e. 1,2,3,10,45,7,9,..) , simpl
 (i.e. 20-40), ranges with a stride either positive or negative (i.e. 20-40:2 or 80-50:-2) or as
 combinations of all the former methods (1,2,4,5,10-20,21-40:2,80-50:-2). 
 
-Finally, lists can be imported from ndx files (GROMACS format). Use NDX_FILE to set the name of 
+Moreover, lists can be imported from ndx files (GROMACS format). Use NDX_FILE to set the name of 
 the index file and NDX_GROUP to set the name of the group to be imported (default is first one).
+
+It is also possible to remove atoms from a list and or sort them using keywords REMOVE, SORT, and UNIQUE.
+The flow is the following:
+- If ATOMS is present take the ordered list of atoms from the ATOMS keyword.
+- If NDX_FILE is present append the list from the the gromacs group.
+- If REMOVE is present remove the first occurence of each of these atoms from the list.
+  If one tries to remove an atom that was not listed plumed adds a notice in the output.
+- If SORT is present resulting list is sorted.
+- If UNIQUE is present the resuling list is sorted and duplicate elements are removed.
 
 Notice that this command just creates a shortcut, and does not imply any real calculation.
 It is just convenient to better organize input files. Might be used in combination with
@@ -75,7 +85,7 @@ h: GROUP ATOMS=2,3,5,6,8,9,12,13
 \endverbatim
 and then include it in the main 'plumed.dat' file
 \verbatim
-INCLUDE groups.dat
+INCLUDE FILE=groups.dat
 # compute the coordination among the two groups
 c: COORDINATION GROUPA=o GROUPB=h R_0=0.3
 # print the coordination on file 'colvar'
@@ -92,6 +102,18 @@ pro: GROUP NDX_FILE=index.ndx NDX_GROUP=protein
 DUMPATOMS ATOMS=pro FILE=traj.gro
 \endverbatim
 (see also \ref DUMPATOMS)
+
+A list can be edited with REMOVE
+\verbatim
+# take one atom every three
+ox: GROUP ATOMS=1-90:3
+# take the remaining atoms
+hy: GROUP ATOMS=1-90 REMOVE=ox
+DUMPATOMS ATOMS=ox FILE=ox.gro
+DUMPATOMS ATOMS=hy FILE=hy.gro
+\endverbatim
+(see also \ref DUMPATOMS)
+
 
 */
 //+ENDPLUMEDOC
@@ -149,9 +171,42 @@ Group::Group(const ActionOptions&ao):
     if(!groupfound) error("group has not been found in index file");
   }
 
+  std::vector<AtomNumber> remove;
+  parseAtomList("REMOVE",remove);
+  if(remove.size()>0){
+    std::vector<AtomNumber> notfound;
+    log<<"  removing these atoms from the list:";
+    for(unsigned i=0;i<remove.size();i++){
+      std::vector<AtomNumber>::iterator it = find(atoms.begin(),atoms.end(),remove[i]);
+      if(it!=atoms.end()){
+        log<<" "<<(*it).serial();
+        atoms.erase(it);
+      } else notfound.push_back(remove[i]);
+    }
+    log<<"\n";
+    if(notfound.size()>0){
+      log<<"  the following atoms were not found:";
+      for(unsigned i=0;i<notfound.size();i++) log<<" "<<notfound[i].serial();
+      log<<"\n";
+    }
+  }
+
+  bool sortme=false;
+  parseFlag("SORT",sortme);
+  if(sortme){
+    log<<"  atoms are sorted\n";
+    sort(atoms.begin(),atoms.end());
+  }
+  bool unique=false;
+  parseFlag("UNIQUE",unique);
+  if(unique){
+    log<<"  sorting atoms and removing duplicates\n";
+    Tools::removeDuplicates(atoms);
+  }
+
   this->atoms.insertGroup(getLabel(),atoms);
-  log.printf("  of atoms ");
-  for(unsigned i=0;i<atoms.size();i++) log.printf(" %d",atoms[i].serial());
+  log.printf("  list of atoms ");
+  for(unsigned i=0;i<atoms.size();i++) log<<" "<<atoms[i].serial();
   log.printf("\n");
 }
 
@@ -159,6 +214,9 @@ void Group::registerKeywords( Keywords& keys ){
   Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("atoms", "ATOMS", "the numerical indexes for the set of atoms in the group");
+  keys.add("atoms", "REMOVE","remove these atoms from the list");
+  keys.addFlag("SORT",false,"sort the resulting list");
+  keys.addFlag("UNIQUE",false,"sort atoms and remove duplicated ones");
   keys.add("optional", "NDX_FILE", "the name of index file (gromacs syntax)");
   keys.add("optional", "NDX_GROUP", "the name of the group to be imported (gromacs syntax) - first group found is used by default");
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -39,6 +39,9 @@ ActionSetup::ActionSetup(const ActionOptions&ao):
 void ActionSetup::registerKeywords( Keywords& keys ){
   Action::registerKeywords(keys);
   keys.remove("LABEL");
+  keys.remove("UPDATE_UNTIL");
+  keys.remove("UPDATE_FROM");
+  keys.remove("RESTART");
 }
 
 }

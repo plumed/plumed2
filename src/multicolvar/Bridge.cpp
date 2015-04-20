@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -60,6 +60,7 @@ PRINT ARG=a1.mean FILE=colvar
 
 class Bridge : public MultiColvar {
 private:
+  double rcut2;
   Vector dij, dik;
   SwitchingFunction sf1;
   SwitchingFunction sf2;
@@ -123,7 +124,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  distance between bridging atoms and atoms in GROUPB must be less than %s\n",sf2.description().c_str());
 
   // Setup link cells
-  setLinkCellCutoff( 2.*sf1.inverse( getTolerance() ) );
+  setLinkCellCutoff( sf1.get_dmax() );
+  rcut2 = sf1.get_dmax()*sf1.get_dmax();
 
   // And setup the ActionWithVessel
   if( getNumberOfVessels()!=0 ) error("should not have vessels for this action");
@@ -136,11 +138,11 @@ PLUMED_MULTICOLVAR_INIT(ao)
 
 void Bridge::calculateWeight(){
   Vector dij=getSeparation( getPosition(0), getPosition(2) );
-  double dw, w=sf2.calculateSqr( dij.modulo2(), dw );
-  // printf("HELLO STUFF %f %f \n", dij.modulo2(), w );
+  double ldij = dij.modulo2();
+  if( ldij>rcut2 ) { setWeight(0); return; }
+  double dw, w=sf2.calculateSqr( ldij, dw );
   setWeight( w );
 
-  if( w<getTolerance() ) return; 
   addAtomsDerivativeOfWeight( 0, -dw*dij );
   addAtomsDerivativeOfWeight( 2, dw*dij );
   addBoxDerivativesOfWeight( (-dw)*Tensor(dij,dij) );

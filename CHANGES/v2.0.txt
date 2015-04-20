@@ -91,7 +91,7 @@ For users:
 - Several small fixes in documentation and log file.
 
 For developers:
-- Fixed makefile dependencies in some auxiliary files in src/lib (src/lib/*cmake and src/lib/*inc).
+- Fixed makefile dependencies in some auxiliary files in src/lib (*cmake and *inc).
 - Changed way modules are linked in src/.
   E.g. src/colvar/tools/ is not anymore a symlink to src/colvar but a real directory.
   (Notice that this introduces a regression: when using plumed as an external library
@@ -126,18 +126,43 @@ For developers:
 - Fixed non-ansi syntax in a few points and a non-important memory leakage.
 - Split cltools/Driver.cpp to make parallel compilation faster.
 
-Unreleased changes (will be included in 2.0.4)
+Version 2.0.4 (Sep 15, 2014)
 ----------------------------------------------
-See <a href="http://github.com/plumed/plumed2/commits/v2.0">branch v2.0 on git repository</a>.
 
 For users:
 - Fixed a bug in \ref BIASVALUE that could produce wrong acceptance with replica exchange simulations.
 - Fixed a few innocuous memory leaks.
-- Fixed reader for xyz files, that now correctly detecs missing columns. Also a related regtest has
+- Fixed reader for xyz files, that now correctly detects missing columns. Also a related regtest has
   been changed.
+- Several small fixes in documentation and log file.
 
 For developers:
 - Renamed Value.cpp to BiasValue.cpp
+
+Version 2.0.5 (Dec 15, 2014)
+----------------------------------------------
+
+Notice that branch 2.0 will not be longer maintained!
+All users are invited to switch to version 2.1.
+
+For users:
+- Fixed a bug in replica exchange with different Hamiltonians (either lamdba-dynamics
+  or plumed XX-hrex branch) possibly occuring when using charge or mass dependent
+  variables.
+- Fixed a bug in analysis (e.g. \ref HISTOGRAM) leading to wrong accumulation
+  of statistics when running a replica exchange simulation.
+- Fixed a bug in the calculation of derivatives in histograms. This should
+  be harmless since people usually only consider the value in histograms
+  and not the derivatives.
+- Fixed an issue in Makefile that could results in problems when
+  patching an MD code with --shared option (pointed out by Abhi Acharya).
+  This fixes a regression introduced in 2.0.2.
+- Small fixes in documentation.
+
+For developers:
+- Added warning when performing regtests using an instance of plumed from
+  a different directory
+
 
 */
 

@@ -118,14 +118,16 @@ static gmx_bool repl_quantity(const gmx_multisim_t *ms,
     qall[re->repl] = q;
     gmx_sum_sim(ms->nsim, qall, ms);
 
-    bDiff = FALSE;
-    for (s = 1; s < ms->nsim; s++)
-    {
-        if (qall[s] != qall[0])
-        {
+    /* PLUMED */
+    //bDiff = FALSE;
+    //for (s = 1; s < ms->nsim; s++)
+    //{
+    //    if (qall[s] != qall[0])
+    //    {
             bDiff = TRUE;
-        }
-    }
+    //    }
+    //}
+    /* END PLUMED */
 
     if (bDiff)
     {
@@ -275,6 +277,10 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
         re->ind[i] = i;
     }
 
+    /* PLUMED */
+    // plumed2: check if we want alternative patterns (i.e. for bias-exchange metaD)
+    // in those cases replicas can share the same temperature.
+    /*
     if (re->type < ereENDSINGLE)
     {
 
@@ -283,11 +289,12 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
             for (j = i+1; j < re->nrepl; j++)
             {
                 if (re->q[re->type][re->ind[j]] < re->q[re->type][re->ind[i]])
-                {
+                {*/
                     /* Unordered replicas are supposed to work, but there
                      * is still an issues somewhere.
                      * Note that at this point still re->ind[i]=i.
                      */
+                 /*
                     gmx_fatal(FARGS, "Replicas with indices %d < %d have %ss %g > %g, please order your replicas on increasing %s",
                               i, j,
                               erename[re->type],
@@ -305,6 +312,8 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
             }
         }
     }
+    */
+    /* END PLUMED */
 
     /* keep track of all the swaps, starting with the initial placement. */
     snew(re->allswaps, re->nrepl);

@@ -1,0 +1,7 @@
+mpiprocs=2
+type=driver
+plumed_needs=xdrfile
+# here we read two files traj.0.trr and traj.1.trr
+# the two trajectories have atoms in a different order so as to check that
+# each processor is writing on the correct output files
+arg="--plumed plumed.dat --trajectory-stride 1 --timestep 0.005 --itrr traj.trr --multi 2"
