@@ -335,7 +335,7 @@ double RMSD::simpleAlignment(const  std::vector<double>  & align,
 
 // this below enable the standard case for rmsd where the rmsd is calculated and the derivative of rmsd respect to positions is retrieved
 // additionally this assumes that the com of the reference is already subtracted.    
-//#define OLDRMSD
+#define OLDRMSD
 #ifdef OLDRMSD
 // notice that in the current implementation the safe argument only makes sense for
 // align==displace
