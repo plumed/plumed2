@@ -35,6 +35,7 @@
 #include "time.h"
 #include <iostream>
 #include <limits>
+#include <deque>
 
 #define DP2CUTOFF 6.25
 
@@ -261,14 +262,18 @@ class MetaD : public Bias {
   double tt_biasf_;
   double tt_biasthreshold_;
   vector<vector<double> > transitionwells_;
+  double tt_alpha_;
   bool benthic_toleration_;
-  double benthic_tol_energy_;
+  double benthic_tol_number_;
   bool benthic_erosion_;
   double benthic_erosive_time_;
-  vector<double> benthic_smoothing_der_;
   double last_benthic_erosion_;
+  int benthic_histo_stride_;
+  vector<double> benthic_histo_bandwidth_;
+  Grid *BenthicHistogram_;
   bool use_domains_;
   bool scale_new_hills_;
+  bool use_whole_grid_domain_;
   string domainsreadfilename_;
   string domains_histo_readfilename_;
   unsigned n_domains_;
@@ -283,9 +288,10 @@ class MetaD : public Bias {
   AdaptiveDomainRefType adaptive_domains_reftype_;
   double adaptive_domains_eoffset_;
   int adaptive_domains_stride_;
-  int histo_stride_;
-  vector<double> histo_bandwidth_;
-  Grid *Histogram_;
+  double adaptive_domains_downsampling_;
+  int domains_histo_stride_;
+  vector<double> domains_histo_bandwidth_;
+  Grid *DomainsHistogram_;
   string whistofilename_;
   OFile whistofile_;
   bool print_domains_scaling_;
@@ -302,6 +308,8 @@ class MetaD : public Bias {
   int mw_rstride_;
   bool walkers_mpi;
   bool acceleration;
+  bool calc_average_bias_coft_;
+  double average_bias_coft_;
   double acc;
   vector<IFile*> ifiles;
   vector<string> ifilesnames;
@@ -319,7 +327,7 @@ class MetaD : public Bias {
   double getTransitionBarrierBias();
   void   defineDomains(const Grid * const);
   void   filterDomains();
-  void   spread_domain(unsigned, unsigned, vector<unsigned> &, const Grid * const, const Grid * const);
+  void   spread_domain(unsigned, unsigned, const Grid * const);
 
   void   createScalingGrids();
   bool   shouldAdaptDomainsNow();
@@ -353,6 +361,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias", "default", "the instantaneous value of the bias potential");
   keys.addOutputComponent("acc", "ACCELERATION", "the metadynamics acceleration factor");
+  keys.addOutputComponent("coft", "CALC_AVERAGE_BIAS", "the metadynamics average bias c(t)");
   keys.use("ARG");
   keys.add("compulsory", "SIGMA", "the widths of the Gaussian hills");
   keys.add("compulsory", "PACE", "the frequency for hill addition");
@@ -364,10 +373,13 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "TTBIASFACTOR", "use transition tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
   keys.add("optional", "TTBIASTHRESHOLD", "use transition tempered metadynamics with this bias threshold.  Please note you must also specify TTBIASFACTOR");
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well in transition-tempered metadynamics. At least one must be provided.");
+  keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this decay shape parameter value between 0.5 and 1.0 (default 0.5).  Please note you must also specify TTBIASFACTOR");
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition states");
-  keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time");
-  keys.addFlag("USE_DOMAINS", false, "use metabasin metadynamics with adaptively set regions");
+  keys.add("optional", "BENTHIC_FILTER_STRIDE", "use benthic metadynamics accumulating filter samples on this timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
+  keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
+  keys.addFlag("USE_DOMAINS", false, "use metabasin metadynamics");
   keys.add("optional", "REGION_RFILE", "use metabasin metadynamics with this file defining areas to flatten");
+  keys.addFlag("WHOLE_GRID_DOMAIN", false, "use metabasin metadynamics with the entire grid as the domain to flatten");
   keys.addFlag("USE_ADAPTIVE_DOMAINS", false, "use metabasin metadynamics with adaptively set regions");
   keys.add("optional", "ADAPTIVE_DOMAINS_HISTOGRAM_RFILE", "read in a histogram file for restarting an adaptive domain calculation");
   keys.add("optional", "ADAPTIVE_DOMAINS_HISTOGRAM_WFILE", "print histogram files for restarting an adaptive domain calculation");
@@ -375,6 +387,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "ADAPTIVE_DOMAINS_REFERENCE", "set metabasin metadynamics adaptive regions with reference to either the 'transition' free energy or the 'minimum' free energy");
   keys.add("optional", "ADAPTIVE_DOMAINS_ENERGY_OFFSET", "use adaptive metabasin metadynamics with regions below a free energy that is the reference free energy plus this value");
   keys.add("optional", "ADAPTIVE_DOMAINS_STRIDE", "use adaptive metabasin metadynamics with regions adapted every this number of steps");  
+  keys.add("optional", "ADAPTIVE_DOMAINS_DOWNSAMPLING", "when creating scaling grids, add this ratio fewer hills to minimize performance costs");
   keys.addFlag("PRINT_DOMAINS_SCALING", false, "print out the scaling functions for each metabasin metadynamics domain");
   keys.addFlag("PRINT_ADAPTIVE_DOMAINS_ENERGIES", false, "print out the scaling functions for each metabasin metadynamics domain");
   keys.add("optional", "TEMP", "the system temperature - this is only needed if you are doing well-tempered metadynamics, transition-tempered metadynamics, acceleration, or adaptive metabasin metadynamics");
@@ -399,6 +412,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "SIGMA_MIN", "the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI", false, "Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
   keys.addFlag("ACCELERATION", false, "Set to TRUE if you want to compute the metadynamics acceleration factor.");
+  keys.addFlag("CALC_AVERAGE_BIAS", false, "Set to TRUE if you want to compute the metadynamics average bias, c(t).");
 }
 
 MetaD::~MetaD() {
@@ -411,17 +425,24 @@ MetaD::~MetaD() {
   if (ExtGrid_) {
     delete ExtGrid_;
   }
-  if (scale_new_hills_) {
-    for (unsigned i = 0; i < n_domains_; i++) {
-      if (HillScalingGrids_[i]) delete HillScalingGrids_[i];
-    }
+  if (benthic_toleration_) {
+    delete BenthicHistogram_;
   }
+
   if (use_domains_) {
+    if (scale_new_hills_) {
+      for (unsigned i = 0; i < n_domains_; i++) {
+        if (HillScalingGrids_[i]) delete HillScalingGrids_[i];
+      }
+    }
     if (print_domains_scaling_) {
       for (unsigned i = 0; i < DomainsScalingFilePs_.size(); i++) {
         DomainsScalingFilePs_[i]->close();
         delete DomainsScalingFilePs_[i];
       }
+    }
+    if (use_adaptive_domains_) {
+      delete DomainsHistogram_;
     }
     if (wgridstride_ > 0 && whistofilename_.size() > 0) {
       whistofile_.close();
@@ -456,14 +477,17 @@ MetaD::MetaD(const ActionOptions &ao):
   transitiontempered_(false),
   tt_biasf_(1.0),
   tt_biasthreshold_(0.0),
+  tt_alpha_(0.5),
   benthic_toleration_(false),
-  benthic_tol_energy_(0.0),
+  benthic_tol_number_(0.0),
   benthic_erosion_(false),
   benthic_erosive_time_(0.0),
-  benthic_smoothing_der_(vector<double>()),
   last_benthic_erosion_(0.0),
+  benthic_histo_stride_(0),
+  BenthicHistogram_(NULL),
   use_domains_(false),
   scale_new_hills_(false),
+  use_whole_grid_domain_(false),
   n_domains_(0),
   domain_bias_level_(0.0),
   use_adaptive_domains_(false),
@@ -471,8 +495,9 @@ MetaD::MetaD(const ActionOptions &ao):
   adaptive_domains_reftype_(kMinRef),
   adaptive_domains_eoffset_(0.0),
   adaptive_domains_stride_(0),
-  histo_stride_(0),
-  Histogram_(NULL),
+  adaptive_domains_downsampling_(1.0),
+  domains_histo_stride_(0),
+  DomainsHistogram_(NULL),
   print_domains_scaling_(false),
   DomainsScalingFilePs_(vector<OFile*>()),
   print_adaptive_domains_energies_(false),
@@ -483,6 +508,7 @@ MetaD::MetaD(const ActionOptions &ao):
   mw_n_(1), mw_dir_("./"), mw_id_(0), mw_rstride_(1),
   walkers_mpi(false),
   acceleration(false), acc(0.0),
+  calc_average_bias_coft_(false), average_bias_coft_(0.0),
   // Interval initialization
   uppI_(-1), lowI_(-1), doInt_(false),
   // Event clock initialization
@@ -595,6 +621,10 @@ MetaD::MetaD(const ActionOptions &ao):
     if (tt_biasthreshold_ < 0.0) {
       error("transition tempered bias threshold is nonsensical");
     }
+    parse("TTALPHA", tt_alpha_);
+    if (tt_alpha_ < 0.5 || tt_alpha_ > 1.0) {
+      error("transition tempered decay shape parameter alpha is nonsensical");
+    }
     vector<double> tempcoords(getNumberOfArguments());    
     for (unsigned i = 0; ; i++) {
       if (!parseNumberedVector("TRANSITIONWELL", i, tempcoords) ) break;
@@ -607,15 +637,16 @@ MetaD::MetaD(const ActionOptions &ao):
 
   // Check for a benthic metadynamics toleration threshold.
   // Wait to set the energy threshold until the hill height is parsed.
-  int benthic_n_tolerated = 0;
-  parse("BENTHIC_TOLERATION", benthic_n_tolerated);
-  if (benthic_n_tolerated > 0) {
+  parse("BENTHIC_TOLERATION", benthic_tol_number_);
+  if (benthic_tol_number_ > 0.0) {
     benthic_toleration_ = true;
-  }
-  // Check for a benthic metadynamics erosion time.
-  parse("BENTHIC_EROSION", benthic_erosive_time_);
-  if (benthic_erosive_time_ > 0.0) {
-    benthic_erosion_ = true;
+    // Check for a benthic metadynamics filter time.
+    parse("BENTHIC_FILTER_STRIDE", benthic_histo_stride_);
+    // Check for a benthic metadynamics erosion time.
+    parse("BENTHIC_EROSION", benthic_erosive_time_);
+    if (benthic_erosive_time_ > 0.0) {
+      benthic_erosion_ = true;
+    }
   }
 
   // Set initial bias deposition rate parameters.
@@ -743,6 +774,7 @@ MetaD::MetaD(const ActionOptions &ao):
   parseFlag("USE_DOMAINS", use_domains_);
   if (use_domains_) {
     parse("REGION_RFILE", domainsreadfilename_);
+    parseFlag("WHOLE_GRID_DOMAIN", use_whole_grid_domain_);
     parseFlag("USE_ADAPTIVE_DOMAINS", use_adaptive_domains_);
     if (use_adaptive_domains_) {
       if (kbt_ == 0.0) {
@@ -765,8 +797,12 @@ MetaD::MetaD(const ActionOptions &ao):
         error("adaptive domains energy offset must be positive for minimum-referenced to make sense");
       }
       parse("ADAPTIVE_DOMAINS_STRIDE", adaptive_domains_stride_);
-      if (adaptive_domains_stride_ <=0) {
+      if (adaptive_domains_stride_ <= 0) {
         error("adaptive domains requires a stride value greater than zero");
+      }
+      parse("ADAPTIVE_DOMAINS_DOWNSAMPLING", adaptive_domains_downsampling_);
+      if (adaptive_domains_downsampling_ < 1.0) {
+        error("adaptive domains downsampling must be at least one");
       }
       parseFlag("PRINT_ADAPTIVE_DOMAINS_ENERGIES", print_adaptive_domains_energies_);
       if (print_adaptive_domains_energies_) {
@@ -812,6 +848,8 @@ MetaD::MetaD(const ActionOptions &ao):
   // Set special clock options.
   acceleration = false;
   parseFlag("ACCELERATION", acceleration);
+  // Set to calculate the average bias.
+  parseFlag("CALC_AVERAGE_BIAS", calc_average_bias_coft_);
   checkRead();
   
   // Log all of what has just been set.
@@ -829,13 +867,18 @@ MetaD::MetaD(const ActionOptions &ao):
   log.printf("  Gaussian deposition pace %d\n", stride_);
   log.printf("  Gaussian file %s\n", hillsfname.c_str());
   if (welltempered_) {
-    log.printf("  Well-Tempered Bias Factor %f\n", biasf_);
+    log.printf("  Well-Tempered bias factor %f\n", biasf_);
     log.printf("  Hills relaxation time (tau) %f\n", tau);
     log.printf("  KbT %f\n", kbt_);
+    if (wt_biasthreshold_ != 0.0) {
+      log.printf("  Well-Tempered bias threshold %f\n", wt_biasthreshold_);
+    }
   }
   // Transition tempered metadynamics options
   if (transitiontempered_) {
-    log.printf("  Transition-Tempered Bias Factor %f\n", tt_biasf_);
+    log.printf("  Transition-Tempered bias factor %f\n", tt_biasf_);
+    log.printf("  Transition-Tempered bias threshold %f\n", tt_biasthreshold_);
+    log.printf("  Transition-Tempered decay shape parameter alpha %f\n", tt_alpha_);
     log.printf("  Number of transition wells %d\n", transitionwells_.size());
     for (unsigned i = 0; i < transitionwells_.size(); i++) {
       log.printf("  Transition well %d at coordinate ", i);
@@ -863,38 +906,36 @@ MetaD::MetaD(const ActionOptions &ao):
   }
   // Benthic metadynamics options
   if (benthic_toleration_) {
-    benthic_tol_energy_ = height0_ * (.05 + (double) benthic_n_tolerated);
-    log.printf("  Benthic number of hills to tolerate %d, energy threshold %f\n", benthic_n_tolerated, benthic_tol_energy_);
-  }
-  if (benthic_erosion_) {
     // Benthic erosion relies on using a grid and an acceleration factor.
     if (!grid_) {
-      error(" benthic erosion requires a grid for the bias");
+      error(" benthic requires a grid for the bias");
     }
     if (!acceleration) {
-      error(" benthic erosion requires calculation of the acceleration factor");
+      error(" benthic requires calculation of the acceleration factor");
     }
-    // The smoothing derivative is set by assuming that 2 times the maximum force
-    // added by a single hill is a safe force to add to the bias anywhere.
-    benthic_smoothing_der_ = vector<double>(getNumberOfArguments());
-    for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-      if (adaptive_ == FlexibleBin::none) {
-        benthic_smoothing_der_[i] = 2.0 * .6065 * height0_ / sigma0_[i];
-      } else {
-        if (sigma0min_.size() == 0) {
-          error(" benthic erosion requires hill width estimates");
-        }
-        benthic_smoothing_der_[i] = 2.0 * .6065 * height0_ / sigma0min_[i];
+    log.printf("  Benthic number of samples to tolerate %d\n", benthic_tol_number_);
+    if (benthic_erosion_) {
+      // Log the timescale.
+      log.printf("  Benthic erosion on timescale %f \n", benthic_erosive_time_);
+    }
+    // Set the histogramming parameters for the thresholding if not already
+    // specified.
+    if (benthic_histo_stride_ == 0) {
+      benthic_histo_stride_ = max(1, stride_);
+    }
+    if (benthic_histo_bandwidth_.size() == 0) {
+      benthic_histo_bandwidth_ = vector<double>(getNumberOfArguments());
+      for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+        benthic_histo_bandwidth_[i] = sigma0_[i];
       }
     }
-    // Log the timescale, the threshold, and the smoothing derivatives.
-    log.printf("  Benthic erosion on timescale %f, energy threshold %f\n", benthic_erosive_time_, benthic_tol_energy_);
-    log.printf("  Smoothing derivatives for the erosion are");
-    for (unsigned i = 0; i < benthic_smoothing_der_.size(); ++i) {
-      log.printf(" %f", benthic_smoothing_der_[i]);
+    log.printf("  Histogram update stride is %d and bandwiths are", domains_histo_stride_);
+    for (unsigned i = 0; i < domains_histo_bandwidth_.size(); i++) {
+      log.printf(" %f", domains_histo_bandwidth_[i]);
     }
     log.printf("\n");
   }
+
   if (doInt_) {
     log.printf("  Upper and Lower limits boundaries for the bias are activated at %f - %f\n", lowI_, uppI_);
   }
@@ -932,11 +973,24 @@ MetaD::MetaD(const ActionOptions &ao):
   }
 
   if (use_domains_) {
+    log.printf("  Using metabasin metadynamics \n");      
     if (!grid_ || sparsegrid) {
       error(" using domains requires a dense grid for the bias");
     }
+    if (!nospline) {
+      error(" using domains is currently numerically unstable when using splines for the bias");
+    }
     if (adaptive_ != FlexibleBin::none) {
       error(" using domains only works for fixed, non-adaptive Gaussians");
+    }
+    if (!(use_whole_grid_domain_ || use_adaptive_domains_ || domainsreadfilename_.size())) {
+      error(" must specify exactly one of WHOLE_GRID_DOMAIN, USE_ADAPTIVE_DOMAINS, or REGION_RFILE with USE_DOMAINS");
+    }
+    if ((use_whole_grid_domain_ && use_adaptive_domains_) || (use_whole_grid_domain_ && domainsreadfilename_.size()) || (domainsreadfilename_.size() && use_adaptive_domains_) ) {
+      error(" must specify only one of WHOLE_GRID_DOMAIN, USE_ADAPTIVE_DOMAINS, or REGION_RFILE with USE_DOMAINS");
+    }
+    if (use_whole_grid_domain_) {
+      log.printf("  Using the entire grid as the metabasin metadynamics domain \n");      
     }
     if (domainsreadfilename_.size() > 0) {
       log.printf("  Reading grid in file %s for initial metabasin metadynamics domains \n", domainsreadfilename_.c_str());
@@ -959,20 +1013,21 @@ MetaD::MetaD(const ActionOptions &ao):
         log.printf("  Reading histogram in file %s for restarting metabasin metadynamics with adaptive domains \n", domains_histo_readfilename_.c_str());
       }
       log.printf("  Domains will be updated every %d steps\n", adaptive_domains_stride_);
+      log.printf("  Scaling grids will be generated using 1 / %f of the grid points\n", adaptive_domains_downsampling_);
       // Set the histogramming parameters for the future free energy estimates
       // if they are not already specified.
-      if (histo_stride_ == 0) {
-        histo_stride_ = max(1, stride_ / 5);
+      if (domains_histo_stride_ == 0) {
+        domains_histo_stride_ = max(1, stride_ / 5);
       }
-      if (histo_bandwidth_.size() == 0) {
-        histo_bandwidth_ = vector<double>(getNumberOfArguments());
+      if (domains_histo_bandwidth_.size() == 0) {
+        domains_histo_bandwidth_ = vector<double>(getNumberOfArguments());
         for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-          histo_bandwidth_[i] = sigma0_[i] / 2.5;
+          domains_histo_bandwidth_[i] = sigma0_[i] / 2.5;
         }
       }
-      log.printf("  Histogram update stride is %d and bandwiths are", histo_stride_);
-      for (unsigned i = 0; i < histo_bandwidth_.size(); i++) {
-        log.printf(" %f", histo_bandwidth_[i]);
+      log.printf("  Histogram update stride is %d and bandwiths are", domains_histo_stride_);
+      for (unsigned i = 0; i < domains_histo_bandwidth_.size(); i++) {
+        log.printf(" %f", domains_histo_bandwidth_[i]);
       }
       log.printf("\n");
     }
@@ -1000,6 +1055,17 @@ MetaD::MetaD(const ActionOptions &ao):
     log.printf("  calculation on the fly of the acceleration factor\n");
     addComponent("acc");
     componentIsNotPeriodic("acc");
+  }
+  if (calc_average_bias_coft_) {
+    if (kbt_ == 0.0) {
+      error("The calculation of the average bias on the fly works only if simulation temperature has been defined");
+    }
+    if (!grid_) {
+      error("Calculating the average bias on the fly works only with a grid");
+    }
+    log.printf("  calculation on the fly of the average bias c(t)\n");
+    addComponent("coft");
+    componentIsNotPeriodic("coft");
   }
   
   // Perform initializations based on the options just set and logged.
@@ -1084,32 +1150,64 @@ MetaD::MetaD(const ActionOptions &ao):
     }
   }
 
+  // Initialize an auxiliary histogram for the benthic metadynamics control.
+  if (benthic_toleration_) {
+    // Use the same parameters as for the main grid, but don't use splines or derivatives.
+    std::string funcl = getLabel() + ".number";
+    BenthicHistogram_ = new Grid(funcl, getArguments(), gmin, gmax, gbin, false, false);
+  }
+
+  log.printf("  Entering USE_DOMAINS initialization.\n"); log.flush();
   if (use_domains_) {
-    // Initialize and read a region grid if requested or default.
-    if (domainsreadfilename_.length() > 0) {
-      // Read the grid in input, find the keys.
-      IFile gridfile;
-      gridfile.open(domainsreadfilename_);
-      std::string funcl = getLabel() + ".indicator";
-      Grid* input_region = Grid::create(funcl, getArguments(), gridfile, false, false, false);
-      gridfile.close();
-      // Check for consistency between the region grid and the MetaD input specs.
-      if (input_region->getDimension() != getNumberOfArguments()) {
-        error("mismatch between dimensionality of region input grid and number of arguments");
+    // Initialize domains based on an initial region if requested.
+    if (use_whole_grid_domain_ || domainsreadfilename_.length() > 0) {
+      // Initialize and set up a whole grid region if requested.
+      if (use_whole_grid_domain_) {
+        // Create a copy of the grid.
+        Grid *whole_grid_region;
+        std::string funcl = getLabel() + ".indicator";
+        vector<unsigned> input_nbins = BiasGrid_->getNbin();
+        for (unsigned j = 0; j < getNumberOfArguments(); ++j) {
+          if (!getPntrToArgument(j)->isPeriodic()) {
+            input_nbins[j] -= 1;
+          }
+        }
+        whole_grid_region = new Grid(funcl, getArguments(), BiasGrid_->getMin(), BiasGrid_->getMax(), input_nbins, false, false);
+        // Set all values to 1.0.
+        for (unsigned i = 0; i < whole_grid_region->getMaxSize(); i++) {
+          whole_grid_region->setValue(i, 1.0);
+        }
+        // Use the region grid to set up domains in the bias grid.
+        defineDomains(whole_grid_region);
+        // Get rid of the temporary.
+        delete whole_grid_region;
       }
-      for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
-        if (getPntrToArgument(i)->isPeriodic() != input_region->getIsPeriodic()[i]) {
-          error("periodicity mismatch between arguments and region input function");
+      // Initialize and read domains from a region grid if requested.
+      if (domainsreadfilename_.length() > 0) {
+        // Read the grid in input, find the keys.
+        IFile gridfile;
+        gridfile.open(domainsreadfilename_);
+        std::string funcl = getLabel() + ".indicator";
+        Grid* input_region = Grid::create(funcl, getArguments(), gridfile, false, false, false);
+        gridfile.close();
+        // Check for consistency between the region grid and the MetaD input specs.
+        if (input_region->getDimension() != getNumberOfArguments()) {
+          error("mismatch between dimensionality of region input grid and number of arguments");
+        }
+        for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
+          if (getPntrToArgument(i)->isPeriodic() != input_region->getIsPeriodic()[i]) {
+            error("periodicity mismatch between arguments and region input function");
+          }
+        }
+        // Use the region grid to set up domains in the bias grid.
+        defineDomains(input_region);
+        // Get rid of the temporary.
+        delete input_region;
+        if (n_domains_ == 0) {
+          error("no domains found in region file " + domainsreadfilename_);
         }
       }
-      // Use the region grid to set up domains in the bias grid.
-      defineDomains(input_region);
-      // Get rid of the temporary.
-      delete input_region;
-      if (n_domains_ == 0) {
-        error("no domains found in region file " + domainsreadfilename_);
-      }
-      // Use the domains to set up the scaling grids.
+      // Use the domains to set up scaling grids.
       createScalingGrids();
       scale_new_hills_ = true;
       if (print_domains_scaling_) {
@@ -1138,23 +1236,23 @@ MetaD::MetaD(const ActionOptions &ao):
         IFile histofile;
         histofile.open(domains_histo_readfilename_);
         std::string funcl = getLabel() + ".number";
-        Histogram_ = Grid::create(funcl, getArguments(), histofile, false, false, false);
+        DomainsHistogram_ = Grid::create(funcl, getArguments(), histofile, false, false, false);
         histofile.close();
         // Check for consistency between the external grid and the MetaD input specs.
-        if (Histogram_->getDimension() != getNumberOfArguments()) {
+        if (DomainsHistogram_->getDimension() != getNumberOfArguments()) {
           error("mismatch between dimensionality of input histogram and number of arguments");
         }
         for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
-          if (getPntrToArgument(i)->isPeriodic() != Histogram_->getIsPeriodic()[i]) {
+          if (getPntrToArgument(i)->isPeriodic() != DomainsHistogram_->getIsPeriodic()[i]) {
             error("periodicity mismatch between arguments and input histogram");
           }
         }
         adaptDomains();
       } else {
         std::string funcl = getLabel() + ".number";
-        Histogram_ = new Grid(funcl, getArguments(), gmin, gmax, gbin, false, false);
-        for (unsigned i = 0; i < Histogram_->getMaxSize(); i++) {
-          Histogram_->setValue(i, .3);
+        DomainsHistogram_ = new Grid(funcl, getArguments(), gmin, gmax, gbin, false, false);
+        for (unsigned i = 0; i < DomainsHistogram_->getMaxSize(); i++) {
+          DomainsHistogram_->setValue(i, .3);
         }
       }
       if (wgridstride_ > 0 && whistofilename_.size() > 0) {
@@ -1163,6 +1261,7 @@ MetaD::MetaD(const ActionOptions &ao):
       }
     }
   }
+  log.printf("  Exiting USE_DOMAINS initialization.\n"); log.flush();
 
   // Create vector of ifile* for hills reading.
   // Open all files at the beginning and read Gaussians if restarting.
@@ -1229,7 +1328,10 @@ MetaD::MetaD(const ActionOptions &ao):
                       "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if (acceleration) log << plumed.cite(
                             "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
+  if (calc_average_bias_coft_) log << plumed.cite(
+                                       "Pratyush and Parrinello, J. Phys. Chem. B 119, 736–742 (2015)");
   log << "\n";
+  log.flush();
 }
 
 void MetaD::readGaussians(IFile *ifile) {
@@ -1342,6 +1444,10 @@ double tame_scaling(double scale) {
 }
 
 void MetaD::addGaussian(const Gaussian &hill) {
+  // If the height is zero, add no hill.
+  if (hill.height == 0.0) {
+    return;
+  }
   // Add the hill to the list of Gaussians if there is no grid.
   if (!grid_) {
     hills_.push_back(hill);
@@ -1435,7 +1541,7 @@ void MetaD::addGaussian(const Gaussian &hill) {
           }
         }
       }
-      // Set all derivatives. This is incorrect.
+      // Set all derivatives.
       for (unsigned i = 0; i < neighbors.size(); ++i) {
         BiasGrid_->setDerivFromValues(neighbors[i]);
       }
@@ -1491,8 +1597,6 @@ void MetaD::addGaussianToGrid(const Gaussian &hill, Grid * const grid) {
     }
   }
 }
-
-
 
 vector<unsigned> MetaD::getGaussianSupport(const Gaussian &hill) {
   vector<unsigned> nneigh;
@@ -1592,23 +1696,6 @@ double MetaD::getBiasAndDerivatives(const vector<double> &cv, double* der) {
     }
   }
 
-  // Use a toleration threshold for benthic metadynamics if one has
-  // been specified.
-  if (benthic_toleration_) {
-    // If the bias is below the threshold, set it and the forces to zero.
-    if (bias <= benthic_tol_energy_) {
-      bias = 0.0;
-      if (der) {
-        for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
-          der[i] = 0.0;
-        }
-      }
-    // Otherwise, just subtract the toleration threshold from the bias and
-    // leave forces unchanged.
-    } else {
-      bias -= benthic_tol_energy_;
-    }
-  }
   // Add in the overall bias level if domains are being used.
   if (use_domains_) {
     bias += domain_bias_level_;
@@ -1703,11 +1790,20 @@ double MetaD::getHeight(const vector<double> &cv) {
   double height = height0_;
   if (welltempered_) {
     double vbias = getBiasAndDerivatives(cv);
-    height = height0_ * exp(-max(0.0, vbias - wt_biasthreshold_) / (kbt_ * (biasf_ - 1.0)));
+    height *= exp(-max(0.0, vbias - wt_biasthreshold_) / (kbt_ * (biasf_ - 1.0)));
   }
   if (transitiontempered_) {
     double vbarrier = getTransitionBarrierBias();
-    height = height0_ * exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
+    if (tt_alpha_ == 1.0) {
+      height *= exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
+    } else {
+      height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha_ / (1 - tt_alpha_));
+    }
+  }
+  if (benthic_toleration_) {
+    if (BenthicHistogram_->getValue(BiasGrid_->getIndex(cv)) < benthic_tol_number_) {
+      height = 0.0;
+    }
   }
   if (use_domains_ && scale_new_hills_) {
     if (domain_ids_[BiasGrid_->getIndex(cv)] == 0) {
@@ -1754,15 +1850,22 @@ double MetaD::getTransitionBarrierBias() {
   }
 }
 
-void MetaD::spread_domain(unsigned i, unsigned domain, vector<unsigned> &domain_ids, const Grid * const input_region, const Grid * const BiasGrid_) {
-  vector<unsigned> neighs = BiasGrid_->getNearestNeighbors(i);
-  for (unsigned j = 0; j < neighs.size(); j++) {
-    bool should_be_biased = (input_region->getValue(BiasGrid_->getPoint(neighs[j])) == 1.0);
-    bool domain_is_not_set = (domain_ids[neighs[j]] == 0);
-    if (should_be_biased && domain_is_not_set) {
-      domain_ids[neighs[j]] = domain;
-      spread_domain(neighs[j], domain, domain_ids, input_region, BiasGrid_);
+void MetaD::spread_domain(unsigned i, unsigned domain, const Grid * const input_region) {
+  deque<unsigned> point_stack = deque<unsigned>();
+  point_stack.push_back(i);
+  unsigned curr_point;
+  while (!point_stack.empty()) {
+    curr_point = point_stack.front();
+    vector<unsigned> neighs = BiasGrid_->getNearestNeighbors(curr_point);
+    for (unsigned j = 0; j < neighs.size(); j++) {
+      bool should_be_biased = (input_region->getValue(BiasGrid_->getPoint(neighs[j])) == 1.0);
+      bool domain_is_not_set = (domain_ids_[neighs[j]] == 0);
+      if (should_be_biased && domain_is_not_set) {
+        domain_ids_[neighs[j]] = domain;
+        point_stack.push_back(neighs[j]);
+      }
     }
+    point_stack.pop_front();
   }
 }
 
@@ -1772,7 +1875,7 @@ void MetaD::defineDomains(const Grid * const input_region) {
   // points as the bias grid. Clear it if it already exists.
   n_domains_ = 0;
   domain_ids_ = vector<unsigned>(BiasGrid_->getMaxSize(), 0);
-  
+
   // Define the connected domains given the input region.
   // Search over all points to find ones that are supposed to be biased but
   // are not yet assigned to any domain.
@@ -1787,7 +1890,7 @@ void MetaD::defineDomains(const Grid * const input_region) {
       domain_ids_[i] = n_domains_;
       // Find all other points to be biased that are connected to this one by other
       // points that should also be biased and set their domain values. Recursive.
-      spread_domain(i, n_domains_, domain_ids_, input_region, BiasGrid_);
+      spread_domain(i, n_domains_, input_region);
     }
   }
   // Find and store the boundary points for each domain.
@@ -1916,10 +2019,16 @@ void MetaD::createScalingGrids() {
     }
     // Create the base scaling function by adding a Gaussian to the grid for
     // each point in the domain.
+    int pts_seen = 0;
+    int hills_added = 0;
     for (unsigned j = 0; j < BiasGrid_->getMaxSize(); j++) {
       if (domain_ids_[j] == (i + 1)) {
-        Gaussian newhill = Gaussian(BiasGrid_->getPoint(j), sigma0_, height0_, false);
-        addGaussianToGrid(newhill, newScalingGrid);
+        pts_seen++;
+        if (pts_seen >= adaptive_domains_downsampling_ * hills_added) {
+          hills_added++;
+          Gaussian newhill = Gaussian(BiasGrid_->getPoint(j), sigma0_, height0_, false);
+          addGaussianToGrid(newhill, newScalingGrid);
+        }
       }
     }
 
@@ -1944,7 +2053,8 @@ bool MetaD::shouldAdaptDomainsNow() {
   bool adapt_domains_now = true;
   if (delay_adaptive_domains_) {
     // For the min-referenced adaptive domains, delay until the 
-    // (FES-scaled) bias is above the offset somewhere.
+    // bias (scaled into free energy by the biasfactor) is above
+    // the offset somewhere.
     if (adaptive_domains_reftype_ == kMinRef) {
       double max_bias = 0.0;
       for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
@@ -1979,7 +2089,7 @@ void MetaD::adaptDomains() {
   new_region = new Grid(funcl, getArguments(), BiasGrid_->getMin(), BiasGrid_->getMax(), input_nbins, false, false);
   // Copy the histogram.
   for (unsigned i = 0; i < new_region->getMaxSize(); i++) {
-    new_region->setValue(i, Histogram_->getValue(i));
+    new_region->setValue(i, DomainsHistogram_->getValue(i));
   }
   // Take a log scaled by kbT to convert the histogram into an energy.
   new_region->logAllValuesAndDerivatives(-kbt_);
@@ -2105,6 +2215,10 @@ void MetaD::calculate() {
   } else if (acceleration && isFirstStep) {
     getPntrToComponent("acc")->set(1.0);
   }
+  // Set the average bias
+  if (calc_average_bias_coft_) {
+    getPntrToComponent("coft")->set(average_bias_coft_);  
+  } 
   // set Forces
   for (unsigned i = 0; i < ncv; ++i) {
     const double f = -der[i];
@@ -2142,9 +2256,9 @@ void MetaD::update() {
   // only be used through the log and normalization thus corresponds to an
   // irrelevant constant. 
   if (use_adaptive_domains_) {
-    if (getStep() % histo_stride_ == 0 && !isFirstStep) {
-      KernelFunctions kernel(cv, histo_bandwidth_, "gaussian", false, 1.0, false);
-      Histogram_->addKernel(kernel);
+    if (getStep() % domains_histo_stride_ == 0 && !isFirstStep) {
+      KernelFunctions kernel(cv, domains_histo_bandwidth_, "gaussian", false, 1.0, false);
+      DomainsHistogram_->addKernel(kernel);
     }
     if (getStep() % adaptive_domains_stride_ == 0 && !isFirstStep) {
       // Check if the delay conditions are satisfied.
@@ -2154,15 +2268,25 @@ void MetaD::update() {
       }
     }
   }
-  // When using benthic erosion, erosion can't affect anything until a
-  // new hill is added--so only perform erosion just before adding hills.
-  // Hills are added directly or from reading other walkers' hills.
-  if (benthic_erosion_ && (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0))) {
-    // The erosion time is a real time scale, so it is compared to the
-    // boosted time rather than the plain simulation time.
-    if ( acc * getTimeStep() > (last_benthic_erosion_ + benthic_erosive_time_)) {
-      BiasGrid_->erodeFunction(benthic_tol_energy_, benthic_smoothing_der_);
-      last_benthic_erosion_ = acc * getTimeStep();
+  if (benthic_toleration_) {
+    if (getStep() % benthic_histo_stride_ == 0 && !isFirstStep) {
+      KernelFunctions kernel(cv, benthic_histo_bandwidth_, "gaussian", false, 1.0, false);
+      BenthicHistogram_->addKernel(kernel);
+    }
+    // When using benthic erosion, erosion can't affect anything until a
+    // new hill is added--so only perform erosion just before adding hills.
+    // Hills are added directly or from reading other walkers' hills.
+    if (benthic_erosion_ && (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0))) {
+      // The erosion time is a real time scale, so it is compared to the
+      // boosted time rather than the plain simulation time.
+      if ( acc * getTimeStep() > (last_benthic_erosion_ + benthic_erosive_time_)) {
+        for (unsigned i = 0; i < BenthicHistogram_->getMaxSize(); i++) {
+          if (BenthicHistogram_->getValue(i) <= benthic_tol_number_) {
+            BenthicHistogram_->setValue(i, 0.0);
+          }
+        }
+        last_benthic_erosion_ = acc * getTimeStep();
+      }
     }
   }
   if (nowAddAHill) { // probably this can be substituted with a signal
@@ -2246,7 +2370,7 @@ void MetaD::update() {
     }
     BiasGrid_->writeToFile(gridfile_);
     if (use_adaptive_domains_ && whistofilename_.size() > 0) {
-      Histogram_->writeToFile(whistofile_);
+      DomainsHistogram_->writeToFile(whistofile_);
     }
 
     // if a single grid is stored, it is necessary to flush it, otherwise
@@ -2283,6 +2407,34 @@ void MetaD::update() {
         ifiles[i]->reset(false);
       }
     }
+  }
+  // Calculate the new average bias after any bias update.
+  // This follows the Tiwary and Parrinello JPCB paper.
+  if (calc_average_bias_coft_ && (nowAddAHill || (mw_n_ > 1 && getStep() % mw_rstride_ == 0))) {
+    // Calc sums rather than integrals because the normalization
+    // is irrelevant.
+    double exp_free_energy_sum = 0.0;
+    double exp_biased_free_energy_sum = 0.0;
+    // The formula depends on how the final free energy 
+    // should be inferred from the bias.
+    // For reasons I don't understand, the first branch of the if
+    // statement can't be followed unless I flush the log first.
+    log.flush();
+    if (biasf_ == 1.0) {
+      for (unsigned i; i < BiasGrid_->getMaxSize(); i++) {
+        double pt_bias = BiasGrid_->getValue(i);
+        exp_free_energy_sum += exp(pt_bias / kbt_);
+        exp_biased_free_energy_sum += 1.0;
+      }
+    } else if (biasf_ > 1.0) {
+      for (unsigned i; i < BiasGrid_->getMaxSize(); i++) {
+        double pt_bias = BiasGrid_->getValue(i);
+        exp_free_energy_sum += exp(biasf_ * pt_bias / (kbt_  * (biasf_ - 1)));
+        exp_biased_free_energy_sum += exp(pt_bias / (kbt_ * (biasf_ - 1)));
+      }
+    }
+    average_bias_coft_ = kbt_ * ( std::log(exp_free_energy_sum) - std::log(exp_biased_free_energy_sum));
+    getPntrToComponent("coft")->set(average_bias_coft_);
   }
 }
 
