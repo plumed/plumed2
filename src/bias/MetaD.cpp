@@ -339,6 +339,9 @@ class MetaD : public Bias {
   bool   scanOneHill(IFile *ifile,  vector<Value> &v, vector<double> &center, vector<double>  &sigma, double &height, bool &multivariate);
   std::string fmt;
 
+  void   dumpBias();
+  void   dumpGrid(Grid *, OFile &);
+
  public:
   MetaD(const ActionOptions &);
   ~MetaD();
@@ -2352,38 +2355,9 @@ void MetaD::update() {
   }
   // dump grid on file
   if (wgridstride_ > 0 && getStep() % wgridstride_ == 0) {
-    // in case old grids are stored, a sequence of grids should appear
-    // this call results in a repetition of the header:
-    if (storeOldGrids_) {
-      gridfile_.clearFields();
-      if (use_adaptive_domains_ && whistofilename_.size() > 0) {
-        whistofile_.clearFields();
-      }
-    }
-    // in case only latest grid is stored, file should be rewound
-    // this will overwrite previously written grids
-    else {
-      gridfile_.rewind();
-      if (use_adaptive_domains_ && whistofilename_.size() > 0) {
-        whistofile_.clearFields();
-      }
-    }
-    BiasGrid_->writeToFile(gridfile_);
+    dumpBias();
     if (use_adaptive_domains_ && whistofilename_.size() > 0) {
-      DomainsHistogram_->writeToFile(whistofile_);
-    }
-
-    // if a single grid is stored, it is necessary to flush it, otherwise
-    // the file might stay empty forever (when a single grid is not large enough to
-    // trigger flushing from the operating system).
-    // on the other hand, if grids are stored one after the other this is
-    // no necessary, and we leave the flushing control to the user as usual
-    // (with FLUSH keyword)
-    if (!storeOldGrids_) {
-      gridfile_.flush();
-      if (use_adaptive_domains_ && whistofilename_.size() > 0) {
-        whistofile_.flush();
-      }
+      dumpGrid(DomainsHistogram_, whistofile_);
     }
   }
   // if multiple walkers and time to read Gaussians
@@ -2558,6 +2532,44 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
     return true;
   } else {
     return false;
+  }
+}
+
+void MetaD::dumpBias() {
+  // Add the internally used domain bias level.
+  if (use_domains_ && domain_bias_level_ > 0.0) {
+    for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
+      BiasGrid_->addValue(i, domain_bias_level_);
+    }
+  }
+  dumpGrid(BiasGrid_, gridfile_);
+  // Subtract it again.
+  if (use_domains_ && domain_bias_level_ > 0.0) {
+    for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
+      BiasGrid_->addValue(i, -domain_bias_level_);
+    }
+  }
+}
+
+void MetaD::dumpGrid(Grid *grid, OFile &gridfile) {
+  // in case old grids are stored, a sequence of grids should appear
+  // this call results in a repetition of the header:
+  if (storeOldGrids_) {
+    gridfile.clearFields();
+  // in case only latest grid is stored, file should be rewound
+  // this will overwrite previously written grids
+  } else {
+    gridfile.rewind();
+  }
+  grid->writeToFile(gridfile);
+  // if a single grid is stored, it is necessary to flush it, otherwise
+  // the file might stay empty forever (when a single grid is not large enough to
+  // trigger flushing from the operating system).
+  // on the other hand, if grids are stored one after the other this is
+  // no necessary, and we leave the flushing control to the user as usual
+  // (with FLUSH keyword)
+  if (!storeOldGrids_) {
+    gridfile.flush();
   }
 }
 
