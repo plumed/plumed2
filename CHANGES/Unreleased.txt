@@ -26,6 +26,8 @@ Changes from version 2.1 which are relevant for users:
   - \ref MFILTER_LESS filter multicolvar by the value of the colvar
   - \ref MFILTER_MORE 
   - \ref MFILTER_BETWEEN
+  - \ref PCARMSD pca collective variables using OPTIMAL rmsd measure
+  - \ref PCAVARS pca collective variables using any one of the measures in reference
   - \ref GRADIENT can be used to calculate the gradient of a quantity.  Used to drive nucleation
   - \ref CAVITY
   - \ref PUCKERING implemebted for 5-membered rings (thanks to Alejandro Gil-Ley).
