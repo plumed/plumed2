@@ -373,6 +373,8 @@ isvectorial(false)
     csforces.resize(atoms.size());
     addValueWithDerivatives();
     setNotPeriodic();
+    if(ensemble) setEnsemble(ens_dim);
+    else setNotEnsemble();
   } else {
     csforces.resize(6*numResidues*atoms.size());
     for(int i=0; i<numResidues; i++) {
@@ -383,11 +385,23 @@ isvectorial(false)
       addComponentWithDerivatives("ca_"+num); componentIsNotPeriodic("ca_"+num);
       addComponentWithDerivatives("cb_"+num); componentIsNotPeriodic("cb_"+num);
       addComponentWithDerivatives("co_"+num); componentIsNotPeriodic("co_"+num);
+      if(ensemble) {
+        componentIsEnsemble("ha_"+num, ens_dim);
+        componentIsEnsemble("hn_"+num, ens_dim);
+        componentIsEnsemble("nh_"+num, ens_dim);
+        componentIsEnsemble("ca_"+num, ens_dim);
+        componentIsEnsemble("cb_"+num, ens_dim);
+        componentIsEnsemble("co_"+num, ens_dim);
+      } else {
+        componentIsNotEnsemble("ha_"+num);
+        componentIsNotEnsemble("hn_"+num);
+        componentIsNotEnsemble("nh_"+num);
+        componentIsNotEnsemble("ca_"+num);
+        componentIsNotEnsemble("cb_"+num);
+        componentIsNotEnsemble("co_"+num);
+      }
     }
   }
-
-  if(ensemble) setEnsemble(ens_dim);
-  else setNotEnsemble();
 
   requestAtoms(atoms);
   log.printf("  DONE!\n"); log.flush();
@@ -464,18 +478,18 @@ void CS2Backbone::calculate()
     // inside each replica
     comm.Sum(&sh[0][0], numResidues*6);
     // now all the replicas have the same averaged chemical shifts
-    if(isvectorial) {
-      unsigned k=0;
-      for(unsigned i=0;i<cam_list[0].atom.size();i++) {
-        for(unsigned a=0;a<cam_list[0].atom[i].size();a++) {
-          for(unsigned cs=0;cs<6;cs++) {
-            // first set the camshift chemical shifts to the averaged one
-            cam_list[0].atom[i][a].calc_cs[cs] = sh[k][cs];
-            // then substitute it with the difference to exp 
-            sh[k][cs] = (sh[k][cs]-cam_list[0].atom[i][a].exp_cs[cs]);
-          }
-          k++;
+  }
+  if(isvectorial) {
+    unsigned k=0;
+    for(unsigned i=0;i<cam_list[0].atom.size();i++) {
+      for(unsigned a=0;a<cam_list[0].atom[i].size();a++) {
+        for(unsigned cs=0;cs<6;cs++) {
+          // first set the camshift chemical shifts to the averaged one
+          cam_list[0].atom[i][a].calc_cs[cs] = sh[k][cs];
+          // then substitute it with the difference to exp 
+          sh[k][cs] = (sh[k][cs]-cam_list[0].atom[i][a].exp_cs[cs]);
         }
+        k++;
       }
     }
   }
