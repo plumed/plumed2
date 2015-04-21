@@ -197,11 +197,11 @@ void PCARMSD::calculate(){
 		double tmp1;
 		for(unsigned a=0;a<3;a++){
 			for(unsigned b=0;b<3;b++){
+				tmp1=0.;
+				for(unsigned n=0;n<getNumberOfAtoms();n++){
+					tmp1+=centeredpos[n][b]*eigenvectors[i][n][a];
+				}
 				for(unsigned iat=0;iat<getNumberOfAtoms();iat++){
-					tmp1=0.;
-					for(unsigned n=0;n<getNumberOfAtoms();n++){
-						tmp1+=centeredpos[n][b]*eigenvectors[i][n][a];
-					}
 					der[iat]+=drotdpos[a][b][iat]*tmp1;	
 				}
 			}
