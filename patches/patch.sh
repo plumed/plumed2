@@ -257,11 +257,20 @@ case "$action" in
       test -n "$quiet" || echo "Patching with stored diff"
       bash "$diff"
     fi
+
+    echo ""
+    if $PLUMED_ROOT/src/lib/plumed --has-mpi; then
+      echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
+    else
+      echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"
+    fi
+
     
     if type -t plumed_after_patch 1>/dev/null ; then
       test -n "$quiet" || echo "Executing plumed_after_patch function"
       plumed_after_patch
     fi
+
   ;;
   (info)
     if type -t plumed_patch_info 1>/dev/null ; then
