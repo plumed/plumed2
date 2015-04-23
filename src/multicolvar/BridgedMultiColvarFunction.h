@@ -81,6 +81,8 @@ public:
   void updateActiveAtoms( AtomValuePack& myatoms ) const { plumed_error(); }
   void getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices );
   void applyBridgeForces( const std::vector<double>& bb );
+  Vector getCentralAtomPos( const unsigned& curr );
+  CatomPack getCentralAtomPack( const unsigned& basn, const unsigned& curr );
 };
 
 inline
@@ -106,6 +108,11 @@ unsigned BridgedMultiColvarFunction::getSizeOfAtomsWithDerivatives(){
 inline 
 Vector BridgedMultiColvarFunction::getPositionOfAtomForLinkCells( const unsigned& iatom ) const { 
   return mycolv->getPositionOfAtomForLinkCells(iatom);
+}
+
+inline
+Vector BridgedMultiColvarFunction::getCentralAtomPos( const unsigned& curr ){
+  return mycolv->getCentralAtomPos( curr );
 }
 
 }

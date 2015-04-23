@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "CatomPack.h"
 #include "BridgedMultiColvarFunction.h"
 
 namespace PLMD {
@@ -101,6 +102,10 @@ bool BridgedMultiColvarFunction::isPeriodic(){
 
 void BridgedMultiColvarFunction::deactivate_task( const unsigned& taskno ){
   plumed_merror("This should never be called");
+}
+
+CatomPack BridgedMultiColvarFunction::getCentralAtomPack( const unsigned& basn, const unsigned& curr ){
+  return mycolv->getCentralAtomPack( basn, curr );
 }
 
 }
