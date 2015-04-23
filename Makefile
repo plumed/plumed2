@@ -45,7 +45,7 @@ else
 
 all:
 	@echo No configuration available
-	@echo First run ./configure.sh
+	@echo First run ./configure
 endif
 
 # these targets are available also without configuration
@@ -60,10 +60,7 @@ fullclean:
 	make clean
 	rm -f Makefile.conf
 	rm -f sourceme.sh
-	rm -fr autoconf/auto*
-	rm -f autoconf/Makefile.conf
-	rm -f autoconf/sourceme.sh
-	rm -f autoconf/config.*
+	rm -f config.log 
 
 
 docclean:
