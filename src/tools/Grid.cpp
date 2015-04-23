@@ -86,6 +86,7 @@ void Grid::Init(const std::string &funcl, const std::vector<std::string> &names,
   min_.resize(dimension_);
   max_.resize(dimension_);
   pbc_.resize(dimension_);
+  indices_.resize(dimension_);
   for (unsigned int i = 0; i < dimension_; ++i) {
     argnames[i] = names[i];
     if (isperiodic[i]) {
@@ -246,9 +247,10 @@ vector<double> Grid::getPoint(const vector<double> &x) const {
   return getPoint(getIndices(x));
 }
 
-void Grid::getPoint(unsigned index, std::vector<double> &point) const {
+void Grid::getPoint(unsigned index, std::vector<double> &point) {
   plumed_dbg_assert(index < maxsize_);
-  getPoint(getIndices(index), point);
+  getIndices(index, indices_);
+  getPoint(indices_, point);
 }
 
 void Grid::getPoint(const std::vector<unsigned> &indices, std::vector<double> &point) const {
@@ -259,9 +261,30 @@ void Grid::getPoint(const std::vector<unsigned> &indices, std::vector<double> &p
   }
 }
 
-void Grid::getPoint(const std::vector<double> &x, std::vector<double> &point) const {
+void Grid::getPoint(const std::vector<double> &x, std::vector<double> &point) {
   plumed_dbg_assert(x.size() == dimension_);
-  getPoint(getIndices(x), point);
+  getIndices(x, indices_);
+  getPoint(indices_, point);
+}
+
+// we are flattening arrays using a column-major order
+void Grid::getIndices(unsigned index, vector<unsigned> &indices) {
+  unsigned kk = index;
+  indices[0] = (index % nbin_[0]);
+  for (unsigned int i = 1; i < dimension_ - 1; ++i) {
+    kk = (kk - indices[i - 1]) / nbin_[i - 1];
+    indices[i] = (kk % nbin_[i]);
+  }
+  if (dimension_ >= 2) {
+    indices[dimension_ - 1] = ((kk - indices[dimension_ - 2]) / nbin_[dimension_ - 2]);
+  }
+}
+
+void Grid::getIndices(const vector<double> &x, vector<unsigned> &indices) {
+  plumed_dbg_assert(x.size() == dimension_);
+  for (unsigned int i = 0; i < dimension_; ++i) {
+    indices.push_back(unsigned(floor((x[i] - min_[i]) / dx_[i])));
+  }
 }
 
 
@@ -280,11 +303,10 @@ vector<unsigned> Grid::getNeighbors
 // For each point in the small neighbor grid, generate the indices for
 // the point and decide whether it is a real neighbor or not.
   vector<unsigned> small_indices(dimension_);
-  vector<unsigned> tmp_indices;
+  vector<unsigned> tmp_indices(dimension_);
   for (unsigned index = 0; index < small_nbin; ++index) {
     // First find the putative multidimensional index that this point would
     // correspond to in the greater grid neglecting boundaries.
-    tmp_indices.resize(dimension_);
     unsigned kk = index;
     small_indices[0] = (index % small_bin[0]);
     for (unsigned i = 1; i < dimension_ - 1; ++i) {
@@ -319,8 +341,7 @@ vector<unsigned> Grid::getNeighbors
       ll++;
     }
     // Add the point to the list of neighbors if it actually fell in the grid.
-    tmp_indices.resize(ll);
-    if (tmp_indices.size() == dimension_) {
+    if (ll == dimension_) {
       neighbors.push_back(getIndex(tmp_indices));
     }
   }

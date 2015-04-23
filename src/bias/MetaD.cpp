@@ -279,7 +279,8 @@ class MetaD : public Bias {
   unsigned n_domains_;
   vector<unsigned> domain_ids_;
   vector<vector<unsigned> > domain_boundary_pts_;
-  double domain_bias_level_;
+  vector<double> domain_boundary_grid_levels_;
+  double domain_implicit_bias_level_;
   vector<Grid*> HillScalingGrids_;
   vector<OFile> regionfiles_;
   bool use_adaptive_domains_;
@@ -288,6 +289,8 @@ class MetaD : public Bias {
   AdaptiveDomainRefType adaptive_domains_reftype_;
   double adaptive_domains_eoffset_;
   int adaptive_domains_stride_;
+  double adaptive_domains_eincrement_;
+  double adaptive_domains_last_elevel_;
   double adaptive_domains_downsampling_;
   int domains_histo_stride_;
   vector<double> domains_histo_bandwidth_;
@@ -327,7 +330,8 @@ class MetaD : public Bias {
   double getTransitionBarrierBias();
   void   defineDomains(const Grid * const);
   void   filterDomains();
-  void   spread_domain(unsigned, unsigned, const Grid * const);
+  void   spreadDomain(unsigned, unsigned, const Grid * const);
+  void   applyDomainBoundaryBias(unsigned, double);
 
   void   createScalingGrids();
   bool   shouldAdaptDomainsNow();
@@ -390,6 +394,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "ADAPTIVE_DOMAINS_REFERENCE", "set metabasin metadynamics adaptive regions with reference to either the 'transition' free energy or the 'minimum' free energy");
   keys.add("optional", "ADAPTIVE_DOMAINS_ENERGY_OFFSET", "use adaptive metabasin metadynamics with regions below a free energy that is the reference free energy plus this value");
   keys.add("optional", "ADAPTIVE_DOMAINS_STRIDE", "use adaptive metabasin metadynamics with regions adapted every this number of steps");  
+  keys.add("optional", "ADAPTIVE_DOMAINS_ENERGY_INCREMENT", "use adaptive metabasin metadynamics with regions adapted every this increase of the bias level");
   keys.add("optional", "ADAPTIVE_DOMAINS_DOWNSAMPLING", "when creating scaling grids, add this ratio fewer hills to minimize performance costs");
   keys.addFlag("PRINT_DOMAINS_SCALING", false, "print out the scaling functions for each metabasin metadynamics domain");
   keys.addFlag("PRINT_ADAPTIVE_DOMAINS_ENERGIES", false, "print out the scaling functions for each metabasin metadynamics domain");
@@ -492,12 +497,14 @@ MetaD::MetaD(const ActionOptions &ao):
   scale_new_hills_(false),
   use_whole_grid_domain_(false),
   n_domains_(0),
-  domain_bias_level_(0.0),
+  domain_implicit_bias_level_(0.0),
   use_adaptive_domains_(false),
   delay_adaptive_domains_(false),
   adaptive_domains_reftype_(kMinRef),
   adaptive_domains_eoffset_(0.0),
   adaptive_domains_stride_(0),
+  adaptive_domains_eincrement_(0.0),
+  adaptive_domains_last_elevel_(0.0),
   adaptive_domains_downsampling_(1.0),
   domains_histo_stride_(0),
   DomainsHistogram_(NULL),
@@ -740,15 +747,17 @@ MetaD::MetaD(const ActionOptions &ao):
     if (gbin.size() == 0) {
       gbin.assign(getNumberOfArguments(), 1);
     }
-    if (gspacing.size() != 0) for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+    if (gspacing.size() != 0) {
+      for (unsigned i = 0; i < getNumberOfArguments(); i++) {
         double a, b;
         Tools::convert(gmin[i], a);
         Tools::convert(gmax[i], b);
-        unsigned n = ((b - a) / gspacing[i]) + 1;
+        unsigned n = ((b - a) / gspacing[i]);
         if (gbin[i] < n) {
           gbin[i] = n;
         }
       }
+    }
   }
   bool sparsegrid = false;
   parseFlag("GRID_SPARSE", sparsegrid);
@@ -802,6 +811,10 @@ MetaD::MetaD(const ActionOptions &ao):
       parse("ADAPTIVE_DOMAINS_STRIDE", adaptive_domains_stride_);
       if (adaptive_domains_stride_ <= 0) {
         error("adaptive domains requires a stride value greater than zero");
+      }
+      parse("ADAPTIVE_DOMAINS_ENERGY_INCREMENT", adaptive_domains_eincrement_);
+      if (adaptive_domains_eincrement_ < 0.0) {
+        error("adaptive domains requires an energy increment value greater than zero");
       }
       parse("ADAPTIVE_DOMAINS_DOWNSAMPLING", adaptive_domains_downsampling_);
       if (adaptive_domains_downsampling_ < 1.0) {
@@ -933,8 +946,8 @@ MetaD::MetaD(const ActionOptions &ao):
       }
     }
     log.printf("  Histogram update stride is %d and bandwiths are", domains_histo_stride_);
-    for (unsigned i = 0; i < domains_histo_bandwidth_.size(); i++) {
-      log.printf(" %f", domains_histo_bandwidth_[i]);
+    for (unsigned i = 0; i < benthic_histo_bandwidth_.size(); i++) {
+      log.printf(" %f", benthic_histo_bandwidth_[i]);
     }
     log.printf("\n");
   }
@@ -1016,6 +1029,9 @@ MetaD::MetaD(const ActionOptions &ao):
         log.printf("  Reading histogram in file %s for restarting metabasin metadynamics with adaptive domains \n", domains_histo_readfilename_.c_str());
       }
       log.printf("  Domains will be updated every %d steps\n", adaptive_domains_stride_);
+      if (adaptive_domains_eincrement_ > 0) {
+        log.printf("  After initialization domains will change only if the domains bias level has increased by %d energy units since last change\n", adaptive_domains_eincrement_);        
+      }
       log.printf("  Scaling grids will be generated using 1 / %f of the grid points\n", adaptive_domains_downsampling_);
       // Set the histogramming parameters for the future free energy estimates
       // if they are not already specified.
@@ -1025,7 +1041,7 @@ MetaD::MetaD(const ActionOptions &ao):
       if (domains_histo_bandwidth_.size() == 0) {
         domains_histo_bandwidth_ = vector<double>(getNumberOfArguments());
         for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-          domains_histo_bandwidth_[i] = sigma0_[i] / 2.5;
+          domains_histo_bandwidth_[i] = sigma0_[i] / 3.0;
         }
       }
       log.printf("  Histogram update stride is %d and bandwiths are", domains_histo_stride_);
@@ -1513,37 +1529,10 @@ void MetaD::addGaussian(const Gaussian &hill) {
       }
     }
     // After adding a hill, correct the derivatives and the 
-    // bias level.
+    // boundary bias.
     if (scale_new_hills_ && hilldomain != 0) {
-      // Set the overall bias level as needed.
-      double boundary_ave = 0.0;
-      // The bias level is set so that the current domain's 
-      // average boundary bias matches the exterior bias.
-      // First calculate the average boundary bias.
-      for (unsigned i = 0; i < domain_boundary_pts_[hilldomain - 1].size(); i++) {
-         boundary_ave += BiasGrid_->getValue(domain_boundary_pts_[hilldomain - 1][i]);
-      }
-      boundary_ave /= (double) domain_boundary_pts_[hilldomain - 1].size();
-      // If the boundary bias differs from zero appreciably, then
-      // correct the bias level by 1) adding to the level and 2)
-      // subtracting off a bias with the same boundary level that 
-      // could be added through flat sampling of the domain. 
-      if (boundary_ave >= .2 * height0_) {
-        // Add to the level.
-        domain_bias_level_ += boundary_ave;
-        // Subtract bias from the domain and its immediate surroundings.
-        for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
-          if (HillScalingGrids_[hilldomain - 1]->getValue(i) > 0.0) {
-            if (domain_ids_[i] == hilldomain) {
-              BiasGrid_->addValue(i, -boundary_ave); 
-            } else {
-              double scaling = HillScalingGrids_[hilldomain - 1]->getValue(i);
-              double bias_corr = -boundary_ave * scaling / tame_scaling(scaling);
-              BiasGrid_->addValue(i, bias_corr);
-            }
-          }
-        }
-      }
+      // Correct the boundary bias
+      if (!use_whole_grid_domain_) applyDomainBoundaryBias(hilldomain - 1, 0.125 * height0_);
       // Set all derivatives.
       for (unsigned i = 0; i < neighbors.size(); ++i) {
         BiasGrid_->setDerivFromValues(neighbors[i]);
@@ -1701,7 +1690,7 @@ double MetaD::getBiasAndDerivatives(const vector<double> &cv, double* der) {
 
   // Add in the overall bias level if domains are being used.
   if (use_domains_) {
-    bias += domain_bias_level_;
+    bias += domain_implicit_bias_level_;
   }
 
   return bias;
@@ -1847,21 +1836,23 @@ double MetaD::getTransitionBarrierBias() {
       least_transition_bias = fmin(curr_transition_bias, least_transition_bias);
     }
     if (use_domains_) {
-      least_transition_bias += domain_bias_level_;
+      least_transition_bias += domain_implicit_bias_level_;
     }
     return least_transition_bias;
   }
 }
 
-void MetaD::spread_domain(unsigned i, unsigned domain, const Grid * const input_region) {
+void MetaD::spreadDomain(unsigned i, unsigned domain, const Grid * const input_region) {
   deque<unsigned> point_stack = deque<unsigned>();
   point_stack.push_back(i);
   unsigned curr_point;
+  vector<double> temp_point(getNumberOfArguments());
   while (!point_stack.empty()) {
     curr_point = point_stack.front();
     vector<unsigned> neighs = BiasGrid_->getNearestNeighbors(curr_point);
     for (unsigned j = 0; j < neighs.size(); j++) {
-      bool should_be_biased = (input_region->getValue(BiasGrid_->getPoint(neighs[j])) == 1.0);
+      BiasGrid_->getPoint(neighs[j], temp_point);
+      bool should_be_biased = (input_region->getValue(temp_point) == 1.0);
       bool domain_is_not_set = (domain_ids_[neighs[j]] == 0);
       if (should_be_biased && domain_is_not_set) {
         domain_ids_[neighs[j]] = domain;
@@ -1869,6 +1860,38 @@ void MetaD::spread_domain(unsigned i, unsigned domain, const Grid * const input_
       }
     }
     point_stack.pop_front();
+  }
+}
+
+void MetaD::applyDomainBoundaryBias(unsigned idomain, double threshold) {
+  // Set the overall bias level as needed.
+  double boundary_ave = 0.0;
+  // The bias level is set so that the current domain's 
+  // average boundary bias matches the exterior bias.
+  // First calculate the average boundary bias.
+  for (unsigned i = 0; i < domain_boundary_pts_[idomain].size(); i++) {
+     boundary_ave += BiasGrid_->getValue(domain_boundary_pts_[idomain][i]);
+  }
+  boundary_ave /= (double) domain_boundary_pts_[idomain].size();
+  // If the boundary bias differs from zero appreciably, then
+  // correct the bias level by 1) adding to the level and 2)
+  // subtracting off a bias with the same boundary level that 
+  // could be added through flat sampling of the domain. 
+  if ((boundary_ave - domain_boundary_grid_levels_[idomain]) >= threshold) {
+    // Add to the level.
+    domain_implicit_bias_level_ += boundary_ave;
+    // Subtract bias from the domain and its immediate surroundings.
+    for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
+      if (HillScalingGrids_[idomain]->getValue(i) > 0.0) {
+        if (domain_ids_[i] == idomain) {
+          BiasGrid_->addValue(i, -boundary_ave); 
+        } else {
+          double scaling = HillScalingGrids_[idomain]->getValue(i);
+          double bias_corr = -boundary_ave * scaling / tame_scaling(scaling);
+          BiasGrid_->addValue(i, bias_corr);
+        }
+      }
+    }
   }
 }
 
@@ -1882,8 +1905,10 @@ void MetaD::defineDomains(const Grid * const input_region) {
   // Define the connected domains given the input region.
   // Search over all points to find ones that are supposed to be biased but
   // are not yet assigned to any domain.
+  vector<double> temp_point(getNumberOfArguments());
   for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
-    bool should_be_biased = (input_region->getValue(BiasGrid_->getPoint(i)) == 1.0);
+    BiasGrid_->getPoint(i, temp_point);
+    bool should_be_biased = (input_region->getValue(temp_point) == 1.0);
     bool domain_is_not_set = (domain_ids_[i] == 0);
     // If a point satisfies both conditions in this outer loop, it is the first point
     // discovered in a new connected domain. 
@@ -1893,9 +1918,10 @@ void MetaD::defineDomains(const Grid * const input_region) {
       domain_ids_[i] = n_domains_;
       // Find all other points to be biased that are connected to this one by other
       // points that should also be biased and set their domain values. Recursive.
-      spread_domain(i, n_domains_, input_region);
+      spreadDomain(i, n_domains_, input_region);
     }
   }
+
   // Find and store the boundary points for each domain.
   domain_boundary_pts_ = vector< vector<unsigned> >(n_domains_);
   for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
@@ -1911,6 +1937,25 @@ void MetaD::defineDomains(const Grid * const input_region) {
       }
       domain_boundary_pts_[idomain - 1].push_back(i);
     }
+  }
+  
+  // Filter out domains that don't meet minimum size criteria if
+  // they weren't specifically entered by hand.
+  if (use_adaptive_domains_) {
+    filterDomains();
+  }
+
+  // Calculate the level targets for each domain boundary
+  // to keep the level unchanged after future hill additions.
+  domain_boundary_grid_levels_ = vector<double>(n_domains_, 0.0);
+  for (unsigned i = 0; i < n_domains_; i++) {
+    // Find the average of the grid bias over the domain boundary.
+    double boundary_ave = 0.0;
+    for (unsigned j = 0; j < domain_boundary_pts_[i].size(); j++) {
+       boundary_ave += BiasGrid_->getValue(domain_boundary_pts_[i][j]);
+    }
+    boundary_ave /= (double) domain_boundary_pts_[i].size();  
+    domain_boundary_grid_levels_[i] = boundary_ave;
   }
 }
 
@@ -1999,8 +2044,14 @@ void MetaD::createScalingGrids() {
     }
   }
   HillScalingGrids_ = vector<Grid *>();
+  // Tell the program to scale future hills if a domain exists.
+  if (n_domains_ > 0) {
+    scale_new_hills_ = true;
+  } else {
+    scale_new_hills_ = false;
+  }
   // For every domain, create a new scaling grid and evaluate a scaling function
-  // for hills added in that domain.
+  // for hills added in that domain. Only executes if a domain exists.
   for (unsigned i = 0; i < n_domains_; i++) {
     // Prepare to create a new scaling
     Grid * newScalingGrid;
@@ -2024,12 +2075,14 @@ void MetaD::createScalingGrids() {
     // each point in the domain.
     int pts_seen = 0;
     int hills_added = 0;
+    vector<double> temp_point(getNumberOfArguments());
     for (unsigned j = 0; j < BiasGrid_->getMaxSize(); j++) {
       if (domain_ids_[j] == (i + 1)) {
         pts_seen++;
         if (pts_seen >= adaptive_domains_downsampling_ * hills_added) {
           hills_added++;
-          Gaussian newhill = Gaussian(BiasGrid_->getPoint(j), sigma0_, height0_, false);
+          BiasGrid_->getPoint(j, temp_point);
+          Gaussian newhill = Gaussian(temp_point, sigma0_, height0_, false);
           addGaussianToGrid(newhill, newScalingGrid);
         }
       }
@@ -2053,32 +2106,61 @@ void MetaD::createScalingGrids() {
 }
 
 bool MetaD::shouldAdaptDomainsNow() {
+  
+  // Check that this step is a candidate.
+  if (getStep() % adaptive_domains_stride_ != 0 || isFirstStep) {
+    return false;
+  }
+  if (adaptive_domains_eincrement_ > 0.0) {
+    if (scale_new_hills_) { 
+      if (domain_implicit_bias_level_ < adaptive_domains_eincrement_ + adaptive_domains_last_elevel_) {
+        return false;
+      }
+    }
+  }
+
+  // Check the delay condition if necessary.
   bool adapt_domains_now = true;
   if (delay_adaptive_domains_) {
     // For the min-referenced adaptive domains, delay until the 
     // bias (scaled into free energy by the biasfactor) is above
     // the offset somewhere.
+    double trigger_bias = 0.0;
     if (adaptive_domains_reftype_ == kMinRef) {
       double max_bias = 0.0;
       for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
         max_bias = max(max_bias, BiasGrid_->getValue(i));
       }
-      max_bias += domain_bias_level_;
-      if (welltempered_) {
-        max_bias *= biasf_ / (biasf_ - 1.0);
-      }
-      adapt_domains_now = (max_bias > adaptive_domains_eoffset_);
+      trigger_bias = max_bias + domain_implicit_bias_level_;
     // For the transition-referenced adaptive domains, delay until
     // the transition barrier bias is above the offset.
     } else if (adaptive_domains_reftype_ == kTransitionRef) {
-      double transition_bias = getTransitionBarrierBias();
-      adapt_domains_now = (transition_bias > adaptive_domains_eoffset_);
+      trigger_bias = getTransitionBarrierBias();
+    }
+    // Rescale the bias to match a free energy estimate as needed.
+    if (welltempered_) {
+      trigger_bias *= biasf_ / (biasf_ - 1.0);
+    }
+    // If the trigger is not passed, continue the delay.
+    if (trigger_bias <= adaptive_domains_eoffset_) {
+      adapt_domains_now = false;
+    // Otherwise allow the adaptation and end the delay.
+    } else {
+      delay_adaptive_domains_ = false;
     }
   }
   return adapt_domains_now;
 }
 
 void MetaD::adaptDomains() {
+
+  // Ensure that the boundary biases are perfectly consistent
+  // before redefinition to avoid drift.
+  if (scale_new_hills_) {
+    for (unsigned i = 0; i < n_domains_; i++) {
+      applyDomainBoundaryBias(i, 0.0);
+    }
+  }
 
   // Calculate a new free energy estimate.
   Grid *new_region;
@@ -2125,10 +2207,10 @@ void MetaD::adaptDomains() {
     // transition barrier on the new free energy surface.
     // Store bias data.
     Grid *temp_grid = BiasGrid_;
-    double temp_level = domain_bias_level_;
+    double temp_level = domain_implicit_bias_level_;
     // Replace the bias data with the new free energy estimate data.
     BiasGrid_ = new_region;
-    domain_bias_level_ = 0.0;
+    domain_implicit_bias_level_ = 0.0;
     // Flip the energy estimate.
     for (unsigned i = 0; i < new_region->getMaxSize(); i++) {
       new_region->setValue(i, -new_region->getValue(i));
@@ -2140,7 +2222,7 @@ void MetaD::adaptDomains() {
       new_region->setValue(i, -new_region->getValue(i));
     }
     // Reset the bias data to its true values.
-    domain_bias_level_ = temp_level;
+    domain_implicit_bias_level_ = temp_level;
     BiasGrid_ = temp_grid;
   }
   // The threshold is now a simple offset from that value.
@@ -2160,10 +2242,8 @@ void MetaD::adaptDomains() {
   scale_new_hills_ = false;
   defineDomains(new_region);
   delete new_region;
-  filterDomains();
   createScalingGrids();
   if (n_domains_ > 0) {
-    scale_new_hills_ = true;
     // Print for examination if desired.
     if (print_domains_scaling_) {
       if (DomainsScalingFilePs_.size() < HillScalingGrids_.size()) {
@@ -2181,9 +2261,10 @@ void MetaD::adaptDomains() {
       for (unsigned i = 0; i < HillScalingGrids_.size(); i++) HillScalingGrids_[i]->writeToFile(*(DomainsScalingFilePs_[i]));
       for (unsigned i = 0; i < DomainsScalingFilePs_.size(); i++) DomainsScalingFilePs_[i]->flush();
     }
-  } else {
-    scale_new_hills_ = false;
   }
+  // Record the bias level for the purpose of 
+  // timing the next update.
+  adaptive_domains_last_elevel_ = domain_implicit_bias_level_;
 }
 
 /// Calculate the bias and bias force at the current step, update the
@@ -2211,7 +2292,7 @@ void MetaD::calculate() {
     if (!use_domains_) {
       acc += exp(ene / (kbt_));
     } else {
-      acc += exp((ene - domain_bias_level_) / (kbt_));
+      acc += exp((ene - domain_implicit_bias_level_) / (kbt_));
     }
     double mean_acc = acc / ((double) getStep());
     getPntrToComponent("acc")->set(mean_acc);
@@ -2263,12 +2344,10 @@ void MetaD::update() {
       KernelFunctions kernel(cv, domains_histo_bandwidth_, "gaussian", false, 1.0, false);
       DomainsHistogram_->addKernel(kernel);
     }
-    if (getStep() % adaptive_domains_stride_ == 0 && !isFirstStep) {
-      // Check if the delay conditions are satisfied.
-      if (shouldAdaptDomainsNow()) {
-        // If so calculate a new region and new domains.
-        adaptDomains();
-      }
+    // Check if the delay conditions are satisfied.
+    if (shouldAdaptDomainsNow()) {
+      // If so calculate a new region and new domains.
+      adaptDomains();
     }
   }
   if (benthic_toleration_) {
@@ -2537,16 +2616,16 @@ bool MetaD::scanOneHill(IFile *ifile,  vector<Value> &tmpvalues, vector<double> 
 
 void MetaD::dumpBias() {
   // Add the internally used domain bias level.
-  if (use_domains_ && domain_bias_level_ > 0.0) {
+  if (use_domains_ && domain_implicit_bias_level_ > 0.0) {
     for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
-      BiasGrid_->addValue(i, domain_bias_level_);
+      BiasGrid_->addValue(i, domain_implicit_bias_level_);
     }
   }
   dumpGrid(BiasGrid_, gridfile_);
   // Subtract it again.
-  if (use_domains_ && domain_bias_level_ > 0.0) {
+  if (use_domains_ && domain_implicit_bias_level_ > 0.0) {
     for (unsigned i = 0; i < BiasGrid_->getMaxSize(); i++) {
-      BiasGrid_->addValue(i, -domain_bias_level_);
+      BiasGrid_->addValue(i, -domain_implicit_bias_level_);
     }
   }
 }
