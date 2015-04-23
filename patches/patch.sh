@@ -259,7 +259,7 @@ case "$action" in
     fi
 
     echo ""
-    if $PLUMED_ROOT/src/lib/plumed --has-mpi; then
+    if grep -q $PLUMED_ROOT/src/config/compile_options.sh "-D__PLUMED_MPI=1"; then
       echo "PLUMED is compiled with MPI support so you can configure $engine with MPI" 
     else
       echo "PLUMED is compiled WITHOUT MPI support so you CANNOT configure $engine with MPI"
