@@ -510,8 +510,10 @@ if test $mpi == true; then
   if test $mpi_found == ok; then
     AC_MSG_NOTICE([**** PLUMED will be compiled using MPI])
   else 
-    AC_MSG_NOTICE([**** PLUMED will NOT be compiled using MPI])
+    AC_MSG_WARN([**** PLUMED will NOT be compiled using MPI because MPI have not been found!])
   fi
+else
+    AC_MSG_NOTICE([**** PLUMED will be compiled without MPI])
 fi
 
 AC_SUBST(build_dir)
