@@ -253,18 +253,26 @@ type(QF)
   if(type==QF||type==SDEV||type==CORR) {
     addValueWithDerivatives();
     setNotPeriodic();
+    if(ensemble) setEnsemble(ens_dim);
+    else setNotEnsemble();
   } else if(type==COMP) {
     for(unsigned i=0;i<coupl.size();i++) {
       std::string num; Tools::convert(i,num);
       addComponentWithDerivatives("bond_"+num); componentIsNotPeriodic("bond_"+num);
+      if(ensemble) {
+        componentIsEnsemble("bond_"+num, ens_dim);
+      } else {
+        componentIsNotEnsemble("bond_"+num);
+      }
+
     }
   } else if(type==SVD) {
     addValue();
     setNotPeriodic();
+    if(ensemble) setEnsemble(ens_dim);
+    else setNotEnsemble();
   }
 
-  if(ensemble) setEnsemble(ens_dim);
-  else setNotEnsemble();
 
   requestAtoms(atoms);
 
