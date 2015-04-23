@@ -64,7 +64,7 @@ PRINT ARG=csb.sigma,csb.accept,csb.bias
 
 class BayesianGJ : public Bias
 {
-  const double sqrt2pi = 2.506628274631001;
+  const double sqrt2pi;
   // sigma is data uncertainty
   double sigma_;
   double sigma_min_;
@@ -75,13 +75,13 @@ class BayesianGJ : public Bias
   // temperature in kbt
   double kbt_;
   // number of data points
-  int ndata_;
+  unsigned ndata_;
   // number of replicas
-  int nrep_;
+  unsigned nrep_;
   // Monte Carlo stuff
-  int MCsteps_;
-  int MCstride_;
-  unsigned int MCaccept_;
+  unsigned MCsteps_;
+  unsigned MCstride_;
+  unsigned MCaccept_;
   long int MCfirst_;
   // output
   Value* valueBias;
@@ -121,7 +121,12 @@ void BayesianGJ::registerKeywords(Keywords& keys){
 }
 
 BayesianGJ::BayesianGJ(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao), MCsteps_(1), MCstride_(1), MCaccept_(0), MCfirst_(-1)
+PLUMED_BIAS_INIT(ao), 
+sqrt2pi(2.506628274631001),
+MCsteps_(1), 
+MCstride_(1), 
+MCaccept_(0), 
+MCfirst_(-1)
 {
   parse("SIGMA0",sigma_);
   parse("SIGMA_MIN",sigma_min_);

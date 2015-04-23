@@ -64,7 +64,7 @@ PRINT ARG=csb.sigma,csb.accept,csb.bias
 
 class BayesianSP : public Bias
 {
-  const double sqrt2_div_pi = 0.45015815807855;
+  const double sqrt2_div_pi;
   // sigma is data uncertainty
   double sigma_;
   double sigma_min_;
@@ -78,13 +78,13 @@ class BayesianSP : public Bias
   // temperature in kbt
   double kbt_;
   // number of data points
-  int ndata_;
+  unsigned ndata_;
   // number of replicas
-  int nrep_;
+  unsigned nrep_;
   // Monte Carlo stuff
-  int MCsteps_;
-  int MCstride_;
-  unsigned int MCaccept_;
+  unsigned MCsteps_;
+  unsigned MCstride_;
+  unsigned MCaccept_;
   long int MCfirst_;
   // output
   Value* valueBias;
@@ -122,7 +122,12 @@ void BayesianSP::registerKeywords(Keywords& keys){
 }
 
 BayesianSP::BayesianSP(const ActionOptions&ao):
-PLUMED_BIAS_INIT(ao), MCsteps_(1), MCstride_(1), MCaccept_(0), MCfirst_(-1)
+PLUMED_BIAS_INIT(ao), 
+sqrt2_div_pi(0.45015815807855),
+MCsteps_(1), 
+MCstride_(1), 
+MCaccept_(0), 
+MCfirst_(-1)
 {
   parse("SIGMA0",sigma_);
   parse("SIGMA_MIN",sigma_min_);
