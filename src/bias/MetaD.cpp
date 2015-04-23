@@ -1305,6 +1305,9 @@ MetaD::MetaD(const ActionOptions &ao):
       ifile->open(fname);
       // Read the Gaussians in the file if and only if this is a restart.
       if (plumed.getRestart()) {
+        if (use_adaptive_domains_) {
+          warning(" RESTART with adaptive domains does not exactly restart a simulation.\n To exactly restart adaptive domains calculations, provide the grid and the histogram from the end of the last run.");
+        }
         log.printf("  Restarting from %s:", ifilesnames[i].c_str());
         readGaussians(ifiles[i]);
       }
@@ -1346,9 +1349,9 @@ MetaD::MetaD(const ActionOptions &ao):
   if (doInt_) log << plumed.cite(
                       "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if (acceleration) log << plumed.cite(
-                            "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
+                            "Tiwary and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
   if (calc_average_bias_coft_) log << plumed.cite(
-                                       "Pratyush and Parrinello, J. Phys. Chem. B 119, 736–742 (2015)");
+                                       "Tiwary and Parrinello, J. Phys. Chem. B 119, 736–742 (2015)");
   log << "\n";
   log.flush();
 }
