@@ -5286,8 +5286,8 @@ fi
 
 fi
 if test $found == ko ; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, which only support dcd and xtc/trr/trj" >&5
-$as_echo "$as_me: WARNING: using internal molfile_plugins, which only support dcd and xtc/trr/trj" >&2;}
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&5
+$as_echo "$as_me: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&2;}
 	$as_echo "#define __PLUMED_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
 
 fi
