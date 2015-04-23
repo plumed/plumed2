@@ -6436,9 +6436,12 @@ if test $mpi == true; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled using MPI" >&5
 $as_echo "$as_me: **** PLUMED will be compiled using MPI" >&6;}
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will NOT be compiled using MPI" >&5
-$as_echo "$as_me: **** PLUMED will NOT be compiled using MPI" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** PLUMED will NOT be compiled using MPI because MPI have not been found!" >&5
+$as_echo "$as_me: WARNING: **** PLUMED will NOT be compiled using MPI because MPI have not been found!" >&2;}
   fi
+else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled without MPI" >&5
+$as_echo "$as_me: **** PLUMED will be compiled without MPI" >&6;}
 fi
 
 
