@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -164,10 +164,12 @@ void FitToTemplate::calculate(){
 void FitToTemplate::apply(){
   Vector totForce;
   for(unsigned i=0;i<getTotAtoms();i++){
-    totForce+=modifyForce(AtomNumber::index(i));
+    totForce+=modifyGlobalForce(AtomNumber::index(i));
   }
+  Tensor & vv(modifyGlobalVirial());
+  vv+=Tensor(center,totForce);
   for(unsigned i=0;i<aligned.size();++i){
-    Vector & ff(modifyForce(aligned[i]));
+    Vector & ff(modifyGlobalForce(aligned[i]));
     ff-=totForce*weights[i];
   }
 }

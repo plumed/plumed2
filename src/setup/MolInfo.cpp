@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -40,7 +40,13 @@ Please be aware that the pdb parser in plumed is far from perfect. You should th
 and examine what plumed is actually doing whenenver you use the MOLINFO action.
 
 Using MOLINFO with a protein's pdb extend the possibility of atoms selection using the @ special
-symbol. Current registered keywords are:
+symbol.
+
+Providing `MOLTYPE=protein`, `MOLTYPE=rna`, or `MOLTYPE=dna` will instruct plumed to look
+for known residues from these three types of molecule (so that any of these three choice
+can be safely used in a RNA/protein complex).
+
+For protein residues, the following groups are available:
 
 \verbatim
 @phi-#
@@ -51,12 +57,40 @@ symbol. Current registered keywords are:
 
 that select the appropriate atoms that define each dihedral angle for residue #.
 
+For RNA or RNA residues, the following groups are available:
+
+\verbatim
+# quadruplets for backbone dihedral angles
+@alpha-#
+@beta-#
+@gamma-#
+@delta-#
+@epsilon-#
+@zeta-#
+
+# quadruplets for sugar dihedral angles
+@v0-#
+@v1-#
+@v2-#
+@v3-#
+@v4-#
+
+# backbone, sugar, and base heavy atoms
+@back-#
+@sugar-#
+@base-#
+\endverbatim
+
+Notice that `zeta` and `epsilon` groups should not be used on 3' end and `alpha` should not be used on 5' end.
+
+\warning If a residue-chain is repeated twice only the first entry will be selected.
+
 \bug At the moment the HA1 atoms in a GLY residues are treated as if they are the CB atoms. This may or
 may not be true - GLY is problematic for secondary structure residues as it is achiral. 
 
 \bug If you use WHOLEMOLECULES RESIDUES=1-10 for a 18 amino acid protein 
 ( 18 amino acids + 2 terminal groups = 20 residues ) the code will fail as it will not be able to 
-interpret termnal residue 1.
+interpret terminal residue 1.
 
 \par Examples
 

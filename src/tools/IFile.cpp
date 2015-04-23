@@ -196,17 +196,30 @@ IFile::~IFile(){
 }
 
 IFile& IFile::getline(std::string &str){
-  char tmp;
+  char tmp=0;
   str="";
-  fpos_t pos;
-  fgetpos(fp,&pos);
-  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && !eof && !err){
+// I comment out this (see note below on commented fgetpos):
+// fpos_t pos;
+// fgetpos(fp,&pos);
+  while(llread(&tmp,1)==1 && tmp && tmp!='\n' && tmp!='\r' && !eof && !err){
     str+=tmp;
   }
-  if(err || eof || tmp!='\n'){
+  if(tmp=='\r'){
+    llread(&tmp,1);
+    plumed_massert(tmp=='\n',"plumed only accepts \\n (unix) or \\r\\n (dos) new lines");
+  }
+  if(eof){
+    if(str.length()>0) eof=false;
+  } else if(err || tmp!='\n'){
     eof = true;
     str="";
-    fsetpos(fp,&pos);
+// there was a fsetpos here that apparently is not necessary
+//  fsetpos(fp,&pos);
+// I think it was necessary to have rewind working correctly
+// after end of file. Since rewind is not used now anywhere,
+// it should be ok not to reset position.
+// This is necessary so that eof works properly for emacs files
+// with no endline at end of file.
   }
   return *this;
 }

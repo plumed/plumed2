@@ -83,6 +83,10 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
   return pbc.distance(v1,v2);
 }
 
+void ActionAtomistic::pbcApply(std::vector<Vector>& dlist, unsigned max_index)const{
+  pbc.apply(dlist, max_index);
+}
+
 void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
   calculateAtomicNumericalDerivatives( a, 0 );
 }
@@ -246,6 +250,7 @@ void ActionAtomistic::applyForces(){
 }
 
 void ActionAtomistic::clearOutputForces(){
+  virial.zero();
   if(donotforce) return;
   for(unsigned i=0;i<forces.size();++i)forces[i].zero();
   forceOnEnergy=0.0;

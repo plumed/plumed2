@@ -261,7 +261,7 @@ if test "$external_molfile_plugins" == true ; then
         	[ AC_CHECK_HEADER([libmolfile_plugin.h], [LIBS="-lmolfile_plugin $LIBS"] [found=ok] ) ])
 fi
 if test $found == ko ; then
-	AC_MSG_WARN([using internal molfile_plugins, which only support dcd and xtc/trr/trj])
+	AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
 	AC_DEFINE([__PLUMED_INTERNAL_MOLFILE_PLUGINS])
 fi
 
@@ -512,8 +512,10 @@ if test $mpi == true; then
   if test $mpi_found == ok; then
     AC_MSG_NOTICE([**** PLUMED will be compiled using MPI])
   else 
-    AC_MSG_NOTICE([**** PLUMED will NOT be compiled using MPI])
+    AC_MSG_WARN([**** PLUMED will NOT be compiled using MPI because MPI have not been found!])
   fi
+else
+    AC_MSG_NOTICE([**** PLUMED will be compiled without MPI])
 fi
 
 AC_SUBST(build_dir)

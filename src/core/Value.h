@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -120,6 +120,8 @@ public:
   void clearDerivatives();
 /// Add some derivative to the ith component of the derivatives array
   void addDerivative(unsigned i,double d);
+/// Set the value of the ith component of the derivatives array
+  void setDerivative(unsigned i, double d);
 /// Apply the chain rule to the derivatives
   void chainRule(double df);
 /// Get the derivative with respect to component n
@@ -234,6 +236,12 @@ inline
 void Value::addDerivative(unsigned i,double d){
   plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
   derivatives[i]+=d;
+}
+
+inline
+void Value::setDerivative(unsigned i, double d){
+  plumed_dbg_massert(i<derivatives.size(),"derivative is out of bounds");
+  derivatives[i]=d;
 }
 
 inline

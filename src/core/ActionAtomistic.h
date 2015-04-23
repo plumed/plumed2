@@ -82,7 +82,10 @@ public:
   unsigned getTotAtoms()const;
 /// Get modifiable force of i-th atom (access by absolute AtomNumber).
 /// Should be used by action that need to modify the stored atomic forces
-  Vector & modifyForce(AtomNumber);
+  Vector & modifyGlobalForce(AtomNumber);
+/// Get modifiable virial
+/// Should be used by action that need to modify the stored virial
+  Tensor & modifyGlobalVirial();
 /// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
@@ -103,6 +106,8 @@ public:
   unsigned getNumberOfAtoms()const{return indexes.size();}
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
+/// Applies  PBCs to a seriens of positions or distances
+  void pbcApply(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Get the vector of absolute indexes
   const std::vector<AtomNumber> & getAbsoluteIndexes()const;
 /// Get the absolute index of an atom
@@ -173,8 +178,13 @@ Vector & ActionAtomistic::modifyPosition(AtomNumber i){
 }
 
 inline
-Vector & ActionAtomistic::modifyForce(AtomNumber i){
+Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i){
   return atoms.forces[i.index()];
+}
+
+inline
+Tensor & ActionAtomistic::modifyGlobalVirial(){
+  return atoms.virial;
 }
 
 inline

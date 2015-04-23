@@ -1,18 +1,20 @@
 language: cpp
 env:
 # list of configurations to be attempted:
-# clang
-  - PLUMED_CC=clang PLUMED_CXX=clang++ 
-# GNU + doc
-  - PLUMED_CC=gcc   PLUMED_CXX=g++ 
 # MPI + doc
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes
-# clang
+# this is the "master" one, it is going to update the manual if log contains [makedoc]
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes ALMOST=yes
+# the following two are with debug flags, including bound check
+# I think clang does not support debug-glibcxx, so I skip it here
+  - PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
+# then I try serial compilers
+  - PLUMED_CC=clang PLUMED_CXX=clang++
+  - PLUMED_CC=gcc   PLUMED_CXX=g++
+# then check with different optimization flags
   - PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3 LAPACK=yes
-# GNU
   - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
-# MPI
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes ALMOST=yes
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
@@ -50,7 +52,7 @@ script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST --enable-openmp
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS --enable-openmp
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install

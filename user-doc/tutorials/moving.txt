@@ -182,7 +182,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> PUCKERING </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> \ref PUCKERING (5 membered rings only) </TD>
 </TR>
 <TR>
   <TD> S_PATH </TD>
@@ -206,7 +206,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> PCA </TD>
-  <TD> <b> currently missing </b> </TD>
+  <TD> \ref PCARMSD </TD>
 </TR>
 <TR>
   <TD> SPRINT </TD>

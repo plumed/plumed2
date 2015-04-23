@@ -107,7 +107,7 @@ void Ensemble::calculate(){
     comm.Sum(&cv, 1);
     Value* v=getPntrToComponent(i);
     v->set(cv);
-    setDerivative(v,cv,fact);
+    setDerivative(v,i,fact);
   };
 }
 

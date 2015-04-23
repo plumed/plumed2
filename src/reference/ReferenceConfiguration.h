@@ -28,6 +28,7 @@
 #include "tools/Tensor.h"
 #include "tools/Tools.h"
 #include "tools/Exception.h"
+#include "tools/Matrix.h"
 
 namespace PLMD{
 
@@ -142,12 +143,20 @@ public:
   virtual double getReferenceArgument( const unsigned& i ){ plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
 /// to make PLMD::distance work
-  virtual const std::vector<Vector>& getReferencePositions()const;
+  virtual const std::vector<Vector>& getReferencePositions();
   virtual const std::vector<double>& getReferenceArguments(); 
   virtual const std::vector<double>& getReferenceMetric();
 /// These are overwritten in ReferenceArguments and ReferenceAtoms to make frame copying work
   virtual const std::vector<AtomNumber>& getAbsoluteIndexes();
   virtual const std::vector<std::string>& getArgumentNames();
+/// Stuff for pca
+  virtual bool pcaIsEnabledForThisReference(){ return false; }
+  virtual Vector getAtomicDisplacement( const unsigned& iatom ){ plumed_error(); return Vector(0.0,0.0,0.0); }
+  virtual double projectAtomicDisplacementOnVector( const unsigned& i, const Matrix<Vector>& eigv, const std::vector<Vector>& pos, std::vector<Vector>& derivatives ){
+     plumed_error(); return 1; 
+  }
+/// Stuff for sanity checks on distance
+  bool isDirection() const ;
 };
 
 inline
@@ -187,7 +196,7 @@ bool ReferenceConfiguration::parseVector(const std::string&key,std::vector<T>&t,
 }
 
 inline
-const std::vector<Vector>& ReferenceConfiguration::getReferencePositions()const{
+const std::vector<Vector>& ReferenceConfiguration::getReferencePositions(){
   return fake_refatoms;
 }
 
