@@ -263,9 +263,8 @@ private:
   double uppI_;
   double lowI_;
   bool doInt_;
-  bool isFirstStep;
-/// accumulator for work
   double work_;
+  bool isFirstStep;
   
   void   readGaussians(IFile*);
   bool   readChunkOfGaussians(IFile *ifile, unsigned n);
@@ -294,6 +293,7 @@ void MetaD::registerKeywords(Keywords& keys){
   Bias::registerKeywords(keys);
   componentsAreNotOptional(keys);
   keys.addOutputComponent("bias","default","the instantaneous value of the bias potential");
+  keys.addOutputComponent("work","default","accumulator for work");
   keys.addOutputComponent("acc","ACCELERATION","the metadynamics acceleration factor");
   keys.use("ARG");
   keys.add("compulsory","SIGMA","the widths of the Gaussian hills");
@@ -1104,25 +1104,25 @@ void MetaD::update(){
   double vbias1=getBiasAndDerivatives(cv);
   work_+=vbias1-vbias;
 
-// dump grid on file
+  // dump grid on file
   if(wgridstride_>0&&getStep()%wgridstride_==0){
-// in case old grids are stored, a sequence of grids should appear
-// this call results in a repetition of the header:
+    // in case old grids are stored, a sequence of grids should appear
+    // this call results in a repetition of the header:
     if(storeOldGrids_) gridfile_.clearFields();
-// in case only latest grid is stored, file should be rewound
-// this will overwrite previously written grids
+    // in case only latest grid is stored, file should be rewound
+    // this will overwrite previously written grids
     else gridfile_.rewind();
     BiasGrid_->writeToFile(gridfile_); 
-// if a single grid is stored, it is necessary to flush it, otherwise
-// the file might stay empty forever (when a single grid is not large enough to
-// trigger flushing from the operating system).
-// on the other hand, if grids are stored one after the other this is
-// no necessary, and we leave the flushing control to the user as usual
-// (with FLUSH keyword)
+    // if a single grid is stored, it is necessary to flush it, otherwise
+    // the file might stay empty forever (when a single grid is not large enough to
+    // trigger flushing from the operating system).
+    // on the other hand, if grids are stored one after the other this is
+    // no necessary, and we leave the flushing control to the user as usual
+    // (with FLUSH keyword)
     if(!storeOldGrids_) gridfile_.flush();
   }
 
-// if multiple walkers and time to read Gaussians
+  // if multiple walkers and time to read Gaussians
  if(mw_n_>1 && getStep()%mw_rstride_==0){
    for(int i=0;i<mw_n_;++i){
     // don't read your own Gaussians
