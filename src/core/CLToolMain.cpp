@@ -167,9 +167,8 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
     vector<string> files=Tools::ls(root);
     if(find(files.begin(),files.end(),"patches")==files.end()) {
       string msg=
-         "ERROR: I cannot find "+root+"/patches/ directory\n";
+         "WARNING: I cannot find "+root+"/patches/ directory. Set PLUMED_ROOT or reinstall PLUMED\n\n";
       fprintf(stderr,"%s",msg.c_str());
-      return 1;
     }
   }
 
