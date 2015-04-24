@@ -83,7 +83,7 @@ class KernelFunctions;
 class Grid {
   std::vector<double> grid_;
   std::vector< std::vector<double> > der_;
-  std::vector<unsigned> domains_;
+
  protected:
   std::string funcname;
   std::vector<std::string> argnames;
@@ -91,6 +91,7 @@ class Grid {
   std::vector<double> min_, max_, dx_;
   std::vector<unsigned> nbin_;
   std::vector<bool> pbc_;
+  std::vector<unsigned> indices_;
   unsigned maxsize_, dimension_;
   bool dospline_, usederiv_, usedomains_;
   std::string fmt_; // format for output
@@ -140,9 +141,11 @@ class Grid {
   std::vector<double> getPoint(const std::vector<unsigned> &indices) const;
   std::vector<double> getPoint(const std::vector<double> &x) const;
 /// faster versions relying on preallocated vectors
-  void getPoint(unsigned index, std::vector<double> &point) const;
+  void getPoint(unsigned index, std::vector<double> &point);
   void getPoint(const std::vector<unsigned> &indices, std::vector<double> &point) const;
-  void getPoint(const std::vector<double> &x, std::vector<double> &point) const;
+  void getPoint(const std::vector<double> &x, std::vector<double> &point);
+  void getIndices(unsigned index, std::vector<unsigned> &indices);
+  void getIndices(const std::vector<double> &x, std::vector<unsigned> &indices);
 
 /// get neighbors
   std::vector<unsigned> getNeighbors(unsigned index, const std::vector<unsigned> &neigh) const;
