@@ -51,7 +51,7 @@ public:
   virtual void generateProjections( PointWiseMapping* mymap )=0;
   virtual double transformHD( const double& val, double& df ) const=0;
   virtual double transformLD( const double& val, double& df ) const=0;
-  void findClosestPoint( const int& ii, ReferenceConfiguration* myref, std::vector<double>& pp );
+  void findClosestPoint( const unsigned& ii, std::vector<double>& pp );
   double calculateStress( const std::vector<double>& pp, std::vector<double>& der );
   void analyzeAllData();
   unsigned getLowDimensionSize() const ;

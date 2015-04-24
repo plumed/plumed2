@@ -50,9 +50,9 @@ void FarthestPointSampling::select( MultiReferenceBase* myframes ){
   landmarks[0] = std::floor( getNumberOfFrames()*rand );
   selectFrame( landmarks[0], myframes );
 
-  // Now find distance to all other points
+  // Now find distance to all other points (N.B. We can use squared distances here for speed)
   Matrix<double> distances( getNumberOfLandmarks(), getNumberOfFrames() );
-  for(unsigned i=0;i<getNumberOfFrames();++i) distances(0,i) = getDistanceBetweenFrames( landmarks[0], i );
+  for(unsigned i=0;i<getNumberOfFrames();++i) distances(0,i) = getDistanceBetweenFrames( landmarks[0], i, true );
 
   // Now find all other landmarks
   for(unsigned i=1;i<getNumberOfLandmarks();++i){
@@ -66,7 +66,7 @@ void FarthestPointSampling::select( MultiReferenceBase* myframes ){
           if( mind>maxd ){ maxd=mind; landmarks[i]=j; }
       }
       selectFrame( landmarks[i], myframes );
-      for(unsigned k=0;k<getNumberOfFrames();++k) distances(i,k) = getDistanceBetweenFrames( landmarks[i], k );
+      for(unsigned k=0;k<getNumberOfFrames();++k) distances(i,k) = getDistanceBetweenFrames( landmarks[i], k, true );
   } 
 }
 

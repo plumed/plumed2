@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiReferenceBase.h"
 #include "tools/Communicator.h"
+#include "FakeFrame.h"
 #include "MetricRegister.h"
 
 namespace PLMD {
@@ -71,16 +72,23 @@ void MultiReferenceBase::setNumberOfAtomsAndArguments( const unsigned& natoms, c
 }
 
 void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ){
+  std::string fmetric=frameToCopy->getName();
   // Create a reference configuration of the appropriate type
-  ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( frameToCopy->getName() );
-  // Copy names of arguments and and indexes
-  mymsd->setNamesAndAtomNumbers( frameToCopy->getAbsoluteIndexes(), frameToCopy->getArgumentNames() );
-  // Copy reference positions, reference arguments and reference metric
-  mymsd->setReferenceConfig( frameToCopy->getReferencePositions(), frameToCopy->getReferenceArguments(), frameToCopy->getReferenceMetric() );
-  // Copy weight
-  mymsd->setWeight( frameToCopy->getWeight() );
-  // Easy bit - copy the frame
-  frames.push_back( mymsd ); 
+  if( fmetric=="fake" ){
+     ReferenceConfiguration* mymsd=new FakeFrame( ReferenceConfigurationOptions(fmetric) );
+     mymsd->setWeight( frameToCopy->getWeight() ); 
+     frames.push_back( mymsd ); 
+  } else {
+     ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( frameToCopy->getName() );
+     // Copy names of arguments and and indexes
+     mymsd->setNamesAndAtomNumbers( frameToCopy->getAbsoluteIndexes(), frameToCopy->getArgumentNames() );
+     // Copy reference positions, reference arguments and reference metric
+     mymsd->setReferenceConfig( frameToCopy->getReferencePositions(), frameToCopy->getReferenceArguments(), frameToCopy->getReferenceMetric() );
+     // Copy weight
+     mymsd->setWeight( frameToCopy->getWeight() );
+     // Easy bit - copy the frame
+     frames.push_back( mymsd ); 
+  }
   // This resizes the low dim array
   resizeRestOfFrame();
 }
@@ -91,16 +99,16 @@ void MultiReferenceBase::setWeights( const std::vector<double>& weights ){
 }
 
 
-void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> & vals, Communicator& comm, Matrix<double>& distances, const bool& squared ){
-  distances=0.0;
-  unsigned k=0, size=comm.Get_size(), rank=comm.Get_rank(); 
-  for(unsigned i=1;i<frames.size();++i){
-      for(unsigned j=0;j<i;++j){
-          if( (k++)%size!=rank ) continue;         
-          distances(i,j) = distances(j,i) = distance( pbc, vals, frames[i], frames[j], squared );
-      }
-  }
-  comm.Sum( distances );
-}
+// void MultiReferenceBase::calculateAllDistances( const Pbc& pbc, const std::vector<Value*> & vals, Communicator& comm, Matrix<double>& distances, const bool& squared ){
+//   distances=0.0;
+//   unsigned k=0, size=comm.Get_size(), rank=comm.Get_rank(); 
+//   for(unsigned i=1;i<frames.size();++i){
+//       for(unsigned j=0;j<i;++j){
+//           if( (k++)%size!=rank ) continue;         
+//           distances(i,j) = distances(j,i) = distance( pbc, vals, frames[i], frames[j], squared );
+//       }
+//   }
+//   comm.Sum( distances );
+// }
 
 }

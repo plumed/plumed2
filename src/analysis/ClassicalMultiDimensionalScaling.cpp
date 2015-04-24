@@ -197,10 +197,10 @@ DimensionalityReductionBase(ao)
 }
 
 void ClassicalMultiDimensionalScaling::calculateAllDistances( PointWiseMapping* mymap, Matrix<double>& targets ){
-  // Calculate all pairwise diatances
-  mymap->calculateAllDistances( getPbc(), getArguments(), comm, mymap->modifyDmat(), true );
-  // Copy data to targets
-  targets=mymap->modifyDmat();
+  unsigned N = mymap->getNumberOfReferenceFrames(); Matrix<double> & dmat(  mymap->modifyDmat() ); 
+  for(unsigned i=1;i<N;++i){
+     for(unsigned j=0;j<i;++j) targets(i,j)=targets(j,i)=dmat(i,j)=dmat(j,i)=getDistanceBetweenLandmarks( i, j, true );
+  }
 }
 
 void ClassicalMultiDimensionalScaling::generateProjections( PointWiseMapping* mymap ){

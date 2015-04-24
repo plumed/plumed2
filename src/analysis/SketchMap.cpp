@@ -86,10 +86,10 @@ DimensionalityReductionBase(ao)
 
 void SketchMap::calculateAllDistances( PointWiseMapping* mymap, Matrix<double>& targets ){
   // Calculate matrix of dissimilarities (High dimensional space) 
-  mymap->calculateAllDistances( getPbc(), getArguments(), comm, mymap->modifyDmat(), false );
-  double dr; unsigned M = mymap->getNumberOfReferenceFrames(); 
+  double dr; unsigned M = mymap->getNumberOfReferenceFrames(); Matrix<double>& dmat( mymap->modifyDmat() ); 
   for(unsigned i=1; i<M; ++i){
-      for(unsigned j=0; j<i; ++j) {
+      for(unsigned j=0; j<i; ++j){
+          dmat(i,j) = dmat(j,i) = getDistanceBetweenLandmarks( i, j, false ); 
           targets(i,j) = targets(j,i) = 1.0 - highdf.calculate( mymap->modifyDmat()(i,j), dr ); // high dim space
       }
   }

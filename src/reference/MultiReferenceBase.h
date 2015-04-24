@@ -72,7 +72,7 @@ public:
 /// Retrieve the weight of one of the frames
   double getWeight( const unsigned& ifram ) const ;
 /// Calculate the distances between all the frames and store in a matrix
-  void calculateAllDistances( const Pbc& pbc, const std::vector<Value*> & vals, Communicator& comm, Matrix<double>& distances, const bool& squared );
+//  void calculateAllDistances( const Pbc& pbc, const std::vector<Value*> & vals, Communicator& comm, Matrix<double>& distances, const bool& squared );
 };
 
 template <class T>

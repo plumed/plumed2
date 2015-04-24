@@ -30,6 +30,7 @@
 #include "reference/ReferenceArguments.h"
 #include "reference/ReferenceAtoms.h"
 #include "reference/MetricRegister.h"
+#include "reference/FakeFrame.h"
 #include "DimensionalityReductionBase.h"
 
 namespace PLMD {
@@ -102,6 +103,7 @@ write_chq(false),
 reusing_data(false),
 dimred_data(false),
 ignore_reweight(false),
+dmat_type(unset),
 needeng(false),
 idata(0),
 firstAnalysisDone(false),
@@ -390,9 +392,7 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
          norm+=exp( logweights[i]-maxweight );
       }
       // Calculate weights (no memory)
-      for(unsigned i=0;i<logweights.size();++i){
-          data[i]->setWeight( exp( logweights[i]-maxweight ) );
-      }
+      for(unsigned i=0;i<logweights.size();++i) data[i]->setWeight( exp( logweights[i]-maxweight ) );
   // Calculate normalized weights (with memory)
   } else {
       // Calculate normalization constant
@@ -401,9 +401,7 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
       }
       if( !firstAnalysisDone ) old_norm=1.0;
       // Calculate weights (with memory)
-      for(unsigned i=0;i<logweights.size();++i){
-          data[i]->setWeight( exp( logweights[i] ) / old_norm );
-      }
+      for(unsigned i=0;i<logweights.size();++i) data[i]->setWeight( exp( logweights[i] ) / old_norm );
       if( !firstAnalysisDone ) old_norm=0.0;
   }
   
@@ -412,6 +410,7 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
 void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
   plumed_dbg_assert( getNumberOfAtoms()==0 );
   if( !reusing_data ){
+      plumed_assert( dmat_type==unset );
       plumed_dbg_assert( idata<logweights.size() &&  point.size()==getNumberOfArguments() );
       for(unsigned i=0;i<point.size();++i) point[i]=data[idata]->getReferenceArgument(i);
       weight=data[idata]->getWeight();
@@ -423,8 +422,12 @@ void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, 
   }
 }
 
-double Analysis::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe ){
-  return distance( getPbc(), getArguments(), getReferenceConfiguration(iframe), getReferenceConfiguration(jframe), false );
+double Analysis::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& squared ){
+  if( reusing_data ) return mydatastash->getDistanceBetweenFrames( iframe, jframe, squared );
+  if( dmat_type==unset ) return distance( getPbc(), getArguments(), getReferenceConfiguration(iframe), getReferenceConfiguration(jframe), squared );
+  if( dmat_type==squared && !squared ) return sqrt( pairwise_dissimilarity_matrix(iframe,jframe) ); 
+  if( dmat_type==dist && squared ) return pairwise_dissimilarity_matrix(iframe,jframe)*pairwise_dissimilarity_matrix(iframe,jframe);
+  return pairwise_dissimilarity_matrix(iframe,jframe);
 }
 
 void Analysis::runAnalysis(){
@@ -473,6 +476,21 @@ void Analysis::runFinalJobs() {
   if( !single_run ) return;
   if( getNumberOfDataPoints()==0 ) error("no data is available for analysis");
   runAnalysis(); 
+}
+
+void Analysis::setPairwiseDisimilarityMatrix( const Matrix<double>& edges, const std::vector<double>& w, const bool& sq ){
+  plumed_dbg_assert( edges.nrows()==edges.ncols() && w.size()==edges.nrows() );
+
+  if( sq ) dmat_type=squared;
+  else dmat_type=dist;
+  
+  pairwise_dissimilarity_matrix.resize( edges.nrows(), edges.ncols() );
+  pairwise_dissimilarity_matrix = edges;
+
+  logweights.resize( w.size() ); idata=w.size(); data.resize( w.size() );
+  for(unsigned i=0;i<w.size();++i){
+      logweights[i]=std::log(w[i]); data[i]=new FakeFrame( ReferenceConfigurationOptions("fake") );
+  }
 }
 
 }

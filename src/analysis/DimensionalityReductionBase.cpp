@@ -66,8 +66,8 @@ DimensionalityReductionBase::~DimensionalityReductionBase(){
 
 void DimensionalityReductionBase::analyzeLandmarks(){
   // These hold data on the distances from high dimensional points
-  fframes.resize( myembedding->getNumberOfReferenceFrames() );
-  targetDisimilarities.resize( myembedding->getNumberOfReferenceFrames(), myembedding->getNumberOfReferenceFrames() );
+  fframes.resize( getNumberOfLandmarks() );
+  targetDisimilarities.resize( getNumberOfLandmarks(), getNumberOfLandmarks() );
   // This calculates all the distanaces between the high dimensional points
   calculateAllDistances( myembedding, targetDisimilarities );
   // This generates the projections of the points
@@ -80,7 +80,7 @@ void DimensionalityReductionBase::analyzeLandmarks(){
   gfile.open( ofilename.c_str() );
   
   // Print embedding coordinates
-  for(unsigned i=0;i<myembedding->getNumberOfReferenceFrames();++i){
+  for(unsigned i=0;i<getNumberOfLandmarks();++i){
       for(unsigned j=0;j<nlow;++j){
           std::string num; Tools::convert(j+1,num);
           gfile.printField( getLabel() + "." + num , myembedding->getProjectionCoordinate(i,j) );
@@ -100,36 +100,24 @@ void DimensionalityReductionBase::analyzeLandmarks(){
   }
 }
 
-void DimensionalityReductionBase::findClosestPoint( const int& ii, ReferenceConfiguration* myref, std::vector<double>& pp ){
-  plumed_dbg_assert( pp.size()==myembedding->getNumberOfProperties() );
-  unsigned pnum;
+void DimensionalityReductionBase::findClosestPoint( const unsigned& ii, std::vector<double>& pp ){
+  plumed_dbg_assert( ii<getNumberOfDataPoints() &&  pp.size()==myembedding->getNumberOfProperties() );
+  unsigned pnum; double mindist, df;
 
-  if( ii<0 ){
-     double df; pnum=0; 
-     double mindist=distance( getPbc(), getArguments(), myembedding->getFrame(0), myref, false );
-     for(unsigned i=1;i<myembedding->getNumberOfReferenceFrames();++i){
-        double dist=distance( getPbc(), getArguments(), myembedding->getFrame(i), myref, false ); 
-        if( dist<mindist ){ mindist=dist; pnum=i; }
-        fframes[i]=transformHD( dist, df );
-     }
-  } else if( ii==0 ){
-     double mindist;
-     fframes[0]=0.0; mindist=fframes[1]=targetDisimilarities(ii,0); pnum=1;
-     for(unsigned i=2;i<myembedding->getNumberOfReferenceFrames();++i){
-        fframes[i]=targetDisimilarities(ii,i);
-        if( fframes[i]<mindist ){ mindist=fframes[i]; pnum=i; }
-     }
-  } else if( ii<myembedding->getNumberOfReferenceFrames() ){
-     double mindist;
-     mindist=fframes[0]=targetDisimilarities(ii,0); pnum=0;
-     for(unsigned i=1;i<myembedding->getNumberOfReferenceFrames();++i){
-         fframes[i]=targetDisimilarities(ii,i);
-         if( i==ii ) continue;
-         if( fframes[i]<mindist ){ mindist=fframes[i]; pnum=i; }
-     }
+  if( ii==getLandmarkIndex(0) ){
+      pnum=1; fframes[0]=0.0; mindist=fframes[1]=transformHD( getDistanceBetweenFrames( getLandmarkIndex(1), ii, false ), df );
+      for(unsigned i=2;i<myembedding->getNumberOfReferenceFrames();++i){
+          fframes[i]=transformHD( getDistanceBetweenFrames( getLandmarkIndex(i), ii, false ), df );
+          if( fframes[i]<mindist ){ mindist=fframes[i]; pnum=i; }
+      } 
   } else {
-     plumed_error();
-  }
+      pnum=0; mindist=fframes[0]=transformHD( getDistanceBetweenFrames( getLandmarkIndex(0), ii, false ), df );
+      for(unsigned i=1;i<myembedding->getNumberOfReferenceFrames();++i){
+          fframes[i]=transformHD( getDistanceBetweenFrames( getLandmarkIndex(i), ii, false ), df );
+          if( ii==getLandmarkIndex(i) ) continue;
+          if( fframes[i]<mindist ){ mindist=fframes[i]; pnum=i; }
+      }
+  } 
 
   for(unsigned i=0;i<myembedding->getNumberOfProperties();++i) pp[i]=myembedding->getProjectionCoordinate( pnum, i );
 }
@@ -165,7 +153,7 @@ void DimensionalityReductionBase::getPropertyNames( std::vector<std::string>& di
 
 void DimensionalityReductionBase::getProjectedPoint( const unsigned& idata, std::vector<double>& pp ){
   plumed_dbg_assert( pp.size()==nlow );
-  findClosestPoint( -1, getReferenceConfiguration(idata), pp );
+  findClosestPoint( idata, pp );
   ConjugateGradient<DimensionalityReductionBase> myminimiser( this );
   myminimiser.minimise( cgtol, pp, &DimensionalityReductionBase::calculateStress );
 }

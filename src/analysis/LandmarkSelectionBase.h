@@ -52,6 +52,8 @@ private:
   AnalysisWithLandmarks* action;
 /// How do we treat weights
   bool novoronoi, noweights;
+/// This is used by CopyAllFrames to set the number of landmarks
+  void setNumberOfLandmarks( const unsigned& nland );
 protected:
 /// Return the numbe of landmarks
   unsigned getNumberOfLandmarks() const ;
@@ -67,7 +69,7 @@ protected:
 /// Get the weight of the ith frame
   double getWeightOfFrame( const unsigned& );
 /// Calculate the distance between the ith and jth frames
-  double getDistanceBetweenFrames( const unsigned& , const unsigned&  );
+  double getDistanceBetweenFrames( const unsigned& , const unsigned&, const bool& );
 /// Transfer frame i in the underlying action to the object we are going to analyze
   void selectFrame( const unsigned& , MultiReferenceBase* );
 public:

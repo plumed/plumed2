@@ -41,6 +41,7 @@ action(lo.action)
       novoronoi=true;
   } else {
       parse("N",nlandmarks);
+      action->landmark_frame_numbers.resize( nlandmarks );
       novoronoi=false; parseFlag("NOVORONOI",novoronoi);
   }
   parseFlag("IGNORE_WEIGHTS",noweights);
@@ -73,16 +74,21 @@ std::string LandmarkSelectionBase::description(){
   return ostr.str();
 }
 
+void LandmarkSelectionBase::setNumberOfLandmarks( const unsigned& nland ){
+  nlandmarks=nland; action->landmark_frame_numbers.resize( nland );
+}
+
 double LandmarkSelectionBase::getWeightOfFrame( const unsigned& iframe ){
   if(noweights) return 1.0;
   return action->getWeight(iframe);
 }
-double LandmarkSelectionBase::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe  ){
-  return action->getDistanceBetweenFrames( iframe, jframe ); 
+double LandmarkSelectionBase::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& squared ){
+  return action->getDistanceBetweenFrames( iframe, jframe, squared ); 
 }
 
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe, MultiReferenceBase* myframes){
   plumed_assert( myframes->getNumberOfReferenceFrames()<nlandmarks );
+  action->landmark_frame_numbers[ myframes->getNumberOfReferenceFrames() ] = iframe;
   myframes->copyFrame( action->getReferenceConfiguration(iframe) );
 }
 
@@ -97,10 +103,9 @@ void LandmarkSelectionBase::selectLandmarks( MultiReferenceBase* myframes ){
       unsigned size=action->comm.Get_size();
       std::vector<double> weights( nlandmarks, 0.0 );
       for(unsigned i=rank;i<action->getNumberOfDataPoints();i+=size){
-          unsigned closest=0;
-          double mindist=distance( action->getPbc(), action->getArguments(), action->getReferenceConfiguration(i), myframes->getFrame(0), false );
+          unsigned closest=0; double mindist=action->getDistanceBetweenFrames( i, action->landmark_frame_numbers[0], true );  
           for(unsigned j=1;j<nlandmarks;++j){
-              double dist=distance( action->getPbc(), action->getArguments(), action->getReferenceConfiguration(i), myframes->getFrame(j), false );
+              double dist=action->getDistanceBetweenFrames( i, action->landmark_frame_numbers[j], true ); 
               if( dist<mindist ){ mindist=dist; closest=j; }
           } 
           weights[closest] += getWeightOfFrame(i);

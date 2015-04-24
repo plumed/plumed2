@@ -67,6 +67,10 @@ private:
   Analysis* mydatastash;
 /// The dimensionality reduction object that we are reusing data from
   DimensionalityReductionBase* dimredstash;
+/// This is used in cltool that works by setting up analysis objects 
+/// from a matrix of pairwise disimilarities
+  enum {unset,squared,dist} dmat_type; 
+  Matrix<double> pairwise_dissimilarity_matrix;
 /// The frequency with which we are performing analysis
   unsigned freq;
 /// Number of data point we need to run analysis
@@ -122,7 +126,7 @@ protected:
 /// Return the number of data points
   unsigned getNumberOfDataPoints() const;
 /// Calculate the distance between stored snapshot iframe and stored snapshot jframe
-  double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe );
+  double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
 /// Return the weight of the ith point
   double getWeight( const unsigned& idata ) const ;
 /// Retrieve the ith point
@@ -156,6 +160,7 @@ public:
   void runAnalysis();
   void lockRequests();
   void unlockRequests();
+  void setPairwiseDisimilarityMatrix( const Matrix<double>& edges, const std::vector<double>& w, const bool& squared );
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
   bool isPeriodic(){ plumed_error(); return false; }
   unsigned getNumberOfDerivatives(){ plumed_error(); return 0; }

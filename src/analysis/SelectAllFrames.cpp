@@ -39,7 +39,7 @@ LandmarkSelectionBase(lo)
 }
 
 void CopyAllFrames::select( MultiReferenceBase* myframes ){
-  nlandmarks = action->getNumberOfDataPoints();
+  setNumberOfLandmarks( action->getNumberOfDataPoints() );
   for(unsigned i=0;i<getNumberOfFrames();++i) selectFrame( i, myframes );
 }
 

@@ -38,6 +38,8 @@ friend class CopyAllFrames;
 private:
 /// This object selects landmarks from the data
   LandmarkSelectionBase* landmarkSelector;
+/// The list of the indices of the landmark frames
+  std::vector<unsigned> landmark_frame_numbers;
 /// A pointer to the data we are analyzing             
   MultiReferenceBase* data_to_analyze;
 protected:
@@ -45,6 +47,10 @@ protected:
   void setDataToAnalyze( MultiReferenceBase* mydata );
 /// Return the number of landmarks we are selecting
   unsigned getNumberOfLandmarks() const ;
+/// Return the index in the data array for the ith landmark
+  unsigned getLandmarkIndex( const unsigned& iframe ) const ; 
+/// Get the distance between landmark frame i and landmark frame j
+  double getDistanceBetweenLandmarks( const unsigned& iframe, const unsigned& jframe, const bool& squared );
 public:
   static void registerKeywords( Keywords& keys );
   AnalysisWithLandmarks( const ActionOptions& );
@@ -55,6 +61,18 @@ public:
 /// This does nothing
   void performTask();
 };
+
+inline
+double AnalysisWithLandmarks::getDistanceBetweenLandmarks( const unsigned& iframe, const unsigned& jframe, const bool& squared ){
+  plumed_dbg_assert( iframe<landmarkSelection->getNumberOfReferenceFrames() && jframe<landmarkSelection->getNumberOfReferenceFrames() );
+  return getDistanceBetweenFrames( landmark_frame_numbers[iframe], landmark_frame_numbers[jframe], squared );
+}
+
+inline
+unsigned AnalysisWithLandmarks::getLandmarkIndex( const unsigned& iframe ) const {
+  plumed_dbg_assert( iframe<landmarkSelection->getNumberOfReferenceFrames() );
+  return landmark_frame_numbers[iframe];
+}
 
 }
 }

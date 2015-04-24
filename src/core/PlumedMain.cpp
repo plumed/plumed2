@@ -309,7 +309,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
       // commands which can be used only before initialization:
       case INIT:
         CHECK_NOTINIT(initialized,word);
-        init();
+        init(true);
         break;
       case SETREALPRECISION:
         CHECK_NOTINIT(initialized,word);
@@ -463,7 +463,7 @@ void PlumedMain::cmd(const std::string & word,void*val){
 
 ////////////////////////////////////////////////////////////////////////
 
-void PlumedMain::init(){
+void PlumedMain::init( const bool& true_init ){
 // check that initialization just happens once
   initialized=true;
   atoms.init();
@@ -497,7 +497,11 @@ void PlumedMain::init(){
       cifile.close();
       firstcheckdone=true; // This ensures old restart file is backed up
   }
+  atoms.updateUnits();
+  if( true_init ) finish_init_print();
+}
 
+void PlumedMain::finish_init_print(){
   atoms.updateUnits();
   log.printf("Timestep: %f\n",atoms.getTimeStep());
   if(atoms.getKbT()>0.0)

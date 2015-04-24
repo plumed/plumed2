@@ -200,7 +200,17 @@ public:
   Initialize the object.
   Should be called once.
 */
-  void init();
+  void init( const bool& true_init );
+/**
+  Write out some last bits of 
+  information to the log.  This is
+  used in the tool graphtools as the 
+  list of relevant Actions is read in inside that
+  cltool and I wanted these bits to be printed 
+  after the information on the actions.  In
+  normal usage this is called from init 
+*/
+  void finish_init_print();
 /**
   Prepare the calculation.
   Here it is checked which are the active Actions and communication of the relevant atoms is initiated.
