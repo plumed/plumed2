@@ -80,6 +80,17 @@ or enhanced sampling calculations.
 
 \page Changelog Change Log
 
+Here you can find a history of changes across different PLUMED versions.
+We mostly add new features without breaking exising ones.
+However, some of the changes lead to incompatible behavior.
+In the Change Log we try to give as much visibility as possible to these changes
+to avoid surprises.
+
+We also log changes that are relevant if you are developing the code. These
+change lists are however not complete, and if you want to put your hands in the code
+and maintain your own collective variables we suggest you to follow the development
+on github.
+
 @CHANGES@
 
 */
