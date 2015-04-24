@@ -18,7 +18,24 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  #endif
  #ifdef GMX_THREADS
  #include "tmpi.h"
-@@ -427,13 +433,14 @@
+@@ -193,10 +199,16 @@
+ #ifdef GMX_FAHCORE
+     /* Temporary addition for FAHCORE checkpointing */
+     int chkpt_ret;
+ #endif
+ 
++    /* PLUMED */
++    int plumedNeedsEnergy=0;
++    int plumedWantsToStop=0;
++    matrix plumed_vir;
++    /* END PLUMED */
++
+     /* Check for special mdrun options */
+     bRerunMD = (Flags & MD_RERUN);
+     bIonize  = (Flags & MD_IONIZE);
+     bFFscan  = (Flags & MD_FFSCAN);
+     bAppend  = (Flags & MD_APPENDFILES);
+@@ -440,13 +452,14 @@
          check_nst_param(fplog,cr,"nstcalcenergy",ir->nstcalcenergy,
                          "repl_ex_nst",&repl_ex_nst);
          /* This check needs to happen before inter-simulation
@@ -34,116 +51,129 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
      {
          if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
          {
-@@ -574,10 +581,55 @@
+@@ -588,10 +601,57 @@
              }
          }
          fprintf(fplog,"\n");
      }
  
-+/* PLUMED */
-+  if(plumedswitch){
-+    if(cr->ms && cr->ms->nsim>1) {
-+      if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
++    /* PLUMED */
++    if(plumedswitch){
++      /* detect plumed API version */
++      int pversion=0;
++      plumed_cmd(plumedmain,"getApiVersion",&pversion);
++      /* setting kbT is only implemented with api>1) */
++      real kbT=ir->opts.ref_t[0]*BOLTZ;
++      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
++
++      if(cr->ms && cr->ms->nsim>1) {
++        if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
++        if(PAR(cr)){
++          if(DOMAINDECOMP(cr)) {
++            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
++          }else{
++            plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
++          }
++        }
++        plumed_cmd(plumedmain,"GREX init",NULL);
++      }
 +      if(PAR(cr)){
 +        if(DOMAINDECOMP(cr)) {
-+          plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->dd->mpi_comm_all);
++          plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
 +        }else{
-+          plumed_cmd(plumedmain,"GREX setMPIIntracomm",&cr->mpi_comm_mysim);
++          plumed_cmd(plumedmain,"setMPIComm",&cr->mpi_comm_mysim);
 +        }
 +      }
-+      plumed_cmd(plumedmain,"GREX init",NULL);
-+    }
++      plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
++      plumed_cmd(plumedmain,"setMDEngine","gromacs");
++      plumed_cmd(plumedmain,"setLog",fplog);
++      real real_delta_t;
++      real_delta_t=ir->delta_t;
++      plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
++      plumed_cmd(plumedmain,"init",NULL);
 +
-+    if(PAR(cr)){
-+      if(DOMAINDECOMP(cr)) {
-+        plumed_cmd(plumedmain,"setMPIComm",&cr->dd->mpi_comm_all);
-+      }else{
-+        plumed_cmd(plumedmain,"setMPIComm",&cr->mpi_comm_mysim);
++      if(PAR(cr)){
++        if(DOMAINDECOMP(cr)) {
++          plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
++          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
++        }else{
++          plumed_cmd(plumedmain,"setAtomsNlocal",&mdatoms->homenr);
++          plumed_cmd(plumedmain,"setAtomsContiguous",&mdatoms->start);
++        }
 +      }
 +    }
-+
-+    plumed_cmd(plumedmain,"setNatoms",&top_global->natoms);
-+    plumed_cmd(plumedmain,"setMDEngine","gromacs");
-+    plumed_cmd(plumedmain,"setLog",fplog);
-+    real real_delta_t;
-+    real_delta_t=ir->delta_t;
-+    plumed_cmd(plumedmain,"setTimestep",&real_delta_t);
-+
-+    plumed_cmd(plumedmain,"init",NULL);
-+
-+
-+    if(PAR(cr)){
-+      if(DOMAINDECOMP(cr)) {
-+        plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-+        plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-+      }else{
-+        plumed_cmd(plumedmain,"setAtomsNlocal",&mdatoms->homenr);
-+        plumed_cmd(plumedmain,"setAtomsContiguous",&mdatoms->start);
-+      }
-+    }
-+  }
-+/* END PLUMED */
-+
++    /* END PLUMED */
 +
      /* Set and write start time */
      runtime_start(runtime);
      print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
      wallcycle_start(wcycle,ewcRUN);
      if (fplog)
-@@ -884,10 +936,17 @@
+@@ -898,10 +958,17 @@
                                      state,&f,mdatoms,top,fr,
                                      vsite,shellfc,constr,
                                      nrnb,wcycle,do_verbose);
                  wallcycle_stop(wcycle,ewcDOMDEC);
                  /* If using an iterative integrator, reallocate space to match the decomposition */
-+/* PLUMED */
-+        if(plumedswitch){
-+          plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
-+          plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
-+        }
-+/* END PLUMED */
 +
++                /* PLUMED */
++                if(plumedswitch){
++                  plumed_cmd(plumedmain,"setAtomsNlocal",&cr->dd->nat_home);
++                  plumed_cmd(plumedmain,"setAtomsGatindex",cr->dd->gatindex);
++                }
++                /* END PLUMED */
              }
          }
  
          if (MASTER(cr) && do_log && !bFFscan)
          {
-@@ -1010,16 +1069,40 @@
+@@ -1038,16 +1105,50 @@
               * in do_force.
               * This is parallellized as well, and does communication too. 
               * Check comments in sim_util.c
               */
          
 +
-+ /* PLUMED */
-+       if(plumedswitch){
-+         long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
-+         plumed_cmd(plumedmain,"setPositions",&state->x[mdatoms->start][0]);
-+         plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[mdatoms->start]);
-+         plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
-+         plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
-+
-+         plumed_cmd(plumedmain,"prepareCalc",NULL);
-+       }
-+ /* END PLUMED */
-+
++            /* PLUMED */
++            plumedNeedsEnergy=0;
++            if(plumedswitch){
++              long int lstep=step; plumed_cmd(plumedmain,"setStepLong",&lstep);
++              plumed_cmd(plumedmain,"setPositions",&state->x[mdatoms->start][0]);
++              plumed_cmd(plumedmain,"setMasses",&mdatoms->massT[mdatoms->start]);
++              plumed_cmd(plumedmain,"setCharges",&mdatoms->chargeA[mdatoms->start]);
++              plumed_cmd(plumedmain,"setBox",&state->box[0][0]);
++              plumed_cmd(plumedmain,"prepareCalc",NULL);
++              plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
++              plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
++              plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
++              clear_mat(plumed_vir);
++              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
++            }
++            /* END PLUMED */
              do_force(fplog,cr,ir,step,nrnb,wcycle,top,top_global,groups,
                       state->box,state->x,&state->hist,
                       f,force_vir,mdatoms,enerd,fcd,
                       state->lambda,graph,
                       fr,vsite,mu_tot,t,outf->fp_field,ed,bBornRadii,
-                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
-+ /* PLUMED */
-+       if(plumedswitch){
-+         plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
-+         plumed_cmd(plumedmain,"setForces",&f[mdatoms->start][0]);
-+         plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
-+         plumed_cmd(plumedmain,"performCalc",NULL);
-+         if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
-+            do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
-+       }
-+ /* END PLUMED */
-+
+-                     (bNS ? GMX_FORCE_NS : 0) | force_flags);
++                     (plumedNeedsEnergy? GMX_FORCE_ENERGY : 0) |(bNS ? GMX_FORCE_NS : 0) | force_flags);
++            /* PLUMED */
++            if(plumedswitch){
++              if(plumedNeedsEnergy){
++                msmul(force_vir,2.0,plumed_vir);
++                plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
++                plumed_cmd(plumedmain,"performCalc",NULL);
++                msmul(plumed_vir,0.5,force_vir);
++              } else {
++                msmul(plumed_vir,0.5,plumed_vir);
++                plumed_cmd(plumedmain,"performCalc",NULL);
++                m_add(force_vir,plumed_vir,force_vir);
++              }
++              if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
++                 do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
++              if(plumedWantsToStop) ir->nsteps=step_rel+1;
++            }
++            /* END PLUMED */
          }
      
          GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -182,7 +212,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/mdrun.c" << \EOF_EOF
  #define NFILE asize(fnm)
  
    /* Command line options ! */
-@@ -662,16 +669,52 @@
+@@ -663,16 +670,52 @@
  
    ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
    ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
