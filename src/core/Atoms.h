@@ -70,7 +70,7 @@ class Atoms
   unsigned forcesHaveBeenSet;
   bool virialHasBeenSet;
   bool massAndChargeOK;
-  bool shuffledAtoms;
+  unsigned shuffledAtoms;
 
   std::map<std::string,std::vector<AtomNumber> > groups;
 

@@ -102,6 +102,8 @@ public:
   const std::vector<unsigned> & getAtomBlockEnds() const ;
 /// Get the number of blocks of atoms in the pdb
   unsigned getNumberOfAtomBlocks() const ;
+/// Set the position array
+  void setPositions(const std::vector<Vector> &v);
 };
 
 }

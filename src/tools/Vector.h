@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -23,6 +23,12 @@
 #define __PLUMED_tools_Vector_h
 
 #include <cmath>
+#include "LoopUnroller.h"
+
+#ifdef _GLIBCXX_DEBUG
+#include "Exception.h"
+#endif
+
 
 namespace PLMD{
 
@@ -36,8 +42,9 @@ This class implements a vector of doubles with size fixed at
 compile time. It is useful for small fixed size objects (e.g.
 3d vectors) as it does not waste space to store the vector size.
 Moreover, as the compiler knows the size, it can be completely
-opimized inline.
-All the methods are inlined for better optimization.
+opimized inline. 
+All the methods are inlined for better optimization and
+all the loops are explicitly unrolled using PLMD::LoopUnroller class.
 Vector elements are initialized to zero by default. Notice that
 this means that constructor is a bit slow. This point might change
 in future if we find performance issues.
@@ -70,6 +77,7 @@ int main(){
 
 */
 
+
 template <unsigned n>
 class VectorGeneric{
   double d[n];
@@ -79,8 +87,6 @@ public:
   VectorGeneric(double,double);
   VectorGeneric(double,double,double);
   VectorGeneric(double,double,double,double);
-/// Copy constructor
-  VectorGeneric(const VectorGeneric<n>& src);
 /// create it null
   VectorGeneric();
 /// set it to zero
@@ -166,94 +172,70 @@ VectorGeneric<4>:: VectorGeneric(double x0,double x1,double x2,double x3){
   d[3]=x3;
 }
 
-template<unsigned n>
-VectorGeneric<n>::VectorGeneric(const VectorGeneric<n>& src){
-  for(unsigned i=0;i<n;i++) d[i]=src[i];
-}
-
-/// Specialized copy constructor
-template<>
-inline VectorGeneric<3>::VectorGeneric(const VectorGeneric<3>& src){
-  d[0]=src[0]; d[1]=src[1]; d[2]=src[2];
+template <unsigned n>
+void VectorGeneric<n>::zero(){
+  LoopUnroller<n>::_zero(d);
 }
 
 template <unsigned n>
 VectorGeneric<n>::VectorGeneric(){
-  for(unsigned i=0;i<n;i++) d[i]=0.0;
-}
-
-template <unsigned n>
-void VectorGeneric<n>::zero(){
-  for(unsigned i=0;i<n;i++) d[i]=0.0;
+  zero();
 }
 
 template <unsigned n>
 double & VectorGeneric<n>::operator[](unsigned i){
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n);
+#endif
   return d[i];
 }
 
 template <unsigned n>
 const double & VectorGeneric<n>::operator[](unsigned i)const{
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n);
+#endif
   return d[i];
 }
 
 template <unsigned n>
 double & VectorGeneric<n>::operator()(unsigned i){
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n);
+#endif
   return d[i];
 }
 
 template <unsigned n>
 const double & VectorGeneric<n>::operator()(unsigned i)const{
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n);
+#endif
   return d[i];
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator +=(const VectorGeneric<n>& b){
-  for(unsigned i=0;i<n;i++) d[i]+=b.d[i];
-  return *this;
-}
-
-// specialized version for 3-vectors
-template <> inline
-VectorGeneric<3>& VectorGeneric<3>::operator +=(const VectorGeneric<3>& b){
-  d[0]+=b.d[0];
-  d[1]+=b.d[1];
-  d[2]+=b.d[2];  
+  LoopUnroller<n>::_add(d,b.d);
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator -=(const VectorGeneric<n>& b){
-  for(unsigned i=0;i<n;i++) d[i]-=b.d[i];
-  return *this;
-}
-
-// specialized version for 3-vectors
-template <> inline
-VectorGeneric<3>& VectorGeneric<3>::operator -=(const VectorGeneric<3>& b){
-  d[0]-=b.d[0];
-  d[1]-=b.d[1];
-  d[2]-=b.d[2];  
+  LoopUnroller<n>::_sub(d,b.d);
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator *=(double s){
-  for(unsigned i=0;i<n;i++) d[i]*=s;
-  return *this;
-}
-
-// specialized version for 3-vectors
-template <> inline
-VectorGeneric<3>& VectorGeneric<3>::operator *=(double s){
-  d[0]*=s; d[1]*=s; d[2]*=s;  
+  LoopUnroller<n>::_mul(d,s);
   return *this;
 }
 
 template <unsigned n>
 VectorGeneric<n>& VectorGeneric<n>::operator /=(double s){
-  double x=1.0/s;
-  return (*this)*=x;
+  LoopUnroller<n>::_mul(d,1.0/s);
+  return *this;
 }
 
 template <unsigned n>
@@ -264,7 +246,7 @@ VectorGeneric<n>  VectorGeneric<n>::operator +()const{
 template <unsigned n>
 VectorGeneric<n> VectorGeneric<n>::operator -()const{
   VectorGeneric<n> r;
-  for(unsigned i=0;i<n;i++) r[i]=-d[i];
+  LoopUnroller<n>::_neg(r.d,d);
   return r;
 }
 
@@ -278,14 +260,6 @@ template <unsigned n>
 VectorGeneric<n> operator-(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2){
   VectorGeneric<n> v(v1);
   return v-=v2;
-}
-
-// specialized version for 3-vectors
-template <> inline
-VectorGeneric<3> operator-(const VectorGeneric<3>&v1,const VectorGeneric<3>&v2){
-  VectorGeneric<3> v(v1); 
-  v[0]-=v2[0]; v[1]-=v2[1]; v[2]-=v2[2]; 
-  return v;
 }
 
 template <unsigned n>
@@ -311,52 +285,12 @@ VectorGeneric<n> delta(const VectorGeneric<n>&v1,const VectorGeneric<n>&v2){
 
 template <unsigned n>
 double VectorGeneric<n>::modulo2()const{
-  double r=0.0;
-  for(unsigned i=0;i<n;i++) r+=d[i]*d[i];
-  return r;
+  return LoopUnroller<n>::_sum2(d);
 }
 
 template <unsigned n>
 double dotProduct(const VectorGeneric<n>& v1,const VectorGeneric<n>& v2){
-  double r=0.0;
-  for(unsigned i=0;i<n;i++) r+=v1[i]*v2[i];
-  return r;
-}
-
-// faster, specialized version for 2d
-inline
-double dotProduct(const VectorGeneric<2>& v1,const VectorGeneric<2>& v2){
-  return v1[0]*v2[0]+v1[1]*v2[1];
-}
-
-template<>
-inline
-double VectorGeneric<2>::modulo2()const{
-  return d[0]*d[0]+d[1]*d[1];
-}
-
-// faster, specialized version for 3d
-inline
-double dotProduct(const VectorGeneric<3>& v1,const VectorGeneric<3>& v2){
-  return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
-}
-
-template<>
-inline
-double VectorGeneric<3>::modulo2()const{
-  return d[0]*d[0]+d[1]*d[1]+d[2]*d[2];
-}
-
-// faster, specialized version for 4d
-inline
-double dotProduct(const VectorGeneric<4>& v1,const VectorGeneric<4>& v2){
-  return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]+v1[3]*v2[3];
-}
-
-template<>
-inline
-double VectorGeneric<4>::modulo2()const{
-  return d[0]*d[0]+d[1]*d[1]+d[2]*d[2]+d[3]*d[3];
+  return LoopUnroller<n>::_dot(v1.d,v2.d);
 }
 
 inline

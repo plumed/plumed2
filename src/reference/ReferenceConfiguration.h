@@ -29,6 +29,7 @@
 #include "tools/Tools.h"
 #include "tools/Exception.h"
 #include "ReferenceValuePack.h"
+#include "tools/Matrix.h"
 
 namespace PLMD{
 
@@ -85,7 +86,7 @@ protected:
 /// Crash with an error
   void error(const std::string& msg);
 /// Clear the derivatives 
-  void clearDerivatives();
+//  void clearDerivatives();
 public:
   ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
 /// Destructor
@@ -144,7 +145,7 @@ public:
   void print( OFile& ofile, const double& time, const double& weight, const double& old_norm );
   void print( OFile& ofile, const std::string& fmt );
 /// Get one of the referene arguments
-  virtual double getReferenceArgument( const unsigned& i ){ plumed_error(); return 0.0; }
+  virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
 /// to make PLMD::distance work
   virtual const std::vector<Vector>& getReferencePositions() const ; 
@@ -153,6 +154,15 @@ public:
 /// These are overwritten in ReferenceArguments and ReferenceAtoms to make frame copying work
   virtual const std::vector<AtomNumber>& getAbsoluteIndexes();
   virtual const std::vector<std::string>& getArgumentNames();
+/// Stuff for pca
+  virtual bool pcaIsEnabledForThisReference(){ return false; }
+  virtual double projectAtomicDisplacementOnVector( const unsigned& i, const Matrix<Vector>& eigv, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
+     plumed_error(); return 1; 
+  }
+/// Stuff for sanity checks on distance
+  bool isDirection() const ;
+/// Stuff to setup pca
+  virtual void setupPCAStorage( ReferenceValuePack& mypack ){ plumed_error(); }
 };
 
 // inline

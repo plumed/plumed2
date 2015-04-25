@@ -28,6 +28,7 @@ namespace PLMD {
 
 class ReferenceValuePack {
 friend class MultiDomainRMSD;
+friend class OptimalRMSD;
 private:
 /// Was the virial set
   bool boxWasSet;
@@ -41,6 +42,14 @@ private:
   std::vector<unsigned> atom_indices;
 /// A vector of vectors to save us some overhead for vector resises
   std::vector<Vector> tmp_derivs;
+/// A vector of vectors to save us some overhead for vector resizes
+  std::vector<Vector> centeredpos;
+///
+  std::vector<Vector> displacement;
+///
+  std::vector<Tensor> rot;
+///
+  Matrix< std::vector<Vector> >  DRotDPos;
 public:
   ReferenceValuePack( const unsigned& nargs, const unsigned& natoms, MultiValue& vals );
 ///
@@ -87,6 +96,8 @@ public:
   Tensor getBoxDerivatives() const ;
 ///
   std::vector<Vector>& getAtomVector();
+///
+  std::vector<Vector>& getAtomsDisplacementVector();
 };
 
 inline
@@ -182,6 +193,11 @@ Tensor ReferenceValuePack::getBoxDerivatives() const {
 inline
 std::vector<Vector>& ReferenceValuePack::getAtomVector(){
   return tmp_derivs;
+}
+
+inline
+std::vector<Vector>& ReferenceValuePack::getAtomsDisplacementVector(){
+  return displacement;
 }
 
 }

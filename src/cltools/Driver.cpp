@@ -179,6 +179,7 @@ void Driver<real>::registerKeywords( Keywords& keys ){
   keys.add("optional","--length-units","units for length, either as a string or a number");
   keys.add("optional","--dump-forces","dump the forces on a file");
   keys.add("optional","--dump-forces-fmt","( default=%%f ) the format to use to dump the forces");
+  keys.addFlag("--dump-full-virial",false,"with --dump-forces, it dumps the 9 components of the virial");
   keys.add("optional","--pdb","provides a pdb with masses and charges");
   keys.add("optional","--mc","provides a file with masses and charges as produced with DUMPMASSCHARGE");
   keys.add("optional","--box","comma-separated box dimensions (3 for orthorombic, 9 for generic)");
@@ -285,8 +286,10 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
   unsigned stride; parse("--trajectory-stride",stride);
 // are we writing forces
   string dumpforces(""), dumpforcesFmt("%f");; 
+  bool dumpfullvirial=false;
   if(!noatoms) parse("--dump-forces",dumpforces);
   if(dumpforces!="") parse("--dump-forces-fmt",dumpforcesFmt);
+  if(dumpforces!="") parseFlag("--dump-full-virial",dumpfullvirial);
 
   string trajectory_fmt;
 
@@ -803,8 +806,13 @@ int Driver<real>::main(FILE* in,FILE*out,Communicator& pc){
 
    if(fp_forces){
      fprintf(fp_forces,"%d\n",natoms);
+     string fmtv=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
      string fmt=dumpforcesFmt+" "+dumpforcesFmt+" "+dumpforcesFmt+"\n";
-     fprintf(fp_forces,fmt.c_str(),virial[0],virial[4],virial[8]);
+     if(dumpfullvirial){
+       fprintf(fp_forces,fmtv.c_str(),virial[0],virial[1],virial[2],virial[3],virial[4],virial[5],virial[6],virial[7],virial[8]);
+     } else {
+       fprintf(fp_forces,fmt.c_str(),virial[0],virial[4],virial[8]);
+     }
      fmt="X "+fmt;
      for(int i=0;i<natoms;i++)
        fprintf(fp_forces,fmt.c_str(),forces[3*i],forces[3*i+1],forces[3*i+2]);

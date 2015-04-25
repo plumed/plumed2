@@ -40,6 +40,11 @@ const std::vector<Vector> & PDB::getPositions()const{
   return positions;
 }
 
+void PDB::setPositions(const std::vector<Vector> &v ){
+	  plumed_assert( v.size()==positions.size() );	
+	  positions=v;
+}
+
 const std::vector<double> & PDB::getOccupancy()const{
   return occupancy;
 }

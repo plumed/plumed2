@@ -27,9 +27,11 @@ Changes from version 2.1 which are relevant for users:
   - \ref MFILTER_LESS filter multicolvar by the value of the colvar
   - \ref MFILTER_MORE 
   - \ref MFILTER_BETWEEN
+  - \ref PCARMSD pca collective variables using OPTIMAL rmsd measure
+  - \ref PCAVARS pca collective variables using any one of the measures in reference
   - \ref GRADIENT can be used to calculate the gradient of a quantity.  Used to drive nucleation
   - \ref CAVITY
-  - \ref PUCKERING implemebted for 5-membered rings (thanks to Alejandro Gil-Ley).
+  - \ref PUCKERING implemented for 5-membered rings (thanks to Alejandro Gil-Ley).
   - \ref WRAPAROUND to fix periodic boundary conditions.
 - New features for existing actions:
   - Keywords UPDATE_FROM and UPDATE_UNTIL to limit update step in a defined time window.
@@ -41,9 +43,11 @@ Changes from version 2.1 which are relevant for users:
     molecular dynamics with \ref DUMPMASSCHARGE
   - Possibility to enable or disable \ref RESTART on a per action basis.
   - \ref MOLINFO now supports many more special names for rna and dna (thanks to Alejandro Gil-Ley).
-- VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
+  - VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
   can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
   part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
+- Other changes:
+  - File reader now supports dos newlines as well as files with no endline at the end.
 
 For developers:
 
@@ -54,6 +58,5 @@ the derivatives calculated in the various performTask methods are stored in an o
 this is contained within an object of type AtomValuePack, which stores information on the atom indices.  If you have implemented
 a new multicolvar it should be relatively straightforward to translate them so they can exploit this new version of the code.  Look 
 at what has been done to the other multicolvars in there for guidance.  Sorry for any inconvenience caused.
-
 
 */

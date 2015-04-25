@@ -56,7 +56,6 @@ void SingleDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const
      center+=conf[i]*align[i]; der_index[i]=i;
   }
   for(unsigned i=0;i<conf.size();++i) reference_atoms[i]=conf[i]-center;
-  // setNumberOfAtoms( conf.size() ); setNumberOfArguments( 0 );
 }
 
 double SingleDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {

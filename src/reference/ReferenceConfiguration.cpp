@@ -136,11 +136,9 @@ void ReferenceConfiguration::checkRead(){
   }
 }
 
-// void ReferenceConfiguration::clearDerivatives(){
-//   for(unsigned i=0;i<atom_ders.size();++i) atom_ders[i].zero();
-//   virial.zero(); virialWasSet=false;
-//   arg_ders.assign(arg_ders.size(),0.0);
-// }
+bool ReferenceConfiguration::isDirection() const {
+  return ( name=="DIRECTION" );
+}
 
 double ReferenceConfiguration::calculate( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, 
                                           ReferenceValuePack& myder, const bool& squared ) const {

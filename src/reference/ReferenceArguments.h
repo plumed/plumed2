@@ -78,7 +78,7 @@ public:
 /// Set the positions of the refernce arguments
   void setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma );
 /// Get the value of the ith reference argument
-  double getReferenceArgument( const unsigned& i );
+  double getReferenceArgument( const unsigned& i ) const ;
 /// Print the arguments out
   void printArguments( OFile& ofile, const std::string& fmt ) const ;
 /// Return all the reference arguments
@@ -89,7 +89,7 @@ public:
 };
 
 inline
-double ReferenceArguments::getReferenceArgument( const unsigned& i ){
+double ReferenceArguments::getReferenceArgument( const unsigned& i ) const {
   plumed_dbg_assert( i<reference_args.size() );
   return reference_args[i];
 }

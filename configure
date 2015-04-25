@@ -5328,8 +5328,8 @@ fi
 
 fi
 if test $found == ko ; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, which only support dcd and xtc/trr/trj" >&5
-$as_echo "$as_me: WARNING: using internal molfile_plugins, which only support dcd and xtc/trr/trj" >&2;}
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&5
+$as_echo "$as_me: WARNING: using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files" >&2;}
 	$as_echo "#define __PLUMED_INTERNAL_MOLFILE_PLUGINS 1" >>confdefs.h
 
 fi
@@ -6436,9 +6436,12 @@ if test $mpi == true; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled using MPI" >&5
 $as_echo "$as_me: **** PLUMED will be compiled using MPI" >&6;}
   else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will NOT be compiled using MPI" >&5
-$as_echo "$as_me: **** PLUMED will NOT be compiled using MPI" >&6;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: **** PLUMED will NOT be compiled using MPI because MPI have not been found!" >&5
+$as_echo "$as_me: WARNING: **** PLUMED will NOT be compiled using MPI because MPI have not been found!" >&2;}
   fi
+else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be compiled without MPI" >&5
+$as_echo "$as_me: **** PLUMED will be compiled without MPI" >&6;}
 fi
 
 

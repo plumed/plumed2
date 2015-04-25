@@ -28,32 +28,44 @@ namespace PLMD{
 
 class OptimalRMSD : public RMSDBase {
 private:
-  bool fast;
+  bool pca,fast;
   RMSD myrmsd;
 public:
   OptimalRMSD(const ReferenceConfigurationOptions& ro);
   void read( const PDB& );
   double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
+  bool pcaIsEnabledForThisReference(){ pca=true; return true; }
+  void setupPCAStorage( ReferenceValuePack& mypack ){ 
+        mypack.centeredpos.resize( getNumberOfAtoms() ); 
+        mypack.displacement.resize( getNumberOfAtoms() ); 
+        mypack.DRotDPos.resize(3,3); mypack.rot.resize(1);
+  } 
+  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ; 
 };
 
 PLUMED_REGISTER_METRIC(OptimalRMSD,"OPTIMAL")
 
 OptimalRMSD::OptimalRMSD(const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-RMSDBase(ro)
+RMSDBase(ro),
+pca(false)
 {
   fast=ro.usingFastOption();
 }
 
 void OptimalRMSD::read( const PDB& pdb ){
-  readReference( pdb ); 
+  readReference( pdb ); myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL-FAST"); 
 }
 
 double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
-  double d; 
-  if( fast ){
+  double d;
+  if( pca ){
+     std::vector<Vector> centeredreference( getNumberOfAtoms () );
+     d=myrmsd.calc_PCAelements(pos,myder.getAtomVector(),myder.rot[0],myder.DRotDPos,myder.getAtomsDisplacementVector(),myder.centeredpos,centeredreference,squared);
+     unsigned nat = pos.size(); for(unsigned i=0;i<nat;++i) myder.getAtomsDisplacementVector()[i] -= getReferencePosition(i);
+  } else if( fast ){
      if( getAlign()==getDisplace() ) d=myrmsd.optimalAlignment<false,true>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared); 
-     else d=myrmsd.optimalAlignment<false,false>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
+     d=myrmsd.optimalAlignment<false,false>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
   } else {
      if( getAlign()==getDisplace() ) d=myrmsd.optimalAlignment<true,true>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
      else d=myrmsd.optimalAlignment<true,false>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
@@ -62,6 +74,30 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
   for(unsigned i=0;i<nat;++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] ); 
   if( !myder.updateComplete() ) myder.updateDynamicLists();
   return d;
+}
+
+double OptimalRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
+
+  double proj=0.0; mypack.clear();
+  for(unsigned i=0;i<pos.size();++i){
+      proj += dotProduct( mypack.getAtomsDisplacementVector()[i] , vecs(iv,i) );
+  }
+  for(unsigned a=0;a<3;a++){
+      for(unsigned b=0;b<3;b++){ 
+          for(unsigned iat=0;iat<getNumberOfAtoms();iat++){
+              double tmp1=0.;
+              for(unsigned n=0;n<getNumberOfAtoms();n++) tmp1+=mypack.centeredpos[n][b]*vecs(iv,n)[a];
+              mypack.addAtomDerivatives( iat, mypack.DRotDPos[a][b][iat]*tmp1 );
+          }
+      }
+  }
+  Tensor trot=mypack.rot[0].transpose();
+  Vector v1; v1.zero(); double prefactor = 1. / static_cast<double>( getNumberOfAtoms() );
+  for(unsigned n=0;n<getNumberOfAtoms();n++) v1+=prefactor*matmul(trot,vecs(iv,n));
+  for(unsigned iat=0;iat<getNumberOfAtoms();iat++) mypack.addAtomDerivatives( iat, matmul(trot,vecs(iv,iat))-v1 );
+  if( !mypack.updateComplete() ) mypack.updateDynamicLists();
+
+  return proj;
 }
 
 }

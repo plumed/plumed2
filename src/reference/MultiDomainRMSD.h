@@ -32,6 +32,8 @@ class MultiDomainRMSD : public ReferenceAtoms {
 private:
 /// The type of RMSD we are using
   std::string ftype;
+/// Are we doing pca
+  bool pca;
 /// The weight of a block
   std::vector<double> weights;
 /// Blocks containing start and end points for all the domains
@@ -48,6 +50,11 @@ public:
 /// Calculate
   double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
   double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
+///
+  bool pcaIsEnabledForThisReference();
+//  Vector getAtomicDisplacement( const unsigned& iatom );
+  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ; 
+  void setupPCAStorage( ReferenceValuePack& mypack ); 
 };
 
 }

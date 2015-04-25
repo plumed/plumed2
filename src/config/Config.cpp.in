@@ -22,6 +22,7 @@
 
 #include "Config.h"
 #include "version.h"
+#include <cstdlib>
 #include <cstring>
 
 namespace PLMD{
@@ -36,7 +37,14 @@ bool isInstalled(){
 }
 
 std::string getPlumedRoot(){
-  return "@PLUMED_ROOT@";
+  char *env = std::getenv("PLUMED_ROOT");
+  std::string ss;
+  if( env == NULL) {
+    ss="@PLUMED_ROOT@";
+  } else {
+    ss=std::string( env );
+  }
+  return ss;
 }
 
 std::string getVersion(){

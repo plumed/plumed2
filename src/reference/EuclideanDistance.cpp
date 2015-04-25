@@ -27,6 +27,8 @@ namespace PLMD {
 class EuclideanDistance : public ArgumentOnlyDistance {
 public:
   EuclideanDistance( const ReferenceConfigurationOptions& ro );
+  bool pcaIsEnabledForThisReference(){ return true; }
+  void setupPCAStorage( ReferenceValuePack& mypack ){}
 };
 
 PLUMED_REGISTER_METRIC(EuclideanDistance,"EUCLIDEAN")

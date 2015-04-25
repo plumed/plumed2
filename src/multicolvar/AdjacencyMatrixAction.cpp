@@ -63,7 +63,6 @@ tmpdf(1)
           }
 
           for(unsigned j=i;j<nfunc;++j){
-             plumed_assert( j*(i+1)<0.5*(nfunc*nfunc+nfunc) );
              std::string sw, errors; parseNumbered("SWITCH",ibase+j+1,sw);
              if(sw.length()==0){
                 std::string num; Tools::convert(ibase+j+1,num);

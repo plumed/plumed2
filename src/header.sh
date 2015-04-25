@@ -7,7 +7,11 @@ test -d ../.git  || {
   exit 1
 }
 
-for dir in *
+DIRS=$1
+
+test -z "$DIRS" && DIRS=*
+
+for dir in $DIRS
 do
 test -d "$dir" || continue
 cd $dir
