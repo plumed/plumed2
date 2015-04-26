@@ -88,20 +88,19 @@ void MultiDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const 
 }
 
 double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
-  //clearDerivatives(); 
-  double totd=0.; Tensor tvirial; std::vector<Vector> mypos;
-  MultiValue tvals( 1, myder.getNumberOfDerivatives() ); ReferenceValuePack tder( 0, 0, tvals );
+  double totd=0.; Tensor tvirial; std::vector<Vector> mypos; MultiValue tvals( 1, 3*pos.size()+9 ); 
+  ReferenceValuePack tder( 0, getNumberOfAtoms(), tvals ); tder.setValIndex(0);
+
   for(unsigned i=0;i<domains.size();++i){
      // Must extract appropriate positions here
-     mypos.resize( blocks[i+1] - blocks[i] ); 
-     unsigned n=0; tder.resize( 0, mypos.size() );
-     if( pca ) domains[i]->setupPCAStorage( tder );
-     for(unsigned j=blocks[i];j<blocks[i+1];++j){ tder.setAtomIndex(n,j); mypos[n]=pos[j]; n++; }
-
+     mypos.resize( blocks[i+1] - blocks[i] );
+     if( pca ) domains[i]->setupPCAStorage( tder ); 
+     unsigned n=0; for(unsigned j=blocks[i];j<blocks[i+1];++j){ tder.setAtomIndex(n,j); mypos[n]=pos[j]; n++; }
+     for(unsigned k=n;k<getNumberOfAtoms();++k) tder.setAtomIndex(k,pos.size()+1);
      // This actually does the calculation
      totd += weights[i]*domains[i]->calculate( mypos, pbc, tder, true );
      // Now merge the derivative
-     myder.copyScaledDerivatives( 1, weights[i], tvals );
+     myder.copyScaledDerivatives( 0, weights[i], tvals );
      // If PCA copy PCA stuff
      if(pca){
         unsigned n=0;
@@ -118,7 +117,7 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
      // Make sure virial status is set correctly in output derivative pack
      // This is only done here so I do this by using class friendship
      if( tder.virialWasSet() ) myder.boxWasSet=true;
-     // And clear
+     // Clear the tempory derivatives ready for next loop
      tder.clear();
   }
   if( !squared ){
@@ -185,7 +184,7 @@ double MultiDomainRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, c
       domains[i]->projectAtomicDisplacementOnVector( iv, tvecs, mypos, tder );
      
       // And derivatives
-      mypack.copyScaledDerivatives( 1, weights[i], tvals );
+      mypack.copyScaledDerivatives( 0, weights[i], tvals );
   }
 
   return totd;

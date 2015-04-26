@@ -41,7 +41,7 @@ void ReferenceValuePack::updateDynamicLists(){
   for(unsigned i=0;i<numberOfArgs;++i) myvals.putIndexInActiveArray( i );
   for(unsigned i=0;i<atom_indices.size();++i){
      unsigned nbase = numberOfArgs + 3*atom_indices[i];
-     if( myvals.isActive( nbase ) ){
+     if( atom_indices[i]<atom_indices.size() && myvals.isActive( nbase ) ){
         myvals.putIndexInActiveArray( nbase+0 ); myvals.putIndexInActiveArray( nbase+1 ); myvals.putIndexInActiveArray( nbase+2 );
      }
   }

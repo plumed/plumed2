@@ -277,9 +277,6 @@ void DynamicList<T>::deactivateAll(){
   allWereDeactivated=true; allWereActivated=false;
   for(unsigned i=0;i<nactive;++i) onoff[ active[i] ]= 0; 
   nactive=0;
-#ifndef NDEBUG
-  for(unsigned i=0;i<onoff.size();++i) plumed_dbg_assert( onoff[i]==0 );
-#endif
 }
 
 template <typename T>

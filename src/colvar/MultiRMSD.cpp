@@ -149,7 +149,6 @@ PLUMED_COLVAR_INIT(ao),squared(false),myvals(1,0), mypack(0,0,myvals)
   
   std::vector<AtomNumber> atoms;
   rmsd->getAtomRequests( atoms );
-//   rmsd->setNumberOfAtoms( atoms.size() );
   requestAtoms( atoms );
 
   myvals.resize( 1, 3*atoms.size()+9 );
