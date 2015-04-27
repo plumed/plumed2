@@ -89,7 +89,7 @@ void MultiDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const 
 
 double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
   double totd=0.; Tensor tvirial; std::vector<Vector> mypos; MultiValue tvals( 1, 3*pos.size()+9 ); 
-  ReferenceValuePack tder( 0, getNumberOfAtoms(), tvals ); tder.setValIndex(0);
+  ReferenceValuePack tder( 0, getNumberOfAtoms(), tvals ); tder.setValIndex(0); myder.clear();
 
   for(unsigned i=0;i<domains.size();++i){
      // Must extract appropriate positions here
@@ -117,14 +117,13 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
      // Make sure virial status is set correctly in output derivative pack
      // This is only done here so I do this by using class friendship
      if( tder.virialWasSet() ) myder.boxWasSet=true;
-     // Clear the tempory derivatives ready for next loop
-     tder.clear();
   }
+  if( !myder.updateComplete() ) myder.updateDynamicLists();
+
   if( !squared ){
      totd=sqrt(totd); double xx=0.5/totd;
      myder.scaleAllDerivatives( xx );
   }
-  if( !myder.updateComplete() ) myder.updateDynamicLists();
   return totd;
 }
 

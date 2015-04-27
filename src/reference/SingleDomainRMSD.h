@@ -42,6 +42,8 @@ public:
   virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const=0;
 /// This sets upper and lower bounds on distances to be used in DRMSD (here it does nothing)
   virtual void setBoundsOnDistances( bool dopbc, double lbound=0.0, double ubound=std::numeric_limits<double>::max( ) ){};
+/// This is used by MultiDomainRMSD to setup the RMSD object in Optimal RMSD type
+  virtual void setupRMSDObject(){};
 };
 
 }

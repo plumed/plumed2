@@ -76,7 +76,7 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceVal
   plumed_dbg_assert( targets.size()>0 );
 
   Vector distance; 
-  double drmsd=0.; 
+  myder.clear(); double drmsd=0.; 
   for(std::map< std::pair <unsigned,unsigned> , double>::const_iterator it=targets.begin();it!=targets.end();++it){
       
       unsigned i=getAtomIndex( it->first.first );

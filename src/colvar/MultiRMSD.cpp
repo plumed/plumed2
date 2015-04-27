@@ -168,7 +168,7 @@ MultiRMSD::~MultiRMSD(){
 
 // calculator
 void MultiRMSD::calculate(){
-  mypack.clear(); double r=rmsd->calculate( getPositions(), getPbc(), mypack, squared );
+  double r=rmsd->calculate( getPositions(), getPbc(), mypack, squared );
 
   setValue(r); 
   for(unsigned i=0;i<getNumberOfAtoms();i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
