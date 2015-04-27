@@ -189,6 +189,7 @@ For users:
   See notes <a href="http://github.com/plumed/plumed2/issues/132"> here </a>
   This fix requires gromacs to be repatched and could be very important if you run biased simulations in the NPT ensemble.
 - Fixed a bug in the virial computed with \ref FIT_TO_TEMPLATE when the reference pdb had center non located at the origin.
+- Fixed a bug in the the forces computed with \ref FIT_TO_TEMPLATE when used in combination with \ref COM, \ref CENTER, or \ref GHOST
 - Updated internal molfile plugins to VMD 1.9.2.
 - Included crd and crdbox formats to internal molfile.
 - Added --natoms to \ref driver . This is required to read coordinate
