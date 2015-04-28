@@ -97,7 +97,6 @@ mypack(0,0,myvals)
   // Now create packs
   myvals.resize( 1, myargs.size() );
   mypack.resize( myargs.size(), 0 );
-  mypack.setValIndex( 0 );
 
   // Create the value
   addValueWithDerivatives(); setNotPeriodic();

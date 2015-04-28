@@ -26,10 +26,11 @@ namespace PLMD {
 ReferenceValuePack::ReferenceValuePack( const unsigned& nargs, const unsigned& natoms, MultiValue& vals ):
 boxWasSet(false),
 numberOfArgs(nargs),
-oind(1),
+oind_set(false),
 myvals(vals)
 {
   atom_indices.resize( natoms ); tmp_derivs.resize( natoms );
+  if( vals.getNumberOfValues()==1 ){ oind=0; oind_set=true; }
 }
 
 void ReferenceValuePack::resize( const unsigned& nargs, const unsigned& natoms ){
@@ -41,7 +42,7 @@ void ReferenceValuePack::updateDynamicLists(){
   for(unsigned i=0;i<numberOfArgs;++i) myvals.putIndexInActiveArray( i );
   for(unsigned i=0;i<atom_indices.size();++i){
      unsigned nbase = numberOfArgs + 3*atom_indices[i];
-     if( atom_indices[i]<atom_indices.size() && myvals.isActive( nbase ) ){
+     if( atom_indices[i]<myvals.getNumberOfDerivatives() && myvals.isActive( nbase ) ){
         myvals.putIndexInActiveArray( nbase+0 ); myvals.putIndexInActiveArray( nbase+1 ); myvals.putIndexInActiveArray( nbase+2 );
      }
   }

@@ -269,7 +269,7 @@ mypack(0,0,myvals)
   // Setup the derivative pack
   if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9 ); 
   else myvals.resize( 1, args.size() );
-  mypack.resize( args.size(), atoms.size() ); mypack.setValIndex( 0 );
+  mypack.resize( args.size(), atoms.size() ); 
   for(unsigned i=0;i<atoms.size();++i) mypack.setAtomIndex( i, i );
   /// This sets up all the storage data required by PCA in the pack
   myframes.getFrame(0)->setupPCAStorage( mypack );

@@ -65,13 +65,14 @@ double SimpleRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const 
       for(unsigned k=0;k<3;++k) comder[k] += getAlign()[j]*vecs(iv,j)[k];
   }
 
-  double proj=0; 
+  double proj=0; mypack.clear();
   for(unsigned j=0;j<pos.size();++j){
       for(unsigned k=0;k<3;++k){
           proj += vecs(iv,j)[k]*mypack.getAtomsDisplacementVector()[j][k];
       }
       mypack.setAtomDerivatives( j, vecs(iv,j) - comder );
   }
+  if( !mypack.updateComplete() ) mypack.updateDynamicLists();
   return proj;
 }
 

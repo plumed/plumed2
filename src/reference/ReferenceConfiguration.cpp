@@ -169,8 +169,11 @@ void ReferenceConfiguration::print( OFile& ofile, const std::string& fmt ){
 }
 
 double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
-  MultiValue myvals( 2, ref1->getReferenceArguments().size() + 3*ref1->getReferencePositions().size() + 9 ); 
-  ReferenceValuePack myder( ref1->getReferenceArguments().size() , ref1->getReferencePositions().size() , myvals ); 
+  unsigned nder;
+  if( ref1->getReferencePositions().size()>0 ) nder=ref1->getReferenceArguments().size() + 3*ref1->getReferencePositions().size() + 9;
+  else nder=ref1->getReferenceArguments().size();
+
+  MultiValue myvals( 1, nder ); ReferenceValuePack myder( ref1->getReferenceArguments().size() , ref1->getReferencePositions().size() , myvals ); 
   double dist1=ref1->calc( ref2->getReferencePositions(), pbc, vals, ref2->getReferenceArguments(), myder, squared );
 #ifndef NDEBUG
   // Check that A - B = B - A

@@ -179,8 +179,7 @@ PLUMED_COLVAR_INIT(ao),myvals(1,0), mypack(0,0,myvals),squared(false)
   requestAtoms( atoms );
 
   // Setup the derivative pack
-  myvals.resize( 1, 3*atoms.size()+9 );
-  mypack.resize( 0, atoms.size() ); mypack.setValIndex(0);
+  myvals.resize( 1, 3*atoms.size()+9 ); mypack.resize( 0, atoms.size() );
   for(unsigned i=0;i<atoms.size();++i) mypack.setAtomIndex( i, i );
 
   log.printf("  reference from file %s\n",reference.c_str());
