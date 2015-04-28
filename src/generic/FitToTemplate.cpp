@@ -33,6 +33,7 @@
 #include "core/ActionSet.h"
 #include "core/SetupMolInfo.h"
 #include "tools/PDB.h"
+#include "tools/Pbc.h"
 
 #include <vector>
 #include <string>
@@ -109,6 +110,7 @@ class FitToTemplate:
   std::vector<Vector> ddistdpos;
   std::vector<Vector> centeredpositions;
   Vector center_positions;
+
         
 public:
   FitToTemplate(const ActionOptions&ao);
@@ -198,11 +200,11 @@ void FitToTemplate::calculate(){
   		}
 	}
   	else if( type=="OPTIMAL" or type=="OPTIMAL-FAST"){
-		if(positions.size()!=aligned.size()){
-			for (unsigned i=0;i<aligned.size();i++)	positions.push_back(modifyPosition(aligned[i]));
-		}else{
-		        for (unsigned i=0;i<aligned.size();i++) positions[i]=modifyPosition(aligned[i]);
-		}
+// we store positions here to be used in apply()
+// notice that in apply() it is not guaranteed that positions are still equal to their value here
+// since they could have been changed by a subsequent FIT_TO_TEMPLATE
+		positions.resize(aligned.size());
+	        for (unsigned i=0;i<aligned.size();i++) positions[i]=modifyPosition(aligned[i]);
 
 		// specific stuff that provides all that is needed
   	        double r=rmsd->calc_FitElements( positions, rotation ,  drotdpos , centeredpositions, center_positions);
@@ -211,6 +213,9 @@ void FitToTemplate::calculate(){
 			Vector & ato (modifyPosition(AtomNumber::index(i)));
 			ato=matmul(rotation,ato-center_positions)+center;
 		}
+// rotate box
+		Pbc & pbc(modifyGlobalPbc());
+		pbc.setBox(matmul(pbc.getBox(),transpose(rotation)));
 	}
 
 }
@@ -219,45 +224,48 @@ void FitToTemplate::apply(){
   if (type=="SIMPLE") {
   	Vector totForce;
   	for(unsigned i=0;i<getTotAtoms();i++){
-  	  totForce+=modifyForce(AtomNumber::index(i));
+  	  totForce+=modifyGlobalForce(AtomNumber::index(i));
   	}
 	Tensor & vv(modifyGlobalVirial());
   	vv+=Tensor(center,totForce);
   	for(unsigned i=0;i<aligned.size();++i){
-  	  Vector & ff(modifyForce(aligned[i]));
+  	  Vector & ff(modifyGlobalForce(aligned[i]));
   	  ff-=totForce*weights[i];
   	}
   } else if ( type=="OPTIMAL" or type=="OPTIMAL-FAST") { 
-  	Vector totalforce;
-	vector<Vector> rotatedforce(getTotAtoms());
-	// first: the term needed by everyone
-  	for(unsigned i=0;i<getTotAtoms();i++){
-		Vector &force=modifyForce(AtomNumber::index(i));
-		rotatedforce[i]=matmul(rotation,force);
-	}	
-	// term with derivative with respect of the com (again, only for atoms involved in the optimal alignment)
-	for(unsigned i=0;i<aligned.size(); i++) {
-		totalforce+=rotatedforce[i]*weights[i];
-	}	
+  	Vector totForce;
 	for(unsigned i=0;i<getTotAtoms(); i++) {
-		rotatedforce[i]-=totalforce;// this loop can be embedded down	
+        	Vector & f(modifyGlobalForce(AtomNumber::index(i)));
+// rotate back forces
+		f=matmul(transpose(rotation),f);
+// accumulate rotated c.o.m. forces - this is already in the non rotated reference frame
+        	totForce+=f;
 	}
-	// term with derivatives of rotation matrix (only for atoms involved in the calculation of optimal alignment)
-	for(unsigned i=0;i<getTotAtoms(); i++) {
-		Vector &pos_i=modifyPosition(AtomNumber::index(i));
-		for(unsigned j=0;j<aligned.size(); j++) {
-			Vector &force_j=modifyForce(aligned[j]);
-			for(unsigned k=0;k<3;k++){	
-				Tensor a_j=RMSD::getMatrixFromDRot(drotdpos,j,k);
-				rotatedforce[i][k]+=dotProduct(matmul(a_j,pos_i-center_positions),force_j);	
-			}	
-		}
-		// sum all
-		Vector &force=modifyForce(AtomNumber::index(i));	
-		force=rotatedforce[i];
-	}	
+        Tensor& virial(modifyGlobalVirial());
+// notice that an extra Tensor(center,matmul(rotation,totForce)) is required to
+// compute the derivatives of the rotation with respect to center
+	Tensor ww=matmul(transpose(rotation),virial+Tensor(center,matmul(rotation,totForce)));
+// rotate back virial
+	virial=matmul(transpose(rotation),matmul(virial,rotation));
 
-  } 
+// now we compute the force due to alignment
+	for(unsigned i=0;i<aligned.size(); i++) {
+		Vector g;
+		for(unsigned k=0;k<3;k++){
+// this could be made faster computing only the diagonal of d
+			Tensor d=matmul(ww,RMSD::getMatrixFromDRot(drotdpos,i,k));
+			g[k]=(d(0,0)+d(1,1)+d(2,2));
+		}
+// here is the extra contribution
+		modifyGlobalForce(aligned[i])+=-g-weights[i]*totForce;
+// here it the contribution to the virial
+// notice that here we can use absolute positions since, for the alignment to be defined,
+// positions should be in one well defined periodic image
+		virial+=extProduct(positions[i],g);
+	}
+// finally, correction to the virial
+	virial+=extProduct(matmul(transpose(rotation),center),totForce);
+  }
 }
 
 }
