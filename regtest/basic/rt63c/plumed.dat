@@ -1,5 +1,7 @@
 MOLINFO STRUCTURE=helix.pdb
 
+DUMPATOMS ATOMS=1-132 FILE=before.gro
+
 # length of first lattice vector
 cell: CELL
 aaaa: MATHEVAL ARG=cell.ax,cell.ay,cell.az FUNC=0.001*(x*x+y*y+z*z) PERIODIC=NO
@@ -23,3 +25,5 @@ PRINT ARG=aaaa,aaaa2,rmsd,rmsd2 FILE=ddd
 RESTRAINT ARG=rmsd2 AT=0 SLOPE=1
 # here either aaaa or aaaa2 should give the same result:
 RESTRAINT ARG=aaaa2 AT=0 SLOPE=1
+
+DUMPATOMS ATOMS=1-132 FILE=after.gro
