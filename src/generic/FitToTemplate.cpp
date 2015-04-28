@@ -114,6 +114,7 @@ class FitToTemplate:
         
 public:
   FitToTemplate(const ActionOptions&ao);
+  ~FitToTemplate();
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();
@@ -134,7 +135,8 @@ FitToTemplate::FitToTemplate(const ActionOptions&ao):
 Action(ao),
 ActionPilot(ao),
 ActionAtomistic(ao),
-ActionWithValue(ao)
+ActionWithValue(ao),
+rmsd(NULL)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -266,6 +268,10 @@ void FitToTemplate::apply(){
 // finally, correction to the virial
 	virial+=extProduct(matmul(transpose(rotation),center),totForce);
   }
+}
+
+FitToTemplate::~FitToTemplate(){
+  if(rmsd) delete rmsd;
 }
 
 }
