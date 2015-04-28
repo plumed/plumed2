@@ -199,7 +199,11 @@ plumed_cmd(plumedmain,"setLog",fplog);                         // Pass the file 
 plumed_cmd(plumedmain,"setLogFile",fplog);		       // Pass the file  on which to write out the plumed log (to be created)
 plumed_cmd(plumedmain,"setTimestep",&delta_t);                 // Pass a pointer to the molecular dynamics timestep to plumed
 
-plumed_cmd(plumedmain,"setKbT",&kbT);                          // Tell to PLUMED the value of kbT - ONLY VALID IF API VERSION > 1
+// This is valid only if API VERSION > 1
+plumed_cmd(plumedmain,"setKbT",&kbT);                          // Pointer to a real containing the value of kbT
+
+// This is valid only if API VERSION > 2
+plumed_cmd(plumedmain,"setRestart",&res);                      // Pointer to an integer saying if we are restarting (zero means no, one means yes)
 
 // Calls to do the actual initialization (all the above commands must appear before this call)
 plumed_cmd(plumedmain,"init",NULL);                            // Do all the initialization of plumed
