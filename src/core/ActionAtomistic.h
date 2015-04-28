@@ -86,6 +86,9 @@ public:
 /// Get modifiable virial
 /// Should be used by action that need to modify the stored virial
   Tensor & modifyGlobalVirial();
+/// Get modifiable PBC
+/// Should be used by action that need to modify the stored box
+  Pbc & modifyGlobalPbc();
 /// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
@@ -261,6 +264,11 @@ const std::set<AtomNumber> & ActionAtomistic::getUnique()const{
 inline
 unsigned ActionAtomistic::getTotAtoms()const{
   return atoms.positions.size();
+}
+
+inline
+Pbc & ActionAtomistic::modifyGlobalPbc(){
+  return atoms.pbc;
 }
 
 
