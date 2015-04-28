@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -121,6 +121,7 @@ public:
 PLUMED_REGISTER_ACTION(FitToTemplate,"FIT_TO_TEMPLATE")
 
 void FitToTemplate::registerKeywords( Keywords& keys ){
+  Action::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
   keys.add("compulsory","REFERENCE","a file in pdb format containing the reference structure and the atoms involved in the CV.");
@@ -218,10 +219,10 @@ void FitToTemplate::apply(){
   if (type=="SIMPLE") {
   	Vector totForce;
   	for(unsigned i=0;i<getTotAtoms();i++){
-  	  Vector & ato (modifyPosition(AtomNumber::index(i)));
-  	  ato-=shift;
   	  totForce+=modifyForce(AtomNumber::index(i));
   	}
+	Tensor & vv(modifyGlobalVirial());
+  	vv+=Tensor(center,totForce);
   	for(unsigned i=0;i<aligned.size();++i){
   	  Vector & ff(modifyForce(aligned[i]));
   	  ff-=totForce*weights[i];

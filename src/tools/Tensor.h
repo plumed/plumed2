@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -24,6 +24,11 @@
 
 #include "MatrixSquareBracketsAccess.h"
 #include "Vector.h"
+#include "LoopUnroller.h"
+
+#ifdef _GLIBCXX_DEBUG
+#include "Exception.h"
+#endif
 
 namespace PLMD{
 
@@ -39,6 +44,7 @@ compile time. It is useful for small fixed size objects (e.g.
 3x3 tensors) as it does not waste space to store the vector size.
 Moreover, as the compiler knows the size, it can be completely
 opimized inline.
+Most of the loops are explicitly unrolled using PLMD::LoopUnroller class
 Matrix elements are initialized to zero by default. Notice that
 this means that constructor is a bit slow. This point might change
 in future if we find performance issues.
@@ -163,7 +169,7 @@ public:
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>::TensorGeneric(){
-  for(unsigned i=0;i<n*m;i++)d[i]=0.0;
+  LoopUnroller<n*m>::_zero(d);
 }
 
 template<unsigned n,unsigned m>
@@ -196,40 +202,47 @@ TensorGeneric<3,3>::TensorGeneric(double d00,double d01,double d02,double d10,do
 
 template<unsigned n,unsigned m>
 void TensorGeneric<n,m>::zero(){
-  for(unsigned i=0;i<n*m;i++)d[i]=0.0;
+  LoopUnroller<n*m>::_zero(d);
 }
 
 template<unsigned n,unsigned m>
 double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j){
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n && j<m);
+#endif
   return d[m*i+j];
 }
 
 template<unsigned n,unsigned m>
 const double & TensorGeneric<n,m>::operator() (unsigned i,unsigned j)const{
+#ifdef _GLIBCXX_DEBUG
+  plumed_assert(i<n && j<m);
+#endif
   return d[m*i+j];
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator +=(const TensorGeneric<n,m>& b){
-  for(unsigned i=0;i<n*m;i++)d[i]+=b.d[i];
+  LoopUnroller<n*m>::_add(d,b.d);
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator -=(const TensorGeneric<n,m>& b){
-  for(unsigned i=0;i<n*m;i++)d[i]-=b.d[i];
+  LoopUnroller<n*m>::_sub(d,b.d);
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator *=(double s){
-  for(unsigned i=0;i<n*m;i++)d[i]*=s;
+  LoopUnroller<n*m>::_mul(d,s);
   return *this;
 }
 
 template<unsigned n,unsigned m>
 TensorGeneric<n,m>& TensorGeneric<n,m>::operator /=(double s){
-  return (*this)*=1.0/s;
+  LoopUnroller<n*m>::_mul(d,1.0/s);
+  return *this;
 }
 
 template<unsigned n,unsigned m>
@@ -240,7 +253,7 @@ TensorGeneric<n,m> TensorGeneric<n,m>::operator+()const{
 template<unsigned n,unsigned m>
 TensorGeneric<n,m> TensorGeneric<n,m>::operator-()const{
   TensorGeneric<n,m> r;
-  for(unsigned i=0;i<n*m;i++)r.d[i]=-d[i];
+  LoopUnroller<n*m>::_neg(r.d,d);
   return r;
 }
 

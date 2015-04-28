@@ -75,6 +75,9 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <string.h>
 #include <windows.h>
 
+namespace PLMD{
+namespace molfile{
+
 typedef HANDLE fio_fd;
 typedef LONGLONG fio_size_t;
 typedef void * fio_caddr_t;
@@ -360,6 +363,9 @@ static fio_size_t fio_ftell(fio_fd fd) {
 }
 #endif /* plain ANSI C */
 
+}
+}
+
 #else 
 
 /* Version for UNIX machines */
@@ -374,6 +380,9 @@ static fio_size_t fio_ftell(fio_fd fd) {
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+
+namespace PLMD{
+namespace molfile{
 
 typedef int fio_fd;
 typedef off_t fio_size_t;      /* off_t is 64-bits with LFS builds */
@@ -397,21 +406,35 @@ typedef off_t fio_size_t;      /* off_t is 64-bits with LFS builds */
 
 typedef void * fio_caddr_t;
 
+}
+}
+
 #if defined(USE_KERNEL_READV)
 #include <errno.h>
 #include <sys/uio.h>
+namespace PLMD{
+namespace molfile{
 typedef struct iovec fio_iovec;
+}
+}
 #else
 
+namespace PLMD{
+namespace molfile{
 typedef struct {
   fio_caddr_t iov_base;
   int iov_len;
 } fio_iovec;
+}
+}
 #endif
 
 #define FIO_SEEK_CUR SEEK_CUR
 #define FIO_SEEK_SET SEEK_SET
 #define FIO_SEEK_END SEEK_END
+
+namespace PLMD{
+namespace molfile{
 
 static int fio_open(const char *filename, int mode, fio_fd *fd) {
   int nfd;
@@ -621,7 +644,13 @@ static fio_size_t fio_ftell(fio_fd fd) {
   return lseek(fd, 0, SEEK_CUR);
 }
 
+}
+}
+
 #endif
+
+namespace PLMD{
+namespace molfile{
 
 
 /* higher level routines that are OS independent */
@@ -639,4 +668,6 @@ static int fio_write_str(fio_fd fd, const char *str) {
   return (fio_fwrite((void *) str, len, 1, fd) != 1);
 }
 
+}
+}
 #endif

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -44,6 +44,7 @@ namespace crystallization{
 class Tetrahedral : public multicolvar::MultiColvar {
 private:
 //  double nl_cut;
+  double rcut2;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
@@ -89,7 +90,8 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
+  setLinkCellCutoff( switchingFunction.get_dmax() );
+  rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
 
   // Read in the atoms
   int natoms=2; readAtoms( natoms );
@@ -105,11 +107,12 @@ double Tetrahedral::compute(){
    Vector myder, fder;
    double sw, sp1, sp2, sp3, sp4;
    double sp1c, sp2c, sp3c, sp4c, r3, r5, tmp;
-   double t1, t2, t3, t4, tt1, tt2, tt3, tt4;
+   double d2, t1, t2, t3, t4, tt1, tt2, tt3, tt4;
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPosition(0), getPosition(i) );
-      sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
-      if( sw>=getTolerance() ){ 
+      d2 = distance.modulo2();
+      if( d2<rcut2 ){ 
+         sw = switchingFunction.calculateSqr( d2, dfunc );
 
          sp1 = +distance[0]+distance[1]+distance[2];
          sp2 = +distance[0]-distance[1]-distance[2];

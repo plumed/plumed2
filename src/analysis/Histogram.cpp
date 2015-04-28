@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -119,6 +119,7 @@ private:
   std::string gridfname;
   std::string kerneltype;
   bool fenergy; 
+  bool unnormalized;
 public:
   static void registerKeywords( Keywords& keys );
   Histogram(const ActionOptions&ao);
@@ -139,6 +140,7 @@ void Histogram::registerKeywords( Keywords& keys ){
                                              More details on the kernels available in plumed can be found in \\ref kernelfunctions.");
   keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
   keys.addFlag("FREE-ENERGY",false,"Set to TRUE if you want a FREE ENERGY instead of a probabilty density (you need to set TEMP).");
+  keys.addFlag("UNNORMALIZED",false,"Set to TRUE if you don't want histogram to be normalized or free energy to be shifted.");
   keys.add("compulsory","GRID_WFILE","histogram","the file on which to write the grid");
   keys.use("NOMEMORY");
 }
@@ -146,7 +148,8 @@ void Histogram::registerKeywords( Keywords& keys ){
 Histogram::Histogram(const ActionOptions&ao):
 PLUMED_ANALYSIS_INIT(ao),
 point(getNumberOfArguments()),
-fenergy(false)
+fenergy(false),
+unnormalized(false)
 {
   // Read stuff for Grid
   parseVector("GRID_MIN",gmin);
@@ -186,6 +189,15 @@ fenergy(false)
 
   parseFlag("FREE-ENERGY",fenergy);
   if(getTemp()<=0 && fenergy) error("Set the temperature (TEMP) if you want a free energy.");
+
+  parseFlag("UNNORMALIZED",unnormalized);
+  if(unnormalized){
+    if(fenergy) log<<"  free energy will not be shifted to set its minimum to zero\n";
+    else        log<<"  histogram will not be normalized\n";
+  } else {
+    if(fenergy) log<<"  free energy will be shifted to set its minimum to zero\n";
+    else        log<<"  histogram will be normalized\n";
+  }
   checkRead();
 
   log.printf("  Using %s kernel functions\n",kerneltype.c_str() );
@@ -196,7 +208,7 @@ fenergy(false)
   for(unsigned i=0;i<gmax.size();++i) log.printf(" %s",gmax[i].c_str() );
   log.printf("\n");
   log.printf("  Grid bin");
-  for(unsigned i=0;i<gbin.size();++i) log.printf(" %d",gbin[i]);
+  for(unsigned i=0;i<gbin.size();++i) log.printf(" %u",gbin[i]);
   log.printf("\n");
 }
 
@@ -256,10 +268,10 @@ void Histogram::performAnalysis(){
   }
 
   // Normalize the histogram
-  gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
+  if(!unnormalized) gg->scaleAllValuesAndDerivatives( 1.0 / getNormalization() );
   if(fenergy) {
     gg->logAllValuesAndDerivatives( -getTemp() );
-    gg->setMinToZero();
+    if(!unnormalized) gg->setMinToZero();
   }
 
   // Write the grid to a file

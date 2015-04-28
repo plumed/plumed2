@@ -46,7 +46,7 @@ void Between::reserveKeyword( Keywords& keys ){
 Between::Between( const VesselOptions& da ) :
 FunctionVessel(da)
 { 
-
+  wnum=getAction()->getIndexOfWeight();
   bool isPeriodic=getAction()->isPeriodic();
   double min, max; std::string str_min, str_max;
   if( isPeriodic ){
@@ -68,7 +68,7 @@ std::string Between::function_description(){
 }
 
 bool Between::calculate(){
-  double weight=getAction()->getElementValue(1);
+  double weight=getAction()->getElementValue(wnum);
   plumed_dbg_assert( weight>=getTolerance() );
   double val=getAction()->getElementValue(0);
   double dval, f = hist.calculate(val, dval);
@@ -81,8 +81,8 @@ bool Between::calculate(){
   if( addval ){
      getAction()->chainRuleForElementDerivatives( 0, 0, weight*dval, this );
      if(diffweight){
-        getAction()->chainRuleForElementDerivatives( 0, 1, f, this ); 
-        if(norm) getAction()->chainRuleForElementDerivatives( 1, 1, 1.0, this );
+        getAction()->chainRuleForElementDerivatives( 0, wnum, f, this ); 
+        if(norm) getAction()->chainRuleForElementDerivatives( 1, wnum, 1.0, this );
      }
   }
   return ( contr>getNLTolerance() );
@@ -106,7 +106,7 @@ void Between::finish(){
   }
 }
 
-double Between::getCutoff( const double& tol ){
+double Between::getCutoff(){
   return std::numeric_limits<double>::max();
 } 
 

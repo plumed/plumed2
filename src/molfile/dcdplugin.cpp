@@ -92,6 +92,9 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include "endianswap.h"
 #include "molfile_plugin.h"
 
+namespace PLMD{
+namespace molfile{
+
 #ifndef M_PI_2
 #define M_PI_2 1.57079632679489661922
 #endif
@@ -1209,6 +1212,9 @@ VMDPLUGIN_API int VMDPLUGIN_register(void *v, vmdplugin_register_cb cb) {
 
 VMDPLUGIN_API int VMDPLUGIN_fini() {
   return VMDPLUGIN_SUCCESS;
+}
+
+}
 }
 
   

@@ -1,14 +1,14 @@
 /**
 \page belfast-8 Belfast tutorial: Replica exchange II and Multiple walkers
 
-\section Aims
+\section belfast-8-aim Aims
 
 The aim of this tutorial is to introduce the users to the use of Bias-Exchange Metadynamics. We will go through the writing of
 the input files for BEMETA for a simple case of three peptide and we will use METAGUI to to analyse them. We will compare
 the results of WT-BEMETA and STANDARD-BEMETA with four independent runs on the four Collective Variables. Finally we will
 use a simplified version of BEMETA that is Multiple Walkers Metadynamics.
 
-\section belfast-8-lo Learning Outcomes
+\subsection belfast-8-lo Learning Outcomes
 
 Once this tutorial is completed students will:
 
@@ -16,16 +16,16 @@ Once this tutorial is completed students will:
 - Know how to analyse the results of BEMETA with the help of METAGUI
 - Know how to run a Multiple Walker simulation 
 
-\section Resources
+\section belfast-8-res Resources
 
-The <a href="belfast-8.tgz" download="belfast-8.tgz"> tarball </a> for this project contains the following files:
+The <a href="tutorial-resources/belfast-8.tar.gz" download="belfast-8.tar.gz"> tarball </a> for this project contains the following files:
 
 - system folder: a starting structure for Val-Ile-Leu system
 - WTBX: a run of Well-Tempered Bias-Exchange Metadynamics ready for the analysis
 
-\section Instructions
+\section belfast-8-ins Instructions
 
-\subsection bemeta Bias-Exchange Metadynamics
+\subsection belfast-8-bemeta Bias-Exchange Metadynamics
 
 In all variants of metadynamics the free-energy landscape of the system is reconstructed by gradually
 filling the local minima with gaussian hills. The dimensionality of the landscape is equal to the
@@ -48,9 +48,7 @@ equilibrium free-energy, due to hysteresis. Instead, in the bias-exchange approa
 The probability to accept the exchange is given by a Metropolis rule:
 
 \f[
-\begin{eqnarray}
 \min\left( 1, \exp \left[ \beta ( V_G^a(x^a,t)+V_G^b(x^b,t)-V_G^a(x^b,t)-V_G^b(x^a,t) ) \right] \right)
-\end{eqnarray}
 \f]
 
 where \f$ x^{a} \f$ and \f$ x^{b} \f$ are the coordinates of replicas \f$a \f$ and \f$ b \f$
@@ -113,7 +111,7 @@ between each pair (as printed in the GROMACS *.log files).
 
 The same simulation can be run using WELLTEMPERED metadynamics.
 
-\subsection bxcon   Convergence of the Simulations
+\subsection belfast-8-bxcon   Convergence of the Simulations
 In the resources for this tutorial you can find the results for a 40ns long Well-Tempered Bias Exchange simulation. First of all we
 can try to assess the convergence of the simulations by looking at the profiles. In the "convergence" folder there is a script that
 calculates the free energy from the HILLS.0 file at incresing simulation lengths (i.e. every more 0.8 ns of simulation). The
@@ -129,7 +127,7 @@ at successive profiles:
 \anchor belfast-8-convergence-fig
 \image html belfast-8-convergence.png "Superposition of FE profiles in different time windows" 
 
-\subsection metagui Bias-Exchange Analysis with METAGUI
+\subsection belfast-8-metagui Bias-Exchange Analysis with METAGUI
 In principle Bias-Exchange Metadynamics can give as a results only N 1D free energy profiles. But the information
 contained in all the replicas can be used to recover multidensional free energy surfaces in >=N dimensions. A simple
 way to perform this analysis is to use METAGUI. METAGUI performs the following operations:
@@ -284,7 +282,7 @@ cp MICROSTATES FES/FES.4D
 
 and edit the script to select the two columns of MICROSTATES on which show the integrated FES.
 
-\subsection mw Multiple Walker Metadynamics
+\subsection belfast-8-mw Multiple Walker Metadynamics
 
 Multiple Walker metadynamics is the simplest way to parallelise a MetaD calculation: multiple simulation of the same system
 are run in parallel using metadynamics on the same set of collective variables. The deposited bias is shared among the replicas
@@ -324,7 +322,7 @@ alternatively Multiple Walkers can be run as independent simulations sharing via
 this is usefull because it provides a parallelisation that does not need a parallel code. In this case the walkers read with
 a given frequency the gaussians deposited by the others and add them to their own \ref METAD.
 
-\section refer Reference
+\section belfast-8-refer Reference
 
 This tutorial is freely inspired to the work of Biarnes et al.
 
@@ -343,3 +341,4 @@ link: @subpage belfast-8
 
 description: Bias exchange and multiple walkers
 
+additional-files: belfast-8

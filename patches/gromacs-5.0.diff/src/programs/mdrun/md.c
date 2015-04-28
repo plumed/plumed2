@@ -233,6 +233,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* PLUMED */
     int plumedNeedsEnergy=0;
     int plumedWantsToStop=0;
+    matrix plumed_vir;
     /* END PLUMED */
 
 #ifdef GMX_FAHCORE
@@ -309,7 +310,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
-            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, Flags);
+            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, Flags, wcycle);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -670,6 +671,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
       /* setting kbT is only implemented with api>1) */
       real kbT=ir->opts.ref_t[0]*BOLTZ;
       if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
+      if(pversion>2){
+        int res=1;
+        if( (Flags & MD_STARTFROMCPT) ) plumed_cmd(plumedmain,"setRestart",&res);
+      }
 
       if(cr->ms && cr->ms->nsim>1) {
         if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
@@ -1150,8 +1155,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
               plumed_cmd(plumedmain,"prepareCalc",NULL);
               plumed_cmd(plumedmain,"setStopFlag",&plumedWantsToStop);
               plumed_cmd(plumedmain,"setForces",&f[0][0]);
-              plumed_cmd(plumedmain,"setVirial",&force_vir[0][0]);
               plumed_cmd(plumedmain,"isEnergyNeeded",&plumedNeedsEnergy);
+              clear_mat(plumed_vir);
+              plumed_cmd(plumedmain,"setVirial",&plumed_vir[0][0]);
             }
             /* END PLUMED */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
@@ -1163,8 +1169,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* PLUMED */
             if(plumedswitch){
               if(plumedNeedsEnergy){
+                msmul(force_vir,2.0,plumed_vir);
                 plumed_cmd(plumedmain,"setEnergy",&enerd->term[F_EPOT]);
                 plumed_cmd(plumedmain,"performCalc",NULL);
+                msmul(plumed_vir,0.5,force_vir);
+              } else {
+                msmul(plumed_vir,0.5,plumed_vir);
+                m_add(force_vir,plumed_vir,force_vir);
               }
               if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
                  do_per_step(step,repl_ex_nst)) plumed_cmd(plumedmain,"GREX savePositions",NULL);
@@ -1176,6 +1187,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (bVV && !bStartingFromCpt && !bRerunMD)
         /*  ############### START FIRST UPDATE HALF-STEP FOR VV METHODS############### */
         {
+            wallcycle_start(wcycle, ewcUPDATE);
             if (ir->eI == eiVV && bInitStep)
             {
                 /* if using velocity verlet with full time step Ekin,
@@ -1250,11 +1262,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 bOK = TRUE;
                 if (!bRerunMD || rerun_fr.bV || bForceUpdate)     /* Why is rerun_fr.bV here?  Unclear. */
                 {
+                    wallcycle_stop(wcycle, ewcUPDATE);
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, shake_vir,
                                        cr, nrnb, wcycle, upd, constr,
                                        TRUE, bCalcVir, vetanew);
+                    wallcycle_start(wcycle, ewcUPDATE);
 
                     if (bCalcVir && bUpdateDoLR && ir->nstcalclr > 1)
                     {
@@ -1294,6 +1308,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                    So we need information from the last step in the first half of the integration */
                 if (bGStat || do_per_step(step-1, nstglobalcomm))
                 {
+                    wallcycle_stop(wcycle, ewcUPDATE);
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, state->box,
@@ -1314,6 +1329,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                        time step kinetic energy for the pressure (always true now, since we want accurate statistics).
                        b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
                        EkinAveVel because it's needed for the pressure */
+                    wallcycle_start(wcycle, ewcUPDATE);
                 }
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (!bInitStep)
@@ -1327,7 +1343,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     {
                         if (bExchanged)
                         {
-
+                            wallcycle_stop(wcycle, ewcUPDATE);
                             /* We need the kinetic energy at minus the half step for determining
                              * the full step kinetic energy and possibly for T-coupling.*/
                             /* This may not be quite working correctly yet . . . . */
@@ -1336,6 +1352,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                             constr, NULL, FALSE, state->box,
                                             top_global, &bSumEkinhOld,
                                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
+                            wallcycle_start(wcycle, ewcUPDATE);
                         }
                     }
                 }
@@ -1365,6 +1382,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 copy_rvecn(cbuf, state->v, 0, state->natoms);
             }
+            wallcycle_stop(wcycle, ewcUPDATE);
         }
 
         /* MRS -- now done iterating -- compute the conserved quantity */
@@ -1407,7 +1425,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
                                  outf, mdebin, ekind, f, f_global,
-                                 wcycle, &nchkpt,
+                                 &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
@@ -1989,6 +2007,21 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     }
                     dd_bcast(cr->dd, sizeof(gmx_bool), &bPMETuneRunning);
 
+                    if (bPMETuneRunning &&
+                        fr->nbv->bUseGPU && DOMAINDECOMP(cr) &&
+                        !(cr->duty & DUTY_PME))
+                    {
+                        /* Lock DLB=auto to off (does nothing when DLB=yes/no).
+                         * With GPUs + separate PME ranks, we don't want DLB.
+                         * This could happen when we scan coarse grids and
+                         * it would then never be turned off again.
+                         * This would hurt performance at the final, optimal
+                         * grid spacing, where DLB almost never helps.
+                         * Also, DLB can limit the cut-off for PME tuning.
+                         */
+                        dd_dlb_set_lock(cr->dd, TRUE);
+                    }
+
                     if (bPMETuneRunning || step_rel > ir->nstlist*50)
                     {
                         bPMETuneTry     = FALSE;
@@ -2019,6 +2052,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     {
                         calc_enervirdiff(NULL, ir->eDispCorr, fr);
                     }
+
+                    if (!bPMETuneRunning &&
+                        DOMAINDECOMP(cr) &&
+                        dd_dlb_is_locked(cr->dd))
+                    {
+                        /* Unlock the DLB=auto, DLB is allowed to activate
+                         * (but we don't expect it to activate in most cases).
+                         */
+                        dd_dlb_set_lock(cr->dd, FALSE);
+                    }
                 }
                 cycles_pmes = 0;
             }
@@ -2048,6 +2091,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
     /* End of main MD loop */
     debug_gmx();
+
+    /* Closing TNG files can include compressing data. Therefore it is good to do that
+     * before stopping the time measurements. */
+    mdoutf_tng_close(outf);
 
     /* Stop measuring walltime */
     walltime_accounting_end(walltime_accounting);

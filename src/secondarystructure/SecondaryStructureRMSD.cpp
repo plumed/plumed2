@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -63,7 +63,10 @@ void SecondaryStructureRMSD::registerKeywords( Keywords& keys ){
                                  "elsewhere in the input by using the label of the action. However, thes Action can also be used to "
                                  "calculate the following quantities by using the keywords as described below.  The quantities then "
                                  "calculated can be referened using the label of the action followed by a dot and then the name "
-                                 "from the table below."); 
+                                 "from the table below.  Please note that you can use the LESS_THAN keyword more than once.  The resulting "
+                                 "components will be labelled <em>label</em>.lessthan-1, <em>label</em>.lessthan-2 and so on unless you "
+                                 "exploit the fact that these labels are customizable. In particular, by using the LABEL keyword in the "
+                                 "description of you LESS_THAN function you can set name of the component that you are calculating"); 
 }
 
 SecondaryStructureRMSD::SecondaryStructureRMSD(const ActionOptions&ao):
@@ -117,9 +120,9 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
   std::vector<std::string> resstrings; parseVector( "RESIDUES", resstrings );
   if( !verbose_output ){
       if(resstrings[0]=="all"){
-         log.printf("  examining all possible secondary structure combinations");
+         log.printf("  examining all possible secondary structure combinations\n");
       } else {
-         log.printf("  examining secondary struture in residue poritions : %s ",resstrings[0].c_str() );
+         log.printf("  examining secondary struture in residue poritions : %s \n",resstrings[0].c_str() );
          for(unsigned i=1;i<resstrings.size();++i) log.printf(", %s",resstrings[i].c_str() );
          log.printf("\n");
       }
@@ -137,7 +140,7 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
 void SecondaryStructureRMSD::addColvar( const std::vector<unsigned>& newatoms ){
   if( colvar_atoms.size()>0 ) plumed_assert( colvar_atoms[0].size()==newatoms.size() );
   if( verbose_output ){
-     log.printf("  Secondary structure segment %d contains atoms : ", colvar_atoms.size()+1);
+     log.printf("  Secondary structure segment %u contains atoms : ", static_cast<unsigned>(colvar_atoms.size()+1));
      for(unsigned i=0;i<newatoms.size();++i) log.printf("%d ",all_atoms(newatoms[i]).serial() );
      log.printf("\n");
   }

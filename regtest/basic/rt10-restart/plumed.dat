@@ -4,6 +4,10 @@ vol: VOLUME
 
 METAD ARG=mu1,vol SIGMA=0.1,0.2 HEIGHT=1.0 PACE=10 LABEL=md FMT=%14.6f
 
+# this is to check RESTART.
+# since here restart is disabled, the hills in H1 should not be read
+METAD ARG=mu1,vol SIGMA=0.1,0.2 HEIGHT=0.0 PACE=10 LABEL=md1 FMT=%14.6f FILE=H1 RESTART=NO
+
 PRINT ...
   STRIDE=1
   ARG=mu1,vol,md.bias 

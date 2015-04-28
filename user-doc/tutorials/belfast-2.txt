@@ -8,6 +8,11 @@ In this section we want to introduce the concept of adaptive collective variable
 These are special variables that are knowledge-based in that are built from a pre-existing
 notion of the mechanism of the transition under study
 
+\section belfast-2-resources Resources
+
+Here is the <a href="tutorial-resources/belfast-2.tar.gz" download="belfast-5.tar.gz"> tarball with the files referenced
+in the following</a>.
+
 \section belfast-2-problem  What happens when in a complex reaction?
 
 When you deal with a complex conformational transition that you want to analyze (or bias), very often you cannot
@@ -96,7 +101,7 @@ Additionally, note that the measure units of LAMBDA are in the units of the code
 One is the progress along the path of \ref belfast-2-s-eq, the other is the distance from the closest point along the path, which is denoted with the zzz component.
 This is defined as
 
-\anchor belfast-2-s-eq
+\anchor belfast-2-s-eq2
 \f[
 Z(X)=-\frac{1}{\lambda}\log (\sum_{i=1}^{N} \ \exp^{-\lambda \vert X-X_i \vert })
 \f]
@@ -116,7 +121,7 @@ This case is exemplified in Fig. \ref belfast-2-ab-sz-nowhere-fig
 \anchor belfast-2-ab-sz-nowhere-fig
 \image html belfast-2-ab-sz-nowhere.png "The conformation is moving in a small amount and this corresponds to a radical change in S if the distance from the path is large"
 
-\section pcvs-topo A note on the path topology
+\section belfast-2-pcvs-topo A note on the path topology
 
 A truly important point is that if you get a trajectory from some form of accelerated dynamics (e.g. simply by heating) this cannot simply be converted into a path. 
 Since it is likely that your trajectory is going stochastically back and forth (not in the case of SMD or US, discussed later), your trajectory might be not topologically 
@@ -448,3 +453,4 @@ link: @subpage belfast-2
 
 description: How to use path CVs
 
+additional-files: belfast-2

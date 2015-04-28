@@ -1,14 +1,188 @@
 /**
 
+\page Miscelaneous Miscelaneous
+
+- \subpage comments
+- \subpage ContinuationLines
+- \subpage includes
+- \subpage load
+- \subpage degub
+- \subpage exchange-patterns
+- \subpage mymodules
+- \subpage MTS
+- \subpage Openmp
+- \subpage misc
+
+\page comments Comments
+
+If you are an organised sort of person who likes to remember what the hell you were trying to do when you ran a 
+particular simulation you might find it useful to put comments in your input file.  In PLUMED you can do this as 
+comments can be added using a # sign.  On any given line everything after the # sign is ignored so 
+erm... yes add lines of comments or trailing comments to your hearts content as shown below (using Shakespeare is optional):
+
+\verbatim
+# This is the distance between two atoms:
+DISTANCE ATOM=1,2 LABEL=d1
+UPPER_WALLS ARG=d1 AT=3.0 KAPPA=3.0 LABEL=Snout # In this same interlude it doth befall.
+# That I, one Snout by name, present a wall.
+\endverbatim
+(see \ref DISTANCE and \ref UPPER_WALLS)
+
+An alternative to including comments in this way is to use line starting ENDPLUMED.  Everything in the PLUMED input after this
+keyword will be ignored.
+
+\page ContinuationLines Continuation lines
+
+If your input lines get very long then editing them using vi and other such text editors becomes a massive pain in the arse.  
+We at PLUMED are aware of this fact and thus have provided a way of doing line continuations so as to make your life that much 
+easier - aren't we kind?  Well no not really, we have to use this code too.  Anyway, you can do continuations by using the "..." syntax
+as this makes this: 
+
+\verbatim
+DISTANCES ATOMS1=1,300 ATOMS2=1,400 ATOMS3=1,500
+\endverbatim
+(see \ref DISTANCES)
+
+equivalent to this:
+
+\verbatim
+DISTANCES ...
+# we can also insert comments here
+  ATOMS1=1,300
+# multiple kewords per line are allowed
+  ATOMS2=1,400 ATOMS3=1,500
+#empty lines are also allowed
+
+... DISTANCES
+\endverbatim
+
+\page includes Including other files 
+
+If, for some reason, you want to spread your PLUMED input over a number of files you can use \subpage INCLUDE as shown below:
+
+\verbatim
+INCLUDE FILE=filename
+\endverbatim
+
+So, for example, a single "plumed.dat" file:
+
+\verbatim
+DISTANCE ATOMS=0,1 LABEL=dist
+RESTRAINT ARG=dist
+\endverbatim
+(see \ref DISTANCE and \ref RESTRAINT)
+
+could be split up into two files as shown below:
+ 
+\verbatim
+DISTANCE ATOMS=0,1 LABEL=dist
+INCLUDE FILE=toBeIncluded.dat
+\endverbatim
+plus a "toBeIncluded.dat" file
+\verbatim
+RESTRAINT ARG=dist
+\endverbatim
+
+However, when you do this it is important to recognise that \ref INCLUDE is a real directive that is only resolved
+after all the \ref comments have been stripped and the \ref ContinuationLines have been unrolled.  This means it
+is not possible to do things like:
+
+\verbatim
+# this is wrong:
+DISTANCE INCLUDE FILE=options.dat
+RESTRAINT ARG=dist
+\endverbatim
+
+\page load Loading shared libraries
+
+You can introduce new functionality into PLUMED by placing it directly into the src directory and recompiling the 
+PLUMED libraries.  Alternatively, if you want to keep your code independent from the rest of PLUMED (perhaps
+so you can release it independely - we won't be offended), then you can create your own dynamic library.  To use this 
+in conjuction with PLUMED you can then load it at runtime by using the \subpage LOAD keyword as shown below:
+
+\verbatim
+LOAD FILE=library.so
+\endverbatim
+ 
+N.B.  If your system uses a different suffix for dynamic libraries (e.g. macs use .dylib) then PLUMED will try to 
+automatically adjust the suffix accordingly.
+
+\page degub Debugging the code
+
+The \subpage DEBUG action provides some functionality for debugging the code that may be useful if you are doing 
+very intensive development of the code of if you are running on a computer with a strange architecture.
+
+\page exchange-patterns Changing exchange patterns in replica exchange
+
+Using the \subpage RANDOM_EXCHANGES keyword it is possible to make exchanges betweem randomly
+chosen replicas. This is useful e.g. for bias exchange metadynamics \cite piana.
+
+\page Openmp OpenMP
+
+OpenMP support is still experimental in PLUMED. To
+enable it you should configure using flag "--enable-openmp".
+Additionally, at runtime, you should set the environment variable
+PLUMED_NUM_THREADS to the number of threads you wish to use with PLUMED.
+By default (if PLUMED_NUM_THREADS is unset) openmp will be disabled at
+runtime. E.g., to run with gromacs you should do:
+\verbatim
+export PLUMED_NUM_THREADS=8
+mdrun -plumed
+\endverbatim
+
+Notice that:
+- This option is likely to improve the performance, but could also slow down
+  the code in some case.
+- Results could be slightly different because of numerical roundoff and
+  different order in summations. This should be harmless.
+- The optimum number of threads is not necessary "all of them", nor should be
+  equal to the number of threads used to parallelize MD.
+- Only a few CVs are parallelized with opemMP (currently, \ref COORDINATION and
+  \ref DHENERGY).
+- You might want to tune also the environmental variable PLUMED_CACHELINE_SIZE,
+  by default 512, to set the size of cachelines on your machine. This is used
+  by PLUMED to decrease the number of threads to be used in each loop so as to
+  avoid clashes in memory access. This variable is expected to affect
+  performance only, not results.
+
+\page MTS Multiple time stepping
+
+By setting a STRIDE different from 1, you change how frequently
+an action is calculated. In the case of actions such as \ref PRINT, this just
+means how frequently you dump some quantity on the disk.
+Notice that variables are only computed when necessary. Thus,
+if a variable is only appearing as the argument of a \ref PRINT statement with
+STRIDE=10, it will be computed every 10 steps.
+
+In a similar fashion, the STRIDE keyword can be used in a bias potential
+so as to apply the bias potential every few steps.
+In this case, forces from this bias potential are scaled up by
+a factor equal to STRIDE.
+
+This technique can allow your simulation to run faster if you need
+the apply a bias potential on some very expensive collective variable.
+
+The technique is discussed in details here \cite Ferrarotti2015
+
+See also \subpage EFFECTIVE_ENERGY_DRIFT.
+
+
 \page misc Frequently used tools
 
 @DICTIONARY@
 <TABLE ALIGN="center" FRAME="void" WIDTH="95%%" CELLPADDING="5%%">
 <TR>
 <TD WIDTH="5%"> 
-\ref Regex </TD><TD> </TD><TD> POSIX regular expressions can be used to select multiple actions when using ARG (i.e. \ref PRINT).
+\subpage Regex </TD><TD> </TD><TD> POSIX regular expressions can be used to select multiple actions when using ARG (i.e. \ref PRINT).
+</TD>
+</TR>
+<TR>
+<TD WIDTH="5%"> 
+\subpage Files </TD><TD> </TD><TD> Dealing with Input/Outpt
 </TD>
 </TR>
 </TABLE>
+
+
 
 */

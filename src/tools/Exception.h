@@ -59,6 +59,12 @@ extensive error message can be added.
   if(a<=0) plumed_error();
   if(a<=0) plumed_merror("a should be larger than zero");
 \endverbatim
+The additional macros
+plumed_dbg_assert() and plumed_dbg_massert() are similar
+to plumed_assert() and plumed_massert() respectively, but the corresponding
+check is only performed when NDEBUG macro is not defined. They should
+be used when the check is expensive and should be skipped in production
+code.
 
 By default, execution is terminated imediately and a message is printed on stderr.
 
@@ -133,7 +139,7 @@ public:
 /// Conditionally print file/line/function information and exit when NDEBUG flag is not present
 #define plumed_dbg_assert(test) if(!(test)) throw PLMD::Exception("assertion failed " #test,__FILE__,__LINE__,__PRETTY_FUNCTION__)
 /// \relates PLMD::Exception
-/// Conditionally print file/line/function information plus msg and exit when NDEBUG flast is not present
+/// Conditionally print file/line/function information plus msg and exit when NDEBUG flag is not present
 #define plumed_dbg_massert(test,msg) if(!(test)) throw PLMD::Exception("assertion failed " #test ", " msg,__FILE__,__LINE__,__PRETTY_FUNCTION__)
 #endif
 

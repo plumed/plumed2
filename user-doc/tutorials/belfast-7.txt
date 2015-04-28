@@ -1,7 +1,7 @@
 /**
 \page belfast-7 Belfast tutorial: Replica exchange I
 
-\section Aims
+\section belfast-7-aims Aims
 
 The aim of this tutorial is to introduce the users to running a parallel tempering (PT) simulation using PLUMED. 
 We will set up a simple simulation of alanine dipeptide in vacuum, analyze the output, calculate free energies
@@ -517,5 +517,5 @@ link: @subpage belfast-7
 
 description: Parallel tempering and Metadynamics, Well-Tempered Ensemble
 
-additional-files: belfast-7.tar.gz
+additional-files: belfast-7
 

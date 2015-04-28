@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -30,9 +30,9 @@ PLUMED_REGISTER_METRIC(MultiDomainRMSD,"MULTI")
 
 MultiDomainRMSD::MultiDomainRMSD( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-ReferenceAtoms(ro)
+ReferenceAtoms(ro),
+ftype(ro.getMultiRMSDType())
 {
-   ftype=ro.getMultiRMSDType();
 }
 
 MultiDomainRMSD::~MultiDomainRMSD(){
@@ -48,16 +48,16 @@ void MultiDomainRMSD::read( const PDB& pdb ){
    std::string num; blocks.resize( nblocks+1 ); blocks[0]=0;
    for(unsigned i=0;i<nblocks;++i) blocks[i+1]=pdb.getAtomBlockEnds()[i]; 
 
-   double lower, upper;
-   if( !parse("LOWER_CUTOFF",lower,true) ) lower=0.0;
-   if( !parse("UPPER_CUTTOFF",upper,true) ) upper=std::numeric_limits<double>::max( );
+   double lower=0.0, upper=std::numeric_limits<double>::max( );
+   parse("LOWER_CUTOFF",lower,true); 
+   parse("UPPER_CUTOFF",upper,true);
 
    for(unsigned i=1;i<=nblocks;++i){
        Tools::convert(i,num);
        if( ftype=="RMSD" ){
           parse("TYPE"+num, ftype );
-          if( !parse("LOWER_CUTOFF"+num,lower,true) ) lower=0.0;
-          if( !parse("UPPER_CUTTOFF"+num,upper,true) ) upper=std::numeric_limits<double>::max( );
+          parse("LOWER_CUTOFF"+num,lower,true); 
+          parse("UPPER_CUTOFF"+num,upper,true); 
        }
        domains.push_back( metricRegister().create<SingleDomainRMSD>( ftype ) );
        positions.resize( blocks[i] - blocks[i-1] + 1 );

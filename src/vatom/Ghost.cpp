@@ -47,10 +47,6 @@ PRINT ARG=d1
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
 
-\warning If a force is added to a ghost atom, the contribution
-to the virial could contain small artifacts. It is therefore discouraged to
-use GHOST in a constant pressure simulation.
-
 */
 //+ENDPLUMEDOC
 
@@ -87,7 +83,6 @@ Ghost::Ghost(const ActionOptions&ao):
   log.printf("  of atoms");
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());
   log.printf("\n");
-  log<<"  WARNING: GHOST does not include virial contributions, please avoid using it with constant pressure molecular dynamics\n";
   requestAtoms(atoms);
 }
 
@@ -95,6 +90,11 @@ void Ghost::calculate(){
   Vector pos;
   vector<Tensor> deriv(getNumberOfAtoms());
   vector<Vector> n;
+  Vector pp[3];
+
+  pp[0]=getPosition(0);
+  pp[1]=pp[0]+delta(getPosition(0), getPosition(1));
+  pp[2]=pp[0]+delta(getPosition(0), getPosition(2));
 
 // first versor 
   Vector n01 = delta(getPosition(0), getPosition(1));
@@ -182,6 +182,19 @@ void Ghost::calculate(){
   deriv[2] =                                       coord[1]*dn1d2 + coord[2]*dn2d2;
 
   setAtomsDerivatives(deriv);
+
+// Virial contribution
+  std::vector<Tensor> bd(3);
+  for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) for(unsigned k=0;k<3;k++){
+// Notice that this expression is very similar to the one used in Colvar::setBoxDerivativesNoPbc().
+// Indeed, we have the negative of a sum over dependent atoms (l) of the external product between positions
+// and derivatives. Notice that positions here should be computed in the same periodic image
+// as pos.
+    for(unsigned l=0;l<3;l++){
+      bd[k][i][j]-=pp[l][i]*deriv[l][j][k];
+    }
+  }
+  setBoxDerivatives(bd);
 }
 
 }

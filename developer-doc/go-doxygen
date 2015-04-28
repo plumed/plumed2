@@ -2,7 +2,7 @@
 
 {
   cat Doxyfile
-  echo "PROJECT_NUMBER = \"$(plumed info --version)\""
+  echo "PROJECT_NUMBER = \"$(plumed --no-mpi info --version)\""
   echo "INPUT+=" ../src/*/ ../src/*/*/
   echo "REFERENCES_RELATION=NO"
   echo "REFERENCED_BY_RELATION=NO"

@@ -24,6 +24,7 @@
 #include "core/ActionSet.h"
 #include "tools/Pbc.h"
 #include "MultiColvarBase.h"
+#include "BridgedMultiColvarFunction.h"
 
 namespace PLMD {
 namespace multicolvar { 
@@ -31,16 +32,18 @@ namespace multicolvar {
 void MultiColvarFunction::registerKeywords( Keywords& keys ){
   MultiColvarBase::registerKeywords( keys );
   keys.add("compulsory","DATA","the labels of the action that calculates the multicolvars we are interested in");
+  keys.reserve("compulsory","WTOL","if the base multicolvars have weights then you must define a hard cutoff on those you want to consider explicitally");
   keys.reset_style("NUMERICAL_DERIVATIVES","hidden");
 }
 
 MultiColvarFunction::MultiColvarFunction(const ActionOptions& ao):
 Action(ao),
-MultiColvarBase(ao)
+MultiColvarBase(ao),
+wtolerance(0.0)
 {
   // Read in the arguments
   std::string mname; std::vector<std::string> mlabs; parseVector("DATA",mlabs);
-  log.printf("  using colvars calculated by actions ");
+  log.printf("  using colvars calculated by actions "); bool useweights=false;
   for(unsigned i=0;i<mlabs.size();++i){
       log.printf("%s ",mlabs[i].c_str() );
       MultiColvarBase* mycolv = plumed.getActionSet().selectWithLabel<MultiColvarBase*>(mlabs[i]); 
@@ -57,19 +60,27 @@ MultiColvarBase(ao)
       mycolv->setLowMemOption( usingLowMem() );
       // Add the dependency
       addDependency(mycolv);
+      // Ensure weights are considered
+      if( mycolv->weightHasDerivatives ) useweights=true;
       // And store the multicolvar base
       mybasemulticolvars.push_back( mycolv );
       // And track which variable stores each colvar
       for(unsigned j=0;j<mycolv->getFullNumberOfTasks();++j) colvar_label.push_back( i );
   }
   log.printf("\n");
+  if( keywords.exists("WTOL") && useweights ){
+      parse("WTOL",wtolerance);
+      log.printf("  only considering those colvars with a weight greater than %f \n",wtolerance);
+  }
 }
 
 void MultiColvarFunction::setupAtomLists(){
   // Copy lists of atoms involved from base multicolvars 
   std::vector<AtomNumber> all_atoms, tmp_atoms;
   for(unsigned i=0;i<mybasemulticolvars.size();++i){
-      tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
+      BridgedMultiColvarFunction* mybr=dynamic_cast<BridgedMultiColvarFunction*>( mybasemulticolvars[i] );
+      if( mybr ) tmp_atoms=(mybr->mycolv)->getAbsoluteIndexes();
+      else tmp_atoms=mybasemulticolvars[i]->getAbsoluteIndexes();
       for(unsigned j=0;j<tmp_atoms.size();++j) all_atoms.push_back( tmp_atoms[j] );
   }   
   
@@ -84,7 +95,11 @@ void MultiColvarFunction::buildSymmetryFunctionLists(){
   if( mybasemulticolvars.size()>2 ) error("Found too many multicolvars in DATA specification. You can use either 1 or 2");
 
   // Make sure information is stored in the required multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes();
+  if( keywords.exists("WTOL") ){
+      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( true, wtolerance );
+  } else {
+      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( false, 0.0 ); 
+  }
 
   usespecies=true; ablocks.resize( 1 );
   for(unsigned i=0;i<mybasemulticolvars[0]->getFullNumberOfTasks();++i) addTaskToList( i );
@@ -104,11 +119,41 @@ void MultiColvarFunction::buildSymmetryFunctionLists(){
   setupAtomLists();
 }
 
+void MultiColvarFunction::buildSets(){
+  nblock = mybasemulticolvars[0]->getFullNumberOfTasks();
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+     if( mybasemulticolvars[i]->getFullNumberOfTasks()!=nblock ){
+          error("mismatch between numbers of tasks in various base multicolvars");
+     }
+     mybasemulticolvars[i]->buildDataStashes( false, 0.0 );
+  }
+  ablocks.resize( mybasemulticolvars.size() );
+  usespecies=false; current_atoms.resize( mybasemulticolvars.size() );
+  for(unsigned i=0;i<mybasemulticolvars.size();++i){
+      ablocks[i].resize( nblock ); 
+      for(unsigned j=0;j<nblock;++j) ablocks[i][j]=i*nblock+j;  
+  }
+  for(unsigned i=0;i<nblock;++i){
+      if( mybasemulticolvars.size()<4 ){
+          unsigned cvcode=0, tmpc=1;
+          for(unsigned j=0;j<ablocks.size();++j){ cvcode +=i*tmpc; tmpc *= nblock; }
+          addTaskToList( cvcode );
+      } else {
+          addTaskToList( i );
+      }
+  }
+  setupAtomLists();
+}
+
 void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group ){
   if( !allow_intra_group && mybasemulticolvars.size()>2 ) error("only two input multicolvars allowed with this function"); 
 
   // Make sure information is stored in the required multicolvars
-  for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes();
+  if( keywords.exists("WTOL") ){
+      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( true, wtolerance );
+  } else {
+      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( false, 0.0 );
+  }
   
   usespecies=false; ablocks.resize(2); current_atoms.resize( 2 );
   if( !allow_intra_group && mybasemulticolvars.size()==2 ){
@@ -153,11 +198,18 @@ void MultiColvarFunction::calculate(){
      unsigned maxb=mybasemulticolvars.size() - 1;
      changeBox( mybasemulticolvars[maxb]->getBox() );
   }
-  setupLinkCells(); runAllTasks();
+  setupLinkCells(); 
+  // And run all tasks
+  runAllTasks();
 }
 
 void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
-  unsigned pstart=0;
+  // Construct matrix to store numerical derivatives
+  unsigned pstart=0; 
+  for(unsigned i=0;i<mybasemulticolvars.size();++i) pstart+=3*mybasemulticolvars[i]->getNumberOfAtoms();
+  Matrix<double> numder_store( getNumberOfComponents(), pstart + 9 );
+
+  pstart=0; 
   for(unsigned i=0;i<mybasemulticolvars.size();++i){
      mybasemulticolvars[i]->calculateAtomicNumericalDerivatives( this, pstart );
      for(unsigned k=0;k<getNumberOfComponents();++k){
@@ -188,7 +240,7 @@ void MultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
 void MultiColvarFunction::addStoredDerivative( const unsigned& jout, const unsigned& base_cv_no, const unsigned& base_index, const double& der ){
   plumed_dbg_assert( jout<getNumberOfQuantities() && base_cv_no<mybasemulticolvars.size() && base_index<mybasemulticolvars[base_cv_no]->getNumberOfDerivatives() );
 
-  unsigned mbase = 3*mybasemulticolvars[base_cv_no]->getNumberOfAtoms(), tbase = 3*getNumberOfAtoms();
+  unsigned mbase = 3*mybasemulticolvars[base_cv_no]->getSizeOfAtomsWithDerivatives(), tbase = 3*getNumberOfAtoms();
   if( base_index>=mbase ){
       // Add virial element
       unsigned jindex = base_index - mbase + tbase;
@@ -199,16 +251,14 @@ void MultiColvarFunction::addStoredDerivative( const unsigned& jout, const unsig
       unsigned jindex = offset + base_index; 
       plumed_dbg_assert( jindex<3*getNumberOfAtoms() );
       addElementDerivative( jout*getNumberOfDerivatives() + jindex, der );
-      unsigned iatom = std::floor( jindex / 3 );
+      unsigned iatom = ( jindex / 3 );
       atoms_with_derivatives.activate( iatom );
   }
 }
 
 void MultiColvarFunction::updateActiveAtoms(){
   if( atoms_with_derivatives.updateComplete() ) return;
-  atoms_with_derivatives.emptyActiveMembers();
-  for(unsigned i=0;i<getNumberOfAtoms();++i) atoms_with_derivatives.updateIndex(i);
-  atoms_with_derivatives.sortActiveList();
+  atoms_with_derivatives.updateActiveMembers();
 }
 
 Vector MultiColvarFunction::calculateCentralAtomPosition(){

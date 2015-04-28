@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -114,13 +114,14 @@ PRINT ARG=nh,rdce.bias FILE=colvar
 
 class RDC : public Colvar {
 private:
-  const double Const;
+  const double   Const;
   vector<double> coupl;
   vector<double> mu_s;
   vector<double> scale;
   vector<double> bond_d;
-  int  ens_dim;
-  int  pperiod;
+  unsigned ens_dim;
+  unsigned pperiod;
+  double norm;
   bool ensemble;
   bool firstTime;
   bool fixdist;
@@ -222,11 +223,13 @@ firstTime(true)
 
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    else ens_dim=multi_sim_comm.Get_size(); 
-  } else ens_dim=0; 
-  if(ensemble) comm.Sum(&ens_dim, 1);
+  if(ensemble){
+    if(comm.Get_rank()==0) {
+      if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+      ens_dim=multi_sim_comm.Get_size();
+    } else ens_dim=0;
+    comm.Sum(&ens_dim, 1);
+  } else ens_dim=1;
 
   correlation=false;
   parseFlag("CORRELATION",correlation);
@@ -251,7 +254,7 @@ firstTime(true)
     log.printf("  Dipolar Coupling is %f. Gyromagnetic moment is %f. Scaling factor is %f.\n",coupl[i],mu_s[i],scale[i]);
   }
   if(fixdist)  { log.printf("  Keeping bond distances FIXED using those provided\n"); }
-  if(ensemble) { log.printf("  ENSEMBLE averaging over %i replicas\n", ens_dim); }
+  if(ensemble) { log.printf("  ENSEMBLE averaging over %u replicas\n", ens_dim); }
 
   checkRead();
 
@@ -265,14 +268,35 @@ firstTime(true)
 
 void RDC::calculate()
 {
-  double score=0., norm=0.;
-  double scx=0., scx2=0., scy=0., scy2=0., scxy=0.;
+  double score=0.;
+  double scx=0., scx2=0., scy=0., scxy=0.;
   vector<double> rdc( coupl.size() );
   unsigned N = getNumberOfAtoms();
   vector<Vector> dRDC(N);
-  vector<Vector> deriv(N);
-  Tensor virial;
-  virial.zero();
+
+  // internal parallelisation
+  unsigned stride=2*comm.Get_size();
+  unsigned rank=2*comm.Get_rank();
+  if(serial){
+    stride=2;
+    rank=0;
+  }
+
+  // fixed distances
+  if(firstTime) {
+    if(fixdist) {
+      for(unsigned r=0;r<N;r+=2)
+      {
+        unsigned index=r/2;
+        double d = bond_d[index]; 
+        double d3 = d*d*d;
+        bond_d[index] = 1./d3;
+      }
+    }
+    norm = 0.; 
+    for(unsigned i=0; i<coupl.size(); i++) norm += coupl[i]*coupl[i];
+    firstTime = false;
+  }
 
   if(svd) {
 #ifdef __PLUMED_HAS_GSL
@@ -298,18 +322,17 @@ void RDC::calculate()
       double d2   = d*d;
       double d3   = d2*d;
       double id3  = 1./d3; 
-      double max  = -Const*mu_s[index];
+      double max  = -Const*mu_s[index]*scale[index];
       dmax[index] = id3*max;
       double mu_x = distance[0]/d;
       double mu_y = distance[1]/d;
       double mu_z = distance[2]/d;
-      double w=1.;
       gsl_vector_set(rdc_vec,index,coupl[index]/dmax[index]);
-      gsl_matrix_set(coef_mat,index,0,gsl_matrix_get(coef_mat,index,0)+w*(mu_x*mu_x-mu_z*mu_z));
-      gsl_matrix_set(coef_mat,index,1,gsl_matrix_get(coef_mat,index,1)+w*(mu_y*mu_y-mu_z*mu_z));
-      gsl_matrix_set(coef_mat,index,2,gsl_matrix_get(coef_mat,index,2)+w*(2.0*mu_x*mu_y));
-      gsl_matrix_set(coef_mat,index,3,gsl_matrix_get(coef_mat,index,3)+w*(2.0*mu_x*mu_z));
-      gsl_matrix_set(coef_mat,index,4,gsl_matrix_get(coef_mat,index,4)+w*(2.0*mu_y*mu_z));
+      gsl_matrix_set(coef_mat,index,0,gsl_matrix_get(coef_mat,index,0)+(mu_x*mu_x-mu_z*mu_z));
+      gsl_matrix_set(coef_mat,index,1,gsl_matrix_get(coef_mat,index,1)+(mu_y*mu_y-mu_z*mu_z));
+      gsl_matrix_set(coef_mat,index,2,gsl_matrix_get(coef_mat,index,2)+(2.0*mu_x*mu_y));
+      gsl_matrix_set(coef_mat,index,3,gsl_matrix_get(coef_mat,index,3)+(2.0*mu_x*mu_z));
+      gsl_matrix_set(coef_mat,index,4,gsl_matrix_get(coef_mat,index,4)+(2.0*mu_y*mu_z));
       index++;
     }
     gsl_matrix_memcpy(A,coef_mat);
@@ -324,7 +347,6 @@ void RDC::calculate()
     gsl_blas_dgemv(CblasNoTrans, 1.0, coef_mat, S, 0., bc);
     for(index=0; index<coupl.size(); index++) {
       rdc[index] = gsl_vector_get(bc,index)*dmax[index];
-      norm  += coupl[index]*coupl[index];
       double delta = rdc[index]-coupl[index];
       score += delta*delta;
     }
@@ -338,39 +360,23 @@ void RDC::calculate()
 #endif
   } else {
 
-    if(fixdist&&firstTime) {
-      unsigned index=0;
-      for(unsigned r=0;r<N;r+=2)
-      {
-        double d = bond_d[index]; 
-        double d3 = d*d*d;
-        bond_d[index] = 1./d3;
-        index++;
-      }
-      firstTime = false;
-    }
-
     /* using on-the-fly bonds distances */
     if(!fixdist) {
       /* RDC Calculations and forces */
-      unsigned index=0;
-      for(unsigned r=0;r<N;r+=2)
+      for(unsigned r=rank;r<N;r+=stride)
       {
+        unsigned index=r/2;
         Vector distance;
         distance=pbcDistance(getPosition(r),getPosition(r+1));
         double d    = distance.modulo();
-        double d2   = d*d;
-        double d3   = d2*d;
-        double d7   = d3*d3*d;
-        double id2  = 1./d2; 
-        double id3  = 1./d3; 
-        double id7  = 1./d7;
-        double id9  = id7*id2;
+        double ind  = 1./d;
+        double id3  = ind*ind*ind; 
+        double id7  = id3*id3*ind;
+        double id9  = id7*ind*ind;
         double max  = -Const*scale[index]*mu_s[index];
         double dmax = id3*max;
-        double cos_theta = distance[2]/d;
+        double cos_theta = distance[2]*ind;
         rdc[index] = 0.5*dmax*(3.*cos_theta*cos_theta-1.);
-        norm  += coupl[index]*coupl[index];
         double x2=distance[0]*distance[0];
         double y2=distance[1]*distance[1];
         double z2=distance[2]*distance[2];
@@ -387,19 +393,17 @@ void RDC::calculate()
             scx  += rdc[index];
             scx2 += rdc[index]*rdc[index];
             scy  += coupl[index];
-            scy2 += coupl[index]*coupl[index];
             scxy += rdc[index]*coupl[index];
           }
         }
         dRDC[r+1] = -dRDC[r];
-        index++;
       }
     /* using time0 bonds distances */
     } else {
       /* RDC Calculations and forces */
-      unsigned index=0;
-      for(unsigned r=0;r<N;r+=2)
+      for(unsigned r=rank;r<N;r+=stride)
       {
+        unsigned index=r/2;
         Vector distance;
         distance=pbcDistance(getPosition(r),getPosition(r+1));
         double d    = distance.modulo();
@@ -410,7 +414,6 @@ void RDC::calculate()
         double max  = -Const*scale[index]*mu_s[index];
         double dmax = bond_d[index]*max;
         rdc[index] = 0.5*dmax*(3.*cos_theta*cos_theta-1.);
-        norm  += coupl[index]*coupl[index];
         double x2=distance[0]*distance[0];
         double y2=distance[1]*distance[1];
         double z2=distance[2]*distance[2];
@@ -427,12 +430,10 @@ void RDC::calculate()
             scx  += rdc[index];
             scx2 += rdc[index]*rdc[index];
             scy  += coupl[index];
-            scy2 += coupl[index]*coupl[index];
             scxy += rdc[index]*coupl[index];
           }
         }
         dRDC[r+1] = -dRDC[r];
-        index++;
       }
     }
 
@@ -440,31 +441,34 @@ void RDC::calculate()
 
   // Printout
   bool printout=false;
-  if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
+  if(pperiod>0) printout = (!(getStep()%pperiod));
   if(printout) {
-    string dcfile;
-    char tmps1[21];
-    sprintf(tmps1, "%li", getStep());
-    if(ensemble) {
-      dcfile = string("rdc-")+getLabel()+"-"+tmps1+string(".dat");
-    } else dcfile = string("rdc-")+getLabel()+"-"+tmps1+string(".dat");
-    FILE *outfile = fopen(dcfile.c_str(), "w");
-    fprintf(outfile, "#index calc exp\n");
-    double sum=0.;
-    double Q=0.;
-    for(unsigned r=0;r<coupl.size();r++) { 
-      fprintf(outfile," %4u %10.6f %10.6f\n", r, rdc[r], coupl[r]);
-      sum+=(rdc[r]-coupl[r])*(rdc[r]-coupl[r]);
-      Q+=(coupl[r]*coupl[r]);
+    // share the calculated rdc
+    if(!serial) comm.Sum(&rdc[0],rdc.size());
+    // only the master replica is going to write
+    if(comm.Get_rank()==0) {
+      char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+      string dcfile = string("rdc-")+getLabel()+"-"+tmp1+string(".dat");
+      FILE *outfile = fopen(dcfile.c_str(), "w");
+      fprintf(outfile, "#index calc exp\n");
+      double sum=0.;
+      double Q=0.;
+      for(unsigned r=0;r<coupl.size();r++) { 
+        fprintf(outfile," %4u %10.6f %10.6f\n", r, rdc[r], coupl[r]);
+        sum+=(rdc[r]-coupl[r])*(rdc[r]-coupl[r]);
+        Q+=(coupl[r]*coupl[r]);
+      }
+      fprintf(outfile, "# Q factor = %6.4f\n", sqrt(sum/Q));
+      fclose(outfile);
     }
-    fprintf(outfile, "# Q factor = %6.4f\n", sqrt(sum/Q));
-    fclose(outfile);
   }
 
   // Ensemble averaging
   double fact=1.0;
   if(ensemble) {
     fact = 1./((double) ens_dim);
+    // share the calculated rdc unless they have been already shared by printout
+    if(!serial&&!printout) comm.Sum(&rdc[0],rdc.size());
     // I am the master of my replica
     if(comm.Get_rank()==0) {
       // among replicas
@@ -473,9 +477,9 @@ void RDC::calculate()
     } else for(unsigned i=0;i<coupl.size();i++) rdc[i] = 0.;
     // inside each replica
     comm.Sum(&rdc[0], coupl.size() );
-    unsigned r=0;
     score = 0.;
-    for(unsigned index=0;index<coupl.size();index++) {
+    for(unsigned r=rank;r<N;r+=stride) {
+      unsigned index=r/2;
       if(!correlation) {
         double delta = rdc[index]-coupl[index];
         dRDC[r]   *= delta;
@@ -485,38 +489,55 @@ void RDC::calculate()
         scx  += rdc[index];
         scx2 += rdc[index]*rdc[index];
         scy  += coupl[index];
-        scy2 += coupl[index]*coupl[index];
         scxy += rdc[index]*coupl[index];
       }
-      r+=2;
     } 
   }
-  
-  if(!correlation) score /= norm;
-  else {
+ 
+  Tensor virial;
+  virial.zero();
+  vector<Vector> deriv(N);
+  if(!correlation) {
+    if(!serial) comm.Sum(score);
+    score /= norm;
+    double tmpder = 2.*fact/norm;
+    for(unsigned r=rank;r<N;r+=stride) {
+      deriv[r]   = tmpder*dRDC[r];
+      deriv[r+1] = tmpder*dRDC[r+1];
+      virial=virial+(-1.*Tensor(getPosition(r),deriv[r]));
+      virial=virial+(-1.*Tensor(getPosition(r+1),deriv[r+1]));
+    }
+  } else {
+    if(!serial) { 
+      comm.Sum(scxy);
+      comm.Sum(scx);
+      comm.Sum(scy);
+      comm.Sum(scx2);
+    }
     double ns = coupl.size();
     double num = ns*scxy - scx*scy;
+    double scy2=norm;
     double idevx = 1./sqrt(ns*scx2-scx*scx);
     double idevy = 1./sqrt(ns*scy2-scy*scy);
     score = num * idevx * idevy;
-    unsigned r=0;
-    for(unsigned index=0;index<coupl.size();index++) {
+    for(unsigned r=rank;r<N;r+=stride) {
+      unsigned index=r/2;
       double tmpder1 = (ns*coupl[index]-scy)*idevx*idevy;
       double tmpder2 = num*(ns*rdc[index]-scx)*idevy*idevx*idevx*idevx;
-      double tmpder3 = tmpder1-tmpder2;
-      dRDC[r]   *= tmpder3;
-      dRDC[r+1] *= tmpder3;
-      r+=2;
+      double tmpder3 = fact*(tmpder1-tmpder2);
+      deriv[r]   = tmpder3*dRDC[r];
+      deriv[r+1] = tmpder3*dRDC[r+1];
+      virial=virial+(-1.*Tensor(getPosition(r),deriv[r]));
+      virial=virial+(-1.*Tensor(getPosition(r+1),deriv[r+1]));
     }
   }
 
-  for(unsigned i=0;i<N;i++) {
-    if(!correlation) deriv[i] = 2.*fact*dRDC[i]/norm;
-    else deriv[i] = fact*dRDC[i];
-    setAtomsDerivatives(i,deriv[i]);
-    virial=virial+(-1.*Tensor(getPosition(i),deriv[i]));
+  if(!serial){
+    if(!deriv.empty()) comm.Sum(&deriv[0][0],3*deriv.size());
+    comm.Sum(virial);
   }
-  
+
+  for(unsigned i=0;i<N;i++) setAtomsDerivatives(i,deriv[i]);
   setValue           (score);
   setBoxDerivatives  (virial);
 }

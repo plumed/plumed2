@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -71,6 +71,17 @@ class Action
 /// so as to check if all the present keywords are correct.
   std::vector<std::string> line;
 
+/// Update only after this time.
+  double update_from;
+
+/// Update only until this time.
+  double update_until;
+
+public:
+
+/// Check if action should be updated.
+  bool checkUpdate()const;
+
 public:
   typedef std::vector<Action*> Dependencies;
 
@@ -83,6 +94,8 @@ private:
 
 /// Option that you might have enabled 
   std::set<std::string> options; 
+
+  bool restart;
 
 public:
 
@@ -106,6 +119,9 @@ public:
 
 /// Return the timestep
   double getTimeStep()const;
+
+/// Return true if we are doing a restart
+  bool getRestart()const;
 
 /// Parse one keyword as generic type
   template<class T>
@@ -379,6 +395,11 @@ bool Action::isActive()const{
 inline
 bool Action::isOptionOn(const std::string &s)const{
   return options.count(s);
+}
+
+inline
+bool Action::getRestart()const{
+  return restart;
 }
 
 }

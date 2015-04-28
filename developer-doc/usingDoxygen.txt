@@ -445,9 +445,17 @@ description "The description of what is described on your page" will appear.
 
 One final thing, if your How-to is a tutorial - that is to say if you have a set of exercises for users to work through - then it may be useful to 
 provide them with some example files that they can download.  This is possible you add the files to our repository and you can put a link to download them
-somewhere on your page. To keep things manageable there should only be one file for each how-to page.  As such if you need to provide users with multiple files
-please put them in a zipped tar ball. This tar-ball should then be placed in the user-doc/tutorials directory and ideally given a name so that it can be identified
-with your corresponding *.txt file.  You can then download it by including the following into your *.txt file.
+somewhere on your page.
+To keep things manageable there should only be one (or a few) tar-ball file per tutorial.
+As such if you need to provide users with multiple files please put them in a single directory. The script that 
+build the documentation will make one or more tar-balls from there.
+please put them in a zipped tar ball.
+The simplest way is thus to add a directory
+in the user-doc/tutorials directory and ideally given a name so that it can be identified
+with your corresponding *.txt file.
+For example if the name of the tutorial is `mytute` you should make a directory named
+`user-doc/tutorials/mytute`. 
+You can then download it by including the following into your *.txt file.
 
 \verbatim
 /**
@@ -461,9 +469,32 @@ link: @subpage mytute
 
 description: A tutorial for users to work through
 
-additional-files: mytute.tar.gz
+additional-files: mytute
 \endverbatim 
 
 In this case the tar ball you add is called mytute.tar.gz.  The user can download this file by clicking on the word file.
+
+\section updating-web-manuals Updating web manuals
+
+Precompiled versions of PLUMED manuals can be found on github at an address such as http://plumed.github.io/doc-v2.1/user-doc/html/index.html
+(replace v2.1 with the actual version number). These manuals take advantage of a nice github feature: any branch named gh-pages
+is shown as a webpage. In this example, the repository is located at http://github.com/plumed/doc-v2.1 .
+Before version 2.1.1 it was necessary to upload the precompiled manual by hand. Since version 2.1.1, this is done
+from Travis CI automatically whenever a commit containing in its log the tag [makedoc] is pushed into the plumed2 github repository.
+Notice that Travis CI will try to push the manual on a repository named http://github.com/plumed/doc-NAMEOFTHEBRANCH , so that 
+this should work for all the future release branches as long as an appropriate repository is created on the github.com/plumed
+organization.
+We could even easily create repositories to host the documentation of temporary branches.
+Also notice that these repositories (plumed-doc-xxx) need to give write access to a dummy github account (PlumedBot). A token
+for that user enabling html access is stored in the environment variable GIT_TOKEN which is saved (not visible) on travis-ci.org.
+In this way, any commit made in the plumed repository by one of the developers will have access to the variable and will trigger
+(optionally, when [makedoc] is present) manual build and push. Conversely, pull requests by external users should not be able to
+access the token and won't update manual changes.
+
+Bottom line: when you make a commit where you modified the manual and you want the online manual to be updated,
+add [makedoc] in the commit log. After ten minutes or so the manual should be up to date, remember to double check on the web
+and to revert the commit if there are errors!
+
+
 
 */

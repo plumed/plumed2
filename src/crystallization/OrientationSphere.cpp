@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -67,13 +67,11 @@ MultiColvarFunction(ao)
   }
   log.printf("  degree of overlap in orientation between central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
-  setLinkCellCutoff( 2.*switchingFunction.inverse( getTolerance() ) );
+  rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
+  setLinkCellCutoff( switchingFunction.get_dmax() );
 
   // Finish the setup of the object
   buildSymmetryFunctionLists();
-
-  // And check everything has been read in correctly
-  checkRead();
 }
 
 void OrientationSphere::calculateWeight(){
@@ -87,13 +85,15 @@ double OrientationSphere::compute(){
    vv->firstcall=true;
 
    weightHasDerivatives=true;   // The weight has no derivatives really
-   double sw, value=0, denom=0, dot, f_dot, dot_df, dfunc; Vector distance;
+   double d2, sw, value=0, denom=0, dot, f_dot, dot_df, dfunc; Vector distance;
 
    getVectorForBaseTask(0, catom_orient );
    for(unsigned i=1;i<getNAtoms();++i){
       distance=getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(i) );
-      sw = switchingFunction.calculateSqr( distance.modulo2(), dfunc );
-      if( sw>=getTolerance() ){    
+      d2 = distance.modulo2();
+      if( d2<rcut2 ){ 
+         sw = switchingFunction.calculateSqr( d2, dfunc );  
+ 
          getVectorForBaseTask( i, this_orient );
          // Calculate the dot product wrt to this position 
          dot=0; for(unsigned k=0;k<catom_orient.size();++k) dot+=catom_orient[k]*this_orient[k];  

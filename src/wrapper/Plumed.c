@@ -148,16 +148,28 @@ plumed_plumedmain_function_holder* plumed_kernel_register(const plumed_plumedmai
 
 plumed plumed_create(void){
   plumed p;
-  p.p=(*(plumed_kernel_register(NULL)->create))();
+  plumed_plumedmain_function_holder*h=plumed_kernel_register(NULL);
+  assert(h);
+  assert(h->create);
+  p.p=(*(h->create))();
+  assert(p.p);
   return p;
 }
 
 void plumed_cmd(plumed p,const char*key,const void*val){
-  (*(plumed_kernel_register(NULL)->cmd))(p.p,key,val);
+  plumed_plumedmain_function_holder*h=plumed_kernel_register(NULL);
+  assert(p.p);
+  assert(h);
+  assert(h->cmd);
+  (*(h->cmd))(p.p,key,val);
 }
 
 void plumed_finalize(plumed p){
-  (*(plumed_kernel_register(NULL)->finalize))(p.p);
+  plumed_plumedmain_function_holder*h=plumed_kernel_register(NULL);
+  assert(p.p);
+  assert(h);
+  assert(h->finalize);
+  (*(h->finalize))(p.p);
 }
 
 int plumed_installed(void){
@@ -179,10 +191,12 @@ void plumed_gcreate(void){
 }
 
 void plumed_gcmd(const char*key,const void*val){
+  assert(gmain.p);
   plumed_cmd(gmain,key,val);
 }
 
 void plumed_gfinalize(void){
+  assert(gmain.p);
   plumed_finalize(gmain);
   gmain.p=NULL;
 }
@@ -250,10 +264,12 @@ plumed plumed_f2c(const char*c){
 */
 
 void plumed_f_installed(int*i){
+  assert(i);
   *i=plumed_installed();
 }
 
 void plumed_f_ginitialized(int*i){
+  assert(i);
   *i=plumed_ginitialized();
 }
 

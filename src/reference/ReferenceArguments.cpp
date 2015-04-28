@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -28,8 +28,8 @@ namespace PLMD {
 
 ReferenceArguments::ReferenceArguments( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-hasmetric(false),
-hasweights(false)
+hasweights(false),
+hasmetric(false)
 {
 }
 
@@ -171,7 +171,7 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
              if(i==j) dp_j=dp_i;
              else dp_j=vals[jk]->difference( reference_args[j], arg[jk] );
 
-             arg_ders[ ik ]+=metric(i,j)*dp_j;
+             arg_ders[ ik ]+=2.0*metric(i,j)*dp_j;    // Factor of two for off diagonal terms as you have terms from ij and ji
              r+=dp_i*dp_j*metric(i,j);
           }
       }

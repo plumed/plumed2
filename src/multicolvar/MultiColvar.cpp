@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -60,15 +60,17 @@ verbose_output(false)
 }
 
 void MultiColvar::readAtoms( int& natoms ){
-  std::vector<AtomNumber> all_atoms;
+  if( getNumberOfAtoms()==0 ){
+     std::vector<AtomNumber> all_atoms;
+     
+     if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
+     if( keywords.exists("GROUP") ) readGroupsKeyword( natoms, all_atoms );
+     if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms, all_atoms );
 
-  if( keywords.exists("ATOMS") ) readAtomsLikeKeyword( "ATOMS", natoms, all_atoms );
-  if( keywords.exists("GROUP") ) readGroupsKeyword( natoms, all_atoms );
-  if( keywords.exists("SPECIES") ) readSpeciesKeyword( natoms, all_atoms );
-
-  if( all_atoms.size()==0 ) error("No atoms have been read in");
-  // Request all atoms from ActionAtomistic
-  ActionAtomistic::requestAtoms( all_atoms ); 
+     if( all_atoms.size()==0 ) error("No atoms have been read in");
+     // Request all atoms from ActionAtomistic
+     ActionAtomistic::requestAtoms( all_atoms ); 
+  }
   // Setup the multicolvar base
   setupMultiColvarBase();
 }
@@ -161,7 +163,7 @@ void MultiColvar::readGroupsKeyword( int& natoms, std::vector<AtomNumber>& all_a
          }
       }
       if( !verbose_output ){
-          log.printf("  constructing colvars from %d atoms : ", t.size() );
+          log.printf("  constructing colvars from %u atoms : ", static_cast<unsigned>(t.size()) );
           for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
           log.printf("\n");
       }
@@ -205,7 +207,7 @@ void MultiColvar::readTwoGroups( const std::string& key1, const std::string& key
      }
   }
   if( !verbose_output ){
-      log.printf("  constructing colvars from two groups containing %d and %d atoms respectively\n",t1.size(),t2.size() );
+      log.printf("  constructing colvars from two groups containing %u and %u atoms respectively\n",static_cast<unsigned>(t1.size()),static_cast<unsigned>(t2.size()));
       log.printf("  group %s contains atoms : ", key1.c_str() );
       for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() );
       log.printf("\n");
@@ -252,7 +254,7 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
         }
       }
       if( !verbose_output ){
-        log.printf("  constructing colvars from two groups containing %d and %d atoms respectively\n",t1.size(),t2.size() ); 
+        log.printf("  constructing colvars from two groups containing %u and %u atoms respectively\n",static_cast<unsigned>(t1.size()),static_cast<unsigned>(t2.size())); 
         log.printf("  group %s contains atoms : ", key1.c_str() );
         for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() ); 
         log.printf("\n"); 
@@ -281,7 +283,7 @@ void MultiColvar::readThreeGroups( const std::string& key1, const std::string& k
           }
       }
       if( !verbose_output ){
-        log.printf("  constructing colvars from three groups containing %d, %d  and %d atoms respectively\n",t1.size(),t2.size(),t3.size() );
+        log.printf("  constructing colvars from three groups containing %u, %u and %u atoms respectively\n",static_cast<unsigned>(t1.size()),static_cast<unsigned>(t2.size()),static_cast<unsigned>(t3.size()));
         log.printf("  group %s contains atoms : ", key1.c_str() );
         for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() );
         log.printf("\n"); 
@@ -309,7 +311,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_
           for(unsigned i=0;i<t.size();++i) addTaskToList(i);
           ablocks[0].resize( t.size() ); for(unsigned i=0;i<t.size();++i) ablocks[0][i]=i; 
           if( !verbose_output ){
-              log.printf("  generating colvars from %d atoms of a particular type\n",t.size() );
+              log.printf("  generating colvars from %u atoms of a particular type\n",static_cast<unsigned>(t.size()));
               log.printf("  atoms involved : "); 
               for(unsigned i=0;i<t.size();++i) log.printf("%d ",t[i].serial() );
               log.printf("\n");
@@ -345,7 +347,7 @@ void MultiColvar::readSpeciesKeyword( int& natoms, std::vector<AtomNumber>& all_
             else { all_atoms.push_back( t2[i] ); ablocks[0][i]=t1.size() + k; k++; }
          }
          if( !verbose_output ){
-             log.printf("  generating colvars from a group of %d central atoms and %d other atoms\n",t1.size(), t2.size() );
+             log.printf("  generating colvars from a group of %u central atoms and %u other atoms\n",static_cast<unsigned>(t1.size()),static_cast<unsigned>(t2.size()));
              log.printf("  central atoms are : ");
              for(unsigned i=0;i<t1.size();++i) log.printf("%d ",t1[i].serial() );
              log.printf("\n");

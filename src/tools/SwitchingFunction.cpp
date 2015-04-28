@@ -77,11 +77,19 @@ s(r)=\exp\left(-\frac{ (r - d_0)^2 }{ 2r_0^2 }\right)
 </tr> <tr> 
 <td> SMAP </td> <td>
 \f$
-s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)\right]^{-b/a}
+s(r) = \left[ 1 + ( 2^{a/b} -1 )\left( \frac{r-d_0}{r_0} \right)^a \right]^{-b/a}
 \f$
 </td> <td>
 {SMAP R_0=\f$r_0\f$ D_0=\f$d_0\f$ A=\f$a\f$ B=\f$b\f$}
 </td> <td> \f$d_0=0.0\f$ </td>
+</tr> <tr> 
+<td> CUBIC </td> <td>
+\f$
+s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{r - r_1}{r_0-r_1}
+\f$
+</td> <td>
+{CUBIC D_0=\f$r_1\f$ D_MAX=\f$r_0\f$}
+</td> <td> </td>
 </tr> 
 </table>
 
@@ -128,16 +136,20 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   shift=0.0;
   init=true;
 
-  double r0;
-  bool found_r0=Tools::parse(data,"R_0",r0);
-  if(!found_r0) errormsg="R_0 is required";
-  invr0=1.0/r0;
-  invr0_2=invr0*invr0;
   Tools::parse(data,"D_0",d0);
   Tools::parse(data,"D_MAX",dmax);
   dmax_2=dmax*dmax;
   bool dostretch=false;
   Tools::parseFlag(data,"STRETCH",dostretch);
+  double r0;
+  if(name=="CUBIC"){
+     r0 = dmax - d0;
+  } else {
+     bool found_r0=Tools::parse(data,"R_0",r0);
+     if(!found_r0) errormsg="R_0 is required";
+  }
+  invr0=1.0/r0;
+  invr0_2=invr0*invr0;
 
   if(name=="RATIONAL"){
     type=rational;
@@ -153,6 +165,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
     d = -static_cast<double>(b) / static_cast<double>(a);
   } else if(name=="EXP") type=exponential;
   else if(name=="GAUSSIAN") type=gaussian;
+  else if(name=="CUBIC") type=cubic;
   else errormsg="cannot understand switching function type '"+name+"'";
   if( !data.empty() ){
       errormsg="found the following rogue keywords in switching function input : ";
@@ -179,6 +192,8 @@ std::string SwitchingFunction::description() const {
      ostr<<"gaussian";
   } else if(type==smap){
      ostr<<"smap";
+  } else if(type==cubic){
+     ostr<<"cubic";
   } else{
      plumed_merror("Unknown switching function type");
   }
@@ -187,6 +202,8 @@ std::string SwitchingFunction::description() const {
     ostr<<" nn="<<nn<<" mm="<<mm;
   } else if(type==smap){
     ostr<<" a="<<a<<" b="<<b;
+  } else if(type==cubic){
+    ostr<<" dmax="<<dmax;
   }
   return ostr.str(); 
 }
@@ -260,6 +277,10 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
     }else if(type==gaussian){
       result=exp(-0.5*rdist*rdist);
       dfunc=-rdist*result;
+    }else if(type==cubic){
+      double tmp1=rdist-1, tmp2=(1+2*rdist);
+      result=tmp1*tmp1*tmp2;
+      dfunc=2*tmp1*tmp2 + 2*tmp1*tmp1;
     }else plumed_merror("Unknown switching function type");
 // this is for the chain rule:
     dfunc*=invr0;
@@ -272,33 +293,6 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
   dfunc*=stretch;
 
   return result;
-}
-
-double SwitchingFunction::inverse( const double& val ) const {
-  double ival;  
-
-  if( dmax<numeric_limits<double>::max() ) return dmax;
-
-  if( type==smap ){
-// I add this error because I do not know how to compute ival
-// previously this line was just missing
-// In this manner at least we are should that it cannot happen that
-// an uninitialized ival is used
-    plumed_merror("cannot compute ival in this case");
-  } else if(type==rational){
-      ival=1.1;
-      for(unsigned i=0;;++i){
-          double vv = ( 1.0 - pow(ival,nn) ) / ( 1.0 - pow( ival,mm) );
-          if( vv < val ) break;
-          ival+=0.1;
-      }
-  } else if(type==exponential){
-      ival=-log(val);
-  } else if(type==gaussian){
-      ival=2*sqrt( -log(val) );
-  } else plumed_merror("Unknown switching function type");
-
-  return ival/invr0 + d0;
 }
 
 SwitchingFunction::SwitchingFunction():
@@ -334,6 +328,10 @@ double SwitchingFunction::get_r0() const {
 
 double SwitchingFunction::get_d0() const {
   return d0;
+}
+
+double SwitchingFunction::get_dmax() const {
+  return dmax;
 }
 
 }

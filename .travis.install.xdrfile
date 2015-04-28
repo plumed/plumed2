@@ -1,0 +1,14 @@
+#! /bin/bash
+
+set -e
+set -x
+
+echo "installing xdrfile library"
+wget ftp://ftp.gromacs.org/pub/contrib/xdrfile-1.1.4.tar.gz
+tar xzf xdrfile-1.1.4.tar.gz
+cd xdrfile-1.1.4
+./configure --enable-shared --prefix=/usr/local
+make
+sudo make install
+cd ../
+

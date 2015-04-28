@@ -60,6 +60,9 @@ OTHER DEALINGS WITH THE SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
+namespace PLMD{
+namespace molfile{
+
 #define PDB_RECORD_LENGTH   80   /* actual record size */
 #define PDB_BUFFER_LENGTH   83   /* size need to buffer + CR, LF, and NUL */
 
@@ -438,5 +441,7 @@ static int write_raw_pdb_record(FILE *fd, const char *recordname,
   return (rc > 0);
 }
 
+}
+}
 #endif
 #endif

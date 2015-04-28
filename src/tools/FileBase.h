@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -75,12 +75,20 @@ protected:
   bool err;
 /// path of the opened file
   std::string path;
+/// mode of the opened file
+  std::string mode;
 /// Set to true if you want flush to be heavy (close/reopen)
   bool heavyFlush;
+public:
 /// Append suffix.
 /// It appends the desired suffix to the string. Notice that
-/// it conserves a possible ".gz" suffix.
+/// it conserves some suffix (e.g. gz/xtc/trr).
   static std::string appendSuffix(const std::string&path,const std::string&suffix);
+private:
+/// Enforced suffix:
+  std::string enforcedSuffix;
+/// If true, use enforcedSuffix, else get it from PlumedMain
+  bool enforcedSuffix_;
 public:
 /// Link to an already open filed
   FileBase& link(FILE*);
@@ -92,6 +100,9 @@ public:
 /// Link to an Action object.
 /// Automatically links also the corresponding PlumedMain and Communicator.
   FileBase& link(Action&);
+/// Enforce suffix.
+/// Overrides the one set in PlumedMain&
+  FileBase& enforceSuffix(const std::string&suffix);
 /// Flushes the file to disk
   virtual FileBase& flush();
 /// Closes the file
@@ -111,7 +122,24 @@ public:
   bool FileExist(const std::string& path);
 /// Check if a file is open
   bool isOpen();
+/// Retrieve the path
+  std::string getPath()const;
+/// Retrieve the mode
+  std::string getMode()const;
+/// Get the file suffix
+  std::string getSuffix()const;
 };
+
+inline
+std::string FileBase::getPath()const{
+  return path;
+}
+
+inline
+std::string FileBase::getMode()const{
+  return mode;
+}
+
 
 
 }

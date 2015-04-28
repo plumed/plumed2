@@ -36,14 +36,15 @@ void LessThan::reserveKeyword( Keywords& keys ){
   keys.reserve("numbered","LESS_THAN","calculate the number of variables less than a certain target value. "
                                  "This quantity is calculated using \\f$\\sum_i \\sigma(s_i)\\f$, where \\f$\\sigma(s)\\f$ "
                                  "is a \\ref switchingfunction.",true);
-  keys.addOutputComponent("less_than","LESS_THAN","the number of values less than a target value. This is calculated using one of the " 
-                                                  "formula described in the description of the keyword so as to make it continuous. "
-                                                  "You can calculate this quantity multiple times using different parameters."); 
+  keys.addOutputComponent("lessthan","LESS_THAN","the number of values less than a target value. This is calculated using one of the " 
+                                                 "formula described in the description of the keyword so as to make it continuous. "
+                                                 "You can calculate this quantity multiple times using different parameters."); 
 }
 
 LessThan::LessThan( const VesselOptions& da ) :
 FunctionVessel(da)
 {
+  wnum=getAction()->getIndexOfWeight();
   if( getAction()->isPeriodic() ) error("LESS_THAN is not a meaningful option for periodic variables");
   std::string errormsg; sf.set( getAllInput(), errormsg ); 
   if( errormsg.size()!=0 ) error( errormsg ); 
@@ -54,7 +55,7 @@ std::string LessThan::function_description(){
 }
 
 bool LessThan::calculate(){
-  double weight=getAction()->getElementValue(1);
+  double weight=getAction()->getElementValue(wnum);
   plumed_dbg_assert( weight>=getTolerance() );
 
   double val=getAction()->getElementValue(0);
@@ -63,7 +64,7 @@ bool LessThan::calculate(){
   bool addval=addValueUsingTolerance(0,contr);
   if(addval){ 
     getAction()->chainRuleForElementDerivatives(0, 0, weight*dval, this);
-    if(diffweight) getAction()->chainRuleForElementDerivatives(0, 1, f, this);
+    if(diffweight) getAction()->chainRuleForElementDerivatives(0, wnum, f, this);
   }
   return ( contr>getNLTolerance() ); 
 }
@@ -74,8 +75,8 @@ void LessThan::finish(){
   mergeFinalDerivatives( df );
 }
 
-double LessThan::getCutoff( const double& tol ){
-  return sf.inverse( tol );
+double LessThan::getCutoff(){
+  return sf.get_dmax();
 }
 
 }

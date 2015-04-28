@@ -2,12 +2,12 @@
 
 # Making sure that plumed executable is available
 echo -n "Searching for plumed ..."
-if plumed 2>/dev/null 1>/dev/null ; then
+if plumed --no-mpi 2>/dev/null 1>/dev/null ; then
   echo " found"
 else
   echo " not found"
   echo -n "Sourcing sourceme.sh and searching again ..."
-  if source ../sourceme.sh && plumed 2>/dev/null 1>/dev/null ; then
+  if source ../sourceme.sh && plumed --no-mpi 2>/dev/null 1>/dev/null ; then
     echo " found"
   else
     echo "ERROR: you should compile plumed first!"
@@ -15,8 +15,42 @@ else
   fi
 fi
 
+LIST="
+ IntroPP.txt ../CHANGES InstallationPP.txt SyntaxPP.txt ColvarPP.txt GroupPP.txt FunctionsPP.txt AnalysisPP.txt
+  BiasPP.txt ToolsPP.txt MiscPP.txt RegexPP.txt FilesPP.txt ModulesPP.txt TutorialsPP.txt GlossaryPP.txt automatic tutorials"
+
 {
   cat Doxyfile
-  echo "PROJECT_NUMBER = \"$(plumed info --version)\""
-  echo "INPUT+=" *PP.txt
+  echo "PROJECT_NUMBER = \"$(plumed --no-mpi info --long-version)\""
+  echo "INPUT+=" $LIST
+  # add this to manually control layout:
+  # echo "LAYOUT_FILE=PlumedLayout.xml"
 } | doxygen -
+
+for file in html/*.html
+do
+awk -v version=$(plumed --no-mpi info --version) '{
+  if(match($0,"<span>Main&#160;Page</span>")){
+    sub("Main","Home",$0);
+    sub("Page","(v"version")",$0);
+    print
+  } else if(match($0,"<span>Related&#160;Pages</span>")){
+    print "      <li><a href=\"_syntax.html\"><span>Getting&#160;started</span></a></li>"
+    print "      <li><a href=\"tutorials.html\"><span>Tutorials</span></a></li>"
+    print "      <li><a href=\"glossary.html\"><span>Index&#160;of&#160;Actions</span></a></li>"
+  } else print
+}' $file > $file.tmp
+mv $file.tmp $file
+done
+
+cat html/doxygen.css plumed.css > html/doxygen.css.tmp
+mv html/doxygen.css.tmp html/doxygen.css
+
+cd latex
+
+# this is a workaround for a problem on the linux workstation
+# where I compile the manual - GB
+sed -i 's/pdfencoding=unicode/unicode/g' refman.tex
+make
+cp refman.pdf ../manual.pdf
+

@@ -31,6 +31,7 @@ namespace vesselbase{
 
 class LessThan : public FunctionVessel {
 private:
+  unsigned wnum;
   SwitchingFunction sf;
 public:
   static void registerKeywords( Keywords& keys );
@@ -39,7 +40,7 @@ public:
   std::string function_description();
   bool calculate();
   void finish();
-  double getCutoff( const double& tol );
+  double getCutoff();
 };
 
 }

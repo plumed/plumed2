@@ -192,11 +192,13 @@ PLUMED_COLVAR_INIT(ao)
 
   ensemble=false;
   parseFlag("ENSEMBLE",ensemble);
-  if(ensemble&&comm.Get_rank()==0) {
-    if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
-    else ens_dim=multi_sim_comm.Get_size(); 
-  } else ens_dim=0; 
-  if(ensemble) comm.Sum(&ens_dim, 1);
+  if(ensemble){
+    if(comm.Get_rank()==0) { 
+      if(multi_sim_comm.Get_size()<2) error("You CANNOT run Replica-Averaged simulations without running multiple replicas!\n");
+      ens_dim=multi_sim_comm.Get_size();
+    } else ens_dim=0;
+    comm.Sum(&ens_dim, 1);
+  } else ens_dim=1;
 
   stringadb  = stringa_data + string("/camshift.db");
   stringamdb = stringa_data + string("/") + stringa_forcefield;
@@ -320,7 +322,6 @@ PLUMED_COLVAR_INIT(ao)
      <<plumed.cite("Kohlhoff K, Robustelli P, Cavalli A, Salvatella A, Vendruscolo M, J. Am. Chem. Soc. 131, 13894 (2009)")
      <<plumed.cite("Camilloni C, Robustelli P, De Simone A, Cavalli A, Vendruscolo M, J. Am. Chem. Soc. 134, 3968 (2012)") <<"\n";
 
-
   coor.resize(atoms.size()); 
   csforces.resize(atoms.size()); 
 
@@ -355,16 +356,9 @@ void CS2Backbone::calculate()
   bool printout=false;
   if(pperiod>0&&comm.Get_rank()==0) printout = (!(getStep()%pperiod));
   if(printout) {
-    string csfile;
-    char tmps1[21], tmps2[21];
-    // add to the name the label of the cv in such a way to have different files
-    // when there is more than one defined variable
-    sprintf(tmps1, "%li", getStep());
-    if(ensemble) {
-      sprintf(tmps2, "%i", multi_sim_comm.Get_rank());
-      csfile = string("cs-")+getLabel()+"-"+tmps2+"-"+tmps1+string(".dat");
-    } else csfile = string("cs-")+getLabel()+"-"+tmps1+string(".dat");
-    cam_list[0].printout_chemical_shifts(csfile.c_str());
+    char tmp1[21]; sprintf(tmp1, "%ld", getStep()); 
+    string csfile = string("cs-")+getLabel()+"-"+tmp1+string(".dat");;
+    cam_list[0].printout_chemical_shifts(csfile.c_str(), sh);
   }
 
   double fact=1.0;
@@ -380,8 +374,7 @@ void CS2Backbone::calculate()
   }
 
   csforces.clear();
-  double energy;
-  energy = cam_list[0].ens_energy_force(coor, csforces, sh);
+  double energy = cam_list[0].ens_energy_force(coor, csforces, sh);
   if(!serial) comm.Sum(&csforces[0][0], N*4);
 
   Tensor virial;
