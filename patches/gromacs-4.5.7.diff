@@ -51,7 +51,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
      {
          if (mdatoms->cFREEZE && (state->flags & (1<<estV)))
          {
-@@ -588,10 +601,57 @@
+@@ -588,10 +601,60 @@
              }
          }
          fprintf(fplog,"\n");
@@ -65,7 +65,10 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
 +      /* setting kbT is only implemented with api>1) */
 +      real kbT=ir->opts.ref_t[0]*BOLTZ;
 +      if(pversion>1) plumed_cmd(plumedmain,"setKbT",&kbT);
-+
++      if(pversion>2){
++        int res=1;
++        if( (Flags & MD_STARTFROMCPT) ) plumed_cmd(plumedmain,"setRestart",&res);
++      }
 +      if(cr->ms && cr->ms->nsim>1) {
 +        if(MASTER(cr)) plumed_cmd(plumedmain,"GREX setMPIIntercomm",&cr->ms->mpi_comm_masters);
 +        if(PAR(cr)){
@@ -109,7 +112,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
      print_date_and_time(fplog,cr->nodeid,"Started mdrun",runtime);
      wallcycle_start(wcycle,ewcRUN);
      if (fplog)
-@@ -898,10 +958,17 @@
+@@ -898,10 +961,17 @@
                                      state,&f,mdatoms,top,fr,
                                      vsite,shellfc,constr,
                                      nrnb,wcycle,do_verbose);
@@ -127,7 +130,7 @@ patch -u -l -b -F 5 --suffix=.preplumed "./src/kernel/md.c" << \EOF_EOF
  
          if (MASTER(cr) && do_log && !bFFscan)
          {
-@@ -1038,16 +1105,50 @@
+@@ -1038,16 +1108,50 @@
               * in do_force.
               * This is parallellized as well, and does communication too. 
               * Check comments in sim_util.c
