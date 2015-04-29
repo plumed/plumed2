@@ -391,7 +391,6 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.addFlag("USE_ADAPTIVE_DOMAINS", false, "use metabasin metadynamics with adaptively set regions");
   keys.add("optional", "ADAPTIVE_DOMAINS_HISTOGRAM_RFILE", "read in a histogram file for restarting an adaptive domain calculation");
   keys.add("optional", "ADAPTIVE_DOMAINS_HISTOGRAM_WFILE", "print histogram files for restarting an adaptive domain calculation");
-  keys.addFlag("DELAY_ADAPTIVE_DOMAINS", false, "use adaptive metabasin metadynamics only after the reference bias crosses the offset.");
   keys.add("optional", "ADAPTIVE_DOMAINS_REFERENCE", "set metabasin metadynamics adaptive regions with reference to either the 'transition' free energy or the 'minimum' free energy");
   keys.add("optional", "ADAPTIVE_DOMAINS_ENERGY_OFFSET", "use adaptive metabasin metadynamics with regions below a free energy that is the reference free energy plus this value");
   keys.add("optional", "ADAPTIVE_DOMAINS_STRIDE", "use adaptive metabasin metadynamics with regions adapted every this number of steps");  
@@ -794,9 +793,9 @@ MetaD::MetaD(const ActionOptions &ao):
       if (kbt_ == 0.0) {
         error("Unless the MD engine passes the temperature to plumed, with adaptive domains metabasin metad you must specify it using TEMP");
       }
+      delay_adaptive_domains_ = true;
       parse("ADAPTIVE_DOMAINS_HISTOGRAM_RFILE", domains_histo_readfilename_);
       parse("ADAPTIVE_DOMAINS_HISTOGRAM_WFILE", whistofilename_);
-      parseFlag("DELAY_ADAPTIVE_DOMAINS", delay_adaptive_domains_);
       string refstring;
       parse("ADAPTIVE_DOMAINS_REFERENCE", refstring);
       if (refstring == "minimum") {
