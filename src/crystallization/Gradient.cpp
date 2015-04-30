@@ -94,8 +94,8 @@ nbins(3)
 
   // And setup the vessel
   std::string input; addVessel( "GRADIENT", input, -1 );
-  // And resize atoms
-  finishTaskListUpdate();
+  // And resize everything
+  readVesselKeywords();
 }
 
 void Gradient::setupRegions(){
