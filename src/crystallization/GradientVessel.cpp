@@ -100,7 +100,9 @@ void GradientVessel::resize(){
 }
 
 bool GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
-  unsigned nder=getAction()->getNumberOfDerivatives();
+  unsigned nder;
+  if( getAction()->derivativesAreRequired() ) nder=getAction()->getNumberOfDerivatives();
+  else nder=0;
   unsigned wstart, cstart; if( ncomponents==1 ){ cstart=1; wstart=2; } else { cstart=2; wstart=2+ncomponents; }
 
   for(unsigned iw=0;iw<nweights;++iw){
@@ -121,7 +123,9 @@ bool GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std
 
 void GradientVessel::finish( const std::vector<double>& buffer ){
   std::vector<double> val_interm( ncomponents*nweights );
-  unsigned nder = getAction()->getNumberOfDerivatives();
+  unsigned nder;
+  if( getAction()->derivativesAreRequired() ) nder=getAction()->getNumberOfDerivatives();
+  else nder=0;
   Matrix<double> der_interm( ncomponents*nweights, nder ); der_interm=0;
 
   if( isdens ){
