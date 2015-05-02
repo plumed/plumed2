@@ -68,6 +68,8 @@ protected:
 /// Finish the setup of the storage object by setting how much
 /// data has to be stored
   void completeSetup( const unsigned& , const unsigned& );
+/// Get the number of values that have been stored
+  unsigned getNumberOfStoredValues() const ;
 /// Return value of nspace
   unsigned getNumberOfDerivativeSpacesPerComponent() const ;
 /// Retrieve the values from the underlying ActionWithVessel
@@ -142,6 +144,11 @@ bool StoreDataVessel::storedValueIsActive( const unsigned& iatom ){
 inline
 unsigned StoreDataVessel::getSizeOfDerivativeList() const {
   return active_der.size();
+}
+
+inline
+unsigned StoreDataVessel::getNumberOfStoredValues() const {
+  return getAction()->getFullNumberOfTasks();
 }
 
 }
