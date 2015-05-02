@@ -27,14 +27,16 @@ ReferenceValuePack::ReferenceValuePack( const unsigned& nargs, const unsigned& n
 boxWasSet(false),
 numberOfArgs(nargs),
 oind_set(false),
-myvals(vals)
+myvals(vals),
+atom_indices(myvals.getIndices())
 {
-  atom_indices.resize( natoms ); tmp_derivs.resize( natoms );
+  if( atom_indices.size()!=natoms ){ atom_indices.resize( natoms ); myvals.getAtomVector().resize( natoms ); }
   if( vals.getNumberOfValues()==1 ){ oind=0; oind_set=true; }
 }
 
 void ReferenceValuePack::resize( const unsigned& nargs, const unsigned& natoms ){
-  numberOfArgs=nargs; atom_indices.resize( natoms ); tmp_derivs.resize( natoms );
+  numberOfArgs=nargs; atom_indices.resize( natoms ); 
+  myvals.getAtomVector().resize( natoms );
 }
 
 void ReferenceValuePack::updateDynamicLists(){

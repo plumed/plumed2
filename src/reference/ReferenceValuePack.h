@@ -40,9 +40,7 @@ private:
 /// Copy of the values that we are adding to
   MultiValue& myvals;
 /// Ths list of atom indices
-  std::vector<unsigned> atom_indices;
-/// A vector of vectors to save us some overhead for vector resises
-  std::vector<Vector> tmp_derivs;
+  std::vector<unsigned>& atom_indices;
 /// A vector of vectors to save us some overhead for vector resizes
   std::vector<Vector> centeredpos;
 ///
@@ -194,7 +192,7 @@ Tensor ReferenceValuePack::getBoxDerivatives() const {
 
 inline
 std::vector<Vector>& ReferenceValuePack::getAtomVector(){
-  return tmp_derivs;
+  return myvals.getAtomVector();
 }
 
 inline
