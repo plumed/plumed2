@@ -35,7 +35,7 @@ public:
   void read( const PDB& );
   double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
   bool pcaIsEnabledForThisReference(){ pca=true; return true; }
-  void setupRMSDObject(){ myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL-FAST"); }
+  void setupRMSDObject(){ myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); }
   void setupPCAStorage( ReferenceValuePack& mypack ){ 
         mypack.centeredpos.resize( getNumberOfAtoms() ); 
         mypack.displacement.resize( getNumberOfAtoms() ); 
@@ -55,7 +55,7 @@ pca(false)
 }
 
 void OptimalRMSD::read( const PDB& pdb ){
-  readReference( pdb ); myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL-FAST"); 
+  readReference( pdb ); myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); 
 }
 
 double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
@@ -71,8 +71,7 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
      if( getAlign()==getDisplace() ) d=myrmsd.optimalAlignment<true,true>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
      else d=myrmsd.optimalAlignment<true,false>(getAlign(),getDisplace(),pos,getReferencePositions(),myder.getAtomVector(),squared);
   }
-  unsigned nat=myder.getAtomVector().size();
-  myder.clear(); for(unsigned i=0;i<nat;++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] ); 
+  myder.clear(); for(unsigned i=0;i<pos.size();++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] ); 
   if( !myder.updateComplete() ) myder.updateDynamicLists();
   return d;
 }
