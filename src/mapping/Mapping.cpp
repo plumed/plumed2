@@ -39,7 +39,7 @@ void Mapping::registerKeywords( Keywords& keys ){
   vesselbase::ActionWithVessel::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
-  keys.add("compulsory","TYPE","OPTIMAL","the manner in which distances are calculated. More information on the different "
+  keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
                                          "metrics that are available in PLUMED can be found in the section of the manual on "
                                          "\\ref dists");
   keys.addFlag("DISABLE_CHECKS",false,"disable checks on reference input structures.");
