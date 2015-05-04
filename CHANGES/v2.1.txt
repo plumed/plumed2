@@ -195,6 +195,8 @@ For users:
 - Added --natoms to \ref driver . This is required to read coordinate
   files with VMD plugins when number of atoms is not present (e.g. amber
   crd files)
+- Added the checks in the driver to detect cases where molinfo does not provide box information
+  (e.g. pdb).
 
 For developers:
 - Allow external VMD plugins to be detected with --has-external-molfile. This
