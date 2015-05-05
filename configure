@@ -695,6 +695,7 @@ enable_cxx_exceptions
 enable_mpi
 enable_openmp
 enable_external_lapack
+enable_external_blas
 enable_molfile_plugins
 enable_external_molfile_plugins
 enable_matheval
@@ -1345,6 +1346,7 @@ Optional Features:
   --enable-openmp         enable search for openmp, default: no
   --enable-external-lapack
                           enable search for external lapack, default: yes
+  --enable-external-blas  enable search for external blas, default: yes
   --enable-molfile-plugins
                           enable use molfile_plugins, default: yes
   --enable-external-molfile-plugins
@@ -2422,6 +2424,24 @@ else
   case "yes" in
              (yes) external_lapack=true ;;
              (no)  external_lapack=false ;;
+  esac
+
+fi
+
+
+
+external_blas=
+# Check whether --enable-external-blas was given.
+if test "${enable_external_blas+set}" = set; then :
+  enableval=$enable_external_blas; case "${enableval}" in
+             (yes) external_blas=true ;;
+             (no)  external_blas=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-external-blas" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) external_blas=true ;;
+             (no)  external_blas=false ;;
   esac
 
 fi
@@ -5110,8 +5130,18 @@ save_LIBS="$LIBS"
 blas_found=
 lapack_found=
 
-if test "$external_lapack" == true ; then
+# if external lapack can only work with external blas
+# thus, if external blas are disabled also external lapack should be disabled
+if test "$external_blas" == false && test "$external_lapack" == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Internal blas can only be used with internal lapack" >&5
+$as_echo "$as_me: Internal blas can only be used with internal lapack" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Will not search for external lapack" >&5
+$as_echo "$as_me: Will not search for external lapack" >&6;}
+  external_lapack=false
+fi
 
+# first look for blas
+if test "$external_blas" == true ; then
 ac_fn_cxx_check_func "$LINENO" "dgemv" "ac_cv_func_dgemv"
 if test "x$ac_cv_func_dgemv" = xyes; then :
   blas_found=nounderscore
@@ -5209,8 +5239,26 @@ fi
 
 fi
 
+fi
 
+# if not found, then use internal lapack and blas
+if test -z "$blas_found" ; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack and blas, could be inefficient" >&5
+$as_echo "$as_me: WARNING: using internal lapack and blas, could be inefficient" >&2;}
+LIBS="$save_LIBS"
+
+$as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
+
+$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
+
+fi
+
+# if found, also look for external blas
 if test -n "$blas_found" ; then
+
+save_LIBS="$LIBS"
+
+if test "$external_lapack" == true ; then
 # Then we look for lapack using same underscoring
 case "$blas_found" in
 (underscore) search_for=dsyevr_ ;;
@@ -5270,25 +5318,25 @@ fi
 
 fi
 
-fi
-
+# if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack/blas, could be inefficient" >&5
-$as_echo "$as_me: WARNING: using internal lapack/blas, could be inefficient" >&2;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack, could be inefficient" >&5
+$as_echo "$as_me: WARNING: using internal lapack, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
 $as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
 
-$as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
+fi
 
+fi
 
-else
+# in case external blas have been found, take note of their underscoring
+# notice that this applies also when external blas are used with internal lapack
+# in the latter case, also (internal) lapack names will be underscored consistently
+if test "$blas_found" == nounderscore
+then
+  $as_echo "#define F77_NO_UNDERSCORE 1" >>confdefs.h
 
-  if test $blas_found == nounderscore
-  then
-    $as_echo "#define F77_NO_UNDERSCORE 1" >>confdefs.h
-
-  fi
 fi
 
 #### End of compulsory libraries ####

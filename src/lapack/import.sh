@@ -107,6 +107,6 @@ echo "#endif"
 } | sed 's/static //' > lapack.cpp
 
 cd ../
-./header.sh
+./header.sh lapack
 
 
