@@ -25,6 +25,7 @@
 #include "Action.h"
 #include "tools/Tensor.h"
 #include "Atoms.h"
+#include "tools/Pbc.h"
 #include <vector>
 #include <set>
 
@@ -43,7 +44,6 @@ class ActionAtomistic :
   std::set<AtomNumber>  unique;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
-  Tensor                box;
   Pbc&                  pbc;
   Tensor                virial;
   std::vector<double>   masses;
@@ -220,7 +220,7 @@ const double & ActionAtomistic::getEnergy()const{
 
 inline
 const Tensor & ActionAtomistic::getBox()const{
-  return box;
+  return pbc.getBox();
 }
 
 inline
