@@ -35,14 +35,14 @@ Changes from version 2.1 which are relevant for users:
   - \ref PUCKERING implemented for 5-membered rings (thanks to Alejandro Gil-Ley).
   - \ref WRAPAROUND to fix periodic boundary conditions.
 - New features for existing actions:
-  - Keywords UPDATE_FROM and UPDATE_UNTIL to limit update step in a defined time window.
+  - Keywords UPDATE_FROM and UPDATE_UNTIL to limit update step in a defined time window, available only for actions where it would be useful.
   - Keyword UNNORMALIZED for \ref HISTOGRAM.
   - Keywords for \ref GROUP (REMOVE, SORT, UNIQUE) to allow more flexible editing of groups.
   - \ref DUMPATOMS now supports dumping xtc and trr files (requires xdrfile library).
   - \ref driver can now read xtc and trr files also with xdrfile library.
   - \ref driver accepts a --mc flag to read charges and masses from a file produced during
     molecular dynamics with \ref DUMPMASSCHARGE
-  - Possibility to enable or disable \ref RESTART on a per action basis.
+  - Possibility to enable or disable \ref RESTART on a per action basis, available only for actions where it would be useful.
   - \ref MOLINFO now supports many more special names for rna and dna (thanks to Alejandro Gil-Ley).
   - VMEAN and VSUM allow one to calculate the sum of a set of vectors calculated by VectorMultiColvar.  Note these
   can also be used in tandem with \ref AROUND or \ref MFILTER_MORE to calculate the average vector within a particular
