@@ -40,11 +40,11 @@ and return one single value.
 
 class FunctionVessel : public Vessel {
 private:
-/// The number of derivatives
-  unsigned nderivatives;
 /// This is the pointer to the value we are creating
   Value* final_value;
 protected:
+/// The number of derivatives
+  unsigned nderivatives;
 /// Are the derivatives differentiable
   bool diffweight;
 /// Are we normalising by the weight

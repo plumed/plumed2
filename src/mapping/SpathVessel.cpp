@@ -30,7 +30,6 @@ class SpathVessel : public vesselbase::FunctionVessel {
 private:
   bool foundoneclose;
   unsigned mycoordnumber;
-  unsigned nderiv;
   Mapping* mymap;
 public:
   static void registerKeywords( Keywords& keys );
@@ -59,7 +58,7 @@ FunctionVessel(da)
   plumed_massert( mymap, "SpathVessel can only be used with mappings");
   // Retrieve the index of the property in the underlying mapping
   mycoordnumber=mymap->getPropertyIndex( getLabel() ); 
-  usetol=true; norm=true; nderiv=mymap->getNumberOfDerivatives();
+  usetol=true; norm=true; 
 
   for(unsigned i=0;i<mymap->getFullNumberOfTasks();++i){
      if( mymap->getTaskCode(i)!=mymap->getPositionInFullTaskList(i) ) error("mismatched tasks and codes");
@@ -77,7 +76,7 @@ void SpathVessel::prepare(){
 bool SpathVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const {
   double pp=mymap->getPropertyValue( current, mycoordnumber ), weight=myvals.get(0);
   if( weight<getTolerance() ) return false;
-  buffer[bufstart] += weight*pp; buffer[bufstart+1+nderiv] += weight; 
+  buffer[bufstart] += weight*pp; buffer[bufstart+1+nderivatives] += weight; 
   if( getAction()->derivativesAreRequired() ){
      myvals.chainRule( 0, 0, 1, 0, pp, bufstart, buffer );
      myvals.chainRule( 0, 1, 1, 0, 1.0, bufstart, buffer );

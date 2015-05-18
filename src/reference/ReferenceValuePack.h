@@ -70,6 +70,8 @@ public:
 ///
   void addArgumentDerivatives( const unsigned& iarg, const double& der );
 ///
+  void setArgumentDerivatives( const unsigned& iarg, const double& der );
+///
   void setAtomDerivatives( const unsigned& jder, const Vector& der );
 ///
   void addAtomDerivatives( const unsigned& iatom, const Vector& der );
@@ -128,6 +130,11 @@ unsigned ReferenceValuePack::getAtomIndex( const unsigned& iatom ) const {
 inline
 void ReferenceValuePack::addArgumentDerivatives( const unsigned& iarg, const double& der ){
   plumed_dbg_assert( iarg<numberOfArgs && oind_set ); myvals.addDerivative( oind, iarg, der );
+}
+
+inline
+void ReferenceValuePack::setArgumentDerivatives( const unsigned& iarg, const double& der ){
+  plumed_dbg_assert( iarg<numberOfArgs && oind_set ); myvals.setDerivative( oind, iarg, der );
 }
 
 inline
