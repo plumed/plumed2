@@ -59,7 +59,7 @@ void OptimalRMSD::read( const PDB& pdb ){
 }
 
 double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
-  double d; plumed_dbg_assert( pos.size()==getNumberOfAtoms() && myder.getAtomVector().size()==getNumberOfAtoms() );
+  double d; 
   if( pca ){
      std::vector<Vector> centeredreference( getNumberOfAtoms () );
      d=myrmsd.calc_PCAelements(pos,myder.getAtomVector(),myder.rot[0],myder.DRotDPos,myder.getAtomsDisplacementVector(),myder.centeredpos,centeredreference,squared);
