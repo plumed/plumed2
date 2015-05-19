@@ -9,14 +9,18 @@ and \link InstallingPlumed install\endlink
 PLUMED.
 For those of you who are impatient, the following might do the job:
 \verbatim
-> ./configure --prefix=/usr/local/lib
+> ./configure --prefix=/usr/local
 > make -j 4
-> make doc # this is optional and requires doxygen installed
+> make doc # this is optional and requires proper doxygen version installed
 > make install
 \endverbatim
+Notice that `make install` is not strictly necessary  as plumed can be used from the compilation
+directory. This is very useful so as to quickly test the implementation of new features.
+However, we strongly recommend to perform a full install.
 
-Once the above is completed you can use PLUMED to analyze
-existing trajectories or you can play with the Lennard-Jones code that is included.
+Once the above is completed the `plumed` executable should be in your execution path
+and you will be able to use PLUMED to analyze
+existing trajectories or play with the Lennard-Jones code that is included.
 However, because PLUMED is mostly used to bias on the fly simulations
 performed with serious molecular dynamics packages, 
 you can find instructions about how to
@@ -24,7 +28,6 @@ you can find instructions about how to
 your favorite MD code so that it can be combined with PLUMED below.
 Again, if you are impatient, something like this will do the job:
 \verbatim
-> source /plumed/root/dir/sourceme.sh
 > cd /md/root/dir
 > plumed patch -p
 \endverbatim
@@ -34,7 +37,7 @@ It is thus recommended that you read the instructions
 at the end of this page.
 Notice that MD codes could in principle be "PLUMED ready"
 in their official distribution. If your favorite MD code is available "PLUMED ready" 
-you will have to compile PLUMED first as a library then check the MD codes' manual to
+you will have to compile PLUMED first, then (optionally) install it, then check the MD codes' manual to
 discover how to link it.
 
 \section ConfiguringPlumed Configuring PLUMED
@@ -87,7 +90,7 @@ in place so as to do some checking you can use
 > ./configure --enable-debug
 \endverbatim
 This will perform some extra check during execution (possibly slowing down PLUMED)
-and write full symbol tables in the executable (making the final executible  much larger).
+and write full symbol tables in the executable (making the final executable  much larger).
 
 The main goal of the automatic configure is to find the libraries.
 When they are stored in unconventional places it is thus sensible to tell autoconf where 
@@ -99,32 +102,35 @@ first try to configure without any additional flags and to then check the log so
 or not the libraries were properly detected.
 
 If a library is not found during configuration, you can try to use options to modify the
-seatch path.
+search path.
 For example if your matheval libraries is in /opt/local (this is where MacPorts put it)
-use
+and configure is not able to find it you can try
 \verbatim
 > ./configure LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include
 \endverbatim
 Notice that PLUMED will first try to link a routine from say matheval
 without any additional flag, and then in case of failure will retry adding
-"-lmatheval" to the LIBS options. This allows you to use libraries
+"-lmatheval" to the LIBS options.
+If also this does not work, the matheval library will be
+disabled and some features will not be available.
+This procedure allows you to use libraries
 with custom names. So, if
 your matheval library is called /opt/local/lib/libmymatheval.so you can 
 link it with
 \verbatim
 > ./configure LDFLAGS=-L/opt/local/lib CPPFLAGS=-I/opt/local/include LIBS=-lmymatheval
 \endverbatim
-In this example, if the linker finds the libmymatheval.so library it will be happy.
-If not it will try adding "-lmatheval". If also this does not work, the matheval library will be
-disabled and some features will not be available.
+In this example, the linker will directly try to link `/opt/local/lib/libmymatheval.so`.
 This rule is true for all the libraries, so that you will always be able to link
 a specific version of a library by specifying it using the LIBS variable.
 
 \warning On Linux you might have problems using the LDFLAGS option. In particular,
-if you have problems in linking the file 'src/lib/plumed-shared', try to set correctly
+if makefile complaints that it cannot link the file 'src/lib/plumed-shared',
+try to set correctly
 the runtime path by using
 \verbatim
-> ./configure LDFLAGS="-L/opt/local/lib -Wl,-rpath,/opt/local/lib" CPPFLAGS=-I/opt/local/include LIBS=-lmymatheval
+> ./configure LDFLAGS="-L/opt/local/lib -Wl,-rpath,/opt/local/lib" \
+  CPPFLAGS=-I/opt/local/include LIBS=-lmymatheval
 \endverbatim
 Notice that although the file 'src/lib/plumed-shared' is not necessary, being
 able to produce it means that it will be possible to link PLUMED dynamically
@@ -132,7 +138,7 @@ with MD codes later.
 
 PLUMED needs blas and lapack. These are treated slighty different from
 other libraries. The search is done in the usual way (i.e., first
-look for them without any link flag, then add "-lblas" and "-llapack", resepctively).
+look for them without any link flag, then add "-lblas" and "-llapack", respectively).
 As such  if you want to use a specific version of blas or lapack
 you can make them available to configure by using
 \verbatim
@@ -173,10 +179,9 @@ We tried to keep PLUMED as independent as possible from external libraries and a
 that require external libraries (e.g. Almost and Matheval) are optional. However, to have a properly working version
 of plumed PLUMED you need BLAS and LAPACK libraries.  We would strongly recommend you download these libraries and 
 install them separately so as to have the most efficient possible implementations of the functions contained within 
-them.  However, if you cannot install blas and lapack, you can use the internal ones. To do so simply add the flags 
--D__PLUMED_INTERNAL_BLAS and -D__PLUMED_INTERNAL_LAPACK to your CPPFLAGS variable.
-However, as described above, the automatic configure should be able to choose automatically the internal
-libraries when necessary.
+them.  However, if you cannot install blas and lapack, you can use the internal ones.
+Since version 2.1, PLUMED uses a configure script to detect libraries. In case system LAPACK or BLAS
+are not found on your system, PLUMED will use the internal replacement.
 
 We have had a number of emails (and have struggled ourselves) with ensuring that PLUMED 
 can link BLAS and LAPACK.  The following describes some of the pitfalls that you can fall
@@ -193,12 +198,13 @@ Some simple to fix further problems include:
 - If the linker complains and suggests recompiling lapack with -fPIC, it means that you have static lapack libraries. Either install dynamic lapack libraries
 or switch to static compilation of PLUMED by unsetting the SOEXT variable
 in the configuration file.
-- If the linker complains that dsyevr_ cannot be found, try adding
-  -DF77_NO_UNDERSCORE to CPPFLAGS
 - If the linker complains about other missing functions (typically starting with
   "for_" prefix) then you should also link some Fortran libraries. PLUMED
   is written in C++ and often C++ linkers do not include Fortran libraries by default.
   These libraries are required for lapack and blas to work. Please check the documentation of your compiler.
+- If the linker complains that dsyevr_ cannot be found, try adding
+  -DF77_NO_UNDERSCORE to CPPFLAGS
+  Notice that "./configure" should automatically try this solution.
 
 \section CompilingPlumed Compiling PLUMED
 
@@ -209,19 +215,21 @@ Once configured, PLUMED can be compiled using the following command:
 This will compile the entire code and produce a number of files
 in the 'src/lib' directory, including the executable 
 'src/lib/plumed'. When shared libraries are enabled,
-a shared libraries called 'src/lib/libKernel.so' should also have been compiled. 
+a shared libraries called 'src/lib/libKernel.so' should also be present.
 Notice that the extension could be '.dylib' on a Mac.
 
-The file 'sourceme.sh' that has been created by
-the configure script in the main PLUMED directory
-can be "sourced" (presently only working for bash shell)
-if you want to use PLUMED *without installing it* (i.e. from the compilation
-directory). It is a good idea to source it:
+In case you want to run PLUMED *without installing it* (i.e. from the compilation
+directory), you can use the file 'sourceme.sh' that has been created by
+the configure script in the main PLUMED directory.
+This file can be "sourced" (presently only working for bash shell)
+if you want to use PLUMED *before installing it* (i.e. from the compilation
+directory). It is a good idea to source it now, so that you can play with the just compiled
+PLUMED:
 \verbatim
 > source sourceme.sh
 \endverbatim
 
-If compilation is successful, 
+Now
 a "plumed" executable should be in your path. Try to type
 \verbatim
 > plumed -h
@@ -229,7 +237,7 @@ a "plumed" executable should be in your path. Try to type
 
 \warning If you are cross compiling, the plumed executable
 will not work. As a consequence, you won't be able to run regtests
-or compile the manual.
+or compile the manual. This is not a problem.
 
 You can also check if PLUMED is correctly compiled by performing our regression tests.
 Be warned that some of them fail because of the different numerical accuracy on different machines.
@@ -271,31 +279,37 @@ this is currently the only way to use the PLUMED static executable on Windows.
 
 \section InstallingPlumed Installing PLUMED
 
-It might be convenient to install PLUMED in a predefined location.
-This will allow you to remove the original compilation directory,
-or to recompile a different PLUMED version in the same place.
-Notice that installation *is optional*. Even from the compilation
-directory, if the environment is properly set (see sourceme.sh file)
-PLUMED should work.
-
-To install PLUMED one should first decide the location. Just set
-the environment variable PLUMED_PREFIX, then type "make install"
+It is strongly suggested to
+install PLUMED in a predefined location.
+This is done using
 \verbatim
-> export PLUMED_PREFIX=$HOME/opt
 > make install
 \endverbatim
-If PLUMED_PREFIX is not set, it will be assumed to be
-the one set when you configured with autoconf. So if you configured
-using
+This will allow you to remove the original compilation directory,
+or to recompile a different PLUMED version in the same place.
+
+To install PLUMED one should first decide the location.
+The standard way to do it is during the configure step:
 \verbatim
 > ./configure --prefix=$HOME/opt
 > make
 > make install
 \endverbatim
-Then the PLUMED_PREFIX will be set equal to $HOME/opt.
-If the PLUMED_PREFIX is not set, it defaults to /usr/local.
+However, you can also change it after compilation setting
+the environment variable PLUMED_PREFIX.
+\verbatim
+> ./configure
+> make
+> export PLUMED_PREFIX=$HOME/opt
+> make install
+\endverbatim
+If you didn't specify the --prefix option during configure, and you did not set the PLUMED_PREFIX
+environment variable, PLUMED will be installed in /usr/local.
 The install command should be executed with root permissions (e.g. "sudo make install")
 if you want to install PLUMED on a system directory.
+Notice that upon installation PLUMED currently needs to relink a library. If
+root user does not have access to compilers, "sudo -E make install" might solve
+the issue.
 An almost full copy of the compilation directory will
 be installed into $PLUMED_PREFIX/lib/plumed/ directory. A link to the proper
 PLUMED executable will be set up in $PLUMED_PREFIX/bin,
@@ -334,9 +348,14 @@ do not want to set up modules, but we believe that using modules as described ab
 
 \section Patching Patching your MD code
 
-At the present times PLUMED can be added to the following list of codes:
+In case your MD code is not supporting PLUMED already, you should modify it.
+We provide scripts to adjust some of the most popular MD codes
+so as to provide PLUMED support.
+At the present times we support patching the following list of codes:
 
-@CODES@
+@CODESL@
+
+In the section \subpage CodeSpecificNotes you can find information specific for each MD code.
 
 To patch your MD code, you should have already installed PLUMED properly.
 This is necessary as you need to have the command "plumed" in your execution
@@ -361,25 +380,49 @@ There are different options available when patching. You can check all of them u
 > plumed patch --help
 \endverbatim
 Particularly interesting options include:
-- --static (default) just link PLUMED as a collection of object files.
+- --static (default) just link PLUMED as a collection of object files. This is only suggested if for external reasons you
+  absolutely need a static executable. Notice that with this setting it is often more complicated to configure
+  properly the MD code, since all the libraries that PLUMED depends on should be properly specified. The `./configure` script
+  does its best in this sense, but sometime it cannot solve the problem. Additionally, this patching mode has been reported
+  not to work properly on OSX.
 - --shared allows you to link PLUMED as a shared library. As a result when PLUMED is updated, there will be no need to recompile the MD code.
+  This is way better than --static since the libraries that PLUMED depends on should be automatically linked.
+  Notice that if you later remove the directory where PLUMED is installed also the MD code will not run anymore.
 - --runtime allows you to choose the location of the PLUMED library at runtime by setting the variable PLUMED_KERNEL.
+  This is probably the most flexible option, and we encourage system administrators to use this option when installing
+  PLUMED on shared facilities. Indeed, using this setting it will be possible to update separately the PLUMED library
+  and the MD code, leaving to the user the possibility to combine different versions at will. 
+  We also recommend to use the provided modulefile (see above) to properly set the runtime environment.
 
 Notice that it is not currently possible to link PLUMED as a static library (something like 'libplumed.a').
 The reason for this is that PLUMED heavily relies on C++ static constructors that do not behave well in static libraries.
 For this reason, to produce a static executable with an MD code + PLUMED we link PLUMED as a collection of object files.
 
-A note for cross compiling: if you are compiling an executable from a different machine, then then
-"plumed" executable will not be available in the compilation environment. You should thus use the following command
-\verbatim
-> plumed-patch
-\endverbatim
-as a replacement for "plumed patch".
-
 If your MD code is not supported, you may want to implement an interface for
 it. Refer to the <a href="../../developer-doc/html/index.html"> developer
 manual </a>.
 
+\section CrossCompiling Cross compiling
+
+If you are compiling an executable from a different machine, then
+`plumed` executable will not be available in the compilation environment.
+This means that you won't be able to perform regtests on the machine
+nor to compile the manual.
+You can try to run the regtests on the computing nodes, but this might require some tweak
+since often machines where people do cross compiling have architectures with limited capabilities
+on the compute nodes. Also notice that many of the `plumed` options (e.g. patch) are implemented
+as shell scripts launched from within the `plumed` executable. If the compute nodes have some limitation
+(e.g. they do not allow to fork new processes) these options will not work. Anyway, the PLUMED library
+in combination with an MD software should work if both PLUMED and the MD software have been properly compiled.
+
+Also notice that it will not be possible
+to use the command `plumed patch` on the machine where you are compiling.
+You should thus use `plumed-patch` instead of `plumed patch` (notice that it should be written as a single word).
+Try e.g.:
+\verbatim
+> plumed-patch --help
+\endverbatim
+This script provides a "shell only" implementation of `plumed patch` that will skip the launch of the `plumed` executable.
 
 \section installingalmost Installing PLUMED with ALMOST
 
@@ -387,22 +430,38 @@ In order to used some of the NMR based collective variables (\ref CS2BACKBONE an
 To do this the free package ALMOST v.2.1 MUST be dowloaded via SVN (svn checkout svn://svn.code.sf.net/p/almost/code/ almost-code).
 ALMOST 2.1 can be found in branches/almost-2.1/ and can be compiled:
 
-\warning ALMOST needs SQLITE3, GZIP and BZIP2 installed on your computer.
+\warning ALMOST needs SQLITE3 and  GZIP installed on your computer.
+\warning ALMOST cannot be installed in the same folder of the source code, use --prefix to install it in a different folder
 
 \verbatim
-./configure --prefix="wherever you want it" 
-make
-make install
+> ./configure --prefix="wherever you want it" CXXFLAGS="-O3 -fPIC" CFLAGS="-O3 -fPIC" 
+> make
+> make install
 \endverbatim
+
+Sometimes ALMOST can give errors related to the automake tools. To fix them it is often enough to execute
+\verbatim
+> autoreconf -fi
+> automake
+\endverbatim
+and then repeat the configuration and compilation instructions.
 
 PLUMED will not use the RDCs module of ALMOST so you can ignore the warning about LAPACK.
 
-Once ALMOST is installeed, PLUMED 2 can then be configured with ALMOST enabled: 
+Once ALMOST is installed, PLUMED 2 can then be configured with ALMOST enabled: 
 
 \verbatim
-./configure --enable-almost CPPFLAGS="-I/ALMOST_INSTALL_PATH/include -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib"
+> ./configure --enable-almost CPPFLAGS="-I/ALMOST_INSTALL_PATH/include \
+  -I/ALMOST_INSTALL_PATH/include/almost" LDFLAGS="-L/ALMOST_INSTALL_PATH/lib"
+  
 \endverbatim
 with ALMOST_INSTALL_PATH set to the full path to the ALMOST installation folder.
+
+\page CodeSpecificNotes Code specific notes
+
+Here you can find instructions that are specific for patching each of the supported MD codes.
+
+@CODES@
  
 */
 

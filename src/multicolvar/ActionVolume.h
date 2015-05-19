@@ -115,7 +115,7 @@ public:
   virtual void setupRegion()=0;
   virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
 /// Forces here are applied through the bridge
-  void addBridgeForces( const std::vector<double>& bb );
+  void applyBridgeForces( const std::vector<double>& bb );
   void apply(){};
 /// These routines replace the virtual routines in ActionWithVessel for 
 /// code optimization

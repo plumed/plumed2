@@ -117,9 +117,11 @@ static void reduce_thread_forces(int n, rvec *f,
                                  int nthreads, f_thread_t *f_t)
 {
     int t, i;
+    int nthreads_loop gmx_unused;
 
     /* This reduction can run over any number of threads */
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntBonded)) private(t) schedule(static)
+    nthreads_loop = gmx_omp_nthreads_get(emntBonded);
+#pragma omp parallel for num_threads(nthreads_loop) private(t) schedule(static)
     for (i = 0; i < n; i++)
     {
         for (t = 1; t < nthreads; t++)
@@ -539,14 +541,11 @@ void do_force_lowlevel(FILE       *fplog,   gmx_int64_t step,
 
                     ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
                                        cr, t, fr,
-                                       md->chargeA,
-                                       md->nChargePerturbed ? md->chargeB : NULL,
-                                       md->sqrt_c6A,
-                                       md->nTypePerturbed ? md->sqrt_c6B : NULL,
-                                       md->sigmaA,
-                                       md->nTypePerturbed ? md->sigmaB : NULL,
-                                       md->sigma3A,
-                                       md->nTypePerturbed ? md->sigma3B : NULL,
+                                       md->chargeA, md->chargeB,
+                                       md->sqrt_c6A, md->sqrt_c6B,
+                                       md->sigmaA, md->sigmaB,
+                                       md->sigma3A, md->sigma3B,
+                                       md->nChargePerturbed || md->nTypePerturbed,
                                        ir->cutoff_scheme != ecutsVERLET,
                                        excl, x, bSB ? boxs : box, mu_tot,
                                        ir->ewald_geometry,

@@ -15,10 +15,10 @@ else
 all:
 	./extract
 	./go-doxygen
-	cp Octocat.png html/
+	cp *png html/
 	./report_errors
 
 endif
 
 clean:
-	rm -fr html latex automatic *~ *PP.txt errors 
+	rm -fr html latex automatic *~ *PP.txt errors manual.pdf regtests

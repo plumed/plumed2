@@ -1,4 +1,4 @@
-#! FIELDS time parameter c2.more_than c2n.more_than
+#! FIELDS time parameter c2.morethan c2n.morethan
  0.000000 0   0.0160   0.0160
  0.000000 1   0.0181   0.0181
  0.000000 2   0.0166   0.0166

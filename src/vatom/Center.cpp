@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -39,6 +39,11 @@ an atom list through the label for the CENTER action that creates it.
 Notice that the generated virtual atom has charge equal to the sum of the
 charges and mass equal to the sum of the masses. If used with the MASS flag,
 then it provides a result identical to \ref COM.
+
+When running with periodic boundary conditions, the user should take care 
+that the atoms in the COM group actually are in the proper periodic image.
+This is typically achieved using the \ref WHOLEMOLECULES action
+before COM calculation.
 
 \par Examples
 

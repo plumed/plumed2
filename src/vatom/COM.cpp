@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -38,6 +38,11 @@ center of mass is stored as a virtual atom that can be accessed in
 an atom list through the label for the COM action that creates it.
 
 For arbitrary weights (e.g. geometric center) see \ref CENTER.
+
+When running with periodic boundary conditions, the user should take care 
+that the atoms in the COM group actually are in the proper periodic image.
+This is typically achieved using the \ref WHOLEMOLECULES action
+before COM calculation.
 
 \par Examples
 

@@ -25,6 +25,12 @@ implement all these collective variables without implementing having an unmanigi
 \ref DISTANCES GROUPA=1 GROUPB=2-100 LESS_THAN={RATIONAL R_0=3}) there are more computationally efficient options available in plumed
 (e.g. \ref COORDINATION).  However, MultiColvars are worth investigating as they provide a flexible syntax for many quite-complex CVs.
 
+- \subpage Group
+- \subpage Colvar
+- \subpage dists
+- \subpage Function
+- \subpage mcolv
+
 \page Colvar CV Documentation
 
 The following list contains descriptions of a number of the colvars that are currently implemented in PLUMED 2.

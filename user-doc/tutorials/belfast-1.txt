@@ -1,7 +1,7 @@
 /**
 \page belfast-1 Belfast tutorial: Analyzing CVs
 
-\section Aims
+\section belfast-1-aims Aims
 
 The aim of this tutorial is to introduce the users to the plumed syntax. We will go through the writing of
 simple collective variable and we will use them to analyse a trajectory in terms of probabilty distributions
@@ -14,14 +14,14 @@ Once this tutorial is completed students will:
 - Know how to write a simple plumed input file 
 - Know how to analyse a trajectory using plumed
 
-\section Resources
+\section belfast-1-resources Resources
 
 The <a href="tutorial-resources/belfast-1.tar.gz" download="belfast-1.tar.gz"> tarball </a> for this project contains the following files:
 
 - trajectory-short.xyz : a (short) trajectory for a 16 residue protein in xyz format. All calculations with plumed driver use this trajectory.
 - template.pdb : a single frame from the trajectory that can be used in conjuction with the \ref MOLINFO command
 
-\section Instructions
+\section belfast-1-instructions Instructions
 
 PLUMED2 is a library that can be accessed by multiple codes adding a relatively simple and well documented interface.
 Once PLUMED is installed you can run a plumed executable that can be used for multiple purposes:
@@ -40,16 +40,16 @@ plumed driver --help
 
 In the following we are going to see how to write an input file for plumed2 that can be used to analyse a trajectory.
 
-\subsection Units A note on units
+\subsection belfast-1-units A note on units
 By default the PLUMED inputs and outputs quantities in the following units:
 
 - Energy - kJ/mol
 - Length - nanometers
 - Time - picoseconds
 
-If you want to change these units you can do this using the \subpage UNITS keyword. 
+If you want to change these units you can do this using the \ref UNITS keyword. 
 
-\subsection introinput Introduction to the PLUMED input file
+\subsection belfast-1-introinput Introduction to the PLUMED input file
 
 A typical input file for PLUMED input is composed by specification of one or more CVs, the printout frequency and a termination line.
 Comments are denoted with a # and the termination of the input for PLUMED is marked with the keyword ENDPLUMED. Whatever it follows is ignored by PLUMED. You can introduce blank lines. They are not interpreted by PLUMED.
@@ -180,11 +180,11 @@ ca: GROUP ATOMS=9,16,31,55,69,90,102,114,124,138,160,174,194,208,224,238
 
 Now 'ca' is not a virtual atom but a simple list of atoms.
 
-\subsection multicol MULTICOLVAR
+\subsection belfast-1-multicol MULTICOLVAR
 
 Sometimes it can be useful to calculate properties of many similar collective variables at the same time, for example one can be interested
 in calculating the properties of the distances between a group of atoms, or properties linked to the distribution of the dihedral angles
-of a chain and so on. In PLUMED2 this kind of collective variables fall under the name of MULTICOLVAR (cf. \subpage mcolv.)
+of a chain and so on. In PLUMED2 this kind of collective variables fall under the name of MULTICOLVAR (cf. \ref mcolv.)
 Here we are going to analyse the distances between CA carbons along the chain:
 
 \verbatim
@@ -209,7 +209,7 @@ for example the set of Secondary Structure CVs (\ref ANTIBETARMSD, \ref PARABETA
 MOLINFO STRUCTURE=template.pdb
 abeta: ANTIBETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} STRANDS_CUTOFF=1
 
-PRINT ARG=abeta.less_than STRIDE=1 FILE=COLVAR 
+PRINT ARG=abeta.lessthan STRIDE=1 FILE=COLVAR 
 
 ENDPLUMED
 \endverbatim
@@ -217,7 +217,7 @@ ENDPLUMED
 We have now seen how to write the input some of the many CVs available in PLUMED. More complex CVs
 will be discussed in the next workshop, \ref belfast-2.
  
-\subsection analysis Analysis of Collective Variables
+\subsection belfast-1-analysis Analysis of Collective Variables
 
 Collective variables are usually used to visualize the Free Energy of a system. Given a system evolving
 at fixed temperature, fixed number of particles and fixed volume, it will explore different conformations
@@ -257,10 +257,10 @@ DISTANCES ...
 GROUP=ca MEAN MIN={BETA=50} MAX={BETA=0.02} MOMENTS=2 LABEL=dd
 ... DISTANCES 
 
-PRINT ARG=abeta.less_than,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR 
+PRINT ARG=abeta.lessthan,dd.mean,dd.min,dd.max,dd.moment-2 STRIDE=1 FILE=COLVAR 
 
 HISTOGRAM ...
-ARG=abeta.less_than,dd.mean
+ARG=abeta.lessthan,dd.mean
 USE_ALL_DATA
 KERNEL=discrete
 GRID_MIN=0,0.8
@@ -286,7 +286,7 @@ and the BANDWIDTH should be smaller (i.e. one order of magnitude) than the varia
 
 \verbatim
 HISTOGRAM ...
-ARG=abeta.less_than,dd.mean
+ARG=abeta.lessthan,dd.mean
 USE_ALL_DATA
 GRID_MIN=0,0.8
 GRID_MAX=4,1.2
@@ -307,4 +307,4 @@ link: @subpage belfast-1
 
 description: This tutorial explains how to use plumed to analyze CVs
 
-additional-files: belfast-1.tar.gz
+additional-files: belfast-1

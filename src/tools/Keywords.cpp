@@ -589,6 +589,8 @@ void Keywords::setComponentsIntroduction( const std::string& instr ){
 
 void Keywords::addOutputComponent( const std::string& name, const std::string& key, const std::string& descr ){
   plumed_assert( !outputComponentExists( name, false ) );
+  plumed_massert( name.find("-")==std::string::npos,"dash is reseved character in component names" );
+
   ckey.insert( std::pair<std::string,std::string>(name,key) );
   cdocs.insert( std::pair<std::string,std::string>(name,descr) );
   cnames.push_back(name);
@@ -599,7 +601,11 @@ bool Keywords::outputComponentExists( const std::string& name, const bool& custo
 
   std::string sname; std::size_t num=name.find_first_of("-");
   if( num!=std::string::npos ) sname=name.substr(0,num);
-  else sname=name;
+  else {
+     std::size_t num2=name.find_first_of("_");
+     if( num2!=std::string::npos ) sname=name.substr(num2);
+     else sname=name;
+  }
 
   for(unsigned i=0;i<cnames.size();++i){
      if( sname==cnames[i] ) return true;

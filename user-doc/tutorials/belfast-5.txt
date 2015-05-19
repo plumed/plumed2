@@ -7,6 +7,11 @@ This directive is very flexible and allows for a programmed series
 of draggings and can be used also to sample multiple events
 within a single simulation. Here I will explain the concepts of it and show some examples
 
+\section belfast-5-resources Resources
+
+Here is the <a href="tutorial-resources/belfast-5.tar.gz" download="belfast-5.tar.gz"> tarball with the files referenced
+in the following </a>.
+ 
 \section belfast-5-SMD Steered MD
 
 Steered MD (SMD) is often  used to drag the system from an initial configuration
@@ -91,7 +96,7 @@ The value of restraint.force2 is the squared force (which is a proxy of the forc
 Note that the actual force on an atom of the system involved in a CV is instead
 
 \f{eqnarray*}{
--\frac{\partial H_\lambda(X,t)}{\partial x_i}&=&  -\frac{\partial H_\lambda(X,t)}{\partial s} \frac{\partial s}{\partial x_i} &=&  -(s(X)-s_0-vt) \frac{\partial s}{\partial x_i} 
+-\frac{\partial H_\lambda(X,t)}{\partial x_i}&=&  -\frac{\partial H_\lambda(X,t)}{\partial s} \frac{\partial s}{\partial x_i} \\  &=&  -(s(X)-s_0-vt) \frac{\partial s}{\partial x_i} 
 \f}
 
 This is important because in CVs that  have a derivative that change significantly with space then you might have regions in which no force is exerted while in others you
@@ -288,5 +293,7 @@ which all the heavy atoms are in a precise position is rather unrealistic. This 
 link: @subpage belfast-5
 
 description: How to run a steered MD simulations and how to estimate the free energy
+
+additional-files: belfast-5
 
 

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "ActionRegister.h"
+#include "core/ActionSet.h"
 #include "tools/Grid.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -73,8 +74,8 @@ utility.
 
 In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics 
 calculation increases with the length of the simulation as one has to, at every step, evaluate 
-the values of a larger and larger number of Gaussians. To avoid this issue you can in plumed 2.0 
-store the bias on a grid.  This approach is similar to that proposed in \cite babi+08jcp but has the 
+the values of a larger and larger number of Gaussians. To avoid this issue you can
+store the bias on a grid.  This approach is similar to that proposed in \cite babi08jcp but has the 
 advantage that the grid spacing is independent on the Gaussian width.
 Notice that you should
 provide either the number of bins for every collective variable (GRID_BIN) or
@@ -84,7 +85,7 @@ In case you do not provide any information about bin size (neither GRID_BIN nor 
 and if Gaussian width is fixed PLUMED will use 1/5 of the Gaussian width as grid spacing.
 This default choice should be reasonable for most applications.
 
-Another option that is available in plumed 2.0 is well-tempered metadynamics \cite Barducci:2008. In this
+Another option that is available in plumed is well-tempered metadynamics \cite Barducci:2008. In this
 varient of metadynamics the heights of the Gaussian hills are rescaled at each step so the bias is now
 given by:
 
@@ -471,14 +472,14 @@ isFirstStep(true)
   if(gmin.size()!=0){
     if(gbin.size()==0 && gspacing.size()==0){
       if(adaptive_==FlexibleBin::none){
-        log<<"  Binsize not spacified, 1/5 of sigma will be be used\n";
+        log<<"  Binsize not specified, 1/5 of sigma will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0_[i];
       } else {
         // with adaptive hills and grid a sigma min must be specified
         if(sigma0min_.size()==0) error("When using Adaptive Gaussians on a grid SIGMA_MIN must be specified");
-        log<<"  Binsize not spacified, 1/5 of sigma_min will be be used\n";
+        log<<"  Binsize not specified, 1/5 of sigma_min will be be used\n";
         plumed_assert(sigma0_.size()==getNumberOfArguments());
         gspacing.resize(getNumberOfArguments());
         for(unsigned i=0;i<gspacing.size();i++) gspacing[i]=0.2*sigma0min_[i];
@@ -570,7 +571,7 @@ isFirstStep(true)
    for(unsigned i=0;i<gmax.size();++i) log.printf(" %s",gmax[i].c_str() );
    log.printf("\n");
    log.printf("  Grid bin");
-   for(unsigned i=0;i<gbin.size();++i) log.printf(" %d",gbin[i]);
+   for(unsigned i=0;i<gbin.size();++i) log.printf(" %u",gbin[i]);
    log.printf("\n");
    if(spline){log.printf("  Grid uses spline interpolation\n");}
    if(sparsegrid){log.printf("  Grid uses sparse grid\n");}
@@ -695,6 +696,12 @@ isFirstStep(true)
 // output periodicities of variables
   for(unsigned i=0;i<getNumberOfArguments();++i) hillsOfile_.setupPrintValue( getPntrToArgument(i) );
 
+  bool concurrent=false;
+
+  const ActionSet&actionSet(plumed.getActionSet());
+  for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) if(dynamic_cast<MetaD*>(*p)){ concurrent=true; break; }
+  if(concurrent) log<<"  You are using concurrent metadynamics\n";
+
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
@@ -706,6 +713,9 @@ isFirstStep(true)
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(acceleration) log<<plumed.cite(
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
+  if(concurrent) log<<plumed.cite(
+     "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
+ 
   log<<"\n";
 
 }

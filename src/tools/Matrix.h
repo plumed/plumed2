@@ -237,13 +237,14 @@ template <typename T> int diagMat( const Matrix<T>& A, std::vector<double>& eige
       for(unsigned j=0;j<A.rw;++j){ eigenvecs(i,j)=evecs[k++]; }
    }
 
-   // This changes eigenvectors so that the sum of the elements is positive
+   // This changes eigenvectors so that the first non-null element
+   // of each of them is positive
    // We can do it because the phase is arbitrary, and helps making
    // the result reproducible
-   for(unsigned i=0;i<n;++i){
-     double s=0.0;
-     for(unsigned j=0;j<n;++j) s+=eigenvecs(i,j);
-     if(s<0.0) for(unsigned j=0;j<n;++j) eigenvecs(i,j)*=-1;
+   for(unsigned i=0;i<n;++i) {
+     unsigned j;
+     for(j=0;j<n;j++) if(eigenvecs(i,j)*eigenvecs(i,j)>1e-14) break;
+     if(j<n) if(eigenvecs(i,j)<0.0) for(unsigned j=0;j<n;j++) eigenvecs(i,j)*=-1;
    }
 
    // Deallocate all the memory used by the various arrays

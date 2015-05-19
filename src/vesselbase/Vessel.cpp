@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -55,25 +55,36 @@ void Vessel::registerKeywords( Keywords& keys ){
   keys.add("optional","LABEL","the label used to reference this particular quantity");
 }
 
+std::string Vessel::transformName( const std::string& name ){
+   std::string tlabel=name; 
+   // Convert to lower case
+   std::transform( tlabel.begin(), tlabel.end(), tlabel.begin(), tolower );
+   // Remove any underscore characters (as these are reserved)
+   for(unsigned i=0;;++i){
+      std::size_t num=tlabel.find_first_of("_");
+      if( num==std::string::npos ) break;
+      tlabel.erase( tlabel.begin() + num, tlabel.begin() + num + 1 );
+   }
+   return tlabel;
+}
+
 Vessel::Vessel( const VesselOptions& da ):
 myname(da.myname),
 numlab(da.numlab),
 action(da.action),
+line(Tools::getWords( da.parameters )),
 keywords(da.keywords),
 finished_read(false),
 comm(da.action->comm),
 log((da.action)->log)
 {
-  line=Tools::getWords( da.parameters );
   if( da.mylabel.length()>0){
       mylabel=da.mylabel;
   } else {
       if( keywords.exists("LABEL") ) parse("LABEL",mylabel);
       if( mylabel.length()==0 && numlab>=0 ){
-          mylabel=myname; std::string nn; 
-          std::transform( mylabel.begin(), mylabel.end(), mylabel.begin(), tolower );
+          mylabel=transformName( myname ); std::string nn; 
           if(numlab>0){ Tools::convert( numlab, nn ); mylabel =  mylabel + "-" + nn; }
-          else { mylabel = mylabel; }
       } 
   }
 }

@@ -234,7 +234,7 @@ void MultiColvarFunction::addStoredDerivative( const unsigned& jout, const unsig
       unsigned jindex = offset + base_index; 
       plumed_dbg_assert( jindex<3*getNumberOfAtoms() );
       addElementDerivative( jout*getNumberOfDerivatives() + jindex, der );
-      unsigned iatom = std::floor( jindex / 3 );
+      unsigned iatom = ( jindex / 3 );
       atoms_with_derivatives.activate( iatom );
   }
 }

@@ -1,7 +1,7 @@
 /**
 \page belfast-6 Belfast tutorial: Metadynamics
 
-\section Aims
+\section belfast-6-aims Aims
 
 The aim of this tutorial is to introduce the users to running a metadynamics simulation with PLUMED. We will set up
 a simple simulation of alanine dipeptide in vacuum, analyze the output, and estimate free energies
@@ -466,6 +466,6 @@ link: @subpage belfast-6
 
 description: How to run a metadynamics simulation
 
-additional-files: belfast-6.tar.gz
+additional-files: belfast-6
 
 

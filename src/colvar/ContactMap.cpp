@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -36,7 +36,8 @@ namespace colvar {
 /*
 Calculate the distances between a number of pairs of atoms and transform each distance by a switching function.
 The transformed distance can be compared with a reference value in order to calculate the squared distance
-between two contact maps. Each distance can also be weighted for a given value.
+between two contact maps. Each distance can also be weighted for a given value. CONTACTMAP can be used together
+with \ref FUNCPATHMSD to define a path in the contactmap space.
 
 \par Examples
 
@@ -50,7 +51,9 @@ PRINT ARG=f1.* FILE=colvar
 \endverbatim
 
 The following example calculates the difference of the current contact map with respect
-to a reference provided. 
+to a reference provided. In this case REFERENCE is the fraction of contact that is formed
+(i.e. the distance between two atoms transformed with the SWITH), while R_0 is the contact
+distance. WEIGHT gives the relative weight of each contact to the final distance measure. 
 
 \verbatim
 CONTACTMAP ...
@@ -107,7 +110,7 @@ void ContactMap::registerKeywords( Keywords& keys ){
   keys.addFlag("SUM",false,"calculate the sum of all the contacts in the input");
   keys.addFlag("CMDIST",false,"calculate the distance with respect to the provided reference contant map");
   keys.addFlag("SERIAL",false,"Perform the calculation in serial - for debug purpose");
-  keys.addOutputComponent("contact_","default","By not using SUM or CMDIST each contact will be stored in a component");
+  keys.addOutputComponent("contact","default","By not using SUM or CMDIST each contact will be stored in a component");
 }
 
 ContactMap::ContactMap(const ActionOptions&ao):
@@ -141,7 +144,7 @@ docmdist(false)
 
      // Add a value for this contact
      std::string num; Tools::convert(i,num);
-     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact_"+num); componentIsNotPeriodic("contact_"+num);}
+     if(!dosum&&!docmdist) {addComponentWithDerivatives("contact-"+num); componentIsNotPeriodic("contact-"+num);}
   }
   // Create neighbour lists
   nl= new NeighborList(ga_lista,gb_lista,true,pbc,getPbc());
