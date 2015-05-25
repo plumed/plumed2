@@ -120,7 +120,7 @@ void KernelFunctions::setData( const std::vector<double>& at, const std::vector<
   center.resize( at.size() ); for(unsigned i=0;i<at.size();++i) center[i]=at[i];
   width.resize( sig.size() ); for(unsigned i=0;i<sig.size();++i) width[i]=sig[i];
   diagonal=false;
-  if (multivariate==false || at.size()==1 ) diagonal=true;
+  if (multivariate==false ) diagonal=true;
 
   // Setup the kernel type
   if(type=="GAUSSIAN" || type=="gaussian"){

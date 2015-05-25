@@ -86,6 +86,21 @@ void ActionWithVirtualAtom::setBoxDerivatives(const std::vector<Tensor> &d){
   for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) boxDerivatives[j][i][j]+=pos[i];
 }
 
+void ActionWithVirtualAtom::setBoxDerivativesNoPbc(){
+  std::vector<Tensor> bd(3);
+  for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) for(unsigned k=0;k<3;k++){
+// Notice that this expression is very similar to the one used in Colvar::setBoxDerivativesNoPbc().
+// Indeed, we have the negative of a sum over dependent atoms (l) of the external product between positions
+// and derivatives. Notice that this only works only when Pbc have not been used to compute
+// derivatives.
+    for(unsigned l=0;l<getNumberOfAtoms();l++){
+      bd[k][i][j]-=getPosition(l)[i]*derivatives[l][j][k];
+    }
+  }
+  setBoxDerivatives(bd);
+}
+
+
 
 void ActionWithVirtualAtom::setGradientsIfNeeded(){
   if(isOptionOn("GRADIENTS")) { 

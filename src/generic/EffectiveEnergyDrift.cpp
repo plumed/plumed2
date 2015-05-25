@@ -130,6 +130,9 @@ void EffectiveEnergyDrift::registerKeywords( Keywords& keys ){
   keys.add("compulsory", "FILE", "file on which to output the effective energy drift.");
   keys.add("compulsory", "PRINT_STRIDE", "frequency to which output the effective energy drift on FILE");
   keys.addFlag("ENSEMBLE",false,"Set to TRUE if you want to average over multiple replicas.");
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 EffectiveEnergyDrift::EffectiveEnergyDrift(const ActionOptions&ao):

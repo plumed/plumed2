@@ -325,6 +325,9 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");  
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 MetaD::~MetaD(){
@@ -798,12 +801,12 @@ void MetaD::addGaussian(const Gaussian& hill)
  else{
   unsigned ncv=getNumberOfArguments();
   vector<unsigned> nneighb=getGaussianSupport(hill);
-  vector<unsigned> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
+  vector<unsigned long long> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
   vector<double> der(ncv);
   vector<double> xx(ncv);
   if(comm.Get_size()==1){
     for(unsigned i=0;i<neighbors.size();++i){
-     unsigned ineigh=neighbors[i];
+     unsigned long long ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=0.0;}
      BiasGrid_->getPoint(ineigh,xx);
      double bias=evaluateGaussian(xx,hill,&der[0]);
@@ -815,14 +818,14 @@ void MetaD::addGaussian(const Gaussian& hill)
     vector<double> allder(ncv*neighbors.size(),0.0);
     vector<double> allbias(neighbors.size(),0.0);
     for(unsigned i=rank;i<neighbors.size();i+=stride){
-     unsigned ineigh=neighbors[i];
+     unsigned long long ineigh=neighbors[i];
      BiasGrid_->getPoint(ineigh,xx);
      allbias[i]=evaluateGaussian(xx,hill,&allder[ncv*i]);
     }
     comm.Sum(allbias);
     comm.Sum(allder);
     for(unsigned i=0;i<neighbors.size();++i){
-     unsigned ineigh=neighbors[i];
+     unsigned long long ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=allder[ncv*i+j];}
      BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
     }
