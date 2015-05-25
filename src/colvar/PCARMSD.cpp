@@ -152,7 +152,7 @@ PLUMED_COLVAR_INIT(ao),squared(true)
         std::string num; Tools::convert( i, num );
         string name; name=string("eig-")+num;
 	pca_names.push_back(name);
-	addComponentWithDerivatives(name.c_str()); componentIsNotPeriodic(name.c_str());	
+	addComponentWithDerivatives(name); componentIsNotPeriodic(name);
   }  
   turnOnDerivatives();
 
