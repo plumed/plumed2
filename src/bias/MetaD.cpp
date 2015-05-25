@@ -801,12 +801,12 @@ void MetaD::addGaussian(const Gaussian& hill)
  else{
   unsigned ncv=getNumberOfArguments();
   vector<unsigned> nneighb=getGaussianSupport(hill);
-  vector<unsigned long long> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
+  vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
   vector<double> der(ncv);
   vector<double> xx(ncv);
   if(comm.Get_size()==1){
     for(unsigned i=0;i<neighbors.size();++i){
-     unsigned long long ineigh=neighbors[i];
+     Grid::index_t ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=0.0;}
      BiasGrid_->getPoint(ineigh,xx);
      double bias=evaluateGaussian(xx,hill,&der[0]);
@@ -818,14 +818,14 @@ void MetaD::addGaussian(const Gaussian& hill)
     vector<double> allder(ncv*neighbors.size(),0.0);
     vector<double> allbias(neighbors.size(),0.0);
     for(unsigned i=rank;i<neighbors.size();i+=stride){
-     unsigned long long ineigh=neighbors[i];
+     Grid::index_t ineigh=neighbors[i];
      BiasGrid_->getPoint(ineigh,xx);
      allbias[i]=evaluateGaussian(xx,hill,&allder[ncv*i]);
     }
     comm.Sum(allbias);
     comm.Sum(allder);
     for(unsigned i=0;i<neighbors.size();++i){
-     unsigned long long ineigh=neighbors[i];
+     Grid::index_t ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=allder[ncv*i+j];}
      BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
     }

@@ -116,7 +116,7 @@ void Grid::Init(const std::string& funcl, const std::vector<std::string> &names,
 void Grid::clear(){
  grid_.resize(maxsize_);
  if(usederiv_) der_.resize(maxsize_);
- for(unsigned long long i=0;i<maxsize_;++i){
+ for(index_t i=0;i<maxsize_;++i){
   grid_[i]=0.0;
   if(usederiv_){
    (der_[i]).resize(dimension_); 
@@ -156,7 +156,7 @@ vector<string> Grid::getArgNames() const {
 }
 
 
-unsigned long long Grid::getSize() const {
+Grid::index_t Grid::getSize() const {
  return maxsize_;
 }
 
@@ -165,7 +165,7 @@ unsigned Grid::getDimension() const {
 }
 
 // we are flattening arrays using a column-major order
-unsigned long long Grid::getIndex(const vector<unsigned> & indices) const {
+Grid::index_t Grid::getIndex(const vector<unsigned> & indices) const {
  plumed_dbg_assert(indices.size()==dimension_);
  for(unsigned int i=0;i<dimension_;i++)
   if(indices[i]>=nbin_[i]) {
@@ -174,22 +174,22 @@ unsigned long long Grid::getIndex(const vector<unsigned> & indices) const {
     std::string msg="ERROR: the system is looking for a value outside the grid along the " + is;
     plumed_merror(msg+" index!");
   }
- unsigned long long index=indices[dimension_-1];
+ index_t index=indices[dimension_-1];
  for(unsigned int i=dimension_-1;i>0;--i){
   index=index*nbin_[i-1]+indices[i-1];
  }
  return index;
 }
 
-unsigned long long Grid::getIndex(const vector<double> & x) const {
+Grid::index_t Grid::getIndex(const vector<double> & x) const {
  plumed_dbg_assert(x.size()==dimension_);
  return getIndex(getIndices(x));
 }
 
 // we are flattening arrays using a column-major order
-vector<unsigned> Grid::getIndices(unsigned long long index) const {
+vector<unsigned> Grid::getIndices(index_t index) const {
  vector<unsigned> indices(dimension_);
- unsigned long long kk=index;
+ index_t kk=index;
  indices[0]=(index%nbin_[0]);
  for(unsigned int i=1;i<dimension_-1;++i){
   kk=(kk-indices[i-1])/nbin_[i-1];
@@ -219,7 +219,7 @@ vector<double> Grid::getPoint(const vector<unsigned> & indices) const {
  return x;
 }
 
-vector<double> Grid::getPoint(unsigned long long index) const {
+vector<double> Grid::getPoint(index_t index) const {
  plumed_dbg_assert(index<maxsize_);
  return getPoint(getIndices(index));
 }
@@ -229,7 +229,7 @@ vector<double> Grid::getPoint(const vector<double> & x) const {
  return getPoint(getIndices(x));
 }
 
-void Grid::getPoint(unsigned long long index,std::vector<double> & point) const{
+void Grid::getPoint(index_t index,std::vector<double> & point) const{
  plumed_dbg_assert(index<maxsize_);
  getPoint(getIndices(index),point);
 }
@@ -247,11 +247,11 @@ void Grid::getPoint(const std::vector<double> & x,std::vector<double> & point) c
  getPoint(getIndices(x),point);
 }
 
-vector<unsigned long long> Grid::getNeighbors
+vector<Grid::index_t> Grid::getNeighbors
  (const vector<unsigned> &indices,const vector<unsigned> &nneigh)const{
  plumed_dbg_assert(indices.size()==dimension_ && nneigh.size()==dimension_);
 
- vector<unsigned long long> neighbors;
+ vector<index_t> neighbors;
  vector<unsigned> small_bin(dimension_);
 
  unsigned small_nbin=1;
@@ -289,21 +289,21 @@ vector<unsigned long long> Grid::getNeighbors
  return neighbors;
 }
  
-vector<unsigned long long> Grid::getNeighbors
+vector<Grid::index_t> Grid::getNeighbors
  (const vector<double> & x,const vector<unsigned> & nneigh)const{
  plumed_dbg_assert(x.size()==dimension_ && nneigh.size()==dimension_);
  return getNeighbors(getIndices(x),nneigh);
 }
 
-vector<unsigned long long> Grid::getNeighbors
- (unsigned long long index,const vector<unsigned> & nneigh)const{
+vector<Grid::index_t> Grid::getNeighbors
+ (index_t index,const vector<unsigned> & nneigh)const{
  plumed_dbg_assert(index<maxsize_ && nneigh.size()==dimension_);
  return getNeighbors(getIndices(index),nneigh);
 }
 
-vector<unsigned long long> Grid::getSplineNeighbors(const vector<unsigned> & indices)const{
+vector<Grid::index_t> Grid::getSplineNeighbors(const vector<unsigned> & indices)const{
  plumed_dbg_assert(indices.size()==dimension_);
- vector<unsigned long long> neighbors;
+ vector<index_t> neighbors;
  unsigned nneigh=unsigned(pow(2.0,int(dimension_)));
  
  for(unsigned int i=0;i<nneigh;++i){
@@ -324,7 +324,7 @@ vector<unsigned long long> Grid::getSplineNeighbors(const vector<unsigned> & ind
 void Grid::addKernel( const KernelFunctions& kernel ){
   plumed_dbg_assert( kernel.ndim()==dimension_ );
   std::vector<unsigned> nneighb=kernel.getSupport( dx_ );
-  std::vector<unsigned long long> neighbors=getNeighbors( kernel.getCenter(), nneighb );
+  std::vector<index_t> neighbors=getNeighbors( kernel.getCenter(), nneighb );
   std::vector<double> xx( dimension_ ); std::vector<Value*> vv( dimension_ );
   std::string str_min, str_max;
   for(unsigned i=0;i<dimension_;++i){
@@ -340,7 +340,7 @@ void Grid::addKernel( const KernelFunctions& kernel ){
 
   double newval; std::vector<double> der( dimension_ );
   for(unsigned i=0;i<neighbors.size();++i){
-      unsigned long long ineigh=neighbors[i];
+      index_t ineigh=neighbors[i];
       getPoint( ineigh, xx );
       for(unsigned j=0;j<dimension_;++j) vv[j]->set(xx[j]);
       newval = kernel.evaluate( vv, der, usederiv_ );
@@ -351,7 +351,7 @@ void Grid::addKernel( const KernelFunctions& kernel ){
   for(unsigned i=0;i<dimension_;++i) delete vv[i];
 }
 
-double Grid::getValue(unsigned long long index) const {
+double Grid::getValue(index_t index) const {
  plumed_dbg_assert(index<maxsize_);
  return grid_[index];
 }
@@ -359,7 +359,7 @@ double Grid::getValue(unsigned long long index) const {
 double Grid::getMinValue() const {
  double minval;
  minval=DBL_MAX;
- for(unsigned long long i=0;i<grid_.size();++i){
+ for(index_t i=0;i<grid_.size();++i){
 	 if(grid_[i]<minval)minval=grid_[i];
  }
  return minval;
@@ -368,7 +368,7 @@ double Grid::getMinValue() const {
 double Grid::getMaxValue() const {
  double maxval;
  maxval=DBL_MIN;
- for(unsigned long long i=0;i<grid_.size();++i){
+ for(index_t i=0;i<grid_.size();++i){
 	 if(grid_[i]>maxval)maxval=grid_[i];
  }
  return maxval;
@@ -389,7 +389,7 @@ double Grid::getValue(const vector<double> & x) const {
 }
 
 double Grid::getValueAndDerivatives
- (unsigned long long index, vector<double>& der) const{
+ (index_t index, vector<double>& der) const{
  plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  der=der_[index];
  return grid_[index];
@@ -415,7 +415,7 @@ double Grid::getValueAndDerivatives
   for(unsigned int i=0;i<dimension_;++i) der[i]=0.0;
 
   vector<unsigned> indices=getIndices(x);
-  vector<unsigned long long> neigh=getSplineNeighbors(indices);
+  vector<index_t> neigh=getSplineNeighbors(indices);
   vector<double>   xfloor=getPoint(x);
 
 // loop over neighbors
@@ -452,7 +452,7 @@ double Grid::getValueAndDerivatives
  }
 }
 
-void Grid::setValue(unsigned long long index, double value){
+void Grid::setValue(index_t index, double value){
  plumed_dbg_assert(index<maxsize_ && !usederiv_);
  grid_[index]=value;
 }
@@ -462,7 +462,7 @@ void Grid::setValue(const vector<unsigned> & indices, double value){
 }
 
 void Grid::setValueAndDerivatives
- (unsigned long long index, double value, vector<double>& der){
+ (index_t index, double value, vector<double>& der){
  plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  grid_[index]=value;
  der_[index]=der;
@@ -473,7 +473,7 @@ void Grid::setValueAndDerivatives
  setValueAndDerivatives(getIndex(indices),value,der); 
 }
 
-void Grid::addValue(unsigned long long index, double value){
+void Grid::addValue(index_t index, double value){
  plumed_dbg_assert(index<maxsize_ && !usederiv_);
  grid_[index]+=value;
 }
@@ -483,7 +483,7 @@ void Grid::addValue(const vector<unsigned> & indices, double value){
 }
 
 void Grid::addValueAndDerivatives
- (unsigned long long index, double value, vector<double>& der){
+ (index_t index, double value, vector<double>& der){
  plumed_dbg_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  grid_[index]+=value;
  for(unsigned int i=0;i<dimension_;++i) der_[index][i]+=der[i];
@@ -496,40 +496,40 @@ void Grid::addValueAndDerivatives
 
 void Grid::scaleAllValuesAndDerivatives( const double& scalef ){
   if(usederiv_){
-     for(unsigned long long i=0;i<grid_.size();++i){
+     for(index_t i=0;i<grid_.size();++i){
          grid_[i]*=scalef;
          for(unsigned j=0;j<dimension_;++j) der_[i][j]*=scalef;
      }
   } else {
-     for(unsigned long long i=0;i<grid_.size();++i) grid_[i]*=scalef;
+     for(index_t i=0;i<grid_.size();++i) grid_[i]*=scalef;
   }
 }
 
 void Grid::logAllValuesAndDerivatives( const double& scalef ){
   if(usederiv_){
-     for(unsigned long long i=0;i<grid_.size();++i){
+     for(index_t i=0;i<grid_.size();++i){
          grid_[i] = scalef*log(grid_[i]);
          for(unsigned j=0;j<dimension_;++j) der_[i][j] = scalef/der_[i][j];
      }
   } else {
-     for(unsigned long long i=0;i<grid_.size();++i) grid_[i] = scalef*log(grid_[i]);
+     for(index_t i=0;i<grid_.size();++i) grid_[i] = scalef*log(grid_[i]);
   }
 }
 
 void Grid::setMinToZero(){
   double min=grid_[0];
-  for(unsigned long long i=1;i<grid_.size();++i) if(grid_[i]<min) min=grid_[i];
-  for(unsigned long long i=0;i<grid_.size();++i) grid_[i] -= min; 
+  for(index_t i=1;i<grid_.size();++i) if(grid_[i]<min) min=grid_[i];
+  for(index_t i=0;i<grid_.size();++i) grid_[i] -= min; 
 }
 
 void Grid::applyFunctionAllValuesAndDerivatives( double (*func)(double val), double (*funcder)(double valder) ){
   if(usederiv_){
-     for(unsigned long long i=0;i<grid_.size();++i){
+     for(index_t i=0;i<grid_.size();++i){
          grid_[i]=func(grid_[i]);
          for(unsigned j=0;j<dimension_;++j) der_[i][j]=funcder(der_[i][j]);
      }
   } else {
-     for(unsigned long long i=0;i<grid_.size();++i) grid_[i]=func(grid_[i]);
+     for(index_t i=0;i<grid_.size();++i) grid_[i]=func(grid_[i]);
   }
 }
 
@@ -547,7 +547,7 @@ void Grid::writeToFile(OFile& ofile){
  vector<double> der(dimension_);
  double f;
  writeHeader(ofile); 
- for(unsigned long long i=0;i<getSize();++i){
+ for(index_t i=0;i<getSize();++i){
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}
@@ -655,7 +655,7 @@ Grid* Grid::create(const std::string& funcl, std::vector<Value*> args, IFile& if
      ifile.scanField( "periodic_" + labels[i], pstring );
   }
   if(hasder){ for(unsigned i=0;i<nvar;++i){ ifile.scanField( "der_" + args[i]->getName(), dder[i] ); } }
-  unsigned long long index=grid->getIndex(xx);
+  index_t index=grid->getIndex(xx);
   if(doder){grid->setValueAndDerivatives(index,f,dder);}
   else{grid->setValue(index,f);}
   ifile.scanField();
@@ -668,15 +668,15 @@ void SparseGrid::clear(){
  map_.clear();
 }
 
-unsigned long long SparseGrid::getSize() const{
+Grid::index_t SparseGrid::getSize() const{
  return map_.size(); 
 }
 
-unsigned long long SparseGrid::getMaxSize() const {
+Grid::index_t SparseGrid::getMaxSize() const {
  return maxsize_; 
 }
 
-double SparseGrid::getValue(unsigned long long index)const{
+double SparseGrid::getValue(index_t index)const{
  plumed_assert(index<maxsize_);
  double value=0.0;
  iterator it=map_.find(index);
@@ -685,7 +685,7 @@ double SparseGrid::getValue(unsigned long long index)const{
 }
 
 double SparseGrid::getValueAndDerivatives
- (unsigned long long index, vector<double>& der)const{
+ (index_t index, vector<double>& der)const{
  plumed_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  double value=0.0;
  for(unsigned int i=0;i<dimension_;++i) der[i]=0.0;
@@ -696,25 +696,25 @@ double SparseGrid::getValueAndDerivatives
  return value;
 }
 
-void SparseGrid::setValue(unsigned long long index, double value){
+void SparseGrid::setValue(index_t index, double value){
  plumed_assert(index<maxsize_ && !usederiv_);
  map_[index]=value;
 }
 
 void SparseGrid::setValueAndDerivatives
- (unsigned long long index, double value, vector<double>& der){
+ (index_t index, double value, vector<double>& der){
  plumed_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  map_[index]=value;
  der_[index]=der;
 }
 
-void SparseGrid::addValue(unsigned long long index, double value){
+void SparseGrid::addValue(index_t index, double value){
  plumed_assert(index<maxsize_ && !usederiv_);
  map_[index]+=value;
 }
 
 void SparseGrid::addValueAndDerivatives
- (unsigned long long index, double value, vector<double>& der){
+ (index_t index, double value, vector<double>& der){
  plumed_assert(index<maxsize_ && usederiv_ && der.size()==dimension_);
  map_[index]+=value;
  der_[index].resize(dimension_);
@@ -728,7 +728,7 @@ void SparseGrid::writeToFile(OFile& ofile){
  writeHeader(ofile);
  ofile.fmtField(" "+fmt_);
  for(iterator it=map_.begin();it!=map_.end();++it){
-   unsigned long long i=(*it).first;
+   index_t i=(*it).first;
    xx=getPoint(i);
    if(usederiv_){f=getValueAndDerivatives(i,der);} 
    else{f=getValue(i);}

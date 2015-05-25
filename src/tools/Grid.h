@@ -68,6 +68,14 @@ class KernelFunctions;
 /// \ingroup TOOLBOX
 class Grid  
 {
+public:
+// we use a size_t here
+// should be 8 bytes on all 64-bit machines
+// and more portable than "unsigned long long"
+ typedef size_t index_t;
+// to restore old implementation (unsigned) use the following instead:
+// typedef unsigned index_t;
+private:
  std::vector<double> grid_;
  std::vector< std::vector<double> > der_;
 protected:
@@ -77,12 +85,12 @@ protected:
  std::vector<double> min_,max_,dx_;  
  std::vector<unsigned> nbin_;
  std::vector<bool> pbc_;
- unsigned long long maxsize_;
+ index_t maxsize_;
  unsigned dimension_;
  bool dospline_, usederiv_;
  std::string fmt_; // format for output 
  /// get "neighbors" for spline
- std::vector<unsigned long long> getSplineNeighbors(const std::vector<unsigned> & indices)const;
+ std::vector<index_t> getSplineNeighbors(const std::vector<unsigned> & indices)const;
 
 
 public:
@@ -119,22 +127,22 @@ public:
  std::vector<std::string> getArgNames() const;
  
 /// methods to handle grid indices 
- std::vector<unsigned> getIndices(unsigned long long index) const;
+ std::vector<unsigned> getIndices(index_t index) const;
  std::vector<unsigned> getIndices(const std::vector<double> & x) const;
- unsigned long long getIndex(const std::vector<unsigned> & indices) const;
- unsigned long long getIndex(const std::vector<double> & x) const;
- std::vector<double> getPoint(unsigned long long index) const;
+ index_t getIndex(const std::vector<unsigned> & indices) const;
+ index_t getIndex(const std::vector<double> & x) const;
+ std::vector<double> getPoint(index_t index) const;
  std::vector<double> getPoint(const std::vector<unsigned> & indices) const;
  std::vector<double> getPoint(const std::vector<double> & x) const;
 /// faster versions relying on preallocated vectors
- void getPoint(unsigned long long index,std::vector<double> & point) const;
+ void getPoint(index_t index,std::vector<double> & point) const;
  void getPoint(const std::vector<unsigned> & indices,std::vector<double> & point) const;
  void getPoint(const std::vector<double> & x,std::vector<double> & point) const;
 
 /// get neighbors
- std::vector<unsigned long long> getNeighbors(unsigned long long index,const std::vector<unsigned> & neigh) const;
- std::vector<unsigned long long> getNeighbors(const std::vector<unsigned> & indices,const std::vector<unsigned> & neigh) const;
- std::vector<unsigned long long> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
+ std::vector<index_t> getNeighbors(index_t index,const std::vector<unsigned> & neigh) const;
+ std::vector<index_t> getNeighbors(const std::vector<unsigned> & indices,const std::vector<unsigned> & neigh) const;
+ std::vector<index_t> getNeighbors(const std::vector<double> & x,const std::vector<unsigned> & neigh) const;
 
 /// write header for grid file
  void writeHeader(OFile& file);
@@ -146,9 +154,9 @@ public:
                      const std::vector<std::string>&,const std::vector<std::string>&,
                      const std::vector<unsigned>&,bool,bool,bool); 
 /// get grid size
- virtual unsigned long long getSize() const;
+ virtual index_t getSize() const;
 /// get grid value
- virtual double getValue(unsigned long long index) const;
+ virtual double getValue(index_t index) const;
  virtual double getValue(const std::vector<unsigned> & indices) const;
  virtual double getValue(const std::vector<double> & x) const;
 /// get minimum value
@@ -156,21 +164,21 @@ public:
 /// get maximum value
   virtual double getMaxValue() const;
 /// get grid value and derivatives
- virtual double getValueAndDerivatives(unsigned long long index, std::vector<double>& der) const ;
+ virtual double getValueAndDerivatives(index_t index, std::vector<double>& der) const ;
  virtual double getValueAndDerivatives(const std::vector<unsigned> & indices, std::vector<double>& der) const;
  virtual double getValueAndDerivatives(const std::vector<double> & x, std::vector<double>& der) const;
 
 /// set grid value 
- virtual void setValue(unsigned long long index, double value);
+ virtual void setValue(index_t index, double value);
  virtual void setValue(const std::vector<unsigned> & indices, double value);
 /// set grid value and derivatives
- virtual void setValueAndDerivatives(unsigned long long index, double value, std::vector<double>& der);
+ virtual void setValueAndDerivatives(index_t index, double value, std::vector<double>& der);
  virtual void setValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der);
 /// add to grid value
- virtual void addValue(unsigned long long index, double value); 
+ virtual void addValue(index_t index, double value); 
  virtual void addValue(const std::vector<unsigned> & indices, double value);
 /// add to grid value and derivatives
- virtual void addValueAndDerivatives(unsigned long long index, double value, std::vector<double>& der); 
+ virtual void addValueAndDerivatives(index_t index, double value, std::vector<double>& der); 
  virtual void addValueAndDerivatives(const std::vector<unsigned> & indices, double value, std::vector<double>& der); 
 /// Scale all grid values and derivatives by a constant factor
  virtual void scaleAllValuesAndDerivatives( const double& scalef );
@@ -202,10 +210,10 @@ public:
 class SparseGrid : public Grid
 {
 
- std::map<unsigned long long,double> map_;
- typedef std::map<unsigned long long,double>::const_iterator iterator;
- std::map< unsigned long long,std::vector<double> > der_;
- typedef std::map<unsigned long long,std::vector<double> >::const_iterator iterator_der;
+ std::map<index_t,double> map_;
+ typedef std::map<index_t,double>::const_iterator iterator;
+ std::map< index_t,std::vector<double> > der_;
+ typedef std::map<index_t,std::vector<double> >::const_iterator iterator_der;
  
  protected:
  void clear(); 
@@ -216,8 +224,8 @@ class SparseGrid : public Grid
             const std::vector<unsigned> & nbin, bool dospline, bool usederiv):
             Grid(funcl,args,gmin,gmax,nbin,dospline,usederiv,false){}
  
- unsigned long long getSize() const;
- unsigned long long getMaxSize() const;
+ index_t getSize() const;
+ index_t getMaxSize() const;
 
 /// this is to access to Grid:: version of these methods (allowing overloading of virtual methods)
  using Grid::getValue;
@@ -228,18 +236,18 @@ class SparseGrid : public Grid
  using Grid::addValueAndDerivatives;
  
  /// get grid value
- double getValue(unsigned long long index) const;
+ double getValue(index_t index) const;
 /// get grid value and derivatives
- double getValueAndDerivatives(unsigned long long index, std::vector<double>& der) const; 
+ double getValueAndDerivatives(index_t index, std::vector<double>& der) const; 
 
 /// set grid value 
- void setValue(unsigned long long index, double value);
+ void setValue(index_t index, double value);
 /// set grid value and derivatives
- void setValueAndDerivatives(unsigned long long index, double value, std::vector<double>& der);
+ void setValueAndDerivatives(index_t index, double value, std::vector<double>& der);
 /// add to grid value
- void addValue(unsigned long long index, double value); 
+ void addValue(index_t index, double value); 
 /// add to grid value and derivatives
- void addValueAndDerivatives(unsigned long long index, double value, std::vector<double>& der); 
+ void addValueAndDerivatives(index_t index, double value, std::vector<double>& der); 
 
 /// dump grid on file
  void writeToFile(OFile&);
