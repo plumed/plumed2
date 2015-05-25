@@ -217,7 +217,7 @@ void BayesianSP::doMonteCarlo(){
   // accept or reject
   double delta = ( new_energy - old_energy ) / kbt_;
   // if delta is negative always accept move
-  if( delta < 0.0 ){
+  if( delta <= 0.0 ){
    old_energy = new_energy;
    sigma_ = new_sigma;
    MCaccept_++;
