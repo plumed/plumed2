@@ -571,9 +571,9 @@ void Grid::writeCubeFile(OFile& ofile){
   ofile.printf("PLUMED CUBE FILE\n");
   ofile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
   ofile.printf("%d %f %f %f\n",0,0.0,0.0,0.0); // Number of atoms followed by position of origin
-  ofile.printf("%d %f %f %f\n",nbin_[0],dx_[0],0.0,0.0);  // Number of bins in each direction followed by 
-  ofile.printf("%d %f %f %f\n",nbin_[1],0.0,dx_[1],0.0);  // shape of voxel
-  ofile.printf("%d %f %f %f\n",nbin_[2],0.0,0.0,dx_[2]);
+  ofile.printf("%u %f %f %f\n",nbin_[0],dx_[0],0.0,0.0);  // Number of bins in each direction followed by 
+  ofile.printf("%u %f %f %f\n",nbin_[1],0.0,dx_[1],0.0);  // shape of voxel
+  ofile.printf("%u %f %f %f\n",nbin_[2],0.0,0.0,dx_[2]);
   std::vector<unsigned> pp(3);
   for(pp[0]=0;pp[0]<nbin_[0];++pp[0]){
       for(pp[1]=0;pp[1]<nbin_[1];++pp[1]){
