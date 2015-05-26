@@ -42,9 +42,24 @@ AC_DEFUN([PLUMED_CHECK_CXXFLAG], [
   CXXFLAGS="$CXXFLAGS $1"
   AC_MSG_CHECKING([whether $CXX accepts $1])
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-    [AC_MSG_RESULT([yes])],
+    [
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([not linking]); CXXFLAGS="$save_CXXFLAGS"])
+    ],
     [AC_MSG_RESULT([no]); CXXFLAGS="$save_CXXFLAGS"]
   )
+])
+
+# PLUMED_CHECK_LDFLAGS(flag)
+# use it to check if a flag is available on this compiler
+AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS $1"
+  AC_MSG_CHECKING([whether LDFLAGS can contain $1])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+    [AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no]); LDFLAGS="$save_LDFLAGS"])
 ])
 
 # PLUMED_CHECK_PACKAGE(header,function,define[,library])
@@ -75,6 +90,7 @@ PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
+PLUMED_CONFIG_ENABLE([openmp],[openmp],[search for openmp],[no])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
@@ -245,7 +261,7 @@ if test "$external_molfile_plugins" == true ; then
         	[ AC_CHECK_HEADER([libmolfile_plugin.h], [LIBS="-lmolfile_plugin $LIBS"] [found=ok] ) ])
 fi
 if test $found == ko ; then
-	AC_MSG_WARN([using internal molfile_plugins, which only support dcd and xtc/trr/trj])
+	AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
 	AC_DEFINE([__PLUMED_INTERNAL_MOLFILE_PLUGINS])
 fi
 
@@ -265,6 +281,9 @@ if test $mpi == true ; then
   PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
 else 
   mpi_found=ko
+fi
+if test $openmp == true ; then
+  AC_OPENMP
 fi
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
@@ -317,11 +336,6 @@ if test $xdrfile == true ; then
   PLUMED_CHECK_PACKAGE([xdrfile/xdrfile_xtc.h],[write_xtc],[__PLUMED_HAS_XDRFILE],[xdrfile])
 fi
 
-# this can be used to enable openmp:
-# AC_OPENMP
-# CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
-#### End of optional libraries ####
-
 # in non-debug mode, add -DNDEBUG
 if test "$debug" == false ; then
   AC_MSG_NOTICE([Release mode, adding -DNDEBUG])
@@ -365,7 +379,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([LDSO and LDFLAGS need special flags])
     SOEXT=so
     LDSO="$LDSO -shared"
-    LDFLAGS="$LDFLAGS -rdynamic"
+    PLUMED_CHECK_LDFLAGS([-rdynamic])
   ;;
   (*)
     AC_MSG_NOTICE([*** Dynamic library only enabled on OSX and Linux ***])
@@ -498,8 +512,10 @@ if test $mpi == true; then
   if test $mpi_found == ok; then
     AC_MSG_NOTICE([**** PLUMED will be compiled using MPI])
   else 
-    AC_MSG_NOTICE([**** PLUMED will NOT be compiled using MPI])
+    AC_MSG_WARN([**** PLUMED will NOT be compiled using MPI because MPI have not been found!])
   fi
+else
+    AC_MSG_NOTICE([**** PLUMED will be compiled without MPI])
 fi
 
 AC_SUBST(build_dir)

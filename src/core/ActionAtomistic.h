@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -25,6 +25,7 @@
 #include "Action.h"
 #include "tools/Tensor.h"
 #include "Atoms.h"
+#include "tools/Pbc.h"
 #include <vector>
 #include <set>
 
@@ -43,7 +44,6 @@ class ActionAtomistic :
   std::set<AtomNumber>  unique;
   std::vector<Vector>   positions;       // positions of the needed atoms
   double                energy;
-  Tensor                box;
   Pbc&                  pbc;
   Tensor                virial;
   std::vector<double>   masses;
@@ -82,7 +82,10 @@ public:
   unsigned getTotAtoms()const;
 /// Get modifiable force of i-th atom (access by absolute AtomNumber).
 /// Should be used by action that need to modify the stored atomic forces
-  Vector & modifyForce(AtomNumber);
+  Vector & modifyGlobalForce(AtomNumber);
+/// Get modifiable virial
+/// Should be used by action that need to modify the stored virial
+  Tensor & modifyGlobalVirial();
 /// Get box shape
   const Tensor & getBox()const;
 /// Get the array of all positions
@@ -103,6 +106,8 @@ public:
   unsigned getNumberOfAtoms()const{return indexes.size();}
 /// Compute the pbc distance between two positions
   Vector pbcDistance(const Vector&,const Vector&)const;
+/// Applies  PBCs to a seriens of positions or distances
+  void pbcApply(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Get the vector of absolute indexes
   const std::vector<AtomNumber> & getAbsoluteIndexes()const;
 /// Get the absolute index of an atom
@@ -127,6 +132,8 @@ public:
 /// If this function is called during initialization, then forces are
 /// not going to be propagated. Can be used for optimization.
   void doNotForce(){donotforce=true;}
+/// Make atoms whole, assuming they are in the proper order
+  void makeWhole();
 public:
 
 // virtual functions:
@@ -171,8 +178,13 @@ Vector & ActionAtomistic::modifyPosition(AtomNumber i){
 }
 
 inline
-Vector & ActionAtomistic::modifyForce(AtomNumber i){
+Vector & ActionAtomistic::modifyGlobalForce(AtomNumber i){
   return atoms.forces[i.index()];
+}
+
+inline
+Tensor & ActionAtomistic::modifyGlobalVirial(){
+  return atoms.virial;
 }
 
 inline
@@ -208,7 +220,7 @@ const double & ActionAtomistic::getEnergy()const{
 
 inline
 const Tensor & ActionAtomistic::getBox()const{
-  return box;
+  return pbc.getBox();
 }
 
 inline

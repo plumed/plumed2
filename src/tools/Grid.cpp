@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -127,7 +127,7 @@ void Grid::clear() {
   if (usederiv_) {
     der_.resize(maxsize_);
   }
-  for (unsigned int i = 0; i < maxsize_; ++i) {
+  for (unsigned long long i = 0; i < maxsize_; ++i) {
     grid_[i] = 0.0;
     if (usederiv_) {
       (der_[i]).resize(dimension_);
@@ -170,11 +170,11 @@ vector<string> Grid::getArgNames() const {
   return argnames;
 }
 
-unsigned Grid::getSize() const {
+unsigned long long Grid::getSize() const {
   return maxsize_;
 }
 
-unsigned Grid::getMaxSize() const {
+unsigned long long Grid::getMaxSize() const {
   return maxsize_;
 }
 
@@ -183,7 +183,7 @@ unsigned Grid::getDimension() const {
 }
 
 // we are flattening arrays using a column-major order
-unsigned Grid::getIndex(const vector<unsigned> &indices) const {
+unsigned long long Grid::getIndex(const vector<unsigned> &indices) const {
   plumed_dbg_assert(indices.size() == dimension_);
   for (unsigned int i = 0; i < dimension_; i++)
     if (indices[i] >= nbin_[i]) {
@@ -192,20 +192,20 @@ unsigned Grid::getIndex(const vector<unsigned> &indices) const {
       std::string msg = "ERROR: the system is looking for a value outside the grid along the " + is;
       plumed_merror(msg + " index!");
     }
-  unsigned index = indices[dimension_ - 1];
+  unsigned long long index = indices[dimension_ - 1];
   for (unsigned int i = dimension_ - 1; i > 0; --i) {
     index = index * nbin_[i - 1] + indices[i - 1];
   }
   return index;
 }
 
-unsigned Grid::getIndex(const vector<double> &x) const {
+unsigned long long Grid::getIndex(const vector<double> &x) const {
   plumed_dbg_assert(x.size() == dimension_);
   return getIndex(getIndices(x));
 }
 
 // we are flattening arrays using a column-major order
-vector<unsigned> Grid::getIndices(unsigned index) const {
+vector<unsigned> Grid::getIndices(unsigned long long index) const {
   vector<unsigned> indices(dimension_);
   unsigned kk = index;
   indices[0] = (index % nbin_[0]);
@@ -237,7 +237,7 @@ vector<double> Grid::getPoint(const vector<unsigned> &indices) const {
   return x;
 }
 
-vector<double> Grid::getPoint(unsigned index) const {
+vector<double> Grid::getPoint(unsigned long long index) const {
   plumed_dbg_assert(index < maxsize_);
   return getPoint(getIndices(index));
 }
@@ -247,7 +247,7 @@ vector<double> Grid::getPoint(const vector<double> &x) const {
   return getPoint(getIndices(x));
 }
 
-void Grid::getPoint(unsigned index, std::vector<double> &point) {
+void Grid::getPoint(unsigned long long index, std::vector<double> &point) {
   plumed_dbg_assert(index < maxsize_);
   getIndices(index, indices_);
   getPoint(indices_, point);
@@ -268,7 +268,7 @@ void Grid::getPoint(const std::vector<double> &x, std::vector<double> &point) {
 }
 
 // we are flattening arrays using a column-major order
-void Grid::getIndices(unsigned index, vector<unsigned> &indices) {
+void Grid::getIndices(unsigned long long index, vector<unsigned> &indices) {
   unsigned kk = index;
   indices[0] = (index % nbin_[0]);
   for (unsigned int i = 1; i < dimension_ - 1; ++i) {
@@ -287,13 +287,12 @@ void Grid::getIndices(const vector<double> &x, vector<unsigned> &indices) {
   }
 }
 
-
-vector<unsigned> Grid::getNeighbors
+vector<unsigned long long> Grid::getNeighbors
 (const vector<unsigned> &indices, const vector<unsigned> &nneigh)const {
   plumed_dbg_assert(indices.size() == dimension_ && nneigh.size() == dimension_);
 // Set up a small grid corresponding to all possible neighbors
 // of the desired point if the grid were infinite in size.
-  vector<unsigned> neighbors;
+  vector<unsigned long long> neighbors;
   vector<unsigned> small_bin(dimension_);
   unsigned small_nbin = 1;
   for (unsigned j = 0; j < dimension_; ++j) {
@@ -348,21 +347,21 @@ vector<unsigned> Grid::getNeighbors
   return neighbors;
 }
 
-vector<unsigned> Grid::getNeighbors
+vector<unsigned long long> Grid::getNeighbors
 (const vector<double> &x, const vector<unsigned> &nneigh)const {
   plumed_dbg_assert(x.size() == dimension_ && nneigh.size() == dimension_);
   return getNeighbors(getIndices(x), nneigh);
 }
 
-vector<unsigned> Grid::getNeighbors
-(unsigned index, const vector<unsigned> &nneigh)const {
+vector<unsigned long long> Grid::getNeighbors
+(unsigned long long index, const vector<unsigned> &nneigh)const {
   plumed_dbg_assert(index < maxsize_ && nneigh.size() == dimension_);
   return getNeighbors(getIndices(index), nneigh);
 }
 
-vector<unsigned> Grid::getSplineNeighbors(const vector<unsigned> &indices)const {
+vector<unsigned long long> Grid::getSplineNeighbors(const vector<unsigned> &indices)const {
   plumed_dbg_assert(indices.size() == dimension_);
-  vector<unsigned> neighbors;
+  vector<unsigned long long> neighbors;
   unsigned nneigh = unsigned(pow(2.0, int(dimension_)));
   for (unsigned int i = 0; i < nneigh; ++i) {
     unsigned tmp = i;
@@ -385,14 +384,14 @@ vector<unsigned> Grid::getSplineNeighbors(const vector<unsigned> &indices)const 
   return neighbors;
 }
 
-vector<unsigned> Grid::getNearestNeighbors(const unsigned index) const {
-  vector<unsigned> nearest_neighs = vector<unsigned>();
+vector<unsigned long long> Grid::getNearestNeighbors(const unsigned long long index) const {
+  vector<unsigned long long> nearest_neighs = vector<unsigned long long>();
   for (unsigned i = 0; i < dimension_; i++) {
     vector<unsigned> neighsneeded = vector<unsigned>(dimension_, 0);
     neighsneeded[i] = 1;
-    vector<unsigned> singledim_nearest_neighs = getNeighbors(index, neighsneeded);
+    vector<unsigned long long> singledim_nearest_neighs = getNeighbors(index, neighsneeded);
     for (unsigned j = 0; j < singledim_nearest_neighs.size(); j++) {
-      unsigned neigh = singledim_nearest_neighs[j];
+      unsigned long long neigh = singledim_nearest_neighs[j];
       if (neigh != index) {
         nearest_neighs.push_back(neigh);
       }
@@ -401,16 +400,15 @@ vector<unsigned> Grid::getNearestNeighbors(const unsigned index) const {
   return nearest_neighs;
 }
 
-vector<unsigned> Grid::getNearestNeighbors(const vector<unsigned> &indices) const {
+vector<unsigned long long> Grid::getNearestNeighbors(const vector<unsigned> &indices) const {
   plumed_dbg_assert(indices.size() == dimension_);
   return getNearestNeighbors(getIndex(indices));
 }
 
-
 void Grid::addKernel(const KernelFunctions &kernel) {
   plumed_dbg_assert(kernel.ndim() == dimension_);
   std::vector<unsigned> nneighb = kernel.getSupport(dx_);
-  std::vector<unsigned> neighbors = getNeighbors(kernel.getCenter(), nneighb);
+  std::vector<unsigned long long> neighbors = getNeighbors(kernel.getCenter(), nneighb);
   std::vector<double> xx(dimension_);
   std::vector<Value*> vv(dimension_);
   std::string str_min, str_max;
@@ -427,7 +425,7 @@ void Grid::addKernel(const KernelFunctions &kernel) {
   double newval;
   std::vector<double> der(dimension_);
   for (unsigned i = 0; i < neighbors.size(); ++i) {
-    unsigned ineigh = neighbors[i];
+    unsigned long long ineigh = neighbors[i];
     getPoint(ineigh, xx);
     for (unsigned j = 0; j < dimension_; ++j) {
       vv[j]->set(xx[j]);
@@ -444,7 +442,7 @@ void Grid::addKernel(const KernelFunctions &kernel) {
   }
 }
 
-double Grid::getValue(unsigned index) const {
+double Grid::getValue(unsigned long long index) const {
   plumed_dbg_assert(index < maxsize_);
   return grid_[index];
 }
@@ -452,7 +450,7 @@ double Grid::getValue(unsigned index) const {
 double Grid::getMinValue() const {
   double minval;
   minval = DBL_MAX;
-  for (unsigned i = 0; i < grid_.size(); ++i) {
+  for (unsigned long long i = 0; i < grid_.size(); ++i) {
     if (grid_[i] < minval) {
       minval = grid_[i];
     }
@@ -463,7 +461,7 @@ double Grid::getMinValue() const {
 double Grid::getMaxValue() const {
   double maxval;
   maxval = DBL_MIN;
-  for (unsigned i = 0; i < grid_.size(); ++i) {
+  for (unsigned long long i = 0; i < grid_.size(); ++i) {
     if (grid_[i] > maxval) {
       maxval = grid_[i];
     }
@@ -486,7 +484,7 @@ double Grid::getValue(const vector<double> &x) const {
 }
 
 double Grid::getValueAndDerivatives
-(unsigned index, vector<double> &der) const {
+(unsigned long long index, vector<double> &der) const {
   plumed_dbg_assert(index < maxsize_ && usederiv_ && der.size() == dimension_);
   der = der_[index];
   return grid_[index];
@@ -512,8 +510,9 @@ double Grid::getValueAndDerivatives
       der[i] = 0.0;
     }
     vector<unsigned> indices = getIndices(x);
-    vector<unsigned> neigh = getSplineNeighbors(indices);
+    vector<unsigned long long> neigh = getSplineNeighbors(indices);
     vector<double>   xfloor = getPoint(x);
+
 // loop over neighbors
     for (unsigned int ipoint = 0; ipoint < neigh.size(); ++ipoint) {
       double grid = getValueAndDerivatives(neigh[ipoint], dder);
@@ -556,7 +555,7 @@ double Grid::getValueAndDerivatives
   }
 }
 
-void Grid::setValue(unsigned index, double value) {
+void Grid::setValue(unsigned long long index, double value) {
   plumed_dbg_assert(index < maxsize_ && !usederiv_);
   grid_[index] = value;
 }
@@ -566,7 +565,7 @@ void Grid::setValue(const vector<unsigned> &indices, double value) {
 }
 
 void Grid::setValueAndDerivatives
-(unsigned index, double value, vector<double> &der) {
+(unsigned long long index, double value, vector<double> &der) {
   plumed_dbg_assert(index < maxsize_ && usederiv_ && der.size() == dimension_);
   grid_[index] = value;
   der_[index] = der;
@@ -577,7 +576,7 @@ void Grid::setValueAndDerivatives
   setValueAndDerivatives(getIndex(indices), value, der);
 }
 
-void Grid::addValue(unsigned index, double value) {
+void Grid::addValue(unsigned long long index, double value) {
   plumed_dbg_assert(index < maxsize_ && !usederiv_);
   grid_[index] += value;
 }
@@ -587,7 +586,7 @@ void Grid::addValue(const vector<unsigned> &indices, double value) {
 }
 
 void Grid::addValueAndDerivatives
-(unsigned index, double value, vector<double> &der) {
+(unsigned long long index, double value, vector<double> &der) {
   plumed_dbg_assert(index < maxsize_ && usederiv_ && der.size() == dimension_);
   grid_[index] += value;
   for (unsigned int i = 0; i < dimension_; ++i) {
@@ -602,14 +601,14 @@ void Grid::addValueAndDerivatives
 
 void Grid::scaleAllValuesAndDerivatives(const double &scalef) {
   if (usederiv_) {
-    for (unsigned i = 0; i < grid_.size(); ++i) {
+    for (unsigned long long i = 0; i < grid_.size(); ++i) {
       grid_[i] *= scalef;
       for (unsigned j = 0; j < dimension_; ++j) {
         der_[i][j] *= scalef;
       }
     }
   } else {
-    for (unsigned i = 0; i < grid_.size(); ++i) {
+    for (unsigned long long i = 0; i < grid_.size(); ++i) {
       grid_[i] *= scalef;
     }
   }
@@ -617,14 +616,14 @@ void Grid::scaleAllValuesAndDerivatives(const double &scalef) {
 
 void Grid::logAllValuesAndDerivatives(const double &scalef) {
   if (usederiv_) {
-    for (unsigned i = 0; i < grid_.size(); ++i) {
+    for (unsigned long long i = 0; i < grid_.size(); ++i) {
       grid_[i] = scalef * log(grid_[i]);
       for (unsigned j = 0; j < dimension_; ++j) {
         der_[i][j] = scalef / der_[i][j];
       }
     }
   } else {
-    for (unsigned i = 0; i < grid_.size(); ++i) {
+    for (unsigned long long i = 0; i < grid_.size(); ++i) {
       grid_[i] = scalef * log(grid_[i]);
     }
   }
@@ -632,30 +631,30 @@ void Grid::logAllValuesAndDerivatives(const double &scalef) {
 
 void Grid::setMinToZero() {
   double min = grid_[0];
-  for (unsigned i = 1; i < grid_.size(); ++i) if (grid_[i] < min) {
+  for (unsigned long long i = 1; i < grid_.size(); ++i) if (grid_[i] < min) {
       min = grid_[i];
     }
-  for (unsigned i = 0; i < grid_.size(); ++i) {
+  for (unsigned long long i = 0; i < grid_.size(); ++i) {
     grid_[i] -= min;
   }
 }
 
 void Grid::applyFunctionAllValuesAndDerivatives(double(*func)(double val), double(*funcder)(double valder)) {
   if (usederiv_) {
-    for (unsigned i = 0; i < grid_.size(); ++i) {
+    for (unsigned long long i = 0; i < grid_.size(); ++i) {
       grid_[i] = func(grid_[i]);
       for (unsigned j = 0; j < dimension_; ++j) {
         der_[i][j] = funcder(der_[i][j]);
       }
     }
   } else {
-    for (unsigned i = 0; i < grid_.size(); ++i) {
+    for (unsigned long long i = 0; i < grid_.size(); ++i) {
       grid_[i] = func(grid_[i]);
     }
   }
 }
 
-bool indexed_lt(pair<unsigned, double> const &x, pair<unsigned, double> const   &y) {
+bool indexed_lt(pair<unsigned long long, double> const &x, pair<unsigned long long, double> const   &y) {
   return x.second < y.second;
 }
 
@@ -663,8 +662,8 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
   plumed_dbg_assert(source.size() == dimension_);
   plumed_dbg_assert(sink.size() == dimension_);
   // Start and end indices
-  unsigned source_idx = getIndex(source);
-  unsigned sink_idx = getIndex(sink);
+  unsigned long long source_idx = getIndex(source);
+  unsigned long long sink_idx = getIndex(sink);
   // Path cost
   double maximal_minimum;
   // In one dimension, path searching is very easy--either go one way if it's not periodic,
@@ -675,7 +674,7 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
     double curr_min_bias = getValue(source_idx);
     // Either search from a high source to a low sink.
     if (source_idx > sink_idx) {
-      for (unsigned i = source_idx; i >= sink_idx; i--) {
+      for (unsigned long long i = source_idx; i >= sink_idx; i--) {
         if (curr_min_bias == 0.0) {
           break;
         }
@@ -683,7 +682,7 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
       }
       // Or search from a low source to a high sink.
     } else if (source_idx < sink_idx) {
-      for (unsigned i = source_idx; i <= sink_idx; i++) {
+      for (unsigned long long i = source_idx; i <= sink_idx; i++) {
         if (curr_min_bias == 0.0) {
           break;
         }
@@ -698,13 +697,13 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
       // Either go from a high source to the upper boundary and
       // then from the bottom boundary to the sink
       if (source_idx > sink_idx) {
-        for (unsigned i = source_idx; i < maxsize_; i++) {
+        for (unsigned long long i = source_idx; i < maxsize_; i++) {
           if (curr_min_bias == 0.0) {
             break;
           }
           curr_min_bias = fmin(curr_min_bias, getValue(i));
         }
-        for (unsigned i = 0; i <= sink_idx; i++) {
+        for (unsigned long long i = 0; i <= sink_idx; i++) {
           if (curr_min_bias == 0.0) {
             break;
           }
@@ -713,14 +712,14 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
         // Or go from a low source to the bottom boundary and
         // then from the high boundary to the sink
       } else if (source_idx < sink_idx) {
-        for (unsigned i = source_idx; i > 0; i--) {
+        for (unsigned long long i = source_idx; i > 0; i--) {
           if (curr_min_bias == 0.0) {
             break;
           }
           curr_min_bias = fmin(curr_min_bias, getValue(i));
         }
         curr_min_bias = fmin(curr_min_bias, getValue(0));
-        for (unsigned i = maxsize_ - 1; i <= sink_idx; i--) {
+        for (unsigned long long i = maxsize_ - 1; i <= sink_idx; i--) {
           if (curr_min_bias == 0.0) {
             break;
           }
@@ -750,14 +749,14 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
     vector<double> mins_from_source = vector<double>(maxsize_, -1.0);
     // Heap for tracking available steps, steps are recorded as std::pairs of
     // an index and a value.
-    vector< pair<unsigned, double> > next_steps;
-    pair<unsigned, double> curr_indexed_val;
+    vector< pair<unsigned long long, double> > next_steps;
+    pair<unsigned long long, double> curr_indexed_val;
     make_heap(next_steps.begin(), next_steps.end(), indexed_lt);
     // The search begins at the source index.
-    next_steps.push_back(pair<unsigned, double>(source_idx, getValue(source_idx)));
+    next_steps.push_back(pair<unsigned long long, double>(source_idx, getValue(source_idx)));
     push_heap(next_steps.begin(), next_steps.end(), indexed_lt);
     // At first no points have been examined and the optimal path has not been found.
-    unsigned n_examined = 0;
+    unsigned long long n_examined = 0;
     bool path_not_found = true;
     // Until a path is found,
     while (path_not_found) {
@@ -782,15 +781,15 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
       }
       // If the search is not over, add this grid point's neighbors to the
       // possible next points to search for the sink.
-      vector<unsigned> neighs = getNearestNeighbors(curr_indexed_val.first);
+      vector<unsigned long long> neighs = getNearestNeighbors(curr_indexed_val.first);
       for (unsigned k = 0; k < neighs.size(); k++) {
-	unsigned i = neighs[k];
+	      unsigned long long i = neighs[k];
         // If the neighbor has not already been added to the list of possible next steps,
         if (mins_from_source[i] == -1.0) {
           // Set the cost to reach it via a path through the current point being examined.
           mins_from_source[i] = fmin(curr_indexed_val.second, getValue(i));
           // Add the neighboring point to the heap of potential next steps.
-          next_steps.push_back(pair<unsigned, double>(i, mins_from_source[i]));
+          next_steps.push_back(pair<unsigned long long, double>(i, mins_from_source[i]));
           push_heap(next_steps.begin(), next_steps.end(), indexed_lt);
         }
       }
@@ -802,7 +801,7 @@ double Grid::findMaximalPathMinimum(const std::vector<double> &source, const std
   }
 }
 
-void Grid::setDerivFromValues(const unsigned index) {
+void Grid::setDerivFromValues(const unsigned long long index) {
   // Along each dimension, take a centered finite difference
   // for the derivative. If one is against a hard boundary,
   // set the derivative to zero as if the boundaries are reflective.
@@ -812,7 +811,7 @@ void Grid::setDerivFromValues(const unsigned index) {
     // These GetNeighbors calls return up to 3 neighbors in a defined ordering
     // matching the grid's unwrapped-boundaries-ordering. The point of interest
     // is considered one of its own neighbors.
-    vector<unsigned> neighs = getNeighbors(index, neighsneeded);
+    vector<unsigned long long> neighs = getNeighbors(index, neighsneeded);
     // If there are three points, use the automatic ordering.
     if (neighs.size() == 3) {
       der_[index][i] = (grid_[neighs[2]] - grid_[neighs[0]]) / (2 * dx_[i]);
@@ -842,7 +841,7 @@ void Grid::writeToFile(OFile &ofile) {
   vector<double> der(dimension_);
   double f;
   writeHeader(ofile);
-  for (unsigned i = 0; i < getSize(); ++i) {
+  for (unsigned long long i = 0; i < getSize(); ++i) {
     xx = getPoint(i);
     if (usederiv_) {
       f = getValueAndDerivatives(i, der);
@@ -873,6 +872,26 @@ void Grid::writeToFile(OFile &ofile) {
         ofile.printField("der_" + argnames[j] , der[j]);
       }
     ofile.printField();
+  }
+}
+
+void Grid::writeCubeFile(OFile& ofile){
+  plumed_assert( dimension_==3 );
+  ofile.printf("PLUMED CUBE FILE\n");
+  ofile.printf("OUTER LOOP: X, MIDDLE LOOP: Y, INNER LOOP: Z\n");
+  ofile.printf("%d %f %f %f\n",0,0.0,0.0,0.0); // Number of atoms followed by position of origin
+  ofile.printf("%d %f %f %f\n",nbin_[0],dx_[0],0.0,0.0);  // Number of bins in each direction followed by 
+  ofile.printf("%d %f %f %f\n",nbin_[1],0.0,dx_[1],0.0);  // shape of voxel
+  ofile.printf("%d %f %f %f\n",nbin_[2],0.0,0.0,dx_[2]);
+  std::vector<unsigned> pp(3);
+  for(pp[0]=0;pp[0]<nbin_[0];++pp[0]){
+      for(pp[1]=0;pp[1]<nbin_[1];++pp[1]){
+          for(pp[2]=0;pp[2]<nbin_[2];++pp[2]){
+              ofile.printf("%f ",getValue(pp) );
+              if(pp[2]%6==5) ofile.printf("\n");
+          }
+          ofile.printf("\n");
+     }
   }
 }
 
@@ -982,11 +1001,11 @@ void SparseGrid::clear() {
   map_.clear();
 }
 
-unsigned SparseGrid::getSize() const {
+unsigned long long SparseGrid::getSize() const {
   return map_.size();
 }
 
-double SparseGrid::getValue(unsigned index)const {
+double SparseGrid::getValue(unsigned long long index)const {
   plumed_assert(index < maxsize_);
   double value = 0.0;
   iterator it = map_.find(index);
@@ -997,7 +1016,7 @@ double SparseGrid::getValue(unsigned index)const {
 }
 
 double SparseGrid::getValueAndDerivatives
-(unsigned index, vector<double> &der)const {
+(unsigned long long index, vector<double> &der)const {
   plumed_assert(index < maxsize_ && usederiv_ && der.size() == dimension_);
   double value = 0.0;
   for (unsigned int i = 0; i < dimension_; ++i) {
@@ -1014,25 +1033,25 @@ double SparseGrid::getValueAndDerivatives
   return value;
 }
 
-void SparseGrid::setValue(unsigned index, double value) {
+void SparseGrid::setValue(unsigned long long index, double value) {
   plumed_assert(index < maxsize_ && !usederiv_);
   map_[index] = value;
 }
 
 void SparseGrid::setValueAndDerivatives
-(unsigned index, double value, vector<double> &der) {
+(unsigned long long index, double value, vector<double> &der) {
   plumed_assert(index < maxsize_ && usederiv_ && der.size() == dimension_);
   map_[index] = value;
   der_[index] = der;
 }
 
-void SparseGrid::addValue(unsigned index, double value) {
+void SparseGrid::addValue(unsigned long long index, double value) {
   plumed_assert(index < maxsize_ && !usederiv_);
   map_[index] += value;
 }
 
 void SparseGrid::addValueAndDerivatives
-(unsigned index, double value, vector<double> &der) {
+(unsigned long long index, double value, vector<double> &der) {
   plumed_assert(index < maxsize_ && usederiv_ && der.size() == dimension_);
   map_[index] += value;
   der_[index].resize(dimension_);
@@ -1048,7 +1067,7 @@ void SparseGrid::writeToFile(OFile &ofile) {
   writeHeader(ofile);
   ofile.fmtField(" " + fmt_);
   for (iterator it = map_.begin(); it != map_.end(); ++it) {
-    unsigned i = (*it).first;
+    unsigned long long i = (*it).first;
     xx = getPoint(i);
     if (usederiv_) {
       f = getValueAndDerivatives(i, der);
@@ -1081,126 +1100,114 @@ void SparseGrid::writeToFile(OFile &ofile) {
   }
 }
 
+void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBase * ptr2obj ){
+    unsigned i=0;
+    for(i=0;i<vHigh.size();i++){
+       if(vHigh[i]<0){// this bin needs to be integrated out 
+          // parallelize here???
+    	  for(unsigned j=0;j<(getNbin())[i];j++){
+            vHigh[i]=int(j);  
+            projectOnLowDimension(val,vHigh,ptr2obj); // recursive function: this is the core of the mechanism
+            vHigh[i]=-1;
+          } 
+          return; // 
+       }
+    }
+    // when there are no more bin to dig in then retrieve the value 
+    if(i==vHigh.size()){
+        //std::cerr<<"POINT: "; 
+        //for(unsigned j=0;j<vHigh.size();j++){
+        //   std::cerr<<vHigh[j]<<" ";
+        //} 
+        std::vector<unsigned> vv(vHigh.size()); 
+        for(unsigned j=0;j<vHigh.size();j++)vv[j]=unsigned(vHigh[j]);
+        //
+        // this is the real assignment !!!!! (hack this to have bias or other stuff)
+        //
 
-void Grid::projectOnLowDimension(double &val, std::vector<int> &vHigh, WeightBase * ptr2obj) {
-  unsigned i = 0;
-  for (i = 0; i < vHigh.size(); i++) {
-    if (vHigh[i] < 0) { // this bin needs to be integrated out
-      // parallelize here???
-      for (unsigned j = 0; j < (getNbin())[i]; j++) {
-        vHigh[i] = int(j);
-        projectOnLowDimension(val, vHigh, ptr2obj); // recursive function: this is the core of the mechanism
-        vHigh[i] = -1;
-      }
-      return; //
+        // this case: produce fes
+        //val+=exp(beta*getValue(vv)) ;
+        double myv=getValue(vv);
+        val=ptr2obj->projectInnerLoop(val,myv) ;
+        // to be added: bias (same as before without negative sign) 
+        //std::cerr<<" VAL: "<<val <<endl;
     }
-  }
-  // when there are no more bin to dig in then retrieve the value
-  if (i == vHigh.size()) {
-    //std::cerr<<"POINT: ";
-    //for(unsigned j=0;j<vHigh.size();j++){
-    //   std::cerr<<vHigh[j]<<" ";
-    //}
-    std::vector<unsigned> vv(vHigh.size());
-    for (unsigned j = 0; j < vHigh.size(); j++) {
-      vv[j] = unsigned(vHigh[j]);
-    }
-    //
-    // this is the real assignment !!!!! (hack this to have bias or other stuff)
-    //
-    // this case: produce fes
-    //val+=exp(beta*getValue(vv)) ;
-    double myv = getValue(vv);
-    val = ptr2obj->projectInnerLoop(val, myv) ;
-    // to be added: bias (same as before without negative sign)
-    //std::cerr<<" VAL: "<<val <<endl;
-  }
 }
 
-Grid Grid::project(const std::vector<std::string> &proj , WeightBase *ptr2obj) {
-  // find extrema only for the projection
-  vector<string>   smallMin, smallMax;
-  vector<unsigned> smallBin;
-  vector<unsigned> dimMapping;
-  vector<bool> smallIsPeriodic;
-  vector<string> smallName;
-  // check if the two key methods are there
-  WeightBase* pp = dynamic_cast<WeightBase*>(ptr2obj);
-  if (!pp) {
-    plumed_merror("This WeightBase is not complete: you need a projectInnerLoop and projectOuterLoop ");
-  }
-  for (unsigned j = 0; j < proj.size(); j++) {
-    for (unsigned i = 0; i < getArgNames().size(); i++) {
-      if (proj[j] == getArgNames()[i]) {
-        unsigned offset;
-        // note that at sizetime the non periodic dimension get a bin more
-        if (getIsPeriodic()[i]) {
-          offset = 0;
-        } else {
-          offset = 1;
-        }
-        smallMax.push_back(getMax()[i]);
-        smallMin.push_back(getMin()[i]);
-        smallBin.push_back(getNbin()[i] - offset);
-        smallIsPeriodic.push_back(getIsPeriodic()[i]);
-        dimMapping.push_back(i);
-        smallName.push_back(getArgNames()[i]);
-        break;
-      }
-    }
-  }
-  Grid smallgrid("projection", smallName, smallMin, smallMax, smallBin, false, false, true, smallIsPeriodic, smallMin, smallMax);
-  // check that the two grids are commensurate
-  for (unsigned i = 0; i < dimMapping.size(); i++) {
-    plumed_massert((smallgrid.getMax())[i] == (getMax())[dimMapping[i]],  "the two input grids are not compatible in max");
-    plumed_massert((smallgrid.getMin())[i] == (getMin())[dimMapping[i]],  "the two input grids are not compatible in min");
-    plumed_massert((smallgrid.getNbin())[i] == (getNbin())[dimMapping[i]], "the two input grids are not compatible in bin");
-  }
-  vector<unsigned> toBeIntegrated;
-  for (unsigned i = 0; i < getArgNames().size(); i++) {
-    bool doappend = true;
-    for (unsigned j = 0; j < dimMapping.size(); j++) {
-      if (dimMapping[j] == i) {
-        doappend = false;
-        break;
-      }
-    }
-    if (doappend) {
-      toBeIntegrated.push_back(i);
-    }
-  }
-  //for(unsigned i=0;i<dimMapping.size();i++ ){
-  //     cerr<<"Dimension to preserve "<<dimMapping[i]<<endl;
-  //}
-  //for(unsigned i=0;i<toBeIntegrated.size();i++ ){
-  //     cerr<<"Dimension to integrate "<<toBeIntegrated[i]<<endl;
-  //}
-  // loop over all the points in the Grid, find the corresponding fixed index, rotate over all the other ones
-  for (unsigned i = 0; i < smallgrid.getSize(); i++) {
-    std::vector<unsigned> v;
-    v = smallgrid.getIndices(i);
-    std::vector<int> vHigh((getArgNames()).size(), -1);
-    for (unsigned j = 0; j < dimMapping.size(); j++) {
-      vHigh[dimMapping[j]] = int(v[j]);
-    }
-    // the vector vhigh now contains at the beginning the index of the low dimension and -1 for the values that need to be integrated
-    double initval = 0.;
-    projectOnLowDimension(initval, vHigh, ptr2obj);
-    smallgrid.setValue(i, initval);
-  }
-  // reset to zero just for biasing (this option can be evtl enabled in a future...)
-  //double vmin;vmin=-smallgrid.getMinValue()+1;
-  for (unsigned i = 0; i < smallgrid.getSize(); i++) {
-    //         //if(dynamic_cast<BiasWeight*>(ptr2obj)){
-    //         //        smallgrid.addValue(i,vmin);// go to 1
-    //         //}
-    double vv = smallgrid.getValue(i);
-    smallgrid.setValue(i, ptr2obj->projectOuterLoop(vv));
-    //         //if(dynamic_cast<BiasWeight*>(ptr2obj)){
-    //         //        smallgrid.addValue(i,-vmin);// bring back to the value
-    //         //}
-  }
-  return smallgrid;
-}
+Grid Grid::project(const std::vector<std::string> & proj , WeightBase *ptr2obj ){
+         // find extrema only for the projection
+         vector<string>   smallMin,smallMax;
+         vector<unsigned> smallBin;
+         vector<unsigned> dimMapping;
+         vector<bool> smallIsPeriodic;
+         vector<string> smallName;
 
+         // check if the two key methods are there
+         WeightBase* pp = dynamic_cast<WeightBase*>(ptr2obj);
+         if (!pp)plumed_merror("This WeightBase is not complete: you need a projectInnerLoop and projectOuterLoop ");
+ 
+         for(unsigned j=0;j<proj.size();j++){
+              for(unsigned i=0;i<getArgNames().size();i++){
+                    if(proj[j]==getArgNames()[i]){ 
+	    	         unsigned offset;		 
+ 	    	         // note that at sizetime the non periodic dimension get a bin more  	
+                         if(getIsPeriodic()[i]){offset=0;}else{offset=1;}
+                         smallMax.push_back(getMax()[i]);
+                         smallMin.push_back(getMin()[i]);
+                         smallBin.push_back(getNbin()[i]-offset);
+			 smallIsPeriodic.push_back(getIsPeriodic()[i]);
+                         dimMapping.push_back(i);
+			 smallName.push_back(getArgNames()[i]);
+                         break;
+                    }
+              }
+         }
+         Grid smallgrid("projection",smallName,smallMin,smallMax,smallBin,false,false,true,smallIsPeriodic,smallMin,smallMax);  
+         // check that the two grids are commensurate 
+         for(unsigned i=0;i<dimMapping.size();i++){
+              plumed_massert(  (smallgrid.getMax())[i] == (getMax())[dimMapping[i]],  "the two input grids are not compatible in max"   );  
+              plumed_massert(  (smallgrid.getMin())[i] == (getMin())[dimMapping[i]],  "the two input grids are not compatible in min"   );  
+              plumed_massert(  (smallgrid.getNbin())[i]== (getNbin())[dimMapping[i]], "the two input grids are not compatible in bin"   );  
+         }
+         vector<unsigned> toBeIntegrated;
+         for(unsigned i=0;i<getArgNames().size();i++){
+              bool doappend=true;
+         	for(unsigned j=0;j<dimMapping.size();j++){
+                 if(dimMapping[j]==i){doappend=false; break;}  
+              }
+              if(doappend)toBeIntegrated.push_back(i);
+         }
+         //for(unsigned i=0;i<dimMapping.size();i++ ){
+         //     cerr<<"Dimension to preserve "<<dimMapping[i]<<endl;
+         //}
+         //for(unsigned i=0;i<toBeIntegrated.size();i++ ){
+         //     cerr<<"Dimension to integrate "<<toBeIntegrated[i]<<endl;
+         //}
+
+         // loop over all the points in the Grid, find the corresponding fixed index, rotate over all the other ones  
+         for(unsigned i=0;i<smallgrid.getSize();i++){
+                 std::vector<unsigned> v;
+                 v=smallgrid.getIndices(i);
+                 std::vector<int> vHigh((getArgNames()).size(),-1);   
+                 for(unsigned j=0;j<dimMapping.size();j++)vHigh[dimMapping[j]]=int(v[j]);
+                 // the vector vhigh now contains at the beginning the index of the low dimension and -1 for the values that need to be integrated 
+                 double initval=0.;  
+                 projectOnLowDimension(initval,vHigh, ptr2obj); 
+                 smallgrid.setValue(i,initval);  
+         }
+         // reset to zero just for biasing (this option can be evtl enabled in a future...) 
+         //double vmin;vmin=-smallgrid.getMinValue()+1;
+         for(unsigned i=0;i<smallgrid.getSize();i++){
+         //         //if(dynamic_cast<BiasWeight*>(ptr2obj)){
+	 //         //        smallgrid.addValue(i,vmin);// go to 1	
+         //         //}
+                  double vv=smallgrid.getValue(i); 
+                  smallgrid.setValue(i,ptr2obj->projectOuterLoop(vv));
+ 	 //         //if(dynamic_cast<BiasWeight*>(ptr2obj)){
+	 //         //        smallgrid.addValue(i,-vmin);// bring back to the value	
+         //         //}
+         }
+
+     return smallgrid; 
+}
 }

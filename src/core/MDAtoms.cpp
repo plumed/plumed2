@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -23,6 +23,7 @@
 #include <string>
 #include "MDAtoms.h"
 #include "tools/Tools.h"
+#include "tools/OpenMP.h"
 #include "tools/Exception.h"
 
 using namespace std;
@@ -36,8 +37,8 @@ template <class T>
 class MDAtomsTyped:
 public MDAtomsBase
 {
-  double scalep,scalef;
-  double scaleb,scalev;
+  T scalep,scalef;
+  T scaleb,scalev;
   int stride;
   T *m;
   T *c;
@@ -64,6 +65,8 @@ public:
   }
   void getBox(Tensor &)const;
   void getPositions(const vector<int>&index,vector<Vector>&positions)const;
+  void getPositions(unsigned j,unsigned k,vector<Vector>&positions)const;
+  void getLocalPositions(std::vector<Vector>&p)const;
   void getMasses(const vector<int>&index,vector<double>&)const;
   void getCharges(const vector<int>&index,vector<double>&)const;
   void updateVirial(const Tensor&)const;
@@ -92,12 +95,35 @@ void MDAtomsTyped<T>::getBox(Tensor&box)const{
 
 template <class T>
 void MDAtomsTyped<T>::getPositions(const vector<int>&index,vector<Vector>&positions)const{
+// cannot be parallelized with omp because access to positions is not ordered
   for(unsigned i=0;i<index.size();++i){
     positions[index[i]][0]=px[stride*i]*scalep;
     positions[index[i]][1]=py[stride*i]*scalep;
     positions[index[i]][2]=pz[stride*i]*scalep;
   }
 }
+
+template <class T>
+void MDAtomsTyped<T>::getPositions(unsigned j,unsigned k,vector<Vector>&positions)const{
+#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(&positions[j],(k-j)))
+  for(unsigned i=j;i<k;++i){
+    positions[i][0]=px[stride*i]*scalep;
+    positions[i][1]=py[stride*i]*scalep;
+    positions[i][2]=pz[stride*i]*scalep;
+  }
+}
+
+
+template <class T>
+void MDAtomsTyped<T>::getLocalPositions(vector<Vector>&positions)const{
+#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(positions))
+  for(unsigned i=0;i<positions.size();++i){
+    positions[i][0]=px[stride*i]*scalep;
+    positions[i][1]=py[stride*i]*scalep;
+    positions[i][2]=pz[stride*i]*scalep;
+  }
+}
+
 
 template <class T>
 void MDAtomsTyped<T>::getMasses(const vector<int>&index,vector<double>&masses)const{
@@ -118,16 +144,18 @@ void MDAtomsTyped<T>::updateVirial(const Tensor&virial)const{
 
 template <class T>
 void MDAtomsTyped<T>::updateForces(const vector<int>&index,const vector<Vector>&forces){
+#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0;i<index.size();++i){
-    fx[stride*i]+=T(scalef*forces[index[i]][0]);
-    fy[stride*i]+=T(scalef*forces[index[i]][1]);
-    fz[stride*i]+=T(scalef*forces[index[i]][2]);
+    fx[stride*i]+=scalef*T(forces[index[i]][0]);
+    fy[stride*i]+=scalef*T(forces[index[i]][1]);
+    fz[stride*i]+=scalef*T(forces[index[i]][2]);
   }
 }
 
 template <class T>
 void MDAtomsTyped<T>::rescaleForces(const vector<int>&index,double factor){
   if(virial) for(unsigned i=0;i<3;i++)for(unsigned j=0;j<3;j++) virial[3*i+j]*=T(factor);
+#pragma omp parallel for num_threads(OpenMP::getGoodNumThreads(fx,stride*index.size()))
   for(unsigned i=0;i<index.size();++i){
     fx[stride*i]*=T(factor);
     fy[stride*i]*=T(factor);

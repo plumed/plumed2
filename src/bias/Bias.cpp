@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -32,7 +32,10 @@ ActionWithValue(ao),
 ActionWithArguments(ao),
 outputForces(getNumberOfArguments(),0.0)
 {
-  if(getStride()>1) error("Using bias with stride!=1 is not currently supported");
+  if(getStride()>1){
+    log<<"  multiple time step "<<getStride()<<" ";
+    log<<cite("Ferrarotti, Bottaro, Perez-Villa, and Bussi, J. Chem. Theory Comput. 11, 139 (2015)")<<"\n";
+  }
   for(unsigned i=0;i<getNumberOfArguments();++i){
      (getPntrToArgument(i)->getPntrToAction())->turnOnDerivatives();
   }

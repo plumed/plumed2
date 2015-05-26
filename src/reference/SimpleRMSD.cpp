@@ -32,6 +32,9 @@ public:
   SimpleRMSD( const ReferenceConfigurationOptions& ro );
   void read( const PDB& );
   double calc( const std::vector<Vector>& pos, const bool& squared );
+  bool pcaIsEnabledForThisReference(){ return true; }
+  Vector getAtomicDisplacement( const unsigned& iatom );
+  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, std::vector<Vector>& derivatives );
 };
 
 PLUMED_REGISTER_METRIC(SimpleRMSD,"SIMPLE")
@@ -47,7 +50,27 @@ void SimpleRMSD::read( const PDB& pdb ){
 }
 
 double SimpleRMSD::calc( const std::vector<Vector>& pos, const bool& squared ){
-  return myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), atom_ders, squared );
+  return myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), atom_ders, displacement, squared );
+}
+
+Vector SimpleRMSD::getAtomicDisplacement( const unsigned& iatom ){
+  return displacement[iatom];
+}
+
+double SimpleRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, std::vector<Vector>& derivatives ){
+  Vector comder; comder.zero();
+  for(unsigned j=0;j<displacement.size();++j){
+      for(unsigned k=0;k<3;++k) comder[k] += getAlign()[j]*vecs(iv,j)[k];
+  }
+
+  double proj=0;
+  for(unsigned j=0;j<displacement.size();++j){
+      for(unsigned k=0;k<3;++k){
+          proj += vecs(iv,j)[k]*displacement[j][k];
+          derivatives[j][k] = vecs(iv,j)[k] - comder[k];
+      }
+  }
+  return proj;
 }
 
 }

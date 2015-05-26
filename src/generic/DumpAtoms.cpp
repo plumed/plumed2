@@ -134,7 +134,9 @@ void DumpAtoms::registerKeywords( Keywords& keys ){
 #else
   keys.add("optional", "TYPE","file type, either xyz or gro, can override an automatically detected file extension");
 #endif
-
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 DumpAtoms::DumpAtoms(const ActionOptions&ao):

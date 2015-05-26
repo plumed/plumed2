@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -28,6 +28,7 @@
 #include "tools/Tensor.h"
 #include "tools/Tools.h"
 #include "tools/Exception.h"
+#include "tools/Matrix.h"
 
 namespace PLMD{
 
@@ -148,6 +149,14 @@ public:
 /// These are overwritten in ReferenceArguments and ReferenceAtoms to make frame copying work
   virtual const std::vector<AtomNumber>& getAbsoluteIndexes();
   virtual const std::vector<std::string>& getArgumentNames();
+/// Stuff for pca
+  virtual bool pcaIsEnabledForThisReference(){ return false; }
+  virtual Vector getAtomicDisplacement( const unsigned& iatom ){ plumed_error(); return Vector(0.0,0.0,0.0); }
+  virtual double projectAtomicDisplacementOnVector( const unsigned& i, const Matrix<Vector>& eigv, const std::vector<Vector>& pos, std::vector<Vector>& derivatives ){
+     plumed_error(); return 1; 
+  }
+/// Stuff for sanity checks on distance
+  bool isDirection() const ;
 };
 
 inline

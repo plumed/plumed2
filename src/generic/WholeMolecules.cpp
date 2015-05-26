@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -67,7 +67,7 @@ at every step of the calculation and dump them on a file.
 \verbatim
 # to see the effect, one could dump the atoms as they were before molecule reconstruction:
 # DUMPATOMS FILE=dump-broken.xyz ATOMS=1-20
-WHOLEMOLECULES STRIDE=1 ENTITY0=1-20
+WHOLEMOLECULES ENTITY0=1-20
 DUMPATOMS FILE=dump.xyz ATOMS=1-20
 \endverbatim
 (see also \ref DUMPATOMS)
@@ -75,7 +75,7 @@ DUMPATOMS FILE=dump.xyz ATOMS=1-20
 This command instructs plumed to reconstruct two molecules containing atoms 1-20 and 30-40
 
 \verbatim
-WHOLEMOLECULES STRIDE=1 ENTITY0=1-20 ENTITY1=30-40
+WHOLEMOLECULES ENTITY0=1-20 ENTITY1=30-40
 DUMPATOMS FILE=dump.xyz ATOMS=1-20,30-40
 \endverbatim
 (see also \ref DUMPATOMS)
@@ -85,7 +85,7 @@ protein
 
 \verbatim
 MOLINFO STRUCTURE=helix.pdb
-WHOLEMOLECULES STRIDE=1 RESIDUES=all MOLTYPE=protein 
+WHOLEMOLECULES RESIDUES=all MOLTYPE=protein 
 \endverbatim
 (See also \ref MOLINFO)
 
@@ -112,7 +112,7 @@ void WholeMolecules::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   keys.add("compulsory","STRIDE","1","the frequency with which molecules are reassembled.  Unless you are completely certain about what you are doing leave this set equal to 1!");
-  keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY1, ENTITY2,...");
+  keys.add("numbered","ENTITY","the atoms that make up a molecule that you wish to align. To specify multiple molecules use a list of ENTITY keywords: ENTITY0, ENTITY1,...");
   keys.reset_style("ENTITY","atoms");
   keys.add("residues","RESIDUES","this command specifies that the backbone atoms in a set of residues all must be aligned. It must be used in tandem with the \\ref MOLINFO "
                               "action and the MOLTYPE keyword. If you wish to use all the residues from all the chains in your system you can do so by "
@@ -151,7 +151,7 @@ ActionAtomistic(ao)
       std::vector< std::vector<AtomNumber> > backatoms;
       moldat[0]->getBackbone( resstrings, moltype, backatoms );
       for(unsigned i=0;i<backatoms.size();++i){
-          log.printf("  atoms in entity %d : ", groups.size()+1 );
+          log.printf("  atoms in entity %u : ", static_cast<unsigned>(groups.size()+1));
           for(unsigned j=0;j<backatoms[i].size();++j) log.printf("%d ",backatoms[i][j].serial() );
           log.printf("\n");
           groups.push_back( backatoms[i] );

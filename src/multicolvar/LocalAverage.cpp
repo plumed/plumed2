@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -141,7 +141,7 @@ MultiColvarFunction(ao)
   }
   log.printf("  averaging over central molecule and those within %s\n",( switchingFunction.description() ).c_str() );
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
-  setLinkCellCutoff( 2.*switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
+  setLinkCellCutoff( switchingFunction.get_dmax() ); buildSymmetryFunctionLists();
   for(unsigned i=0;i<getNumberOfBaseMultiColvars();++i) getBaseMultiColvar(i)->doNotCalculateDirector();
 }
 

@@ -92,6 +92,8 @@ protected:
   void setupLinkCells();
 /// Get the separation between a pair of vectors
   Vector getSeparation( const Vector& vec1, const Vector& vec2 ) const ;
+/// Apply PBCs over a set of distance vectors
+  void applyPbc(std::vector<Vector>& dlist, unsigned max_index=0) const;
 /// Do we use pbc to calculate this quantity
   bool usesPbc() const ;
 /// Add some derivatives for an atom

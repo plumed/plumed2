@@ -1,0 +1,22 @@
+MOLINFO STRUCTURE=helix.pdb
+
+one: CONSTANT VALUE=1
+
+# two alternative ways to get the same result:
+
+# old way (using a center of mass)
+# c: CENTER ATOMS=1,2 WEIGHTS=1,0.5
+# p: DISTANCE ATOMS=c,3 COMPONENTS
+# px: COMBINE ARG=p.x,one COEFFICIENTS=1.0,+1.0 PERIODIC=NO
+
+# new way (resetting reference frame)
+FIT_TO_TEMPLATE REFERENCE=align.pdb TYPE=SIMPLE
+p: POSITION ATOM=3
+px: COMBINE ARG=p.x COEFFICIENTS=1.0 PERIODIC=NO
+# using one or the other should give the same result and same forces
+
+
+RESTRAINT ARG=px AT=0 SLOPE=1
+RESTRAINT ARG=p.y AT=0 SLOPE=2
+RESTRAINT ARG=p.z AT=0 SLOPE=3
+

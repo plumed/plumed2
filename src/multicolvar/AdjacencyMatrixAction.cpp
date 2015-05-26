@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -63,7 +63,6 @@ tmpdf(1)
           }
 
           for(unsigned j=i;j<nfunc;++j){
-             plumed_assert( j*(i+1)<0.5*(nfunc*nfunc+nfunc) );
              std::string sw, errors; parseNumbered("SWITCH",ibase+j+1,sw);
              if(sw.length()==0){
                 std::string num; Tools::convert(ibase+j+1,num);
@@ -91,7 +90,7 @@ tmpdf(1)
       }
   }
   // And set the link cell cutoff
-  setLinkCellCutoff( 2*sfmax );
+  setLinkCellCutoff( sfmax );
 
   // Create the storeAdjacencyMatrixVessel
   std::string param; vesselbase::VesselOptions da("","",0,param,this);
