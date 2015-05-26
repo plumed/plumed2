@@ -1036,7 +1036,7 @@ MetaD::MetaD(const ActionOptions &ao):
       }
       log.printf("  Domains will be updated every %d steps\n", adaptive_domains_stride_);
       if (adaptive_domains_eincrement_ > 0) {
-        log.printf("  After initialization domains will change only if the domains bias level has increased by %d energy units since last change\n", adaptive_domains_eincrement_);        
+        log.printf("  After initialization domains will change only if the domains bias level has increased by %f energy units since last change\n", adaptive_domains_eincrement_);        
       }
       log.printf("  Scaling grids will be generated using 1 / %f of the grid points\n", adaptive_domains_downsampling_);
       // Set the histogramming parameters for the future free energy estimates
