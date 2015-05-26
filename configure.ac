@@ -42,9 +42,24 @@ AC_DEFUN([PLUMED_CHECK_CXXFLAG], [
   CXXFLAGS="$CXXFLAGS $1"
   AC_MSG_CHECKING([whether $CXX accepts $1])
   AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-    [AC_MSG_RESULT([yes])],
+    [
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([not linking]); CXXFLAGS="$save_CXXFLAGS"])
+    ],
     [AC_MSG_RESULT([no]); CXXFLAGS="$save_CXXFLAGS"]
   )
+])
+
+# PLUMED_CHECK_LDFLAGS(flag)
+# use it to check if a flag is available on this compiler
+AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
+  save_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$LDFLAGS $1"
+  AC_MSG_CHECKING([whether LDFLAGS can contain $1])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+    [AC_MSG_RESULT([yes])],
+    [AC_MSG_RESULT([no]); LDFLAGS="$save_LDFLAGS"])
 ])
 
 # PLUMED_CHECK_PACKAGE(header,function,define[,library])
@@ -244,7 +259,7 @@ if test "$external_molfile_plugins" == true ; then
         	[ AC_CHECK_HEADER([libmolfile_plugin.h], [LIBS="-lmolfile_plugin $LIBS"] [found=ok] ) ])
 fi
 if test $found == ko ; then
-	AC_MSG_WARN([using internal molfile_plugins, which only support dcd and xtc/trr/trj])
+	AC_MSG_WARN([using internal molfile_plugins, which only support dcd/xtc/trr/trj/crd files])
 	AC_DEFINE([__PLUMED_INTERNAL_MOLFILE_PLUGINS])
 fi
 
@@ -362,7 +377,7 @@ if test "$shared" == true ; then
     AC_MSG_NOTICE([LDSO and LDFLAGS need special flags])
     SOEXT=so
     LDSO="$LDSO -shared"
-    LDFLAGS="$LDFLAGS -rdynamic"
+    PLUMED_CHECK_LDFLAGS([-rdynamic])
   ;;
   (*)
     AC_MSG_NOTICE([*** Dynamic library only enabled on OSX and Linux ***])
@@ -495,8 +510,10 @@ if test $mpi == true; then
   if test $mpi_found == ok; then
     AC_MSG_NOTICE([**** PLUMED will be compiled using MPI])
   else 
-    AC_MSG_NOTICE([**** PLUMED will NOT be compiled using MPI])
+    AC_MSG_WARN([**** PLUMED will NOT be compiled using MPI because MPI have not been found!])
   fi
+else
+    AC_MSG_NOTICE([**** PLUMED will be compiled without MPI])
 fi
 
 AC_SUBST(build_dir)

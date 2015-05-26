@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "ActionRegister.h"
+#include "core/ActionSet.h"
 #include "tools/Grid.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -31,7 +32,6 @@
 #include <string>
 #include <cstring>
 #include "tools/File.h"
-#include "time.h"
 #include <iostream>
 #include <limits>
 
@@ -74,7 +74,7 @@ utility.
 In the simplest possible implementation of a metadynamics calculation the expense of a metadynamics 
 calculation increases with the length of the simulation as one has to, at every step, evaluate 
 the values of a larger and larger number of Gaussians. To avoid this issue you can
-store the bias on a grid.  This approach is similar to that proposed in \cite babi+08jcp but has the 
+store the bias on a grid.  This approach is similar to that proposed in \cite babi08jcp but has the 
 advantage that the grid spacing is independent on the Gaussian width.
 Notice that you should
 provide either the number of bins for every collective variable (GRID_BIN) or
@@ -665,6 +665,12 @@ isFirstStep(true)
 // output periodicities of variables
   for(unsigned i=0;i<getNumberOfArguments();++i) hillsOfile_.setupPrintValue( getPntrToArgument(i) );
 
+  bool concurrent=false;
+
+  const ActionSet&actionSet(plumed.getActionSet());
+  for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) if(dynamic_cast<MetaD*>(*p)){ concurrent=true; break; }
+  if(concurrent) log<<"  You are using concurrent metadynamics\n";
+
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
@@ -676,6 +682,9 @@ isFirstStep(true)
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(acceleration) log<<plumed.cite(
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
+  if(concurrent) log<<plumed.cite(
+     "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
+ 
   log<<"\n";
 
 }

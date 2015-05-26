@@ -10,10 +10,11 @@ mkdir -p tmp/$$
 cd tmp/$$
 
 # grab doc
-cp -R $root/*doc .
-
-# delete gitignore files
-rm */.gitignore
+mkdir user-doc
+cp -R $root/user-doc/{html,manual.pdf} user-doc/
+test -d $root/user-doc/regtests && cp -R $root/user-doc/regtests user-doc/ || true
+mkdir developer-doc
+cp -R $root/developer-doc/html developer-doc/
 
 # This file should be here, it is needed otherwise
 # files beginning with _ are skipped

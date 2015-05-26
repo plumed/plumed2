@@ -1,0 +1,5 @@
+INCLUDE FILE=plumed-common.dat
+
+#add here the metadynamics on your first cv
+
+ENDPLUMED

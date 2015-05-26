@@ -104,7 +104,7 @@ do
  sed 's|<types/simple.h>|"simple.h"|'
 done
 echo "#endif"
-} > lapack.cpp
+} | sed 's/static //' > lapack.cpp
 
 cd ../
 ./header.sh

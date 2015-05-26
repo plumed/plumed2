@@ -92,13 +92,13 @@ install-do:
 # rebuild libraries and main using new target dir
 	$(MAKE) PLUMED_LIBDIR=$(PLUMED_INSTALL_ROOT)/src/lib/ PLUMED_INSTALL=Install all
 # copy .h, .cpp .o compile_options.sh and documentation:
-	cd ../../ ; tar cf - patches scripts src/*/*.h src/*/*.cpp src/*/*.o src/config/compile_options.sh *-doc/*.png *-doc/html *-doc/regtests *-doc/manual.pdf | tar xf - -C $(PLUMED_INSTALL_ROOT)/
+	cd ../../ ; tar cf - patches scripts src/*/*.h src/*/*.cpp src/*/*.o src/config/compile_options.sh *-doc/html *-doc/regtests *-doc/manual.pdf | tar xf - -C $(PLUMED_INSTALL_ROOT)/
 # also copy .h files into include/ dir
 	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)/
 # copy inc files changing the path
 	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../../)| $(PLUMED_INSTALL_ROOT)/|g" $$file > $(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
 # modulefile
-	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|"> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|" | sed "s|@_SUFFIX_@|$(PLUMED_INSTALL_LIBSUFFIX)|" > $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
 # install links
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	for file in $(PLUMED_SCRIPTS) ; do ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-$$file $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-$$file ; done

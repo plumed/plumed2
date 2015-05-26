@@ -34,12 +34,20 @@ Communicator::Communicator()
 {
 }
 
+// cppcheck complains about this:
+// Member variable 'Communicator::communicator' is not initialized in the constructor
+// this is a false positive so I suppress it
+// cppcheck-suppress uninitMemberVar
 Communicator::Communicator(const Communicator&pc){
   Set_comm(pc.communicator);
 }
 
 Communicator::Status Communicator::StatusIgnore;
 
+// cppcheck complains about this:
+// Member variable 'Communicator::communicator' is not assigned a value in 'Communicator::operator='
+// this is a false positive so I suppress it
+// cppcheck-suppress operatorEqVarError
 Communicator& Communicator::operator=(const Communicator&pc){
   if (this != &pc){
       Set_comm(pc.communicator);

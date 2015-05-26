@@ -1,0 +1,8 @@
+# this is to test virial correction with pbc
+# the two ghost atoms are far away but close when distance is computed with pbc
+g1: GHOST ATOMS=1,2,3 COORDINATES=1.0,0.0,0.0
+g2: GHOST ATOMS=4,5,6 COORDINATES=1.0,0.0,0.0
+d: DISTANCE ATOMS=g1,g2
+RESTRAINT ARG=d AT=0.0 KAPPA=1.0
+
+DUMPATOMS ATOMS=1-6,g1,g2 FILE=x

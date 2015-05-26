@@ -113,6 +113,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
       value[j*natoms+i][k]=a->getOutputQuantity(j);
     }
   }
+ Tensor box(pbc.getBox());
  for(int i=0;i<3;i++) for(int k=0;k<3;k++){
    double arg0=box(i,k);
    for(int j=0;j<natoms;j++) positions[j]=pbc.realToScaled(positions[j]);
@@ -203,7 +204,6 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
 
 
 void ActionAtomistic::retrieveAtoms(){
-  box=atoms.box;
   pbc=atoms.pbc;
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
@@ -246,6 +246,7 @@ void ActionAtomistic::applyForces(){
 }
 
 void ActionAtomistic::clearOutputForces(){
+  virial.zero();
   if(donotforce) return;
   for(unsigned i=0;i<forces.size();++i)forces[i].zero();
   forceOnEnergy=0.0;
