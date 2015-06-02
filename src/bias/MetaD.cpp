@@ -492,7 +492,7 @@ MetaD::MetaD(const ActionOptions &ao):
   transitiontempered_(false),
   tt_biasf_(1.0),
   tt_biasthreshold_(0.0),
-  tt_alpha_(0.5),
+  tt_alpha_(1.0),
   benthic_toleration_(false),
   benthic_tol_number_(0.0),
   benthic_erosion_(false),
