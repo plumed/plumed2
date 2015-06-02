@@ -1380,6 +1380,8 @@ MetaD::MetaD(const ActionOptions &ao):
      "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
   if (calc_average_bias_coft_) log << plumed.cite(
      "Tiwary and Parrinello, J. Phys. Chem. B 119, 736–742 (2015)");
+  if (use_whole_grid_domain_) log << plumed.cite(
+     "McGovern and de Pablo, J. Chem. Phys. 139, 084102 (2013)");
   log << "\n";
   log.flush();
 }
