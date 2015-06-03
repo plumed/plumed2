@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -68,7 +68,13 @@ void BridgedMultiColvarFunction::performTask(){
   }
 
   completeTask();
-  atoms_with_derivatives.updateActiveMembers();
+  atoms_with_derivatives.emptyActiveMembers();
+  if( mycolv->isDensity() ){
+     for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j) atoms_with_derivatives.updateIndex( mycolv->atomsWithCatomDer[j] );
+  } else {
+     for(unsigned j=0;j<mycolv->atoms_with_derivatives.getNumberActive();++j) atoms_with_derivatives.updateIndex( mycolv->atoms_with_derivatives[j] );
+  }
+  atoms_with_derivatives.sortActiveList();
 }
 
 Vector BridgedMultiColvarFunction::retrieveCentralAtomPos(){
@@ -88,7 +94,8 @@ Vector BridgedMultiColvarFunction::retrieveCentralAtomPos(){
              addElementDerivative(nbase + nx + 2, mycolv->getElementDerivative(nbas2 + nx + 2) ); 
          } 
       }
-      atomsWithCatomDer.updateActiveMembers();  // This can perhaps be faster
+      for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j) atomsWithCatomDer.updateIndex( mycolv->atomsWithCatomDer[j] );
+      atomsWithCatomDer.sortActiveList();
       return cvec;
   }
   Vector cvec;

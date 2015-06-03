@@ -136,6 +136,10 @@ void ReferenceConfiguration::checkRead(){
   }
 }
 
+bool ReferenceConfiguration::isDirection() const {
+  return ( name=="DIRECTION" );
+}
+
 void ReferenceConfiguration::clearDerivatives(){
   for(unsigned i=0;i<atom_ders.size();++i) atom_ders[i].zero();
   virial.zero(); virialWasSet=false;

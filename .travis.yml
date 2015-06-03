@@ -1,22 +1,25 @@
 language: cpp
 env:
 # list of configurations to be attempted:
-# clang
-  - PLUMED_CC=clang PLUMED_CXX=clang++
-# GNU
-  - PLUMED_CC=gcc   PLUMED_CXX=g++
 # MPI + doc
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes
-# clang
+# this is the "master" one, it is going to update the manual if log contains [makedoc]
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ MAKEDOC=yes ALMOST=yes
+# the following two are with debug flags, including bound check
+# I think clang does not support debug-glibcxx, so I skip it here
+  - PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
+# then I try serial compilers
+  - PLUMED_CC=clang PLUMED_CXX=clang++
+  - PLUMED_CC=gcc   PLUMED_CXX=g++
+# then check with different optimization flags
   - PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3 LAPACK=yes
-# GNU
   - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
-# MPI
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes ALMOST=yes
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
 # build the manual, only if log contains string [makedoc]
+  - export PLUMED_NUM_THREADS=2
   - ./.travis.check.log makedoc  || MAKEDOC=no
   - ./.travis.check.log valgrind || VALGRIND=no
   - ./.travis.check.log almost   || ALMOST=no
@@ -41,12 +44,15 @@ install:
   - test "$LAPACK" == yes  && sudo apt-get install libatlas-base-dev      || true
   - test "$ALMOST" == yes && ./.travis.install.almost                     || true
   - test "$ALMOST" == yes && ENALMOST="--enable-almost"                 || true
+  - test "$ALMOST" == yes && PLUMED_CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost"  || true
+# moreover, we hardcode path to dynamic library, required for xdrfile to link properly
+# I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
+  - test -n "$LD_LIBRARY_PATH" && PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" || true
 script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
-# moreover, we hardcode path to dynamic library, required for xdrfile to link properly
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost" $ENALMOST
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS --enable-openmp
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install

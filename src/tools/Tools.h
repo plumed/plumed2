@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -168,6 +168,11 @@ bool Tools::parseFlag(std::vector<std::string>&line,const std::string&key,bool&v
 /// beware: this brings any number into a pbc that ranges from -0.5 to 0.5
 inline
 double Tools::pbc(double x){
+#ifdef PBC_WHILE
+  while (x>0.5) x-=1.0;
+  while (x<-0.5) x+=1.0;
+  return x;
+#else
   if(std::numeric_limits<int>::round_style == std::round_toward_zero) {
     const double offset=100.0;
     const double y=x+offset;
@@ -176,6 +181,7 @@ double Tools::pbc(double x){
   } else if(std::numeric_limits<int>::round_style == std::round_to_nearest) {
     return x-int(x);
   } else return x-floor(x+0.5);
+#endif
 }
 
 template<typename T>

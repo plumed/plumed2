@@ -30,6 +30,7 @@ class Pbc;
 
 class SingleDomainRMSD : public ReferenceAtoms {
 protected:
+  std::vector<Vector> displacement;
   void readReference( const PDB& pdb );
 public:
   SingleDomainRMSD( const ReferenceConfigurationOptions& ro );

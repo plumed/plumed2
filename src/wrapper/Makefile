@@ -2,6 +2,11 @@
 # include the machine dependent configuration
 -include ../../Makefile.conf
 
+# openmp flags should not be used here
+ifdef CXXFLAGS_NOOPENMP
+  CXXFLAGS := $(CXXFLAGS_NOOPENMP)
+endif
+
 # if machine dependent configuration has been found:
 ifdef GCCDEP
 

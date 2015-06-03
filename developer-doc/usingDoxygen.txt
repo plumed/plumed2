@@ -445,9 +445,17 @@ description "The description of what is described on your page" will appear.
 
 One final thing, if your How-to is a tutorial - that is to say if you have a set of exercises for users to work through - then it may be useful to 
 provide them with some example files that they can download.  This is possible you add the files to our repository and you can put a link to download them
-somewhere on your page. To keep things manageable there should only be one file for each how-to page.  As such if you need to provide users with multiple files
-please put them in a zipped tar ball. This tar-ball should then be placed in the user-doc/tutorials directory and ideally given a name so that it can be identified
-with your corresponding *.txt file.  You can then download it by including the following into your *.txt file.
+somewhere on your page.
+To keep things manageable there should only be one (or a few) tar-ball file per tutorial.
+As such if you need to provide users with multiple files please put them in a single directory. The script that 
+build the documentation will make one or more tar-balls from there.
+please put them in a zipped tar ball.
+The simplest way is thus to add a directory
+in the user-doc/tutorials directory and ideally given a name so that it can be identified
+with your corresponding *.txt file.
+For example if the name of the tutorial is `mytute` you should make a directory named
+`user-doc/tutorials/mytute`. 
+You can then download it by including the following into your *.txt file.
 
 \verbatim
 /**
@@ -461,7 +469,7 @@ link: @subpage mytute
 
 description: A tutorial for users to work through
 
-additional-files: mytute.tar.gz
+additional-files: mytute
 \endverbatim 
 
 In this case the tar ball you add is called mytute.tar.gz.  The user can download this file by clicking on the word file.

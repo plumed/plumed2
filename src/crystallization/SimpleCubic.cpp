@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -105,7 +105,7 @@ PLUMED_MULTICOLVAR_INIT(ao)
   log.printf("  measure of simple cubicity around central atom.  Includes those atoms within %s\n",( switchingFunction.description() ).c_str() );
   // Set the link cell cutoff
   rcut2 = switchingFunction.get_dmax()*switchingFunction.get_dmax();
-  setLinkCellCutoff( 2.*switchingFunction.get_dmax() );
+  setLinkCellCutoff( switchingFunction.get_dmax() );
 
   // Read in the atoms
   int natoms=2; readAtoms( natoms );

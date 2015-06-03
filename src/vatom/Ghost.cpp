@@ -47,10 +47,6 @@ PRINT ARG=d1
 \endverbatim
 (See also \ref DISTANCE and \ref PRINT).
 
-\warning If a force is added to a ghost atom, the contribution
-to the virial could contain small artifacts. It is therefore discouraged to
-use GHOST in a constant pressure simulation.
-
 */
 //+ENDPLUMEDOC
 
@@ -87,7 +83,6 @@ Ghost::Ghost(const ActionOptions&ao):
   log.printf("  of atoms");
   for(unsigned i=0;i<atoms.size();++i) log.printf(" %d",atoms[i].serial());
   log.printf("\n");
-  log<<"  WARNING: GHOST does not include virial contributions, please avoid using it with constant pressure molecular dynamics\n";
   requestAtoms(atoms);
 }
 
@@ -182,6 +177,9 @@ void Ghost::calculate(){
   deriv[2] =                                       coord[1]*dn1d2 + coord[2]*dn2d2;
 
   setAtomsDerivatives(deriv);
+
+// Virial contribution
+  setBoxDerivativesNoPbc();
 }
 
 }

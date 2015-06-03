@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -30,9 +30,9 @@ PLUMED_REGISTER_METRIC(MultiDomainRMSD,"MULTI")
 
 MultiDomainRMSD::MultiDomainRMSD( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-ReferenceAtoms(ro)
+ReferenceAtoms(ro),
+ftype(ro.getMultiRMSDType())
 {
-   ftype=ro.getMultiRMSDType();
 }
 
 MultiDomainRMSD::~MultiDomainRMSD(){
@@ -117,6 +117,51 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
 double MultiDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
   plumed_dbg_assert( vals.size()==0 && pos.size()==getNumberOfAtoms() && arg.size()==0 );
   return calculate( pos, pbc, squared );
+}
+
+bool MultiDomainRMSD::pcaIsEnabledForThisReference(){
+  bool enabled=true;
+  for(unsigned i=0;i<domains.size();++i){
+      if( !domains[i]->pcaIsEnabledForThisReference() ) enabled=false;
+  }
+  return enabled;
+}
+
+Vector MultiDomainRMSD::getAtomicDisplacement( const unsigned& iatom ){
+  for(unsigned i=0;i<domains.size();++i){
+      unsigned n=0;
+      for(unsigned j=blocks[i];j<blocks[i+1];++j){
+          if( j==iatom ) return weights[i]*domains[i]->getAtomicDisplacement(n);
+          n++;
+      }
+  }
+}
+
+double MultiDomainRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, std::vector<Vector>& derivatives ){
+  double totd=0.; std::vector<Vector> mypos, tderivs; Matrix<Vector> tvecs;
+  for(unsigned i=0;i<domains.size();++i){
+      // Must extract appropriate positions here 
+     mypos.resize( blocks[i+1] - blocks[i] + 1 );
+     tderivs.resize( blocks[i+1] - blocks[i] + 1 );
+     tvecs.resize( vecs.ncols(), blocks[i+1] - blocks[i] + 1 );
+     unsigned n=0;
+     for(unsigned j=blocks[i];j<blocks[i+1];++j){
+        mypos[n]=pos[j];
+        for(unsigned k=0;k<vecs.ncols();++k) tvecs( k, n ) = vecs( k, j );
+        n++; 
+     }
+      
+     // Do the calculations
+     domains[i]->projectAtomicDisplacementOnVector( iv, tvecs, mypos, tderivs );
+      
+     // And derivatives
+     n=0;
+     for(unsigned j=blocks[i];j<blocks[i+1];++j){
+         addAtomicDerivatives( j, weights[i]*tderivs[n] ); n++;
+     }
+  }
+
+  return totd;
 }
 
 }

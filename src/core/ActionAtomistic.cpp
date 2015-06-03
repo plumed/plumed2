@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -83,6 +83,10 @@ Vector ActionAtomistic::pbcDistance(const Vector &v1,const Vector &v2)const{
   return pbc.distance(v1,v2);
 }
 
+void ActionAtomistic::pbcApply(std::vector<Vector>& dlist, unsigned max_index)const{
+  pbc.apply(dlist, max_index);
+}
+
 void ActionAtomistic::calculateNumericalDerivatives( ActionWithValue* a ){
   calculateAtomicNumericalDerivatives( a, 0 );
 }
@@ -113,6 +117,7 @@ void ActionAtomistic::calculateAtomicNumericalDerivatives( ActionWithValue* a, c
       value[j*natoms+i][k]=a->getOutputQuantity(j);
     }
   }
+ Tensor box(pbc.getBox());
  for(int i=0;i<3;i++) for(int k=0;k<3;k++){
    double arg0=box(i,k);
    for(int j=0;j<natoms;j++) positions[j]=pbc.realToScaled(positions[j]);
@@ -161,9 +166,8 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
 
   Tools::interpretRanges(strings); t.resize(0);
   for(unsigned i=0;i<strings.size();++i){
-   bool ok=false;
    AtomNumber atom;
-   ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
+   bool ok=Tools::convert(strings[i],atom); // this is converting strings to AtomNumbers
    if(ok) t.push_back(atom);
 // here we check if this is a special symbol for MOLINFO
    if( !ok && strings[i].compare(0,1,"@")==0 ){
@@ -204,7 +208,6 @@ void ActionAtomistic::parseAtomList(const std::string&key,const int num, std::ve
 
 
 void ActionAtomistic::retrieveAtoms(){
-  box=atoms.box;
   pbc=atoms.pbc;
   Colvar*cc=dynamic_cast<Colvar*>(this);
   if(cc && cc->checkIsEnergy()) energy=atoms.getEnergy();
@@ -247,6 +250,7 @@ void ActionAtomistic::applyForces(){
 }
 
 void ActionAtomistic::clearOutputForces(){
+  virial.zero();
   if(donotforce) return;
   for(unsigned i=0;i<forces.size();++i)forces[i].zero();
   forceOnEnergy=0.0;
@@ -264,4 +268,12 @@ void ActionAtomistic::readAtomsFromPDB( const PDB& pdb ){
   }
   for(unsigned j=0;j<indexes.size();j++) charges[j]=pdb.getBeta()[indexes[j].index()];
   for(unsigned j=0;j<indexes.size();j++) masses[j]=pdb.getOccupancy()[indexes[j].index()];
+}
+
+void ActionAtomistic::makeWhole(){
+  for(unsigned j=0;j<positions.size()-1;++j){
+    const Vector & first (positions[j]);
+    Vector & second (positions[j+1]);
+    second=first+pbcDistance(first,second);
+  }
 }

@@ -1,0 +1,24 @@
+#! FIELDS time t2 t3 t4 t5 t6 t7 t8 t9 t10 t12 t13
+#! SET min_t2 -pi
+#! SET max_t2 pi
+#! SET min_t3 -pi
+#! SET max_t3 pi
+#! SET min_t4 -pi
+#! SET max_t4 pi
+#! SET min_t5 -pi
+#! SET max_t5 pi
+#! SET min_t6 -pi
+#! SET max_t6 pi
+#! SET min_t7 -pi
+#! SET max_t7 pi
+#! SET min_t8 -pi
+#! SET max_t8 pi
+#! SET min_t9 -pi
+#! SET max_t9 pi
+#! SET min_t10 -pi
+#! SET max_t10 pi
+#! SET min_t12 -pi
+#! SET max_t12 pi
+#! SET min_t13 -pi
+#! SET max_t13 pi
+ 0.000000 -1.140  3.000  1.144 -2.773 -2.785 -1.264  0.044 -0.426  0.621  0.361 -0.867

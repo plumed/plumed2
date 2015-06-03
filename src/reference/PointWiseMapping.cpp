@@ -35,6 +35,7 @@ void PointWiseMapping::setPropertyNames( const std::vector<std::string>& prop, c
 }
 
 void PointWiseMapping::readRestOfFrame(){
+  if( getFrame( getNumberOfReferenceFrames() - 1 )->isDirection() ) plumed_merror("cannot use directions in mapping");
   plumed_dbg_assert( property.size()>0 );
 
   std::vector<double> labelvals;

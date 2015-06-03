@@ -40,6 +40,11 @@ const std::vector<Vector> & PDB::getPositions()const{
   return positions;
 }
 
+void PDB::setPositions(const std::vector<Vector> &v ){
+	  plumed_assert( v.size()==positions.size() );	
+	  positions=v;
+}
+
 const std::vector<double> & PDB::getOccupancy()const{
   return occupancy;
 }
@@ -211,6 +216,14 @@ std::string PDB::getResidueName( const unsigned& resnum ) const {
   return "";
 }
 
+std::string PDB::getResidueName(const unsigned& resnum,const std::string& chainid ) const {
+  for(unsigned i=0;i<size();++i){
+     if( residue[i]==resnum && ( chainid=="*" || chain[i]==chainid) ) return residuenames[i];
+  }
+  return "";
+}
+
+
 AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigned& resnum ) const {
   for(unsigned i=0;i<size();++i){
      if( residue[i]==resnum && atomsymb[i]==aname ) return numbers[i];
@@ -219,6 +232,16 @@ AtomNumber PDB::getNamedAtomFromResidue( const std::string& aname, const unsigne
   plumed_merror("residue " + num + " does not contain an atom named " + aname );
   return numbers[0]; // This is to stop compiler errors
 }
+
+AtomNumber PDB::getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chainid ) const{
+  for(unsigned i=0;i<size();++i){
+     if( residue[i]==resnum && atomsymb[i]==aname && ( chainid=="*" || chain[i]==chainid) ) return numbers[i];
+  }
+  std::string num; Tools::convert( resnum, num );
+  plumed_merror("residue " + num + " from chain " + chainid + " does not contain an atom named " + aname );
+  return numbers[0]; // This is to stop compiler errors
+}
+
 
 std::string PDB::getChainID(const unsigned& resnumber) const {
   for(unsigned i=0;i<size();++i){
