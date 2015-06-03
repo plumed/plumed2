@@ -17,11 +17,10 @@ env:
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
 # cppcheck
 # in principle we should make only "cppcheck" here
-# to avoid to many if's below, I also make a quick test with -O0 here
-  - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O0 CPPCHECK=yes
+  - PLUMED_CC=gcc   PLUMED_CXX=g++   CPPCHECK=yes
 matrix:
   allow_failures:
-    - env: PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O0 CPPCHECK=yes
+    - env: PLUMED_CC=gcc   PLUMED_CXX=g++  CPPCHECK=yes
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
