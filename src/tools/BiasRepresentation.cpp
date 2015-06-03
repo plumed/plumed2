@@ -158,12 +158,12 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
                  vector<unsigned> nneighb;
                  if(doInt_) nneighb=BiasGrid_->getNbin();
                  else nneighb=kk->getSupport(BiasGrid_->getDx());
-                 vector<unsigned long long> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
+                 vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(kk->getCenter(),nneighb);
                  vector<double> der(ndim);
                  vector<double> xx(ndim);
                  if(mycomm.Get_size()==1){
                    for(unsigned i=0;i<neighbors.size();++i){
-                     unsigned long long ineigh=neighbors[i];
+                     Grid::index_t ineigh=neighbors[i];
                      for(int j=0;j<ndim;++j){der[j]=0.0;}
                      BiasGrid_->getPoint(ineigh,xx);   
                      // assign xx to a new vector of values
@@ -185,7 +185,7 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
                    vector<double> allbias(neighbors.size(),0.0);
 	           vector<double> tmpder(ndim); 
                    for(unsigned i=rank;i<neighbors.size();i+=stride){
-                     unsigned long long ineigh=neighbors[i];
+                     Grid::index_t ineigh=neighbors[i];
                      BiasGrid_->getPoint(ineigh,xx);
                      for(int j=0;j<ndim;++j){values[j]->set(xx[j]);}	 
                      if(doInt_) allbias[i]=kk->evaluate(values,der,true,doInt_,lowI_,uppI_);
@@ -202,7 +202,7 @@ void BiasRepresentation::pushKernel( IFile *ifile ){
                    mycomm.Sum(allbias);
                    mycomm.Sum(allder);
                    for(unsigned i=0;i<neighbors.size();++i){
-                     unsigned long long ineigh=neighbors[i];
+                     Grid::index_t ineigh=neighbors[i];
                      for(int j=0;j<ndim;++j){der[j]=allder[ndim*i+j];}
                      BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
                    }
