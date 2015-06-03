@@ -5,7 +5,7 @@ set -e
 # I use a "tee" here so that errors qre written both immediately (to see progress)
 # and on a file (for later report)
 
-cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 -q \
+cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 \
   --template='[{file}:{line}] ({severity}) :{id}: {message}' --enable=all --inline-suppr --force \
   */*.{h,cpp} 2> >(tee cppcheck.log >&2)
 
