@@ -190,6 +190,8 @@ For users:
 - Fixed a bug in the virial computed with \ref FIT_TO_TEMPLATE when the reference pdb had center non located at the origin.
 - Fixed a bug in the the forces computed with \ref FIT_TO_TEMPLATE when used in combination with \ref COM, \ref CENTER, or \ref GHOST
 - Fixed a bug that could lead plumed to be stuck with domain decomposition in some extreme case (one domain with all atoms, other domains empty).
+- Fixed a bug when \ref COMBINE or \ref MATHEVAL are used with PERIODIC keyword. Now when PERIODIC keyword is used the result
+  of the calculation is brought within the periodicity domain. See <a href="http://github.com/plumed/plumed2/issues/139"> here </a>.
 - Fixed a bug related to \RANDOM_EXCHANGES followed by \ref INCLUDE
 - Updated internal molfile plugins to VMD 1.9.2.
 - Included crd and crdbox formats to internal molfile.
