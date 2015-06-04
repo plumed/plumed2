@@ -624,10 +624,7 @@ build_dir
 xxd
 dot
 doxygen
-STATIC_LIBS
-LDSO
 LD
-SOEXT
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -645,6 +642,9 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+LDSO
+STATIC_LIBS
+SOEXT
 target_alias
 host_alias
 build_alias
@@ -712,6 +712,9 @@ enable_xdrfile
       ac_precious_vars='build_alias
 host_alias
 target_alias
+SOEXT
+STATIC_LIBS
+LDSO
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1362,6 +1365,11 @@ Optional Features:
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
+  SOEXT       extension of dynamic libraries (so/dylib)
+  STATIC_LIBS variables that should be linked statically directly to MD code -
+              configure will add here -ldl if necessary
+  LDSO        command for linking shared library - configure will use CXX plus
+              the proper flags
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -2651,6 +2659,10 @@ else
   esac
 
 fi
+
+
+
+
 
 
 
@@ -3951,22 +3963,24 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 # log the initial flags
 LD="$CXX"
 LDSO="$CXX"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXX:      $CXX" >&5
-$as_echo "$as_me: Initial CXX:      $CXX" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXXFLAGS: $CXXFLAGS" >&5
-$as_echo "$as_me: Initial CXXFLAGS: $CXXFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CPPFLAGS: $CPPFLAGS" >&5
-$as_echo "$as_me: Initial CPPFLAGS: $CPPFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDFLAGS:  $LDFLAGS" >&5
-$as_echo "$as_me: Initial LDFLAGS:  $LDFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LIBS:     $LDFLAGS" >&5
-$as_echo "$as_me: Initial LIBS:     $LDFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LD:       $LD" >&5
-$as_echo "$as_me: Initial LD:       $LD" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDSO:     $LDSO" >&5
-$as_echo "$as_me: Initial LDSO:     $LDSO" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial SOEXT:    $SOEXT" >&5
-$as_echo "$as_me: Initial SOEXT:    $SOEXT" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXX:         $CXX" >&5
+$as_echo "$as_me: Initial CXX:         $CXX" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXXFLAGS:    $CXXFLAGS" >&5
+$as_echo "$as_me: Initial CXXFLAGS:    $CXXFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CPPFLAGS:    $CPPFLAGS" >&5
+$as_echo "$as_me: Initial CPPFLAGS:    $CPPFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDFLAGS:     $LDFLAGS" >&5
+$as_echo "$as_me: Initial LDFLAGS:     $LDFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LIBS:        $LDFLAGS" >&5
+$as_echo "$as_me: Initial LIBS:        $LDFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial STATIC_LIBS: $LDFLAGS" >&5
+$as_echo "$as_me: Initial STATIC_LIBS: $LDFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LD:          $LD" >&5
+$as_echo "$as_me: Initial LD:          $LD" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDSO:        $LDSO" >&5
+$as_echo "$as_me: Initial LDSO:        $LDSO" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial SOEXT:       $SOEXT" >&5
+$as_echo "$as_me: Initial SOEXT:       $SOEXT" >&6;}
 
 # check C++ flags
 if test $shared == true
