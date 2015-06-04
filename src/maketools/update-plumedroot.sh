@@ -39,7 +39,7 @@ if test -n "$PLUMED_LIBSUFFIX" ; then
 fi
 
 PLUMED_PROGRAM_NAME="$(echo plumed | sed "${program_transform_name}")${PLUMED_LIBSUFFIX}"
-PLUMED_ROOT="$prefix/lib/${PLUMED_PROGRAM_NAME}/"
+PLUMED_ROOT="$prefix/lib/${PLUMED_PROGRAM_NAME}"
 
 {
 echo "PLUMED_INSTALL_ROOT=${PLUMED_ROOT}"
