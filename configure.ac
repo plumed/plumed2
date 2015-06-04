@@ -513,7 +513,7 @@ then
 fi
 
 AC_MSG_NOTICE([**** PLUMED will be installed using prefix $prefix])
-AC_MSG_NOTICE([**** You can change this later setting PLUMED_PREFIX environment variable before installing])
+AC_MSG_NOTICE([**** You can change this later using "make install prefix=/path"])
 AC_MSG_NOTICE([**** Executable will be named 'plumed'])
 AC_MSG_NOTICE([**** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing])
 

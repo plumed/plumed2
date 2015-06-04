@@ -296,29 +296,28 @@ The standard way to do it is during the configure step:
 > make install
 \endverbatim
 However, you can also change it after compilation setting
-the environment variable PLUMED_PREFIX.
+the variable `prefix`.
 \verbatim
 > ./configure
 > make
-> export PLUMED_PREFIX=$HOME/opt
-> make install
+> make install prefix=$HOME/opt
 \endverbatim
-If you didn't specify the --prefix option during configure, and you did not set the PLUMED_PREFIX
-environment variable, PLUMED will be installed in /usr/local.
+If you didn't specify the `--prefix` option during configure, and you did not set the `prefix`
+variable when installing, PLUMED will be installed in /usr/local.
 The install command should be executed with root permissions (e.g. "sudo make install")
 if you want to install PLUMED on a system directory.
 Notice that upon installation PLUMED currently needs to relink a library. If
 root user does not have access to compilers, "sudo -E make install" might solve
 the issue.
 An almost full copy of the compilation directory will
-be installed into $PLUMED_PREFIX/lib/plumed/ directory. A link to the proper
-PLUMED executable will be set up in $PLUMED_PREFIX/bin,
-PLUMED include files will be copied to $PLUMED_PREFIX/include/plumed
-and PLUMED libraries will be linked to $PLUMED_PREFIX/lib.
+be installed into $prefix/lib/plumed/ directory. A link to the proper
+PLUMED executable will be set up in $prefix/bin,
+PLUMED include files will be copied to $prefix/include/plumed
+and PLUMED libraries will be linked to $prefix/lib.
 
 One should then set the environment properly. We suggest to do it using
 the module framework (http://modules.sourceforge.net). An ad hoc generated
-module file for PLUMED can be found in $PLUMED_PREFIX/lib/plumed/src/lib/modulefile
+module file for PLUMED can be found in $prefix/lib/plumed/src/lib/modulefile
 Just edit it as you wish and put it in your modulefile directory.
 This will also allow you to install multiple PLUMED versions on your machine and to
 switch amongst them. If you do not want to use modules, you can 
@@ -335,11 +334,9 @@ the following things:
   exploit the PLUMED library in general purpose programs
 
 As a final note, if you want to install several PLUMED versions without using modules then you can 
-define the environment variable PLUMED_LIBSUFFIX using:
+define the variable PLUMED_LIBSUFFIX using:
 \verbatim
-> export PLUMED_PREFIX=$HOME/opt
-> export PLUMED_LIBSUFFIX=v2.0
-> make install
+> make install prefix=$HOME/opt PLUMED_LIBSUFFIX=v2.0
 \endverbatim
 This will install a plumed executable named "plumed-v2.0". All the other files will be renamed similarly,
 e.g. the PLUMED library will be loaded with "-lplumed-v2.0" and the PLUMED header files

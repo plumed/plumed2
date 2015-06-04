@@ -6483,8 +6483,8 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using prefix $prefix" >&5
 $as_echo "$as_me: **** PLUMED will be installed using prefix $prefix" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change this later setting PLUMED_PREFIX environment variable before installing" >&5
-$as_echo "$as_me: **** You can change this later setting PLUMED_PREFIX environment variable before installing" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change this later using \"make install prefix=/path\"" >&5
+$as_echo "$as_me: **** You can change this later using \"make install prefix=/path\"" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** Executable will be named 'plumed'" >&5
 $as_echo "$as_me: **** Executable will be named 'plumed'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing" >&5
