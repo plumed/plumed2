@@ -7,7 +7,7 @@ SUBDIRS := $(SRCDIRS) user-doc developer-doc regtest
 SUBDIRSCLEAN:=$(addsuffix .clean,$(SUBDIRS))
 
      
-.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck
+.PHONY: all lib clean $(SRCDIRS) doc docclean check cppcheck distclean
 
 # if machine dependent configuration has been found:
 ifdef GCCDEP
@@ -55,6 +55,8 @@ clean: $(SUBDIRSCLEAN)
 
 $(SUBDIRSCLEAN): %.clean:
 	$(MAKE) -C $* clean
+
+distclean: fullclean
 
 fullclean:
 	make clean
