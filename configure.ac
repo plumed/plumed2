@@ -103,6 +103,10 @@ PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([almost],[almost],[search for almost],[no])
 PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[no])
 
+AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
+AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
+AC_ARG_VAR(LDSO,[command for linking shared library - configure will use CXX plus the proper flags ])
+
 
 # by default use -O flag
 # we override the autoconf default (-g) because in release build we do not want to
@@ -141,14 +145,15 @@ AC_LANG(C++)
 # log the initial flags
 LD="$CXX"
 LDSO="$CXX"
-AC_MSG_NOTICE([Initial CXX:      $CXX])
-AC_MSG_NOTICE([Initial CXXFLAGS: $CXXFLAGS])
-AC_MSG_NOTICE([Initial CPPFLAGS: $CPPFLAGS])
-AC_MSG_NOTICE([Initial LDFLAGS:  $LDFLAGS])
-AC_MSG_NOTICE([Initial LIBS:     $LDFLAGS])
-AC_MSG_NOTICE([Initial LD:       $LD])
-AC_MSG_NOTICE([Initial LDSO:     $LDSO])
-AC_MSG_NOTICE([Initial SOEXT:    $SOEXT])
+AC_MSG_NOTICE([Initial CXX:         $CXX])
+AC_MSG_NOTICE([Initial CXXFLAGS:    $CXXFLAGS])
+AC_MSG_NOTICE([Initial CPPFLAGS:    $CPPFLAGS])
+AC_MSG_NOTICE([Initial LDFLAGS:     $LDFLAGS])
+AC_MSG_NOTICE([Initial LIBS:        $LDFLAGS])
+AC_MSG_NOTICE([Initial STATIC_LIBS: $LDFLAGS])
+AC_MSG_NOTICE([Initial LD:          $LD])
+AC_MSG_NOTICE([Initial LDSO:        $LDSO])
+AC_MSG_NOTICE([Initial SOEXT:       $SOEXT])
 
 # check C++ flags
 if test $shared == true
