@@ -163,10 +163,10 @@ MCfirst_(-1)
   log.printf("  maximum MC move of data uncertainty %f\n",Dsigma_);
   log.printf("  uncertainty in the mean estimate %f\n",sigma_mean_);
   log.printf("  temperature of the system %f\n",kbt_);
-  log.printf("  number of experimental data points %d\n",ndata_);
-  log.printf("  number of replicas %d\n",nrep_);
-  log.printf("  MC steps %d\n",MCsteps_);
-  log.printf("  MC stride %d\n",MCstride_);
+  log.printf("  number of experimental data points %u\n",ndata_);
+  log.printf("  number of replicas %u\n",nrep_);
+  log.printf("  MC steps %u\n",MCsteps_);
+  log.printf("  MC stride %u\n",MCstride_);
 
   addComponent("bias");   componentIsNotPeriodic("bias");
   addComponent("sigma");  componentIsNotPeriodic("sigma");

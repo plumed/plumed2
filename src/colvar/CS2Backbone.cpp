@@ -223,9 +223,8 @@ isvectorial(false)
     }
     Tools::interpretRanges(srep);
     for(unsigned i=0;i<srep.size();++i){
-      bool ok=false;
       unsigned tmp;
-      ok=Tools::convert(srep[i],tmp);
+      bool ok=Tools::convert(srep[i],tmp);
       if(ok) replicas.push_back(tmp);
     }
     std::copy( replicas.begin(), replicas.end(), std::back_inserter( repl_list ) );
@@ -330,7 +329,7 @@ isvectorial(false)
   
   if(ensemble) { 
     if(replicas.size()>0) {
-      log.printf("  I am repl %u, ENSEMBLE averaging over %u replicas: ", my_repl, replicas.size());
+      log.printf("  I am repl %u, ENSEMBLE averaging over %lu replicas: ", my_repl, replicas.size());
       for(unsigned k=0;k<replicas.size();k++) log.printf(" %u", replicas[k]);
       log.printf("\n");
     } else log.printf("  ENSEMBLE averaging over %u replicas\n", ens_dim);
@@ -472,7 +471,7 @@ void CS2Backbone::calculate()
       // among replicas
       for(unsigned k=0;k<ens_dim;k++) multi_sim_comm.Sum(&allsh[k][0][0], numResidues*6);
       for(std::list<unsigned>::iterator k = repl_list.begin(); k != repl_list.end(); k++) {
-          for(unsigned i=0;i<6;i++) for(unsigned j=0;j<numResidues;j++) sh[j][i] += allsh[*k][j][i]*fact;
+          for(unsigned i=0;i<6;++i) for(unsigned j=0;j<numResidues;++j) sh[j][i] += allsh[*k][j][i]*fact;
       }
     } 
     // inside each replica
