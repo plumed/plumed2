@@ -512,10 +512,16 @@ then
   prefix=/usr/local
 fi
 
+AC_ARG_PROGRAM
+
+
+# version modified to work in shell script instead of makefile:
+program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
+program_name=$(echo plumed | sed "$program_transform_name_sh")
+
 AC_MSG_NOTICE([**** PLUMED will be installed using prefix $prefix])
 AC_MSG_NOTICE([**** You can change this later using "make install prefix=/path"])
-AC_MSG_NOTICE([**** Executable will be named 'plumed'])
-AC_MSG_NOTICE([**** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing])
+AC_MSG_NOTICE([**** Executable will be named $program_name])
 
 if test $mpi == true; then
   if test $mpi_found == ok; then
@@ -529,6 +535,8 @@ fi
 
 AC_SUBST(build_dir)
 build_dir=`pwd`
+
+
 
 # This is to replace tags in Makefile.conf.in
 # saving the result to Makefile.conf

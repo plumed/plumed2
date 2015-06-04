@@ -25,14 +25,26 @@ if test -n "$PLUMED_PREFIX" ; then
   prefix="${PLUMED_PREFIX}"
 fi
 
-PLUMED_LIBSUFFIX="${PLUMED_LIBSUFFIX:=}"
-test -n "$PLUMED_LIBSUFFIX" && PLUMED_LIBSUFFIX="-${PLUMED_LIBSUFFIX}"
-PLUMED_ROOT="$prefix/lib/plumed${PLUMED_LIBSUFFIX}/"
+# if environment variable PLUMED_LIBSUFFIX is set, complain
+if test -n "$PLUMED_LIBSUFFIX" ; then
+  echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+  echo "WARNING: using PLUMED_LIBSUFFIX variable is deprecated, please use"
+  echo "         ./configure --program-suffix='$PLUMED_LIBSUFFIX'"
+  echo "         at configure time"
+  echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+# this will result in an error in a later version
+# now we fall back to the previous behavior
+  PLUMED_LIBSUFFIX="${PLUMED_LIBSUFFIX:=}"
+  test -n "$PLUMED_LIBSUFFIX" && PLUMED_LIBSUFFIX="-${PLUMED_LIBSUFFIX}"
+fi
+
+PLUMED_PROGRAM_NAME="$(echo plumed | sed "${program_transform_name}")${PLUMED_LIBSUFFIX}"
+PLUMED_ROOT="$prefix/lib/${PLUMED_PROGRAM_NAME}/"
 
 {
 echo "PLUMED_INSTALL_ROOT=${PLUMED_ROOT}"
 echo "PLUMED_INSTALL_PREFIX=$prefix"
-echo "PLUMED_INSTALL_LIBSUFFIX=${PLUMED_LIBSUFFIX}"
+echo "PLUMED_PROGRAM_NAME=${PLUMED_PROGRAM_NAME}"
 } > install.conf
 
 sed "s|@PLUMED_ROOT@|${PLUMED_ROOT}|g" > $1~

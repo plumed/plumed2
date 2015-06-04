@@ -88,33 +88,33 @@ install-do:
 	$(MAKE) uninstall
 	mkdir -p $(PLUMED_INSTALL_PREFIX)/bin
 	mkdir -p $(PLUMED_INSTALL_ROOT)/src/lib
-	mkdir -p $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
+	mkdir -p $(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
 # rebuild libraries and main using new target dir
 	$(MAKE) PLUMED_LIBDIR=$(PLUMED_INSTALL_ROOT)/src/lib/ PLUMED_INSTALL=Install all
 # copy .h, .cpp .o compile_options.sh and documentation:
 	cd ../../ ; tar cf - patches scripts src/*/*.h src/*/*.cpp src/*/*.o src/config/compile_options.sh *-doc/html *-doc/regtests *-doc/manual.pdf | tar xf - -C $(PLUMED_INSTALL_ROOT)/
 # also copy .h files into include/ dir
-	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)/
+	cd ../../src ; tar cf - */*.h */*/*.h | tar xf - -C $(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)/
 # copy inc files changing the path
 	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../../)| $(PLUMED_INSTALL_ROOT)/|g" $$file > $(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
 # modulefile
-	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|" | sed "s|@_SUFFIX_@|$(PLUMED_INSTALL_LIBSUFFIX)|" > $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|" | sed "s|@_PROGNAME_@|$(PLUMED_PROGRAM_NAME)|" > $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
 # install links
-	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	for file in $(PLUMED_SCRIPTS) ; do ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-$$file $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-$$file ; done
+	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
+	for file in $(PLUMED_SCRIPTS) ; do ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-$$file $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-$$file ; done
 ifdef SOEXT
-	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumed.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
-	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumedKernel.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
+	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumed.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME).$(SOEXT)
+	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/libplumedKernel.$(SOEXT) $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)
 endif
 	chmod -R go+rX,go-w $(PLUMED_INSTALL_ROOT)
-	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-*
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
+	chmod -R go+rX,go-w $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-*
 	@echo
 	@echo "*** PLUMED has been installed ***"
 	@echo
 	@echo "Install prefix : $(PLUMED_INSTALL_PREFIX)"
-	@echo "Full name      : plumed$(PLUMED_INSTALL_LIBSUFFIX)"
+	@echo "Full name      : $(PLUMED_PROGRAM_NAME)"
 	@echo
 	@echo "Setup your environment"
 	@echo "- Ensure this is in your execution path : $(PLUMED_INSTALL_PREFIX)/bin"
@@ -122,7 +122,7 @@ endif
 ifdef SOEXT
 	@echo "- Ensure this is in your library path   : $(PLUMED_INSTALL_PREFIX)/lib"
 	@echo "For runtime binding:"
-	@echo "- Set this environment variable         : PLUMED_KERNEL=$(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)"
+	@echo "- Set this environment variable         : PLUMED_KERNEL=$(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)"
 endif
 	@echo
 	@echo "To create a tcl module that sets all the variables above, use this one as a starting point:"
@@ -130,21 +130,21 @@ endif
 	@echo
 	@echo "To uninstall, remove the following files and directories:"
 	@echo $(PLUMED_INSTALL_ROOT)
-	@echo $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	@echo $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	@for file in $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-* ; do echo $$file ; done
+	@echo $(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
+	@echo $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
+	@for file in $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-* ; do echo $$file ; done
 ifdef SOEXT
-	@echo $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
-	@echo $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
+	@echo $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME).$(SOEXT)
+	@echo $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)
 endif
 
 uninstall:
 	rm -fr $(PLUMED_INSTALL_ROOT)
-	rm -fr $(PLUMED_INSTALL_PREFIX)/include/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
-	rm -f $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-*
-	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX).$(SOEXT)
-	rm -f $(PLUMED_INSTALL_PREFIX)/lib/libplumed$(PLUMED_INSTALL_LIBSUFFIX)Kernel.$(SOEXT)
+	rm -fr $(PLUMED_INSTALL_PREFIX)/include/$(PLUMED_PROGRAM_NAME)
+	rm -f $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)
+	rm -f $(PLUMED_INSTALL_PREFIX)/bin/$(PLUMED_PROGRAM_NAME)-*
+	rm -f $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME).$(SOEXT)
+	rm -f $(PLUMED_INSTALL_PREFIX)/lib/lib$(PLUMED_PROGRAM_NAME)Kernel.$(SOEXT)
 
 $(DIRS):
 	$(MAKE) -C $@ obj

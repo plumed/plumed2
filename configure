@@ -1322,6 +1322,11 @@ Fine tuning of the installation directories:
 _ACEOF
 
   cat <<\_ACEOF
+
+Program names:
+  --program-prefix=PREFIX            prepend PREFIX to installed program names
+  --program-suffix=SUFFIX            append SUFFIX to installed program names
+  --program-transform-name=PROGRAM   run sed PROGRAM on installed program names
 _ACEOF
 fi
 
@@ -6481,14 +6486,28 @@ then
   prefix=/usr/local
 fi
 
+test "$program_prefix" != NONE &&
+  program_transform_name="s&^&$program_prefix&;$program_transform_name"
+# Use a double $ so make ignores it.
+test "$program_suffix" != NONE &&
+  program_transform_name="s&\$&$program_suffix&;$program_transform_name"
+# Double any \ or $.
+# By default was `s,x,x', remove it if useless.
+ac_script='s/[\\$]/&&/g;s/;s,x,x,$//'
+program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
+
+
+
+# version modified to work in shell script instead of makefile:
+program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
+program_name=$(echo plumed | sed "$program_transform_name_sh")
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using prefix $prefix" >&5
 $as_echo "$as_me: **** PLUMED will be installed using prefix $prefix" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change this later using \"make install prefix=/path\"" >&5
 $as_echo "$as_me: **** You can change this later using \"make install prefix=/path\"" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** Executable will be named 'plumed'" >&5
-$as_echo "$as_me: **** Executable will be named 'plumed'" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing" >&5
-$as_echo "$as_me: **** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** Executable will be named $program_name" >&5
+$as_echo "$as_me: **** Executable will be named $program_name" >&6;}
 
 if test $mpi == true; then
   if test $mpi_found == ok; then
@@ -6505,6 +6524,8 @@ fi
 
 
 build_dir=`pwd`
+
+
 
 # This is to replace tags in Makefile.conf.in
 # saving the result to Makefile.conf
