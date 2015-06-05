@@ -50,6 +50,8 @@ public:
   bool hasDerivatives();
 /// Resize the quantities in the vessel
   void resize();
+/// Get the action that reads the command in
+  ActionWithVessel* getOutputAction();
 /// Setup the action we are outputting to
   void setOutputAction( ActionWithVessel* myOutputAction );
 /// Apply some force 
@@ -69,6 +71,11 @@ public:
 /// Calculate numerical derivatives
   void completeNumericalDerivatives();
 };
+
+inline
+ActionWithVessel* BridgeVessel::getOutputAction(){
+  return myOutputAction;
+}
 
 }
 }

@@ -55,6 +55,9 @@ public:
   virtual unsigned getNumberOfQuantities();
 /// Calculate whats in the volume
   void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
+/// This calculates whether or not a particular is inside the box of interest
+/// this is used for neighbour list with volumes
+  bool inVolumeOfInterest( const unsigned& curr ) const ;
   virtual double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const=0;
   unsigned getCentralAtomElementIndex();
 };

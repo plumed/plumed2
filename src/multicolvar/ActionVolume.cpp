@@ -71,5 +71,14 @@ void ActionVolume::calculateAllVolumes( const unsigned& curr, MultiValue& outval
   setNumberInVolume( 0, curr, weight, wdf, vir, refders, outvals );
 }
 
+bool ActionVolume::inVolumeOfInterest( const unsigned& curr ) const {
+  Vector catom_pos=getPntrToMultiColvar()->getCentralAtomPos( curr );
+  Vector wdf; Tensor vir; std::vector<Vector> refders( getNumberOfAtoms() );
+  double weight=calculateNumberInside( catom_pos, wdf, vir, refders );
+  if( not_in ) weight = 1.0 - weight;
+  if( weight<getTolerance() ) return false;
+  return true;
+}
+
 }
 }
