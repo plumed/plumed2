@@ -250,7 +250,7 @@ double RMSD::calc_DDistDRef_Rot_DRotDPos_DRotDRef( const std::vector<Vector>& po
   return ret;
 }
 
-double RMSD::calc_PCAelements( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared  ){
+double RMSD::calc_PCAelements( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared  ) const {
    double ret=0.;
    switch(alignmentMethod){
 	case SIMPLE:
@@ -709,7 +709,7 @@ double RMSD::optimalAlignment_PCA(const  std::vector<double>  & align,
                             Tensor & Rotation,
                             std::vector<Vector> & DDistDPos,
                             Matrix<std::vector<Vector> > & DRotDPos,
-                            bool squared){
+                            bool squared) const {
    //initialize the data into the structure
    // typically the positions do not have the com neither calculated nor subtracted. This layer takes care of this business
    RMSDCoreData cd(align,displace,positions,reference);

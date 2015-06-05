@@ -34,22 +34,24 @@ namespace crystallization {
 class OrientationSphere : public multicolvar::MultiColvarFunction {
 private:
   double rcut2;
-  std::vector<double> catom_orient, catom_der, this_orient;
-  std::vector<double> catom_iorient, catom_ider, this_iorient;
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
   OrientationSphere(const ActionOptions&);
-  double compute();
-  void calculateWeight();
-  virtual double transformDotProduct( const double& dot, double& df );
-  Vector getCentralAtom();  
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  virtual double transformDotProduct( const double& dot, double& df ) const ;
+  virtual double calculateCoordinationPrefactor( const double& coord, double& df ) const ;
   bool isPeriodic(){ return false; }
 };
 
 inline
-double OrientationSphere::transformDotProduct( const double& dot, double& df ){
+double OrientationSphere::transformDotProduct( const double& dot, double& df ) const {
   df=1.0; return dot;
+}
+
+inline
+double OrientationSphere::calculateCoordinationPrefactor( const double& coord, double& df ) const {
+  df=0.0; return 1.0;
 }
 
 }

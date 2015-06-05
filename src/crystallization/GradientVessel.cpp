@@ -34,16 +34,14 @@ private:
   bool isdens;
   unsigned nweights, ncomponents;
   std::vector<unsigned> starts;
-  std::vector<double> val_interm;
-  Matrix<double> der_interm;
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   GradientVessel( const vesselbase::VesselOptions& da );
   std::string function_description();
   void resize();
-  bool calculate();
-  void finish();
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+  void finish( const std::vector<double>& buffer );
 };
 
 PLUMED_REGISTER_VESSEL(GradientVessel,"GRADIENT")
@@ -63,7 +61,11 @@ FunctionVessel(da)
    Gradient* vg=dynamic_cast<Gradient*>( getAction() );
    plumed_assert( vg ); isdens=(vg->getPntrToMultiColvar())->isDensity();
    nweights = vg->nbins[0] + vg->nbins[1] + vg->nbins[2];
-   ncomponents = vg->vend;
+   if( (vg->getPntrToMultiColvar())->getNumberOfQuantities()>2 ){
+       ncomponents = (vg->getPntrToMultiColvar())->getNumberOfQuantities() - 2; 
+   } else {
+       ncomponents = 1;
+   }
 
    starts.push_back(0);
    if( vg->nbins[0]>0 ){
@@ -91,56 +93,61 @@ void GradientVessel::resize(){
      unsigned nder=getAction()->getNumberOfDerivatives();
      resizeBuffer( (1+nder)*(ncomponents+1)*nweights );
      setNumberOfDerivatives( nder );
-     val_interm.resize( ncomponents*nweights );
-     der_interm.resize( ncomponents*nweights, nder );
   } else {
      setNumberOfDerivatives(0); 
      resizeBuffer( (ncomponents+1)*nweights );
-     val_interm.resize( ncomponents*nweights );
   }
 }
 
-bool GradientVessel::calculate(){
+bool GradientVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+  unsigned nder;
+  if( getAction()->derivativesAreRequired() ) nder=getAction()->getNumberOfDerivatives();
+  else nder=0;
+  unsigned wstart, cstart; if( ncomponents==1 ){ cstart=1; wstart=2; } else { cstart=2; wstart=2+ncomponents; }
+
   for(unsigned iw=0;iw<nweights;++iw){
       unsigned xx = (ncomponents+1)*iw;
-      double weight=getAction()->getElementValue(ncomponents + iw);
-      addValueIgnoringTolerance( xx, weight ); 
-      getAction()->chainRuleForElementDerivatives( xx , ncomponents + iw, 1.0, this );
+      double weight=myvals.get(wstart+iw); 
+      buffer[bufstart+xx*(nder+1)] += weight;
+      myvals.chainRule( wstart + iw, xx, 1, 0, 1.0, bufstart, buffer );
       for(unsigned jc=0;jc<ncomponents;++jc){
-          double colvar=getAction()->getElementValue( jc );
-          addValueIgnoringTolerance( xx + 1 + jc, weight*colvar );
-          getAction()->chainRuleForElementDerivatives( xx + 1 + jc, jc, weight, this );
-          getAction()->chainRuleForElementDerivatives( xx + 1 + jc, ncomponents + iw, colvar, this );   
+          double colvar=myvals.get( cstart + jc );   
+          buffer[bufstart+(xx+1+jc)*(nder+1) ] += weight*colvar;
+          myvals.chainRule( cstart + jc, xx + 1 + jc, 1, 0, weight, bufstart, buffer );
+          myvals.chainRule( wstart + iw, xx + 1 + jc, 1, 0, colvar, bufstart, buffer );
       }
   }
 
   return true;
 }
 
-void GradientVessel::finish(){
-  der_interm=0;  // Clear all interim derivatives
-  unsigned nder = getAction()->getNumberOfDerivatives();
+void GradientVessel::finish( const std::vector<double>& buffer ){
+  std::vector<double> val_interm( ncomponents*nweights );
+  unsigned nder;
+  if( getAction()->derivativesAreRequired() ) nder=getAction()->getNumberOfDerivatives();
+  else nder=0;
+  Matrix<double> der_interm( ncomponents*nweights, nder ); der_interm=0;
 
   if( isdens ){
       for(unsigned iw=0;iw<nweights;++iw){
-          val_interm[iw] = getFinalValue( 2*iw );
+          val_interm[iw] = buffer[bufstart + 2*iw*(1+nder)]; 
           if( getAction()->derivativesAreRequired() ){
-              unsigned wstart = 2*iw*(nder+1) + 1;
-              for(unsigned jder=0;jder<nder;++jder) der_interm( iw, jder ) += getBufferElement( wstart + jder );
+              unsigned wstart = bufstart + 2*iw*(nder+1) + 1;
+              for(unsigned jder=0;jder<nder;++jder) der_interm( iw, jder ) += buffer[ wstart + jder ]; 
           }
       }
   } else {
       for(unsigned iw=0;iw<nweights;++iw){
           unsigned xx = (ncomponents+1)*iw;
-          double sum=0, ww=getFinalValue( xx );
-          for(unsigned jc=0;jc<ncomponents;++jc) val_interm[ iw*ncomponents + jc ] = getFinalValue( xx + 1 + jc ) / ww;
+          double ww=buffer[bufstart + xx*(1+nder)];  
+          for(unsigned jc=0;jc<ncomponents;++jc) val_interm[ iw*ncomponents + jc ] = buffer[bufstart + (xx+1+jc)*(1+nder)] / ww; 
           if( getAction()->derivativesAreRequired() ){
-              unsigned wstart = xx*(nder+1) + 1;
+              unsigned wstart = bufstart + xx*(nder+1) + 1;
               for(unsigned jc=0;jc<ncomponents;++jc){
-                  unsigned bstart = ( xx + 1 + jc )*(nder+1) + 1;
-                  double val = getFinalValue( xx + 1 + jc );
+                  unsigned bstart = bufstart + ( xx + 1 + jc )*(nder+1) + 1;
+                  double val = buffer[bufstart + (nder+1)*(xx+1+jc)]; 
                   for(unsigned jder=0;jder<nder;++jder) 
-                     der_interm( iw*ncomponents + jc, jder ) = (1.0/ww)*getBufferElement( bstart + jder ) - (val/(ww*ww))*getBufferElement( wstart + jder );
+                     der_interm( iw*ncomponents + jc, jder ) = (1.0/ww)*buffer[bstart + jder] - (val/(ww*ww))*buffer[wstart + jder]; 
               }
           }
       }

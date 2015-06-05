@@ -35,6 +35,7 @@ PathBase::PathBase(const ActionOptions& ao):
 Action(ao),
 Mapping(ao)
 {
+  weightHasDerivatives=true;
   bool noz; parseFlag("NOZPATH",noz);
   parse("LAMBDA",lambda);
 
@@ -54,15 +55,18 @@ void PathBase::calculate(){
   runAllTasks();
 }
 
-void PathBase::performTask(){
+void PathBase::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+  // This builds a pack to hold the derivatives
+  ReferenceValuePack mypack( getNumberOfArguments(), getNumberOfAtoms(), myvals );
+  finishPackSetup( current, mypack );
   // Calculate the distance from the frame
-  double val=calculateDistanceFunction( getCurrentTask(), true );
+  double val=calculateDistanceFunction( current, mypack, true );
   // Put the element value in element zero
-  setElementValue( 0, val ); setElementValue( 1, 1.0 );
+  myvals.setValue( 0, val ); myvals.setValue( 1, 1.0 );
   return;
 }
 
-double PathBase::transformHD( const double& dist, double& df ){
+double PathBase::transformHD( const double& dist, double& df ) const {
   double val = exp( -dist*lambda );
   df = -lambda*val; 
   return val;

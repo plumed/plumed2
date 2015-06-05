@@ -124,7 +124,7 @@ public:
   static void registerKeywords( Keywords& keys );
   Histogram(const ActionOptions&ao);
   void performAnalysis();
-  void performTask();
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 };
 
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
@@ -212,7 +212,7 @@ unnormalized(false)
   log.printf("\n");
 }
 
-void Histogram::performTask(){ plumed_error(); }
+void Histogram::performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
 
 void Histogram::performAnalysis(){
   // Back up old histogram files

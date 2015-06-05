@@ -46,12 +46,13 @@ public:
 /// Set the input from an analysis object (don't know how this will work yet so currently just a plumed_error)
   void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
 /// Calculate
-  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
-  double calculate( const std::vector<Vector>& pos, const Pbc& pbc,  const bool& squared );
+  double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
+  double calculate( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const ;
 ///
   bool pcaIsEnabledForThisReference();
-  Vector getAtomicDisplacement( const unsigned& iatom );
-  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, std::vector<Vector>& derivatives );
+//  Vector getAtomicDisplacement( const unsigned& iatom );
+  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ; 
+  void setupPCAStorage( ReferenceValuePack& mypack ); 
 };
 
 }

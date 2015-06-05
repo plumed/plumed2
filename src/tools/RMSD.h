@@ -180,7 +180,7 @@ double optimalAlignment_PCA(const  std::vector<double>  & align,
 			    Tensor & Rotation, 
                             std::vector<Vector> & DDistDPos, 
 			    Matrix<std::vector<Vector> > & DRotDPos,
-                            bool squared=false);
+                            bool squared=false) const ;
 
 template <bool safe,bool alEqDis>
 double optimalAlignment_Fit(const  std::vector<double>  & align,
@@ -205,7 +205,7 @@ double optimalAlignment_Fit(const  std::vector<double>  & align,
  double calc_DDistDRef_Rot_DRotDPos( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos, const bool squared=false   ); 
  double calc_DDistDRef_Rot_DRotDPos_DRotDRef( const std::vector<Vector>& positions, std::vector<Vector> &DDistDPos, std::vector<Vector>& DDistDRef , Tensor & Rotation,Matrix<std::vector<Vector> > &DRotDPos,Matrix<std::vector<Vector> > &DRotDRef, const bool squared=false   ); 
  /// convenience method to retrieve all the bits and pieces for PCA
- double calc_PCAelements( const std::vector<Vector>& pos, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared=false); 
+ double calc_PCAelements( const std::vector<Vector>& pos, std::vector<Vector> &DDistDPos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector>  & alignedpositions, std::vector<Vector> & centeredpositions, std::vector<Vector> &centeredreference, const bool& squared=false) const ; 
  /// convenience method to retrieve all the bits and pieces needed by FitToTemplate 
  double calc_FitElements( const std::vector<Vector>& pos, Tensor & Rotation, Matrix<std::vector<Vector> > & DRotDPos,std::vector<Vector> & centeredpositions ,Vector & center_positions, const bool& squared=false ); 
  /// static convenience method to get the matrix i,a from drotdpos (which is a bit tricky)

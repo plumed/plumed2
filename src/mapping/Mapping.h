@@ -53,12 +53,16 @@ protected:
   std::vector<double> fframes;
 /// Get the number of frames in the path
   unsigned getNumberOfReferencePoints() const ;
+/// Finish the setup of the referenceValuePack by transfering atoms and args
+  void finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const ;
 /// Calculate the value of the distance from the ith frame
-  double calculateDistanceFunction( const unsigned& ifunc, const bool& squared );
+  double calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const ;
 /// Store the distance function
   void storeDistanceFunction( const unsigned& ifunc );
 /// Get the value of the weight
-  double getWeight() const ;
+  double getWeight( const unsigned& weight ) const ;
+/// Return a pointer to one of the reference configurations
+  ReferenceConfiguration* getReferenceConfiguration( const unsigned& ifunc );
 public:
   static void registerKeywords( Keywords& keys );
   Mapping(const ActionOptions&);
@@ -75,7 +79,7 @@ public:
 /// Get the value of lambda for paths and property maps 
   virtual double getLambda();
 /// This does the transformation of the distance by whatever function is required
-  virtual double transformHD( const double& dist, double& df )=0;
+  virtual double transformHD( const double& dist, double& df ) const=0;
 /// Get the number of properties we are projecting onto
   unsigned getNumberOfProperties() const ;
 /// Get the name of the ith property we are projecting
@@ -85,11 +89,7 @@ public:
 /// Get the name of the ith argument
   std::string getArgumentName( unsigned& iarg );
 /// Get the value of the ith property for the current frame
-  double getPropertyValue( const unsigned& iprop ) const ;
-/// Return the current value of the high dimensional function
-  double getCurrentHighDimFunctionValue( const unsigned& ider ) const ;
-/// Perform chain rule for derivatives
-  void mergeDerivatives( const unsigned& , const double& );
+  double getPropertyValue( const unsigned& current, const unsigned& iprop ) const ;
 /// Stuff to do before we do the calculation
   void prepare();
 /// Apply the forces 
@@ -131,20 +131,14 @@ std::string Mapping::getPropertyName( const unsigned& iprop ) const {
 }
 
 inline
-double Mapping::getPropertyValue( const unsigned& iprop ) const {
+double Mapping::getPropertyValue( const unsigned& cur, const unsigned& iprop ) const {
   plumed_dbg_assert( iprop<getNumberOfProperties() );
-  return mymap->getPropertyValue( getCurrentTask(), iprop ); 
+  return mymap->getPropertyValue( cur, iprop ); 
 }
 
 inline
-double Mapping::getWeight() const {
-  return mymap->getWeight( getCurrentTask() ); 
-}
-
-inline 
-double Mapping::getCurrentHighDimFunctionValue( const unsigned& ider ) const {
-  plumed_dbg_assert( ider<2 );
-  return fframes[ider*getNumberOfReferencePoints() + getCurrentTask()];
+double Mapping::getWeight( const unsigned& current ) const {
+  return mymap->getWeight( current ); 
 }
 
 inline
