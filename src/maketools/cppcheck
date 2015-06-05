@@ -26,7 +26,7 @@ cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 \
 ## perhaps we could keep some of them to make to code cleaner at some point
 ##
 ## (the "true" command is necessary so that the script does not fail if some string is not found)
-grep -v "(style)" cppcheck.log | grep -v "\[molfile/" > cppcheck.fatal || true
+grep -v "(style)" cppcheck.log | grep -v "\[molfile/" | grep -v "\[lapack/" | grep -v "\[blas/"> cppcheck.fatal || true
 count=$(cat cppcheck.fatal | wc -l)
 echo 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
