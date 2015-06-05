@@ -1168,13 +1168,33 @@ MetaD::MetaD(const ActionOptions &ao):
     if (grid_) {
       double temp_val = 0.0;
       vector<double> temp_der(getNumberOfArguments());
-      vector<double> temp_point(getNumberOfArguments());
-      for (unsigned long long i = 0; i < BiasGrid_->getMaxSize(); i++) {
-        BiasGrid_->getPoint(i, temp_point);
-        temp_val = ExtGrid_->getValueAndDerivatives(temp_point, temp_der);
-        if(temp_val != 0.0) {
-          BiasGrid_->addValueAndDerivatives(i, temp_val, temp_der);
+      // If the grids have identical coordinates, simply copy the old one point by point.
+      bool grid_coords_are_same = true;
+      for (unsigned i = 0; i < getNumberOfArguments(); i++) {
+        grid_coords_are_same = grid_coords_are_same && (BiasGrid_->getNbin()[i] == ExtGrid_->getNbin()[i]);
+        grid_coords_are_same = grid_coords_are_same && (BiasGrid_->getMin()[i] == ExtGrid_->getMin()[i]);
+        grid_coords_are_same = grid_coords_are_same && (BiasGrid_->getMax()[i] == ExtGrid_->getMax()[i]);
+      }
+      if (grid_coords_are_same) {
+        for (unsigned long long i = 0; i < BiasGrid_->getMaxSize(); i++) {
+          temp_val = ExtGrid_->getValueAndDerivatives(i, temp_der);
+          if (temp_val != 0.0) {
+            BiasGrid_->addValueAndDerivatives(i, temp_val, temp_der);
+          }
         }
+        log << "  Copied GRID_RFILE potential to bias grid without interpolation\n";
+      // If the grid coordinates are not identical, map points in the new grid to points 
+      // in the old grid, then copy an interpolated value.
+      } else {
+        vector<double> temp_point(getNumberOfArguments());
+        for (unsigned long long i = 0; i < BiasGrid_->getMaxSize(); i++) {
+          BiasGrid_->getPoint(i, temp_point);
+          temp_val = ExtGrid_->getValueAndDerivatives(temp_point, temp_der);
+          if (temp_val != 0.0) {
+            BiasGrid_->addValueAndDerivatives(i, temp_val, temp_der);
+          }
+        }
+        log << "  Copied GRID_RFILE potential to bias grid using interpolation\n";
       }
       delete ExtGrid_;
       ExtGrid_ = NULL;
