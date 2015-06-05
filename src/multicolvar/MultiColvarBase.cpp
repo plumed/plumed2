@@ -21,7 +21,9 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
 #include "BridgedMultiColvarFunction.h"
+#include "ActionVolume.h"
 #include "vesselbase/Vessel.h"
+#include "vesselbase/BridgeVessel.h"
 #include "tools/Pbc.h"
 #include "AtomValuePack.h"
 #include "CatomPack.h"
@@ -185,7 +187,50 @@ void MultiColvarBase::setupLinkCells(){
      deactivateAllTasks(); 
      activateTheseTasks( active_tasks );
      contributorsAreUnlocked=false;
+  } else {
+     // Now check for calculating volumes (currently this is only done for usespecies style commands 
+     // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless
+     bool justVolumes=true;
+     for(unsigned i=0;i<getNumberOfVessels();++i){
+         vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+         if( !myb ){ justVolumes=false; break; }
+         ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() ); 
+         if( !myv ){ justVolumes=false; break; }
+     }
+     // Now ensure that we only do calculations for those atoms in the relevant volume
+     if( justVolumes ){
+         bool justVolumes=true;
+         // Setup the regions in the action volume objects 
+         for(unsigned i=0;i<getNumberOfVessels();++i){
+             vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+             ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+             myv->retrieveAtoms(); myv->setupRegions();
+         } 
+
+         unsigned stride=comm.Get_size();
+         unsigned rank=comm.Get_rank();
+         if( serialCalculation() ){ stride=1; rank=0; } 
+
+         unsigned nactive=0;
+         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+             bool invol=false;
+             for(unsigned j=0;j<getNumberOfVessels();++j){
+                 vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(j) );
+                 ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+                 if( myv->inVolumeOfInterest(i) ){ invol=true; }  
+             }
+             if( invol ){ nactive++; active_tasks[i]=1; }
+         }
+
+         if( !serialCalculation() ) comm.Sum( active_tasks );
+
+         deactivateAllTasks();
+         activateTheseTasks( active_tasks );
+         contributorsAreUnlocked=false;
+     }
   }
+
 }
 
 void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {

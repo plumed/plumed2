@@ -11,10 +11,10 @@ cd tmp/$$
 
 # grab doc
 mkdir user-doc
-cp -R $root/user-doc/{*.png,html,manual.pdf} user-doc/
+cp -R $root/user-doc/{html,manual.pdf} user-doc/
 test -d $root/user-doc/regtests && cp -R $root/user-doc/regtests user-doc/ || true
 mkdir developer-doc
-cp -R $root/developer-doc/{*.png,html} developer-doc/
+cp -R $root/developer-doc/html developer-doc/
 
 # This file should be here, it is needed otherwise
 # files beginning with _ are skipped

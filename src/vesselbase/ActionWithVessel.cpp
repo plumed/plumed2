@@ -36,14 +36,14 @@ namespace PLMD{
 namespace vesselbase{
 
 void ActionWithVessel::registerKeywords(Keywords& keys){
-  keys.add("optional","TOL","this keyword can be used to speed up your calculation. When accumulating sums in which the individual "
-                            "terms are numbers inbetween zero and one it is assumed that terms less than a certain tolerance "
-                            "make only a small contribution to the sum.  They can thus be safely ignored as can the the derivatives "
-                            "wrt these small quantities.");
+  keys.add("hidden","TOL","this keyword can be used to speed up your calculation. When accumulating sums in which the individual "
+                          "terms are numbers inbetween zero and one it is assumed that terms less than a certain tolerance "
+                          "make only a small contribution to the sum.  They can thus be safely ignored as can the the derivatives "
+                          "wrt these small quantities.");
   keys.reserve("hidden","NL_TOL","this keyword can be used to speed up your calculation.  It must be used in conjuction with the TOL "
-                                   "keyword and the value for NL_TOL must be set less than the value for TOL.  This keyword ensures that "
-                                   "quantities, which are much less than TOL and which will thus not added to the sums being accumulated "
-                                   "are not calculated at every step. They are only calculated when the neighbor list is updated.");
+                                 "keyword and the value for NL_TOL must be set less than the value for TOL.  This keyword ensures that "
+                                 "quantities, which are much less than TOL and which will thus not added to the sums being accumulated "
+                                 "are not calculated at every step. They are only calculated when the neighbor list is updated.");
   keys.add("hidden","MAXDERIVATIVES","The maximum number of derivatives that can be used when storing data.  This controls when "
                                      "we have to start using lowmem");
   keys.addFlag("SERIAL",false,"do the calculation in serial.  Do not parallelize");
