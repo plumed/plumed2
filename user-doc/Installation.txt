@@ -153,8 +153,17 @@ used by PLUMED.
 If you wish to disable any search for external libraries
 (e.g. because the system libraries have problems) this can be done with
 \verbatim
+> ./configure --disable-external-blas
+\endverbatim
+Notice that you can also disable external lapack only, that is use internal lapack with external blas
+using
+\verbatim
 > ./configure --disable-external-lapack
 \endverbatim
+Since typically it is the blas library that can be heavily optimized, this configuration
+should not provide significant slowing down and could be used on systems where
+native lapack libraries have problems.
+
 
 As a final resort, you can also edit the resulting Makefile.conf file.
 Notable variables in this file include:
