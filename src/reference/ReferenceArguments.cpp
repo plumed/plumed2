@@ -159,8 +159,9 @@ const std::vector<double>& ReferenceArguments::getReferenceMetric(){
   return trig_metric;
 }
 
-double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, const bool& squared ){
-  double r=0;
+double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, 
+                                                      ReferenceValuePack& myder, const bool& squared ) const {
+  double r=0; std::vector<double> arg_ders( vals.size() );
   if( hasmetric ){
       double dp_i, dp_j;
       for(unsigned i=0;i<reference_args.size();++i){
@@ -185,7 +186,9 @@ double ReferenceArguments::calculateArgumentDistance( const std::vector<Value*> 
   }
   if(!squared){ 
     r=sqrt(r); double ir=1.0/(2.0*r); 
-    for(unsigned i=0;i<arg_ders.size();++i) arg_ders[i]*=ir; 
+    for(unsigned i=0;i<arg_ders.size();++i) myder.setArgumentDerivatives( i, arg_ders[i]*ir ); 
+  } else {
+    for(unsigned i=0;i<arg_ders.size();++i) myder.setArgumentDerivatives( i, arg_ders[i] );
   }
   return r;
 }

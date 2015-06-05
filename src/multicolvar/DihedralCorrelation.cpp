@@ -85,9 +85,8 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   DihedralCorrelation(const ActionOptions&);
-  virtual double compute();
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
-  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(DihedralCorrelation,"DIHCOR")
@@ -102,6 +101,10 @@ PLUMED_MULTICOLVAR_INIT(ao)
 {
   // Read in the atoms
   int natoms=8; readAtoms( natoms );
+  // Stuff for central atoms
+  std::vector<bool> catom_ind(8, false); 
+  catom_ind[1]=catom_ind[2]=catom_ind[5]=catom_ind[6]=true;
+  setAtomsForCentralAtom( catom_ind );
 
   // And setup the ActionWithVessel
   if( getNumberOfVessels()==0 ){
@@ -114,19 +117,19 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double DihedralCorrelation::compute(){
+double DihedralCorrelation::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
   Vector d10,d11,d12;
-  d10=getSeparation(getPosition(1),getPosition(0));
-  d11=getSeparation(getPosition(2),getPosition(1));
-  d12=getSeparation(getPosition(3),getPosition(2));
+  d10=getSeparation(myatoms.getPosition(1),myatoms.getPosition(0));
+  d11=getSeparation(myatoms.getPosition(2),myatoms.getPosition(1));
+  d12=getSeparation(myatoms.getPosition(3),myatoms.getPosition(2));
 
   Vector dd10,dd11,dd12; PLMD::Torsion t1;
   double phi1  = t1.compute(d10,d11,d12,dd10,dd11,dd12);
 
   Vector d20,d21,d22;
-  d20=getSeparation(getPosition(5),getPosition(4));
-  d21=getSeparation(getPosition(6),getPosition(5));
-  d22=getSeparation(getPosition(7),getPosition(6));
+  d20=getSeparation(myatoms.getPosition(5),myatoms.getPosition(4));
+  d21=getSeparation(myatoms.getPosition(6),myatoms.getPosition(5));
+  d22=getSeparation(myatoms.getPosition(7),myatoms.getPosition(6));
 
   Vector dd20,dd21,dd22; PLMD::Torsion t2;
   double phi2 = t2.compute( d20, d21, d22, dd20, dd21, dd22 );
@@ -138,31 +141,23 @@ double DihedralCorrelation::compute(){
   dd11 *= 0.5*sin( phi2 - phi1 );
   dd12 *= 0.5*sin( phi2 - phi1 );
   // And add
-  addAtomsDerivatives(0,dd10);
-  addAtomsDerivatives(1,dd11-dd10);
-  addAtomsDerivatives(2,dd12-dd11);
-  addAtomsDerivatives(3,-dd12);
-  addBoxDerivatives  (-(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)));
+  myatoms.addAtomsDerivatives(1, 0, dd10);
+  myatoms.addAtomsDerivatives(1, 1, dd11-dd10);
+  myatoms.addAtomsDerivatives(1, 2, dd12-dd11);
+  myatoms.addAtomsDerivatives(1, 3, -dd12);
+  myatoms.addBoxDerivatives  (1, -(extProduct(d10,dd10)+extProduct(d11,dd11)+extProduct(d12,dd12)));
   // Derivative wrt phi2
   dd20 *= -0.5*sin( phi2 - phi1 );
   dd21 *= -0.5*sin( phi2 - phi1 );
   dd22 *= -0.5*sin( phi2 - phi1 );
   // And add
-  addAtomsDerivatives(4,dd20);
-  addAtomsDerivatives(5,dd21-dd20);
-  addAtomsDerivatives(6,dd22-dd21);
-  addAtomsDerivatives(7,-dd22);
-  addBoxDerivatives  (-(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)));
+  myatoms.addAtomsDerivatives(1, 4, dd20);
+  myatoms.addAtomsDerivatives(1, 5, dd21-dd20);
+  myatoms.addAtomsDerivatives(1, 6, dd22-dd21);
+  myatoms.addAtomsDerivatives(1, 7, -dd22);
+  myatoms.addBoxDerivatives(1, -(extProduct(d20,dd20)+extProduct(d21,dd21)+extProduct(d22,dd22)));
 
   return value;
-}
-
-Vector DihedralCorrelation::getCentralAtom(){
-   addCentralAtomDerivatives( 1, 0.25*Tensor::identity() );
-   addCentralAtomDerivatives( 2, 0.25*Tensor::identity() );
-   addCentralAtomDerivatives( 5, 0.25*Tensor::identity() );
-   addCentralAtomDerivatives( 6, 0.25*Tensor::identity() );
-   return 0.25*( getPosition(1) + getPosition(2) + getPosition(5) + getPosition(6) );
 }
 
 }

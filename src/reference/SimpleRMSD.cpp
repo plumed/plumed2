@@ -31,10 +31,12 @@ private:
 public:
   SimpleRMSD( const ReferenceConfigurationOptions& ro );
   void read( const PDB& );
-  double calc( const std::vector<Vector>& pos, const bool& squared );
+  double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
   bool pcaIsEnabledForThisReference(){ return true; }
-  Vector getAtomicDisplacement( const unsigned& iatom );
-  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, std::vector<Vector>& derivatives );
+  void setupPCAStorage( ReferenceValuePack& mypack ){
+     mypack.switchOnPCAOption(); mypack.getAtomsDisplacementVector().resize( getNumberOfAtoms() );
+  }
+  double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;  
 };
 
 PLUMED_REGISTER_METRIC(SimpleRMSD,"SIMPLE")
@@ -49,27 +51,28 @@ void SimpleRMSD::read( const PDB& pdb ){
   readReference( pdb );
 }
 
-double SimpleRMSD::calc( const std::vector<Vector>& pos, const bool& squared ){
-  return myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), atom_ders, displacement, squared );
+double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
+  if( myder.getAtomsDisplacementVector().size()!=pos.size() ) myder.getAtomsDisplacementVector().resize( pos.size() );
+  double d=myrmsd.simpleAlignment( getAlign(), getDisplace(), pos, getReferencePositions(), myder.getAtomVector(), myder.getAtomsDisplacementVector(), squared );
+  myder.clear(); for(unsigned i=0;i<pos.size();++i) myder.setAtomDerivatives( i, myder.getAtomVector()[i] );
+  if( !myder.updateComplete() ) myder.updateDynamicLists();
+  return d;
 }
 
-Vector SimpleRMSD::getAtomicDisplacement( const unsigned& iatom ){
-  return displacement[iatom];
-}
-
-double SimpleRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, std::vector<Vector>& derivatives ){
-  Vector comder; comder.zero();
-  for(unsigned j=0;j<displacement.size();++j){
+double SimpleRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const { 
+  plumed_dbg_assert( mypack.calcUsingPCAOption() ); Vector comder; comder.zero();
+  for(unsigned j=0;j<pos.size();++j){
       for(unsigned k=0;k<3;++k) comder[k] += getAlign()[j]*vecs(iv,j)[k];
   }
 
-  double proj=0;
-  for(unsigned j=0;j<displacement.size();++j){
+  double proj=0; mypack.clear();
+  for(unsigned j=0;j<pos.size();++j){
       for(unsigned k=0;k<3;++k){
-          proj += vecs(iv,j)[k]*displacement[j][k];
-          derivatives[j][k] = vecs(iv,j)[k] - comder[k];
+          proj += vecs(iv,j)[k]*mypack.getAtomsDisplacementVector()[j][k];
       }
+      mypack.setAtomDerivatives( j, vecs(iv,j) - comder );
   }
+  if( !mypack.updateComplete() ) mypack.updateDynamicLists();
   return proj;
 }
 

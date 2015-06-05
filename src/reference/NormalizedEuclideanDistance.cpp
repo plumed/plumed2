@@ -27,8 +27,6 @@ namespace PLMD {
 class NormalizedEuclideanDistance : public ArgumentOnlyDistance {
 public:
   NormalizedEuclideanDistance( const ReferenceConfigurationOptions& ro );
-  void read( const PDB& );
-  double calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
 };
 
 PLUMED_REGISTER_METRIC(NormalizedEuclideanDistance,"NORM-EUCLIDEAN")
@@ -39,14 +37,5 @@ ArgumentOnlyDistance(ro)
 {
   hasweights=true;
 }
-
-void NormalizedEuclideanDistance::read( const PDB& pdb ){
-  readArgumentsFromPDB( pdb );
-}
-
-double NormalizedEuclideanDistance::calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
-  return calculateArgumentDistance( vals, arg, squared );
-}
-
 
 }

@@ -44,7 +44,7 @@ void LessThan::reserveKeyword( Keywords& keys ){
 LessThan::LessThan( const VesselOptions& da ) :
 FunctionVessel(da)
 {
-  wnum=getAction()->getIndexOfWeight();
+  usetol=true; 
   if( getAction()->isPeriodic() ) error("LESS_THAN is not a meaningful option for periodic variables");
   std::string errormsg; sf.set( getAllInput(), errormsg ); 
   if( errormsg.size()!=0 ) error( errormsg ); 
@@ -54,25 +54,8 @@ std::string LessThan::function_description(){
   return "the number of values less than " + sf.description();
 }
 
-bool LessThan::calculate(){
-  double weight=getAction()->getElementValue(wnum);
-  plumed_dbg_assert( weight>=getTolerance() );
-
-  double val=getAction()->getElementValue(0);
-  double dval, f = sf.calculate(val, dval); dval*=val;
-  double contr=weight*f;
-  bool addval=addValueUsingTolerance(0,contr);
-  if(addval){ 
-    getAction()->chainRuleForElementDerivatives(0, 0, weight*dval, this);
-    if(diffweight) getAction()->chainRuleForElementDerivatives(0, wnum, f, this);
-  }
-  return ( contr>getNLTolerance() ); 
-}
-
-void LessThan::finish(){
-  setOutputValue( getFinalValue(0) ); 
-  std::vector<double> df(2); df[0]=1.0; df[1]=0.0;
-  mergeFinalDerivatives( df );
+double LessThan::calcTransform( const double& val, double& dv ) const {
+  double f = sf.calculate(val, dv); dv*=val; return f;
 }
 
 double LessThan::getCutoff(){

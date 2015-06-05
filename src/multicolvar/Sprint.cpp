@@ -104,7 +104,7 @@ PLUMED_REGISTER_ACTION(Sprint,"SPRINT")
 void Sprint::registerKeywords( Keywords& keys ){
   AdjacencyMatrixAction::registerKeywords( keys );
   componentsAreNotOptional(keys);
-  keys.addOutputComponent("coord","default","all \f$n\f$ sprint coordinates are calculated and then stored in increasing order. "
+  keys.addOutputComponent("coord","default","all \\f$n\\f$ sprint coordinates are calculated and then stored in increasing order. "
                                             "the smallest sprint coordinate will be labelled <em>label</em>.coord-1, "
                                             "the second smallest will be labelleled <em>label</em>.coord-1 and so on");
 }
@@ -169,17 +169,23 @@ void Sprint::completeCalculation(){
    else { rank=comm.Get_rank(); stride=comm.Get_size(); } 
 
    // Derivatives
-   Matrix<double> mymat_ders( getNumberOfComponents(), getNumberOfDerivatives() ); 
-   unsigned nval = getFullNumberOfBaseTasks(); mymat_ders=0; 
+   MultiValue myvals( 2, getNumberOfDerivatives() );
+   Matrix<double> mymat_ders( getNumberOfComponents(), getNumberOfDerivatives() );  
+   std::vector<unsigned> catoms(2); unsigned nval = getFullNumberOfBaseTasks(); mymat_ders=0; 
    for(unsigned i=rank;i<getNumberOfActiveMatrixElements();i+=stride){
-      setMatrixIndexesForTask( i ); unsigned j=current_atoms[0], k=current_atoms[1];
+      decodeIndexToAtoms( getTaskCode(getActiveMatrixElement(i)), catoms ); unsigned j=catoms[0], k=catoms[1];
       double tmp1 = 2 * eigenvecs(nval-1,j)*eigenvecs(nval-1,k);
       for(unsigned icomp=0;icomp<getNumberOfComponents();++icomp){
           double tmp2 = 0.; 
           for(unsigned n=0;n<nval-1;++n){  // Need care on following line
               tmp2 += eigenvecs(n,maxeig[icomp].second) * ( eigenvecs(n,j)*eigenvecs(nval-1,k) + eigenvecs(n,k)*eigenvecs(nval-1,j) ) / ( lambda - eigvals[n] );
           }
-          addDerivativesOnMatrixElement( i, icomp, sqrtn*( tmp1*maxeig[icomp].first + tmp2*lambda ), mymat_ders );
+          double prefactor=sqrtn*( tmp1*maxeig[icomp].first + tmp2*lambda );
+          getAdjacencyVessel()->retrieveDerivatives( getActiveMatrixElement(i), false, myvals );
+          for(unsigned jd=0;jd<myvals.getNumberActive();++jd){
+              unsigned ider=myvals.getActiveIndex(jd);
+              mymat_ders( icomp, ider ) += prefactor*myvals.getDerivative( 1, ider );
+          }
       }
    }
    if( !serialCalculation() ) comm.Sum( mymat_ders );

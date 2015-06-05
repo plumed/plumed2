@@ -37,8 +37,8 @@ Action(ao),
 MultiColvarFunction(ao),
 tmpdf(1)
 {
+  use_orient=false;
   if( keywords.exists("USE_ORIENTATION") ) parseFlag("USE_ORIENTATION",use_orient);
-  else use_orient=true;
   // Weight of this does have derivatives
   weightHasDerivatives=true;
   // Read in the switching function
@@ -77,9 +77,11 @@ tmpdf(1)
 
   // Build atom lists
   buildAtomListWithPairs( true );
+
+  if( use_orient && getBaseMultiColvar(0)->getNumberOfQuantities()<3 ) error("using orientation but no orientations in base colvars"); 
+
   // Build active elements array
   for(unsigned i=0;i<getFullNumberOfTasks();++i) active_elements.addIndexToList( i );
-  active_elements.setupMPICommunication( comm );
 
   // Find the largest sf cutoff
   double sfmax=switchingFunction(0,0).get_dmax();
@@ -97,42 +99,42 @@ tmpdf(1)
   Keywords keys; AdjacencyMatrixVessel::registerKeywords( keys );
   vesselbase::VesselOptions da2(da,keys);
   mat = new AdjacencyMatrixVessel(da2);
+  // Set a cutoff for clustering
+  mat->setHardCutoffOnWeight( getTolerance() );
   // Add the vessel to the base
   addVessel( mat );
   // And resize everything
   resizeFunctions();
-
-  // One component for regular multicolvar and nelements for vectormulticolvar
-  unsigned ncomp=getBaseMultiColvar(0)->getNumberOfQuantities() - 5;;
-  orient0.resize( ncomp ); orient1.resize( ncomp );
 }
 
 void AdjacencyMatrixAction::doJobsRequiredBeforeTaskList(){
   // Do jobs required by ActionWithVessel
   ActionWithVessel::doJobsRequiredBeforeTaskList();
   // Make it possible only to go through loop once
-  gathered=false; active_elements.deactivateAll();
+  gathered=false; 
   // Dont calculate derivatives on first loop
   if( usingLowMem() ) dertime=false;
   else dertime=true;
 }
 
-void AdjacencyMatrixAction::calculateWeight(){
-  Vector distance = getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(1) );
-  double dfunc, sw = switchingFunction( getBaseColvarNumber(0),getBaseColvarNumber(1) ).calculate( distance.modulo(), dfunc );
-  setElementValue(1,sw);
+void AdjacencyMatrixAction::calculateWeight( AtomValuePack& myatoms ) const {
+  Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+  double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ),getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( distance.modulo(), dfunc );
+  myatoms.setValue(0,sw);
 }
 
-double AdjacencyMatrixAction::compute(){
-  active_elements.activate( getCurrentPositionInTaskList() );
+double AdjacencyMatrixAction::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+//  active_elements.activate( tindex );
 
-  double f_dot, dot_df;
+  double f_dot, dot_df; 
+  unsigned ncomp=getBaseMultiColvar(0)->getNumberOfQuantities();
+  std::vector<double> orient0(ncomp), orient1(ncomp);
   if( use_orient ){
-      getVectorForBaseTask( 0, orient0 );
-      getVectorForBaseTask( 1, orient1 );   
+      getVectorForTask( myatoms.getIndex(0), true, orient0 );
+      getVectorForTask( myatoms.getIndex(1), true, orient1 );      
 
       double dot; dot=0;
-      for(unsigned k=0;k<orient0.size();++k) dot+=orient0[k]*orient1[k];
+      for(unsigned k=2;k<orient0.size();++k) dot+=orient0[k]*orient1[k];
       f_dot=0.5*( 1 + dot ); dot_df=0.5;
       // Add smac stuff here if required
   } else {
@@ -140,43 +142,49 @@ double AdjacencyMatrixAction::compute(){
   }
 
   // Retrieve the weight of the connection
-  double weight = getElementValue(1); 
+  double weight = myatoms.getValue(0); 
 
   if( dertime && !doNotCalculateDerivatives() ){
      // Add contribution due to separation between atoms
-     Vector distance = getSeparation( getPositionOfCentralAtom(0), getPositionOfCentralAtom(1) );
-     double dfunc, sw = switchingFunction( getBaseColvarNumber(0), getBaseColvarNumber(1) ).calculate( distance.modulo(), dfunc ); 
-     addCentralAtomsDerivatives( 0, 0, (-dfunc)*f_dot*distance );
-     addCentralAtomsDerivatives( 1, 0, (dfunc)*f_dot*distance );
-     MultiColvarBase::addBoxDerivatives( 0, (-dfunc)*f_dot*Tensor(distance,distance) );
+     Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
+     double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(0) ) ).calculate( distance.modulo(), dfunc ); 
+     CatomPack atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
+     myatoms.addComDerivatives( 1, (-dfunc)*f_dot*distance, atom0 );
+     CatomPack atom1=getCentralAtomPackFromInput( myatoms.getIndex(1) );
+
+     myatoms.addComDerivatives( 1, (dfunc)*f_dot*distance, atom1 );
+     myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) );
 
      // And derivatives of orientation
      if( use_orient ){
-        for(unsigned k=0;k<orient0.size();++k){
+        for(unsigned k=2;k<orient0.size();++k){
            orient0[k]*=sw*dot_df; orient1[k]*=sw*dot_df;
         }
-        addOrientationDerivatives( 0, orient1 );
-        addOrientationDerivatives( 1, orient0 );
+        MultiValue myder0(0,0); getVectorDerivatives( myatoms.getIndex(0), true, myder0 );
+        mergeVectorDerivatives( 1, 2, orient1.size(), myatoms.getIndex(0), orient1, myder0, myatoms );
+        MultiValue myder1(0,0); getVectorDerivatives( myatoms.getIndex(1), true, myder1 );
+        mergeVectorDerivatives( 1, 2, orient0.size(), myatoms.getIndex(1), orient0, myder1, myatoms );
      }
   }
   return weight*f_dot;
 }
 
-void AdjacencyMatrixAction::setMatrixIndexesForTask( const unsigned& ii ){
-  unsigned icolv = active_elements[ii], tcode = getTaskCode( icolv );
-  bool check = MultiColvarBase::setupCurrentAtomList( tcode );
-  plumed_assert( check );
-}
-
 void AdjacencyMatrixAction::retrieveMatrix( Matrix<double>& mymatrix ){
   // Gather active elements in matrix
-  if(!gathered) active_elements.mpi_gatherActiveMembers( comm ); 
-  gathered=true;
-  
+  if(!gathered){
+     active_elements.deactivateAll();
+     for(unsigned i=0;i<getFullNumberOfTasks();++i){
+        if( mat->storedValueIsActive(i) ) active_elements.activate(i);
+     }
+     active_elements.updateActiveMembers(); gathered=true;
+  }
+ 
+  std::vector<unsigned> myatoms(2); std::vector<double> vals(2);
   for(unsigned i=0;i<active_elements.getNumberActive();++i){
-      setMatrixIndexesForTask( i );
-      unsigned j = current_atoms[1], k = current_atoms[0];
-      mymatrix(k,j)=mymatrix(j,k)=getMatrixElement( i );
+      decodeIndexToAtoms( getTaskCode(active_elements[i]), myatoms ); 
+      unsigned j = myatoms[1], k = myatoms[0];
+      mat->retrieveValue( active_elements[i], false, vals );
+      mymatrix(k,j)=mymatrix(j,k)=vals[1];   
   }
 }
 
@@ -184,33 +192,26 @@ void AdjacencyMatrixAction::retrieveAdjacencyLists( std::vector<unsigned>& nneig
   plumed_dbg_assert( nneigh.size()==getFullNumberOfBaseTasks() && adj_list.nrows()==getFullNumberOfBaseTasks() && 
                        adj_list.ncols()==getFullNumberOfBaseTasks() );
   // Gather active elements in matrix
-  if(!gathered) active_elements.mpi_gatherActiveMembers( comm );
-  gathered=true;
+  if(!gathered){
+     active_elements.deactivateAll();
+     for(unsigned i=0;i<getFullNumberOfTasks();++i){
+        if( mat->storedValueIsActive(i) ) active_elements.activate(i);
+     }
+     active_elements.updateActiveMembers(); gathered=true;
+  }
 
   // Currently everything has zero neighbors
   for(unsigned i=0;i<nneigh.size();++i) nneigh[i]=0;
 
   // And set up the adjacency list
+  std::vector<unsigned> myatoms(2);
   for(unsigned i=0;i<active_elements.getNumberActive();++i){
-      setMatrixIndexesForTask( i );
-      unsigned j = current_atoms[1], k = current_atoms[0];
+      decodeIndexToAtoms( getTaskCode(active_elements[i]), myatoms );
+      unsigned j = myatoms[1], k = myatoms[0];
       adj_list(k,nneigh[k])=j; nneigh[k]++;
       adj_list(j,nneigh[j])=k; nneigh[j]++;
   } 
 } 
-
-void AdjacencyMatrixAction::addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der ){
-  plumed_dbg_assert( ielem<active_elements.getNumberActive() );
-  tmpdf[0]=df; unsigned jelem=active_elements[ielem];
-
-  if( usingLowMem() ){
-     mat->recompute( jelem, 0 ); mat->chainRule( 0, tmpdf );
-     for(unsigned i=0;i<mat->getNumberOfDerivatives(0);++i) der( jrow, mat->getStoredIndex(0,i) ) += mat->getFinalDerivative(i);
-  } else {
-     mat->chainRule( jelem, tmpdf );
-     for(unsigned i=0;i<mat->getNumberOfDerivatives(jelem);++i) der( jrow, mat->getStoredIndex(jelem,i) ) += mat->getFinalDerivative(i);
-  }
-}
 
 }
 }

@@ -27,9 +27,8 @@ namespace PLMD {
 class EuclideanDistance : public ArgumentOnlyDistance {
 public:
   EuclideanDistance( const ReferenceConfigurationOptions& ro );
-  void read( const PDB& );
-  double calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
   bool pcaIsEnabledForThisReference(){ return true; }
+  void setupPCAStorage( ReferenceValuePack& mypack ){ mypack.switchOnPCAOption(); }
 };
 
 PLUMED_REGISTER_METRIC(EuclideanDistance,"EUCLIDEAN")
@@ -39,14 +38,5 @@ ReferenceConfiguration(ro),
 ArgumentOnlyDistance(ro)
 {
 }
-
-void EuclideanDistance::read( const PDB& pdb ){
-  readArgumentsFromPDB( pdb );
-}
-
-double EuclideanDistance::calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
-  return calculateArgumentDistance( vals, arg, squared );
-}
-
 
 }

@@ -122,7 +122,7 @@ public:
   ~VolumeCavity();
   void setupRegions();
   void update();
-  double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives );
+  double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 };
 
 PLUMED_REGISTER_ACTION(VolumeCavity,"CAVITY")
@@ -170,7 +170,7 @@ dperp(3)
      boxfile.open( boxfname.c_str() );
      log.printf("  printing box coordinates on file named %s in %s \n",boxfname.c_str(), unitname.c_str() );
   }  
-  
+
   checkRead();
   requestAtoms(atoms);
   // We have to readd the dependency because requestAtoms removes it
@@ -193,91 +193,106 @@ void VolumeCavity::setupRegions(){
   d1 = pbcDistance(origin,getPosition(1));
   double d1l=d1.modulo();
   d2 = pbcDistance(origin,getPosition(2));
-  double dl2=d2.modulo();
 
   // Find the vector connecting the origin to the top corner of 
   // the subregion
   d3 = pbcDistance(origin,getPosition(3));
 
-  double bif, crossf, perpf; bif=crossf=perpf=1.0;
   // Create a set of unit vectors
   bi = d1 / d1l; len_bi=dotProduct( d3, bi );
-  if( len_bi<0 ){ bi=-bi; len_bi=-len_bi; bif=-1.;}
-  cross = crossProduct( bi, d2/dl2 ); len_cross=dotProduct( d3, cross );
-  if( len_cross<0 ){ cross=-cross; len_cross=-len_cross; crossf=-1; }
+  cross = crossProduct( d1, d2 ); double crossmod=cross.modulo(); 
+  cross = cross / crossmod; len_cross=dotProduct( d3, cross );
   perp = crossProduct( cross, bi ); len_perp=dotProduct( d3, perp );
-  if( len_perp<0 ){ perp=-perp; len_perp=-len_perp; perpf=-1; }
-  if( len_bi<=0 || len_cross<=0 || len_bi<=0 ) plumed_merror("Invalid box coordinates");
 
   // Calculate derivatives of box shape with respect to atoms
   double d1l3=d1l*d1l*d1l; 
-  dbi[0](0,0) = bif*( -(d1[1]*d1[1]+d1[2]*d1[2])/d1l3 );   // dx/dx
-  dbi[0](0,1) = bif*(  d1[0]*d1[1]/d1l3 );                 // dx/dy
-  dbi[0](0,2) = bif*(  d1[0]*d1[2]/d1l3 );                 // dx/dz 
-  dbi[0](1,0) = bif*(  d1[1]*d1[0]/d1l3 );                 // dy/dx
-  dbi[0](1,1) = bif*( -(d1[0]*d1[0]+d1[2]*d1[2])/d1l3 );   // dy/dy
-  dbi[0](1,2) = bif*(  d1[1]*d1[2]/d1l3 );
-  dbi[0](2,0) = bif*(  d1[2]*d1[0]/d1l3 );
-  dbi[0](2,1) = bif*(  d1[2]*d1[1]/d1l3 );
-  dbi[0](2,2) = bif*( -(d1[1]*d1[1]+d1[0]*d1[0])/d1l3 );
+  dbi[0](0,0) = ( -(d1[1]*d1[1]+d1[2]*d1[2])/d1l3 );   // dx/dx
+  dbi[0](0,1) = (  d1[0]*d1[1]/d1l3 );                 // dx/dy
+  dbi[0](0,2) = (  d1[0]*d1[2]/d1l3 );                 // dx/dz 
+  dbi[0](1,0) = (  d1[1]*d1[0]/d1l3 );                 // dy/dx
+  dbi[0](1,1) = ( -(d1[0]*d1[0]+d1[2]*d1[2])/d1l3 );   // dy/dy
+  dbi[0](1,2) = (  d1[1]*d1[2]/d1l3 );
+  dbi[0](2,0) = (  d1[2]*d1[0]/d1l3 );
+  dbi[0](2,1) = (  d1[2]*d1[1]/d1l3 );
+  dbi[0](2,2) = ( -(d1[1]*d1[1]+d1[0]*d1[0])/d1l3 );
 
-  dbi[1](0,0) = bif*( (d1[1]*d1[1]+d1[2]*d1[2])/d1l3 );
-  dbi[1](0,1) = bif*( -d1[0]*d1[1]/d1l3 );
-  dbi[1](0,2) = bif*( -d1[0]*d1[2]/d1l3 );
-  dbi[1](1,0) = bif*( -d1[1]*d1[0]/d1l3 );
-  dbi[1](1,1) = bif*( (d1[0]*d1[0]+d1[2]*d1[2])/d1l3 );
-  dbi[1](1,2) = bif*( -d1[1]*d1[2]/d1l3 );
-  dbi[1](2,0) = bif*( -d1[2]*d1[0]/d1l3 );
-  dbi[1](2,1) = bif*( -d1[2]*d1[1]/d1l3 );
-  dbi[1](2,2) = bif*( (d1[1]*d1[1]+d1[0]*d1[0])/d1l3 );
+  dbi[1](0,0) = ( (d1[1]*d1[1]+d1[2]*d1[2])/d1l3 );
+  dbi[1](0,1) = ( -d1[0]*d1[1]/d1l3 );
+  dbi[1](0,2) = ( -d1[0]*d1[2]/d1l3 );
+  dbi[1](1,0) = ( -d1[1]*d1[0]/d1l3 );
+  dbi[1](1,1) = ( (d1[0]*d1[0]+d1[2]*d1[2])/d1l3 );
+  dbi[1](1,2) = ( -d1[1]*d1[2]/d1l3 );
+  dbi[1](2,0) = ( -d1[2]*d1[0]/d1l3 );
+  dbi[1](2,1) = ( -d1[2]*d1[1]/d1l3 );
+  dbi[1](2,2) = ( (d1[1]*d1[1]+d1[0]*d1[0])/d1l3 );
   dbi[2].zero();
 
-  std::vector<Tensor> dd2(3); double d123=dl2*dl2*dl2;
-  dd2[0](0,0) = ( -(d2[1]*d2[1]+d2[2]*d2[2])/d123 );
-  dd2[0](0,1) = (  d2[0]*d2[1]/d123 );
-  dd2[0](0,2) = (  d2[0]*d2[2]/d123 );
-  dd2[0](1,0) = (  d2[1]*d2[0]/d123 );
-  dd2[0](1,1) = ( -(d2[0]*d2[0]+d2[2]*d2[2])/d123 );
-  dd2[0](1,2) = (  d2[1]*d2[2]/d123 );
-  dd2[0](2,0) = (  d2[2]*d2[0]/d123 );
-  dd2[0](2,1) = (  d2[2]*d2[1]/d123 );
-  dd2[0](2,2) = ( -(d2[1]*d2[1]+d2[0]*d2[0])/d123 );
+  Tensor tcderiv; double cmod3=crossmod*crossmod*crossmod; Vector ucross=crossmod*cross;
+  tcderiv.setCol( 0, crossProduct( d1, Vector(-1.0,0.0,0.0) ) + crossProduct( Vector(-1.0,0.0,0.0), d2 ) );
+  tcderiv.setCol( 1, crossProduct( d1, Vector(0.0,-1.0,0.0) ) + crossProduct( Vector(0.0,-1.0,0.0), d2 ) );
+  tcderiv.setCol( 2, crossProduct( d1, Vector(0.0,0.0,-1.0) ) + crossProduct( Vector(0.0,0.0,-1.0), d2 ) );
+  dcross[0](0,0)=( tcderiv(0,0)/crossmod - ucross[0]*(ucross[0]*tcderiv(0,0) + ucross[1]*tcderiv(1,0) + ucross[2]*tcderiv(2,0))/cmod3 );    // dx/dx
+  dcross[0](0,1)=( tcderiv(0,1)/crossmod - ucross[0]*(ucross[0]*tcderiv(0,1) + ucross[1]*tcderiv(1,1) + ucross[2]*tcderiv(2,1))/cmod3 );    // dx/dy
+  dcross[0](0,2)=( tcderiv(0,2)/crossmod - ucross[0]*(ucross[0]*tcderiv(0,2) + ucross[1]*tcderiv(1,2) + ucross[2]*tcderiv(2,2))/cmod3 );    // dx/dz 
+  dcross[0](1,0)=( tcderiv(1,0)/crossmod - ucross[1]*(ucross[0]*tcderiv(0,0) + ucross[1]*tcderiv(1,0) + ucross[2]*tcderiv(2,0))/cmod3 );    // dy/dx
+  dcross[0](1,1)=( tcderiv(1,1)/crossmod - ucross[1]*(ucross[0]*tcderiv(0,1) + ucross[1]*tcderiv(1,1) + ucross[2]*tcderiv(2,1))/cmod3 );    // dy/dy
+  dcross[0](1,2)=( tcderiv(1,2)/crossmod - ucross[1]*(ucross[0]*tcderiv(0,2) + ucross[1]*tcderiv(1,2) + ucross[2]*tcderiv(2,2))/cmod3 );    // dy/dz
+  dcross[0](2,0)=( tcderiv(2,0)/crossmod - ucross[2]*(ucross[0]*tcderiv(0,0) + ucross[1]*tcderiv(1,0) + ucross[2]*tcderiv(2,0))/cmod3 );    // dz/dx
+  dcross[0](2,1)=( tcderiv(2,1)/crossmod - ucross[2]*(ucross[0]*tcderiv(0,1) + ucross[1]*tcderiv(1,1) + ucross[2]*tcderiv(2,1))/cmod3 );    // dz/dy
+  dcross[0](2,2)=( tcderiv(2,2)/crossmod - ucross[2]*(ucross[0]*tcderiv(0,2) + ucross[1]*tcderiv(1,2) + ucross[2]*tcderiv(2,2))/cmod3 );    // dz/dz
 
-  dd2[1].zero();
-  dd2[2](0,0) = ( (d2[1]*d2[1]+d2[2]*d2[2])/d123 );
-  dd2[2](0,1) = ( -d2[0]*d2[1]/d123 );
-  dd2[2](0,2) = ( -d2[0]*d2[2]/d123 );
-  dd2[2](1,0) = ( -d2[1]*d2[0]/d123 );
-  dd2[2](1,1) = ( (d2[0]*d2[0]+d2[2]*d2[2])/d123 );
-  dd2[2](1,2) = ( -d2[1]*d2[2]/d123 );
-  dd2[2](2,0) = ( -d2[2]*d2[0]/d123 );
-  dd2[2](2,1) = ( -d2[2]*d2[1]/d123 );
-  dd2[2](2,2) = ( (d2[1]*d2[1]+d2[0]*d2[0])/d123 );
-  d2 *= 1.0 / dl2;
+  tcderiv.setCol( 0, crossProduct( Vector(1.0,0.0,0.0), d2 ) );
+  tcderiv.setCol( 1, crossProduct( Vector(0.0,1.0,0.0), d2 ) );
+  tcderiv.setCol( 2, crossProduct( Vector(0.0,0.0,1.0), d2 ) );
+  dcross[1](0,0)=( tcderiv(0,0)/crossmod - ucross[0]*(ucross[0]*tcderiv(0,0) + ucross[1]*tcderiv(1,0) + ucross[2]*tcderiv(2,0))/cmod3 );    // dx/dx
+  dcross[1](0,1)=( tcderiv(0,1)/crossmod - ucross[0]*(ucross[0]*tcderiv(0,1) + ucross[1]*tcderiv(1,1) + ucross[2]*tcderiv(2,1))/cmod3 );    // dx/dy
+  dcross[1](0,2)=( tcderiv(0,2)/crossmod - ucross[0]*(ucross[0]*tcderiv(0,2) + ucross[1]*tcderiv(1,2) + ucross[2]*tcderiv(2,2))/cmod3 );    // dx/dz 
+  dcross[1](1,0)=( tcderiv(1,0)/crossmod - ucross[1]*(ucross[0]*tcderiv(0,0) + ucross[1]*tcderiv(1,0) + ucross[2]*tcderiv(2,0))/cmod3 );    // dy/dx
+  dcross[1](1,1)=( tcderiv(1,1)/crossmod - ucross[1]*(ucross[0]*tcderiv(0,1) + ucross[1]*tcderiv(1,1) + ucross[2]*tcderiv(2,1))/cmod3 );    // dy/dy
+  dcross[1](1,2)=( tcderiv(1,2)/crossmod - ucross[1]*(ucross[0]*tcderiv(0,2) + ucross[1]*tcderiv(1,2) + ucross[2]*tcderiv(2,2))/cmod3 );    // dy/dz
+  dcross[1](2,0)=( tcderiv(2,0)/crossmod - ucross[2]*(ucross[0]*tcderiv(0,0) + ucross[1]*tcderiv(1,0) + ucross[2]*tcderiv(2,0))/cmod3 );    // dz/dx
+  dcross[1](2,1)=( tcderiv(2,1)/crossmod - ucross[2]*(ucross[0]*tcderiv(0,1) + ucross[1]*tcderiv(1,1) + ucross[2]*tcderiv(2,1))/cmod3 );    // dz/dy
+  dcross[1](2,2)=( tcderiv(2,2)/crossmod - ucross[2]*(ucross[0]*tcderiv(0,2) + ucross[1]*tcderiv(1,2) + ucross[2]*tcderiv(2,2))/cmod3 );    // dz/dz
 
-  dcross[0].setCol( 0, crossf*( crossProduct( bi, dd2[0].getCol(0) ) + crossProduct( dbi[0].getCol(0), d2 ) ) );
-  dcross[0].setCol( 1, crossf*( crossProduct( bi, dd2[0].getCol(1) ) + crossProduct( dbi[0].getCol(1), d2 ) ) );
-  dcross[0].setCol( 2, crossf*( crossProduct( bi, dd2[0].getCol(2) ) + crossProduct( dbi[0].getCol(2), d2 ) ) );
+  tcderiv.setCol( 0, crossProduct( d1, Vector(1.0,0.0,0.0) ) );
+  tcderiv.setCol( 1, crossProduct( d1, Vector(0.0,1.0,0.0) ) );
+  tcderiv.setCol( 2, crossProduct( d1, Vector(0.0,0.0,1.0) ) );
+  dcross[2](0,0)=( tcderiv(0,0)/crossmod - ucross[0]*(ucross[0]*tcderiv(0,0) + ucross[1]*tcderiv(1,0) + ucross[2]*tcderiv(2,0))/cmod3 );    // dx/dx
+  dcross[2](0,1)=( tcderiv(0,1)/crossmod - ucross[0]*(ucross[0]*tcderiv(0,1) + ucross[1]*tcderiv(1,1) + ucross[2]*tcderiv(2,1))/cmod3 );    // dx/dy
+  dcross[2](0,2)=( tcderiv(0,2)/crossmod - ucross[0]*(ucross[0]*tcderiv(0,2) + ucross[1]*tcderiv(1,2) + ucross[2]*tcderiv(2,2))/cmod3 );    // dx/dz 
+  dcross[2](1,0)=( tcderiv(1,0)/crossmod - ucross[1]*(ucross[0]*tcderiv(0,0) + ucross[1]*tcderiv(1,0) + ucross[2]*tcderiv(2,0))/cmod3 );    // dy/dx
+  dcross[2](1,1)=( tcderiv(1,1)/crossmod - ucross[1]*(ucross[0]*tcderiv(0,1) + ucross[1]*tcderiv(1,1) + ucross[2]*tcderiv(2,1))/cmod3 );    // dy/dy
+  dcross[2](1,2)=( tcderiv(1,2)/crossmod - ucross[1]*(ucross[0]*tcderiv(0,2) + ucross[1]*tcderiv(1,2) + ucross[2]*tcderiv(2,2))/cmod3 );    // dy/dz
+  dcross[2](2,0)=( tcderiv(2,0)/crossmod - ucross[2]*(ucross[0]*tcderiv(0,0) + ucross[1]*tcderiv(1,0) + ucross[2]*tcderiv(2,0))/cmod3 );    // dz/dx
+  dcross[2](2,1)=( tcderiv(2,1)/crossmod - ucross[2]*(ucross[0]*tcderiv(0,1) + ucross[1]*tcderiv(1,1) + ucross[2]*tcderiv(2,1))/cmod3 );    // dz/dy
+  dcross[2](2,2)=( tcderiv(2,2)/crossmod - ucross[2]*(ucross[0]*tcderiv(0,2) + ucross[1]*tcderiv(1,2) + ucross[2]*tcderiv(2,2))/cmod3 );    // dz/dz
 
-  dcross[1].setCol( 0, crossf*( crossProduct( dbi[1].getCol(0), d2 ) ) );
-  dcross[1].setCol( 1, crossf*( crossProduct( dbi[1].getCol(1), d2 ) ) );
-  dcross[1].setCol( 2, crossf*( crossProduct( dbi[1].getCol(2), d2 ) ) );
+  dperp[0].setCol( 0, ( crossProduct( dcross[0].getCol(0), bi ) + crossProduct( cross, dbi[0].getCol(0) ) ) );
+  dperp[0].setCol( 1, ( crossProduct( dcross[0].getCol(1), bi ) + crossProduct( cross, dbi[0].getCol(1) ) ) );
+  dperp[0].setCol( 2, ( crossProduct( dcross[0].getCol(2), bi ) + crossProduct( cross, dbi[0].getCol(2) ) ) );
 
-  dcross[2].setCol( 0, crossf*( crossProduct( bi, dd2[2].getCol(0) ) ) );
-  dcross[2].setCol( 1, crossf*( crossProduct( bi, dd2[2].getCol(1) ) ) );
-  dcross[2].setCol( 2, crossf*( crossProduct( bi, dd2[2].getCol(2) ) ) );
+  dperp[1].setCol( 0, ( crossProduct( dcross[1].getCol(0), bi ) + crossProduct( cross, dbi[1].getCol(0) ) ) );
+  dperp[1].setCol( 1, ( crossProduct( dcross[1].getCol(1), bi ) + crossProduct( cross, dbi[1].getCol(1) ) ) );
+  dperp[1].setCol( 2, ( crossProduct( dcross[1].getCol(2), bi ) + crossProduct( cross, dbi[1].getCol(2) ) ) );
 
-  dperp[0].setCol( 0, perpf*( crossProduct( dcross[0].getCol(0), bi ) + crossProduct( cross, dbi[0].getCol(0) ) ) );
-  dperp[0].setCol( 1, perpf*( crossProduct( dcross[0].getCol(1), bi ) + crossProduct( cross, dbi[0].getCol(1) ) ) );
-  dperp[0].setCol( 2, perpf*( crossProduct( dcross[0].getCol(2), bi ) + crossProduct( cross, dbi[0].getCol(2) ) ) );
+  dperp[2].setCol( 0, ( crossProduct( dcross[2].getCol(0), bi ) ) );
+  dperp[2].setCol( 1, ( crossProduct( dcross[2].getCol(1), bi ) ) );
+  dperp[2].setCol( 2, ( crossProduct( dcross[2].getCol(2), bi ) ) );
 
-  dperp[1].setCol( 0, perpf*( crossProduct( dcross[1].getCol(0), bi ) + crossProduct( cross, dbi[1].getCol(0) ) ) );
-  dperp[1].setCol( 1, perpf*( crossProduct( dcross[1].getCol(1), bi ) + crossProduct( cross, dbi[1].getCol(1) ) ) );
-  dperp[1].setCol( 2, perpf*( crossProduct( dcross[1].getCol(2), bi ) + crossProduct( cross, dbi[1].getCol(2) ) ) );
-
-  dperp[2].setCol( 0, perpf*( crossProduct( dcross[2].getCol(0), bi ) ) );
-  dperp[2].setCol( 1, perpf*( crossProduct( dcross[2].getCol(1), bi ) ) );
-  dperp[2].setCol( 2, perpf*( crossProduct( dcross[2].getCol(2), bi ) ) );
+  // Ensure that all lengths are positive
+  if( len_bi<0 ){ 
+     bi=-bi; len_bi=-len_bi; 
+     for(unsigned i=0;i<3;++i) dbi[i]*=-1.0;
+  }
+  if( len_cross<0 ){ 
+     cross=-cross; len_cross=-len_cross; 
+     for(unsigned i=0;i<3;++i) dcross[i]*=-1.0;
+  }
+  if( len_perp<0 ){ 
+     perp=-perp; len_perp=-len_perp; 
+     for(unsigned i=0;i<3;++i) dperp[i]*=-1.0;
+  } 
+  if( len_bi<=0 || len_cross<=0 || len_bi<=0 ) plumed_merror("Invalid box coordinates");
 
   // Now derivatives of lengths
   Tensor dd3( Tensor::identity() ); 
@@ -340,7 +355,10 @@ void VolumeCavity::update(){
   }
 }
 
-double VolumeCavity::calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives ){
+double VolumeCavity::calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& rderiv ) const {
+  // Setup the histogram bead
+  HistogramBead bead; bead.isNotPeriodic(); bead.setKernelType( getKernelType() );
+
   // Calculate distance of atom from origin of new coordinate frame
   Vector datom=pbcDistance( origin, cpos );
   double ucontr, uder, vcontr, vder, wcontr, wder;
@@ -373,7 +391,6 @@ double VolumeCavity::calculateNumberInside( const Vector& cpos, HistogramBead& b
   double tot = ucontr*vcontr*wcontr*jacob_det; 
 
   // Add reference atom derivatives
-  std::vector<Vector> rderiv(4);
   dfd[0]=uder2*vcontr*wcontr; dfd[1]=ucontr*vder2*wcontr; dfd[2]=ucontr*vcontr*wder2;
   Vector dfld; dfld[0]=udlen*vcontr*wcontr; dfld[1]=ucontr*vdlen*wcontr; dfld[2]=ucontr*vcontr*wdlen;
   rderiv[0] = dfd[0]*matmul(datom,dbi[0]) + dfd[1]*matmul(datom,dcross[0]) + dfd[2]*matmul(datom,dperp[0]) +
@@ -384,12 +401,10 @@ double VolumeCavity::calculateNumberInside( const Vector& cpos, HistogramBead& b
               dfld[0]*dlbi[2] + dfld[1]*dlcross[2] + dfld[2]*dlperp[2];
   rderiv[3] = dfld[0]*dlbi[3] + dfld[1]*dlcross[3] + dfld[2]*dlperp[3];
 
-  Tensor vir; vir.zero();
-  vir-=Tensor( cpos,derivatives );
+  vir.zero(); vir-=Tensor( cpos,derivatives );
   for(unsigned i=0;i<4;++i){
-     vir -= Tensor( getPosition(i), rderiv[i] ); addReferenceAtomDerivatives( i, rderiv[i] );
+     vir -= Tensor( getPosition(i), rderiv[i] ); 
   }
-  addBoxDerivatives( vir );
  
   return tot;
 }

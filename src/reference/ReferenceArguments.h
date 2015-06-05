@@ -66,9 +66,11 @@ protected:
   void setReferenceArguments();
 /// Calculate the euclidean/malanobius distance the atoms have moved from the reference
 /// configuration in CV space
-  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, const bool& squared );
+  double calculateArgumentDistance( const std::vector<Value*> & vals, const std::vector<double>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 public:
   ReferenceArguments( const ReferenceConfigurationOptions& ro );
+/// Get the number of reference arguments
+  unsigned getNumberOfReferenceArguments() const ;
 /// Get the arguments required 
   void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false );
 /// Set the names of the arguments
@@ -76,7 +78,7 @@ public:
 /// Set the positions of the refernce arguments
   void setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma );
 /// Get the value of the ith reference argument
-  double getReferenceArgument( const unsigned& i );
+  double getReferenceArgument( const unsigned& i ) const ;
 /// Print the arguments out
   void printArguments( OFile& ofile, const std::string& fmt ) const ;
 /// Return all the reference arguments
@@ -87,7 +89,7 @@ public:
 };
 
 inline
-double ReferenceArguments::getReferenceArgument( const unsigned& i ){
+double ReferenceArguments::getReferenceArgument( const unsigned& i ) const {
   plumed_dbg_assert( i<reference_args.size() );
   return reference_args[i];
 }
@@ -100,6 +102,11 @@ const std::vector<double>& ReferenceArguments::getReferenceArguments(){
 inline
 const std::vector<std::string>& ReferenceArguments::getArgumentNames(){
   return arg_names;
+}
+
+inline
+unsigned ReferenceArguments::getNumberOfReferenceArguments() const {
+  return reference_args.size();
 }
 
 }

@@ -20,10 +20,14 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "MultiColvarBase.h"
-#include "MultiColvarFunction.h"
 #include "BridgedMultiColvarFunction.h"
+#include "ActionVolume.h"
 #include "vesselbase/Vessel.h"
+#include "vesselbase/BridgeVessel.h"
 #include "tools/Pbc.h"
+#include "AtomValuePack.h"
+#include "CatomPack.h"
+#include "CatomPack.h"
 #include <vector>
 #include <string>
 
@@ -63,8 +67,6 @@ ActionWithValue(ao),
 ActionWithVessel(ao),
 usepbc(false),
 linkcells(comm),
-mycatoms(NULL),        // This will be destroyed by ActionWithVesel
-myvalues(NULL),        // This will be destroyed by ActionWithVesel 
 usespecies(false)
 {
   if( keywords.exists("NOPBC") ){ 
@@ -91,12 +93,24 @@ void MultiColvarBase::setupMultiColvarBase(){
   if( !usespecies && ablocks.size()<4 ){
      decoder.resize( ablocks.size() ); unsigned code=1;
      for(unsigned i=0;i<ablocks.size();++i){ decoder[ablocks.size()-1-i]=code; code *= nblock; } 
-  } 
-  // Resize stuff here
-  resizeLocalArrays();
+     use_for_central_atom.resize( ablocks.size(), true );
+     numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
+  } else if( !usespecies ){
+     use_for_central_atom.resize( ablocks.size(), true );
+     numberForCentralAtom = 1.0 / static_cast<double>( ablocks.size() );
+  }
 
   // Setup underlying ActionWithVessel
   readVesselKeywords();
+}
+
+void MultiColvarBase::setAtomsForCentralAtom( const std::vector<bool>& catom_ind ){
+  unsigned nat=0; plumed_assert( catom_ind.size()==ablocks.size() );
+  for(unsigned i=0;i<catom_ind.size();++i){
+      use_for_central_atom[i]=catom_ind[i]; 
+      if( use_for_central_atom[i] ) nat++;
+  }
+  plumed_dbg_assert( nat>0 ); numberForCentralAtom = 1.0 / static_cast<double>( nat );
 }
 
 void MultiColvarBase::turnOnDerivatives(){
@@ -106,17 +120,17 @@ void MultiColvarBase::turnOnDerivatives(){
 } 
 
 void MultiColvarBase::setLinkCellCutoff( const double& lcut ){
-  plumed_assert( usespecies || current_atoms.size()<4 );
+  plumed_assert( usespecies || ablocks.size()<4 );
   linkcells.setCutoff( lcut );
 }
 
 void MultiColvarBase::setupLinkCells(){
   if( !linkcells.enabled() ) return ;
 
-  unsigned iblock, jblock;
+  unsigned iblock;
   if( usespecies ){
       iblock=0; 
-  } else if( current_atoms.size()<4 ){ 
+  } else if( ablocks.size()<4 ){ 
       iblock=1;  
   } else {
       plumed_error();
@@ -125,7 +139,7 @@ void MultiColvarBase::setupLinkCells(){
   // Count number of currently active atoms
   unsigned nactive_atoms=0;
   for(unsigned i=0;i<ablocks[iblock].size();++i){
-      if( isCurrentlyActive( ablocks[iblock][i] ) ) nactive_atoms++;
+      if( isCurrentlyActive( iblock, ablocks[iblock][i] ) ) nactive_atoms++;
   }
 
   std::vector<Vector> ltmp_pos( nactive_atoms ); 
@@ -133,17 +147,15 @@ void MultiColvarBase::setupLinkCells(){
 
   nactive_atoms=0;
   if( usespecies ){
-     ltmp_pos.resize( ablocks[0].size() ); ltmp_ind.resize( ablocks[0].size() );
      for(unsigned i=0;i<ablocks[0].size();++i){
-        if( !isCurrentlyActive( ablocks[0][i] ) ) continue; 
+        if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue; 
         ltmp_ind[nactive_atoms]=ablocks[0][i];
         ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ltmp_ind[nactive_atoms] );
         nactive_atoms++;
      }
   } else {
-     ltmp_pos.resize( ablocks[1].size() ); ltmp_ind.resize( ablocks[1].size() ); 
      for(unsigned i=0;i<ablocks[1].size();++i){
-        if( !isCurrentlyActive( ablocks[1][i] ) ) continue;
+        if( !isCurrentlyActive( 1, ablocks[1][i] ) ) continue;
         ltmp_ind[nactive_atoms]=i; 
         ltmp_pos[nactive_atoms]=getPositionOfAtomForLinkCells( ablocks[1][i] );
         nactive_atoms++; 
@@ -163,8 +175,8 @@ void MultiColvarBase::setupLinkCells(){
      std::vector<unsigned> linked_atoms( 1+ablocks[1].size() );
      std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
      for(unsigned i=rank;i<ablocks[0].size();i+=stride){
-         if( !isCurrentlyActive( ablocks[0][i] ) ) continue;
-         natomsper=1; linked_atoms[0]=ltmp_ind[0];  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
+         if( !isCurrentlyActive( 0, ablocks[0][i] ) ) continue;
+         unsigned natomsper=1; linked_atoms[0]=ltmp_ind[0];  // Note we always check atom 0 because it is simpler than changing LinkCells.cpp
          linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells( ablocks[0][i] ), natomsper, linked_atoms );
          for(unsigned j=0;j<natomsper;++j){
              for(unsigned k=bookeeping(i,linked_atoms[j]).first;k<bookeeping(i,linked_atoms[j]).second;++k) active_tasks[k]=1;
@@ -175,97 +187,159 @@ void MultiColvarBase::setupLinkCells(){
      deactivateAllTasks(); 
      activateTheseTasks( active_tasks );
      contributorsAreUnlocked=false;
+  } else {
+     // Now check for calculating volumes (currently this is only done for usespecies style commands 
+     // as it is difficult to do with things like DISTANCES or ANGLES and I think pointless
+     bool justVolumes=true;
+     for(unsigned i=0;i<getNumberOfVessels();++i){
+         vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+         if( !myb ){ justVolumes=false; break; }
+         ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() ); 
+         if( !myv ){ justVolumes=false; break; }
+     }
+     // Now ensure that we only do calculations for those atoms in the relevant volume
+     if( justVolumes ){
+         bool justVolumes=true;
+         // Setup the regions in the action volume objects 
+         for(unsigned i=0;i<getNumberOfVessels();++i){
+             vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(i) );
+             ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+             myv->retrieveAtoms(); myv->setupRegions();
+         } 
+
+         unsigned stride=comm.Get_size();
+         unsigned rank=comm.Get_rank();
+         if( serialCalculation() ){ stride=1; rank=0; } 
+
+         unsigned nactive=0;
+         std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 0 );
+         for(unsigned i=rank;i<getFullNumberOfTasks();i+=stride){
+             bool invol=false;
+             for(unsigned j=0;j<getNumberOfVessels();++j){
+                 vesselbase::BridgeVessel* myb=dynamic_cast<vesselbase::BridgeVessel*>( getPntrToVessel(j) );
+                 ActionVolume* myv=dynamic_cast<ActionVolume*>( myb->getOutputAction() );
+                 if( myv->inVolumeOfInterest(i) ){ invol=true; }  
+             }
+             if( invol ){ nactive++; active_tasks[i]=1; }
+         }
+
+         if( !serialCalculation() ) comm.Sum( active_tasks );
+
+         deactivateAllTasks();
+         activateTheseTasks( active_tasks );
+         contributorsAreUnlocked=false;
+     }
+  }
+
+}
+
+void MultiColvarBase::decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const {
+  plumed_dbg_assert( atoms.size()==ablocks.size() && !usespecies && ablocks.size()<4 );
+  unsigned scode = taskCode;
+  for(unsigned i=0;i<ablocks.size();++i){
+      unsigned ind=( scode / decoder[i] );
+      atoms[i] = ablocks[i][ind];
+      scode -= ind*decoder[i];
   }
 }
 
-void MultiColvarBase::resizeLocalArrays(){
-  atoms_with_derivatives.clear(); 
-  for(unsigned i=0;i<getSizeOfAtomsWithDerivatives();++i) atoms_with_derivatives.addIndexToList( i );
-  atoms_with_derivatives.deactivateAll();
-  // Set up stuff for central atoms
-  atomsWithCatomDer.clear();
-  for(unsigned i=0;i<getSizeOfAtomsWithDerivatives();++i) atomsWithCatomDer.addIndexToList( i );
-  atomsWithCatomDer.deactivateAll();
-}
-
-bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode ){
+bool MultiColvarBase::setupCurrentAtomList( const unsigned& taskCode, AtomValuePack& myatoms ) const {
   if( usespecies ){
-     natomsper=1;
      if( isDensity() ) return true;
-     current_atoms[0]=taskCode;
-     linkcells.retrieveNeighboringAtoms( getPositionOfAtomForLinkCells(current_atoms[0]), natomsper, current_atoms );
+     unsigned natomsper=myatoms.setupAtomsFromLinkCells( taskCode, getPositionOfAtomForLinkCells(taskCode), linkcells );
      return natomsper>1;
-  } else if( current_atoms.size()<4 ){
-     natomsper=current_atoms.size();
-     unsigned scode = taskCode;
-     for(unsigned i=0;i<ablocks.size();++i){
-        unsigned ind=( scode / decoder[i] );
-        current_atoms[i]=ablocks[i][ind];
-        scode -= ind*decoder[i]; 
-     }
+  } else if( ablocks.size()<4 ){
+     std::vector<unsigned> atoms( ablocks.size() );
+     decodeIndexToAtoms( taskCode, atoms ); myatoms.setNumberOfAtoms( ablocks.size() );
+     for(unsigned i=0;i<ablocks.size();++i) myatoms.setAtom( i, atoms[i] ); 
   } else {
-     natomsper=current_atoms.size(); 
-     for(unsigned i=0;i<ablocks.size();++i) current_atoms[i]=ablocks[i][taskCode];
+     myatoms.setNumberOfAtoms( ablocks.size() );
+     for(unsigned i=0;i<ablocks.size();++i) myatoms.setAtom( i, ablocks[i][taskCode] ); 
   } 
   return true;
 }
 
-void MultiColvarBase::performTask(){
-  // Currently no atoms have derivatives so deactivate those that are active
-  atoms_with_derivatives.deactivateAll();
-  // Currently no central atoms have derivatives so deactive them all
-  atomsWithCatomDer.deactivateAll();
+void MultiColvarBase::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
+
+  AtomValuePack myatoms( myvals, this );
   // Retrieve the atom list
-  if( !setupCurrentAtomList( getCurrentTask() ) ) return;
+  if( !setupCurrentAtomList( current, myatoms ) ) return;
 
   // Do a quick check on the size of this contribution  
-  calculateWeight(); // printf("HELLO WEIGHT %f \n",getElementValue(1) );
-  if( getElementValue(1)<getTolerance() ){
-     updateActiveAtoms();
+  calculateWeight( myatoms ); 
+  if( myatoms.getValue(0)<getTolerance() ){
+     updateActiveAtoms( myatoms );
      return;   
   }
 
   // Compute everything
-  double vv=doCalculation();
-  // Set the value of this element in ActionWithVessel
-  setElementValue( 0, vv );
+  double vv=doCalculation( task_index, myatoms ); 
+  myatoms.setValue( 1, vv );
   return;
 }
 
-double MultiColvarBase::doCalculation(){
-  double val=compute(); updateActiveAtoms();
+void MultiColvarBase::calculateWeight( AtomValuePack& myatoms ) const {
+  myatoms.setValue( 0, 1.0 );
+}
+
+double MultiColvarBase::doCalculation( const unsigned& taskIndex, AtomValuePack& myatoms ) const {
+  double val=compute( taskIndex, myatoms ); updateActiveAtoms( myatoms );
   return val;
 }
 
-Vector MultiColvarBase::retrieveCentralAtomPos(){
-  if( atomsWithCatomDer.getNumberActive()==0 ){
-      Vector cvec = calculateCentralAtomPosition();
-      for(unsigned i=0;i<3;++i) setElementValue( getCentralAtomElementIndex()+i, cvec[i] );
-      return cvec;
+Vector MultiColvarBase::getCentralAtomPos( const unsigned& taskIndex ){
+  unsigned curr=getTaskCode( taskIndex );
+
+  if( usespecies || isDensity() ){
+     return getPositionOfAtomForLinkCells(curr);
+  } else if( ablocks.size()<4 ){
+     // double factor=1.0/static_cast<double>( ablocks.size() );
+     Vector mypos; mypos.zero(); 
+     std::vector<unsigned> atoms( ablocks.size() ); decodeIndexToAtoms( curr, atoms );
+     for(unsigned i=0;i<ablocks.size();++i){
+         if( use_for_central_atom[i] ) mypos+=numberForCentralAtom*getPositionOfAtomForLinkCells(atoms[i]); 
+     }
+     return mypos;
+  } else {
+     Vector mypos; mypos.zero();
+     for(unsigned i=0;i<ablocks.size();++i){
+         if( use_for_central_atom[i] ) mypos+=numberForCentralAtom*getPositionOfAtomForLinkCells(ablocks[i][curr]);
+     }
+     return mypos;
   }
-  Vector cvec; 
-  for(unsigned i=0;i<3;++i) cvec[i]=getElementValue( 2+i );
-  return cvec;
 }
 
-void MultiColvarBase::addCentralAtomDerivatives( const unsigned& iatom, const Tensor& der ){
-  plumed_dbg_assert( iatom<getNumberOfAtoms() );
-  atomsWithCatomDer.activate(iatom);
-  unsigned nder = 3*getNumberOfAtoms() + 9;
-  for(unsigned i=0;i<3;++i){ 
-    for(unsigned j=0;j<3;++j){
-        addElementDerivative( (getCentralAtomElementIndex()+j)*nder + 3*iatom + i, der(j,i) );
+CatomPack MultiColvarBase::getCentralAtomPack( const unsigned& basn, const unsigned& taskIndex ){
+  unsigned curr=getTaskCode( taskIndex );
+
+  CatomPack mypack;
+  if(usespecies){
+     mypack.resize(1);
+     mypack.setIndex( 0, basn + curr );
+     mypack.setDerivative( 0, Tensor::identity() );
+  } else if( ablocks.size()<4 ){
+     mypack.resize(ablocks.size());
+     unsigned k=0;
+     std::vector<unsigned> atoms( ablocks.size() ); decodeIndexToAtoms( curr, atoms );
+     for(unsigned i=0;i<ablocks.size();++i){
+         if( use_for_central_atom[i] ){
+             mypack.setIndex( k, basn + atoms[i] );
+             mypack.setDerivative( k, numberForCentralAtom*Tensor::identity() );
+             k++;
+         }
+     }
+  } else {
+     unsigned k=0;
+     for(unsigned i=0;i<ablocks.size();++i){
+         if( use_for_central_atom[i] ){
+             mypack.setIndex( k, basn + ablocks[i][curr] );
+             mypack.setDerivative( k, numberForCentralAtom*Tensor::identity() );
+             k++;
+         }
      }
   }
-}
-
-double MultiColvarBase::getCentralAtomDerivative( const unsigned& iatom, const unsigned& jcomp, const Vector& df ){
-  plumed_dbg_assert( atomsWithCatomDer.isActive(iatom) && jcomp<3 );
-  unsigned nder = 3*getNumberOfAtoms() + 9;
-  return df[0]*getElementDerivative( (getCentralAtomElementIndex()+0)*nder + 3*iatom + jcomp ) +
-         df[1]*getElementDerivative( (getCentralAtomElementIndex()+1)*nder + 3*iatom + jcomp ) +
-         df[2]*getElementDerivative( (getCentralAtomElementIndex()+2)*nder + 3*iatom + jcomp ); 
-}
+  return mypack;
+} 
 
 Vector MultiColvarBase::getSeparation( const Vector& vec1, const Vector& vec2 ) const {
   if(usepbc){ return pbcDistance( vec1, vec2 ); }
@@ -276,190 +350,9 @@ void MultiColvarBase::applyPbc(std::vector<Vector>& dlist, unsigned int max_inde
    if (usepbc) pbcApply(dlist, max_index);
 }
 
-void MultiColvarBase::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
-  plumed_dbg_assert( !doNotCalculateDerivatives() );
-  indices[jstore]=3*atoms_with_derivatives.getNumberActive() + 9;
-  if( indices[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");
-
-  unsigned kder = ntotal + jstore*maxder;
-  for(unsigned jder=0;jder<atoms_with_derivatives.getNumberActive();++jder){
-     unsigned iatom = 3*atoms_with_derivatives[jder];
-     for(unsigned icomp=0;icomp<3;++icomp){ indices[ kder ] = iatom+icomp; kder++; }
-  }
-  unsigned nbase = 3*getNumberOfAtoms(); 
-  for(unsigned icomp=0;icomp<9;++icomp){ indices[ kder ] = nbase + icomp; kder++; }   
-}   
-
-void MultiColvarBase::getCentralAtomIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ) const {
-  plumed_dbg_assert( !doNotCalculateDerivatives() );
-
-  indices[jstore]=3*atomsWithCatomDer.getNumberActive();
-  if( indices[jstore]>maxder ) error("too many derivatives to store. Run with LOWMEM");
-
-  unsigned kder  = ntotal + jstore*maxder;
-  for(unsigned jder=0;jder<atomsWithCatomDer.getNumberActive();++jder){
-     unsigned iatom = 3*atomsWithCatomDer[jder];
-     for(unsigned icomp=0;icomp<3;++icomp){ indices[ kder ] = iatom+icomp; kder++; }
-  }
-}
-
-void MultiColvarBase::activateIndexes( const unsigned& istart, const unsigned& number, const std::vector<unsigned>& indexes ){
-  plumed_assert( number>0 );
-  for(unsigned i=0;i<number-9;i+=3){
-      plumed_dbg_assert( indexes[istart+i]%3==0 ); unsigned iatom=indexes[istart+i]/3; 
-      atoms_with_derivatives.activate( iatom ); 
-  }
-}
-
-void MultiColvarBase::quotientRule( const unsigned& uder, const unsigned& vder, const unsigned& iout ){
-  unsigned ustart=uder*getNumberOfDerivatives();
-  unsigned vstart=vder*getNumberOfDerivatives();
-  unsigned istart=iout*getNumberOfDerivatives();
-  double weight = getElementValue( vder ), pref = getElementValue( uder ) / (weight*weight);
-  if( !doNotCalculateDerivatives() ){
-      for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
-          unsigned n=3*atoms_with_derivatives[i], nx=n, ny=n+1, nz=n+2;
-          setElementDerivative( istart + nx, getElementDerivative(ustart+nx) / weight - pref*getElementDerivative(vstart+nx) );
-          setElementDerivative( istart + ny, getElementDerivative(ustart+ny) / weight - pref*getElementDerivative(vstart+ny) );
-          setElementDerivative( istart + nz, getElementDerivative(ustart+nz) / weight - pref*getElementDerivative(vstart+nz) );
-      }
-      unsigned vbase=3*getNumberOfAtoms();
-      for(unsigned i=0;i<9;++i){ 
-          setElementDerivative( istart + vbase + i, getElementDerivative(ustart+vbase+i) / weight - pref*getElementDerivative(vstart+vbase+i) );
-      }
-  }
-  thisval_wasset[iout]=false; setElementValue( iout, getElementValue(uder) / weight );
-}
-
-void MultiColvarBase::mergeDerivatives( const unsigned& ider, const double& df ){
-  unsigned vstart=getNumberOfDerivatives()*ider;
-  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
-     unsigned iatom=3*atoms_with_derivatives[i];
-     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
-     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
-     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) );
-  }
-  unsigned nvir=3*getNumberOfAtoms();
-  for(unsigned j=0;j<9;++j){
-     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
-  }
-}
-
-void MultiColvarBase::clearDerivativesAfterTask( const unsigned& ider ){
-  unsigned vstart=getNumberOfDerivatives()*ider;
-  thisval_wasset[ider]=false; setElementValue( ider, 0.0 );
-  thisval_wasset[ider]=false;
-  if( ider>1 && ider<5 && derivativesAreRequired() ){
-     for(unsigned i=0;i<atomsWithCatomDer.getNumberActive();++i){
-        unsigned iatom=vstart+3*atomsWithCatomDer[i];
-        setElementDerivative( iatom, 0.0 ); iatom++;
-        setElementDerivative( iatom, 0.0 ); iatom++;
-        setElementDerivative( iatom, 0.0 );
-     }  
-  } else if( derivativesAreRequired() ) {
-     for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
-        unsigned iatom=vstart+3*atoms_with_derivatives[i];
-        setElementDerivative( iatom, 0.0 ); iatom++;
-        setElementDerivative( iatom, 0.0 ); iatom++;
-        setElementDerivative( iatom, 0.0 );
-     }   
-     unsigned nvir=vstart+3*getNumberOfAtoms();
-     for(unsigned j=0;j<9;++j){
-        setElementDerivative( nvir, 0.0 ); nvir++;
-     }
-  }
-}
-
 void MultiColvarBase::apply(){
   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
 }
-
-vesselbase::StoreDataVessel* MultiColvarBase::buildDataStashes( const bool& allow_wcutoff, const double& wtol ){
-  // Check if vessels have already been setup
-  for(unsigned i=0;i<getNumberOfVessels();++i){
-     StoreColvarVessel* ssc=dynamic_cast<StoreColvarVessel*>( getPntrToVessel(i) );
-     if(ssc){
-        if( allow_wcutoff && !ssc->weightCutoffIsOn() ) error("Cannot have more than one data stash with different properties");
-        if( !allow_wcutoff && ssc->weightCutoffIsOn() ) error("Cannot have more than one data stash with different properties");
-        return ssc;
-     }
-  }
- 
-  // Setup central atoms
-  vesselbase::VesselOptions da("","",0,"",this);
-  mycatoms=new StoreCentralAtomsVessel(da);
-  if( allow_wcutoff ) mycatoms->setHardCutoffOnWeight( wtol );
-  addVessel(mycatoms); 
-
-  // Setup store values vessel
-  vesselbase::VesselOptions ta("","",0,"",this);
-  myvalues=new StoreColvarVessel(ta);   
-  if( allow_wcutoff ) myvalues->setHardCutoffOnWeight( wtol );
-  addVessel(myvalues);
-
-  // Make sure resizing of vessels is done
-  resizeFunctions();
-  return myvalues;
-}
-
-
-Vector MultiColvarBase::getCentralAtomPosition( const unsigned& iatom ) const {
-  plumed_dbg_assert( mycatoms );
-  return mycatoms->getPosition( iatom );
-}
-
-void MultiColvarBase::addCentralAtomDerivativeToFunction( const unsigned& iatom, const unsigned& jout, const unsigned& base_cv_no, const Vector& der, MultiColvarFunction* func ){
-  plumed_dbg_assert( mycatoms ); 
-  if( usingLowMem() ){
-      mycatoms->recompute( iatom, 0 ); ;
-      mycatoms->addAtomsDerivatives( 0, jout, base_cv_no, der, func );
-  } else{
-      mycatoms->addAtomsDerivatives( iatom, jout, base_cv_no, der, func ); 
-  }
-}
-
-void MultiColvarBase::getValueForTask( const unsigned& iatom, std::vector<double>& vals ){
-  // plumed_dbg_assert( myvalues && vals.size()==1 );  // Problem if we want to do MultiColvar + Bridge + MultiColvarFunction
-  vals[0]=myvalues->getValue( iatom );
-}
-
-void MultiColvarBase::copyElementsToBridgedColvar( BridgedMultiColvarFunction* func ){
-  func->setElementValue( 0, getElementValue(0) ); 
-  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
-     unsigned n=atoms_with_derivatives[i], nx=3*n;
-     func->atoms_with_derivatives.activate(n);
-     func->addElementDerivative( nx+0, getElementDerivative(nx+0) );
-     func->addElementDerivative( nx+1, getElementDerivative(nx+1) );
-     func->addElementDerivative( nx+2, getElementDerivative(nx+2) ); 
-  }
-  unsigned nvir=3*getNumberOfAtoms();
-  for(unsigned i=0;i<9;++i){ 
-     func->addElementDerivative( nvir, getElementDerivative(nvir) ); nvir++;
-  }
-}
-
-void MultiColvarBase::addWeightedValueDerivatives( const unsigned& iatom, const unsigned& base_cv_no, const double& weight, MultiColvarFunction* func ){
-  plumed_dbg_assert( myvalues );
-  if( usingLowMem() ){
-     myvalues->recompute( iatom, 0 );
-     myvalues->chainRuleForComponent( 0, 0, base_cv_no, weight, func );
-  } else {
-     myvalues->chainRuleForComponent( iatom, 0, base_cv_no, weight, func );
-  }
-}
-
-bool MultiColvarBase::storedValueIsActive( const unsigned& iatom ){
-  return myvalues->storedValueIsActive( iatom );
-}
-
-void MultiColvarBase::finishWeightedAverageCalculation( MultiColvarFunction* func ){
-  func->quotientRule( 0, 1, 0 );
-}
-
-void MultiColvarBase::addOrientationDerivativesToBase( const unsigned& iatom, const unsigned& jstore, const unsigned& base_cv_no, 
-                                                       const std::vector<double>& weight, MultiColvarFunction* func ) {
-  plumed_merror("This should not be called - invalid use of multicolvar in function");
-} 
      
 }
 }

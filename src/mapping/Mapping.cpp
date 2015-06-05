@@ -22,6 +22,7 @@
 #include "Mapping.h"
 #include "vesselbase/Vessel.h"
 #include "reference/MetricRegister.h"
+#include "reference/ReferenceAtoms.h"
 #include "tools/PDB.h"
 #include "tools/Matrix.h"
 #include "core/PlumedMain.h"
@@ -38,7 +39,7 @@ void Mapping::registerKeywords( Keywords& keys ){
   vesselbase::ActionWithVessel::registerKeywords( keys );
   keys.add("compulsory","REFERENCE","a pdb file containing the set of reference configurations");
   keys.add("compulsory","PROPERTY","the property to be used in the index. This should be in the REMARK of the reference");
-  keys.add("compulsory","TYPE","OPTIMAL","the manner in which distances are calculated. More information on the different "
+  keys.add("compulsory","TYPE","OPTIMAL-FAST","the manner in which distances are calculated. More information on the different "
                                          "metrics that are available in PLUMED can be found in the section of the manual on "
                                          "\\ref dists");
   keys.addFlag("DISABLE_CHECKS",false,"disable checks on reference input structures.");
@@ -106,10 +107,10 @@ ActionWithVessel(ao)
   interpretArgumentList( args, req_args ); requestArguments( req_args );
   // Duplicate all frames (duplicates are used by sketch-map)
   mymap->duplicateFrameList(); 
-  fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
+  // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
   plumed_assert( !mymap->mappingNeedsSetup() );
   // Resize all derivative arrays
-  mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
+  // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
   // Resize forces array
   if( getNumberOfAtoms()>0 ){ 
      forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
@@ -138,10 +139,10 @@ void Mapping::prepare(){
       mymap->duplicateFrameList();
       // Get the number of frames in the path
       unsigned nfram=getNumberOfReferencePoints();
-      fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 ); 
+      // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 ); 
       plumed_assert( !mymap->mappingNeedsSetup() );
       // Resize all derivative arrays
-      mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
+      // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
       // Resize forces array
       forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
   }
@@ -165,12 +166,32 @@ std::string Mapping::getArgumentName( unsigned& iarg ){
   return "pos" + atnum + "z"; 
 } 
 
-double Mapping::calculateDistanceFunction( const unsigned& ifunc, const bool& squared ){
+void Mapping::finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const {
+   ReferenceConfiguration* myref=mymap->getFrame(ifunc); mypack.setValIndex(0);
+   unsigned nargs2=myref->getNumberOfReferenceArguments(); unsigned nat2=myref->getNumberOfReferencePositions();
+   if( mypack.getNumberOfAtoms()!=nat2 || mypack.getNumberOfArguments()!=nargs2 ) mypack.resize( nargs2, nat2 );
+   if( nat2>0 ){
+      ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myref ); plumed_dbg_assert( myat2 );
+      for(unsigned i=0;i<nat2;++i) mypack.setAtomIndex( i, myat2->getAtomIndex(i) );
+   }
+}
+
+double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const {
   // Calculate the distance
-  double dd = mymap->calcDistanceFromConfiguration( ifunc, getPositions(), getPbc(), getArguments(), squared );     
+  double dd = mymap->calcDistanceFromConfiguration( ifunc, getPositions(), getPbc(), getArguments(), myder, squared );     
   // Transform distance by whatever
-  fframes[ifunc]=transformHD( dd, dfframes[ifunc] );
-  return fframes[ifunc];
+  double df, ff=transformHD( dd, df ); myder.scaleAllDerivatives( df );
+  // And the virial
+  if( getNumberOfAtoms()>0 && !myder.virialWasSet() ){
+      Tensor tvir; tvir.zero(); 
+      for(unsigned i=0;i<myder.getNumberOfAtoms();++i) tvir +=-1.0*Tensor( getPosition( myder.getAtomIndex(i) ), myder.getAtomDerivative(i) );
+      myder.addBoxDerivatives( tvir );
+  }
+  return ff;
+}
+
+ReferenceConfiguration* Mapping::getReferenceConfiguration( const unsigned& ifunc ){
+  return mymap->getFrame( ifunc );
 }
 
 void Mapping::calculateNumericalDerivatives( ActionWithValue* a ){
@@ -186,35 +207,6 @@ void Mapping::calculateNumericalDerivatives( ActionWithValue* a ){
      for(unsigned j=0;j<getNumberOfComponents();++j){ 
         for(unsigned i=0;i<getNumberOfArguments();++i) getPntrToComponent(j)->addDerivative( i, save_derivatives(j,i) );
      }
-  }
-}
-
-void Mapping::mergeDerivatives( const unsigned& ider, const double& df ){
-  unsigned cur = getCurrentTask(), frameno=ider*getNumberOfReferencePoints() + cur;
-  for(unsigned i=0;i<getNumberOfArguments();++i){
-      accumulateDerivative( i, df*dfframes[frameno]*mymap->getArgumentDerivative(cur,i) );
-  }
-  if( getNumberOfAtoms()>0 ){
-      Vector ader; Tensor tmpvir; tmpvir.zero();
-      unsigned n=getNumberOfArguments(); 
-      for(unsigned i=0;i<getNumberOfAtoms();++i){
-          ader=mymap->getAtomDerivatives( cur, i );            
-          accumulateDerivative( n, df*dfframes[frameno]*ader[0] ); n++;
-          accumulateDerivative( n, df*dfframes[frameno]*ader[1] ); n++;
-          accumulateDerivative( n, df*dfframes[frameno]*ader[2] ); n++;
-          tmpvir += -1.0*Tensor( getPosition(i), ader );
-      }
-      Tensor vir; 
-      if( !mymap->getVirial( cur, vir ) ) vir=tmpvir;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(0,0) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(0,1) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(0,2) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(1,0) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(1,1) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(1,2) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(2,0) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(2,1) ); n++;
-      accumulateDerivative( n, df*dfframes[frameno]*vir(2,2) ); 
   }
 }
 
