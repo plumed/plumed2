@@ -28,7 +28,7 @@ class EuclideanDistance : public ArgumentOnlyDistance {
 public:
   EuclideanDistance( const ReferenceConfigurationOptions& ro );
   bool pcaIsEnabledForThisReference(){ return true; }
-  void setupPCAStorage( ReferenceValuePack& mypack ){}
+  void setupPCAStorage( ReferenceValuePack& mypack ){ mypack.switchOnPCAOption(); }
 };
 
 PLUMED_REGISTER_METRIC(EuclideanDistance,"EUCLIDEAN")

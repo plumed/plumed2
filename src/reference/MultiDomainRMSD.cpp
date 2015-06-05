@@ -31,8 +31,7 @@ PLUMED_REGISTER_METRIC(MultiDomainRMSD,"MULTI")
 MultiDomainRMSD::MultiDomainRMSD( const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
 ReferenceAtoms(ro),
-ftype(ro.getMultiRMSDType()),
-pca(false)
+ftype(ro.getMultiRMSDType())
 {
 }
 
@@ -94,7 +93,7 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
   for(unsigned i=0;i<domains.size();++i){
      // Must extract appropriate positions here
      mypos.resize( blocks[i+1] - blocks[i] );
-     if( pca ) domains[i]->setupPCAStorage( tder ); 
+     if( myder.calcUsingPCAOption() ) domains[i]->setupPCAStorage( tder ); 
      unsigned n=0; for(unsigned j=blocks[i];j<blocks[i+1];++j){ tder.setAtomIndex(n,j); mypos[n]=pos[j]; n++; }
      for(unsigned k=n;k<getNumberOfAtoms();++k) tder.setAtomIndex(k,3*pos.size()+10);
      // This actually does the calculation
@@ -102,7 +101,7 @@ double MultiDomainRMSD::calculate( const std::vector<Vector>& pos, const Pbc& pb
      // Now merge the derivative
      myder.copyScaledDerivatives( 0, weights[i], tvals );
      // If PCA copy PCA stuff
-     if(pca){
+     if( myder.calcUsingPCAOption() ){
         unsigned n=0;
         if( tder.centeredpos.size()>0 ) myder.rot[i]=tder.rot[0];
         for(unsigned j=blocks[i];j<blocks[i+1];++j){
@@ -134,7 +133,7 @@ double MultiDomainRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, co
 }
 
 bool MultiDomainRMSD::pcaIsEnabledForThisReference(){
-  bool enabled=true; pca=true;
+  bool enabled=true; 
   for(unsigned i=0;i<domains.size();++i){
       if( !domains[i]->pcaIsEnabledForThisReference() ) enabled=false;
   }
@@ -143,6 +142,7 @@ bool MultiDomainRMSD::pcaIsEnabledForThisReference(){
 
 void MultiDomainRMSD::setupPCAStorage( ReferenceValuePack& mypack ){ 
   plumed_dbg_assert( pcaIsEnabledForThisReference() );
+  mypack.switchOnPCAOption();
   mypack.displacement.resize( getNumberOfAtoms() );
   mypack.centeredpos.resize( getNumberOfAtoms() );
   mypack.DRotDPos.resize(3,3); mypack.rot.resize( domains.size() );

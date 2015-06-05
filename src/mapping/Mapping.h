@@ -61,6 +61,8 @@ protected:
   void storeDistanceFunction( const unsigned& ifunc );
 /// Get the value of the weight
   double getWeight( const unsigned& weight ) const ;
+/// Return a pointer to one of the reference configurations
+  ReferenceConfiguration* getReferenceConfiguration( const unsigned& ifunc );
 public:
   static void registerKeywords( Keywords& keys );
   Mapping(const ActionOptions&);

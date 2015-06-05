@@ -28,7 +28,8 @@ boxWasSet(false),
 numberOfArgs(nargs),
 oind_set(false),
 myvals(vals),
-atom_indices(myvals.getIndices())
+atom_indices(myvals.getIndices()),
+pca(false)
 {
   if( atom_indices.size()!=natoms ){ atom_indices.resize( natoms ); myvals.getAtomVector().resize( natoms ); }
   if( vals.getNumberOfValues()==1 ){ oind=0; oind_set=true; }

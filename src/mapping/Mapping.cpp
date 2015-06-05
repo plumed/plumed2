@@ -182,12 +182,16 @@ double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValue
   // Transform distance by whatever
   double df, ff=transformHD( dd, df ); myder.scaleAllDerivatives( df );
   // And the virial
-  if( !myder.virialWasSet() ){
+  if( getNumberOfAtoms()>0 && !myder.virialWasSet() ){
       Tensor tvir; tvir.zero(); 
       for(unsigned i=0;i<myder.getNumberOfAtoms();++i) tvir +=-1.0*Tensor( getPosition( myder.getAtomIndex(i) ), myder.getAtomDerivative(i) );
       myder.addBoxDerivatives( tvir );
   }
   return ff;
+}
+
+ReferenceConfiguration* Mapping::getReferenceConfiguration( const unsigned& ifunc ){
+  return mymap->getFrame( ifunc );
 }
 
 void Mapping::calculateNumericalDerivatives( ActionWithValue* a ){

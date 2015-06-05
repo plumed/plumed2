@@ -41,6 +41,8 @@ private:
   MultiValue& myvals;
 /// Ths list of atom indices
   std::vector<unsigned>& atom_indices;
+/// Are we using pca 
+  bool pca;
 /// A vector of vectors to save us some overhead for vector resizes
   std::vector<Vector> centeredpos;
 ///
@@ -95,6 +97,10 @@ public:
   double getArgumentDerivative( const unsigned& ival ) const ;
 ///
   Tensor getBoxDerivatives() const ;
+///
+  bool calcUsingPCAOption() const ;
+///
+  void switchOnPCAOption();
 ///
   std::vector<Vector>& getAtomVector();
 ///
@@ -195,6 +201,16 @@ Tensor ReferenceValuePack::getBoxDerivatives() const {
   plumed_dbg_assert( oind_set && boxWasSet ); Tensor tvir; unsigned nbase = myvals.getNumberOfDerivatives() - 9;
   for(unsigned i=0;i<3;++i) for(unsigned j=0;j<3;++j) tvir(i,j)=myvals.getDerivative( oind, nbase + 3*i + j );
   return tvir;
+}
+
+inline
+bool ReferenceValuePack::calcUsingPCAOption() const {
+  return pca;
+}
+
+inline
+void ReferenceValuePack::switchOnPCAOption(){
+  pca=true;
 }
 
 inline

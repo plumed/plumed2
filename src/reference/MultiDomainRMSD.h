@@ -32,8 +32,6 @@ class MultiDomainRMSD : public ReferenceAtoms {
 private:
 /// The type of RMSD we are using
   std::string ftype;
-/// Are we doing pca
-  bool pca;
 /// The weight of a block
   std::vector<double> weights;
 /// Blocks containing start and end points for all the domains

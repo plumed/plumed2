@@ -28,15 +28,16 @@ namespace PLMD{
 
 class OptimalRMSD : public RMSDBase {
 private:
-  bool pca,fast;
+  bool fast;
   RMSD myrmsd;
 public:
   OptimalRMSD(const ReferenceConfigurationOptions& ro);
   void read( const PDB& );
   double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
-  bool pcaIsEnabledForThisReference(){ pca=true; return true; }
+  bool pcaIsEnabledForThisReference(){ return true; }
   void setupRMSDObject(){ myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); }
   void setupPCAStorage( ReferenceValuePack& mypack ){ 
+        mypack.switchOnPCAOption();
         mypack.centeredpos.resize( getNumberOfAtoms() ); 
         mypack.displacement.resize( getNumberOfAtoms() ); 
         mypack.DRotDPos.resize(3,3); mypack.rot.resize(1);
@@ -48,8 +49,7 @@ PLUMED_REGISTER_METRIC(OptimalRMSD,"OPTIMAL")
 
 OptimalRMSD::OptimalRMSD(const ReferenceConfigurationOptions& ro ):
 ReferenceConfiguration(ro),
-RMSDBase(ro),
-pca(false)
+RMSDBase(ro)
 {
   fast=ro.usingFastOption();
 }
@@ -60,7 +60,7 @@ void OptimalRMSD::read( const PDB& pdb ){
 
 double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {
   double d; plumed_dbg_assert( pos.size()==getNumberOfAtoms() && myder.getAtomVector().size()==getNumberOfAtoms() );
-  if( pca ){
+  if( myder.calcUsingPCAOption() ){
      std::vector<Vector> centeredreference( getNumberOfAtoms () );
      d=myrmsd.calc_PCAelements(pos,myder.getAtomVector(),myder.rot[0],myder.DRotDPos,myder.getAtomsDisplacementVector(),myder.centeredpos,centeredreference,squared);
      unsigned nat = pos.size(); for(unsigned i=0;i<nat;++i) myder.getAtomsDisplacementVector()[i] -= getReferencePosition(i);
@@ -77,6 +77,7 @@ double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& my
 }
 
 double OptimalRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const {
+  plumed_dbg_assert( mypack.calcUsingPCAOption() );
 
   double proj=0.0; mypack.clear();
   for(unsigned i=0;i<pos.size();++i){

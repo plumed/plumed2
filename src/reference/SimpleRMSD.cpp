@@ -34,7 +34,7 @@ public:
   double calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const ;
   bool pcaIsEnabledForThisReference(){ return true; }
   void setupPCAStorage( ReferenceValuePack& mypack ){
-     mypack.getAtomsDisplacementVector().resize( getNumberOfAtoms() );
+     mypack.switchOnPCAOption(); mypack.getAtomsDisplacementVector().resize( getNumberOfAtoms() );
   }
   double projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const ;  
 };
@@ -60,7 +60,7 @@ double SimpleRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myd
 }
 
 double SimpleRMSD::projectAtomicDisplacementOnVector( const unsigned& iv, const Matrix<Vector>& vecs, const std::vector<Vector>& pos, ReferenceValuePack& mypack ) const { 
-  Vector comder; comder.zero();
+  plumed_dbg_assert( mypack.calcUsingPCAOption() ); Vector comder; comder.zero();
   for(unsigned j=0;j<pos.size();++j){
       for(unsigned k=0;k<3;++k) comder[k] += getAlign()[j]*vecs(iv,j)[k];
   }
