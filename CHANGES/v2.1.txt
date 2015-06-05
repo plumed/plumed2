@@ -181,7 +181,6 @@ Unreleased changes (will be included in 2.1.3)
 See <a href="http://github.com/plumed/plumed2/commits/v2.1">branch v2.1 on git repository</a>.
 
 For users:
-- Updated gromacs patch 5.0 to 5.0.4
 - Updated gromacs patch 4.5.5 to 4.5.7
 - Fixed bug in \ref ENSEMBLE derivatives when more than 1 argument was provided
 - Fixed bug in \ref GHOST : virial is now computed correctly.
@@ -190,6 +189,10 @@ For users:
   This fix requires gromacs to be repatched and could be very important if you run biased simulations in the NPT ensemble.
 - Fixed a bug in the virial computed with \ref FIT_TO_TEMPLATE when the reference pdb had center non located at the origin.
 - Fixed a bug in the the forces computed with \ref FIT_TO_TEMPLATE when used in combination with \ref COM, \ref CENTER, or \ref GHOST
+- Fixed a bug that could lead plumed to be stuck with domain decomposition in some extreme case (one domain with all atoms, other domains empty).
+- Fixed a bug when \ref COMBINE or \ref MATHEVAL are used with PERIODIC keyword. Now when PERIODIC keyword is used the result
+  of the calculation is brought within the periodicity domain. See <a href="http://github.com/plumed/plumed2/issues/139"> here </a>.
+- Fixed a bug related to \RANDOM_EXCHANGES followed by \ref INCLUDE
 - Updated internal molfile plugins to VMD 1.9.2.
 - Included crd and crdbox formats to internal molfile.
 - Added --natoms to \ref driver . This is required to read coordinate
@@ -202,6 +205,8 @@ For developers:
 - Allow external VMD plugins to be detected with --has-external-molfile. This
   is required to enable some regtest with amber files.
 - Added --dump-full-virial to \ref driver
+- Allow definition of variables where some of the components have derivatives and some haven't (issue #131).
+- Improved travis tests with more debug options.
 - Improved some regtest to check out-of-diagonal virial components
 
 

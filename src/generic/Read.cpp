@@ -99,6 +99,8 @@ void Read::registerKeywords(Keywords& keys){
   keys.addFlag("IGNORE_TIME",false,"ignore the time in the colvar file. When this flag is not present read will be quite strict "
                                    "about the start time of the simulation and the stride between frames");
   keys.remove("NUMERICAL_DERIVATIVES");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
   ActionWithValue::useCustomisableComponents(keys);
 }
 

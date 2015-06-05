@@ -624,10 +624,7 @@ build_dir
 xxd
 dot
 doxygen
-STATIC_LIBS
-LDSO
 LD
-SOEXT
 OPENMP_CXXFLAGS
 EGREP
 GREP
@@ -645,6 +642,9 @@ CPPFLAGS
 LDFLAGS
 CXXFLAGS
 CXX
+LDSO
+STATIC_LIBS
+SOEXT
 target_alias
 host_alias
 build_alias
@@ -701,6 +701,7 @@ enable_matheval
 enable_zlib
 enable_clock_gettime
 enable_gettimeofday
+enable_readdir_r
 enable_cregex
 enable_dlopen
 enable_execinfo
@@ -711,6 +712,9 @@ enable_xdrfile
       ac_precious_vars='build_alias
 host_alias
 target_alias
+SOEXT
+STATIC_LIBS
+LDSO
 CXX
 CXXFLAGS
 LDFLAGS
@@ -1350,6 +1354,8 @@ Optional Features:
   --enable-zlib           enable search for zlib, default: yes
   --enable-clock-gettime  enable search for gettime, default: yes
   --enable-gettimeofday   enable search for gettimeofday, default: yes
+  --enable-readdir-r      enable search for readdir_r (threadsafe), default:
+                          yes
   --enable-cregex         enable search for C regular expression, default: yes
   --enable-dlopen         enable search for dlopen, default: yes
   --enable-execinfo       enable search for execinfo, default: yes
@@ -1359,6 +1365,11 @@ Optional Features:
   --disable-openmp        do not use OpenMP
 
 Some influential environment variables:
+  SOEXT       extension of dynamic libraries (so/dylib)
+  STATIC_LIBS variables that should be linked statically directly to MD code -
+              configure will add here -ldl if necessary
+  LDSO        command for linking shared library - configure will use CXX plus
+              the proper flags
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -2525,6 +2536,24 @@ fi
 
 
 
+readdir_r=
+# Check whether --enable-readdir-r was given.
+if test "${enable_readdir_r+set}" = set; then :
+  enableval=$enable_readdir_r; case "${enableval}" in
+             (yes) readdir_r=true ;;
+             (no)  readdir_r=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-readdir-r" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) readdir_r=true ;;
+             (no)  readdir_r=false ;;
+  esac
+
+fi
+
+
+
 cregex=
 # Check whether --enable-cregex was given.
 if test "${enable_cregex+set}" = set; then :
@@ -2630,6 +2659,10 @@ else
   esac
 
 fi
+
+
+
+
 
 
 
@@ -3930,22 +3963,24 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 # log the initial flags
 LD="$CXX"
 LDSO="$CXX"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXX:      $CXX" >&5
-$as_echo "$as_me: Initial CXX:      $CXX" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXXFLAGS: $CXXFLAGS" >&5
-$as_echo "$as_me: Initial CXXFLAGS: $CXXFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CPPFLAGS: $CPPFLAGS" >&5
-$as_echo "$as_me: Initial CPPFLAGS: $CPPFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDFLAGS:  $LDFLAGS" >&5
-$as_echo "$as_me: Initial LDFLAGS:  $LDFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LIBS:     $LDFLAGS" >&5
-$as_echo "$as_me: Initial LIBS:     $LDFLAGS" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LD:       $LD" >&5
-$as_echo "$as_me: Initial LD:       $LD" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDSO:     $LDSO" >&5
-$as_echo "$as_me: Initial LDSO:     $LDSO" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial SOEXT:    $SOEXT" >&5
-$as_echo "$as_me: Initial SOEXT:    $SOEXT" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXX:         $CXX" >&5
+$as_echo "$as_me: Initial CXX:         $CXX" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CXXFLAGS:    $CXXFLAGS" >&5
+$as_echo "$as_me: Initial CXXFLAGS:    $CXXFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CPPFLAGS:    $CPPFLAGS" >&5
+$as_echo "$as_me: Initial CPPFLAGS:    $CPPFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDFLAGS:     $LDFLAGS" >&5
+$as_echo "$as_me: Initial LDFLAGS:     $LDFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LIBS:        $LDFLAGS" >&5
+$as_echo "$as_me: Initial LIBS:        $LDFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial STATIC_LIBS: $LDFLAGS" >&5
+$as_echo "$as_me: Initial STATIC_LIBS: $LDFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LD:          $LD" >&5
+$as_echo "$as_me: Initial LD:          $LD" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDSO:        $LDSO" >&5
+$as_echo "$as_me: Initial LDSO:        $LDSO" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial SOEXT:       $SOEXT" >&5
+$as_echo "$as_me: Initial SOEXT:       $SOEXT" >&6;}
 
 # check C++ flags
 if test $shared == true
@@ -5632,6 +5667,30 @@ fi
     else
        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&5
 $as_echo "$as_me: WARNING: cannot enable __PLUMED_HAS_GETTIMEOFDAY" >&2;}
+    fi
+
+fi
+if test $readdir_r == true ; then
+
+    found=ko
+    ac_fn_cxx_check_header_mongrel "$LINENO" "dirent.h" "ac_cv_header_dirent_h" "$ac_includes_default"
+if test "x$ac_cv_header_dirent_h" = xyes; then :
+
+      ac_fn_cxx_check_func "$LINENO" "readdir_r" "ac_cv_func_readdir_r"
+if test "x$ac_cv_func_readdir_r" = xyes; then :
+  found=ok
+fi
+
+
+fi
+
+
+    if test $found == ok ; then
+      $as_echo "#define __PLUMED_READDIR_R 1" >>confdefs.h
+
+    else
+       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cannot enable __PLUMED_READDIR_R" >&5
+$as_echo "$as_me: WARNING: cannot enable __PLUMED_READDIR_R" >&2;}
     fi
 
 fi
