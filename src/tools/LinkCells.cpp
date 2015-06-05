@@ -99,7 +99,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
 #define LINKC_MAX(n) ((n<3)? 1 : 2)
 #define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
 
-void LinkCells::retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ){
+void LinkCells::retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ) const {
   plumed_assert( natomsper==1 );  // This is really a bug. If you are trying to reuse this ask GAT for help
   std::vector<unsigned> celn( findMyCell( pos ) );
 

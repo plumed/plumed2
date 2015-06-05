@@ -40,23 +40,19 @@ and return one single value.
 
 class FunctionVessel : public Vessel {
 private:
-/// The number of derivatives
-  unsigned nderivatives;
 /// This is the pointer to the value we are creating
   Value* final_value;
 protected:
+/// The number of derivatives
+  unsigned nderivatives;
 /// Are the derivatives differentiable
   bool diffweight;
-/// Add some value to the accumulator if it is greater than tolerance
-  bool addValueUsingTolerance( const unsigned& jval, const double& val );
-/// Add some value to the accumulator and ignore the tolerance
-  void addValueIgnoringTolerance( const unsigned& jval, const double& val );
+/// Are we normalising by the weight
+  bool norm;
+/// Are we using the tolerance
+  bool usetol;
 /// Set the final value
   void setOutputValue( const double& val );
-/// Get the nth value in the distribution
-  double getFinalValue( const unsigned& j );
-/// This does a combination of the product and chain rules
-  void mergeFinalDerivatives( const std::vector<double>& df );
 /// Resize the vector containing the derivatives
   void setNumberOfDerivatives( const unsigned& nder );
 /// Return a pointer to the final value
@@ -72,24 +68,15 @@ public:
   std::string description();
 /// The rest of the description of what we are calculating
   virtual std::string function_description()=0;
+/// Do the calcualtion
+  virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
+/// Do any transformations of the value that are required
+  virtual double calcTransform( const double& val, double& df ) const ;
+/// Finish the calculation of the quantity
+  virtual void finish( const std::vector<double>& buffer );
+/// Finish with any transforms required
+  virtual double finalTransform( const double& val, double& dv );
 };
-
-inline
-bool FunctionVessel::addValueUsingTolerance( const unsigned& jval, const double& val ){
-  if( fabs(val)<getTolerance() ) return false; 
-  addToBufferElement( (nderivatives+1)*jval, val );
-  return true;
-}
-
-inline
-void FunctionVessel::addValueIgnoringTolerance( const unsigned& jval, const double& val ){
-  addToBufferElement( (nderivatives+1)*jval, val );
-}
-
-inline
-double FunctionVessel::getFinalValue(const unsigned& j){
-  return getBufferElement( (nderivatives+1)*j );
-}
 
 inline
 void FunctionVessel::setOutputValue( const double& val ){

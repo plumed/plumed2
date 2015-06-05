@@ -28,10 +28,9 @@ namespace vesselbase {
 
 BridgeVessel::BridgeVessel( const VesselOptions& da ):
 Vessel(da),
-inum(0),
-in_normal_calculate(false)
+inum(0)
+// in_normal_calculate(false)
 {
-  resizeBuffer(0);
 }
 
 void BridgeVessel::resize(){
@@ -39,6 +38,7 @@ void BridgeVessel::resize(){
       mynumerical_values.resize( getAction()->getNumberOfDerivatives()*myOutputValues->getNumberOfComponents() );
       inum=0;
   }
+  unsigned tmp=0; resizeBuffer( myOutputAction->getSizeOfBuffer( tmp ) );
 }
 
 void BridgeVessel::setOutputAction( ActionWithVessel* myact ){
@@ -58,22 +58,31 @@ void BridgeVessel::prepare(){
   myOutputAction->doJobsRequiredBeforeTaskList();
 }
 
-bool BridgeVessel::calculate(){
-  in_normal_calculate=true;
-  myOutputAction->task_index = getAction()->task_index;
-  myOutputAction->current = getAction()->current;
-  myOutputAction->performTask();
-  if( myOutputAction->getValueForTolerance()<myOutputAction->getTolerance() ){
-      myOutputAction->clearAfterTask();
-      return ( !myOutputAction->contributorsAreUnlocked || myOutputAction->getValueForTolerance()>=myOutputAction->getNLTolerance() );
+void BridgeVessel::setBufferStart( unsigned& start ){
+  unsigned tmp=myOutputAction->getSizeOfBuffer( start );
+}
+
+MultiValue& BridgeVessel::transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ){
+  if( outvals.getNumberOfValues()!=myOutputAction->getNumberOfQuantities() ||
+      outvals.getNumberOfDerivatives()!=myOutputAction->getNumberOfDerivatives() ){
+       outvals.resize( myOutputAction->getNumberOfQuantities(), myOutputAction->getNumberOfDerivatives() );
   }
-  bool keep=myOutputAction->calculateAllVessels();
-  in_normal_calculate=false;
+  myOutputAction->transformBridgedDerivatives( current, invals, outvals );
+  return outvals;
+}
+
+bool BridgeVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+  // in_normal_calculate=true;
+  if( myvals.get(0)<myOutputAction->getTolerance() ){
+      return ( !myOutputAction->contributorsAreUnlocked || myvals.get(0)>=myOutputAction->getNLTolerance() );
+  }
+  bool keep=myOutputAction->calculateAllVessels( current, myvals, myvals, buffer, der_list );    
+  // in_normal_calculate=false;
   return ( !myOutputAction->contributorsAreUnlocked || keep );
 }
 
-void BridgeVessel::finish(){
-  myOutputAction->finishComputations();
+void BridgeVessel::finish( const std::vector<double>& buffer ){
+  myOutputAction->finishComputations( buffer );
   if( myOutputAction->checkNumericalDerivatives() ){
      if ( inum<mynumerical_values.size() ){
          for(int i=0;i<myOutputValues->getNumberOfComponents();++i){

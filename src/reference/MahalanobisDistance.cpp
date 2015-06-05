@@ -27,8 +27,6 @@ namespace PLMD {
 class MahalanobisDistance : public ArgumentOnlyDistance {
 public:
   MahalanobisDistance( const ReferenceConfigurationOptions& ro );
-  void read( const PDB& );
-  double calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared );
 };
 
 PLUMED_REGISTER_METRIC(MahalanobisDistance,"MAHALANOBIS")
@@ -39,14 +37,5 @@ ArgumentOnlyDistance(ro)
 {
   hasmetric=true;
 }
-
-void MahalanobisDistance::read( const PDB& pdb ){
-  readArgumentsFromPDB( pdb );
-}
-
-double MahalanobisDistance::calc( const std::vector<Value*>& vals, const std::vector<double>& arg, const bool& squared ){
-  return calculateArgumentDistance( vals, arg, squared );
-}
-
 
 }

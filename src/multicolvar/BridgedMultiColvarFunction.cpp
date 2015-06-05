@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "CatomPack.h"
 #include "BridgedMultiColvarFunction.h"
 
 namespace PLMD {
@@ -46,111 +47,32 @@ MultiColvarBase(ao)
   if( checkNumericalDerivatives() ) mycolv->useNumericalDerivatives();
 
   myBridgeVessel = mycolv->addBridgingVessel( this ); addDependency(mycolv);
-  weightHasDerivatives=true;
+  weightHasDerivatives=true; usespecies=mycolv->usespecies;
   // Number of tasks is the same as the number in the underlying MultiColvar
   for(unsigned i=0;i<mycolv->getFullNumberOfTasks();++i) addTaskToList( mycolv->getTaskCode(i) );
-  // Do all setup stuff in MultiColvarBase
-  resizeLocalArrays();
 }
 
-void BridgedMultiColvarFunction::getIndexList( const unsigned& ntotal, const unsigned& jstore, const unsigned& maxder, std::vector<unsigned>& indices ){
-  mycolv->getIndexList( ntotal, jstore, maxder, indices );
-}
-
-void BridgedMultiColvarFunction::performTask(){
-  atoms_with_derivatives.deactivateAll();
-
-  if( !myBridgeVessel->prerequisitsCalculated() ){
-      mycolv->setTaskIndexToCompute( getCurrentPositionInTaskList() );
-      mycolv->performTask();
-  } else {
-
-  }
-
-  completeTask();
-  atoms_with_derivatives.emptyActiveMembers();
-  if( mycolv->isDensity() ){
-     for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j) atoms_with_derivatives.updateIndex( mycolv->atomsWithCatomDer[j] );
-  } else {
-     for(unsigned j=0;j<mycolv->atoms_with_derivatives.getNumberActive();++j) atoms_with_derivatives.updateIndex( mycolv->atoms_with_derivatives[j] );
-  }
-  atoms_with_derivatives.sortActiveList();
-}
-
-Vector BridgedMultiColvarFunction::retrieveCentralAtomPos(){
-  if( atomsWithCatomDer.getNumberActive()==0 ){
-      Vector cvec = mycolv->retrieveCentralAtomPos();
-
-      // Copy the value and derivatives from the MultiColvar
-      atomsWithCatomDer.emptyActiveMembers();
-      for(unsigned i=0;i<3;++i){
-         setElementValue( getCentralAtomElementIndex() + i, mycolv->getElementValue( mycolv->getCentralAtomElementIndex() + i ) );
-         unsigned nbase = ( getCentralAtomElementIndex() + i)*getNumberOfDerivatives();
-         unsigned nbas2 = ( mycolv->getCentralAtomElementIndex() + i )*mycolv->getNumberOfDerivatives();
-         for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j){
-             unsigned n=mycolv->atomsWithCatomDer[j], nx=3*n; atomsWithCatomDer.activate(n);
-             addElementDerivative(nbase + nx + 0, mycolv->getElementDerivative(nbas2 + nx + 0) );
-             addElementDerivative(nbase + nx + 1, mycolv->getElementDerivative(nbas2 + nx + 1) );
-             addElementDerivative(nbase + nx + 2, mycolv->getElementDerivative(nbas2 + nx + 2) ); 
-         } 
+void BridgedMultiColvarFunction::transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const {
+  completeTask( current, invals, outvals );
+  
+  // Now update the outvals derivatives lists
+  if( derivativesAreRequired() ){ 
+     outvals.emptyActiveMembers();
+     if( mycolv->isDensity() ){
+         for(unsigned j=0;j<3;++j) outvals.putIndexInActiveArray( 3*current+j ); 
+         for(unsigned j=invals.getNumberOfDerivatives()-9;j<invals.getNumberOfDerivatives();++j) outvals.putIndexInActiveArray(j);
+      } else {
+         for(unsigned j=0;j<invals.getNumberActive();++j) outvals.putIndexInActiveArray( invals.getActiveIndex(j) );
       }
-      for(unsigned j=0;j<mycolv->atomsWithCatomDer.getNumberActive();++j) atomsWithCatomDer.updateIndex( mycolv->atomsWithCatomDer[j] );
-      atomsWithCatomDer.sortActiveList();
-      return cvec;
+      for(unsigned j=invals.getNumberOfDerivatives();j<outvals.getNumberOfDerivatives();++j) outvals.putIndexInActiveArray( j );
+      outvals.completeUpdate(); 
   }
-  Vector cvec;
-  for(unsigned i=0;i<3;++i) cvec[i]=getElementValue(1+i);
-  return cvec;
 }
 
-void BridgedMultiColvarFunction::mergeDerivatives( const unsigned& ider, const double& df ){
-  unsigned vstart=getNumberOfDerivatives()*ider;
-  // Merge atom derivatives
-  for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
-     unsigned iatom=3*atoms_with_derivatives[i];
-     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
-     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) ); iatom++;
-     accumulateDerivative( iatom, df*getElementDerivative(vstart+iatom) );
-  }
-  // Merge virial derivatives
-  unsigned nvir=3*mycolv->getNumberOfAtoms();
-  for(unsigned j=0;j<9;++j){
-     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
-  }
-  // Merge local atom derivatives
-  for(unsigned j=0;j<getNumberOfAtoms();++j){
-     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
-     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
-     accumulateDerivative( nvir, df*getElementDerivative(vstart+nvir) ); nvir++;
-  }
-  plumed_dbg_assert( nvir==getNumberOfDerivatives() );
-}
-
-void BridgedMultiColvarFunction::clearDerivativesAfterTask( const unsigned& ider ){
-  unsigned vstart=getNumberOfDerivatives()*ider;
-  if( derivativesAreRequired() ){
-     // Clear atom derivatives
-     for(unsigned i=0;i<atoms_with_derivatives.getNumberActive();++i){
-        unsigned iatom=vstart+3*atoms_with_derivatives[i];
-        setElementDerivative( iatom, 0.0 ); iatom++;
-        setElementDerivative( iatom, 0.0 ); iatom++;
-        setElementDerivative( iatom, 0.0 );
-     }
-     // Clear virial contribution
-     unsigned nvir=vstart+3*mycolv->getNumberOfAtoms();
-     for(unsigned j=0;j<9;++j){
-        setElementDerivative( nvir, 0.0 ); nvir++;
-     }
-     // Clear derivatives of local atoms
-     for(unsigned j=0;j<getNumberOfAtoms();++j){
-        setElementDerivative( nvir, 0.0 ); nvir++;
-        setElementDerivative( nvir, 0.0 ); nvir++;
-        setElementDerivative( nvir, 0.0 ); nvir++;
-     }
-     plumed_dbg_assert( (nvir-vstart)==getNumberOfDerivatives() );
-  }
-  // Clear values
-  thisval_wasset[ider]=false; setElementValue( ider, 0.0 ); thisval_wasset[ider]=false;
+void BridgedMultiColvarFunction::performTask( const unsigned& taskIndex, const unsigned& current, MultiValue& myvals ) const {
+  MultiValue invals( mycolv->getNumberOfQuantities(), mycolv->getNumberOfDerivatives() );
+  mycolv->performTask( taskIndex, current, invals );
+  transformBridgedDerivatives( taskIndex, invals, myvals ); 
 }
 
 void BridgedMultiColvarFunction::calculateNumericalDerivatives( ActionWithValue* a ){
@@ -178,8 +100,12 @@ bool BridgedMultiColvarFunction::isPeriodic(){
   return mycolv->isPeriodic();
 }
 
-void BridgedMultiColvarFunction::deactivate_task(){
+void BridgedMultiColvarFunction::deactivate_task( const unsigned& taskno ){
   plumed_merror("This should never be called");
+}
+
+CatomPack BridgedMultiColvarFunction::getCentralAtomPack( const unsigned& basn, const unsigned& curr ){
+  return mycolv->getCentralAtomPack( basn, curr );
 }
 
 }

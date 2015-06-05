@@ -35,6 +35,8 @@ namespace colvar{
    
 class RMSD : public Colvar {
 	
+  MultiValue myvals;
+  ReferenceValuePack mypack;
   PLMD::RMSDBase* rmsd;
   bool squared; 
 
@@ -150,7 +152,7 @@ void RMSD::registerKeywords(Keywords& keys){
 }
 
 RMSD::RMSD(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao),squared(false)
+PLUMED_COLVAR_INIT(ao),myvals(1,0), mypack(0,0,myvals),squared(false)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -173,8 +175,12 @@ PLUMED_COLVAR_INIT(ao),squared(false)
   
   std::vector<AtomNumber> atoms;
   rmsd->getAtomRequests( atoms );
-  rmsd->setNumberOfAtoms( atoms.size() );
+//  rmsd->setNumberOfAtoms( atoms.size() );
   requestAtoms( atoms );
+
+  // Setup the derivative pack
+  myvals.resize( 1, 3*atoms.size()+9 ); mypack.resize( 0, atoms.size() );
+  for(unsigned i=0;i<atoms.size();++i) mypack.setAtomIndex( i, i );
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
@@ -189,12 +195,12 @@ RMSD::~RMSD(){
 
 // calculator
 void RMSD::calculate(){
-  double r=rmsd->calculate( getPositions(), squared );
+  double r=rmsd->calculate( getPositions(), mypack, squared );
 
   setValue(r); 
-  for(unsigned i=0;i<getNumberOfAtoms();i++) setAtomsDerivatives( i, rmsd->getAtomDerivative(i) );
+  for(unsigned i=0;i<getNumberOfAtoms();i++) setAtomsDerivatives( i, mypack.getAtomDerivative(i) );
 
-  Tensor virial; plumed_dbg_assert( !rmsd->getVirial(virial) );
+  Tensor virial; plumed_dbg_assert( !mypack.virialWasSet() );
   setBoxDerivativesNoPbc();
 }
 

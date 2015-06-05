@@ -45,6 +45,8 @@ set of collective variables.
 
 class Target : public Function {
 private:
+  MultiValue myvals;
+  ReferenceValuePack mypack;
   PLMD::ArgumentOnlyDistance* target;
 public:
   Target(const ActionOptions&);
@@ -67,7 +69,9 @@ void Target::registerKeywords(Keywords& keys){
 
 Target::Target(const ActionOptions&ao):
 Action(ao),
-Function(ao)
+Function(ao),
+myvals(1,0),
+mypack(0,0,myvals)
 {
   std::string type; parse("TYPE",type);
   std::string reference; parse("REFERENCE",reference); 
@@ -84,12 +88,15 @@ Function(ao)
   // Get the argument names
   std::vector<std::string> args_to_retrieve;
   target->getArgumentRequests( args_to_retrieve, false );
-  target->setNumberOfArguments( args_to_retrieve.size() );
 
   // Get the arguments
   std::vector<Value*> myargs;
   interpretArgumentList( args_to_retrieve, myargs );
   requestArguments( myargs );
+
+  // Now create packs
+  myvals.resize( 1, myargs.size() );
+  mypack.resize( myargs.size(), 0 );
 
   // Create the value
   addValueWithDerivatives(); setNotPeriodic();
@@ -100,8 +107,8 @@ Target::~Target(){
 }
 
 void Target::calculate(){
-  double r=target->calculate( getArguments(), false ); setValue(r);
-  for(unsigned i=0;i<getNumberOfArguments();i++) setDerivative( i, target->getArgumentDerivative(i) );
+  mypack.clear(); double r=target->calculate( getArguments(), mypack, false ); setValue(r);
+  for(unsigned i=0;i<getNumberOfArguments();i++) setDerivative( i, mypack.getArgumentDerivative(i) );
 }
 
 }

@@ -31,12 +31,10 @@ void AdjacencyMatrixVessel::registerKeywords( Keywords& keys ){
 }
 
 AdjacencyMatrixVessel::AdjacencyMatrixVessel( const vesselbase::VesselOptions& da ):
-StoreDataVessel(da),
-tmpdf(1)
+StoreDataVessel(da)
 {
   function=dynamic_cast<AdjacencyMatrixAction*>( getAction() );
   plumed_assert( function );
-  completeSetup( 0, 1 ); nrows = function->getFullNumberOfTasks();
 }
 
 void AdjacencyMatrixVessel::prepare(){
@@ -48,23 +46,15 @@ void AdjacencyMatrixVessel::setFinishedTrue(){
   finished=true;
 }
 
-void AdjacencyMatrixVessel::recompute( const unsigned& ivec, const unsigned& jstore ){
-  plumed_dbg_assert( function->usingLowMem() && function->dertime );
-  
-  // Set the task we want to reperform
-  setTaskToRecompute( ivec );
-  // Reperform the task
-  if( function->dertime ){
-     function->performTask();
-     storeDerivativesLowMem( jstore );
-     function->clearAfterTask();
-  }
-} 
+bool AdjacencyMatrixVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const {
+  if( !finished ) return StoreDataVessel::calculate( current, myvals, buffer, der_list );
+  return false;
+}
 
-void AdjacencyMatrixVessel::finish(){
+void AdjacencyMatrixVessel::finish( const std::vector<double>& buffer ){
   if( !finished ){
      finished=true;
-     StoreDataVessel::finish(); 
+     StoreDataVessel::finish( buffer ); 
      function->dertime=true;
      function->completeCalculation();
   }
