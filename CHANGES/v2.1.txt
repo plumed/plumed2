@@ -192,7 +192,7 @@ For users:
 - Fixed a bug that could lead plumed to be stuck with domain decomposition in some extreme case (one domain with all atoms, other domains empty).
 - Fixed a bug when \ref COMBINE or \ref MATHEVAL are used with PERIODIC keyword. Now when PERIODIC keyword is used the result
   of the calculation is brought within the periodicity domain. See <a href="http://github.com/plumed/plumed2/issues/139"> here </a>.
-- Fixed a bug related to \RANDOM_EXCHANGES followed by \ref INCLUDE
+- Fixed a bug related to \ref RANDOM_EXCHANGES followed by \ref INCLUDE
 - Updated internal molfile plugins to VMD 1.9.2.
 - Included crd and crdbox formats to internal molfile.
 - Added --natoms to \ref driver . This is required to read coordinate

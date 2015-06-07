@@ -313,10 +313,4 @@ we add new features, this number will be increased.
 This is similar to plumed 1. All the files that you want to modify should be
 first copied to .preplumed files. Then use "plumed patch -s" to save the diff.
 
-\section Notes Notes
-
-Compiler options to use shared libraries on many architectures: 
-http://www.fortran-2000.com/ArnaudRecipes/sharedlib.html
-
-
 */
