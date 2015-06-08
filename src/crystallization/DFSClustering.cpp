@@ -32,6 +32,7 @@ void DFSClustering::registerKeywords( Keywords& keys ){
 DFSClustering::DFSClustering(const ActionOptions&ao):
 Action(ao),
 AdjacencyMatrixAction(ao),
+number_of_cluster(-1),
 nneigh(getFullNumberOfBaseTasks()),
 adj_list(getFullNumberOfBaseTasks(),getFullNumberOfBaseTasks()),
 cluster_sizes(getFullNumberOfBaseTasks()),
