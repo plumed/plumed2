@@ -92,6 +92,7 @@ PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([openmp],[openmp],[search for openmp],[no])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
+PLUMED_CONFIG_ENABLE([external_blas],[external-blas],[search for external blas],[yes])
 PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
@@ -203,15 +204,38 @@ save_LIBS="$LIBS"
 blas_found=
 lapack_found=
 
-if test "$external_lapack" == true ; then
+# if external lapack can only work with external blas
+# thus, if external blas are disabled also external lapack should be disabled
+if test "$external_blas" == false && test "$external_lapack" == true ; then
+  AC_MSG_NOTICE([Internal blas can only be used with internal lapack])
+  AC_MSG_NOTICE([Will not search for external lapack])
+  external_lapack=false
+fi
 
+# first look for blas
+if test "$external_blas" == true ; then
 AC_CHECK_FUNC(  [dgemv], [blas_found=nounderscore], [
 AC_CHECK_FUNC(  [dgemv_],[blas_found=underscore],   [
 AC_CHECK_LIB(   [blas],[dgemv],  [LIBS="-lblas $LIBS"] [blas_found=nounderscore], [
 AC_CHECK_LIB(   [blas],[dgemv_], [LIBS="-lblas $LIBS"] [blas_found=underscore]
 ) ]) ]) ])
+fi
 
+# if not found, then use internal lapack and blas
+if test -z "$blas_found" ; then
+AC_MSG_WARN([using internal lapack and blas, could be inefficient])
+LIBS="$save_LIBS"
+
+AC_DEFINE([__PLUMED_INTERNAL_BLAS])
+AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
+fi
+
+# if found, also look for external blas
 if test -n "$blas_found" ; then
+
+save_LIBS="$LIBS"
+
+if test "$external_lapack" == true ; then
 # Then we look for lapack using same underscoring
 case "$blas_found" in
 (underscore) search_for=dsyevr_ ;;
@@ -223,21 +247,22 @@ AC_CHECK_LIB(  [lapack],[$search_for], [LIBS="-llapack $LIBS"] [lapack_found=yes
 ])
 fi
 
-fi 
-
+# if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
-AC_MSG_WARN([using internal lapack/blas, could be inefficient])
+AC_MSG_WARN([using internal lapack, could be inefficient])
 LIBS="$save_LIBS"
 
 AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
-AC_DEFINE([__PLUMED_INTERNAL_BLAS])
+fi
 
-else
+fi 
 
-  if test $blas_found == nounderscore
-  then
-    AC_DEFINE([F77_NO_UNDERSCORE])
-  fi
+# in case external blas have been found, take note of their underscoring
+# notice that this applies also when external blas are used with internal lapack
+# in the latter case, also (internal) lapack names will be underscored consistently
+if test "$blas_found" == nounderscore
+then
+  AC_DEFINE([F77_NO_UNDERSCORE])
 fi
 
 #### End of compulsory libraries ####

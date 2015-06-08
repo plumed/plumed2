@@ -14,7 +14,8 @@ env:
 # then check with different optimization flags
   - PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3 LAPACK=yes
   - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
+# test using external blas with internal lapack
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
 # cppcheck
 # in principle we should make only "cppcheck" here
   - PLUMED_CC=gcc   PLUMED_CXX=g++   CPPCHECK=yes
