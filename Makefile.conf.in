@@ -14,4 +14,4 @@ LD=@LD@
 LDSO=@LDSO@
 GCCDEP=@CXX@
 prefix=@prefix@
-
+program_transform_name=@program_transform_name@

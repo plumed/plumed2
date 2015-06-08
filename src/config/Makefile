@@ -2,13 +2,18 @@
 # include the machine dependent configuration
 -include ../../Makefile.conf
 
+# sed script to edit program name defaults to do nothing
+ifndef program_transform_name
+  program_transform_name=s,x,x,
+endif
+
 # default target
 .PHONY: all obj
 all:
 	@echo "Updating ConfigInstall.cpp"
 	@sed "s/@SOEXT@/$(SOEXT)/g" Config.cpp.in | \
          sed "s/@ISINSTALLED@/true/g" | \
-	env prefix="${prefix}" ../maketools/update-plumedroot.sh ConfigInstall.cpp
+	env prefix="${prefix}" env program_transform_name="${program_transform_name}" ../maketools/update-plumedroot.sh ConfigInstall.cpp
 	@echo "Updating version file"
 	@ ../maketools/update-version.sh version.h
 	$(MAKE) do-all
