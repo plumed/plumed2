@@ -200,6 +200,7 @@ For users:
   crd files)
 - Added the checks in the driver to detect cases where molinfo does not provide box information
   (e.g. pdb).
+- Added support for readdir_r when available, which makes opening files thread safe.
 
 For developers:
 - Allow external VMD plugins to be detected with --has-external-molfile. This
