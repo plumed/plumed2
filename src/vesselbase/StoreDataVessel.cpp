@@ -32,7 +32,8 @@ StoreDataVessel::StoreDataVessel( const VesselOptions& da ):
 Vessel(da),
 max_lowmem_stash(3),
 vecsize(0),
-hard_cut(false)
+hard_cut(false),
+nspace(0)
 {
   ActionWithValue* myval=dynamic_cast<ActionWithValue*>( getAction() );
   if( !myval ) hasderiv=false;

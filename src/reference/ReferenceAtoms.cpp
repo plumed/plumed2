@@ -26,7 +26,8 @@
 namespace PLMD {
 
 ReferenceAtoms::ReferenceAtoms( const ReferenceConfigurationOptions& ro ):
-ReferenceConfiguration(ro)
+ReferenceConfiguration(ro),
+checks_were_disabled(false)
 {
 }
 

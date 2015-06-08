@@ -28,8 +28,10 @@ namespace vesselbase {
 
 BridgeVessel::BridgeVessel( const VesselOptions& da ):
 Vessel(da),
-inum(0)
+inum(0),
 // in_normal_calculate(false)
+myOutputAction(NULL),
+myOutputValues(NULL)
 {
 }
 

@@ -52,7 +52,8 @@ void SpathVessel::reserveKeyword( Keywords& keys ){
 }
 
 SpathVessel::SpathVessel( const vesselbase::VesselOptions& da ):
-FunctionVessel(da)
+FunctionVessel(da),
+foundoneclose(false)
 {
   mymap=dynamic_cast<Mapping*>( getAction() );
   plumed_massert( mymap, "SpathVessel can only be used with mappings");

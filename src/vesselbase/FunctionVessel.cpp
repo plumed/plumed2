@@ -32,7 +32,8 @@ void FunctionVessel::registerKeywords( Keywords& keys ){
 FunctionVessel::FunctionVessel( const VesselOptions& da ):
 Vessel(da),
 norm(false),
-usetol(false)
+usetol(false),
+nderivatives(0)
 {
   ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
   plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");

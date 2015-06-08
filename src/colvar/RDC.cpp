@@ -156,6 +156,7 @@ void RDC::registerKeywords( Keywords& keys ){
 RDC::RDC(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 Const(0.3356806),
+norm(0.0),
 firstTime(true)
 {
   // Read in the atoms
