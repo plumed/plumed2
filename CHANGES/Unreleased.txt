@@ -21,6 +21,12 @@ Changes from version 2.1 which are relevant for users:
   the switching function goes to zero. Users should always set this parameter when using a switching function
   in order to achieve optimal performance.
 - DHENERGY option is no longer possible within \ref DISTANCES.  You can still calculate the DHENERGY colvar by using \ref DHENERGY
+- News in configure and install:
+  - ./configure now allows external blas to be used with internal lapack. This is done automatically if only blas are available,
+    and can be enforced with --disable-external-lapack.
+  - ./configure supports --program-prefix, --program-suffix, and --program-transform-name.
+  - make install supports DESTDIR and prefix.
+  - Environment variables PLUMED_LIBSUFFIX and PLUMED_PREFIX are deprecated and will be removed in a later version.
 - New actions
   - \ref DUMPMASSCHARGE to dump a file with mass and charges during MD.
   - \ref EFFECTIVE_ENERGY_DRIFT to check that plumed forces are not screwing the MD integrator.
