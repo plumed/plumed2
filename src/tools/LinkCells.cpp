@@ -28,6 +28,7 @@ namespace PLMD{
 LinkCells::LinkCells( Communicator& cc ) :
 comm(cc),
 cutoffwasset(false),
+link_cutoff(0.0),
 ncells(3),
 nstride(3)
 {

@@ -27,6 +27,7 @@ namespace PLMD {
 PointWiseMapping::PointWiseMapping( const std::string& type, const bool& checksoff ):
 MultiReferenceBase(type,checksoff)
 {
+  ispath=false;
 }
 
 void PointWiseMapping::setPropertyNames( const std::vector<std::string>& prop, const bool isp ){

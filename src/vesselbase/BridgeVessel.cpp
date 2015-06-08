@@ -28,7 +28,9 @@ namespace vesselbase {
 
 BridgeVessel::BridgeVessel( const VesselOptions& da ):
 Vessel(da),
-inum(0)
+inum(0),
+myOutputAction(NULL),
+myOutputValues(NULL)
 {
   resizeBuffer(0);
 }

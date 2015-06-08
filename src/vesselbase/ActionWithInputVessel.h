@@ -37,7 +37,6 @@ class ActionWithInputVessel : public virtual Action {
 private:
   Vessel* arguments;
   BridgeVessel* myBridgeVessel;
-  bool lockRequestArguments;
 protected:
 /// What type of arguments are we reading in
   void readArgument( const std::string& type );

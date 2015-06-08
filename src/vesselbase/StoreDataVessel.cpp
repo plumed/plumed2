@@ -31,7 +31,9 @@ void StoreDataVessel::registerKeywords( Keywords& keys ){
 StoreDataVessel::StoreDataVessel( const VesselOptions& da ):
 Vessel(da),
 max_lowmem_stash(3),
-vecsize(0)
+data_start(0),
+vecsize(0),
+nspace(0)
 {
   ActionWithValue* myval=dynamic_cast<ActionWithValue*>( getAction() );
   if( !myval ) hasderiv=false;

@@ -155,7 +155,7 @@ private:
   bool allWereActivated, allWereDeactivated;
 public:
 /// Constructor
-  DynamicList():nactive(0),nprocessors(1),rank(0),allWereActivated(false) {}
+  DynamicList():nactive(0),nprocessors(1),rank(0),allWereActivated(false),allWereDeactivated(false){}
 /// An operator that returns the element from the current active list
   inline T operator [] (const unsigned& i) const { 
      plumed_dbg_assert( i<nactive );

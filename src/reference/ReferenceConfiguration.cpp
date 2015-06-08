@@ -48,6 +48,8 @@ name(ro.tt),
 arg_ders(0),
 atom_ders(0)
 {
+  weight=0.0;
+  virialWasSet=false;
 }
 
 ReferenceConfiguration::~ReferenceConfiguration()
