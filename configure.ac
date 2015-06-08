@@ -51,6 +51,24 @@ AC_DEFUN([PLUMED_CHECK_CXXFLAG], [
   )
 ])
 
+# PLUMED_CHECK_CFLAG(flag)
+# use it to check if a flag is available on this compiler
+AC_DEFUN([PLUMED_CHECK_CFLAG], [
+  AC_LANG_PUSH(C)
+  save_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS $1"
+  AC_MSG_CHECKING([whether $CC accepts $1])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+    [
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([not linking]); CCFLAGS="$save_CCFLAGS"])
+    ],
+    [AC_MSG_RESULT([no]); CCFLAGS="$save_CCFLAGS"]
+  )
+  AC_LANG_POP
+])
+
 # PLUMED_CHECK_LDFLAGS(flag)
 # use it to check if a flag is available on this compiler
 AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
@@ -149,6 +167,7 @@ LDSO="$CXX"
 AC_MSG_NOTICE([Initial CXX:         $CXX])
 AC_MSG_NOTICE([Initial CXXFLAGS:    $CXXFLAGS])
 AC_MSG_NOTICE([Initial CPPFLAGS:    $CPPFLAGS])
+AC_MSG_NOTICE([Initial CFLAGS:      $CFLAGS])
 AC_MSG_NOTICE([Initial LDFLAGS:     $LDFLAGS])
 AC_MSG_NOTICE([Initial LIBS:        $LDFLAGS])
 AC_MSG_NOTICE([Initial STATIC_LIBS: $LDFLAGS])
@@ -160,6 +179,7 @@ AC_MSG_NOTICE([Initial SOEXT:       $SOEXT])
 if test $shared == true
 then
   PLUMED_CHECK_CXXFLAG([-fPIC])
+  PLUMED_CHECK_CFLAG([-fPIC])
 fi
 
 if test $basic_warnings == true
