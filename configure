@@ -6386,7 +6386,7 @@ EOF
     $CXX $CXXFLAGS -c conftest.cpp
 # start search:
     found=
-    for testlib in "" -lstdc++ -lc++ ; do
+    for testlib in "" -lstdc++ -lc++ -lmpi_cxx ; do
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $name can link a C++ object$comment" >&5
@@ -6407,8 +6407,8 @@ $as_echo "no" >&6; }
     if test -z "$found" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: You might have problems linking $name programs." >&5
 $as_echo "$as_me: WARNING: You might have problems linking $name programs." >&2;}
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please add c++ library to LIBS - e.g. LIBS=-lstdc++" >&5
-$as_echo "$as_me: WARNING: Please add c++ library to LIBS - e.g. LIBS=-lstdc++" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please add c++ library to LIBS" >&5
+$as_echo "$as_me: WARNING: Please add c++ library to LIBS" >&2;}
     fi
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: $compiler compiler not configured" >&5
