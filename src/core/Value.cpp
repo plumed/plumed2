@@ -42,6 +42,7 @@ Value::Value():
   max(0.0), 
   max_minus_min(0.0), 
   inv_max_minus_min(0.0),
+  ensemble(notaveraged),
   nrep(1)
 {
 }
@@ -59,6 +60,7 @@ Value::Value(ActionWithValue* av, const std::string& name, const bool withderiv)
   max(0.0),
   max_minus_min(0.0),
   inv_max_minus_min(0.0),
+  ensemble(notaveraged),
   nrep(1)
 {
 }
