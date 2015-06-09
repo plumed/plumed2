@@ -156,7 +156,8 @@ void RDC::registerKeywords( Keywords& keys ){
 RDC::RDC(const ActionOptions&ao):
 PLUMED_COLVAR_INIT(ao),
 Const(0.3356806),
-type(QF)
+type(QF),
+norm(0.0)
 {
   // Read in the atoms
   vector<AtomNumber> t, atoms;

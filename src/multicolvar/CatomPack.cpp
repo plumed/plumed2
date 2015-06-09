@@ -19,20 +19,13 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "StoreValueVessel.h"
+#include "CatomPack.h"
 
-namespace PLMD {
-namespace vesselbase {
+namespace PLMD{
+namespace multicolvar{
 
-void StoreValueVessel::registerKeywords( Keywords& keys ){
-  StoreDataVessel::registerKeywords( keys );
-}
-
-StoreValueVessel::StoreValueVessel( const VesselOptions& da):
-StoreDataVessel(da)
-{
-  if( weightHasDerivatives() ) error("this quantity cannot be calculated if weights have derivatives");
-  completeSetup( 0, 1 );
+void CatomPack::resize( const unsigned& size ){
+  indices.resize(size); derivs.resize(size);
 }
 
 }

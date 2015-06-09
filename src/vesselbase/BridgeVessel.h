@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -40,7 +40,7 @@ it is created in a different Action however.  At the moment this is used for reg
 class BridgeVessel : public Vessel {
 private:
   unsigned inum;
-  bool in_normal_calculate;
+  // bool in_normal_calculate;
   std::vector<double> mynumerical_values;
   ActionWithVessel* myOutputAction;
   ActionWithValue* myOutputValues;
@@ -50,6 +50,8 @@ public:
   bool hasDerivatives();
 /// Resize the quantities in the vessel
   void resize();
+/// Get the action that reads the command in
+  ActionWithVessel* getOutputAction();
 /// Setup the action we are outputting to
   void setOutputAction( ActionWithVessel* myOutputAction );
 /// Apply some force 
@@ -58,19 +60,21 @@ public:
   std::string description();
 /// Jobs to do before the task list starts
   void prepare();
+/// Set the start of the buffer 
+  void setBufferStart( unsigned& start );
+/// This transforms the derivatives using the output value
+  MultiValue& transformDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals );
 /// Actually do the calculation
-  bool calculate();
+  bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 /// Finish the calculation
-  void finish();
+  void finish( const std::vector<double>& buffer );
 /// Calculate numerical derivatives
   void completeNumericalDerivatives();
-/// This is used to tell if the bridge has been called in recompute
-  bool prerequisitsCalculated();
 };
 
 inline
-bool BridgeVessel::prerequisitsCalculated(){
-  return in_normal_calculate;
+ActionWithVessel* BridgeVessel::getOutputAction(){
+  return myOutputAction;
 }
 
 }

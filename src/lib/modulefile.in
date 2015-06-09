@@ -7,9 +7,9 @@ set prefix "@_PREFIX_@"
 # this is the extension for dynamic libraries
 # if set to empty, switches off plumed library
 set soext  "@_SOEXT_@"
-# this is the suffix to plumed executable and library
-# could be set to plumed version, but is usually blank
-set suffix "@_SUFFIX_@"
+# this is the name of the plumed program
+# it is usually plumed
+set progname "@_PROGNAME_@"
 
 # everything past this line should not need any editing
 
@@ -39,5 +39,5 @@ if { [module-info mode load] && [ info exists ::env(PLUMED_KERNEL) ] } {
 prepend-path  LIBRARY_PATH       $prefix/lib/
 prepend-path  LD_LIBRARY_PATH    $prefix/lib/
 prepend-path  DYLD_LIBRARY_PATH  $prefix/lib/
-setenv        PLUMED_KERNEL      $prefix/lib/libplumed${suffix}Kernel.$soext
+setenv        PLUMED_KERNEL      $prefix/lib/lib${progname}Kernel.$soext
 }

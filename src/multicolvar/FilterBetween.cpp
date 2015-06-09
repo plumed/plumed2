@@ -42,7 +42,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   FilterBetween(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df );
+  double applyFilter( const double& val, double& df ) const ;
 }; 
 
 PLUMED_REGISTER_ACTION(FilterBetween,"MFILTER_BETWEEN")
@@ -86,7 +86,7 @@ MultiColvarFilter(ao)
   checkRead();  
 }
 
-double FilterBetween::applyFilter( const double& val, double& df ){
+double FilterBetween::applyFilter( const double& val, double& df ) const {
   double f = hb.calculate( val, df ); 
   return f;
 }

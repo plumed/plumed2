@@ -64,8 +64,7 @@ public:
   static void registerKeywords( Keywords& keys );
   SimpleCubic(const ActionOptions&);
 // active methods:
-  virtual double compute(); 
-  Vector getCentralAtom();
+  virtual double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ; 
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
 };
@@ -113,17 +112,18 @@ PLUMED_MULTICOLVAR_INIT(ao)
   checkRead();
 }
 
-double SimpleCubic::compute(){
-   weightHasDerivatives=true;
-   double d2, value=0, norm=0, dfunc; Vector distance;
+double SimpleCubic::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const { 
+   double d2, value=0, norm=0, dfunc; 
 
    // Calculate the coordination number
    Vector myder, fder;
    double sw, t1, t2, t3, x2, x3, x4, y2, y3, y4, z2, z3, z4, r4, tmp;
-   for(unsigned i=1;i<getNAtoms();++i){
-      distance=getSeparation( getPosition(0), getPosition(i) );
-      d2 = distance.modulo2();
-      if( d2<rcut2 ){ 
+   for(unsigned i=1;i<myatoms.getNumberOfAtoms();++i){
+      Vector& distance=myatoms.getPosition(i);  // getSeparation( myatoms.getPosition(0), myatoms.getPosition(i) );
+      if ( (d2=distance[0]*distance[0])<rcut2 &&
+           (d2+=distance[1]*distance[1])<rcut2 &&
+           (d2+=distance[2]*distance[2])<rcut2) {
+
          sw = switchingFunction.calculateSqr( d2, dfunc );        
 
          x2 = distance[0]*distance[0];
@@ -147,30 +147,24 @@ double SimpleCubic::compute(){
          myder[2] = 4*z3/t2-4*distance[2]*t3; 
 
          value += sw*tmp; fder = (+dfunc)*tmp*distance + sw*myder;
-         addAtomsDerivatives( 0, -fder );
-         addAtomsDerivatives( i, +fder );
+         myatoms.addAtomsDerivatives( 1, 0, -fder );
+         myatoms.addAtomsDerivatives( 1, i, +fder );
          // Tens is a constructor that you build by taking the vector product of two vectors (remember the scalars!)
-         addBoxDerivatives( Tensor(distance,-fder) );
+         myatoms.addBoxDerivatives( 1, Tensor(distance,-fder) );
  
          norm += sw;
-         addAtomsDerivativeOfWeight( 0, (-dfunc)*distance );
-         addAtomsDerivativeOfWeight( i, (+dfunc)*distance );
-         addBoxDerivativesOfWeight( (-dfunc)*Tensor(distance,distance) );
+         myatoms.addAtomsDerivatives( 0, 0, (-dfunc)*distance );
+         myatoms.addAtomsDerivatives( 0, i, (+dfunc)*distance );
+         myatoms.addBoxDerivatives( 0, (-dfunc)*Tensor(distance,distance) );
       }
    }
    
-   setElementValue(0, value); setElementValue(1, norm ); 
+   myatoms.setValue(1, value); myatoms.setValue(0, norm ); 
    // values -> der of... value [0], weight[1], x coord [2], y, z... [more magic]
-   updateActiveAtoms(); quotientRule( 0, 1, 0 ); clearDerivativesAfterTask(1);
-   // Weight doesn't really have derivatives (just use the holder for convenience)
-   weightHasDerivatives=false; setElementValue( 1, 1.0 );
+   updateActiveAtoms( myatoms ); myatoms.getUnderlyingMultiValue().quotientRule( 1, 0, 1 ); 
+   myatoms.getUnderlyingMultiValue().clear(0); myatoms.setValue( 0, 1.0 );
 
    return value / norm; // this is equivalent to getting an "atomic" CV
-}
-
-Vector SimpleCubic::getCentralAtom(){
-   addCentralAtomDerivatives( 0, Tensor::identity() );
-   return getPosition(0);
 }
 
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -90,7 +90,15 @@ s(r) = (y-1)^2(1+2y) \qquad \textrm{where} \quad y = \frac{r - r_1}{r_0-r_1}
 </td> <td>
 {CUBIC D_0=\f$r_1\f$ D_MAX=\f$r_0\f$}
 </td> <td> </td>
-</tr> 
+</tr> <tr> 
+<td> TANH </td> <td>
+\f$
+s(r) = 1 - \tanh\left( \frac{ r - d_0 }{ r_0 } \right) 
+\f$
+</td> <td>
+{TANH R_0=\f$r_0\f$ D_0=\f$d_0\f$}
+</td> <td> </td>
+</tr>
 </table>
 
 For all the switching functions in the above table one can also specify a further (optional) parameter using the parameter
@@ -166,6 +174,7 @@ void SwitchingFunction::set(const std::string & definition,std::string& errormsg
   } else if(name=="EXP") type=exponential;
   else if(name=="GAUSSIAN") type=gaussian;
   else if(name=="CUBIC") type=cubic;
+  else if(name=="TANH") type=tanh;
   else errormsg="cannot understand switching function type '"+name+"'";
   if( !data.empty() ){
       errormsg="found the following rogue keywords in switching function input : ";
@@ -194,6 +203,8 @@ std::string SwitchingFunction::description() const {
      ostr<<"smap";
   } else if(type==cubic){
      ostr<<"cubic";
+  } else if(type==tanh){
+     ostr<<"tanh";
   } else{
      plumed_merror("Unknown switching function type");
   }
@@ -281,6 +292,10 @@ double SwitchingFunction::calculate(double distance,double&dfunc)const{
       double tmp1=rdist-1, tmp2=(1+2*rdist);
       result=tmp1*tmp1*tmp2;
       dfunc=2*tmp1*tmp2 + 2*tmp1*tmp1;
+    }else if(type==tanh){
+      double tmp1=std::tanh(rdist);
+      result = 1.0 - tmp1;
+      dfunc=-(1-tmp1*tmp1);
     }else plumed_merror("Unknown switching function type");
 // this is for the chain rule:
     dfunc*=invr0;
@@ -303,6 +318,10 @@ SwitchingFunction::SwitchingFunction():
   dmax(0.0),
   nn(6),
   mm(12),
+  a(0.0),
+  b(0.0),
+  c(0.0),
+  d(0.0),
   invr0_2(0.0),
   dmax_2(0.0),
   stretch(1.0),

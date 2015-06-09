@@ -119,9 +119,10 @@ chosen replicas. This is useful e.g. for bias exchange metadynamics \cite piana.
 
 \page Openmp OpenMP
 
-OpenMP support is still experimental in PLUMED. To
-enable it you should configure using flag "--enable-openmp".
-Additionally, at runtime, you should set the environment variable
+PLUMED is partly parallelized using OpenMP.
+This should be enabled by default if your compiler supports it,
+and can be disabled with `--disable-openmp`..
+At runtime, you should set the environment variable
 PLUMED_NUM_THREADS to the number of threads you wish to use with PLUMED.
 By default (if PLUMED_NUM_THREADS is unset) openmp will be disabled at
 runtime. E.g., to run with gromacs you should do:

@@ -72,11 +72,11 @@ void DRMSD::setup_targets(){
   if( targets.empty() ) error("drmsd will compare no distances - check upper and lower bounds are sensible");  
 }
 
-double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& squared ){
-  plumed_dbg_assert( !targets.empty() );
+double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
+  plumed_dbg_assert( targets.size()>0 );
 
   Vector distance; 
-  double drmsd=0.; 
+  myder.clear(); double drmsd=0.; 
   for(std::map< std::pair <unsigned,unsigned> , double>::const_iterator it=targets.begin();it!=targets.end();++it){
       
       unsigned i=getAtomIndex( it->first.first );
@@ -89,9 +89,9 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& 
       double diff = len - it->second;
 
       drmsd += diff * diff;
-      addAtomicDerivatives( i, -( diff / len ) * distance );
-      addAtomicDerivatives( j, ( diff / len ) * distance );
-      addBoxDerivatives( -( diff / len ) * Tensor(distance,distance) );
+      myder.addAtomDerivatives( i, -( diff / len ) * distance );
+      myder.addAtomDerivatives( j, ( diff / len ) * distance );
+      myder.addBoxDerivatives( -( diff / len ) * Tensor(distance,distance) );
   }
 
   double npairs = static_cast<double>(targets.size());
@@ -105,8 +105,9 @@ double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, const bool& 
      idrmsd = 1.0/( drmsd * npairs );
   }
 
-  virial *= idrmsd; 
-  for(unsigned i=0;i<getNumberOfAtoms();++i){atom_ders[i] *= idrmsd;}
+  myder.scaleAllDerivatives( idrmsd );
+  // virial *= idrmsd; 
+  // for(unsigned i=0;i<getNumberOfAtoms();++i){atom_ders[i] *= idrmsd;}
 
   return drmsd;
 }

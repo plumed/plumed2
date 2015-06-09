@@ -85,6 +85,8 @@ private:
 /// Is this quantity an ensemble average 
   enum {averaged,notaveraged} ensemble;
   unsigned nrep;
+// bring value within PBCs
+  void applyPeriodicity();
 public:
 /// A constructor that can be used to make Vectors of values
   Value();
@@ -160,6 +162,14 @@ void copy( const Value& val1, Value* val2 );
 void add( const Value& val1, Value* valout );
 
 inline
+void Value::applyPeriodicity(){
+  if(periodicity==periodic){
+    value=min+difference(min,value);
+    if(value<min)value+=max_minus_min;
+  }
+}
+
+inline
 void product( const Value& val1, const Value& val2, Value& valout ){
   plumed_assert( val1.derivatives.size()==val2.derivatives.size() );
   if( valout.derivatives.size()!=val1.derivatives.size() ) valout.derivatives.resize( val1.derivatives.size() );
@@ -187,12 +197,14 @@ inline
 void Value::set(double v){
   value_set=true;
   value=v;
+  applyPeriodicity();
 }
 
 inline
 void Value::add(double v){
   value_set=true;
   value+=v;
+  applyPeriodicity();
 }
 
 inline

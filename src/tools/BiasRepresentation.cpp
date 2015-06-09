@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -27,7 +27,9 @@
 namespace PLMD {
 
 /// the constructor here
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),mycomm(cc),BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc ):hasgrid(false),rescaledToBias(false),mycomm(cc),BiasGrid_(NULL){
+    lowI_=0.0;
+    uppI_=0.0;
     doInt_=false;
     ndim=tmpvalues.size();
     for(int i=0;i<ndim;i++){
@@ -36,7 +38,9 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
     } 
 }
 /// overload the constructor: add the sigma  at constructor time 
-BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false),histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
+BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc,  vector<double> sigma ):hasgrid(false), rescaledToBias(false), histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
+    lowI_=0.0;
+    uppI_=0.0;
     doInt_=false;
     ndim=tmpvalues.size();
     for(int i=0;i<ndim;i++){
@@ -60,6 +64,8 @@ BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &c
 } 
 /// overload the constructor with some external sigmas: needed for histogram
 BiasRepresentation::BiasRepresentation(vector<Value*> tmpvalues, Communicator &cc , vector<string> gmin, vector<string> gmax, vector<unsigned> nbin , vector<double> sigma):hasgrid(false), rescaledToBias(false),histosigma(sigma),mycomm(cc),BiasGrid_(NULL){
+    lowI_=0.0;
+    uppI_=0.0;
     doInt_=false;
     ndim=tmpvalues.size();
     for(int  i=0;i<ndim;i++){

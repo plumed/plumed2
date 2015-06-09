@@ -14,7 +14,8 @@ env:
 # then check with different optimization flags
   - PLUMED_CC=clang PLUMED_CXX=clang++ PLUMED_CXXFLAGS=-O3 LAPACK=yes
   - PLUMED_CC=gcc   PLUMED_CXX=g++     PLUMED_CXXFLAGS=-O3 LAPACK=yes
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes
+# test using external blas with internal lapack
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
 # cppcheck
 # in principle we should make only "cppcheck" here
   - PLUMED_CC=gcc   PLUMED_CXX=g++   CPPCHECK=yes
@@ -26,30 +27,30 @@ matrix:
 install:
 # build the manual, only if log contains string [makedoc]
   - export PLUMED_NUM_THREADS=2
-  - ./.travis.check.log makedoc  || MAKEDOC=no
-  - ./.travis.check.log valgrind || VALGRIND=no
-  - ./.travis.check.log almost   || ALMOST=no
+  - ./.travis/check.log makedoc  || MAKEDOC=no
+  - ./.travis/check.log valgrind || VALGRIND=no
+  - ./.travis/check.log almost   || ALMOST=no
 # install some package - these are fast, we install them anyway
   - sudo apt-get update -qq
   - sudo apt-get install -y libmatheval-dev
-  - ./.travis.install.xdrfile
+  - ./.travis/install.xdrfile
   - LIBRARY_PATH="$LIBRARY_PATH:/usr/local/lib"
   - LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
 # cppcheck:
-  - test "$CPPCHECK" == yes && ./.travis.install.cppcheck 1.69 || true
+  - test "$CPPCHECK" == yes && ./.travis/install.cppcheck 1.69 || true
 # installation of these packages takes a lot of time
 # we do it only when needed
   - test "$PLUMED_CXX" == "mpic++" && sudo apt-get install -y libopenmpi1.5-dev openmpi1.5-bin || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
 # doxygen from its repository (apt-get gets an old version)
-#  - test "$MAKEDOC" == yes && ./.travis.install.doxygen                   || true
+#  - test "$MAKEDOC" == yes && ./.travis/install.doxygen                   || true
 # it seems that here we can get precompiled doxygen and latex
   - test "$MAKEDOC" == yes && sudo apt-add-repository -y ppa:libreoffice/ppa || true
   - test "$MAKEDOC" == yes && sudo apt-get update -qq                     || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
   - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
   - test "$LAPACK" == yes  && sudo apt-get install libatlas-base-dev      || true
-  - test "$ALMOST" == yes && ./.travis.install.almost                     || true
+  - test "$ALMOST" == yes && ./.travis/install.almost                     || true
   - test "$ALMOST" == yes && ENALMOST="--enable-almost"                 || true
   - test "$ALMOST" == yes && PLUMED_CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost"  || true
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
@@ -71,4 +72,4 @@ script:
   - make -C regtest checkfail
   - if test "$CPPCHECK" == yes ; then make cppcheck ; fi
 after_success:
-  - test "$MAKEDOC" == yes && ./.travis.pushdoc
+  - test "$MAKEDOC" == yes && ./.travis/pushdoc

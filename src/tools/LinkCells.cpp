@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2014 The plumed team
+   Copyright (c) 2014,2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -28,6 +28,7 @@ namespace PLMD{
 LinkCells::LinkCells( Communicator& cc ) :
 comm(cc),
 cutoffwasset(false),
+link_cutoff(0.0),
 ncells(3),
 nstride(3)
 {
@@ -99,7 +100,7 @@ void LinkCells::buildCellLists( const std::vector<Vector>& pos, const std::vecto
 #define LINKC_MAX(n) ((n<3)? 1 : 2)
 #define LINKC_PBC(n,num) ((n<0)? num-1 : n%num )
 
-void LinkCells::retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ){
+void LinkCells::retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ) const {
   plumed_assert( natomsper==1 );  // This is really a bug. If you are trying to reuse this ask GAT for help
   std::vector<unsigned> celn( findMyCell( pos ) );
 

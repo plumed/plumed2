@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -43,22 +43,22 @@ private:
   double sigma;
 /// Are we interested in the area outside the colvar
   bool not_in;
-/// The bead for the histogram
-  HistogramBead bead;
+/// The kernel type for this histogram
+  std::string kerneltype;
 protected:
   double getSigma() const ;
-  void addReferenceAtomDerivatives( const unsigned& iatom, const Vector& der );
-  void addBoxDerivatives( const Tensor& vir );
+  std::string getKernelType() const ;
 public:
   static void registerKeywords( Keywords& keys );
   ActionVolume(const ActionOptions&);
 /// Get the number of quantities that are calculated each time
   virtual unsigned getNumberOfQuantities();
 /// Calculate whats in the volume
-  void calculateAllVolumes();
-  virtual double calculateNumberInside( const Vector& cpos, HistogramBead& bead, Vector& derivatives )=0;
-  double getValueForTolerance();
-  unsigned getIndexOfWeight();
+  void calculateAllVolumes( const unsigned& curr, MultiValue& outvals ) const ;
+/// This calculates whether or not a particular is inside the box of interest
+/// this is used for neighbour list with volumes
+  bool inVolumeOfInterest( const unsigned& curr ) const ;
+  virtual double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const=0;
   unsigned getCentralAtomElementIndex();
 };
 
@@ -73,25 +73,8 @@ double ActionVolume::getSigma() const {
 }
 
 inline
-void ActionVolume::addReferenceAtomDerivatives( const unsigned& iatom, const Vector& der ){
-  if( not_in ) VolumeGradientBase::addReferenceAtomDerivatives( nquantities-1, iatom, -1.0*der );
-  else VolumeGradientBase::addReferenceAtomDerivatives( nquantities-1, iatom, der );
-}
-
-inline 
-void ActionVolume::addBoxDerivatives( const Tensor& vir ){
-  if( not_in ) VolumeGradientBase::addBoxDerivatives( nquantities-1, -1.0*vir );
-  else VolumeGradientBase::addBoxDerivatives( nquantities-1, vir );
-}
-
-inline
-double ActionVolume::getValueForTolerance(){
-  return getElementValue( nquantities-1 );
-}
-
-inline
-unsigned ActionVolume::getIndexOfWeight(){
-  return nquantities-1;
+std::string ActionVolume::getKernelType() const {
+  return kerneltype;
 }
 
 inline
