@@ -527,7 +527,7 @@ EOF
     $CXX $CXXFLAGS -c conftest.cpp 
 # start search:
     found=
-    for testlib in "" -lstdc++ -lc++ ; do
+    for testlib in "" -lstdc++ -lc++ -lmpi_cxx ; do
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       AC_MSG_CHECKING([whether $name can link a C++ object$comment])
@@ -544,7 +544,7 @@ EOF
     done
     if test -z "$found" ; then
       AC_MSG_WARN([You might have problems linking $name programs.])
-      AC_MSG_WARN([Please add c++ library to LIBS - e.g. LIBS=-lstdc++])
+      AC_MSG_WARN([Please add c++ library to LIBS])
     fi
   else
     AC_MSG_NOTICE([$compiler compiler not configured])
