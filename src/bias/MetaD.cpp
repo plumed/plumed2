@@ -1020,6 +1020,7 @@ MetaD::MetaD(const ActionOptions &ao):
     }
     if (use_whole_grid_domain_) {
       log.printf("  Using the entire grid as the metabasin metadynamics domain \n");      
+      log.printf("  (This is the multiplicative boundary correction of McGovern and de Pablo cited below) \n");
     }
     if (domainsreadfilename_.size() > 0) {
       log.printf("  Reading grid in file %s for initial metabasin metadynamics domains \n", domainsreadfilename_.c_str());
@@ -1054,7 +1055,7 @@ MetaD::MetaD(const ActionOptions &ao):
       if (domains_histo_bandwidth_.size() == 0) {
         domains_histo_bandwidth_ = vector<double>(getNumberOfArguments());
         for (unsigned i = 0; i < getNumberOfArguments(); i++) {
-          domains_histo_bandwidth_[i] = sigma0_[i] / 3.0;
+          domains_histo_bandwidth_[i] = sigma0_[i] / 2.0;
         }
       }
       log.printf("  Histogram update stride is %d and bandwiths are", domains_histo_stride_);
@@ -1303,8 +1304,9 @@ MetaD::MetaD(const ActionOptions &ao):
       } else {
         std::string funcl = getLabel() + ".number";
         DomainsHistogram_ = new Grid(funcl, getArguments(), gmin, gmax, gbin, false, false);
+        double histo_scale = 4.0 * (height0_ / kbt_) * pow(2.0, getNumberOfArguments()) * (static_cast<double>(domains_histo_stride_) / stride_);
         for (unsigned long long i = 0; i < DomainsHistogram_->getMaxSize(); i++) {
-          DomainsHistogram_->setValue(i, .3);
+          DomainsHistogram_->setValue(i, 1.0 / histo_scale);
         }
       }
       if (wgridstride_ > 0 && whistofilename_.size() > 0) {
@@ -2218,7 +2220,7 @@ void MetaD::adaptDomains() {
     }
   }
 
-  // Calculate a new free energy estimate.
+  // Set up a grid for the new region.
   Grid *new_region;
   std::string funcl = getLabel() + ".indicator";
   vector<unsigned> input_nbins = BiasGrid_->getNbin();
@@ -2228,7 +2230,9 @@ void MetaD::adaptDomains() {
     }
   }
   new_region = new Grid(funcl, getArguments(), BiasGrid_->getMin(), BiasGrid_->getMax(), input_nbins, false, false);
-  // Copy the histogram.
+  
+  // Calculate a new free energy estimate on that new grid.
+  // Begin by copying the histogram.
   for (unsigned long long i = 0; i < new_region->getMaxSize(); i++) {
     new_region->setValue(i, DomainsHistogram_->getValue(i));
   }
@@ -2239,7 +2243,8 @@ void MetaD::adaptDomains() {
     new_region->writeToFile(HistEnergyFile_);
     HistEnergyFile_.flush();
   }
-
+  // Next subtract off the current bias from the pure histogram
+  // contribution.
   // Subtract the current bias.
   for (unsigned long long i = 0; i < new_region->getMaxSize(); i++) {
     new_region->addValue(i, -BiasGrid_->getValue(i));
@@ -2250,7 +2255,7 @@ void MetaD::adaptDomains() {
     HistBiasEnergyFile_.flush();
   }
 
-  // Find the threshold to use. 
+  // Given the free energy estimate, find the threshold to use. 
   // First find the adaptive reference value.
   double reference_energy = 0.0;
   if (adaptive_domains_reftype_ == kMinRef) {
@@ -2537,13 +2542,13 @@ void MetaD::update() {
     // statement can't be followed unless I flush the log first.
     log.flush();
     if (biasf_ == 1.0) {
-      for (unsigned long long i; i < BiasGrid_->getMaxSize(); i++) {
+      for (unsigned long long i = 0; i < BiasGrid_->getMaxSize(); i++) {
         double pt_bias = BiasGrid_->getValue(i);
         exp_free_energy_sum += exp(pt_bias / kbt_);
         exp_biased_free_energy_sum += 1.0;
       }
     } else if (biasf_ > 1.0) {
-      for (unsigned long long i; i < BiasGrid_->getMaxSize(); i++) {
+      for (unsigned long long i = 0; i < BiasGrid_->getMaxSize(); i++) {
         double pt_bias = BiasGrid_->getValue(i);
         exp_free_energy_sum += exp(biasf_ * pt_bias / (kbt_  * (biasf_ - 1)));
         exp_biased_free_energy_sum += exp(pt_bias / (kbt_ * (biasf_ - 1)));
