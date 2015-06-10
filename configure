@@ -695,6 +695,7 @@ enable_cxx_exceptions
 enable_mpi
 enable_openmp
 enable_external_lapack
+enable_external_blas
 enable_molfile_plugins
 enable_external_molfile_plugins
 enable_matheval
@@ -1322,6 +1323,11 @@ Fine tuning of the installation directories:
 _ACEOF
 
   cat <<\_ACEOF
+
+Program names:
+  --program-prefix=PREFIX            prepend PREFIX to installed program names
+  --program-suffix=SUFFIX            append SUFFIX to installed program names
+  --program-transform-name=PROGRAM   run sed PROGRAM on installed program names
 _ACEOF
 fi
 
@@ -1345,6 +1351,7 @@ Optional Features:
   --enable-openmp         enable search for openmp, default: no
   --enable-external-lapack
                           enable search for external lapack, default: yes
+  --enable-external-blas  enable search for external blas, default: yes
   --enable-molfile-plugins
                           enable use molfile_plugins, default: yes
   --enable-external-molfile-plugins
@@ -1622,6 +1629,52 @@ fi
   as_fn_set_status $ac_retval
 
 } # ac_fn_cxx_try_link
+
+# ac_fn_c_try_link LINENO
+# -----------------------
+# Try to link conftest.$ac_ext, and return whether this succeeded.
+ac_fn_c_try_link ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  rm -f conftest.$ac_objext conftest$ac_exeext
+  if { { ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:${as_lineno-$LINENO}: $ac_try_echo\""
+$as_echo "$ac_try_echo"; } >&5
+  (eval "$ac_link") 2>conftest.err
+  ac_status=$?
+  if test -s conftest.err; then
+    grep -v '^ *+' conftest.err >conftest.er1
+    cat conftest.er1 >&5
+    mv -f conftest.er1 conftest.err
+  fi
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext && {
+	 test "$cross_compiling" = yes ||
+	 test -x conftest$ac_exeext
+       }; then :
+  ac_retval=0
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_retval=1
+fi
+  # Delete the IPA/IPO (Inter Procedural Analysis/Optimization) information
+  # created by the PGI compiler (conftest_ipa8_conftest.oo), as it would
+  # interfere with the next link command; also delete a directory that is
+  # left behind by Apple's compiler.  We do this before executing the actions.
+  rm -rf conftest.dSYM conftest_ipa8_conftest.oo
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+  as_fn_set_status $ac_retval
+
+} # ac_fn_c_try_link
 
 # ac_fn_cxx_try_cpp LINENO
 # ------------------------
@@ -2252,6 +2305,10 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 # use it to check if a flag is available on this compiler
 
 
+# PLUMED_CHECK_CFLAG(flag)
+# use it to check if a flag is available on this compiler
+
+
 # PLUMED_CHECK_LDFLAGS(flag)
 # use it to check if a flag is available on this compiler
 
@@ -2422,6 +2479,24 @@ else
   case "yes" in
              (yes) external_lapack=true ;;
              (no)  external_lapack=false ;;
+  esac
+
+fi
+
+
+
+external_blas=
+# Check whether --enable-external-blas was given.
+if test "${enable_external_blas+set}" = set; then :
+  enableval=$enable_external_blas; case "${enableval}" in
+             (yes) external_blas=true ;;
+             (no)  external_blas=false ;;
+             (*)   as_fn_error $? "wrong argument to --enable-external-blas" "$LINENO" 5 ;;
+  esac
+else
+  case "yes" in
+             (yes) external_blas=true ;;
+             (no)  external_blas=false ;;
   esac
 
 fi
@@ -3969,6 +4044,8 @@ $as_echo "$as_me: Initial CXX:         $CXX" >&6;}
 $as_echo "$as_me: Initial CXXFLAGS:    $CXXFLAGS" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial CPPFLAGS:    $CPPFLAGS" >&5
 $as_echo "$as_me: Initial CPPFLAGS:    $CPPFLAGS" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Initial CFLAGS:      $CFLAGS" >&5
+$as_echo "$as_me: Initial CFLAGS:      $CFLAGS" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial LDFLAGS:     $LDFLAGS" >&5
 $as_echo "$as_me: Initial LDFLAGS:     $LDFLAGS" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: Initial LIBS:        $LDFLAGS" >&5
@@ -4031,6 +4108,65 @@ $as_echo "no" >&6; }; CXXFLAGS="$save_CXXFLAGS"
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+  save_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS -fPIC"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $CC accepts -fPIC" >&5
+$as_echo_n "checking whether $CC accepts -fPIC... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not linking" >&5
+$as_echo "not linking" >&6; }; CCFLAGS="$save_CCFLAGS"
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }; CCFLAGS="$save_CCFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
 
 fi
 
@@ -5110,8 +5246,18 @@ save_LIBS="$LIBS"
 blas_found=
 lapack_found=
 
-if test "$external_lapack" == true ; then
+# if external lapack can only work with external blas
+# thus, if external blas are disabled also external lapack should be disabled
+if test "$external_blas" == false && test "$external_lapack" == true ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Internal blas can only be used with internal lapack" >&5
+$as_echo "$as_me: Internal blas can only be used with internal lapack" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Will not search for external lapack" >&5
+$as_echo "$as_me: Will not search for external lapack" >&6;}
+  external_lapack=false
+fi
 
+# first look for blas
+if test "$external_blas" == true ; then
 ac_fn_cxx_check_func "$LINENO" "dgemv" "ac_cv_func_dgemv"
 if test "x$ac_cv_func_dgemv" = xyes; then :
   blas_found=nounderscore
@@ -5209,8 +5355,26 @@ fi
 
 fi
 
+fi
 
+# if not found, then use internal lapack and blas
+if test -z "$blas_found" ; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack and blas, could be inefficient" >&5
+$as_echo "$as_me: WARNING: using internal lapack and blas, could be inefficient" >&2;}
+LIBS="$save_LIBS"
+
+$as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
+
+$as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
+
+fi
+
+# if found, also look for external blas
 if test -n "$blas_found" ; then
+
+save_LIBS="$LIBS"
+
+if test "$external_lapack" == true ; then
 # Then we look for lapack using same underscoring
 case "$blas_found" in
 (underscore) search_for=dsyevr_ ;;
@@ -5270,25 +5434,25 @@ fi
 
 fi
 
-fi
-
+# if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack/blas, could be inefficient" >&5
-$as_echo "$as_me: WARNING: using internal lapack/blas, could be inefficient" >&2;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using internal lapack, could be inefficient" >&5
+$as_echo "$as_me: WARNING: using internal lapack, could be inefficient" >&2;}
 LIBS="$save_LIBS"
 
 $as_echo "#define __PLUMED_INTERNAL_LAPACK 1" >>confdefs.h
 
-$as_echo "#define __PLUMED_INTERNAL_BLAS 1" >>confdefs.h
+fi
 
+fi
 
-else
+# in case external blas have been found, take note of their underscoring
+# notice that this applies also when external blas are used with internal lapack
+# in the latter case, also (internal) lapack names will be underscored consistently
+if test "$blas_found" == nounderscore
+then
+  $as_echo "#define F77_NO_UNDERSCORE 1" >>confdefs.h
 
-  if test $blas_found == nounderscore
-  then
-    $as_echo "#define F77_NO_UNDERSCORE 1" >>confdefs.h
-
-  fi
 fi
 
 #### End of compulsory libraries ####
@@ -6445,7 +6609,7 @@ EOF
     $CXX $CXXFLAGS -c conftest.cpp
 # start search:
     found=
-    for testlib in "" -lstdc++ -lc++ ; do
+    for testlib in "" -lstdc++ -lc++ -lmpi_cxx ; do
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether $name can link a C++ object$comment" >&5
@@ -6466,8 +6630,8 @@ $as_echo "no" >&6; }
     if test -z "$found" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: You might have problems linking $name programs." >&5
 $as_echo "$as_me: WARNING: You might have problems linking $name programs." >&2;}
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please add c++ library to LIBS - e.g. LIBS=-lstdc++" >&5
-$as_echo "$as_me: WARNING: Please add c++ library to LIBS - e.g. LIBS=-lstdc++" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please add c++ library to LIBS" >&5
+$as_echo "$as_me: WARNING: Please add c++ library to LIBS" >&2;}
     fi
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: $compiler compiler not configured" >&5
@@ -6481,14 +6645,28 @@ then
   prefix=/usr/local
 fi
 
+test "$program_prefix" != NONE &&
+  program_transform_name="s&^&$program_prefix&;$program_transform_name"
+# Use a double $ so make ignores it.
+test "$program_suffix" != NONE &&
+  program_transform_name="s&\$&$program_suffix&;$program_transform_name"
+# Double any \ or $.
+# By default was `s,x,x', remove it if useless.
+ac_script='s/[\\$]/&&/g;s/;s,x,x,$//'
+program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
+
+
+
+# version modified to work in shell script instead of makefile:
+program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
+program_name=$(echo plumed | sed "$program_transform_name_sh")
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: **** PLUMED will be installed using prefix $prefix" >&5
 $as_echo "$as_me: **** PLUMED will be installed using prefix $prefix" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change this later setting PLUMED_PREFIX environment variable before installing" >&5
-$as_echo "$as_me: **** You can change this later setting PLUMED_PREFIX environment variable before installing" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** Executable will be named 'plumed'" >&5
-$as_echo "$as_me: **** Executable will be named 'plumed'" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: **** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing" >&5
-$as_echo "$as_me: **** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** You can change this later using \"make install prefix=/path\"" >&5
+$as_echo "$as_me: **** You can change this later using \"make install prefix=/path\"" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: **** Executable will be named $program_name" >&5
+$as_echo "$as_me: **** Executable will be named $program_name" >&6;}
 
 if test $mpi == true; then
   if test $mpi_found == ok; then
@@ -6505,6 +6683,8 @@ fi
 
 
 build_dir=`pwd`
+
+
 
 # This is to replace tags in Makefile.conf.in
 # saving the result to Makefile.conf

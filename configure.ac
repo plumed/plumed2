@@ -51,6 +51,24 @@ AC_DEFUN([PLUMED_CHECK_CXXFLAG], [
   )
 ])
 
+# PLUMED_CHECK_CFLAG(flag)
+# use it to check if a flag is available on this compiler
+AC_DEFUN([PLUMED_CHECK_CFLAG], [
+  AC_LANG_PUSH(C)
+  save_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS $1"
+  AC_MSG_CHECKING([whether $CC accepts $1])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+    [
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([not linking]); CCFLAGS="$save_CCFLAGS"])
+    ],
+    [AC_MSG_RESULT([no]); CCFLAGS="$save_CCFLAGS"]
+  )
+  AC_LANG_POP
+])
+
 # PLUMED_CHECK_LDFLAGS(flag)
 # use it to check if a flag is available on this compiler
 AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
@@ -92,6 +110,7 @@ PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
 PLUMED_CONFIG_ENABLE([openmp],[openmp],[search for openmp],[no])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
+PLUMED_CONFIG_ENABLE([external_blas],[external-blas],[search for external blas],[yes])
 PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([external_molfile_plugins],[external-molfile-plugins],[search for external molfile_plugins],[yes])
 PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
@@ -151,6 +170,7 @@ LDSO="$CXX"
 AC_MSG_NOTICE([Initial CXX:         $CXX])
 AC_MSG_NOTICE([Initial CXXFLAGS:    $CXXFLAGS])
 AC_MSG_NOTICE([Initial CPPFLAGS:    $CPPFLAGS])
+AC_MSG_NOTICE([Initial CFLAGS:      $CFLAGS])
 AC_MSG_NOTICE([Initial LDFLAGS:     $LDFLAGS])
 AC_MSG_NOTICE([Initial LIBS:        $LDFLAGS])
 AC_MSG_NOTICE([Initial STATIC_LIBS: $LDFLAGS])
@@ -162,6 +182,7 @@ AC_MSG_NOTICE([Initial SOEXT:       $SOEXT])
 if test $shared == true
 then
   PLUMED_CHECK_CXXFLAG([-fPIC])
+  PLUMED_CHECK_CFLAG([-fPIC])
 fi
 
 if test $basic_warnings == true
@@ -203,15 +224,38 @@ save_LIBS="$LIBS"
 blas_found=
 lapack_found=
 
-if test "$external_lapack" == true ; then
+# if external lapack can only work with external blas
+# thus, if external blas are disabled also external lapack should be disabled
+if test "$external_blas" == false && test "$external_lapack" == true ; then
+  AC_MSG_NOTICE([Internal blas can only be used with internal lapack])
+  AC_MSG_NOTICE([Will not search for external lapack])
+  external_lapack=false
+fi
 
+# first look for blas
+if test "$external_blas" == true ; then
 AC_CHECK_FUNC(  [dgemv], [blas_found=nounderscore], [
 AC_CHECK_FUNC(  [dgemv_],[blas_found=underscore],   [
 AC_CHECK_LIB(   [blas],[dgemv],  [LIBS="-lblas $LIBS"] [blas_found=nounderscore], [
 AC_CHECK_LIB(   [blas],[dgemv_], [LIBS="-lblas $LIBS"] [blas_found=underscore]
 ) ]) ]) ])
+fi
 
+# if not found, then use internal lapack and blas
+if test -z "$blas_found" ; then
+AC_MSG_WARN([using internal lapack and blas, could be inefficient])
+LIBS="$save_LIBS"
+
+AC_DEFINE([__PLUMED_INTERNAL_BLAS])
+AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
+fi
+
+# if found, also look for external blas
 if test -n "$blas_found" ; then
+
+save_LIBS="$LIBS"
+
+if test "$external_lapack" == true ; then
 # Then we look for lapack using same underscoring
 case "$blas_found" in
 (underscore) search_for=dsyevr_ ;;
@@ -223,21 +267,22 @@ AC_CHECK_LIB(  [lapack],[$search_for], [LIBS="-llapack $LIBS"] [lapack_found=yes
 ])
 fi
 
-fi 
-
+# if not found, then use internal lapack with external blas
 if test -z "$lapack_found" ; then
-AC_MSG_WARN([using internal lapack/blas, could be inefficient])
+AC_MSG_WARN([using internal lapack, could be inefficient])
 LIBS="$save_LIBS"
 
 AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
-AC_DEFINE([__PLUMED_INTERNAL_BLAS])
+fi
 
-else
+fi 
 
-  if test $blas_found == nounderscore
-  then
-    AC_DEFINE([F77_NO_UNDERSCORE])
-  fi
+# in case external blas have been found, take note of their underscoring
+# notice that this applies also when external blas are used with internal lapack
+# in the latter case, also (internal) lapack names will be underscored consistently
+if test "$blas_found" == nounderscore
+then
+  AC_DEFINE([F77_NO_UNDERSCORE])
 fi
 
 #### End of compulsory libraries ####
@@ -482,7 +527,7 @@ EOF
     $CXX $CXXFLAGS -c conftest.cpp 
 # start search:
     found=
-    for testlib in "" -lstdc++ -lc++ ; do
+    for testlib in "" -lstdc++ -lc++ -lmpi_cxx ; do
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       AC_MSG_CHECKING([whether $name can link a C++ object$comment])
@@ -499,7 +544,7 @@ EOF
     done
     if test -z "$found" ; then
       AC_MSG_WARN([You might have problems linking $name programs.])
-      AC_MSG_WARN([Please add c++ library to LIBS - e.g. LIBS=-lstdc++])
+      AC_MSG_WARN([Please add c++ library to LIBS])
     fi
   else
     AC_MSG_NOTICE([$compiler compiler not configured])
@@ -512,10 +557,16 @@ then
   prefix=/usr/local
 fi
 
+AC_ARG_PROGRAM
+
+
+# version modified to work in shell script instead of makefile:
+program_transform_name_sh=$(echo "${program_transform_name}" | sed 's:\$\$:$:g')
+program_name=$(echo plumed | sed "$program_transform_name_sh")
+
 AC_MSG_NOTICE([**** PLUMED will be installed using prefix $prefix])
-AC_MSG_NOTICE([**** You can change this later setting PLUMED_PREFIX environment variable before installing])
-AC_MSG_NOTICE([**** Executable will be named 'plumed'])
-AC_MSG_NOTICE([**** To add a suffix to this name, set PLUMED_LIBSUFFIX environment variable before installing])
+AC_MSG_NOTICE([**** You can change this later using "make install prefix=/path"])
+AC_MSG_NOTICE([**** Executable will be named $program_name])
 
 if test $mpi == true; then
   if test $mpi_found == ok; then
@@ -529,6 +580,8 @@ fi
 
 AC_SUBST(build_dir)
 build_dir=`pwd`
+
+
 
 # This is to replace tags in Makefile.conf.in
 # saving the result to Makefile.conf

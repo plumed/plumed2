@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -32,7 +32,8 @@ void FunctionVessel::registerKeywords( Keywords& keys ){
 FunctionVessel::FunctionVessel( const VesselOptions& da ):
 Vessel(da),
 norm(false),
-usetol(false)
+usetol(false),
+nderivatives(0)
 {
   ActionWithValue* a=dynamic_cast<ActionWithValue*>( getAction() );
   plumed_massert(a,"cannot create passable values as base action does not inherit from ActionWithValue");

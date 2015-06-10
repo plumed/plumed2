@@ -192,7 +192,7 @@ For users:
 - Fixed a bug that could lead plumed to be stuck with domain decomposition in some extreme case (one domain with all atoms, other domains empty).
 - Fixed a bug when \ref COMBINE or \ref MATHEVAL are used with PERIODIC keyword. Now when PERIODIC keyword is used the result
   of the calculation is brought within the periodicity domain. See <a href="http://github.com/plumed/plumed2/issues/139"> here </a>.
-- Fixed a bug related to \RANDOM_EXCHANGES followed by \ref INCLUDE
+- Fixed a bug related to \ref RANDOM_EXCHANGES followed by \ref INCLUDE
 - Updated internal molfile plugins to VMD 1.9.2.
 - Included crd and crdbox formats to internal molfile.
 - Added --natoms to \ref driver . This is required to read coordinate
@@ -200,6 +200,9 @@ For users:
   crd files)
 - Added the checks in the driver to detect cases where molinfo does not provide box information
   (e.g. pdb).
+- Added support for readdir_r when available, which makes opening files thread safe.
+- CFLAGS now include -fPIC by default
+- Fixes in documentation.
 
 For developers:
 - Allow external VMD plugins to be detected with --has-external-molfile. This
@@ -208,7 +211,7 @@ For developers:
 - Allow definition of variables where some of the components have derivatives and some haven't (issue #131).
 - Improved travis tests with more debug options.
 - Improved some regtest to check out-of-diagonal virial components
-
-
+- Improved make cppcheck options.
+- Fixes in developer documentation.
 
 */

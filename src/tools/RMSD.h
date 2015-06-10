@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -263,13 +263,13 @@ class RMSDCoreData
 		RMSDCoreData(const std::vector<double> &a ,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r, Vector &cp, Vector &cr ):
 			alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),
 			creference(cr),creference_is_calculated(true),creference_is_removed(true),
-			cpositions(cp),cpositions_is_calculated(true),cpositions_is_removed(true),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d){};
+			cpositions(cp),cpositions_is_calculated(true),cpositions_is_removed(true),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d),dist(0.0),rr00(0.0),rr11(0.0){};
 
 		// this constructor does not assume that the positions and reference have the center subtracted
 		RMSDCoreData(const std::vector<double> &a ,const std::vector<double> &d,const std::vector<Vector> &p, const std::vector<Vector> &r):
 			alEqDis(false),distanceIsMSD(false),hasDistance(false),isInitialized(false),safe(false),
 			creference_is_calculated(false),creference_is_removed(false),
-			cpositions_is_calculated(false),cpositions_is_removed(false),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d)
+			cpositions_is_calculated(false),cpositions_is_removed(false),retrieve_only_rotation(false),positions(p),reference(r),align(a),displace(d),dist(0.0),rr00(0.0),rr11(0.0)
 			{cpositions.zero();creference.zero();};
 
 		// set the center on the fly without subtracting

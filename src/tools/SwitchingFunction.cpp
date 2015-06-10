@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -318,6 +318,10 @@ SwitchingFunction::SwitchingFunction():
   dmax(0.0),
   nn(6),
   mm(12),
+  a(0.0),
+  b(0.0),
+  c(0.0),
+  d(0.0),
   invr0_2(0.0),
   dmax_2(0.0),
   stretch(1.0),

@@ -106,7 +106,8 @@ MultiColvarDensity::MultiColvarDensity(const ActionOptions&ao):
   ActionAtomistic(ao),
   ActionWithInputVessel(ao),
   norm(0),
-  firststep(true)
+  firststep(true),
+  gg(NULL)
 {
 
   std::vector<AtomNumber> atom;

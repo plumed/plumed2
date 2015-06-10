@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -32,7 +32,8 @@ StoreDataVessel::StoreDataVessel( const VesselOptions& da ):
 Vessel(da),
 max_lowmem_stash(3),
 vecsize(0),
-hard_cut(false)
+hard_cut(false),
+nspace(0)
 {
   ActionWithValue* myval=dynamic_cast<ActionWithValue*>( getAction() );
   if( !myval ) hasderiv=false;

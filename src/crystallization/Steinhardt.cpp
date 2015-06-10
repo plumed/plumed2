@@ -41,7 +41,8 @@ void Steinhardt::registerKeywords( Keywords& keys ){
 
 Steinhardt::Steinhardt( const ActionOptions& ao ):
 Action(ao),
-VectorMultiColvar(ao)
+VectorMultiColvar(ao),
+tmom(0)
 {
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
