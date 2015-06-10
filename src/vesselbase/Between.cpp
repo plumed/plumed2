@@ -56,7 +56,7 @@ FunctionVessel(da)
 
   parseFlag("NORM",norm); std::string errormsg; 
 
-  hist.set( getAllInput(),"",errormsg );
+  hist.set( getAllInput(),errormsg );
   if( !isPeriodic ) hist.isNotPeriodic();
   else hist.isPeriodic( min, max ); 
   if( errormsg.size()!=0 ) error( errormsg );

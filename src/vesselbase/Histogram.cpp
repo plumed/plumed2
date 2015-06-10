@@ -52,7 +52,7 @@ ShortcutVessel(da)
 {
   bool norm; parseFlag("NORM",norm); std::string normstr="";
   if(norm) normstr=" NORM";
-  std::vector<std::string> bins; HistogramBead::generateBins( getAllInput(), "", bins );
+  std::vector<std::string> bins; HistogramBead::generateBins( getAllInput(), bins );
   for(unsigned i=0;i<bins.size();++i) addVessel("BETWEEN",bins[i] + normstr);
 }
 
