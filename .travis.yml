@@ -7,9 +7,8 @@ env:
 # the following are with debug flags
 # I think clang does not support debug-glibcxx, so I skip it here
   - PLUMED_CC=gcc   PLUMED_CXX=g++    CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
-# debug options (the two flags combined are failing, see test below)
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug"
-  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug-glibcxx"
+# with debug flags there are issues with openmp+mpi on travis - I disable openmp here
+  - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx --disable-openmp"
 # then I try serial compilers
   - PLUMED_CC=clang PLUMED_CXX=clang++
   - PLUMED_CC=gcc   PLUMED_CXX=g++
@@ -21,8 +20,8 @@ env:
 # cppcheck
 # in principle we should make only "cppcheck" here
   - PLUMED_CC=gcc   PLUMED_CXX=g++   CPPCHECK=yes
-# I allow this to fail. I do not understand why it fails - GB:
-# notice that individual debug flags above do not fail
+# with debug flags there are issues with openmp+mpi on travis - I disable openmp here
+# I leave this test here to monitor if things change in the future, allowing it to fail
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 matrix:
   allow_failures:
@@ -66,7 +65,7 @@ script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS --enable-openmp
+  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS
   - make -j 2
 # we install plumed so that it is in the path
   - sudo make install
