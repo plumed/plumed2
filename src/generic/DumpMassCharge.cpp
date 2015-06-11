@@ -42,11 +42,23 @@ File can be recycled in the \ref driver tool.
 
 \par Examples
 
+You can add the DUMPMASSCHARGE action at the end of the plumed.dat
+file that you use during an MD simulations:
+
 \verbatim
-DUMPMASSCHARGE FILE=mcfile
 c1: COM ATOMS=1-10
 c2: COM ATOMS=11-20
-PRINT ARG=c1,c2 FILE=colvar
+PRINT ARG=c1,c2 FILE=colvar STRIDE=100
+
+DUMPMASSCHARGE FILE=mcfile
+\endverbatim
+(see also \ref COM and \ref PRINT)
+
+In this way, you will be able to use the same masses while processing
+a trajectory from the \ref driver . To do so, you need to 
+add the --mc flag on the driver command line, e.g.
+\verbatim
+plumed driver --mc mcfile --plumed plumed.dat --ixyz traj.xyz
 \endverbatim
 
 */
