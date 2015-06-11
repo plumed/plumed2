@@ -134,7 +134,9 @@ plumed driver --plumed plumed.dat --imf_crd trajectory.crd --natoms 128
 Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
 
 Additionally, you can use the xdrfile implementation of xtc and trr. To this aim, just
-download and install properly the xdrfile library (see here: http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library)
+download and install properly the xdrfile library (see here: http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library).
+If the xdrfile library is installed properly the PLUMED configure script should be able to
+detect it and enable it.
 Notice that the xdrfile implementation of xtc and trr
 is more robust than the molfile one, since it provides support for generic cell shapes.
 
