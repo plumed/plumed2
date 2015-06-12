@@ -28,6 +28,7 @@ void MultiColvarFilter::registerKeywords( Keywords& keys ){
   BridgedMultiColvarFunction::registerKeywords( keys );
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   keys.use("MEAN"); keys.use("MOMENTS"); keys.use("MIN"); keys.use("MAX");
+  keys.use("ALT_MIN"); 
 }
 
 MultiColvarFilter::MultiColvarFilter(const ActionOptions&ao):

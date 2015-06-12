@@ -100,7 +100,7 @@ PLUMED_REGISTER_ACTION(XYDistances,"YZDISTANCES")
 
 void XYDistances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS");  // keys.use("MAX");
+  keys.use("ATOMS"); keys.use("MAX"); keys.use("ALT_MIN"); 
   keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); 
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");

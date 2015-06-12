@@ -56,6 +56,7 @@ PLUMED_REGISTER_ACTION(InPlaneDistances,"INPLANEDISTANCES")
 
 void InPlaneDistances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
+  keys.use("ALT_MIN");
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); 
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms","VECTORSTART","The first atom position that is used to define the normal to the plane of interest");
