@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -131,14 +131,11 @@ pbc(true)
 // calculator
 void Angle::calculate(){
 
+  if(pbc) makeWhole();
+
   Vector dij,dik;
-  if(pbc){
-    dij=pbcDistance(getPosition(2),getPosition(3));
-    dik=pbcDistance(getPosition(1),getPosition(0));
-  } else {
-    dij=delta(getPosition(2),getPosition(3));
-    dik=delta(getPosition(1),getPosition(0));
-  }
+  dij=delta(getPosition(2),getPosition(3));
+  dik=delta(getPosition(1),getPosition(0));
   Vector ddij,ddik;
   PLMD::Angle a;
   double angle=a.compute(dij,dik,ddij,ddik);
@@ -147,7 +144,7 @@ void Angle::calculate(){
   setAtomsDerivatives(2,-ddij);
   setAtomsDerivatives(3,ddij);
   setValue           (angle);
-  setBoxDerivatives  (-(Tensor(dij,ddij)+Tensor(dik,ddik)));
+  setBoxDerivativesNoPbc();
 }
 
 }

@@ -228,10 +228,11 @@ void MolDataClass::specialSymbol( const std::string& type, const std::string& sy
       if( name=="chi" ) {
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("O4\'",resnum,chainid));
         numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C1\'",resnum,chainid));
-        numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N1",resnum,chainid));
         if(basetype=="T" || basetype=="U" || basetype=="C"){
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N1",resnum,chainid));
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C2",resnum,chainid));
         } else if(basetype=="G" || basetype=="A"){
+          numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("N9",resnum,chainid));
           numbers.push_back(mypdb.getNamedAtomFromResidueAndChain("C4",resnum,chainid));
         } else plumed_error();
       } else if( name=="alpha" ) {

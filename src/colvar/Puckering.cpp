@@ -99,13 +99,14 @@ PLUMED_COLVAR_INIT(ao)
 void Puckering::calculate(){
 
   Vector d0,d1,d2,d3,d4,d5;
+  makeWhole();
   
-  d0=pbcDistance(getPosition(2),getPosition(1));
-  d1=pbcDistance(getPosition(3),getPosition(2));
-  d2=pbcDistance(getPosition(4),getPosition(3));
-  d3=pbcDistance(getPosition(4),getPosition(3));
-  d4=pbcDistance(getPosition(0),getPosition(4));
-  d5=pbcDistance(getPosition(1),getPosition(0));
+  d0=delta(getPosition(2),getPosition(1));
+  d1=delta(getPosition(3),getPosition(2));
+  d2=delta(getPosition(4),getPosition(3));
+  d3=delta(getPosition(4),getPosition(3));
+  d4=delta(getPosition(0),getPosition(4));
+  d5=delta(getPosition(1),getPosition(0));
     
   Vector r[5];
   r[0]=getPosition(0);
@@ -156,11 +157,7 @@ void Puckering::calculate(){
   setAtomsDerivatives (vzx,2, dZx_dR[2]);
   setAtomsDerivatives (vzx,3, dZx_dR[3]);
   setAtomsDerivatives (vzx,4, dZx_dR[4]);
-  Tensor zx_virial;
-  for(unsigned j=0;j<5;j++){
-    zx_virial-=extProduct(r[j],dZx_dR[j]);
-  }
-  setBoxDerivatives (vzx,zx_virial);
+  setBoxDerivativesNoPbc(vzx);
     
   Value* vzy=getPntrToComponent("Zy");
   vzy->set(Zy);
@@ -169,11 +166,7 @@ void Puckering::calculate(){
   setAtomsDerivatives (vzy,2, dZy_dR[2]);
   setAtomsDerivatives (vzy,3, dZy_dR[3]);
   setAtomsDerivatives (vzy,4, dZy_dR[4]);
-  Tensor zy_virial;
-  for(unsigned j=0;j<5;j++){
-    zy_virial-=extProduct(r[j],dZy_dR[j]);
-  }
-  setBoxDerivatives (vzy,zy_virial);
+  setBoxDerivativesNoPbc(vzy);
 
 
   Value* vph=getPntrToComponent("phs");
@@ -183,11 +176,7 @@ void Puckering::calculate(){
   setAtomsDerivatives (vph,2, dphase_dR[2]);
   setAtomsDerivatives (vph,3, dphase_dR[3]);
   setAtomsDerivatives (vph,4, dphase_dR[4]);
-  Tensor phase_virial;
-  for(unsigned j=0;j<5;j++){
-    phase_virial-=extProduct(r[j],dphase_dR[j]);
-  }
-  setBoxDerivatives (vph,phase_virial);
+  setBoxDerivativesNoPbc(vph);
     
   Value* vam=getPntrToComponent("amp");
   vam->set(amplitude);
@@ -196,11 +185,7 @@ void Puckering::calculate(){
   setAtomsDerivatives (vam,2, damplitude_dR[2]);
   setAtomsDerivatives (vam,3, damplitude_dR[3]);
   setAtomsDerivatives (vam,4, damplitude_dR[4]);
-  Tensor amplitude_virial;
-  for(unsigned j=0;j<5;j++){
-    amplitude_virial-=extProduct(r[j],damplitude_dR[j]);
-  }
-  setBoxDerivatives (vam,amplitude_virial);  
+  setBoxDerivativesNoPbc(vam);
 
     
 }

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -77,6 +77,9 @@ void DumpForces::registerKeywords(Keywords& keys){
   keys.use("ARG");
   keys.add("compulsory","STRIDE","1","the frequency with which the forces should be output");
   keys.add("compulsory","FILE","the name of the file on which to output the forces");
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 DumpForces::DumpForces(const ActionOptions&ao):

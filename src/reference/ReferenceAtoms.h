@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -75,23 +75,21 @@ protected:
 /// Get the position of the ith atom
   Vector getReferencePosition( const unsigned& iatom ) const ;  
 /// Get the reference positions
-  const std::vector<Vector> & getReferencePositions();
+  const std::vector<Vector> & getReferencePositions() const ; 
 /// Add derivatives to iatom th atom in list
-  void addAtomicDerivatives( const unsigned& , const Vector& );
+//  void addAtomicDerivatives( const unsigned& , const Vector& );
 /// Get the atomic derivatives on the ith atom in the list
-  Vector retrieveAtomicDerivatives( const unsigned& ) const ;
+//  Vector retrieveAtomicDerivatives( const unsigned& ) const ;
 /// Add derivatives to the viral
-  void addBoxDerivatives( const Tensor& );
+//  void addBoxDerivatives( const Tensor& );
 /// This does the checks that are always required
   void singleDomainRequests( std::vector<AtomNumber>&, bool disable_checks );
-/// This returns the number of reference atom positions
-  unsigned getNumberOfReferencePositions() const ;
-/// This returns how many atoms there should be
-  unsigned getNumberOfAtoms() const ;
-/// This allows us to use a single pos array with RMSD objects using different atom indexes
-  unsigned getAtomIndex( const unsigned& ) const ;
 public:
   ReferenceAtoms( const ReferenceConfigurationOptions& ro );
+/// This returns the number of reference atom positions
+  unsigned getNumberOfReferencePositions() const ;
+/// This allows us to use a single pos array with RMSD objects using different atom indexes
+  unsigned getAtomIndex( const unsigned& ) const ;
 /// Get the atoms required (additional checks are required when we have multiple domains)
   virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false );
 /// Set the indices of the reference atoms
@@ -102,6 +100,8 @@ public:
   void printAtoms( OFile& ofile ) const ;
 /// Return all atom indexes
   const std::vector<AtomNumber>& getAbsoluteIndexes();
+/// This returns how many atoms there should be
+  unsigned getNumberOfAtoms() const ;
 };
 
 inline
@@ -122,13 +122,13 @@ unsigned ReferenceAtoms::getNumberOfReferencePositions() const {
 
 inline
 unsigned ReferenceAtoms::getNumberOfAtoms() const {
-  return atom_ders.size();
+  return reference_atoms.size();
 }
 
 inline
 unsigned ReferenceAtoms::getAtomIndex( const unsigned& iatom ) const {
   plumed_dbg_assert( iatom<der_index.size() );
-  plumed_dbg_assert( der_index[iatom]<atom_ders.size() );
+  plumed_dbg_assert( der_index[iatom]<reference_atoms.size() );
   return der_index[iatom];
 }
 
@@ -139,24 +139,24 @@ Vector ReferenceAtoms::getReferencePosition( const unsigned& iatom ) const {
 }
 
 inline
-const std::vector<Vector> & ReferenceAtoms::getReferencePositions(){
+const std::vector<Vector> & ReferenceAtoms::getReferencePositions() const {
   return reference_atoms;
 }
 
-inline
-void ReferenceAtoms::addAtomicDerivatives( const unsigned& iatom, const Vector& der ){
-  atom_ders[ getAtomIndex(iatom) ]+=der;
-}
+// inline
+// void ReferenceAtoms::addAtomicDerivatives( const unsigned& iatom, const Vector& der ){
+//   atom_ders[ getAtomIndex(iatom) ]+=der;
+// }
 
-inline
-Vector ReferenceAtoms::retrieveAtomicDerivatives( const unsigned& iatom ) const {
-  return atom_ders[ getAtomIndex(iatom) ];
-}
+// inline
+// Vector ReferenceAtoms::retrieveAtomicDerivatives( const unsigned& iatom ) const {
+//   return atom_ders[ getAtomIndex(iatom) ];
+// }
 
-inline
-void ReferenceAtoms::addBoxDerivatives( const Tensor& vir ){
-  virialWasSet=true; virial+=vir;
-}
+// inline
+// void ReferenceAtoms::addBoxDerivatives( const Tensor& vir ){
+//   virialWasSet=true; virial+=vir;
+// }
 
 inline
 const std::vector<AtomNumber>& ReferenceAtoms::getAbsoluteIndexes(){

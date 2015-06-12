@@ -280,8 +280,23 @@ vector<string> Tools::ls(const string&d){
   DIR*dir;
   vector<string> result;
   if ((dir=opendir(d.c_str()))){
-    struct dirent *ent;
-    while ((ent = readdir (dir))) if(string(ent->d_name)!="." && string(ent->d_name)!="..") result.push_back(ent->d_name);
+    struct dirent *res;
+    struct dirent ent;
+    while(true){
+#if defined(__PLUMED_READDIR_R)
+      readdir_r(dir,&ent,&res);
+#else
+// cppcheck complains about this:
+// (portability) Non reentrant function 'readdir' called. For threadsafe applications it is recommended to use the reentrant replacement function 'readdir_r'.
+// since we use it only if readdir_r is not available, I suppress the warning
+// GB
+// cppcheck-suppress nonreentrantFunctionsreaddir
+      res=readdir(dir);
+      (void) ent; // avoid warning
+#endif
+      if(!res) break;
+      if(string(res->d_name)!="." && string(res->d_name)!="..") result.push_back(res->d_name);
+    }
     closedir (dir);
   }
   return result;

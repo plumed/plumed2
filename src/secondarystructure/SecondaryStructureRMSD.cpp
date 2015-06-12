@@ -133,15 +133,17 @@ void SecondaryStructureRMSD::readBackboneAtoms( const std::string& moltype, std:
   chain_lengths.resize( backatoms.size() );
   for(unsigned i=0;i<backatoms.size();++i){
      chain_lengths[i]=backatoms[i].size();
-     for(unsigned j=0;j<backatoms[i].size();++j) all_atoms.addIndexToList( backatoms[i][j] );
+     for(unsigned j=0;j<backatoms[i].size();++j) all_atoms.push_back( backatoms[i][j] );
   }
+  ActionAtomistic::requestAtoms( all_atoms );
+  forcesToApply.resize( getNumberOfDerivatives() );
 }
 
 void SecondaryStructureRMSD::addColvar( const std::vector<unsigned>& newatoms ){
   if( colvar_atoms.size()>0 ) plumed_assert( colvar_atoms[0].size()==newatoms.size() );
   if( verbose_output ){
      log.printf("  Secondary structure segment %u contains atoms : ", static_cast<unsigned>(colvar_atoms.size()+1));
-     for(unsigned i=0;i<newatoms.size();++i) log.printf("%d ",all_atoms(newatoms[i]).serial() );
+     for(unsigned i=0;i<newatoms.size();++i) log.printf("%d ",all_atoms[newatoms[i]].serial() );
      log.printf("\n");
   }
   addTaskToList( colvar_atoms.size() );
@@ -161,7 +163,6 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   }
 
   if( references.size()==0 ){
-     pos.resize( structure.size() ); 
      finishTaskListUpdate();
 
      readVesselKeywords();
@@ -181,7 +182,7 @@ void SecondaryStructureRMSD::setSecondaryStructure( std::vector<Vector>& structu
   std::vector<double> align( structure.size(), 1.0 ), displace( structure.size(), 1.0 );
   references[nn]->setBoundsOnDistances( true , bondlength );  // We always use pbc
   references[nn]->setReferenceAtoms( structure, align, displace );
-  references[nn]->setNumberOfAtoms( structure.size() );
+//  references[nn]->setNumberOfAtoms( structure.size() );
 }
 
 void SecondaryStructureRMSD::prepare(){
@@ -191,29 +192,22 @@ void SecondaryStructureRMSD::prepare(){
   }
 }
 
-void SecondaryStructureRMSD::finishTaskListUpdate(){
-  all_atoms.deactivateAll();
-  for(unsigned i=0;i<getCurrentNumberOfActiveTasks();++i){
-      for(unsigned j=0;j<colvar_atoms[getActiveTask(i)].size();++j) all_atoms.activate( colvar_atoms[getActiveTask(i)][j] );
-  }
-  all_atoms.updateActiveMembers();
-  ActionAtomistic::requestAtoms( all_atoms.retrieveActiveList() );
-  forcesToApply.resize( getNumberOfDerivatives() );
-}
+void SecondaryStructureRMSD::finishTaskListUpdate(){ }
 
 void SecondaryStructureRMSD::calculate(){
   runAllTasks();
 }
 
-void SecondaryStructureRMSD::performTask(){
+void SecondaryStructureRMSD::performTask( const unsigned& task_index, const unsigned& current, MultiValue& myvals ) const {
   // Retrieve the positions
-  for(unsigned i=0;i<pos.size();++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(i) );
+  std::vector<Vector> pos( references[0]->getNumberOfAtoms() );
+  for(unsigned i=0;i<pos.size();++i) pos[i]=ActionAtomistic::getPosition( getAtomIndex(current,i) );
 
   // This does strands cutoff
   Vector distance=pbcDistance( pos[align_atom_1],pos[align_atom_2] ); 
   if( s_cutoff>0 ){
      if( distance.modulo()>s_cutoff ){
-       setElementValue(1,0.0);
+       myvals.setValue( 0, 0.0 );
        return;
      }
   }
@@ -225,56 +219,37 @@ void SecondaryStructureRMSD::performTask(){
      for(unsigned i=15;i<30;++i){
          pos[i]+=( origin_new - origin_old );
      }
-  } 
+  }
+  // Create a holder for the derivatives
+  ReferenceValuePack mypack( 0, pos.size(), myvals ); mypack.setValIndex( 1 );
+  for(unsigned i=0;i<pos.size();++i) mypack.setAtomIndex( i, getAtomIndex(current,i) );
 
   // And now calculate the RMSD
   double r,nr; const Pbc& pbc=getPbc(); 
-  closest=0; r=references[0]->calculate( pos, pbc, false );
+  unsigned closest=0; r=references[0]->calculate( pos, pbc, mypack, false );
   for(unsigned i=1;i<references.size();++i){
-      nr=references[i]->calculate( pos, pbc, false );
+      mypack.setValIndex( i+1 );
+      nr=references[i]->calculate( pos, pbc, mypack, false );
       if( nr<r ){ closest=i; r=nr; }
   }
-  setElementValue(1,1.0); 
-  setElementValue(0,r);
-  return;
-}
 
-void SecondaryStructureRMSD::mergeDerivatives( const unsigned& ider, const double& df ){
-  plumed_dbg_assert( ider==0 );
-  for(unsigned i=0;i<colvar_atoms[getCurrentTask()].size();++i){
-     unsigned thisatom=getAtomIndex(i), thispos=3*thisatom; 
-     Vector ader=references[closest]->getAtomDerivative(i);
-     accumulateDerivative( thispos, df*ader[0] ); thispos++;
-     accumulateDerivative( thispos, df*ader[1] ); thispos++;
-     accumulateDerivative( thispos, df*ader[2] ); 
+  // Transfer everything to the value
+  myvals.setValue( 0, 1.0 ); myvals.setValue( 1, r );
+  if( closest>0 ) mypack.moveDerivatives( closest+1, 1 );
+
+  if( !mypack.virialWasSet() ){
+      Tensor vir; vir.zero();
+      for(unsigned i=0;i<colvar_atoms[current].size();++i){
+         vir+=(-1.0*Tensor( pos[i], mypack.getAtomDerivative(i) ));
+      } 
+      mypack.setValIndex(1); mypack.addBoxDerivatives( vir );
   }
-  Tensor virial;
-  if( !references[closest]->getVirial( virial ) ){ 
-     virial.zero();
-     for(unsigned i=0;i<colvar_atoms[getCurrentTask()].size();++i){
-         virial+=(-1.0*Tensor( pos[i], references[closest]->getAtomDerivative(i) ));
-     }
-  } 
 
-  // Easy to merge the virial
-  unsigned outnat=3*getNumberOfAtoms();
-  accumulateDerivative( outnat, df*virial(0,0) ); outnat++;
-  accumulateDerivative( outnat, df*virial(0,1) ); outnat++;
-  accumulateDerivative( outnat, df*virial(0,2) ); outnat++;
-  accumulateDerivative( outnat, df*virial(1,0) ); outnat++;
-  accumulateDerivative( outnat, df*virial(1,1) ); outnat++;
-  accumulateDerivative( outnat, df*virial(1,2) ); outnat++;
-  accumulateDerivative( outnat, df*virial(2,0) ); outnat++;
-  accumulateDerivative( outnat, df*virial(2,1) ); outnat++;
-  accumulateDerivative( outnat, df*virial(2,2) );
+  return;
 }
 
 void SecondaryStructureRMSD::apply(){
   if( getForcesFromVessels( forcesToApply ) ) setForcesOnAtoms( forcesToApply );
-}
-
-void SecondaryStructureRMSD::clearDerivativesAfterTask( const unsigned& ival ){
-  thisval_wasset[ival]=false; setElementValue( ival, 0.0 ); thisval_wasset[ival]=false;
 }
 
 }

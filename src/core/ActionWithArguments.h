@@ -78,7 +78,7 @@ public:
   void lockRequests();
   void unlockRequests();
 /// Returns an array of pointers to the arguments
-  std::vector<Value*>    & getArguments();
+  const std::vector<Value*>    & getArguments() const ;
 /// Convert a list of argument names into a list of pointers to the values
   void interpretArgumentList(const std::vector<std::string>& c, std::vector<Value*>&arg);
 };
@@ -120,7 +120,7 @@ void ActionWithArguments::unlockRequests(){
 }
 
 inline
-std::vector<Value*> & ActionWithArguments::getArguments(){
+const std::vector<Value*> & ActionWithArguments::getArguments() const {
   return arguments;
 }
 

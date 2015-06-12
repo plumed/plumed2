@@ -159,7 +159,7 @@ void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
    if (max_index==0) max_index=dlist.size();
    if(type==unset){
   } else if(type==orthorombic) {
-#ifdef PBC_WHILE
+#ifdef __PLUMED_PBC_WHILE
    for(unsigned k=0;k<max_index;++k){
       while(dlist[k][0]>hdiag[0])   dlist[k][0]-=diag[0];
       while(dlist[k][0]<=mdiag[0])  dlist[k][0]+=diag[0];
@@ -172,7 +172,7 @@ void Pbc::apply(std::vector<Vector>& dlist, unsigned max_index) const {
    for(unsigned k=0;k<max_index;++k) for(int i=0;i<3;i++) dlist[k][i]=Tools::pbc(dlist[k][i]*invBox(i,i))*box(i,i);
 #endif
   } else if(type==generic) {
-   plumed_merror("apply pbc with generic cell is not implemented");
+   for(unsigned k=0;k<max_index;++k) dlist[k]=distance(Vector(0.0,0.0,0.0),dlist[k]);
   } else plumed_merror("unknown pbc type");
 }
 
@@ -180,7 +180,7 @@ Vector Pbc::distance(const Vector&v1,const Vector&v2,int*nshifts)const{
   Vector d=delta(v1,v2);
   if(type==unset){
   } else if(type==orthorombic) {
-#ifdef PBC_WHILE
+#ifdef __PLUMED_PBC_WHILE
     for(unsigned i=0;i<3;i++){
       while(d[i]>hdiag[i]) d[i]-=diag[i];
       while(d[i]<=mdiag[i]) d[i]+=diag[i];

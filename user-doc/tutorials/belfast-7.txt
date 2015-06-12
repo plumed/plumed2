@@ -288,8 +288,14 @@ Previously, we prepared a single PLUMED input file to run a PT simulation. This 
 since in that case the same task was performed at all temperatures. Here instead we need to have a slightly
 different PLUMED input file for each simulation, since we need to use the keyword TEMP to
 specify the temperature on the line of the \ref METAD directory. We will thus prepare 4 input
-files, called plumed.dat.0, plumed.dat.1, plumed.dat.2, and plumed.dat.3, with a different
-value for the keyword TEMP. Here how plumed.dat.3 should look like:
+files, called plumed.0.dat, plumed.1.dat, plumed.2.dat, and plumed.3.dat, with a different
+value for the keyword TEMP.
+
+\warning
+Notice that the rules for replica suffix are changed with version 2.2.
+With PLUMED versions 2.0 and 2.1 these files should have been named plumed.dat.0, plumed.dat.1, etc.
+
+Here how plumed.3.dat should look like:
 
 \verbatim
 # set up two variables for Phi and Psi dihedral angles 

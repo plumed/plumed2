@@ -42,7 +42,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   FilterBetween(const ActionOptions& ao);
-  double applyFilter( const double& val, double& df );
+  double applyFilter( const double& val, double& df ) const ;
 }; 
 
 PLUMED_REGISTER_ACTION(FilterBetween,"MFILTER_BETWEEN")
@@ -72,21 +72,21 @@ MultiColvarFilter(ao)
   }
 
   if(sw.length()>0){
-     hb.set(sw,"",errors);
+     hb.set(sw,errors);
      if( errors.length()!=0 ) error("problem reading BEAD keyword : " + errors );
   } else {
      double l, u, s; std::string ll, uu, ss;
      parse("LOWER",l); parse("UPPER",u); parse("SMEAR",s);
      Tools::convert(l,ll); Tools::convert(u,uu); Tools::convert(s,ss);
      sw="GAUSSIAN LOWER=" + ll + " UPPER=" + uu + " SMEAR=" + ss;
-     hb.set(sw,"",errors); plumed_massert(errors.length()==0,"problems with bead" + errors);
+     hb.set(sw,errors); plumed_massert(errors.length()==0,"problems with bead" + errors);
   }
   log.printf("  filtering colvar values and focussing only on those values in range %s\n",( hb.description() ).c_str() );
 
   checkRead();  
 }
 
-double FilterBetween::applyFilter( const double& val, double& df ){
+double FilterBetween::applyFilter( const double& val, double& df ) const {
   double f = hb.calculate( val, df ); 
   return f;
 }

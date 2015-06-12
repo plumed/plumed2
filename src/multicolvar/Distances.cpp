@@ -82,10 +82,9 @@ public:
   static void registerKeywords( Keywords& keys );
   Distances(const ActionOptions&);
 // active methods:
-  virtual double compute();
+  virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
 /// Returns the number of coordinates of the field
   bool isPeriodic(){ return false; }
-  Vector getCentralAtom();
 };
 
 PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
@@ -93,7 +92,7 @@ PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 void Distances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
   keys.use("ATOMS"); 
-  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); keys.use("DHENERGY");
+  keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); // keys.use("DHENERGY");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "
@@ -139,23 +138,17 @@ PLUMED_MULTICOLVAR_INIT(ao)
   }
 }
 
-double Distances::compute(){
+double Distances::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
    Vector distance; 
-   distance=getSeparation( getPosition(0), getPosition(1) );
+   distance=getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
    const double value=distance.modulo();
    const double invvalue=1.0/value;
 
    // And finish the calculation
-   addAtomsDerivatives( 0,-invvalue*distance );
-   addAtomsDerivatives( 1, invvalue*distance );
-   addBoxDerivatives( -invvalue*Tensor(distance,distance) );
+   myatoms.addAtomsDerivatives( 1, 0,-invvalue*distance );
+   myatoms.addAtomsDerivatives( 1, 1, invvalue*distance );
+   myatoms.addBoxDerivatives( 1, -invvalue*Tensor(distance,distance) );
    return value;
-}
-
-Vector Distances::getCentralAtom(){
-   addCentralAtomDerivatives( 0, 0.5*Tensor::identity() );
-   addCentralAtomDerivatives( 1, 0.5*Tensor::identity() );
-   return 0.5*( getPosition(0) + getPosition(1) );
 }
 
 }

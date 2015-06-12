@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -75,9 +75,11 @@ DRMSD REFERENCE=file.pdb LOWER_CUTOFF=0.1 UPPER_CUTOFF=0.8
 
    
 class DRMSD : public Colvar {
-	
+
+  bool pbc_;	
+  MultiValue myvals;
+  ReferenceValuePack mypack;
   PLMD::DRMSD* drmsd_;
-  bool pbc_;
 
 public:
   DRMSD(const ActionOptions&);
@@ -96,7 +98,7 @@ void DRMSD::registerKeywords(Keywords& keys){
 }
 
 DRMSD::DRMSD(const ActionOptions&ao):
-PLUMED_COLVAR_INIT(ao), pbc_(true)
+PLUMED_COLVAR_INIT(ao), pbc_(true), myvals(1,0), mypack(0,0,myvals)
 {
   string reference;
   parse("REFERENCE",reference);
@@ -125,8 +127,12 @@ PLUMED_COLVAR_INIT(ao), pbc_(true)
 
   std::vector<AtomNumber> atoms; 
   drmsd_->getAtomRequests( atoms );
-  drmsd_->setNumberOfAtoms( atoms.size() );
+//   drmsd_->setNumberOfAtoms( atoms.size() );
   requestAtoms( atoms );
+
+  // Setup the derivative pack
+  myvals.resize( 1, 3*atoms.size()+9 ); mypack.resize( 0, atoms.size() );
+  for(unsigned i=0;i<atoms.size();++i) mypack.setAtomIndex( i, i );
 
   log.printf("  reference from file %s\n",reference.c_str());
   log.printf("  which contains %d atoms\n",getNumberOfAtoms());
@@ -140,14 +146,15 @@ DRMSD::~DRMSD(){
 // calculator
 void DRMSD::calculate(){
 
- double drmsd; Tensor virial;
+ double drmsd; Tensor virial; mypack.clear();
 
- drmsd=drmsd_->calculate(getPositions(), getPbc(), false);
+ drmsd=drmsd_->calculate(getPositions(), getPbc(), mypack, false);
 
  setValue(drmsd);
- for(unsigned i=0;i<getNumberOfAtoms();++i) { setAtomsDerivatives( i, drmsd_->getAtomDerivative(i) ); }
- 
- drmsd_->getVirial( virial ); setBoxDerivatives(virial);
+ for(unsigned i=0;i<getNumberOfAtoms();++i) { if( myvals.isActive(3*i) ) setAtomsDerivatives( i, mypack.getAtomDerivative(i) ); }
+ setBoxDerivatives( mypack.getBoxDerivatives() );   
+
+ // drmsd_->getVirial( virial ); setBoxDerivatives(virial);
 
 }
 

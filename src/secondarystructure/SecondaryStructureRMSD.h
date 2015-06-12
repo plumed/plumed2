@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -41,12 +41,10 @@ class SecondaryStructureRMSD :
   public vesselbase::ActionWithVessel
 {
 private:
-/// Tempory integer to say which refernce configuration is the closest
-  unsigned closest;
 /// The type of rmsd we are calculating
   std::string alignType;
 /// List of all the atoms we require
-  DynamicList<AtomNumber> all_atoms;
+  std::vector<AtomNumber> all_atoms;
 /// The atoms involved in each of the secondary structure segments
   std::vector< std::vector<unsigned> > colvar_atoms;
 /// The list of reference configurations
@@ -60,10 +58,9 @@ private:
   unsigned align_atom_1, align_atom_2;
   bool verbose_output;
 /// Tempory variables for getting positions of atoms and applying forces
-  std::vector<Vector> pos;
   std::vector<double> forcesToApply;
 /// Get the index of an atom
-  unsigned getAtomIndex( const unsigned& iatom );
+  unsigned getAtomIndex( const unsigned& current, const unsigned& iatom ) const ;
 protected:
 /// Get the atoms in the backbone
   void readBackboneAtoms( const std::string& backnames, std::vector<unsigned>& chain_lengths );
@@ -79,16 +76,21 @@ public:
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();
+  unsigned getNumberOfQuantities();
   void turnOnDerivatives();
   void prepare();
   void finishTaskListUpdate();
   void calculate();
-  void performTask();
-  void clearDerivativesAfterTask( const unsigned& );
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const ; 
   void apply();
-  void mergeDerivatives( const unsigned& , const double& );
   bool isPeriodic(){ return false; }
 };
+
+inline
+unsigned SecondaryStructureRMSD::getNumberOfQuantities(){
+  return 1 + references.size();
+}
+
 
 inline
 unsigned SecondaryStructureRMSD::getNumberOfFunctionsInAction(){
@@ -101,8 +103,8 @@ unsigned SecondaryStructureRMSD::getNumberOfDerivatives(){
 }
 
 inline
-unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& iatom ){
-  return all_atoms.linkIndex( colvar_atoms[getCurrentTask()][iatom] );
+unsigned SecondaryStructureRMSD::getAtomIndex( const unsigned& current, const unsigned& iatom ) const {
+  return colvar_atoms[current][iatom];
 }
 
 }

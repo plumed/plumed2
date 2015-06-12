@@ -53,7 +53,7 @@ public:
 /// Find what is required of us from the reference frames
   void getAtomAndArgumentRequirements( std::vector<AtomNumber>& atoms, std::vector<std::string>& args );
 /// Finish setup of frames
-  void setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs );
+//  void setNumberOfAtomsAndArguments( const unsigned& natoms, const unsigned& nargs );
 /// Do additional reading required by derived class
   virtual void readRestOfFrame(){}
 /// Do additional resizing required by derived class
@@ -62,7 +62,7 @@ public:
   unsigned getNumberOfReferenceFrames() const ;  
 /// Calculate the distance from one of the reference points
   double calcDistanceFromConfiguration( const unsigned& ifunc, const std::vector<Vector>& pos, const Pbc& pbc,
-                                                        const std::vector<Value*>& arg, const bool& squared );
+                                        const std::vector<Value*>& arg, ReferenceValuePack& myder, const bool& squared ) const ;
 /// Return the ith reference frame
   ReferenceConfiguration* getFrame( const unsigned& iframe );
 /// Copy a reference configuration into the multi reference object
@@ -82,8 +82,8 @@ void MultiReferenceBase::parse(const std::string& key, T& val ){
 
 inline
 double MultiReferenceBase::calcDistanceFromConfiguration( const unsigned& ifunc, const std::vector<Vector>& pos, const Pbc& pbc,
-                                                        const std::vector<Value*>& arg, const bool& squared ){
-   return frames[ifunc]->calculate( pos, pbc, arg, squared );
+                                                        const std::vector<Value*>& arg, ReferenceValuePack& myder, const bool& squared ) const {
+   return frames[ifunc]->calculate( pos, pbc, arg, myder, squared );
 }
 
 inline

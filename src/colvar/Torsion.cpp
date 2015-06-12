@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -144,15 +144,10 @@ do_cosine(false)
 void Torsion::calculate(){
 
   Vector d0,d1,d2;
-  if(pbc){
-    d0=pbcDistance(getPosition(1),getPosition(0));
-    d1=pbcDistance(getPosition(3),getPosition(2));
-    d2=pbcDistance(getPosition(5),getPosition(4));
-  } else {
-    d0=delta(getPosition(1),getPosition(0));
-    d1=delta(getPosition(3),getPosition(2));
-    d2=delta(getPosition(5),getPosition(4));
-  }
+  if(pbc) makeWhole();
+  d0=delta(getPosition(1),getPosition(0));
+  d1=delta(getPosition(3),getPosition(2));
+  d2=delta(getPosition(5),getPosition(4));
   Vector dd0,dd1,dd2;
   PLMD::Torsion t;
   double torsion=t.compute(d0,d1,d2,dd0,dd1,dd2);
@@ -170,7 +165,7 @@ void Torsion::calculate(){
   setAtomsDerivatives(5,-dd2);
 
   setValue           (torsion);
-  setBoxDerivatives  (-(extProduct(d0,dd0)+extProduct(d1,dd1)+extProduct(d2,dd2)));
+  setBoxDerivativesNoPbc();
 }
 
 }

@@ -21,6 +21,7 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "Bias.h"
 #include "ActionRegister.h"
+#include "core/ActionSet.h"
 #include "tools/Grid.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
@@ -31,7 +32,6 @@
 #include <string>
 #include <cstring>
 #include "tools/File.h"
-#include "time.h"
 #include <iostream>
 #include <limits>
 
@@ -324,6 +324,9 @@ void MetaD::registerKeywords(Keywords& keys){
   keys.add("optional","SIGMA_MIN","the lower bounds for the sigmas (in CV units) when using adaptive hills. Negative number means no bounds ");
   keys.addFlag("WALKERS_MPI",false,"Switch on MPI version of multiple walkers - not compatible with other WALKERS_* options");
   keys.addFlag("ACCELERATION",false,"Set to TRUE if you want to compute the metadynamics acceleration factor.");  
+  keys.use("RESTART");
+  keys.use("UPDATE_FROM");
+  keys.use("UPDATE_UNTIL");
 }
 
 MetaD::~MetaD(){
@@ -676,6 +679,12 @@ isFirstStep(true)
 // output periodicities of variables
   for(unsigned i=0;i<getNumberOfArguments();++i) hillsOfile_.setupPrintValue( getPntrToArgument(i) );
 
+  bool concurrent=false;
+
+  const ActionSet&actionSet(plumed.getActionSet());
+  for(ActionSet::const_iterator p=actionSet.begin();p!=actionSet.end();++p) if(dynamic_cast<MetaD*>(*p)){ concurrent=true; break; }
+  if(concurrent) log<<"  You are using concurrent metadynamics\n";
+
   log<<"  Bibliography "<<plumed.cite("Laio and Parrinello, PNAS 99, 12562 (2002)");
   if(welltemp_) log<<plumed.cite(
     "Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)");
@@ -687,6 +696,9 @@ isFirstStep(true)
      "Baftizadeh, Cossio, Pietrucci, and Laio, Curr. Phys. Chem. 2, 79 (2012)");
   if(acceleration) log<<plumed.cite(
      "Pratyush and Parrinello, Phys. Rev. Lett. 111, 230602 (2013)");
+  if(concurrent) log<<plumed.cite(
+     "Gil-Ley and Bussi, J. Chem. Theory Comput. 11, 1077 (2015)");
+ 
   log<<"\n";
 
 }
@@ -788,12 +800,12 @@ void MetaD::addGaussian(const Gaussian& hill)
  else{
   unsigned ncv=getNumberOfArguments();
   vector<unsigned> nneighb=getGaussianSupport(hill);
-  vector<unsigned> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
+  vector<Grid::index_t> neighbors=BiasGrid_->getNeighbors(hill.center,nneighb);
   vector<double> der(ncv);
   vector<double> xx(ncv);
   if(comm.Get_size()==1){
     for(unsigned i=0;i<neighbors.size();++i){
-     unsigned ineigh=neighbors[i];
+     Grid::index_t ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=0.0;}
      BiasGrid_->getPoint(ineigh,xx);
      double bias=evaluateGaussian(xx,hill,&der[0]);
@@ -805,14 +817,14 @@ void MetaD::addGaussian(const Gaussian& hill)
     vector<double> allder(ncv*neighbors.size(),0.0);
     vector<double> allbias(neighbors.size(),0.0);
     for(unsigned i=rank;i<neighbors.size();i+=stride){
-     unsigned ineigh=neighbors[i];
+     Grid::index_t ineigh=neighbors[i];
      BiasGrid_->getPoint(ineigh,xx);
      allbias[i]=evaluateGaussian(xx,hill,&allder[ncv*i]);
     }
     comm.Sum(allbias);
     comm.Sum(allder);
     for(unsigned i=0;i<neighbors.size();++i){
-     unsigned ineigh=neighbors[i];
+     Grid::index_t ineigh=neighbors[i];
      for(unsigned j=0;j<ncv;++j){der[j]=allder[ncv*i+j];}
      BiasGrid_->addValueAndDerivatives(ineigh,allbias[i],der);
     }

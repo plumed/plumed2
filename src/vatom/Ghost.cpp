@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -90,11 +90,6 @@ void Ghost::calculate(){
   Vector pos;
   vector<Tensor> deriv(getNumberOfAtoms());
   vector<Vector> n;
-  Vector pp[3];
-
-  pp[0]=getPosition(0);
-  pp[1]=pp[0]+delta(getPosition(0), getPosition(1));
-  pp[2]=pp[0]+delta(getPosition(0), getPosition(2));
 
 // first versor 
   Vector n01 = delta(getPosition(0), getPosition(1));
@@ -184,17 +179,7 @@ void Ghost::calculate(){
   setAtomsDerivatives(deriv);
 
 // Virial contribution
-  std::vector<Tensor> bd(3);
-  for(unsigned i=0;i<3;i++) for(unsigned j=0;j<3;j++) for(unsigned k=0;k<3;k++){
-// Notice that this expression is very similar to the one used in Colvar::setBoxDerivativesNoPbc().
-// Indeed, we have the negative of a sum over dependent atoms (l) of the external product between positions
-// and derivatives. Notice that positions here should be computed in the same periodic image
-// as pos.
-    for(unsigned l=0;l<3;l++){
-      bd[k][i][j]-=pp[l][i]*deriv[l][j][k];
-    }
-  }
-  setBoxDerivatives(bd);
+  setBoxDerivativesNoPbc();
 }
 
 }

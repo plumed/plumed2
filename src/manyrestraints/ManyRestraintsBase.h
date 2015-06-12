@@ -40,27 +40,26 @@ class ManyRestraintsBase :
 private:
 /// Pointer to underlying action with vessel
   vesselbase::ActionWithVessel* aves;
-protected:
-/// Get the value of the current cv
-  double getValue();
-/// Get the weight of the current cv
-  double getWeight();
-/// Apply the chain rule to calculate the derivatives
-  void applyChainRuleForDerivatives( const double& df );
 public:
   static void registerKeywords( Keywords& keys );
   ManyRestraintsBase(const ActionOptions&);
   bool isPeriodic(){ return false; }
   unsigned getNumberOfDerivatives();
 /// Routines that have to be defined so as not to have problems with virtual methods
-  void deactivate_task(){};
+  void deactivate_task( const unsigned & task_index ){};
 /// Don't actually clear the derivatives when this is called from plumed main.  
 /// They are calculated inside another action and clearing them would be bad  
   void clearDerivatives(){}
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
+/// This actually does the calculation
+  void transformBridgedDerivatives( const unsigned& current, MultiValue& invals, MultiValue& outvals ) const ;
+/// Calculate the potential
+  virtual double calcPotential( const double& val, double& df ) const=0;
 // Calculate does nothing
   void calculate(){};
+/// This should never be called
+  void performTask( const unsigned& , const unsigned& , MultiValue& ) const { plumed_error(); }
 /// Deactivate task now does nothing
   void apply();
   void applyBridgeForces( const std::vector<double>& bb ){ plumed_assert( bb.size()==0 ); }
@@ -69,16 +68,6 @@ public:
 inline
 unsigned ManyRestraintsBase::getNumberOfDerivatives(){
   return aves->getNumberOfDerivatives();
-}
-
-inline
-double ManyRestraintsBase::getValue(){
-  return aves->getElementValue(0);
-}
-
-inline
-double ManyRestraintsBase::getWeight(){
-  return aves->getElementValue(1);
 }
 
 }
