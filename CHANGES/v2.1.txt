@@ -202,6 +202,7 @@ For users:
   (e.g. pdb).
 - Added support for readdir_r when available, which makes opening files thread safe.
 - CFLAGS now include -fPIC by default
+- Added a warning when using \ref METAD without grids with a large number of hills.
 - Fixes in documentation.
 
 For developers:
