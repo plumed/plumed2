@@ -35,7 +35,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   SpathVessel( const vesselbase::VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   void prepare();
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const ;
 };
@@ -66,7 +66,7 @@ foundoneclose(false)
   }
 }
 
-std::string SpathVessel::function_description(){
+std::string SpathVessel::value_descriptor(){
   return "the position on the path";
 }
 
@@ -77,6 +77,7 @@ void SpathVessel::prepare(){
 bool SpathVessel::calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const {
   double pp=mymap->getPropertyValue( current, mycoordnumber ), weight=myvals.get(0);
   if( weight<getTolerance() ) return false;
+  unsigned nderivatives=getFinalValue()->getNumberOfDerivatives();
   buffer[bufstart] += weight*pp; buffer[bufstart+1+nderivatives] += weight; 
   if( getAction()->derivativesAreRequired() ){
      myvals.chainRule( 0, 0, 1, 0, pp, bufstart, buffer );

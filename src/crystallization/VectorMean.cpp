@@ -33,7 +33,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   VectorMean( const vesselbase::VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   void resize();
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
@@ -56,7 +56,7 @@ FunctionVessel(da)
 {
 }
 
-std::string VectorMean::function_description(){
+std::string VectorMean::value_descriptor(){
   return "the norm of the mean vector";
 }
 
@@ -65,10 +65,8 @@ void VectorMean::resize(){
 
   if( getAction()->derivativesAreRequired() ){
      unsigned nder=getAction()->getNumberOfDerivatives();
-     resizeBuffer( (1+nder)*(ncomp+1) );
-     setNumberOfDerivatives( nder );
+     resizeBuffer( (1+nder)*(ncomp+1) ); getFinalValue()->resizeDerivatives( nder );
   } else {
-     setNumberOfDerivatives(0); 
      resizeBuffer(ncomp+1);
   }
 }
@@ -99,10 +97,11 @@ void VectorMean::finish( const std::vector<double>& buffer ){
   double tw = 1.0 / sqrt(sum); setOutputValue( sqrt(sum) ); 
   if( !getAction()->derivativesAreRequired() ) return;
 
+  Value* fval=getFinalValue();
   for(unsigned icomp=0;icomp<ncomp;++icomp){
       double tmp = buffer[(icomp+1)*(1+nder)] / ww; 
       unsigned bstart = bufstart + (1+icomp)*(nder+1) + 1;
-      for(unsigned jder=0;jder<nder;++jder) addDerivativeToFinalValue( jder, (tw*tmp/ww)*( buffer[bstart + jder] - tmp*buffer[bufstart + 1 + jder] ) );
+      for(unsigned jder=0;jder<nder;++jder) fval->addDerivative( jder, (tw*tmp/ww)*( buffer[bstart + jder] - tmp*buffer[bufstart + 1 + jder] ) );
   }
 }
 

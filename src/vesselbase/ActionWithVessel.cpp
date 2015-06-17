@@ -120,7 +120,7 @@ void ActionWithVessel::addVessel( Vessel* vv ){
 
   StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv );
   if( mydata && mm ) error("cannot have more than one StoreDataVessel in one action");
-  else mydata=mm;
+  else if( mm ) mydata=mm;
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -19,44 +19,44 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "FunctionVessel.h"
-#include "VesselRegister.h"
+#ifndef __PLUMED_vesselbase_ValueVessel_h
+#define __PLUMED_vesselbase_ValueVessel_h
+
+#include <string>
+#include <cstring>
+#include <vector>
+
+#include "Vessel.h"
+#include "core/Value.h"
 
 namespace PLMD {
 namespace vesselbase{
 
-class Sum : public FunctionVessel {
+class ValueVessel : public Vessel {
+private: 
+  Value* final_value;
+protected:
+  Value* getFinalValue() const ;
+/// Set the final value
+  void setOutputValue( const double& val );
 public:
   static void registerKeywords( Keywords& keys );
-  static void reserveKeyword( Keywords& keys );
-  Sum( const VesselOptions& da );
-  std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
+  ValueVessel( const VesselOptions& da );
+  std::string description();
+  virtual std::string value_descriptor()=0;
+  bool applyForce( std::vector<double>& forces );
 };
 
-PLUMED_REGISTER_VESSEL(Sum,"SUM")
-
-void Sum::registerKeywords( Keywords& keys ){
-  FunctionVessel::registerKeywords( keys );
+inline
+Value* ValueVessel::getFinalValue() const {
+  return final_value;
 }
 
-void Sum::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("SUM",false,"calculate the sum of all the quantities.",true);
-  keys.addOutputComponent("sum","SUM","the sum of values");
-}
-
-Sum::Sum( const VesselOptions& da ) :
-FunctionVessel(da)
-{
-}
-
-std::string Sum::value_descriptor(){
-  return "the sum of all the values"; 
-}
-
-double Sum::calcTransform( const double& val, double& dv ) const {
-  dv=1.0; return val;
+inline
+void ValueVessel::setOutputValue( const double& val ){
+  final_value->set( val );
 }
 
 }
 }
+#endif

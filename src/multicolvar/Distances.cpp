@@ -91,7 +91,7 @@ PLUMED_REGISTER_ACTION(Distances,"DISTANCES")
 
 void Distances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS"); keys.use("ALT_MIN"); 
+  keys.use("ATOMS"); keys.use("ALT_MIN"); keys.use("LOWEST"); keys.use("HIGHEST"); 
   keys.use("MEAN"); keys.use("MIN"); keys.use("MAX"); keys.use("LESS_THAN"); // keys.use("DHENERGY");
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");

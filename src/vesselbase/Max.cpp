@@ -33,7 +33,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Max( const VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
   double finalTransform( const double& val, double& dv );
 };
@@ -64,7 +64,7 @@ FunctionVessel(da)
   if( diffweight ) error("can't calculate max if weight is differentiable");
 }
 
-std::string Max::function_description(){
+std::string Max::value_descriptor(){
   std::string str_beta; Tools::convert( beta, str_beta );
   return "the maximum value. Beta is equal to " + str_beta;
 }

@@ -33,7 +33,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   ZpathVessel( const vesselbase::VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
   double finalTransform( const double& val, double& dv );
 };
@@ -57,7 +57,7 @@ FunctionVessel(da)
   invlambda = 1.0 / mymap->getLambda(); usetol=true;
 }
 
-std::string ZpathVessel::function_description(){
+std::string ZpathVessel::value_descriptor(){
   return "the distance from the low-dimensional manifold";
 }
 

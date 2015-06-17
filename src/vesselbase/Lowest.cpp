@@ -19,43 +19,43 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "FunctionVessel.h"
+#include "OrderingVessel.h"
 #include "VesselRegister.h"
 
 namespace PLMD {
 namespace vesselbase{
 
-class Sum : public FunctionVessel {
+class Lowest : public OrderingVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Sum( const VesselOptions& da );
+  Lowest( const VesselOptions& da );
   std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
+  bool compare( const double& , const double& );
 };
 
-PLUMED_REGISTER_VESSEL(Sum,"SUM")
+PLUMED_REGISTER_VESSEL(Lowest,"LOWEST")
 
-void Sum::registerKeywords( Keywords& keys ){
-  FunctionVessel::registerKeywords( keys );
+void Lowest::registerKeywords( Keywords& keys ){
+  OrderingVessel::registerKeywords( keys );
 }
 
-void Sum::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("SUM",false,"calculate the sum of all the quantities.",true);
-  keys.addOutputComponent("sum","SUM","the sum of values");
+void Lowest::reserveKeyword( Keywords& keys ){
+  keys.reserveFlag("LOWEST",false,"calculate the lowest of these variables.",true);
+  keys.addOutputComponent("lowest","LOWEST","the lowest of the quantitities calculated by this action");
 }
 
-Sum::Sum( const VesselOptions& da ) :
-FunctionVessel(da)
+Lowest::Lowest( const VesselOptions& da ) :
+OrderingVessel(da)
 {
 }
 
-std::string Sum::value_descriptor(){
-  return "the sum of all the values"; 
+std::string Lowest::value_descriptor(){
+  return "the lowest of the individual colvar values";
 }
 
-double Sum::calcTransform( const double& val, double& dv ) const {
-  dv=1.0; return val;
+bool Lowest::compare( const double& val1, const double& val2 ){
+  return val1<val2;
 }
 
 }

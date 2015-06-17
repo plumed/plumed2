@@ -19,43 +19,43 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "FunctionVessel.h"
+#include "OrderingVessel.h"
 #include "VesselRegister.h"
 
 namespace PLMD {
 namespace vesselbase{
 
-class Sum : public FunctionVessel {
+class Highest : public OrderingVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Sum( const VesselOptions& da );
+  Highest( const VesselOptions& da );
   std::string value_descriptor();
-  double calcTransform( const double& val, double& dv ) const ;
+  bool compare( const double& , const double& );
 };
 
-PLUMED_REGISTER_VESSEL(Sum,"SUM")
+PLUMED_REGISTER_VESSEL(Highest,"HIGHEST")
 
-void Sum::registerKeywords( Keywords& keys ){
-  FunctionVessel::registerKeywords( keys );
+void Highest::registerKeywords( Keywords& keys ){
+  OrderingVessel::registerKeywords( keys );
 }
 
-void Sum::reserveKeyword( Keywords& keys ){
-  keys.reserveFlag("SUM",false,"calculate the sum of all the quantities.",true);
-  keys.addOutputComponent("sum","SUM","the sum of values");
+void Highest::reserveKeyword( Keywords& keys ){
+  keys.reserveFlag("HIGHEST",false,"calculate the highest of these variables.",true);
+  keys.addOutputComponent("highest","HIGHEST","the lowest of the quantitities calculated by this action");
 }
 
-Sum::Sum( const VesselOptions& da ) :
-FunctionVessel(da)
+Highest::Highest( const VesselOptions& da ) :
+OrderingVessel(da)
 {
 }
 
-std::string Sum::value_descriptor(){
-  return "the sum of all the values"; 
+std::string Highest::value_descriptor(){
+  return "the highest of the individual colvar values";
 }
 
-double Sum::calcTransform( const double& val, double& dv ) const {
-  dv=1.0; return val;
+bool Highest::compare( const double& val1, const double& val2 ){
+  return val1>val2;
 }
 
 }

@@ -68,8 +68,6 @@ protected:
 /// Finish the setup of the storage object by setting how much
 /// data has to be stored
   void completeSetup( const unsigned& , const unsigned& );
-/// Get the number of values that have been stored
-  unsigned getNumberOfStoredValues() const ;
 /// Return value of nspace
   unsigned getNumberOfDerivativeSpacesPerComponent() const ;
 /// Retrieve the values from the underlying ActionWithVessel
@@ -83,6 +81,8 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   StoreDataVessel( const VesselOptions& );
+/// Get the number of values that have been stored
+  unsigned getNumberOfStoredValues() const ;
 /// Set a hard cutoff on the weight of an element
   void setHardCutoffOnWeight( const double& mytol );
 /// Is the hard weight cutoff on

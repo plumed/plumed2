@@ -36,7 +36,8 @@ void Steinhardt::registerKeywords( Keywords& keys ){
                                "When this keyword is present you no longer need the NN, MM, D_0 and R_0 keywords.");
   keys.use("SPECIES"); keys.use("SPECIESA"); keys.use("SPECIESB");
   keys.use("MEAN"); keys.use("LESS_THAN"); keys.use("MORE_THAN"); keys.use("VMEAN");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("MIN");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("MIN"); keys.use("ALT_MIN");
+  keys.use("LOWEST"); keys.use("HIGHEST");
 }
 
 Steinhardt::Steinhardt( const ActionOptions& ao ):

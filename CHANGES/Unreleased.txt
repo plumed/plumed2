@@ -57,6 +57,7 @@ Changes from version 2.1 which are relevant for users:
   part of the cell or the average vector amonst those that have a magnitude greater than some tolerance
   - New way of calculating the minimum value in multicolvars (ALT_MIN). This is less succetible to overflow for certain 
     values of \f$\beta\f$.  
+  - New keywords for calculating the LOWEST and HIGHEST colvar calculated by a multicolvar
 - Other changes:
   - File reader now supports dos newlines as well as files with no endline at the end.
 

@@ -33,7 +33,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Min( const VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
   double finalTransform( const double& val, double& dv );
 };
@@ -63,7 +63,7 @@ FunctionVessel(da)
   if( diffweight ) error("can't calculate min if weight is differentiable");
 }
 
-std::string Min::function_description(){
+std::string Min::value_descriptor(){
   std::string str_beta; Tools::convert( beta, str_beta );
   return "the minimum value. Beta is equal to " + str_beta;
 }

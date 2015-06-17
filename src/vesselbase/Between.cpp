@@ -62,7 +62,7 @@ FunctionVessel(da)
   if( errormsg.size()!=0 ) error( errormsg );
 }
 
-std::string Between::function_description(){
+std::string Between::value_descriptor(){
   if(norm) return "the fraction of values " + hist.description();
   return "the number of values " + hist.description();
 }

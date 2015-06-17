@@ -31,7 +31,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Mean( const vesselbase::VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
 };
 
@@ -54,7 +54,7 @@ FunctionVessel(da)
   norm=true;   // Makes sure we calculate the average
 }
 
-std::string Mean::function_description(){
+std::string Mean::value_descriptor(){
   return "the mean value";
 }
 
