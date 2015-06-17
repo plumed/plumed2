@@ -265,6 +265,7 @@ private:
   bool doInt_;
   double work_;
   bool isFirstStep;
+  long int last_step_warn_grid;
   
   void   readGaussians(IFile*);
   bool   readChunkOfGaussians(IFile *ifile, unsigned n);
@@ -359,7 +360,8 @@ acceleration(false), acc(0.0),
 // Interval initialization
 uppI_(-1), lowI_(-1), doInt_(false),
 work_(0.0),
-isFirstStep(true)
+isFirstStep(true),
+last_step_warn_grid(0)
 {
   // parse the flexible hills
   string adaptiveoption;
@@ -888,6 +890,13 @@ double MetaD::getBiasAndDerivatives(const vector<double>& cv, double* der)
 {
  double bias=0.0;
  if(!grid_){
+  if(hills_.size()>10000 && (getStep()-last_step_warn_grid)>10000){
+    std::string msg;
+    Tools::convert(hills_.size(),msg);
+    msg="You have accumulated "+msg+" hills, you should enable GRIDs to avoid serious performance hits";
+    warning(msg);
+    last_step_warn_grid=getStep();
+  }
   unsigned stride=comm.Get_size();
   unsigned rank=comm.Get_rank();
   for(unsigned i=rank;i<hills_.size();i+=stride){
