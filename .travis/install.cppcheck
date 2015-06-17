@@ -17,7 +17,7 @@ fi
 
 
 git checkout $tag
-sudo make -j 4 install CFGDIR=/usr/share/cppcheck/
+sudo make -j 4 install CFGDIR=/usr/share/cppcheck/ CXXFLAGS="-O2 -march=native -mtune=native -Wunreachable-code"
 cd ../
 
 
