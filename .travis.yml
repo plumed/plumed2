@@ -51,7 +51,7 @@ install:
   - test "$CPPCHECK" == yes && ./.travis/install.cppcheck 1.69 || true
 # installation of these packages takes a lot of time
 # we do it only when needed
-  - test "$PLUMED_CXX" == "mpic++" && sudo apt-get install -y libopenmpi1.5-dev openmpi1.5-bin || true
+  - test "$PLUMED_CXX" == "mpic++" && sudo apt-get install -y libopenmpi-dev openmpi-bin || true
   - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
 # doxygen from its repository (apt-get gets an old version)
 #  - test "$MAKEDOC" == yes && ./.travis/install.doxygen                   || true
