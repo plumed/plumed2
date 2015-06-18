@@ -18,14 +18,13 @@ env:
 # test using external blas with internal lapack
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
 # cppcheck
-# in principle we should make only "cppcheck" here
-  - PLUMED_CC=gcc   PLUMED_CXX=g++   CPPCHECK=yes
+  - CPPCHECK=yes
 # with debug flags there are issues with openmp+mpi on travis - I disable openmp here
 # I leave this test here to monitor if things change in the future, allowing it to fail
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 matrix:
   allow_failures:
-    - env: PLUMED_CC=gcc   PLUMED_CXX=g++   CPPCHECK=yes
+    - env: CPPCHECK=yes
     - env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
@@ -70,17 +69,27 @@ install:
 script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
+
+# BUILD:
+# this is done only if PLUMED_CXX is defined
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS
-  - make -j 2
+  - if test "$PLUMED_CXX" ; then ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS ; fi
+  - if test "$PLUMED_CXX" ; then make -j 2 ; fi
 # we install plumed so that it is in the path
-  - make install prefix="$HOME/opt"
-# run static analyzer
+  - if test "$PLUMED_CXX" ; then make install prefix="$HOME/opt" ; fi
+
+# TEST:
   - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi
-  - make -C regtest $OPT
+  - if test "$PLUMED_CXX" ; then make -C regtest $OPT ; fi
   - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
   - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
-  - make -C regtest checkfail
+  - if test "$MAKEDOC" == yes ; then make -C regtest checkfail ; fi
+
+# CPPCHECK:
+# this is required so as to have all the include files inplace:
+# notice that this is done automatically in build
+  - if test "$CPPCHECK" == yes ; then make -C src/lib/ dirslinks ; fi
+# then we do cppcheck
   - if test "$CPPCHECK" == yes ; then make cppcheck ; fi
 after_success:
   - if test "$MAKEDOC" == yes ; then ./.travis/pushdoc ; fi 

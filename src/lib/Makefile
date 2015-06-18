@@ -81,10 +81,6 @@ dirs:
 	@echo "*** Compiling all directories ***"
 	$(MAKE) $(DIRS)
 
-dirslinks:
-	@echo "*** Updating links to used modules in all directories ***"
-	$(MAKE) $(DIRSLINKS)
-
 
 install:
 	cd ../config ; $(MAKE)
@@ -158,9 +154,6 @@ uninstall:
 
 $(DIRS):
 	$(MAKE) -C $@ obj
-
-$(DIRSLINKS): %.links:
-	$(MAKE) -C $* links
 
 .PHONY: lib lib-static lib-shared
 
@@ -280,14 +273,21 @@ error:
 	@echo First run ./configure in the root directory
 endif
 
-# this target is available anyway
+# these targets are available anyway
 
-.PHONY: clean
+.PHONY: clean dirslinks
 clean:
 	rm -f $(CLEANLIST)
 	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
 	rm -f Plumed.inc* plumed-* Plumed.cmake*
 	rm -f .lib*
+
+dirslinks:
+	@echo "*** Updating links to used modules in all directories ***"
+	$(MAKE) $(DIRSLINKS)
+$(DIRSLINKS): %.links:
+	$(MAKE) -C $* links
+
 
 # generic makefile rules
 include ../maketools/make.rules
