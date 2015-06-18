@@ -54,6 +54,13 @@ PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
 PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
 PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
 
+ifdef PLUMED_LIBDIR_NODEST
+  PLUMED_ROOT :="$(PLUMED_LIBDIR_NODEST)../../"
+else
+  PLUMED_ROOT :="$(realpath ../../)"
+endif
+
+
 .PHONY: all links $(DIRS) $(DIRSLINKS) all-static Plumed.cmake Plumed.inc
 ifdef SOEXT
 all:
@@ -168,7 +175,7 @@ lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED
 $(PLUMED_SCRIPTS_EXE):
 	@echo "#! /bin/bash" > $@
 	@echo "echo 'NOTE: shell only version, useful when plumed is cross compiled' >&2" >> $@
-	@echo "export PLUMED_ROOT=\"$(PLUMED_LIBDIR_NODEST)../../\"" >> $@
+	@echo "export PLUMED_ROOT=\"$(PLUMED_ROOT)\"" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 	chmod a+x $@
 
