@@ -30,6 +30,12 @@ matrix:
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
+# setup environment to allow install on the home directory
+  - export PATH="$PATH:$HOME/opt/bin"
+  - export CPATH="$CPATH:$HOME/opt/include"
+  - export INCLUDE="$INCLUDE:$HOME/opt/include"
+  - export LIBRARY_PATH="$LIBRARY_PATH:$HOME/opt/lib"
+  - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$HOME/opt/lib"
 # build the manual, only if log contains string [makedoc]
   - export PLUMED_NUM_THREADS=2
   - ./.travis/check.log makedoc  || MAKEDOC=no
@@ -68,7 +74,7 @@ script:
   - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS
   - make -j 2
 # we install plumed so that it is in the path
-  - sudo make install
+  - make install prefix="$HOME/opt"
 # run static analyzer
   - test "$VALGRIND" == yes && OPT=valgrind || OPT=""
   - make -C regtest $OPT
