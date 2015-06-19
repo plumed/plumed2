@@ -20,6 +20,10 @@ confirm () {
 VALIDATED=
 if [ "$1" = --validated ] ; then
   VALIDATED=yes
+elif test -n "$1" ; then
+  echo ERROR
+  echo "cannot understand $1 option"
+  exit 1
 fi
 
 
@@ -89,26 +93,30 @@ if ! test "$VALIDATED" ; then
   echo "  http://plumed.github.io/doc-v$shortversion"
   echo "In case of success, relaunch this script as \"./release.sh --validated\""
 else
-  echo "Updating VERSION file to $version"
   {
     grep  \# VERSION 
     echo $version
   } > VERSION.tmp
   mv VERSION.tmp VERSION
-  git add VERSION
+  echo "Here's the new VERSION file:"
+  echo "***"
+  cat VERSION
+  echo "***"
   msg="Release v$version
 
 [makedoc]"
-  echo "Now I will make the release commit, add a tag named v$version"
+  echo "Now I will add it, prepare a release commit, add a tag named v$version"
   echo "push it to origin and create a tgz file"
   echo "I will use the following commands:"
   echo "***"
+  echo "git add VERSION"
   echo "git commit --allow-empty -m \"$msg\""
   echo "git tag v$version"
   echo "git push origin v$version"
   echo "git archive -o plumed-$version.tgz --prefix plumed-$version/ v$version"
   echo "***"
   confirm || exit
+  git add VERSION
   git commit --allow-empty -m "$msg"
   git tag v$version
   git push origin v$version
