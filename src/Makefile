@@ -20,13 +20,14 @@ SUBDIRSCLEAN :=$(addsuffix .clean,$(SUBDIRS))
 
 # this is cleaning all subdirectories
 clean: $(SUBDIRSCLEAN)
+	rm -f cppcheck.log cppcheck.fatal
 
 $(SUBDIRSCLEAN): %.clean:
 	$(MAKE) -C $* clean
 
 .PHONY: cppcheck
 cppcheck:
-	cppcheck --std=c++03 --std=posix -j 4 --platform=unix64 -q --enable=all --force */*.{h,cpp}
+	maketools/cppcheck
 
 .PHONY: mod-light mod-heavy mod-reset
 mod-light:

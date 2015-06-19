@@ -356,7 +356,7 @@ void ActionWithVessel::mergeDerivatives( const unsigned& ider, const double& df 
 }
 
 bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply ){
-#ifndef DNDEBUG
+#ifndef NDEBUG
   if( forcesToApply.size()>0 ) plumed_dbg_assert( forcesToApply.size()==getNumberOfDerivatives() );
 #endif
   if(tmpforces.size()!=forcesToApply.size() ) tmpforces.resize( forcesToApply.size() );

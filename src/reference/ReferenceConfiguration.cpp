@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -48,6 +48,8 @@ name(ro.tt),
 arg_ders(0),
 atom_ders(0)
 {
+  weight=0.0;
+  virialWasSet=false;
 }
 
 ReferenceConfiguration::~ReferenceConfiguration()

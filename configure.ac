@@ -51,6 +51,24 @@ AC_DEFUN([PLUMED_CHECK_CXXFLAG], [
   )
 ])
 
+# PLUMED_CHECK_CFLAG(flag)
+# use it to check if a flag is available on this compiler
+AC_DEFUN([PLUMED_CHECK_CFLAG], [
+  AC_LANG_PUSH(C)
+  save_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS $1"
+  AC_MSG_CHECKING([whether $CC accepts $1])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+    [
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([])],
+        [AC_MSG_RESULT([yes])],
+        [AC_MSG_RESULT([not linking]); CCFLAGS="$save_CCFLAGS"])
+    ],
+    [AC_MSG_RESULT([no]); CCFLAGS="$save_CCFLAGS"]
+  )
+  AC_LANG_POP
+])
+
 # PLUMED_CHECK_LDFLAGS(flag)
 # use it to check if a flag is available on this compiler
 AC_DEFUN([PLUMED_CHECK_LDFLAGS], [
@@ -97,11 +115,16 @@ PLUMED_CONFIG_ENABLE([matheval],[matheval],[search for matheval],[yes])
 PLUMED_CONFIG_ENABLE([zlib],[zlib],[search for zlib],[yes])
 PLUMED_CONFIG_ENABLE([clock_gettime],[clock-gettime],[search for gettime],[yes])
 PLUMED_CONFIG_ENABLE([gettimeofday],[gettimeofday],[search for gettimeofday],[yes])
+PLUMED_CONFIG_ENABLE([readdir_r],[readdir-r],[search for readdir_r (threadsafe)],[yes])
 PLUMED_CONFIG_ENABLE([cregex],[cregex],[search for C regular expression],[yes])
 PLUMED_CONFIG_ENABLE([dlopen],[dlopen],[search for dlopen],[yes])
 PLUMED_CONFIG_ENABLE([execinfo],[execinfo],[search for execinfo],[yes])
 PLUMED_CONFIG_ENABLE([almost],[almost],[search for almost],[no])
 PLUMED_CONFIG_ENABLE([gsl],[gsl],[search for gsl],[no])
+
+AC_ARG_VAR(SOEXT,[extension of dynamic libraries (so/dylib)])
+AC_ARG_VAR(STATIC_LIBS,[variables that should be linked statically directly to MD code - configure will add here -ldl if necessary ])
+AC_ARG_VAR(LDSO,[command for linking shared library - configure will use CXX plus the proper flags ])
 
 
 # by default use -O flag
@@ -141,19 +164,22 @@ AC_LANG(C++)
 # log the initial flags
 LD="$CXX"
 LDSO="$CXX"
-AC_MSG_NOTICE([Initial CXX:      $CXX])
-AC_MSG_NOTICE([Initial CXXFLAGS: $CXXFLAGS])
-AC_MSG_NOTICE([Initial CPPFLAGS: $CPPFLAGS])
-AC_MSG_NOTICE([Initial LDFLAGS:  $LDFLAGS])
-AC_MSG_NOTICE([Initial LIBS:     $LDFLAGS])
-AC_MSG_NOTICE([Initial LD:       $LD])
-AC_MSG_NOTICE([Initial LDSO:     $LDSO])
-AC_MSG_NOTICE([Initial SOEXT:    $SOEXT])
+AC_MSG_NOTICE([Initial CXX:         $CXX])
+AC_MSG_NOTICE([Initial CXXFLAGS:    $CXXFLAGS])
+AC_MSG_NOTICE([Initial CPPFLAGS:    $CPPFLAGS])
+AC_MSG_NOTICE([Initial CFLAGS:      $CFLAGS])
+AC_MSG_NOTICE([Initial LDFLAGS:     $LDFLAGS])
+AC_MSG_NOTICE([Initial LIBS:        $LDFLAGS])
+AC_MSG_NOTICE([Initial STATIC_LIBS: $LDFLAGS])
+AC_MSG_NOTICE([Initial LD:          $LD])
+AC_MSG_NOTICE([Initial LDSO:        $LDSO])
+AC_MSG_NOTICE([Initial SOEXT:       $SOEXT])
 
 # check C++ flags
 if test $shared == true
 then
   PLUMED_CHECK_CXXFLAG([-fPIC])
+  PLUMED_CHECK_CFLAG([-fPIC])
 fi
 
 if test $basic_warnings == true
@@ -288,6 +314,9 @@ if test $clock_gettime == true ; then
 fi
 if test $gettimeofday == true ; then
   PLUMED_CHECK_PACKAGE([sys/time.h], [gettimeofday], [__PLUMED_HAS_GETTIMEOFDAY])
+fi
+if test $readdir_r == true ; then
+  PLUMED_CHECK_PACKAGE([dirent.h],[readdir_r],[__PLUMED_READDIR_R])
 fi
 if test $cregex == true ; then
   PLUMED_CHECK_PACKAGE([regex.h],[regcomp],[__PLUMED_HAS_CREGEX])
@@ -471,7 +500,7 @@ EOF
     $CXX $CXXFLAGS -c conftest.cpp 
 # start search:
     found=
-    for testlib in "" -lstdc++ -lc++ ; do
+    for testlib in "" -lstdc++ -lc++ -lmpi_cxx ; do
       comment=
       test -n "$testlib" && comment=" with library $testlib"
       AC_MSG_CHECKING([whether $name can link a C++ object$comment])
@@ -488,7 +517,7 @@ EOF
     done
     if test -z "$found" ; then
       AC_MSG_WARN([You might have problems linking $name programs.])
-      AC_MSG_WARN([Please add c++ library to LIBS - e.g. LIBS=-lstdc++])
+      AC_MSG_WARN([Please add c++ library to LIBS])
     fi
   else
     AC_MSG_NOTICE([$compiler compiler not configured])

@@ -28,8 +28,6 @@ all: $(OBJ_WRAPPER) $(OBJ_DYNAMIC_WRAPPER)
 
 obj: all
 
-links:
-	@echo Nothing to do in $(CURDIR)
 
 # there is a single C file here, and this is its dependency:
 Plumed.o: Plumed.c Plumed.h
@@ -48,10 +46,12 @@ endif
 
 # this target is available anyway
 
-.PHONY: clean
+.PHONY: clean links
 clean:
 	rm -fr deps 
 	rm -fr $(CLEANLIST)
+links:
+	@echo Nothing to do in $(CURDIR)
 
 # generic makefile rules
 include ../maketools/make.rules
