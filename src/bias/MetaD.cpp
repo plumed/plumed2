@@ -264,6 +264,8 @@ class MetaD : public Bias {
   double tt_biasthreshold_;
   vector<vector<double> > transitionwells_;
   double tt_alpha_;
+  std::string edm_readfilename_;
+  Grid *EDMTarget_;
   bool benthic_toleration_;
   double benthic_tol_number_;
   bool benthic_erosion_;
@@ -385,6 +387,7 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "TTBIASTHRESHOLD", "use transition tempered metadynamics with this bias threshold.  Please note you must also specify TTBIASFACTOR");
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well in transition-tempered metadynamics. At least one must be provided.");
   keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this decay shape parameter value between 0.5 and 1.0 (default 0.5).  Please note you must also specify TTBIASFACTOR");
+  keys.add("optional", "EDM_RFILE", "use experiment-directed metadynamics with this file defining the desired target free energy");
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition states");
   keys.add("optional", "BENTHIC_FILTER_STRIDE", "use benthic metadynamics accumulating filter samples on this timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
   keys.add("optional", "BENTHIC_EROSION", "use benthic metadynamics with erosion on this boosted timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
@@ -443,7 +446,9 @@ MetaD::~MetaD() {
   if (benthic_toleration_) {
     delete BenthicHistogram_;
   }
-
+  if (edm_readfilename_.size() > 0) {
+    delete EDMTarget_;
+  }
   if (use_domains_) {
     if (scale_new_hills_) {
       for (unsigned i = 0; i < n_domains_; i++) {
@@ -652,6 +657,8 @@ MetaD::MetaD(const ActionOptions &ao):
       transitionwells_.push_back(tempcoords);
     }
   }
+
+  parse("EDM_RFILE", edm_readfilename_);
 
   // Check for a benthic metadynamics toleration threshold.
   // Wait to set the energy threshold until the hill height is parsed.
@@ -933,6 +940,10 @@ MetaD::MetaD(const ActionOptions &ao):
       }
     }
   }
+  // Experiment-directed metadynamics
+  if (edm_readfilename_.length() > 0) {
+    log.printf("  Reading a target distribution from grid in file %s \n", edm_readfilename_.c_str());
+  }
   // Benthic metadynamics options
   if (benthic_toleration_) {
     // Benthic erosion relies on using a grid and an acceleration factor.
@@ -1200,6 +1211,24 @@ MetaD::MetaD(const ActionOptions &ao):
       delete ExtGrid_;
       ExtGrid_ = NULL;
       hasextgrid_ = false;
+    }
+  }
+
+  // Initialize and read a target experimental free energy (log distribution) if requested.
+  if (edm_readfilename_.length() > 0) {
+    IFile edm_file;
+    edm_file.open(edm_readfilename_);
+    std::string funcl = getLabel() + ".target";
+    EDMTarget_ = Grid::create(funcl, getArguments(), edm_file, false, false, false);
+    edm_file.close();
+    // Check for consistency between the target and the MetaD input specs.
+    if (EDMTarget_->getDimension() != getNumberOfArguments()) {
+      error("mismatch between dimensionality of input grid and number of arguments");
+    }
+    for (unsigned i = 0; i < getNumberOfArguments(); ++i) {
+      if (getPntrToArgument(i)->isPeriodic() != EDMTarget_->getIsPeriodic()[i]) {
+        error("periodicity mismatch between arguments and input bias");
+      }
     }
   }
 
@@ -1846,6 +1875,9 @@ double MetaD::getHeight(const vector<double> &cv) {
     } else {
       height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha_ / (1 - tt_alpha_));
     }
+  }
+  if (edm_readfilename_.size() > 0) {
+    height = min(height0_, height * exp(EDMTarget_->getValue(cv) / kbt_));
   }
   if (benthic_toleration_) {
     if (BenthicHistogram_->getValue(BiasGrid_->getIndex(cv)) < benthic_tol_number_) {
