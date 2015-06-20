@@ -659,6 +659,11 @@ MetaD::MetaD(const ActionOptions &ao):
   }
 
   parse("EDM_RFILE", edm_readfilename_);
+  if (edm_readfilename_.size() > 0) {
+    if (kbt_ == 0.0) {
+      error("Unless the MD engine passes the temperature to plumed, with experiment-directed metad you must specify it using TEMP");
+    }
+  }
 
   // Check for a benthic metadynamics toleration threshold.
   // Wait to set the energy threshold until the hill height is parsed.
