@@ -126,8 +126,9 @@ PLUMED_REGISTER_ACTION(XDistances,"ZDISTANCES")
 
 void XDistances::registerKeywords( Keywords& keys ){
   MultiColvar::registerKeywords( keys );
-  keys.use("ATOMS");  // keys.use("MAX");
-  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN"); 
+  keys.use("ATOMS");  keys.use("MAX"); keys.use("ALT_MIN"); 
+  keys.use("MEAN"); keys.use("MIN"); keys.use("LESS_THAN");
+  keys.use("LOWEST"); keys.use("HIGHEST"); 
   keys.use("MORE_THAN"); keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
   keys.add("atoms-1","GROUP","Calculate the distance between each distinct pair of atoms in the group");
   keys.add("atoms-2","GROUPA","Calculate the distances between all the atoms in GROUPA and all "

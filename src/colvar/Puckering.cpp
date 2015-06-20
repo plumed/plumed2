@@ -65,6 +65,7 @@ PLUMED_REGISTER_ACTION(Puckering,"PUCKERING")
 
 void Puckering::registerKeywords(Keywords& keys){
    Colvar::registerKeywords( keys );
+   keys.remove("NOPBC");
    keys.add("atoms","ATOMS","the five atoms of the sugar ring in the order C4',O4',C1',C2',C3'");
    componentsAreNotOptional(keys);
    keys.addOutputComponent("phs","default","Pseudorotaion phase");

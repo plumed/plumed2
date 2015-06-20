@@ -56,13 +56,13 @@ FunctionVessel(da)
 
   parseFlag("NORM",norm); std::string errormsg; 
 
-  hist.set( getAllInput(),"",errormsg );
+  hist.set( getAllInput(),errormsg );
   if( !isPeriodic ) hist.isNotPeriodic();
   else hist.isPeriodic( min, max ); 
   if( errormsg.size()!=0 ) error( errormsg );
 }
 
-std::string Between::function_description(){
+std::string Between::value_descriptor(){
   if(norm) return "the fraction of values " + hist.description();
   return "the number of values " + hist.description();
 }

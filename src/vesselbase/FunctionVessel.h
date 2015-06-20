@@ -25,7 +25,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
-#include "Vessel.h"
+#include "ValueVessel.h"
 #include "core/Value.h"
 
 namespace PLMD {
@@ -38,36 +38,19 @@ functions of the form \f$\prod_k H_k[ \sum_j \prod_i g_i(x) ]\f$.  They should t
 and return one single value.   
 */
 
-class FunctionVessel : public Vessel {
-private:
-/// This is the pointer to the value we are creating
-  Value* final_value;
+class FunctionVessel : public ValueVessel {
 protected:
-/// The number of derivatives
-  unsigned nderivatives;
 /// Are the derivatives differentiable
   bool diffweight;
 /// Are we normalising by the weight
   bool norm;
 /// Are we using the tolerance
   bool usetol;
-/// Set the final value
-  void setOutputValue( const double& val );
-/// Resize the vector containing the derivatives
-  void setNumberOfDerivatives( const unsigned& nder );
-/// Return a pointer to the final value
-  void addDerivativeToFinalValue( const unsigned& j, const double& der  );
 public:
   static void registerKeywords( Keywords& keys );
   FunctionVessel( const VesselOptions& );
 /// This does the resizing of the buffer
   virtual void resize();
-/// This applies all the forces
-  bool applyForce( std::vector<double>& forces );
-/// The description for the log
-  std::string description();
-/// The rest of the description of what we are calculating
-  virtual std::string function_description()=0;
 /// Do the calcualtion
   virtual bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
 /// Do any transformations of the value that are required
@@ -77,17 +60,6 @@ public:
 /// Finish with any transforms required
   virtual double finalTransform( const double& val, double& dv );
 };
-
-inline
-void FunctionVessel::setOutputValue( const double& val ){
-  final_value->set( val );
-}
-
-inline
-void FunctionVessel::addDerivativeToFinalValue( const unsigned& j, const double& der ){
-  plumed_dbg_assert( j<nderivatives );
-  final_value->addDerivative( j, der );
-}
 
 }
 }

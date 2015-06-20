@@ -339,7 +339,7 @@ TensorGeneric<n,n> TensorGeneric<n,m>::identity(){
 template<unsigned n,unsigned m>
 TensorGeneric<m,n> TensorGeneric<n,m>::transpose()const{
   TensorGeneric<m,n> t;
-  for(unsigned i=0;i<n;i++)for(unsigned j=0;j<m;j++) t(i,j)=(*this)(j,i);
+  for(unsigned i=0;i<m;i++)for(unsigned j=0;j<n;j++) t(i,j)=(*this)(j,i);
   return t;
 }
 

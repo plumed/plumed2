@@ -30,7 +30,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   Sum( const VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
 };
 
@@ -50,7 +50,7 @@ FunctionVessel(da)
 {
 }
 
-std::string Sum::function_description(){
+std::string Sum::value_descriptor(){
   return "the sum of all the values"; 
 }
 

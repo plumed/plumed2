@@ -49,8 +49,10 @@ Dump selected atoms on a file.
 
 This command can be used to output the positions of a particular set of atoms.
 The atoms required are ouput in a xyz or gro formatted file.
-If PLUMED has been compiled with xdrfile support, then also xtc and trr files can be read.
+If PLUMED has been compiled with xdrfile support, then also xtc and trr files can be written.
 To this aim one should install xdrfile library (http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library).
+If the xdrfile library is installed properly the PLUMED configure script should be able to
+detect it and enable it.
 The type of file is automatically detected from the file extension, but can be also
 enforced with TYPE.
 Importantly, if your

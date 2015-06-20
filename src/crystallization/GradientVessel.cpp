@@ -38,7 +38,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   GradientVessel( const vesselbase::VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   void resize();
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
@@ -84,7 +84,7 @@ FunctionVessel(da)
    }
 }
 
-std::string GradientVessel::function_description(){
+std::string GradientVessel::value_descriptor(){
   return "the gradient";
 }
 
@@ -92,9 +92,8 @@ void GradientVessel::resize(){
   if( getAction()->derivativesAreRequired() ){
      unsigned nder=getAction()->getNumberOfDerivatives();
      resizeBuffer( (1+nder)*(ncomponents+1)*nweights );
-     setNumberOfDerivatives( nder );
+     getFinalValue()->resizeDerivatives( nder );
   } else {
-     setNumberOfDerivatives(0); 
      resizeBuffer( (ncomponents+1)*nweights );
   }
 }
@@ -156,20 +155,21 @@ void GradientVessel::finish( const std::vector<double>& buffer ){
   double tmp, diff2=0.0; 
 
   if( getAction()->derivativesAreRequired() ){
+     Value* fval=getFinalValue();
      for(unsigned j=0;j<starts.size()-1;++j){
         for(unsigned bin=starts[j];bin<starts[j+1];++bin){
            for(unsigned jc=0;jc<ncomponents;++jc){
                if( bin==starts[j] ){
                   tmp=val_interm[(starts[j+1]-1)*ncomponents + jc] - val_interm[bin*ncomponents + jc];
                   for(unsigned jder=0;jder<nder;++jder){
-                      addDerivativeToFinalValue( jder, +2.0*tmp*der_interm( (starts[j+1]-1)*ncomponents + jc, jder) );
-                      addDerivativeToFinalValue( jder, -2.0*tmp*der_interm( bin*ncomponents + jc, jder ) );
+                      fval->addDerivative( jder, +2.0*tmp*der_interm( (starts[j+1]-1)*ncomponents + jc, jder) );
+                      fval->addDerivative( jder, -2.0*tmp*der_interm( bin*ncomponents + jc, jder ) );
                   }
                } else {
                   tmp=val_interm[(bin-1)*ncomponents + jc] - val_interm[bin*ncomponents + jc];
                   for(unsigned jder=0;jder<nder;++jder){
-                      addDerivativeToFinalValue( jder, +2.0*tmp*der_interm( (bin-1)*ncomponents + jc, jder) );
-                      addDerivativeToFinalValue( jder, -2.0*tmp*der_interm( bin*ncomponents + jc, jder ) );
+                      fval->addDerivative( jder, +2.0*tmp*der_interm( (bin-1)*ncomponents + jc, jder) );
+                      fval->addDerivative( jder, -2.0*tmp*der_interm( bin*ncomponents + jc, jder ) );
                   }
                }
                diff2+=tmp*tmp;

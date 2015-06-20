@@ -151,8 +151,9 @@ void DFSBasic::registerKeywords( Keywords& keys ){
   keys.use("MEAN"); keys.use("MORE_THAN"); keys.use("LESS_THAN");
   if( keys.reserved("VMEAN") ) keys.use("VMEAN");
   if( keys.reserved("VSUM") ) keys.use("VSUM");
-  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS");
+  keys.use("BETWEEN"); keys.use("HISTOGRAM"); keys.use("MOMENTS"); keys.use("ALT_MIN"); 
   keys.use("MIN"); keys.use("MAX"); keys.use("SUM"); keys.remove("LOWMEM"); keys.use("HIGHMEM");
+  keys.use("LOWEST"); keys.use("HIGHEST");
 }
 
 DFSBasic::DFSBasic(const ActionOptions&ao):

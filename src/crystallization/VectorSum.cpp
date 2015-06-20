@@ -33,7 +33,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   VectorSum( const vesselbase::VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   void resize();
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;
   void finish( const std::vector<double>& buffer );
@@ -56,7 +56,7 @@ FunctionVessel(da)
 {
 }
 
-std::string VectorSum::function_description(){
+std::string VectorSum::value_descriptor(){
   return "the norm of the mean vector";
 }
 
@@ -65,10 +65,8 @@ void VectorSum::resize(){
 
   if( getAction()->derivativesAreRequired() ){
      unsigned nder=getAction()->getNumberOfDerivatives();
-     resizeBuffer( (1+nder)*ncomp );
-     setNumberOfDerivatives( nder );
+     resizeBuffer( (1+nder)*ncomp ); getFinalValue()->resizeDerivatives( nder );
   } else {
-     setNumberOfDerivatives(0); 
      resizeBuffer(ncomp);
   }
 }
@@ -100,10 +98,11 @@ void VectorSum::finish( const std::vector<double>& buffer ){
   setOutputValue( sqrt(sum) ); 
   if( !getAction()->derivativesAreRequired() ) return;
 
+  Value* fval=getFinalValue();
   for(unsigned icomp=0;icomp<ncomp;++icomp){
       double tmp = buffer[icomp*(1+nder)];    
       unsigned bstart = bufstart + icomp*(nder+1) + 1;
-      for(unsigned jder=0;jder<nder;++jder) addDerivativeToFinalValue( jder, tw*tmp*buffer[bstart + jder] );
+      for(unsigned jder=0;jder<nder;++jder) fval->addDerivative( jder, tw*tmp*buffer[bstart + jder] );
   }
 }
 

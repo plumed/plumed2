@@ -1,0 +1,11 @@
+d: DISTANCE ATOMS=1,10
+c: COORDINATION GROUPA=1-108 GROUPB=1-108 R_0=0.5
+
+single: METAD ARG=c,d SIGMA=0.1,0.2 HEIGHT=0.1 PACE=2 FMT=%14.6f             FILE=HILLS_single
+multi:  METAD ARG=c,d SIGMA=0.1,0.2 HEIGHT=0.1 PACE=2 FMT=%14.6f WALKERS_MPI FILE=HILLS_multi   RESTART=YES
+
+single_a: METAD ARG=c,d ADAPTIVE=GEOM SIGMA=0.1 HEIGHT=0.1 PACE=2 FMT=%14.6f             FILE=HILLS_single_a
+multi_a:  METAD ARG=c,d ADAPTIVE=GEOM SIGMA=0.1 HEIGHT=0.1 PACE=2 FMT=%14.6f WALKERS_MPI FILE=HILLS_multi_a 
+
+PRINT ARG=single.bias,multi.bias,single_a.bias,multi_a.bias FILE=colvar
+

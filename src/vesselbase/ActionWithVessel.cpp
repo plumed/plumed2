@@ -120,7 +120,7 @@ void ActionWithVessel::addVessel( Vessel* vv ){
 
   StoreDataVessel* mm=dynamic_cast<StoreDataVessel*>( vv );
   if( mydata && mm ) error("cannot have more than one StoreDataVessel in one action");
-  else mydata=mm;
+  else if( mm ) mydata=mm;
 }
 
 BridgeVessel* ActionWithVessel::addBridgingVessel( ActionWithVessel* tome ){
@@ -394,7 +394,7 @@ void ActionWithVessel::finishComputations( const std::vector<double>& buffer ){
 }
 
 bool ActionWithVessel::getForcesFromVessels( std::vector<double>& forcesToApply ){
-#ifndef DNDEBUG
+#ifndef NDEBUG
   if( forcesToApply.size()>0 ) plumed_dbg_assert( forcesToApply.size()==getNumberOfDerivatives() );
 #endif
   if(tmpforces.size()!=forcesToApply.size() ) tmpforces.resize( forcesToApply.size() );

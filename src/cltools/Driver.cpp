@@ -70,6 +70,14 @@ In addition, you can use the special \subpage READ command inside your plumed in
 to read in colvar files that were generated during your MD simulation.  The values
 read in can then be treated like calculated colvars. 
 
+\warning
+Notice that by default the driver has no knowledge about the masses and charges
+of your atoms! Thus, if you want to compute quantities depending charges (e.g. \ref DHENERGY)
+or masses (e.g. \ref COM) you should pass the proper information to the driver.
+You can do it either with the --pdb option or with the --mc option. The latter
+will read a file produced by \ref DUMPMASSCHARGE .
+
+
 \par Examples
 
 The following command tells plumed to postprocess the trajectory contained in trajectory.xyz
@@ -126,7 +134,9 @@ plumed driver --plumed plumed.dat --imf_crd trajectory.crd --natoms 128
 Check the available molfile plugins and limitations at http://www.ks.uiuc.edu/Research/vmd/plugins/molfile/.
 
 Additionally, you can use the xdrfile implementation of xtc and trr. To this aim, just
-download and install properly the xdrfile library (see here: http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library)
+download and install properly the xdrfile library (see here: http://www.gromacs.org/Developer_Zone/Programming_Guide/XTC_Library).
+If the xdrfile library is installed properly the PLUMED configure script should be able to
+detect it and enable it.
 Notice that the xdrfile implementation of xtc and trr
 is more robust than the molfile one, since it provides support for generic cell shapes.
 

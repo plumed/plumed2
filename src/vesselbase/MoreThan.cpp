@@ -35,7 +35,7 @@ public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
   MoreThan( const VesselOptions& da );
-  std::string function_description();
+  std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
 };
 
@@ -64,7 +64,7 @@ FunctionVessel(da)
   if( errormsg.size()!=0 ) error( errormsg );
 }
 
-std::string MoreThan::function_description(){
+std::string MoreThan::value_descriptor(){
   return "the number of values more than " + sf.description();
 }
 

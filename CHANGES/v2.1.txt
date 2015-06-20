@@ -201,6 +201,9 @@ For users:
 - Added the checks in the driver to detect cases where molinfo does not provide box information
   (e.g. pdb).
 - Added support for readdir_r when available, which makes opening files thread safe.
+- CFLAGS now include -fPIC by default
+- Added a warning when using \ref METAD without grids with a large number of hills.
+- Fixes in documentation.
 
 For developers:
 - Allow external VMD plugins to be detected with --has-external-molfile. This
@@ -209,7 +212,7 @@ For developers:
 - Allow definition of variables where some of the components have derivatives and some haven't (issue #131).
 - Improved travis tests with more debug options.
 - Improved some regtest to check out-of-diagonal virial components
-
-
+- Improved make cppcheck options.
+- Fixes in developer documentation.
 
 */

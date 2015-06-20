@@ -50,7 +50,7 @@ FunctionVessel(da)
   if( errormsg.size()!=0 ) error( errormsg ); 
 }
 
-std::string LessThan::function_description(){
+std::string LessThan::value_descriptor(){
   return "the number of values less than " + sf.description();
 }
 

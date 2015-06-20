@@ -54,6 +54,13 @@ PLUMED_MAIN_STATIC := $(PLUMED_LIBDIR)plumed
 PLUMED_MAIN_SHARED := $(PLUMED_LIBDIR)plumed-shared
 PLUMED_MAIN_RUNTIME := $(PLUMED_LIBDIR)plumed-runtime
 
+ifdef PLUMED_LIBDIR_NODEST
+  PLUMED_ROOT :="$(PLUMED_LIBDIR_NODEST)../../"
+else
+  PLUMED_ROOT :="$(realpath ../../)"
+endif
+
+
 .PHONY: all links $(DIRS) $(DIRSLINKS) all-static Plumed.cmake Plumed.inc
 ifdef SOEXT
 all:
@@ -73,10 +80,6 @@ all-static:
 dirs:
 	@echo "*** Compiling all directories ***"
 	$(MAKE) $(DIRS)
-
-dirslinks:
-	@echo "*** Updating links to used modules in all directories ***"
-	$(MAKE) $(DIRSLINKS)
 
 
 install:
@@ -152,9 +155,6 @@ uninstall:
 $(DIRS):
 	$(MAKE) -C $@ obj
 
-$(DIRSLINKS): %.links:
-	$(MAKE) -C $* links
-
 .PHONY: lib lib-static lib-shared
 
 lib: lib-static lib-shared
@@ -168,7 +168,7 @@ lib-shared: $(PLUMED_KERNEL) $(PLUMED_SHARED_OBJ) $(PLUMED_MAIN_SHARED) $(PLUMED
 $(PLUMED_SCRIPTS_EXE):
 	@echo "#! /bin/bash" > $@
 	@echo "echo 'NOTE: shell only version, useful when plumed is cross compiled' >&2" >> $@
-	@echo "export PLUMED_ROOT=\"$(PLUMED_LIBDIR_NODEST)../../\"" >> $@
+	@echo "export PLUMED_ROOT=\"$(PLUMED_ROOT)\"" >> $@
 	@echo "source \"\$$PLUMED_ROOT\"/scripts/$(subst plumed-,,$(@F)).sh" >> $@
 	chmod a+x $@
 
@@ -273,14 +273,21 @@ error:
 	@echo First run ./configure in the root directory
 endif
 
-# this target is available anyway
+# these targets are available anyway
 
-.PHONY: clean
+.PHONY: clean dirslinks
 clean:
 	rm -f $(CLEANLIST)
 	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
 	rm -f Plumed.inc* plumed-* Plumed.cmake*
 	rm -f .lib*
+
+dirslinks:
+	@echo "*** Updating links to used modules in all directories ***"
+	$(MAKE) $(DIRSLINKS)
+$(DIRSLINKS): %.links:
+	$(MAKE) -C $* links
+
 
 # generic makefile rules
 include ../maketools/make.rules
