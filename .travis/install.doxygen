@@ -24,8 +24,8 @@ fi
 
 git checkout $version
 
-./configure --prefix=/usr/local
+./configure --prefix="$HOME/opt"
 make
-sudo make install
+make install
 cd ../
 

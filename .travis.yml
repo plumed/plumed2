@@ -18,18 +18,23 @@ env:
 # test using external blas with internal lapack
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++  PLUMED_CXXFLAGS=-O3 LAPACK=yes CONFIG_FLAGS="--disable-external-lapack"
 # cppcheck
-# in principle we should make only "cppcheck" here
-  - PLUMED_CC=gcc   PLUMED_CXX=g++   CPPCHECK=yes
+  - CPPCHECK=yes
 # with debug flags there are issues with openmp+mpi on travis - I disable openmp here
 # I leave this test here to monitor if things change in the future, allowing it to fail
   - PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 matrix:
   allow_failures:
-    - env: PLUMED_CC=gcc   PLUMED_CXX=g++   CPPCHECK=yes
+    - env: CPPCHECK=yes
     - env: PLUMED_CC=mpicc PLUMED_CXX=mpic++ CONFIG_FLAGS="--enable-debug --enable-debug-glibcxx"
 # Possible additional variables:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
+# setup environment to allow install on the home directory
+  - export PATH="$PATH:$HOME/opt/bin"
+  - export CPATH="$CPATH:$HOME/opt/include"
+  - export INCLUDE="$INCLUDE:$HOME/opt/include"
+  - export LIBRARY_PATH="$LIBRARY_PATH:$HOME/opt/lib"
+  - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$HOME/opt/lib"
 # build the manual, only if log contains string [makedoc]
   - export PLUMED_NUM_THREADS=2
   - ./.travis/check.log makedoc  || MAKEDOC=no
@@ -38,43 +43,51 @@ install:
 # install some package - these are fast, we install them anyway
   - sudo apt-get update -qq
   - sudo apt-get install -y libmatheval-dev
-  - ./.travis/install.xdrfile
-  - LIBRARY_PATH="$LIBRARY_PATH:/usr/local/lib"
-  - LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
+  - if test "$PLUMED_CXX" ; then ./.travis/install.xdrfile ; fi
 # cppcheck:
-  - test "$CPPCHECK" == yes && ./.travis/install.cppcheck 1.69 || true
+  - if test "$CPPCHECK" == yes ; then  ./.travis/install.cppcheck 1.69  ; fi
 # installation of these packages takes a lot of time
 # we do it only when needed
-  - test "$PLUMED_CXX" == "mpic++" && sudo apt-get install -y libopenmpi1.5-dev openmpi1.5-bin || true
-  - test "$MAKEDOC" == yes && sudo apt-get install -y graphviz            || true
+  - if test "$PLUMED_CXX" == "mpic++" ; then sudo apt-get install -y libopenmpi1.5-dev openmpi1.5-bin ; fi
+  - if test "$MAKEDOC" == yes ; then sudo apt-get install -y graphviz            ; fi
 # doxygen from its repository (apt-get gets an old version)
 #  - test "$MAKEDOC" == yes && ./.travis/install.doxygen                   || true
 # it seems that here we can get precompiled doxygen and latex
-  - test "$MAKEDOC" == yes && sudo apt-add-repository -y ppa:libreoffice/ppa || true
-  - test "$MAKEDOC" == yes && sudo apt-get update -qq                     || true
-  - test "$MAKEDOC" == yes && sudo apt-get install -y doxygen doxygen-latex || true
-  - test "$VALGRIND" == yes && sudo apt-get install -y valgrind           || true
-  - test "$LAPACK" == yes  && sudo apt-get install libatlas-base-dev      || true
-  - test "$ALMOST" == yes && ./.travis/install.almost                     || true
-  - test "$ALMOST" == yes && ENALMOST="--enable-almost"                 || true
-  - test "$ALMOST" == yes && PLUMED_CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost"  || true
+  - if test "$MAKEDOC" == yes ; then sudo apt-add-repository -y ppa:libreoffice/ppa ; fi
+  - if test "$MAKEDOC" == yes ; then sudo apt-get update -qq                     ; fi
+  - if test "$MAKEDOC" == yes ; then sudo apt-get install -y doxygen doxygen-latex ; fi
+  - if test "$VALGRIND" == yes ; then sudo apt-get install -y valgrind           ; fi
+  - if test "$LAPACK" == yes  ; then sudo apt-get install libatlas-base-dev      ; fi
+  - if test "$ALMOST" == yes ; then ./.travis/install.almost                     ; fi
+  - if test "$ALMOST" == yes ; then ENALMOST="--enable-almost"                 ; fi
+  - if test "$ALMOST" == yes ; then PLUMED_CPPFLAGS="$INCLUDE -I/usr/local/include -I/usr/local/include/almost"  ; fi
 # moreover, we hardcode path to dynamic library, required for xdrfile to link properly
 # I do it only when LD_LIBRARY_PATH is non blank, since otherwise clang gives problems
-  - test -n "$LD_LIBRARY_PATH" && PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" || true
+  - if test -n "$LD_LIBRARY_PATH" ; then PLUMED_LDFLAGS="-Wl,-rpath,$LD_LIBRARY_PATH" ; fi
 script:
 # we set all the optional modules on
   - touch src/crystallization.on src/manyrestraints.on
+
+# BUILD:
+# this is done only if PLUMED_CXX is defined
 # we have to pass the full path since on travis machines sudo does not have compilers in the path
-  - ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS
-  - make -j 2
+  - if test "$PLUMED_CXX" ; then ./configure CXX=$(which $PLUMED_CXX) CC=$(which $PLUMED_CC) CXXFLAGS="$PLUMED_CXXFLAGS" LDFLAGS="$PLUMED_LDFLAGS" CPPFLAGS="$PLUMED_CPPFLAGS" $ENALMOST $CONFIG_FLAGS ; fi
+  - if test "$PLUMED_CXX" ; then make -j 2 ; fi
 # we install plumed so that it is in the path
-  - sudo make install
-# run static analyzer
-  - test "$VALGRIND" == yes && OPT=valgrind || OPT=""
-  - make -C regtest $OPT
-  - test "$MAKEDOC" == yes && make -C regtest copytodoc || true
-  - test "$MAKEDOC" == yes && make doc >/dev/null || true
-  - make -C regtest checkfail
+  - if test "$PLUMED_CXX" ; then make install prefix="$HOME/opt" ; fi
+
+# TEST:
+  - if test "$VALGRIND" == yes ; then OPT=valgrind ; else OPT="" ; fi
+  - if test "$PLUMED_CXX" ; then make -C regtest $OPT ; fi
+  - if test "$MAKEDOC" == yes ; then make -C regtest copytodoc ; fi
+  - if test "$MAKEDOC" == yes ; then make doc >/dev/null ; fi
+  - if test "$MAKEDOC" == yes ; then make -C regtest checkfail ; fi
+
+# CPPCHECK:
+# this is required so as to have all the include files inplace:
+# notice that this is done automatically in build
+  - if test "$CPPCHECK" == yes ; then make -C src/lib/ dirslinks ; fi
+# then we do cppcheck
   - if test "$CPPCHECK" == yes ; then make cppcheck ; fi
 after_success:
-  - test "$MAKEDOC" == yes && ./.travis/pushdoc
+  - if test "$MAKEDOC" == yes ; then ./.travis/pushdoc ; fi 
