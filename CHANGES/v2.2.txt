@@ -1,6 +1,9 @@
 /**
 
-@page CHANGES-UNRELEASED Unreleased changes
+@page CHANGES-2-2 Version 2.2b
+
+Version 2.2b0 (June xx, 2015)
+----------------------------
 
 Include all fixes in branch 2.1 indicated in \ref CHANGES-2-1 .
 
