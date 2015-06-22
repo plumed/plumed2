@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2013-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -27,6 +27,7 @@ namespace PLMD {
 PointWiseMapping::PointWiseMapping( const std::string& type, const bool& checksoff ):
 MultiReferenceBase(type,checksoff)
 {
+  ispath=false;
 }
 
 void PointWiseMapping::setPropertyNames( const std::vector<std::string>& prop, const bool isp ){

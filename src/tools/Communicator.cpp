@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2011-2014 The plumed team
+   Copyright (c) 2011-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -34,12 +34,20 @@ Communicator::Communicator()
 {
 }
 
+// cppcheck complains about this:
+// Member variable 'Communicator::communicator' is not initialized in the constructor
+// this is a false positive so I suppress it
+// cppcheck-suppress uninitMemberVar
 Communicator::Communicator(const Communicator&pc){
   Set_comm(pc.communicator);
 }
 
 Communicator::Status Communicator::StatusIgnore;
 
+// cppcheck complains about this:
+// Member variable 'Communicator::communicator' is not assigned a value in 'Communicator::operator='
+// this is a false positive so I suppress it
+// cppcheck-suppress operatorEqVarError
 Communicator& Communicator::operator=(const Communicator&pc){
   if (this != &pc){
       Set_comm(pc.communicator);

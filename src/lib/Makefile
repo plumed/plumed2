@@ -74,10 +74,6 @@ dirs:
 	@echo "*** Compiling all directories ***"
 	$(MAKE) $(DIRS)
 
-dirslinks:
-	@echo "*** Updating links to used modules in all directories ***"
-	$(MAKE) $(DIRSLINKS)
-
 
 install:
 	cd ../config ; $(MAKE)
@@ -98,7 +94,7 @@ install-do:
 # copy inc files changing the path
 	for file in Plumed.inc* Plumed.cmake* ; do sed "s| $(realpath ../../)| $(PLUMED_INSTALL_ROOT)/|g" $$file > $(PLUMED_INSTALL_ROOT)/src/lib/$$file ; done
 # modulefile
-	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|"> $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
+	@sed "s|@_PREFIX_@|$(PLUMED_INSTALL_PREFIX)|" modulefile.in | sed "s|@_SOEXT_@|$(SOEXT)|" | sed "s|@_SUFFIX_@|$(PLUMED_INSTALL_LIBSUFFIX)|" > $(PLUMED_INSTALL_ROOT)/src/lib/modulefile
 # install links
 	ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)
 	for file in $(PLUMED_SCRIPTS) ; do ln -s $(PLUMED_INSTALL_ROOT)/src/lib/plumed-$$file $(PLUMED_INSTALL_PREFIX)/bin/plumed$(PLUMED_INSTALL_LIBSUFFIX)-$$file ; done
@@ -148,9 +144,6 @@ uninstall:
 
 $(DIRS):
 	$(MAKE) -C $@ obj
-
-$(DIRSLINKS): %.links:
-	$(MAKE) -C $* links
 
 .PHONY: lib lib-static lib-shared
 
@@ -246,13 +239,20 @@ error:
 	@echo First run ./configure in the root directory
 endif
 
-# this target is available anyway
+# these targets are available anyway
 
-.PHONY: clean
+.PHONY: clean dirslinks
 clean:
 	rm -f $(CLEANLIST)
 	rm -f $(PLUMED_MAIN_STATIC) $(PLUMED_MAIN_SHARED) $(PLUMED_MAIN_RUNTIME)
 	rm -f Plumed.inc* plumed-* Plumed.cmake*
+
+dirslinks:
+	@echo "*** Updating links to used modules in all directories ***"
+	$(MAKE) $(DIRSLINKS)
+$(DIRSLINKS): %.links:
+	$(MAKE) -C $* links
+
 
 # generic makefile rules
 include ../maketools/make.rules

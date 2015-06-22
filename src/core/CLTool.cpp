@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -171,6 +171,8 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
     }
   }
 
+  plumed_assert(mystdin);
+
   char buffer[256]; std::string line; line.resize(256);
   while(fgets(buffer,256,mystdin)){
      line=buffer; 
@@ -193,7 +195,7 @@ bool CLTool::readInputFile( int argc, char**argv, FILE* in, FILE*out ){
         fprintf(out,"Usage: %s < inputFile \n", name.c_str() );
         fprintf(out,"inputFile should contain one directive per line.  The directives should come from amongst the following\n\n");
         keywords.print( out );
-        if(mystdin) fclose(mystdin);
+        fclose(mystdin);
         return false;
      }
   }

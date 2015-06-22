@@ -95,11 +95,7 @@ std::ostream & operator<<(std::ostream &log,const ActionRegister&ar);
 
 #define PLUMED_CONCATENATE_DIRECT(s1, s2) s1##s2
 #define PLUMED_CONCATENATE(s1, s2) PLUMED_CONCATENATE_DIRECT(s1, s2)
-#ifdef _MSC_VER // Necessary for edit & continue in MS Visual C++.
-# define PLUMED_UNIQUENAME(str) PLUMED_CONCATENATE(str, __COUNTER__)
-#else
-# define PLUMED_UNIQUENAME(str) PLUMED_CONCATENATE(str, __LINE__)
-#endif
+#define PLUMED_UNIQUENAME(str) PLUMED_CONCATENATE(str, __LINE__)
 
 /// Shortcut for Action registration
 /// \relates PLMD::ActionRegister

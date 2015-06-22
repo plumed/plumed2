@@ -36,6 +36,7 @@ namespace colvar{
 
 void PathMSDBase::registerKeywords(Keywords& keys){
   Colvar::registerKeywords(keys);
+  keys.remove("NOPBC");
   keys.add("compulsory","LAMBDA","the lambda parameter is needed for smoothing, is in the units of plumed");
   keys.add("compulsory","REFERENCE","the pdb is needed to provide the various milestones");
   keys.add("optional","NEIGH_SIZE","size of the neighbor list");
