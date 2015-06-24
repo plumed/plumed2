@@ -167,12 +167,10 @@ PCARMSD::~PCARMSD(){
 void PCARMSD::calculate(){
         Tensor rotation,invrotation;
         Matrix<std::vector<Vector> > drotdpos(3,3);
-        std::vector<Vector> DDistDRef;
         std::vector<Vector> alignedpos;
         std::vector<Vector> centeredpos;
         std::vector<Vector> centeredref;
         std::vector<Vector> ddistdpos;
-        std::vector<Vector> derivatives;
         double r=rmsd->calc_PCAelements( getPositions(), ddistdpos, rotation ,  drotdpos , alignedpos ,centeredpos, centeredref ,squared);
 	invrotation=rotation.transpose();
 	
