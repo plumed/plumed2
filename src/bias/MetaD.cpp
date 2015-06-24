@@ -264,6 +264,10 @@ class MetaD : public Bias {
   double tt_biasthreshold_;
   vector<vector<double> > transitionwells_;
   double tt_alpha_;
+  bool globallytempered_;
+  double gt_biasf_;
+  double gt_biasthreshold_;
+  double gt_alpha_;
   std::string edm_readfilename_;
   Grid *EDMTarget_;
   bool benthic_toleration_;
@@ -386,7 +390,10 @@ void MetaD::registerKeywords(Keywords &keys) {
   keys.add("optional", "TTBIASFACTOR", "use transition tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
   keys.add("optional", "TTBIASTHRESHOLD", "use transition tempered metadynamics with this bias threshold.  Please note you must also specify TTBIASFACTOR");
   keys.add("numbered", "TRANSITIONWELL", "This keyword appears multiple times as TRANSITIONWELLx with x=0,1,2,...,n. Each specifies the coordinates for one well in transition-tempered metadynamics. At least one must be provided.");
-  keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this decay shape parameter value between 0.5 and 1.0 (default 0.5).  Please note you must also specify TTBIASFACTOR");
+  keys.add("optional", "TTALPHA", "use transition tempered metadynamics with this decay shape parameter value between 0.5 and 1.0 (default 1.0).  Please note you must also specify TTBIASFACTOR");
+  keys.add("optional", "GTBIASFACTOR", "use globally tempered metadynamics and use this biasfactor.  Please note you must also specify temp");
+  keys.add("optional", "GTBIASTHRESHOLD", "use globally tempered metadynamics with this bias threshold.  Please note you must also specify GTBIASFACTOR");
+  keys.add("optional", "GTALPHA", "use globally tempered metadynamics with this decay shape parameter value between 0.5 and 1.0 (default 1.0).  Please note you must also specify GTBIASFACTOR");
   keys.add("optional", "EDM_RFILE", "use experiment-directed metadynamics with this file defining the desired target free energy");
   keys.add("optional", "BENTHIC_TOLERATION", "use benthic metadynamics with this number of mistakes tolerated in transition states");
   keys.add("optional", "BENTHIC_FILTER_STRIDE", "use benthic metadynamics accumulating filter samples on this timescale in units of simulation time.  Please note you must also specify BENTHIC_TOLERATION");
@@ -498,6 +505,10 @@ MetaD::MetaD(const ActionOptions &ao):
   tt_biasf_(1.0),
   tt_biasthreshold_(0.0),
   tt_alpha_(1.0),
+  globallytempered_(false),
+  gt_biasf_(1.0),
+  gt_biasthreshold_(0.0),
+  gt_alpha_(1.0),
   benthic_toleration_(false),
   benthic_tol_number_(0.0),
   benthic_erosion_(false),
@@ -655,6 +666,26 @@ MetaD::MetaD(const ActionOptions &ao):
         error("incorrect number of coordinates for transition tempering well");
       }
       transitionwells_.push_back(tempcoords);
+    }
+  }
+
+  // Set global tempering parameters.
+  parse("GTBIASFACTOR", gt_biasf_);
+  if (gt_biasf_ < 1.0) {
+    error("globally tempered bias factor is nonsensical");
+  }
+  if (gt_biasf_ > 1.0) {
+    if (kbt_ == 0.0) {
+      error("Unless the MD engine passes the temperature to plumed, with globally-tempered metad you must specify it using TEMP");
+    }
+    globallytempered_ = true;
+    parse("GTBIASTHRESHOLD", gt_biasthreshold_);
+    if (gt_biasthreshold_ < 0.0) {
+      error("well tempered bias threshold is nonsensical");
+    }
+    parse("GTALPHA", gt_alpha_);
+    if (gt_alpha_ < 0.5 || gt_alpha_ > 1.0) {
+      error("globally tempered decay shape parameter alpha is nonsensical");
     }
   }
 
@@ -943,6 +974,17 @@ MetaD::MetaD(const ActionOptions &ao):
           error(" transition well is not in grid");
         }
       }
+    }
+  }
+  // Globally tempered metadynamics options
+  if (globallytempered_) {
+    log.printf("  Globally-Tempered bias factor %f\n", gt_biasf_);
+    log.printf("  Globally-Tempered bias threshold %f\n", gt_biasthreshold_);
+    log.printf("  Globally-Tempered decay shape parameter alpha %f\n", gt_alpha_);
+    log.printf("  KbT %f\n", kbt_);
+    // Check that the average bias is being calculated.
+    if (!calc_average_bias_coft_) {
+      error(" global tempering requires calculation of the average bias");
     }
   }
   // Experiment-directed metadynamics
@@ -1879,6 +1921,13 @@ double MetaD::getHeight(const vector<double> &cv) {
       height *= exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
     } else {
       height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha_ / (1 - tt_alpha_));
+    }
+  }
+  if (globallytempered_) {
+    if (gt_alpha_ == 1.0) {
+      height *= exp(-max(0.0, average_bias_coft_ - gt_biasthreshold_) / (kbt_ * (gt_biasf_ - 1.0)));
+    } else {
+      height *= pow(1 + max(0.0, average_bias_coft_ - gt_biasthreshold_) / (kbt_ * (gt_biasf_ - 1.0)), - gt_alpha_ / (1 - gt_alpha_));
     }
   }
   if (edm_readfilename_.size() > 0) {
