@@ -84,4 +84,4 @@ script:
 # then we do cppcheck
   - if test "$CPPCHECK" == yes ; then make cppcheck ; fi
 after_success:
-  - if test "$MAKEDOC" == yes ; then ./.travis.pushdoc
+  - if test "$MAKEDOC" == yes ; then ./.travis.pushdoc ; fi 
