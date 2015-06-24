@@ -344,6 +344,12 @@ void SwitchingFunction::set(int nn,int mm,double r0,double d0){
   this->d0=d0;
   this->dmax=d0+r0*pow(0.00001,1./(nn-mm));
   this->dmax_2=this->dmax*this->dmax;
+
+  double dummy;
+  double s0=calculate(0.0,dummy);
+  double sd=calculate(dmax,dummy);
+  stretch=1.0/(s0-sd);
+  shift=-sd*stretch;
 }
 
 double SwitchingFunction::get_r0() const {
