@@ -1920,14 +1920,14 @@ double MetaD::getHeight(const vector<double> &cv) {
     if (tt_alpha_ == 1.0) {
       height *= exp(-max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)));
     } else {
-      height *= pow(1 + max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha_ / (1 - tt_alpha_));
+      height *= pow(1 + (1 - tt_alpha_) / tt_alpha_ * max(0.0, vbarrier - tt_biasthreshold_) / (kbt_ * (tt_biasf_ - 1.0)), - tt_alpha_ / (1 - tt_alpha_));
     }
   }
   if (globallytempered_) {
     if (gt_alpha_ == 1.0) {
       height *= exp(-max(0.0, average_bias_coft_ - gt_biasthreshold_) / (kbt_ * (gt_biasf_ - 1.0)));
     } else {
-      height *= pow(1 + max(0.0, average_bias_coft_ - gt_biasthreshold_) / (kbt_ * (gt_biasf_ - 1.0)), - gt_alpha_ / (1 - gt_alpha_));
+      height *= pow(1 + (1 - tt_alpha_) / tt_alpha_ * max(0.0, average_bias_coft_ - gt_biasthreshold_) / (kbt_ * (gt_biasf_ - 1.0)), - gt_alpha_ / (1 - gt_alpha_));
     }
   }
   if (edm_readfilename_.size() > 0) {
