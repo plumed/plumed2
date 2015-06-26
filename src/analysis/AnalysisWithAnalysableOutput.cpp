@@ -31,24 +31,15 @@ namespace analysis {
 
 void AnalysisWithAnalysableOutput::registerKeywords( Keywords& keys ){
   Analysis::registerKeywords( keys );
-  keys.add("optional","DISSIMILARITIES","the label of the action that calculates the dissimilarities");
 }
 
 AnalysisWithAnalysableOutput::AnalysisWithAnalysableOutput( const ActionOptions& ao ):
 Action(ao),
 Analysis(ao),
-mydissims(NULL),
-myinput(NULL)
+mydissims(NULL)
 {
-  std::string dlab; parse("DISSIMILARITIES",dlab);
-  if( dlab.length()>0 ){
-    log.printf("  calculating dissimilarities using Action with label %s \n",dlab.c_str() );
-    mydissims = plumed.getActionSet().selectWithLabel<DissimilarityMatrixBase*>(dlab);
-    if(!mydissims) error("action labelled " +  dlab + " does not exist or is not of DissimilarityMatrixBase type");
-    addDependency( mydissims );
-  } else if( dimredstash ){
-    myinput = dynamic_cast<AnalysisWithAnalysableOutput*>( dimredstash ); 
-  }
+  if( mydatastash ) mydissims = dynamic_cast<DissimilarityMatrixBase*>( mydatastash );
+  if( dimredstash ) mydissims = dynamic_cast<DissimilarityMatrixBase*>( dimredstash );
 }
 
 void AnalysisWithAnalysableOutput::setNumberOfOutputPoints( const unsigned& n ){
@@ -66,13 +57,12 @@ void AnalysisWithAnalysableOutput::getOutputForPoint( const unsigned& idata, std
 }
 
 double AnalysisWithAnalysableOutput::getDissimilarity( const unsigned& idata, const unsigned& jdata ){
-  if( mydissims ) return mydissims->getDissimilarity( idata, jdata );
-  if( dimredstash ) return myinput->getOutputDissimilarity( idata, jdata );
-  plumed_error(); return 1.0;  
+  plumed_assert( mydissims );
+  return mydissims->getDissimilarity( idata, jdata );
 }
 
 bool AnalysisWithAnalysableOutput::dissimilaritiesWereSet(){
-  return ( mydissims || dimredstash );
+  return mydissims; 
 }
 
 }

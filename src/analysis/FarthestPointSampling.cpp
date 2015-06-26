@@ -36,12 +36,11 @@ public:
   void selectLandmarks();
 };
 
-PLUMED_REGISTER_ACTION(FarthestPointSampling,"LANDMARK_SELECTION_FPS")
+PLUMED_REGISTER_ACTION(FarthestPointSampling,"LANDMARK_SELECT_FPS")
 
 void FarthestPointSampling::registerKeywords( Keywords& keys ){
   LandmarkSelectionBase::registerKeywords(keys);
   keys.add("compulsory","SEED","1234","a random number seed");
-  keys.reset_style("DISSIMILARITIES","compulsory");
 }
 
 FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
@@ -49,6 +48,7 @@ Action(ao),
 LandmarkSelectionBase(ao)
 {
   parse("SEED",seed);
+  if( !dissimilaritiesWereSet() ) error("wrong type of input Action");
 }
 
 void FarthestPointSampling::selectLandmarks(){

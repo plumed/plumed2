@@ -19,43 +19,36 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_analysis_DissimilarityMatrixBase_h
-#define __PLUMED_analysis_DissimilarityMatrixBase_h
-
-#include "tools/Matrix.h"
+#include "DissimilarityMatrixBase.h"
+#include "core/ActionRegister.h"
 #include "Analysis.h"
 
 namespace PLMD {
 namespace analysis {
 
-class DissimilarityMatrixBase : public Analysis {
-private:
-  unsigned nnodes;
-  std::string fname, wfile;
-  Matrix<double> mydissimilarities;
-protected:
-  void setDissimilarityMatrixElement( const unsigned& , const unsigned& , const double& );
+class EuclideanDissimilarityMatrix : public DissimilarityMatrixBase {
 public:
   static void registerKeywords( Keywords& keys );
-  DissimilarityMatrixBase( const ActionOptions& ao );
-  void performTask(){};
-  double getDissimilarity( const unsigned& , const unsigned& );
-  virtual void calcDissimilarity( const unsigned& , const unsigned& ){ plumed_error(); }
-  virtual void performAnalysis();
+  EuclideanDissimilarityMatrix( const ActionOptions& ao );
+  void calcDissimilarity( const unsigned& , const unsigned& );
 };
 
-inline
-void DissimilarityMatrixBase::setDissimilarityMatrixElement( const unsigned& i, const unsigned& j, const double& v ){
-  plumed_dbg_assert( mydissimilarities(i,j)<epsilon );
-  mydissimilarities(j,i)=mydissimilarities(i,j) = v;
+PLUMED_REGISTER_ACTION(EuclideanDissimilarityMatrix,"EUCLIDEAN_DISSIMILARITIES")
+
+void EuclideanDissimilarityMatrix::registerKeywords( Keywords& keys ){
+  DissimilarityMatrixBase::registerKeywords( keys );
 }
 
-inline
-double DissimilarityMatrixBase::getDissimilarity( const unsigned& i, const unsigned& j ){
-  if( mydissimilarities(i,j)>0. ) return mydissimilarities(i,j);
-  calcDissimilarity(i,j); return mydissimilarities(i,j);
+EuclideanDissimilarityMatrix::EuclideanDissimilarityMatrix( const ActionOptions& ao ):
+Action(ao),
+DissimilarityMatrixBase(ao)
+{
+}
+
+void EuclideanDissimilarityMatrix::calcDissimilarity( const unsigned& iframe, const unsigned& jframe ){
+  double d = getDistanceBetweenFrames( iframe, jframe, true );
+  setDissimilarityMatrixElement( iframe, jframe, d );
 }
 
 }
 }
-#endif

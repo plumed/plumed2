@@ -103,7 +103,6 @@ write_chq(false),
 reusing_data(false),
 dimred_data(false),
 ignore_reweight(false),
-dmat_type(unset),
 needeng(false),
 idata(0),
 firstAnalysisDone(false),
@@ -415,7 +414,6 @@ void Analysis::finalizeWeights( const bool& ignore_weights ){
 void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
   plumed_dbg_assert( getNumberOfAtoms()==0 );
   if( !reusing_data ){
-      plumed_assert( dmat_type==unset );
       plumed_dbg_assert( idata<logweights.size() &&  point.size()==getNumberOfArguments() );
       for(unsigned i=0;i<point.size();++i) point[i]=data[idata]->getReferenceArgument(i);
       weight=data[idata]->getWeight();
@@ -428,11 +426,9 @@ void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, 
 }
 
 double Analysis::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& squared ){
+  if( dimred_data ) return dimredstash->getDistanceBetweenFrames( iframe, jframe, squared );
   if( reusing_data ) return mydatastash->getDistanceBetweenFrames( iframe, jframe, squared );
-  if( dmat_type==unset ) return distance( getPbc(), getArguments(), getReferenceConfiguration(iframe), getReferenceConfiguration(jframe), squared );
-  if( dmat_type==squared && !squared ) return sqrt( pairwise_dissimilarity_matrix(iframe,jframe) ); 
-  if( dmat_type==dist && squared ) return pairwise_dissimilarity_matrix(iframe,jframe)*pairwise_dissimilarity_matrix(iframe,jframe);
-  return pairwise_dissimilarity_matrix(iframe,jframe);
+  return distance( getPbc(), getArguments(), getReferenceConfiguration(iframe), getReferenceConfiguration(jframe), squared );
 }
 
 void Analysis::runAnalysis(){

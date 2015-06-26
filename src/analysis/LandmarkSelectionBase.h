@@ -46,6 +46,7 @@ public:
   void performAnalysis();
   virtual void selectLandmarks()=0;
   ReferenceConfiguration* getOutputConfiguration( const unsigned& idata );
+  double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
   void performTask(){ plumed_error(); }
   double getOutputDissimilarity( const unsigned& idata, const unsigned& jdata );
 };
@@ -53,6 +54,11 @@ public:
 inline
 unsigned LandmarkSelectionBase::getNumberOfLandmarks() const {
   return nlandmarks;
+}
+
+inline
+double LandmarkSelectionBase::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq ){
+  return Analysis::getDistanceBetweenFrames( landmark_indices[iframe], landmark_indices[jframe], true );
 }
 
 }

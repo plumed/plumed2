@@ -68,10 +68,6 @@ private:
   Analysis* mydatastash;
 /// The dimensionality reduction object that we are reusing data from
   AnalysisWithAnalysableOutput* dimredstash;
-/// This is used in cltool that works by setting up analysis objects 
-/// from a matrix of pairwise disimilarities
-  enum {unset,squared,dist} dmat_type; 
-  Matrix<double> pairwise_dissimilarity_matrix;
 /// The frequency with which we are performing analysis
   unsigned freq;
 /// Number of data point we need to run analysis
@@ -124,8 +120,6 @@ protected:
   std::string getMetricName() const ;
 /// Return the number of arguments (this overwrites the one in ActionWithArguments)
   unsigned getNumberOfArguments() const;
-/// Calculate the distance between stored snapshot iframe and stored snapshot jframe
-  double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
 /// Return the weight of the ith point
   double getWeight( const unsigned& idata ) const ;
 /// Retrieve the ith point
@@ -151,6 +145,8 @@ public:
   ~Analysis();
 /// Return the number of data points
   unsigned getNumberOfDataPoints() const;
+/// Calculate the distance between stored snapshot iframe and stored snapshot jframe
+  virtual double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
   void prepare();
   void calculate();
   void update();
@@ -165,6 +161,7 @@ public:
   bool isPeriodic(){ plumed_error(); return false; }
   unsigned getNumberOfDerivatives(){ plumed_error(); return 0; }
   unsigned getRunFrequency() const ;
+  bool runFinalAnalysisOnly() const ;
 };
 
 inline
@@ -214,6 +211,11 @@ std::vector<Value*> Analysis::getArguments(){
 inline
 std::string Analysis::getOutputFormat() const {
   return ofmt;
+}
+
+inline
+bool Analysis::runFinalAnalysisOnly() const {
+  return single_run;
 }
 
 }
