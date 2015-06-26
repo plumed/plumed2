@@ -66,9 +66,9 @@ void Analysis::registerKeywords( Keywords& keys ){
   keys.use("ARG"); keys.reset_style("ARG","atoms");
   keys.add("atoms","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
   keys.add("compulsory","METRIC","EUCLIDEAN","how are we measuring the distances between configurations");
-  keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis.  This is not required if you specify REUSE_DATA_FROM/USE_OUTPUT_DATA_FROM");
-  keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA/REUSE_DATA_FROM/USE_OUTPUT_DATA_FROM");
-  keys.add("atoms-2","REUSE_DATA_FROM","using this form of input allows one to do multiple analyses on the same set of data.  The data "
+  keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis.  This is not required if you specify REUSE_INPUT_DATA_FROM/USE_OUTPUT_DATA_FROM");
+  keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA/REUSE_INPUT_DATA_FROM/USE_OUTPUT_DATA_FROM");
+  keys.add("atoms-2","REUSE_INPUT_DATA_FROM","using this form of input allows one to do multiple analyses on the same set of data.  The data "
                                        "from the referenced Analysis action will be re-analysed using this new form of analysis after having "
                                        "been analysed using the form of analysis specified in the action that was previously referenced. The " 
                                        "frequency (STRIDE) of storage of the data and the frequency of running this second form of analysis (RUN) "
@@ -86,7 +86,7 @@ void Analysis::registerKeywords( Keywords& keys ){
                                       "distribution at a second temperature. For more information see \\ref reweighting. "
                                       "This is not possible during postprocessing.");
   keys.addFlag("WRITE_CHECKPOINT",false,"write out a checkpoint so that the analysis can be restarted in a later run");
-  keys.add("hidden","IGNORE_REWEIGHTING","this allows you to ignore any reweighting factors");
+  // keys.add("hidden","IGNORE_REWEIGHTING","this allows you to ignore any reweighting factors");
   keys.reserveFlag("NOMEMORY",false,"analyse each block of data separately");
   ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); 
 }
@@ -133,14 +133,15 @@ argument_names(getNumberOfArguments())
   // And delte the fake reference we created
   delete checkref;
 
-  std::string prev_analysis; parse("REUSE_DATA_FROM",prev_analysis);
+  std::string prev_analysis; parse("REUSE_INPUT_DATA_FROM",prev_analysis);
   if( prev_analysis.length()>0 ){
       reusing_data=true;
       mydatastash=plumed.getActionSet().selectWithLabel<Analysis*>( prev_analysis );
       if( !mydatastash ) error("could not find analysis action named " + prev_analysis );
-      parseFlag("IGNORE_REWEIGHTING",ignore_reweight);
-      if( ignore_reweight ) log.printf("  reusing data stored by %s but ignoring all reweighting\n",prev_analysis.c_str() );
+      // parseFlag("IGNORE_REWEIGHTING",ignore_reweight);
+      // if( ignore_reweight ) log.printf("  reusing data stored by %s but ignoring all reweighting\n",prev_analysis.c_str() );
       else log.printf("  reusing data stored by %s\n",prev_analysis.c_str() ); 
+      single_run=mydatastash->single_run; freq=mydatastash->freq;
   } else {
       std::string prev_dimred; parse("USE_OUTPUT_DATA_FROM",prev_dimred);
       if( prev_dimred.length()>0 ){
@@ -150,6 +151,7 @@ argument_names(getNumberOfArguments())
           mydatastash=dynamic_cast<Analysis*>( dimredstash ); plumed_assert( mydatastash );
           if( ignore_reweight ) log.printf("  using projections calculated by %s but ignoring all reweighting\n",prev_dimred.c_str() );
           else log.printf("  using projections calculated by %s\n",prev_dimred.c_str() ); 
+          single_run=mydatastash->single_run; freq=mydatastash->freq;
       } else { 
           if( keywords.exists("REWEIGHT_BIAS") ){
              bool dobias; parseFlag("REWEIGHT_BIAS",dobias);
@@ -434,7 +436,6 @@ double Analysis::getDistanceBetweenFrames( const unsigned& iframe, const unsigne
 }
 
 void Analysis::runAnalysis(){
-
   // Note : could add multiple walkers here - simply read in the data from all
   // other walkers here if we are writing the check points.
 
@@ -465,7 +466,7 @@ void Analysis::update(){
   accumulate();
   if( !single_run ){
     if( getStep()>0 && getStep()%freq==0 ) runAnalysis(); 
-    else if( idata==logweights.size() ) error("something has gone wrong. Probably a wrong initial time on restart"); 
+    else if( !reusing_data && idata==logweights.size() ) error("something has gone wrong. Probably a wrong initial time on restart"); 
   }
 }
 

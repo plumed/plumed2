@@ -102,9 +102,9 @@ void OutputStoredData::performAnalysis(){
   // Output the embedding in plumed format
   if( efilename!="dont output"){
      OFile afile; afile.link(*this); afile.setBackupString("analysis"); std::size_t psign=getOutputFormat().find("%");
-     afile.open( efilename.c_str() ); std::string descr="REMARK WEIGHT=%-" + getOutputFormat().substr(psign+1);
+     afile.open( efilename.c_str() ); std::string descr="REMARK WEIGHT=%-" + getOutputFormat().substr(psign+1) + "\n";
      for(unsigned j=0;j<getNumberOfDataPoints();++j){
-         afile.printf("DESCRIPTION: landmark configuration from %s performed at time %f",getLabel().c_str(),getTime() );
+         afile.printf("DESCRIPTION: landmark configuration from %s performed at time %f \n",getLabel().c_str(),getTime() );
          afile.printf(descr.c_str(),getReferenceConfiguration(j)->getWeight() ); 
          if( plumed.getAtoms().usingNaturalUnits() ) getReferenceConfiguration(j)->print( 1.0, afile, getOutputFormat() );
          else getReferenceConfiguration(j)->print( plumed.getAtoms().getUnits().getLength()/0.1, afile, getOutputFormat() );
