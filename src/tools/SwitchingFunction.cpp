@@ -118,6 +118,10 @@ s'(r)=\frac{1-r^6}{1-r^{12}}
 Since PLUMED 2.2 this is the default. The old behavior (no stretching) can be obtained with the
 NOSTRETCH flag. The NOSTRETCH keyword is only provided for backward compatibility and might be
 removed in the future. Similarly, the STRETCH keyword is still allowed but has no effect.
+
+Notice that switching functions defined with the simplified syntax are never stretched
+for backward compatibility. This might change in the future.
+
 */
 //+ENDPLUMEDOC
 
