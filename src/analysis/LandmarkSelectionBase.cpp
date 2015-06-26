@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -20,101 +20,68 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LandmarkSelectionBase.h"
-#include "reference/MultiReferenceBase.h"
+#include "DissimilarityMatrixBase.h"
 
 namespace PLMD {
 namespace analysis {
 
-LandmarkSelectionOptions::LandmarkSelectionOptions( const std::vector<std::string>& input, AnalysisWithLandmarks* myanalysis ):
-words(input),
-action(myanalysis)
+void LandmarkSelectionBase::registerKeywords( Keywords& keys ){
+  AnalysisWithAnalysableOutput::registerKeywords( keys );
+  keys.add("compulsory","NLANDMARKS","the number of landmarks that you would like to select");
+  keys.addFlag("NOVORONOI",false,"do not do a Voronoi analysis of the data to determine weights of final points");
+  keys.addFlag("IGNORE_WEIGHTS",false,"ignore the weights in the underlying analysis object");
+}
+
+LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
+Action(ao),
+AnalysisWithAnalysableOutput(ao)
 {
+  parse("NLANDMARKS",nlandmarks); 
+  log.printf("  selecting %d landmark points \n");
+  setNumberOfOutputPoints(nlandmarks);
+
+  parseFlag("NOVORONOI",novoronoi); 
+  if( !novoronoi && !dissimilaritiesWereSet() ) error("cannot calculate voronoi weights without dissimilarity mesaure use NOVORONOI or DISSIMILARITIES keyword");
+
+  if( !novoronoi ) log.printf("  ascribing weights to landmarks using voronoi analysis\n");
+  else log.printf("  ascribing weights of original points to landmark\n");  
 }
 
-LandmarkSelectionBase::LandmarkSelectionBase( const LandmarkSelectionOptions& lo ):
-style(lo.words[0]),
-input(lo.words),
-action(lo.action)
-{
-  input.erase( input.begin() );
-  if( style=="ALL" ){
-      novoronoi=true;
-  } else {
-      parse("N",nlandmarks);
-      action->landmark_frame_numbers.resize( nlandmarks );
-      novoronoi=false; parseFlag("NOVORONOI",novoronoi);
-  }
-  parseFlag("IGNORE_WEIGHTS",noweights);
+void LandmarkSelectionBase::selectFrame( const unsigned& iframe ){
+  landmark_indices.push_back( iframe );
 }
 
-LandmarkSelectionBase::~LandmarkSelectionBase(){
+ReferenceConfiguration* LandmarkSelectionBase::getOutputConfiguration( const unsigned& idata ){
+  return getReferenceConfiguration( landmark_indices[idata] );
 }
 
-void LandmarkSelectionBase::parseFlag(const std::string& key, bool& t){
-  Tools::parseFlag(input,key,t);
+double LandmarkSelectionBase::getOutputDissimilarity( const unsigned& idata, const unsigned& jdata ){
+  return getDissimilarity( landmark_indices[idata], landmark_indices[jdata] );
 }
 
-void LandmarkSelectionBase::checkRead() const {
-  if(!input.empty()){
-     std::string msg="cannot understand the following words from landmark selection input : ";
-     for(unsigned i=0;i<input.size();++i) msg = msg + input[i] + ", ";
-     plumed_merror(msg); 
-  }
-}
+void LandmarkSelectionBase::performAnalysis(){
+  landmark_indices.resize(0); selectLandmarks(); 
+  plumed_dbg_assert( nlandmarks==getNumberOfOutputPoints() );
 
-std::string LandmarkSelectionBase::description(){
-  std::ostringstream ostr;
-  if( style=="ALL"){
-     ostr<<"using all data";
-  } else {
-     ostr<<"selecting "<<nlandmarks<<" landmarks using "<<style<<" algorithm to analyze\n";
-     if(noweights) ostr<<"  ignoring all reweighting of data during landmark selection\n";
-     if(novoronoi) ostr<<"  voronoi weights will not be ascribed to points\n";
-  }
-  return ostr.str();
-}
-
-void LandmarkSelectionBase::setNumberOfLandmarks( const unsigned& nland ){
-  nlandmarks=nland; action->landmark_frame_numbers.resize( nland );
-}
-
-double LandmarkSelectionBase::getWeightOfFrame( const unsigned& iframe ){
-  if(noweights) return 1.0;
-  return action->getWeight(iframe);
-}
-double LandmarkSelectionBase::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& squared ){
-  return action->getDistanceBetweenFrames( iframe, jframe, squared ); 
-}
-
-void LandmarkSelectionBase::selectFrame( const unsigned& iframe, MultiReferenceBase* myframes){
-  plumed_assert( myframes->getNumberOfReferenceFrames()<nlandmarks );
-  action->landmark_frame_numbers[ myframes->getNumberOfReferenceFrames() ] = iframe;
-  myframes->copyFrame( action->getReferenceConfiguration(iframe) );
-}
-
-void LandmarkSelectionBase::selectLandmarks( MultiReferenceBase* myframes ){
-  // Select landmarks
-  myframes->clearFrames(); select( myframes );
-  plumed_assert( myframes->getNumberOfReferenceFrames()==nlandmarks );
-
-  // Now calculate voronoi weights 
   if( !novoronoi ){
-      unsigned rank=action->comm.Get_rank();
-      unsigned size=action->comm.Get_size();
-      std::vector<double> weights( nlandmarks, 0.0 );
-      for(unsigned i=rank;i<action->getNumberOfDataPoints();i+=size){
-          unsigned closest=0; double mindist=action->getDistanceBetweenFrames( i, action->landmark_frame_numbers[0], true );  
+      std::vector<double> lweights( nlandmarks, 0.0 );
+      unsigned rank=comm.Get_rank(), size=comm.Get_size();
+      for(unsigned i=rank;i<getNumberOfDataPoints();i+=size){
+          unsigned closest=0; 
+          double mindist=getDissimilarity( i, landmark_indices[0] );
           for(unsigned j=1;j<nlandmarks;++j){
-              double dist=action->getDistanceBetweenFrames( i, action->landmark_frame_numbers[j], true ); 
+              double dist=getDissimilarity( i, landmark_indices[j] );
               if( dist<mindist ){ mindist=dist; closest=j; }
           } 
-          weights[closest] += getWeightOfFrame(i);
+          lweights[closest] += getWeight(i);
       }
-      action->comm.Sum( &weights[0], weights.size() );
-      myframes->setWeights( weights );
+      comm.Sum( &lweights[0], lweights.size() ); setOutputWeights( lweights );
+  } else {
+      std::vector<double> lweights( nlandmarks );
+      for(unsigned i=0;i<nlandmarks;++i) lweights[i]=getWeight( landmark_indices[i] );
+      setOutputWeights( lweights );
   }
 }
 
 }
 }
-

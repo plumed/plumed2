@@ -22,7 +22,7 @@
 #include "ActionWithInputVessel.h"
 #include "StoreDataVessel.h"
 #include "BridgeVessel.h"
-#include "GridVesselBase.h"
+//#include "GridVesselBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -73,9 +73,9 @@ void ActionWithInputVessel::readArgument( const std::string& type ){
       if(!mves) error("action labelled " +  glab + " does not exist or does not have vessels");
       addDependency(mves);
 
-      GridVesselBase* gg = dynamic_cast<GridVesselBase*>( mves->getVesselWithName("GRID") );
-      if( !gg ) error(glab + " is not an action that calculates a function on a grid");
-      arguments = dynamic_cast<Vessel*>( gg );
+      // GridVesselBase* gg = dynamic_cast<GridVesselBase*>( mves->getVesselWithName("GRID") );
+      // if( !gg ) error(glab + " is not an action that calculates a function on a grid");
+      // arguments = dynamic_cast<Vessel*>( gg );
   }
 }
 

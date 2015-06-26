@@ -35,7 +35,7 @@ class ReferenceConfiguration;
 
 namespace analysis {
 
-class DimensionalityReductionBase;
+class AnalysisWithAnalysableOutput;
 
 /**
 \ingroup INHERIT
@@ -50,6 +50,7 @@ class Analysis :
   public ActionWithArguments,
   public vesselbase::ActionWithVessel
   {
+friend class AnalysisWithAnalysableOutput;
 private:
 /// Are we running only once for the whole trajectory
   bool single_run;
@@ -66,7 +67,7 @@ private:
 /// The Analysis action that we are reusing data from
   Analysis* mydatastash;
 /// The dimensionality reduction object that we are reusing data from
-  DimensionalityReductionBase* dimredstash;
+  AnalysisWithAnalysableOutput* dimredstash;
 /// This is used in cltool that works by setting up analysis objects 
 /// from a matrix of pairwise disimilarities
   enum {unset,squared,dist} dmat_type; 
@@ -123,8 +124,6 @@ protected:
   std::string getMetricName() const ;
 /// Return the number of arguments (this overwrites the one in ActionWithArguments)
   unsigned getNumberOfArguments() const;
-/// Return the number of data points
-  unsigned getNumberOfDataPoints() const;
 /// Calculate the distance between stored snapshot iframe and stored snapshot jframe
   double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
 /// Return the weight of the ith point
@@ -150,6 +149,8 @@ public:
   static void registerKeywords( Keywords& keys );
   Analysis(const ActionOptions&);
   ~Analysis();
+/// Return the number of data points
+  unsigned getNumberOfDataPoints() const;
   void prepare();
   void calculate();
   void update();
@@ -160,10 +161,10 @@ public:
   void runAnalysis();
   void lockRequests();
   void unlockRequests();
-  void setPairwiseDisimilarityMatrix( const Matrix<double>& edges, const std::vector<double>& w, const bool& squared );
   void calculateNumericalDerivatives( ActionWithValue* a=NULL ){ plumed_error(); }
   bool isPeriodic(){ plumed_error(); return false; }
   unsigned getNumberOfDerivatives(){ plumed_error(); return 0; }
+  unsigned getRunFrequency() const ;
 };
 
 inline
@@ -181,16 +182,6 @@ inline
 void Analysis::unlockRequests(){ 
   ActionAtomistic::unlockRequests();
   ActionWithArguments::unlockRequests();
-}
-
-inline
-unsigned Analysis::getNumberOfDataPoints() const {
-  if( !reusing_data ){
-     plumed_dbg_assert( data.size()==logweights.size() );
-     return data.size();
-  } else {
-     return mydatastash->getNumberOfDataPoints();
-  }
 }
 
 inline

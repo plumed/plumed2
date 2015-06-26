@@ -69,7 +69,9 @@ Action(ao),
 Analysis(ao)
 {
   parseOutputFile("OUTPUT_FILE",efilename);
+  if( efilename!="dont output" ) log.printf("  printing data to embedding file named %s \n",efilename.c_str() );
   parseOutputFile("LIST_FILE",ofilename);
+  if( ofilename!="dont output" ) log.printf("  printing data to colvar file named %s \n",ofilename.c_str() );
 }
 
 void OutputStoredData::performAnalysis(){

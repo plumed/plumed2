@@ -20,7 +20,8 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LandmarkSelectionBase.h"
-#include "LandmarkRegister.h"
+#include "DissimilarityMatrixBase.h"
+#include "core/ActionRegister.h"
 #include "tools/Random.h"
 
 namespace PLMD {
@@ -30,43 +31,51 @@ class FarthestPointSampling : public LandmarkSelectionBase {
 private:
   unsigned seed;
 public:
-  FarthestPointSampling( const LandmarkSelectionOptions& lo );
-  void select( MultiReferenceBase* );
+  static void registerKeywords( Keywords& keys );
+  FarthestPointSampling( const ActionOptions& ao );
+  void selectLandmarks();
 };
 
-PLUMED_REGISTER_LANDMARKS(FarthestPointSampling,"FPS")
+PLUMED_REGISTER_ACTION(FarthestPointSampling,"LANDMARK_SELECTION_FPS")
 
-FarthestPointSampling::FarthestPointSampling( const LandmarkSelectionOptions& lo ):
-LandmarkSelectionBase(lo)
+void FarthestPointSampling::registerKeywords( Keywords& keys ){
+  LandmarkSelectionBase::registerKeywords(keys);
+  keys.add("compulsory","SEED","1234","a random number seed");
+  keys.reset_style("DISSIMILARITIES","compulsory");
+}
+
+FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
+Action(ao),
+LandmarkSelectionBase(ao)
 {
   parse("SEED",seed);
 }
 
-void FarthestPointSampling::select( MultiReferenceBase* myframes ){
+void FarthestPointSampling::selectLandmarks(){
   std::vector<unsigned> landmarks( getNumberOfLandmarks() );
 
   // Select first point at random
   Random random; random.setSeed(-seed); double rand=random.RandU01();
-  landmarks[0] = std::floor( getNumberOfFrames()*rand );
-  selectFrame( landmarks[0], myframes );
+  landmarks[0] = std::floor( getNumberOfDataPoints()*rand );
+  selectFrame( landmarks[0] );
 
   // Now find distance to all other points (N.B. We can use squared distances here for speed)
-  Matrix<double> distances( getNumberOfLandmarks(), getNumberOfFrames() );
-  for(unsigned i=0;i<getNumberOfFrames();++i) distances(0,i) = getDistanceBetweenFrames( landmarks[0], i, true );
+  Matrix<double> distances( getNumberOfLandmarks(), getNumberOfDataPoints() );
+  for(unsigned i=0;i<getNumberOfDataPoints();++i) distances(0,i) = getDissimilarity( landmarks[0], i );
 
   // Now find all other landmarks
   for(unsigned i=1;i<getNumberOfLandmarks();++i){
       // Find point that has the largest minimum distance from the landmarks selected thus far
       double maxd=0;
-      for(unsigned j=0;j<getNumberOfFrames();++j){
+      for(unsigned j=0;j<getNumberOfDataPoints();++j){
           double mind=distances(0,j);
           for(unsigned k=1;k<i;++k){
               if( distances(k,j)<mind ){ mind=distances(k,j); }
           }
           if( mind>maxd ){ maxd=mind; landmarks[i]=j; }
       }
-      selectFrame( landmarks[i], myframes );
-      for(unsigned k=0;k<getNumberOfFrames();++k) distances(i,k) = getDistanceBetweenFrames( landmarks[i], k, true );
+      selectFrame( landmarks[i] );
+      for(unsigned k=0;k<getNumberOfDataPoints();++k) distances(i,k) = getDissimilarity( landmarks[i], k );
   } 
 }
 

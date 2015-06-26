@@ -26,7 +26,7 @@
 #include "StoreDataVessel.h"
 #include "VesselRegister.h"
 #include "BridgeVessel.h"
-#include "GridVesselBase.h"
+//#include "GridVesselBase.h"
 #include "FunctionVessel.h"
 
 using namespace std;
@@ -403,8 +403,8 @@ Vessel* ActionWithVessel::getVesselWithName( const std::string& mynam ){
 void ActionWithVessel::dumpCheckPointFile( OFile& cfile ){
   cfile.printf("BEGIN ACTION: TYPE=%s LABEL=%s \n",getName().c_str(),getLabel().c_str() );
   for(unsigned i=0;i<functions.size();++i){
-     GridVesselBase* gv = dynamic_cast<GridVesselBase*>( functions[i] );
-     if(gv) gv->writeToCheckpoint( cfile );
+     // GridVesselBase* gv = dynamic_cast<GridVesselBase*>( functions[i] );
+     // if(gv) gv->writeToCheckpoint( cfile );
   }
   cfile.printf("END ACTION: TYPE=%s LABEL=%s \n",getName().c_str(),getLabel().c_str() );
 }
@@ -419,8 +419,8 @@ void ActionWithVessel::restartFromCheckPointFile( IFile& cifile ){
   if( alab!=getLabel() ) error("mismatch for action label in checkpoint file");
 
   for(unsigned i=0;i<functions.size();++i){
-     GridVesselBase* gv = dynamic_cast<GridVesselBase*>( functions[i] );
-     if(gv) gv->readFromCheckpoint( cifile );
+//     GridVesselBase* gv = dynamic_cast<GridVesselBase*>( functions[i] );
+//     if(gv) gv->readFromCheckpoint( cifile );
   }
 
   // Check last line

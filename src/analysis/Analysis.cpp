@@ -31,7 +31,7 @@
 #include "reference/ReferenceAtoms.h"
 #include "reference/MetricRegister.h"
 #include "reference/FakeFrame.h"
-#include "DimensionalityReductionBase.h"
+#include "AnalysisWithAnalysableOutput.h"
 
 namespace PLMD {
 namespace analysis {
@@ -66,14 +66,14 @@ void Analysis::registerKeywords( Keywords& keys ){
   keys.use("ARG"); keys.reset_style("ARG","atoms");
   keys.add("atoms","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
   keys.add("compulsory","METRIC","EUCLIDEAN","how are we measuring the distances between configurations");
-  keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis.  This is not required if you specify REUSE_DATA_FROM/USE_DIMRED_DATA_FROM");
-  keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA/REUSE_DATA_FROM/USE_DIMRED_DATA_FROM");
+  keys.add("compulsory","STRIDE","1","the frequency with which data should be stored for analysis.  This is not required if you specify REUSE_DATA_FROM/USE_OUTPUT_DATA_FROM");
+  keys.add("compulsory","RUN","the frequency with which to run the analysis algorithm. This is not required if you specify USE_ALL_DATA/REUSE_DATA_FROM/USE_OUTPUT_DATA_FROM");
   keys.add("atoms-2","REUSE_DATA_FROM","using this form of input allows one to do multiple analyses on the same set of data.  The data "
                                        "from the referenced Analysis action will be re-analysed using this new form of analysis after having "
                                        "been analysed using the form of analysis specified in the action that was previously referenced. The " 
                                        "frequency (STRIDE) of storage of the data and the frequency of running this second form of analysis (RUN) "
                                        "are the same as those in the referenced analysis object");
-  keys.add("atoms-3","USE_DIMRED_DATA_FROM","using this form of input allows one to analyse projections of the data generated using some dimensionality reduction algoirthm. "
+  keys.add("atoms-3","USE_OUTPUT_DATA_FROM","using this form of input allows one to analyse projections of the data generated using some dimensionality reduction algoirthm. "
                                             "The dimensionality reduction will have been performed using the referenced Analysis action.  If landmark configurations were "
                                             "used projections of all stored points will be generated using the appropriate out of sample technique.  The frequency (STRIDE) "
                                             "of storage of the data and the frequency with which this particular form of analysis are performed (RUN) are the same as those "
@@ -142,11 +142,11 @@ argument_names(getNumberOfArguments())
       if( ignore_reweight ) log.printf("  reusing data stored by %s but ignoring all reweighting\n",prev_analysis.c_str() );
       else log.printf("  reusing data stored by %s\n",prev_analysis.c_str() ); 
   } else {
-      std::string prev_dimred; parse("USE_DIMRED_DATA_FROM",prev_dimred);
+      std::string prev_dimred; parse("USE_OUTPUT_DATA_FROM",prev_dimred);
       if( prev_dimred.length()>0 ){
           reusing_data=true; dimred_data=true;
-          dimredstash=plumed.getActionSet().selectWithLabel<DimensionalityReductionBase*>( prev_dimred );
-          if( !dimredstash ) error("could not find dimensionality reduction action named " + prev_dimred );
+          dimredstash=plumed.getActionSet().selectWithLabel<AnalysisWithAnalysableOutput*>( prev_dimred );
+          if( !dimredstash ) error("could not find analysis output action named " + prev_dimred );
           mydatastash=dynamic_cast<Analysis*>( dimredstash ); plumed_assert( mydatastash );
           if( ignore_reweight ) log.printf("  using projections calculated by %s but ignoring all reweighting\n",prev_dimred.c_str() );
           else log.printf("  using projections calculated by %s\n",prev_dimred.c_str() ); 
@@ -205,6 +205,7 @@ argument_names(getNumberOfArguments())
           if( !single_run ){
               freq=mydatastash->freq;
               ndata=freq/mydatastash->getStride();
+              setStride( freq );
           }
       } else if( single_run ) {       
           log.printf("  analyzing all data in trajectory\n");
@@ -349,6 +350,8 @@ double Analysis::getWeight( const unsigned& idata ) const {
   if( !reusing_data ){
      plumed_dbg_assert( idata<data.size() );
      return data[idata]->getWeight();
+  } else if( dimred_data ){
+     return dimredstash->getOutputWeight(idata);
   } else {
      return mydatastash->getWeight(idata);
   }
@@ -358,15 +361,15 @@ ReferenceConfiguration* Analysis::getReferenceConfiguration( const unsigned& ida
   if( !reusing_data ){
       return data[idata];
   } else if( dimred_data ){
-      ReferenceConfigurationOptions("EUCLIDEAN");
-      ReferenceConfiguration* mydata=metricRegister().create<ReferenceConfiguration>("EUCLIDEAN");
-      unsigned ndim=dimredstash->getLowDimensionSize();
-      std::vector<std::string> dimnames(ndim); dimredstash->getPropertyNames( dimnames );
-      mydata->setNamesAndAtomNumbers( std::vector<AtomNumber>(), dimnames );
-      std::vector<double> pp(ndim); dimredstash->getProjectedPoint( idata, pp );
-      std::vector<double> empty( pp.size() );
-      mydata->setReferenceConfig( std::vector<Vector>(), pp, empty );  
-      return mydata;
+      // ReferenceConfigurationOptions("EUCLIDEAN");
+      // ReferenceConfiguration* mydata=metricRegister().create<ReferenceConfiguration>("EUCLIDEAN");
+      // unsigned ndim=dimredstash->getDimensionOfOutputPoints();
+      // std::vector<std::string> dimnames(ndim); dimredstash->getPropertyNames( dimnames );
+      // mydata->setNamesAndAtomNumbers( std::vector<AtomNumber>(), dimnames );
+      // std::vector<double> pp(ndim); dimredstash->getOutputForPoint( idata, pp );
+      // std::vector<double> empty( pp.size() );
+      // mydata->setReferenceConfig( std::vector<Vector>(), pp, empty );  
+      return dimredstash->getOutputConfiguration( idata );
   } else {
       return mydatastash->getReferenceConfiguration( idata );
   }
@@ -416,7 +419,7 @@ void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, 
       weight=data[idata]->getWeight();
   } else if( dimred_data ){
       weight = getWeight( idata );
-      dimredstash->getProjectedPoint( idata, point );
+      dimredstash->getOutputForPoint( idata, point );
   } else {
       mydatastash->getDataPoint( idata, point, weight );
   }
@@ -478,19 +481,19 @@ void Analysis::runFinalJobs() {
   runAnalysis(); 
 }
 
-void Analysis::setPairwiseDisimilarityMatrix( const Matrix<double>& edges, const std::vector<double>& w, const bool& sq ){
-  plumed_dbg_assert( edges.nrows()==edges.ncols() && w.size()==edges.nrows() );
-
-  if( sq ) dmat_type=squared;
-  else dmat_type=dist;
-  
-  pairwise_dissimilarity_matrix.resize( edges.nrows(), edges.ncols() );
-  pairwise_dissimilarity_matrix = edges;
-
-  logweights.resize( w.size() ); idata=w.size(); data.resize( w.size() );
-  for(unsigned i=0;i<w.size();++i){
-      logweights[i]=std::log(w[i]); data[i]=new FakeFrame( ReferenceConfigurationOptions("fake") );
+unsigned Analysis::getNumberOfDataPoints() const {
+  if( !reusing_data ){
+     plumed_dbg_assert( data.size()==logweights.size() );
+     return data.size();
+  } else if( dimred_data ){
+     return dimredstash->getNumberOfOutputPoints();
+  } else {
+     return mydatastash->getNumberOfDataPoints();
   }
+}
+
+unsigned Analysis::getRunFrequency() const {
+  return freq;
 }
 
 }

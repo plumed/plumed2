@@ -12,8 +12,11 @@
 !/core
 !/crystallization
 !/cruiser
+!/dimred
+!/fieldcvs
 !/function
 !/generic
+!/gridtools
 !/header.sh
 !/release.sh
 !/imd

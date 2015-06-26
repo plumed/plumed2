@@ -20,27 +20,33 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LandmarkSelectionBase.h"
-#include "LandmarkRegister.h"
+#include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace analysis {
 
 class SelectWithStride : public LandmarkSelectionBase {
 public:
-  SelectWithStride( const LandmarkSelectionOptions& lo );
-  void select( MultiReferenceBase* );
+  static void registerKeywords( Keywords& keys );
+  SelectWithStride( const ActionOptions& ao );
+  void selectLandmarks();
 };
 
-PLUMED_REGISTER_LANDMARKS(SelectWithStride,"STRIDE")
+PLUMED_REGISTER_ACTION(SelectWithStride,"LANDMARK_SELECT_STRIDE")
 
-SelectWithStride::SelectWithStride( const LandmarkSelectionOptions& lo ):
-LandmarkSelectionBase(lo)
+void SelectWithStride::registerKeywords( Keywords& keys ){
+  LandmarkSelectionBase::registerKeywords( keys );
+}
+
+SelectWithStride::SelectWithStride( const ActionOptions& ao ):
+Action(ao),
+LandmarkSelectionBase(ao)
 {
 }
 
-void SelectWithStride::select( MultiReferenceBase* myframes ){
-  unsigned stride = std::floor( getNumberOfFrames() / getNumberOfLandmarks() ), max=stride*getNumberOfLandmarks();
-  for(unsigned i=0;i<max;i+=stride) selectFrame( i, myframes ); 
+void SelectWithStride::selectLandmarks(){
+  unsigned stride = std::floor( getNumberOfDataPoints() / getNumberOfLandmarks() ), max=stride*getNumberOfLandmarks();
+  for(unsigned i=0;i<max;i+=stride) selectFrame( i ); 
 }
 
 }
