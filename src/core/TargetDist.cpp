@@ -58,9 +58,9 @@ void TargetDist::read( const std::vector<double>& targ, std::vector<Value*> ar )
 
 double TargetDist::calculate( std::vector<double>& derivs ){
   plumed_assert( derivs.size()==args.size() );
-  double dist=0, tmp;
+  double dist=0;
   for(unsigned i=0;i<args.size();++i){
-      tmp=args[i]->difference( target[i], args[i]->get() );
+      double tmp=args[i]->difference( target[i], args[i]->get() );
       derivs[i]=tmp; dist+=tmp*tmp; 
   }
   dist=sqrt(dist);

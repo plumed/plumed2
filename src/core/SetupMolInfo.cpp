@@ -146,7 +146,7 @@ void SetupMolInfo::getBackbone( std::vector<std::string>& restrings, const std::
 
       // And now get the backbone atoms from each segment
       backbone.resize( segments.size() ); 
-      std::vector<std::string> atnames; std::vector<AtomNumber> atomnumbers; 
+      std::vector<AtomNumber> atomnumbers; 
       for(unsigned i=0;i<segments.size();++i){
           for(unsigned j=0;j<segments[i].size();++j){
               std::string resname=pdb.getResidueName( segments[i][j] );
