@@ -80,14 +80,11 @@ awk 'BEGIN{c=0}{
   if(match($0,"#")) print ; else {print c,$2,$3; c++}
 }' < mc > newmc
 }'
+\endverbatim
 then
 \verbatim
 plumed driver --mc newmc --plumed plumed.dat --ixyz traj.gro
 \endverbatim
-
-\endverbatim
-
-
 
 
 */
