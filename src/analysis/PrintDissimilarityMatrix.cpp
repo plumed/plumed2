@@ -63,7 +63,7 @@ fmt("%f")
   if(!mydissim) error("action labelled " +  aname + " does not exist or is not of Analysis type");
   addDependency( mydissim );
 
-  if( mydissim->runFinalAnalysisOnly() ) setStride( mydissim->getStride() );
+  if( !mydissim->runFinalAnalysisOnly() ) setStride( mydissim->getRunFrequency() );
 
   log.printf("  printing dissimilarity matrix calculated by action with label %s \n",aname.c_str() );
 
@@ -81,12 +81,12 @@ void PrintDissimilarityMatrix::printToFile( OFile& ofile ){
 }
 
 void PrintDissimilarityMatrix::update(){
-  if( mydissim->runFinalAnalysisOnly() ) return ;
+  if( getStep()==0 || mydissim->runFinalAnalysisOnly() ) return ;
   OFile ofile; ofile.setBackupString("analysis"); printToFile( ofile );
 }
 
 void PrintDissimilarityMatrix::runFinalJobs(){
-  OFile ofile; printToFile( ofile );
+  if( mydissim->runFinalAnalysisOnly() ){ OFile ofile; printToFile( ofile ); }
 }
 
 }
