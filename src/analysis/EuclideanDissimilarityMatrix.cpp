@@ -19,28 +19,31 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DissimilarityMatrixBase.h"
+#include "Analysis.h"
 #include "core/ActionRegister.h"
 
 namespace PLMD {
 namespace analysis {
 
-class EuclideanDissimilarityMatrix : public DissimilarityMatrixBase {
+class EuclideanDissimilarityMatrix : public Analysis {
 public:
   static void registerKeywords( Keywords& keys );
   EuclideanDissimilarityMatrix( const ActionOptions& ao );
   void calcDissimilarity( const unsigned& , const unsigned& );
+  void performAnalysis(){}
+  void performTask(){ plumed_error(); }
+  bool dissimilaritiesWereSet() const { return true; }
 };
 
 PLUMED_REGISTER_ACTION(EuclideanDissimilarityMatrix,"EUCLIDEAN_DISSIMILARITIES")
 
 void EuclideanDissimilarityMatrix::registerKeywords( Keywords& keys ){
-  DissimilarityMatrixBase::registerKeywords( keys );
+  Analysis::registerKeywords( keys );
 }
 
 EuclideanDissimilarityMatrix::EuclideanDissimilarityMatrix( const ActionOptions& ao ):
 Action(ao),
-DissimilarityMatrixBase(ao)
+Analysis(ao)
 {
 }
 

@@ -19,15 +19,16 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "DissimilarityMatrixBase.h"
+#include "Analysis.h"
 #include "core/PlumedMain.h"
+#include "core/ActionSet.h"
 #include "core/ActionRegister.h"
 #include "tools/IFile.h"
 
 namespace PLMD {
 namespace analysis {
 
-class ReadDissimilarityMatrix : public DissimilarityMatrixBase {
+class ReadDissimilarityMatrix : public Analysis {
 private:
   unsigned nnodes;
   std::string fname, wfile;
@@ -41,13 +42,16 @@ public:
   void calcDissimilarity( const unsigned& , const unsigned& ){ plumed_error(); }
   void update();
   void performAnalysis();
+  void performTask(){ plumed_error(); }
+  double getWeight( const unsigned& idata ) const ;
   double getOutputWeight( const unsigned& idata ) const ;
+  bool dissimilaritiesWereSet() const { return true; }
 };
 
 PLUMED_REGISTER_ACTION(ReadDissimilarityMatrix,"READ_DISSIMILARITY_MATRIX")
 
 void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ){
-  DissimilarityMatrixBase::registerKeywords( keys );
+  Analysis::registerKeywords( keys );
   keys.add("compulsory","FILE","an input file containing the matrix of dissimilarities");
   keys.add("optional","WFILE","input file containing weights of points");
   keys.remove("ATOMS"); keys.remove("METRIC"); keys.remove("STRIDE"); keys.remove("RUN");
@@ -58,9 +62,11 @@ void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ){
 
 ReadDissimilarityMatrix::ReadDissimilarityMatrix( const ActionOptions& ao ):
 Action(ao),
-DissimilarityMatrixBase(ao),
+Analysis(ao),
 nnodes(1)
 {
+  if( plumed.getActionSet().size()!=0 ) error("read dissimilarity matrix command must be at top of input file");
+
   parse("FILE",fname);
   log.printf("  reading dissimilarity matrix from file %s \n",fname.c_str() );
   parse("WFILE",wfile);
@@ -106,8 +112,14 @@ void ReadDissimilarityMatrix::getDataPoint( const unsigned& idata, std::vector<d
 }
 
 double ReadDissimilarityMatrix::getOutputWeight( const unsigned& idata ) const {
-  plumed_dbg_assert( idata<nnodes ); return weights[idata]; 
+  return getWeight( idata );
 }
+
+double ReadDissimilarityMatrix::getWeight( const unsigned& idata ) const {
+  plumed_assert( idata<nnodes ); return weights[idata]; 
+}
+
+
 
 
 }

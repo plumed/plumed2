@@ -27,20 +27,13 @@
 namespace PLMD {
 namespace analysis {
 
-class DissimilarityMatrixBase;
-
 class AnalysisWithAnalysableOutput : public Analysis {
 private:
-/// The object that calculates the dissimilarities between points
-  DissimilarityMatrixBase* mydissims;
-///
-  AnalysisWithAnalysableOutput* myinput;
   unsigned noutput_points;
   std::vector<double> oweights;
 protected:
   void setNumberOfOutputPoints( const unsigned& n );
   void setOutputWeights( const std::vector<double>& wwwin );
-  double getDissimilarity( const unsigned& idata, const unsigned& jdata );
 public:
   static void registerKeywords( Keywords& keys );
   AnalysisWithAnalysableOutput( const ActionOptions& );
@@ -49,7 +42,6 @@ public:
   virtual void getOutputForPoint( const unsigned& idata, std::vector<double>& point );
   double getOutputWeight( const unsigned& idata );
   virtual double getOutputDissimilarity( const unsigned& idata, const unsigned& jdata )=0;
-  bool dissimilaritiesWereSet();
 };
 
 inline

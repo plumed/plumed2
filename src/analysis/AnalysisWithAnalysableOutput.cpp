@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AnalysisWithAnalysableOutput.h"
-#include "DissimilarityMatrixBase.h"
 #include "reference/ReferenceConfiguration.h"
 #include "reference/MetricRegister.h"
 #include "core/PlumedMain.h"
@@ -35,11 +34,8 @@ void AnalysisWithAnalysableOutput::registerKeywords( Keywords& keys ){
 
 AnalysisWithAnalysableOutput::AnalysisWithAnalysableOutput( const ActionOptions& ao ):
 Action(ao),
-Analysis(ao),
-mydissims(NULL)
+Analysis(ao)
 {
-  if( mydatastash ) mydissims = dynamic_cast<DissimilarityMatrixBase*>( mydatastash );
-  if( dimredstash ) mydissims = dynamic_cast<DissimilarityMatrixBase*>( dimredstash );
 }
 
 void AnalysisWithAnalysableOutput::setNumberOfOutputPoints( const unsigned& n ){
@@ -54,15 +50,6 @@ void AnalysisWithAnalysableOutput::setOutputWeights( const std::vector<double>& 
 
 void AnalysisWithAnalysableOutput::getOutputForPoint( const unsigned& idata, std::vector<double>& point ){
   error("cannot construct histograms using this kind of object");
-}
-
-double AnalysisWithAnalysableOutput::getDissimilarity( const unsigned& idata, const unsigned& jdata ){
-  plumed_assert( mydissims );
-  return mydissims->getDissimilarity( idata, jdata );
-}
-
-bool AnalysisWithAnalysableOutput::dissimilaritiesWereSet(){
-  return mydissims; 
 }
 
 }

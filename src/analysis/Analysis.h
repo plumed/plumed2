@@ -51,6 +51,7 @@ class Analysis :
   public vesselbase::ActionWithVessel
   {
 friend class AnalysisWithAnalysableOutput;
+friend class ReadDissimilarityMatrix;
 private:
 /// Are we running only once for the whole trajectory
   bool single_run;
@@ -107,9 +108,13 @@ private:
   double retrieveNorm() const ;
 /// Get the metric if we are using malonobius distance and flexible hill
   std::vector<double> getMetric() const ;
+/// The matrix containing the dissimiarities
+  Matrix<double> mydissimilarities;
 protected:
 /// Get a reference configuration 
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata );
+/// Get the squared dissimilarity between two reference configurations
+  double getDissimilarity( const unsigned& i, const unsigned& j );
 /// This is used to read in output file names for analysis methods.  When
 /// this method is used and the calculation is not restarted old analysis
 /// files are backed up.
@@ -120,8 +125,8 @@ protected:
   std::string getMetricName() const ;
 /// Return the number of arguments (this overwrites the one in ActionWithArguments)
   unsigned getNumberOfArguments() const;
-/// Return the weight of the ith point
-  double getWeight( const unsigned& idata ) const ;
+/// Set the value of one fo the dissimilarities
+  void setDissimilarityMatrixElement( const unsigned& , const unsigned& , const double& );
 /// Retrieve the ith point
   void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Returns true if argument i is periodic together with the domain 
@@ -139,14 +144,18 @@ protected:
   std::vector<Value*> getArguments();
 /// Return the format to use for numbers in output files
   std::string getOutputFormat() const ;
+/// Calculate the distance between stored snapshot iframe and stored snapshot jframe
+  double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
 public:
   static void registerKeywords( Keywords& keys );
   Analysis(const ActionOptions&);
   ~Analysis();
 /// Return the number of data points
-  virtual unsigned getNumberOfDataPoints() const;
-/// Calculate the distance between stored snapshot iframe and stored snapshot jframe
-  virtual double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
+  virtual unsigned getNumberOfDataPoints() const ;
+/// Return the weight of the ith point
+  virtual double getWeight( const unsigned& idata ) const ;
+/// Calculate the dissimilarity between two configurations
+  virtual void calcDissimilarity( const unsigned& , const unsigned& ){ plumed_error(); }
   void prepare();
   void calculate();
   void update();
@@ -162,6 +171,7 @@ public:
   unsigned getNumberOfDerivatives(){ plumed_error(); return 0; }
   unsigned getRunFrequency() const ;
   bool runFinalAnalysisOnly() const ;
+  virtual bool dissimilaritiesWereSet() const ;
 };
 
 inline
@@ -216,6 +226,12 @@ std::string Analysis::getOutputFormat() const {
 inline
 bool Analysis::runFinalAnalysisOnly() const {
   return single_run;
+}
+
+inline
+void Analysis::setDissimilarityMatrixElement( const unsigned& i, const unsigned& j, const double& v ){
+  plumed_dbg_assert( mydissimilarities(i,j)<epsilon );
+  mydissimilarities(j,i)=mydissimilarities(i,j) = v;
 }
 
 }

@@ -20,73 +20,44 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "tools/OFile.h"
+#include "Analysis.h"
 #include "core/ActionRegister.h"
-#include "DissimilarityMatrixBase.h"
-#include "core/PlumedMain.h"
-#include "core/ActionSet.h"
 
 namespace PLMD {
 namespace analysis {
 
-class PrintDissimilarityMatrix : public ActionPilot {
+class PrintDissimilarityMatrix : public Analysis {
 private:
-  std::string fmt;
   std::string fname;
-  DissimilarityMatrixBase* mydissim;
-  void printToFile( OFile& ofile );
 public:
   static void registerKeywords( Keywords& keys );
   PrintDissimilarityMatrix( const ActionOptions& ao );
-  void calculate(){};
-  void apply(){};
-  void update();
-  void runFinalJobs();
+  void performAnalysis();
+  void performTask(){ plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(PrintDissimilarityMatrix,"PRINT_DISSIMILARITY_MATRIX")
 
 void PrintDissimilarityMatrix::registerKeywords( Keywords& keys ){
-  Action::registerKeywords( keys );
-  ActionPilot::registerKeywords( keys );
-  keys.add("compulsory","MATRIX","the action that calculates the matrix of dissimiliarities");
+  Analysis::registerKeywords( keys );
   keys.add("compulsory","FILE","name of file on which to output the data");
-  keys.add("optional","FMT","the format to use for numbers in the output file");
 }
 
 PrintDissimilarityMatrix::PrintDissimilarityMatrix( const ActionOptions& ao ):
 Action(ao),
-ActionPilot(ao),
-fmt("%f")
+Analysis(ao)
 {
-  std::string aname; parse("MATRIX",aname);
-  mydissim = plumed.getActionSet().selectWithLabel<DissimilarityMatrixBase*>(aname);
-  if(!mydissim) error("action labelled " +  aname + " does not exist or is not of Analysis type");
-  addDependency( mydissim );
-
-  if( !mydissim->runFinalAnalysisOnly() ) setStride( mydissim->getRunFrequency() );
-
-  log.printf("  printing dissimilarity matrix calculated by action with label %s \n",aname.c_str() );
-
-  parse("FILE",fname); parse("FMT",fmt); fmt=" "+fmt;
-  log.printf("  printing to file named %s with formt%s \n",fname.c_str(), fmt.c_str() );
+  parseOutputFile("FILE",fname); 
+  log.printf("  printing to file named %s with formt%s \n",fname.c_str(), getOutputFormat().c_str() );
 }
 
-void PrintDissimilarityMatrix::printToFile( OFile& ofile ){
-  ofile.open(fname); 
-  for(unsigned i=0;i<mydissim->getNumberOfDataPoints();++i){
-      for(unsigned j=0;j<mydissim->getNumberOfDataPoints();++j) ofile.printf(fmt.c_str(), mydissim->getDissimilarity( i,j ) );
+void PrintDissimilarityMatrix::performAnalysis(){
+  OFile ofile; ofile.setBackupString("analysis"); ofile.open(fname); 
+  for(unsigned i=0;i<getNumberOfDataPoints();++i){
+      for(unsigned j=0;j<getNumberOfDataPoints();++j) ofile.printf(getOutputFormat().c_str(), getDissimilarity( i,j ) );
       ofile.printf("\n");
   }   
   ofile.close();
-}
-
-void PrintDissimilarityMatrix::update(){
-  if( getStep()==0 || mydissim->runFinalAnalysisOnly() ) return ;
-  OFile ofile; ofile.setBackupString("analysis"); printToFile( ofile );
-}
-
-void PrintDissimilarityMatrix::runFinalJobs(){
-  if( mydissim->runFinalAnalysisOnly() ){ OFile ofile; printToFile( ofile ); }
 }
 
 }

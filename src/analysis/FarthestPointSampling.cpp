@@ -20,7 +20,6 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "LandmarkSelectionBase.h"
-#include "DissimilarityMatrixBase.h"
 #include "core/ActionRegister.h"
 #include "tools/Random.h"
 
@@ -47,8 +46,8 @@ FarthestPointSampling::FarthestPointSampling( const ActionOptions& ao ):
 Action(ao),
 LandmarkSelectionBase(ao)
 {
+  if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input action");
   parse("SEED",seed);
-  if( !dissimilaritiesWereSet() ) error("wrong type of input Action");
 }
 
 void FarthestPointSampling::selectLandmarks(){

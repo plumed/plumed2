@@ -19,7 +19,6 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
 #include "Analysis.h"
 #include "core/ActionSet.h"
 #include "core/ActionWithValue.h"
@@ -111,7 +110,7 @@ ofmt("%f"),
 current_args(getNumberOfArguments()),
 argument_names(getNumberOfArguments())
 {
-  if( keywords.exists("FMT") ) parse("FMT",ofmt);  // Read the format for output files
+  if( keywords.exists("FMT") ){ parse("FMT",ofmt); ofmt=" "+ofmt; }  // Read the format for output files
   // Make a vector containing all the argument names
   for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i]=getPntrToArgument(i)->getName();
   std::vector<AtomNumber> atom_numbers;
@@ -391,6 +390,29 @@ ReferenceConfiguration* Analysis::getReferenceConfiguration( const unsigned& ida
   }
 }
 
+bool Analysis::dissimilaritiesWereSet() const {
+  if( !reusing_data ){
+      return false;
+  } else if( dimred_data ){ 
+      return dimredstash->dissimilaritiesWereSet();
+  } else {
+      return mydatastash->dissimilaritiesWereSet();
+  } 
+}
+
+double Analysis::getDissimilarity( const unsigned& i, const unsigned& j ){
+  if( !reusing_data ){
+     plumed_assert( i<mydissimilarities.nrows() && j<mydissimilarities.ncols() );
+     if( mydissimilarities(i,j)>0. ) return mydissimilarities(i,j);
+     if( i!=j ){ calcDissimilarity(i,j); return mydissimilarities(i,j); }
+     return 0.0;
+  } else if( dimred_data ){
+     return dimredstash->getOutputDissimilarity( i,j );
+  } else {
+     return mydatastash->getDissimilarity( i,j );
+  }
+}
+
 void Analysis::finalizeWeights( const bool& ignore_weights ){
   plumed_assert( !reusing_data );
   // Ensure weights are not finalized if we are using readDissimilarityMatrix
@@ -456,6 +478,7 @@ void Analysis::runAnalysis(){
   // Calculate the final weights from the log weights 
   if( !reusing_data ){ 
      finalizeWeights( ignore_reweight ); 
+     mydissimilarities.resize( getNumberOfDataPoints(), getNumberOfDataPoints() );
   } else {
      // mydatastash->finalizeWeights( ignore_reweight ); Weights will have been finalized by previous analysis
      if( mydatastash ) norm=mydatastash->retrieveNorm();
@@ -465,7 +488,6 @@ void Analysis::runAnalysis(){
   performAnalysis(); idata=0;
   // Update total normalization constant
   old_norm+=norm; firstAnalysisDone=true;
-
 }
 
 double Analysis::getNormalization() const {
