@@ -111,28 +111,33 @@ ofmt("%f"),
 current_args(getNumberOfArguments()),
 argument_names(getNumberOfArguments())
 {
-  parse("FMT",ofmt);  // Read the format for output files
+  if( keywords.exists("FMT") ) parse("FMT",ofmt);  // Read the format for output files
   // Make a vector containing all the argument names
   for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i]=getPntrToArgument(i)->getName();
-  // Read in the metric style
-  parse("METRIC",metricname); std::vector<AtomNumber> atom_numbers;
-  ReferenceConfiguration* checkref=metricRegister().create<ReferenceConfiguration>( metricname );
-  // Check if we should read atoms
-  ReferenceAtoms* hasatoms=dynamic_cast<ReferenceAtoms*>( checkref );
-  if( hasatoms ){
-      parseAtomList("ATOMS",atom_numbers); requestAtoms(atom_numbers);
-      log.printf("  monitoring positions of atoms ");
-      for(unsigned i=0;i<atom_numbers.size();++i) log.printf("%d ",atom_numbers[i].serial() );
-      log.printf("\n");
-  }
-  // Check if we should read arguments
-  ReferenceArguments* hasargs=dynamic_cast<ReferenceArguments*>( checkref );
-  if( !hasargs && getNumberOfArguments()!=0 ) error("use of arguments with metric type " + metricname + " is invalid");
-  if( hasatoms && hasargs ) error("currently dependencies break if you have both arguments and atoms");
-  // And delte the fake reference we created
-  delete checkref;
+  std::vector<AtomNumber> atom_numbers;
 
-  std::string prev_analysis; parse("REUSE_INPUT_DATA_FROM",prev_analysis);
+  // Read in the metric style
+  if( keywords.exists("METRIC") ){
+      parse("METRIC",metricname); 
+      ReferenceConfiguration* checkref=metricRegister().create<ReferenceConfiguration>( metricname );
+      // Check if we should read atoms
+      ReferenceAtoms* hasatoms=dynamic_cast<ReferenceAtoms*>( checkref );
+      if( hasatoms ){
+          parseAtomList("ATOMS",atom_numbers); requestAtoms(atom_numbers);
+          log.printf("  monitoring positions of atoms ");
+          for(unsigned i=0;i<atom_numbers.size();++i) log.printf("%d ",atom_numbers[i].serial() );
+          log.printf("\n");
+      }
+      // Check if we should read arguments
+      ReferenceArguments* hasargs=dynamic_cast<ReferenceArguments*>( checkref );
+      if( !hasargs && getNumberOfArguments()!=0 ) error("use of arguments with metric type " + metricname + " is invalid");
+      if( hasatoms && hasargs ) error("currently dependencies break if you have both arguments and atoms");
+      // And delte the fake reference we created
+      delete checkref;
+  }
+
+  std::string prev_analysis; 
+  if( keywords.exists("REUSE_INPUT_DATA_FROM") ) parse("REUSE_INPUT_DATA_FROM",prev_analysis);
   if( prev_analysis.length()>0 ){
       reusing_data=true;
       mydatastash=plumed.getActionSet().selectWithLabel<Analysis*>( prev_analysis );
@@ -142,7 +147,8 @@ argument_names(getNumberOfArguments())
       else log.printf("  reusing data stored by %s\n",prev_analysis.c_str() ); 
       single_run=mydatastash->single_run; freq=mydatastash->freq;
   } else {
-      std::string prev_dimred; parse("USE_OUTPUT_DATA_FROM",prev_dimred);
+      std::string prev_dimred; 
+      if( keywords.exists("USE_OUTPUT_DATA_FROM") ) parse("USE_OUTPUT_DATA_FROM",prev_dimred);
       if( prev_dimred.length()>0 ){
           reusing_data=true; dimred_data=true;
           dimredstash=plumed.getActionSet().selectWithLabel<AnalysisWithAnalysableOutput*>( prev_dimred );
@@ -181,7 +187,8 @@ argument_names(getNumberOfArguments())
          log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
          rtemp*=plumed.getAtoms().getKBoltzmann(); 
       } 
-      simtemp=0.; parse("TEMP",simtemp);
+      simtemp=0.; 
+      if( keywords.exists("TEMP") ) parse("TEMP",simtemp);
       if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
       else simtemp=plumed.getAtoms().getKbT();
 
@@ -189,7 +196,8 @@ argument_names(getNumberOfArguments())
          if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
       }
 
-      parseFlag("USE_ALL_DATA",single_run); 
+      if( keywords.exists("USE_ALL_DATA") ) parseFlag("USE_ALL_DATA",single_run);
+      else single_run=true; 
       if( !single_run && !reusing_data ){
           parse("RUN",freq );
           log.printf("  running analysis every %u steps\n",freq);
@@ -201,19 +209,26 @@ argument_names(getNumberOfArguments())
              data[i]->setNamesAndAtomNumbers( atom_numbers, argument_names );
           }
           logweights.resize( ndata );
-      } else if( reusing_data ){
+      } else if( reusing_data && mydatastash ){
           single_run=mydatastash->single_run;
           if( !single_run ){
               freq=mydatastash->freq;
               ndata=freq/mydatastash->getStride();
               setStride( freq );
           }
+      } else if( reusing_data && dimredstash ){
+          single_run=dimredstash->single_run;
+          if( !single_run ){
+              freq=dimredstash->freq;
+              ndata=freq/dimredstash->getStride();
+              setStride( freq );
+          } 
       } else if( single_run ) {       
-          log.printf("  analyzing all data in trajectory\n");
+          if( keywords.exists("RUN") ) log.printf("  analyzing all data in trajectory\n");
       }
       if( keywords.exists("NOMEMORY") ){ nomemory=false; parseFlag("NOMEMORY",nomemory); }
       if(nomemory) log.printf("  doing a separate analysis for each block of data\n");
-      parseFlag("WRITE_CHECKPOINT",write_chq);
+      if( keywords.exists("WRITE_CHECKPOINT") ) parseFlag("WRITE_CHECKPOINT",write_chq);
       if( write_chq && single_run ){
           write_chq=false;
           warning("ignoring WRITE_CHECKPOINT flag because we are analyzing all data");
@@ -377,6 +392,9 @@ ReferenceConfiguration* Analysis::getReferenceConfiguration( const unsigned& ida
 }
 
 void Analysis::finalizeWeights( const bool& ignore_weights ){
+  plumed_assert( !reusing_data );
+  // Ensure weights are not finalized if we are using readDissimilarityMatrix
+  if( single_run && logweights.size()==0 ) return ;
   // Check that we have the correct ammount of data
   if( !reusing_data && idata!=logweights.size() ) error("something has gone wrong.  Am trying to run analysis but I don't have sufficient data");
 
@@ -440,7 +458,8 @@ void Analysis::runAnalysis(){
      finalizeWeights( ignore_reweight ); 
   } else {
      // mydatastash->finalizeWeights( ignore_reweight ); Weights will have been finalized by previous analysis
-     norm=mydatastash->retrieveNorm();
+     if( mydatastash ) norm=mydatastash->retrieveNorm();
+     if( dimredstash ) norm=dimredstash->retrieveNorm();
   }
   // And run the analysis
   performAnalysis(); idata=0;

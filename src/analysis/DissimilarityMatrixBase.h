@@ -29,6 +29,7 @@ namespace PLMD {
 namespace analysis {
 
 class DissimilarityMatrixBase : public Analysis {
+friend class ReadDissimilarityMatrix;
 private:
   unsigned nnodes;
   std::string fname, wfile;
@@ -53,7 +54,8 @@ void DissimilarityMatrixBase::setDissimilarityMatrixElement( const unsigned& i, 
 inline
 double DissimilarityMatrixBase::getDissimilarity( const unsigned& i, const unsigned& j ){
   if( mydissimilarities(i,j)>0. ) return mydissimilarities(i,j);
-  calcDissimilarity(i,j); return mydissimilarities(i,j);
+  if( i!=j ){ calcDissimilarity(i,j); return mydissimilarities(i,j); }
+  return 0.0;
 }
 
 }

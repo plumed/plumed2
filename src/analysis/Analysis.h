@@ -144,7 +144,7 @@ public:
   Analysis(const ActionOptions&);
   ~Analysis();
 /// Return the number of data points
-  unsigned getNumberOfDataPoints() const;
+  virtual unsigned getNumberOfDataPoints() const;
 /// Calculate the distance between stored snapshot iframe and stored snapshot jframe
   virtual double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
   void prepare();

@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DissimilarityMatrixBase.h"
 #include "core/ActionRegister.h"
-#include "Analysis.h"
 
 namespace PLMD {
 namespace analysis {
