@@ -29,15 +29,13 @@ namespace analysis {
 
 class AnalysisWithAnalysableOutput : public Analysis {
 private:
-  unsigned noutput_points;
   std::vector<double> oweights;
 protected:
-  void setNumberOfOutputPoints( const unsigned& n );
   void setOutputWeights( const std::vector<double>& wwwin );
 public:
   static void registerKeywords( Keywords& keys );
   AnalysisWithAnalysableOutput( const ActionOptions& );
-  unsigned getNumberOfOutputPoints() const ;
+  virtual unsigned getNumberOfOutputPoints() const=0;
   virtual ReferenceConfiguration* getOutputConfiguration( const unsigned& idata )=0;  
   virtual void getOutputForPoint( const unsigned& idata, std::vector<double>& point );
   double getOutputWeight( const unsigned& idata );
@@ -45,13 +43,8 @@ public:
 };
 
 inline
-unsigned AnalysisWithAnalysableOutput::getNumberOfOutputPoints() const {
-  return noutput_points;
-}
-
-inline
 double AnalysisWithAnalysableOutput::getOutputWeight( const unsigned& idata ){
-  plumed_dbg_assert( idata<noutput_points ); return oweights[idata]; 
+  plumed_dbg_assert( idata<getNumberOfOutputPoints() ); return oweights[idata]; 
 }
 
 }

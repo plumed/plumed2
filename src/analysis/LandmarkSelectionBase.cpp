@@ -37,7 +37,6 @@ AnalysisWithAnalysableOutput(ao)
 {
   parse("NLANDMARKS",nlandmarks); 
   log.printf("  selecting %d landmark points \n");
-  setNumberOfOutputPoints(nlandmarks);
 
   parseFlag("NOVORONOI",novoronoi); 
   if( !novoronoi && !dissimilaritiesWereSet() ) error("cannot calculate voronoi weights without dissimilarity mesaure use NOVORONOI or DISSIMILARITIES keyword");

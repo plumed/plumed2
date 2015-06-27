@@ -19,54 +19,39 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_analysis_DimensionalityReductionBase_h
-#define __PLUMED_analysis_DimensionalityReductionBase_h
+#ifndef __PLUMED_dimred_DimensionalityReductionBase_h
+#define __PLUMED_dimred_DimensionalityReductionBase_h
 
-#include "AnalysisWithLandmarks.h"
+#include "analysis/AnalysisWithAnalysableOutput.h"
 
 namespace PLMD {
+namespace dimred {
 
-class PointWiseMapping;
-
-namespace analysis {
-
-class DimensionalityReductionBase : public AnalysisWithLandmarks {
+class DimensionalityReductionBase : public analysis::AnalysisWithAnalysableOutput {
 private:
+  bool use_dimred_dissims;
   unsigned nlow;
-  double cgtol;
-  std::string ofilename;
-  std::string efilename;
-  PointWiseMapping* myembedding;
-  std::vector<double> fframes;
-  Matrix<double> targetDisimilarities;
+  ReferenceConfiguration* mydata;
+  DimensionalityReductionBase* dimredbase;
+  Matrix<double> projections;
 protected:
-  const Matrix<double>& getTargets() const ;
+  double getInputDissimilarity( const unsigned& idata, const unsigned& jdata );
 public:
   static void registerKeywords( Keywords& keys );
   DimensionalityReductionBase( const ActionOptions& );
   ~DimensionalityReductionBase();
-  void analyzeLandmarks();
-  virtual std::string getAlgorithmName() const=0;
-  virtual void calculateAllDistances( PointWiseMapping* mymap, Matrix<double>& targets )=0;
-  virtual void generateProjections( PointWiseMapping* mymap )=0;
-  virtual double transformHD( const double& val, double& df ) const=0;
-  virtual double transformLD( const double& val, double& df ) const=0;
-  void findClosestPoint( const unsigned& ii, std::vector<double>& pp );
-  double calculateStress( const std::vector<double>& pp, std::vector<double>& der );
-  void analyzeAllData();
-  unsigned getLowDimensionSize() const ;
-  void getPropertyNames( std::vector<std::string>& dimnames );
-  void getProjectedPoint( const unsigned& idata, std::vector<double>& pp );
+  ReferenceConfiguration* getOutputConfiguration( const unsigned& idata );
+  unsigned getNumberOfOutputPoints() const ;
+  void getOutputForPoint( const unsigned& idata, std::vector<double>& point );
+  double getOutputDissimilarity( const unsigned& idata, const unsigned& jdata );
+  void performTask(){}
+  void performAnalysis();
+  virtual void calculateProjections( const Matrix<double>& , Matrix<double>& )=0;
 };
 
 inline
-const Matrix<double>& DimensionalityReductionBase::getTargets() const {
-  return targetDisimilarities;
-}
-
-inline
-unsigned DimensionalityReductionBase::getLowDimensionSize() const {
-  return nlow;
+unsigned DimensionalityReductionBase::getNumberOfOutputPoints() const {
+  return getNumberOfDataPoints();
 }
 
 }

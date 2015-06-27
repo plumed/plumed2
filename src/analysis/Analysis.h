@@ -67,8 +67,6 @@ private:
   bool ignore_reweight;
 /// The Analysis action that we are reusing data from
   Analysis* mydatastash;
-/// The dimensionality reduction object that we are reusing data from
-  AnalysisWithAnalysableOutput* dimredstash;
 /// The frequency with which we are performing analysis
   unsigned freq;
 /// Number of data point we need to run analysis
@@ -111,6 +109,8 @@ private:
 /// The matrix containing the dissimiarities
   Matrix<double> mydissimilarities;
 protected:
+/// The dimensionality reduction object that we are reusing data from
+  AnalysisWithAnalysableOutput* dimredstash;
 /// Get a reference configuration 
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata );
 /// Get the squared dissimilarity between two reference configurations

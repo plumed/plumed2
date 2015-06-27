@@ -110,7 +110,7 @@ ofmt("%f"),
 current_args(getNumberOfArguments()),
 argument_names(getNumberOfArguments())
 {
-  if( keywords.exists("FMT") ){ parse("FMT",ofmt); ofmt=" "+ofmt; }  // Read the format for output files
+  if( keywords.exists("FMT") ) parse("FMT",ofmt);   // Read the format for output files
   // Make a vector containing all the argument names
   for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i]=getPntrToArgument(i)->getName();
   std::vector<AtomNumber> atom_numbers;
@@ -376,14 +376,6 @@ ReferenceConfiguration* Analysis::getReferenceConfiguration( const unsigned& ida
   if( !reusing_data ){
       return data[idata];
   } else if( dimred_data ){
-      // ReferenceConfigurationOptions("EUCLIDEAN");
-      // ReferenceConfiguration* mydata=metricRegister().create<ReferenceConfiguration>("EUCLIDEAN");
-      // unsigned ndim=dimredstash->getDimensionOfOutputPoints();
-      // std::vector<std::string> dimnames(ndim); dimredstash->getPropertyNames( dimnames );
-      // mydata->setNamesAndAtomNumbers( std::vector<AtomNumber>(), dimnames );
-      // std::vector<double> pp(ndim); dimredstash->getOutputForPoint( idata, pp );
-      // std::vector<double> empty( pp.size() );
-      // mydata->setReferenceConfig( std::vector<Vector>(), pp, empty );  
       return dimredstash->getOutputConfiguration( idata );
   } else {
       return mydatastash->getReferenceConfiguration( idata );
@@ -393,7 +385,7 @@ ReferenceConfiguration* Analysis::getReferenceConfiguration( const unsigned& ida
 bool Analysis::dissimilaritiesWereSet() const {
   if( !reusing_data ){
       return false;
-  } else if( dimred_data ){ 
+  } else if( dimred_data ){
       return dimredstash->dissimilaritiesWereSet();
   } else {
       return mydatastash->dissimilaritiesWereSet();
@@ -478,7 +470,10 @@ void Analysis::runAnalysis(){
   // Calculate the final weights from the log weights 
   if( !reusing_data ){ 
      finalizeWeights( ignore_reweight ); 
-     mydissimilarities.resize( getNumberOfDataPoints(), getNumberOfDataPoints() );
+     if( mydissimilarities.nrows()!=getNumberOfDataPoints() || mydissimilarities.ncols()!=getNumberOfDataPoints() ){
+         mydissimilarities.resize( getNumberOfDataPoints(), getNumberOfDataPoints() );
+     }
+     mydissimilarities=0;
   } else {
      // mydatastash->finalizeWeights( ignore_reweight ); Weights will have been finalized by previous analysis
      if( mydatastash ) norm=mydatastash->retrieveNorm();

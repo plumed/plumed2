@@ -45,11 +45,17 @@ public:
   LandmarkSelectionBase( const ActionOptions& ao );
   void performAnalysis();
   virtual void selectLandmarks()=0;
+  unsigned getNumberOfOutputPoints() const ;
   ReferenceConfiguration* getOutputConfiguration( const unsigned& idata );
   double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
   void performTask(){ plumed_error(); }
   double getOutputDissimilarity( const unsigned& idata, const unsigned& jdata );
 };
+
+inline
+unsigned LandmarkSelectionBase::getNumberOfOutputPoints() const {
+  return nlandmarks;
+}
 
 inline
 unsigned LandmarkSelectionBase::getNumberOfLandmarks() const {

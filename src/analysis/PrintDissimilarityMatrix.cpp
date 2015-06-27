@@ -48,13 +48,14 @@ Action(ao),
 Analysis(ao)
 {
   parseOutputFile("FILE",fname); 
-  log.printf("  printing to file named %s with formt%s \n",fname.c_str(), getOutputFormat().c_str() );
+  log.printf("  printing to file named %s with formt %s \n",fname.c_str(), getOutputFormat().c_str() );
 }
 
 void PrintDissimilarityMatrix::performAnalysis(){
+  std::string ofmt=" "+getOutputFormat();
   OFile ofile; ofile.setBackupString("analysis"); ofile.open(fname); 
   for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      for(unsigned j=0;j<getNumberOfDataPoints();++j) ofile.printf(getOutputFormat().c_str(), getDissimilarity( i,j ) );
+      for(unsigned j=0;j<getNumberOfDataPoints();++j) ofile.printf(ofmt.c_str(), getDissimilarity( i,j ) );
       ofile.printf("\n");
   }   
   ofile.close();

@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2013,2014 The plumed team
+   Copyright (c) 2012-2014 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -20,13 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DimensionalityReductionBase.h"
-#include "ClassicalScaling.h"
-#include "SMACOF.h"
-#include "reference/PointWiseMapping.h"
 #include "core/ActionRegister.h"
-
-namespace PLMD {
-namespace analysis {
 
 //+PLUMEDOC ANALYSIS CLASSICAL_MDS
 /*
@@ -49,7 +43,7 @@ Euclidean distances between pairs of them, \f$d_{ij}\f$, resemble the dissimilar
 
 where \f$D_{ij}\f$ is the distance between point \f$X^{i}\f$ and point \f$X^{j}\f$ and \f$d_{ij}\f$ is the distance between the projection 
 of \f$X^{i}\f$, \f$x^i\f$, and the projection of \f$X^{j}\f$, \f$x^j\f$.  A tutorial on this approach can be used to analyse simulations 
-can be found in the tutorial \ref belfast-3 and in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be" > short video.</a>  
+can be found in the tutorial \ref belfast-3 and in the following <a href="https://www.youtube.com/watch?v=ofC2qz0_9_A&feature=youtu.be" > short video.</a>
 
 \par Examples
 
@@ -165,63 +159,53 @@ see <a href="http://quest4rigor.com/tag/multidimensional-scaling/"> this website
 */
 //+ENDPLUMEDOC
 
+namespace PLMD {
+namespace dimred {
+
 class ClassicalMultiDimensionalScaling : public DimensionalityReductionBase {
-private:
-  bool nosmacof;
-  double stol;
 public:
   static void registerKeywords( Keywords& keys );
-  ClassicalMultiDimensionalScaling( const ActionOptions& ao );
-  std::string getAlgorithmName() const { return "classical mds"; }
-  void calculateAllDistances( PointWiseMapping* mymap, Matrix<double>& targets );
-  void generateProjections( PointWiseMapping* mymap );
-  double transformHD( const double& val, double& df ) const ;
-  double transformLD( const double& val, double& df ) const ;
+  ClassicalMultiDimensionalScaling( const ActionOptions& );
+  void calculateProjections( const Matrix<double>& , Matrix<double>& );
 };
 
 PLUMED_REGISTER_ACTION(ClassicalMultiDimensionalScaling,"CLASSICAL_MDS")
 
 void ClassicalMultiDimensionalScaling::registerKeywords( Keywords& keys ){
   DimensionalityReductionBase::registerKeywords( keys );
-  keys.addFlag("NOSMACOF",false,"don't refine the projection using the SMACOF algorithm.  N.B. classical MDS ignores weights");
-  keys.add("compulsory","SMACOF_TOL","1E-4","tolerance for the SMACOF optimization algorith");
 }
 
-ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao ):
+ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const ActionOptions& ao):
 Action(ao),
 DimensionalityReductionBase(ao)
 {
-  parseFlag("NOSMACOF",nosmacof); parse("SMACOF_TOL",stol);
-  if(nosmacof) log.printf("  generating projection using classical MDS and ignoring weight information \n");
-  else log.printf("  generating projection using SMCAOF.  Tolerance is %f \n",stol);
 }
 
-void ClassicalMultiDimensionalScaling::calculateAllDistances( PointWiseMapping* mymap, Matrix<double>& targets ){
-  unsigned N = mymap->getNumberOfReferenceFrames(); Matrix<double> & dmat(  mymap->modifyDmat() ); 
-  for(unsigned i=1;i<N;++i){
-     for(unsigned j=0;j<i;++j) targets(i,j)=targets(j,i)=dmat(i,j)=dmat(j,i)=getDistanceBetweenLandmarks( i, j, true );
-  }
-}
+void ClassicalMultiDimensionalScaling::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ){
+   // Retrieve the distances from the dimensionality reduction object
+   double half=(-0.5); Matrix<double> distances( half*targets ); 
+ 
+   // Apply centering transtion
+   unsigned n=distances.nrows(); double sum;
+   // First HM
+   for(unsigned i=0;i<n;++i){
+       sum=0; for(unsigned j=0;j<n;++j) sum+=distances(i,j);
+       for(unsigned j=0;j<n;++j) distances(i,j) -= sum/n;
+   }
+   // Now (HM)H
+   for(unsigned i=0;i<n;++i){
+      sum=0; for(unsigned j=0;j<n;++j) sum+=distances(j,i);
+      for(unsigned j=0;j<n;++j) distances(j,i) -= sum/n; 
+   }
 
-void ClassicalMultiDimensionalScaling::generateProjections( PointWiseMapping* mymap ){
+   // Diagonalize matrix
+   std::vector<double> eigval(n); Matrix<double> eigvec(n,n);
+   diagMat( distances, eigval, eigvec );
 
-  // Run multidimensional scaling
-  ClassicalScaling::run( mymap );
-
-  if( !nosmacof ){
-     unsigned M=mymap->getNumberOfReferenceFrames(); Matrix<double> Weights( M, M );
-     for(unsigned i=1; i<M; ++i){
-         for(unsigned j=0; j<i; ++j) Weights(i,j) = Weights(j,i) = mymap->getWeight(i)*mymap->getWeight(j);
-     }  
-     SMACOF::run( Weights, mymap, stol );
-  }
-}
-
-double ClassicalMultiDimensionalScaling::transformHD( const double& val, double& df ) const {
-  df=1.0; return val; 
-}
-double ClassicalMultiDimensionalScaling::transformLD( const double& val, double& df ) const {
-  df=1.0; return val;
+   // Pass final projections to map object
+   for(unsigned i=0;i<n;++i){
+      for(unsigned j=0;j<projections.nrows();++j) projections(i,j)=sqrt(eigval[n-1-j])*eigvec(n-1-j,i); 
+   }
 }
 
 }

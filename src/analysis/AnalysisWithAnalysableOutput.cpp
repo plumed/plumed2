@@ -38,10 +38,6 @@ Analysis(ao)
 {
 }
 
-void AnalysisWithAnalysableOutput::setNumberOfOutputPoints( const unsigned& n ){
-  noutput_points=n;
-}
-
 void AnalysisWithAnalysableOutput::setOutputWeights( const std::vector<double>& wwwin ){
   plumed_dbg_assert( wwwin.size()==noutput_points );
   if( oweights.size()!=wwwin.size() ) oweights.resize( wwwin.size() );
