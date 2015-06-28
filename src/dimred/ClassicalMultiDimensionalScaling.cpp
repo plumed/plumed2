@@ -179,6 +179,7 @@ ClassicalMultiDimensionalScaling::ClassicalMultiDimensionalScaling( const Action
 Action(ao),
 DimensionalityReductionBase(ao)
 {
+  if( dimredbase ) error("input to CLASSICAL_MDS should not be output from dimensionality reduction object");
 }
 
 void ClassicalMultiDimensionalScaling::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ){

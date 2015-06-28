@@ -19,39 +19,31 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_dimred_DimensionalityReductionBase_h
-#define __PLUMED_dimred_DimensionalityReductionBase_h
+#ifndef __PLUMED_dimred_SketchMapBase_h
+#define __PLUMED_dimred_SketchMapBase_h
 
-#include "analysis/AnalysisWithAnalysableOutput.h"
+#include "tools/SwitchingFunction.h"
+#include "DimensionalityReductionBase.h"
 
 namespace PLMD {
 namespace dimred {
 
-class DimensionalityReductionBase : public analysis::AnalysisWithAnalysableOutput {
+class SketchMapBase : public DimensionalityReductionBase {
 private:
-  bool use_dimred_dissims;
-  unsigned nlow;
-  ReferenceConfiguration* mydata;
-  Matrix<double> projections;
+  SwitchingFunction lowdf, highdf;
 protected:
-  DimensionalityReductionBase* dimredbase;
-  double getInputDissimilarity( const unsigned& idata, const unsigned& jdata );
+  double mixparam;
+  double calculateLowDimensionalSwitchingFunction( const double& val, double& df ) const ;
 public:
   static void registerKeywords( Keywords& keys );
-  DimensionalityReductionBase( const ActionOptions& );
-  ~DimensionalityReductionBase();
-  ReferenceConfiguration* getOutputConfiguration( const unsigned& idata );
-  unsigned getNumberOfOutputPoints() const ;
-  void getOutputForPoint( const unsigned& idata, std::vector<double>& point );
-  double getOutputDissimilarity( const unsigned& idata, const unsigned& jdata );
-  void performTask(){}
-  void performAnalysis();
-  virtual void calculateProjections( const Matrix<double>& , Matrix<double>& )=0;
+  SketchMapBase( const ActionOptions& );
+  void calculateProjections( const Matrix<double>& , Matrix<double>& );
+  virtual void minimise( const Matrix<double>& , const Matrix<double>& , Matrix<double>& )=0;
 };
 
 inline
-unsigned DimensionalityReductionBase::getNumberOfOutputPoints() const {
-  return getNumberOfDataPoints();
+double SketchMapBase::calculateLowDimensionalSwitchingFunction( const double& val, double& df ) const {
+  double ans=1.0 - lowdf.calculate( val, df ); df*=-val; return ans;
 }
 
 }

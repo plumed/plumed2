@@ -38,18 +38,26 @@ void DimensionalityReductionBase::registerKeywords( Keywords& keys ){
 DimensionalityReductionBase::DimensionalityReductionBase( const ActionOptions& ao ):
 Action(ao),
 analysis::AnalysisWithAnalysableOutput(ao),
+mydata(NULL),
 dimredbase(NULL)
 {
-  parse("NLOW_DIM",nlow); parseFlag("RUN_ON_PROJECTION",use_dimred_dissims);
-  if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
-  log.printf("  projecting in %d dimensional space \n",nlow);
+  parseFlag("RUN_ON_PROJECTION",use_dimred_dissims);
 
   // Now we check if the input was a dimensionality reduction object
   dimredbase = dynamic_cast<DimensionalityReductionBase*>( dimredstash );
   if( use_dimred_dissims && !dimredbase ) error("am supposed to be doing dimensionality reduction based on input projection but input is not a projection");
 
+  // Retrieve the dimension in the low dimensionality space
+  if( dimredbase ){
+      nlow=dimredbase->nlow;
+  } else {
+      parse("NLOW_DIM",nlow);
+      if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
+  }
+  log.printf("  projecting in %d dimensional space \n",nlow);
+
   // Check that some dissimilarity information is available
-  if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input action");
+  if( !dissimilaritiesWereSet() ) error("dissimilarities have not been calcualted in input actions");
 
   ReferenceConfigurationOptions("EUCLIDEAN");
   mydata=metricRegister().create<ReferenceConfiguration>("EUCLIDEAN");
@@ -88,6 +96,20 @@ double DimensionalityReductionBase::getOutputDissimilarity( const unsigned& idat
 void DimensionalityReductionBase::performAnalysis(){
   // Resize the projections array
   projections.resize( getNumberOfDataPoints(), nlow );
+
+  // Retrieve the weights from the previous calculation
+  std::vector<double> lweights( getNumberOfDataPoints() );
+  for(unsigned i=0;i<getNumberOfDataPoints();++i) lweights[i]=getWeight(i);
+  setOutputWeights( lweights );
+
+  // Retreive the projections from the previous calculation
+  if( dimredbase ){
+      std::vector<double> newp( nlow );
+      for(unsigned i=0;i<getNumberOfDataPoints();++i){ 
+         dimredbase->getOutputForPoint( i, newp ); plumed_dbg_assert( newp.size()==nlow );
+         for(unsigned j=0;j<nlow;++j) projections(i,j)=newp[j]; 
+      }
+  }
   // Calculate matrix of dissimilarities
   Matrix<double> targets( getNumberOfDataPoints(), getNumberOfDataPoints() );
   for(unsigned i=1;i<getNumberOfDataPoints();++i){
