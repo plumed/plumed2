@@ -45,6 +45,16 @@ AnalysisWithAnalysableOutput(ao)
   else log.printf("  ascribing weights of original points to landmark\n");  
 }
 
+unsigned LandmarkSelectionBase::getDataPointIndexInBase( const unsigned& idata ) const {
+  if( !reusing_data ){
+      return landmark_indices[idata]; 
+  } else if( dimred_data ){
+      return dimredstash->getDataPointIndexInBase( landmark_indices[idata] );
+  }  else {
+      return mydatastash->getDataPointIndexInBase( landmark_indices[idata] );
+  } 
+}
+
 void LandmarkSelectionBase::selectFrame( const unsigned& iframe ){
   landmark_indices.push_back( iframe );
 }

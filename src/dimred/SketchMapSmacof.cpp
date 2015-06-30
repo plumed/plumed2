@@ -88,7 +88,7 @@ double SketchMapSmacof::recalculateWeights( const Matrix<double>& transformed, c
           }
           double dij=sqrt(tempd);
    
-          double fij = calculateLowDimensionalSwitchingFunction( dij, dr ); 
+          double fij = transformLowDimensionalDistance( dij, dr ); 
           double filter=transformed(i,j)-fij;
           double diff=distances(i,j) - dij;
 

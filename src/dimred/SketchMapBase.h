@@ -33,17 +33,23 @@ private:
   SwitchingFunction lowdf, highdf;
 protected:
   double mixparam;
-  double calculateLowDimensionalSwitchingFunction( const double& val, double& df ) const ;
 public:
   static void registerKeywords( Keywords& keys );
   SketchMapBase( const ActionOptions& );
   void calculateProjections( const Matrix<double>& , Matrix<double>& );
   virtual void minimise( const Matrix<double>& , const Matrix<double>& , Matrix<double>& )=0;
+  double transformLowDimensionalDistance( const double& val, double& df ) const ;
+  double transformHighDimensionalDistance( const double& val, double& df ) const ;
 };
 
 inline
-double SketchMapBase::calculateLowDimensionalSwitchingFunction( const double& val, double& df ) const {
+double SketchMapBase::transformLowDimensionalDistance( const double& val, double& df ) const {
   double ans=1.0 - lowdf.calculate( val, df ); df*=-val; return ans;
+}
+
+inline
+double SketchMapBase::transformHighDimensionalDistance( const double& val, double& df ) const {
+  double ans=1.0 - highdf.calculate( val, df ); df*=-val; return ans;
 }
 
 }

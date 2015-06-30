@@ -1,15 +1,4 @@
-DESCRIPTION: landmark configuration from @7 performed at time 12.000000 
-REMARK WEIGHT=1.000000
-REMARK ARG=d1
-REMARK d1=6.000000 
-END
-DESCRIPTION: landmark configuration from @7 performed at time 12.000000 
-REMARK WEIGHT=1.000000
-REMARK ARG=d1
-REMARK d1=8.000000 
-END
-DESCRIPTION: landmark configuration from @7 performed at time 12.000000 
-REMARK WEIGHT=1.000000
-REMARK ARG=d1
-REMARK d1=10.000000 
-END
+#! FIELDS d1
+6.000000 
+8.000000 
+10.000000 

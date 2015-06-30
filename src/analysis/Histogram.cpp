@@ -116,6 +116,7 @@ private:
   std::vector<std::string> gmin, gmax; 
   std::vector<double> point, bw;
   std::vector<unsigned> gbin;
+  std::string fmt;
   std::string gridfname;
   std::string kerneltype;
   bool fenergy; 
@@ -141,6 +142,7 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.add("optional","BANDWIDTH","the bandwdith for kernel density estimation");
   keys.addFlag("FREE-ENERGY",false,"Set to TRUE if you want a FREE ENERGY instead of a probabilty density (you need to set TEMP).");
   keys.addFlag("UNNORMALIZED",false,"Set to TRUE if you don't want histogram to be normalized or free energy to be shifted.");
+  keys.add("optional","FMT","the format that should be used in the output file");
   keys.add("compulsory","GRID_WFILE","histogram","the file on which to write the grid");
   keys.use("NOMEMORY");
 }
@@ -148,9 +150,12 @@ void Histogram::registerKeywords( Keywords& keys ){
 Histogram::Histogram(const ActionOptions&ao):
 PLUMED_ANALYSIS_INIT(ao),
 point(getNumberOfArguments()),
+fmt("%f"),
 fenergy(false),
 unnormalized(false)
 {
+  // Read output format
+  parse("FMT",fmt); 
   // Read stuff for Grid
   parseVector("GRID_MIN",gmin);
   if(gmin.size()!=getNumberOfArguments()) error("Wrong number of values for GRID_MIN: they should be equal to the number of arguments");
@@ -241,7 +246,7 @@ void Histogram::performAnalysis(){
       gg = new Grid( "probs", getArguments(), gmin, gmax, gbin,false,false);
   }
   // Set output format for grid
-  gg->setOutputFmt( getOutputFormat() );
+  gg->setOutputFmt( fmt );
 
   // Now build the histogram
   double weight; std::vector<double> point( getNumberOfArguments() );

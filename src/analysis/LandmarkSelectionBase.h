@@ -50,6 +50,7 @@ public:
   double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
   void performTask(){ plumed_error(); }
   double getOutputDissimilarity( const unsigned& idata, const unsigned& jdata );
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
 };
 
 inline

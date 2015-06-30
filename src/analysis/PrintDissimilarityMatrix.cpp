@@ -28,6 +28,7 @@ namespace analysis {
 
 class PrintDissimilarityMatrix : public Analysis {
 private:
+  std::string fmt;
   std::string fname;
 public:
   static void registerKeywords( Keywords& keys );
@@ -41,18 +42,20 @@ PLUMED_REGISTER_ACTION(PrintDissimilarityMatrix,"PRINT_DISSIMILARITY_MATRIX")
 void PrintDissimilarityMatrix::registerKeywords( Keywords& keys ){
   Analysis::registerKeywords( keys );
   keys.add("compulsory","FILE","name of file on which to output the data");
+  keys.add("optional","FMT","the format to use for the output of numbers");
 }
 
 PrintDissimilarityMatrix::PrintDissimilarityMatrix( const ActionOptions& ao ):
 Action(ao),
-Analysis(ao)
+Analysis(ao),
+fmt("%f")
 {
-  parseOutputFile("FILE",fname); 
-  log.printf("  printing to file named %s with formt %s \n",fname.c_str(), getOutputFormat().c_str() );
+  parseOutputFile("FILE",fname); parse("FMT",fmt);
+  log.printf("  printing to file named %s with formt %s \n",fname.c_str(), fmt.c_str() );
 }
 
 void PrintDissimilarityMatrix::performAnalysis(){
-  std::string ofmt=" "+getOutputFormat();
+  std::string ofmt=" "+fmt;
   OFile ofile; ofile.setBackupString("analysis"); ofile.open(fname); 
   for(unsigned i=0;i<getNumberOfDataPoints();++i){
       for(unsigned j=0;j<getNumberOfDataPoints();++j) ofile.printf(ofmt.c_str(), getDissimilarity( i,j ) );

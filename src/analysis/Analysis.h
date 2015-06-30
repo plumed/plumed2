@@ -52,6 +52,7 @@ class Analysis :
   {
 friend class AnalysisWithAnalysableOutput;
 friend class ReadDissimilarityMatrix;
+friend class LandmarkSelectionBase;
 private:
 /// Are we running only once for the whole trajectory
   bool single_run;
@@ -87,8 +88,6 @@ private:
   bool firstAnalysisDone;
 /// The value of the old normalization constant
   double norm, old_norm;
-/// The format to use in output files
-  std::string ofmt;
 /// Tempory vector to store values of arguments
   std::vector<double> current_args;
 /// List of argument names 
@@ -142,8 +141,6 @@ protected:
 /// Overwrite ActionWithArguments getArguments() so that we don't return
 /// the bias
   std::vector<Value*> getArguments();
-/// Return the format to use for numbers in output files
-  std::string getOutputFormat() const ;
 /// Calculate the distance between stored snapshot iframe and stored snapshot jframe
   double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
 public:
@@ -152,6 +149,8 @@ public:
   ~Analysis();
 /// Return the number of data points
   virtual unsigned getNumberOfDataPoints() const ;
+/// Return the index of the data point in the base class
+  virtual unsigned getDataPointIndexInBase( const unsigned& idata ) const ; 
 /// Return the weight of the ith point
   virtual double getWeight( const unsigned& idata ) const ;
 /// Calculate the dissimilarity between two configurations
@@ -216,11 +215,6 @@ std::vector<Value*> Analysis::getArguments(){
   std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
   for(unsigned i=0;i<biases.size();++i) arg_vals.erase(arg_vals.end()-1);
   return arg_vals;
-}
-
-inline
-std::string Analysis::getOutputFormat() const {
-  return ofmt;
 }
 
 inline

@@ -58,11 +58,11 @@ void SketchMapBase::calculateProjections( const Matrix<double>& targets, Matrix<
   Matrix<double> distances( targets.nrows(), targets.ncols() ); 
 
   // Transform the high dimensional distances
-  double df;
+  double df; distances=0.; transformed=0.;
   for(unsigned i=1;i<distances.ncols();++i){
       for(unsigned j=0;j<i;++j){
           distances(i,j)=distances(j,i)=sqrt( targets(i,j) );
-          transformed(i,j)=transformed(j,i)=1.0 - highdf.calculate( distances(i,j), df );
+          transformed(i,j)=transformed(j,i)=transformHighDimensionalDistance( distances(i,j), df ); 
       }
   }
   // And minimse

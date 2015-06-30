@@ -28,6 +28,7 @@ namespace PLMD {
 namespace dimred {
 
 class DimensionalityReductionBase : public analysis::AnalysisWithAnalysableOutput {
+friend class ProjectNonLandmarkPoints;
 private:
   bool use_dimred_dissims;
   unsigned nlow;
@@ -47,11 +48,23 @@ public:
   void performTask(){}
   void performAnalysis();
   virtual void calculateProjections( const Matrix<double>& , Matrix<double>& )=0;
+  virtual double transformLowDimensionalDistance( const double& val, double& df ) const ;
+  virtual double transformHighDimensionalDistance( const double& val, double& df ) const ;
 };
 
 inline
 unsigned DimensionalityReductionBase::getNumberOfOutputPoints() const {
   return getNumberOfDataPoints();
+}
+
+inline
+double DimensionalityReductionBase::transformLowDimensionalDistance( const double& val, double& df ) const {
+  df=1.0; return val;
+}
+
+inline
+double DimensionalityReductionBase::transformHighDimensionalDistance( const double& val, double& df ) const {
+  df=1.0; return val; 
 }
 
 }

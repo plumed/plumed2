@@ -78,7 +78,6 @@ void Analysis::registerKeywords( Keywords& keys ){
                                             "of storage of the data and the frequency with which this particular form of analysis are performed (RUN) are the same as those "
                                             "in the referenced analysis object.");
   keys.addFlag("USE_ALL_DATA",false,"use the data from the entire trajectory to perform the analysis");
-  keys.add("optional","FMT","the format that should be used in analysis output files");
   keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics. For more information see \\ref reweighting.");
   keys.add("optional","TEMP","the system temperature.  This is required if you are reweighting or doing free energies.");
   keys.add("optional","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability "
@@ -106,11 +105,9 @@ needeng(false),
 idata(0),
 firstAnalysisDone(false),
 old_norm(0.0),
-ofmt("%f"),
 current_args(getNumberOfArguments()),
 argument_names(getNumberOfArguments())
 {
-  if( keywords.exists("FMT") ) parse("FMT",ofmt);   // Read the format for output files
   // Make a vector containing all the argument names
   for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i]=getPntrToArgument(i)->getName();
   std::vector<AtomNumber> atom_numbers;
@@ -455,6 +452,15 @@ void Analysis::getDataPoint( const unsigned& idata, std::vector<double>& point, 
   } else {
       mydatastash->getDataPoint( idata, point, weight );
   }
+}
+
+unsigned Analysis::getDataPointIndexInBase( const unsigned& idata ) const {
+  if( !reusing_data ){
+      return idata;
+  } else if ( dimred_data ){
+      return dimredstash->getDataPointIndexInBase( idata );
+  } 
+  return mydatastash->getDataPointIndexInBase( idata );
 }
 
 double Analysis::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& squared ){
