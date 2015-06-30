@@ -1,5 +1,5 @@
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   Copyright (c) 2012-2014 The plumed team
+   Copyright (c) 2012-2015 The plumed team
    (see the PEOPLE file at the root of the distribution for a list of names)
 
    See http://www.plumed-code.org for more information.
@@ -181,8 +181,8 @@ double HistogramBead::calculate( double x, double& df ) const {
      lowB = ( difference( x, lowb ) / width );
      upperB = ( difference( x, highb ) / width );
      df=0;
-     if( fabs(lowB)<1. ) df = 1 - fabs(lowB) / width;
-     if( fabs(upperB)<1. ) df -= fabs(upperB) / width;
+     if( fabs(lowB)<1. ) df = (1 - fabs(lowB)) / width;
+     if( fabs(upperB)<1. ) df -= (1 - fabs(upperB)) / width;
      if (upperB<=-1. || lowB >=1.){
         f=0.;
      } else { 
