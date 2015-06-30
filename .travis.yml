@@ -24,11 +24,11 @@ matrix:
 #   VALGRIND=yes to make valgrind tests, only when log contains string [valgrind]
 install:
 # setup environment to allow install on the home directory
-  - export PATH="$PATH:$HOME/opt/bin"
-  - export CPATH="$CPATH:$HOME/opt/include"
-  - export INCLUDE="$INCLUDE:$HOME/opt/include"
-  - export LIBRARY_PATH="$LIBRARY_PATH:$HOME/opt/lib"
-  - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$HOME/opt/lib"
+  - export PATH="$HOME/opt/bin:$PATH"
+  - export CPATH="$HOME/opt/include:$CPATH"
+  - export INCLUDE="$HOME/opt/include:$INCLUDE"
+  - export LIBRARY_PATH="$HOME/opt/lib:$LIBRARY_PATH"
+  - export LD_LIBRARY_PATH="$HOME/opt/lib:$LD_LIBRARY_PATH"
 # build the manual, only if log contains string [makedoc]
   - ./.travis.check.log makedoc  || MAKEDOC=no
   - ./.travis.check.log valgrind || VALGRIND=no
