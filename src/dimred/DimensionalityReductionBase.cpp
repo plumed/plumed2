@@ -46,7 +46,7 @@ dimredbase(NULL)
   parseFlag("RUN_ON_PROJECTION",use_dimred_dissims);
 
   // Now we check if the input was a dimensionality reduction object
-  dimredbase = dynamic_cast<DimensionalityReductionBase*>( dimredstash );
+  if( dimredstash ) dimredbase = dynamic_cast<DimensionalityReductionBase*>( dimredstash );
   if( use_dimred_dissims && !dimredbase ) error("am supposed to be doing dimensionality reduction based on input projection but input is not a projection");
 
   // Retrieve the dimension in the low dimensionality space

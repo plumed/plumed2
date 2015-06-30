@@ -29,6 +29,7 @@ namespace dimred {
 
 class DimensionalityReductionBase : public analysis::AnalysisWithAnalysableOutput {
 friend class ProjectNonLandmarkPoints;
+friend class SketchMapPointwise;
 private:
   bool use_dimred_dissims;
   unsigned nlow;

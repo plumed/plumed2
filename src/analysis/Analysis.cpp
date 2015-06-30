@@ -101,12 +101,14 @@ write_chq(false),
 reusing_data(false),
 dimred_data(false),
 ignore_reweight(false),
+mydatastash(NULL),
 needeng(false),
 idata(0),
 firstAnalysisDone(false),
 old_norm(0.0),
 current_args(getNumberOfArguments()),
-argument_names(getNumberOfArguments())
+argument_names(getNumberOfArguments()),
+dimredstash(NULL)
 {
   // Make a vector containing all the argument names
   for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i]=getPntrToArgument(i)->getName();
