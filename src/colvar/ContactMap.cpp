@@ -234,7 +234,7 @@ ContactMap::~ContactMap(){
 
 void ContactMap::calculate(){ 
      
- double ncoord=0., coord;
+ double ncoord=0.;
  Tensor virial;
  std::vector<Vector> deriv(getNumberOfAtoms());
 
@@ -261,7 +261,7 @@ void ContactMap::calculate(){
     }
 
     double dfunc=0.;
-    coord = weight[i]*(sfs[i].calculate(distance.modulo(), dfunc) - reference[i]);
+    double coord = weight[i]*(sfs[i].calculate(distance.modulo(), dfunc) - reference[i]);
     Vector tmpder = weight[i]*dfunc*distance;
     Tensor tmpvir = weight[i]*dfunc*Tensor(distance,distance);
     if(!docmdist) { 

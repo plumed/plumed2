@@ -115,7 +115,7 @@ PRINT STRIDE=10 ARG=phi,psi,ex.phi_fict,ex.psi_fict FILE=COLVAR
 //+ENDPLUMEDOC
 
 class ExtendedLagrangian : public Bias{
-  double firsttime;
+  bool firsttime;
   std::vector<double> fict;
   std::vector<double> vfict;
   std::vector<double> vfict_laststep;

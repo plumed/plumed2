@@ -126,7 +126,7 @@ equivalent.  You should read the documentation for the Plumed 2 Action.
 </TR>
 <TR>
   <TD> MINDIST </TD>
-  <TD> \ref DISTANCES with keyword MIN (See also \ref mindist) </TD>
+  <TD> \ref DISTANCES with keyword MIN </TD>
 </TR>
 <TR>
   <TD> ANGLE </TD>
