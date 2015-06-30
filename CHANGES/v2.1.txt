@@ -176,7 +176,7 @@ For users:
 - Sourceme.sh now sets proper library path in linux also.
 
 
-Version 2.1.3 (June xx, 2015)
+Version 2.1.3 (June 30, 2015)
 ----------------------------------------------
 
 For users:
