@@ -20,4 +20,7 @@ git checkout $tag
 make -j 4 install CFGDIR="$HOME/opt/share/cppcheck/" CXXFLAGS="-O2 -march=native -mtune=native -Wunreachable-code" PREFIX="$HOME/opt"
 cd ../
 
+cppcheck --version
+
+
 
