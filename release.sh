@@ -119,7 +119,7 @@ else
   git add VERSION
   git commit --allow-empty -m "$msg"
   git tag v$version
-  git push origin v$version
+  git push origin v$shortversion v$version
   git archive -o plumed-$version.tgz --prefix plumed-$version/ v$version
   echo
   echo "Done!"

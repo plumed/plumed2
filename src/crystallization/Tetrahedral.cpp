@@ -34,8 +34,42 @@ namespace crystallization{
 
 //+PLUMEDOC MCOLVAR TETRAHEDRAL
 /*
+Calculate the degree to which the environment about ions has a tetrahedral order.
+
+We can measure the degree to which the first coordination shell around any atom, \f$i\f$ is 
+tetrahedrally ordered using the following function.
+
+\f[
+ s(i) = \frac{1}{\sum_j \sigma( r_{ij} )} \sum_j \sigma( r_{ij} )\left[ \frac{(x_{ij} + y_{ij} + z_{ij})^3}{r_{ij}^3} + 
+                                                                        \frac{(x_{ij} - y_{ij} - z_{ij})^3}{r_{ij}^3} + 
+                                                                        \frac{(-x_{ij} + y_{ij} - z_{ij})^3}{r_{ij}^3} + 
+                                                                        \frac{(-x_{ij} - y_{ij} + z_{ij})^3}{r_{ij}^3} \right]  
+\f]
+
+Here \f$r_{ij}\f$ is the magnitude fo the vector connecting atom \f$i\f$ to atom \f$j\f$ and \f$x_{ij}\f$, \f$y_{ij}\f$ and \f$z_{ij}\f$
+are its three components.  The function  \f$\sigma( r_{ij} )\f$ is a \ref switchingfunction that acts on the distance between 
+atoms \f$i\f$ and \f$j\f$.  The parameters of this function should be set so that the function is equal to one
+when atom \f$j\f$ is in the first coordination sphere of atom \f$i\f$ and is zero otherwise.
 
 \par Examples
+
+The following command calculates the average value of the tetrahedrality parameter for a set of 64 atoms all of the same type
+and outputs this quantity to a file called colvar.
+
+\verbatim
+tt: TETRAHEDRAL SPECIES=1-64 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MEAN
+PRINT ARG=tt.mean FILE=colvar
+\endverbatim  
+
+The following command calculates the number of tetrahedrality parameters that are greater than 0.8 in a set of 10 atoms.
+In this calculation it is assumed that there are two atom types A and B and that the first coordination sphere of the
+10 atoms of type A contains atoms of type B.  The formula above is thus calculated for ten different A atoms and within 
+it the sum over \f$j\f$ runs over 40 atoms of type B that could be in the first coordination sphere.
+
+\verbatim
+tt: TETRAHEDRAL SPECIESA=1-10 SPECIESB=11-40 SWITCH={RATIONAL D_0=1.3 R_0=0.2} MORE_THAN={RATIONAL R_0=0.8}
+PRINT ARG=tt.* FILE=colvar
+\endverbatim
 
 */
 //+ENDPLUMEDOC
