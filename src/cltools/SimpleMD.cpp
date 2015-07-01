@@ -434,7 +434,6 @@ virtual int main(FILE* in,FILE*out,PLMD::Communicator& pc){
   string      outputfile;        // name of file with final configuration (xyz)
   string      trajfile;          // name of the trajectory file (xyz)
   string      statfile;          // name of the file with statistics
-  string      string;            // a string for parsing
 
   double engkin;                 // kinetic energy
   double engconf;                // configurational energy
