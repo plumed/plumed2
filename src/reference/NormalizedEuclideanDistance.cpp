@@ -26,7 +26,7 @@ namespace PLMD {
 
 class NormalizedEuclideanDistance : public ArgumentOnlyDistance {
 public:
-  NormalizedEuclideanDistance( const ReferenceConfigurationOptions& ro );
+  explicit NormalizedEuclideanDistance( const ReferenceConfigurationOptions& ro );
 };
 
 PLUMED_REGISTER_METRIC(NormalizedEuclideanDistance,"NORM-EUCLIDEAN")

@@ -41,7 +41,7 @@ class MultiRMSD : public Colvar {
   ReferenceValuePack mypack;
 
 public:
-  MultiRMSD(const ActionOptions&);
+  explicit MultiRMSD(const ActionOptions&);
   ~MultiRMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);

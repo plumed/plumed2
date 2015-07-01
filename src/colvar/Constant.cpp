@@ -58,7 +58,7 @@ PRINT ARG=sss.2
 class Constant : public Colvar {
   double value;
 public:
-  Constant(const ActionOptions&);
+  explicit Constant(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords( Keywords& keys );

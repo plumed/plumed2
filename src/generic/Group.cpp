@@ -123,7 +123,7 @@ class Group:
 {
 
 public:
-  Group(const ActionOptions&ao);
+  explicit Group(const ActionOptions&ao);
   ~Group();
   static void registerKeywords( Keywords& keys );
   void calculate(){}

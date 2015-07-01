@@ -128,7 +128,7 @@ public:
 /// Convert the name to the label of the component
   static std::string transformName( const std::string& name );
 /// The constructor
-  Vessel( const VesselOptions& da );
+  explicit Vessel( const VesselOptions& da );
 /// Virtual destructor needed for proper inheritance
   virtual ~Vessel(){}
 /// Return the name

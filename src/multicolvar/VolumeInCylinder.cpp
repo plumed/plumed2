@@ -69,7 +69,7 @@ private:
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  VolumeInCylinder (const ActionOptions& ao);
+  explicit VolumeInCylinder (const ActionOptions& ao);
   void setupRegions();
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 }; 

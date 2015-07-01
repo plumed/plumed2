@@ -77,7 +77,7 @@ class RandomExchanges:
 {
 public:
   static void registerKeywords( Keywords& keys );
-  RandomExchanges(const ActionOptions&ao);
+  explicit RandomExchanges(const ActionOptions&ao);
   void calculate(){}
   void apply(){}
 };

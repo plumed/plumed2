@@ -51,7 +51,7 @@ class ColvarFake : public Colvar {
 
 public:
   static void registerKeywords( Keywords& keys );
-  ColvarFake(const ActionOptions&);
+  explicit ColvarFake(const ActionOptions&);
 // active methods:
   virtual void calculate();
 };

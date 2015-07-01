@@ -71,7 +71,7 @@ public ActionWithArguments
 public:
   void calculate(){}
   void prepare();
-  Print(const ActionOptions&);
+  explicit Print(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply(){}
   void update();

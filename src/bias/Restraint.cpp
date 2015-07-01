@@ -67,7 +67,7 @@ class Restraint : public Bias{
   Value* valueBias;
   Value* valueForce2;
 public:
-  Restraint(const ActionOptions&);
+  explicit Restraint(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };

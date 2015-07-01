@@ -34,7 +34,7 @@ class ActionSetup :
   public virtual Action {
 public:
 /// Constructor
-  ActionSetup(const ActionOptions&ao);
+  explicit ActionSetup(const ActionOptions&ao);
 /// Creator of keywords
   static void registerKeywords( Keywords& keys ); 
 /// Do nothing.

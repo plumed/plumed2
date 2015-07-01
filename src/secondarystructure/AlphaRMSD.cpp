@@ -80,7 +80,7 @@ ALPHARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LABEL
 class AlphaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
-  AlphaRMSD(const ActionOptions&);
+  explicit AlphaRMSD(const ActionOptions&);
 }; 
 
 PLUMED_REGISTER_ACTION(AlphaRMSD,"ALPHARMSD")

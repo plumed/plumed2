@@ -112,7 +112,7 @@ class MovingRestraint : public Bias{
   std::vector<double> work;
   double tot_work;
 public:
-  MovingRestraint(const ActionOptions&);
+  explicit MovingRestraint(const ActionOptions&);
   void calculate();
   static void registerKeywords( Keywords& keys );
 };

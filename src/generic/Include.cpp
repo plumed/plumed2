@@ -68,7 +68,7 @@ class Include :
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Include(const ActionOptions&ao);
+  explicit Include(const ActionOptions&ao);
   void calculate(){}
   void apply(){}
 };

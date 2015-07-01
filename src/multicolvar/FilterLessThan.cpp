@@ -41,7 +41,7 @@ private:
   SwitchingFunction sf;
 public:
   static void registerKeywords( Keywords& keys );
-  FilterLess(const ActionOptions& ao);
+  explicit FilterLess(const ActionOptions& ao);
   double applyFilter( const double& val, double& df ) const ;
 }; 
 

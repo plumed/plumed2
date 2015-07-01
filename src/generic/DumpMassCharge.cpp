@@ -97,7 +97,7 @@ class DumpMassCharge:
   string file;
   bool first;
 public:
-  DumpMassCharge(const ActionOptions&);
+  explicit DumpMassCharge(const ActionOptions&);
   ~DumpMassCharge();
   static void registerKeywords( Keywords& keys );
   void calculate(){}

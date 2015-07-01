@@ -91,7 +91,7 @@ private:
   SwitchingFunction sf2;
 public:
   static void registerKeywords( Keywords& keys );
-  Angles(const ActionOptions&);
+  explicit Angles(const ActionOptions&);
 /// Updates neighbor list
   virtual double compute( const unsigned& tindex, AtomValuePack& ) const ;
 /// Returns the number of coordinates of the field

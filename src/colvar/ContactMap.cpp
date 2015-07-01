@@ -81,7 +81,7 @@ private:
   vector<double> reference, weight;
 public:
   static void registerKeywords( Keywords& keys );
-  ContactMap(const ActionOptions&);
+  explicit ContactMap(const ActionOptions&);
   ~ContactMap();
 // active methods:
   virtual void calculate();

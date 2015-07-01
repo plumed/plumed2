@@ -193,7 +193,7 @@ class FuncSumHills :
   BiasRepresentation *biasrep;
   BiasRepresentation *historep;
 public:
-  FuncSumHills(const ActionOptions&);
+  explicit FuncSumHills(const ActionOptions&);
   ~FuncSumHills();
   void calculate(); // this probably is not needed
   bool checkFilesAreExisting(const vector<string> & hills ); 

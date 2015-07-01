@@ -41,7 +41,7 @@ class RMSD : public Colvar {
   bool squared; 
 
 public:
-  RMSD(const ActionOptions&);
+  explicit RMSD(const ActionOptions&);
   ~RMSD();
   virtual void calculate();
   static void registerKeywords(Keywords& keys);

@@ -122,7 +122,7 @@ private:
   bool unnormalized;
 public:
   static void registerKeywords( Keywords& keys );
-  Histogram(const ActionOptions&ao);
+  explicit Histogram(const ActionOptions&ao);
   void performAnalysis();
   void performTask( const unsigned& , const unsigned& , MultiValue& ) const ;
 };

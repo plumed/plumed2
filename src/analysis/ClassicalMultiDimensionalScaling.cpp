@@ -172,7 +172,7 @@ private:
   PointWiseMapping* myembedding;
 public:
   static void registerKeywords( Keywords& keys );
-  ClassicalMultiDimensionalScaling( const ActionOptions& ao );
+  explicit ClassicalMultiDimensionalScaling( const ActionOptions& ao );
   ~ClassicalMultiDimensionalScaling();
   void analyzeLandmarks();
 };

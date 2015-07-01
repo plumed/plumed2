@@ -51,7 +51,7 @@ namespace mapping{
 class PropertyMap : public PathBase {
 public:
   static void registerKeywords( Keywords& keys );
-  PropertyMap(const ActionOptions&);
+  explicit PropertyMap(const ActionOptions&);
 };
 
 PLUMED_REGISTER_ACTION(PropertyMap,"GPROPERTYMAP")

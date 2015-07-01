@@ -45,7 +45,7 @@ private:
   ActionWithVessel* myOutputAction;
   ActionWithValue* myOutputValues;
 public:
-  BridgeVessel( const VesselOptions& );
+  explicit BridgeVessel( const VesselOptions& );
 /// Does this have derivatives
   bool hasDerivatives();
 /// Resize the quantities in the vessel

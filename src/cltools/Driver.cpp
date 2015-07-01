@@ -166,7 +166,7 @@ template<typename real>
 class Driver : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
-  Driver(const CLToolOptions& co );
+  explicit Driver(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc);
   string description()const;
 };

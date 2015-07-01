@@ -65,7 +65,7 @@ private:
   std::vector<double> bmin, bmax;
 public:
   static void registerKeywords( Keywords& keys );
-  Committor(const ActionOptions&ao);
+  explicit Committor(const ActionOptions&ao);
   void calculate();
   void apply(){}
 };

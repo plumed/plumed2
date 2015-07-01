@@ -82,7 +82,7 @@ PARABETARMSD RESIDUES=all TYPE=DRMSD LESS_THAN={RATIONAL R_0=0.08 NN=8 MM=12} LA
 class ParabetaRMSD : public SecondaryStructureRMSD {
 public:
   static void registerKeywords( Keywords& keys );
-  ParabetaRMSD(const ActionOptions&);
+  explicit ParabetaRMSD(const ActionOptions&);
 }; 
 
 PLUMED_REGISTER_ACTION(ParabetaRMSD,"PARABETARMSD")

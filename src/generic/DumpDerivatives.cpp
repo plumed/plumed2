@@ -62,7 +62,7 @@ public ActionWithArguments
   OFile of;
 public:
   void calculate(){}
-  DumpDerivatives(const ActionOptions&);
+  explicit DumpDerivatives(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply(){}
   void update();

@@ -37,7 +37,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Moments( const vesselbase::VesselOptions& da );
+  explicit Moments( const vesselbase::VesselOptions& da );
   std::string description();
   void resize();
   void finish( const std::vector<double>& buffer );
