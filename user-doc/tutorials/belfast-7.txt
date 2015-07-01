@@ -334,7 +334,7 @@ without the use of PT (see \ref belfast-6-exercise-5), here we can focus on the 
 the PTMetaD simulation. Let's compare the behavior of the biased variable psi in the two simulations:
 
 \anchor belfast-7-ptmetadh-fig
-\image html belfast-7-ptmetadh.pdf "Time serie of the biased CV psi in a well-tempered metadynamics and PTMetaD simulations."
+\image html belfast-7-ptmetadh.png "Time serie of the biased CV psi in a well-tempered metadynamics and PTMetaD simulations."
 
 In well-tempered metadynamics (left panel), the biased variable psi looked stuck early in the simulation (t=3 ns).
 The reason was the transition of the other hidden degree of freedom phi from one free-energy basin
@@ -342,7 +342,7 @@ to the other. In the PTMetaD case (right panel), this seems not to happen. To be
 we can plot the time evolution of the hidden degree of freedom phi in the two cases.
 
 \anchor belfast-7-ptmetadhidd-fig
-\image html belfast-7-ptmetadhidd.pdf "Time serie of the CV phi in a well-tempered metadynamics and PTMetaD simulations."
+\image html belfast-7-ptmetadhidd.png "Time serie of the CV phi in a well-tempered metadynamics and PTMetaD simulations."
 
 Thanks to the excursions at high temperature, in the PTMetaD simulation the transition of the CV phi
 between the two basins is accelerate. As a result, the convergence of the reconstructed free energy in psi
