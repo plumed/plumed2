@@ -22,50 +22,74 @@
 #ifndef __PLUMED_analysis_LandmarkSelectionBase_h
 #define __PLUMED_analysis_LandmarkSelectionBase_h
 
-#include "AnalysisWithAnalysableOutput.h"
+#include "AnalysisWithDataCollection.h"
 
 namespace PLMD {
 namespace analysis {
 
-class LandmarkSelectionBase : public AnalysisWithAnalysableOutput {
+class LandmarkSelectionBase : public AnalysisWithDataCollection {
 private:
 /// The number of landmarks we are selecting
   unsigned nlandmarks;
+/// The weights of the landmark points
+  std::vector<double> lweights;
 /// The indices of the landmarks in the original data set
   std::vector<unsigned> landmark_indices;
 /// How do we treat weights
   bool novoronoi, noweights;
 protected:
-/// Return the number of landmarks
-  unsigned getNumberOfLandmarks() const ;
 /// Transfer frame i in the underlying action to the object we are going to analyze
   void selectFrame( const unsigned& );
 public:
   static void registerKeywords( Keywords& keys );  
   LandmarkSelectionBase( const ActionOptions& ao );
+/// Return the number of data points
+  unsigned getNumberOfDataPoints() const ;
+/// Return the index of the data point in the base class
+  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
+/// Get the weight
+  double getWeight( const unsigned& idata ) const ;
+/// Get the ith data point
+  void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
+/// Get a reference configuration
+  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
+/// Select landmark configurations
   void performAnalysis();
   virtual void selectLandmarks()=0;
-  unsigned getNumberOfOutputPoints() const ;
-  ReferenceConfiguration* getOutputConfiguration( const unsigned& idata );
-  double getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq );
+/// Get the squared dissimilarity between two reference configurations
+  double getDissimilarity( const unsigned& i, const unsigned& j );
+/// This does nothing - it just ensures the final class is not abstract
   void performTask(){ plumed_error(); }
-  double getOutputDissimilarity( const unsigned& idata, const unsigned& jdata );
-  unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
 };
 
 inline
-unsigned LandmarkSelectionBase::getNumberOfOutputPoints() const {
+unsigned LandmarkSelectionBase::getNumberOfDataPoints() const {
   return nlandmarks;
 }
 
 inline
-unsigned LandmarkSelectionBase::getNumberOfLandmarks() const {
-  return nlandmarks;
+unsigned LandmarkSelectionBase::getDataPointIndexInBase( const unsigned& idata ) const {
+  return AnalysisWithDataCollection::getDataPointIndexInBase( landmark_indices[idata] );
 }
 
 inline
-double LandmarkSelectionBase::getDistanceBetweenFrames( const unsigned& iframe, const unsigned& jframe, const bool& sq ){
-  return Analysis::getDistanceBetweenFrames( landmark_indices[iframe], landmark_indices[jframe], true );
+double LandmarkSelectionBase::getWeight( const unsigned& idata ) const {
+  return lweights[idata];
+}
+
+inline
+void LandmarkSelectionBase::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
+  AnalysisWithDataCollection::getDataPoint( landmark_indices[idata], point, weight );
+}
+
+inline
+ReferenceConfiguration* LandmarkSelectionBase::getReferenceConfiguration( const unsigned& idat ){
+  return AnalysisWithDataCollection::getReferenceConfiguration( landmark_indices[idat] );
+}
+
+inline
+double LandmarkSelectionBase::getDissimilarity( const unsigned& i, const unsigned& j ){
+  return AnalysisBase::getDissimilarity( landmark_indices[i], landmark_indices[j] );
 }
 
 }

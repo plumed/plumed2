@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Analysis.h"
+#include "AnalysisBase.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
@@ -28,41 +28,45 @@
 namespace PLMD {
 namespace analysis {
 
-class ReadDissimilarityMatrix : public Analysis {
+class ReadDissimilarityMatrix : public AnalysisBase {
 private:
   unsigned nnodes;
   std::string fname, wfile;
+  Matrix<double> dissimilarities;
   std::vector<double> weights;
 public:
   static void registerKeywords( Keywords& keys );
   ReadDissimilarityMatrix( const ActionOptions& ao );
   unsigned getNumberOfDataPoints() const { return nnodes; }
+/// This gives an error as if we read in the matrix we dont have the coordinates
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata );
+/// This gives an error as if we read in the matrix we dont have the coordinates
   void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
-  void calcDissimilarity( const unsigned& , const unsigned& ){ plumed_error(); }
-  void update();
-  void performAnalysis();
-  void performTask(){ plumed_error(); }
-  double getWeight( const unsigned& idata ) const ;
-  double getOutputWeight( const unsigned& idata ) const ;
+/// Tell everyone we have dissimilarities
   bool dissimilaritiesWereSet() const { return true; }
+/// Get the dissimilarity between two data points 
+  double getDissimilarity( const unsigned& , const unsigned& );
+/// Get the weight from the input file
+  double getWeight( const unsigned& idata ) const ;
+/// Just tell plumed to stop
+  void update();
+/// Read in the dissimilarity matrix
+  void performAnalysis();
+/// Overwrite virtual function in base class
+  void performTask(){ plumed_error(); }
 };
 
 PLUMED_REGISTER_ACTION(ReadDissimilarityMatrix,"READ_DISSIMILARITY_MATRIX")
 
 void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ){
-  Analysis::registerKeywords( keys );
+  AnalysisBase::registerKeywords( keys ); keys.remove("USE_OUTPUT_DATA_FROM");
   keys.add("compulsory","FILE","an input file containing the matrix of dissimilarities");
   keys.add("optional","WFILE","input file containing weights of points");
-  keys.remove("ATOMS"); keys.remove("METRIC"); keys.remove("STRIDE"); keys.remove("RUN");
-  keys.remove("REUSE_INPUT_DATA_FROM"); keys.remove("USE_OUTPUT_DATA_FROM"); keys.remove("USE_ALL_DATA");
-  keys.remove("FMT"); keys.remove("REWEIGHT_BIAS"); keys.remove("TEMP"); keys.remove("REWEIGHT_TEMP");
-  keys.remove("WRITE_CHECKPOINT");
 }
 
 ReadDissimilarityMatrix::ReadDissimilarityMatrix( const ActionOptions& ao ):
 Action(ao),
-Analysis(ao),
+AnalysisBase(ao),
 nnodes(1)
 {
   if( plumed.getActionSet().size()!=0 ) error("read dissimilarity matrix command must be at top of input file");
@@ -80,13 +84,13 @@ void ReadDissimilarityMatrix::performAnalysis(){
   IFile mfile; mfile.open(fname); 
   // Read in first line
   std::vector<std::string> words; Tools::getParsedLine( mfile, words );
-  nnodes=words.size(); mydissimilarities.resize( nnodes, nnodes ); 
-  for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], mydissimilarities(0,j) );
+  nnodes=words.size(); dissimilarities.resize( nnodes, nnodes ); 
+  for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], dissimilarities(0,j) );
 
   for(unsigned i=1;i<nnodes;++i){
        Tools::getParsedLine( mfile, words );
        if( words.size()!=nnodes ) error("bad formatting in matrix file");
-       for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], mydissimilarities(i,j) ); 
+       for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], dissimilarities(i,j) ); 
   }
   mfile.close();
 
@@ -102,6 +106,10 @@ void ReadDissimilarityMatrix::performAnalysis(){
   }
 }
 
+double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ){
+  return dissimilarities( iframe, jframe );
+}
+
 ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata ){
   plumed_merror("cannot get reference configurations from read in dissimilarity matrix");
   return NULL;
@@ -111,16 +119,9 @@ void ReadDissimilarityMatrix::getDataPoint( const unsigned& idata, std::vector<d
   plumed_merror("cannot get data points from read in dissmimilarity matrix");
 }
 
-double ReadDissimilarityMatrix::getOutputWeight( const unsigned& idata ) const {
-  return getWeight( idata );
-}
-
 double ReadDissimilarityMatrix::getWeight( const unsigned& idata ) const {
   plumed_assert( idata<nnodes ); return weights[idata]; 
 }
-
-
-
 
 }
 }

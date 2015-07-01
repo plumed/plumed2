@@ -45,7 +45,7 @@ LandmarkSelectionBase(ao)
 }
 
 void SelectWithStride::selectLandmarks(){
-  unsigned stride = std::floor( getNumberOfDataPoints() / getNumberOfLandmarks() ), max=stride*getNumberOfLandmarks();
+  unsigned stride = std::floor( mydata->getNumberOfDataPoints() / getNumberOfDataPoints() ), max=stride*getNumberOfDataPoints();
   for(unsigned i=0;i<max;i+=stride) selectFrame( i ); 
 }
 

@@ -95,6 +95,7 @@ old_norm(0.0)
          if( hasatoms && hasargs ) error("currently dependencies break if you have both arguments and atoms");   // Not sure if this is really a problem anymore
          // And delte the fake reference we created
          delete checkref;
+         log.printf("  storing data as %s type reference objects \n",metricname.c_str() );
 
          // Read in the information about how often to run the analysis (storage is read in in ActionPilot.cpp)
          parseFlag("USE_ALL_DATA",use_all_data);
@@ -147,7 +148,7 @@ old_norm(0.0)
          simtemp=0; parse("TEMP",simtemp); 
          if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
          else simtemp=plumed.getAtoms().getKbT();
-         if(simtemp==0) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
+         if(simtemp==0 && (rtemp!=0 || !biases.empty()) ) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
 
          // Check if a check point is required   (this should be got rid of at some point when we have proper checkpointing) GAT
          parseFlag("WRITE_CHECKPOINT",write_chq);
@@ -231,7 +232,7 @@ ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( c
 }
 
 void AnalysisWithDataCollection::update(){
-  if( mydata ) AnalysisBase::update();
+  if( mydata ){ AnalysisBase::update(); return; }
 
   // Ignore first bit of data if we are not using all data - this is a weird choice - I am not sure I understand GAT (perhaps this should be changed)?
   if( !use_all_data && getStep()==0 ) return ;
@@ -289,7 +290,7 @@ void AnalysisWithDataCollection::update(){
 }
 
 void AnalysisWithDataCollection::runFinalJobs(){
-  if( mydata ) AnalysisBase::runFinalJobs();
+  if( mydata ){ AnalysisBase::runFinalJobs(); return; }
   if( use_all_data ) runAnalysis();
 }
 

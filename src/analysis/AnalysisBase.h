@@ -74,7 +74,7 @@ public:
 /// Ensures that dissimilarities were set somewhere 
   virtual bool dissimilaritiesWereSet() const ;
 /// Get the squared dissimilarity between two reference configurations
-  double getDissimilarity( const unsigned& i, const unsigned& j );
+  virtual double getDissimilarity( const unsigned& i, const unsigned& j );
 /// This returns the label of the object that contains the base data
   virtual std::string getBaseDataLabel() const ;
 /// Get the ith data point

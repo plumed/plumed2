@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Analysis.h"
+#include "AnalysisWithDataCollection.h"
 #include "reference/ReferenceAtoms.h"
 #include "reference/ReferenceArguments.h"
 #include "core/ActionRegister.h"
@@ -44,7 +44,7 @@ using that dimensionality reduction algorithms out-of-sample extension algorithm
 */
 //+ENDPLUMEDOC
 
-class OutputColvarFile : public Analysis {
+class OutputColvarFile : public AnalysisWithDataCollection {
 private:
   std::string fmt;
   std::string filename;
@@ -58,17 +58,18 @@ public:
 PLUMED_REGISTER_ACTION(OutputColvarFile,"OUTPUT_ANALYSIS_DATA_TO_COLVAR")
 
 void OutputColvarFile::registerKeywords( Keywords& keys ){
-  Analysis::registerKeywords( keys );
+  AnalysisWithDataCollection::registerKeywords( keys );
   keys.add("compulsory","FILE","the name of the file to output to");
   keys.add("optional","FMT","the format to output the data using");
 }
 
 OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
 Action(ao),
-Analysis(ao),
+AnalysisWithDataCollection(ao),
 fmt("%f")
 {
-  parseOutputFile("FILE",filename); parse("FMT",fmt);
+  parse("FILE",filename); parse("FMT",fmt);
+  if( !getRestart() ){ OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(filename); }
   log.printf("  printing data to file named %s \n",filename.c_str() );
 }
 

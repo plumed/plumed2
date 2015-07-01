@@ -51,22 +51,22 @@ LandmarkSelectionBase(ao)
 }
 
 void FarthestPointSampling::selectLandmarks(){
-  std::vector<unsigned> landmarks( getNumberOfLandmarks() );
+  std::vector<unsigned> landmarks( getNumberOfDataPoints() );
 
   // Select first point at random
   Random random; random.setSeed(-seed); double rand=random.RandU01();
-  landmarks[0] = std::floor( getNumberOfDataPoints()*rand );
+  landmarks[0] = std::floor( mydata->getNumberOfDataPoints()*rand );
   selectFrame( landmarks[0] );
 
   // Now find distance to all other points (N.B. We can use squared distances here for speed)
-  Matrix<double> distances( getNumberOfLandmarks(), getNumberOfDataPoints() );
-  for(unsigned i=0;i<getNumberOfDataPoints();++i) distances(0,i) = getDissimilarity( landmarks[0], i );
+  Matrix<double> distances( getNumberOfDataPoints(), mydata->getNumberOfDataPoints() );
+  for(unsigned i=0;i<mydata->getNumberOfDataPoints();++i) distances(0,i) = mydata->getDissimilarity( landmarks[0], i );
 
   // Now find all other landmarks
-  for(unsigned i=1;i<getNumberOfLandmarks();++i){
+  for(unsigned i=1;i<getNumberOfDataPoints();++i){
       // Find point that has the largest minimum distance from the landmarks selected thus far
       double maxd=0;
-      for(unsigned j=0;j<getNumberOfDataPoints();++j){
+      for(unsigned j=0;j<mydata->getNumberOfDataPoints();++j){
           double mind=distances(0,j);
           for(unsigned k=1;k<i;++k){
               if( distances(k,j)<mind ){ mind=distances(k,j); }
@@ -74,7 +74,7 @@ void FarthestPointSampling::selectLandmarks(){
           if( mind>maxd ){ maxd=mind; landmarks[i]=j; }
       }
       selectFrame( landmarks[i] );
-      for(unsigned k=0;k<getNumberOfDataPoints();++k) distances(i,k) = getDissimilarity( landmarks[i], k );
+      for(unsigned k=0;k<mydata->getNumberOfDataPoints();++k) distances(i,k) = mydata->getDissimilarity( landmarks[i], k );
   } 
 }
 

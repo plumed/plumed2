@@ -72,23 +72,23 @@ public:
 /// Return the number of arguments (this overwrites the one in ActionWithArguments)
   unsigned getNumberOfArguments() const;
 /// Return the number of data points
-  unsigned getNumberOfDataPoints() const ;
+  virtual unsigned getNumberOfDataPoints() const ;
 /// Return the index of the data point in the base class
   virtual unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
 /// Return the weight of the ith point
-  double getWeight( const unsigned& idata ) const ;
+  virtual double getWeight( const unsigned& idata ) const ;
 /// Are we using memory in this calculation this affects the weights
   virtual bool usingMemory() const ;
 /// Return the normalisation constant for the calculation
   virtual double getNormalization() const ;
 /// By default dissimilarities are not set - they are only set in dissimilarity objects
-  virtual bool dissimilaritiesWereSet() const { return false; } 
+  virtual bool dissimilaritiesWereSet() const ; 
 /// This returns the label of the object that contains the base data
   std::string getBaseDataLabel() const ;
 /// Get the ith data point
-  void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
+  virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Get a reference configuration
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
+  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
 /// This ensures that the energy is stored if we are reweighting
   void prepare();
 /// This stores the data and calls the analysis to be performed
@@ -113,6 +113,12 @@ inline
 bool AnalysisWithDataCollection::usingMemory() const {
   if( !mydata ) return !nomemory;
   return AnalysisBase::usingMemory();
+}
+
+inline
+bool AnalysisWithDataCollection::dissimilaritiesWereSet() const { 
+  if( !mydata ) return false; 
+  return AnalysisBase::dissimilaritiesWereSet();
 }
 
 inline
