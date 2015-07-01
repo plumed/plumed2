@@ -43,7 +43,6 @@ void MultiDomainRMSD::read( const PDB& pdb ){
    unsigned nblocks =  pdb.getNumberOfAtomBlocks();
    if( nblocks<2 ) error("multidomain RMSD only has one block of atoms");
   
-   std::vector<AtomNumber> atomnumbers;
    std::vector<Vector> positions; std::vector<double> align, displace;
    std::string num; blocks.resize( nblocks+1 ); blocks[0]=0;
    for(unsigned i=0;i<nblocks;++i) blocks[i+1]=pdb.getAtomBlockEnds()[i]; 
