@@ -18,7 +18,8 @@ An experimental PDF copy of this manual can be found
 To understand the difference between PLUMED 1 and PLUMED 2, and to
 follow the development of PLUMED 2, you can look at the detailed \ref Changelog.
 
-A short tutorial explaining how to move from PLUMED 1 to PLUMED 2 is also available (see \ref moving)
+A short tutorial explaining why it is a good idea to move from PLUMED 1 to PLUMED 2
+and how to do it in practice is also available (see \ref moving).
 
 To install PLUMED 2, see this page: \ref Installation
 
