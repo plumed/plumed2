@@ -155,6 +155,8 @@ public:
   virtual double getWeight( const unsigned& idata ) const ;
 /// Calculate the dissimilarity between two configurations
   virtual void calcDissimilarity( const unsigned& , const unsigned& ){ plumed_error(); }
+/// This returns the label of the object that contains the base data
+  std::string getBaseDataLabel() const ;
   void prepare();
   void calculate();
   void update();

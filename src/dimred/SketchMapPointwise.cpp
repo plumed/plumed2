@@ -34,12 +34,10 @@ private:
   bool nointerpolation;
   double cgtol, gbuf;
   std::vector<unsigned> npoints;
-  std::vector<double> dtargets, ftargets;
 public:
   static void registerKeywords( Keywords& keys ); 
   SketchMapPointwise( const ActionOptions& ao );
   void minimise( const Matrix<double>& , const Matrix<double>& , Matrix<double>& );
-  double calculateStress( const std::vector<double>& p, std::vector<double>& d );
 };
 
 PLUMED_REGISTER_ACTION(SketchMapPointwise,"SKETCHMAP_POINTWISE")
@@ -72,7 +70,6 @@ npoints(nlow)
 }
 
 void SketchMapPointwise::minimise( const Matrix<double>& transformed, const Matrix<double>& distances, Matrix<double>& projections ){
-  dtargets.resize( distances.nrows() ); ftargets.resize( distances.nrows() );
   std::vector<double> gmin( nlow ), gmax( nlow ), mypoint( nlow ); 
 
   // Find the extent of the grid
@@ -95,7 +92,7 @@ void SketchMapPointwise::minimise( const Matrix<double>& transformed, const Matr
   for(unsigned i=0;i<ncycles;++i){
       for(unsigned j=0;j<getNumberOfDataPoints();++j){
           // Setup target distances and target functions for calculate stress 
-          for(unsigned k=0;k<getNumberOfDataPoints();++k){ dtargets[k]=distances(j,k); ftargets[k]=transformed(j,k); }
+          for(unsigned k=0;k<getNumberOfDataPoints();++k) setTargetDistance( k, distances(j,k)  ); 
 
           if( nointerpolation ){
               // Minimise using grid search
@@ -109,36 +106,6 @@ void SketchMapPointwise::minimise( const Matrix<double>& transformed, const Matr
           for(unsigned k=0;k<nlow;++k) projections(j,k)=mypoint[k];
       }
   }
-}
-
-double SketchMapPointwise::calculateStress( const std::vector<double>& p, std::vector<double>& d ){
-
-  // Zero derivative and stress accumulators
-  for(unsigned i=0;i<p.size();++i) d[i]=0.0;
-  double stress=0; std::vector<double> dtmp( p.size() );
-  
-  // Now accumulate total stress on system
-  for(unsigned i=0;i<ftargets.size();++i){
-      if( dtargets[i]<epsilon ) continue ;
-
-      // Calculate distance in low dimensional space
-      double dd=0; 
-      for(unsigned j=0;j<p.size();++j){ dtmp[j]=p[j]-projections(i,j); dd+=dtmp[j]*dtmp[j]; }
-      dd = sqrt(dd); 
-
-      // Now do transformations and calculate differences
-      double df, fd = transformLowDimensionalDistance( dd, df ); 
-      double ddiff = dd - dtargets[i];
-      double fdiff = fd - ftargets[i];      
-
-      // Calculate derivatives
-      double pref = 2.*getWeight(i) / dd ;
-      for(unsigned j=0;j<p.size();++j) d[j] += pref*( (1-mixparam)*fdiff*df + mixparam*ddiff )*dtmp[j];
-
-      // Accumulate the total stress 
-      stress += getWeight(i)*( (1-mixparam)*fdiff*fdiff + mixparam*ddiff*ddiff );
-  }
-  return stress;
 }
 
 }

@@ -404,6 +404,16 @@ double Analysis::getDissimilarity( const unsigned& i, const unsigned& j ){
   }
 }
 
+std::string Analysis::getBaseDataLabel() const {
+  if( !reusing_data ){
+     return getLabel();
+  } else if( dimred_data ){
+     return dimredstash->getBaseDataLabel();
+  } else {
+     return mydatastash->getBaseDataLabel();
+  }
+}
+
 void Analysis::finalizeWeights( const bool& ignore_weights ){
   plumed_assert( !reusing_data );
   // Ensure weights are not finalized if we are using readDissimilarityMatrix

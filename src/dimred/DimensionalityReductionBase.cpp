@@ -96,6 +96,8 @@ double DimensionalityReductionBase::getOutputDissimilarity( const unsigned& idat
 }
 
 void DimensionalityReductionBase::performAnalysis(){
+  // Resize the tempory array (this is used for out of sample)
+  dtargets.resize( getNumberOfDataPoints() );
   // Resize the projections array
   projections.resize( getNumberOfDataPoints(), nlow );
 
@@ -119,6 +121,34 @@ void DimensionalityReductionBase::performAnalysis(){
   }
   // This calculates the projections of the points
   calculateProjections( targets, projections );
+}
+
+double DimensionalityReductionBase::calculateStress( const std::vector<double>& p, std::vector<double>& d ){
+
+  // Zero derivative and stress accumulators
+  for(unsigned i=0;i<p.size();++i) d[i]=0.0;
+  double stress=0; std::vector<double> dtmp( p.size() );
+
+  // Now accumulate total stress on system
+  for(unsigned i=0;i<dtargets.size();++i){
+      if( dtargets[i]<epsilon ) continue ;
+
+      // Calculate distance in low dimensional space
+      double dd=0;
+      for(unsigned j=0;j<p.size();++j){ dtmp[j]=p[j]-projections(i,j); dd+=dtmp[j]*dtmp[j]; }
+      dd = sqrt(dd);
+
+      // Now do transformations and calculate differences
+      double ddiff = dd - dtargets[i];
+
+      // Calculate derivatives
+      double pref = 2.*getWeight(i) / dd;
+      for(unsigned j=0;j<p.size();++j) d[j] += pref*ddiff*dtmp[j];
+ 
+      // Accumulate the total stress 
+      stress += getWeight(i)*ddiff*ddiff;
+  }
+  return stress;
 }
 
 }

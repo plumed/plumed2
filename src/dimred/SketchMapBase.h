@@ -30,7 +30,10 @@ namespace dimred {
 
 class SketchMapBase : public DimensionalityReductionBase {
 private:
+  bool reuse_hd, reuse_ld;
+  SketchMapBase* smapbase;
   SwitchingFunction lowdf, highdf;
+  std::vector<double> dtargets, ftargets;
 protected:
   double mixparam;
 public:
@@ -40,16 +43,25 @@ public:
   virtual void minimise( const Matrix<double>& , const Matrix<double>& , Matrix<double>& )=0;
   double transformLowDimensionalDistance( const double& val, double& df ) const ;
   double transformHighDimensionalDistance( const double& val, double& df ) const ;
+  void setTargetDistance( const unsigned& idata, const double& dist );
+  double calculateStress( const std::vector<double>& p, std::vector<double>& d );
 };
 
 inline
 double SketchMapBase::transformLowDimensionalDistance( const double& val, double& df ) const {
+  if( reuse_ld ) return smapbase->transformLowDimensionalDistance( val, df );
   double ans=1.0 - lowdf.calculate( val, df ); df*=-val; return ans;
 }
 
 inline
 double SketchMapBase::transformHighDimensionalDistance( const double& val, double& df ) const {
+  if( reuse_hd ) return smapbase->transformHighDimensionalDistance( val, df );
   double ans=1.0 - highdf.calculate( val, df ); df*=-val; return ans;
+}
+
+inline
+void SketchMapBase::setTargetDistance( const unsigned& idata, const double& dist ){
+  double df; dtargets[idata]=dist; ftargets[idata]=transformHighDimensionalDistance( dist, df );
 }
 
 }

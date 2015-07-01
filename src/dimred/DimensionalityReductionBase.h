@@ -29,13 +29,14 @@ namespace dimred {
 
 class DimensionalityReductionBase : public analysis::AnalysisWithAnalysableOutput {
 friend class ProjectNonLandmarkPoints;
-friend class SketchMapPointwise;
+friend class SketchMapBase;
 private:
   bool use_dimred_dissims;
-  unsigned nlow;
+  std::vector<double> dtargets;
   ReferenceConfiguration* mydata;
   Matrix<double> projections;
 protected:
+  unsigned nlow;
   DimensionalityReductionBase* dimredbase;
   double getInputDissimilarity( const unsigned& idata, const unsigned& jdata );
 public:
@@ -49,8 +50,8 @@ public:
   void performTask(){}
   void performAnalysis();
   virtual void calculateProjections( const Matrix<double>& , Matrix<double>& )=0;
-  virtual double transformLowDimensionalDistance( const double& val, double& df ) const ;
-  virtual double transformHighDimensionalDistance( const double& val, double& df ) const ;
+  virtual void setTargetDistance( const unsigned& , const double& );
+  virtual double calculateStress( const std::vector<double>& pp, std::vector<double>& der );
 };
 
 inline
@@ -59,13 +60,8 @@ unsigned DimensionalityReductionBase::getNumberOfOutputPoints() const {
 }
 
 inline
-double DimensionalityReductionBase::transformLowDimensionalDistance( const double& val, double& df ) const {
-  df=1.0; return val;
-}
-
-inline
-double DimensionalityReductionBase::transformHighDimensionalDistance( const double& val, double& df ) const {
-  df=1.0; return val; 
+void DimensionalityReductionBase::setTargetDistance( const unsigned& idata, const double& dist ){
+  dtargets[idata]=dist;
 }
 
 }
