@@ -22,6 +22,7 @@
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
+#include "tools/Random.h"
 #include "reference/MetricRegister.h"
 #include "tools/ConjugateGradient.h"
 #include "analysis/AnalysisWithAnalysableOutput.h"
@@ -93,8 +94,9 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idata, std::v
       mybase->setTargetDistance( i, dist );
       if( dist<mindist ){ mindist=dist; closest=i; }
   }
-  // Put the initial guess at the closest landmark  -- may wish to use grid here again Sandip??
-  for(unsigned j=0;j<nlow;++j) point[j]=mybase->projections(closest,j);
+  // Put the initial guess near to the closest landmark  -- may wish to use grid here again Sandip??
+  Random random; random.setSeed(-1234);
+  for(unsigned j=0;j<nlow;++j) point[j]=mybase->projections(closest,j) + (random.RandU01() - 0.5)*0.01;
   myminimiser.minimise( cgtol, point, &ProjectNonLandmarkPoints::calculateStress );
 }
 
