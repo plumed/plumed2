@@ -19,7 +19,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#include "Analysis.h"
+#include "AnalysisWithDataCollection.h"
 #include "core/PlumedMain.h"
 #include "core/ActionRegister.h"
 #include "tools/Grid.h"
@@ -111,7 +111,7 @@ HISTOGRAM ...
 */
 //+ENDPLUMEDOC
 
-class Histogram : public Analysis {
+class Histogram : public AnalysisWithDataCollection {
 private:
   std::vector<std::string> gmin, gmax; 
   std::vector<double> point, bw;
@@ -131,8 +131,8 @@ public:
 PLUMED_REGISTER_ACTION(Histogram,"HISTOGRAM")
 
 void Histogram::registerKeywords( Keywords& keys ){
-  Analysis::registerKeywords( keys ); keys.reset_style("METRIC","hidden");
-  keys.remove("ATOMS"); keys.reset_style("ARG","compulsory");
+  AnalysisWithDataCollection::registerKeywords( keys ); 
+  keys.remove("ATOMS"); 
   keys.add("compulsory","GRID_MIN","the lower bounds for the grid");
   keys.add("compulsory","GRID_MAX","the upper bounds for the grid");
   keys.add("optional","GRID_BIN","the number of bins for the grid");
@@ -144,11 +144,11 @@ void Histogram::registerKeywords( Keywords& keys ){
   keys.addFlag("UNNORMALIZED",false,"Set to TRUE if you don't want histogram to be normalized or free energy to be shifted.");
   keys.add("optional","FMT","the format that should be used in the output file");
   keys.add("compulsory","GRID_WFILE","histogram","the file on which to write the grid");
-  keys.use("NOMEMORY");
 }
 
 Histogram::Histogram(const ActionOptions&ao):
-PLUMED_ANALYSIS_INIT(ao),
+Action(ao),
+AnalysisWithDataCollection(ao),
 point(getNumberOfArguments()),
 fmt("%f"),
 fenergy(false),
@@ -182,7 +182,8 @@ unnormalized(false)
       unsigned n=((b-a)/gspacing[i])+1;
       if(gbin[i]<n) gbin[i]=n;
   }
-  parseOutputFile("GRID_WFILE",gridfname); 
+  parse("GRID_WFILE",gridfname);
+  if( !getRestart() ){ OFile ofile; ofile.link(*this); ofile.setBackupString("analysis"); ofile.backupAllFiles(gridfname); }
 
   // Read the type of kernel we are using
   parse("KERNEL",kerneltype);
@@ -228,8 +229,9 @@ void Histogram::performAnalysis(){
   pmin.resize(getNumberOfArguments());
   pmax.resize(getNumberOfArguments());
   for(unsigned i=0;i<getNumberOfArguments();++i){
-     pbc.push_back( getPeriodicityInformation(i,dmin,dmax) );
+     pbc.push_back( getPntrToArgument(i)->isPeriodic() );
      if(pbc[i]){ 
+       getPntrToArgument(i)->getDomain(dmin,dmax);
        Tools::convert(dmin,gmin[i]); 
        Tools::convert(dmax,gmax[i]);
        Tools::convert(dmin,pmin[i]);
@@ -237,13 +239,19 @@ void Histogram::performAnalysis(){
      }
   }
 
-  Grid* gg; IFile oldf; oldf.link(*this); 
+  Grid* gg; IFile oldf; oldf.link(*this);
+
+  // Retrieve the arguments remembering to delete all biases
+  std::vector<Value*> arg_vals( ActionWithArguments::getArguments() );
+  unsigned nbias = arg_vals.size() - getNumberOfArguments();
+  for(unsigned i=0;i<nbias;++i) arg_vals.erase(arg_vals.end()-1); 
+
   if( usingMemory() && oldf.FileExist(gridfname) ){
       oldf.open(gridfname);
-      gg = Grid::create( "probs", getArguments(), oldf, gmin, gmax, gbin, false, false, false );
+      gg = Grid::create( "probs", arg_vals, oldf, gmin, gmax, gbin, false, false, false );
       oldf.close();
   } else {
-      gg = new Grid( "probs", getArguments(), gmin, gmax, gbin,false,false);
+      gg = new Grid( "probs", arg_vals, gmin, gmax, gbin,false,false);
   }
   // Set output format for grid
   gg->setOutputFmt( fmt );
