@@ -73,7 +73,7 @@ void DRMSD::setup_targets(){
 }
 
 double DRMSD::calc( const std::vector<Vector>& pos, const Pbc& pbc, ReferenceValuePack& myder, const bool& squared ) const {
-  plumed_dbg_assert( targets.size()>0 );
+  plumed_dbg_assert(!targets.empty());
 
   Vector distance; 
   myder.clear(); double drmsd=0.; 
