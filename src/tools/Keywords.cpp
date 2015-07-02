@@ -362,18 +362,21 @@ void Keywords::print_html() const {
      if ( (types.find(keys[i])->second).isAtomList() ) nkeys++;
   }
   if( nkeys>0 ){
-    if(isaction) std::cout<<"\\par The atoms involved can be specified using\n\n";
+    if(isaction && isatoms) std::cout<<"\\par The atoms involved can be specified using\n\n";
+    else if(isaction) std::cout<<"\\par The data to analyse can be the output from another analysis algorithm\n\n";
     else std::cout<<"\\par The input trajectory is specified using one of the following\n\n";
     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-    std::string prevtag="start";
+    std::string prevtag="start"; unsigned counter=0;
     for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isAtomList() ){
            plumed_massert( atomtags.count(keys[i]), "keyword " + keys[i] + " allegedly specifies atoms but no tag has been specified. Please email Gareth Tribello");
            if( prevtag!="start" && prevtag!=atomtags.find(keys[i])->second && isaction ){
                std::cout<<"</table>\n\n";
-               std::cout<<"\\par Or alternatively by using\n\n";
+               if( isatoms ) std::cout<<"\\par Or alternatively by using\n\n";
+               else if( counter==0 ){ std::cout<<"\\par Alternatively data can be collected from the trajectory using \n\n"; counter++; }
+               else std::cout<<"\\par Lastly data collected in a previous analysis action can be reanalysed by using the keyword \n\n";
                std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
-           }
+           } 
            print_html_item( keys[i] );
            prevtag=atomtags.find(keys[i])->second;
         }

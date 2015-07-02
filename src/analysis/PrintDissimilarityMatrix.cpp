@@ -23,6 +23,16 @@
 #include "AnalysisBase.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC ANALYSIS PRINT_DISSIMILARITY_MATRIX
+/* 
+Print the matrix of dissimilarities between a trajectory of atomic configurations.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
+
 namespace PLMD {
 namespace analysis {
 

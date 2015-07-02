@@ -24,6 +24,14 @@
 #include "tools/ConjugateGradient.h"
 #include "tools/GridSearch.h"
 
+//+PLUMEDOC DIMRED SKETCHMAP_POINTWISE
+/*
+Optimise the sketch-map stress function using a pointwise global optimisation algorithm.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
 
 namespace PLMD {
 namespace dimred {

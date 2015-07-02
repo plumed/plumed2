@@ -40,12 +40,14 @@ void AnalysisWithDataCollection::registerKeywords( Keywords& keys ){
   keys.add("atoms-1","STRIDE","the frequency with which data should be stored for analysis.  By default data is collected on every step");
   keys.add("atoms-1","RUN","the frequency with which to run the analysis algorithms.");
   keys.addFlag("USE_ALL_DATA",false,"just analyse all the data in the trajectory.  This option should be used in tandem with ATOMS/ARG + STRIDE");
-  keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics.  This option must be used in tandem with ATOMS/ARG + STRIDE.  For more information see \\ref reweighting");
-  keys.add("optional","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability distribution at a second temperature.  This option must be used in tandem with ATOMS/ARG + STRIDE.  For more information see \\ref reweighting");
+  keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN/USE_ALL_DATA. " 
+                                     "For more information see \\ref analysisbas");
+  keys.add("optional","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability distribution at a second temperature.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN/USE_ALL_DATA. "
+                                      "For more information see \\ref analysisbas");
   keys.add("optional","TEMP","the system temperature. This is required if you are reweighting (REWEIGHT_BIAS/REWEIGHT_TEMP) or if you are calculating free energies. You are not required to specify the temperature if this is passed by the underlying MD code.");
   keys.add("atoms-3","REUSE_INPUT_DATA_FROM","do a second form of analysis on the data stored by a previous analysis object");
-  keys.addFlag("WRITE_CHECKPOINT",false,"write out a checkpoint so that the analysis can be restarted in a later run.  This option must be used in tandem with ATOMS/ARG + STRIDE.");
-  keys.addFlag("NOMEMORY",false,"do a block averaging i.e. analyse each block of data separately.  This option must be used in tandem with ATOMS/ARG + STRIDE.");
+  keys.addFlag("WRITE_CHECKPOINT",false,"write out a checkpoint so that the analysis can be restarted in a later run.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN.");
+  keys.addFlag("NOMEMORY",false,"do a block averaging i.e. analyse each block of data separately.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN.");
   keys.use("RESTART"); keys.use("UPDATE_FROM"); keys.use("UPDATE_UNTIL");
 }
 

@@ -61,7 +61,14 @@ void OutputColvarFile::registerKeywords( Keywords& keys ){
   AnalysisWithDataCollection::registerKeywords( keys );
   keys.add("compulsory","FILE","the name of the file to output to");
   keys.add("optional","FMT","the format to output the data using");
-}
+  keys.reset_style("ATOMS","hidden"); keys.reset_style("STRIDE","hidden"); 
+  keys.reset_style("RUN","hidden"); keys.reset_style("USE_ALL_DATA","hidden");
+  keys.reset_style("REWEIGHT_BIAS","hidden"); keys.reset_style("REWEIGHT_TEMP","hidden");
+  keys.reset_style("TEMP","hidden"); keys.reset_style("REUSE_INPUT_DATA_FROM","hidden");
+  keys.reset_style("WRITE_CHECKPOINT","hidden"); keys.reset_style("NOMEMORY","hidden");
+  keys.reset_style("RESTART","hidden"); keys.reset_style("UPDATE_FROM","hidden");
+  keys.reset_style("UPDATE_UNTIL","hidden"); keys.reset_style("ARG","hidden");
+} 
 
 OutputColvarFile::OutputColvarFile( const ActionOptions& ao ):
 Action(ao),

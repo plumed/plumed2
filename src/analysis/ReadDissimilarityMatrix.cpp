@@ -25,6 +25,15 @@
 #include "core/ActionRegister.h"
 #include "tools/IFile.h"
 
+//+PLUMEDOC ANALYSIS READ_DISSIMILARITY_MATRIX
+/* 
+Read a matrix of dissimilarities between a trajectory of atomic configurations from a file.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace analysis {
 

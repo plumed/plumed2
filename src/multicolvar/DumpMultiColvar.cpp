@@ -40,7 +40,7 @@ namespace PLMD
 {
 namespace multicolvar {
 
-//+PLUMEDOC ANALYSIS DUMPMULTICOLVAR 
+//+PLUMEDOC MCOLVARA DUMPMULTICOLVAR 
 /*
 Dump atom positions and multicolvar on a file.
 

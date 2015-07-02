@@ -28,6 +28,15 @@
 #include "analysis/AnalysisBase.h"
 #include "DimensionalityReductionBase.h"
 
+//+PLUMEDOC DIMRED PROJECT_ALL_ANALYSIS_DATA
+/*
+Find projections of all non-landmark points using the embedding calculated by a dimensionality reduction optimisation calculation. 
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace dimred {
 

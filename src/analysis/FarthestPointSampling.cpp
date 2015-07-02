@@ -23,6 +23,15 @@
 #include "core/ActionRegister.h"
 #include "tools/Random.h"
 
+//+PLUMEDOC LANDMARKS LANDMARK_SELECT_FPS
+/* 
+Select a set of landmarks using farthest point sampling.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace analysis {
 
@@ -39,6 +48,7 @@ PLUMED_REGISTER_ACTION(FarthestPointSampling,"LANDMARK_SELECT_FPS")
 
 void FarthestPointSampling::registerKeywords( Keywords& keys ){
   LandmarkSelectionBase::registerKeywords(keys);
+  LandmarkSelectionBase::removeDataCollectionKeywords( keys );
   keys.add("compulsory","SEED","1234","a random number seed");
 }
 

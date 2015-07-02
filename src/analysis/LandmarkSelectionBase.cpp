@@ -24,6 +24,13 @@
 namespace PLMD {
 namespace analysis {
 
+void LandmarkSelectionBase::removeDataCollectionKeywords( Keywords& keys ){
+  keys.remove("ATOMS"); keys.remove("STRIDE"); keys.remove("RUN"); keys.remove("USE_ALL_DATA");
+  keys.remove("REWEIGHT_BIAS"); keys.remove("REWEIGHT_TEMP"); keys.remove("TEMP"); 
+  keys.remove("REUSE_INPUT_DATA_FROM"); keys.remove("WRITE_CHECKPOINT"); keys.remove("NOMEMORY");
+  keys.remove("RESTART"); keys.remove("UPDATE_FROM"); keys.remove("UPDATE_UNTIL"); keys.remove("ARG");
+}
+
 void LandmarkSelectionBase::registerKeywords( Keywords& keys ){
   AnalysisWithDataCollection::registerKeywords( keys );
   keys.add("compulsory","NLANDMARKS","the number of landmarks that you would like to select");

@@ -23,10 +23,9 @@
 #include "core/ActionRegister.h"
 #include "SMACOF.h"
 
-//+PLUMEDOC ANALYSIS SMACOFF_MDS
+//+PLUMEDOC DIMRED SMACOF_MDS
 /*
-Create a low-dimensional projection of a trajectory using the classical multidimensional 
-scaling algorithm.
+Optimise the multidimensional scaling stress function using the SMACOF algorithm.
 
 \par Examples
 

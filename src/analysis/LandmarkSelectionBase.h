@@ -42,6 +42,7 @@ protected:
   void selectFrame( const unsigned& );
 public:
   static void registerKeywords( Keywords& keys );  
+  static void removeDataCollectionKeywords( Keywords& keys );
   LandmarkSelectionBase( const ActionOptions& ao );
 /// Return the number of data points
   unsigned getNumberOfDataPoints() const ;

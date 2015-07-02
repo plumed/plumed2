@@ -23,6 +23,15 @@
 #include "core/ActionRegister.h"
 #include "reference/ReferenceConfiguration.h"
 
+//+PLUMEDOC ANALYSIS EUCLIDEAN_DISSIMILARITIES
+/* 
+Calculate the matrix of dissimilarities between a trajectory of atomic configurations.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace analysis {
 

@@ -22,6 +22,15 @@
 #include "LandmarkSelectionBase.h"
 #include "core/ActionRegister.h"
 
+//+PLUMEDOC LANDMARKS LANDMARK_SELECT_STRIDE
+/* 
+Select every \f$k\f$th landmark from the trajectory.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace analysis {
 

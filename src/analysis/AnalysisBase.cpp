@@ -31,7 +31,7 @@ void AnalysisBase::registerKeywords( Keywords& keys ){
   ActionPilot::registerKeywords( keys );
   ActionAtomistic::registerKeywords( keys );
   ActionWithArguments::registerKeywords( keys );
-  ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); keys.remove("LOWMEM");  
+  ActionWithVessel::registerKeywords( keys ); keys.remove("TOL"); keys.remove("LOWMEM"); keys.remove("TIMINGS"); keys.isAnalysis();  
   keys.add("atoms-2","USE_OUTPUT_DATA_FROM","use the ouput of the analysis performed by this object as input to your new analysis object");
 }
 

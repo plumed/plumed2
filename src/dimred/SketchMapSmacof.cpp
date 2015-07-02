@@ -23,6 +23,15 @@
 #include "SketchMapBase.h"
 #include "SMACOF.h"
 
+//+PLUMEDOC DIMRED SKETCHMAP_SMACOF
+/*
+Optimise the sketch-map stress function using the SMACOF algorithm.
+
+\par Examples
+
+*/
+//+ENDPLUMEDOC
+
 namespace PLMD {
 namespace dimred {
 
