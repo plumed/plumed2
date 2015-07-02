@@ -42,6 +42,7 @@ class ActionPilot:
   int stride; // multiple time step
 protected:
   int getStride()const;
+  void setStride( const unsigned& s );
 public:
   ActionPilot(const ActionOptions&);
 /// Create the keywords for actionPilot

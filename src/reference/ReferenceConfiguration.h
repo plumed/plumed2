@@ -142,8 +142,8 @@ public:
 /// Set the reference structure (perhaps should also pass the pbc and align and displace )
   void setReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric );
 /// Print a pdb file containing the reference configuration
-  void print( OFile& ofile, const double& time, const double& weight, const double& old_norm );
-  void print( OFile& ofile, const std::string& fmt );
+  void print( const double& lunits, OFile& ofile, const double& time, const double& weight, const double& old_norm );
+  void print( const double& lunits, OFile& ofile, const std::string& fmt );
 /// Get one of the referene arguments
   virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 

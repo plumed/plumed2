@@ -31,8 +31,14 @@ ActionPilot::ActionPilot(const ActionOptions&ao):
 Action(ao),
 stride(1)
 {
-  parse("STRIDE",stride);
-  log.printf("  with stride %d\n",stride);
+  if( keywords.exists("STRIDE") ){
+     parse("STRIDE",stride);
+     log.printf("  with stride %d\n",stride);
+  }
+}
+
+void ActionPilot::setStride( const unsigned& s ){
+  stride=s;
 }
 
 bool ActionPilot::onStep()const{
