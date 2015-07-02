@@ -27,9 +27,17 @@ LIST="
   # echo "LAYOUT_FILE=PlumedLayout.xml"
 } | doxygen -
 
+version=$(plumed --no-mpi info --version)
+
+# in the online manual better to put the branch name
+# which is available through the TRAVIS_BRANCH env var
+if test "$TRAVIS" == true ; then
+  version="${TRAVIS_BRANCH}"
+fi
+
 for file in html/*.html
 do
-awk -v version=$(plumed --no-mpi info --version) '{
+awk -v version="$version" '{
   if(match($0,"<span>Main&#160;Page</span>")){
     sub("Main","Home",$0);
     sub("Page","(v"version")",$0);
