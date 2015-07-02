@@ -80,7 +80,7 @@ public:
 /// Get the value of the ith reference argument
   double getReferenceArgument( const unsigned& i ) const ;
 /// Print the arguments out
-  void printArguments( OFile& ofile, const std::string& fmt ) const ;
+  void printArguments( OFile& ofile, const std::string& fmt, const bool& isproperty ) const ;
 /// Return all the reference arguments
   const std::vector<double>& getReferenceArguments();
   const std::vector<double>& getReferenceMetric();

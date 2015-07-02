@@ -82,12 +82,13 @@ void OutputColvarFile::performAnalysis(){
   gfile.open( filename.c_str() );
 
   // Can't print out all landmark data if we have reference atom positions
-  ReferenceAtoms* myat=dynamic_cast<ReferenceAtoms*>( getReferenceConfiguration(0) );
+  bool ignore;
+  ReferenceAtoms* myat=dynamic_cast<ReferenceAtoms*>( getReferenceConfiguration(0,ignore) );
   plumed_assert( !myat );
   
   // Print embedding coordinates
   for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      ReferenceArguments* myref=dynamic_cast<ReferenceArguments*>( getReferenceConfiguration(i) );
+      ReferenceArguments* myref=dynamic_cast<ReferenceArguments*>( getReferenceConfiguration(i,ignore) );
       plumed_assert( myref );
       for(unsigned j=0;j<myref->getReferenceArguments().size();++j){
           gfile.printField( myref->getArgumentNames()[j], myref->getReferenceArgument(j) );

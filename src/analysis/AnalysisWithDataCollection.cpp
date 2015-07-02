@@ -227,9 +227,14 @@ void AnalysisWithDataCollection::getDataPoint( const unsigned& idat, std::vector
   }
 }
 
-ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( const unsigned& idat ){
+ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( const unsigned& idat, bool& isprojection ){
+  if( !mydata ){ plumed_dbg_assert( idat<data.size() ); isprojection=false; return data[idat]; }
+  return AnalysisBase::getReferenceConfiguration( idat, isprojection );
+}
+
+ReferenceConfiguration* AnalysisWithDataCollection::getInputReferenceConfiguration( const unsigned& idat ){
   if( !mydata ){ plumed_dbg_assert( idat<data.size() ); return data[idat]; }
-  return AnalysisBase::getReferenceConfiguration( idat );
+  return AnalysisBase::getInputReferenceConfiguration( idat );
 }
 
 void AnalysisWithDataCollection::update(){

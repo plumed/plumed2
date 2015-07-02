@@ -64,39 +64,27 @@ DimensionalityReductionBase::~DimensionalityReductionBase(){
   delete myref;
 }
 
-ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idata ){
-  std::vector<double> pp(nlow); for(unsigned i=0;i<nlow;++i) pp[i]=projections(idata,i);
-  std::vector<double> empty( pp.size() );
+ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat, bool& isprojection ){
+  std::vector<double> pp(nlow); for(unsigned i=0;i<nlow;++i) pp[i]=projections(idat,i);
+  std::vector<double> empty( pp.size() ); isprojection=true;
   myref->setReferenceConfig( std::vector<Vector>(), pp, empty );
   return myref;
 }
 
-// double DimensionalityReductionBase::getInputDissimilarity( const unsigned& idata, const unsigned& jdata ){
-//   if( dimredbase && use_dimred_dissims ) return dimredbase->getOutputDissimilarity( idata, jdata );
-//   if( dimredbase ) return dimredbase->getInputDissimilarity( idata, jdata );
-//   return getDissimilarity( idata, jdata );
-// }
+ReferenceConfiguration* DimensionalityReductionBase::getInputReferenceConfiguration( const unsigned& idat ){
+  return mydata->getInputReferenceConfiguration( idat );
+}
 
 void DimensionalityReductionBase::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
   if( point.size()!=nlow ) point.resize( nlow );
   weight = getWeight(idata); for(unsigned i=0;i<nlow;++i) point[i]=projections(idata,i);
 }
 
-// double DimensionalityReductionBase::getOutputDissimilarity( const unsigned& idata, const unsigned& jdata ){
-//   double dissim=0; for(unsigned i=0;i<nlow;++i){ double tmp=projections(idata,i)-projections(jdata,i); dissim+=tmp*tmp; }
-//   return dissim;
-// }
-
 void DimensionalityReductionBase::performAnalysis(){
   // Resize the tempory array (this is used for out of sample)
   dtargets.resize( getNumberOfDataPoints() );
   // Resize the projections array
   projections.resize( getNumberOfDataPoints(), nlow );
-
-//  // Retrieve the weights from the previous calculation
-//  std::vector<double> lweights( getNumberOfDataPoints() );
-//  for(unsigned i=0;i<getNumberOfDataPoints();++i) lweights[i]=getWeight(i);
-//  setOutputWeights( lweights );
 
   // Retreive the projections from the previous calculation
   if( dimredbase ){

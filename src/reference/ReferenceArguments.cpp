@@ -120,8 +120,9 @@ void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, 
   }
 }
 
-void ReferenceArguments::printArguments( OFile& ofile, const std::string& fmt ) const {
-  ofile.printf("REMARK ARG=%s", arg_names[0].c_str() );
+void ReferenceArguments::printArguments( OFile& ofile, const std::string& fmt, const bool& isproperty ) const {
+  if( isproperty ) ofile.printf("REMARK PROPERTIES=%s", arg_names[0].c_str() );
+  else ofile.printf("REMARK ARG=%s", arg_names[0].c_str() );
   for(unsigned i=1;i<arg_names.size();++i) ofile.printf(",%s", arg_names[i].c_str() );
   ofile.printf("\n");
   ofile.printf("REMARK ");

@@ -158,15 +158,16 @@ double ReferenceConfiguration::calculate( const std::vector<Vector>& pos, const 
 
 void ReferenceConfiguration::print( const double& lunits, OFile& ofile, const double& time, const double& weight, const double& old_norm ){
   ofile.printf("REMARK TIME=%f LOG_WEIGHT=%f OLD_NORM=%f\n",time, weight, old_norm );
-  print( lunits, ofile, "%f" );  // HARD CODED FORMAT HERE AS THIS IS FOR CHECKPOINT FILE
+  print( lunits, ofile, "%f", false );  // HARD CODED FORMAT HERE AS THIS IS FOR CHECKPOINT FILE
 }
 
-void ReferenceConfiguration::print( const double& lunits, OFile& ofile, const std::string& fmt ){
+void ReferenceConfiguration::print( const double& lunits, OFile& ofile, const std::string& fmt, const bool& isproperty ){
   ReferenceArguments* args=dynamic_cast<ReferenceArguments*>(this);
-  if(args) args->printArguments( ofile, fmt );
+  if(args) args->printArguments( ofile, fmt, isproperty );
   ReferenceAtoms* atoms=dynamic_cast<ReferenceAtoms*>(this);
+  if( atoms && isproperty ) plumed_merror("a set of atoms is not a list of properties");
   if(atoms) atoms->printAtoms( lunits, ofile );
-  ofile.printf("END\n");
+  if( !isproperty ) ofile.printf("END\n");
 }
 
 double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){

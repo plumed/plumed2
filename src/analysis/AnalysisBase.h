@@ -80,8 +80,10 @@ public:
   virtual std::string getBaseDataLabel() const ;
 /// Get the ith data point
   virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
-/// Get a reference configuration 
-  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata );
+/// Get a reference configuration (in dimensionality reduction this returns the projection)
+  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata, bool& isprojection );
+/// Get the input configuration (in dimensionality reduction this returns the high dimensional configuration)
+  virtual ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idata );
 /// This actually performs the analysis
   virtual void performAnalysis()=0;
 /// These overwrite things from inherited classes (this is a bit of a fudge)
@@ -156,8 +158,13 @@ void AnalysisBase::getDataPoint( const unsigned& idata, std::vector<double>& poi
 }
 
 inline
-ReferenceConfiguration* AnalysisBase::getReferenceConfiguration( const unsigned& idata ){
-  return mydata->getReferenceConfiguration( idata );
+ReferenceConfiguration* AnalysisBase::getReferenceConfiguration( const unsigned& idata, bool& isprojection ){
+  return mydata->getReferenceConfiguration( idata, isprojection );
+}
+
+inline
+ReferenceConfiguration* AnalysisBase::getInputReferenceConfiguration( const unsigned& idata ){
+  return mydata->getInputReferenceConfiguration( idata );
 }
 
 }

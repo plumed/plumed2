@@ -87,8 +87,10 @@ public:
   std::string getBaseDataLabel() const ;
 /// Get the ith data point
   virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
-/// Get a reference configuration
-  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
+/// Get a reference configuration (in dimensionality reduction this returns the projection)
+  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat, bool& isprojection );
+/// Get the underlying reference configuration (in dimensionality reduction this return the high dimensional point)
+  ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idat );
 /// This ensures that the energy is stored if we are reweighting
   void prepare();
 /// This stores the data and calls the analysis to be performed

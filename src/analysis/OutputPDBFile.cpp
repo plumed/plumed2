@@ -70,12 +70,18 @@ fmt("%f")
 void OutputPDBFile::performAnalysis(){
   // Output the embedding in plumed pdb format
   OFile afile; afile.link(*this); afile.setBackupString("analysis"); std::size_t psign=fmt.find("%");
-  afile.open( filename.c_str() ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";
+  afile.open( filename.c_str() ); bool isprojection; std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";
   for(unsigned j=0;j<getNumberOfDataPoints();++j){
       afile.printf("DESCRIPTION: analysis data from calculation done at time %f \n",getLabel().c_str(),getTime() );
       afile.printf(descr.c_str(),getWeight(j) ); 
-      if( plumed.getAtoms().usingNaturalUnits() ) getReferenceConfiguration(j)->print( 1.0, afile, fmt );
-      else getReferenceConfiguration(j)->print( plumed.getAtoms().getUnits().getLength()/0.1, afile, fmt );
+      ReferenceConfiguration* myref = getReferenceConfiguration(j,isprojection);
+      if( plumed.getAtoms().usingNaturalUnits() ) myref->print( 1.0, afile, fmt, isprojection );
+      else myref->print( plumed.getAtoms().getUnits().getLength()/0.1, afile, fmt, isprojection );
+      // This ensures the high dimensional position is projected if we are working with dimensionality reduction 
+      if( isprojection ){ 
+          if( plumed.getAtoms().usingNaturalUnits() ) getInputReferenceConfiguration(j)->print( 1.0, afile, fmt, false );
+          else getInputReferenceConfiguration(j)->print( plumed.getAtoms().getUnits().getLength()/0.1, afile, fmt, false );
+      }
   }
   afile.close();
 }
