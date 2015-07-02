@@ -156,7 +156,7 @@ static int register_cb(void *v, vmdplugin_t *p){
 	//cerr<<"MOLFILE: found duplicate plugin for "<<key<<" : not inserted "<<endl; 
   }else{
 	//cerr<<"MOLFILE: loading plugin "<<key<<" number "<<plugins.size()-1<<endl;
-  	plugins.push_back((molfile_plugin_t *)p);
+  	plugins.push_back(reinterpret_cast<molfile_plugin_t *>(p));
   } 
   return VMDPLUGIN_SUCCESS;
 }

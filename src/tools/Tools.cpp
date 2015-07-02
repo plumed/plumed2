@@ -280,9 +280,11 @@ vector<string> Tools::ls(const string&d){
   DIR*dir;
   vector<string> result;
   if ((dir=opendir(d.c_str()))){
-    struct dirent *res;
+#if defined(__PLUMED_READDIR_R)
     struct dirent ent;
+#endif
     while(true){
+      struct dirent *res;
 #if defined(__PLUMED_READDIR_R)
       readdir_r(dir,&ent,&res);
 #else
@@ -292,7 +294,6 @@ vector<string> Tools::ls(const string&d){
 // GB
 // cppcheck-suppress nonreentrantFunctionsreaddir
       res=readdir(dir);
-      (void) ent; // avoid warning
 #endif
       if(!res) break;
       if(string(res->d_name)!="." && string(res->d_name)!="..") result.push_back(res->d_name);
