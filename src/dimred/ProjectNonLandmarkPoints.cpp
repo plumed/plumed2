@@ -25,43 +25,52 @@
 #include "tools/Random.h"
 #include "reference/MetricRegister.h"
 #include "tools/ConjugateGradient.h"
-#include "analysis/AnalysisWithAnalysableOutput.h"
+#include "analysis/AnalysisBase.h"
 #include "DimensionalityReductionBase.h"
 
 namespace PLMD {
 namespace dimred {
 
-class ProjectNonLandmarkPoints : public analysis::AnalysisWithAnalysableOutput {
+class ProjectNonLandmarkPoints : public analysis::AnalysisBase {
 private:
+/// Tolerance for conjugate gradient algorithm
   double cgtol;
+/// Number of diemsions in low dimensional space
   unsigned nlow;
-  ReferenceConfiguration* mydata; 
+/// We create a reference configuration here so that we can pass projection data
+/// quickly
+  ReferenceConfiguration* myref; 
+/// The class that calcualtes the projection of the data that is required
   DimensionalityReductionBase* mybase;
+/// Generate a projection of the ith data point - this is called in two routine
   void generateProjection( const unsigned& idata, std::vector<double>& point );
 public:
   static void registerKeywords( Keywords& keys );
   ProjectNonLandmarkPoints( const ActionOptions& ao );
   ~ProjectNonLandmarkPoints();
-  ReferenceConfiguration* getOutputConfiguration( const unsigned& idata );
-  unsigned getNumberOfOutputPoints() const ;
-  void getOutputForPoint( const unsigned& idata, std::vector<double>& point );
-  double getOutputDissimilarity( const unsigned& idata, const unsigned& jdata );
-  void performTask(){}
-  void performAnalysis();
+/// Get the ith data point (this returns the projection)
+  void getDataPoint( const unsigned& idata, std::vector<double>& point );
+/// Get a reference configuration (this returns the projection)
+  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata );
+/// This does nothing -- projections are calculated when getDataPoint and getReferenceConfiguration are called
+  void performAnalysis(){}
+/// This just calls calculate stress in the underlying projection object
   double calculateStress( const std::vector<double>& pp, std::vector<double>& der );
+/// Overwrite virtual function in ActionWithVessel
+  void performTask(){ plumed_error(); }  
 };
 
 PLUMED_REGISTER_ACTION(ProjectNonLandmarkPoints,"PROJECT_ALL_ANALYSIS_DATA")
 
 void ProjectNonLandmarkPoints::registerKeywords( Keywords& keys ){
-  analysis::AnalysisWithAnalysableOutput::registerKeywords( keys );
+  analysis::AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","PROJECTION","the projection that you wish to generate out-of-sample projections with");
   keys.add("compulsory","CGTOL","1E-6","the tolerance for the conjugate gradient optimisation");
 }
 
 ProjectNonLandmarkPoints::ProjectNonLandmarkPoints( const ActionOptions& ao ):
 Action(ao),
-analysis::AnalysisWithAnalysableOutput(ao),
+analysis::AnalysisBase(ao),
 mybase(NULL)
 {
   std::string myproj; parse("PROJECTION",myproj);
@@ -75,14 +84,14 @@ mybase(NULL)
   parse("CGTOL",cgtol);
 
   ReferenceConfigurationOptions("EUCLIDEAN");
-  mydata=metricRegister().create<ReferenceConfiguration>("EUCLIDEAN");
+  myref=metricRegister().create<ReferenceConfiguration>("EUCLIDEAN");
   std::vector<std::string> dimnames(nlow); std::string num;
   for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); dimnames[i] = getLabel() + "." + num; }
-  mydata->setNamesAndAtomNumbers( std::vector<AtomNumber>(), dimnames );
+  myref->setNamesAndAtomNumbers( std::vector<AtomNumber>(), dimnames );
 }
 
 ProjectNonLandmarkPoints::~ProjectNonLandmarkPoints(){
-  delete mydata;
+  delete myref;
 }
 
 void ProjectNonLandmarkPoints::generateProjection( const unsigned& idata, std::vector<double>& point ){
@@ -100,39 +109,15 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idata, std::v
   myminimiser.minimise( cgtol, point, &ProjectNonLandmarkPoints::calculateStress );
 }
 
-ReferenceConfiguration* ProjectNonLandmarkPoints::getOutputConfiguration( const unsigned& idata ){
+ReferenceConfiguration* ProjectNonLandmarkPoints::getReferenceConfiguration( const unsigned& idata ){
   std::vector<double> pp(nlow); std::vector<double> empty( pp.size() ); generateProjection( idata, pp );
-  mydata->setReferenceConfig( std::vector<Vector>(), pp, empty );
-  return mydata;
+  myref->setReferenceConfig( std::vector<Vector>(), pp, empty );
+  return myref;
 }
 
-///void ProjectNonLandmarkPoints::printAdditionalDataForFrameToPDB( const unsigned& idata, OFile& afile, const std::string& fmt ){
-///  std::size_t psign=fmt.find("%"); plumed_assert( psign!=std::string::npos ); std::string num, descr2="%s=%-" + fmt.substr(psign+1);
-///  for(unsigned j=0;j<nlow;++j){ Tools::convert(j+1,num); afile.printf(descr2.c_str(), (getLabel()+num).c_str(), projections(idata,j) ); }
-///  afile.printf("\n"); 
-///} 
-
-unsigned ProjectNonLandmarkPoints::getNumberOfOutputPoints() const {
-  return getNumberOfDataPoints();
-}
-
-void ProjectNonLandmarkPoints::getOutputForPoint( const unsigned& idata, std::vector<double>& point ){
+void ProjectNonLandmarkPoints::getDataPoint( const unsigned& idata, std::vector<double>& point ){
   if( point.size()!=nlow ) point.resize( nlow );
   generateProjection( idata, point );
-}
-
-double ProjectNonLandmarkPoints::getOutputDissimilarity( const unsigned& idata, const unsigned& jdata ){
-  std::vector<double> proj1( nlow ), proj2( nlow ); generateProjection( idata, proj1 ); generateProjection( jdata, proj2 );
-  double dissim=0; for(unsigned i=0;i<nlow;++i){ double tmp=proj1[i]-proj2[i]; dissim+=tmp*tmp; }
-  return dissim;
-}
-
-void ProjectNonLandmarkPoints::performAnalysis(){
-  // Retrieve the weights from the previous calculation
-  std::vector<double> lweights( getNumberOfDataPoints() );
-  for(unsigned i=0;i<getNumberOfDataPoints();++i) lweights[i]=getWeight(i);
-  setOutputWeights( lweights );
-
 }
 
 double ProjectNonLandmarkPoints::calculateStress( const std::vector<double>& pp, std::vector<double>& der ){
