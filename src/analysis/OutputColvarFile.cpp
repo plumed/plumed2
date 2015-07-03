@@ -88,17 +88,21 @@ void OutputColvarFile::performAnalysis(){
   gfile.fmtField(fmt+" ");
   gfile.open( filename.c_str() );
 
-  // Can't print out all landmark data if we have reference atom positions
-  bool ignore;
-  ReferenceAtoms* myat=dynamic_cast<ReferenceAtoms*>( getReferenceConfiguration(0,ignore) );
-  plumed_assert( !myat );
-  
+  ReferenceConfiguration* myp = getReferenceConfiguration(0);
+  if( myp->getNumberOfProperties()==0 ) plumed_assert( !dynamic_cast<ReferenceAtoms*>( myp ) );
+
   // Print embedding coordinates
   for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      ReferenceArguments* myref=dynamic_cast<ReferenceArguments*>( getReferenceConfiguration(i,ignore) );
-      plumed_assert( myref );
-      for(unsigned j=0;j<myref->getReferenceArguments().size();++j){
-          gfile.printField( myref->getArgumentNames()[j], myref->getReferenceArgument(j) );
+      ReferenceConfiguration* mypoint=getReferenceConfiguration(i);
+      for(unsigned j=0;j<mypoint->getNumberOfProperties();++j){
+          gfile.printField( mypoint->getPropertyName(j), mypoint->getPropertyValue(j) );
+      }
+      if( mypoint->getNumberOfProperties()==0 ){
+          ReferenceArguments* myref=dynamic_cast<ReferenceArguments*>( mypoint );
+          plumed_assert( myref );
+          for(unsigned j=0;j<myref->getReferenceArguments().size();++j){
+              gfile.printField( myref->getArgumentNames()[j], myref->getReferenceArgument(j) );
+          }
       }
       gfile.printField();
   }  

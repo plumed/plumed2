@@ -66,8 +66,6 @@ private:
   double weight;
 /// A vector containing all the remarks from the pdb input
   std::vector<std::string> line;
-/// This is used to store the values of arguments
-//  std::vector<double> tmparg;
 /// These are used to do fake things when we copy frames
   std::vector<AtomNumber> fake_atom_numbers;
   std::vector<std::string> fake_arg_names;
@@ -75,18 +73,12 @@ private:
   std::vector<Vector> fake_refatoms;
   std::vector<double> fake_refargs;
   std::vector<double> fake_metric;
+/// Property values are basically the projections of points
+  std::vector<std::string> property_names;
+  std::vector<double> property_values;
 protected:
-/// Derivatives wrt to the arguments
-//  std::vector<double> arg_ders;
-/// The virial contribution has to be stored 
-//  bool virialWasSet;
-//  Tensor virial;
-/// Derivatives wrt to the atoms
-//  std::vector<Vector> atom_ders;
 /// Crash with an error
   void error(const std::string& msg);
-/// Clear the derivatives 
-//  void clearDerivatives();
 public:
   ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
 /// Destructor
@@ -100,10 +92,6 @@ public:
   virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false ){}
 /// Retrieve the arguments that are required for this guy
   virtual void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false ){}
-/// Set the final number of arguments
-//  virtual void setNumberOfArguments( const unsigned& );
-/// Set the final number of atoms
-//  virtual void setNumberOfAtoms( const unsigned& );
 /// Set the reference configuration using a PDB 
   virtual void set( const PDB& );
 /// Do all local business for setting the configuration 
@@ -117,14 +105,6 @@ public:
 /// Calculate the distance from the reference configuration
   virtual double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
                        ReferenceValuePack& myder, const bool& squared ) const=0;
-// /// Return the derivative wrt to the ith atom
-//   Vector getAtomDerivative( const unsigned& ) const ;
-// /// Return the derivative wrt to the ith argument
-//   double getArgumentDerivative( const unsigned& ) const ;
-/// Return the derivatives of the distance wrt the cell vectors.  This returns false
-/// for everything other than DRMSD as these sort of calculations have to be done 
-/// separately when you use RMSD 
-//   bool getVirial( Tensor& virout ) const ;    
 /// Parse something from the pdb remarks
   template<class T>
   bool parse( const std::string&key, T&t, bool ignore_missing=false );
@@ -137,13 +117,9 @@ public:
   void checkRead();
 /// Copy derivatives from one frame to this frame
   void copyDerivatives( const ReferenceConfiguration* );
-/// Set the atom numbers and the argument names
-  void setNamesAndAtomNumbers( const std::vector<AtomNumber>& numbers, const std::vector<std::string>& arg );
-/// Set the reference structure (perhaps should also pass the pbc and align and displace )
-  void setReferenceConfig( const std::vector<Vector>& pos, const std::vector<double>& arg, const std::vector<double>& metric );
 /// Print a pdb file containing the reference configuration
   void print( const double& lunits, OFile& ofile, const double& time, const double& weight, const double& old_norm );
-  void print( const double& lunits, OFile& ofile, const std::string& fmt, const bool& isproperty );
+  void print( const double& lunits, OFile& ofile, const std::string& fmt );
 /// Get one of the referene arguments
   virtual double getReferenceArgument( const unsigned& i ) const { plumed_error(); return 0.0; }
 /// These are overwritten in ReferenceArguments and ReferenceAtoms but are required here 
@@ -163,19 +139,17 @@ public:
   bool isDirection() const ;
 /// Stuff to setup pca
   virtual void setupPCAStorage( ReferenceValuePack& mypack ){ plumed_error(); }
+/// This clears the set of properties that have been attached to the file
+  void clearAllProperties();
+/// Attach a property to this reference configuration
+  void attachProperty( const std::string& name, const double& val );
+/// Get the number of properties that are stored in this object
+  unsigned getNumberOfProperties() const ;
+/// Get the inum th property value
+  double getPropertyValue( const unsigned& inum ) const ;
+/// Get the name of the inum th property value
+  std::string getPropertyName( const unsigned& inum ) const ;
 };
-
-// inline
-// Vector ReferenceConfiguration::getAtomDerivative( const unsigned& ider ) const {
-//   plumed_dbg_assert( ider<atom_ders.size() );
-//   return atom_ders[ider];
-// }
-
-// inline
-// double ReferenceConfiguration::getArgumentDerivative( const unsigned& ider ) const {
-//   plumed_dbg_assert( ider<arg_ders.size() );
-//   return arg_ders[ider];
-// }
 
 inline
 void ReferenceConfiguration::setWeight( const double& ww ){
@@ -236,7 +210,20 @@ unsigned ReferenceConfiguration::getNumberOfReferenceArguments() const {
   return 0;
 }
 
+inline
+unsigned ReferenceConfiguration::getNumberOfProperties() const {
+  return property_values.size();
+}
 
+inline
+double ReferenceConfiguration::getPropertyValue( const unsigned& inum ) const {
+  plumed_dbg_assert( inum<property_values.size() ); return property_values[inum];
+}
+
+inline
+std::string ReferenceConfiguration::getPropertyName( const unsigned& inum ) const {
+  plumed_dbg_assert( inum<property_names.size() ); return property_names[inum];
+}
 
 }
 #endif

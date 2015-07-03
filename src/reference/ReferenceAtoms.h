@@ -45,6 +45,7 @@ class ReferenceAtoms :
   virtual public ReferenceConfiguration
 {
 friend class SingleDomainRMSD;
+friend class MultiDomainRMSD;
 private:
 /// This flag tells us if the user has disabled checking of the input in order to
 /// do fancy paths with weird inputs
@@ -64,8 +65,6 @@ private:
 protected:
 /// Read in the atoms from the pdb file
   void readAtomsFromPDB( const PDB& );
-/// Add atom indices to list
-  void setAtomIndices( const std::vector<AtomNumber>& atomnumbers );
 /// Read a list of atoms from the pdb input file
   bool parseAtomList( const std::string& , std::vector<unsigned>& );
 /// Get the vector of alignment weights
@@ -76,12 +75,6 @@ protected:
   Vector getReferencePosition( const unsigned& iatom ) const ;  
 /// Get the reference positions
   const std::vector<Vector> & getReferencePositions() const ; 
-/// Add derivatives to iatom th atom in list
-//  void addAtomicDerivatives( const unsigned& , const Vector& );
-/// Get the atomic derivatives on the ith atom in the list
-//  Vector retrieveAtomicDerivatives( const unsigned& ) const ;
-/// Add derivatives to the viral
-//  void addBoxDerivatives( const Tensor& );
 /// This does the checks that are always required
   void singleDomainRequests( std::vector<AtomNumber>&, bool disable_checks );
 public:
@@ -92,8 +85,6 @@ public:
   unsigned getAtomIndex( const unsigned& ) const ;
 /// Get the atoms required (additional checks are required when we have multiple domains)
   virtual void getAtomRequests( std::vector<AtomNumber>&, bool disable_checks=false );
-/// Set the indices of the reference atoms
-  void setAtomNumbers( const std::vector<AtomNumber>& numbers );
 /// Set the positions of the reference atoms
   virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in )=0;
 /// Print the atomic positions
@@ -116,13 +107,12 @@ const std::vector<double> & ReferenceAtoms::getDisplace() const {
 
 inline
 unsigned ReferenceAtoms::getNumberOfReferencePositions() const {
-  plumed_dbg_assert( der_index.size()==reference_atoms.size() );
-  return reference_atoms.size();
+  return der_index.size(); // reference_atoms.size();
 }
 
 inline
 unsigned ReferenceAtoms::getNumberOfAtoms() const {
-  return reference_atoms.size();
+  return der_index.size(); // reference_atoms.size();
 }
 
 inline
@@ -142,21 +132,6 @@ inline
 const std::vector<Vector> & ReferenceAtoms::getReferencePositions() const {
   return reference_atoms;
 }
-
-// inline
-// void ReferenceAtoms::addAtomicDerivatives( const unsigned& iatom, const Vector& der ){
-//   atom_ders[ getAtomIndex(iatom) ]+=der;
-// }
-
-// inline
-// Vector ReferenceAtoms::retrieveAtomicDerivatives( const unsigned& iatom ) const {
-//   return atom_ders[ getAtomIndex(iatom) ];
-// }
-
-// inline
-// void ReferenceAtoms::addBoxDerivatives( const Tensor& vir ){
-//   virialWasSet=true; virial+=vir;
-// }
 
 inline
 const std::vector<AtomNumber>& ReferenceAtoms::getAbsoluteIndexes(){

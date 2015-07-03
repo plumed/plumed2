@@ -70,20 +70,20 @@ void MultiReferenceBase::getAtomAndArgumentRequirements( std::vector<AtomNumber>
 //   }
 // }
 
-void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ){
-  // Create a reference configuration of the appropriate type
-  ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( frameToCopy->getName() );
-  // Copy names of arguments and and indexes
-  mymsd->setNamesAndAtomNumbers( frameToCopy->getAbsoluteIndexes(), frameToCopy->getArgumentNames() );
-  // Copy reference positions, reference arguments and reference metric
-  mymsd->setReferenceConfig( frameToCopy->getReferencePositions(), frameToCopy->getReferenceArguments(), frameToCopy->getReferenceMetric() );
-  // Copy weight
-  mymsd->setWeight( frameToCopy->getWeight() );
-  // Easy bit - copy the frame
-  frames.push_back( mymsd ); 
-  // This resizes the low dim array
-  resizeRestOfFrame();
-}
+// void MultiReferenceBase::copyFrame( ReferenceConfiguration* frameToCopy ){
+//   // Create a reference configuration of the appropriate type
+//   ReferenceConfiguration* mymsd=metricRegister().create<ReferenceConfiguration>( frameToCopy->getName() );
+//   // Copy names of arguments and and indexes
+//   mymsd->setNamesAndAtomNumbers( frameToCopy->getAbsoluteIndexes(), frameToCopy->getArgumentNames() );
+//   // Copy reference positions, reference arguments and reference metric
+//   mymsd->setReferenceConfig( frameToCopy->getReferencePositions(), frameToCopy->getReferenceArguments(), frameToCopy->getReferenceMetric() );
+//   // Copy weight
+//   mymsd->setWeight( frameToCopy->getWeight() );
+//   // Easy bit - copy the frame
+//   frames.push_back( mymsd ); 
+//   // This resizes the low dim array
+//   resizeRestOfFrame();
+// }
 
 void MultiReferenceBase::setWeights( const std::vector<double>& weights ){
    plumed_assert( weights.size()==frames.size() );

@@ -36,7 +36,10 @@ void AnalysisWithDataCollection::registerKeywords( Keywords& keys ){
   AnalysisBase::registerKeywords( keys );
   keys.use("ARG"); keys.reset_style("ARG","atoms-1");
   keys.add("atoms-1","ATOMS","the atoms whose positions we are tracking for the purpose of analysing the data");
-  keys.add("hidden","METRIC","how are we measuring the distances between configurations. If you have only arguments this will by default be the euclidean metric. You must specify a metric if you are analysing atoms");
+  keys.add("hidden","METRIC","how are we measuring the distances between configurations. If you have only arguments this will by default be the euclidean "
+                             "metric. You must specify a metric if you are analysing atoms.  You can choose any of the metrics described in the part of the "
+                             "manual on \\ref dists.  If your metric involves multiple different blocks of atoms then you can use repeated ATOMS keywords "
+                             "i.e. ATOMS1, ATOMS2 etc.  You can also add additional information on your metric in this command.");
   keys.add("atoms-1","STRIDE","the frequency with which data should be stored for analysis.  By default data is collected on every step");
   keys.add("atoms-1","RUN","the frequency with which to run the analysis algorithms.");
   keys.addFlag("USE_ALL_DATA",false,"just analyse all the data in the trajectory.  This option should be used in tandem with ATOMS/ARG + STRIDE");
@@ -75,21 +78,38 @@ old_norm(0.0)
       // we must collect data from the trajectory
       } else {
          // Get information on numbers of atoms and argument names
-         std::vector<AtomNumber> atom_numbers; std::vector<std::string> argument_names( getNumberOfArguments() );
+         std::vector<std::string> argument_names( getNumberOfArguments() );
          for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i]=getPntrToArgument(i)->getName();
-
+         if( getNumberOfArguments()>0 ) mypdb.addArgumentNames( argument_names );
          // Read in information on the metric that is being used in this analysis object
-         parse("METRIC",metricname);
-         if( metricname.length()==0 ) metricname="EUCLIDEAN";
+         std::string metrictmp; parse("METRIC",metrictmp); 
+         if( metrictmp.length()==0 ){
+             metricname="EUCLIDEAN";
+         } else {
+             std::vector<std::string> metricwords = Tools::getWords( metrictmp );
+             metricname=metricwords[0]; metricwords.erase(metricwords.begin()); 
+             mypdb.addRemark( metricwords );
+         }
          ReferenceConfiguration* checkref=metricRegister().create<ReferenceConfiguration>( metricname );
          // Check if we should read atoms
          ReferenceAtoms* hasatoms=dynamic_cast<ReferenceAtoms*>( checkref );
          if( hasatoms ){
-             parseAtomList("ATOMS",atom_numbers); requestAtoms(atom_numbers);
-             if( atom_numbers.size()==0 ) error("no atom positions have been specified in input");
-             log.printf("  monitoring positions of atoms ");
-             for(unsigned i=0;i<atom_numbers.size();++i) log.printf("%d ",atom_numbers[i].serial() );
-             log.printf("\n");
+             std::vector<AtomNumber> atom_numbers; parseAtomList("ATOMS",atom_numbers); 
+             if( atom_numbers.size()>0 ){ 
+                log.printf("  monitoring positions of atoms ");
+                for(unsigned i=0;i<atom_numbers.size();++i) log.printf("%d ",atom_numbers[i].serial() );
+                log.printf("\n"); mypdb.addBlockEnd( atom_numbers.size() );
+             } else {
+                std::vector<AtomNumber> tmpatoms; mypdb.addBlockEnd(0);
+                for(unsigned i=1;;++i){
+                    parseAtomList("ATOMS",i,tmpatoms);
+                    if( i==1 && tmpatoms.size()==0 ) error("no atom positions have been specified in input");
+                    else if( tmpatoms.size()==0 ) break;
+                    for(unsigned j=0;j<tmpatoms.size();++j) atom_numbers.push_back( tmpatoms[j] );
+                    mypdb.addBlockEnd( atom_numbers.size() );
+                }
+             }
+             requestAtoms(atom_numbers); mypdb.setAtomNumbers( atom_numbers );
          }
          // Check if we should read arguments
          ReferenceArguments* hasargs=dynamic_cast<ReferenceArguments*>( checkref );
@@ -107,10 +127,7 @@ old_norm(0.0)
              // Setup everything given the ammount of data that we will have in each analysis 
              if( freq%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
              unsigned ndata=freq/getStride(); data.resize(ndata); logweights.resize( ndata );
-             for(unsigned i=0;i<ndata;++i){
-                data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
-                data[i]->setNamesAndAtomNumbers( atom_numbers, argument_names );
-             }
+             for(unsigned i=0;i<ndata;++i) data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
              log.printf("  running analysis every %u steps\n",freq);
              // Check if we are doing block averaging
              parseFlag("NOMEMORY",nomemory);
@@ -189,10 +206,10 @@ void AnalysisWithDataCollection::readCheckPointFile( const std::string& filename
   if(fp!=NULL){
      bool do_read=true, first=true;
      while (do_read) {
-        PDB mypdb;
-        do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+        PDB tpdb;
+        do_read=tpdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
         if(do_read){
-           data[idata]->set( mypdb );
+           data[idata]->set( tpdb );
            data[idata]->parse("TIME",tstep);
            if( !first && ((tstep-oldtstep) - getStride()*plumed.getAtoms().getTimeStep())>plumed.getAtoms().getTimeStep() ){
               error("frequency of data storage in " + filename + " is not equal to frequency of data storage plumed.dat file");
@@ -229,9 +246,9 @@ void AnalysisWithDataCollection::getDataPoint( const unsigned& idat, std::vector
   }
 }
 
-ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( const unsigned& idat, bool& isprojection ){
-  if( !mydata ){ plumed_dbg_assert( idat<data.size() ); isprojection=false; return data[idat]; }
-  return AnalysisBase::getReferenceConfiguration( idat, isprojection );
+ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( const unsigned& idat ){
+  if( !mydata ){ plumed_dbg_assert( idat<data.size() ); return data[idat]; }
+  return AnalysisBase::getReferenceConfiguration( idat );
 }
 
 ReferenceConfiguration* AnalysisWithDataCollection::getInputReferenceConfiguration( const unsigned& idat ){
@@ -259,24 +276,22 @@ void AnalysisWithDataCollection::update(){
       // Reweighting because of biases
       if( !biases.empty() ) ww += bias/simtemp;
 
-      // Get the arguments ready to transfer to reference configuration
-      std::vector<double> current_args( getNumberOfArguments() );
-      for(unsigned i=0;i<getNumberOfArguments();++i) current_args[i]=getArgument(i);
-      // Could add stuff for fancy metrics here eventually but for now unecessary
-      std::vector<double> mymetric( getNumberOfArguments(), 1.0 );
-
+      // Pass the atom positions to the pdb
+      mypdb.setAtomPositions( getPositions() );
+      // Pass the argument values to the pdb
+      for(unsigned i=0;i<getNumberOfArguments();++i){
+         mypdb.setArgumentValue( getPntrToArgument(i)->getName(), getArgument(i) ); 
+      }
+      // Could add stuff for mahalanobis distance etc here eventually but for now unecessary
+ 
       if(use_all_data){
          data.push_back( metricRegister().create<ReferenceConfiguration>( metricname ) );
          plumed_dbg_assert( data.size()==idata+1 ); 
-         std::vector<std::string> argument_names( getNumberOfArguments() );
-         for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i] = getPntrToArgument(i)->getName();
-         data[idata]->setNamesAndAtomNumbers( getAbsoluteIndexes(), argument_names );
-         data[idata]->setReferenceConfig( getPositions(), current_args, mymetric );
-         logweights.push_back(ww);
+         data[idata]->set( mypdb ); logweights.push_back(ww);
       } else {
          // Get the arguments and store them in a vector of vectors
-         data[idata]->setReferenceConfig( getPositions(), current_args, mymetric );
-         logweights[idata] = ww;
+         // We have to clear all properties from previous analyses prior to setting the data
+         data[idata]->clearAllProperties(); data[idata]->set( mypdb ); logweights[idata] = ww;
       }
 
       // Write data to checkpoint file

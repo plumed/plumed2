@@ -79,7 +79,8 @@ void MultiDomainRMSD::read( const PDB& pdb ){
        else weights.push_back( ww );
    }   
    // And set the atom numbers for this object
-   setAtomNumbers( pdb.getAtomNumbers() );
+   for(unsigned i=0;i<pdb.size();++i){ indices.push_back( pdb.getAtomNumbers()[i] ); der_index.push_back(i); }
+   // setAtomNumbers( pdb.getAtomNumbers() );
 }
 
 void MultiDomainRMSD::setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in ){

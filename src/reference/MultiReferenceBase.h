@@ -66,7 +66,7 @@ public:
 /// Return the ith reference frame
   ReferenceConfiguration* getFrame( const unsigned& iframe );
 /// Copy a reference configuration into the multi reference object
-  void copyFrame( ReferenceConfiguration* frameToCopy ); 
+//  void copyFrame( ReferenceConfiguration* frameToCopy ); 
 /// Set the weight of the ith frame
   void setWeights( const std::vector<double>& ww );
 /// Retrieve the weight of one of the frames

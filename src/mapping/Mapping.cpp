@@ -106,9 +106,9 @@ ActionWithVessel(ao)
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
   // Duplicate all frames (duplicates are used by sketch-map)
-  mymap->duplicateFrameList(); 
+  // mymap->duplicateFrameList(); 
   // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
-  plumed_assert( !mymap->mappingNeedsSetup() );
+  // plumed_assert( !mymap->mappingNeedsSetup() );
   // Resize all derivative arrays
   // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
   // Resize forces array
@@ -128,25 +128,25 @@ Mapping::~Mapping(){
   delete mymap;
 }
 
-void Mapping::prepare(){
-  if( mymap->mappingNeedsSetup() ){
-      // Get the arguments and atoms that are required
-      std::vector<AtomNumber> atoms; std::vector<std::string> args;
-      mymap->getAtomAndArgumentRequirements( atoms, args );
-      requestAtoms( atoms ); std::vector<Value*> req_args; 
-      interpretArgumentList( args, req_args ); requestArguments( req_args );
-      // Duplicate all frames (duplicates are used by sketch-map)
-      mymap->duplicateFrameList();
-      // Get the number of frames in the path
-      unsigned nfram=getNumberOfReferencePoints();
-      // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 ); 
-      plumed_assert( !mymap->mappingNeedsSetup() );
-      // Resize all derivative arrays
-      // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
-      // Resize forces array
-      forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
-  }
-}
+// void Mapping::prepare(){
+//   if( mymap->mappingNeedsSetup() ){
+//       // Get the arguments and atoms that are required
+//       std::vector<AtomNumber> atoms; std::vector<std::string> args;
+//       mymap->getAtomAndArgumentRequirements( atoms, args );
+//       requestAtoms( atoms ); std::vector<Value*> req_args; 
+//       interpretArgumentList( args, req_args ); requestArguments( req_args );
+//       // Duplicate all frames (duplicates are used by sketch-map)
+//       // mymap->duplicateFrameList();
+//       // Get the number of frames in the path
+//       unsigned nfram=getNumberOfReferencePoints();
+//       // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 ); 
+//       plumed_assert( !mymap->mappingNeedsSetup() );
+//       // Resize all derivative arrays
+//       // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
+//       // Resize forces array
+//       forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
+//   }
+// }
 
 unsigned Mapping::getPropertyIndex( const std::string& name ) const {
   return mymap->getPropertyIndex( name );

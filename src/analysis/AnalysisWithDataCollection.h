@@ -23,6 +23,7 @@
 #define __PLUMED_analysis_AnalysisWithDataCollection_h
 
 #include "AnalysisBase.h"
+#include "tools/PDB.h"
 
 namespace PLMD {
 
@@ -52,8 +53,9 @@ private:
   bool firstAnalysisDone;
 /// The value of the old normalization constant
   double norm, old_norm;
-/// List of argument names 
-  std::vector<std::string> argument_names;
+/// Data is collected from the trajectory by passing it to this pdb.  These pdb
+/// files are then read by the ReferenceConfigurations in data
+  PDB mypdb;
 /// The type of metric we are using to measure distances
   std::string metricname;
 /// The checkpoint file --- really I would like to get rid of this and have some universal mechanism and a single file GT
@@ -88,7 +90,7 @@ public:
 /// Get the ith data point
   virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Get a reference configuration (in dimensionality reduction this returns the projection)
-  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat, bool& isprojection );
+  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
 /// Get the underlying reference configuration (in dimensionality reduction this return the high dimensional point)
   ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idat );
 /// This ensures that the energy is stored if we are reweighting

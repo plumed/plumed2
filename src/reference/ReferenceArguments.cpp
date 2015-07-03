@@ -38,8 +38,8 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ){
   if( !aref ) parseVector( "ARG", arg_names );
   else parseVector( "ARG", arg_names, true );
 
-  reference_args.resize( arg_names.size() );
-  for(unsigned i=0;i<arg_names.size();++i) parse( arg_names[i], reference_args[i] );
+  reference_args.resize( arg_names.size() ); der_index.resize( arg_names.size() );
+  for(unsigned i=0;i<arg_names.size();++i){ parse( arg_names[i], reference_args[i] ); der_index[i]=i; }
 
   if( hasweights ){
       plumed_massert( !hasmetric, "should not have weights if we are using metric");
@@ -60,17 +60,6 @@ void ReferenceArguments::readArgumentsFromPDB( const PDB& pdb ){
       weights.resize( arg_names.size() );
       for(unsigned i=0;i<weights.size();++i) weights[i]=1.0; 
   }
-}
-
-void ReferenceArguments::setArgumentNames( const std::vector<std::string>& arg_vals ){
-  reference_args.resize( arg_vals.size() ); 
-  arg_names.resize( arg_vals.size() ); 
-  der_index.resize( arg_vals.size() );
-  for(unsigned i=0;i<arg_vals.size();++i){
-     arg_names[i]=arg_vals[i]; der_index[i]=i; 
-  }
-  if( hasmetric ) metric.resize( arg_vals.size(), arg_vals.size() );
-  else weights.resize( arg_vals.size() );
 }
 
 void ReferenceArguments::setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma ){
@@ -120,9 +109,8 @@ void ReferenceArguments::getArgumentRequests( std::vector<std::string>& argout, 
   }
 }
 
-void ReferenceArguments::printArguments( OFile& ofile, const std::string& fmt, const bool& isproperty ) const {
-  if( isproperty ) ofile.printf("REMARK PROPERTIES=%s", arg_names[0].c_str() );
-  else ofile.printf("REMARK ARG=%s", arg_names[0].c_str() );
+void ReferenceArguments::printArguments( OFile& ofile, const std::string& fmt ) const {
+  ofile.printf("REMARK ARG=%s", arg_names[0].c_str() );
   for(unsigned i=1;i<arg_names.size();++i) ofile.printf(",%s", arg_names[i].c_str() );
   ofile.printf("\n");
   ofile.printf("REMARK ");

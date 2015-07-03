@@ -274,8 +274,6 @@ mypack(0,0,myvals)
   /// This sets up all the storage data required by PCA in the pack
   myframes.getFrame(0)->setupPCAStorage( mypack );
 
-  // Retrieve the position of the first frame, as we use this for alignment
-  myref->setNamesAndAtomNumbers( atoms, args );
   // Check there are no periodic arguments
   for(unsigned i=0;i<getNumberOfArguments();++i){
       if( getPntrToArgument(i)->isPeriodic() ) error("cannot use periodic variables in pca projections");

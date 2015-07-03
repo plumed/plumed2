@@ -98,6 +98,16 @@ public:
 /// Return the atom named aname from residue number resnum and chain.
 /// Chain=="*" matches any chain and makes it equivalent to getNamedAtomFromResidue.
   AtomNumber getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chain ) const;
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to add the sizes of the domains for PLMD::MultiRMSD
+  void addBlockEnd( const unsigned& end );
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to add the names of the arguments 
+  void addArgumentNames( const std::vector<std::string>& argument_names );
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to add the numbers of the atoms
+  void setAtomNumbers( const std::vector<AtomNumber>& atoms );
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to set the atom positions
+  void setAtomPositions( const std::vector<Vector>& pos );
+/// This is used in PLMD::analysis::AnalysisWithDataCollection to set the argument values 
+  void setArgumentValue( const std::string& argname, const double& val );
 /// Get the extents of the blocks containing the atoms
   const std::vector<unsigned> & getAtomBlockEnds() const ;
 /// Get the number of blocks of atoms in the pdb

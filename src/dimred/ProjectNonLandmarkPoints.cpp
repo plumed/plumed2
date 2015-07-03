@@ -23,9 +23,9 @@
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "tools/Random.h"
-#include "reference/MetricRegister.h"
 #include "tools/ConjugateGradient.h"
 #include "analysis/AnalysisBase.h"
+#include "reference/ReferenceConfiguration.h"
 #include "DimensionalityReductionBase.h"
 
 //+PLUMEDOC DIMRED PROJECT_ALL_ANALYSIS_DATA
@@ -46,22 +46,18 @@ private:
   double cgtol;
 /// Number of diemsions in low dimensional space
   unsigned nlow;
-/// We create a reference configuration here so that we can pass projection data
-/// quickly
-  ReferenceConfiguration* myref; 
 /// The class that calcualtes the projection of the data that is required
   DimensionalityReductionBase* mybase;
 /// Generate a projection of the ith data point - this is called in two routine
-  void generateProjection( const unsigned& idata, std::vector<double>& point );
+  void generateProjection( const unsigned& idat, std::vector<double>& point );
 public:
   static void registerKeywords( Keywords& keys );
   ProjectNonLandmarkPoints( const ActionOptions& ao );
-  ~ProjectNonLandmarkPoints();
 /// Get the ith data point (this returns the projection)
-  void getDataPoint( const unsigned& idata, std::vector<double>& point );
+  void getDataPoint( const unsigned& idat, std::vector<double>& point );
 /// Get a reference configuration (this returns the projection)
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata, bool& isprojection );
-  ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idata );
+  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
+  ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idat );
 /// This does nothing -- projections are calculated when getDataPoint and getReferenceConfiguration are called
   void performAnalysis(){}
 /// This just calls calculate stress in the underlying projection object
@@ -92,24 +88,14 @@ mybase(NULL)
 
   log.printf("  generating out-of-sample projections using projection with label %s \n",myproj.c_str() );
   parse("CGTOL",cgtol);
-
-  ReferenceConfigurationOptions("EUCLIDEAN");
-  myref=metricRegister().create<ReferenceConfiguration>("EUCLIDEAN");
-  std::vector<std::string> dimnames(nlow); std::string num;
-  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); dimnames[i] = getLabel() + "." + num; }
-  myref->setNamesAndAtomNumbers( std::vector<AtomNumber>(), dimnames );
 }
 
-ProjectNonLandmarkPoints::~ProjectNonLandmarkPoints(){
-  delete myref;
-}
-
-void ProjectNonLandmarkPoints::generateProjection( const unsigned& idata, std::vector<double>& point ){
+void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::vector<double>& point ){
   ConjugateGradient<ProjectNonLandmarkPoints> myminimiser( this );
-  unsigned closest=0; double mindist = sqrt( getDissimilarity( idata, mybase->getDataPointIndexInBase(0) ) );
+  unsigned closest=0; double mindist = sqrt( getDissimilarity( idat, mybase->getDataPointIndexInBase(0) ) );
   mybase->setTargetDistance( 0, mindist );
   for(unsigned i=1;i<mybase->getNumberOfDataPoints();++i){
-      double dist = sqrt( getDissimilarity( idata, mybase->getDataPointIndexInBase(i) ) );
+      double dist = sqrt( getDissimilarity( idat, mybase->getDataPointIndexInBase(i) ) );
       mybase->setTargetDistance( i, dist );
       if( dist<mindist ){ mindist=dist; closest=i; }
   }
@@ -119,19 +105,20 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idata, std::v
   myminimiser.minimise( cgtol, point, &ProjectNonLandmarkPoints::calculateStress );
 }
 
-ReferenceConfiguration* ProjectNonLandmarkPoints::getReferenceConfiguration( const unsigned& idata, bool& isprojection ){
-  std::vector<double> pp(nlow); std::vector<double> empty( pp.size() ); generateProjection( idata, pp );
-  myref->setReferenceConfig( std::vector<Vector>(), pp, empty ); isprojection=true;
+ReferenceConfiguration* ProjectNonLandmarkPoints::getReferenceConfiguration( const unsigned& idat ){
+  std::vector<double> pp(nlow); generateProjection( idat, pp ); std::string num;
+  ReferenceConfiguration* myref = mydata->getInputReferenceConfiguration( idat ); myref->clearAllProperties();
+  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, pp[i] ); }
   return myref;
 }
 
-ReferenceConfiguration* ProjectNonLandmarkPoints::getInputReferenceConfiguration( const unsigned& idata ){
-  return mydata->getInputReferenceConfiguration( idata );
+ReferenceConfiguration* ProjectNonLandmarkPoints::getInputReferenceConfiguration( const unsigned& idat ){
+  return mydata->getInputReferenceConfiguration( idat );
 }
 
-void ProjectNonLandmarkPoints::getDataPoint( const unsigned& idata, std::vector<double>& point ){
+void ProjectNonLandmarkPoints::getDataPoint( const unsigned& idat, std::vector<double>& point ){
   if( point.size()!=nlow ) point.resize( nlow );
-  generateProjection( idata, point );
+  generateProjection( idat, point );
 }
 
 double ProjectNonLandmarkPoints::calculateStress( const std::vector<double>& pp, std::vector<double>& der ){

@@ -1,698 +1,698 @@
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0008  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0594   mds.2=0.0053   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7340   c1.moment-3=1.2672   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0012  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0683   mds.2=0.0034   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7371   c1.moment-3=1.2758   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0004  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0705   mds.2=0.0006   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7401   c1.moment-3=1.2777   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0010  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0729   mds.2=-0.0019  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7428   c1.moment-3=1.2796   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0022  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0874   mds.2=-0.0069  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7497   c1.moment-3=1.2934   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0019  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0961   mds.2=-0.0095  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7533   c1.moment-3=1.3018   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0023  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0867   mds.2=-0.0062  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7489   c1.moment-3=1.2928   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0030  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0719   mds.2=-0.0008  
 REMARK ARG=c1.moment-2,c1.moment-3
-REMARK c1.moment-2=0.7417   c1.moment-3=1.2788   
+REMARK c1.moment-2=0.7417   c1.moment-3=1.2789   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0118  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0575   mds.2=0.0031   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7360   c1.moment-3=1.2651   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0063  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0552   mds.2=0.0034   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7354   c1.moment-3=1.2628   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0022  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0682   mds.2=-0.0002  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7405   c1.moment-3=1.2753   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0029  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0781   mds.2=-0.0024  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7440   c1.moment-3=1.2847   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0010  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0785   mds.2=-0.0025  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7441   c1.moment-3=1.2852   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0004  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0763   mds.2=-0.0027  
 REMARK ARG=c1.moment-2,c1.moment-3
-REMARK c1.moment-2=0.7441   c1.moment-3=1.2829   
+REMARK c1.moment-2=0.7441   c1.moment-3=1.2830   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0013  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0755   mds.2=-0.0041  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7454   c1.moment-3=1.2820   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0069  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0792   mds.2=-0.0069  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7486   c1.moment-3=1.2853   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0096  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0778   mds.2=-0.0062  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7477   c1.moment-3=1.2840   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0076  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0727   mds.2=-0.0025  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7434   c1.moment-3=1.2795   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0143  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0726   mds.2=0.0014   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7396   c1.moment-3=1.2798   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0302  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0756   mds.2=0.0030   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7384   c1.moment-3=1.2830   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0171  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0821   mds.2=0.0017   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7405   c1.moment-3=1.2893   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0013  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0816   mds.2=0.0001   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7420   c1.moment-3=1.2886   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0167  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0774   mds.2=0.0008   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7407   c1.moment-3=1.2845   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0234  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0766   mds.2=0.0008   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7407   c1.moment-3=1.2837   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0171  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0838   mds.2=-0.0005  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7429   c1.moment-3=1.2906   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0265  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0931   mds.2=-0.0016  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7452   c1.moment-3=1.2997   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0521  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0936   mds.2=-0.0010  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7446   c1.moment-3=1.3004   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0504  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0923   mds.2=-0.0009  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7443   c1.moment-3=1.2990   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0443  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0906   mds.2=-0.0008  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7440   c1.moment-3=1.2974   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0270  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0706   mds.2=0.0025   
 REMARK ARG=c1.moment-2,c1.moment-3
-REMARK c1.moment-2=0.7382   c1.moment-3=1.2780   
+REMARK c1.moment-2=0.7382   c1.moment-3=1.2779   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0120  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0664   mds.2=0.0050   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7352   c1.moment-3=1.2741   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0517  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0901   mds.2=0.0019   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7412   c1.moment-3=1.2972   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0821  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.1059   mds.2=-0.0015  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7467   c1.moment-3=1.3125   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0206  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0917   mds.2=0.0006   
 REMARK ARG=c1.moment-2,c1.moment-3
-REMARK c1.moment-2=0.7428   c1.moment-3=1.2986   
+REMARK c1.moment-2=0.7428   c1.moment-3=1.2987   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0206  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0876   mds.2=0.0021   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7407   c1.moment-3=1.2948   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0207  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.1008   mds.2=-0.0001  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7446   c1.moment-3=1.3076   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0270  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0955   mds.2=-0.0014  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7452   c1.moment-3=1.3022   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0171  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0858   mds.2=-0.0018  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7444   c1.moment-3=1.2925   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0345  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0894   mds.2=-0.0005  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7436   c1.moment-3=1.2963   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0819  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0922   mds.2=0.0014   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7420   c1.moment-3=1.2992   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.1159  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0917   mds.2=0.0010   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7423   c1.moment-3=1.2987   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0266  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0925   mds.2=-0.0043  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7477   c1.moment-3=1.2989   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0072  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0967   mds.2=-0.0102  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7541   c1.moment-3=1.3023   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0358  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.1073   mds.2=-0.0096  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7548   c1.moment-3=1.3129   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0264  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.1065   mds.2=-0.0047  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7499   c1.moment-3=1.3126   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0087  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0935   mds.2=-0.0003  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7439   c1.moment-3=1.3003   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0055  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0668   mds.2=0.0049   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7353   c1.moment-3=1.2745   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0047  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
-REMARK mds.1=0.0411   mds.2=0.0087   
+REMARK mds.1=0.0410   mds.2=0.0086   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7284   c1.moment-3=1.2494   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0049  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0264   mds.2=0.0110   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7242   c1.moment-3=1.2352   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0014  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0254   mds.2=0.0125   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7226   c1.moment-3=1.2344   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0015  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0503   mds.2=0.0085   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7297   c1.moment-3=1.2586   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0025  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0855   mds.2=0.0007   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7419   c1.moment-3=1.2925   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0045  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0975   mds.2=-0.0028  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7469   c1.moment-3=1.3039   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0336  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0983   mds.2=-0.0035  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7477   c1.moment-3=1.3047   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0570  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0997   mds.2=-0.0044  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7487   c1.moment-3=1.3059   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0021  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0877   mds.2=-0.0021  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7449   c1.moment-3=1.2944   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0002  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0501   mds.2=0.0053   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7328   c1.moment-3=1.2580   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0004  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0104   mds.2=0.0140   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7192   c1.moment-3=1.2197   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0009  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0199  mds.2=0.0221   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7074   c1.moment-3=1.1907   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0004  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0416  mds.2=0.0277   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6990   c1.moment-3=1.1698   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0688  mds.2=0.0338   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6895   c1.moment-3=1.1436   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0858  mds.2=0.0354   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6858   c1.moment-3=1.1269   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0897  mds.2=0.0313   
 REMARK ARG=c1.moment-2,c1.moment-3
-REMARK c1.moment-2=0.6894   c1.moment-3=1.1226   
+REMARK c1.moment-2=0.6894   c1.moment-3=1.1225   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0920  mds.2=0.0254   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6950   c1.moment-3=1.1195   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.1168  mds.2=0.0227   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6945   c1.moment-3=1.0946   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0001  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.1447  mds.2=0.0227   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6910   c1.moment-3=1.0669   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0004  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.1636  mds.2=0.0221   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6892   c1.moment-3=1.0481   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0011  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.1461  mds.2=0.0182   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6953   c1.moment-3=1.0650   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0004  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.1212  mds.2=0.0139   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7027   c1.moment-3=1.0891   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0005  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0775  mds.2=0.0056   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7164   c1.moment-3=1.1314   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0004  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0008  mds.2=-0.0041  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7358   c1.moment-3=1.2063   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0007  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0469   mds.2=-0.0038  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7415   c1.moment-3=1.2537   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0074  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0771   mds.2=-0.0004  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7419   c1.moment-3=1.2840   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0384  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0917   mds.2=0.0005   
 REMARK ARG=c1.moment-2,c1.moment-3
-REMARK c1.moment-2=0.7428   c1.moment-3=1.2986   
+REMARK c1.moment-2=0.7428   c1.moment-3=1.2987   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0153  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0656   mds.2=0.0042   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7359   c1.moment-3=1.2732   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0016  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0034  mds.2=0.0115   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7200   c1.moment-3=1.2057   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0006  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0901  mds.2=0.0141   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7064   c1.moment-3=1.1200   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0005  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.1784  mds.2=0.0069   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7024   c1.moment-3=1.0315   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0002  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.2253  mds.2=-0.0077  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7109   c1.moment-3=0.9832   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0001  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.2372  mds.2=-0.0248  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7264   c1.moment-3=0.9692   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.2415  mds.2=-0.0448  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7456   c1.moment-3=0.9624   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.2562  mds.2=-0.0539  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7529   c1.moment-3=0.9466   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.2901  mds.2=-0.0433  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7381   c1.moment-3=0.9144   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.3173  mds.2=-0.0215  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7130   c1.moment-3=0.8902   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.3117  mds.2=0.0096   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6829   c1.moment-3=0.8996   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.2787  mds.2=0.0317   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6651   c1.moment-3=0.9352   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.2319  mds.2=0.0372   
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.6656   c1.moment-3=0.9823   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.1897  mds.2=0.0305   
 REMARK ARG=c1.moment-2,c1.moment-3
-REMARK c1.moment-2=0.6776   c1.moment-3=1.0233   
+REMARK c1.moment-2=0.6775   c1.moment-3=1.0233   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0001  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.1592  mds.2=0.0142   
 REMARK ARG=c1.moment-2,c1.moment-3
-REMARK c1.moment-2=0.6975   c1.moment-3=1.0515   
+REMARK c1.moment-2=0.6975   c1.moment-3=1.0514   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
-REMARK mds.1=-0.1211  mds.2=-0.0049  
+REMARK mds.1=-0.1212  mds.2=-0.0049  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7213   c1.moment-3=1.0868   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0960  mds.2=-0.0150  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7345   c1.moment-3=1.1105   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0001  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0842  mds.2=-0.0162  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7372   c1.moment-3=1.1221   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0001  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0813  mds.2=-0.0187  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7401   c1.moment-3=1.1246   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0823  mds.2=-0.0193  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7406   c1.moment-3=1.1235   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0773  mds.2=-0.0179  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7398   c1.moment-3=1.1287   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0621  mds.2=-0.0202  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7440   c1.moment-3=1.1435   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0449  mds.2=-0.0215  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7475   c1.moment-3=1.1604   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0269  mds.2=-0.0307  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7589   c1.moment-3=1.1770   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0000  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=-0.0075  mds.2=-0.0368  
 REMARK ARG=c1.moment-2,c1.moment-3
 REMARK c1.moment-2=0.7673   c1.moment-3=1.1955   
 END
 DESCRIPTION: analysis data from calculation done at time 10.000000 
-REMARK WEIGHT=0.0002  
+REMARK WEIGHT=1.0000  
 REMARK PROPERTIES=mds.1,mds.2
 REMARK mds.1=0.0266   mds.2=-0.0342  
 REMARK ARG=c1.moment-2,c1.moment-3

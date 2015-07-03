@@ -73,14 +73,12 @@ public:
   unsigned getNumberOfReferenceArguments() const ;
 /// Get the arguments required 
   void getArgumentRequests( std::vector<std::string>&, bool disable_checks=false );
-/// Set the names of the arguments
-  void setArgumentNames( const std::vector<std::string>& arg_vals );
 /// Set the positions of the refernce arguments
   void setReferenceArguments( const std::vector<double>& arg_vals, const std::vector<double>& sigma );
 /// Get the value of the ith reference argument
   double getReferenceArgument( const unsigned& i ) const ;
 /// Print the arguments out
-  void printArguments( OFile& ofile, const std::string& fmt, const bool& isproperty ) const ;
+  void printArguments( OFile& ofile, const std::string& fmt ) const ;
 /// Return all the reference arguments
   const std::vector<double>& getReferenceArguments();
   const std::vector<double>& getReferenceMetric();

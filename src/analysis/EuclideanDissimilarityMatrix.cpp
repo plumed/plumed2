@@ -73,8 +73,7 @@ double EuclideanDissimilarityMatrix::getDissimilarity( const unsigned& iframe, c
   plumed_dbg_assert( iframe<dissimilarities.nrows() && jframe<dissimilarities.ncols() );
   if( dissimilarities(iframe,jframe)>0. ){ return dissimilarities(iframe,jframe); }
   if( iframe!=jframe ){ 
-     bool ignore;
-     dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), getReferenceConfiguration(iframe,ignore), getReferenceConfiguration(jframe,ignore), true ); 
+     dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), getReferenceConfiguration(iframe), getReferenceConfiguration(jframe), true ); 
      return dissimilarities(iframe,jframe);
   }
   return 0.0;

@@ -28,6 +28,38 @@ using namespace std;
 
 namespace PLMD{
 
+void PDB::setAtomNumbers( const std::vector<AtomNumber>& atoms ){
+  positions.resize( atoms.size() ); occupancy.resize( atoms.size() ); 
+  beta.resize( atoms.size() ); numbers.resize( atoms.size() );
+  for(unsigned i=0;i<atoms.size();++i){ numbers[i]=atoms[i]; beta[i]=1.0; occupancy[i]=1.0; }
+}
+
+void PDB::addArgumentNames( const std::vector<std::string>& argument_names ){
+  std::string newrem = "ARG="+argument_names[0];
+  for(unsigned i=1;i<argument_names.size();++i) newrem+="," + argument_names[i];
+  remark.push_back( newrem );
+  for(unsigned i=0;i<argument_names.size();++i) remark.push_back( argument_names[i] + "=0" );
+}
+
+void PDB::setAtomPositions( const std::vector<Vector>& pos ){
+  plumed_dbg_assert( pos.size()==positions.size() );
+  for(unsigned i=0;i<positions.size();++i) positions[i]=pos[i];
+}
+
+void PDB::setArgumentValue( const std::string& argname, const double& val ){
+  bool replaced=false; std::string num; Tools::convert( val, num );
+  for(unsigned i=0;i<remark.size();++i){
+      if( remark[i].find(argname+"=")!=std::string::npos){
+          remark[i]=argname + "=" + num; replaced=true;
+      }
+  }
+  plumed_assert( replaced ); 
+}
+
+void PDB::addBlockEnd( const unsigned& end ){
+  block_ends.push_back( end );
+}
+
 unsigned PDB::getNumberOfAtomBlocks()const{
   return block_ends.size();
 }

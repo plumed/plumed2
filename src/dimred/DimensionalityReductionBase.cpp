@@ -21,7 +21,6 @@
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "DimensionalityReductionBase.h"
 #include "reference/ReferenceConfiguration.h"
-#include "reference/MetricRegister.h"
 #include "core/PlumedMain.h"
 #include "core/Atoms.h"
 
@@ -36,7 +35,6 @@ void DimensionalityReductionBase::registerKeywords( Keywords& keys ){
 DimensionalityReductionBase::DimensionalityReductionBase( const ActionOptions& ao ):
 Action(ao),
 analysis::AnalysisBase(ao),
-myref(NULL),
 dimredbase(NULL)
 {
   // Check that some dissimilarity information is available
@@ -52,23 +50,12 @@ dimredbase(NULL)
       if( nlow<1 ) error("dimensionality of low dimensional space must be at least one");
   }
   log.printf("  projecting in %d dimensional space \n",nlow);
-
-  ReferenceConfigurationOptions("EUCLIDEAN");
-  myref=metricRegister().create<ReferenceConfiguration>("EUCLIDEAN");
-  std::vector<std::string> dimnames(nlow); std::string num;
-  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); dimnames[i] = getLabel() + "." + num; }
-  myref->setNamesAndAtomNumbers( std::vector<AtomNumber>(), dimnames );
 }
 
-DimensionalityReductionBase::~DimensionalityReductionBase(){
-  delete myref;
-}
-
-ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat, bool& isprojection ){
-  std::vector<double> pp(nlow); for(unsigned i=0;i<nlow;++i) pp[i]=projections(idat,i);
-  std::vector<double> empty( pp.size() ); isprojection=true;
-  myref->setReferenceConfig( std::vector<Vector>(), pp, empty );
-  return myref;
+ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat ){
+  ReferenceConfiguration* myref = mydata->getInputReferenceConfiguration( idat ); std::string num; myref->clearAllProperties();
+  for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, projections(idat,i) ); }
+  return myref; 
 }
 
 ReferenceConfiguration* DimensionalityReductionBase::getInputReferenceConfiguration( const unsigned& idat ){
