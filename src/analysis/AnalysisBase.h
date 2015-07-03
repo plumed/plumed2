@@ -46,6 +46,7 @@ class AnalysisBase :
   public ActionWithArguments,
   public vesselbase::ActionWithVessel
   {
+friend class ReselectLandmarks;
 friend class ReadDissimilarityMatrix; 
 friend class AnalysisWithDataCollection;
 private:

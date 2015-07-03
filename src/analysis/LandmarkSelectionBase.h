@@ -28,6 +28,7 @@ namespace PLMD {
 namespace analysis {
 
 class LandmarkSelectionBase : public AnalysisWithDataCollection {
+friend class ReselectLandmarks;
 private:
 /// The number of landmarks we are selecting
   unsigned nlandmarks;

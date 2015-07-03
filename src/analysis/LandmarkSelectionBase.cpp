@@ -42,7 +42,7 @@ LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
 Action(ao),
 AnalysisWithDataCollection(ao)
 {
-  parse("NLANDMARKS",nlandmarks); 
+  if( keywords.exists("NLANDMARKS") ) parse("NLANDMARKS",nlandmarks); 
   log.printf("  selecting %d landmark points \n",nlandmarks);
   lweights.resize( nlandmarks );
 
@@ -60,6 +60,7 @@ void LandmarkSelectionBase::selectFrame( const unsigned& iframe ){
 void LandmarkSelectionBase::performAnalysis(){
   landmark_indices.resize(0); selectLandmarks(); 
   plumed_dbg_assert( nlandmarks==getNumberOfDataPoints() );
+  if( lweights.size()!=nlandmarks ) lweights.resize( nlandmarks );
 
   if( !novoronoi ){
       lweights.assign(lweights.size(),0.0);

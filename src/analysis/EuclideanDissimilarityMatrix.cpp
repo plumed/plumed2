@@ -55,6 +55,7 @@ PLUMED_REGISTER_ACTION(EuclideanDissimilarityMatrix,"EUCLIDEAN_DISSIMILARITIES")
 
 void EuclideanDissimilarityMatrix::registerKeywords( Keywords& keys ){
   AnalysisWithDataCollection::registerKeywords( keys );
+  keys.reset_style("METRIC","atoms-1");
 }
 
 EuclideanDissimilarityMatrix::EuclideanDissimilarityMatrix( const ActionOptions& ao ):
