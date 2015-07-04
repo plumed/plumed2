@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AnalysisBase.h"
+#include "ReadAnalysisFrames.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 #include "core/ActionRegister.h"
@@ -46,7 +47,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   ReadDissimilarityMatrix( const ActionOptions& ao );
-  unsigned getNumberOfDataPoints() const { return nnodes; }
+  unsigned getNumberOfDataPoints() const ;
 /// This gives an error as if we read in the matrix we dont have the coordinates
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata );
   ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idata );
@@ -71,6 +72,7 @@ PLUMED_REGISTER_ACTION(ReadDissimilarityMatrix,"READ_DISSIMILARITY_MATRIX")
 void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ){
   AnalysisBase::registerKeywords( keys ); keys.remove("USE_OUTPUT_DATA_FROM");
   keys.add("compulsory","FILE","an input file containing the matrix of dissimilarities");
+  keys.add("optional","TRAJ","the label for a READ_ANALYSIS_FRAMES action that stores the trajectory");
   keys.add("optional","WFILE","input file containing weights of points");
 }
 
@@ -79,11 +81,20 @@ Action(ao),
 AnalysisBase(ao),
 nnodes(1)
 {
-  if( plumed.getActionSet().size()!=0 ) error("read dissimilarity matrix command must be at top of input file");
+  std::string mytraj; parse("TRAJ",mytraj);
+  if( mytraj.length()>0 ){
+     ReadAnalysisFrames* mtraj = plumed.getActionSet().selectWithLabel<ReadAnalysisFrames*>( mytraj );
+     if( !mtraj ) error(mytraj + " is not the label of a READ_ANALYSIS_FRAMES object");
+     mydata = dynamic_cast<AnalysisBase*>( mtraj );  
+  }
+
+  if( mytraj.length()>0 && plumed.getActionSet().size()!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
+  if( mytraj.length()==0 && plumed.getActionSet().size()!=0 ) error("read dissimilarity matrix command must be at top of input file");
 
   parse("FILE",fname);
   log.printf("  reading dissimilarity matrix from file %s \n",fname.c_str() );
   parse("WFILE",wfile);
+
   if( wfile.length()>0 ) log.printf("  reading weights of nodes from file named %s \n",wfile.c_str() );
   else log.printf("  setting weights of all nodes equal to one\n");
 
@@ -92,7 +103,7 @@ nnodes(1)
   use_all_data=true; freq=1; setStride(1);
 }
 
-void ReadDissimilarityMatrix::update(){ plumed.stop(); }
+void ReadDissimilarityMatrix::update(){ if(!mydata) plumed.stop(); }
 
 void ReadDissimilarityMatrix::performAnalysis(){
   IFile mfile; mfile.open(fname); 
@@ -107,6 +118,7 @@ void ReadDissimilarityMatrix::performAnalysis(){
        for(unsigned j=0;j<nnodes;++j) Tools::convert( words[j], dissimilarities(i,j) ); 
   }
   mfile.close();
+  if( mydata && nnodes!=getNumberOfDataPoints() ) error("mismatch between number of data points in trajectory and the dimensions of the dissimilarity matrix");
 
   weights.resize( nnodes );
   if( wfile.length()>0 ){
@@ -120,21 +132,29 @@ void ReadDissimilarityMatrix::performAnalysis(){
   }
 }
 
+unsigned ReadDissimilarityMatrix::getNumberOfDataPoints() const { 
+  if( mydata ) return AnalysisBase::getNumberOfDataPoints();
+  return nnodes;
+}
+
 double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ){
   return dissimilarities( iframe, jframe );
 }
 
 ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata ){
+  if( mydata ) return AnalysisBase::getReferenceConfiguration( idata );
   plumed_merror("cannot get reference configurations from read in dissimilarity matrix");
   return NULL;
 }
 
 ReferenceConfiguration* ReadDissimilarityMatrix::getInputReferenceConfiguration( const unsigned& idata ){
+  if( mydata ) return AnalysisBase::getInputReferenceConfiguration( idata );
   plumed_merror("cannot get reference configurations from read in dissimilarity matrix");
   return NULL;
 }
 
 void ReadDissimilarityMatrix::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
+  if( mydata ){ AnalysisBase::getDataPoint( idata, point, weight ); return; } 
   plumed_merror("cannot get data points from read in dissmimilarity matrix");
 }
 

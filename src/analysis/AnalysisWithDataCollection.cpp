@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AnalysisWithDataCollection.h"
+#include "ReadAnalysisFrames.h"
 #include "reference/ReferenceConfiguration.h"
 #include "reference/ReferenceArguments.h"
 #include "reference/ReferenceAtoms.h"
@@ -71,6 +72,8 @@ old_norm(0.0)
       if( datastr.length()>0 ) {
          AnalysisWithDataCollection* checkd = plumed.getActionSet().selectWithLabel<AnalysisWithDataCollection*>( datastr );       
          if( !checkd) error("cannot reuse input data from action with label " + datastr + " as this does not store data");
+         ReadAnalysisFrames* checkt = dynamic_cast<ReadAnalysisFrames*>( checkd );
+         if( checkt ) error("READ_ANALYSIS_FRAMES should only be used in association with READ_DISSSIMILARITY_MATRIX");
          mydata=dynamic_cast<AnalysisBase*>( checkd );                       
          log.printf("  performing analysis on input data stored in from %s \n",datastr.c_str() );
          freq=mydata->freq; use_all_data=mydata->use_all_data;
@@ -86,7 +89,8 @@ old_norm(0.0)
          if( keywords.exists("METRIC") ){
              std::string metrictmp; parse("METRIC",metrictmp); 
              if( metrictmp.length()==0 ){
-                 metricname="EUCLIDEAN";
+                 if( keywords.exists("ARG") ) metricname="EUCLIDEAN";
+                 else metricname="OPTIMAL";
              } else {
                  std::vector<std::string> metricwords = Tools::getWords( metrictmp );
                  metricname=metricwords[0]; metricwords.erase(metricwords.begin()); 
@@ -126,7 +130,10 @@ old_norm(0.0)
          }
 
          // Read in the information about how often to run the analysis (storage is read in in ActionPilot.cpp)
-         if( keywords.exists("USE_ALL_DATA") ) parseFlag("USE_ALL_DATA",use_all_data);
+         if( keywords.exists("USE_ALL_DATA") ){
+             if( !keywords.exists("RUN") ) use_all_data=true;
+             else parseFlag("USE_ALL_DATA",use_all_data);
+         }
          if(!use_all_data){
              if( keywords.exists("RUN") ) parse("RUN",freq); 
              // Setup everything given the ammount of data that we will have in each analysis 
@@ -268,7 +275,6 @@ ReferenceConfiguration* AnalysisWithDataCollection::getInputReferenceConfigurati
 
 void AnalysisWithDataCollection::update(){
   if( mydata ){ AnalysisBase::update(); return; }
-
   // Ignore first bit of data if we are not using all data - this is a weird choice - I am not sure I understand GAT (perhaps this should be changed)?
   if( !use_all_data && getStep()==0 ) return ;
 

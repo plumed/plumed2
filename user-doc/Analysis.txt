@@ -122,7 +122,9 @@ external file
 <tr> <td width=5%> \subpage READ_DISSIMILARITY_MATRIX </td> <td> Read a matrix of dissimilarities between a trajectory of atomic configurations from a file. </td> </tr>
 </table>
  
-N.B. You can only use the \ref READ_DISSIMILARITY_MATRIX command when you are doing post-processing.
+N.B. You can only use the \ref READ_DISSIMILARITY_MATRIX command when you are doing post-processing.  If you have a 
+trajectory that contains the configurations you read in the configurations from the trajectory using 
+\ref READ_ANALYSIS_FRAMES 
 
 \ref landmarks Landmark Selection
 

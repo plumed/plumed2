@@ -20,6 +20,7 @@
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 #include "AnalysisBase.h"
+#include "ReadAnalysisFrames.h"
 #include "core/PlumedMain.h"
 #include "core/ActionSet.h"
 
@@ -50,6 +51,8 @@ mydata(NULL)
       !keywords.exists("REUSE_INPUT_DATA_FROM") ) error("input analysis action was not specified use USE_OUTPUT_DATA_FROM");
   if( datastr.length()>0 ){
       mydata=plumed.getActionSet().selectWithLabel<AnalysisBase*>( datastr );
+      ReadAnalysisFrames* checkt = dynamic_cast<ReadAnalysisFrames*>( mydata );
+      if( checkt ) error("READ_ANALYSIS_FRAMES should only be used in association with READ_DISSSIMILARITY_MATRIX"); 
       log.printf("  performing analysis on output from %s \n",datastr.c_str() );
       if( !mydata ) error("could not find analysis action named " + datastr );
       freq=mydata->freq; use_all_data=mydata->use_all_data;
