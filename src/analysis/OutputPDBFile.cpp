@@ -77,7 +77,7 @@ fmt("%f")
 void OutputPDBFile::performAnalysis(){
   // Output the embedding in plumed pdb format
   OFile afile; afile.link(*this); afile.setBackupString("analysis"); std::size_t psign=fmt.find("%");
-  afile.open( filename.c_str() ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + "\n";
+  afile.open( filename.c_str() ); std::string descr="REMARK WEIGHT=%-" + fmt.substr(psign+1) + " TYPE=" + getMetricName() + "\n";
   for(unsigned j=0;j<getNumberOfDataPoints();++j){
       afile.printf("DESCRIPTION: analysis data from calculation done at time %f \n",getLabel().c_str(),getTime() );
       afile.printf(descr.c_str(),getWeight(j) ); 

@@ -407,19 +407,25 @@ void Keywords::print_html() const {
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isFlag() ) print_html_item( keys[i] );
      }
-     std::cout<<"\n";
+  } else {
+     nkeys=0;
+     for(unsigned i=0;i<keys.size();++i){
+        if ( (types.find(keys[i])->second).isOptional() ) nkeys++;
+     }
+     if( nkeys>0 ){
+        if(isaction) std::cout<<"\\par Options\n\n";
+        else std::cout<<"\\par The following options are available\n\n";
+        std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
+     }
   }
-  std::cout<<"</table>\n\n";
   nkeys=0;
   for(unsigned i=0;i<keys.size();++i){
      if ( (types.find(keys[i])->second).isOptional() ) nkeys++;
   }
   if( nkeys>0 ){
-     std::cout<<" <table align=center frame=void width=95%% cellpadding=5%%> \n";
      for(unsigned i=0;i<keys.size();++i){
         if ( (types.find(keys[i])->second).isOptional() ) print_html_item( keys[i] );
      }
-     std::cout<<"\n";
   }
   std::cout<<"</table>\n\n";
 }

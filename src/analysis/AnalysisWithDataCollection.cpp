@@ -66,7 +66,8 @@ old_norm(0.0)
 {
   if( !mydata ){
       // Check if we are using the input data from another action
-      std::string datastr; parse("REUSE_INPUT_DATA_FROM",datastr);
+      std::string datastr; 
+      if( keywords.exists("REUSE_INPUT_DATA_FROM") ) parse("REUSE_INPUT_DATA_FROM",datastr);
       if( datastr.length()>0 ) {
          AnalysisWithDataCollection* checkd = plumed.getActionSet().selectWithLabel<AnalysisWithDataCollection*>( datastr );       
          if( !checkd) error("cannot reuse input data from action with label " + datastr + " as this does not store data");
@@ -82,55 +83,60 @@ old_norm(0.0)
          for(unsigned i=0;i<getNumberOfArguments();++i) argument_names[i]=getPntrToArgument(i)->getName();
          if( getNumberOfArguments()>0 ) mypdb.addArgumentNames( argument_names );
          // Read in information on the metric that is being used in this analysis object
-         std::string metrictmp; parse("METRIC",metrictmp); 
-         if( metrictmp.length()==0 ){
-             metricname="EUCLIDEAN";
-         } else {
-             std::vector<std::string> metricwords = Tools::getWords( metrictmp );
-             metricname=metricwords[0]; metricwords.erase(metricwords.begin()); 
-             mypdb.addRemark( metricwords );
-         }
-         ReferenceConfiguration* checkref=metricRegister().create<ReferenceConfiguration>( metricname );
-         // Check if we should read atoms
-         ReferenceAtoms* hasatoms=dynamic_cast<ReferenceAtoms*>( checkref );
-         if( hasatoms ){
-             std::vector<AtomNumber> atom_numbers; parseAtomList("ATOMS",atom_numbers); 
-             if( atom_numbers.size()>0 ){ 
-                log.printf("  monitoring positions of atoms ");
-                for(unsigned i=0;i<atom_numbers.size();++i) log.printf("%d ",atom_numbers[i].serial() );
-                log.printf("\n"); mypdb.addBlockEnd( atom_numbers.size() );
+         if( keywords.exists("METRIC") ){
+             std::string metrictmp; parse("METRIC",metrictmp); 
+             if( metrictmp.length()==0 ){
+                 metricname="EUCLIDEAN";
              } else {
-                std::vector<AtomNumber> tmpatoms; mypdb.addBlockEnd(0);
-                for(unsigned i=1;;++i){
-                    parseAtomList("ATOMS",i,tmpatoms);
-                    if( i==1 && tmpatoms.size()==0 ) error("no atom positions have been specified in input");
-                    else if( tmpatoms.size()==0 ) break;
-                    for(unsigned j=0;j<tmpatoms.size();++j) atom_numbers.push_back( tmpatoms[j] );
-                    mypdb.addBlockEnd( atom_numbers.size() );
-                }
+                 std::vector<std::string> metricwords = Tools::getWords( metrictmp );
+                 metricname=metricwords[0]; metricwords.erase(metricwords.begin()); 
+                 mypdb.addRemark( metricwords );
+             } 
+             ReferenceConfiguration* checkref=metricRegister().create<ReferenceConfiguration>( metricname );
+             // Check if we should read atoms
+             ReferenceAtoms* hasatoms=dynamic_cast<ReferenceAtoms*>( checkref );
+             if( hasatoms ){
+                 std::vector<AtomNumber> atom_numbers; parseAtomList("ATOMS",atom_numbers); 
+                 if( atom_numbers.size()>0 ){ 
+                    log.printf("  monitoring positions of atoms ");
+                    for(unsigned i=0;i<atom_numbers.size();++i) log.printf("%d ",atom_numbers[i].serial() );
+                    log.printf("\n"); mypdb.addBlockEnd( atom_numbers.size() );
+                 } else {
+                    std::vector<AtomNumber> tmpatoms; mypdb.addBlockEnd(0);
+                    for(unsigned i=1;;++i){
+                        parseAtomList("ATOMS",i,tmpatoms);
+                        if( i==1 && tmpatoms.size()==0 ) error("no atom positions have been specified in input");
+                        else if( tmpatoms.size()==0 ) break;
+                        for(unsigned j=0;j<tmpatoms.size();++j) atom_numbers.push_back( tmpatoms[j] );
+                        mypdb.addBlockEnd( atom_numbers.size() );
+                    }
+                 }
+                 requestAtoms(atom_numbers); mypdb.setAtomNumbers( atom_numbers );
              }
-             requestAtoms(atom_numbers); mypdb.setAtomNumbers( atom_numbers );
+             // Check if we should read arguments
+             ReferenceArguments* hasargs=dynamic_cast<ReferenceArguments*>( checkref );
+             if( !hasargs && getNumberOfArguments()!=0 ) error("use of arguments with metric type " + metricname + " is invalid");
+             if( keywords.exists("ARG") && hasargs && getNumberOfArguments()==0 ) error("no arguments have been specified in input");
+             if( hasatoms && hasargs ) error("currently dependencies break if you have both arguments and atoms");   // Not sure if this is really a problem anymore
+             // And delte the fake reference we created
+             delete checkref;
+             log.printf("  storing data as %s type reference objects \n",metricname.c_str() );
+         } else {
+             metricname="";
          }
-         // Check if we should read arguments
-         ReferenceArguments* hasargs=dynamic_cast<ReferenceArguments*>( checkref );
-         if( !hasargs && getNumberOfArguments()!=0 ) error("use of arguments with metric type " + metricname + " is invalid");
-         if( hasargs && getNumberOfArguments()==0 ) error("no arguments have been specified in input");
-         if( hasatoms && hasargs ) error("currently dependencies break if you have both arguments and atoms");   // Not sure if this is really a problem anymore
-         // And delte the fake reference we created
-         delete checkref;
-         log.printf("  storing data as %s type reference objects \n",metricname.c_str() );
 
          // Read in the information about how often to run the analysis (storage is read in in ActionPilot.cpp)
-         parseFlag("USE_ALL_DATA",use_all_data);
+         if( keywords.exists("USE_ALL_DATA") ) parseFlag("USE_ALL_DATA",use_all_data);
          if(!use_all_data){
-             parse("RUN",freq); 
+             if( keywords.exists("RUN") ) parse("RUN",freq); 
              // Setup everything given the ammount of data that we will have in each analysis 
              if( freq%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
              unsigned ndata=freq/getStride(); data.resize(ndata); logweights.resize( ndata );
              for(unsigned i=0;i<ndata;++i) data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
              log.printf("  running analysis every %u steps\n",freq);
              // Check if we are doing block averaging
-             parseFlag("NOMEMORY",nomemory);
+             nomemory=false;
+             if( keywords.exists("NOMEMORY") ) parseFlag("NOMEMORY",nomemory);
              if(nomemory) log.printf("  doing block averaging and analysing each portion of trajectory separately\n");
          } else {
              log.printf("  analysing all data in trajectory\n");
@@ -139,7 +145,8 @@ old_norm(0.0)
          // Read in stuff for reweighting of trajectories
 
          // Reweighting for biases
-         bool dobias; parseFlag("REWEIGHT_BIAS",dobias);
+         bool dobias; 
+         if( keywords.exists("REWEIGHT_BIAS") ) parseFlag("REWEIGHT_BIAS",dobias);
          if( dobias ){
              std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
              if( all.empty() ) error("your input file is not telling plumed to calculate anything");
@@ -159,19 +166,21 @@ old_norm(0.0)
          }
 
          // Reweighting for temperatures
-         rtemp=0; parse("REWEIGHT_TEMP",rtemp);
+         rtemp=0; 
+         if( keywords.exists("REWEIGHT_TEMP") ) parse("REWEIGHT_TEMP",rtemp);
          if( rtemp!=0 ){ 
             rtemp*=plumed.getAtoms().getKBoltzmann(); 
             log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
          }
          // Now retrieve the temperature in the simulation
-         simtemp=0; parse("TEMP",simtemp); 
+         simtemp=0; 
+         if( keywords.exists("TEMP") ) parse("TEMP",simtemp); 
          if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
          else simtemp=plumed.getAtoms().getKbT();
          if(simtemp==0 && (rtemp!=0 || !biases.empty()) ) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
 
          // Check if a check point is required   (this should be got rid of at some point when we have proper checkpointing) GAT
-         parseFlag("WRITE_CHECKPOINT",write_chq);
+         if( keywords.exists("WRITE_CHECKPOINT") ) parseFlag("WRITE_CHECKPOINT",write_chq);
          std::string filename = getName() + "_" + getLabel() + ".chkpnt";
          if( write_chq ) rfile.link(*this);
          if( getRestart() ){
@@ -202,13 +211,14 @@ AnalysisWithDataCollection::~AnalysisWithDataCollection(){
 
 
 void AnalysisWithDataCollection::readCheckPointFile( const std::string& filename ){
-  FILE* fp=fopen(filename.c_str(),"r"); double tstep, oldtstep;
+  FILE* fp=fopen(filename.c_str(),"r"); double tstep, oldtstep; bool empty=(data.size()==0);
   if(fp!=NULL){
      bool do_read=true, first=true;
      while (do_read) {
         PDB tpdb;
         do_read=tpdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
         if(do_read){
+           if( empty ) data.push_back( metricRegister().create<ReferenceConfiguration>( metricname ) ); logweights.push_back(0); 
            data[idata]->set( tpdb );
            data[idata]->parse("TIME",tstep);
            if( !first && ((tstep-oldtstep) - getStride()*plumed.getAtoms().getTimeStep())>plumed.getAtoms().getTimeStep() ){
@@ -218,7 +228,7 @@ void AnalysisWithDataCollection::readCheckPointFile( const std::string& filename
            data[idata]->parse("OLD_NORM",old_norm);
            data[idata]->checkRead();
            idata++; first=false; oldtstep=tstep;
-        } else{
+        } else {
            break;
         }
      }

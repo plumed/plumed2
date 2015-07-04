@@ -69,6 +69,8 @@ public:
   virtual unsigned getDataPointIndexInBase( const unsigned& idata ) const ; 
 /// Return the weight of the ith point
   virtual double getWeight( const unsigned& idata ) const ;
+/// Get the name of the metric that is being used
+  virtual std::string getMetricName() const ;
 /// Are we using memory in this calculation this affects the weights of points
   virtual bool usingMemory() const ;
 /// Return the normalisation constant for the calculation
@@ -121,6 +123,11 @@ unsigned AnalysisBase::getNumberOfDataPoints() const {
 inline
 unsigned AnalysisBase::getDataPointIndexInBase( const unsigned& idata ) const {
   return mydata->getDataPointIndexInBase( idata );
+}
+
+inline
+std::string AnalysisBase::getMetricName() const {
+  return mydata->getMetricName();
 }
 
 inline

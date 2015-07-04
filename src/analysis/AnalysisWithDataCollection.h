@@ -60,10 +60,10 @@ private:
   std::string metricname;
 /// The checkpoint file --- really I would like to get rid of this and have some universal mechanism and a single file GT
   OFile rfile;
-/// Read the checkpoint file 
-  void readCheckPointFile( const std::string& filename );
 /// Perform the analysis -- we have a funciton as it is called from both runFinalJobs() and upate()
   void runAnalysis();
+/// Read the checkpoint file  (this is used to read the nodes in readDissimilarityMatrix)
+  void readCheckPointFile( const std::string& filename );
 protected:
 /// Return the temperature (used by Histogram)
   double getTemp() const { return simtemp; }
@@ -77,6 +77,8 @@ public:
   virtual unsigned getNumberOfDataPoints() const ;
 /// Return the index of the data point in the base class
   virtual unsigned getDataPointIndexInBase( const unsigned& idata ) const ;
+/// Get the name of the metric we are using
+  virtual std::string getMetricName() const ;
 /// Return the weight of the ith point
   virtual double getWeight( const unsigned& idata ) const ;
 /// Are we using memory in this calculation this affects the weights
@@ -106,6 +108,13 @@ unsigned AnalysisWithDataCollection::getNumberOfDataPoints() const {
   if( !mydata ) return data.size();
   return AnalysisBase::getNumberOfDataPoints();
 }
+
+inline
+std::string AnalysisWithDataCollection::getMetricName() const {
+  if( !mydata ) return metricname; 
+  return AnalysisBase::getMetricName();
+}
+
 
 inline
 unsigned AnalysisWithDataCollection::getDataPointIndexInBase( const unsigned& idata ) const {
