@@ -120,13 +120,12 @@ external file
 
 <table align=center frame=void width=95%% cellpadding=5%%>
 <tr> <td width=5%> \subpage READ_DISSIMILARITY_MATRIX </td> <td> Read a matrix of dissimilarities between a trajectory of atomic configurations from a file. </td> </tr>
+<tr> <td width=5%> \subpage READ_ANALYSIS_FRAMES </td> <td> Store the frames in trajectory to use in tandem with a dissimilarity matrix read using \ref READ_DISSIMILARITY_MATRIX </td> </tr>
 </table>
  
-N.B. You can only use the \ref READ_DISSIMILARITY_MATRIX command when you are doing post-processing.  If you have a 
-trajectory that contains the configurations you read in the configurations from the trajectory using 
-\ref READ_ANALYSIS_FRAMES 
+N.B. You can only use the two commands above when you are doing post-processing.  
 
-\ref landmarks Landmark Selection
+\section landmarks Landmark Selection
 
 Many of the techniques described in the following sections are very computationally expensive to run on large trajectories.
 A common strategy is thus to use a landmark selection algorithm to pick a particularly-reprentative subset of trajectory
@@ -135,8 +134,7 @@ that are available in PLUMED are as follows
 
 @LANDMARKS@
 
-Some of these algorithms (e.g. \ref LANDMARK_SELECT_STRIDE) can collect data from the trajectory themselves.  Others such as
-\ref LANDMARK_SELECT_FPS must take a dissimilarity matrix action as input.  That is to say they must be used as follows:
+In general most of these landmark selection algorithms must be used in tandem with a \ref dissimilaritym "dissimilarity matrix" object as as follows:
 
 \verbatim
 ss1: EUCLIDEAN_DISSIMILARITIES STRIDE=1 USE_ALL_DATA ARG=d1
@@ -196,7 +194,7 @@ a number of different algorithms.  The various algorithms that can be used to op
 
 @DIMRED@
 
-\ref output Outputting the results from analysis algorithms
+\section output Outputting the results from analysis algorithms
 
 The following methods are available for printing the result output by the various analysis algorithms:
 

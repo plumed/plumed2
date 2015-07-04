@@ -50,7 +50,6 @@ PLUMED_REGISTER_ACTION(ReselectLandmarks,"RESELECT_LANDMARKS")
 
 void ReselectLandmarks::registerKeywords( Keywords& keys ){
   LandmarkSelectionBase::registerKeywords(keys);
-  LandmarkSelectionBase::removeDataCollectionKeywords( keys );
   keys.remove("NLANDMARKS");
   keys.add("compulsory","LANDMARKS","the action that selects the landmarks that you want to reselect using this action");
 }

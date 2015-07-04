@@ -24,15 +24,8 @@
 namespace PLMD {
 namespace analysis {
 
-void LandmarkSelectionBase::removeDataCollectionKeywords( Keywords& keys ){
-  keys.remove("ATOMS"); keys.remove("STRIDE"); keys.remove("RUN"); keys.remove("USE_ALL_DATA");
-  keys.remove("REWEIGHT_BIAS"); keys.remove("REWEIGHT_TEMP"); keys.remove("TEMP"); 
-  keys.remove("REUSE_INPUT_DATA_FROM"); keys.remove("WRITE_CHECKPOINT"); keys.remove("NOMEMORY");
-  keys.remove("RESTART"); keys.remove("UPDATE_FROM"); keys.remove("UPDATE_UNTIL"); keys.remove("ARG");
-}
-
 void LandmarkSelectionBase::registerKeywords( Keywords& keys ){
-  AnalysisWithDataCollection::registerKeywords( keys );
+  AnalysisBase::registerKeywords( keys );
   keys.add("compulsory","NLANDMARKS","the number of landmarks that you would like to select");
   keys.addFlag("NOVORONOI",false,"do not do a Voronoi analysis of the data to determine weights of final points");
   keys.addFlag("IGNORE_WEIGHTS",false,"ignore the weights in the underlying analysis object");
@@ -40,7 +33,7 @@ void LandmarkSelectionBase::registerKeywords( Keywords& keys ){
 
 LandmarkSelectionBase::LandmarkSelectionBase( const ActionOptions& ao ):
 Action(ao),
-AnalysisWithDataCollection(ao)
+AnalysisBase(ao)
 {
   if( keywords.exists("NLANDMARKS") ) parse("NLANDMARKS",nlandmarks); 
   log.printf("  selecting %d landmark points \n",nlandmarks);

@@ -22,12 +22,12 @@
 #ifndef __PLUMED_analysis_LandmarkSelectionBase_h
 #define __PLUMED_analysis_LandmarkSelectionBase_h
 
-#include "AnalysisWithDataCollection.h"
+#include "AnalysisBase.h"
 
 namespace PLMD {
 namespace analysis {
 
-class LandmarkSelectionBase : public AnalysisWithDataCollection {
+class LandmarkSelectionBase : public AnalysisBase {
 friend class ReselectLandmarks;
 private:
 /// The number of landmarks we are selecting
@@ -43,7 +43,6 @@ protected:
   void selectFrame( const unsigned& );
 public:
   static void registerKeywords( Keywords& keys );  
-  static void removeDataCollectionKeywords( Keywords& keys );
   LandmarkSelectionBase( const ActionOptions& ao );
 /// Return the number of data points
   unsigned getNumberOfDataPoints() const ;
@@ -71,7 +70,7 @@ unsigned LandmarkSelectionBase::getNumberOfDataPoints() const {
 
 inline
 unsigned LandmarkSelectionBase::getDataPointIndexInBase( const unsigned& idata ) const {
-  return AnalysisWithDataCollection::getDataPointIndexInBase( landmark_indices[idata] );
+  return AnalysisBase::getDataPointIndexInBase( landmark_indices[idata] );
 }
 
 inline
@@ -81,12 +80,12 @@ double LandmarkSelectionBase::getWeight( const unsigned& idata ) const {
 
 inline
 void LandmarkSelectionBase::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
-  AnalysisWithDataCollection::getDataPoint( landmark_indices[idata], point, weight );
+  AnalysisBase::getDataPoint( landmark_indices[idata], point, weight );
 }
 
 inline
 ReferenceConfiguration* LandmarkSelectionBase::getReferenceConfiguration( const unsigned& idat ){
-  return AnalysisWithDataCollection::getReferenceConfiguration( landmark_indices[idat] );
+  return AnalysisBase::getReferenceConfiguration( landmark_indices[idat] );
 }
 
 inline
