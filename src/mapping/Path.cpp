@@ -76,8 +76,11 @@ PathBase(ao)
 
   std::string empty;
   if(!nos){
-     if( getPropertyIndex("spath")!=0 || getNumberOfProperties()>1 ){
-        error("paths only work when there is a single property called sss being calculated"); 
+     for(unsigned i=0;i<getNumberOfReferencePoints();++i){
+        ReferenceConfiguration* myconf = getReferenceConfiguration(i);
+        if( myconf->getNumberOfProperties()>1 || myconf->getPropertyName(0)!="spath" ){
+           error("paths only work when there is a single property called spath being calculated"); 
+        }
      }
      empty="LABEL=spath"; 
      addVessel("SPATH",empty,0);    

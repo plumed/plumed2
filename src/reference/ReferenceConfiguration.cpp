@@ -131,6 +131,14 @@ void ReferenceConfiguration::clearAllProperties(){
   property_names.resize(0); property_values.resize(0);
 }
 
+double ReferenceConfiguration::getPropertyValue( const std::string& myname ) const {
+  bool found=false;
+  for(unsigned i=0;i<property_names.size();++i){
+      if( myname==property_names[i] ) return property_values[i];
+  }
+  plumed_assert( false ); return 0.0;
+}
+
 void ReferenceConfiguration::attachProperty( const std::string& name, const double& val ){
   bool found=false;
   for(unsigned i=0;i<property_names.size();++i){

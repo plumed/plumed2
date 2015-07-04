@@ -22,7 +22,6 @@
 #include "core/ActionWithValue.h"
 #include "core/ActionAtomistic.h"
 #include "core/ActionWithArguments.h"
-#include "reference/MultiReferenceBase.h"
 #include "reference/MetricRegister.h"
 #include "core/ActionRegister.h"
 #include "core/PlumedMain.h"
@@ -231,7 +230,8 @@ mypack(0,0,myvals)
   if(!fp) error("could not open reference file " + reference );
 
   // Read all reference configurations 
-  MultiReferenceBase myframes( "", false );
+  // MultiReferenceBase myframes( "", false );
+  std::vector<ReferenceConfiguration*> myframes;
   bool do_read=true; unsigned nfram=0;
   while (do_read){
      PDB mypdb;
@@ -244,11 +244,11 @@ mypack(0,0,myvals)
            myref = metricRegister().create<ReferenceConfiguration>( mtype, mypdb );
            if( myref->isDirection() ) error("first frame should be reference configuration - not direction of vector");
            if( !myref->pcaIsEnabledForThisReference() ) error("can't do PCA with reference type " + mtype );
-           std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
-           bool found=Tools::parse( remarks, "TYPE", rtype ); 
-           if(!found){ std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
-           myframes.readFrame( mypdb );
-        } else myframes.readFrame( mypdb ); 
+           // std::vector<std::string> remarks( mypdb.getRemark() ); std::string rtype;
+           // bool found=Tools::parse( remarks, "TYPE", rtype ); 
+           // if(!found){ std::vector<std::string> newrem(1); newrem[0]="TYPE="+mtype; mypdb.addRemark(newrem); }
+           // myframes.push_back( metricRegister().create<ReferenceConfiguration>( "", mypdb ) );
+        } else myframes.push_back( metricRegister().create<ReferenceConfiguration>( "", mypdb ) ); 
         nfram++;
      } else {
         break;
@@ -261,10 +261,13 @@ mypack(0,0,myvals)
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
-  std::vector<AtomNumber> atoms; std::vector<std::string> args;
-  myframes.getAtomAndArgumentRequirements( atoms, args );
+  std::vector<AtomNumber> atoms; myref->getAtomRequests( atoms, false );
+  std::vector<std::string> args; myref->getArgumentRequests( args, false );
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
+
+  // And now check that the atoms/arguments are the same in all the eigenvalues
+  for(unsigned i=0;i<myframes.size();++i){ myframes[i]->getAtomRequests( atoms, false ); myframes[i]->getArgumentRequests( args, false ); }
 
   // Setup the derivative pack
   if( atoms.size()>0 ) myvals.resize( 1, args.size() + 3*atoms.size() + 9 ); 
@@ -272,7 +275,7 @@ mypack(0,0,myvals)
   mypack.resize( args.size(), atoms.size() ); 
   for(unsigned i=0;i<atoms.size();++i) mypack.setAtomIndex( i, i );
   /// This sets up all the storage data required by PCA in the pack
-  myframes.getFrame(0)->setupPCAStorage( mypack );
+  myref->setupPCAStorage( mypack );
 
   // Check there are no periodic arguments
   for(unsigned i=0;i<getNumberOfArguments();++i){
@@ -289,9 +292,9 @@ mypack(0,0,myvals)
   // Create fake periodic boundary condition (these would only be used for DRMSD which is not allowed)
   Pbc fake_pbc; 
   // Now calculate the eigenvectors 
-  for(unsigned i=1;i<nfram;++i){
+  for(unsigned i=0;i<myframes.size();++i){
       // Calculate distance from reference configuration
-      double dist=myframes.getFrame(i)->calc( myref->getReferencePositions(), fake_pbc, getArguments(), myref->getReferenceArguments(), mypack, true );
+      double dist=myframes[i]->calc( myref->getReferencePositions(), fake_pbc, getArguments(), myref->getReferenceArguments(), mypack, true );
 
       // Calculate the length of the vector for normalization
       double tmp, norm=0.0;
@@ -302,11 +305,11 @@ mypack(0,0,myvals)
 
       // Normalize the eigevector
       if(nflag){ norm = 1.0 / sqrt(norm); } else { norm = 1.0; }
-      for(unsigned j=0;j<getNumberOfAtoms();++j) atom_eigv(i-1,j) = norm*mypack.getAtomsDisplacementVector()[j]; 
-      for(unsigned j=0;j<getNumberOfArguments();++j) arg_eigv(i-1,j) = -0.5*norm*mypack.getArgumentDerivative(j); 
+      for(unsigned j=0;j<getNumberOfAtoms();++j) atom_eigv(i,j) = norm*mypack.getAtomsDisplacementVector()[j]; 
+      for(unsigned j=0;j<getNumberOfArguments();++j) arg_eigv(i,j) = -0.5*norm*mypack.getArgumentDerivative(j); 
 
       // Create a component to store the output
-      std::string num; Tools::convert( i, num );
+      std::string num; Tools::convert( i + 1, num );
       addComponentWithDerivatives("eig-"+num); componentIsNotPeriodic("eig-"+num);
   }
   addComponentWithDerivatives("residual"); componentIsNotPeriodic("residual");

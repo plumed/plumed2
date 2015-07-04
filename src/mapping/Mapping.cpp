@@ -55,19 +55,14 @@ ActionWithVessel(ao)
   // Read the input
   std::string mtype; parse("TYPE",mtype);
   bool skipchecks; parseFlag("DISABLE_CHECKS",skipchecks);
-  // Setup the object that does the mapping
-  mymap = new PointWiseMapping( mtype, skipchecks ); 
  
   // Read the properties we require
+  bool ispath=false;
   if( keywords.exists("PROPERTY") ){
-     std::vector<std::string> property;
      parseVector("PROPERTY",property);
      if(property.size()==0) error("no properties were specified");
-     mymap->setPropertyNames( property, false );
   } else {
-     std::vector<std::string> property(1); 
-     property[0]="spath";
-     mymap->setPropertyNames( property, true );
+     property.resize(1); property[0]="spath"; ispath=true;
   }
 
   // Open reference file
@@ -82,35 +77,36 @@ ActionWithVessel(ao)
      PDB mypdb; 
      // Read the pdb file
      do_read=mypdb.readFromFilepointer(fp,plumed.getAtoms().usingNaturalUnits(),0.1/atoms.getUnits().getLength());
+     // Break if we are done
+     if( !do_read ) break ;
+     // Check for required properties
+     if( !ispath ){
+         if( !mypdb.hasRequiredProperties( property ) ) error("pdb input does not have contain required properties");
+     } else {
+         std::vector<std::string> pathremarks(2); std::string num; Tools::convert( myframes.size()+1, num );
+         pathremarks[0]="PROPERTIES=spath"; pathremarks[1]="spath=" + num;
+         mypdb.addRemark( pathremarks );
+     }
      // Fix argument names
      expandArgKeywordInPDB( mypdb );
-     if(do_read){
-        mymap->readFrame( mypdb ); ww=mymap->getWeight( nfram ); 
-        weights.push_back( ww );
-        wnorm+=ww; nfram++;
-     } else {
-        break;
-     }
+     // And read the frame
+     myframes.push_back( metricRegister().create<ReferenceConfiguration>( mtype, mypdb ) );
+     myframes[nfram]->checkRead(); ww=myframes[nfram]->getWeight(); 
+     weights.push_back( ww );
+     wnorm+=ww; nfram++;
   }
   fclose(fp); 
 
   if(nfram==0 ) error("no reference configurations were specified");
   log.printf("  found %u configurations in file %s\n",nfram,reference.c_str() );
-  for(unsigned i=0;i<weights.size();++i) weights[i] /= wnorm;
-  mymap->setWeights( weights );
+  for(unsigned i=0;i<weights.size();++i) myframes[i]->setWeight( weights[i]/wnorm );
 
   // Finish the setup of the mapping object
   // Get the arguments and atoms that are required
   std::vector<AtomNumber> atoms; std::vector<std::string> args;
-  mymap->getAtomAndArgumentRequirements( atoms, args );
+  for(unsigned i=0;i<myframes.size();++i){ myframes[i]->getAtomRequests( atoms, skipchecks ); myframes[i]->getArgumentRequests( args, skipchecks ); }
   requestAtoms( atoms ); std::vector<Value*> req_args;
   interpretArgumentList( args, req_args ); requestArguments( req_args );
-  // Duplicate all frames (duplicates are used by sketch-map)
-  // mymap->duplicateFrameList(); 
-  // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 );
-  // plumed_assert( !mymap->mappingNeedsSetup() );
-  // Resize all derivative arrays
-  // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
   // Resize forces array
   if( getNumberOfAtoms()>0 ){ 
      forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
@@ -125,31 +121,7 @@ void Mapping::turnOnDerivatives(){
 } 
 
 Mapping::~Mapping(){
-  delete mymap;
-}
-
-// void Mapping::prepare(){
-//   if( mymap->mappingNeedsSetup() ){
-//       // Get the arguments and atoms that are required
-//       std::vector<AtomNumber> atoms; std::vector<std::string> args;
-//       mymap->getAtomAndArgumentRequirements( atoms, args );
-//       requestAtoms( atoms ); std::vector<Value*> req_args; 
-//       interpretArgumentList( args, req_args ); requestArguments( req_args );
-//       // Duplicate all frames (duplicates are used by sketch-map)
-//       // mymap->duplicateFrameList();
-//       // Get the number of frames in the path
-//       unsigned nfram=getNumberOfReferencePoints();
-//       // fframes.resize( 2*nfram, 0.0 ); dfframes.resize( 2*nfram, 0.0 ); 
-//       plumed_assert( !mymap->mappingNeedsSetup() );
-//       // Resize all derivative arrays
-//       // mymap->setNumberOfAtomsAndArguments( atoms.size(), args.size() );
-//       // Resize forces array
-//       forcesToApply.resize( 3*getNumberOfAtoms() + 9 + getNumberOfArguments() );
-//   }
-// }
-
-unsigned Mapping::getPropertyIndex( const std::string& name ) const {
-  return mymap->getPropertyIndex( name );
+  for(unsigned i=0;i<myframes.size();++i) delete myframes[i];
 }
 
 double Mapping::getLambda(){
@@ -167,18 +139,19 @@ std::string Mapping::getArgumentName( unsigned& iarg ){
 } 
 
 void Mapping::finishPackSetup( const unsigned& ifunc, ReferenceValuePack& mypack ) const {
-   ReferenceConfiguration* myref=mymap->getFrame(ifunc); mypack.setValIndex(0);
-   unsigned nargs2=myref->getNumberOfReferenceArguments(); unsigned nat2=myref->getNumberOfReferencePositions();
+   mypack.setValIndex(0);
+   unsigned nargs2=myframes[ifunc]->getNumberOfReferenceArguments(); 
+   unsigned nat2=myframes[ifunc]->getNumberOfReferencePositions();
    if( mypack.getNumberOfAtoms()!=nat2 || mypack.getNumberOfArguments()!=nargs2 ) mypack.resize( nargs2, nat2 );
    if( nat2>0 ){
-      ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myref ); plumed_dbg_assert( myat2 );
+      ReferenceAtoms* myat2=dynamic_cast<ReferenceAtoms*>( myframes[ifunc] ); plumed_dbg_assert( myat2 );
       for(unsigned i=0;i<nat2;++i) mypack.setAtomIndex( i, myat2->getAtomIndex(i) );
    }
 }
 
 double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValuePack& myder, const bool& squared ) const {
   // Calculate the distance
-  double dd = mymap->calcDistanceFromConfiguration( ifunc, getPositions(), getPbc(), getArguments(), myder, squared );     
+  double dd = myframes[ifunc]->calculate( getPositions(), getPbc(), getArguments(), myder, squared );     
   // Transform distance by whatever
   double df, ff=transformHD( dd, df ); myder.scaleAllDerivatives( df );
   // And the virial
@@ -191,7 +164,7 @@ double Mapping::calculateDistanceFunction( const unsigned& ifunc, ReferenceValue
 }
 
 ReferenceConfiguration* Mapping::getReferenceConfiguration( const unsigned& ifunc ){
-  return mymap->getFrame( ifunc );
+  return myframes[ifunc]; 
 }
 
 void Mapping::calculateNumericalDerivatives( ActionWithValue* a ){

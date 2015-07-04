@@ -147,6 +147,8 @@ public:
   unsigned getNumberOfProperties() const ;
 /// Get the inum th property value
   double getPropertyValue( const unsigned& inum ) const ;
+/// Get the property with name myname
+  double getPropertyValue( const std::string& myname ) const ;
 /// Get the name of the inum th property value
   std::string getPropertyName( const unsigned& inum ) const ;
 };

@@ -56,6 +56,28 @@ void PDB::setArgumentValue( const std::string& argname, const double& val ){
   plumed_assert( replaced ); 
 }
 
+bool PDB::hasRequiredProperties( const std::vector<std::string>& inproperties ){
+  bool hasprop=false;
+  for(unsigned i=0;i<remark.size();++i){
+      if( remark[i].find("PROPERTIES=")!=std::string::npos){ hasprop=true; break; }
+  }
+  if( !hasprop ){
+      std::string mypropstr="PROPERTIES=" + inproperties[0];
+      for(unsigned i=1;i<inproperties.size();++i) mypropstr += "," + inproperties[i];
+      remark.push_back( mypropstr );
+  }
+  // Now check that all required properties are there
+  for(unsigned i=0;i<inproperties.size();++i){
+      hasprop=false;
+      for(unsigned j=0;j<remark.size();++j){ 
+          printf("SEARCHING FOR %s FOUND %s \n",inproperties[i].c_str(),remark[i].c_str() );
+          if( remark[i].find(inproperties[i]+"=")!=std::string::npos){ hasprop=true; break; }
+      }
+      if( !hasprop ) return false;  
+  }
+  return true;
+}
+
 void PDB::addBlockEnd( const unsigned& end ){
   block_ends.push_back( end );
 }

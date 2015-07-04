@@ -98,6 +98,8 @@ public:
 /// Return the atom named aname from residue number resnum and chain.
 /// Chain=="*" matches any chain and makes it equivalent to getNamedAtomFromResidue.
   AtomNumber getNamedAtomFromResidueAndChain( const std::string& aname, const unsigned& resnum, const std::string& chain ) const;
+/// Check if the properties that are required are in this pdb this is used in PLMD::mapping::Mapping
+  bool hasRequiredProperties( const std::vector<std::string>& inproperties );
 /// This is used in PLMD::analysis::AnalysisWithDataCollection to add the sizes of the domains for PLMD::MultiRMSD
   void addBlockEnd( const unsigned& end );
 /// This is used in PLMD::analysis::AnalysisWithDataCollection to add the names of the arguments 
