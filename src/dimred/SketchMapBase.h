@@ -37,6 +37,8 @@ private:
   SketchMapBase* smapbase;
 /// Switching functions for low and high dimensional space 
   SwitchingFunction lowdf, highdf;
+/// This holds the target distances and target transformed distances
+  Matrix<double> distances, transformed;
 /// This is used within calculate stress to hold the target distances and the 
 /// target values for the high dimensional switching function
   std::vector<double> dtargets, ftargets;

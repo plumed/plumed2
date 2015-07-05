@@ -73,12 +73,13 @@ smapbase(NULL)
 }
 
 void SketchMapBase::calculateProjections( const Matrix<double>& targets, Matrix<double>& projections ){
-  // These hold data so that we can do stress calculations
-  dtargets.resize( targets.nrows() ); ftargets.resize( targets.nrows() );
-
-  // Matrices for storing input data
-  Matrix<double> transformed( targets.nrows(), targets.ncols() );
-  Matrix<double> distances( targets.nrows(), targets.ncols() ); 
+  if( dtargets.size()!=targets.nrows() ){
+      // These hold data so that we can do stress calculations
+      dtargets.resize( targets.nrows() ); ftargets.resize( targets.nrows() );
+      // Matrices for storing input data
+      transformed.resize( targets.nrows(), targets.ncols() );
+      distances.resize( targets.nrows(), targets.ncols() ); 
+  }
 
   // Transform the high dimensional distances
   double df; distances=0.; transformed=0.;
