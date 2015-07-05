@@ -120,6 +120,7 @@ LocalAverage::LocalAverage(const ActionOptions& ao):
 Action(ao),
 MultiColvarFunction(ao)
 {
+  if( getNumberOfBaseMultiColvars()>1 ) error("local average with more than one base colvar makes no sense");
   // Read in the switching function
   std::string sw, errors; parse("SWITCH",sw);
   if(sw.length()>0){
