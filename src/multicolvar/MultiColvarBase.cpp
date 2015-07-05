@@ -121,7 +121,8 @@ void MultiColvarBase::turnOnDerivatives(){
 
 void MultiColvarBase::setLinkCellCutoff( const double& lcut ){
   plumed_assert( usespecies || ablocks.size()<4 );
-  linkcells.setCutoff( lcut );
+  if( !linkcells.enabled() ) linkcells.setCutoff( lcut );
+  else if( lcut>linkcells.getCutoff() )  linkcells.setCutoff( lcut );
 }
 
 void MultiColvarBase::setupLinkCells(){

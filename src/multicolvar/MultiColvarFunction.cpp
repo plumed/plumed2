@@ -104,7 +104,7 @@ void MultiColvarFunction::buildSymmetryFunctionLists(){
 //      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( false, 0.0 ); 
 //  }
 
-  usespecies=true; ablocks.resize( 1 );
+  ignorepos=false; usespecies=true; ablocks.resize( 1 );
   for(unsigned i=0;i<mybasemulticolvars[0]->getFullNumberOfTasks();++i) addTaskToList( i );
 
   unsigned ntotal=0;
@@ -124,7 +124,7 @@ void MultiColvarFunction::buildSymmetryFunctionLists(){
 }
 
 void MultiColvarFunction::buildSets(){
-  nblock = mybasemulticolvars[0]->getFullNumberOfTasks();
+  ignorepos=true; nblock = mybasemulticolvars[0]->getFullNumberOfTasks();
   for(unsigned i=0;i<mybasemulticolvars.size();++i){
      if( mybasemulticolvars[i]->getFullNumberOfTasks()!=nblock ){
           error("mismatch between numbers of tasks in various base multicolvars");
@@ -159,7 +159,7 @@ void MultiColvarFunction::buildAtomListWithPairs( const bool& allow_intra_group 
 //      for(unsigned i=0;i<mybasemulticolvars.size();++i) mybasemulticolvars[i]->buildDataStashes( false, 0.0 );
 //  }
   
-  usespecies=false; ablocks.resize(2); // current_atoms.resize( 2 );
+  ignorepos=false; usespecies=false; ablocks.resize(2); // current_atoms.resize( 2 );
   if( !allow_intra_group && mybasemulticolvars.size()==2 ){
      nblock = mybasemulticolvars[0]->getFullNumberOfTasks();
      if( mybasemulticolvars[1]->getFullNumberOfTasks()>nblock ) nblock = mybasemulticolvars[1]->getFullNumberOfTasks();
@@ -208,7 +208,35 @@ void MultiColvarFunction::calculate(){
      if( bb ) changeBox( (bb->getPntrToMultiColvar())->getBox() ); 
      else changeBox( mybasemulticolvars[maxb]->getBox() );
   }
-  setupLinkCells(); 
+  // This updates the task list based on what is inactive in the underlying multicolvars
+  // This is used by PAMM, which cares only about the values of the multicolvars and their
+  // weights.  It doesn't use the central atom positions at all
+  if( ignorepos ){
+     std::vector<unsigned>  active_tasks( getFullNumberOfTasks(), 1 ); 
+     if( ablocks.size()<4 ){
+        std::vector<unsigned> atoms( ablocks.size() );
+        for(unsigned i=0;i<getFullNumberOfTasks();++i){
+             decodeIndexToAtoms( getTaskCode(i), atoms );
+             for(unsigned j=0;j<atoms.size();++j){
+                 if( !isCurrentlyActive( j, atoms[j] ) ) active_tasks[i]=0; 
+             }
+        }
+     } else {
+        std::vector<unsigned> atoms( ablocks.size() );
+        for(unsigned i=0;i<getFullNumberOfTasks();++i){
+            unsigned mytask = getTaskCode(i);
+            for(unsigned j=0;j<atoms.size();++j){
+                if( !isCurrentlyActive( j, ablocks[mytask][j] ) ) active_tasks[i]=0;
+            }
+        }
+     }
+     deactivateAllTasks(); 
+     activateTheseTasks( active_tasks );
+     contributorsAreUnlocked=false; 
+  // This updates the task list based on link cells on central atom positions
+  } else {
+     setupLinkCells(); 
+  }
   // And run all tasks
   runAllTasks();
 }

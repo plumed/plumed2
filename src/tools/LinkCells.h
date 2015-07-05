@@ -69,6 +69,8 @@ public:
   void buildCellLists( const std::vector<Vector>& pos, const std::vector<unsigned>& indices, const Pbc& pbc );
 /// Find a list of relevant atoms
   void retrieveNeighboringAtoms( const Vector& pos, unsigned& natomsper, std::vector<unsigned>& atoms ) const ; 
+/// Return the value of the cutoff
+  double getCutoff() const ;
 };
 
 inline
