@@ -59,7 +59,7 @@ class Flush:
   public ActionPilot
 {
 public:
-  Flush(const ActionOptions&ao):
+  explicit Flush(const ActionOptions&ao):
     Action(ao),
     ActionPilot(ao)
   {

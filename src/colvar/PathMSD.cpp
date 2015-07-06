@@ -63,7 +63,7 @@ is shared, as well as most input options.
    
 class PathMSD : public PathMSDBase {
 public:
-  PathMSD(const ActionOptions&);
+  explicit PathMSD(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
 };
 

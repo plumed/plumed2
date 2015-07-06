@@ -63,7 +63,7 @@ class Units :
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Units(const ActionOptions&ao);
+  explicit Units(const ActionOptions&ao);
 };
 
 PLUMED_REGISTER_ACTION(Units,"UNITS")

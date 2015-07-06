@@ -69,7 +69,7 @@ private:
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  CoordinationNumbers(const ActionOptions&);
+  explicit CoordinationNumbers(const ActionOptions&);
 // active methods:
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ; 
 /// Returns the number of coordinates of the field

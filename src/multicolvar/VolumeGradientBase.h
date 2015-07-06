@@ -47,7 +47,7 @@ protected:
   void setNumberInVolume( const unsigned& , const unsigned& , const double& , const Vector& , const Tensor& , const std::vector<Vector>& , MultiValue& ) const ;
 public:
   static void registerKeywords( Keywords& keys );
-  VolumeGradientBase(const ActionOptions&);
+  explicit VolumeGradientBase(const ActionOptions&);
 /// Do jobs required before tasks are undertaken
   void doJobsRequiredBeforeTaskList();
 /// Actually do what we are asked

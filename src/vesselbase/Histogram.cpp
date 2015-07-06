@@ -30,7 +30,7 @@ class Histogram : public ShortcutVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Histogram( const VesselOptions& da );
+  explicit Histogram( const VesselOptions& da );
 };
 
 PLUMED_REGISTER_VESSEL(Histogram,"HISTOGRAM")

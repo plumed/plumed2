@@ -129,7 +129,7 @@ private:
   bool serial;
   bool svd;
 public:
-  RDC(const ActionOptions&);
+  explicit RDC(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
   virtual void calculate();
 };

@@ -29,7 +29,7 @@ class Lowest : public OrderingVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Lowest( const VesselOptions& da );
+  explicit Lowest( const VesselOptions& da );
   std::string value_descriptor();
   bool compare( const double& , const double& );
 };

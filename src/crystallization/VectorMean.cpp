@@ -32,7 +32,7 @@ class VectorMean : public vesselbase::FunctionVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  VectorMean( const vesselbase::VesselOptions& da );
+  explicit VectorMean( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   void resize();
   bool calculate( const unsigned& current, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_list ) const ;

@@ -40,7 +40,7 @@ protected:
   void setAngularMomentum( const unsigned& ang );
 public:
   static void registerKeywords( Keywords& keys );
-  Steinhardt( const ActionOptions& ao );
+  explicit Steinhardt( const ActionOptions& ao );
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
   double deriv_poly( const unsigned&, const double&, double& ) const ;
 };

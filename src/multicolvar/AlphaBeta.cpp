@@ -97,7 +97,7 @@ private:
   std::vector<double> target;
 public:
   static void registerKeywords( Keywords& keys );
-  AlphaBeta(const ActionOptions&);
+  explicit AlphaBeta(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
 };

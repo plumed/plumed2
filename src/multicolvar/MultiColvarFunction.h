@@ -73,7 +73,7 @@ protected:
 /// Return the base multicolvar index that this colvar is a part of
   unsigned getBaseColvarNumber( const unsigned& iatom ) const ;
 public:
-  MultiColvarFunction(const ActionOptions&);
+  explicit MultiColvarFunction(const ActionOptions&);
   static void registerKeywords( Keywords& keys );
 /// Update the atoms that are active
   virtual void updateActiveAtoms( AtomValuePack& myatoms ) const ;

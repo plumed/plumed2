@@ -81,7 +81,7 @@ is shared, as well as most input options.
    
 class PropertyMap : public PathMSDBase {
 public:
-  PropertyMap(const ActionOptions&);
+  explicit PropertyMap(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
 };
 

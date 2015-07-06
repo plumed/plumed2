@@ -55,7 +55,7 @@ on the position) is computed on the geometric center of the group.
 class Dipole : public Colvar {
   vector<AtomNumber> ga_lista;
 public:
-  Dipole(const ActionOptions&);
+  explicit Dipole(const ActionOptions&);
   virtual void calculate();
   static void registerKeywords(Keywords& keys);
 };

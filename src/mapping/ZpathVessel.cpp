@@ -32,7 +32,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  ZpathVessel( const vesselbase::VesselOptions& da );
+  explicit ZpathVessel( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
   double finalTransform( const double& val, double& dv );

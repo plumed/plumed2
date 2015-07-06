@@ -72,7 +72,7 @@ class Position : public Colvar {
 
 public:
   static void registerKeywords( Keywords& keys );
-  Position(const ActionOptions&);
+  explicit Position(const ActionOptions&);
 // active methods:
   virtual void calculate();
 };

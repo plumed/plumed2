@@ -94,7 +94,7 @@ class Coordination : public CoordinationBase{
   SwitchingFunction switchingFunction;
 
 public:
-  Coordination(const ActionOptions&);
+  explicit Coordination(const ActionOptions&);
 // active methods:
   static void registerKeywords( Keywords& keys );
   virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;

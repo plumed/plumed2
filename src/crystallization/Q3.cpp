@@ -171,7 +171,7 @@ namespace crystallization {
 class Q3 : public Steinhardt {
 public:
   static void registerKeywords( Keywords& keys );
-  Q3( const ActionOptions& ao );
+  explicit Q3( const ActionOptions& ao );
 };
 
 PLUMED_REGISTER_ACTION(Q3,"Q3")

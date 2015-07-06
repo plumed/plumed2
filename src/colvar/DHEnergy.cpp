@@ -72,7 +72,7 @@ class DHEnergy : public CoordinationBase{
   double epsilon;
 
 public:
-  DHEnergy(const ActionOptions&);
+  explicit DHEnergy(const ActionOptions&);
 // active methods:
   static void registerKeywords( Keywords& keys );
   virtual double pairing(double distance,double&dfunc,unsigned i,unsigned j)const;

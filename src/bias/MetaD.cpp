@@ -284,7 +284,7 @@ private:
   std::string fmt;
 
 public:
-  MetaD(const ActionOptions&);
+  explicit MetaD(const ActionOptions&);
   ~MetaD();
   void calculate();
   void update();

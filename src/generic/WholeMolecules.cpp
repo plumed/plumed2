@@ -109,7 +109,7 @@ class WholeMolecules:
 {
   vector<vector<AtomNumber> > groups;
 public:
-  WholeMolecules(const ActionOptions&ao);
+  explicit WholeMolecules(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply(){}

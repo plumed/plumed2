@@ -43,7 +43,7 @@ friend class ReferenceConfiguration;
 private:
   std::string tt;
 public:
-  ReferenceConfigurationOptions( const std::string& type );
+  explicit ReferenceConfigurationOptions( const std::string& type );
   bool usingFastOption() const ;
   std::string getMultiRMSDType() const ;
 };
@@ -90,7 +90,7 @@ protected:
 /// Clear the derivatives 
 //  void clearDerivatives();
 public:
-  ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
+  explicit ReferenceConfiguration( const ReferenceConfigurationOptions& ro );
 /// Destructor
   virtual ~ReferenceConfiguration();
 /// Return the name of this metric

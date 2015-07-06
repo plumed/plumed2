@@ -37,7 +37,7 @@ class CoordinationBase : public Colvar {
   bool firsttime;
   
 public:
-  CoordinationBase(const ActionOptions&);
+  explicit CoordinationBase(const ActionOptions&);
   ~CoordinationBase();
 // active methods:
   virtual void calculate();

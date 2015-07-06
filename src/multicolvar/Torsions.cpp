@@ -74,7 +74,7 @@ Similarly \@psi-4 tells plumed that you want to calculate the \f$\psi\f$ angle o
 class Torsions : public MultiColvar {
 public:
   static void registerKeywords( Keywords& keys );
-  Torsions(const ActionOptions&);
+  explicit Torsions(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return true; }
   void retrieveDomain( std::string& min, std::string& max ){ min="-pi"; max="pi"; }

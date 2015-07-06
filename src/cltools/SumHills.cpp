@@ -189,7 +189,7 @@ that gives  myhisto_0.dat,  myhisto_1.dat,  myhisto_3.dat etc..
 class CLToolSumHills : public CLTool {
 public:
   static void registerKeywords( Keywords& keys );
-  CLToolSumHills(const CLToolOptions& co );
+  explicit CLToolSumHills(const CLToolOptions& co );
   int main(FILE* in,FILE*out,Communicator& pc);
   string description()const;
 /// find a list of variables present, if they are periodic and which is the period

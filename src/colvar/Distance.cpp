@@ -118,7 +118,7 @@ class Distance : public Colvar {
 
 public:
   static void registerKeywords( Keywords& keys );
-  Distance(const ActionOptions&);
+  explicit Distance(const ActionOptions&);
 // active methods:
   virtual void calculate();
 };

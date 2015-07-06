@@ -138,7 +138,7 @@ public:
 
 // virtual functions:
 
-  ActionAtomistic(const ActionOptions&ao);
+  explicit ActionAtomistic(const ActionOptions&ao);
   ~ActionAtomistic();
 
   static void registerKeywords( Keywords& keys );

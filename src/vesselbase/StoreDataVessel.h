@@ -80,7 +80,7 @@ protected:
   void setLocalDerivative( const unsigned& ibuf, const double& val );
 public:
   static void registerKeywords( Keywords& keys );
-  StoreDataVessel( const VesselOptions& );
+  explicit StoreDataVessel( const VesselOptions& );
 /// Get the number of values that have been stored
   unsigned getNumberOfStoredValues() const ;
 /// Set a hard cutoff on the weight of an element

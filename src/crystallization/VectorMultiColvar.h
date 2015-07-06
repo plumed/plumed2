@@ -48,7 +48,7 @@ protected:
   void addForcesOnAtoms( const std::vector<double>& inforces );
 public:
   static void registerKeywords( Keywords& keys );
-  VectorMultiColvar(const ActionOptions&);
+  explicit VectorMultiColvar(const ActionOptions&);
   ~VectorMultiColvar(){}
 /// The norm of a vector is not periodic
   virtual bool isPeriodic(){ return false; }

@@ -203,7 +203,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
         "Commands:\n";
     fprintf(out,"%s",msg.c_str());
     for(unsigned j=0;j<availableCxx.size();++j){
-      CLTool *cl=cltoolRegister().create(availableCxx[j]);
+      CLTool *cl=cltoolRegister().create(CLToolOptions(availableCxx[j]));
       plumed_assert(cl);
       string manual=availableCxx[j]+" : "+cl->description();
       delete cl;
@@ -229,7 +229,7 @@ int CLToolMain::run(int argc, char **argv,FILE*in,FILE*out,Communicator& pc){
   string command(argv[i]);
 
   if(find(availableCxx.begin(),availableCxx.end(),command)!=availableCxx.end()){
-    CLTool *cl=cltoolRegister().create(command);
+    CLTool *cl=cltoolRegister().create(CLToolOptions(command));
     plumed_assert(cl); 
     // Read the command line options (returns false if we are just printing help)
     if( !cl->readInput( argc-i,&argv[i],in,out ) ){ delete cl; return 0; } 

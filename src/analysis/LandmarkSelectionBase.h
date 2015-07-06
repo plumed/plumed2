@@ -71,7 +71,7 @@ protected:
 /// Transfer frame i in the underlying action to the object we are going to analyze
   void selectFrame( const unsigned& , MultiReferenceBase* );
 public:
-  LandmarkSelectionBase( const LandmarkSelectionOptions& lo );
+  explicit LandmarkSelectionBase( const LandmarkSelectionOptions& lo );
   virtual ~LandmarkSelectionBase();
 /// Check everything was read in
   void checkRead() const ;

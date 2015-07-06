@@ -75,7 +75,7 @@ class Piecewise :
 {
   std::vector<std::pair<double,double> > points;
 public:
-  Piecewise(const ActionOptions&);
+  explicit Piecewise(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };
