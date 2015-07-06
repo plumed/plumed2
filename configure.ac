@@ -224,7 +224,7 @@ save_LIBS="$LIBS"
 blas_found=
 lapack_found=
 
-# if external lapack can only work with external blas
+# external lapack can only work with external blas
 # thus, if external blas are disabled also external lapack should be disabled
 if test "$external_blas" == false && test "$external_lapack" == true ; then
   AC_MSG_NOTICE([Internal blas can only be used with internal lapack])
@@ -250,7 +250,7 @@ AC_DEFINE([__PLUMED_INTERNAL_BLAS])
 AC_DEFINE([__PLUMED_INTERNAL_LAPACK])
 fi
 
-# if found, also look for external blas
+# if found, also look for external lapack
 if test -n "$blas_found" ; then
 
 save_LIBS="$LIBS"
