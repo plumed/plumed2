@@ -686,6 +686,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_modules
 enable_debug
 enable_basic_warnings
 enable_fussy
@@ -1341,6 +1342,8 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-modules        all/none/reset or comma separated list such as
+                          +crystallization,-bias default: reset
   --enable-debug          enable debugging, default: no
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
@@ -2320,6 +2323,62 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 ##################################################################
+
+# Check whether --enable-modules was given.
+if test "${enable_modules+set}" = set; then :
+  enableval=$enable_modules;
+   rm -fr src/*.on src/*.off
+   if test "${enableval}" == yes ; then
+     enableval=reset
+   fi
+   if test "${enableval}" == no ; then
+     enableval=none
+   fi
+   for modules_mod in `echo "${enableval}" | sed 's/,/ /g'`
+   do
+     case "$modules_mod" in
+     (none)
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling all optional modules" >&5
+$as_echo "$as_me: Disabling all optional modules" >&6;}
+       touch $(grep default-on src/*/module.type | sed "s|/module.type:.*|.off|") ;;
+     (all)
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling all optional modules" >&5
+$as_echo "$as_me: Enabling all optional modules" >&6;}
+       touch $(grep default-off src/*/module.type | sed "s|/module.type:.*|.on|") ;;
+     (reset)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: Resetting modules to default" >&5
+$as_echo "$as_me: Resetting modules to default" >&6;}
+        rm -f src/*.on src/*.off ;;
+     (-*)
+       modules_mod=`echo "${modules_mod}" | sed "s|-||"`
+       if test ! -f src/$modules_mod/module.type ; then
+         as_fn_error $? "trying to remove module $modules_mod which does not exist" "$LINENO" 5
+       fi
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Disabling module ${modules_mod}" >&5
+$as_echo "$as_me: Disabling module ${modules_mod}" >&6;}
+       touch src/$modules_mod.off ;;
+     (+*)
+       modules_mod=`echo "${modules_mod}" | sed "s|+||"`
+       if test ! -f src/$modules_mod/module.type ; then
+         as_fn_error $? "trying to add module $modules_mod which does not exist" "$LINENO" 5
+       fi
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
+$as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
+       touch src/$modules_mod.on ;;
+     (*)
+       if test ! -f src/$modules_mod/module.type ; then
+         as_fn_error $? "trying to add module $modules_mod which does not exist" "$LINENO" 5
+       fi
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling module ${modules_mod}" >&5
+$as_echo "$as_me: Enabling module ${modules_mod}" >&6;}
+       touch src/$modules_mod.on ;;
+     esac
+   done
+
+
+fi
+
+
 
 # set enable flags for ./configure
 
