@@ -130,7 +130,7 @@ void ActionWithValue::addComponent( const std::string& name ){
 //  plumed_massert( keywords.outputComponentExists(name,true), "a description of component " + name + " has not been added to the manual");
   if( !keywords.outputComponentExists(name,true) ){
      warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
-             "registerKeywords as described in the developer docs. In version 2.2 this warning will turn into an error i.e. component registration will be compulsory"); 
+             "registerKeywords as described in the developer docs."); 
   }
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0;i<values.size();++i){
@@ -146,7 +146,7 @@ void ActionWithValue::addComponentWithDerivatives( const std::string& name ){
 //  plumed_massert( keywords.outputComponentExists(name,true), "a description of component " + name + " has not been added to the manual");
   if( !keywords.outputComponentExists(name,true) ){ 
      warning("a description of component " + name + " has not been added to the manual. Components should be registered like keywords in "
-             "registerKeywords as described in the developer doc. In version 2.2 this warning will turn into an error i.e. component registration will be compulsory");
+             "registerKeywords as described in the developer doc.");
   }
   std::string thename; thename=getLabel() + "." + name;
   for(unsigned i=0;i<values.size();++i){
