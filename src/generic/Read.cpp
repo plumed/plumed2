@@ -74,7 +74,7 @@ private:
   std::vector<Value*> readvals;
 public:
   static void registerKeywords( Keywords& keys );
-  Read(const ActionOptions&);
+  explicit Read(const ActionOptions&);
   ~Read();
   void prepare();
   void apply(){}

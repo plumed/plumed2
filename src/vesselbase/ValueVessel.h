@@ -41,7 +41,7 @@ protected:
   void setOutputValue( const double& val );
 public:
   static void registerKeywords( Keywords& keys );
-  ValueVessel( const VesselOptions& da );
+  explicit ValueVessel( const VesselOptions& da );
   std::string description();
   virtual std::string value_descriptor()=0;
   bool applyForce( std::vector<double>& forces );

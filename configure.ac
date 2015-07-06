@@ -211,6 +211,13 @@ then
   PLUMED_CHECK_CXXFLAG([-Wold-style-cast])
 fi
 
+AC_MSG_CHECKING([whether $CXX supports explicit])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([ class A{explicit A(){}};])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no]) ;
+   AC_DEFINE([explicit],[])])
+
+
 #### Compulsory libraries ####
 # some of them might be made optional if we find that are not available in some system
 AC_MSG_NOTICE([Now we will check compulsory headers and libraries])

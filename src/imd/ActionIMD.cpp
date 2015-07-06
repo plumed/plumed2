@@ -84,7 +84,7 @@ public:
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();
-  IMD(const ActionOptions&);
+  explicit IMD(const ActionOptions&);
   ~IMD(){};
 };
 

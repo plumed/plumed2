@@ -30,7 +30,7 @@ class Mean : public FunctionVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Mean( const vesselbase::VesselOptions& da );
+  explicit Mean( const vesselbase::VesselOptions& da );
   std::string value_descriptor();
   double calcTransform( const double& val, double& dv ) const ;
 };

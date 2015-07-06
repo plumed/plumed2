@@ -63,7 +63,7 @@ protected:
   void addDerivativesOnMatrixElement( const unsigned& ielem, const unsigned& jrow, const double& df, Matrix<double>& der );
 public:
   static void registerKeywords( Keywords& keys );
-  AdjacencyMatrixAction(const ActionOptions&);
+  explicit AdjacencyMatrixAction(const ActionOptions&);
   double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   void calculateWeight( AtomValuePack& myatoms ) const ;
   void doJobsRequiredBeforeTaskList();

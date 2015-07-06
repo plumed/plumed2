@@ -49,7 +49,7 @@ class GREX:
   std::string buffer;
   int myreplica;
 public:
-  GREX(PlumedMain&);
+  explicit GREX(PlumedMain&);
   ~GREX();
   void cmd(const std::string&key,void*val=NULL);
   void calculate();

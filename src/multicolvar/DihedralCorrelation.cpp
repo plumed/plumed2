@@ -84,7 +84,7 @@ class DihedralCorrelation : public MultiColvar {
 private:
 public:
   static void registerKeywords( Keywords& keys );
-  DihedralCorrelation(const ActionOptions&);
+  explicit DihedralCorrelation(const ActionOptions&);
   virtual double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
   bool isPeriodic(){ return false; }
 };

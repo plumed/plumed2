@@ -59,7 +59,7 @@ public CLTool
 {
 public:
   static void registerKeywords( Keywords& keys );
-  Manual(const CLToolOptions& co );
+  explicit Manual(const CLToolOptions& co );
   int main(FILE* in, FILE*out,Communicator& pc);
   string description()const{
     return "print out a description of the keywords for an action in html";

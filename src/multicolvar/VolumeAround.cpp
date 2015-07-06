@@ -76,7 +76,7 @@ private:
   double zlow, zhigh;
 public:
   static void registerKeywords( Keywords& keys );
-  VolumeAround(const ActionOptions& ao);
+  explicit VolumeAround(const ActionOptions& ao);
   void setupRegions();
   double calculateNumberInside( const Vector& cpos, Vector& derivatives, Tensor& vir, std::vector<Vector>& refders ) const ;
 }; 

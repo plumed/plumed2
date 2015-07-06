@@ -104,7 +104,7 @@ static void registerKeywords( Keywords& keys ){
   keys.add("compulsory","wrapatoms","false","If true, atomic coordinates are written wrapped in minimal cell");
 }
 
-SimpleMD( const CLToolOptions& co ) :
+explicit SimpleMD( const CLToolOptions& co ) :
   CLTool(co),
   write_positions_first(true),
   write_statistics_first(true),

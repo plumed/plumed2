@@ -40,7 +40,7 @@ class ActionSet:
 {
   PlumedMain& plumed;
 public:
-  ActionSet(PlumedMain&p);
+  explicit ActionSet(PlumedMain&p);
   ~ActionSet();
 /// Clear and deletes all the included pointers.
   void clearDelete();

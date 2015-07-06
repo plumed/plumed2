@@ -46,7 +46,7 @@ Calculate distances in the plane perpendicular to an axis
 class InPlaneDistances : public MultiColvar {
 public:
   static void registerKeywords( Keywords& keys );
-  InPlaneDistances(const ActionOptions&);
+  explicit InPlaneDistances(const ActionOptions&);
 // active methods:
   virtual double compute(const unsigned& tindex, AtomValuePack& myatoms ) const ; 
   bool isPeriodic(){ return false; }

@@ -129,7 +129,7 @@ class ExtendedLagrangian : public Bias{
   double kbt;
   Random rand;
 public:
-  ExtendedLagrangian(const ActionOptions&);
+  explicit ExtendedLagrangian(const ActionOptions&);
   void calculate();
   void update();
   void turnOnDerivatives();

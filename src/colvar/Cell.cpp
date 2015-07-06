@@ -53,7 +53,7 @@ class Cell : public Colvar {
   Value* components[3][3];
 
 public:
-  Cell(const ActionOptions&);
+  explicit Cell(const ActionOptions&);
 // active methods:
   virtual void calculate();
 /// Register all the keywords for this action

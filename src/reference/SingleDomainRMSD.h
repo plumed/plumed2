@@ -32,7 +32,7 @@ class SingleDomainRMSD : public ReferenceAtoms {
 protected:
   void readReference( const PDB& pdb );
 public:
-  SingleDomainRMSD( const ReferenceConfigurationOptions& ro );
+  explicit SingleDomainRMSD( const ReferenceConfigurationOptions& ro );
 /// Set the reference structure
   virtual void setReferenceAtoms( const std::vector<Vector>& conf, const std::vector<double>& align_in, const std::vector<double>& displace_in );
 /// Calculate

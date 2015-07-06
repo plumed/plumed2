@@ -134,7 +134,7 @@ protected:
   std::string getOutputFormat() const ;
 public:
   static void registerKeywords( Keywords& keys );
-  Analysis(const ActionOptions&);
+  explicit Analysis(const ActionOptions&);
   ~Analysis();
   void prepare();
   void calculate();

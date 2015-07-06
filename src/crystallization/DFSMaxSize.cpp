@@ -79,7 +79,7 @@ public:
 /// Create manual
   static void registerKeywords( Keywords& keys );
 /// Constructor
-  DFSMaxCluster(const ActionOptions&);
+  explicit DFSMaxCluster(const ActionOptions&);
 ///
   void doCalculationOnCluster();
 };

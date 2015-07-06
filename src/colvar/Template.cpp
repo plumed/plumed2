@@ -47,7 +47,7 @@ class Template : public Colvar {
   bool pbc;
 
 public:
-  Template(const ActionOptions&);
+  explicit Template(const ActionOptions&);
 // active methods:
   virtual void calculate();
   static void registerKeywords(Keywords& keys);

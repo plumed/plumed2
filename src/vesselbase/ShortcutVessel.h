@@ -36,7 +36,7 @@ protected:
   void addVessel( const std::string& name, const std::string& intput );  
 public:
   static void registerKeywords( Keywords& keys );
-  ShortcutVessel( const VesselOptions& );
+  explicit ShortcutVessel( const VesselOptions& );
   std::string description(){ return ""; }
   void resize(){ plumed_error(); }
   bool calculate( const unsigned& taskCode, MultiValue& myvals, std::vector<double>& buffer, std::vector<unsigned>& der_index ) const { plumed_error(); }

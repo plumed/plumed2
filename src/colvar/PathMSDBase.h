@@ -75,7 +75,7 @@ protected:
   std::vector< std::vector<double> > indexvec; // use double to allow isomaps
   unsigned nframes;
 public:
-  PathMSDBase(const ActionOptions&);
+  explicit PathMSDBase(const ActionOptions&);
 // active methods:
   virtual void calculate();
 //  virtual void prepare();

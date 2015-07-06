@@ -46,7 +46,7 @@ public ActionWithArguments
   OFile of;
 public:
   void calculate(){}
-  DumpProjections(const ActionOptions&);
+  explicit DumpProjections(const ActionOptions&);
   static void registerKeywords(Keywords& keys);
   void apply(){}
   void update();

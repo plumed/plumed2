@@ -72,7 +72,7 @@ protected:
   void setAtomsFromStrands( const unsigned& atom1, const unsigned& atom2 );
 public:
   static void registerKeywords( Keywords& keys );
-  SecondaryStructureRMSD(const ActionOptions&);
+  explicit SecondaryStructureRMSD(const ActionOptions&);
   virtual ~SecondaryStructureRMSD();
   unsigned getNumberOfFunctionsInAction();
   unsigned getNumberOfDerivatives();

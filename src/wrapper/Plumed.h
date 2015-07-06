@@ -365,6 +365,9 @@ public:
             will not finalize the corresponding plumed structure.
             It is expected that the FORTRAN code calls plumed_c_finalize for it
 */
+// to have maximum portability of this file I do not use the explicit keyword here
+// I thus add a suppress command for cppcheck
+// cppcheck-suppress noExplicitConstructor
   Plumed(const char*c);
 /**
    Clone a Plumed object from a C plumed structure
@@ -373,7 +376,10 @@ public:
  \attention The Plumed object created in this manner
             will not finalize the corresponding plumed structure.
             It is expected that the C code calls plumed_finalize for it
-*/
+*/ 
+// to have maximum portability of this file I do not use the explicit keyword here
+// I thus add a suppress command for cppcheck
+// cppcheck-suppress noExplicitConstructor
   Plumed(plumed p);
 private:
 /** Copy constructor is disabled (private and unimplemented)

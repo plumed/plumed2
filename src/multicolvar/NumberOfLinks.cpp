@@ -73,7 +73,7 @@ private:
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  NumberOfLinks(const ActionOptions&);
+  explicit NumberOfLinks(const ActionOptions&);
 /// Do the stuff with the switching functions
   void calculateWeight( AtomValuePack& myatoms ) const ;
 /// Actually do the calculation

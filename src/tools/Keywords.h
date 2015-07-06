@@ -38,7 +38,7 @@ class Keywords{
   class KeyType{
   public:
     enum {hidden,compulsory,flag,optional,atoms} style;
-    KeyType( const std::string& type );
+    explicit KeyType( const std::string& type );
     void setStyle( const std::string& type );
     bool isCompulsory() const { return (style==compulsory); }
     bool isFlag() const { return (style==flag); }

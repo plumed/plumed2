@@ -90,7 +90,7 @@ protected:
 /// Decode indices if there are 2 or 3 atoms involved
   void decodeIndexToAtoms( const unsigned& taskCode, std::vector<unsigned>& atoms ) const ;
 public:
-  MultiColvarBase(const ActionOptions&);
+  explicit MultiColvarBase(const ActionOptions&);
   ~MultiColvarBase(){}
   static void registerKeywords( Keywords& keys );
 /// Turn on the derivatives 

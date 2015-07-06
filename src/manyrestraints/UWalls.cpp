@@ -68,7 +68,7 @@ private:
   double offset;
 public:
   static void registerKeywords( Keywords& keys );
-  UWalls( const ActionOptions& );
+  explicit UWalls( const ActionOptions& );
   double calcPotential( const double& val, double& df ) const ;
 };
 

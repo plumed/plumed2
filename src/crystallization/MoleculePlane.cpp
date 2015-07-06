@@ -40,7 +40,7 @@ class MoleculePlane : public VectorMultiColvar {
 private:
 public:
   static void registerKeywords( Keywords& keys );
-  MoleculePlane( const ActionOptions& ao );
+  explicit MoleculePlane( const ActionOptions& ao );
   void calculateVector( multicolvar::AtomValuePack& myatoms ) const ;
 };
 

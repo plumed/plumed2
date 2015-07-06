@@ -88,7 +88,7 @@ private:
   SwitchingFunction switchingFunction;
 public:
   static void registerKeywords( Keywords& keys );
-  LocalAverage(const ActionOptions&);
+  explicit LocalAverage(const ActionOptions&);
 /// We have to overwrite this here
   unsigned getNumberOfQuantities();
 /// Actually do the calculation

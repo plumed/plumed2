@@ -118,7 +118,7 @@ private:
   std::vector<Tensor> dbi, dcross, dperp;
 public:
   static void registerKeywords( Keywords& keys );
-  VolumeCavity(const ActionOptions& ao);
+  explicit VolumeCavity(const ActionOptions& ao);
   ~VolumeCavity();
   void setupRegions();
   void update();

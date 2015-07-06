@@ -89,7 +89,7 @@ class ABMD : public Bias{
   std::vector<int> seed;
   vector<Random> random;
 public:
-  ABMD(const ActionOptions&);
+  explicit ABMD(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };

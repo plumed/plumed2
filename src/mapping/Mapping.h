@@ -65,7 +65,7 @@ protected:
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& ifunc );
 public:
   static void registerKeywords( Keywords& keys );
-  Mapping(const ActionOptions&);
+  explicit Mapping(const ActionOptions&);
   ~Mapping();
 /// Overload the virtual functions that appear in both ActionAtomistic and ActionWithArguments
   void turnOnDerivatives();

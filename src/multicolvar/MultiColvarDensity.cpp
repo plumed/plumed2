@@ -70,7 +70,7 @@ class MultiColvarDensity :
   std::vector<double> bw;
   std::vector<unsigned> directions;
 public:
-  MultiColvarDensity(const ActionOptions&);
+  explicit MultiColvarDensity(const ActionOptions&);
   ~MultiColvarDensity();
   static void registerKeywords( Keywords& keys );
   void calculate(){}

@@ -48,7 +48,7 @@ protected:
   void setOutputForce(int i,double g);
 public:
   static void registerKeywords(Keywords&);
-  Bias(const ActionOptions&ao);
+  explicit Bias(const ActionOptions&ao);
   void apply();
   unsigned getNumberOfDerivatives();
   void turnOnDerivatives();

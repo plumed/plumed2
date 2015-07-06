@@ -96,7 +96,7 @@ class FitToTemplate:
   Vector center;
   Vector shift;
 public:
-  FitToTemplate(const ActionOptions&ao);
+  explicit FitToTemplate(const ActionOptions&ao);
   static void registerKeywords( Keywords& keys );
   void calculate();
   void apply();

@@ -30,7 +30,7 @@ public ReferenceAtoms,
 public ReferenceArguments
 {
 public:
-  Direction( const ReferenceConfigurationOptions& ro );
+  explicit Direction( const ReferenceConfigurationOptions& ro );
   void read( const PDB& );
   double calc( const std::vector<Vector>& pos, const Pbc& pbc, const std::vector<Value*>& vals, const std::vector<double>& args, 
                ReferenceValuePack& myder, const bool& squared ) const ;

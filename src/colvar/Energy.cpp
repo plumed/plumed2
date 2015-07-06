@@ -61,7 +61,7 @@ PRINT ARG=ene
 class Energy : public Colvar {
 
 public:
-  Energy(const ActionOptions&);
+  explicit Energy(const ActionOptions&);
 // active methods:
   void prepare();
   virtual void calculate();

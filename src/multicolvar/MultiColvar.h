@@ -58,7 +58,7 @@ protected:
 /// Add a collective variable
   void addColvar( const std::vector<unsigned>& newatoms );
 public:
-  MultiColvar(const ActionOptions&);
+  explicit MultiColvar(const ActionOptions&);
   ~MultiColvar(){}
   static void registerKeywords( Keywords& keys );
 /// Get the position of atom iatom

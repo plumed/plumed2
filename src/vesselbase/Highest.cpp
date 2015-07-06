@@ -29,7 +29,7 @@ class Highest : public OrderingVessel {
 public:
   static void registerKeywords( Keywords& keys );
   static void reserveKeyword( Keywords& keys );
-  Highest( const VesselOptions& da );
+  explicit Highest( const VesselOptions& da );
   std::string value_descriptor();
   bool compare( const double& , const double& );
 };

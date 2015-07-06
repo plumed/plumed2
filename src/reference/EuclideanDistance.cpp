@@ -26,7 +26,7 @@ namespace PLMD {
 
 class EuclideanDistance : public ArgumentOnlyDistance {
 public:
-  EuclideanDistance( const ReferenceConfigurationOptions& ro );
+  explicit EuclideanDistance( const ReferenceConfigurationOptions& ro );
   bool pcaIsEnabledForThisReference(){ return true; }
   void setupPCAStorage( ReferenceValuePack& mypack ){ mypack.switchOnPCAOption(); }
 };

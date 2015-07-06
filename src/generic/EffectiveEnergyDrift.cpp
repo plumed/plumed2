@@ -108,7 +108,7 @@ public ActionPilot{
   bool isFirstStep;
 
 public:
-  EffectiveEnergyDrift(const ActionOptions&);
+  explicit EffectiveEnergyDrift(const ActionOptions&);
   ~EffectiveEnergyDrift();
 
   static void registerKeywords( Keywords& keys );

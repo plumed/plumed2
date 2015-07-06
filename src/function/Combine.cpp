@@ -66,7 +66,7 @@ class Combine :
   std::vector<double> coefficients;
   std::vector<double> powers;
 public:
-  Combine(const ActionOptions&);
+  explicit Combine(const ActionOptions&);
   void calculate();
   static void registerKeywords(Keywords& keys);
 };

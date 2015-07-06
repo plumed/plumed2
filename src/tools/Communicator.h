@@ -69,27 +69,27 @@ class Communicator{
 /// Init from pointer and size
     template <typename T> Data(T*p,int s): pointer(p), size(s), type(getMPIType<T>()) {}
 /// Init from reference
-    template <typename T> Data(T&p): pointer(&p), size(1), type(getMPIType<T>()) {}
+    template <typename T> explicit Data(T&p): pointer(&p), size(1), type(getMPIType<T>()) {}
 /// Init from pointer to VectorGeneric
-   template <unsigned n> Data(VectorGeneric<n> *p,int s): pointer(p), size(n*s), type(getMPIType<double>()) {}
+   template <unsigned n> explicit Data(VectorGeneric<n> *p,int s): pointer(p), size(n*s), type(getMPIType<double>()) {}
 /// Init from reference to VectorGeneric
-   template <unsigned n> Data(VectorGeneric<n> &p): pointer(&p), size(n), type(getMPIType<double>()) {}
+   template <unsigned n> explicit Data(VectorGeneric<n> &p): pointer(&p), size(n), type(getMPIType<double>()) {}
 /// Init from pointer to TensorGeneric
-   template <unsigned n,unsigned m> Data(TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), type(getMPIType<double>()) {}
+   template <unsigned n,unsigned m> explicit Data(TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), type(getMPIType<double>()) {}
 /// Init from reference to TensorGeneric
-   template <unsigned n,unsigned m> Data(TensorGeneric<n,m> &p): pointer(&p), size(n*m), type(getMPIType<double>()) {}
+   template <unsigned n,unsigned m> explicit Data(TensorGeneric<n,m> &p): pointer(&p), size(n*m), type(getMPIType<double>()) {}
 /// Init from reference to std::vector
-    template <typename T> Data(std::vector<T>&v){
+    template <typename T> explicit Data(std::vector<T>&v){
       if(v.size()>0){ Data d(&v[0],v.size()); pointer=d.pointer; size=d.size; type=d.type; }
       else { pointer=NULL; size=0; }
     }
 /// Init from reference to PLMD::Matrix
-    template <typename T> Data(Matrix<T>&m ){
+    template <typename T> explicit Data(Matrix<T>&m ){
       if(m.nrows()*m.ncols()>0){ Data d(&m(0,0),m.nrows()*m.ncols()); pointer=d.pointer; size=d.size; type=d.type; }
       else{ pointer=NULL; size=0; } 
     }
 /// Init from reference to std::string
-    Data(std::string&s){
+    explicit Data(std::string&s){
       if(s.size()>0){ Data d(&s[0],s.size()); pointer=d.pointer; size=d.size; type=d.type; }
       else { pointer=NULL; size=0; }
     }
@@ -100,21 +100,21 @@ class Communicator{
     const void*pointer;
     int size;
     MPI_Datatype type;
-    template <typename T> ConstData(const T*p,int s): pointer(p), size(s), type(getMPIType<T>()) {}
-    template <typename T> ConstData(const T&p): pointer(&p), size(1), type(getMPIType<T>()) {}
-    template <unsigned n> ConstData(const VectorGeneric<n> *p,int s): pointer(p), size(n*s), type(getMPIType<double>()) {}
-    template <unsigned n> ConstData(const VectorGeneric<n> &p): pointer(&p), size(n), type(getMPIType<double>()) {}
-    template <unsigned n,unsigned m> ConstData(const TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), type(getMPIType<double>()) {}
-    template <unsigned n,unsigned m> ConstData(const TensorGeneric<n,m> &p): pointer(&p), size(n*m), type(getMPIType<double>()) {}
-    template <typename T> ConstData(const std::vector<T>&v){
+    template <typename T> explicit ConstData(const T*p,int s): pointer(p), size(s), type(getMPIType<T>()) {}
+    template <typename T> explicit ConstData(const T&p): pointer(&p), size(1), type(getMPIType<T>()) {}
+    template <unsigned n> explicit ConstData(const VectorGeneric<n> *p,int s): pointer(p), size(n*s), type(getMPIType<double>()) {}
+    template <unsigned n> explicit ConstData(const VectorGeneric<n> &p): pointer(&p), size(n), type(getMPIType<double>()) {}
+    template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> *p,int s): pointer(p), size(n*m*s), type(getMPIType<double>()) {}
+    template <unsigned n,unsigned m> explicit ConstData(const TensorGeneric<n,m> &p): pointer(&p), size(n*m), type(getMPIType<double>()) {}
+    template <typename T> explicit ConstData(const std::vector<T>&v){
       if(v.size()>0){ ConstData d(&v[0],v.size()); pointer=d.pointer; size=d.size; type=d.type; }
       else { pointer=NULL; size=0; }
     }
-    template <typename T> ConstData(const Matrix<T>&m ){
+    template <typename T> explicit ConstData(const Matrix<T>&m ){
       if(m.nrows()*m.ncols()>0){ ConstData d(&m(0,0),m.nrows()*m.ncols()); pointer=d.pointer; size=d.size; type=d.type; }
       else{ pointer=NULL; size=0; }
     }
-    ConstData(const std::string&s){
+    explicit ConstData(const std::string&s){
       if(s.size()>0){ ConstData d(&s[0],s.size()); pointer=d.pointer; size=d.size; type=d.type; }
       else { pointer=NULL; size=0; }
     }
