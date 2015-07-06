@@ -301,8 +301,10 @@ AC_CHECK_LIB([dl],dlopen, [STATIC_LIBS="-ldl $STATIC_LIBS"] [LIBS="-ldl $LIBS"])
 mpi_found=ko
 # optional libraries follow
 if test $mpi == true ; then
-  mpi_found=ok
   PLUMED_CHECK_PACKAGE([mpi.h],[MPI_Init],[__PLUMED_MPI])
+  if test "x$ac_cv_func_MPI_Init" = xyes; then
+    mpi_found=ok
+  fi
 else 
   mpi_found=ko
 fi
