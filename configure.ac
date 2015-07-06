@@ -101,7 +101,7 @@ AC_DEFUN([PLUMED_CHECK_PACKAGE], [
 ##################################################################
 
 AC_ARG_ENABLE([modules],
-  AS_HELP_STRING([--enable-modules], [all/none/reset or comma separated list such as +crystallization,-bias default: reset]),
+  AS_HELP_STRING([--enable-modules], [all/none/reset or : separated list such as +crystallization:-bias default: reset]),
   [
    rm -fr src/*.on src/*.off
    if test "${enableval}" == yes ; then
@@ -110,7 +110,7 @@ AC_ARG_ENABLE([modules],
    if test "${enableval}" == no ; then
      enableval=none
    fi
-   for modules_mod in `echo "${enableval}" | sed 's/,/ /g'`
+   for modules_mod in `echo "${enableval}" | sed 's/:/ /g'`
    do
      case "$modules_mod" in
      (none)

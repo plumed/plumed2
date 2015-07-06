@@ -1342,8 +1342,8 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-modules        all/none/reset or comma separated list such as
-                          +crystallization,-bias default: reset
+  --enable-modules        all/none/reset or : separated list such as
+                          +crystallization:-bias default: reset
   --enable-debug          enable debugging, default: no
   --enable-basic-warnings enable basic warnings, default: yes
   --enable-fussy          enable fussy warnings, default: no
@@ -2334,7 +2334,7 @@ if test "${enable_modules+set}" = set; then :
    if test "${enableval}" == no ; then
      enableval=none
    fi
-   for modules_mod in `echo "${enableval}" | sed 's/,/ /g'`
+   for modules_mod in `echo "${enableval}" | sed 's/:/ /g'`
    do
      case "$modules_mod" in
      (none)
