@@ -220,4 +220,10 @@ Unreleased changes (will be included in 2.1.4)
 
 See branch \branch{v2.1} on git repository.
 
+For users:
+- Fixed erroneously reported message about MPI at the end of ./configure.
+- Changed warning message about undocumented components.
+- PLUMED now says in the log file if it was compiled from a dirty git repository.
+
+
 */
