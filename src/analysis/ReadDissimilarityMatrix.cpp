@@ -50,7 +50,6 @@ public:
   unsigned getNumberOfDataPoints() const ;
 /// This gives an error as if we read in the matrix we dont have the coordinates
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata );
-  ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idata );
 /// This gives an error as if we read in the matrix we dont have the coordinates
   void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Tell everyone we have dissimilarities
@@ -72,7 +71,9 @@ PLUMED_REGISTER_ACTION(ReadDissimilarityMatrix,"READ_DISSIMILARITY_MATRIX")
 void ReadDissimilarityMatrix::registerKeywords( Keywords& keys ){
   AnalysisBase::registerKeywords( keys ); keys.remove("USE_OUTPUT_DATA_FROM");
   keys.add("compulsory","FILE","an input file containing the matrix of dissimilarities");
-  keys.add("optional","TRAJ","the label for a READ_ANALYSIS_FRAMES action that stores the trajectory");
+  keys.add("optional","FRAMES","with this keyword you can specify the atomic configurations that you would like to store using "
+                               "an COLLECT_FRAMES action.  When the projection is output in dimensionality reduction you will then "
+                               "print the underlying atoms and their projection");
   keys.add("optional","WFILE","input file containing weights of points");
 }
 
@@ -81,11 +82,11 @@ Action(ao),
 AnalysisBase(ao),
 nnodes(1)
 {
-  std::string mytraj; parse("TRAJ",mytraj);
+  std::string mytraj; parse("FRAMES",mytraj);
   if( mytraj.length()>0 ){
      ReadAnalysisFrames* mtraj = plumed.getActionSet().selectWithLabel<ReadAnalysisFrames*>( mytraj );
      if( !mtraj ) error(mytraj + " is not the label of a READ_ANALYSIS_FRAMES object");
-     mydata = dynamic_cast<AnalysisBase*>( mtraj );  
+     mydata = dynamic_cast<AnalysisBase*>( mtraj ); mydata->use_all_data=true;
   }
 
   if( mytraj.length()>0 && plumed.getActionSet().size()!=1 ) error("should only be this action and the READ_ANALYSIS_FRAMES command in the input file");
@@ -143,12 +144,6 @@ double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const 
 
 ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata ){
   if( mydata ) return AnalysisBase::getReferenceConfiguration( idata );
-  plumed_merror("cannot get reference configurations from read in dissimilarity matrix");
-  return NULL;
-}
-
-ReferenceConfiguration* ReadDissimilarityMatrix::getInputReferenceConfiguration( const unsigned& idata ){
-  if( mydata ) return AnalysisBase::getInputReferenceConfiguration( idata );
   plumed_merror("cannot get reference configurations from read in dissimilarity matrix");
   return NULL;
 }

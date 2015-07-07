@@ -57,7 +57,6 @@ public:
   void getDataPoint( const unsigned& idat, std::vector<double>& point );
 /// Get a reference configuration (this returns the projection)
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
-  ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idat );
 /// This does nothing -- projections are calculated when getDataPoint and getReferenceConfiguration are called
   void performAnalysis(){}
 /// This just calls calculate stress in the underlying projection object
@@ -107,13 +106,9 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::ve
 
 ReferenceConfiguration* ProjectNonLandmarkPoints::getReferenceConfiguration( const unsigned& idat ){
   std::vector<double> pp(nlow); generateProjection( idat, pp ); std::string num;
-  ReferenceConfiguration* myref = mydata->getInputReferenceConfiguration( idat ); myref->clearAllProperties();
+  ReferenceConfiguration* myref = mydata->getReferenceConfiguration( idat ); myref->clearAllProperties();
   for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, pp[i] ); }
   return myref;
-}
-
-ReferenceConfiguration* ProjectNonLandmarkPoints::getInputReferenceConfiguration( const unsigned& idat ){
-  return mydata->getInputReferenceConfiguration( idat );
 }
 
 void ProjectNonLandmarkPoints::getDataPoint( const unsigned& idat, std::vector<double>& point ){

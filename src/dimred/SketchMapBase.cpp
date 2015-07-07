@@ -90,7 +90,7 @@ void SketchMapBase::calculateProjections( const Matrix<double>& targets, Matrix<
       }
   }
   // And minimse
-  minimise( transformed, distances, projections );
+  minimise( projections );
 }
 
 double SketchMapBase::calculateStress( const std::vector<double>& p, std::vector<double>& d ){

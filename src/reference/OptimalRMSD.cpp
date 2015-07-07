@@ -55,7 +55,7 @@ RMSDBase(ro)
 }
 
 void OptimalRMSD::read( const PDB& pdb ){
-  readReference( pdb ); myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); 
+  readReference( pdb ); myrmsd.clear(); myrmsd.set(getAlign(),getDisplace(),getReferencePositions(),"OPTIMAL"); 
 }
 
 double OptimalRMSD::calc( const std::vector<Vector>& pos, ReferenceValuePack& myder, const bool& squared ) const {

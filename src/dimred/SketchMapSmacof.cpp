@@ -39,12 +39,11 @@ class SketchMapSmacof : public SketchMapBase {
 private:
   unsigned max_smap, maxiter;
   double smap_tol, iter_tol, regulariser;
-  double recalculateWeights( const Matrix<double>& transformed, const Matrix<double>& distances,   
-                             const Matrix<double>& projections, Matrix<double>& weights );
+  double recalculateWeights( const Matrix<double>& projections, Matrix<double>& weights );
 public:
   static void registerKeywords( Keywords& keys ); 
   SketchMapSmacof( const ActionOptions& ao );
-  void minimise( const Matrix<double>& , const Matrix<double>& , Matrix<double>& );
+  void minimise( Matrix<double>& );
 };
 
 PLUMED_REGISTER_ACTION(SketchMapSmacof,"SKETCHMAP_SMACOF")
@@ -67,14 +66,14 @@ SketchMapBase(ao)
   parse("SMACOF_TOL",smap_tol); parse("SMAP_TOL",iter_tol); 
 }
 
-void SketchMapSmacof::minimise( const Matrix<double>& transformed, const Matrix<double>& distances, Matrix<double>& projections ){
+void SketchMapSmacof::minimise( Matrix<double>& projections ){
   Matrix<double> weights( distances.nrows(), distances.ncols() ); weights=0.;
-  double filt = recalculateWeights( transformed, distances, projections, weights );
+  double filt = recalculateWeights( projections, weights );
 
   for(unsigned i=0;i<maxiter;++i){
       SMACOF::run( weights, distances, smap_tol, max_smap, projections );
       // Recalculate weights matrix and sigma
-      double newsig = recalculateWeights( transformed, distances, projections, weights );
+      double newsig = recalculateWeights( projections, weights );
       printf("HELLO SMACOF %d %f %f \n",i,newsig,filt);
       // Test whether or not the algorithm has converged
       if( fabs( newsig - filt )<iter_tol ) break;
@@ -83,8 +82,7 @@ void SketchMapSmacof::minimise( const Matrix<double>& transformed, const Matrix<
   }
 }
 
-double SketchMapSmacof::recalculateWeights( const Matrix<double>& transformed, const Matrix<double>& distances,  
-                                            const Matrix<double>& projections, Matrix<double>& weights ){
+double SketchMapSmacof::recalculateWeights( const Matrix<double>& projections, Matrix<double>& weights ){
   double filt=0, totalWeight=0.;; double dr;
   for(unsigned i=1; i<weights.nrows(); ++i){
       for(unsigned j=0; j<i; ++j){

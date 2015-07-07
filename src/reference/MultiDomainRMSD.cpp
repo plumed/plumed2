@@ -52,6 +52,7 @@ void MultiDomainRMSD::read( const PDB& pdb ){
    parse("LOWER_CUTOFF",lower,true); 
    parse("UPPER_CUTOFF",upper,true);
 
+   domains.resize(0); weights.resize(0);
    for(unsigned i=1;i<=nblocks;++i){
        Tools::convert(i,num);
        if( ftype=="RMSD" ){
@@ -79,6 +80,7 @@ void MultiDomainRMSD::read( const PDB& pdb ){
        else weights.push_back( ww );
    }   
    // And set the atom numbers for this object
+   indices.resize(0); der_index.resize(0);
    for(unsigned i=0;i<pdb.size();++i){ indices.push_back( pdb.getAtomNumbers()[i] ); der_index.push_back(i); }
    // setAtomNumbers( pdb.getAtomNumbers() );
 }

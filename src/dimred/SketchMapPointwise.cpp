@@ -45,7 +45,7 @@ private:
 public:
   static void registerKeywords( Keywords& keys ); 
   SketchMapPointwise( const ActionOptions& ao );
-  void minimise( const Matrix<double>& , const Matrix<double>& , Matrix<double>& );
+  void minimise( Matrix<double>& );
 /// This is used in pointwise global optimization
   double calculateFullStress( const std::vector<double>& p, std::vector<double>& d );
 };
@@ -79,7 +79,7 @@ npoints(nlow)
   if( nointerpolation ) log.printf("  not using any interpolation in grid search\n");
 }
 
-void SketchMapPointwise::minimise( const Matrix<double>& transformed, const Matrix<double>& distances, Matrix<double>& projections ){
+void SketchMapPointwise::minimise( Matrix<double>& projections ){
   std::vector<double> gmin( nlow ), gmax( nlow ), mypoint( nlow ); 
 
   // Find the extent of the grid
@@ -118,51 +118,12 @@ void SketchMapPointwise::minimise( const Matrix<double>& transformed, const Matr
   }
 }
 
-void SketchMapPointwise::minimise( const Matrix<double>& transformed, const Matrix<double>& distances, Matrix<double>& projections ){
-  std::vector<double> gmin( nlow ), gmax( nlow ), mypoint( nlow );
-
-  // Find the extent of the grid
-  for(unsigned j=0;j<nlow;++j) gmin[j]=gmax[j]=projections(0,j);
-  for(unsigned i=1;i<getNumberOfDataPoints();++i){
-      for(unsigned j=0;j<nlow;++j){
-          if( projections(i,j) < gmin[j] ) gmin[j] = projections(i,j); 
-          if( projections(i,j) > gmax[j] ) gmax[j] = projections(i,j);
-      }
-  }       
-  for(unsigned j=0;j<nlow;++j){ 
-     double gbuffer = 0.5*gbuf*( gmax[j]-gmin[j] ) - 0.5*( gmax[j]- gmin[j] );
-     gmin[j]-=gbuffer; gmax[j]+=gbuffer; 
-  }
-          
-  // And do the search
-  ConjugateGradient<SketchMapPointwise> mycgminimise( this );
-  GridSearch<SketchMapPointwise> mygridsearch( gmin, gmax, npoints, this );
-  // Run multiple loops over all projections
-  for(unsigned i=0;i<ncycles;++i){
-      for(unsigned j=0;j<getNumberOfDataPoints();++j){
-          // Setup target distances and target functions for calculate stress 
-          for(unsigned k=0;k<getNumberOfDataPoints();++k) setTargetDistance( k, distances(j,k)  );
-          
-          if( nointerpolation ){
-              // Minimise using grid search
-              mygridsearch.minimise( mypoint, &SketchMapPointwise::calculateStress );
-              // Minimise output using conjugate gradient
-              mycgminimise.minimise( cgtol, projections.getVector(), &SketchMapPointwise::calculateFullStress );
-          } else {
-              plumed_merror("use a class here that Sandip will implement that allows you to do this with some interpolation");
-          }   
-          // Save new projection 
-          for(unsigned k=0;k<nlow;++k) projections(j,k)=mypoint[k];
-      }   
-  }   
-}
-
 double SketchMapPointwise::calculateFullStress( const std::vector<double>& p, std::vector<double>& d ){
   // Zero derivative and stress accumulators
   for(unsigned i=0;i<p.size();++i) d[i]=0.0;
   double stress=0; std::vector<double> dtmp( p.size() );
 
-  for(unsigned i=1;i<dtargets.size();++i){
+  for(unsigned i=1;i<distances.nrows();++i){
       for(unsigned j=0;j<i;++j){
           // Calculate distance in low dimensional space
           double dd=0;

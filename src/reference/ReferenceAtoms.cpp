@@ -34,6 +34,7 @@ checks_were_disabled(false)
 void ReferenceAtoms::readAtomsFromPDB( const PDB& pdb ){
   if( pdb.getNumberOfAtomBlocks()!=1 ) error("found multi-atom-block pdb format but expecting only one block of atoms");  
 
+  indices.resize(0); reference_atoms.resize(0); align.resize(0); displace.resize(0); der_index.resize(0);
   for(unsigned i=0;i<pdb.size();++i){
      indices.push_back( pdb.getAtomNumbers()[i] ); reference_atoms.push_back( pdb.getPositions()[i] );
      align.push_back( pdb.getOccupancy()[i] ); displace.push_back( pdb.getBeta()[i] ); der_index.push_back(i);

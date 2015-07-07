@@ -48,7 +48,6 @@ public:
   void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Get a reference configuration (this returns the projection)
   ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata ); 
-  ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idata );
 /// Actually perform the analysis
   void performAnalysis();
 /// Calculate the projections of points

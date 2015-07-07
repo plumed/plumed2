@@ -31,7 +31,11 @@ class ReferenceConfiguration;
 
 namespace analysis {
 
+class ReadAnalysisFrames;
+
 class AnalysisWithDataCollection : public AnalysisBase {
+friend class EuclideanDissimilarityMatrix;
+friend class ReadDissimilarityMatrix;
 private:
 /// Are we treating each block of data separately
   bool nomemory;
@@ -53,6 +57,9 @@ private:
   bool firstAnalysisDone;
 /// The value of the old normalization constant
   double norm, old_norm;
+/// This allows you to output trajectory data with the projections
+/// in EUCLIDEAN_DISSIMLAIRITIES and READ_DISSIMILARITY_MATRIX
+  ReadAnalysisFrames* myframes;
 /// Data is collected from the trajectory by passing it to this pdb.  These pdb
 /// files are then read by the ReferenceConfigurations in data
   PDB mypdb;
@@ -93,8 +100,6 @@ public:
   virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Get a reference configuration (in dimensionality reduction this returns the projection)
   virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
-/// Get the underlying reference configuration (in dimensionality reduction this return the high dimensional point)
-  ReferenceConfiguration* getInputReferenceConfiguration( const unsigned& idat );
 /// This ensures that the energy is stored if we are reweighting
   void prepare();
 /// This stores the data and calls the analysis to be performed

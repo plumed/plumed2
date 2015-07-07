@@ -55,7 +55,7 @@ PLUMED_REGISTER_ACTION(EuclideanDissimilarityMatrix,"EUCLIDEAN_DISSIMILARITIES")
 
 void EuclideanDissimilarityMatrix::registerKeywords( Keywords& keys ){
   AnalysisWithDataCollection::registerKeywords( keys );
-  keys.reset_style("METRIC","atoms-1");
+  keys.reset_style("METRIC","atoms-1"); keys.use("FRAMES");
 }
 
 EuclideanDissimilarityMatrix::EuclideanDissimilarityMatrix( const ActionOptions& ao ):
@@ -72,8 +72,15 @@ void EuclideanDissimilarityMatrix::performAnalysis(){
 double EuclideanDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const unsigned& jframe ){
   plumed_dbg_assert( iframe<dissimilarities.nrows() && jframe<dissimilarities.ncols() );
   if( dissimilarities(iframe,jframe)>0. ){ return dissimilarities(iframe,jframe); }
-  if( iframe!=jframe ){ 
-     dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), getReferenceConfiguration(iframe), getReferenceConfiguration(jframe), true ); 
+  if( iframe!=jframe ){
+     ReferenceConfiguration* myref1; ReferenceConfiguration* myref2; 
+     if( mydata ){ myref1=AnalysisBase::getReferenceConfiguration(iframe); myref2=AnalysisBase::getReferenceConfiguration(jframe); }
+     else { myref1 = data[iframe]; myref2 = data[jframe]; }
+     if( myref1->getNumberOfProperties()>0 ){
+        dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = property_distance( myref1, myref2, true );
+     } else {
+        dissimilarities(iframe,jframe) = dissimilarities(jframe,iframe) = distance( getPbc(), getArguments(), myref1, myref2, true ); 
+     }
      return dissimilarities(iframe,jframe);
   }
   return 0.0;

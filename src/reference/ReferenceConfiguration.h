@@ -58,6 +58,7 @@ public:
 
 class ReferenceConfiguration {
 friend class SingleDomainRMSD;
+friend double property_distance( ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared );
 friend double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration*, ReferenceConfiguration*, const bool& squared );
 private:
 /// The name of this particular config

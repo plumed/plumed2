@@ -52,7 +52,7 @@ mydata(NULL)
   if( datastr.length()>0 ){
       mydata=plumed.getActionSet().selectWithLabel<AnalysisBase*>( datastr );
       ReadAnalysisFrames* checkt = dynamic_cast<ReadAnalysisFrames*>( mydata );
-      if( checkt ) error("READ_ANALYSIS_FRAMES should only be used in association with READ_DISSSIMILARITY_MATRIX"); 
+      if( checkt ) error("READ_ANALYSIS_FRAMES should only be used in input to the FRAMES keyword"); 
       log.printf("  performing analysis on output from %s \n",datastr.c_str() );
       if( !mydata ) error("could not find analysis action named " + datastr );
       freq=mydata->freq; use_all_data=mydata->use_all_data;

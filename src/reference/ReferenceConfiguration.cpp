@@ -148,6 +148,14 @@ void ReferenceConfiguration::attachProperty( const std::string& name, const doub
   if( !found ){ property_names.push_back( name ); property_values.push_back( val ); }
 }
 
+double property_distance( ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
+  plumed_dbg_assert( ref1->property_values.size()>0 && ref2->propert_values.size()==ref1->property_values.size() );
+  unsigned nprop=ref1->property_values.size(); double dist=0;
+  for(unsigned i=0;i<nprop;++i){ double tmp=ref1->property_values[i]-ref2->property_values[i]; dist+=tmp*tmp; }
+  if(squared) return dist;
+  return sqrt(dist);
+}
+
 double distance( const Pbc& pbc, const std::vector<Value*> & vals, ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
   unsigned nder;
   if( ref1->getReferencePositions().size()>0 ) nder=ref1->getReferenceArguments().size() + 3*ref1->getReferencePositions().size() + 9;

@@ -46,6 +46,9 @@ void AnalysisWithDataCollection::registerKeywords( Keywords& keys ){
   keys.addFlag("USE_ALL_DATA",false,"just analyse all the data in the trajectory.  This option should be used in tandem with ATOMS/ARG + STRIDE");
   keys.addFlag("REWEIGHT_BIAS",false,"reweight the data using all the biases acting on the dynamics.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN/USE_ALL_DATA. " 
                                      "For more information see \\ref analysisbas");
+  keys.reserve("optional","FRAMES","with this keyword you can specify the atomic configurations that you would like to store using "
+                                   "an COLLECT_FRAMES action.  When the projection is output in dimensionality reduction you will then "
+                                   "print the underlying atoms and their projection");
   keys.add("optional","REWEIGHT_TEMP","reweight data from a trajectory at one temperature and output the probability distribution at a second temperature.  This option must be used in tandem with ATOMS/ARG + STRIDE + RUN/USE_ALL_DATA. "
                                       "For more information see \\ref analysisbas");
   keys.add("optional","TEMP","the system temperature. This is required if you are reweighting (REWEIGHT_BIAS/REWEIGHT_TEMP) or if you are calculating free energies. You are not required to specify the temperature if this is passed by the underlying MD code.");
@@ -63,13 +66,25 @@ write_chq(false),
 rtemp(0),
 idata(0),
 firstAnalysisDone(false),
-old_norm(0.0)
+old_norm(0.0),
+myframes(NULL)
 {
   if( !mydata ){
+      // Check for FRAMES keyword that allows us to read reference configurations from elsewhere
+      std::string instring; if( keywords.exists("FRAMES") ) parse("FRAMES",instring);
+      if( instring.length()>0 ){
+          if( mydata ) error("frames keyword is not compatible with USE_OUTPUT_DATA_FROM");
+          myframes=plumed.getActionSet().selectWithLabel<ReadAnalysisFrames*>( instring );
+          if( !myframes ) error( instring + " is not the name of an object that collects trajectory data");
+          log.printf("  frames are stored by object with label %s \n",instring.c_str() );
+          freq=myframes->freq; use_all_data=myframes->use_all_data; setStride( myframes->getStride() );
+      }
+
       // Check if we are using the input data from another action
       std::string datastr; 
       if( keywords.exists("REUSE_INPUT_DATA_FROM") ) parse("REUSE_INPUT_DATA_FROM",datastr);
       if( datastr.length()>0 ) {
+         if( myframes ) error("FRAMES command is incompatible with REUSE_INPUT_DATA_FROM");
          AnalysisWithDataCollection* checkd = plumed.getActionSet().selectWithLabel<AnalysisWithDataCollection*>( datastr );       
          if( !checkd) error("cannot reuse input data from action with label " + datastr + " as this does not store data");
          ReadAnalysisFrames* checkt = dynamic_cast<ReadAnalysisFrames*>( checkd );
@@ -129,31 +144,49 @@ old_norm(0.0)
              metricname="";
          }
 
-         // Read in the information about how often to run the analysis (storage is read in in ActionPilot.cpp)
-         if( keywords.exists("USE_ALL_DATA") ){
-             if( !keywords.exists("RUN") ) use_all_data=true;
-             else parseFlag("USE_ALL_DATA",use_all_data);
-         }
-         if(!use_all_data){
-             if( keywords.exists("RUN") ) parse("RUN",freq); 
-             // Setup everything given the ammount of data that we will have in each analysis 
-             if( freq%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
-             unsigned ndata=freq/getStride(); data.resize(ndata); logweights.resize( ndata );
-             for(unsigned i=0;i<ndata;++i) data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
-             log.printf("  running analysis every %u steps\n",freq);
-             // Check if we are doing block averaging
-             nomemory=false;
-             if( keywords.exists("NOMEMORY") ) parseFlag("NOMEMORY",nomemory);
-             if(nomemory) log.printf("  doing block averaging and analysing each portion of trajectory separately\n");
+         bool dobias;
+         if( !myframes ){
+             // Read in the information about how often to run the analysis (storage is read in in ActionPilot.cpp)
+             if( keywords.exists("USE_ALL_DATA") ){
+                 if( !keywords.exists("RUN") ) use_all_data=true;
+                 else parseFlag("USE_ALL_DATA",use_all_data);
+             }
+             if(!use_all_data){
+                 if( keywords.exists("RUN") ) parse("RUN",freq); 
+                 // Setup everything given the ammount of data that we will have in each analysis 
+                 if( freq%getStride()!= 0 ) error("Frequncy of running is not a multiple of the stride");
+                 // Check if we are doing block averaging
+                 nomemory=false;
+                 if( keywords.exists("NOMEMORY") ) parseFlag("NOMEMORY",nomemory);
+                 if(nomemory) log.printf("  doing block averaging and analysing each portion of trajectory separately\n");
+             } else {
+                 log.printf("  analysing all data in trajectory\n");
+             }
+
+             // Read in stuff for reweighting of trajectories
+
+             // Reweighting for biases
+             if( keywords.exists("REWEIGHT_BIAS") ) parseFlag("REWEIGHT_BIAS",dobias);
+
+             // Reweighting for temperatures
+             rtemp=0; 
+             if( keywords.exists("REWEIGHT_TEMP") ) parse("REWEIGHT_TEMP",rtemp);
+             if( rtemp!=0 ){ 
+                 rtemp*=plumed.getAtoms().getKBoltzmann(); 
+                 log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
+             }
+             // Now retrieve the temperature in the simulation
+             simtemp=0; 
+             if( keywords.exists("TEMP") ) parse("TEMP",simtemp); 
+             if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
+             else simtemp=plumed.getAtoms().getKbT();
+             if(simtemp==0 && (rtemp!=0 || !biases.empty()) ) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
          } else {
-             log.printf("  analysing all data in trajectory\n");
+             nomemory = myframes->nomemory; dobias = (myframes->biases.size()>0);
+             rtemp = myframes->rtemp; simtemp = myframes->simtemp;
          }
 
-         // Read in stuff for reweighting of trajectories
-
-         // Reweighting for biases
-         bool dobias; 
-         if( keywords.exists("REWEIGHT_BIAS") ) parseFlag("REWEIGHT_BIAS",dobias);
+         // Setup bias reweighting
          if( dobias ){
              std::vector<ActionWithValue*> all=plumed.getActionSet().select<ActionWithValue*>();
              if( all.empty() ) error("your input file is not telling plumed to calculate anything");
@@ -171,20 +204,13 @@ old_norm(0.0)
              if( biases.empty() ) error("you are asking to reweight bias but there does not appear to be a bias acting on your system");
              requestArguments( arg );
          }
-
-         // Reweighting for temperatures
-         rtemp=0; 
-         if( keywords.exists("REWEIGHT_TEMP") ) parse("REWEIGHT_TEMP",rtemp);
-         if( rtemp!=0 ){ 
-            rtemp*=plumed.getAtoms().getKBoltzmann(); 
-            log.printf("  reweighting simulation to probabilities at temperature %f\n",rtemp);
+         // Setup reference configuration objects to store data
+         if( !use_all_data ){
+             plumed_assert( !mydata );
+             log.printf("  running analysis every %u steps\n",freq);
+             unsigned ndata=freq/getStride(); data.resize(ndata); logweights.resize( ndata );
+             for(unsigned i=0;i<ndata;++i) data[i]=metricRegister().create<ReferenceConfiguration>( metricname );
          }
-         // Now retrieve the temperature in the simulation
-         simtemp=0; 
-         if( keywords.exists("TEMP") ) parse("TEMP",simtemp); 
-         if(simtemp>0) simtemp*=plumed.getAtoms().getKBoltzmann();
-         else simtemp=plumed.getAtoms().getKbT();
-         if(simtemp==0 && (rtemp!=0 || !biases.empty()) ) error("The MD engine does not pass the temperature to plumed so you have to specify it using TEMP");
 
          // Check if a check point is required   (this should be got rid of at some point when we have proper checkpointing) GAT
          if( keywords.exists("WRITE_CHECKPOINT") ) parseFlag("WRITE_CHECKPOINT",write_chq);
@@ -207,8 +233,8 @@ old_norm(0.0)
             for(unsigned i=0;i<getNumberOfArguments();++i) rfile.setupPrintValue( getPntrToArgument(i) );
          }
          // This is the end of the stuff for the checkpoint file - hopefully get rid of all this in not too distant future  GAT
-      }
-  }
+     }
+     }
 }
 
 AnalysisWithDataCollection::~AnalysisWithDataCollection(){
@@ -264,13 +290,12 @@ void AnalysisWithDataCollection::getDataPoint( const unsigned& idat, std::vector
 }
 
 ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( const unsigned& idat ){
-  if( !mydata ){ plumed_dbg_assert( idat<data.size() ); return data[idat]; }
+  if( !mydata ){ 
+     plumed_dbg_assert( idat<data.size() ); 
+     if( myframes ) return myframes->getReferenceConfiguration( idat );
+     return data[idat]; 
+  }
   return AnalysisBase::getReferenceConfiguration( idat );
-}
-
-ReferenceConfiguration* AnalysisWithDataCollection::getInputReferenceConfiguration( const unsigned& idat ){
-  if( !mydata ){ plumed_dbg_assert( idat<data.size() ); return data[idat]; }
-  return AnalysisBase::getInputReferenceConfiguration( idat );
 }
 
 void AnalysisWithDataCollection::update(){

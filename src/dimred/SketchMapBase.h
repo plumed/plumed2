@@ -37,12 +37,12 @@ private:
   SketchMapBase* smapbase;
 /// Switching functions for low and high dimensional space 
   SwitchingFunction lowdf, highdf;
-/// This holds the target distances and target transformed distances
-  Matrix<double> distances, transformed;
 /// This is used within calculate stress to hold the target distances and the 
 /// target values for the high dimensional switching function
   std::vector<double> dtargets, ftargets;
 protected:
+/// This holds the target distances and target transformed distances
+  Matrix<double> distances, transformed;
 /// The fraction of pure distances to mix in when optimising
   double mixparam;
 public:
@@ -51,7 +51,7 @@ public:
 /// This starts the process of calculating the projections
   void calculateProjections( const Matrix<double>& , Matrix<double>& );
 /// This finishes the process of calculating the prjections
-  virtual void minimise( const Matrix<double>& , const Matrix<double>& , Matrix<double>& )=0;
+  virtual void minimise( Matrix<double>& )=0;
 /// Apply the low dimensional switching function to the value val
   double transformLowDimensionalDistance( const double& val, double& df ) const ;
 /// Apply the high dimensional switching function to the value val

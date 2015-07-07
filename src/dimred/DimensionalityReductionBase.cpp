@@ -53,13 +53,9 @@ dimredbase(NULL)
 }
 
 ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat ){
-  ReferenceConfiguration* myref = mydata->getInputReferenceConfiguration( idat ); std::string num; myref->clearAllProperties();
+  ReferenceConfiguration* myref = mydata->getReferenceConfiguration( idat ); std::string num; myref->clearAllProperties();
   for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, projections(idat,i) ); }
   return myref; 
-}
-
-ReferenceConfiguration* DimensionalityReductionBase::getInputReferenceConfiguration( const unsigned& idat ){
-  return mydata->getInputReferenceConfiguration( idat );
 }
 
 void DimensionalityReductionBase::getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const {
