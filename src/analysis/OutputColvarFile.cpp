@@ -88,12 +88,12 @@ void OutputColvarFile::performAnalysis(){
   gfile.fmtField(fmt+" ");
   gfile.open( filename.c_str() );
 
-  ReferenceConfiguration* myp = getReferenceConfiguration(0);
+  ReferenceConfiguration* myp = getReferenceConfiguration(0,false);
   if( myp->getNumberOfProperties()==0 ) plumed_assert( !dynamic_cast<ReferenceAtoms*>( myp ) );
 
   // Print embedding coordinates
   for(unsigned i=0;i<getNumberOfDataPoints();++i){
-      ReferenceConfiguration* mypoint=getReferenceConfiguration(i);
+      ReferenceConfiguration* mypoint=getReferenceConfiguration(i,false);
       for(unsigned j=0;j<mypoint->getNumberOfProperties();++j){
           gfile.printField( mypoint->getPropertyName(j), mypoint->getPropertyValue(j) );
       }

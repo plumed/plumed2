@@ -99,7 +99,7 @@ public:
 /// Get the ith data point
   virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Get a reference configuration (in dimensionality reduction this returns the projection)
-  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
+  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat, const bool& calcdist );
 /// This ensures that the energy is stored if we are reweighting
   void prepare();
 /// This stores the data and calls the analysis to be performed

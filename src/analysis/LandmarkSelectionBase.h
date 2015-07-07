@@ -53,7 +53,7 @@ public:
 /// Get the ith data point
   void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Get a reference configuration
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
+  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat, const bool& calcdist );
 /// Select landmark configurations
   void performAnalysis();
   virtual void selectLandmarks()=0;
@@ -84,8 +84,8 @@ void LandmarkSelectionBase::getDataPoint( const unsigned& idata, std::vector<dou
 }
 
 inline
-ReferenceConfiguration* LandmarkSelectionBase::getReferenceConfiguration( const unsigned& idat ){
-  return AnalysisBase::getReferenceConfiguration( landmark_indices[idat] );
+ReferenceConfiguration* LandmarkSelectionBase::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
+  return AnalysisBase::getReferenceConfiguration( landmark_indices[idat], calcdist );
 }
 
 inline

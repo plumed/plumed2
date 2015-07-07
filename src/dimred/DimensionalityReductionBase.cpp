@@ -52,8 +52,8 @@ dimredbase(NULL)
   log.printf("  projecting in %d dimensional space \n",nlow);
 }
 
-ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat ){
-  ReferenceConfiguration* myref = mydata->getReferenceConfiguration( idat ); std::string num; myref->clearAllProperties();
+ReferenceConfiguration* DimensionalityReductionBase::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
+  ReferenceConfiguration* myref = mydata->getReferenceConfiguration( idat, calcdist ); std::string num; myref->clearAllProperties();
   for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, projections(idat,i) ); }
   return myref; 
 }

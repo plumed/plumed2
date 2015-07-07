@@ -81,8 +81,8 @@ void OutputPDBFile::performAnalysis(){
   for(unsigned j=0;j<getNumberOfDataPoints();++j){
       afile.printf("DESCRIPTION: analysis data from calculation done at time %f \n",getLabel().c_str(),getTime() );
       afile.printf(descr.c_str(),getWeight(j) ); 
-      if( plumed.getAtoms().usingNaturalUnits() ) getReferenceConfiguration(j)->print( 1.0, afile, fmt );
-      else getReferenceConfiguration(j)->print( plumed.getAtoms().getUnits().getLength()/0.1, afile, fmt );
+      if( plumed.getAtoms().usingNaturalUnits() ) getReferenceConfiguration(j,false)->print( 1.0, afile, fmt );
+      else getReferenceConfiguration(j,false)->print( plumed.getAtoms().getUnits().getLength()/0.1, afile, fmt );
   }
   afile.close();
 }

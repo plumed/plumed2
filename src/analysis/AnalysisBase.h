@@ -84,7 +84,7 @@ public:
 /// Get the ith data point
   virtual void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Get a reference configuration (in dimensionality reduction this returns the projection)
-  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata  );
+  virtual ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata, const bool& calcdist  );
 /// This actually performs the analysis
   virtual void performAnalysis()=0;
 /// These overwrite things from inherited classes (this is a bit of a fudge)
@@ -164,8 +164,8 @@ void AnalysisBase::getDataPoint( const unsigned& idata, std::vector<double>& poi
 }
 
 inline
-ReferenceConfiguration* AnalysisBase::getReferenceConfiguration( const unsigned& idata ){
-  return mydata->getReferenceConfiguration( idata );
+ReferenceConfiguration* AnalysisBase::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){
+  return mydata->getReferenceConfiguration( idata, calcdist );
 }
 
 }

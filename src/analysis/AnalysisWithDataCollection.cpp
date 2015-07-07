@@ -289,13 +289,13 @@ void AnalysisWithDataCollection::getDataPoint( const unsigned& idat, std::vector
   }
 }
 
-ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( const unsigned& idat ){
+ReferenceConfiguration* AnalysisWithDataCollection::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
   if( !mydata ){ 
      plumed_dbg_assert( idat<data.size() ); 
-     if( myframes ) return myframes->getReferenceConfiguration( idat );
+     if( !calcdist && myframes ) return myframes->getReferenceConfiguration( idat, false );
      return data[idat]; 
   }
-  return AnalysisBase::getReferenceConfiguration( idat );
+  return AnalysisBase::getReferenceConfiguration( idat, calcdist );
 }
 
 void AnalysisWithDataCollection::update(){

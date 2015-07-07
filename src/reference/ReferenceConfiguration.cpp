@@ -149,7 +149,7 @@ void ReferenceConfiguration::attachProperty( const std::string& name, const doub
 }
 
 double property_distance( ReferenceConfiguration* ref1, ReferenceConfiguration* ref2, const bool& squared ){
-  plumed_dbg_assert( ref1->property_values.size()>0 && ref2->propert_values.size()==ref1->property_values.size() );
+  plumed_dbg_assert( ref1->property_values.size()>0 && ref2->property_values.size()==ref1->property_values.size() );
   unsigned nprop=ref1->property_values.size(); double dist=0;
   for(unsigned i=0;i<nprop;++i){ double tmp=ref1->property_values[i]-ref2->property_values[i]; dist+=tmp*tmp; }
   if(squared) return dist;

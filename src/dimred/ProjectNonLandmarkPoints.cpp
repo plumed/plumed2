@@ -56,7 +56,7 @@ public:
 /// Get the ith data point (this returns the projection)
   void getDataPoint( const unsigned& idat, std::vector<double>& point );
 /// Get a reference configuration (this returns the projection)
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat );
+  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idat, const bool& calcdist );
 /// This does nothing -- projections are calculated when getDataPoint and getReferenceConfiguration are called
   void performAnalysis(){}
 /// This just calls calculate stress in the underlying projection object
@@ -104,9 +104,9 @@ void ProjectNonLandmarkPoints::generateProjection( const unsigned& idat, std::ve
   myminimiser.minimise( cgtol, point, &ProjectNonLandmarkPoints::calculateStress );
 }
 
-ReferenceConfiguration* ProjectNonLandmarkPoints::getReferenceConfiguration( const unsigned& idat ){
+ReferenceConfiguration* ProjectNonLandmarkPoints::getReferenceConfiguration( const unsigned& idat, const bool& calcdist ){
   std::vector<double> pp(nlow); generateProjection( idat, pp ); std::string num;
-  ReferenceConfiguration* myref = mydata->getReferenceConfiguration( idat ); myref->clearAllProperties();
+  ReferenceConfiguration* myref = mydata->getReferenceConfiguration( idat, calcdist ); myref->clearAllProperties();
   for(unsigned i=0;i<nlow;++i){ Tools::convert(i+1,num); myref->attachProperty( getLabel() + "." + num, pp[i] ); }
   return myref;
 }

@@ -49,7 +49,7 @@ public:
   ReadDissimilarityMatrix( const ActionOptions& ao );
   unsigned getNumberOfDataPoints() const ;
 /// This gives an error as if we read in the matrix we dont have the coordinates
-  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata );
+  ReferenceConfiguration* getReferenceConfiguration( const unsigned& idata, const bool& calcdist );
 /// This gives an error as if we read in the matrix we dont have the coordinates
   void getDataPoint( const unsigned& idata, std::vector<double>& point, double& weight ) const ;
 /// Tell everyone we have dissimilarities
@@ -142,8 +142,8 @@ double ReadDissimilarityMatrix::getDissimilarity( const unsigned& iframe, const 
   return dissimilarities( iframe, jframe );
 }
 
-ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata ){
-  if( mydata ) return AnalysisBase::getReferenceConfiguration( idata );
+ReferenceConfiguration* ReadDissimilarityMatrix::getReferenceConfiguration( const unsigned& idata, const bool& calcdist ){
+  if( mydata ) return AnalysisBase::getReferenceConfiguration( idata, calcdist );
   plumed_merror("cannot get reference configurations from read in dissimilarity matrix");
   return NULL;
 }
