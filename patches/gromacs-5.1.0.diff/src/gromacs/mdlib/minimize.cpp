@@ -791,7 +791,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     int plumedNeedsEnergy=0;
     matrix plumed_vir;
     if(plumedswitch){
-      long int lstep=count; (*plumedcmd)(plumedmain,"setStepLong",&count);
+      long int lstep=count; (*plumedcmd)(plumedmain,"setStepLong",&lstep);
       (*plumedcmd) (plumedmain,"setPositions",&ems->s.x[0][0]);
       (*plumedcmd) (plumedmain,"setMasses",&mdatoms->massT[0]);
       (*plumedcmd) (plumedmain,"setCharges",&mdatoms->chargeA[0]);
