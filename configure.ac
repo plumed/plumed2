@@ -108,7 +108,6 @@ PLUMED_CONFIG_ENABLE([debug_glibcxx],[debug-glibcxx],[enable boundary check],[no
 PLUMED_CONFIG_ENABLE([shared],[shared],[shared libs],[yes])
 PLUMED_CONFIG_ENABLE([cxx_exceptions],[cxx-exceptions],[c++ exceptions],[no])
 PLUMED_CONFIG_ENABLE([mpi],[mpi],[search for mpi],[yes])
-PLUMED_CONFIG_ENABLE([openmp],[openmp],[search for openmp],[yes])
 PLUMED_CONFIG_ENABLE([external_lapack],[external-lapack],[search for external lapack],[yes])
 PLUMED_CONFIG_ENABLE([external_blas],[external-blas],[search for external blas],[yes])
 PLUMED_CONFIG_ENABLE([molfile_plugins],[molfile-plugins],[use molfile_plugins],[yes])
@@ -342,9 +341,11 @@ if test $mpi == true ; then
 else 
   mpi_found=ko
 fi
-if test $openmp == true ; then
-  AC_OPENMP
-fi
+
+# search for openmp is automatically disabled by autoconf
+# when configuring with --disable-openmp
+AC_OPENMP
+
 if test $matheval == true ; then
   PLUMED_CHECK_PACKAGE([matheval.h],[evaluator_create],[__PLUMED_HAS_MATHEVAL],[matheval])
 fi

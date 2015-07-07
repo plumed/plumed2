@@ -693,7 +693,6 @@ enable_debug_glibcxx
 enable_shared
 enable_cxx_exceptions
 enable_mpi
-enable_openmp
 enable_external_lapack
 enable_external_blas
 enable_molfile_plugins
@@ -709,6 +708,7 @@ enable_execinfo
 enable_almost
 enable_gsl
 enable_xdrfile
+enable_openmp
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1348,7 +1348,6 @@ Optional Features:
   --enable-shared         enable shared libs, default: yes
   --enable-cxx-exceptions enable c++ exceptions, default: no
   --enable-mpi            enable search for mpi, default: yes
-  --enable-openmp         enable search for openmp, default: yes
   --enable-external-lapack
                           enable search for external lapack, default: yes
   --enable-external-blas  enable search for external blas, default: yes
@@ -2443,24 +2442,6 @@ else
   case "yes" in
              (yes) mpi=true ;;
              (no)  mpi=false ;;
-  esac
-
-fi
-
-
-
-openmp=
-# Check whether --enable-openmp was given.
-if test "${enable_openmp+set}" = set; then :
-  enableval=$enable_openmp; case "${enableval}" in
-             (yes) openmp=true ;;
-             (no)  openmp=false ;;
-             (*)   as_fn_error $? "wrong argument to --enable-openmp" "$LINENO" 5 ;;
-  esac
-else
-  case "yes" in
-             (yes) openmp=true ;;
-             (no)  openmp=false ;;
   esac
 
 fi
@@ -5637,7 +5618,9 @@ $as_echo "$as_me: WARNING: cannot enable __PLUMED_MPI" >&2;}
 else
   mpi_found=ko
 fi
-if test $openmp == true ; then
+
+# search for openmp is automatically disabled by autoconf
+# when configuring with --disable-openmp
 
   OPENMP_CXXFLAGS=
   # Check whether --enable-openmp was given.
@@ -5704,7 +5687,7 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
   fi
 
 
-fi
+
 if test $matheval == true ; then
 
     found=ko
