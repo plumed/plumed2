@@ -110,7 +110,7 @@ AC_ARG_ENABLE([modules],
    if test "${enableval}" == no ; then
      enableval=none
    fi
-   for modules_mod in `echo "${enableval}" | sed 's/:/ /g'`
+   for modules_mod in `echo "${enableval}" | sed 's/:/ /g' | sed 's/+/ +/g' | sed 's/-/ -/g'`
    do
      case "$modules_mod" in
      (none)

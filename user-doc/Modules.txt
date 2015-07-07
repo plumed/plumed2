@@ -25,7 +25,13 @@ list. Notice that `+modulename` and `modulename` both activate the module, where
 ./configure --enable-modules=+crystallization:-colvar
 \endverbatim
 will disable the colvar module and enable the crystallization module.
-If you repeat the `--enable-modules` keyword only the last one will be used. Thus
+Also notice that `:` can be omitted when using `+` or `-`. Thus, the same can be obtained
+with
+\verbatim
+./configure --enable-modules=+crystallization-colvar
+\endverbatim
+
+If you repeat the `--enable-modules` keyword only the last instance will be used. Thus
 `./configure --enable-modules=crystallization --enable-modules=-colvar` will _not_ do what you expect!
 
 There are also some shortcuts available:
