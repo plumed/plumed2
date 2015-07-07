@@ -19,15 +19,15 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_crystallization_DFSClustering_h
-#define __PLUMED_crystallization_DFSClustering_h
+#ifndef __PLUMED_adjmat_DFSClustering_h
+#define __PLUMED_adjmat_DFSClustering_h
 
-#include "multicolvar/AdjacencyMatrixAction.h"
+#include "AdjacencyMatrixAction.h"
 
 namespace PLMD {
-namespace crystallization {
+namespace adjmat {
 
-class DFSClustering : public multicolvar::AdjacencyMatrixAction {
+class DFSClustering : public AdjacencyMatrixAction {
 private:
 /// Used to identify the cluster we are working on 
   int number_of_cluster;

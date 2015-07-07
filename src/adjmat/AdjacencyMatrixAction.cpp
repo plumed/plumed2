@@ -22,10 +22,10 @@
 #include "AdjacencyMatrixAction.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace adjmat {
 
 void AdjacencyMatrixAction::registerKeywords( Keywords& keys ){
-  MultiColvarFunction::registerKeywords( keys );
+  multicolvar::MultiColvarFunction::registerKeywords( keys );
   keys.reserveFlag("USE_ORIENTATION",false,"When computing whether two atoms/molecules are adjacent also take their orientations into account");
   keys.add("numbered","SWITCH","This keyword is used if you want to employ an alternative to the continuous swiching function defined above. "
                                "The following provides information on the \\ref switchingfunction that are available. "
@@ -117,13 +117,13 @@ void AdjacencyMatrixAction::doJobsRequiredBeforeTaskList(){
   else dertime=true;
 }
 
-void AdjacencyMatrixAction::calculateWeight( AtomValuePack& myatoms ) const {
+void AdjacencyMatrixAction::calculateWeight( multicolvar::AtomValuePack& myatoms ) const {
   Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
   double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ),getBaseColvarNumber( myatoms.getIndex(1) ) ).calculate( distance.modulo(), dfunc );
   myatoms.setValue(0,sw);
 }
 
-double AdjacencyMatrixAction::compute( const unsigned& tindex, AtomValuePack& myatoms ) const {
+double AdjacencyMatrixAction::compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const {
 //  active_elements.activate( tindex );
 
   double f_dot, dot_df; 
@@ -148,9 +148,9 @@ double AdjacencyMatrixAction::compute( const unsigned& tindex, AtomValuePack& my
      // Add contribution due to separation between atoms
      Vector distance = getSeparation( myatoms.getPosition(0), myatoms.getPosition(1) );
      double dfunc, sw = switchingFunction( getBaseColvarNumber( myatoms.getIndex(0) ), getBaseColvarNumber( myatoms.getIndex(0) ) ).calculate( distance.modulo(), dfunc ); 
-     CatomPack atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
+     multicolvar::CatomPack atom0=getCentralAtomPackFromInput( myatoms.getIndex(0) );
      myatoms.addComDerivatives( 1, (-dfunc)*f_dot*distance, atom0 );
-     CatomPack atom1=getCentralAtomPackFromInput( myatoms.getIndex(1) );
+     multicolvar::CatomPack atom1=getCentralAtomPackFromInput( myatoms.getIndex(1) );
 
      myatoms.addComDerivatives( 1, (dfunc)*f_dot*distance, atom1 );
      myatoms.addBoxDerivatives( 1, (-dfunc)*f_dot*Tensor(distance,distance) );

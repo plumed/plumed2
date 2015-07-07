@@ -38,7 +38,7 @@ done by this action.
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace crystallization {
+namespace adjmat {
 
 class DFSClusterDiameter : public DFSClustering {
 private:

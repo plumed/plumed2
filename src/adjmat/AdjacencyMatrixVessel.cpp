@@ -24,7 +24,7 @@
 #include "AdjacencyMatrixAction.h" 
 
 namespace PLMD {
-namespace multicolvar {
+namespace adjmat {
 
 void AdjacencyMatrixVessel::registerKeywords( Keywords& keys ){
   StoreDataVessel::registerKeywords(keys);

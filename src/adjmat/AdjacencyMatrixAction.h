@@ -19,18 +19,18 @@
    You should have received a copy of the GNU Lesser General Public License
    along with plumed.  If not, see <http://www.gnu.org/licenses/>.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-#ifndef __PLUMED_multicolvar_AdjacencyMatrixAction_h
-#define __PLUMED_multicolvar_AdjacencyMatrixAction_h
+#ifndef __PLUMED_adjmat_AdjacencyMatrixAction_h
+#define __PLUMED_adjmat_AdjacencyMatrixAction_h
 
-#include "MultiColvarFunction.h"
+#include "multicolvar/MultiColvarFunction.h"
 #include "tools/SwitchingFunction.h"
 #include "tools/Matrix.h"
 #include "AdjacencyMatrixVessel.h"
 
 namespace PLMD {
-namespace multicolvar {
+namespace adjmat {
 
-class AdjacencyMatrixAction : public MultiColvarFunction {
+class AdjacencyMatrixAction : public multicolvar::MultiColvarFunction {
 friend class AdjacencyMatrixVessel;
 private:
 /// Are we including the orientation in our measure of adjacency
@@ -64,8 +64,8 @@ protected:
 public:
   static void registerKeywords( Keywords& keys );
   explicit AdjacencyMatrixAction(const ActionOptions&);
-  double compute( const unsigned& tindex, AtomValuePack& myatoms ) const ;
-  void calculateWeight( AtomValuePack& myatoms ) const ;
+  double compute( const unsigned& tindex, multicolvar::AtomValuePack& myatoms ) const ;
+  void calculateWeight( multicolvar::AtomValuePack& myatoms ) const ;
   void doJobsRequiredBeforeTaskList();
 /// Finish the calculation
   virtual void completeCalculation()=0;

@@ -25,7 +25,7 @@
 #include "vesselbase/StoreDataVessel.h" 
 
 namespace PLMD {
-namespace multicolvar {
+namespace adjmat {
 
 class AdjacencyMatrixAction;
 

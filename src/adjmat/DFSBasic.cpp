@@ -125,7 +125,7 @@ clust: DFSCLUSTERING DATA=cf WTOL=0.03 CLUSTER=1 SWITCH={CUBIC D_0=0.4   D_MAX=0
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace crystallization {
+namespace adjmat {
 
 class DFSBasic : public DFSClustering {
 private:

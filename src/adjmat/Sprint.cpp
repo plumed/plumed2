@@ -74,7 +74,7 @@ PRINT ARG=ss.* FILE=colvar
 
 
 namespace PLMD {
-namespace multicolvar {
+namespace adjmat {
 
 class Sprint : public AdjacencyMatrixAction {
 private:

@@ -65,7 +65,7 @@ clust: DFSMAXCLUSTER DATA=cf BETA=0.5 SWITCH={CUBIC D_0=0.4   D_MAX=0.5} TRANSFO
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace crystallization {
+namespace adjmat {
 
 class DFSMaxCluster : public DFSClustering {
 private:

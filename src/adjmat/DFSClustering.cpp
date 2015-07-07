@@ -23,10 +23,10 @@
 
 
 namespace PLMD {
-namespace crystallization {
+namespace adjmat {
 
 void DFSClustering::registerKeywords( Keywords& keys ){
-  multicolvar::AdjacencyMatrixAction::registerKeywords( keys );
+  AdjacencyMatrixAction::registerKeywords( keys );
 }
 
 DFSClustering::DFSClustering(const ActionOptions&ao):

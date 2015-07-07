@@ -32,7 +32,7 @@ Find the number of clusters that have a size larger than a certain cutoff
 //+ENDPLUMEDOC
 
 namespace PLMD {
-namespace crystallization {
+namespace adjmat {
 
 class DFSNumberOfClusters : public DFSClustering {
 private:
