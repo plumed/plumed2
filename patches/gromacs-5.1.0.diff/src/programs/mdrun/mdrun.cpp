@@ -547,7 +547,6 @@ int gmx_mdrun(int argc, char *argv[])
     if (opt2bSet("-plumed",NFILE,fnm)) plumedswitch=1;
     if(plumedswitch){
       plumedcmd=plumed_cmd;
-      int plumed_is_there=0;
       int real_precision=sizeof(real);
       real energyUnits=1.0;
       real lengthUnits=1.0;
